@@ -220,7 +220,11 @@ describe('Keyboard navigation', () => {
                 async () => {
                     const name = await browser.execute(() => {
                         const entry = document.querySelector('.file-entry.is-under-cursor')
-                        return entry?.querySelector('.col-name')?.textContent ?? entry?.querySelector('.name')?.textContent ?? ''
+                        return (
+                            entry?.querySelector('.col-name')?.textContent ??
+                            entry?.querySelector('.name')?.textContent ??
+                            ''
+                        )
                     })
                     return name !== '..'
                 },
@@ -516,7 +520,11 @@ describe('Transfer dialogs', () => {
                 async () => {
                     const name = await browser.execute(() => {
                         const entry = document.querySelector('.file-entry.is-under-cursor')
-                        return entry?.querySelector('.col-name')?.textContent ?? entry?.querySelector('.name')?.textContent ?? ''
+                        return (
+                            entry?.querySelector('.col-name')?.textContent ??
+                            entry?.querySelector('.name')?.textContent ??
+                            ''
+                        )
                     })
                     return name !== '..'
                 },
@@ -553,10 +561,7 @@ describe('Transfer dialogs', () => {
         await browser.keys('Escape')
 
         // Wait for dialog to close
-        await browser.waitUntil(
-            async () => !(await browser.$('.modal-overlay').isExisting()),
-            { timeout: 3000 },
-        )
+        await browser.waitUntil(async () => !(await browser.$('.modal-overlay').isExisting()), { timeout: 3000 })
 
         // Verify dialog is closed
         const modalAfter = browser.$('.modal-overlay')
@@ -573,7 +578,11 @@ describe('Transfer dialogs', () => {
                 async () => {
                     const name = await browser.execute(() => {
                         const entry = document.querySelector('.file-entry.is-under-cursor')
-                        return entry?.querySelector('.col-name')?.textContent ?? entry?.querySelector('.name')?.textContent ?? ''
+                        return (
+                            entry?.querySelector('.col-name')?.textContent ??
+                            entry?.querySelector('.name')?.textContent ??
+                            ''
+                        )
                     })
                     return name !== '..'
                 },
@@ -612,10 +621,7 @@ describe('Transfer dialogs', () => {
         await browser.keys('Escape')
 
         // Wait for dialog to close
-        await browser.waitUntil(
-            async () => !(await browser.$('.modal-overlay').isExisting()),
-            { timeout: 3000 },
-        )
+        await browser.waitUntil(async () => !(await browser.$('.modal-overlay').isExisting()), { timeout: 3000 })
 
         // Verify dialog is closed
         const modalAfter = browser.$('.modal-overlay')

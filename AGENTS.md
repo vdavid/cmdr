@@ -54,7 +54,8 @@ no `2>&1`, `head`, or `tail` needed. Don't run raw `cargo check`, `cargo clippy`
 - Specific tests by name (the one exception where direct commands are fine):
   - Rust: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`
   - Svelte: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
-- E2E: See colocated CLAUDE.md files in `apps/desktop/test/e2e-linux/` and `apps/desktop/test/e2e-macos/`
+- E2E (Playwright): See `apps/desktop/test/e2e-playwright/CLAUDE.md` — build with `playwright-e2e` feature, start app, run tests
+- E2E (legacy): See `apps/desktop/test/e2e-linux/CLAUDE.md` and `apps/desktop/test/e2e-macos/CLAUDE.md`
 - Ubuntu test VM: See `apps/desktop/test/e2e-linux/CLAUDE.md` § "Ubuntu test VM"
 - CI: Runs on PRs and pushes to main for changed files. Full run: Actions → CI → "Run workflow".
 

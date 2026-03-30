@@ -107,8 +107,7 @@ function buildTsRules() {
 }
 
 // projectService config — only enabled when type checking is needed.
-const projectServiceConfig =
-    noTypecheck ? {} : { projectService: true, tsconfigRootDir: import.meta.dirname }
+const projectServiceConfig = noTypecheck ? {} : { projectService: true, tsconfigRootDir: import.meta.dirname }
 
 export default tseslint.config(
     // The fast check skips type-aware rules, so eslint-disable comments targeting

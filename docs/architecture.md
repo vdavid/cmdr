@@ -141,9 +141,10 @@ Dev workflow docs and external service references. All in `docs/tooling/`.
 
 The check runner and E2E testing docs live colocated with their code:
 - Check runner: [`scripts/check/CLAUDE.md`](../scripts/check/CLAUDE.md)
-- E2E overview (why three suites, fixtures): [`apps/desktop/test/CLAUDE.md`](../apps/desktop/test/CLAUDE.md)
-- Linux E2E (Docker, VNC, Ubuntu VM): [`apps/desktop/test/e2e-linux/CLAUDE.md`](../apps/desktop/test/e2e-linux/CLAUDE.md)
-- macOS E2E (CrabNebula): [`apps/desktop/test/e2e-macos/CLAUDE.md`](../apps/desktop/test/e2e-macos/CLAUDE.md)
+- E2E overview (all suites, fixtures): [`apps/desktop/test/CLAUDE.md`](../apps/desktop/test/CLAUDE.md)
+- Playwright E2E (tauri-playwright, cross-platform): [`apps/desktop/test/e2e-playwright/CLAUDE.md`](../apps/desktop/test/e2e-playwright/CLAUDE.md)
+- Linux E2E (Docker, VNC, legacy): [`apps/desktop/test/e2e-linux/CLAUDE.md`](../apps/desktop/test/e2e-linux/CLAUDE.md)
+- macOS E2E (CrabNebula, legacy): [`apps/desktop/test/e2e-macos/CLAUDE.md`](../apps/desktop/test/e2e-macos/CLAUDE.md)
 
 ### Dependency management
 

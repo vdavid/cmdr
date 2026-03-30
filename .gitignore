@@ -40,6 +40,9 @@ coverage/
 # Rust build artifacts
 target/
 
+# Auto-generated capability file for playwright-e2e feature (created by build.rs)
+apps/desktop/src-tauri/capabilities/playwright.json
+
 # Downloaded llama-server binaries (fetched at build time, not committed)
 apps/desktop/src-tauri/resources/ai/
 

@@ -70,10 +70,7 @@ describe('Settings page', () => {
         await searchInput.setValue('theme')
 
         // Wait for the input value to be set
-        await browser.waitUntil(
-            async () => (await searchInput.getValue()) === 'theme',
-            { timeout: 3000 },
-        )
+        await browser.waitUntil(async () => (await searchInput.getValue()) === 'theme', { timeout: 3000 })
 
         const value = await searchInput.getValue()
         expect(value).toBe('theme')
@@ -89,10 +86,7 @@ describe('Settings page', () => {
         })
 
         // Wait for search to clear (input value should be empty)
-        await browser.waitUntil(
-            async () => (await browser.$('.search-input').getValue()) === '',
-            { timeout: 3000 },
-        )
+        await browser.waitUntil(async () => (await browser.$('.search-input').getValue()) === '', { timeout: 3000 })
     })
 
     it('navigates between sections when clicking', async () => {

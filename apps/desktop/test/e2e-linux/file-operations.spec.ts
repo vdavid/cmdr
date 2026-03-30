@@ -60,19 +60,13 @@ async function executeViaCommandPalette(query: string): Promise<void> {
     const input = browser.$('.palette-overlay .search-input')
     await input.setValue(query)
     // Wait for filtered results to appear
-    await browser.waitUntil(
-        async () => browser.$('.palette-overlay .result-item').isExisting(),
-        { timeout: 3000 },
-    )
+    await browser.waitUntil(async () => browser.$('.palette-overlay .result-item').isExisting(), { timeout: 3000 })
     await browser.execute(() => {
         const item = document.querySelector('.palette-overlay .result-item') as HTMLElement | null
         item?.click()
     })
     // Wait for palette to close after executing the command
-    await browser.waitUntil(
-        async () => !(await browser.$('.palette-overlay').isExisting()),
-        { timeout: 3000 },
-    )
+    await browser.waitUntil(async () => !(await browser.$('.palette-overlay').isExisting()), { timeout: 3000 })
 }
 
 /**
@@ -353,10 +347,9 @@ describe('Hidden files toggle', () => {
         await executeViaCommandPalette('Toggle hidden')
 
         // Wait for the hidden file visibility to change
-        await browser.waitUntil(
-            async () => (await fileExistsInFocusedPane('.hidden-file')) !== initiallyVisible,
-            { timeout: 3000 },
-        )
+        await browser.waitUntil(async () => (await fileExistsInFocusedPane('.hidden-file')) !== initiallyVisible, {
+            timeout: 3000,
+        })
 
         // After toggle, visibility should be inverted
         const afterToggleVisible = await fileExistsInFocusedPane('.hidden-file')
@@ -366,10 +359,9 @@ describe('Hidden files toggle', () => {
         await executeViaCommandPalette('Toggle hidden')
 
         // Wait for visibility to revert
-        await browser.waitUntil(
-            async () => (await fileExistsInFocusedPane('.hidden-file')) === initiallyVisible,
-            { timeout: 3000 },
-        )
+        await browser.waitUntil(async () => (await fileExistsInFocusedPane('.hidden-file')) === initiallyVisible, {
+            timeout: 3000,
+        })
 
         // Should be back to original state
         const afterSecondToggle = await fileExistsInFocusedPane('.hidden-file')

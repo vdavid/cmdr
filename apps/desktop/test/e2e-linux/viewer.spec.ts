@@ -157,10 +157,7 @@ describe('File viewer search', () => {
         await browser.keys('Escape')
 
         // Wait for search bar to close
-        await browser.waitUntil(
-            async () => !(await browser.$('.search-bar').isExisting()),
-            { timeout: 3000 },
-        )
+        await browser.waitUntil(async () => !(await browser.$('.search-bar').isExisting()), { timeout: 3000 })
 
         searchBar = browser.$('.search-bar')
         expect(await searchBar.isExisting()).toBe(false)

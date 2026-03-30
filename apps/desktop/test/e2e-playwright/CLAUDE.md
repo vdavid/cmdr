@@ -75,9 +75,10 @@ removes it when the feature is not active. The file is gitignored.
 in-flight `evaluate()` result will be lost. Always `waitForSelector()` on the target page's element before evaluating
 further JS.
 
-**Gotcha**: `ensureAppReady()` navigates to `/` every time. **Why**: Since the app instance persists across tests,
-previous tests may leave the app on a different route or in a subdirectory. Navigating to `/` resets the app to its
-initial state (file explorer on the fixture root's `left/` dir).
+**Gotcha**: `ensureAppReady()` must reset both the route AND the directories. **Why**: Navigating to SvelteKit route `/`
+only ensures we're on the file explorer page — it does NOT change which directory either pane is showing. Pane
+directories are persistent app state. So `ensureAppReady()` also emits `mcp-nav-to-path` Tauri events via
+`window.__TAURI_INTERNALS__` to navigate both panes back to the fixture root's `left/` and `right/` directories.
 
 **Gotcha**: File-operation tests need fixture recreation. **Why**: Tests that copy, move, rename, or create files mutate
 the shared fixture directory. Without cleanup, later tests see stale artifacts. `recreateFixtures()` runs in

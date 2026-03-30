@@ -15,6 +15,7 @@ import { spawn, execSync, ChildProcess } from 'child_process'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
+import { waitTauriDriverReady } from '@crabnebula/tauri-driver'
 import { waitTestRunnerBackendReady } from '@crabnebula/test-runner-backend'
 import { createFixtures, cleanupFixtures, recreateFixtures } from '../e2e-shared/fixtures.js'
 
@@ -47,6 +48,8 @@ const rustTarget =
 // Output goes to workspace-level target/<arch>/debug/ when --target is used
 const TAURI_BINARY = process.env.TAURI_BINARY || path.join(__dirname, `../../../../target/${rustTarget}/debug/Cmdr`)
 
+let tauriDriver: ChildProcess | null = null
+let killedTauriDriver = false
 let testRunnerBackend: ChildProcess | null = null
 let killedTestRunnerBackend = false
 let fixtureRootPath: string | null = null
@@ -128,9 +131,39 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
 
         // Tell tauri-driver to connect to the test-runner-backend
         process.env.REMOTE_WEBDRIVER_URL = 'http://127.0.0.1:3000'
+
+        // Start tauri-driver (must be in onPrepare, not beforeSession — WDIO
+        // connects to the driver port during session creation, which happens
+        // before beforeSession fires)
+        console.log('Starting tauri-driver...')
+        tauriDriver = spawn('pnpm', ['tauri-driver'], {
+            stdio: ['ignore', 'pipe', 'pipe'],
+            shell: true,
+            env: {
+                ...process.env,
+                RUST_LOG: 'warn',
+            },
+        })
+
+        tauriDriver.on('error', (error) => {
+            console.error('tauri-driver error:', error)
+            process.exit(1)
+        })
+        tauriDriver.on('exit', (code) => {
+            if (!killedTauriDriver) {
+                console.error('tauri-driver exited unexpectedly with code:', code)
+                process.exit(1)
+            }
+        })
+
+        await waitTauriDriverReady()
+        console.log('tauri-driver is ready')
     },
 
     onComplete: async function () {
+        killedTauriDriver = true
+        tauriDriver?.kill()
+        tauriDriver = null
         killedTestRunnerBackend = true
         testRunnerBackend?.kill()
         testRunnerBackend = null
@@ -176,6 +209,8 @@ export const config: Options.Testrunner & { capabilities: Capabilities.Testrunne
 
 // Ensure cleanup on unexpected exit
 function cleanup() {
+    killedTauriDriver = true
+    tauriDriver?.kill()
     killedTestRunnerBackend = true
     testRunnerBackend?.kill()
     if (fixtureRootPath) {
