@@ -220,11 +220,32 @@ test.describe('Mouse interactions', () => {
         )
         if (leftPaneEntryCount < 2) return
 
-        // Click second entry in left pane
+        // Find initial cursor index so we know the click actually moved it
+        const initialCursorIndex = await tauriPage.evaluate<number>(`(function() {
+            var pane = document.querySelectorAll('.file-pane')[0];
+            var entries = pane ? pane.querySelectorAll('.file-entry') : [];
+            for (var i = 0; i < entries.length; i++) {
+                if (entries[i].classList.contains('is-under-cursor')) return i;
+            }
+            return -1;
+        })()`)
+
+        // Pick a different entry to click — if cursor is on [0], click [1]; otherwise click [0]
+        const targetIndex = initialCursorIndex === 1 ? 0 : 1
+
+        // Dispatch mousedown then click — the cursor movement handler is on
+        // onmousedown, not onclick. Must set button:0 (handleMouseDown checks it).
         await tauriPage.evaluate(`(function() {
             var pane = document.querySelectorAll('.file-pane')[0];
-            var entries = pane.querySelectorAll('.file-entry');
-            if (entries[1]) entries[1].click();
+            var entry = pane?.querySelectorAll('.file-entry')[${targetIndex}];
+            if (entry) {
+                entry.scrollIntoView({block:'center'});
+                var r = entry.getBoundingClientRect();
+                var cx = r.left + r.width/2, cy = r.top + r.height/2;
+                entry.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, button:0, clientX:cx, clientY:cy}));
+                entry.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, button:0, clientX:cx, clientY:cy}));
+                entry.dispatchEvent(new MouseEvent('click', {bubbles:true, button:0, clientX:cx, clientY:cy}));
+            }
         })()`)
 
         // Wait for cursor to move to the clicked entry
@@ -234,14 +255,14 @@ test.describe('Mouse interactions', () => {
                 return tauriPage.evaluate<boolean>(`(function() {
                     var pane = document.querySelectorAll('.file-pane')[0];
                     var entries = pane.querySelectorAll('.file-entry');
-                    return entries[1]?.classList.contains('is-under-cursor') || false;
+                    return entries[${targetIndex}]?.classList.contains('is-under-cursor') || false;
                 })()`)
             },
-            3000,
+            5000,
         )
 
         const entryClass = await tauriPage.evaluate<string>(
-            `document.querySelectorAll('.file-pane')[0]?.querySelectorAll('.file-entry')[1]?.getAttribute('class') || ''`,
+            `document.querySelectorAll('.file-pane')[0]?.querySelectorAll('.file-entry')[${targetIndex}]?.getAttribute('class') || ''`,
         )
         expect(entryClass).toContain('is-under-cursor')
     })

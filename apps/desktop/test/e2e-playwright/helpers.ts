@@ -73,16 +73,14 @@ export async function pressKey(tauriPage: PageLike, key: string): Promise<void> 
 
 /**
  * Ensures the app is fully loaded and focus is initialized.
- * Waits for file entries, dismisses overlays, clicks a file entry in the left
- * pane, and focuses the explorer container so keyboard events reach the handler.
+ * Waits for file entries, dismisses overlays, navigates the left pane back to
+ * the fixture root's `left/` directory (in case a previous test changed it),
+ * clicks a file entry, and focuses the explorer container.
  */
 export async function ensureAppReady(tauriPage: PageLike): Promise<void> {
-    // Always navigate to the main route to ensure we're on the file explorer
-    // and in the correct directory (previous tests may have navigated elsewhere
-    // or entered a subdirectory). SvelteKit client-side routing resets the pane
-    // state from CMDR_E2E_START_PATH.
+    // Navigate to the main route to ensure we're on the file explorer page.
+    // This does NOT reset the directory — just ensures we're on the right route.
     await navigateToRoute(tauriPage, '/')
-    // Give SvelteKit time to process the route transition
     await sleep(500)
 
     // Wait for file entries to be visible (confirms app is fully loaded)
@@ -99,7 +97,6 @@ export async function ensureAppReady(tauriPage: PageLike): Promise<void> {
         var overlay = document.querySelector('.modal-overlay');
         if (overlay) overlay.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
     })()`)
-    // Wait until the modal overlay is gone
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
 
     // Dismiss any overlays (AI notification, etc.)
@@ -107,17 +104,35 @@ export async function ensureAppReady(tauriPage: PageLike): Promise<void> {
         var btn = document.querySelector('.ai-notification .ai-button.secondary');
         if (btn) btn.click();
     })()`)
-    // Wait until the AI notification is gone
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.ai-notification')), 3000)
 
-    // Verify the left pane is showing the fixture root's left/ directory.
-    // After navigating to /, the app should show the fixture root. But if
-    // previous tests navigated into a subdirectory, the pane may still be there.
-    // Check for expected fixture files and navigate back if needed.
+    // Navigate both panes to the fixture root's left/ and right/ directories.
+    // Previous tests may have entered sub-dir or navigated elsewhere.
+    // Route navigation (above) only ensures we're on the explorer PAGE —
+    // it doesn't change which directory the panes are showing.
+    // We emit mcp-nav-to-path Tauri events which the +page.svelte listener
+    // forwards to DualPaneExplorer.navigateToPath().
+    const fixtureRoot = getFixtureRoot()
+    const leftPanePath = fixtureRoot + '/left'
+    const rightPanePath = fixtureRoot + '/right'
+    await tauriPage.evaluate(`(function() {
+        var invoke = window.__TAURI_INTERNALS__.invoke;
+        invoke('plugin:event|emit', {
+            event: 'mcp-nav-to-path',
+            payload: { pane: 'left', path: ${JSON.stringify(leftPanePath)} }
+        });
+        invoke('plugin:event|emit', {
+            event: 'mcp-nav-to-path',
+            payload: { pane: 'right', path: ${JSON.stringify(rightPanePath)} }
+        });
+    })()`)
+    await sleep(300)
+
+    // Wait for the left pane to show the expected fixture files
     await pollUntil(
         tauriPage,
         async () => {
-            const hasFixtureFiles = await tauriPage.evaluate<boolean>(`(function() {
+            return tauriPage.evaluate<boolean>(`(function() {
                 var pane = document.querySelectorAll('.file-pane')[0];
                 if (!pane) return false;
                 var entries = pane.querySelectorAll('.file-entry');
@@ -126,11 +141,6 @@ export async function ensureAppReady(tauriPage: PageLike): Promise<void> {
                 });
                 return names.indexOf('file-a.txt') >= 0 && names.indexOf('sub-dir') >= 0;
             })()`)
-            if (hasFixtureFiles) return true
-            // Not showing expected files — navigate to / again
-            await navigateToRoute(tauriPage, '/')
-            await sleep(500)
-            return false
         },
         10000,
     )

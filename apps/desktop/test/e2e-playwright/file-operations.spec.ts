@@ -139,17 +139,22 @@ test.describe('Rename round-trip', () => {
 
         await tauriPage.waitForSelector('.rename-input', 10000)
 
-        // Clear existing value and type new name
+        // Clear existing value and type the new name. Use the native value setter
+        // + input event to clear (Svelte reads e.target.value in handleInput),
+        // then type character by character (triggers proper keydown/input/keyup).
         await tauriPage.evaluate(`(function() {
             var input = document.querySelector('.rename-input');
-            if (input) {
-                input.value = 'renamed-file.txt';
-                input.dispatchEvent(new Event('input', { bubbles: true }));
-            }
+            if (!input) return;
+            input.focus();
+            var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+            if (desc && desc.set) desc.set.call(input, '');
+            else input.value = '';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
         })()`)
+        await sleep(100)
+        await tauriPage.type('.rename-input', 'renamed-file.txt')
         await sleep(200)
-
-        await tauriPage.keyboard.press('Enter')
+        await tauriPage.press('.rename-input', 'Enter')
 
         // Wait for rename input to disappear
         await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.rename-input')), 5000)
@@ -157,8 +162,8 @@ test.describe('Rename round-trip', () => {
         // Verify new name appears
         await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, 'renamed-file.txt'), 5000)
 
-        // Verify old name is gone
-        expect(await fileExistsInFocusedPane(tauriPage, 'file-a.txt')).toBe(false)
+        // Verify old name is gone (poll because file watcher updates are async)
+        await pollUntil(tauriPage, async () => !(await fileExistsInFocusedPane(tauriPage, 'file-a.txt')), 5000)
 
         // Verify on disk
         expect(fs.existsSync(path.join(fixtureRoot, 'left', 'renamed-file.txt'))).toBe(true)
