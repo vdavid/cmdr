@@ -14,6 +14,7 @@
 import fs from 'fs'
 import path from 'path'
 import { test, expect } from './fixtures.js'
+import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
     ensureAppReady,
     getEntryName,
@@ -27,6 +28,12 @@ import {
     MKDIR_DIALOG,
     TRANSFER_DIALOG,
 } from './helpers.js'
+
+// Recreate lightweight fixtures (text files + dirs, not bulk .dat files)
+// before each test so file operations don't leak state between tests.
+test.beforeEach(() => {
+    recreateFixtures(getFixtureRoot())
+})
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
@@ -323,10 +330,7 @@ test.describe('Empty directory', () => {
         )
 
         if (entryCount > 0) {
-            const firstEntryName = await getEntryName(
-                tauriPage,
-                '.file-pane:nth-child(2) .file-entry:first-child',
-            )
+            const firstEntryName = await getEntryName(tauriPage, '.file-pane:nth-child(2) .file-entry:first-child')
             expect(firstEntryName === '..' || firstEntryName === '').toBe(true)
         }
 

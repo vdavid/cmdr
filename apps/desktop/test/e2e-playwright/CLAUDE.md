@@ -6,11 +6,11 @@ Tauri webview via Unix socket. No WebDriver, no platform-specific quirks.
 ## Architecture
 
 ```
-Playwright (Node.js) ──Unix socket──> tauri-plugin-playwright (Rust)
-                                            │
-                                            └── webview.eval(js) ──> JS executes in webview
-                                                                          │
-                                                                          └── Tauri IPC (result callback)
+Playwright (Node.js) --Unix socket--> tauri-plugin-playwright (Rust)
+                                            |
+                                            +-- webview.eval(js) --> JS executes in webview
+                                                                          |
+                                                                          +-- Tauri IPC (result callback)
 ```
 
 Same tests run on macOS and Linux. Platform differences (Ctrl vs Meta) are handled by a single `CTRL_OR_META` constant
@@ -24,52 +24,61 @@ cd apps/desktop
 # Build the Tauri binary with the playwright plugin
 pnpm test:e2e:playwright:build
 
-# Run the tests (assumes the built binary is available)
-pnpm test:e2e:playwright
+# Start the app (in a separate terminal)
+CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures /path/to/target/.../release/Cmdr
+
+# Run the tests (app must be running with socket at /tmp/tauri-playwright.sock)
+CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright
 ```
+
+The test suite does NOT launch the app itself. The app must be started manually (or by CI) with the
+`CMDR_E2E_START_PATH` env var pointing to a fixture directory created by `e2e-shared/fixtures.ts`.
 
 ## Files
 
-| File                    | Purpose                                                          |
-| ----------------------- | ---------------------------------------------------------------- |
-| `playwright.config.ts`  | Playwright config: Tauri mode only, sequential execution         |
-| `fixtures.ts`           | Test fixture using `createTauriTest` from tauri-playwright       |
-| `global-setup.ts`       | Creates the shared fixture directory tree (~170 MB)              |
-| `global-teardown.ts`    | Cleans up the fixture directory                                  |
-| `helpers.ts`            | Ported helpers: `ensureAppReady`, `pollUntil`, DOM queries, etc. |
-| `app.spec.ts`           | 14 tests: rendering, keyboard nav, mouse interaction, dialogs    |
-| `file-operations.spec.ts` | 8 tests: copy, move, rename, mkdir, view modes, hidden, palette |
-| `settings.spec.ts`      | 5 tests: settings page rendering, sidebar, search                |
-| `viewer.spec.ts`        | 10 tests: file viewer, search, error handling                    |
+| File                      | Purpose                                                          |
+| ------------------------- | ---------------------------------------------------------------- |
+| `playwright.config.ts`    | Playwright config: Tauri mode only, sequential execution         |
+| `fixtures.ts`             | Test fixture using `createTauriTest` from tauri-playwright       |
+| `global-setup.ts`         | Creates or refreshes the fixture directory tree (~170 MB)        |
+| `global-teardown.ts`      | Cleans up the fixture directory (if created by globalSetup)      |
+| `helpers.ts`              | Ported helpers: `ensureAppReady`, `pollUntil`, DOM queries, etc. |
+| `app.spec.ts`             | 14 tests: rendering, keyboard nav, mouse interaction, dialogs    |
+| `file-operations.spec.ts` | 8 tests: copy, move, rename, mkdir, view modes, hidden, palette  |
+| `settings.spec.ts`        | 5 tests: settings page rendering, sidebar, search                |
+| `viewer.spec.ts`          | 10 tests: file viewer, search, error handling                    |
 
 ## Key decisions
 
-**Decision**: Use `tauriPage.evaluate()` with string expressions instead of function callbacks.
-**Why**: TauriPage's `evaluate()` sends a JS string over the socket to be executed in the webview via `webview.eval()`.
-Unlike Playwright's `page.evaluate()`, it doesn't support function serialization. All DOM queries must be written as
-string expressions.
+**Decision**: Use `tauriPage.evaluate()` with string expressions instead of function callbacks. **Why**: TauriPage's
+`evaluate()` sends a JS string over the socket to be executed in the webview via `webview.eval()`. Unlike Playwright's
+`page.evaluate()`, it doesn't support function serialization. All DOM queries must be written as string expressions.
 
-**Decision**: Use `pollUntil()` helper instead of Playwright's built-in `expect().toPass()`.
-**Why**: In Tauri mode, Playwright's auto-waiting and locator assertions don't work because there's no real Playwright
-`Page` object. The `pollUntil()` helper provides the same behavior (retry with timeout) for TauriPage.
+**Decision**: Use `pollUntil()` for complex conditions, `tauriPage.waitForFunction()` for simple JS expressions. **Why**:
+In Tauri mode, Playwright's auto-waiting and locator assertions don't work because there's no real Playwright `Page`
+object. `tauriPage.waitForFunction()` works now that the plugin embeds expressions directly instead of using `eval()`
+(fixed in plugin commit `4f39e3e9`). For conditions that need Node.js-side logic, use `pollUntil()` with
+`tauriPage.evaluate()`.
 
-**Decision**: Use `keyboard.press()` for all key inputs.
-**Why**: The WebDriverIO tests needed platform-specific workarounds for Space, Backspace, and modifier keys due to
-WebKitGTK WebDriver quirks. tauri-playwright dispatches `KeyboardEvent` directly in the webview via JS injection, so
-all keys work uniformly on all platforms.
+**Decision**: Use `pressKey()` helper for Space key instead of `tauriPage.keyboard.press('Space')`. **Why**:
+TauriKeyboard dispatches key names as-is (sends `key: "Space"`), but the DOM spec uses `key: " "` for the space bar. The
+`pressKey()` helper maps Playwright key names to their DOM-correct values.
+
+**Decision**: `build.rs` conditionally generates `capabilities/playwright.json`. **Why**: The plugin's IPC permissions
+(`playwright:default`) are only available when the `playwright-e2e` Cargo feature is enabled. Adding it to
+`default.json` breaks non-feature builds. So `build.rs` generates the capability file when the feature is active and
+removes it when the feature is not active. The file is gitignored.
 
 ## Gotchas
 
-**Gotcha**: Navigation destroys page context.
-**Why**: After triggering SvelteKit navigation (settings, viewer), any in-flight `evaluate()` result will be lost.
-Always `waitForSelector()` on the target page's element before evaluating further JS.
+**Gotcha**: Navigation destroys page context. **Why**: After triggering SvelteKit navigation (settings, viewer), any
+in-flight `evaluate()` result will be lost. Always `waitForSelector()` on the target page's element before evaluating
+further JS.
 
-**Gotcha**: `test.beforeAll` runs per-worker, not globally.
-**Why**: With `workers: 1`, this is effectively global. But if workers are increased, `beforeAll` runs per-worker.
-Use `globalSetup`/`globalTeardown` for truly global setup (fixture creation/cleanup).
+**Gotcha**: `ensureAppReady()` navigates to `/` every time. **Why**: Since the app instance persists across tests,
+previous tests may leave the app on a different route or in a subdirectory. Navigating to `/` resets the app to its
+initial state (file explorer on the fixture root's `left/` dir).
 
-**Gotcha**: `playwright:default` capability not in `default.json`.
-**Why**: The capability can only be validated when the plugin crate is compiled (feature-gated). Adding it to
-`default.json` breaks builds without the `playwright-e2e` feature. The plugin handles its own permission grants when
-initialized. If IPC calls are rejected at runtime, add the capability to a separate JSON file and include it
-conditionally.
+**Gotcha**: File-operation tests need fixture recreation. **Why**: Tests that copy, move, rename, or create files mutate
+the shared fixture directory. Without cleanup, later tests see stale artifacts. `recreateFixtures()` runs in
+`test.beforeEach` in `file-operations.spec.ts` to reset text files and directories (bulk .dat files persist).

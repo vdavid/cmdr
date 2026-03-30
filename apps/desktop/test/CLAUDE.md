@@ -2,17 +2,19 @@
 
 ## E2E test suites
 
-Two complementary approaches, each covering what the others can't:
+Three suites exist. The Playwright suite is the target replacement for the WebDriverIO suites:
 
-| Suite                        | Tech                       | Runs on         | What it tests                                               | CI?                    |
-| ---------------------------- | -------------------------- | --------------- | ----------------------------------------------------------- | ---------------------- |
-| **Linux E2E** (`e2e-linux/`) | WebDriverIO + tauri-driver | Docker (Ubuntu) | Full app: dialogs, keyboard nav, file ops, settings, viewer | Yes (slow)             |
-| **macOS E2E** (`e2e-macos/`) | WebDriverIO + CrabNebula   | macOS only      | Platform integration: APFS ops, volume detection, WKWebView | No (local pre-release) |
+| Suite                              | Tech                       | Runs on         | What it tests                                               | Status           |
+| ---------------------------------- | -------------------------- | --------------- | ----------------------------------------------------------- | ---------------- |
+| **Playwright** (`e2e-playwright/`) | Playwright + tauri-plugin  | macOS and Linux | Full app: dialogs, keyboard nav, file ops, settings, viewer | New (38/38 pass) |
+| **Linux E2E** (`e2e-linux/`)       | WebDriverIO + tauri-driver | Docker (Ubuntu) | Same as above, older suite                                  | Legacy, CI       |
+| **macOS E2E** (`e2e-macos/`)       | WebDriverIO + CrabNebula   | macOS only      | Platform integration: APFS ops, volume detection            | Legacy, local    |
 
-**Why separate?** macOS WKWebView has no Apple-provided WebDriver, so standard tauri-driver only works on Linux
-(WebKitGTK has WebKitWebDriver). CrabNebula provides a commercial WKWebView bridge for macOS, but GitHub Actions charges
-macOS minutes at 10x — too expensive for CI. So: Linux E2E is the workhorse (all platform-independent logic), macOS E2E
-covers platform-specific behavior.
+**Playwright suite** uses `tauri-plugin-playwright` (fork at `vdavid/tauri-playwright`) which injects JS directly into
+the Tauri webview via `webview.eval()` and receives results via Tauri IPC. No WebDriver, no CrabNebula dependency. Same
+tests work on both macOS and Linux. Gated behind the `playwright-e2e` Cargo feature.
+
+**Legacy suites** remain for now but can be removed once CI is switched to the Playwright suite.
 
 ## Shared fixture system
 
@@ -26,15 +28,14 @@ left/                         right/  (empty)
   bulk/  (3 x 50 MB + 20 x 1 MB .dat files)
 ```
 
-`CMDR_E2E_START_PATH` env var tells the app where to open. Fixtures are fully recreated before each test
-(`recreateFixtures()` in `beforeTest`) so tests don't affect each other.
+`CMDR_E2E_START_PATH` env var tells the app where to open. Fixtures are recreated before tests (`recreateFixtures()`) so
+tests don't affect each other.
 
 ## Other test infrastructure
 
-- `smb-servers/` — Docker Compose setup for local SMB share testing
-- Unit tests live in `apps/desktop/test/` (Vitest) — separate from E2E
+- `smb-servers/` -- Docker Compose setup for local SMB share testing
+- Unit tests live in `apps/desktop/test/` (Vitest) -- separate from E2E
 
 ## Detailed docs
 
-Each suite has its own `CLAUDE.md` with running instructions, Docker/VNC setup, WebDriver quirks, and platform-specific
-gotchas. See `e2e-linux/CLAUDE.md` and `e2e-macos/CLAUDE.md`.
+Each suite has its own `CLAUDE.md`: `e2e-playwright/CLAUDE.md`, `e2e-linux/CLAUDE.md`, `e2e-macos/CLAUDE.md`.

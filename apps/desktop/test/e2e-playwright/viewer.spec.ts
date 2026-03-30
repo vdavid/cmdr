@@ -52,8 +52,12 @@ async function navigateAndWaitForViewer(tauriPage: PageLike, filePath: string): 
 }
 
 test.describe('File viewer', () => {
-    test.beforeAll(async ({ tauriPage }) => {
-        await navigateAndWaitForViewer(tauriPage, testFilePath)
+    test.beforeEach(async ({ tauriPage }) => {
+        // Navigate to viewer if not already showing file content
+        const hasContent = await tauriPage.isVisible('.file-content')
+        if (!hasContent) {
+            await navigateAndWaitForViewer(tauriPage, testFilePath)
+        }
     })
 
     test('renders the viewer container', async ({ tauriPage }) => {
@@ -91,8 +95,11 @@ test.describe('File viewer', () => {
 })
 
 test.describe('File viewer search', () => {
-    test.beforeAll(async ({ tauriPage }) => {
-        await navigateAndWaitForViewer(tauriPage, testFilePath)
+    test.beforeEach(async ({ tauriPage }) => {
+        const hasContent = await tauriPage.isVisible('.file-content')
+        if (!hasContent) {
+            await navigateAndWaitForViewer(tauriPage, testFilePath)
+        }
     })
 
     test('opens search bar with Ctrl+F', async ({ tauriPage }) => {

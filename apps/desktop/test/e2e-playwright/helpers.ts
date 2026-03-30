@@ -25,6 +25,50 @@ export const TRANSFER_DIALOG = '[data-dialog-id="transfer-confirmation"]'
 
 export const CTRL_OR_META = process.platform === 'darwin' ? 'Meta' : 'Control'
 
+// ── Key name mapping ────────────────────────────────────────────────────────
+
+/**
+ * Maps Playwright key names to DOM `KeyboardEvent.key` values.
+ * TauriKeyboard dispatches key names as-is, but the DOM spec uses
+ * different values for some keys (for example, 'Space' -> ' ').
+ */
+const KEY_MAP: Record<string, string> = {
+    Space: ' ',
+    Backspace: 'Backspace',
+    Enter: 'Enter',
+    Escape: 'Escape',
+    Tab: 'Tab',
+}
+
+/** Converts a Playwright key name to the DOM-compatible key value. */
+export function mapKey(key: string): string {
+    return KEY_MAP[key] ?? key
+}
+
+/**
+ * Dispatches a keyboard event with the correct DOM key value.
+ * Use this instead of tauriPage.keyboard.press() for keys that need mapping.
+ */
+export async function pressKey(tauriPage: PageLike, key: string): Promise<void> {
+    const mapped = mapKey(key)
+    const parts = mapped.split('+')
+    const mainKey = parts[parts.length - 1]
+    const modifiers = parts.slice(0, -1)
+    const k = JSON.stringify(mainKey)
+    const ctrl = modifiers.includes('Control') || false
+    const shift = modifiers.includes('Shift') || false
+    const alt = modifiers.includes('Alt') || false
+    const meta = modifiers.includes('Meta') || false
+
+    await tauriPage.evaluate(`(function(){
+        var el=document.activeElement||document.body;
+        var o={key:${k},bubbles:true,ctrlKey:${ctrl},shiftKey:${shift},altKey:${alt},metaKey:${meta}};
+        el.dispatchEvent(new KeyboardEvent('keydown',o));
+        el.dispatchEvent(new KeyboardEvent('keypress',o));
+        el.dispatchEvent(new KeyboardEvent('keyup',o));
+    })()`)
+}
+
 // ── App readiness ────────────────────────────────────────────────────────────
 
 /**
@@ -33,6 +77,14 @@ export const CTRL_OR_META = process.platform === 'darwin' ? 'Meta' : 'Control'
  * pane, and focuses the explorer container so keyboard events reach the handler.
  */
 export async function ensureAppReady(tauriPage: PageLike): Promise<void> {
+    // Always navigate to the main route to ensure we're on the file explorer
+    // and in the correct directory (previous tests may have navigated elsewhere
+    // or entered a subdirectory). SvelteKit client-side routing resets the pane
+    // state from CMDR_E2E_START_PATH.
+    await navigateToRoute(tauriPage, '/')
+    // Give SvelteKit time to process the route transition
+    await sleep(500)
+
     // Wait for file entries to be visible (confirms app is fully loaded)
     await tauriPage.waitForSelector('.file-entry', 15000)
 
@@ -58,10 +110,35 @@ export async function ensureAppReady(tauriPage: PageLike): Promise<void> {
     // Wait until the AI notification is gone
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.ai-notification')), 3000)
 
+    // Verify the left pane is showing the fixture root's left/ directory.
+    // After navigating to /, the app should show the fixture root. But if
+    // previous tests navigated into a subdirectory, the pane may still be there.
+    // Check for expected fixture files and navigate back if needed.
+    await pollUntil(
+        tauriPage,
+        async () => {
+            const hasFixtureFiles = await tauriPage.evaluate<boolean>(`(function() {
+                var pane = document.querySelectorAll('.file-pane')[0];
+                if (!pane) return false;
+                var entries = pane.querySelectorAll('.file-entry');
+                var names = Array.from(entries).map(function(e) {
+                    return (e.querySelector('.col-name') || e.querySelector('.name') || {}).textContent || '';
+                });
+                return names.indexOf('file-a.txt') >= 0 && names.indexOf('sub-dir') >= 0;
+            })()`)
+            if (hasFixtureFiles) return true
+            // Not showing expected files — navigate to / again
+            await navigateToRoute(tauriPage, '/')
+            await sleep(500)
+            return false
+        },
+        10000,
+    )
+
     // Click on a file entry in the left pane to ensure focus, then focus the
     // explorer container so keyboard events reach the handler.
     await tauriPage.evaluate(`(function() {
-        var entry = document.querySelector('.file-pane .file-entry');
+        var entry = document.querySelectorAll('.file-pane')[0]?.querySelector('.file-entry');
         if (entry) entry.click();
         var explorer = document.querySelector('.dual-pane-explorer');
         if (explorer) explorer.focus();
@@ -254,3 +331,4 @@ export async function pollUntil(
     }
     return false
 }
+

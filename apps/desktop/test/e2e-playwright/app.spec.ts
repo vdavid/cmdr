@@ -12,6 +12,7 @@ import {
     findFileIndex,
     skipParentEntry,
     pollUntil,
+    pressKey,
     sleep,
     MKDIR_DIALOG,
     TRANSFER_DIALOG,
@@ -117,7 +118,9 @@ test.describe('Keyboard navigation', () => {
         expect(paneCount).toBe(2)
 
         // Verify left pane is focused (ensureAppReady clicked on it)
-        const leftPaneClass = await tauriPage.getAttribute('.file-pane:nth-child(1)', 'class')
+        const leftPaneClass = await tauriPage.evaluate<string>(
+            `document.querySelectorAll('.file-pane')[0]?.getAttribute('class') || ''`,
+        )
         expect(leftPaneClass).toContain('is-focused')
 
         // Press Tab to switch to right pane
@@ -176,7 +179,7 @@ test.describe('Keyboard navigation', () => {
         expect(cursorClass).not.toContain('is-selected')
 
         // Press Space to toggle selection
-        await tauriPage.keyboard.press('Space')
+        await pressKey(tauriPage, 'Space')
 
         // Wait for selection state to change
         await pollUntil(
@@ -192,7 +195,7 @@ test.describe('Keyboard navigation', () => {
         expect(cursorClass).toContain('is-selected')
 
         // Press Space again to deselect
-        await tauriPage.keyboard.press('Space')
+        await pressKey(tauriPage, 'Space')
 
         await pollUntil(
             tauriPage,

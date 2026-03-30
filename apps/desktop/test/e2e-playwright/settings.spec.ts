@@ -10,16 +10,15 @@ import { test, expect } from './fixtures.js'
 import { navigateToRoute, pollUntil } from './helpers.js'
 
 test.describe('Settings page', () => {
-    test.beforeAll(async ({ tauriPage }) => {
-        // Wait for the main app to fully load first
-        await tauriPage.waitForSelector('.dual-pane-explorer', 15000)
-
-        // Navigate to settings via SvelteKit client-side routing
-        await navigateToRoute(tauriPage, '/settings')
-
-        // Wait for settings to fully initialize
-        await tauriPage.waitForSelector('.settings-window', 15000)
-        await tauriPage.waitForSelector('.settings-sidebar', 10000)
+    test.beforeEach(async ({ tauriPage }) => {
+        // Navigate to settings if not already there
+        const onSettings = await tauriPage.isVisible('.settings-window')
+        if (!onSettings) {
+            await tauriPage.waitForSelector('.dual-pane-explorer', 15000)
+            await navigateToRoute(tauriPage, '/settings')
+            await tauriPage.waitForSelector('.settings-window', 15000)
+            await tauriPage.waitForSelector('.settings-sidebar', 10000)
+        }
     })
 
     test('renders the settings page', async ({ tauriPage }) => {
