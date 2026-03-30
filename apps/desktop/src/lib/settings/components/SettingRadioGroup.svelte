@@ -20,6 +20,7 @@
     const { id, disabled = false, customContent }: Props = $props()
 
     const definition = getSettingDefinition(id)
+    const label = definition?.label ?? id
     const options = definition?.constraints?.options ?? []
 
     let value = $state(String(getSetting(id)))
@@ -39,7 +40,7 @@
     }
 </script>
 
-<RadioGroup.Root {value} onValueChange={handleValueChange} {disabled}>
+<RadioGroup.Root {value} onValueChange={handleValueChange} {disabled} aria-label={label}>
     <div class="radio-group">
         {#each options as option (option.value)}
             <RadioGroup.Item value={String(option.value)} class="radio-item" {disabled}>

@@ -306,7 +306,6 @@
         font-size: var(--font-size-sm);
         cursor: default;
         border-radius: 0;
-        transition: background-color var(--transition-fast);
     }
 
     .section-item.selected {

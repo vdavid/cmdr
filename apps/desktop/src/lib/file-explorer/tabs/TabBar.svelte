@@ -59,8 +59,8 @@
     }
 </script>
 
-<div class="tab-bar" role="tablist" aria-label="{paneId} pane tabs" onclick={onPaneFocus}>
-    <div class="tab-list">
+<div class="tab-bar" onclick={onPaneFocus}>
+    <div class="tab-list" role="tablist" aria-label="{paneId} pane tabs">
         {#each tabs as tab, index (tab.id)}
             {@const isActive = tab.id === activeTabId}
             {@const isBeforeActive = index < tabs.length - 1 && tabs[index + 1].id === activeTabId}
@@ -108,10 +108,8 @@
                 {#if !isSingleTab}
                     <span
                         class="close-btn"
-                        role="button"
-                        tabindex="-1"
+                        aria-hidden="true"
                         use:tooltip={'Close tab'}
-                        aria-label="Close tab"
                         onclick={(e: MouseEvent) => {
                             handleCloseClick(e, tab.id)
                         }}>&#xd7;</span

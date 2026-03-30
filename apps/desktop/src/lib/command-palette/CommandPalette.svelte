@@ -155,7 +155,7 @@
             autocapitalize="off"
         />
 
-        <div class="results-container" bind:this={resultsContainer}>
+        <div class="results-container" bind:this={resultsContainer} role="listbox" aria-label="Commands">
             {#if results.length === 0 && query.trim()}
                 <div class="no-results">No commands found</div>
             {:else}
@@ -282,20 +282,19 @@
         white-space: nowrap;
     }
 
-    /* Match highlight - macOS Spotlight-style with visible background */
+    /* Match highlight - underline style that doesn't compromise text contrast */
     .match-highlight {
-        background: var(--color-tint-hover-strong);
         color: inherit;
-        border-radius: var(--radius-sm);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
-        padding: 1px 2px;
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
-        margin: 0 -2px;
+        background: none;
+        text-decoration: underline;
+        text-decoration-color: var(--color-accent);
+        text-underline-offset: 2px;
+        text-decoration-thickness: 2px;
     }
 
     /* When item is under cursor, make the match highlight even more visible */
     .result-item.is-under-cursor .match-highlight {
-        background: color-mix(in srgb, white, transparent 65%);
+        text-decoration-color: var(--color-text-primary);
     }
 
     .shortcuts {

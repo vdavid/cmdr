@@ -472,7 +472,7 @@
 
 <div class="brief-list-container" class:is-focused={isFocused}>
     <!-- Header row with sort options -->
-    <div class="header-row" role="row">
+    <div class="header-row" role="toolbar" aria-label="Sort columns">
         <SortableHeader
             column="name"
             label="Name"
@@ -519,6 +519,7 @@
         onscroll={handleScroll}
         tabindex="-1"
         role="listbox"
+        aria-label="File list"
         aria-activedescendant={cursorIndex >= 0 ? `file-${String(cursorIndex)}` : undefined}
     >
         <!-- Spacer div provides accurate scrollbar for full list width -->

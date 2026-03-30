@@ -379,7 +379,7 @@
 
 <div class="full-list-container" class:is-focused={isFocused} class:is-compact={isCompact}>
     <!-- Header row with sortable columns (outside scroll container for correct height calculation) -->
-    <div class="header-row" style="grid-template-columns: 16px 1fr 60px 115px {dateColumnWidth}px;">
+    <div class="header-row" role="toolbar" aria-label="Sort columns" style="grid-template-columns: 16px 1fr 60px 115px {dateColumnWidth}px;">
         <span class="header-icon"></span>
         <SortableHeader
             column="name"
@@ -419,6 +419,7 @@
         onscroll={handleScroll}
         tabindex="-1"
         role="listbox"
+        aria-label="File list"
         aria-activedescendant={cursorIndex >= 0 ? `file-${String(cursorIndex)}` : undefined}
     >
         <!-- Spacer div provides accurate scrollbar for full list size -->

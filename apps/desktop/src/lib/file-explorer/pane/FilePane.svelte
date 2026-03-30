@@ -1644,7 +1644,7 @@
     onclick={handlePaneClick}
     onkeydown={() => {}}
     role="region"
-    aria-label="File pane"
+    aria-label="{paneId === 'left' ? 'Left' : 'Right'} file pane"
 >
     <div class="header">
         <VolumeBreadcrumb

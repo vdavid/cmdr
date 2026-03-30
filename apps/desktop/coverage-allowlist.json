@@ -238,6 +238,9 @@
         },
         "ai/ai-toast-sync.svelte.ts": {
             "reason": "Svelte $effect reactive sync, depends on Svelte runtime"
+        },
+        "ui/ProgressBar.svelte": {
+            "reason": "Pure UI component, no logic to test beyond rendering"
         }
     }
 }

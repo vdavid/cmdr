@@ -21,6 +21,7 @@
     const { id, disabled = false, unit = '' }: Props = $props()
 
     const definition = getSettingDefinition(id)
+    const label = definition?.label ?? id
     const min = definition?.constraints?.min ?? 0
     const max = definition?.constraints?.max ?? 100
     const step = definition?.constraints?.step ?? 1
@@ -78,7 +79,7 @@
 </script>
 
 <div class="slider-wrapper">
-    <Slider.Root value={[value]} onValueChange={handleSliderChange} {min} {max} {step} {disabled} class="slider-root">
+    <Slider.Root value={[value]} onValueChange={handleSliderChange} {min} {max} {step} {disabled} class="slider-root" aria-label={label}>
         <Slider.Control class="slider-control">
             <Slider.Track class="slider-track">
                 <Slider.Range class="slider-range" />
@@ -101,7 +102,7 @@
 
     <NumberInput.Root value={String(value)} onValueChange={handleInputChange} {min} {max} {step} {disabled}>
         <NumberInput.Control class="number-control">
-            <NumberInput.Input class="number-input" onblur={handleInputBlur} />
+            <NumberInput.Input class="number-input" aria-label={label} onblur={handleInputBlur} />
         </NumberInput.Control>
     </NumberInput.Root>
 

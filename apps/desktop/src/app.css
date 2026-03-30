@@ -25,7 +25,7 @@
     /* === Text === */
     --color-text-primary: #1a1a1a;
     --color-text-secondary: #666666;
-    --color-text-tertiary: #888888;
+    --color-text-tertiary: #737373;
 
     /* === macOS system accent colors (for reference / testing) ===
      * These are the fixed colors returned by NSColor.controlAccentColor().
@@ -180,7 +180,7 @@
         /* === Text === */
         --color-text-primary: #e8e8e8;
         --color-text-secondary: #aaaaaa;
-        --color-text-tertiary: #888888;
+        --color-text-tertiary: #a0a0a0;
 
         /* === Interactive States (fallbacks — see light-mode comment above) === */
         --color-accent: #ffc206;
@@ -238,6 +238,19 @@
         --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
         --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
     }
+}
+
+/* Screen reader only — visually hidden but accessible to assistive technology */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
 }
 
 /* =============================================================================

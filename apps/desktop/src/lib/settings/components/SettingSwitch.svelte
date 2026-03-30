@@ -1,6 +1,6 @@
 <script lang="ts">
     import { Switch } from '@ark-ui/svelte/switch'
-    import { getSetting, setSetting, onSpecificSettingChange, type SettingId, type SettingsValues } from '$lib/settings'
+    import { getSetting, setSetting, getSettingDefinition, onSpecificSettingChange, type SettingId, type SettingsValues } from '$lib/settings'
     import { onMount } from 'svelte'
 
     interface Props {
@@ -9,6 +9,7 @@
     }
 
     const { id, disabled = false }: Props = $props()
+    const label = getSettingDefinition(id)?.label ?? id
 
     let checked = $state(getSetting(id) as boolean)
 
@@ -25,7 +26,7 @@
     }
 </script>
 
-<Switch.Root {checked} onCheckedChange={handleChange} {disabled}>
+<Switch.Root {checked} onCheckedChange={handleChange} {disabled} aria-label={label}>
     <Switch.Control class="switch-control">
         <Switch.Thumb class="switch-thumb" />
     </Switch.Control>

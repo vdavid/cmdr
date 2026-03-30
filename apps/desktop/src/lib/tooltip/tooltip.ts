@@ -15,6 +15,19 @@ let tooltipIdCounter = 0
 let activeElement: HTMLElement | null = null
 let showTimer: ReturnType<typeof setTimeout> | null = null
 
+/** Shared container for tooltips — keeps them inside a landmark to satisfy axe's `region` rule. */
+let tooltipContainer: HTMLDivElement | null = null
+
+function ensureTooltipContainer(): HTMLDivElement {
+    if (tooltipContainer) return tooltipContainer
+    tooltipContainer = document.createElement('div')
+    tooltipContainer.setAttribute('role', 'region')
+    tooltipContainer.setAttribute('aria-label', 'Tooltips')
+    tooltipContainer.className = 'sr-only-container'
+    document.body.appendChild(tooltipContainer)
+    return tooltipContainer
+}
+
 function ensureTooltipElement(): HTMLDivElement {
     if (tooltipEl) return tooltipEl
 
@@ -23,7 +36,7 @@ function ensureTooltipElement(): HTMLDivElement {
     tooltipEl.setAttribute('role', 'tooltip')
     tooltipEl.id = 'cmdr-tooltip-' + String(tooltipIdCounter++)
 
-    document.body.appendChild(tooltipEl)
+    ensureTooltipContainer().appendChild(tooltipEl)
     return tooltipEl
 }
 

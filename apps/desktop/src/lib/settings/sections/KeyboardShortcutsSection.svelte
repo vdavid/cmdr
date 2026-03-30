@@ -513,6 +513,7 @@
                             {/if}
                             <button
                                 class="add-shortcut"
+                                aria-label="Add shortcut"
                                 use:tooltip={'Add shortcut'}
                                 onclick={() => {
                                     handleAddShortcut(command.id)
@@ -523,6 +524,7 @@
                             {#if isModified}
                                 <button
                                     class="reset-shortcut"
+                                    aria-label="Reset to default"
                                     use:tooltip={'Reset to default'}
                                     onclick={(e) => {
                                         e.stopPropagation()

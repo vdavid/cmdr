@@ -14,7 +14,8 @@
         "@wdio/types",
         "webdriverio",
         "@crabnebula/tauri-driver",
-        "@crabnebula/test-runner-backend"
+        "@crabnebula/test-runner-backend",
+        "axe-core"
     ],
     "ignoreExportsUsedInFile": true,
     "project": ["src/**/*.{ts,svelte}"],

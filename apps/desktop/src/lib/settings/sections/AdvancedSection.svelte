@@ -130,6 +130,7 @@
                             onCheckedChange={(d) => {
                                 handleBooleanChange(id, d.checked)
                             }}
+                            aria-label={setting.label}
                         >
                             <Switch.Control class="switch-control">
                                 <Switch.Thumb class="switch-thumb" />
@@ -147,9 +148,9 @@
                             step={setting.constraints?.step ?? 1}
                         >
                             <NumberInput.Control class="number-control">
-                                <NumberInput.DecrementTrigger class="number-btn">−</NumberInput.DecrementTrigger>
-                                <NumberInput.Input class="number-input" />
-                                <NumberInput.IncrementTrigger class="number-btn">+</NumberInput.IncrementTrigger>
+                                <NumberInput.DecrementTrigger class="number-btn" aria-label="Decrease {setting.label}">−</NumberInput.DecrementTrigger>
+                                <NumberInput.Input class="number-input" aria-label={setting.label} />
+                                <NumberInput.IncrementTrigger class="number-btn" aria-label="Increase {setting.label}">+</NumberInput.IncrementTrigger>
                             </NumberInput.Control>
                         </NumberInput.Root>
                         {#if setting.type === 'duration' && setting.constraints?.unit}

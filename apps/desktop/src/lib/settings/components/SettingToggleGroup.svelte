@@ -18,6 +18,7 @@
     const { id, disabled = false }: Props = $props()
 
     const definition = getSettingDefinition(id)
+    const label = definition?.label ?? id
     const options = definition?.constraints?.options ?? []
 
     let value = $state([String(getSetting(id))])
@@ -38,7 +39,7 @@
     }
 </script>
 
-<ToggleGroup.Root {value} onValueChange={handleValueChange} {disabled}>
+<ToggleGroup.Root {value} onValueChange={handleValueChange} {disabled} aria-label={label}>
     {#each options as option (option.value)}
         <ToggleGroup.Item value={String(option.value)} class="toggle-item" {disabled}>
             {option.label}

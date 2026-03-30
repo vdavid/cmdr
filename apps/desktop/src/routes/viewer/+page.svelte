@@ -422,7 +422,8 @@
 
 <svelte:window on:keydown={handleKeyDown} />
 
-<div class="viewer-container" bind:this={scroll.containerRef} tabindex={-1}>
+<main class="viewer-container" bind:this={scroll.containerRef} tabindex={-1}>
+    <h1 class="sr-only">File viewer</h1>
     {#if search.searchVisible}
         <div class="search-bar" role="search">
             <input
@@ -521,6 +522,7 @@
             class="file-content"
             class:word-wrap={scroll.wordWrap}
             role="document"
+            tabindex="0"
             aria-label="File content: {fileName}"
             bind:this={scroll.contentRef}
             onscroll={scroll.handleScroll}
@@ -591,7 +593,7 @@
         {/if}
         <span class="shortcut-hint">W wrap &middot; Ctrl+F search &middot; Esc close</span>
     </div>
-</div>
+</main>
 
 <style>
     .viewer-container {

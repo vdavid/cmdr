@@ -19,6 +19,7 @@
     const { id, disabled = false }: Props = $props()
 
     const definition = getSettingDefinition(id)
+    const label = definition?.label ?? id
     const options = definition?.constraints?.options ?? []
     const allowCustom = definition?.constraints?.allowCustom ?? false
 
@@ -160,7 +161,7 @@
             {disabled}
         >
             <Select.Control>
-                <Select.Trigger class="select-trigger">
+                <Select.Trigger class="select-trigger" aria-label={label}>
                     <Select.ValueText placeholder="Select..." />
                     <Select.Indicator class="select-indicator">▼</Select.Indicator>
                 </Select.Trigger>

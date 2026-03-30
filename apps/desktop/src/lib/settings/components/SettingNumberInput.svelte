@@ -19,6 +19,7 @@
     const { id, disabled = false, unit = '' }: Props = $props()
 
     const definition = getSettingDefinition(id)
+    const label = definition?.label ?? id
     const min = definition?.constraints?.min ?? 0
     const max = definition?.constraints?.max ?? 999999
     const step = definition?.constraints?.step ?? 1
@@ -42,9 +43,9 @@
 <div class="number-input-wrapper">
     <NumberInput.Root value={String(value)} onValueChange={handleChange} {min} {max} {step} {disabled}>
         <NumberInput.Control class="number-control">
-            <NumberInput.DecrementTrigger class="number-btn">−</NumberInput.DecrementTrigger>
-            <NumberInput.Input class="number-input" />
-            <NumberInput.IncrementTrigger class="number-btn">+</NumberInput.IncrementTrigger>
+            <NumberInput.DecrementTrigger class="number-btn" aria-label="Decrease {label}">−</NumberInput.DecrementTrigger>
+            <NumberInput.Input class="number-input" aria-label={label} />
+            <NumberInput.IncrementTrigger class="number-btn" aria-label="Increase {label}">+</NumberInput.IncrementTrigger>
         </NumberInput.Control>
     </NumberInput.Root>
 

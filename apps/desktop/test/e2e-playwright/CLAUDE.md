@@ -54,10 +54,10 @@ The test suite does NOT launch the app itself. The app must be started manually 
 `evaluate()` sends a JS string over the socket to be executed in the webview via `webview.eval()`. Unlike Playwright's
 `page.evaluate()`, it doesn't support function serialization. All DOM queries must be written as string expressions.
 
-**Decision**: Use `pollUntil()` for complex conditions, `tauriPage.waitForFunction()` for simple JS expressions. **Why**:
-In Tauri mode, Playwright's auto-waiting and locator assertions don't work because there's no real Playwright `Page`
-object. `tauriPage.waitForFunction()` works now that the plugin embeds expressions directly instead of using `eval()`
-(fixed in plugin commit `4f39e3e9`). For conditions that need Node.js-side logic, use `pollUntil()` with
+**Decision**: Use `pollUntil()` for complex conditions, `tauriPage.waitForFunction()` for simple JS expressions.
+**Why**: In Tauri mode, Playwright's auto-waiting and locator assertions don't work because there's no real Playwright
+`Page` object. `tauriPage.waitForFunction()` works now that the plugin embeds expressions directly instead of using
+`eval()` (fixed in plugin commit `4f39e3e9`). For conditions that need Node.js-side logic, use `pollUntil()` with
 `tauriPage.evaluate()`.
 
 **Decision**: Use `pressKey()` helper for Space key instead of `tauriPage.keyboard.press('Space')`. **Why**:

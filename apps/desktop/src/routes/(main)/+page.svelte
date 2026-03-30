@@ -1038,12 +1038,13 @@
 <div class="page-container">
     {#if isMacOS()}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="title-bar" class:dev-mode={import.meta.env.DEV} onmousedown={handleTitleBarMouseDown}>
+        <header class="title-bar" class:dev-mode={import.meta.env.DEV} onmousedown={handleTitleBarMouseDown}>
             <span class="title-text">{import.meta.env.DEV ? `DEV MODE - ${windowTitle} - DEV MODE` : windowTitle}</span>
-        </div>
+        </header>
     {/if}
 
-    <div class="main-content">
+    <main class="main-content">
+        <h1 class="sr-only">Cmdr</h1>
         {#if showAboutWindow}
             <AboutWindow onClose={handleAboutClose} />
         {/if}
@@ -1079,22 +1080,22 @@
             <ScanStatusOverlay />
             <ReplayStatusOverlay />
         {/if}
-    </div>
 
-    {#if showApp}
-        <FunctionKeyBar
-            visible={showFunctionKeyBar}
-            onRename={handleFnRename}
-            onView={handleFnView}
-            onEdit={() => void handleFnEdit()}
-            onCopy={handleFnCopy}
-            onMove={handleFnMove}
-            onNewFile={handleFnNewFile}
-            onNewFolder={handleFnNewFolder}
-            onDelete={handleFnDelete}
-            onDeletePermanently={handleFnDeletePermanently}
-        />
-    {/if}
+        {#if showApp}
+            <FunctionKeyBar
+                visible={showFunctionKeyBar}
+                onRename={handleFnRename}
+                onView={handleFnView}
+                onEdit={() => void handleFnEdit()}
+                onCopy={handleFnCopy}
+                onMove={handleFnMove}
+                onNewFile={handleFnNewFile}
+                onNewFolder={handleFnNewFolder}
+                onDelete={handleFnDelete}
+                onDeletePermanently={handleFnDeletePermanently}
+            />
+        {/if}
+    </main>
 </div>
 
 <style>

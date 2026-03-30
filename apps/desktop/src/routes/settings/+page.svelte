@@ -152,7 +152,8 @@
 <svelte:window on:keydown={handleKeydown} on:focusout={handleFocusOut} on:beforeunload={handleBeforeUnload} />
 
 <!-- Prevent body from being a tab stop by keeping focus within the settings window -->
-<div class="settings-window" tabindex="-1">
+<main class="settings-window" tabindex="-1">
+    <h1 class="sr-only">Settings</h1>
     {#if initialized}
         <div class="settings-layout">
             <SettingsSidebar
@@ -170,7 +171,7 @@
     {:else}
         <div class="settings-loading">Loading settings...</div>
     {/if}
-</div>
+</main>
 
 <style>
     .settings-window {
