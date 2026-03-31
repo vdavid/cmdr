@@ -39,9 +39,6 @@ for (const theme of ['light', 'dark'] as const) {
 
                 const results = await new AxeBuilder({ page }).analyze()
 
-                const critical = results.violations.filter((v) => v.impact === 'critical')
-                const serious = results.violations.filter((v) => v.impact === 'serious')
-
                 // Log violations for visibility
                 for (const v of results.violations) {
                     // eslint-disable-next-line no-console
@@ -58,20 +55,14 @@ for (const theme of ['light', 'dark'] as const) {
                 }
 
                 if (results.violations.length > 0) {
-                    const counts = [
-                        critical.length && `${critical.length} critical`,
-                        serious.length && `${serious.length} serious`,
-                    ]
-                        .filter(Boolean)
-                        .join(', ')
-                    if (counts) {
-                        // eslint-disable-next-line no-console
-                        console.log(`⚠ [${name} ${theme}] ${counts} violation(s)`)
-                    }
+                    // eslint-disable-next-line no-console
+                    console.log(`⚠ [${name} ${theme}] ${results.violations.length} violation(s)`)
                 }
 
-                expect(critical, `${name} (${theme}): ${critical.length} critical violation(s)`).toHaveLength(0)
-                expect(serious, `${name} (${theme}): ${serious.length} serious violation(s)`).toHaveLength(0)
+                expect(
+                    results.violations,
+                    `${name} (${theme}): ${results.violations.length} violation(s)`,
+                ).toHaveLength(0)
             })
         }
     })

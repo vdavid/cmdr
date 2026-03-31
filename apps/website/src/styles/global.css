@@ -204,11 +204,11 @@ body {
 
         --color-text-primary: #1a1917;
         --color-text-secondary: #56554e;
-        --color-text-tertiary: #7e7d75;
+        --color-text-tertiary: #6b6a63;
 
         --color-accent: #f0b400;
         --color-accent-hover: #dca400;
-        --color-accent-text: #9a7400;
+        --color-accent-text: #866400;
         --color-accent-glow: rgba(240, 180, 0, 0.4);
         --color-accent-contrast: #14130f;
 
@@ -226,11 +226,11 @@ body {
 
     --color-text-primary: #1a1917;
     --color-text-secondary: #56554e;
-    --color-text-tertiary: #7e7d75;
+    --color-text-tertiary: #6b6a63;
 
     --color-accent: #f0b400;
     --color-accent-hover: #dca400;
-    --color-accent-text: #9a7400;
+    --color-accent-text: #866400;
     --color-accent-glow: rgba(240, 180, 0, 0.4);
     --color-accent-contrast: #14130f;
 

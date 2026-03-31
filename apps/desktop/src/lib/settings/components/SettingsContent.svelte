@@ -12,6 +12,7 @@
     import AdvancedSection from '$lib/settings/sections/AdvancedSection.svelte'
     import LicenseSection from '$lib/settings/sections/LicenseSection.svelte'
     import AiSection from '$lib/settings/sections/AiSection.svelte'
+    import ViewerSection from '$lib/settings/sections/ViewerSection.svelte'
     import SectionSummary from './SectionSummary.svelte'
     import { getMatchingSettingIdsInSection } from '$lib/settings/settings-search'
     import { searchCommands } from '$lib/commands/fuzzy-search'
@@ -106,6 +107,12 @@
         {#if shouldShowSection(['General', 'Updates'])}
             <section data-section-id="general-updates">
                 <UpdatesSection {searchQuery} />
+            </section>
+        {/if}
+
+        {#if shouldShowSection(['General', 'Viewer'])}
+            <section data-section-id="general-viewer">
+                <ViewerSection {searchQuery} />
             </section>
         {/if}
 

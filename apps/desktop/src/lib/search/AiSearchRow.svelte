@@ -115,7 +115,7 @@
     }
 
     .ai-label {
-        color: var(--color-accent);
+        color: var(--color-cmdr-gold);
     }
 
     .name-input {

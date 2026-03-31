@@ -2,7 +2,7 @@
  * Accessibility audit for Cmdr views and dialogs using axe-core.
  *
  * Injects axe-core into the real Tauri webview via tauriPage.evaluate(),
- * runs a WCAG audit on each view/dialog, and fails on critical violations.
+ * runs a WCAG audit on each view/dialog, and fails on any violation.
  *
  * Dialog tests scope the audit to the dialog element itself, avoiding noise
  * from the page behind the overlay.
@@ -139,9 +139,8 @@ test('main explorer view', async ({ tauriPage }) => {
     test.setTimeout(120_000)
     await ensureAppReady(tauriPage)
 
-    const { critical, serious } = await runAxeAudit(tauriPage, 'Main explorer')
-    expect(critical, `Found ${critical.length} critical violation(s) in main explorer`).toHaveLength(0)
-    expect(serious, `Found ${serious.length} serious violation(s) in main explorer`).toHaveLength(0)
+    const { all } = await runAxeAudit(tauriPage, 'Main explorer')
+    expect(all, `Found ${all.length} violation(s) in main explorer`).toHaveLength(0)
 })
 
 test('Copy dialog', async ({ tauriPage }) => {
@@ -152,10 +151,9 @@ test('Copy dialog', async ({ tauriPage }) => {
     await tauriPage.keyboard.press('F5')
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
 
-    const { critical, serious } = await runAxeAudit(tauriPage, 'Copy dialog', TRANSFER_DIALOG)
+    const { all } = await runAxeAudit(tauriPage, 'Copy dialog', TRANSFER_DIALOG)
     await dismissDialog(tauriPage)
-    expect(critical, `Found ${critical.length} critical violation(s) in Copy dialog`).toHaveLength(0)
-    expect(serious, `Found ${serious.length} serious violation(s) in Copy dialog`).toHaveLength(0)
+    expect(all, `Found ${all.length} violation(s) in Copy dialog`).toHaveLength(0)
 })
 
 test('Delete dialog', async ({ tauriPage }) => {
@@ -167,10 +165,9 @@ test('Delete dialog', async ({ tauriPage }) => {
     const deleteDialog = '[data-dialog-id="delete-confirmation"]'
     await tauriPage.waitForSelector(deleteDialog, 5000)
 
-    const { critical, serious } = await runAxeAudit(tauriPage, 'Delete dialog', deleteDialog)
+    const { all } = await runAxeAudit(tauriPage, 'Delete dialog', deleteDialog)
     await dismissDialog(tauriPage)
-    expect(critical, `Found ${critical.length} critical violation(s) in Delete dialog`).toHaveLength(0)
-    expect(serious, `Found ${serious.length} serious violation(s) in Delete dialog`).toHaveLength(0)
+    expect(all, `Found ${all.length} violation(s) in Delete dialog`).toHaveLength(0)
 })
 
 test('Move dialog', async ({ tauriPage }) => {
@@ -181,10 +178,9 @@ test('Move dialog', async ({ tauriPage }) => {
     await tauriPage.keyboard.press('F6')
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
 
-    const { critical, serious } = await runAxeAudit(tauriPage, 'Move dialog', TRANSFER_DIALOG)
+    const { all } = await runAxeAudit(tauriPage, 'Move dialog', TRANSFER_DIALOG)
     await dismissDialog(tauriPage)
-    expect(critical, `Found ${critical.length} critical violation(s) in Move dialog`).toHaveLength(0)
-    expect(serious, `Found ${serious.length} serious violation(s) in Move dialog`).toHaveLength(0)
+    expect(all, `Found ${all.length} violation(s) in Move dialog`).toHaveLength(0)
 })
 
 test('About dialog', async ({ tauriPage }) => {
@@ -194,10 +190,9 @@ test('About dialog', async ({ tauriPage }) => {
     await executeViaCommandPalette(tauriPage, 'About Cmdr')
     await tauriPage.waitForSelector('[data-dialog-id="about"]', 5000)
 
-    const { critical, serious } = await runAxeAudit(tauriPage, 'About dialog', '[data-dialog-id="about"]')
+    const { all } = await runAxeAudit(tauriPage, 'About dialog', '[data-dialog-id="about"]')
     await dismissDialog(tauriPage)
-    expect(critical, `Found ${critical.length} critical violation(s) in About dialog`).toHaveLength(0)
-    expect(serious, `Found ${serious.length} serious violation(s) in About dialog`).toHaveLength(0)
+    expect(all, `Found ${all.length} violation(s) in About dialog`).toHaveLength(0)
 })
 
 test('License dialog', async ({ tauriPage }) => {
@@ -207,10 +202,9 @@ test('License dialog', async ({ tauriPage }) => {
     await executeViaCommandPalette(tauriPage, 'license')
     await tauriPage.waitForSelector('[data-dialog-id="license"]', 5000)
 
-    const { critical, serious } = await runAxeAudit(tauriPage, 'License dialog', '[data-dialog-id="license"]')
+    const { all } = await runAxeAudit(tauriPage, 'License dialog', '[data-dialog-id="license"]')
     await dismissDialog(tauriPage)
-    expect(critical, `Found ${critical.length} critical violation(s) in License dialog`).toHaveLength(0)
-    expect(serious, `Found ${serious.length} serious violation(s) in License dialog`).toHaveLength(0)
+    expect(all, `Found ${all.length} violation(s) in License dialog`).toHaveLength(0)
 })
 
 test('Command palette', async ({ tauriPage }) => {
@@ -219,14 +213,13 @@ test('Command palette', async ({ tauriPage }) => {
 
     await openCommandPalette(tauriPage)
 
-    const { critical, serious } = await runAxeAudit(tauriPage, 'Command palette', '.palette-overlay')
+    const { all } = await runAxeAudit(tauriPage, 'Command palette', '.palette-overlay')
 
     // Dismiss the palette
     await tauriPage.keyboard.press('Escape')
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.palette-overlay')), 3000)
 
-    expect(critical, `Found ${critical.length} critical violation(s) in command palette`).toHaveLength(0)
-    expect(serious, `Found ${serious.length} serious violation(s) in command palette`).toHaveLength(0)
+    expect(all, `Found ${all.length} violation(s) in command palette`).toHaveLength(0)
 })
 
 test('Search dialog', async ({ tauriPage }) => {
@@ -235,14 +228,13 @@ test('Search dialog', async ({ tauriPage }) => {
 
     await openSearchDialog(tauriPage)
 
-    const { critical, serious } = await runAxeAudit(tauriPage, 'Search dialog', '.search-overlay')
+    const { all } = await runAxeAudit(tauriPage, 'Search dialog', '.search-overlay')
 
     // Dismiss the search dialog
     await tauriPage.keyboard.press('Escape')
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.search-overlay')), 3000)
 
-    expect(critical, `Found ${critical.length} critical violation(s) in search dialog`).toHaveLength(0)
-    expect(serious, `Found ${serious.length} serious violation(s) in search dialog`).toHaveLength(0)
+    expect(all, `Found ${all.length} violation(s) in search dialog`).toHaveLength(0)
 })
 
 test('Settings: all sections', async ({ tauriPage }) => {
@@ -276,8 +268,7 @@ test('Settings: all sections', async ({ tauriPage }) => {
         { name: 'Advanced', path: ['Advanced'], sectionId: 'advanced' },
     ]
 
-    const allCritical: { section: string; violations: AxeViolation[] }[] = []
-    const allSerious: { section: string; violations: AxeViolation[] }[] = []
+    const allViolations: { section: string; violations: AxeViolation[] }[] = []
 
     for (const section of sections) {
         // Click sidebar to navigate to the section
@@ -301,22 +292,15 @@ test('Settings: all sections', async ({ tauriPage }) => {
             continue
         }
 
-        const { critical, serious } = await runAxeAudit(tauriPage, `Settings: ${section.name}`)
-        if (critical.length > 0) {
-            allCritical.push({ section: section.name, violations: critical })
-        }
-        if (serious.length > 0) {
-            allSerious.push({ section: section.name, violations: serious })
+        const { all } = await runAxeAudit(tauriPage, `Settings: ${section.name}`)
+        if (all.length > 0) {
+            allViolations.push({ section: section.name, violations: all })
         }
     }
 
-    const totalCritical = allCritical.reduce((sum, s) => sum + s.violations.length, 0)
-    const failedSections = allCritical.map((s) => `${s.section} (${s.violations.length})`).join(', ')
-    expect(totalCritical, `Critical violations in settings: ${failedSections}`).toBe(0)
-
-    const totalSerious = allSerious.reduce((sum, s) => sum + s.violations.length, 0)
-    const failedSeriousSections = allSerious.map((s) => `${s.section} (${s.violations.length})`).join(', ')
-    expect(totalSerious, `Serious violations in settings: ${failedSeriousSections}`).toBe(0)
+    const totalViolations = allViolations.reduce((sum, s) => sum + s.violations.length, 0)
+    const failedSections = allViolations.map((s) => `${s.section} (${s.violations.length})`).join(', ')
+    expect(totalViolations, `Violations in settings: ${failedSections}`).toBe(0)
 })
 
 test('File viewer with text file', async ({ tauriPage }) => {
@@ -329,7 +313,6 @@ test('File viewer with text file', async ({ tauriPage }) => {
     await tauriPage.waitForSelector('.viewer-container', 15000)
     await tauriPage.waitForSelector('.file-content', 10000)
 
-    const { critical, serious } = await runAxeAudit(tauriPage, 'File viewer')
-    expect(critical, `Found ${critical.length} critical violation(s) in file viewer`).toHaveLength(0)
-    expect(serious, `Found ${serious.length} serious violation(s) in file viewer`).toHaveLength(0)
+    const { all } = await runAxeAudit(tauriPage, 'File viewer')
+    expect(all, `Found ${all.length} violation(s) in file viewer`).toHaveLength(0)
 })
