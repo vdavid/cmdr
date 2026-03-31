@@ -42,6 +42,7 @@
         "eslint-plugin-prettier": "^5.5.5",
         "globals": "^17.4.0",
         "html-validate": "^10.11.1",
+        "oxfmt": "^0.42.0",
         "prettier": "^3.8.1",
         "prettier-plugin-astro": "^0.14.1",
         "serve": "14.2.6",

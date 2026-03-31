@@ -48,8 +48,12 @@ for (const theme of ['light', 'dark'] as const) {
                     console.log(
                         `[axe/${v.impact}] [${name} ${theme}] ${v.id}: ${v.description}\n` +
                             `  Help: ${v.helpUrl}\n` +
-                            v.nodes.map((n: { html: string; failureSummary: string }) =>
-                                `  - ${n.html}\n    ${n.failureSummary}`).join('\n'),
+                            v.nodes
+                                .map(
+                                    (n: { html: string; failureSummary: string }) =>
+                                        `  - ${n.html}\n    ${n.failureSummary}`,
+                                )
+                                .join('\n'),
                     )
                 }
 
@@ -66,14 +70,8 @@ for (const theme of ['light', 'dark'] as const) {
                     }
                 }
 
-                expect(
-                    critical,
-                    `${name} (${theme}): ${critical.length} critical violation(s)`,
-                ).toHaveLength(0)
-                expect(
-                    serious,
-                    `${name} (${theme}): ${serious.length} serious violation(s)`,
-                ).toHaveLength(0)
+                expect(critical, `${name} (${theme}): ${critical.length} critical violation(s)`).toHaveLength(0)
+                expect(serious, `${name} (${theme}): ${serious.length} serious violation(s)`).toHaveLength(0)
             })
         }
     })

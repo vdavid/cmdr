@@ -255,9 +255,10 @@ these checks.
 checks (no Docker daemon on freestyle VMs). With `--prefer-freestyle` these run locally in parallel;
 with `--only-freestyle` they're skipped.
 
-**VM lifecycle:** The VM is created once (takes ~5.5 min for toolchain setup), then persists and
-auto-suspends after 5 min idle. Subsequent runs resume it in <1s. VM ID is stored in `.freestyle-vm-id`
-(gitignored). On wake, a health check verifies the toolchain; if it fails, the VM is replaced.
+**VM lifecycle:** The VM is created once (toolchain setup), then uses `persistent` storage so it
+survives freestyle's resource management. It auto-suspends after 5 min idle but resumes in <1s. VM ID
+is stored in `.freestyle-vm-id` (gitignored). On wake, a health check verifies the toolchain; if it
+fails, the VM is replaced. Setup parallelizes pnpm + Playwright install and uses a shallow clone.
 
 **Key files:** `freestyle.go` (all freestyle logic including `preferFreestyleRun`), `main.go`
 (`handleFreestyleFlags` dispatches to the right mode).

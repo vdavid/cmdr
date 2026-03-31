@@ -79,7 +79,16 @@
 </script>
 
 <div class="slider-wrapper">
-    <Slider.Root value={[value]} onValueChange={handleSliderChange} {min} {max} {step} {disabled} class="slider-root" aria-label={label}>
+    <Slider.Root
+        value={[value]}
+        onValueChange={handleSliderChange}
+        {min}
+        {max}
+        {step}
+        {disabled}
+        class="slider-root"
+        aria-label={label}
+    >
         <Slider.Control class="slider-control">
             <Slider.Track class="slider-track">
                 <Slider.Range class="slider-range" />

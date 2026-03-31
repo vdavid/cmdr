@@ -28,5 +28,8 @@
             "sharp",
             "workerd"
         ]
+    },
+    "devDependencies": {
+        "oxfmt": "^0.42.0"
     }
 }

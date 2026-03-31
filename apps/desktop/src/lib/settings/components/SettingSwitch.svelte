@@ -1,6 +1,13 @@
 <script lang="ts">
     import { Switch } from '@ark-ui/svelte/switch'
-    import { getSetting, setSetting, getSettingDefinition, onSpecificSettingChange, type SettingId, type SettingsValues } from '$lib/settings'
+    import {
+        getSetting,
+        setSetting,
+        getSettingDefinition,
+        onSpecificSettingChange,
+        type SettingId,
+        type SettingsValues,
+    } from '$lib/settings'
     import { onMount } from 'svelte'
 
     interface Props {

@@ -148,9 +148,13 @@
                             step={setting.constraints?.step ?? 1}
                         >
                             <NumberInput.Control class="number-control">
-                                <NumberInput.DecrementTrigger class="number-btn" aria-label="Decrease {setting.label}">−</NumberInput.DecrementTrigger>
+                                <NumberInput.DecrementTrigger class="number-btn" aria-label="Decrease {setting.label}"
+                                    >−</NumberInput.DecrementTrigger
+                                >
                                 <NumberInput.Input class="number-input" aria-label={setting.label} />
-                                <NumberInput.IncrementTrigger class="number-btn" aria-label="Increase {setting.label}">+</NumberInput.IncrementTrigger>
+                                <NumberInput.IncrementTrigger class="number-btn" aria-label="Increase {setting.label}"
+                                    >+</NumberInput.IncrementTrigger
+                                >
                             </NumberInput.Control>
                         </NumberInput.Root>
                         {#if setting.type === 'duration' && setting.constraints?.unit}

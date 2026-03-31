@@ -339,6 +339,67 @@ func runPrettierCheck(ctx *CheckContext, dir string, extensions []string) (Check
 	return result, nil
 }
 
+// runOxfmtCheck runs oxfmt formatting check/fix for a given directory.
+// extensions are the file extensions to count (like []string{"*.ts", "*.js"}).
+func runOxfmtCheck(ctx *CheckContext, dir string, extensions []string) (CheckResult, error) {
+	// Count files that oxfmt would check
+	findArgs := buildFindArgs("src", extensions)
+	findCmd := exec.Command("find", findArgs...)
+	findCmd.Dir = dir
+	findOutput, _ := RunCommand(findCmd, true)
+	fileCount := 0
+	if strings.TrimSpace(findOutput) != "" {
+		fileCount = len(strings.Split(strings.TrimSpace(findOutput), "\n"))
+	}
+
+	if ctx.CI {
+		checkCmd := exec.Command("pnpm", "exec", "oxfmt", "--check", ".")
+		checkCmd.Dir = dir
+		checkOutput, err := RunCommand(checkCmd, true)
+		if err != nil {
+			return CheckResult{}, fmt.Errorf("code is not formatted, run `pnpm exec oxfmt .` locally\n%s", indentOutput(checkOutput))
+		}
+		result := Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files")))
+		result.Total = fileCount
+		result.Issues = 0
+		result.Changes = 0
+		return result, nil
+	}
+
+	// Non-CI: check first, then format if needed
+	checkCmd := exec.Command("pnpm", "exec", "oxfmt", "--check", ".")
+	checkCmd.Dir = dir
+	checkOutput, checkErr := RunCommand(checkCmd, true)
+
+	if checkErr != nil {
+		fmtCmd := exec.Command("pnpm", "exec", "oxfmt", ".")
+		fmtCmd.Dir = dir
+		fmtOutput, err := RunCommand(fmtCmd, true)
+		if err != nil {
+			return CheckResult{}, fmt.Errorf("oxfmt formatting failed\n%s", indentOutput(fmtOutput))
+		}
+
+		var needsFormat int
+		for _, line := range strings.Split(strings.TrimSpace(checkOutput), "\n") {
+			if strings.TrimSpace(line) != "" && !strings.HasPrefix(line, "Checking") && !strings.HasPrefix(line, "Finished") && !strings.HasPrefix(line, "Format") {
+				needsFormat++
+			}
+		}
+
+		result := SuccessWithChanges(fmt.Sprintf("Formatted %d of %d %s", needsFormat, fileCount, Pluralize(fileCount, "file", "files")))
+		result.Total = fileCount
+		result.Issues = needsFormat
+		result.Changes = needsFormat
+		return result, nil
+	}
+
+	result := Success(fmt.Sprintf("%d %s already formatted", fileCount, Pluralize(fileCount, "file", "files")))
+	result.Total = fileCount
+	result.Issues = 0
+	result.Changes = 0
+	return result, nil
+}
+
 // runESLintCheck runs ESLint check/fix for a given directory.
 // extensions are the file extensions to count (like []string{"*.ts", "*.svelte", "*.js"}).
 // If requireConfig is true, skips when eslint.config.js is missing.

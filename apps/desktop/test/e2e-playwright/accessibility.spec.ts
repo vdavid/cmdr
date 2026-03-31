@@ -74,9 +74,7 @@ async function runAxeAudit(
 }> {
     await injectAxe(tauriPage)
 
-    const axeCall = scope
-        ? `axe.run(document.querySelector(${JSON.stringify(scope)}))`
-        : 'axe.run()'
+    const axeCall = scope ? `axe.run(document.querySelector(${JSON.stringify(scope)}))` : 'axe.run()'
     const results = await tauriPage.evaluate<AxeResults>(axeCall)
 
     const critical = results.violations.filter((v) => v.impact === 'critical')

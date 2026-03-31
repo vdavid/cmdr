@@ -91,13 +91,13 @@ var AllChecks = []CheckDefinition{
 
 	// Desktop - Svelte checks (all FreestyleCompat except e2e-linux which needs Docker)
 	{
-		ID:              "desktop-svelte-prettier",
-		DisplayName:     "prettier",
+		ID:              "desktop-svelte-oxfmt",
+		DisplayName:     "oxfmt",
 		App:             AppDesktop,
 		Tech:            "🎨 Svelte",
 		FreestyleCompat: true,
 		DependsOn:       nil,
-		Run:             RunDesktopPrettier,
+		Run:             RunDesktopOxfmt,
 	},
 	{
 		ID:              "desktop-svelte-eslint",
@@ -105,7 +105,7 @@ var AllChecks = []CheckDefinition{
 		App:             AppDesktop,
 		Tech:            "🎨 Svelte",
 		FreestyleCompat: true,
-		DependsOn:       []string{"desktop-svelte-prettier"},
+		DependsOn:       []string{"desktop-svelte-oxfmt"},
 		Run:             RunDesktopESLint,
 	},
 	{
@@ -126,7 +126,7 @@ var AllChecks = []CheckDefinition{
 		App:             AppDesktop,
 		Tech:            "🎨 Svelte",
 		FreestyleCompat: true,
-		DependsOn:       []string{"desktop-svelte-prettier"},
+		DependsOn:       []string{"desktop-svelte-oxfmt"},
 		Run:             RunStylelint,
 	},
 	{
@@ -146,7 +146,7 @@ var AllChecks = []CheckDefinition{
 		App:             AppDesktop,
 		Tech:            "🎨 Svelte",
 		FreestyleCompat: true,
-		DependsOn:       []string{"desktop-svelte-prettier"},
+		DependsOn:       []string{"desktop-svelte-oxfmt"},
 		Run:             RunSvelteCheck,
 	},
 	{
@@ -212,13 +212,13 @@ var AllChecks = []CheckDefinition{
 
 	// Website checks (all FreestyleCompat except docker-build)
 	{
-		ID:              "website-prettier",
-		DisplayName:     "prettier",
+		ID:              "website-oxfmt",
+		DisplayName:     "oxfmt",
 		App:             AppWebsite,
 		Tech:            "🚀 Astro",
 		FreestyleCompat: true,
 		DependsOn:       nil,
-		Run:             RunWebsitePrettier,
+		Run:             RunWebsiteOxfmt,
 	},
 	{
 		ID:              "website-eslint",
@@ -226,7 +226,7 @@ var AllChecks = []CheckDefinition{
 		App:             AppWebsite,
 		Tech:            "🚀 Astro",
 		FreestyleCompat: true,
-		DependsOn:       []string{"website-prettier"},
+		DependsOn:       []string{"website-oxfmt"},
 		Run:             RunWebsiteESLint,
 	},
 	{
@@ -278,26 +278,21 @@ var AllChecks = []CheckDefinition{
 
 	// API server checks (all FreestyleCompat)
 	{
-		ID:          "api-server-prettier",
-		DisplayName: "prettier",
-		App:         AppApiServer,
-		Tech:        "⸆⸉ TS",
-		DependsOn:   nil,
-		Run:         RunApiServerPrettier,
+		ID:              "api-server-oxfmt",
+		DisplayName:     "oxfmt",
+		App:             AppApiServer,
+		Tech:            "⸆⸉ TS",
 		FreestyleCompat: true,
+		DependsOn:       nil,
+		Run:             RunApiServerOxfmt,
 	},
 	{
-		ID:          "api-server-eslint",
-		DisplayName: "eslint",
-		App:         AppApiServer,
-		Tech:        "⸆⸉ TS",
-		DependsOn:   []string{"api-server-prettier"},
-		Run:         RunApiServerESLint,
 		ID:              "api-server-eslint",
 		DisplayName:     "eslint",
 		App:             AppApiServer,
 		Tech:            "⸆⸉ TS",
 		FreestyleCompat: true,
+		DependsOn:       []string{"api-server-oxfmt"},
 		Run:             RunApiServerESLint,
 	},
 	{
