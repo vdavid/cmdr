@@ -17,6 +17,14 @@ export default tseslint.config(
   prettierConfig,
   ...astro.configs.recommended,
   {
+    files: ['e2e/**/*.ts'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
+  {
     files: ['**/*.ts'],
     plugins: {
       '@typescript-eslint': tseslint.plugin,

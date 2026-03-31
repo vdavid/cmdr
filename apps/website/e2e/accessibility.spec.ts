@@ -46,7 +46,7 @@ for (const theme of ['light', 'dark'] as const) {
             `[axe/${v.impact}] [${name} ${theme}] ${v.id}: ${v.description}\n` +
               `  Help: ${v.helpUrl}\n` +
               v.nodes
-                .map((n: { html: string; failureSummary: string }) => `  - ${n.html}\n    ${n.failureSummary}`)
+                .map((n: { html: string; failureSummary?: string }) => `  - ${n.html}\n    ${n.failureSummary ?? ''}`)
                 .join('\n'),
           )
         }

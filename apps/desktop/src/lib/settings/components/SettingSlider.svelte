@@ -87,7 +87,7 @@
         {step}
         {disabled}
         class="slider-root"
-        aria-label={label}
+        aria-label={[label]}
     >
         <Slider.Control class="slider-control">
             <Slider.Track class="slider-track">

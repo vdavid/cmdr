@@ -90,7 +90,6 @@
 
   /* === Hover tints (subtle background shifts for interactive items) === */
   --color-tint-hover: color-mix(in srgb, black, transparent 96%);
-  --color-tint-hover-strong: color-mix(in srgb, black, transparent 85%);
 
   /* === Focus ring shadow === */
   --shadow-focus-contrast: 0 0 0 4px color-mix(in srgb, black, transparent 90%);
@@ -221,7 +220,6 @@
 
     /* === Hover tints === */
     --color-tint-hover: color-mix(in srgb, white, transparent 94%);
-    --color-tint-hover-strong: color-mix(in srgb, white, transparent 75%);
 
     /* === Focus ring shadow === */
     --shadow-focus-contrast: 0 0 0 4px color-mix(in srgb, white, transparent 92%);

@@ -111,6 +111,7 @@
     "settings/sections/DriveIndexingSection.svelte": { "reason": "UI section, depends on Tauri invoke" },
     "settings/sections/ListingSection.svelte": { "reason": "UI section, simple rendering" },
     "settings/sections/UpdatesSection.svelte": { "reason": "UI section, simple rendering" },
+    "settings/sections/ViewerSection.svelte": { "reason": "UI section, simple rendering" },
     "settings/settings-store.ts": { "reason": "Depends on Tauri store APIs" },
     "settings/settings-window.ts": { "reason": "Depends on Tauri window APIs" },
     "shortcuts/mcp-shortcuts-listener.ts": { "reason": "MCP listener, depends on Tauri events" },

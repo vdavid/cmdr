@@ -28,7 +28,7 @@ export function createViewerScroll(deps: ScrollDeps) {
   let scrollTop = $state(0)
   let viewportHeight = $state(600)
   let contentRef: HTMLDivElement | undefined = $state()
-  let containerRef: HTMLDivElement | undefined = $state()
+  let containerRef: HTMLElement | undefined = $state()
   let linesContainerRef: HTMLDivElement | undefined = $state()
 
   let contentWidth = $state(0)
@@ -284,7 +284,7 @@ export function createViewerScroll(deps: ScrollDeps) {
     get containerRef() {
       return containerRef
     },
-    set containerRef(v: HTMLDivElement | undefined) {
+    set containerRef(v: HTMLElement | undefined) {
       containerRef = v
     },
     get linesContainerRef() {

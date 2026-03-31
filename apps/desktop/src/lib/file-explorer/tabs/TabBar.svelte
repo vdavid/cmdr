@@ -59,6 +59,7 @@
     }
 </script>
 
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="tab-bar" onclick={onPaneFocus}>
     <div class="tab-list" role="tablist" aria-label="{paneId} pane tabs">
         {#each tabs as tab, index (tab.id)}

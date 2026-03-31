@@ -304,5 +304,5 @@
         flex-shrink: 0;
     }
 
-    /* Light mode overrides handled by design tokens (--color-tint-hover, --color-tint-hover-strong) */
+    /* Light mode overrides handled by design tokens (--color-tint-hover) */
 </style>

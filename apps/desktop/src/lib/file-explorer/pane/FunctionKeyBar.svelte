@@ -43,7 +43,6 @@
 <svelte:document onkeydown={handleKeyDown} onkeyup={handleKeyUp} />
 
 {#if visible}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
         class="function-key-bar"
         role="toolbar"
