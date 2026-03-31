@@ -58,7 +58,7 @@ export async function cacheSet<T>(source: string, range: TimeRange, data: T, ext
                 new Request(url),
                 new Response(body, {
                     headers: { 'Content-Type': 'application/json', 'Cache-Control': `max-age=${ttl}` },
-                })
+                }),
             )
             return
         } catch {

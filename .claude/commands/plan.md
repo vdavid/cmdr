@@ -1,7 +1,7 @@
 Plan the feature implementation we discussed.
 
-1. Collect context from related `CLAUDE.md` files or `docs/`, as needed.
-   Read [design-principles.md](../../docs/design-principles.md)) to remember our core product design values.
+1. Collect context from related `CLAUDE.md` files or `docs/`, as needed. Read
+   [design-principles.md](../../docs/design-principles.md)) to remember our core product design values.
 2. Save the plan to `docs/specs/{feature}-plan.md`.
 3. Capture the INTENTION behind each decision, not just the steps. The implementing agent or human should know the "why"
    s and be able to adapt dynamically!

@@ -1,18 +1,18 @@
 [
-    {
-        "id": "deploy-website",
-        "execute-command": "/opt/cmdr/infra/deploy-webhook/deploy-website.sh",
-        "command-working-directory": "/opt/cmdr",
-        "response-message": "Deployment triggered",
-        "trigger-rule": {
-            "match": {
-                "type": "payload-hmac-sha256",
-                "secret": "{{getenv `DEPLOY_WEBHOOK_SECRET`}}",
-                "parameter": {
-                    "source": "header",
-                    "name": "X-Hub-Signature-256"
-                }
-            }
+  {
+    "id": "deploy-website",
+    "execute-command": "/opt/cmdr/infra/deploy-webhook/deploy-website.sh",
+    "command-working-directory": "/opt/cmdr",
+    "response-message": "Deployment triggered",
+    "trigger-rule": {
+      "match": {
+        "type": "payload-hmac-sha256",
+        "secret": "{{getenv `DEPLOY_WEBHOOK_SECRET`}}",
+        "parameter": {
+          "source": "header",
+          "name": "X-Hub-Signature-256"
         }
+      }
     }
+  }
 ]

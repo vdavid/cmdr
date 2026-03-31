@@ -7,306 +7,306 @@
 #   docker compose down                     # Stop all containers
 
 services:
-    # ============================================================================
-    # Core authentication scenarios
-    # ============================================================================
+  # ============================================================================
+  # Core authentication scenarios
+  # ============================================================================
 
-    smb-guest:
-        build:
-            context: ./containers/smb-base
-            args:
-                GUEST_OK: 'yes'
-                FORCE_USER: ''
-        container_name: smb-guest
-        ports:
-            - '9445:445'
-        volumes:
-            - smb-guest-data:/share
-        environment:
-            - SMB_SHARE_NAME=public
-        healthcheck:
-            test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
-            interval: 10s
-            timeout: 5s
-            retries: 3
-        restart: unless-stopped
+  smb-guest:
+    build:
+      context: ./containers/smb-base
+      args:
+        GUEST_OK: 'yes'
+        FORCE_USER: ''
+    container_name: smb-guest
+    ports:
+      - '9445:445'
+    volumes:
+      - smb-guest-data:/share
+    environment:
+      - SMB_SHARE_NAME=public
+    healthcheck:
+      test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
-    smb-auth:
-        build:
-            context: ./containers/smb-base
-            args:
-                GUEST_OK: 'no'
-                CREATE_USER: 'testuser:testpass'
-        container_name: smb-auth
-        ports:
-            - '9446:445'
-        volumes:
-            - smb-auth-data:/share
-        environment:
-            - SMB_SHARE_NAME=private
-        healthcheck:
-            test: ['CMD', 'smbclient', '-L', 'localhost', '-U', 'testuser%testpass']
-            interval: 10s
-            timeout: 5s
-            retries: 3
-        restart: unless-stopped
+  smb-auth:
+    build:
+      context: ./containers/smb-base
+      args:
+        GUEST_OK: 'no'
+        CREATE_USER: 'testuser:testpass'
+    container_name: smb-auth
+    ports:
+      - '9446:445'
+    volumes:
+      - smb-auth-data:/share
+    environment:
+      - SMB_SHARE_NAME=private
+    healthcheck:
+      test: ['CMD', 'smbclient', '-L', 'localhost', '-U', 'testuser%testpass']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
-    smb-both:
-        build:
-            context: ./containers/smb-base
-            args:
-                GUEST_OK: 'yes'
-                CREATE_USER: 'testuser:testpass'
-        container_name: smb-both
-        ports:
-            - '9447:445'
-        volumes:
-            - smb-both-data:/share
-        environment:
-            - SMB_SHARE_NAME=mixed
-        healthcheck:
-            test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
-            interval: 10s
-            timeout: 5s
-            retries: 3
-        restart: unless-stopped
+  smb-both:
+    build:
+      context: ./containers/smb-base
+      args:
+        GUEST_OK: 'yes'
+        CREATE_USER: 'testuser:testpass'
+    container_name: smb-both
+    ports:
+      - '9447:445'
+    volumes:
+      - smb-both-data:/share
+    environment:
+      - SMB_SHARE_NAME=mixed
+    healthcheck:
+      test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
-    # ============================================================================
-    # Edge cases and stress tests
-    # ============================================================================
+  # ============================================================================
+  # Edge cases and stress tests
+  # ============================================================================
 
-    smb-flaky:
-        build: ./containers/smb-flaky
-        container_name: smb-flaky
-        ports:
-            - '9448:445'
-        volumes:
-            - smb-flaky-data:/share
-        environment:
-            - UP_SECONDS=5
-            - DOWN_SECONDS=5
-        restart: unless-stopped
+  smb-flaky:
+    build: ./containers/smb-flaky
+    container_name: smb-flaky
+    ports:
+      - '9448:445'
+    volumes:
+      - smb-flaky-data:/share
+    environment:
+      - UP_SECONDS=5
+      - DOWN_SECONDS=5
+    restart: unless-stopped
 
-    smb-50shares:
-        build: ./containers/smb-50shares
-        container_name: smb-50shares
-        ports:
-            - '9449:445'
-        volumes:
-            - smb-50shares-data:/shares
-        healthcheck:
-            test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
-            interval: 10s
-            timeout: 5s
-            retries: 3
-        restart: unless-stopped
+  smb-50shares:
+    build: ./containers/smb-50shares
+    container_name: smb-50shares
+    ports:
+      - '9449:445'
+    volumes:
+      - smb-50shares-data:/shares
+    healthcheck:
+      test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
-    smb-slow:
-        build: ./containers/smb-slow
-        container_name: smb-slow
-        ports:
-            - '9450:445'
-        volumes:
-            - smb-slow-data:/share
-        environment:
-            - DELAY_MS=500
-        healthcheck:
-            test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
-            interval: 15s
-            timeout: 10s
-            retries: 3
-        restart: unless-stopped
+  smb-slow:
+    build: ./containers/smb-slow
+    container_name: smb-slow
+    ports:
+      - '9450:445'
+    volumes:
+      - smb-slow-data:/share
+    environment:
+      - DELAY_MS=500
+    healthcheck:
+      test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
 
-    smb-readonly:
-        build:
-            context: ./containers/smb-base
-            args:
-                GUEST_OK: 'yes'
-                READ_ONLY: 'yes'
-        container_name: smb-readonly
-        ports:
-            - '9451:445'
-        volumes:
-            - smb-readonly-data:/share:ro
-        environment:
-            - SMB_SHARE_NAME=readonly
-        healthcheck:
-            test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
-            interval: 10s
-            timeout: 5s
-            retries: 3
-        restart: unless-stopped
+  smb-readonly:
+    build:
+      context: ./containers/smb-base
+      args:
+        GUEST_OK: 'yes'
+        READ_ONLY: 'yes'
+    container_name: smb-readonly
+    ports:
+      - '9451:445'
+    volumes:
+      - smb-readonly-data:/share:ro
+    environment:
+      - SMB_SHARE_NAME=readonly
+    healthcheck:
+      test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
-    # ============================================================================
-    # Protocol edge cases
-    # ============================================================================
+  # ============================================================================
+  # Protocol edge cases
+  # ============================================================================
 
-    smb-ancient:
-        build: ./containers/smb-ancient
-        container_name: smb-ancient
-        ports:
-            - '9452:445'
-        volumes:
-            - smb-ancient-data:/share
-        healthcheck:
-            test: ['CMD', 'smbclient', '-L', 'localhost', '-N', '--option=client min protocol=NT1']
-            interval: 10s
-            timeout: 5s
-            retries: 3
-        restart: unless-stopped
+  smb-ancient:
+    build: ./containers/smb-ancient
+    container_name: smb-ancient
+    ports:
+      - '9452:445'
+    volumes:
+      - smb-ancient-data:/share
+    healthcheck:
+      test: ['CMD', 'smbclient', '-L', 'localhost', '-N', '--option=client min protocol=NT1']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
-    smb-signing:
-        build:
-            context: ./containers/smb-base
-            args:
-                GUEST_OK: 'yes'
-                SERVER_SIGNING: 'mandatory'
-        container_name: smb-signing
-        ports:
-            - '9453:445'
-        volumes:
-            - smb-signing-data:/share
-        environment:
-            - SMB_SHARE_NAME=signed
-        healthcheck:
-            test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
-            interval: 10s
-            timeout: 5s
-            retries: 3
-        restart: unless-stopped
+  smb-signing:
+    build:
+      context: ./containers/smb-base
+      args:
+        GUEST_OK: 'yes'
+        SERVER_SIGNING: 'mandatory'
+    container_name: smb-signing
+    ports:
+      - '9453:445'
+    volumes:
+      - smb-signing-data:/share
+    environment:
+      - SMB_SHARE_NAME=signed
+    healthcheck:
+      test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
-    # ============================================================================
-    # Name/path stress tests
-    # ============================================================================
+  # ============================================================================
+  # Name/path stress tests
+  # ============================================================================
 
-    smb-unicode:
-        build: ./containers/smb-unicode
-        container_name: smb-unicode
-        ports:
-            - '9454:445'
-        volumes:
-            - smb-unicode-data:/shares
-        healthcheck:
-            test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
-            interval: 10s
-            timeout: 5s
-            retries: 3
-        restart: unless-stopped
+  smb-unicode:
+    build: ./containers/smb-unicode
+    container_name: smb-unicode
+    ports:
+      - '9454:445'
+    volumes:
+      - smb-unicode-data:/shares
+    healthcheck:
+      test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
-    smb-longnames:
-        build: ./containers/smb-longnames
-        container_name: smb-longnames
-        ports:
-            - '9455:445'
-        volumes:
-            - smb-longnames-data:/shares
-        healthcheck:
-            test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
-            interval: 10s
-            timeout: 5s
-            retries: 3
-        restart: unless-stopped
+  smb-longnames:
+    build: ./containers/smb-longnames
+    container_name: smb-longnames
+    ports:
+      - '9455:445'
+    volumes:
+      - smb-longnames-data:/shares
+    healthcheck:
+      test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
-    smb-deepnest:
-        build: ./containers/smb-deepnest
-        container_name: smb-deepnest
-        ports:
-            - '9456:445'
-        volumes:
-            - smb-deepnest-data:/share
-        healthcheck:
-            test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
-            interval: 10s
-            timeout: 5s
-            retries: 3
-        restart: unless-stopped
+  smb-deepnest:
+    build: ./containers/smb-deepnest
+    container_name: smb-deepnest
+    ports:
+      - '9456:445'
+    volumes:
+      - smb-deepnest-data:/share
+    healthcheck:
+      test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
-    smb-manyfiles:
-        build: ./containers/smb-manyfiles
-        container_name: smb-manyfiles
-        ports:
-            - '9457:445'
-        volumes:
-            - smb-manyfiles-data:/share
-        healthcheck:
-            test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
-            interval: 10s
-            timeout: 5s
-            retries: 3
-        restart: unless-stopped
+  smb-manyfiles:
+    build: ./containers/smb-manyfiles
+    container_name: smb-manyfiles
+    ports:
+      - '9457:445'
+    volumes:
+      - smb-manyfiles-data:/share
+    healthcheck:
+      test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
-    # ============================================================================
-    # Simulated server types
-    # ============================================================================
+  # ============================================================================
+  # Simulated server types
+  # ============================================================================
 
-    smb-like-windows:
-        build:
-            context: ./containers/smb-base
-            args:
-                GUEST_OK: 'yes'
-                SERVER_STRING: 'Windows Server 2022'
-        container_name: smb-like-windows
-        ports:
-            - '9458:445'
-        volumes:
-            - smb-like-windows-data:/share
-        environment:
-            - SMB_SHARE_NAME=Users
-        healthcheck:
-            test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
-            interval: 10s
-            timeout: 5s
-            retries: 3
-        restart: unless-stopped
+  smb-like-windows:
+    build:
+      context: ./containers/smb-base
+      args:
+        GUEST_OK: 'yes'
+        SERVER_STRING: 'Windows Server 2022'
+    container_name: smb-like-windows
+    ports:
+      - '9458:445'
+    volumes:
+      - smb-like-windows-data:/share
+    environment:
+      - SMB_SHARE_NAME=Users
+    healthcheck:
+      test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
-    smb-like-synology:
-        build: ./containers/smb-like-synology
-        container_name: smb-like-synology
-        ports:
-            - '9459:445'
-        volumes:
-            - smb-like-synology-data:/shares
-        healthcheck:
-            test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
-            interval: 10s
-            timeout: 5s
-            retries: 3
-        restart: unless-stopped
+  smb-like-synology:
+    build: ./containers/smb-like-synology
+    container_name: smb-like-synology
+    ports:
+      - '9459:445'
+    volumes:
+      - smb-like-synology-data:/shares
+    healthcheck:
+      test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
-    smb-like-linux:
-        build:
-            context: ./containers/smb-base
-            args:
-                GUEST_OK: 'yes'
-                SERVER_STRING: 'Samba 4.21.0'
-        container_name: smb-like-linux
-        ports:
-            - '9460:445'
-        volumes:
-            - smb-like-linux-data:/share
-        environment:
-            - SMB_SHARE_NAME=share
-        healthcheck:
-            test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
-            interval: 10s
-            timeout: 5s
-            retries: 3
-        restart: unless-stopped
+  smb-like-linux:
+    build:
+      context: ./containers/smb-base
+      args:
+        GUEST_OK: 'yes'
+        SERVER_STRING: 'Samba 4.21.0'
+    container_name: smb-like-linux
+    ports:
+      - '9460:445'
+    volumes:
+      - smb-like-linux-data:/share
+    environment:
+      - SMB_SHARE_NAME=share
+    healthcheck:
+      test: ['CMD', 'smbclient', '-L', 'localhost', '-N']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
 volumes:
-    smb-guest-data:
-    smb-auth-data:
-    smb-both-data:
-    smb-flaky-data:
-    smb-50shares-data:
-    smb-slow-data:
-    smb-readonly-data:
-    smb-ancient-data:
-    smb-signing-data:
-    smb-unicode-data:
-    smb-longnames-data:
-    smb-deepnest-data:
-    smb-manyfiles-data:
-    smb-like-windows-data:
-    smb-like-synology-data:
-    smb-like-linux-data:
+  smb-guest-data:
+  smb-auth-data:
+  smb-both-data:
+  smb-flaky-data:
+  smb-50shares-data:
+  smb-slow-data:
+  smb-readonly-data:
+  smb-ancient-data:
+  smb-signing-data:
+  smb-unicode-data:
+  smb-longnames-data:
+  smb-deepnest-data:
+  smb-manyfiles-data:
+  smb-like-windows-data:
+  smb-like-synology-data:
+  smb-like-linux-data:

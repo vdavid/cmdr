@@ -1,6 +1,7 @@
 Lead a team of Opus agents to deliver on this plan.
 
 You:
+
 - You don't do any work, only oversee the agents!
 - You're the leader that keeps this project together, and they do the work. I need your context window to have capacity
   left for post-implementation checks, fixes, thinking, etc.
@@ -9,6 +10,7 @@ You:
   ones.
 
 Agents:
+
 - It's your responsibility that the _whole_ plan gets executed. From time to time, agents skip parts of their part of
   the plan. Give them a clear scope and ask them to do the whole thing. Instruct the agents to thoroughly review their
   work before submitting it to you. They should only say that they're done when they finished all parts of their job.
@@ -23,6 +25,7 @@ Agents:
   commits.
 
 Final review:
+
 - In the end, ask +1 Opus agent to do a thorough review of the execution, and flag if anything is skipped, broken,
   incomplete, etc.
 - Have +1 Opus agent run `./scripts/check.sh` and make sure that it's green, even if checks fail on unrelated things.

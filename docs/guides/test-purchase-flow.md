@@ -9,12 +9,11 @@ key generation, and activation in the desktop app.
   ([checkout settings](https://sandbox-vendors.paddle.com/checkout-settings))
 - Paddle sandbox client-side token (starts with `test_`) in `apps/website/.env` as `PUBLIC_PADDLE_CLIENT_TOKEN`
   ([create one](https://sandbox-vendors.paddle.com/authentication-v2))
-- Sandbox price IDs in `apps/website/.env` (`PUBLIC_PADDLE_PRICE_ID_*`) and `apps/api-server/.dev.vars`
-  (`PRICE_ID_*`)
+- Sandbox price IDs in `apps/website/.env` (`PUBLIC_PADDLE_PRICE_ID_*`) and `apps/api-server/.dev.vars` (`PRICE_ID_*`)
 - ngrok installed (`brew install ngrok`) with auth token configured
 
-See [API server README](../../apps/api-server/README.md) and
-[website .env.example](../../apps/website/.env.example) for full setup.
+See [API server README](../../apps/api-server/README.md) and [website .env.example](../../apps/website/.env.example) for
+full setup.
 
 ## Start the services
 
@@ -50,8 +49,8 @@ More test cards: https://developer.paddle.com/concepts/payment-methods/credit-de
 
 ## Verify the webhook
 
-After checkout completes, the ngrok terminal should show a `POST /webhook/paddle` request, and the API server
-terminal should log the key generation. The test email address receives a license key via Resend.
+After checkout completes, the ngrok terminal should show a `POST /webhook/paddle` request, and the API server terminal
+should log the key generation. The test email address receives a license key via Resend.
 
 If the webhook doesn't arrive, check the Paddle sandbox
 [notification log](https://sandbox-vendors.paddle.com/notifications).

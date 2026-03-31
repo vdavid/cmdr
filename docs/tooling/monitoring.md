@@ -9,7 +9,8 @@ We use [UptimeRobot](https://uptimerobot.com/) (free tier) to monitor `getcmdr.c
 ## Alerts
 
 - **Email**: Goes to the account owner's email (default alert contact).
-- **Pushover**: Push notifications to phone via [Pushover](https://pushover.net/). Configured as an alert contact in UptimeRobot.
+- **Pushover**: Push notifications to phone via [Pushover](https://pushover.net/). Configured as an alert contact in
+  UptimeRobot.
 
 ## Links
 

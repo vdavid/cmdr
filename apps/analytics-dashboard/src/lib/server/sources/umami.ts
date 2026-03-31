@@ -70,7 +70,7 @@ async function fetchStats(
     token: string,
     websiteId: string,
     startAt: number,
-    endAt: number
+    endAt: number,
 ): Promise<UmamiSiteStats> {
     const url = `${apiUrl}/api/websites/${websiteId}/stats?startAt=${startAt}&endAt=${endAt}`
     const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
@@ -93,7 +93,7 @@ async function fetchMetrics(
     websiteId: string,
     startAt: number,
     endAt: number,
-    type: string
+    type: string,
 ): Promise<UmamiMetricItem[]> {
     const url = `${apiUrl}/api/websites/${websiteId}/metrics?startAt=${startAt}&endAt=${endAt}&type=${type}`
     const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })

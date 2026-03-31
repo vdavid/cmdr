@@ -29,8 +29,8 @@ This starts both the Svelte frontend and the Rust backend with hot reload.
 In dev mode, press **Cmd+D** to open a debug window. This window is only available in dev builds and provides:
 
 - **Dark mode toggle**: Switch between light and dark themes without changing your system settings
-- **Navigation history**: Real-time view of back/forward history for both panes, showing current position and
-  available history entries
+- **Navigation history**: Real-time view of back/forward history for both panes, showing current position and available
+  history entries
 
 The debug window is a separate, movable window that updates in real-time as you navigate.
 
@@ -48,7 +48,7 @@ RUST_LOG=warn pnpm dev
 # Verbose network debugging
 RUST_LOG=cmdr_lib::network=debug,info pnpm dev
 
-# Unsilence MCP logs by running the command directly, without the env vars built-in to `pnpm dev` 
+# Unsilence MCP logs by running the command directly, without the env vars built-in to `pnpm dev`
 pnpm --filter @cmdr/desktop tauri dev
 ```
 
@@ -87,11 +87,10 @@ pnpm test                         # to run frontend tests
 
 ## Linux testing (Ubuntu VM)
 
-The Linux E2E tests run against the real Tauri app with WebKitGTK.
-Since macOS doesn't have a WebDriver for WKWebView, we need a Linux environment.
-We use a UTM virtual machine (Apple Virtualization) with Ubuntu, connected to the LAN at `192.168.1.97`.
-The macOS repo is shared via VirtioFS so edits on either side are instant, but uses custom bind mounts to avoid
-`node_modules` and build folders overwriting each other between the host mac and the VM.
+The Linux E2E tests run against the real Tauri app with WebKitGTK. Since macOS doesn't have a WebDriver for WKWebView,
+we need a Linux environment. We use a UTM virtual machine (Apple Virtualization) with Ubuntu, connected to the LAN at
+`192.168.1.97`. The macOS repo is shared via VirtioFS so edits on either side are instant, but uses custom bind mounts
+to avoid `node_modules` and build folders overwriting each other between the host mac and the VM.
 
 How to use it for testing the app:
 
@@ -162,15 +161,12 @@ This snippet will likely come handy:
 
 ```json
 {
-  "mcpServers": {
-    "tauri": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@hypothesi/tauri-mcp-server"
-      ]
+    "mcpServers": {
+        "tauri": {
+            "command": "npx",
+            "args": ["-y", "@hypothesi/tauri-mcp-server"]
+        }
     }
-  }
 }
 ```
 
@@ -192,9 +188,9 @@ The API server is a Cloudflare Worker. To deploy it or run `wrangler` commands, 
     - `Zone / DNS / Edit`
 3. Account resources: the Cmdr account only
 4. Add to macOS Keychain:
-   ```sh
-   security add-generic-password -a "$USER" -s "CLOUDFLARE_API_TOKEN" -w "your-token"
-   ```
+    ```sh
+    security add-generic-password -a "$USER" -s "CLOUDFLARE_API_TOKEN" -w "your-token"
+    ```
 
 Wrangler picks up `CLOUDFLARE_API_TOKEN` from the environment — the shell profile exports it from Keychain on startup.
 
@@ -206,9 +202,9 @@ update project settings), you need a personal API key.
 1. Go to https://eu.posthog.com/settings/user-api-keys → **Create personal API key**
 2. Scope it to the Cmdr project
 3. Add to macOS Keychain:
-   ```sh
-   security add-generic-password -a "$USER" -s "POSTHOG_API_KEY" -w "phx_your-key"
-   ```
+    ```sh
+    security add-generic-password -a "$USER" -s "POSTHOG_API_KEY" -w "phx_your-key"
+    ```
 
 See [posthog.md](docs/tooling/posthog.md) for API recipes.
 
@@ -219,45 +215,45 @@ Paddle handles payments and subscriptions. Two API keys are needed — one for l
 1. Go to https://vendors.paddle.com → **Developer tools** → **Authentication** → **Generate API key**
 2. Repeat for sandbox at https://sandbox-vendors.paddle.com
 3. Add both to macOS Keychain:
-   ```sh
-   security add-generic-password -a "$USER" -s "PADDLE_LIVE_API_KEY" -w "your-live-key"
-   security add-generic-password -a "$USER" -s "PADDLE_SANDBOX_API_KEY" -w "your-sandbox-key"
-   ```
+    ```sh
+    security add-generic-password -a "$USER" -s "PADDLE_LIVE_API_KEY" -w "your-live-key"
+    security add-generic-password -a "$USER" -s "PADDLE_SANDBOX_API_KEY" -w "your-sandbox-key"
+    ```
 
 See the Paddle generic tooling doc for API recipes.
 
 ## Cloudflare Access (analytics dashboard)
 
-The analytics dashboard at `analdash.getcmdr.com` is behind Cloudflare Access. To fetch reports via the API, you
-need a service token.
+The analytics dashboard at `analdash.getcmdr.com` is behind Cloudflare Access. To fetch reports via the API, you need a
+service token.
 
 1. Go to https://one.dash.cloudflare.com → **Access** → **Service Auth** → **Create Service Token**
 2. Add both values to macOS Keychain:
-   ```sh
-   security add-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_ID_EXPIRES_2027_03_22" -w "your-client-id"
-   security add-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_SECRET_EXPIRES_2027_03_22" -w "your-client-secret"
-   ```
+    ```sh
+    security add-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_ID_EXPIRES_2027_03_22" -w "your-client-id"
+    security add-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_SECRET_EXPIRES_2027_03_22" -w "your-client-secret"
+    ```
 
 The token expires 2027-03-22. See [analytics-dashboard.md](docs/tooling/analytics-dashboard.md) for usage.
 
 ## ngrok access (tunnels)
 
-ngrok exposes local servers to the internet — useful for testing webhooks (for example, Paddle) against your local
-API server.
+ngrok exposes local servers to the internet — useful for testing webhooks (for example, Paddle) against your local API
+server.
 
 1. Go to https://dashboard.ngrok.com → **Your Authtoken** (or **API** → **API Keys** for the API key)
 2. Add to macOS Keychain:
-   ```sh
-   security add-generic-password -a "$USER" -s "NGROK_API_KEY" -w "your-api-key"
-   ```
+    ```sh
+    security add-generic-password -a "$USER" -s "NGROK_API_KEY" -w "your-api-key"
+    ```
 
 See the ngrok generic tooling doc for API recipes.
 
 ## API server local dev
 
-To run the API server locally (for testing license activation, generating test keys, etc.), you need a `.dev.vars`
-file with Paddle and Resend secrets. See the [API server README](apps/api-server/README.md#local-development)
-for the full setup. Ask a maintainer for the current values if you don't have dashboard access.
+To run the API server locally (for testing license activation, generating test keys, etc.), you need a `.dev.vars` file
+with Paddle and Resend secrets. See the [API server README](apps/api-server/README.md#local-development) for the full
+setup. Ask a maintainer for the current values if you don't have dashboard access.
 
 ## Self-hosted GitHub Actions macOS runner (maintainers)
 
@@ -269,10 +265,10 @@ To set one up:
 2. Select **macOS** and **ARM64**
 3. Follow GitHub's instructions to download, configure, and register the runner, and run it to test it works.
 4. Quit it, then install it as a launchd service so it starts on boot:
-   ```bash
-   ./svc.sh install
-   ./svc.sh start
-   ```
+    ```bash
+    ./svc.sh install
+    ./svc.sh start
+    ```
 5. Make sure the runner has all build dependencies: Rust (`rustup`), Node, pnpm, Go (all via `mise install`), and Xcode
    CLI tools. You need these to build the app anyway.
 6. Prevent sleep in **System Settings → Energy** so the runner stays available during releases.
@@ -282,8 +278,8 @@ Silicon can cross-compile x86_64 and universal builds, so a single ARM64 runner 
 
 ## Infrastructure access (maintainers)
 
-If you have SSH access to the production server (`ssh hetzner`) and credentials for services like Umami, Cloudflare,
-and Paddle, see [docs/architecture.md](docs/architecture.md#tooling-and-infrastructure) for the full map of
-per-service docs.
+If you have SSH access to the production server (`ssh hetzner`) and credentials for services like Umami, Cloudflare, and
+Paddle, see [docs/architecture.md](docs/architecture.md#tooling-and-infrastructure) for the full map of per-service
+docs.
 
 Happy coding!

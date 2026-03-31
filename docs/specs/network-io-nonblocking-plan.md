@@ -147,8 +147,8 @@ remove_file_in_background(dest.to_path_buf());
 ```
 
 Note: the cancelled file is NOT in `CopyTransaction.created_files` — `record_file` is called after successful copy
-(copy.rs line 532), and the cancelled file's copy failed. So `remove_file_in_background` and
-`rollback_in_background` (below) target disjoint file sets. No double-delete coordination needed.
+(copy.rs line 532), and the cancelled file's copy failed. So `remove_file_in_background` and `rollback_in_background`
+(below) target disjoint file sets. No double-delete coordination needed.
 
 **Change 2: `CopyTransaction::rollback_in_background` in `state.rs`.**
 
@@ -177,8 +177,8 @@ pub fn rollback_in_background(mut self) {
 }
 ```
 
-`committed = true` is the safety mechanism preventing `Drop` from synchronous rollback. `mem::take` moves ownership
-into the thread. Both are needed. The synchronous `rollback()` stays for non-cancellation error paths.
+`committed = true` is the safety mechanism preventing `Drop` from synchronous rollback. `mem::take` moves ownership into
+the thread. Both are needed. The synchronous `rollback()` stays for non-cancellation error paths.
 
 **Change 3: `copy.rs` — use `rollback_in_background` on cancel.**
 
@@ -207,8 +207,8 @@ Remove `assert!(!dst.exists())` (cleanup is now async). Add a comment explaining
 ## Out of scope
 
 **Scan phase blocking on stalled mounts.** `scan_sources` → `walk_dir_recursive` does `readdir`/`symlink_metadata` per
-entry. On a stalled mount, individual I/O calls can block for minutes. Could be addressed with `run_cancellable` wrappers
-but is a separate, larger change.
+entry. On a stalled mount, individual I/O calls can block for minutes. Could be addressed with `run_cancellable`
+wrappers but is a separate, larger change.
 
 **`delete_sources_after_move` blocking on stalled source mount.** Does `remove_dir_all`/`remove_file` during normal
 operation. The cancellation flag is checked between sources, so the user can cancel between files, but a single stalled
@@ -239,12 +239,12 @@ operation. The cancellation flag is checked between sources, so the user can can
 ### Milestone 3 — Docs and final checks
 
 1. Update `write_operations/CLAUDE.md`:
-   - Document async rollback pattern (`rollback_in_background` vs `rollback`).
-   - Add gotcha: background cleanup is best-effort; files may remain if mount disconnects.
-   - Note that `start_write_operation` now emits `write-error` for handler errors.
+    - Document async rollback pattern (`rollback_in_background` vs `rollback`).
+    - Add gotcha: background cleanup is best-effort; files may remain if mount disconnects.
+    - Note that `start_write_operation` now emits `write-error` for handler errors.
 2. Run full `./scripts/check.sh`.
 3. Manual test on NAS/SMB:
-   - Copy NAS → local, cancel mid-copy → dialog closes instantly.
-   - Start copy from NAS while mount is stalled → dialog opens, is cancellable.
-   - Copy with invalid source → error dialog appears promptly.
-   - Cross-FS move with cancel → staging directory cleaned up in background.
+    - Copy NAS → local, cancel mid-copy → dialog closes instantly.
+    - Start copy from NAS while mount is stalled → dialog opens, is cancellable.
+    - Copy with invalid source → error dialog appears promptly.
+    - Cross-FS move with cancel → staging directory cleaned up in background.

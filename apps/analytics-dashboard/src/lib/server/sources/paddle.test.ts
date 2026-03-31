@@ -166,7 +166,7 @@ describe('fetchPaddleData', () => {
 
         // Verify pagination cursor was used
         const paginatedCall = fetchMock.mock.calls.find(
-            (call: unknown[]) => typeof call[0] === 'string' && call[0].includes('after=cursor_abc')
+            (call: unknown[]) => typeof call[0] === 'string' && call[0].includes('after=cursor_abc'),
         )
         expect(paginatedCall).toBeDefined()
     })

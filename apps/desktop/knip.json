@@ -1,25 +1,25 @@
 {
-    "$schema": "https://unpkg.com/knip@5/schema.json",
-    "ignoreBinaries": ["only-allow", "rustc"],
-    "ignore": ["src/lib/tauri-commands/**"],
-    "ignoreDependencies": [
-        "oxlint",
-        "@tauri-apps/cli",
-        "@testing-library/svelte",
-        "prettier-plugin-svelte",
-        "@wdio/globals",
-        "@wdio/local-runner",
-        "@wdio/mocha-framework",
-        "@wdio/spec-reporter",
-        "@wdio/types",
-        "webdriverio",
-        "@crabnebula/tauri-driver",
-        "@crabnebula/test-runner-backend",
-        "axe-core"
-    ],
-    "ignoreExportsUsedInFile": true,
-    "project": ["src/**/*.{ts,svelte}"],
-    "svelte": {
-        "entry": ["src/routes/**/+page.svelte", "src/routes/**/+layout.svelte"]
-    }
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreBinaries": ["only-allow", "rustc"],
+  "ignore": ["src/lib/tauri-commands/**"],
+  "ignoreDependencies": [
+    "oxlint",
+    "@tauri-apps/cli",
+    "@testing-library/svelte",
+    "prettier-plugin-svelte",
+    "@wdio/globals",
+    "@wdio/local-runner",
+    "@wdio/mocha-framework",
+    "@wdio/spec-reporter",
+    "@wdio/types",
+    "webdriverio",
+    "@crabnebula/tauri-driver",
+    "@crabnebula/test-runner-backend",
+    "axe-core"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "project": ["src/**/*.{ts,svelte}"],
+  "svelte": {
+    "entry": ["src/routes/**/+page.svelte", "src/routes/**/+layout.svelte"]
+  }
 }

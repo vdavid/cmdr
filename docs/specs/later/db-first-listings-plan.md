@@ -3,7 +3,8 @@
 Serve directory listings from the SQLite index instead of `readdir` + `stat`, cutting navigation time from 2–50ms to
 sub-millisecond. Background verification on each navigation keeps the DB accurate.
 
-See also: [plan.md](../drive-indexing/plan.md) (parent plan, "Future: DB-first directory listings" section), [tasks.md](../drive-indexing/tasks.md)
+See also: [plan.md](../drive-indexing/plan.md) (parent plan, "Future: DB-first directory listings" section),
+[tasks.md](../drive-indexing/tasks.md)
 
 Date: 2026-03-03.
 
@@ -11,15 +12,15 @@ Date: 2026-03-03.
 
 The drive index already stores every file and directory on the volume (`entries` table). Today we only use it for
 enriching directory entries with recursive sizes. This plan promotes the index to the **primary listing source** — the
-first thing the user sees on navigation comes from a SQLite query, not from `readdir`. The filesystem read still happens,
-but in the background as a correctness check.
+first thing the user sees on navigation comes from a SQLite query, not from `readdir`. The filesystem read still
+happens, but in the background as a correctness check.
 
 **Why this matters:** `readdir` + `stat` takes 2–50ms per directory (more on network volumes). A `SELECT` on an indexed
 `parent_path` column takes <1ms. For power users navigating rapidly (Tab, Enter, Backspace), this difference is
 perceptible — especially with 10k+ file directories.
 
-**Why now:** The index has been running in production across milestones 1–8. FSEvents + `sinceWhen` replay + MustScanSubDirs
-keep it fresh. The missing piece is per-navigation verification (`verifier.rs`) to close the last gap.
+**Why now:** The index has been running in production across milestones 1–8. FSEvents + `sinceWhen` replay +
+MustScanSubDirs keep it fresh. The missing piece is per-navigation verification (`verifier.rs`) to close the last gap.
 
 ## Design
 
@@ -56,8 +57,8 @@ The DB-first path activates **per-directory**. If the index isn't ready or has n
 to the current `readdir` + `stat` path transparently.
 
 **Guard: full scan must have completed at least once.** During the initial full scan (first launch, or after "Clear
-index"), the scanner writes entries in batches. A directory might have its own entry in the `entries` table but only some
-of its children written so far. Without this guard, DB-first would show a partial listing, then verification would
+index"), the scanner writes entries in batches. A directory might have its own entry in the `entries` table but only
+some of its children written so far. Without this guard, DB-first would show a partial listing, then verification would
 "correct" it to the full list — a visible jump. Check `scan_completed_at` in the meta table: if not set, always fall
 back to readdir. On subsequent cold starts, the DB is already complete (sinceWhen replay only modifies individual
 entries, not partial directories), so this guard only matters for first launch and "Clear index."
@@ -90,28 +91,29 @@ fn is_directory_indexed(store: &IndexStore, dir_path: &str) -> bool {
 
 Mapping:
 
-| FileEntry field              | Source                                                             |
-|------------------------------|--------------------------------------------------------------------|
-| `name`                       | `ScannedEntry.name`                                                |
-| `path`                       | `ScannedEntry.path`                                                |
-| `is_directory`               | `ScannedEntry.is_directory`                                        |
-| `is_symlink`                 | `ScannedEntry.is_symlink`                                          |
-| `size`                       | `ScannedEntry.logical_size` (matches readdir's `metadata.len()`)  |
-| `modified_at`                | `ScannedEntry.modified_at`                                         |
-| `icon_id`                    | Computed: `get_icon_id(is_directory, is_symlink, &name)` — no stat |
-| `created_at`                 | `None` (not displayed; lazy-loadable later if needed)              |
-| `added_at`                   | `None` (not displayed; lazy-loadable later if needed)              |
-| `opened_at`                  | `None` (not displayed; lazy-loadable later if needed)              |
-| `permissions`                | `0` (not displayed; lazy-loadable later if needed)                 |
-| `owner`                      | `""` (not displayed; lazy-loadable later if needed)                |
-| `group`                      | `""` (not displayed; lazy-loadable later if needed)                |
-| `extended_metadata_loaded`   | `false`                                                            |
-| `recursive_size`             | From `dir_stats` enrichment (existing)                             |
-| `recursive_file_count`       | From `dir_stats` enrichment (existing)                             |
-| `recursive_dir_count`        | From `dir_stats` enrichment (existing)                             |
+| FileEntry field            | Source                                                             |
+| -------------------------- | ------------------------------------------------------------------ |
+| `name`                     | `ScannedEntry.name`                                                |
+| `path`                     | `ScannedEntry.path`                                                |
+| `is_directory`             | `ScannedEntry.is_directory`                                        |
+| `is_symlink`               | `ScannedEntry.is_symlink`                                          |
+| `size`                     | `ScannedEntry.logical_size` (matches readdir's `metadata.len()`)   |
+| `modified_at`              | `ScannedEntry.modified_at`                                         |
+| `icon_id`                  | Computed: `get_icon_id(is_directory, is_symlink, &name)` — no stat |
+| `created_at`               | `None` (not displayed; lazy-loadable later if needed)              |
+| `added_at`                 | `None` (not displayed; lazy-loadable later if needed)              |
+| `opened_at`                | `None` (not displayed; lazy-loadable later if needed)              |
+| `permissions`              | `0` (not displayed; lazy-loadable later if needed)                 |
+| `owner`                    | `""` (not displayed; lazy-loadable later if needed)                |
+| `group`                    | `""` (not displayed; lazy-loadable later if needed)                |
+| `extended_metadata_loaded` | `false`                                                            |
+| `recursive_size`           | From `dir_stats` enrichment (existing)                             |
+| `recursive_file_count`     | From `dir_stats` enrichment (existing)                             |
+| `recursive_dir_count`      | From `dir_stats` enrichment (existing)                             |
 
-The first paint shows: name, icon, size, modified date, and recursive dir sizes — all without any disk I/O. The currently
-unused fields (permissions, owner, group, dates) get defaults and can be lazy-loaded later if those columns are added.
+The first paint shows: name, icon, size, modified date, and recursive dir sizes — all without any disk I/O. The
+currently unused fields (permissions, owner, group, dates) get defaults and can be lazy-loaded later if those columns
+are added.
 
 ### Integration into the listing pipeline
 
@@ -155,8 +157,8 @@ this pattern but is:
 2. **Scoped to a single directory** (not a set of affected paths)
 3. **Updates the LISTING_CACHE** in addition to the DB (so the current listing reflects corrections)
 
-The verifier cancels on navigate-away — if the user navigates elsewhere before verification completes, there's no
-point finishing.
+The verifier cancels on navigate-away — if the user navigates elsewhere before verification completes, there's no point
+finishing.
 
 **Cancellation safety:** Each writer message (`DeleteEntry`, `UpsertEntry`, `PropagateDelta`) is processed atomically by
 the writer thread. If verification is cancelled mid-way, some corrections are committed and some aren't. The uncommitted
@@ -190,8 +192,8 @@ not currently displayed, so their default values are invisible to the user.
 1. **DB-first is opt-in per-directory, not a global switch.** If a directory isn't indexed, the existing readdir path
    runs transparently. No user-facing setting needed.
 
-2. **Verification is mandatory, not optional.** Every DB-first navigation spawns a background verification. The index
-   is a cache, not a source of truth. Skipping verification would risk showing stale data with no correction path.
+2. **Verification is mandatory, not optional.** Every DB-first navigation spawns a background verification. The index is
+   a cache, not a source of truth. Skipping verification would risk showing stale data with no correction path.
 
 3. **Reuse the existing verification pattern.** `verify_affected_dirs` already handles the bidirectional diff. The
    per-navigation verifier follows the same pattern (two-phase: bulk DB read under lock, then filesystem I/O without
@@ -202,17 +204,17 @@ not currently displayed, so their default values are invisible to the user.
    can be wired in using the existing `get_extended_metadata_batch()` / `get_macos_metadata()` APIs.
 
 5. **Add logical size to entries table; rename `size` → `physical_size`.** The `entries` table currently stores physical
-   size (`st_blocks * 512`) in a column ambiguously named `size`. The listing size column shows logical size (`st_size` /
-   `metadata.len()`), which is what Finder shows and what users expect. Without this, DB-first would show physical sizes
-   (confusing for small files: a 100-byte file showing as "4 KB", or inline-stored files showing "0 B"). Rename the
-   existing column to `physical_size`, add `logical_size`; the scanner already has both values from the same `stat()`
-   call. `ScannedEntry` gets the same rename (`physical_size` + `logical_size`). `FileEntry.size` stays as-is (it only
-   ever carries logical, no ambiguity). `dir_stats.recursive_size` stays as-is (only carries physical, documented).
-   Physical size continues to be used for `dir_stats` aggregation (recursive folder sizes), where it's more meaningful
-   for disk usage. Bump schema version → existing indexes auto-rebuild.
+   size (`st_blocks * 512`) in a column ambiguously named `size`. The listing size column shows logical size (`st_size`
+   / `metadata.len()`), which is what Finder shows and what users expect. Without this, DB-first would show physical
+   sizes (confusing for small files: a 100-byte file showing as "4 KB", or inline-stored files showing "0 B"). Rename
+   the existing column to `physical_size`, add `logical_size`; the scanner already has both values from the same
+   `stat()` call. `ScannedEntry` gets the same rename (`physical_size` + `logical_size`). `FileEntry.size` stays as-is
+   (it only ever carries logical, no ambiguity). `dir_stats.recursive_size` stays as-is (only carries physical,
+   documented). Physical size continues to be used for `dir_stats` aggregation (recursive folder sizes), where it's more
+   meaningful for disk usage. Bump schema version → existing indexes auto-rebuild.
 
-6. **Cache update on diff, not cache replacement.** Verification only touches the cache when diffs are found. The
-   common case (no diffs) has zero overhead on the cache path.
+6. **Cache update on diff, not cache replacement.** Verification only touches the cache when diffs are found. The common
+   case (no diffs) has zero overhead on the cache path.
 
 7. **Verification compares against current cache, not original DB snapshot.** The per-directory file watcher may update
    `LISTING_CACHE` between the DB-first paint and verification completion. Comparing the readdir result against the
@@ -232,21 +234,22 @@ simplifies the system and avoids double-processing. Not blocking for milestone 2
 
 ## Performance targets
 
-| Operation                                      | Target    | Notes                                          |
-|------------------------------------------------|-----------|-------------------------------------------------|
-| DB-first listing query (indexed parent_path)   | <1ms      | SQLite WAL read, indexed column                 |
-| ScannedEntry → FileEntry conversion (1K items) | <100µs    | No I/O, just field mapping + icon_id derivation |
-| Total time to first paint (DB-first path)      | <2ms      | Query + convert + enrich + sort                 |
-| Background verification (readdir diff)         | 2–50ms    | Same cost as today's listing                    |
+| Operation                                      | Target | Notes                                           |
+| ---------------------------------------------- | ------ | ----------------------------------------------- |
+| DB-first listing query (indexed parent_path)   | <1ms   | SQLite WAL read, indexed column                 |
+| ScannedEntry → FileEntry conversion (1K items) | <100µs | No I/O, just field mapping + icon_id derivation |
+| Total time to first paint (DB-first path)      | <2ms   | Query + convert + enrich + sort                 |
+| Background verification (readdir diff)         | 2–50ms | Same cost as today's listing                    |
 
 ## Milestones
 
 ### Milestone 1: Per-navigation verifier (`verifier.rs`)
 
-Implement the background readdir diff that runs on every navigation. This works **independently of DB-first listings**
-— it improves index accuracy even when the listing still comes from readdir. Ship and validate before wiring up DB-first.
+Implement the background readdir diff that runs on every navigation. This works **independently of DB-first listings** —
+it improves index accuracy even when the listing still comes from readdir. Ship and validate before wiring up DB-first.
 
-**Intention:** Build confidence that the verifier keeps the index in sync. Once we trust it, the DB-first switch is safe.
+**Intention:** Build confidence that the verifier keeps the index in sync. Once we trust it, the DB-first switch is
+safe.
 
 ### Milestone 2: DB-first listing path
 
@@ -258,7 +261,8 @@ directories not yet indexed. The DB-first path should be invisible to the user e
 
 ### Milestone 3: Performance validation
 
-Benchmark DB-first listings vs readdir across directory sizes. Validate the targets above. Profile and optimize if needed.
+Benchmark DB-first listings vs readdir across directory sizes. Validate the targets above. Profile and optimize if
+needed.
 
 **Intention:** Prove the performance win is real and consistent. Identify edge cases (huge directories, slow SQLite,
 concurrent writes during verification).
@@ -271,8 +275,8 @@ concurrent writes during verification).
 
 - [ ] `verifier.rs`: implement `verify_directory(parent_path, writer, cancel_token)` — bidirectional readdir diff
       against DB (reuse `verify_affected_dirs` pattern: two-phase lock, DeleteEntry/UpsertEntry/PropagateDelta)
-- [ ] `verifier.rs`: accept a `CancellationToken`, cancel on navigate-away (safe: each writer message is atomic,
-      partial verification leaves DB consistent)
+- [ ] `verifier.rs`: accept a `CancellationToken`, cancel on navigate-away (safe: each writer message is atomic, partial
+      verification leaves DB consistent)
 - [ ] `mod.rs`: wire `verify_directory` into navigation flow — after `list_directory_start`, spawn background
       verification for the listed directory
 - [ ] `mod.rs`: cancel previous verification when user navigates away (same pattern as `cancel_nav_priority`)
@@ -285,8 +289,8 @@ concurrent writes during verification).
 - [ ] `entries` table: rename `size` → `physical_size`, add `logical_size` (`st_size`); bump schema version (triggers
       auto-rebuild)
 - [ ] `ScannedEntry`: rename `size` → `physical_size`, add `logical_size: Option<u64>`
-- [ ] `scanner.rs`: store both `physical_size` (`st_blocks * 512`) and `logical_size` (`st_size`) from the same
-      `stat()` call
+- [ ] `scanner.rs`: store both `physical_size` (`st_blocks * 512`) and `logical_size` (`st_size`) from the same `stat()`
+      call
 - [ ] Update all `ScannedEntry` consumers (writer, reconciler, aggregator, verifier) for the field rename
 - [ ] `store.rs`: add `entry_exists(path) -> bool` method (single-row existence check on `entries` table)
 - [ ] `indexing/mod.rs`: add `list_from_index(parent_path) -> Option<Vec<FileEntry>>` — queries DB, converts

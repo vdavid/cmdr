@@ -26,10 +26,10 @@ spinner + "Deleting N copied files..." is correct for an indeterminate operation
 
 ### ProgressBar is just the bar
 
-**Why:** `ProgressOverlay` uses a horizontal row layout (bar + percentage + ETA inline). `TransferProgressDialog` needs a
-grid layout (label, bar, detail). These are fundamentally different layouts. If the component includes label/detail props,
-one consumer won't use them, making the API dishonest. A pure bar component is more composable — consumers arrange labels
-however they need.
+**Why:** `ProgressOverlay` uses a horizontal row layout (bar + percentage + ETA inline). `TransferProgressDialog` needs
+a grid layout (label, bar, detail). These are fundamentally different layouts. If the component includes label/detail
+props, one consumer won't use them, making the API dishonest. A pure bar component is more composable — consumers
+arrange labels however they need.
 
 ### Size variants instead of pixel props
 
@@ -40,8 +40,8 @@ matching what each consumer had before.
 
 ### No fillColor prop
 
-The only potential use was rollback styling, which we're not building. Removing it keeps the API minimal and avoids
-an escape hatch that bypasses the design token system. Can be added later if a real use case arises.
+The only potential use was rollback styling, which we're not building. Removing it keeps the API minimal and avoids an
+escape hatch that bypasses the design token system. Can be added later if a real use case arises.
 
 ### Inline grid layout for dual bars
 
@@ -74,14 +74,16 @@ at "0 B / 0 B (0%)" is misleading. Conditionally hide the size row when `bytesTo
 **File:** `apps/desktop/src/lib/ui/ProgressBar.svelte`
 
 Props:
+
 - `value: number` — 0–1 fractional progress (required)
 - `size?: 'sm' | 'md'` — bar height + radius. `sm` = 4px / `--radius-xs`, `md` = 8px / `--radius-sm`. Default `'md'`
 - `ariaLabel?: string` — accessible label for screen readers
 
 Internals:
+
 - `percent = $derived(Math.min(100, Math.round(value * 100)))`
-- Track div: `role="progressbar"`, `aria-valuenow={percent}`, `aria-valuemin={0}`, `aria-valuemax={100}`,
-  optional `aria-label={ariaLabel}`
+- Track div: `role="progressbar"`, `aria-valuenow={percent}`, `aria-valuemin={0}`, `aria-valuemax={100}`, optional
+  `aria-label={ariaLabel}`
 - Fill div: `transition: width 0.15s ease-out` (standardized from the existing 0.1s and 0.3s)
 - Styling: `--color-bg-tertiary` track, `--color-accent` fill
 
@@ -103,12 +105,13 @@ attributes.
 **File:** `apps/desktop/src/lib/file-operations/transfer/TransferProgressDialog.svelte`
 
 Script:
+
 - Import `ProgressBar`
 - Remove `percentComplete` derived (line 189) — no longer used, replaced by inline expressions
 
-Template — replace lines 799–828 (progress section + stats section) with a CSS grid. Preserve the current file
-indicator (lines 830–835) after the grid — it should remain outside the `{#if}` since the backend emits `current_file`
-during scanning too, and showing it supports radical transparency. Only show the bars when past scanning:
+Template — replace lines 799–828 (progress section + stats section) with a CSS grid. Preserve the current file indicator
+(lines 830–835) after the grid — it should remain outside the `{#if}` since the backend emits `current_file` during
+scanning too, and showing it supports radical transparency. Only show the bars when past scanning:
 
 ```svelte
 {#if phase !== 'scanning'}
@@ -139,13 +142,13 @@ during scanning too, and showing it supports radical transparency. Only show the
 ```
 
 CSS:
-- `.progress-grid`: `display: grid; grid-template-columns: auto 1fr auto; gap: var(--spacing-xs) var(--spacing-sm);
-  align-items: center; padding: 0 var(--spacing-xl); margin-bottom: var(--spacing-md)`
+
+- `.progress-grid`:
+  `display: grid; grid-template-columns: auto 1fr auto; gap: var(--spacing-xs) var(--spacing-sm); align-items: center; padding: 0 var(--spacing-xl); margin-bottom: var(--spacing-md)`
 - `.progress-label`: `font-size: var(--font-size-sm); color: var(--color-text-tertiary)`
-- `.progress-detail`: `font-size: var(--font-size-sm); color: var(--color-text-secondary);
-  font-variant-numeric: tabular-nums; text-align: right`
-- `.progress-meta`: `grid-column: 1 / -1; display: flex; justify-content: space-between;
-  font-size: var(--font-size-sm)`
+- `.progress-detail`:
+  `font-size: var(--font-size-sm); color: var(--color-text-secondary); font-variant-numeric: tabular-nums; text-align: right`
+- `.progress-meta`: `grid-column: 1 / -1; display: flex; justify-content: space-between; font-size: var(--font-size-sm)`
 - `.progress-speed`: `color: var(--color-text-secondary); font-variant-numeric: tabular-nums`
 - `.progress-eta`: `color: var(--color-text-tertiary)`
 - Remove old: `.progress-section`, `.progress-bar-container`, `.progress-bar`, `.progress-info`, `.progress-percent`,
@@ -156,9 +159,8 @@ CSS:
 **`apps/desktop/src/lib/ui/CLAUDE.md`** — add ProgressBar section following the existing format (see ProgressOverlay
 section for the pattern). Props table with types and notes. Mention consumers (ProgressOverlay, TransferProgressDialog).
 
-**`apps/desktop/src/lib/file-operations/CLAUDE.md`** — in the TransferProgressDialog bullet, update
-"Progress bar with ETA, speed (MB/s), current file" → "Dual progress bars (size + file count) with speed, ETA, current
-file"
+**`apps/desktop/src/lib/file-operations/CLAUDE.md`** — in the TransferProgressDialog bullet, update "Progress bar with
+ETA, speed (MB/s), current file" → "Dual progress bars (size + file count) with speed, ETA, current file"
 
 ### Step 5: Checks
 

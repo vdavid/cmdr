@@ -18,6 +18,7 @@ GET /api/report?range=7d
 Accepts `range` query param: `24h`, `7d` (default), `30d`.
 
 The report includes:
+
 - **Awareness**: page views, visitors, referrers (with percentages and deltas vs prior period)
 - **Interest**: product page views, bounce rate, download button clicks, top pages, visitors by country
 - **Download**: totals by version, architecture, and country; daily breakdown; cross-breakdowns (country × architecture,

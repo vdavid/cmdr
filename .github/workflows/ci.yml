@@ -1,463 +1,463 @@
 name: CI
 
 on:
-    workflow_dispatch:
-      inputs:
-        run_all:
-          description: 'Run all checks (bypass change detection)'
-          type: boolean
-          default: true
-    pull_request:
-    push:
-      branches:
-        - main
+  workflow_dispatch:
+    inputs:
+      run_all:
+        description: 'Run all checks (bypass change detection)'
+        type: boolean
+        default: true
+  pull_request:
+  push:
+    branches:
+      - main
 jobs:
-    # ===========================================
-    # Determine which jobs to run based on changed files
-    # ===========================================
-    changes:
-        name: Detect changes
-        runs-on: ubuntu-latest
-        outputs:
-            rust: ${{ steps.filter.outputs.rust }}
-            svelte: ${{ steps.filter.outputs.svelte }}
-            desktop: ${{ steps.filter.outputs.desktop }}
-            website: ${{ steps.filter.outputs.website }}
-            api-server: ${{ steps.filter.outputs.api-server }}
-            scripts: ${{ steps.filter.outputs.scripts }}
-            packages: ${{ steps.filter.outputs.packages }}
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
-            - name: Detect file changes
-              uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
-              id: filter
-              with:
-                  filters: |
-                      rust:
-                        - 'apps/desktop/src-tauri/**'
-                      svelte:
-                        - 'apps/desktop/src/**'
-                        - 'apps/desktop/static/**'
-                        - 'apps/desktop/package.json'
-                        - 'apps/desktop/pnpm-lock.yaml'
-                        - 'apps/desktop/svelte.config.js'
-                        - 'apps/desktop/vite.config.ts'
-                        - 'apps/desktop/tsconfig.json'
-                        - 'apps/desktop/tailwind.config.ts'
-                      desktop:
-                        - 'apps/desktop/**'
-                      website:
-                        - 'apps/website/**'
-                        - '.dockerignore'
-                        - 'CHANGELOG.md'
-                      api-server:
-                        - 'apps/api-server/**'
-                      scripts:
-                        - 'scripts/**'
-                      packages:
-                        - '**/package.json'
-                        - '**/pnpm-lock.yaml'
-
-    # ===========================================
-    # Desktop app - Rust backend
-    # ===========================================
-    desktop-rust:
-        name: Desktop (Rust)
-        runs-on: ubuntu-latest
-        needs: changes
-        if: inputs.run_all || needs.changes.outputs.rust == 'true'
-
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
-            - name: Install mise
-              uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
-
-            - name: Install tools with mise
-              run: mise install
-
-            - name: Cache Cargo
-              uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-              with:
-                  path: ~/.cargo/registry/cache
-                  key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
-                  restore-keys: |
-                      ${{ runner.os }}-cargo-
-
-            - name: Install Tauri dependencies (Linux)
-              run: |
-                  sudo apt-get update
-                  sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev
-
-            - name: Build check tool
-              run: go build -o check .
-              working-directory: ./scripts/check
-
-            - name: Check rustfmt
-              run: ./scripts/check/check --check desktop-rust-rustfmt --ci
-
-            - name: Run clippy
-              run: ./scripts/check/check --check desktop-rust-clippy --ci
-
-            - name: Run jscpd
-              run: ./scripts/check/check --check desktop-rust-jscpd --ci
-
-            - name: Check cfg-gate
-              run: ./scripts/check/check --check desktop-rust-cfg-gate --ci
-
-            - name: Run Rust tests
-              run: ./scripts/check/check --check desktop-rust-tests --ci
-
-    # ===========================================
-    # Desktop app - Svelte frontend
-    # ===========================================
-    desktop-svelte:
-        name: Desktop (Svelte)
-        runs-on: ubuntu-latest
-        needs: changes
-        if: inputs.run_all || needs.changes.outputs.svelte == 'true'
-
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
-            - name: Install mise
-              uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
-
-            - name: Install tools with mise
-              run: mise install
-
-            - name: Cache pnpm
-              uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-              with:
-                  path: ~/.pnpm-store
-                  key: ${{ runner.os }}-pnpm-desktop-${{ hashFiles('apps/desktop/pnpm-lock.yaml') }}
-                  restore-keys: |
-                      ${{ runner.os }}-pnpm-desktop-
-
-            - name: Install dependencies
-              run: pnpm install --frozen-lockfile
-              working-directory: ./apps/desktop
-
-            - name: Generate SvelteKit types
-              run: pnpm exec svelte-kit sync
-              working-directory: ./apps/desktop
-
-            - name: Build check tool
-              run: go build -o check .
-              working-directory: ./scripts/check
-
-            - name: Check Prettier
-              run: ./scripts/check/check --check desktop-svelte-prettier --ci
-
-            - name: Run ESLint
-              run: ./scripts/check/check --check desktop-svelte-eslint --ci
-
-            - name: Run Stylelint
-              run: ./scripts/check/check --check desktop-svelte-stylelint --ci
-
-            - name: Check unused CSS
-              run: ./scripts/check/check --check desktop-svelte-css-unused --ci
-
-            - name: Run svelte-check
-              run: ./scripts/check/check --check desktop-svelte-check --ci
-
-            - name: Run Knip
-              run: ./scripts/check/check --check desktop-svelte-knip --ci
-
-            - name: Check type drift
-              run: ./scripts/check/check --check desktop-svelte-type-drift --ci
-
-            - name: Run Svelte tests
-              run: ./scripts/check/check --check desktop-svelte-tests --ci
-
-    # ===========================================
-    # Desktop app - Tauri E2E (Linux)
-    # ===========================================
-    desktop-e2e-linux:
-        name: Desktop E2E (Linux)
-        runs-on: ubuntu-latest
-        needs: [changes, desktop-rust, desktop-svelte]
-        if: |
-            always() &&
-            (inputs.run_all || needs.changes.outputs.desktop == 'true') &&
-            !contains(needs.*.result, 'failure') &&
-            !contains(needs.*.result, 'cancelled')
-
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
-            - name: Install mise
-              uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
-
-            - name: Install tools with mise
-              run: mise install
-
-            - name: Cache Cargo
-              uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-              with:
-                  path: |
-                      ~/.cargo/registry/cache
-                      target
-                  key: ${{ runner.os }}-cargo-e2e-${{ hashFiles('Cargo.lock') }}
-                  restore-keys: |
-                      ${{ runner.os }}-cargo-e2e-
-                      ${{ runner.os }}-cargo-
-
-            - name: Cache pnpm
-              uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-              with:
-                  path: ~/.pnpm-store
-                  key: ${{ runner.os }}-pnpm-desktop-${{ hashFiles('apps/desktop/pnpm-lock.yaml') }}
-                  restore-keys: |
-                      ${{ runner.os }}-pnpm-desktop-
-
-            - name: Install Tauri dependencies
-              run: |
-                  sudo apt-get update
-                  sudo apt-get install -y \
-                      libwebkit2gtk-4.1-dev \
-                      libayatana-appindicator3-dev \
-                      librsvg2-dev \
-                      patchelf \
-                      libacl1-dev \
-                      webkit2gtk-driver \
-                      xvfb \
-                      dbus-x11
-
-            - name: Install dependencies
-              run: pnpm install --frozen-lockfile
-              working-directory: ./apps/desktop
-
-            - name: Install tauri-driver
-              run: cargo install tauri-driver --locked
-
-            - name: Build Tauri app
-              run: pnpm tauri build --no-bundle
-              working-directory: ./apps/desktop
-
-            - name: Run Tauri E2E tests
-              run: xvfb-run --auto-servernum dbus-run-session -- pnpm test:e2e:linux:native
-              working-directory: ./apps/desktop
-              env:
-                  TAURI_BINARY: ../../target/release/Cmdr
-
-            - name: Upload E2E screenshots on failure
-              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-              if: failure()
-              with:
-                  name: e2e-screenshots
-                  path: apps/desktop/test-results/
-                  retention-days: 7
-
-    # ===========================================
-    # Website
-    # ===========================================
-    website:
-        name: Website
-        runs-on: ubuntu-latest
-        needs: changes
-        if: inputs.run_all || needs.changes.outputs.website == 'true'
-
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
-            - name: Install mise
-              uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
-
-            - name: Install tools with mise
-              run: mise install
-
-            - name: Cache pnpm
-              uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-              with:
-                  path: ~/.pnpm-store
-                  key: ${{ runner.os }}-pnpm-website-${{ hashFiles('apps/website/pnpm-lock.yaml') }}
-                  restore-keys: |
-                      ${{ runner.os }}-pnpm-website-
-
-            - name: Install dependencies
-              run: pnpm install --frozen-lockfile
-              working-directory: ./apps/website
-
-            - name: Build check tool
-              run: go build -o check .
-              working-directory: ./scripts/check
-
-            - name: Check Prettier
-              run: ./scripts/check/check --check website-prettier --ci
-
-            - name: Run ESLint
-              run: ./scripts/check/check --check website-eslint --ci
-
-            - name: Run typecheck
-              run: ./scripts/check/check --check website-typecheck --ci
-
-            - name: Build website
-              run: ./scripts/check/check --check website-build --ci
-
-            - name: Install Playwright browsers
-              run: pnpm exec playwright install --with-deps chromium
-              working-directory: ./apps/website
-
-            - name: Run E2E tests
-              run: ./scripts/check/check --check website-e2e --ci
-
-            - name: Run Lighthouse CI
-              run: pnpm test:lighthouse
-              working-directory: ./apps/website
-              env:
-                  LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-
-            - name: Upload Lighthouse report
-              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-              if: always()
-              with:
-                  name: lighthouse-report
-                  path: apps/website/.lighthouseci/
-                  retention-days: 7
-
-    # ===========================================
-    # API server
-    # ===========================================
-    api-server:
-        name: API server
-        runs-on: ubuntu-latest
-        needs: changes
-        if: inputs.run_all || needs.changes.outputs.api-server == 'true'
-
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
-            - name: Install mise
-              uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
-
-            - name: Install tools with mise
-              run: mise install
-
-            - name: Cache pnpm
-              uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-              with:
-                  path: ~/.pnpm-store
-                  key: ${{ runner.os }}-pnpm-api-server-${{ hashFiles('apps/api-server/pnpm-lock.yaml') }}
-                  restore-keys: |
-                      ${{ runner.os }}-pnpm-api-server-
-
-            - name: Install dependencies
-              run: pnpm install --frozen-lockfile
-              working-directory: ./apps/api-server
-
-            - name: Build check tool
-              run: go build -o check .
-              working-directory: ./scripts/check
-
-            - name: Check Prettier
-              run: ./scripts/check/check --check api-server-prettier --ci
-
-            - name: Run ESLint
-              run: ./scripts/check/check --check api-server-eslint --ci
-
-            - name: Run typecheck
-              run: ./scripts/check/check --check api-server-typecheck --ci
-
-            - name: Run tests
-              run: ./scripts/check/check --check api-server-tests --ci
-
-    # ===========================================
-    # Scripts (Go checks)
-    # ===========================================
-    scripts:
-        name: Scripts (Go)
-        runs-on: ubuntu-latest
-        needs: changes
-        if: inputs.run_all || needs.changes.outputs.scripts == 'true'
-
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
-            - name: Install mise
-              uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
-
-            - name: Install tools with mise
-              run: mise install
-
-            - name: Build check tool
-              run: go build -o check .
-              working-directory: ./scripts/check
-
-            - name: Check gofmt
-              run: ./scripts/check/check --check scripts-go-gofmt --ci
-
-            - name: Run go vet
-              run: ./scripts/check/check --check scripts-go-vet --ci
-
-            - name: Run staticcheck
-              run: ./scripts/check/check --check scripts-go-staticcheck --ci
-
-            - name: Run ineffassign
-              run: ./scripts/check/check --check scripts-go-ineffassign --ci
-
-            - name: Run misspell
-              run: ./scripts/check/check --check scripts-go-misspell --ci
-
-            - name: Run gocyclo
-              run: ./scripts/check/check --check scripts-go-gocyclo --ci
-
-            - name: Run nilaway
-              run: ./scripts/check/check --check scripts-go-nilaway --ci
-
-            - name: Run deadcode
-              run: ./scripts/check/check --check scripts-go-deadcode --ci
-
-            - name: Run Go tests
-              run: ./scripts/check/check --check scripts-go-tests --ci
-
-    # ===========================================
-    # Website deployment
-    # ===========================================
-    deploy-website:
-        name: Deploy website
-        runs-on: ubuntu-latest
-        needs: website
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-        steps:
-            - name: Trigger deploy webhook
-              run: |
-                  # Compute HMAC-SHA256 signature
-                  PAYLOAD='{}'
-                  SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "${{ secrets.DEPLOY_WEBHOOK_SECRET }}" | cut -d' ' -f2)
-
-                  # Send signed request to webhook
-                  curl -f -X POST https://getcmdr.com/hooks/deploy-website \
-                    -H "Content-Type: application/json" \
-                    -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
-                    -d "$PAYLOAD"
-
-    # ===========================================
-    # Summary job for branch protection
-    # ===========================================
-    ci-ok:
-        name: CI OK
-        runs-on: ubuntu-latest
-        needs: [desktop-rust, desktop-svelte, desktop-e2e-linux, website, api-server, scripts]
+  # ===========================================
+  # Determine which jobs to run based on changed files
+  # ===========================================
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      rust: ${{ steps.filter.outputs.rust }}
+      svelte: ${{ steps.filter.outputs.svelte }}
+      desktop: ${{ steps.filter.outputs.desktop }}
+      website: ${{ steps.filter.outputs.website }}
+      api-server: ${{ steps.filter.outputs.api-server }}
+      scripts: ${{ steps.filter.outputs.scripts }}
+      packages: ${{ steps.filter.outputs.packages }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
+        id: filter
+        with:
+          filters: |
+            rust:
+              - 'apps/desktop/src-tauri/**'
+            svelte:
+              - 'apps/desktop/src/**'
+              - 'apps/desktop/static/**'
+              - 'apps/desktop/package.json'
+              - 'apps/desktop/pnpm-lock.yaml'
+              - 'apps/desktop/svelte.config.js'
+              - 'apps/desktop/vite.config.ts'
+              - 'apps/desktop/tsconfig.json'
+              - 'apps/desktop/tailwind.config.ts'
+            desktop:
+              - 'apps/desktop/**'
+            website:
+              - 'apps/website/**'
+              - '.dockerignore'
+              - 'CHANGELOG.md'
+            api-server:
+              - 'apps/api-server/**'
+            scripts:
+              - 'scripts/**'
+            packages:
+              - '**/package.json'
+              - '**/pnpm-lock.yaml'
+
+  # ===========================================
+  # Desktop app - Rust backend
+  # ===========================================
+  desktop-rust:
+    name: Desktop (Rust)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: inputs.run_all || needs.changes.outputs.rust == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install mise
+        uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Cache Cargo
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cargo/registry/cache
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install Tauri dependencies (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Check rustfmt
+        run: ./scripts/check/check --check desktop-rust-rustfmt --ci
+
+      - name: Run clippy
+        run: ./scripts/check/check --check desktop-rust-clippy --ci
+
+      - name: Run jscpd
+        run: ./scripts/check/check --check desktop-rust-jscpd --ci
+
+      - name: Check cfg-gate
+        run: ./scripts/check/check --check desktop-rust-cfg-gate --ci
+
+      - name: Run Rust tests
+        run: ./scripts/check/check --check desktop-rust-tests --ci
+
+  # ===========================================
+  # Desktop app - Svelte frontend
+  # ===========================================
+  desktop-svelte:
+    name: Desktop (Svelte)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: inputs.run_all || needs.changes.outputs.svelte == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install mise
+        uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Cache pnpm
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-desktop-${{ hashFiles('apps/desktop/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-desktop-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ./apps/desktop
+
+      - name: Generate SvelteKit types
+        run: pnpm exec svelte-kit sync
+        working-directory: ./apps/desktop
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Check Prettier
+        run: ./scripts/check/check --check desktop-svelte-prettier --ci
+
+      - name: Run ESLint
+        run: ./scripts/check/check --check desktop-svelte-eslint --ci
+
+      - name: Run Stylelint
+        run: ./scripts/check/check --check desktop-svelte-stylelint --ci
+
+      - name: Check unused CSS
+        run: ./scripts/check/check --check desktop-svelte-css-unused --ci
+
+      - name: Run svelte-check
+        run: ./scripts/check/check --check desktop-svelte-check --ci
+
+      - name: Run Knip
+        run: ./scripts/check/check --check desktop-svelte-knip --ci
+
+      - name: Check type drift
+        run: ./scripts/check/check --check desktop-svelte-type-drift --ci
+
+      - name: Run Svelte tests
+        run: ./scripts/check/check --check desktop-svelte-tests --ci
+
+  # ===========================================
+  # Desktop app - Tauri E2E (Linux)
+  # ===========================================
+  desktop-e2e-linux:
+    name: Desktop E2E (Linux)
+    runs-on: ubuntu-latest
+    needs: [changes, desktop-rust, desktop-svelte]
+    if: |
+      always() &&
+      (inputs.run_all || needs.changes.outputs.desktop == 'true') &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install mise
+        uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Cache Cargo
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/.cargo/registry/cache
+            target
+          key: ${{ runner.os }}-cargo-e2e-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-e2e-
+            ${{ runner.os }}-cargo-
+
+      - name: Cache pnpm
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-desktop-${{ hashFiles('apps/desktop/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-desktop-
+
+      - name: Install Tauri dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+              libwebkit2gtk-4.1-dev \
+              libayatana-appindicator3-dev \
+              librsvg2-dev \
+              patchelf \
+              libacl1-dev \
+              webkit2gtk-driver \
+              xvfb \
+              dbus-x11
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ./apps/desktop
+
+      - name: Install tauri-driver
+        run: cargo install tauri-driver --locked
+
+      - name: Build Tauri app
+        run: pnpm tauri build --no-bundle
+        working-directory: ./apps/desktop
+
+      - name: Run Tauri E2E tests
+        run: xvfb-run --auto-servernum dbus-run-session -- pnpm test:e2e:linux:native
+        working-directory: ./apps/desktop
+        env:
+          TAURI_BINARY: ../../target/release/Cmdr
+
+      - name: Upload E2E screenshots on failure
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: failure()
+        with:
+          name: e2e-screenshots
+          path: apps/desktop/test-results/
+          retention-days: 7
+
+  # ===========================================
+  # Website
+  # ===========================================
+  website:
+    name: Website
+    runs-on: ubuntu-latest
+    needs: changes
+    if: inputs.run_all || needs.changes.outputs.website == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install mise
+        uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Cache pnpm
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-website-${{ hashFiles('apps/website/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-website-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ./apps/website
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Check Prettier
+        run: ./scripts/check/check --check website-prettier --ci
+
+      - name: Run ESLint
+        run: ./scripts/check/check --check website-eslint --ci
+
+      - name: Run typecheck
+        run: ./scripts/check/check --check website-typecheck --ci
+
+      - name: Build website
+        run: ./scripts/check/check --check website-build --ci
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+        working-directory: ./apps/website
+
+      - name: Run E2E tests
+        run: ./scripts/check/check --check website-e2e --ci
+
+      - name: Run Lighthouse CI
+        run: pnpm test:lighthouse
+        working-directory: ./apps/website
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Upload Lighthouse report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
-        steps:
-            - name: Check all jobs passed
-              run: |
-                  if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
-                    echo "Some jobs failed"
-                    exit 1
-                  fi
-                  if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
-                    echo "Some jobs were cancelled"
-                    exit 1
-                  fi
-                  echo "All jobs passed or were skipped"
+        with:
+          name: lighthouse-report
+          path: apps/website/.lighthouseci/
+          retention-days: 7
+
+  # ===========================================
+  # API server
+  # ===========================================
+  api-server:
+    name: API server
+    runs-on: ubuntu-latest
+    needs: changes
+    if: inputs.run_all || needs.changes.outputs.api-server == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install mise
+        uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Cache pnpm
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-api-server-${{ hashFiles('apps/api-server/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-api-server-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ./apps/api-server
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Check Prettier
+        run: ./scripts/check/check --check api-server-prettier --ci
+
+      - name: Run ESLint
+        run: ./scripts/check/check --check api-server-eslint --ci
+
+      - name: Run typecheck
+        run: ./scripts/check/check --check api-server-typecheck --ci
+
+      - name: Run tests
+        run: ./scripts/check/check --check api-server-tests --ci
+
+  # ===========================================
+  # Scripts (Go checks)
+  # ===========================================
+  scripts:
+    name: Scripts (Go)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: inputs.run_all || needs.changes.outputs.scripts == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install mise
+        uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Check gofmt
+        run: ./scripts/check/check --check scripts-go-gofmt --ci
+
+      - name: Run go vet
+        run: ./scripts/check/check --check scripts-go-vet --ci
+
+      - name: Run staticcheck
+        run: ./scripts/check/check --check scripts-go-staticcheck --ci
+
+      - name: Run ineffassign
+        run: ./scripts/check/check --check scripts-go-ineffassign --ci
+
+      - name: Run misspell
+        run: ./scripts/check/check --check scripts-go-misspell --ci
+
+      - name: Run gocyclo
+        run: ./scripts/check/check --check scripts-go-gocyclo --ci
+
+      - name: Run nilaway
+        run: ./scripts/check/check --check scripts-go-nilaway --ci
+
+      - name: Run deadcode
+        run: ./scripts/check/check --check scripts-go-deadcode --ci
+
+      - name: Run Go tests
+        run: ./scripts/check/check --check scripts-go-tests --ci
+
+  # ===========================================
+  # Website deployment
+  # ===========================================
+  deploy-website:
+    name: Deploy website
+    runs-on: ubuntu-latest
+    needs: website
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Trigger deploy webhook
+        run: |
+          # Compute HMAC-SHA256 signature
+          PAYLOAD='{}'
+          SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "${{ secrets.DEPLOY_WEBHOOK_SECRET }}" | cut -d' ' -f2)
+
+          # Send signed request to webhook
+          curl -f -X POST https://getcmdr.com/hooks/deploy-website \
+            -H "Content-Type: application/json" \
+            -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
+            -d "$PAYLOAD"
+
+  # ===========================================
+  # Summary job for branch protection
+  # ===========================================
+  ci-ok:
+    name: CI OK
+    runs-on: ubuntu-latest
+    needs: [desktop-rust, desktop-svelte, desktop-e2e-linux, website, api-server, scripts]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+            echo "Some jobs failed"
+            exit 1
+          fi
+          if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "Some jobs were cancelled"
+            exit 1
+          fi
+          echo "All jobs passed or were skipped"

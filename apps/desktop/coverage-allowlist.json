@@ -1,246 +1,246 @@
 {
-    "$comment": "Files listed here are exempt from coverage thresholds. Each entry should include a reason. Remove entries as you add tests.",
-    "files": {
-        "accent-color.ts": { "reason": "Depends on Tauri invoke and listen APIs" },
-        "commands/command-registry.ts": {
-            "reason": "95% static command definitions; filtering validated by fuzzy-search tests"
-        },
-        "ui/AlertDialog.svelte": { "reason": "Simple UI modal for informational messages" },
-        "ui/CommandBox.svelte": { "reason": "Simple UI component, clipboard + 2s timeout" },
-        "ui/dialog-registry.ts": { "reason": "Pure constant and type definition, no logic to test" },
-        "ui/ModalDialog.svelte": { "reason": "Shared modal dialog wrapper, depends on DOM APIs and Tauri commands" },
-        "updates/UpdateToastContent.svelte": { "reason": "UI component, toast content for update prompt" },
-        "app-status-store.ts": { "reason": "Depends on Tauri APIs" },
-        "benchmark.ts": { "reason": "Dev tooling, not critical path" },
-        "file-explorer/drag/drag-drop.ts": { "reason": "Needs integration testing with Tauri" },
-        "file-explorer/drag/drag-image-renderer.ts": { "reason": "Canvas API dependent, pure logic tested separately" },
-        "file-explorer/drag/DragOverlay.svelte": {
-            "reason": "UI overlay component, state tested in drag-overlay tests"
-        },
-        "file-explorer/drag/drag-overlay.svelte.ts": {
-            "reason": "Reactive Svelte state, pure logic tested in drag-overlay tests"
-        },
-        "file-explorer/modifier-key-tracker.svelte.ts": {
-            "reason": "Document event listeners, reactive Svelte state"
-        },
-        "file-explorer/views/BriefList.svelte": {
-            "reason": "Logic tested in brief-list-utils.ts, component mounting heavy"
-        },
-        "file-explorer/pane/DialogManager.svelte": {
-            "reason": "Pure rendering component, dialog state tested via parent"
-        },
-        "file-explorer/pane/DualPaneExplorer.svelte": { "reason": "Tested in integration.test.ts, complex component" },
-        "file-operations/mkdir/new-folder-operations.ts": { "reason": "Depends on FilePane refs and Tauri listen API" },
-        "file-explorer/pane/sorting-handlers.ts": {
-            "reason": "applySortResult/collectSortState depend on FilePane refs; index functions tested"
-        },
-        "file-explorer/selection/FileIcon.svelte": { "reason": "Simple UI component, display only" },
-        "file-explorer/pane/FilePane.svelte": { "reason": "Tested in integration.test.ts, complex component" },
-        "file-explorer/pane/MtpConnectionView.svelte": { "reason": "MTP connection UI, depends on Tauri APIs" },
-        "file-explorer/pane/NetworkMountView.svelte": { "reason": "Network mount UI, depends on Tauri APIs" },
-        "file-explorer/pane/rename-flow.svelte.ts": {
-            "reason": "Extracted from FilePane, depends on Tauri commands and rename operations"
-        },
-        "file-explorer/views/FullList.svelte": {
-            "reason": "Logic tested in full-list-utils.ts, component mounting heavy"
-        },
-        "file-explorer/views/full-list-utils.ts": {
-            "reason": "measureDateColumnWidth depends on Canvas API for text measurement"
-        },
-        "file-operations/mkfile/NewFileDialog.svelte": {
-            "reason": "UI modal, logic tested in new-file-operations.test.ts and filename-validation.test.ts"
-        },
-        "file-operations/mkdir/NewFolderDialog.svelte": {
-            "reason": "UI modal, logic tested in new-folder-utils.test.ts"
-        },
-        "file-explorer/network/NetworkBrowser.svelte": { "reason": "Network component, needs Tauri integration" },
-        "file-explorer/pane/PaneResizer.svelte": { "reason": "Mouse drag UI component, difficult to unit test" },
-        "file-explorer/network/NetworkLoginForm.svelte": { "reason": "Network component, needs Tauri integration" },
-        "file-explorer/pane/PermissionDeniedPane.svelte": { "reason": "Simple UI component" },
-        "file-explorer/pane/VolumeUnreachableBanner.svelte": {
-            "reason": "UI banner component, depends on Tauri commands"
-        },
-        "file-explorer/selection/SelectionInfo.svelte": {
-            "reason": "Logic tested in selection-info-utils.ts, DOM-dependent"
-        },
-        "file-explorer/network/ShareBrowser.svelte": { "reason": "Network component, needs integration tests" },
-        "file-explorer/selection/SortableHeader.svelte": { "reason": "Simple UI component, display only" },
-        "file-viewer/open-viewer.ts": { "reason": "Depends on Tauri WebviewWindow API" },
-        "font-metrics/measure.ts": { "reason": "Depends on DOM APIs" },
-        "icon-cache.ts": { "reason": "Depends on Tauri APIs" },
-        "licensing/licensing-store.svelte.ts": { "reason": "Depends on Tauri store APIs" },
-        "logging/logger.ts": { "reason": "LogTape config, initialization code only" },
-        "mtp/MtpPermissionDialog.svelte": { "reason": "UI modal for Linux MTP udev rules" },
-        "mtp/PtpcameradDialog.svelte": { "reason": "UI modal for macOS MTP workaround" },
-        "mtp/mtp-store.svelte.ts": { "reason": "Depends on Tauri APIs, tests planned in Phase 6" },
-        "licensing/AboutWindow.svelte": { "reason": "UI component" },
-        "licensing/CommercialReminderModal.svelte": { "reason": "UI component" },
-        "licensing/ExpirationModal.svelte": { "reason": "UI component" },
-        "licensing/LicenseKeyDialog.svelte": { "reason": "UI modal, depends on Tauri commands" },
-        "file-explorer/network/network-store.svelte.ts": { "reason": "Depends on Tauri APIs" },
-        "onboarding/FullDiskAccessPrompt.svelte": { "reason": "UI component" },
-        "settings-store.ts": { "reason": "Depends on Tauri store APIs" },
-        "settings/components/SettingNumberInput.svelte": { "reason": "UI component, logic is simple" },
-        "settings/components/SettingRadioGroup.svelte": { "reason": "UI component, logic is simple" },
-        "settings/components/SectionSummary.svelte": { "reason": "UI component, simple navigation cards" },
-        "settings/reactive-settings.svelte.ts": { "reason": "Svelte reactive state, depends on settings store" },
-        "settings/settings-applier.ts": { "reason": "Depends on DOM APIs (document.documentElement.style)" },
-        "settings/components/SettingRow.svelte": { "reason": "UI component, layout only" },
-        "settings/components/SettingSelect.svelte": { "reason": "UI component, logic is simple" },
-        "settings/components/SettingSlider.svelte": { "reason": "UI component, logic is simple" },
-        "settings/components/SettingSwitch.svelte": { "reason": "UI component, logic is simple" },
-        "settings/components/SettingToggleGroup.svelte": { "reason": "UI component, logic is simple" },
-        "settings/components/SettingsContent.svelte": { "reason": "UI layout component" },
-        "settings/components/SettingsSection.svelte": { "reason": "UI layout component, no logic" },
-        "settings/components/SettingsSidebar.svelte": { "reason": "UI component, search logic tested via registry" },
-        "settings/sections/AdvancedSection.svelte": { "reason": "UI section, depends on Tauri APIs" },
-        "settings/sections/AppearanceSection.svelte": { "reason": "UI section, simple rendering" },
-        "settings/sections/FileOperationsSection.svelte": { "reason": "UI section, simple rendering" },
-        "settings/sections/KeyboardShortcutsSection.svelte": {
-            "reason": "UI section, logic tested in shortcuts/*.test.ts"
-        },
-        "settings/sections/LicenseSection.svelte": {
-            "reason": "UI section, pure logic extracted to license-section-utils.ts and tested"
-        },
-        "settings/sections/LoggingSection.svelte": { "reason": "UI section, simple rendering" },
-        "settings/mcp-main-bridge.ts": { "reason": "MCP bridge, depends on Tauri event APIs (listen/emit)" },
-        "settings/mcp-settings-bridge.ts": { "reason": "MCP bridge, depends on Tauri APIs and events" },
-        "settings/sections/McpServerSection.svelte": { "reason": "UI section, depends on Tauri APIs" },
-        "settings/sections/NetworkSection.svelte": { "reason": "UI section, simple rendering" },
-        "settings/sections/ThemesSection.svelte": { "reason": "UI section, simple rendering" },
-        "settings/sections/DriveIndexingSection.svelte": { "reason": "UI section, depends on Tauri invoke" },
-        "settings/sections/ListingSection.svelte": { "reason": "UI section, simple rendering" },
-        "settings/sections/UpdatesSection.svelte": { "reason": "UI section, simple rendering" },
-        "settings/settings-store.ts": { "reason": "Depends on Tauri store APIs" },
-        "settings/settings-window.ts": { "reason": "Depends on Tauri window APIs" },
-        "shortcuts/mcp-shortcuts-listener.ts": { "reason": "MCP listener, depends on Tauri events" },
-        "shortcuts/keyboard-handler.ts": { "reason": "DOM event handling, tested via integration" },
-        "shortcuts/shortcuts-store.ts": { "reason": "Depends on Tauri store APIs" },
-        "tauri-commands.ts": { "reason": "Re-exports from tauri-commands/, tested via integration" },
-        "tauri-commands/app-state.ts": { "reason": "Tauri command wrappers, tested via integration" },
-        "tauri-commands/file-actions.ts": { "reason": "Tauri command wrappers, tested via integration" },
-        "tauri-commands/file-listing.ts": { "reason": "Tauri command wrappers, tested via integration" },
-        "tauri-commands/icons.ts": { "reason": "Tauri command wrappers, tested via integration" },
-        "tauri-commands/file-viewer.ts": { "reason": "Tauri command wrappers, tested via integration" },
-        "tauri-commands/licensing.ts": { "reason": "Tauri command wrappers, tested via integration" },
-        "tauri-commands/mtp.ts": { "reason": "Tauri command wrappers, tested via integration" },
-        "tauri-commands/networking.ts": { "reason": "Tauri command wrappers, tested via integration" },
-        "tauri-commands/settings.ts": { "reason": "Tauri command wrappers, tested via integration" },
-        "tauri-commands/storage.ts": { "reason": "Tauri command wrappers, tested via integration" },
-        "tauri-commands/write-operations.ts": { "reason": "Tauri command wrappers, tested via integration" },
-        "utils/confirm-dialog.ts": { "reason": "Thin wrapper over Tauri dialog API" },
-        "updates/updater.svelte.ts": { "reason": "Depends on Tauri updater APIs" },
-        "window-state.ts": { "reason": "Depends on Tauri window APIs" },
-        "file-operations/transfer/TransferDialog.svelte": {
-            "reason": "UI modal, logic tested in transfer-dialog-utils.test.ts"
-        },
-        "file-operations/transfer/DirectionIndicator.svelte": {
-            "reason": "Simple UI component, logic tested in transfer-dialog-utils.test.ts"
-        },
-        "file-operations/transfer/TransferProgressDialog.svelte": { "reason": "UI dialog, depends on Tauri events" },
-        "file-operations/transfer/TransferErrorDialog.svelte": {
-            "reason": "UI modal, logic tested in transfer-error-messages.test.ts"
-        },
-        "file-explorer/rename/ExtensionChangeDialog.svelte": {
-            "reason": "UI modal, logic tested in rename-dialogs.test.ts"
-        },
-        "file-explorer/rename/RenameConflictDialog.svelte": {
-            "reason": "UI modal, logic tested in rename-dialogs.test.ts"
-        },
-        "ui/toast/ToastContainer.svelte": { "reason": "UI component, renders from toast store" },
-        "ui/toast/ToastItem.svelte": { "reason": "UI component, timer and snippet rendering" },
-        "file-explorer/rename/InlineRenameEditor.svelte": {
-            "reason": "UI component, depends on DOM focus/selection APIs"
-        },
-        "file-explorer/rename/rename-state.svelte.ts": {
-            "reason": "Reactive Svelte state, tested in rename-state.test.ts"
-        },
-        "file-explorer/rename/rename-activation.ts": {
-            "reason": "Depends on document event listeners and timers"
-        },
-        "file-explorer/rename/rename-operations.ts": {
-            "reason": "Depends on Tauri commands and FilePane integration"
-        },
-        "tauri-commands/rename.ts": {
-            "reason": "Tauri command wrappers, tested via integration"
-        },
-        "indexing/ScanStatusOverlay.svelte": {
-            "reason": "UI overlay component, depends on Tauri event listeners"
-        },
-        "indexing/index-events.ts": {
-            "reason": "Thin wrapper over Tauri listen API"
-        },
-        "indexing/index-priority.ts": {
-            "reason": "Thin wrapper over Tauri invoke API"
-        },
-        "indexing/index-state.svelte.ts": {
-            "reason": "Reactive Svelte state, depends on Tauri event listeners"
-        },
-        "file-explorer/tabs/TabBar.svelte": {
-            "reason": "UI component, tab interactions tested via DualPaneExplorer integration"
-        },
-        "file-explorer/pane/tab-operations.ts": {
-            "reason": "Extracted from DualPaneExplorer, depends on Tauri commands and confirmDialog"
-        },
-        "tauri-commands/tab.ts": {
-            "reason": "Tauri command wrappers, tested via integration"
-        },
-        "tauri-commands/clipboard-files.ts": {
-            "reason": "Tauri command wrappers, tested via integration"
-        },
-        "file-explorer/navigation/VolumeBreadcrumb.svelte": {
-            "reason": "UI component, depends on Tauri APIs and MTP store"
-        },
-        "file-explorer/pane/dialog-state.svelte.ts": {
-            "reason": "Reactive Svelte state, depends on FilePane refs and Tauri commands"
-        },
-        "tooltip/tooltip.ts": {
-            "reason": "DOM-dependent singleton tooltip, requires document.body and getBoundingClientRect"
-        },
-        "file-operations/delete/DeleteDialog.svelte": {
-            "reason": "UI modal, logic tested in delete-dialog-utils.test.ts"
-        },
-        "settings/components/SettingPasswordInput.svelte": {
-            "reason": "UI component, simple show/hide toggle + settings store wiring"
-        },
-        "settings/sections/AiSection.svelte": {
-            "reason": "UI section, depends on Tauri commands and event listeners"
-        },
-        "search/AiSearchRow.svelte": {
-            "reason": "Search sub-component, UI only, depends on parent orchestration"
-        },
-        "search/SearchDialog.svelte": {
-            "reason": "Search dialog UI, depends on Tauri commands and event listeners"
-        },
-        "search/SearchInputArea.svelte": {
-            "reason": "Search sub-component, UI only, depends on parent orchestration and Tauri tooltip action"
-        },
-        "search/SearchResults.svelte": {
-            "reason": "Search sub-component, UI only, display and formatting"
-        },
-        "tauri-commands/search.ts": {
-            "reason": "Tauri command wrappers, tested via integration"
-        },
-        "indexing/ReplayStatusOverlay.svelte": {
-            "reason": "UI overlay component, depends on Tauri event listeners"
-        },
-        "ui/ProgressOverlay.svelte": {
-            "reason": "Pure UI component, no logic to test beyond rendering"
-        },
-        "crash-reporter/CrashReportDialog.svelte": {
-            "reason": "UI dialog, depends on Tauri commands for send/dismiss"
-        },
-        "crash-reporter/CrashReportToastContent.svelte": {
-            "reason": "UI toast content, depends on Tauri window APIs"
-        },
-        "tauri-commands/crash-reporter.ts": {
-            "reason": "Tauri command wrappers, tested via integration"
-        },
-        "ai/ai-toast-sync.svelte.ts": {
-            "reason": "Svelte $effect reactive sync, depends on Svelte runtime"
-        },
-        "ui/ProgressBar.svelte": {
-            "reason": "Pure UI component, no logic to test beyond rendering"
-        }
+  "$comment": "Files listed here are exempt from coverage thresholds. Each entry should include a reason. Remove entries as you add tests.",
+  "files": {
+    "accent-color.ts": { "reason": "Depends on Tauri invoke and listen APIs" },
+    "commands/command-registry.ts": {
+      "reason": "95% static command definitions; filtering validated by fuzzy-search tests"
+    },
+    "ui/AlertDialog.svelte": { "reason": "Simple UI modal for informational messages" },
+    "ui/CommandBox.svelte": { "reason": "Simple UI component, clipboard + 2s timeout" },
+    "ui/dialog-registry.ts": { "reason": "Pure constant and type definition, no logic to test" },
+    "ui/ModalDialog.svelte": { "reason": "Shared modal dialog wrapper, depends on DOM APIs and Tauri commands" },
+    "updates/UpdateToastContent.svelte": { "reason": "UI component, toast content for update prompt" },
+    "app-status-store.ts": { "reason": "Depends on Tauri APIs" },
+    "benchmark.ts": { "reason": "Dev tooling, not critical path" },
+    "file-explorer/drag/drag-drop.ts": { "reason": "Needs integration testing with Tauri" },
+    "file-explorer/drag/drag-image-renderer.ts": { "reason": "Canvas API dependent, pure logic tested separately" },
+    "file-explorer/drag/DragOverlay.svelte": {
+      "reason": "UI overlay component, state tested in drag-overlay tests"
+    },
+    "file-explorer/drag/drag-overlay.svelte.ts": {
+      "reason": "Reactive Svelte state, pure logic tested in drag-overlay tests"
+    },
+    "file-explorer/modifier-key-tracker.svelte.ts": {
+      "reason": "Document event listeners, reactive Svelte state"
+    },
+    "file-explorer/views/BriefList.svelte": {
+      "reason": "Logic tested in brief-list-utils.ts, component mounting heavy"
+    },
+    "file-explorer/pane/DialogManager.svelte": {
+      "reason": "Pure rendering component, dialog state tested via parent"
+    },
+    "file-explorer/pane/DualPaneExplorer.svelte": { "reason": "Tested in integration.test.ts, complex component" },
+    "file-operations/mkdir/new-folder-operations.ts": { "reason": "Depends on FilePane refs and Tauri listen API" },
+    "file-explorer/pane/sorting-handlers.ts": {
+      "reason": "applySortResult/collectSortState depend on FilePane refs; index functions tested"
+    },
+    "file-explorer/selection/FileIcon.svelte": { "reason": "Simple UI component, display only" },
+    "file-explorer/pane/FilePane.svelte": { "reason": "Tested in integration.test.ts, complex component" },
+    "file-explorer/pane/MtpConnectionView.svelte": { "reason": "MTP connection UI, depends on Tauri APIs" },
+    "file-explorer/pane/NetworkMountView.svelte": { "reason": "Network mount UI, depends on Tauri APIs" },
+    "file-explorer/pane/rename-flow.svelte.ts": {
+      "reason": "Extracted from FilePane, depends on Tauri commands and rename operations"
+    },
+    "file-explorer/views/FullList.svelte": {
+      "reason": "Logic tested in full-list-utils.ts, component mounting heavy"
+    },
+    "file-explorer/views/full-list-utils.ts": {
+      "reason": "measureDateColumnWidth depends on Canvas API for text measurement"
+    },
+    "file-operations/mkfile/NewFileDialog.svelte": {
+      "reason": "UI modal, logic tested in new-file-operations.test.ts and filename-validation.test.ts"
+    },
+    "file-operations/mkdir/NewFolderDialog.svelte": {
+      "reason": "UI modal, logic tested in new-folder-utils.test.ts"
+    },
+    "file-explorer/network/NetworkBrowser.svelte": { "reason": "Network component, needs Tauri integration" },
+    "file-explorer/pane/PaneResizer.svelte": { "reason": "Mouse drag UI component, difficult to unit test" },
+    "file-explorer/network/NetworkLoginForm.svelte": { "reason": "Network component, needs Tauri integration" },
+    "file-explorer/pane/PermissionDeniedPane.svelte": { "reason": "Simple UI component" },
+    "file-explorer/pane/VolumeUnreachableBanner.svelte": {
+      "reason": "UI banner component, depends on Tauri commands"
+    },
+    "file-explorer/selection/SelectionInfo.svelte": {
+      "reason": "Logic tested in selection-info-utils.ts, DOM-dependent"
+    },
+    "file-explorer/network/ShareBrowser.svelte": { "reason": "Network component, needs integration tests" },
+    "file-explorer/selection/SortableHeader.svelte": { "reason": "Simple UI component, display only" },
+    "file-viewer/open-viewer.ts": { "reason": "Depends on Tauri WebviewWindow API" },
+    "font-metrics/measure.ts": { "reason": "Depends on DOM APIs" },
+    "icon-cache.ts": { "reason": "Depends on Tauri APIs" },
+    "licensing/licensing-store.svelte.ts": { "reason": "Depends on Tauri store APIs" },
+    "logging/logger.ts": { "reason": "LogTape config, initialization code only" },
+    "mtp/MtpPermissionDialog.svelte": { "reason": "UI modal for Linux MTP udev rules" },
+    "mtp/PtpcameradDialog.svelte": { "reason": "UI modal for macOS MTP workaround" },
+    "mtp/mtp-store.svelte.ts": { "reason": "Depends on Tauri APIs, tests planned in Phase 6" },
+    "licensing/AboutWindow.svelte": { "reason": "UI component" },
+    "licensing/CommercialReminderModal.svelte": { "reason": "UI component" },
+    "licensing/ExpirationModal.svelte": { "reason": "UI component" },
+    "licensing/LicenseKeyDialog.svelte": { "reason": "UI modal, depends on Tauri commands" },
+    "file-explorer/network/network-store.svelte.ts": { "reason": "Depends on Tauri APIs" },
+    "onboarding/FullDiskAccessPrompt.svelte": { "reason": "UI component" },
+    "settings-store.ts": { "reason": "Depends on Tauri store APIs" },
+    "settings/components/SettingNumberInput.svelte": { "reason": "UI component, logic is simple" },
+    "settings/components/SettingRadioGroup.svelte": { "reason": "UI component, logic is simple" },
+    "settings/components/SectionSummary.svelte": { "reason": "UI component, simple navigation cards" },
+    "settings/reactive-settings.svelte.ts": { "reason": "Svelte reactive state, depends on settings store" },
+    "settings/settings-applier.ts": { "reason": "Depends on DOM APIs (document.documentElement.style)" },
+    "settings/components/SettingRow.svelte": { "reason": "UI component, layout only" },
+    "settings/components/SettingSelect.svelte": { "reason": "UI component, logic is simple" },
+    "settings/components/SettingSlider.svelte": { "reason": "UI component, logic is simple" },
+    "settings/components/SettingSwitch.svelte": { "reason": "UI component, logic is simple" },
+    "settings/components/SettingToggleGroup.svelte": { "reason": "UI component, logic is simple" },
+    "settings/components/SettingsContent.svelte": { "reason": "UI layout component" },
+    "settings/components/SettingsSection.svelte": { "reason": "UI layout component, no logic" },
+    "settings/components/SettingsSidebar.svelte": { "reason": "UI component, search logic tested via registry" },
+    "settings/sections/AdvancedSection.svelte": { "reason": "UI section, depends on Tauri APIs" },
+    "settings/sections/AppearanceSection.svelte": { "reason": "UI section, simple rendering" },
+    "settings/sections/FileOperationsSection.svelte": { "reason": "UI section, simple rendering" },
+    "settings/sections/KeyboardShortcutsSection.svelte": {
+      "reason": "UI section, logic tested in shortcuts/*.test.ts"
+    },
+    "settings/sections/LicenseSection.svelte": {
+      "reason": "UI section, pure logic extracted to license-section-utils.ts and tested"
+    },
+    "settings/sections/LoggingSection.svelte": { "reason": "UI section, simple rendering" },
+    "settings/mcp-main-bridge.ts": { "reason": "MCP bridge, depends on Tauri event APIs (listen/emit)" },
+    "settings/mcp-settings-bridge.ts": { "reason": "MCP bridge, depends on Tauri APIs and events" },
+    "settings/sections/McpServerSection.svelte": { "reason": "UI section, depends on Tauri APIs" },
+    "settings/sections/NetworkSection.svelte": { "reason": "UI section, simple rendering" },
+    "settings/sections/ThemesSection.svelte": { "reason": "UI section, simple rendering" },
+    "settings/sections/DriveIndexingSection.svelte": { "reason": "UI section, depends on Tauri invoke" },
+    "settings/sections/ListingSection.svelte": { "reason": "UI section, simple rendering" },
+    "settings/sections/UpdatesSection.svelte": { "reason": "UI section, simple rendering" },
+    "settings/settings-store.ts": { "reason": "Depends on Tauri store APIs" },
+    "settings/settings-window.ts": { "reason": "Depends on Tauri window APIs" },
+    "shortcuts/mcp-shortcuts-listener.ts": { "reason": "MCP listener, depends on Tauri events" },
+    "shortcuts/keyboard-handler.ts": { "reason": "DOM event handling, tested via integration" },
+    "shortcuts/shortcuts-store.ts": { "reason": "Depends on Tauri store APIs" },
+    "tauri-commands.ts": { "reason": "Re-exports from tauri-commands/, tested via integration" },
+    "tauri-commands/app-state.ts": { "reason": "Tauri command wrappers, tested via integration" },
+    "tauri-commands/file-actions.ts": { "reason": "Tauri command wrappers, tested via integration" },
+    "tauri-commands/file-listing.ts": { "reason": "Tauri command wrappers, tested via integration" },
+    "tauri-commands/icons.ts": { "reason": "Tauri command wrappers, tested via integration" },
+    "tauri-commands/file-viewer.ts": { "reason": "Tauri command wrappers, tested via integration" },
+    "tauri-commands/licensing.ts": { "reason": "Tauri command wrappers, tested via integration" },
+    "tauri-commands/mtp.ts": { "reason": "Tauri command wrappers, tested via integration" },
+    "tauri-commands/networking.ts": { "reason": "Tauri command wrappers, tested via integration" },
+    "tauri-commands/settings.ts": { "reason": "Tauri command wrappers, tested via integration" },
+    "tauri-commands/storage.ts": { "reason": "Tauri command wrappers, tested via integration" },
+    "tauri-commands/write-operations.ts": { "reason": "Tauri command wrappers, tested via integration" },
+    "utils/confirm-dialog.ts": { "reason": "Thin wrapper over Tauri dialog API" },
+    "updates/updater.svelte.ts": { "reason": "Depends on Tauri updater APIs" },
+    "window-state.ts": { "reason": "Depends on Tauri window APIs" },
+    "file-operations/transfer/TransferDialog.svelte": {
+      "reason": "UI modal, logic tested in transfer-dialog-utils.test.ts"
+    },
+    "file-operations/transfer/DirectionIndicator.svelte": {
+      "reason": "Simple UI component, logic tested in transfer-dialog-utils.test.ts"
+    },
+    "file-operations/transfer/TransferProgressDialog.svelte": { "reason": "UI dialog, depends on Tauri events" },
+    "file-operations/transfer/TransferErrorDialog.svelte": {
+      "reason": "UI modal, logic tested in transfer-error-messages.test.ts"
+    },
+    "file-explorer/rename/ExtensionChangeDialog.svelte": {
+      "reason": "UI modal, logic tested in rename-dialogs.test.ts"
+    },
+    "file-explorer/rename/RenameConflictDialog.svelte": {
+      "reason": "UI modal, logic tested in rename-dialogs.test.ts"
+    },
+    "ui/toast/ToastContainer.svelte": { "reason": "UI component, renders from toast store" },
+    "ui/toast/ToastItem.svelte": { "reason": "UI component, timer and snippet rendering" },
+    "file-explorer/rename/InlineRenameEditor.svelte": {
+      "reason": "UI component, depends on DOM focus/selection APIs"
+    },
+    "file-explorer/rename/rename-state.svelte.ts": {
+      "reason": "Reactive Svelte state, tested in rename-state.test.ts"
+    },
+    "file-explorer/rename/rename-activation.ts": {
+      "reason": "Depends on document event listeners and timers"
+    },
+    "file-explorer/rename/rename-operations.ts": {
+      "reason": "Depends on Tauri commands and FilePane integration"
+    },
+    "tauri-commands/rename.ts": {
+      "reason": "Tauri command wrappers, tested via integration"
+    },
+    "indexing/ScanStatusOverlay.svelte": {
+      "reason": "UI overlay component, depends on Tauri event listeners"
+    },
+    "indexing/index-events.ts": {
+      "reason": "Thin wrapper over Tauri listen API"
+    },
+    "indexing/index-priority.ts": {
+      "reason": "Thin wrapper over Tauri invoke API"
+    },
+    "indexing/index-state.svelte.ts": {
+      "reason": "Reactive Svelte state, depends on Tauri event listeners"
+    },
+    "file-explorer/tabs/TabBar.svelte": {
+      "reason": "UI component, tab interactions tested via DualPaneExplorer integration"
+    },
+    "file-explorer/pane/tab-operations.ts": {
+      "reason": "Extracted from DualPaneExplorer, depends on Tauri commands and confirmDialog"
+    },
+    "tauri-commands/tab.ts": {
+      "reason": "Tauri command wrappers, tested via integration"
+    },
+    "tauri-commands/clipboard-files.ts": {
+      "reason": "Tauri command wrappers, tested via integration"
+    },
+    "file-explorer/navigation/VolumeBreadcrumb.svelte": {
+      "reason": "UI component, depends on Tauri APIs and MTP store"
+    },
+    "file-explorer/pane/dialog-state.svelte.ts": {
+      "reason": "Reactive Svelte state, depends on FilePane refs and Tauri commands"
+    },
+    "tooltip/tooltip.ts": {
+      "reason": "DOM-dependent singleton tooltip, requires document.body and getBoundingClientRect"
+    },
+    "file-operations/delete/DeleteDialog.svelte": {
+      "reason": "UI modal, logic tested in delete-dialog-utils.test.ts"
+    },
+    "settings/components/SettingPasswordInput.svelte": {
+      "reason": "UI component, simple show/hide toggle + settings store wiring"
+    },
+    "settings/sections/AiSection.svelte": {
+      "reason": "UI section, depends on Tauri commands and event listeners"
+    },
+    "search/AiSearchRow.svelte": {
+      "reason": "Search sub-component, UI only, depends on parent orchestration"
+    },
+    "search/SearchDialog.svelte": {
+      "reason": "Search dialog UI, depends on Tauri commands and event listeners"
+    },
+    "search/SearchInputArea.svelte": {
+      "reason": "Search sub-component, UI only, depends on parent orchestration and Tauri tooltip action"
+    },
+    "search/SearchResults.svelte": {
+      "reason": "Search sub-component, UI only, display and formatting"
+    },
+    "tauri-commands/search.ts": {
+      "reason": "Tauri command wrappers, tested via integration"
+    },
+    "indexing/ReplayStatusOverlay.svelte": {
+      "reason": "UI overlay component, depends on Tauri event listeners"
+    },
+    "ui/ProgressOverlay.svelte": {
+      "reason": "Pure UI component, no logic to test beyond rendering"
+    },
+    "crash-reporter/CrashReportDialog.svelte": {
+      "reason": "UI dialog, depends on Tauri commands for send/dismiss"
+    },
+    "crash-reporter/CrashReportToastContent.svelte": {
+      "reason": "UI toast content, depends on Tauri window APIs"
+    },
+    "tauri-commands/crash-reporter.ts": {
+      "reason": "Tauri command wrappers, tested via integration"
+    },
+    "ai/ai-toast-sync.svelte.ts": {
+      "reason": "Svelte $effect reactive sync, depends on Svelte runtime"
+    },
+    "ui/ProgressBar.svelte": {
+      "reason": "Pure UI component, no logic to test beyond rendering"
     }
+  }
 }

@@ -5,6 +5,17 @@ import "fmt"
 // AllChecks contains all check definitions with their metadata.
 // Dependencies define which checks must complete before this one runs.
 var AllChecks = []CheckDefinition{
+	// Monorepo-wide checks
+	{
+		ID:              "oxfmt",
+		DisplayName:     "oxfmt",
+		App:             AppOther,
+		Tech:            "📐 Format",
+		FreestyleCompat: true,
+		DependsOn:       nil,
+		Run:             RunOxfmt,
+	},
+
 	// Desktop - Rust checks (none FreestyleCompat: Rust dep compilation exceeds freestyle API timeout)
 	{
 		ID:          "desktop-rust-rustfmt",
@@ -91,21 +102,12 @@ var AllChecks = []CheckDefinition{
 
 	// Desktop - Svelte checks (all FreestyleCompat except e2e-linux which needs Docker)
 	{
-		ID:              "desktop-svelte-oxfmt",
-		DisplayName:     "oxfmt",
-		App:             AppDesktop,
-		Tech:            "🎨 Svelte",
-		FreestyleCompat: true,
-		DependsOn:       nil,
-		Run:             RunDesktopOxfmt,
-	},
-	{
 		ID:              "desktop-svelte-eslint",
 		DisplayName:     "eslint",
 		App:             AppDesktop,
 		Tech:            "🎨 Svelte",
 		FreestyleCompat: true,
-		DependsOn:       []string{"desktop-svelte-oxfmt"},
+		DependsOn:       []string{"oxfmt"},
 		Run:             RunDesktopESLint,
 	},
 	{
@@ -126,7 +128,7 @@ var AllChecks = []CheckDefinition{
 		App:             AppDesktop,
 		Tech:            "🎨 Svelte",
 		FreestyleCompat: true,
-		DependsOn:       []string{"desktop-svelte-oxfmt"},
+		DependsOn:       []string{"oxfmt"},
 		Run:             RunStylelint,
 	},
 	{
@@ -146,7 +148,7 @@ var AllChecks = []CheckDefinition{
 		App:             AppDesktop,
 		Tech:            "🎨 Svelte",
 		FreestyleCompat: true,
-		DependsOn:       []string{"desktop-svelte-oxfmt"},
+		DependsOn:       []string{"oxfmt"},
 		Run:             RunSvelteCheck,
 	},
 	{
@@ -212,21 +214,12 @@ var AllChecks = []CheckDefinition{
 
 	// Website checks (all FreestyleCompat except docker-build)
 	{
-		ID:              "website-oxfmt",
-		DisplayName:     "oxfmt",
-		App:             AppWebsite,
-		Tech:            "🚀 Astro",
-		FreestyleCompat: true,
-		DependsOn:       nil,
-		Run:             RunWebsiteOxfmt,
-	},
-	{
 		ID:              "website-eslint",
 		DisplayName:     "eslint",
 		App:             AppWebsite,
 		Tech:            "🚀 Astro",
 		FreestyleCompat: true,
-		DependsOn:       []string{"website-oxfmt"},
+		DependsOn:       []string{"oxfmt"},
 		Run:             RunWebsiteESLint,
 	},
 	{
@@ -278,21 +271,12 @@ var AllChecks = []CheckDefinition{
 
 	// API server checks (all FreestyleCompat)
 	{
-		ID:              "api-server-oxfmt",
-		DisplayName:     "oxfmt",
-		App:             AppApiServer,
-		Tech:            "⸆⸉ TS",
-		FreestyleCompat: true,
-		DependsOn:       nil,
-		Run:             RunApiServerOxfmt,
-	},
-	{
 		ID:              "api-server-eslint",
 		DisplayName:     "eslint",
 		App:             AppApiServer,
 		Tech:            "⸆⸉ TS",
 		FreestyleCompat: true,
-		DependsOn:       []string{"api-server-oxfmt"},
+		DependsOn:       []string{"oxfmt"},
 		Run:             RunApiServerESLint,
 	},
 	{

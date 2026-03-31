@@ -30,7 +30,9 @@ describe('parseHogQLResponse', () => {
     })
 
     it('returns empty array for missing results', () => {
-        expect(parseHogQLResponse({ columns: [], results: undefined } as unknown as typeof sampleHogQLResponse)).toEqual([])
+        expect(
+            parseHogQLResponse({ columns: [], results: undefined } as unknown as typeof sampleHogQLResponse),
+        ).toEqual([])
     })
 })
 
@@ -46,7 +48,7 @@ describe('fetchPostHogData', () => {
             vi.fn().mockResolvedValue({
                 ok: true,
                 json: async () => sampleHogQLResponse,
-            })
+            }),
         )
 
         const result = await fetchPostHogData(mockEnv, '7d')

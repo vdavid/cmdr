@@ -89,10 +89,7 @@ describe('fetchUmamiData', () => {
     })
 
     it('returns error when auth fails', async () => {
-        vi.stubGlobal(
-            'fetch',
-            vi.fn().mockResolvedValueOnce({ ok: false, status: 401 })
-        )
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: false, status: 401 }))
 
         const result = await fetchUmamiData(mockEnv, '7d')
         expect(result.ok).toBe(false)
@@ -118,10 +115,7 @@ describe('fetchUmamiData', () => {
     })
 
     it('returns error on network failure', async () => {
-        vi.stubGlobal(
-            'fetch',
-            vi.fn().mockRejectedValueOnce(new Error('Network error'))
-        )
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce(new Error('Network error')))
 
         const result = await fetchUmamiData(mockEnv, '24h')
         expect(result.ok).toBe(false)

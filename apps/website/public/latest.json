@@ -1,24 +1,24 @@
 {
-    "version": "0.9.1",
-    "dmgSizes": {
-        "aarch64": 32066541,
-        "x86_64": 33524765,
-        "universal": 48779041
+  "version": "0.9.1",
+  "dmgSizes": {
+    "aarch64": 32066541,
+    "x86_64": 33524765,
+    "universal": 48779041
+  },
+  "notes": "### Fixed\n\n- Fix orphaned llama-server processes — rapid AI provider switching (Local → OpenAI → Local) could leave `llama-server` running after app quit. Spawn + PID tracking now happen in a single lock, plus `pgrep`-based cleanup on startup ([b3382e](https://github.com/vdavid/cmdr/commit/b3382e))\n- Fix vendor-specific MTP device detection (Kindle, USB class `0xFF` devices) via `mtp-rs` 0.4.1 upgrade, also fixes indefinite event polling blocking MTP operations on idle devices ([1a170d](https://github.com/vdavid/cmdr/commit/1a170d))\n\n### Non-app\n\n- API server: migrate telemetry from Analytics Engine to D1, add crash email notifications via Resend, add admin endpoints for downloads/active-users/crashes, rename `license-server` → `api-server` ([7dc0da](https://github.com/vdavid/cmdr/commit/7dc0da))\n- Refactor: split `search.rs` (2361 lines) and `SearchDialog.svelte` (1552 lines) into focused modules ([c17c21](https://github.com/vdavid/cmdr/commit/c17c21))\n- Refactor: deduplicate repeated code patterns across Rust, Svelte, TypeScript, and Go ([52afe3](https://github.com/vdavid/cmdr/commit/52afe3))\n- Upgrade 9 Rust dependencies — `reqwest` 0.13, `rusqlite` 0.39, `notify-debouncer-full` 0.7, and more ([929556](https://github.com/vdavid/cmdr/commit/929556))\n- Tooling: skip `pnpm install` when lockfile unchanged, saving ~20s per run ([8d2b39](https://github.com/vdavid/cmdr/commit/8d2b39))\n- Blog: add Kindle support article ([5c9d5b](https://github.com/vdavid/cmdr/commit/5c9d5b))\n",
+  "pub_date": "2026-03-24T17:17:09Z",
+  "platforms": {
+    "darwin-universal": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb3BhRW9ZQzQvbGttRVc3dWZIWFUxNWVvc0pmcmdDbWdjOWhubEdKSElTNUVPNFpkSzVVZWlkVW5YcVRoQml6QmpyMTRMMUhDODF6TUxDRkVIb1gxMFFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc0MzcxOTMwCWZpbGU6Q21kci5hcHAudGFyLmd6CnYzK3FLYkFtRDdWYTZ6RmVzM1ZxeDRLdGgyODRqQUVvWm9nenNjMG94Z2I3RlBpbDZ4STRYSUJxaXpGM0hwTnRmQ0J3OVU1WkcvOHJZTWE2cDgxZURnPT0K",
+      "url": "https://github.com/vdavid/cmdr/releases/download/v0.9.1/Cmdr_universal.app.tar.gz"
     },
-    "notes": "### Fixed\n\n- Fix orphaned llama-server processes — rapid AI provider switching (Local → OpenAI → Local) could leave `llama-server` running after app quit. Spawn + PID tracking now happen in a single lock, plus `pgrep`-based cleanup on startup ([b3382e](https://github.com/vdavid/cmdr/commit/b3382e))\n- Fix vendor-specific MTP device detection (Kindle, USB class `0xFF` devices) via `mtp-rs` 0.4.1 upgrade, also fixes indefinite event polling blocking MTP operations on idle devices ([1a170d](https://github.com/vdavid/cmdr/commit/1a170d))\n\n### Non-app\n\n- API server: migrate telemetry from Analytics Engine to D1, add crash email notifications via Resend, add admin endpoints for downloads/active-users/crashes, rename `license-server` → `api-server` ([7dc0da](https://github.com/vdavid/cmdr/commit/7dc0da))\n- Refactor: split `search.rs` (2361 lines) and `SearchDialog.svelte` (1552 lines) into focused modules ([c17c21](https://github.com/vdavid/cmdr/commit/c17c21))\n- Refactor: deduplicate repeated code patterns across Rust, Svelte, TypeScript, and Go ([52afe3](https://github.com/vdavid/cmdr/commit/52afe3))\n- Upgrade 9 Rust dependencies — `reqwest` 0.13, `rusqlite` 0.39, `notify-debouncer-full` 0.7, and more ([929556](https://github.com/vdavid/cmdr/commit/929556))\n- Tooling: skip `pnpm install` when lockfile unchanged, saving ~20s per run ([8d2b39](https://github.com/vdavid/cmdr/commit/8d2b39))\n- Blog: add Kindle support article ([5c9d5b](https://github.com/vdavid/cmdr/commit/5c9d5b))\n",
-    "pub_date": "2026-03-24T17:17:09Z",
-    "platforms": {
-        "darwin-universal": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb3BhRW9ZQzQvbGttRVc3dWZIWFUxNWVvc0pmcmdDbWdjOWhubEdKSElTNUVPNFpkSzVVZWlkVW5YcVRoQml6QmpyMTRMMUhDODF6TUxDRkVIb1gxMFFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc0MzcxOTMwCWZpbGU6Q21kci5hcHAudGFyLmd6CnYzK3FLYkFtRDdWYTZ6RmVzM1ZxeDRLdGgyODRqQUVvWm9nenNjMG94Z2I3RlBpbDZ4STRYSUJxaXpGM0hwTnRmQ0J3OVU1WkcvOHJZTWE2cDgxZURnPT0K",
-            "url": "https://github.com/vdavid/cmdr/releases/download/v0.9.1/Cmdr_universal.app.tar.gz"
-        },
-        "darwin-aarch64": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb2xmWVpxdlkwTEp0bWRNTnc3cXZzQ3BRM3RpYkZsK3kzWFVNSFlGNis0Qm5mdXBaY0E2amZsSUVESlhCWXdjVlIraEdFMFJJL1JBbmVDemp5MS83TVFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc0MzcyMjgzCWZpbGU6Q21kci5hcHAudGFyLmd6CnV2c2ZWSHR3V0g2SmdEOTJGOVlxaS9zSXI2YUQ5WUVLWmUzR1d4SCtsUVkwUzdYVTJ4cXNqQnFyMGlIYURaYkRycDNoSGVONFpyNlg4WXdxajdOakFnPT0K",
-            "url": "https://github.com/vdavid/cmdr/releases/download/v0.9.1/Cmdr_aarch64.app.tar.gz"
-        },
-        "darwin-x86_64": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb2gwNWlZTVVpUWJyZndpMDQyUUJEZ3dheXd0a01UbjFJdFcvK1FJUGlsTVpxWkhLajlKTzJhejZUOGEyVkVkNzREWXZBTTlJNVVRSlFCUlNRK3g1YmdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc0MzcyNjAxCWZpbGU6Q21kci5hcHAudGFyLmd6CkhpWlVjZGFBMDc1aUVzSkRZUlcwZmlsMXhKbW44Q09TdTNVLzdIUzRnTzE5TDVHUjgvNE1HSTN0WGRTdEk3bmpxcHhaTHQ1OGN2M3VaWGEyWWJvcERRPT0K",
-            "url": "https://github.com/vdavid/cmdr/releases/download/v0.9.1/Cmdr_x64.app.tar.gz"
-        }
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb2xmWVpxdlkwTEp0bWRNTnc3cXZzQ3BRM3RpYkZsK3kzWFVNSFlGNis0Qm5mdXBaY0E2amZsSUVESlhCWXdjVlIraEdFMFJJL1JBbmVDemp5MS83TVFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc0MzcyMjgzCWZpbGU6Q21kci5hcHAudGFyLmd6CnV2c2ZWSHR3V0g2SmdEOTJGOVlxaS9zSXI2YUQ5WUVLWmUzR1d4SCtsUVkwUzdYVTJ4cXNqQnFyMGlIYURaYkRycDNoSGVONFpyNlg4WXdxajdOakFnPT0K",
+      "url": "https://github.com/vdavid/cmdr/releases/download/v0.9.1/Cmdr_aarch64.app.tar.gz"
+    },
+    "darwin-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRS2pCYTdOaDlnb2gwNWlZTVVpUWJyZndpMDQyUUJEZ3dheXd0a01UbjFJdFcvK1FJUGlsTVpxWkhLajlKTzJhejZUOGEyVkVkNzREWXZBTTlJNVVRSlFCUlNRK3g1YmdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc0MzcyNjAxCWZpbGU6Q21kci5hcHAudGFyLmd6CkhpWlVjZGFBMDc1aUVzSkRZUlcwZmlsMXhKbW44Q09TdTNVLzdIUzRnTzE5TDVHUjgvNE1HSTN0WGRTdEk3bmpxcHhaTHQ1OGN2M3VaWGEyWWJvcERRPT0K",
+      "url": "https://github.com/vdavid/cmdr/releases/download/v0.9.1/Cmdr_x64.app.tar.gz"
     }
+  }
 }

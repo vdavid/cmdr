@@ -6,17 +6,17 @@ at `analdash.getcmdr.com`.
 ## Running locally
 
 1. Copy the example env file and fill in real values:
-   ```bash
-   cp .env.example .env
-   ```
+    ```bash
+    cp .env.example .env
+    ```
 2. Install dependencies (from the repo root):
-   ```bash
-   pnpm install
-   ```
+    ```bash
+    pnpm install
+    ```
 3. Start the dev server:
-   ```bash
-   pnpm dev:dashboard
-   ```
+    ```bash
+    pnpm dev:dashboard
+    ```
 4. Open [http://localhost:4830](http://localhost:4830).
 
 The dashboard works without env vars too, but each data source will show a "not configured" message instead of live
@@ -41,14 +41,14 @@ and 1-hour TTL for 30d.
 
 ### Data sources
 
-| Source | Module | What it provides |
-| --- | --- | --- |
-| Umami | `umami.ts` | Page views, visitors, referrers, countries, download events (blog + getcmdr.com) |
-| Cloudflare Analytics Engine | `cloudflare.ts` | Download counts, update check counts by version/arch/country |
-| Paddle | `paddle.ts` | Completed transactions, subscriptions by status |
-| GitHub | `github.ts` | Release download counts per asset (cumulative, not time-ranged) |
-| PostHog | `posthog.ts` | Pageview trends via the Trends API |
-| License server | `license.ts` | Total activations, active devices |
+| Source                      | Module          | What it provides                                                                 |
+| --------------------------- | --------------- | -------------------------------------------------------------------------------- |
+| Umami                       | `umami.ts`      | Page views, visitors, referrers, countries, download events (blog + getcmdr.com) |
+| Cloudflare Analytics Engine | `cloudflare.ts` | Download counts, update check counts by version/arch/country                     |
+| Paddle                      | `paddle.ts`     | Completed transactions, subscriptions by status                                  |
+| GitHub                      | `github.ts`     | Release download counts per asset (cumulative, not time-ranged)                  |
+| PostHog                     | `posthog.ts`    | Pageview trends via the Trends API                                               |
+| License server              | `license.ts`    | Total activations, active devices                                                |
 
 ### Auth
 
@@ -57,19 +57,19 @@ the codebase.
 
 ## Env var reference
 
-| Variable | Required | Description | Where to find it |
-| --- | --- | --- | --- |
-| `UMAMI_API_URL` | Yes | Umami instance URL | Your Umami deployment |
-| `UMAMI_USERNAME` | Yes | Umami login username | Umami admin panel |
-| `UMAMI_PASSWORD` | Yes | Umami login password | Umami admin panel |
-| `UMAMI_WEBSITE_ID` | Yes | getcmdr.com website UUID | Umami > Websites |
-| `UMAMI_BLOG_WEBSITE_ID` | Yes | Blog website UUID | Umami > Websites |
-| `PADDLE_API_KEY_LIVE` | Yes | Live API key (not sandbox) | Paddle > Developer Tools > API Keys |
-| `POSTHOG_API_KEY` | Yes | Personal API key (`phx_...`), not the public project key | PostHog > Settings > Personal API Keys |
-| `POSTHOG_PROJECT_ID` | Yes | PostHog project ID | PostHog > Settings > Project |
-| `POSTHOG_API_URL` | Yes | Must be `https://eu.posthog.com` for EU projects | PostHog region setting |
-| `GITHUB_TOKEN` | No | Avoids GitHub API rate limits on public repo endpoints | GitHub > Settings > Developer Settings > PAT |
-| `LICENSE_SERVER_ADMIN_TOKEN` | Yes | Admin secret for the API server `/admin/stats` endpoint | API server config |
+| Variable                     | Required | Description                                              | Where to find it                             |
+| ---------------------------- | -------- | -------------------------------------------------------- | -------------------------------------------- |
+| `UMAMI_API_URL`              | Yes      | Umami instance URL                                       | Your Umami deployment                        |
+| `UMAMI_USERNAME`             | Yes      | Umami login username                                     | Umami admin panel                            |
+| `UMAMI_PASSWORD`             | Yes      | Umami login password                                     | Umami admin panel                            |
+| `UMAMI_WEBSITE_ID`           | Yes      | getcmdr.com website UUID                                 | Umami > Websites                             |
+| `UMAMI_BLOG_WEBSITE_ID`      | Yes      | Blog website UUID                                        | Umami > Websites                             |
+| `PADDLE_API_KEY_LIVE`        | Yes      | Live API key (not sandbox)                               | Paddle > Developer Tools > API Keys          |
+| `POSTHOG_API_KEY`            | Yes      | Personal API key (`phx_...`), not the public project key | PostHog > Settings > Personal API Keys       |
+| `POSTHOG_PROJECT_ID`         | Yes      | PostHog project ID                                       | PostHog > Settings > Project                 |
+| `POSTHOG_API_URL`            | Yes      | Must be `https://eu.posthog.com` for EU projects         | PostHog region setting                       |
+| `GITHUB_TOKEN`               | No       | Avoids GitHub API rate limits on public repo endpoints   | GitHub > Settings > Developer Settings > PAT |
+| `LICENSE_SERVER_ADMIN_TOKEN` | Yes      | Admin secret for the API server `/admin/stats` endpoint  | API server config                            |
 
 ## Further reading
 

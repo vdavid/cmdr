@@ -22,7 +22,7 @@ suggest a file list. The overall feel is "familiar file manager meets futuristic
 Defined in `apps/website/src/styles/global.css` via Tailwind v4 `@theme`.
 
 | Token                      | Hex                      | Usage                                           |
-|----------------------------|--------------------------|-------------------------------------------------|
+| -------------------------- | ------------------------ | ----------------------------------------------- |
 | `--color-background`       | `#0a0a0b`                | Page background                                 |
 | `--color-surface`          | `#111113`                | Cards, panels                                   |
 | `--color-surface-elevated` | `#18181b`                | Elevated surfaces, content areas                |
@@ -36,8 +36,8 @@ Defined in `apps/website/src/styles/global.css` via Tailwind v4 `@theme`.
 | `--color-accent-glow`      | `rgba(255, 194, 6, 0.4)` | Box shadow glow on buttons                      |
 | `--color-warning`          | `#ff4d6d`                | Error/warning states                            |
 
-The website is dark by default with no light mode toggle. The mustard accent on near-black is the most recognizable
-part of the brand.
+The website is dark by default with no light mode toggle. The mustard accent on near-black is the most recognizable part
+of the brand.
 
 ### Desktop app
 
@@ -47,7 +47,7 @@ Defined in `apps/desktop/src/app.css` via CSS custom properties. Supports both l
 **Light mode:**
 
 | Token                    | Hex                      | Usage                            |
-|--------------------------|--------------------------|----------------------------------|
+| ------------------------ | ------------------------ | -------------------------------- |
 | `--color-bg-primary`     | `#ffffff`                | Main background                  |
 | `--color-bg-secondary`   | `#f5f5f5`                | Panels, sidebars                 |
 | `--color-text-primary`   | `#000000`                | Primary text                     |
@@ -59,15 +59,15 @@ Defined in `apps/desktop/src/app.css` via CSS custom properties. Supports both l
 **Dark mode:**
 
 | Token                    | Hex       | Usage                             |
-|--------------------------|-----------|-----------------------------------|
+| ------------------------ | --------- | --------------------------------- |
 | `--color-bg-primary`     | `#1e1e1e` | Main background                   |
 | `--color-bg-secondary`   | `#2a2a2a` | Panels, sidebars                  |
 | `--color-text-primary`   | `#ffffff` | Primary text                      |
 | `--color-text-secondary` | `#aaaaaa` | Secondary text                    |
 | `--color-accent`         | `#4da3ff` | Interactive accent (lighter blue) |
 
-Note: the desktop app uses a blue accent (`#0078d4` / `#4da3ff`) for interactive elements, not the mustard yellow.
-The golden/mustard tones show up in selection and search highlights. See `app.css` for the full set of tokens.
+Note: the desktop app uses a blue accent (`#0078d4` / `#4da3ff`) for interactive elements, not the mustard yellow. The
+golden/mustard tones show up in selection and search highlights. See `app.css` for the full set of tokens.
 
 ### Color personality
 
@@ -123,9 +123,8 @@ The tagline is **"The AI-native file manager"**. The legal entity is **Rymdskott
 
 ## Newsletter
 
-The Listmonk campaign template lives
-at [campaign-template.html](../../infra/listmonk/campaign-template.html). It uses the website's dark
-palette:
+The Listmonk campaign template lives at [campaign-template.html](../../infra/listmonk/campaign-template.html). It uses
+the website's dark palette:
 
 - `#0a0a0b` outer background, `#18181b` content card, `#27272a` borders
 - `#ffc206` mustard accent bar at the top and for links/CTAs

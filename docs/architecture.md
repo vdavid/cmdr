@@ -6,107 +6,115 @@ Map of Cmdr's major subsystems. Each directory has detailed docs in their `CLAUD
 
 All under `apps/desktop/src/lib/`.
 
-| Directory | Purpose |
-|-----------|---------|
-| `file-explorer/` | Dual-pane file explorer — pane orchestration, selection, navigation, sorting |
-| `file-explorer/views/` | Virtual-scrolling file lists (Brief + Full modes), 100k+ file support |
-| `file-explorer/drag/` | Native drag-and-drop (drag-out, drop-in, pane-to-pane, macOS image swizzle) |
-| `file-explorer/rename/` | Inline rename with validation, conflict resolution, extension change |
-| `file-explorer/selection/` | Space/Shift/Cmd selection, range operations |
-| `file-explorer/navigation/` | Back/forward history, breadcrumb, path utilities |
-| `file-explorer/network/` | Network browser UI (SMB share browsing, login form) |
-| `file-operations/` | Transfer dialogs (copy/move/mkdir) with progress and conflict resolution |
-| `file-viewer/` | Read-only file viewer (opens in separate window, virtual scrolling) |
-| `settings/` | Settings UI + registry-based architecture, reactive state |
-| `shortcuts/` | Keyboard shortcut customization, scope hierarchy, conflict detection |
-| `tauri-commands/` | Typed TypeScript wrappers for all Tauri IPC commands and events |
-| `command-palette/` | Fuzzy command search (~45 commands) |
-| `commands/` | Command registry (~50 commands), fuzzy search engine for command palette |
-| `licensing/` | License validation, commercial reminders, expiration modals |
-| `logging/` | Unified logging: LogTape config, batching bridge to Rust, verbose toggle |
-| `ai/` | Local LLM features (folder suggestions), download flow |
-| `indexing/` | Drive index state, events, priority triggers, scan status overlay |
-| `search/` | Whole-drive file search dialog: orchestrator + `AiSearchRow`, `SearchInputArea`, `SearchResults` components |
-| `mtp/` | MTP (Android device) file browsing UI |
-| `onboarding/` | Full Disk Access prompt for first-launch onboarding |
-| `ui/` | Shared UI primitives: ModalDialog, Button, AlertDialog, LoadingIcon, Notification, dialog registry |
-| `updates/` | Auto-updater UI |
-| `utils/` | Filename validation, confirm dialog utilities |
-| `font-metrics/` | Character width measurement for accurate Brief mode column sizing |
+| Directory                   | Purpose                                                                                                     |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `file-explorer/`            | Dual-pane file explorer — pane orchestration, selection, navigation, sorting                                |
+| `file-explorer/views/`      | Virtual-scrolling file lists (Brief + Full modes), 100k+ file support                                       |
+| `file-explorer/drag/`       | Native drag-and-drop (drag-out, drop-in, pane-to-pane, macOS image swizzle)                                 |
+| `file-explorer/rename/`     | Inline rename with validation, conflict resolution, extension change                                        |
+| `file-explorer/selection/`  | Space/Shift/Cmd selection, range operations                                                                 |
+| `file-explorer/navigation/` | Back/forward history, breadcrumb, path utilities                                                            |
+| `file-explorer/network/`    | Network browser UI (SMB share browsing, login form)                                                         |
+| `file-operations/`          | Transfer dialogs (copy/move/mkdir) with progress and conflict resolution                                    |
+| `file-viewer/`              | Read-only file viewer (opens in separate window, virtual scrolling)                                         |
+| `settings/`                 | Settings UI + registry-based architecture, reactive state                                                   |
+| `shortcuts/`                | Keyboard shortcut customization, scope hierarchy, conflict detection                                        |
+| `tauri-commands/`           | Typed TypeScript wrappers for all Tauri IPC commands and events                                             |
+| `command-palette/`          | Fuzzy command search (~45 commands)                                                                         |
+| `commands/`                 | Command registry (~50 commands), fuzzy search engine for command palette                                    |
+| `licensing/`                | License validation, commercial reminders, expiration modals                                                 |
+| `logging/`                  | Unified logging: LogTape config, batching bridge to Rust, verbose toggle                                    |
+| `ai/`                       | Local LLM features (folder suggestions), download flow                                                      |
+| `indexing/`                 | Drive index state, events, priority triggers, scan status overlay                                           |
+| `search/`                   | Whole-drive file search dialog: orchestrator + `AiSearchRow`, `SearchInputArea`, `SearchResults` components |
+| `mtp/`                      | MTP (Android device) file browsing UI                                                                       |
+| `onboarding/`               | Full Disk Access prompt for first-launch onboarding                                                         |
+| `ui/`                       | Shared UI primitives: ModalDialog, Button, AlertDialog, LoadingIcon, Notification, dialog registry          |
+| `updates/`                  | Auto-updater UI                                                                                             |
+| `utils/`                    | Filename validation, confirm dialog utilities                                                               |
+| `font-metrics/`             | Character width measurement for accurate Brief mode column sizing                                           |
 
 ## Backend (Rust + Tauri 2)
 
 All under `apps/desktop/src-tauri/src/`.
 
-| Directory/file | Purpose |
-|----------------|---------|
-| `file_system/listing/` | Directory reading, streaming, caching, sorting — serves virtual scroll |
-| `file_system/write_operations/` | Copy/move/delete with safety patterns (temp+rename, staging, rollback) |
-| `file_viewer/` | Three-backend file viewer (FullLoad, ByteSeek, LineIndex) |
-| `network/` | SMB: mDNS discovery, share listing (smb-rs + smbutil), mounting, Keychain |
-| `mtp/` | MTP device management, file ops, event-based watching |
-| `mcp/` | MCP server (19 tools, YAML resources, agent-centric API) |
-| `ai/` | llama-server lifecycle, model download, inference client |
-| `licensing/` | Ed25519 license verification, server validation |
-| `settings/` | Settings persistence (tauri-plugin-store) |
-| `indexing/` | Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes |
-| `search/` | In-memory search index (lazy load, rayon parallel scan, glob/regex) and AI query translation pipeline (`search/ai/`) |
-| `font_metrics/` | Binary font metrics cache, per-directory width calculation |
-| `volumes/` | Volume abstraction (local, network, MTP), scanner/watcher traits |
-| `stubs/` | Linux compilation stubs for macOS-only modules (used by Docker E2E pipeline) |
-| `menu/` | Native menu bar: platform-specific construction, dispatch mapping, accelerator sync, context-aware enable/disable |
-| `drag_image_detection.rs` | macOS method swizzle for drag image size detection |
-| `drag_image_swap.rs` | Rich/transparent drag image swap for self-drags |
-| `crash_reporter/` | Crash capture (panic hook + signal handler), next-launch detection, report sending |
-| `commands/` | Tauri command definitions (IPC entry points) |
-| `capabilities/` | Per-window Tauri API permissions — must be updated when using new Tauri APIs from a window |
-| `icons/` | App icons for all platforms + macOS Tahoe Liquid Glass (Assets.car). See [CLAUDE.md](../apps/desktop/src-tauri/icons/CLAUDE.md) for regeneration steps |
+| Directory/file                  | Purpose                                                                                                                                                |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `file_system/listing/`          | Directory reading, streaming, caching, sorting — serves virtual scroll                                                                                 |
+| `file_system/write_operations/` | Copy/move/delete with safety patterns (temp+rename, staging, rollback)                                                                                 |
+| `file_viewer/`                  | Three-backend file viewer (FullLoad, ByteSeek, LineIndex)                                                                                              |
+| `network/`                      | SMB: mDNS discovery, share listing (smb-rs + smbutil), mounting, Keychain                                                                              |
+| `mtp/`                          | MTP device management, file ops, event-based watching                                                                                                  |
+| `mcp/`                          | MCP server (19 tools, YAML resources, agent-centric API)                                                                                               |
+| `ai/`                           | llama-server lifecycle, model download, inference client                                                                                               |
+| `licensing/`                    | Ed25519 license verification, server validation                                                                                                        |
+| `settings/`                     | Settings persistence (tauri-plugin-store)                                                                                                              |
+| `indexing/`                     | Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes                                                                         |
+| `search/`                       | In-memory search index (lazy load, rayon parallel scan, glob/regex) and AI query translation pipeline (`search/ai/`)                                   |
+| `font_metrics/`                 | Binary font metrics cache, per-directory width calculation                                                                                             |
+| `volumes/`                      | Volume abstraction (local, network, MTP), scanner/watcher traits                                                                                       |
+| `stubs/`                        | Linux compilation stubs for macOS-only modules (used by Docker E2E pipeline)                                                                           |
+| `menu/`                         | Native menu bar: platform-specific construction, dispatch mapping, accelerator sync, context-aware enable/disable                                      |
+| `drag_image_detection.rs`       | macOS method swizzle for drag image size detection                                                                                                     |
+| `drag_image_swap.rs`            | Rich/transparent drag image swap for self-drags                                                                                                        |
+| `crash_reporter/`               | Crash capture (panic hook + signal handler), next-launch detection, report sending                                                                     |
+| `commands/`                     | Tauri command definitions (IPC entry points)                                                                                                           |
+| `capabilities/`                 | Per-window Tauri API permissions — must be updated when using new Tauri APIs from a window                                                             |
+| `icons/`                        | App icons for all platforms + macOS Tahoe Liquid Glass (Assets.car). See [CLAUDE.md](../apps/desktop/src-tauri/icons/CLAUDE.md) for regeneration steps |
 
 ## Other apps
 
-| Directory | Purpose |
-|-----------|---------|
-| `apps/analytics-dashboard/` | Private SvelteKit dashboard on CF Pages. Aggregates metrics from Umami, CF Analytics Engine, Paddle, PostHog, GitHub. See [CLAUDE.md](../apps/analytics-dashboard/CLAUDE.md) |
-| `apps/api-server/` | Cloudflare Worker + Hono. Licensing, telemetry, crash reports, downloads, and admin endpoints. See [CLAUDE.md](../apps/api-server/CLAUDE.md) (technical reference) and [README](../apps/api-server/README.md) (first-time setup) |
-| `apps/website/` | getcmdr.com marketing site (Astro + Tailwind v4). See [README](../apps/website/README.md) and [CLAUDE.md](../apps/website/CLAUDE.md) |
-| `apps/website/public/hero/` | Hero illustration assets (frame + pane cutouts, dark/light). See [CLAUDE.md](../apps/website/public/hero/CLAUDE.md) for reshoot process |
-| `scripts/check/` | Go unified check runner (~40 checks, parallel with dependency graph) |
+| Directory                   | Purpose                                                                                                                                                                                                                          |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/analytics-dashboard/` | Private SvelteKit dashboard on CF Pages. Aggregates metrics from Umami, CF Analytics Engine, Paddle, PostHog, GitHub. See [CLAUDE.md](../apps/analytics-dashboard/CLAUDE.md)                                                     |
+| `apps/api-server/`          | Cloudflare Worker + Hono. Licensing, telemetry, crash reports, downloads, and admin endpoints. See [CLAUDE.md](../apps/api-server/CLAUDE.md) (technical reference) and [README](../apps/api-server/README.md) (first-time setup) |
+| `apps/website/`             | getcmdr.com marketing site (Astro + Tailwind v4). See [README](../apps/website/README.md) and [CLAUDE.md](../apps/website/CLAUDE.md)                                                                                             |
+| `apps/website/public/hero/` | Hero illustration assets (frame + pane cutouts, dark/light). See [CLAUDE.md](../apps/website/public/hero/CLAUDE.md) for reshoot process                                                                                          |
+| `scripts/check/`            | Go unified check runner (~40 checks, parallel with dependency graph)                                                                                                                                                             |
 
 ## Search
 
-Whole-drive file search powered by the index DB. The search index loads all entries into memory (~600 MB for 5M files), scans them with rayon in parallel, and returns results sorted by recency. The index is loaded lazily when the search dialog opens and dropped after idle timeout.
+Whole-drive file search powered by the index DB. The search index loads all entries into memory (~600 MB for 5M files),
+scans them with rayon in parallel, and returns results sorted by recency. The index is loaded lazily when the search
+dialog opens and dropped after idle timeout.
 
-**Backend** (`search/`): `engine.rs` has a pure `search()` function (no I/O) that accepts `&SearchIndex` + `&SearchQuery` and returns `SearchResult`. `types.rs` defines data structures, `query.rs` handles DB-touching operations (scope resolution, directory sizes), `index.rs` manages global index state with idle/backstop timers. `search/ai/` contains the AI query translation pipeline (prompt, parser, query builder). See `src-tauri/src/search/CLAUDE.md`.
+**Backend** (`search/`): `engine.rs` has a pure `search()` function (no I/O) that accepts `&SearchIndex` +
+`&SearchQuery` and returns `SearchResult`. `types.rs` defines data structures, `query.rs` handles DB-touching operations
+(scope resolution, directory sizes), `index.rs` manages global index state with idle/backstop timers. `search/ai/`
+contains the AI query translation pipeline (prompt, parser, query builder). See `src-tauri/src/search/CLAUDE.md`.
 
-**IPC** (`commands/search.rs`): Thin wrappers. `prepare_search_index` (starts async load, emits `search-index-ready` event), `search_files` (returns empty if not loaded), `release_search_index` (starts 5-min idle timer), `translate_search_query` (orchestrates `search::ai` pipeline). `resolve_ai_backend` handles AI provider config.
+**IPC** (`commands/search.rs`): Thin wrappers. `prepare_search_index` (starts async load, emits `search-index-ready`
+event), `search_files` (returns empty if not loaded), `release_search_index` (starts 5-min idle timer),
+`translate_search_query` (orchestrates `search::ai` pipeline). `resolve_ai_backend` handles AI provider config.
 
-**Lifecycle**: Load on dialog open (2-3s for 5M rows with cancellation check every 100K rows) -> search while loaded -> idle timeout (5 min) or backstop timeout (10 min) drops the index.
+**Lifecycle**: Load on dialog open (2-3s for 5M rows with cancellation check every 100K rows) -> search while loaded ->
+idle timeout (5 min) or backstop timeout (10 min) drops the index.
 
 ## Cross-cutting patterns
 
-For detailed architecture patterns (data flow, navigation lifecycle, listing lifecycle, concurrency guards, cancellation,
-volume mount/unmount, error recovery, persistence), see [architecture-patterns.md](architecture-patterns.md). Read the
-relevant section when working on navigation, file operations, or volumes.
+For detailed architecture patterns (data flow, navigation lifecycle, listing lifecycle, concurrency guards,
+cancellation, volume mount/unmount, error recovery, persistence), see
+[architecture-patterns.md](architecture-patterns.md). Read the relevant section when working on navigation, file
+operations, or volumes.
 
 ### Platform constraints
 
 Rules that cut across many modules. All existing commands follow these — apply them to new code too.
 
-1. **Tauri IPC threading.** Synchronous `#[tauri::command]` functions block the IPC handler thread.
-   If one command hangs (e.g., a filesystem syscall on a dead network mount), ALL subsequent IPC
-   calls from the frontend queue behind it and the app appears frozen. All filesystem-touching
-   commands are `async` with `blocking_with_timeout` (2s default). When adding new commands that
-   touch the filesystem, follow this pattern — see `commands/file_system.rs` for examples.
+1. **Tauri IPC threading.** Synchronous `#[tauri::command]` functions block the IPC handler thread. If one command hangs
+   (e.g., a filesystem syscall on a dead network mount), ALL subsequent IPC calls from the frontend queue behind it and
+   the app appears frozen. All filesystem-touching commands are `async` with `blocking_with_timeout` (2s default). When
+   adding new commands that touch the filesystem, follow this pattern — see `commands/file_system.rs` for examples.
 
-2. **Network mount blocking syscalls.** `statfs`, `readdir`, `metadata()`, NSURL resource queries,
-   and `realpath` can all block indefinitely on slow/hung network mounts (kernel waits 30–120s).
-   Every Tauri command that calls these is wrapped in `blocking_with_timeout`. New commands MUST
-   do the same. See `commands/CLAUDE.md` for the full pattern and timeout tiers.
+2. **Network mount blocking syscalls.** `statfs`, `readdir`, `metadata()`, NSURL resource queries, and `realpath` can
+   all block indefinitely on slow/hung network mounts (kernel waits 30–120s). Every Tauri command that calls these is
+   wrapped in `blocking_with_timeout`. New commands MUST do the same. See `commands/CLAUDE.md` for the full pattern and
+   timeout tiers.
 
-3. **Two-layer timeout defense.** Backend: `blocking_with_timeout` (2–15s) wraps syscalls in
-   `tokio::time::timeout`. Frontend: `withTimeout` (500ms–3s) races IPC calls and returns a
-   fallback on expiry. Both layers are applied for critical paths (volume switching, path
-   resolution, volume space queries). Apply both when adding new IPC calls to slow paths.
+3. **Two-layer timeout defense.** Backend: `blocking_with_timeout` (2–15s) wraps syscalls in `tokio::time::timeout`.
+   Frontend: `withTimeout` (500ms–3s) races IPC calls and returns a fallback on expiry. Both layers are applied for
+   critical paths (volume switching, path resolution, volume space queries). Apply both when adding new IPC calls to
+   slow paths.
 
 ### macOS specifics
 
@@ -124,8 +132,8 @@ Rules that cut across many modules. All existing commands follow these — apply
 
 ### Checker script
 
-Go-based unified runner (`scripts/check/`). Parallel execution with dependency graph.
-Coverage: 70% threshold enforced, `coverage-allowlist.json` exempts Tauri/DOM-dependent files.
+Go-based unified runner (`scripts/check/`). Parallel execution with dependency graph. Coverage: 70% threshold enforced,
+`coverage-allowlist.json` exempts Tauri/DOM-dependent files.
 
 ## Tooling and infrastructure
 
@@ -133,33 +141,35 @@ Dev workflow docs and external service references. All in `docs/tooling/`.
 
 ### Dev workflow
 
-| Doc | Purpose |
-|-----|---------|
-| [logging.md](tooling/logging.md) | Unified logging, `RUST_LOG` recipes for every subsystem |
-| [css-health-checks.md](tooling/css-health-checks.md) | Stylelint + Go-based unused CSS checker |
-| [index-query.md](tooling/index-query.md) | `index_query` — query index DB with `platform_case` collation (`sqlite3` can't) |
+| Doc                                                  | Purpose                                                                         |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------- |
+| [logging.md](tooling/logging.md)                     | Unified logging, `RUST_LOG` recipes for every subsystem                         |
+| [css-health-checks.md](tooling/css-health-checks.md) | Stylelint + Go-based unused CSS checker                                         |
+| [index-query.md](tooling/index-query.md)             | `index_query` — query index DB with `platform_case` collation (`sqlite3` can't) |
 
 The check runner and E2E testing docs live colocated with their code:
+
 - Check runner: [`scripts/check/CLAUDE.md`](../scripts/check/CLAUDE.md)
 - E2E overview (all suites, fixtures): [`apps/desktop/test/CLAUDE.md`](../apps/desktop/test/CLAUDE.md)
-- Playwright E2E (tauri-playwright, cross-platform): [`apps/desktop/test/e2e-playwright/CLAUDE.md`](../apps/desktop/test/e2e-playwright/CLAUDE.md)
+- Playwright E2E (tauri-playwright, cross-platform):
+  [`apps/desktop/test/e2e-playwright/CLAUDE.md`](../apps/desktop/test/e2e-playwright/CLAUDE.md)
 - Linux E2E (Docker, VNC, legacy): [`apps/desktop/test/e2e-linux/CLAUDE.md`](../apps/desktop/test/e2e-linux/CLAUDE.md)
 - macOS E2E (CrabNebula, legacy): [`apps/desktop/test/e2e-macos/CLAUDE.md`](../apps/desktop/test/e2e-macos/CLAUDE.md)
 
 ### Dependency management
 
-[Renovate](https://docs.renovatebot.com/) (`renovate.json` in repo root) auto-updates all dependencies (npm, Cargo,
-Go). Weekly grouped PRs for non-major updates (auto-merge), monthly for major (manual review). Security vulnerability
-patches get immediate auto-merging PRs regardless of schedule.
+[Renovate](https://docs.renovatebot.com/) (`renovate.json` in repo root) auto-updates all dependencies (npm, Cargo, Go).
+Weekly grouped PRs for non-major updates (auto-merge), monthly for major (manual review). Security vulnerability patches
+get immediate auto-merging PRs regardless of schedule.
 
 ### External services
 
-| Doc | Purpose |
-|-----|---------|
-| [hetzner-vps.md](tooling/hetzner-vps.md) | Production VPS: SSH access, layout, deploy commands |
-| [umami.md](tooling/umami.md) | Website analytics: API access, DB queries, troubleshooting |
-| [cloudflare.md](tooling/cloudflare.md) | Cmdr zones, workers, Pages, D1 telemetry |
-| [posthog.md](tooling/posthog.md) | Cmdr project ID and settings |
-| [monitoring.md](tooling/monitoring.md) | UptimeRobot: uptime checks, alerts |
+| Doc                                      | Purpose                                                    |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| [hetzner-vps.md](tooling/hetzner-vps.md) | Production VPS: SSH access, layout, deploy commands        |
+| [umami.md](tooling/umami.md)             | Website analytics: API access, DB queries, troubleshooting |
+| [cloudflare.md](tooling/cloudflare.md)   | Cmdr zones, workers, Pages, D1 telemetry                   |
+| [posthog.md](tooling/posthog.md)         | Cmdr project ID and settings                               |
+| [monitoring.md](tooling/monitoring.md)   | UptimeRobot: uptime checks, alerts                         |
 
 ONLY do read-only operations with these services unless specifically asked to make changes.

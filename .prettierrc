@@ -15,18 +15,14 @@
         {
             "files": "*.svelte",
             "options": {
-                "plugins": [
-                    "prettier-plugin-svelte"
-                ],
+                "plugins": ["prettier-plugin-svelte"],
                 "parser": "svelte"
             }
         },
         {
             "files": "*.astro",
             "options": {
-                "plugins": [
-                    "prettier-plugin-astro"
-                ],
+                "plugins": ["prettier-plugin-astro"],
                 "parser": "astro"
             }
         }

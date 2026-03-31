@@ -25,8 +25,8 @@ directories, we must be deliberate about what to fetch eagerly vs. on-demand.
 
 ## Tier 3: macOS-specific (requires Objective-C APIs, ~50-100μs/file)
 
-Added date, last opened date, locked flag, stationery pad flag, kind (localized), cloud sync status.
-Use Spotlight / `NSURL resourceValuesForKeys:` or xattrs.
+Added date, last opened date, locked flag, stationery pad flag, kind (localized), cloud sync status. Use Spotlight /
+`NSURL resourceValuesForKeys:` or xattrs.
 
 ## Tier 4: Extended/content-based (1-100ms+, reads file content)
 

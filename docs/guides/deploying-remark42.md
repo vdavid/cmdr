@@ -57,5 +57,5 @@ curl -s https://comments.getcmdr.com/ping
 
 ## Data
 
-Remark42 data is stored in the `remark42-data` Docker volume at `/srv/var` inside the container. Back up this
-volume regularly.
+Remark42 data is stored in the `remark42-data` Docker volume at `/srv/var` inside the container. Back up this volume
+regularly.

@@ -41,7 +41,7 @@ fn get_my_tools() -> Vec<Tool> {
     vec![
         // Tool with no parameters
         Tool::no_params("my.action", "Description of what it does"),
-        
+
         // Tool with parameters
         Tool {
             name: "my.paramAction".to_string(),
@@ -80,10 +80,10 @@ Add a handler in `execute_tool()`:
 pub fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
     match name {
         // ... existing handlers ...
-        
+
         // Add your category
         n if n.starts_with("my.") => execute_my_command(app, n, params),
-        
+
         _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
     }
 }
@@ -96,20 +96,20 @@ fn execute_my_command<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!({"success": true}))
         }
-        
+
         "my.paramAction" => {
             // Extract parameter
             let my_param = params
                 .get("myParam")
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| ToolError::invalid_params("Missing 'myParam'"))?;
-            
+
             // Use the parameter
             app.emit("my-event", json!({"action": "paramAction", "value": my_param}))
                 .map_err(|e| ToolError::internal(e.to_string()))?;
             Ok(json!({"success": true, "param": my_param}))
         }
-        
+
         _ => Err(ToolError::invalid_params(format!("Unknown my command: {name}"))),
     }
 }
@@ -144,7 +144,7 @@ Add tests in `tests.rs`:
 fn test_my_tools_exist() {
     let tools = get_all_tools();
     let my_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("my.")).collect();
-    
+
     assert!(my_tools.iter().any(|t| t.name == "my.action"));
     assert!(my_tools.iter().any(|t| t.name == "my.paramAction"));
 }
@@ -153,7 +153,7 @@ fn test_my_tools_exist() {
 fn test_my_param_action_requires_param() {
     let tools = get_all_tools();
     let tool = tools.iter().find(|t| t.name == "my.paramAction").unwrap();
-    
+
     let required = tool.input_schema.get("required").and_then(|r| r.as_array());
     assert!(required.is_some_and(|r| r.iter().any(|v| v == "myParam")));
 }
@@ -243,7 +243,7 @@ fn execute_context_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolRe
     let store = app
         .try_state::<PaneStateStore>()
         .ok_or_else(|| ToolError::internal("State not initialized"))?;
-    
+
     match name {
         "context.myQuery" => {
             let data = store.get_my_data();
@@ -305,6 +305,7 @@ The bridge is stateless—all state lives in the main cmdr app's HTTP server.
 ### Compilation errors
 
 Run `cargo check` in the `src-tauri` directory:
+
 ```bash
 cd apps/desktop/src-tauri
 cargo check
@@ -313,6 +314,7 @@ cargo check
 ### Tests failing
 
 Run specific test:
+
 ```bash
 cargo test mcp::tests::test_my_tools_exist -- --nocapture
 ```

@@ -14,8 +14,8 @@ UMAMI_USERNAME=...
 UMAMI_PASSWORD='...'    # single-quoted because it contains special chars
 ```
 
-These are for scripts and API calls only — the website runtime uses `PUBLIC_UMAMI_HOST` and
-`PUBLIC_UMAMI_WEBSITE_ID` instead.
+These are for scripts and API calls only — the website runtime uses `PUBLIC_UMAMI_HOST` and `PUBLIC_UMAMI_WEBSITE_ID`
+instead.
 
 ## Query events directly in the DB
 
@@ -30,18 +30,18 @@ ssh hetzner "docker exec umami-db psql -U umami -d umami -c \
 
 ## Gotchas
 
-- **CSP headers**: The nginx CSP in `apps/website/nginx.conf` must allow `anal.veszelovszki.com` in both
-  `script-src` (loads the script) and `connect-src` (sends events). Run
-  `curl -sI https://getcmdr.com | grep content-security-policy` to verify.
-- **`TRACKER_SCRIPT_NAME`**: Set to `mami` in the Umami `docker-compose.yml`. The script is served at `/mami`
-  (no `.js` extension — Umami uses the value literally as the path). Short names like `s` break the Umami API
-  because Next.js middleware matches any URL path containing the tracker name and rewrites it to serve the script.
-  Keep the name distinctive.
+- **CSP headers**: The nginx CSP in `apps/website/nginx.conf` must allow `anal.veszelovszki.com` in both `script-src`
+  (loads the script) and `connect-src` (sends events). Run `curl -sI https://getcmdr.com | grep content-security-policy`
+  to verify.
+- **`TRACKER_SCRIPT_NAME`**: Set to `mami` in the Umami `docker-compose.yml`. The script is served at `/mami` (no `.js`
+  extension — Umami uses the value literally as the path). Short names like `s` break the Umami API because Next.js
+  middleware matches any URL path containing the tracker name and rewrites it to serve the script. Keep the name
+  distinctive.
 
 ## Changing Umami config
 
-Umami's `docker-compose.yml` and Caddy config live in the **`hetzner-server`** repo. **Never edit files directly on
-the server.** The process:
+Umami's `docker-compose.yml` and Caddy config live in the **`hetzner-server`** repo. **Never edit files directly on the
+server.** The process:
 
 1. Edit the file in the local `hetzner-server` repo
 2. Commit and push

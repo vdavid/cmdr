@@ -1,7 +1,7 @@
 # Hetzner VPS (Cmdr-specific)
 
-The Cmdr repo is cloned at `/opt/cmdr` on the Hetzner VPS, owned by the `deploy-cmdr` user. The `david` user
-(SSH login) is in the `deploy-cmdr` group and has write access.
+The Cmdr repo is cloned at `/opt/cmdr` on the Hetzner VPS, owned by the `deploy-cmdr` user. The `david` user (SSH login)
+is in the `deploy-cmdr` group and has write access.
 
 ```
 /opt/cmdr/                          # git clone of this repo

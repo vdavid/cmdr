@@ -9,8 +9,8 @@ reproducible test environments covering authentication modes, edge cases, and se
 
 **Two deployment modes are supported:**
 
-1. **Local (macOS)**: Port-mapped networking (`localhost:PORT`). Use `smbclient` CLI or mount manually to test.
-   Limited by macOS Docker networking issues with SMB (see [Known limitations](#known-limitations)).
+1. **Local (macOS)**: Port-mapped networking (`localhost:PORT`). Use `smbclient` CLI or mount manually to test. Limited
+   by macOS Docker networking issues with SMB (see [Known limitations](#known-limitations)).
 
 2. **Raspberry Pi**: Macvlan networking with real LAN IPs. Containers advertise via mDNS/Bonjour and appear
    automatically in the app's network browser. **Recommended for realistic testing.**

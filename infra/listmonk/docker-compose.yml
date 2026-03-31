@@ -19,9 +19,9 @@ services:
     depends_on:
       - listmonk-db
     command: >
-      sh -c "./listmonk --static-dir=/listmonk/custom-static --install --idempotent --yes --config '' &&
-      ./listmonk --static-dir=/listmonk/custom-static --upgrade --yes --config '' &&
-      ./listmonk --static-dir=/listmonk/custom-static --config ''"
+      sh -c "./listmonk --static-dir=/listmonk/custom-static --install --idempotent --yes --config '' && ./listmonk
+      --static-dir=/listmonk/custom-static --upgrade --yes --config '' && ./listmonk
+      --static-dir=/listmonk/custom-static --config ''"
     environment:
       TZ: Europe/Stockholm
       LISTMONK_db__host: listmonk-db

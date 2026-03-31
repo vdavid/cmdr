@@ -43,7 +43,8 @@ Run: `go run ./scripts/check-css-unused` or via `./scripts/check.sh`
 
 ### Allowlist
 
-Some classes/variables are used dynamically and can't be detected statically. Add them to `scripts/check-css-unused/allowlist.go`:
+Some classes/variables are used dynamically and can't be detected statically. Add them to
+`scripts/check-css-unused/allowlist.go`:
 
 ```go
 var allowedUnusedClasses = map[string]bool{

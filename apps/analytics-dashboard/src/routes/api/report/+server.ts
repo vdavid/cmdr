@@ -32,18 +32,13 @@ function currency(cents: string | number, currencyCode = 'USD'): string {
 }
 
 /** Aggregates download rows by a field, returning sorted [{key, total}] pairs. */
-function aggregateBy(
-    rows: DownloadRow[],
-    field: keyof DownloadRow
-): Array<{ key: string; total: number }> {
+function aggregateBy(rows: DownloadRow[], field: keyof DownloadRow): Array<{ key: string; total: number }> {
     const map = new Map<string, number>()
     for (const row of rows) {
         const key = String(row[field])
         map.set(key, (map.get(key) ?? 0) + row.downloads)
     }
-    return [...map.entries()]
-        .map(([key, total]) => ({ key, total }))
-        .sort((a, b) => b.total - a.total)
+    return [...map.entries()].map(([key, total]) => ({ key, total })).sort((a, b) => b.total - a.total)
 }
 
 /** Compares two semver strings, descending (higher version first). */
@@ -78,9 +73,13 @@ function formatReport(data: DashboardData): string {
         const prevPv = u.blog.pageviews.prev + u.website.pageviews.prev
         line(`- Total page views: ${num(totalPv)}${delta(totalPv, prevPv)}`)
         line(`- Blog views: ${num(u.blog.pageviews.value)}${delta(u.blog.pageviews.value, u.blog.pageviews.prev)}`)
-        line(`- Website views: ${num(u.website.pageviews.value)}${delta(u.website.pageviews.value, u.website.pageviews.prev)}`)
+        line(
+            `- Website views: ${num(u.website.pageviews.value)}${delta(u.website.pageviews.value, u.website.pageviews.prev)}`,
+        )
         line(`- Blog visitors: ${num(u.blog.visitors.value)}${delta(u.blog.visitors.value, u.blog.visitors.prev)}`)
-        line(`- Website visitors: ${num(u.website.visitors.value)}${delta(u.website.visitors.value, u.website.visitors.prev)}`)
+        line(
+            `- Website visitors: ${num(u.website.visitors.value)}${delta(u.website.visitors.value, u.website.visitors.prev)}`,
+        )
 
         if (u.websiteReferrers.length > 0) {
             blank()
@@ -96,13 +95,21 @@ function formatReport(data: DashboardData): string {
     // 2. Interest
     h2('Interest — how many engage with the product page?')
     if (!data.umami.ok && !data.posthog.ok) {
-        line(`Couldn't load: ${[!data.umami.ok ? data.umami.error : '', !data.posthog.ok ? data.posthog.error : ''].filter(Boolean).join('; ')}`)
+        line(
+            `Couldn't load: ${[!data.umami.ok ? data.umami.error : '', !data.posthog.ok ? data.posthog.error : ''].filter(Boolean).join('; ')}`,
+        )
     } else {
         if (data.umami.ok) {
             const u = data.umami.data
-            line(`- getcmdr.com page views: ${num(u.website.pageviews.value)}${delta(u.website.pageviews.value, u.website.pageviews.prev)}`)
-            line(`- Unique visitors: ${num(u.website.visitors.value)}${delta(u.website.visitors.value, u.website.visitors.prev)}`)
-            line(`- Bounce rate: ${u.website.pageviews.value > 0 ? pct(u.website.bounces.value, u.website.visits.value) : 'N/A'}`)
+            line(
+                `- getcmdr.com page views: ${num(u.website.pageviews.value)}${delta(u.website.pageviews.value, u.website.pageviews.prev)}`,
+            )
+            line(
+                `- Unique visitors: ${num(u.website.visitors.value)}${delta(u.website.visitors.value, u.website.visitors.prev)}`,
+            )
+            line(
+                `- Bounce rate: ${u.website.pageviews.value > 0 ? pct(u.website.bounces.value, u.website.visits.value) : 'N/A'}`,
+            )
 
             if (u.downloadEvents.length > 0) {
                 blank()
@@ -143,7 +150,9 @@ function formatReport(data: DashboardData): string {
     // 3. Download
     h2('Download — how many actually download?')
     if (!data.cloudflare.ok && !data.github.ok) {
-        line(`Couldn't load: ${[!data.cloudflare.ok ? data.cloudflare.error : '', !data.github.ok ? data.github.error : ''].filter(Boolean).join('; ')}`)
+        line(
+            `Couldn't load: ${[!data.cloudflare.ok ? data.cloudflare.error : '', !data.github.ok ? data.github.error : ''].filter(Boolean).join('; ')}`,
+        )
     } else {
         if (data.cloudflare.ok) {
             const cf = data.cloudflare.data
@@ -203,7 +212,9 @@ function formatReport(data: DashboardData): string {
                 line('Top countries by version:')
                 for (const c of byCountry.slice(0, 10)) {
                     const countryRows = cf.downloads.filter((r) => r.country === c.key)
-                    const countryVersions = aggregateBy(countryRows, 'version').sort((a, b) => compareSemverDesc(a.key, b.key)).slice(0, 5)
+                    const countryVersions = aggregateBy(countryRows, 'version')
+                        .sort((a, b) => compareSemverDesc(a.key, b.key))
+                        .slice(0, 5)
                     const verStr = countryVersions.map((v) => `${v.key}: ${num(v.total)}`).join(', ')
                     line(`  ${formatCountry(c.key)}: ${verStr}`)
                 }
@@ -230,7 +241,9 @@ function formatReport(data: DashboardData): string {
             blank()
             line('GitHub releases (all-time):')
             for (const rel of data.github.data.releases.slice(0, 10)) {
-                line(`  ${rel.tagName}: ${num(rel.totalDownloads)} downloads (published ${rel.publishedAt.split('T')[0]})`)
+                line(
+                    `  ${rel.tagName}: ${num(rel.totalDownloads)} downloads (published ${rel.publishedAt.split('T')[0]})`,
+                )
             }
         }
     }

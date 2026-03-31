@@ -1,7 +1,7 @@
 # AI search eval history
 
-Reference for future eval and prompt tuning. Tracks six rounds of development for the AI search feature (natural language
-to structured file search query translation), including the v1 → v2 architecture transition between R5 and R6.
+Reference for future eval and prompt tuning. Tracks six rounds of development for the AI search feature (natural
+language to structured file search query translation), including the v1 → v2 architecture transition between R5 and R6.
 
 ## Architecture overview
 
@@ -23,6 +23,7 @@ ranges, byte thresholds, and scope paths. No JSON generation, no regex generatio
 refinement — single pass only.
 
 Key files:
+
 - `ai_response_parser.rs` — parses key-value lines, validates enums
 - `ai_query_builder.rs` — maps enums to `SearchQuery` fields, merges keyword+type patterns
 - `search.rs` — contains `CLASSIFICATION_PROMPT`, orchestrates the pipeline
@@ -31,22 +32,23 @@ The v2 design history is in git (former `docs/specs/ai-search-v2-plan.md`).
 
 ## Iteration summary
 
-| Round | Pipeline | Queries | Reliability | Key changes after |
-|-------|----------|---------|-------------|-------------------|
-| R1 | v1 | 6 | n/a | Glob limitation docs, naming conventions, category-to-extension mapping, size inference, macOS screenshots, default code exclusions |
-| R2 | v1 | 19 | 72% (8/29 empty, 15s timeout) | HTTP timeout 15→30s, pass-1 JSON in refinement context, "preserve flags" rule, regression guard |
-| R3 | v1 | 29 | 90% (26/29) | Prompt compacted 8234→3200 chars, extracted to constants |
-| R4 | v1 | 29 | 90% (3 empty) | Restored "be broad" framing, prominent regex constraint, 3 examples back as behavioral anchors, "ALWAYS include namePattern" rule, empty-pattern guard in `search()` |
-| R5 | v1 | 30 | 93% (28/30) | Final v1 round. Fixed remaining R4 regressions. Established the 30-query catalog. Identified architectural limits of JSON generation approach |
-| R6-cloud | v2 | 30 | 100% (30/30) | v2 pipeline: classification prompt + Rust builder. Zero parse failures, zero MCP timeouts |
-| R6-local | v2 | 30 | 100% (30/30) | Same pipeline on 2B local model. All 30 queries return valid classification output |
-| R7-local | v2 | 30 | 100% (30/30) | Post-fix eval on 2B model. Great/Perfect 43%, Bad down from 43%→20%. Fixes: shell-scripts type, last_6_months, redundant keyword detection, .key removal, prompt improvements |
+| Round    | Pipeline | Queries | Reliability                   | Key changes after                                                                                                                                                             |
+| -------- | -------- | ------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1       | v1       | 6       | n/a                           | Glob limitation docs, naming conventions, category-to-extension mapping, size inference, macOS screenshots, default code exclusions                                           |
+| R2       | v1       | 19      | 72% (8/29 empty, 15s timeout) | HTTP timeout 15→30s, pass-1 JSON in refinement context, "preserve flags" rule, regression guard                                                                               |
+| R3       | v1       | 29      | 90% (26/29)                   | Prompt compacted 8234→3200 chars, extracted to constants                                                                                                                      |
+| R4       | v1       | 29      | 90% (3 empty)                 | Restored "be broad" framing, prominent regex constraint, 3 examples back as behavioral anchors, "ALWAYS include namePattern" rule, empty-pattern guard in `search()`          |
+| R5       | v1       | 30      | 93% (28/30)                   | Final v1 round. Fixed remaining R4 regressions. Established the 30-query catalog. Identified architectural limits of JSON generation approach                                 |
+| R6-cloud | v2       | 30      | 100% (30/30)                  | v2 pipeline: classification prompt + Rust builder. Zero parse failures, zero MCP timeouts                                                                                     |
+| R6-local | v2       | 30      | 100% (30/30)                  | Same pipeline on 2B local model. All 30 queries return valid classification output                                                                                            |
+| R7-local | v2       | 30      | 100% (30/30)                  | Post-fix eval on 2B model. Great/Perfect 43%, Bad down from 43%→20%. Fixes: shell-scripts type, last_6_months, redundant keyword detection, .key removal, prompt improvements |
 
 ## Round details
 
 ### R1: initial implementation (6 queries)
 
 Issues found:
+
 - `invoice.*rymd|rymd.*invoice` — over-constrained, should be `*rymd*`
 - "screenshots from this week" — didn't know macOS `Screenshot YYYY-MM-DD` naming
 - "documents older than a year" — 886K results, no file extension filter
@@ -56,33 +58,34 @@ Issues found:
 
 ### R2: after scope filtering, case toggle, system dir exclusion, two-pass preflight (19 queries)
 
-Good: ssh keys, tax 2024, log files, zip >50mb, empty folders, biggest files, recent downloads.
-Bad: kubernetes (8559 hits — refinement broadened to all `.yml`), package.json not in node_modules (`excludeDirs`
-ignored), "files edited today" (2607 hits — no system exclusion).
-Broken (MCP timeouts): fonts, docker compose, presentation.
+Good: ssh keys, tax 2024, log files, zip >50mb, empty folders, biggest files, recent downloads. Bad: kubernetes (8559
+hits — refinement broadened to all `.yml`), package.json not in node_modules (`excludeDirs` ignored), "files edited
+today" (2607 hits — no system exclusion). Broken (MCP timeouts): fonts, docker compose, presentation.
 
 ### R3: after flag preservation fix (29 queries)
 
-Fixed from R2: .env files (0→48), docker compose (0→24), shell scripts (0→1286).
-Still bad: package.json not in node_modules (745, no `excludeDirs`), "files edited today" (3960).
-Regressions from refinement: markdown notes (574→0, over-narrowed to `note*.md`).
+Fixed from R2: .env files (0→48), docker compose (0→24), shell scripts (0→1286). Still bad: package.json not in
+node_modules (745, no `excludeDirs`), "files edited today" (3960). Regressions from refinement: markdown notes (574→0,
+over-narrowed to `note*.md`).
 
 ### R4: after prompt compaction (29 queries)
 
 New regressions from compaction:
+
 - rymd invoices: refinement generated `(?=...)` lookahead — regex error
 - node_modules: lost name filter entirely, returned Spotlight dirs
 - empty folders: lost `maxSize: 0` trick (224K hits)
 - recent downloads: lost `~/Downloads` scope (51K hits)
 - markdown notes: refinement over-narrowed again
 
-Root causes: lost "be broad" framing, regex constraint less prominent, lost key examples as behavioral anchors.
-MCP failures: LLM returns no `namePattern` → scan 5.6M entries → 60s → MCP client timeout.
+Root causes: lost "be broad" framing, regex constraint less prominent, lost key examples as behavioral anchors. MCP
+failures: LLM returns no `namePattern` → scan 5.6M entries → 60s → MCP client timeout.
 
 ### R5: final v1 round (30 queries)
 
 Restored R4 regressions. Added query #30 (audio recordings meetings). This round established the final v1 baseline.
 Cloud model: 28/30 queries produce usable results. Remaining failures:
+
 - package.json not in node_modules — LLM never reliably produces `excludeDirs`
 - markdown notes this month — refinement over-narrows `\.md$` to `note*.md`
 
@@ -95,27 +98,30 @@ Complete architectural rewrite. The LLM now returns key-value lines with enum to
 generation, date computation, and query assembly deterministically.
 
 **R6-cloud (Anthropic cloud model):**
+
 - 30/30 queries produce valid classification output (no parse failures, no timeouts)
 - 27/30 produce correct/good results
 - 3 queries have quality issues (see analysis below)
 
 **R6-local (2B local model):**
+
 - 30/30 queries produce valid classification output (dramatic improvement from v1's ~40% success)
 - 24/30 produce correct/good results
 - 6 queries have quality issues (keyword selection less precise, but structurally valid)
 
 **R6 issues found and fixed post-eval:**
+
 1. Missing `shell-scripts` type — query #22 had no type to map to. Added `shell-scripts` type with `\.(sh|bash|zsh)$`.
 2. Missing `last_3_months`/`last_6_months` time enums — query #24 "contracts last 6 months" couldn't express the time
    range. Added both enums.
 3. Keyword/type confusion — "HEIC photos" produced `keywords: heic / type: photos` → merged pattern
-   `heic.*\.(jpg|jpeg|png|heic|webp|gif)$` which only matches files with "heic" in the name AND a photo extension.
-   This misses `IMG_1234.heic` (no "heic" in the name part). Similar issue: "sqlite databases" produced
+   `heic.*\.(jpg|jpeg|png|heic|webp|gif)$` which only matches files with "heic" in the name AND a photo extension. This
+   misses `IMG_1234.heic` (no "heic" in the name part). Similar issue: "sqlite databases" produced
    `sqlite.*\.(sqlite|sqlite3|db)$` which misses `history.db`. Fix: added redundant-keyword detection in
    `merge_keyword_and_type` — when the keyword is a known extension that appears in the type's pattern, the keyword is
    dropped and just the type pattern is used. Also added prompt rules to prevent this classification in the first place.
-4. `.key` extension in presentations type — `\.(ppt|pptx|key|odp)$` matched TLS certificates, not Keynote files.
-   Removed `.key` from the pattern.
+4. `.key` extension in presentations type — `\.(ppt|pptx|key|odp)$` matched TLS certificates, not Keynote files. Removed
+   `.key` from the pattern.
 5. Prompt improvements — added rules for singular keywords, time-only-when-explicit, type-over-keywords preference,
    stronger exclude examples. Added 3 new examples (contracts, shell scripts, HEIC).
 6. Exclude handling — added stronger prompt rule: "ALWAYS use `exclude` when the user says 'not in', 'but not in',
@@ -132,6 +138,7 @@ Compared to R6-local: Great/Perfect up from 7→13, Bad down from 13→6. The ar
 gaps are 2B model quality (3 queries) and 2 missing capabilities (scope inference, markdown type).
 
 **Key fixes confirmed:**
+
 - "Time only when explicit" rule fixed 6 queries (#6, #9, #10, #11, #13, #26) that previously had spurious
   `time: today/recent`.
 - `shell-scripts` type: #22 now uses the type correctly (was Bad).
@@ -141,6 +148,7 @@ gaps are 2B model quality (3 queries) and 2 missing capabilities (scope inferenc
 - Singular keyword rule: #24 uses `contract` instead of `contracts`.
 
 **Remaining 6 Bad queries — root causes:**
+
 1. #14 kubernetes — `type: code` without keywords returns all 351K code files. 2B model doesn't understand "kubernetes"
    as a keyword, classifies it as a code query.
 2. #18 recent downloads — `time: recent` emitted but no `scope: downloads`. Missing capability.
@@ -155,41 +163,42 @@ inference, markdown type). Cloud model handles all of these correctly.
 
 ## Query catalog
 
-| # | Query | R5-cloud (v1) | R6-cloud (v2) | R6-local (v2) | R7-local (v2) | v2 interpreted pattern | Notes |
-|---|-------|---------------|---------------|---------------|---------------|------------------------|-------|
-| 1 | rymd invoices | Good | Good | Good | Great (92) | `(?i)rymd.*\.(pdf\|doc\|docx\|txt\|odt\|xls\|xlsx)$` | keywords: rymd / type: documents / time: recent. Correct merge |
-| 2 | screenshots this week | Good | Good | Good | Good (0) | `(?i)^Screenshot.*\.(png\|jpg\|heic)$` + time_after: Monday | type: screenshots / time: this_week. 0 is real (CleanShot not Screenshot) |
-| 3 | node_modules space | Bad | Good | Good | Okay (768) | `*node_modules*` glob, is_dir=true, min_size=100MB | R7: regressed. LLM put all words in keywords: `(node_modules\|folders\|taking)`. Lost `folders: yes` + `size: large` |
-| 4 | python script yesterday | Good | Good | Good | Okay (77K) | `(?i)\.py$` + time range | R7: improved from Bad. `type: python` correct but no `time: yesterday` |
-| 5 | docs older than 1yr | Good | Good | Good | Okay (6068) | `(?i)\.(pdf\|doc\|docx\|txt\|odt\|xls\|xlsx)$` + before 1yr | R7: `type: documents` + `time: last_year` (2025 only, not `time: old`) |
-| 6 | big videos to delete | Good | Good | Good | Great (105) | `(?i)\.(mp4\|mov\|avi\|mkv\|webm)$` + min_size=100MB | R7: fixed from Bad. No spurious time or keyword |
-| 7 | ssh keys | Good | Good | Good | Perfect (6) | `(?i)^(id_(rsa\|dsa\|ecdsa\|ed25519)\|authorized_keys\|known_hosts)(\.pub)?$` | type: ssh-keys. Stable across all rounds |
-| 8 | presentation last quarter | Good | Good | Partial | Good (0) | `(?i)\.(ppt\|pptx\|odp)$` + quarter range | R7: fixed. `.key` removed from presentations. 0 is likely real |
-| 9 | docker compose | Good | Good | Good | Great (24) | `(?i)^(docker-compose\|compose)\.(yml\|yaml)$` | R7: fixed from Bad. Type system, no spurious fields |
-| 10 | fonts installed | Good | Good | Good | Great (1820) | `(?i)\.(ttf\|otf\|ttc\|woff\|woff2)$` + caveat | R7: fixed from Bad. `type: fonts` correctly used |
-| 11 | log files disk space | Good | Good | Good | Perfect (1) | `(?i)\.(log\|out\|err)$` + min_size=100MB, exclude_system_dirs=false | R7: fixed from Bad. `type: logs` + `size: large`. warp.log found |
-| 12 | tax documents 2024 | Good | Good | Good | Okay (778) | `(?i)tax.*\.(pdf\|doc\|docx\|txt\|odt\|xls\|xlsx)$` + 2024 range | R7: regressed from Good. `type: documents` + `time: 2024` but no keyword `tax` |
-| 13 | websocket rust | Good | Good | Good | Great (9) | `(?i)websocket.*\.rs$` | R7: fixed from Bad. No spurious time |
-| 14 | kubernetes | Good | Good | Partial | Bad (351K) | `*kubernetes*` glob | R7: regressed. LLM used `type: code` without keywords. All code files returned |
-| 15 | photos of my cat | Good | Good | Good | Great (188K) | `(?i)\.(jpg\|jpeg\|png\|heic\|webp\|gif)$` + caveat | Stable + caveat |
-| 16 | biggest files | Good | Good | Good | Good (17) | min_size=1GB + caveat (no sorting) | R7: fixed from Bad. `size: huge`, no name filter, caveat shown |
-| 17 | empty folders | Good | Good | Partial | Good (10) | is_dir=true, max_size=0 | R7: improved. `size: empty` + `folders: yes` working |
-| 18 | recent downloads | Good | Good | Good | Bad (1.4M) | scope: ~/Downloads + time_after: 3mo ago | R7: still bad. `time: recent` but no `scope: downloads` |
-| 19 | files edited today | Good | Good | Good | Good (7568) | time_after: start of today | R7: regressed slightly. Lost system dir exclusion |
-| 20 | zip >50mb | Good | Good | Good | Great (15) | `*zip*` glob + min_size=50MB | Stable. Perfect |
-| 21 | HEIC not converted | Good | Good | Partial | Okay (188K) | `*.heic*` glob + caveat | R7: improved from Bad. `type: photos` only (redundant keyword dropped). Returns all photos |
-| 22 | shell scripts dotfiles | Good | Good | Good | Okay (1607) | `(?i)\.(sh\|bash\|zsh)$` + scope: ~ (dotfiles prefix) | R7: improved from Bad. `type: shell-scripts` used but regex mangled, no `scope: dotfiles` |
-| 23 | pnpm-lock wasting space | Good | Good | Good | Okay (29) | `^pnpm\-lock\.yaml$` regex + min_size | R7: regressed. LLM lost keyword, just `size: large` |
-| 24 | contracts last 6mo | Good | Good | Partial | Great (10) | `(?i)contract.*\.(pdf\|doc\|docx\|txt\|odt\|xls\|xlsx)$` + 6mo range | R7: fixed from Bad. `keywords: contract` (singular) + `type: documents` + `time: last_6_months` |
-| 25 | .env files | Good | Good | Good | Bad (0) | `(?i)^\.env(\..+)?$` | R7: still bad. `keywords: env` + `type: env-files` merge → `env.*\.env` |
-| 26 | sqlite databases | Good | Good | Good | Great (2328) | `(?i)\.(sqlite\|sqlite3\|db)$` | R7: fixed from Okay. `type: databases` only, no spurious fields |
-| 27 | markdown notes this month | Bad | Good | Good | Bad (1) | `(?i)note.*\.md$` + this_month range | R7: still bad. `keywords: note` + `type: documents`. Needs markdown type |
-| 28 | old xcode projects | Good | Good | Good | Good (0) | `(?i)\.(xcodeproj\|xcworkspace\|pbxproj)$` + before 1yr | R7: fixed. `type: xcode` + `time: old`. 0 is real |
-| 29 | package.json not in node_modules | Bad | Good | Partial | Bad (3657) | `^package\.json$` regex + exclude: node_modules | R7: worse. LLM dumped all words as keywords |
-| 30 | audio recordings meetings | Good | Good | Good | Okay (4338) | `(?i)meeting.*\.(mp3\|m4a\|flac\|wav\|ogg\|aac)$` | R7: improved from Bad. `type: music` + caveat. No spurious time |
+| #   | Query                            | R5-cloud (v1) | R6-cloud (v2) | R6-local (v2) | R7-local (v2) | v2 interpreted pattern                                                        | Notes                                                                                                                |
+| --- | -------------------------------- | ------------- | ------------- | ------------- | ------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| 1   | rymd invoices                    | Good          | Good          | Good          | Great (92)    | `(?i)rymd.*\.(pdf\|doc\|docx\|txt\|odt\|xls\|xlsx)$`                          | keywords: rymd / type: documents / time: recent. Correct merge                                                       |
+| 2   | screenshots this week            | Good          | Good          | Good          | Good (0)      | `(?i)^Screenshot.*\.(png\|jpg\|heic)$` + time_after: Monday                   | type: screenshots / time: this_week. 0 is real (CleanShot not Screenshot)                                            |
+| 3   | node_modules space               | Bad           | Good          | Good          | Okay (768)    | `*node_modules*` glob, is_dir=true, min_size=100MB                            | R7: regressed. LLM put all words in keywords: `(node_modules\|folders\|taking)`. Lost `folders: yes` + `size: large` |
+| 4   | python script yesterday          | Good          | Good          | Good          | Okay (77K)    | `(?i)\.py$` + time range                                                      | R7: improved from Bad. `type: python` correct but no `time: yesterday`                                               |
+| 5   | docs older than 1yr              | Good          | Good          | Good          | Okay (6068)   | `(?i)\.(pdf\|doc\|docx\|txt\|odt\|xls\|xlsx)$` + before 1yr                   | R7: `type: documents` + `time: last_year` (2025 only, not `time: old`)                                               |
+| 6   | big videos to delete             | Good          | Good          | Good          | Great (105)   | `(?i)\.(mp4\|mov\|avi\|mkv\|webm)$` + min_size=100MB                          | R7: fixed from Bad. No spurious time or keyword                                                                      |
+| 7   | ssh keys                         | Good          | Good          | Good          | Perfect (6)   | `(?i)^(id_(rsa\|dsa\|ecdsa\|ed25519)\|authorized_keys\|known_hosts)(\.pub)?$` | type: ssh-keys. Stable across all rounds                                                                             |
+| 8   | presentation last quarter        | Good          | Good          | Partial       | Good (0)      | `(?i)\.(ppt\|pptx\|odp)$` + quarter range                                     | R7: fixed. `.key` removed from presentations. 0 is likely real                                                       |
+| 9   | docker compose                   | Good          | Good          | Good          | Great (24)    | `(?i)^(docker-compose\|compose)\.(yml\|yaml)$`                                | R7: fixed from Bad. Type system, no spurious fields                                                                  |
+| 10  | fonts installed                  | Good          | Good          | Good          | Great (1820)  | `(?i)\.(ttf\|otf\|ttc\|woff\|woff2)$` + caveat                                | R7: fixed from Bad. `type: fonts` correctly used                                                                     |
+| 11  | log files disk space             | Good          | Good          | Good          | Perfect (1)   | `(?i)\.(log\|out\|err)$` + min_size=100MB, exclude_system_dirs=false          | R7: fixed from Bad. `type: logs` + `size: large`. warp.log found                                                     |
+| 12  | tax documents 2024               | Good          | Good          | Good          | Okay (778)    | `(?i)tax.*\.(pdf\|doc\|docx\|txt\|odt\|xls\|xlsx)$` + 2024 range              | R7: regressed from Good. `type: documents` + `time: 2024` but no keyword `tax`                                       |
+| 13  | websocket rust                   | Good          | Good          | Good          | Great (9)     | `(?i)websocket.*\.rs$`                                                        | R7: fixed from Bad. No spurious time                                                                                 |
+| 14  | kubernetes                       | Good          | Good          | Partial       | Bad (351K)    | `*kubernetes*` glob                                                           | R7: regressed. LLM used `type: code` without keywords. All code files returned                                       |
+| 15  | photos of my cat                 | Good          | Good          | Good          | Great (188K)  | `(?i)\.(jpg\|jpeg\|png\|heic\|webp\|gif)$` + caveat                           | Stable + caveat                                                                                                      |
+| 16  | biggest files                    | Good          | Good          | Good          | Good (17)     | min_size=1GB + caveat (no sorting)                                            | R7: fixed from Bad. `size: huge`, no name filter, caveat shown                                                       |
+| 17  | empty folders                    | Good          | Good          | Partial       | Good (10)     | is_dir=true, max_size=0                                                       | R7: improved. `size: empty` + `folders: yes` working                                                                 |
+| 18  | recent downloads                 | Good          | Good          | Good          | Bad (1.4M)    | scope: ~/Downloads + time_after: 3mo ago                                      | R7: still bad. `time: recent` but no `scope: downloads`                                                              |
+| 19  | files edited today               | Good          | Good          | Good          | Good (7568)   | time_after: start of today                                                    | R7: regressed slightly. Lost system dir exclusion                                                                    |
+| 20  | zip >50mb                        | Good          | Good          | Good          | Great (15)    | `*zip*` glob + min_size=50MB                                                  | Stable. Perfect                                                                                                      |
+| 21  | HEIC not converted               | Good          | Good          | Partial       | Okay (188K)   | `*.heic*` glob + caveat                                                       | R7: improved from Bad. `type: photos` only (redundant keyword dropped). Returns all photos                           |
+| 22  | shell scripts dotfiles           | Good          | Good          | Good          | Okay (1607)   | `(?i)\.(sh\|bash\|zsh)$` + scope: ~ (dotfiles prefix)                         | R7: improved from Bad. `type: shell-scripts` used but regex mangled, no `scope: dotfiles`                            |
+| 23  | pnpm-lock wasting space          | Good          | Good          | Good          | Okay (29)     | `^pnpm\-lock\.yaml$` regex + min_size                                         | R7: regressed. LLM lost keyword, just `size: large`                                                                  |
+| 24  | contracts last 6mo               | Good          | Good          | Partial       | Great (10)    | `(?i)contract.*\.(pdf\|doc\|docx\|txt\|odt\|xls\|xlsx)$` + 6mo range          | R7: fixed from Bad. `keywords: contract` (singular) + `type: documents` + `time: last_6_months`                      |
+| 25  | .env files                       | Good          | Good          | Good          | Bad (0)       | `(?i)^\.env(\..+)?$`                                                          | R7: still bad. `keywords: env` + `type: env-files` merge → `env.*\.env`                                              |
+| 26  | sqlite databases                 | Good          | Good          | Good          | Great (2328)  | `(?i)\.(sqlite\|sqlite3\|db)$`                                                | R7: fixed from Okay. `type: databases` only, no spurious fields                                                      |
+| 27  | markdown notes this month        | Bad           | Good          | Good          | Bad (1)       | `(?i)note.*\.md$` + this_month range                                          | R7: still bad. `keywords: note` + `type: documents`. Needs markdown type                                             |
+| 28  | old xcode projects               | Good          | Good          | Good          | Good (0)      | `(?i)\.(xcodeproj\|xcworkspace\|pbxproj)$` + before 1yr                       | R7: fixed. `type: xcode` + `time: old`. 0 is real                                                                    |
+| 29  | package.json not in node_modules | Bad           | Good          | Partial       | Bad (3657)    | `^package\.json$` regex + exclude: node_modules                               | R7: worse. LLM dumped all words as keywords                                                                          |
+| 30  | audio recordings meetings        | Good          | Good          | Good          | Okay (4338)   | `(?i)meeting.*\.(mp3\|m4a\|flac\|wav\|ogg\|aac)$`                             | R7: improved from Bad. `type: music` + caveat. No spurious time                                                      |
 
-Legend: Good = correct/useful results. Great = correct with tight result count. Perfect = exactly right. Partial = structurally valid but suboptimal (missing synonym, wrong enum choice).
-Okay = valid but too broad/narrow. Bad = too many/few results, wrong filters. Error = regex/parse failure. MCP fail = timeout or empty.
+Legend: Good = correct/useful results. Great = correct with tight result count. Perfect = exactly right. Partial =
+structurally valid but suboptimal (missing synonym, wrong enum choice). Okay = valid but too broad/narrow. Bad = too
+many/few results, wrong filters. Error = regex/parse failure. MCP fail = timeout or empty.
 
 ## R6 analysis
 
@@ -209,12 +218,12 @@ Okay = valid but too broad/narrow. Bad = too many/few results, wrong filters. Er
 ### What's still imperfect
 
 - **Keyword/type confusion.** LLMs sometimes put the file format as a keyword alongside the type (e.g., `keywords: heic`
-  + `type: photos`). The redundant-keyword safety net in `merge_keyword_and_type` handles known extensions, and prompt
-  rules reduce the frequency, but novel combinations may still slip through.
+    - `type: photos`). The redundant-keyword safety net in `merge_keyword_and_type` handles known extensions, and prompt
+      rules reduce the frequency, but novel combinations may still slip through.
 - **Exclude reliability on local models.** The 2B model sometimes ignores "not in X" and omits the `exclude` field.
   Cloud models handle this reliably with the strengthened prompt rules.
-- **Synonym expansion.** Cloud models expand "kubernetes" to include k8s/kube/helm in keywords. Local models return
-  only the literal word. This is acceptable — the user can add terms manually.
+- **Synonym expansion.** Cloud models expand "kubernetes" to include k8s/kube/helm in keywords. Local models return only
+  the literal word. This is acceptable — the user can add terms manually.
 - **Markdown not in documents type.** `.md` files are in the `code` type extension list, not `documents`. This means
   "markdown notes this month" requires the LLM to either pick `type: code` (too broad) or omit type and use keyword
   only. The current prompt doesn't have a `markdown` type.
@@ -315,15 +324,15 @@ Today: {TODAY}.
 
 ### v1-era (R1–R5)
 
-- **Examples are behavioral anchors.** Removing them from the prompt causes regressions on those exact query types.
-  R4 proved this: compacting away the node_modules, empty folders, and kubernetes examples broke all three.
+- **Examples are behavioral anchors.** Removing them from the prompt causes regressions on those exact query types. R4
+  proved this: compacting away the node_modules, empty folders, and kubernetes examples broke all three.
 - **"Be broad" framing is critical for pass 1.** Without it, the LLM over-constrains initial queries, leaving pass 2
   nothing to work with.
 - **Regex constraint must be prominent.** The LLM uses lookahead (`(?=...)`) if the constraint is buried.
 - **Flag preservation needs explicit rules in the refinement prompt.** Without "preserve all flags from pass 1",
   refinement drops `includeSystemDirs`, `excludeDirs`, etc.
-- **Regression guard is essential.** Discard pass 2 if it returns more results than pass 1. Refinement broadens
-  instead of narrowing ~10% of the time.
+- **Regression guard is essential.** Discard pass 2 if it returns more results than pass 1. Refinement broadens instead
+  of narrowing ~10% of the time.
 - **Two-pass is powerful but refinement can be destructive.** Over-narrows ~15% of the time (`.md$` → `note*.md`).
 
 ### v2-era (R6+)
@@ -348,20 +357,20 @@ Today: {TODAY}.
 - **Redundant keyword detection works but merge logic still has gaps.** The `keyword_redundant_with_type` check handles
   known extensions, but `keywords: env` + `type: env-files` still merges to `env.*\.env` because `env` isn't recognized
   as redundant with `env-files`. Edge cases need either broader heuristics or special-case handling.
-- **2B model has a "keyword dumping" failure mode.** When confused, the 2B model puts all query words as keywords
-  (e.g., `node_modules|folders|taking`) instead of classifying them into the correct fields. This caused 3 of 6 Bad
-  results in R7. Cloud model never does this.
+- **2B model has a "keyword dumping" failure mode.** When confused, the 2B model puts all query words as keywords (e.g.,
+  `node_modules|folders|taking`) instead of classifying them into the correct fields. This caused 3 of 6 Bad results in
+  R7. Cloud model never does this.
 
 ## Failure taxonomy (v2)
 
-| Failure mode | Frequency | Example | Mitigation |
-|--------------|-----------|---------|------------|
-| Keyword dumping (local) | ~10% of queries on 2B model | `node_modules\|folders\|taking` instead of classifying | Model quality limit. Cloud model never does this |
-| Keyword/type merge gap | ~5% of kw+type queries | `keywords: env` + `type: env-files` → `env.*\.env` | Broader redundancy heuristics or special-case handling needed |
-| Missing exclude (local) | ~15% of exclude queries on local | package.json not in node_modules | Stronger prompt examples, explicit "ALWAYS use exclude" rule |
-| Missing capability | Ad hoc | No `scope: downloads` inference, no `markdown` type | Add capabilities as identified |
-| Wrong time defaulting | Mostly fixed in R7 | Was ~5% on local, now rare | Prompt rule: "Never default to recent/today" — confirmed effective |
-| Type table gap | Mostly fixed | `shell-scripts` and time enums added in R6→R7 | Add to type table + validator + prompt |
+| Failure mode            | Frequency                        | Example                                                | Mitigation                                                         |
+| ----------------------- | -------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------ |
+| Keyword dumping (local) | ~10% of queries on 2B model      | `node_modules\|folders\|taking` instead of classifying | Model quality limit. Cloud model never does this                   |
+| Keyword/type merge gap  | ~5% of kw+type queries           | `keywords: env` + `type: env-files` → `env.*\.env`     | Broader redundancy heuristics or special-case handling needed      |
+| Missing exclude (local) | ~15% of exclude queries on local | package.json not in node_modules                       | Stronger prompt examples, explicit "ALWAYS use exclude" rule       |
+| Missing capability      | Ad hoc                           | No `scope: downloads` inference, no `markdown` type    | Add capabilities as identified                                     |
+| Wrong time defaulting   | Mostly fixed in R7               | Was ~5% on local, now rare                             | Prompt rule: "Never default to recent/today" — confirmed effective |
+| Type table gap          | Mostly fixed                     | `shell-scripts` and time enums added in R6→R7          | Add to type table + validator + prompt                             |
 
 ## Concrete next steps
 
@@ -373,8 +382,7 @@ R7-local confirmed the architecture is sound. Remaining work is capability gaps 
    Either treat `env` as redundant with `env-files`, or special-case the merge. Would fix query #25.
 3. **Add `scope: downloads` inference** — when the user says "downloads" without other context, infer `scope: downloads`
    instead of treating it as a keyword. Would fix query #18.
-4. **Consider a `images` alias for `photos`** — some users say "images" not "photos". Currently falls through to
-   `None`.
+4. **Consider a `images` alias for `photos`** — some users say "images" not "photos". Currently falls through to `None`.
 5. **Extend EXTENSION_KEYWORDS list** as new confusion cases are found. The current list covers the most common
    extensions but isn't exhaustive.
 6. **Local model exclude training** — the 2B model's exclude handling could improve with more examples or a dedicated

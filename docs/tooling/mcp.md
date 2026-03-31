@@ -4,8 +4,8 @@ Two MCP servers are available when the app is running via `pnpm dev`.
 
 ## Servers
 
-- **cmdr** (port 9224) — High-level app control: navigation, file operations, search, dialogs, state inspection. This
-  is the primary way to test and interact with the running app. Architecture docs: `src-tauri/src/mcp/CLAUDE.md`.
+- **cmdr** (port 9224) — High-level app control: navigation, file operations, search, dialogs, state inspection. This is
+  the primary way to test and interact with the running app. Architecture docs: `src-tauri/src/mcp/CLAUDE.md`.
 - **tauri** (port 9223) — Low-level Tauri access: screenshots, DOM inspection, JS execution, IPC calls. Use for visual
   verification and UI automation.
 
@@ -16,8 +16,8 @@ search, file ops, state inspection). The Tauri MCP is generic low-level access. 
 understand what the app is showing instead of taking a Tauri screenshot. Only fall back to the Tauri MCP for things the
 Cmdr MCP can't do (window management, DOM inspection, arbitrary JS execution).
 
-**Prefer the wired-up MCP tools** (e.g. `mcp__cmdr__search`, `mcp__cmdr__nav_to_path`). These are available when
-Claude Code's MCP integration is connected. Always call `tools/list` first if you're unsure about parameter names.
+**Prefer the wired-up MCP tools** (e.g. `mcp__cmdr__search`, `mcp__cmdr__nav_to_path`). These are available when Claude
+Code's MCP integration is connected. Always call `tools/list` first if you're unsure about parameter names.
 
 **Fallback: `./scripts/mcp-call.sh`** — a curl wrapper for Cmdr's MCP server:
 
@@ -36,15 +36,15 @@ Claude Code's MCP integration is connected. Always call `tools/list` first if yo
 
 ## Connection resilience
 
-The MCP server goes down during hot reloads (up to 15s for Rust changes, up to 3s for frontend changes). Multiple
-agents working simultaneously can trigger frequent reloads. Follow this escalation:
+The MCP server goes down during hot reloads (up to 15s for Rust changes, up to 3s for frontend changes). Multiple agents
+working simultaneously can trigger frequent reloads. Follow this escalation:
 
 1. **Try the wired-up MCP tools** (`mcp__cmdr__*`). If they work, use them.
-2. **If disconnected, try `./scripts/mcp-call.sh`** — it connects independently and may work when the MCP integration
-   is temporarily down.
+2. **If disconnected, try `./scripts/mcp-call.sh`** — it connects independently and may work when the MCP integration is
+   temporarily down.
 3. **If both fail, wait ~15 seconds and retry** — the app is probably mid-reload from a Rust change.
-4. **If still failing, ask the user** to stop other agents that may be triggering hot reloads, and report back when
-   it's clear.
+4. **If still failing, ask the user** to stop other agents that may be triggering hot reloads, and report back when it's
+   clear.
 
 Do NOT retry in a tight loop. One retry after 15 seconds is enough before escalating.
 

@@ -19,19 +19,19 @@ Progress is printed to stderr, CSV to stdout.
 
 ## Output columns
 
-| Column | Description |
-|---|---|
-| `date` | YYYY-MM-DD |
-| `total` | Total lines of code |
-| `rust`, `rust prod`, `rust test` | Rust total, production, and test code |
-| `ts`, `ts prod`, `ts test` | TypeScript (includes `.js`/`.jsx`/`.mjs`/`.cjs`) total, production, and test code |
-| `svelte` | Svelte components |
-| `astro` | Astro pages (website) |
-| `go` | Go scripts |
-| `css` | CSS and SCSS |
-| `docs` | Markdown and LICENSE |
-| `other` | Everything else (config, TOML, YAML, HTML, shell scripts, and the like) |
-| `comments` | Commit messages for that day, joined with `;` |
+| Column                           | Description                                                                       |
+| -------------------------------- | --------------------------------------------------------------------------------- |
+| `date`                           | YYYY-MM-DD                                                                        |
+| `total`                          | Total lines of code                                                               |
+| `rust`, `rust prod`, `rust test` | Rust total, production, and test code                                             |
+| `ts`, `ts prod`, `ts test`       | TypeScript (includes `.js`/`.jsx`/`.mjs`/`.cjs`) total, production, and test code |
+| `svelte`                         | Svelte components                                                                 |
+| `astro`                          | Astro pages (website)                                                             |
+| `go`                             | Go scripts                                                                        |
+| `css`                            | CSS and SCSS                                                                      |
+| `docs`                           | Markdown and LICENSE                                                              |
+| `other`                          | Everything else (config, TOML, YAML, HTML, shell scripts, and the like)           |
+| `comments`                       | Commit messages for that day, joined with `;`                                     |
 
 Days without commits carry forward the previous day's stats and show `-` in the comments column.
 

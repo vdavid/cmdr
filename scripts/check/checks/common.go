@@ -340,22 +340,13 @@ func runPrettierCheck(ctx *CheckContext, dir string, extensions []string) (Check
 }
 
 // runOxfmtCheck runs oxfmt formatting check/fix for a given directory.
-// extensions are the file extensions to count (like []string{"*.ts", "*.js"}).
+// extensions is optional — if nil, file count is parsed from oxfmt output instead of `find`.
 func runOxfmtCheck(ctx *CheckContext, dir string, extensions []string) (CheckResult, error) {
-	// Count files that oxfmt would check
-	findArgs := buildFindArgs("src", extensions)
-	findCmd := exec.Command("find", findArgs...)
-	findCmd.Dir = dir
-	findOutput, _ := RunCommand(findCmd, true)
-	fileCount := 0
-	if strings.TrimSpace(findOutput) != "" {
-		fileCount = len(strings.Split(strings.TrimSpace(findOutput), "\n"))
-	}
-
 	if ctx.CI {
 		checkCmd := exec.Command("pnpm", "exec", "oxfmt", "--check", ".")
 		checkCmd.Dir = dir
 		checkOutput, err := RunCommand(checkCmd, true)
+		fileCount := parseOxfmtFileCount(checkOutput)
 		if err != nil {
 			return CheckResult{}, fmt.Errorf("code is not formatted, run `pnpm exec oxfmt .` locally\n%s", indentOutput(checkOutput))
 		}
@@ -370,6 +361,7 @@ func runOxfmtCheck(ctx *CheckContext, dir string, extensions []string) (CheckRes
 	checkCmd := exec.Command("pnpm", "exec", "oxfmt", "--check", ".")
 	checkCmd.Dir = dir
 	checkOutput, checkErr := RunCommand(checkCmd, true)
+	fileCount := parseOxfmtFileCount(checkOutput)
 
 	if checkErr != nil {
 		fmtCmd := exec.Command("pnpm", "exec", "oxfmt", ".")
@@ -398,6 +390,19 @@ func runOxfmtCheck(ctx *CheckContext, dir string, extensions []string) (CheckRes
 	result.Issues = 0
 	result.Changes = 0
 	return result, nil
+}
+
+// parseOxfmtFileCount extracts the file count from oxfmt output like "Finished in 150ms on 25 files using 16 threads."
+func parseOxfmtFileCount(output string) int {
+	for _, line := range strings.Split(output, "\n") {
+		if strings.HasPrefix(line, "Finished in ") {
+			var count int
+			if _, err := fmt.Sscanf(line, "Finished in %s on %d files", new(string), &count); err == nil {
+				return count
+			}
+		}
+	}
+	return 0
 }
 
 // runESLintCheck runs ESLint check/fix for a given directory.

@@ -1,7 +1,6 @@
 # Deploying the website
 
-The website (getcmdr.com) is automatically deployed when changes are pushed to the `main` branch and all CI
-checks pass.
+The website (getcmdr.com) is automatically deployed when changes are pushed to the `main` branch and all CI checks pass.
 
 ## How it works
 
@@ -9,9 +8,9 @@ checks pass.
 2. GitHub Actions runs the `website` job (Prettier, ESLint, typecheck, build, Playwright, Lighthouse)
 3. If all checks pass, the `deploy-website` job sends a webhook to the server
 4. The server verifies the signature and runs the deploy script:
-   - Pulls the latest code
-   - Rebuilds the Docker image
-   - Restarts the container
+    - Pulls the latest code
+    - Rebuilds the Docker image
+    - Restarts the container
 
 ## Server setup (one-time)
 
@@ -133,9 +132,9 @@ Go to https://github.com/vdavid/cmdr/settings/secrets/actions → **New reposito
 
 Add this secret:
 
-| Name                     | Value                      |
-| ------------------------ | -------------------------- |
-| `DEPLOY_WEBHOOK_SECRET`  | The secret from step 4     |
+| Name                    | Value                  |
+| ----------------------- | ---------------------- |
+| `DEPLOY_WEBHOOK_SECRET` | The secret from step 4 |
 
 ### 8. Configure website environment variables
 
@@ -150,17 +149,17 @@ nano .env
 
 Set the following (get values from the relevant dashboards):
 
-| Variable | Where to get it |
-| --- | --- |
-| `PUBLIC_PADDLE_CLIENT_TOKEN` | [Paddle dashboard](https://vendors.paddle.com) |
-| `PUBLIC_PADDLE_PRICE_ID_*` | Paddle > Catalog > Prices |
-| `PUBLIC_PADDLE_ENVIRONMENT` | `sandbox` or `live` |
-| `PUBLIC_LISTMONK_LIST_UUID` | Listmonk admin > Lists > your list > Settings |
-| `PUBLIC_UMAMI_HOST` | `/u` — proxied through Caddy to avoid adblockers |
-| `PUBLIC_UMAMI_WEBSITE_ID` | Umami > Settings > Websites > getcmdr.com > ID |
-| `PUBLIC_DOWNLOAD_BASE_URL` | `https://api.getcmdr.com` — routes downloads through the API server for analytics. Leave empty to link directly to GitHub. |
-| `PUBLIC_POSTHOG_KEY` | PostHog project API key (starts with `phc_`). Leave empty to disable. |
-| `PUBLIC_POSTHOG_HOST` | `/ph` — proxied through Caddy to avoid adblockers |
+| Variable                     | Where to get it                                                                                                            |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `PUBLIC_PADDLE_CLIENT_TOKEN` | [Paddle dashboard](https://vendors.paddle.com)                                                                             |
+| `PUBLIC_PADDLE_PRICE_ID_*`   | Paddle > Catalog > Prices                                                                                                  |
+| `PUBLIC_PADDLE_ENVIRONMENT`  | `sandbox` or `live`                                                                                                        |
+| `PUBLIC_LISTMONK_LIST_UUID`  | Listmonk admin > Lists > your list > Settings                                                                              |
+| `PUBLIC_UMAMI_HOST`          | `/u` — proxied through Caddy to avoid adblockers                                                                           |
+| `PUBLIC_UMAMI_WEBSITE_ID`    | Umami > Settings > Websites > getcmdr.com > ID                                                                             |
+| `PUBLIC_DOWNLOAD_BASE_URL`   | `https://api.getcmdr.com` — routes downloads through the API server for analytics. Leave empty to link directly to GitHub. |
+| `PUBLIC_POSTHOG_KEY`         | PostHog project API key (starts with `phc_`). Leave empty to disable.                                                      |
+| `PUBLIC_POSTHOG_HOST`        | `/ph` — proxied through Caddy to avoid adblockers                                                                          |
 
 ### 9. Set up Docker network and do initial deploy
 

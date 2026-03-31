@@ -9,12 +9,7 @@ license = "MIT"
 keywords = ["filesystem", "events", "watch", "notify", "macos"]
 repository = "https://github.com/vdavid/cmdr-fsevent-stream"
 readme = "README.md"
-exclude = [
-    ".github/**/*",
-    ".gitignore",
-    ".mergify.yml",
-    "Justfile"
-]
+exclude = [".github/**/*", ".gitignore", ".mergify.yml", "Justfile"]
 
 [features]
 default = ["tokio"]

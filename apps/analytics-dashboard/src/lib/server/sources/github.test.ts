@@ -63,7 +63,7 @@ describe('fetchGitHubData', () => {
             vi.fn().mockResolvedValue({
                 ok: true,
                 json: async () => sampleRawReleases,
-            })
+            }),
         )
 
         const result = await fetchGitHubData({})

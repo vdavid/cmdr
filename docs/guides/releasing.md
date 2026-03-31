@@ -33,8 +33,8 @@ Go to GitHub → Releases → delete the draft manually before retrying.
 
 ### Apple notarization is slow (builds time out at 30 min)
 
-Apple's notarization can take anywhere from minutes to 20+ hours. If the build job times out waiting
-for notarization, the publish job won't run — no broken state.
+Apple's notarization can take anywhere from minutes to 20+ hours. If the build job times out waiting for notarization,
+the publish job won't run — no broken state.
 
 To check notarization status manually:
 
@@ -45,29 +45,28 @@ xcrun notarytool info <SUBMISSION_ID> \
   --issuer 2c362f71-0680-4ec7-a74f-c62be656eeb7
 ```
 
-The submission ID is logged in the build output before the timeout. Once the status shows `Accepted`,
-re-run the failed job(s) in GitHub Actions — tauri-action will re-submit, Apple will return `Accepted`
-immediately (same binary hash), and the build will complete in minutes.
+The submission ID is logged in the build output before the timeout. Once the status shows `Accepted`, re-run the failed
+job(s) in GitHub Actions — tauri-action will re-submit, Apple will return `Accepted` immediately (same binary hash), and
+the build will complete in minutes.
 
-Use "Re-run failed jobs" (not "Re-run all jobs") to avoid rebuilding architectures that already
-succeeded.
+Use "Re-run failed jobs" (not "Re-run all jobs") to avoid rebuilding architectures that already succeeded.
 
 ### Publish job failed but builds succeeded
 
-The publish job downloads signatures from the release, generates `latest.json`, updates the release
-body, commits to main, and triggers a website deploy. If it fails:
+The publish job downloads signatures from the release, generates `latest.json`, updates the release body, commits to
+main, and triggers a website deploy. If it fails:
 
-- **Missing signatures**: check that all 3 build jobs uploaded their `.sig` files. The publish job
-  validates this upfront and fails fast with a clear message.
-- **Git push failed**: another commit was pushed to main between checkout and push. Re-run the
-  publish job — it does `git pull --rebase` to handle this, but if the rebase itself conflicts
-  (someone else edited `latest.json`), it needs manual resolution.
-- **Website deploy webhook failed**: re-trigger manually by pushing any commit to main, or SSH into
-  the server and run the deploy script.
+- **Missing signatures**: check that all 3 build jobs uploaded their `.sig` files. The publish job validates this
+  upfront and fails fast with a clear message.
+- **Git push failed**: another commit was pushed to main between checkout and push. Re-run the publish job — it does
+  `git pull --rebase` to handle this, but if the rebase itself conflicts (someone else edited `latest.json`), it needs
+  manual resolution.
+- **Website deploy webhook failed**: re-trigger manually by pushing any commit to main, or SSH into the server and run
+  the deploy script.
 
 ### Tauri bundles unexpected binaries
 
-Tauri's bundler includes all `[[bin]]` targets from the cmdr package, not just the main `Cmdr` binary.
-Dev-only tools must live in separate workspace crates (like `crates/index-query/`) to stay out of the
-bundle. Non-`.rs` files in `src/bin/` (like `CLAUDE.md`) also confuse the bundler — it strips the
-extension and tries to bundle the result as a binary.
+Tauri's bundler includes all `[[bin]]` targets from the cmdr package, not just the main `Cmdr` binary. Dev-only tools
+must live in separate workspace crates (like `crates/index-query/`) to stay out of the bundle. Non-`.rs` files in
+`src/bin/` (like `CLAUDE.md`) also confuse the bundler — it strips the extension and tries to bundle the result as a
+binary.

@@ -21,8 +21,10 @@ description: A one- or two-sentence summary for SEO and social sharing.
 
 ## Description vs. excerpt
 
-- **`description`** (frontmatter): a concise 1–2 sentence summary. Used for meta tags (`og:description`, `<meta name="description">`), the subtitle on the post page header, and the OG image.
-- **Excerpt** (`<!-- more -->` marker): controls what readers see on the blog index. Can be multiple paragraphs with full markdown formatting.
+- **`description`** (frontmatter): a concise 1–2 sentence summary. Used for meta tags (`og:description`,
+  `<meta name="description">`), the subtitle on the post page header, and the OG image.
+- **Excerpt** (`<!-- more -->` marker): controls what readers see on the blog index. Can be multiple paragraphs with
+  full markdown formatting.
 
 ## Excerpts
 

@@ -29,8 +29,8 @@ hits 50+ forks, 50+ watchers, and 100+ stars. These are
 [Brew's constraints](https://docs.brew.sh/Acceptable-Casks#rejected-casks) plus some margin to make sure it's accepted.
 You can help today by starring/forking/watching the repo.)
 
-Windows and Linux users: sorry, you'll need to wait. The Rust+Tauri stack allows for cross-platform deployment, but the app
-uses OS-specific features by nature, so I've only had time to write and test it on macOS for now.
+Windows and Linux users: sorry, you'll need to wait. The Rust+Tauri stack allows for cross-platform deployment, but the
+app uses OS-specific features by nature, so I've only had time to write and test it on macOS for now.
 
 ## Usage
 

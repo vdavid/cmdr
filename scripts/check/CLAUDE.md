@@ -1,7 +1,7 @@
 # Check runner
 
-Go CLI that runs all code quality checks for the Cmdr monorepo (~41 checks across 4 apps) in
-parallel with dependency ordering. Invoked via `./scripts/check.sh` at the repo root.
+Go CLI that runs all code quality checks for the Cmdr monorepo (~41 checks across 4 apps) in parallel with dependency
+ordering. Invoked via `./scripts/check.sh` at the repo root.
 
 ## Quick start
 
@@ -36,21 +36,21 @@ go run ./scripts/check --only-freestyle
 
 ## Command-line options
 
-| Option | Description |
-| --- | --- |
-| `--app NAME` | Run checks for a specific app |
-| `--rust`, `--rust-only` | Run only Rust checks (desktop) |
-| `--svelte`, `--svelte-only` | Run only Svelte checks (desktop) |
-| `--check ID` | Run specific checks by ID or nickname (repeatable) |
-| `--ci` | Disable auto-fixing (for CI) |
-| `--verbose` | Show detailed output |
-| `--include-slow` | Include slow checks (excluded by default) |
-| `--only-slow` | Run only slow checks |
-| `--only-freestyle` | Run freestyle-compatible checks on a VM (skip the rest) |
-| `--prefer-freestyle` | Run compat checks on VM + the rest locally in parallel |
-| `--fail-fast` | Stop on first failure |
-| `--no-log` | Disable CSV stats logging |
-| `-h`, `--help` | Show help message |
+| Option                      | Description                                             |
+| --------------------------- | ------------------------------------------------------- |
+| `--app NAME`                | Run checks for a specific app                           |
+| `--rust`, `--rust-only`     | Run only Rust checks (desktop)                          |
+| `--svelte`, `--svelte-only` | Run only Svelte checks (desktop)                        |
+| `--check ID`                | Run specific checks by ID or nickname (repeatable)      |
+| `--ci`                      | Disable auto-fixing (for CI)                            |
+| `--verbose`                 | Show detailed output                                    |
+| `--include-slow`            | Include slow checks (excluded by default)               |
+| `--only-slow`               | Run only slow checks                                    |
+| `--only-freestyle`          | Run freestyle-compatible checks on a VM (skip the rest) |
+| `--prefer-freestyle`        | Run compat checks on VM + the rest locally in parallel  |
+| `--fail-fast`               | Stop on first failure                                   |
+| `--no-log`                  | Disable CSV stats logging                               |
+| `-h`, `--help`              | Show help message                                       |
 
 ## Architecture
 
@@ -82,45 +82,43 @@ go run ./scripts/check --only-freestyle
 
 ## Key files
 
-| File | Purpose |
-|------|---------|
-| `main.go` | Entry point: flag parsing, root dir discovery, check selection, pnpm gating, runner delegation |
-| `runner.go` | Parallel executor: goroutine pool, dependency graph, fail-fast, live TTY status line |
-| `checks/common.go` | Core types (`CheckDefinition`, `CheckResult`, `CheckContext`, `CheckFunc`), shared utils (`RunCommand`, `EnsureGoTool`, `runPrettierCheck`, `runESLintCheck`) |
-| `checks/registry.go` | `AllChecks`: canonical ordered list of all check definitions. Lookup and validation functions. |
-| `checks/registry_test.go` | Collision detection, `CLIName()` tests |
-| `stats.go` | CSV stats logging (`logCheckStats`) — appends one row per check to `~/cmdr-check-log.csv` |
-| `colors.go` | ANSI color constants |
-| `utils.go` | `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found) |
-| `checks/desktop-rust-*.go` | One file per Rust check |
-| `checks/desktop-svelte-*.go` | One file per Svelte/TS check |
-| `checks/website-*.go`, `checks/api-server-*.go`, `checks/scripts-go-*.go` | One file per check |
-| `checks/file-length.go` | Informational file-length scanner (warn-only, never fails) |
+| File                                                                      | Purpose                                                                                                                                                       |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `main.go`                                                                 | Entry point: flag parsing, root dir discovery, check selection, pnpm gating, runner delegation                                                                |
+| `runner.go`                                                               | Parallel executor: goroutine pool, dependency graph, fail-fast, live TTY status line                                                                          |
+| `checks/common.go`                                                        | Core types (`CheckDefinition`, `CheckResult`, `CheckContext`, `CheckFunc`), shared utils (`RunCommand`, `EnsureGoTool`, `runPrettierCheck`, `runESLintCheck`) |
+| `checks/registry.go`                                                      | `AllChecks`: canonical ordered list of all check definitions. Lookup and validation functions.                                                                |
+| `checks/registry_test.go`                                                 | Collision detection, `CLIName()` tests                                                                                                                        |
+| `stats.go`                                                                | CSV stats logging (`logCheckStats`) — appends one row per check to `~/cmdr-check-log.csv`                                                                     |
+| `colors.go`                                                               | ANSI color constants                                                                                                                                          |
+| `utils.go`                                                                | `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found)                                                                                 |
+| `checks/desktop-rust-*.go`                                                | One file per Rust check                                                                                                                                       |
+| `checks/desktop-svelte-*.go`                                              | One file per Svelte/TS check                                                                                                                                  |
+| `checks/website-*.go`, `checks/api-server-*.go`, `checks/scripts-go-*.go` | One file per check                                                                                                                                            |
+| `checks/file-length.go`                                                   | Informational file-length scanner (warn-only, never fails)                                                                                                    |
 
 ## Key patterns
 
-**IDs vs nicknames:** `--check` accepts either. `CLIName()` returns nickname if set, else ID.
-`ValidateCheckNames()` runs at startup and fatals on any collision.
+**IDs vs nicknames:** `--check` accepts either. `CLIName()` returns nickname if set, else ID. `ValidateCheckNames()`
+runs at startup and fatals on any collision.
 
-**Dependency graph:** Flat `DependsOn` slice per check. Blocked checks get `StatusBlocked` on dep
-failure and are counted as failed. Dependencies not in the selected run set are treated as satisfied.
+**Dependency graph:** Flat `DependsOn` slice per check. Blocked checks get `StatusBlocked` on dep failure and are
+counted as failed. Dependencies not in the selected run set are treated as satisfied.
 
-**Auto-fix vs CI mode:** `--ci` disables auto-fixing. Formatters/linters fix files locally, report
-only in CI. `runPrettierCheck` and `runESLintCheck` in `common.go` handle both modes.
+**Auto-fix vs CI mode:** `--ci` disables auto-fixing. Formatters/linters fix files locally, report only in CI.
+`runPrettierCheck` and `runESLintCheck` in `common.go` handle both modes.
 
-**Slow checks:** `IsSlow: true` marks checks excluded by default (currently: `rust-tests-linux`,
-`desktop-e2e-linux`). Named `--check` invocations implicitly include slow checks
-(`includeSlow = len(checkNames) > 0`).
+**Slow checks:** `IsSlow: true` marks checks excluded by default (currently: `rust-tests-linux`, `desktop-e2e-linux`).
+Named `--check` invocations implicitly include slow checks (`includeSlow = len(checkNames) > 0`).
 
-**Go tool auto-install:** `EnsureGoTool(name, installPath)` checks PATH first, then runs
-`go install` and returns the full binary path. Used for staticcheck, nilaway, etc.
+**Go tool auto-install:** `EnsureGoTool(name, installPath)` checks PATH first, then runs `go install` and returns the
+full binary path. Used for staticcheck, nilaway, etc.
 
 **TTY detection:** `golang.org/x/term.IsTerminal` gates the live status line — CI logs stay clean.
 
-**CSV stats logging:** Each check run appends a row to `~/cmdr-check-log.csv` with timestamp, app,
-check name, duration, result (pass/fail/skip/blocked), and optional counts (total, issues, changes).
-`CheckResult` has `Total`, `Issues`, `Changes` fields (`-1` = N/A, rendered as `N/A` in CSV).
-Disabled by `--no-log` or `--ci`. Implementation in `stats.go`.
+**CSV stats logging:** Each check run appends a row to `~/cmdr-check-log.csv` with timestamp, app, check name, duration,
+result (pass/fail/skip/blocked), and optional counts (total, issues, changes). `CheckResult` has `Total`, `Issues`,
+`Changes` fields (`-1` = N/A, rendered as `N/A` in CSV). Disabled by `--no-log` or `--ci`. Implementation in `stats.go`.
 
 ## Check definition shape
 
@@ -140,8 +138,8 @@ CheckDefinition{
 
 ## Adding a new check
 
-1. Create `checks/{app}-{name}.go` with a `func RunSomething(ctx *CheckContext) (CheckResult, error)`.
-   Use `website-build.go` or `website-docker.go` as templates — they're the simplest.
+1. Create `checks/{app}-{name}.go` with a `func RunSomething(ctx *CheckContext) (CheckResult, error)`. Use
+   `website-build.go` or `website-docker.go` as templates — they're the simplest.
 2. Register it in `AllChecks` in `registry.go` (ID, App, Tech, DependsOn, Run).
 3. Return `Success("message")` on pass, `fmt.Errorf(...)` on fail, `Skipped("reason")` to skip.
 4. Add a test file if the check has non-trivial logic (`checks/{app}-{name}_test.go`).
@@ -169,20 +167,20 @@ return CheckResult{}, fmt.Errorf("check failed\n%s", indentOutput(output))
 
 ### Dependencies
 
-Set `DependsOn` to ensure checks run in the right order: formatters before linters, linters before
-tests, type checkers before tests.
+Set `DependsOn` to ensure checks run in the right order: formatters before linters, linters before tests, type checkers
+before tests.
 
 ## Apps and check counts
 
-| App | Tech | Checks |
-|-----|------|--------|
-| Desktop | Rust | rustfmt, clippy, cargo-audit, cargo-deny, cargo-udeps, jscpd, tests, tests-linux (slow) |
-| Desktop | Svelte | prettier, eslint, eslint-typecheck (slow), stylelint, css-unused, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow) |
-| Website | Astro | prettier, eslint, typecheck, build, html-validate, e2e |
-| Website | Docker | docker-build |
-| API server | TS | oxfmt, eslint, typecheck, tests |
-| Scripts | Go | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests |
-| Other | Metrics | file-length (warn-only) |
+| App        | Tech    | Checks                                                                                                                                                        |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop    | Rust    | rustfmt, clippy, cargo-audit, cargo-deny, cargo-udeps, jscpd, tests, tests-linux (slow)                                                                       |
+| Desktop    | Svelte  | prettier, eslint, eslint-typecheck (slow), stylelint, css-unused, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow) |
+| Website    | Astro   | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                        |
+| Website    | Docker  | docker-build                                                                                                                                                  |
+| API server | TS      | oxfmt, eslint, typecheck, tests                                                                                                                               |
+| Scripts    | Go      | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests                                                                       |
+| Other      | Metrics | file-length (warn-only)                                                                                                                                       |
 
 ## Output format
 
@@ -206,79 +204,79 @@ Use `CommandExists()` to check if a tool is installed, and auto-install if possi
 
 ## Key decisions
 
-**Decision**: Go instead of Bash for the check script.
-**Why**: Cross-platform support (especially Windows), type-safe, better error handling, and ability to build complex logic (parallel checks, dependency graph, colored output). Go is already in the toolchain via mise.
+**Decision**: Go instead of Bash for the check script. **Why**: Cross-platform support (especially Windows), type-safe,
+better error handling, and ability to build complex logic (parallel checks, dependency graph, colored output). Go is
+already in the toolchain via mise.
 
-**Decision**: `cargo-nextest` instead of `cargo test`.
-**Why**: Faster test execution (parallel by default), better output formatting, clearer failure messages. Auto-installed by the check script if missing.
+**Decision**: `cargo-nextest` instead of `cargo test`. **Why**: Faster test execution (parallel by default), better
+output formatting, clearer failure messages. Auto-installed by the check script if missing.
 
-**Decision**: `cargo-deny` advisories check disabled; use `cargo-audit` instead.
-**Why**: Tauri's transitive dependencies (gtk3-rs, unic-*, fxhash, proc-macro-error, etc.) trigger unmaintained-crate advisories we can't control. `cargo-audit` still catches critical security vulnerabilities. License, bans, and sources checks in `cargo-deny` remain active. See comment in `src-tauri/deny.toml`.
+**Decision**: `cargo-deny` advisories check disabled; use `cargo-audit` instead. **Why**: Tauri's transitive
+dependencies (gtk3-rs, unic-\*, fxhash, proc-macro-error, etc.) trigger unmaintained-crate advisories we can't control.
+`cargo-audit` still catches critical security vulnerabilities. License, bans, and sources checks in `cargo-deny` remain
+active. See comment in `src-tauri/deny.toml`.
 
-**Decision**: `cfg-gate` check to catch ungated macOS-only crate imports.
-**Why**: Rust code using macOS-only crates (from `[target.'cfg(target_os = "macos")'.dependencies]`) compiles fine on macOS but fails on Linux if the `use` isn't wrapped in `#[cfg(target_os = "macos")]`. CI catches this after push, but the check catches it locally and instantly. It parses `Cargo.toml` for macOS-only crate names, detects module-level gating (for example, `#[cfg(target_os = "macos")] mod foo;` in `lib.rs` makes everything inside `foo` inherently safe), and scans remaining files for ungated `use` statements.
+**Decision**: `cfg-gate` check to catch ungated macOS-only crate imports. **Why**: Rust code using macOS-only crates
+(from `[target.'cfg(target_os = "macos")'.dependencies]`) compiles fine on macOS but fails on Linux if the `use` isn't
+wrapped in `#[cfg(target_os = "macos")]`. CI catches this after push, but the check catches it locally and instantly. It
+parses `Cargo.toml` for macOS-only crate names, detects module-level gating (for example,
+`#[cfg(target_os = "macos")] mod foo;` in `lib.rs` makes everything inside `foo` inherently safe), and scans remaining
+files for ungated `use` statements.
 
-**Decision**: Auto-fix locally, check-only in CI.
-**Why**: Developers get instant fixes locally (less friction), CI ensures code is properly formatted before merge. Controlled by the `--ci` flag.
+**Decision**: Auto-fix locally, check-only in CI. **Why**: Developers get instant fixes locally (less friction), CI
+ensures code is properly formatted before merge. Controlled by the `--ci` flag.
 
-**Decision**: Split `desktop-svelte-eslint` into fast (non-type-aware) and slow (full) checks.
-**Why**: Type-aware rules (`no-floating-promises`, `no-unsafe-*`, etc.) take ~45% of lint time due to
-TypeScript project service startup. The fast check sets `ESLINT_NO_TYPECHECK=1`, which
-`eslint.config.js` reads to use `tseslint.configs.strict` (no type info) and suppress
-`reportUnusedDisableDirectives` (since disable comments for type-aware rules would look unused).
-The slow check (`IsSlow: true`) runs the full config with all rules and `reportUnusedDisableDirectives`
-on, so stale disable comments are still caught.
+**Decision**: Split `desktop-svelte-eslint` into fast (non-type-aware) and slow (full) checks. **Why**: Type-aware rules
+(`no-floating-promises`, `no-unsafe-*`, etc.) take ~45% of lint time due to TypeScript project service startup. The fast
+check sets `ESLINT_NO_TYPECHECK=1`, which `eslint.config.js` reads to use `tseslint.configs.strict` (no type info) and
+suppress `reportUnusedDisableDirectives` (since disable comments for type-aware rules would look unused). The slow check
+(`IsSlow: true`) runs the full config with all rules and `reportUnusedDisableDirectives` on, so stale disable comments
+are still caught.
 
-**Decision**: Skip `pnpm install` when lockfile is unchanged.
-**Why**: `pnpm install` takes ~20s and pegs all CPUs even when deps haven't changed. A marker file
-(`node_modules/.pnpm-install-marker`) stores `pnpm-lock.yaml`'s mtime after each successful install.
-On the next run, if the mtime matches, install is skipped. The marker lives inside `node_modules/` so
-it's automatically invalidated if `node_modules` is deleted. Always runs in CI (`--ci`).
+**Decision**: Skip `pnpm install` when lockfile is unchanged. **Why**: `pnpm install` takes ~20s and pegs all CPUs even
+when deps haven't changed. A marker file (`node_modules/.pnpm-install-marker`) stores `pnpm-lock.yaml`'s mtime after
+each successful install. On the next run, if the mtime matches, install is skipped. The marker lives inside
+`node_modules/` so it's automatically invalidated if `node_modules` is deleted. Always runs in CI (`--ci`).
 
 ## Freestyle.sh remote execution
 
 Two modes for offloading checks to a freestyle.sh VM:
 
 - `--only-freestyle`: runs only `FreestyleCompat` checks on the VM, skips the rest entirely.
-- `--prefer-freestyle`: runs `FreestyleCompat` checks on the VM and the rest locally, in parallel.
-  This is the "run everything as fast as possible" mode — Rust checks run on your Mac while Node/Go
-  checks run on the VM simultaneously.
+- `--prefer-freestyle`: runs `FreestyleCompat` checks on the VM and the rest locally, in parallel. This is the "run
+  everything as fast as possible" mode — Rust checks run on your Mac while Node/Go checks run on the VM simultaneously.
 
-**How it works:** Creates a temporary git commit of the full working tree (without modifying the local
-index/worktree), pushes it to a temp branch, fetches on the VM, runs checks, cleans up the branch.
+**How it works:** Creates a temporary git commit of the full working tree (without modifying the local index/worktree),
+pushes it to a temp branch, fetches on the VM, runs checks, cleans up the branch.
 
-**What's freestyle-compatible:** Node/TS checks (Svelte, Astro, API server), Go checks, and metrics —
-any check with `FreestyleCompat: true`. The VM uses `--freestyle-remote` internally to filter to only
-these checks.
+**What's freestyle-compatible:** Node/TS checks (Svelte, Astro, API server), Go checks, and metrics — any check with
+`FreestyleCompat: true`. The VM uses `--freestyle-remote` internally to filter to only these checks.
 
-**What's not:** Rust checks (dep compilation exceeds freestyle's ~15 min API timeout) and Docker
-checks (no Docker daemon on freestyle VMs). With `--prefer-freestyle` these run locally in parallel;
-with `--only-freestyle` they're skipped.
+**What's not:** Rust checks (dep compilation exceeds freestyle's ~15 min API timeout) and Docker checks (no Docker
+daemon on freestyle VMs). With `--prefer-freestyle` these run locally in parallel; with `--only-freestyle` they're
+skipped.
 
-**VM lifecycle:** The VM is created once (toolchain setup), then uses `persistent` storage so it
-survives freestyle's resource management. It auto-suspends after 5 min idle but resumes in <1s. VM ID
-is stored in `.freestyle-vm-id` (gitignored). On wake, a health check verifies the toolchain; if it
-fails, the VM is replaced. Setup parallelizes pnpm + Playwright install and uses a shallow clone.
+**VM lifecycle:** The VM is created once (toolchain setup), then uses `persistent` storage so it survives freestyle's
+resource management. It auto-suspends after 5 min idle but resumes in <1s. VM ID is stored in `.freestyle-vm-id`
+(gitignored). On wake, a health check verifies the toolchain; if it fails, the VM is replaced. Setup parallelizes pnpm +
+Playwright install and uses a shallow clone.
 
-**Key files:** `freestyle.go` (all freestyle logic including `preferFreestyleRun`), `main.go`
-(`handleFreestyleFlags` dispatches to the right mode).
+**Key files:** `freestyle.go` (all freestyle logic including `preferFreestyleRun`), `main.go` (`handleFreestyleFlags`
+dispatches to the right mode).
 
-**Decision**: `FreestyleCompat` field on `CheckDefinition` instead of hardcoded check lists.
-**Why**: Keeps freestyle compatibility co-located with each check's definition. Easy to flip when
-freestyle constraints change. Positive-sense boolean (`true` = compatible) reads more naturally than
-the previous `NoFreestyle` negative.
+**Decision**: `FreestyleCompat` field on `CheckDefinition` instead of hardcoded check lists. **Why**: Keeps freestyle
+compatibility co-located with each check's definition. Easy to flip when freestyle constraints change. Positive-sense
+boolean (`true` = compatible) reads more naturally than the previous `NoFreestyle` negative.
 
-**Decision**: Skip Rust checks entirely on freestyle (not just slow ones).
-**Why**: Freestyle's free tier has a hard ~15 min server-side timeout on `exec-await`. Compiling the
-full Tauri dependency tree (clippy, cargo-udeps, etc.) on 4 x86 vCPUs exceeds this. The 8 GB RAM also
-causes swap pressure when Rust and Node run in parallel. Attempted workarounds (2-VM split, nohup
-background builds) all failed due to VM lifecycle issues (auto-suspend kills background processes,
+**Decision**: Skip Rust checks entirely on freestyle (not just slow ones). **Why**: Freestyle's free tier has a hard ~15
+min server-side timeout on `exec-await`. Compiling the full Tauri dependency tree (clippy, cargo-udeps, etc.) on 4 x86
+vCPUs exceeds this. The 8 GB RAM also causes swap pressure when Rust and Node run in parallel. Attempted workarounds
+(2-VM split, nohup background builds) all failed due to VM lifecycle issues (auto-suspend kills background processes,
 `stopped` VMs lose disk state).
 
-**Decision**: mise's standalone pnpm disabled on freestyle VMs.
-**Why**: The pnpm binary mise installs ships a baked-in V8 snapshot that crashes on freestyle's x86
-Linux VMs. We install pnpm via `npm install -g pnpm@10` instead, configured via
-`[settings] disable_tools = ["pnpm"]` in `/root/.config/mise/config.toml`.
+**Decision**: mise's standalone pnpm disabled on freestyle VMs. **Why**: The pnpm binary mise installs ships a baked-in
+V8 snapshot that crashes on freestyle's x86 Linux VMs. We install pnpm via `npm install -g pnpm@10` instead, configured
+via `[settings] disable_tools = ["pnpm"]` in `/root/.config/mise/config.toml`.
 
 ## Dependencies
 

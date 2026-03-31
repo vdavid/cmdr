@@ -14,6 +14,4 @@ export function toTimeWindow(range: TimeRange): { startAt: number; endAt: number
 }
 
 /** Wraps a data source result. Either the data or an error message for the UI. */
-export type SourceResult<T> =
-    | { ok: true; data: T }
-    | { ok: false; error: string }
+export type SourceResult<T> = { ok: true; data: T } | { ok: false; error: string }

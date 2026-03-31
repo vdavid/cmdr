@@ -1,12 +1,14 @@
 # index_query
 
-Query the drive index SQLite database with the `platform_case` collation registered. The standard `sqlite3` CLI can't query these DBs because the custom collation isn't available.
+Query the drive index SQLite database with the `platform_case` collation registered. The standard `sqlite3` CLI can't
+query these DBs because the custom collation isn't available.
 
 ```sh
 cargo run -p index-query -- <db_path> "<sql>"
 ```
 
 DB paths:
+
 - **Dev**: `~/Library/Application Support/com.veszelovszki.cmdr-dev/index-root.db`
 - **Prod**: `~/Library/Application Support/com.veszelovszki.cmdr/index-root.db`
 

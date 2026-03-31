@@ -5,17 +5,17 @@ troubleshooting, see the [API server README](../../apps/api-server/README.md#dep
 
 ## Zones and Workers
 
-| Zone | Zone ID |
-| --- | --- |
-| `getcmdr.com` | `3b1ddce127d21ce9802588dac5aee4e9` |
+| Zone            | Zone ID                            |
+| --------------- | ---------------------------------- |
+| `getcmdr.com`   | `3b1ddce127d21ce9802588dac5aee4e9` |
 | `gitstrata.com` | `6265d396a0d0bf5c0b22e64a2b7777af` |
 
-| Worker | Domain | Config |
-| --- | --- | --- |
+| Worker                | Domain                                                      | Config                          |
+| --------------------- | ----------------------------------------------------------- | ------------------------------- |
 | `cmdr-license-server` | `api.getcmdr.com` (`license.getcmdr.com` is a legacy alias) | `apps/api-server/wrangler.toml` |
 
-| Pages project | Domain | Notes |
-| --- | --- | --- |
+| Pages project              | Domain                 | Notes                                                                                     |
+| -------------------------- | ---------------------- | ----------------------------------------------------------------------------------------- |
 | `cmdr-analytics-dashboard` | `analdash.getcmdr.com` | SvelteKit dashboard, auth via CF Access. Token needs `Cloudflare Pages: Edit` permission. |
 
 ## Telemetry (D1)

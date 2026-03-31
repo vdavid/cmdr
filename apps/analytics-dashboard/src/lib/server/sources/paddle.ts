@@ -116,7 +116,7 @@ export async function fetchPaddleData(env: PaddleEnv, range: TimeRange): Promise
         const [rawTransactions, rawSubscriptions] = await Promise.all([
             paddleFetchAll<PaddleRawTransaction>(
                 env.PADDLE_API_KEY_LIVE,
-                `/transactions?status=completed&created_at[gte]=${startIso}`
+                `/transactions?status=completed&created_at[gte]=${startIso}`,
             ),
             paddleFetchAll<PaddleRawSubscription>(env.PADDLE_API_KEY_LIVE, '/subscriptions'),
         ])

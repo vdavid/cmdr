@@ -104,10 +104,7 @@ describe('fetchCloudflareData', () => {
     })
 
     it('returns error when API fails', async () => {
-        vi.stubGlobal(
-            'fetch',
-            vi.fn().mockResolvedValue({ ok: false, status: 403, text: async () => 'Forbidden' })
-        )
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 403, text: async () => 'Forbidden' }))
 
         const result = await fetchCloudflareData(mockEnv, '7d')
         expect(result.ok).toBe(false)

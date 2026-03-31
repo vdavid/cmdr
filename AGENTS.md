@@ -11,6 +11,7 @@ Downloadable at [the website](https://getcmdr.com).
 ## File structure
 
 This is a monorepo containing these apps:
+
 - Cmdr: Currently for macOS only. Rust, Tauri 2, Svelte 5, TypeScript, and custom CSS.
 - Analytics dashboard: Private SvelteKit metrics dashboard. Deployed to Cloudflare Pages.
 - getcmdr.com website: Astro + Tailwind v4. Deployed via Docker + Caddy.
@@ -44,29 +45,29 @@ Core structure:
 
 ## Testing and checking
 
-Always use the checker script for compilation, linting, formatting, and tests. Its output is concise and focused —
-no `2>&1`, `head`, or `tail` needed. Don't run raw `cargo check`, `cargo clippy`, `cargo fmt`, `cargo nextest run`, etc.
+Always use the checker script for compilation, linting, formatting, and tests. Its output is concise and focused — no
+`2>&1`, `head`, or `tail` needed. Don't run raw `cargo check`, `cargo clippy`, `cargo fmt`, `cargo nextest run`, etc.
 
-- Specific checks: `./scripts/check.sh --check <name>` (e.g. `--check clippy`, `--check rustfmt`).
-  Use `--help` for the full list, or multiple `--check` flags.
+- Specific checks: `./scripts/check.sh --check <name>` (e.g. `--check clippy`, `--check rustfmt`). Use `--help` for the
+  full list, or multiple `--check` flags.
 - All Rust/Svelte checks: `./scripts/check.sh --rust` or `--svelte`
 - All checks: `./scripts/check.sh`
 - Specific tests by name (the one exception where direct commands are fine):
-  - Rust: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`
-  - Svelte: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
-- E2E (Playwright): See `apps/desktop/test/e2e-playwright/CLAUDE.md` — build with `playwright-e2e` feature, start app, run tests
+    - Rust: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`
+    - Svelte: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
+- E2E (Playwright): See `apps/desktop/test/e2e-playwright/CLAUDE.md` — build with `playwright-e2e` feature, start app,
+  run tests
 - E2E (legacy): See `apps/desktop/test/e2e-linux/CLAUDE.md` and `apps/desktop/test/e2e-macos/CLAUDE.md`
 - Ubuntu test VM: See `apps/desktop/test/e2e-linux/CLAUDE.md` § "Ubuntu test VM"
 - CI: Runs on PRs and pushes to main for changed files. Full run: Actions → CI → "Run workflow".
 
 ## Debugging
 
-- **Data dirs (dev and prod are separate!)**: Prod: `~/Library/Application Support/com.veszelovszki.cmdr/`,
-  Dev: `~/Library/Application Support/com.veszelovszki.cmdr-dev/`. Set by `resolved_app_data_dir()` in
+- **Data dirs (dev and prod are separate!)**: Prod: `~/Library/Application Support/com.veszelovszki.cmdr/`, Dev:
+  `~/Library/Application Support/com.veszelovszki.cmdr-dev/`. Set by `resolved_app_data_dir()` in
   `src-tauri/src/config.rs`.
-- **Logging**: Frontend and backend logs appear together in terminal and in
-  `~/Library/Logs/com.veszelovszki.cmdr/`. Full reference with `RUST_LOG` recipes:
-  [docs/tooling/logging.md](docs/tooling/logging.md).
+- **Logging**: Frontend and backend logs appear together in terminal and in `~/Library/Logs/com.veszelovszki.cmdr/`.
+  Full reference with `RUST_LOG` recipes: [docs/tooling/logging.md](docs/tooling/logging.md).
 - **Crash reports**: When the app crashes, it writes a crash file to the data dir (`crash-report.json` alongside
   `settings.json`). On next launch, the app detects this file and offers to send a crash report. See
   `src-tauri/src/crash_reporter/CLAUDE.md` for architecture details.
@@ -79,8 +80,8 @@ no `2>&1`, `head`, or `tail` needed. Don't run raw `cargo check`, `cargo clippy`
 
 Two MCP servers are available when the app is running via `pnpm dev`:
 
-- **cmdr** (port 9224) — High-level app control: navigation, file operations, search, dialogs, state inspection. This
-  is the primary way to test and interact with the running app. Architecture docs: `src-tauri/src/mcp/CLAUDE.md`.
+- **cmdr** (port 9224) — High-level app control: navigation, file operations, search, dialogs, state inspection. This is
+  the primary way to test and interact with the running app. Architecture docs: `src-tauri/src/mcp/CLAUDE.md`.
 - **tauri** (port 9223) — Low-level Tauri access: screenshots, DOM inspection, JS execution, IPC calls. Use for visual
   verification and UI automation.
 
@@ -106,8 +107,8 @@ resilience, and common pitfalls.
 - ❌ When testing the Tauri app, DO NOT USE THE BROWSER. Use the MCP servers.
 - ❌ Don't ignore linter warnings — fix them or justify with a comment.
 - Always use CSS variables defined in `apps/desktop/src/app.css`. Stylelint catches undefined/hallucinated variables.
-- Never use raw `px` values for `font-size`, `border-radius`, `font-family`, or `z-index` >= 10. Use `var(--font-size-*)`,
-  `var(--radius-*)`, `var(--font-*)`, and `var(--z-*)` tokens. Stylelint enforces this.
+- Never use raw `px` values for `font-size`, `border-radius`, `font-family`, or `z-index` >= 10. Use
+  `var(--font-size-*)`, `var(--radius-*)`, `var(--font-*)`, and `var(--z-*)` tokens. Stylelint enforces this.
 - **Coverage allowlist is a last resort.** Extract pure functions and test them. Only allowlist what genuinely can't be
   tested. Name the specific untestable API in the reason.
 - When adding a new user-facing action, add it to `command-registry.ts` and `handleCommandExecute` in `+page.svelte`.

@@ -30,7 +30,7 @@ describe('fetchLicenseData', () => {
             vi.fn().mockResolvedValue({
                 ok: true,
                 json: async () => sampleResponse,
-            })
+            }),
         )
 
         const result = await fetchLicenseData(mockEnv)

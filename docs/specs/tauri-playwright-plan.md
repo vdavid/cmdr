@@ -72,8 +72,8 @@ modifier keys: Ctrl on Linux vs Meta on macOS) are trivial to handle with a help
 ### What about `withGlobalTauri` for E2E builds?
 
 Not needed. The plugin uses `__TAURI_INTERNALS__` which is always present. However, the plugin needs its permission
-declared in the app's capabilities — we'll add a `playwright:default` capability, similar to how `mcp-bridge:default`
-is already configured for dev builds.
+declared in the app's capabilities — we'll add a `playwright:default` capability, similar to how `mcp-bridge:default` is
+already configured for dev builds.
 
 ---
 
@@ -86,8 +86,8 @@ server. This is the foundational work that makes everything else possible.
 
 #### 1.1 Replace the command execution path
 
-**What**: Thread `AppHandle` into `execute_command`, use `webview.eval()` for JS injection, register an IPC
-`result` command handler for the return path.
+**What**: Thread `AppHandle` into `execute_command`, use `webview.eval()` for JS injection, register an IPC `result`
+command handler for the return path.
 
 **Why**: The current polling loop adds ~16ms latency per command and introduces flakiness. Direct injection is
 instantaneous.
@@ -95,56 +95,64 @@ instantaneous.
 **Changes in `packages/plugin/src/`**:
 
 - `lib.rs`:
-  - Remove the polling JS init script (the `js_init_script()` function that injects the fetch-poll loop).
-  - Replace with a minimal init script: just `window.__PW_ACTIVE__ = true` as a readiness flag for the test fixture
-    (the fixture's `waitForFunction('window.__PW_ACTIVE__')` checks this before running tests).
-  - Add `.invoke_handler(tauri::generate_handler![pw_result])` to the plugin builder chain.
-  - Add `.manage(pending_for_setup)` to the plugin builder chain — **required**, otherwise accessing
-    `tauri::State<'_, PendingResults>` in the command handler will panic at runtime.
-  - Pass `AppHandle` into the socket server's `start()` function (it's already received but stored as `_app`).
+    - Remove the polling JS init script (the `js_init_script()` function that injects the fetch-poll loop).
+    - Replace with a minimal init script: just `window.__PW_ACTIVE__ = true` as a readiness flag for the test fixture
+      (the fixture's `waitForFunction('window.__PW_ACTIVE__')` checks this before running tests).
+    - Add `.invoke_handler(tauri::generate_handler![pw_result])` to the plugin builder chain.
+    - Add `.manage(pending_for_setup)` to the plugin builder chain — **required**, otherwise accessing
+      `tauri::State<'_, PendingResults>` in the command handler will panic at runtime.
+    - Pass `AppHandle` into the socket server's `start()` function (it's already received but stored as `_app`).
 - `server.rs`:
-  - Delete `run_http_server()`, `CommandQueue`, `QueuedCommand`, `CALLBACK_PORT` — all polling infrastructure.
-  - Update `handle_connection` to pass `app` through to `execute_command` (currently receives `_app` but doesn't use it).
-  - Update `execute_command` to accept `app: &AppHandle<R>` and pass it to `eval_js`.
-  - Rewrite `eval_js()`:
-    - Get the webview: `app.get_webview_window(&window_label).ok_or("window not found")?`
-    - Call `webview.eval(&wrapped_script)` (fire-and-forget injection)
-    - Wait on the oneshot receiver for the result (same timeout as before)
-  - Remove the `queue` parameter from all functions.
+    - Delete `run_http_server()`, `CommandQueue`, `QueuedCommand`, `CALLBACK_PORT` — all polling infrastructure.
+    - Update `handle_connection` to pass `app` through to `execute_command` (currently receives `_app` but doesn't use
+      it).
+    - Update `execute_command` to accept `app: &AppHandle<R>` and pass it to `eval_js`.
+    - Rewrite `eval_js()`:
+        - Get the webview: `app.get_webview_window(&window_label).ok_or("window not found")?`
+        - Call `webview.eval(&wrapped_script)` (fire-and-forget injection)
+        - Wait on the oneshot receiver for the result (same timeout as before)
+    - Remove the `queue` parameter from all functions.
 - `commands.rs`:
-  - Add a Tauri command for receiving results from the webview:
-    ```rust
-    #[tauri::command]
-    async fn pw_result(
-        pending: tauri::State<'_, PendingResults>,
-        id: String,
-        ok: bool,
-        data: Option<String>,
-        error: Option<String>,
-    ) -> Result<(), String> { ... }
-    ```
-    This looks up `id` in the pending map and sends the result through the oneshot channel.
-    **Important**: Don't apply `#[serde(rename_all = "camelCase")]` — the field names must match the JS object keys
-    exactly (`id`, `ok`, `data`, `error`).
+    - Add a Tauri command for receiving results from the webview:
+        ```rust
+        #[tauri::command]
+        async fn pw_result(
+            pending: tauri::State<'_, PendingResults>,
+            id: String,
+            ok: bool,
+            data: Option<String>,
+            error: Option<String>,
+        ) -> Result<(), String> { ... }
+        ```
+        This looks up `id` in the pending map and sends the result through the oneshot channel. **Important**: Don't
+        apply `#[serde(rename_all = "camelCase")]` — the field names must match the JS object keys exactly (`id`, `ok`,
+        `data`, `error`).
 
 **The wrapped JS pattern** (generated by `eval_js`):
 
 ```js
-(async () => {
-  try {
-    const __pw_result = await (USER_SCRIPT);
-    window.__TAURI_INTERNALS__.invoke('plugin:playwright|pw_result',
-      { id: 'pw42', ok: true, data: JSON.stringify(__pw_result) });
-  } catch(e) {
-    window.__TAURI_INTERNALS__.invoke('plugin:playwright|pw_result',
-      { id: 'pw42', ok: false, error: String(e && e.message || e) });
-  }
+;(async () => {
+    try {
+        const __pw_result = await USER_SCRIPT
+        window.__TAURI_INTERNALS__.invoke('plugin:playwright|pw_result', {
+            id: 'pw42',
+            ok: true,
+            data: JSON.stringify(__pw_result),
+        })
+    } catch (e) {
+        window.__TAURI_INTERNALS__.invoke('plugin:playwright|pw_result', {
+            id: 'pw42',
+            ok: false,
+            error: String((e && e.message) || e),
+        })
+    }
 })()
 ```
 
 #### 1.2 Add plugin permissions
 
-**What**: Create `permissions/` directory with default permission set, so Tauri apps can grant the plugin's IPC commands.
+**What**: Create `permissions/` directory with default permission set, so Tauri apps can grant the plugin's IPC
+commands.
 
 **Why**: Tauri 2 requires explicit permission grants for plugin commands. Without this, the `invoke()` call from the
 webview will be rejected.
@@ -176,6 +184,7 @@ native screenshot commands (CoreGraphics on macOS) are also useful — they capt
 **Why**: Validate the architecture change works end-to-end before integrating into Cmdr.
 
 **Checks**:
+
 - `cargo check` on the plugin crate
 - `cargo build --features e2e-testing` on the example app
 - Run the example's Playwright tests in Tauri mode
@@ -198,13 +207,14 @@ CrabNebula.
 **Changes**:
 
 - `apps/desktop/src-tauri/Cargo.toml`:
-  - Add feature: `playwright-e2e = ["dep:tauri-plugin-playwright"]`
-  - Add dependency: `tauri-plugin-playwright = { git = "https://github.com/vdavid/tauri-playwright", optional = true }`
+    - Add feature: `playwright-e2e = ["dep:tauri-plugin-playwright"]`
+    - Add dependency:
+      `tauri-plugin-playwright = { git = "https://github.com/vdavid/tauri-playwright", optional = true }`
 - `apps/desktop/src-tauri/src/lib.rs`:
-  ```rust
-  #[cfg(feature = "playwright-e2e")]
-  let builder = builder.plugin(tauri_plugin_playwright::init());
-  ```
+    ```rust
+    #[cfg(feature = "playwright-e2e")]
+    let builder = builder.plugin(tauri_plugin_playwright::init());
+    ```
 - `apps/desktop/src-tauri/capabilities/default.json`: Add `"playwright:default"` to the permission list
 
 **Check**: `./scripts/check.sh --check clippy` to verify compilation.
@@ -232,16 +242,16 @@ apps/desktop/test/e2e-playwright/
 
 **Key changes in the port**:
 
-| WebDriverIO pattern | Playwright equivalent |
-|---|---|
-| `browser.$('.sel')` | `tauriPage.locator('.sel')` |
-| `browser.$$('.sel')` | `tauriPage.locator('.sel').all()` |
-| `element.waitForExist()` | `tauriPage.waitForSelector('.sel')` or `locator.waitFor()` |
-| `element.getAttribute('class')` | `tauriPage.getAttribute('.sel', 'class')` |
-| `browser.keys('ArrowDown')` | `tauriPage.keyboard.press('ArrowDown')` (TauriKeyboard class on `tauriPage.keyboard`) |
-| `browser.execute(() => ...)` | `tauriPage.evaluate('...')` |
-| `jsClick(element)` | `tauriPage.click('.sel')` (no workaround needed) |
-| `browser.pause(100)` | Playwright auto-waiting handles most cases |
+| WebDriverIO pattern             | Playwright equivalent                                                                 |
+| ------------------------------- | ------------------------------------------------------------------------------------- |
+| `browser.$('.sel')`             | `tauriPage.locator('.sel')`                                                           |
+| `browser.$$('.sel')`            | `tauriPage.locator('.sel').all()`                                                     |
+| `element.waitForExist()`        | `tauriPage.waitForSelector('.sel')` or `locator.waitFor()`                            |
+| `element.getAttribute('class')` | `tauriPage.getAttribute('.sel', 'class')`                                             |
+| `browser.keys('ArrowDown')`     | `tauriPage.keyboard.press('ArrowDown')` (TauriKeyboard class on `tauriPage.keyboard`) |
+| `browser.execute(() => ...)`    | `tauriPage.evaluate('...')`                                                           |
+| `jsClick(element)`              | `tauriPage.click('.sel')` (no workaround needed)                                      |
+| `browser.pause(100)`            | Playwright auto-waiting handles most cases                                            |
 
 **Platform-specific keyboard helper**:
 
@@ -266,8 +276,8 @@ Tauri mode runs against the real app webview, not a browser.
 
 Port tests one at a time, verifying each runs before moving to the next. Order matters — start with the simplest:
 
-1. **`app.spec.ts`** (basic rendering, keyboard nav, mouse clicks) — validates the fundamental connection and interaction
-   model works
+1. **`app.spec.ts`** (basic rendering, keyboard nav, mouse clicks) — validates the fundamental connection and
+   interaction model works
 2. **`viewer.spec.ts`** (file viewer) — tests SvelteKit navigation, which was the most hacky part in WebDriverIO
 3. **`settings.spec.ts`** (settings page) — another navigation test, plus form interactions
 4. **`file-operations.spec.ts`** (copy, move, rename, mkdir) — the most complex, touches filesystem and dialogs
@@ -326,8 +336,7 @@ doesn't use WebDriver at all.
 
 #### 3.5 Prepare upstream PR
 
-**What**: Clean up the fork's commit history, write a PR description for the original `srsholmes/tauri-playwright`
-repo.
+**What**: Clean up the fork's commit history, write a PR description for the original `srsholmes/tauri-playwright` repo.
 
 **Scope of upstream PR**: Only the plugin architecture changes (milestone 1). Cmdr-specific integration stays in our
 repo.
@@ -362,13 +371,13 @@ directly via Unix socket, and the JS in the webview communicates via Tauri IPC. 
 
 ## Risks and mitigations
 
-| Risk | Impact | Mitigation |
-|---|---|---|
-| `__TAURI_INTERNALS__.invoke()` might not be available in release builds for plugin commands | Blocks the whole approach | Test early with a minimal Tauri app. Fallback: use a tiny HTTP server for results only (still much better than polling) |
-| Playwright assertions (`expect(locator).toBeVisible()`) use polling internally — may be slower than expected | Flaky tests | tauri-playwright's `expect.ts` already has configurable polling intervals and timeouts |
-| Linux Docker container needs Tauri runtime deps but not WebDriver | Build/CI issues | The current Dockerfile already has all Tauri deps. We just stop installing tauri-driver |
-| Some existing tests rely on WebDriver-specific behavior (element serialization, session reuse) | Port difficulty | The port is a rewrite, not a translation. We'll use Playwright idioms, not WebDriver workarounds |
-| SvelteKit navigation destroys page context mid-eval | Timeout errors in tests that navigate | Always `waitForSelector` after navigation before doing more evaluations (see Gotchas above) |
+| Risk                                                                                                         | Impact                                | Mitigation                                                                                                              |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `__TAURI_INTERNALS__.invoke()` might not be available in release builds for plugin commands                  | Blocks the whole approach             | Test early with a minimal Tauri app. Fallback: use a tiny HTTP server for results only (still much better than polling) |
+| Playwright assertions (`expect(locator).toBeVisible()`) use polling internally — may be slower than expected | Flaky tests                           | tauri-playwright's `expect.ts` already has configurable polling intervals and timeouts                                  |
+| Linux Docker container needs Tauri runtime deps but not WebDriver                                            | Build/CI issues                       | The current Dockerfile already has all Tauri deps. We just stop installing tauri-driver                                 |
+| Some existing tests rely on WebDriver-specific behavior (element serialization, session reuse)               | Port difficulty                       | The port is a rewrite, not a translation. We'll use Playwright idioms, not WebDriver workarounds                        |
+| SvelteKit navigation destroys page context mid-eval                                                          | Timeout errors in tests that navigate | Always `waitForSelector` after navigation before doing more evaluations (see Gotchas above)                             |
 
 ## What's NOT in scope
 

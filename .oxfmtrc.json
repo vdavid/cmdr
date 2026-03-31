@@ -1,29 +1,37 @@
 {
-    "$schema": "./node_modules/oxfmt/configuration_schema.json",
-    "tabWidth": 4,
-    "useTabs": false,
-    "semi": false,
-    "singleQuote": true,
-    "quoteProps": "as-needed",
-    "trailingComma": "all",
-    "bracketSpacing": true,
-    "bracketSameLine": false,
-    "arrowParens": "always",
-    "endOfLine": "lf",
-    "printWidth": 120,
-    "proseWrap": "always",
-    "sortPackageJson": false,
-    "ignorePatterns": [
-        "node_modules/",
-        "**/dist/",
-        "**/build/",
-        "**/.svelte-kit/",
-        "**/.astro/",
-        "**/src-tauri/",
-        "pnpm-lock.yaml",
-        "**/playwright-report/",
-        "**/test-results/",
-        "**/coverage/",
-        "apps/website/src/pages/pricing.astro"
-    ]
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "tabWidth": 4,
+  "useTabs": false,
+  "semi": false,
+  "singleQuote": true,
+  "quoteProps": "as-needed",
+  "trailingComma": "all",
+  "bracketSpacing": true,
+  "bracketSameLine": false,
+  "arrowParens": "always",
+  "endOfLine": "lf",
+  "printWidth": 120,
+  "proseWrap": "always",
+  "sortPackageJson": false,
+  "overrides": [
+    {
+      "files": ["*.json", "*.jsonc", "*.yaml", "*.yml"],
+      "options": {
+        "tabWidth": 2
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "node_modules/",
+    "**/dist/",
+    "**/build/",
+    "**/.svelte-kit/",
+    "**/.astro/",
+    "**/src-tauri/",
+    "pnpm-lock.yaml",
+    "**/playwright-report/",
+    "**/test-results/",
+    "**/coverage/",
+    "apps/website/src/pages/pricing.astro"
+  ]
 }

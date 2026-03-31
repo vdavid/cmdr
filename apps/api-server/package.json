@@ -1,40 +1,40 @@
 {
-    "name": "@cmdr/api-server",
-    "version": "0.0.1",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "preinstall": "npx only-allow pnpm",
-        "dev": "wrangler dev",
-        "cf:deploy": "wrangler deploy",
-        "setup-infra": "./scripts/setup-cf-infra.sh",
-        "generate-keys": "node scripts/generate-keys.js",
-        "test:checkout": "node test/server.js",
-        "lint": "eslint .",
-        "lint:fix": "eslint . --fix",
-        "format": "prettier --write .",
-        "format:check": "prettier --check .",
-        "typecheck": "tsc --noEmit",
-        "test": "vitest run",
-        "test:watch": "vitest"
-    },
-    "dependencies": {
-        "@noble/ed25519": "^3.0.0",
-        "hono": "^4.12.5",
-        "resend": "^6.9.3"
-    },
-    "devDependencies": {
-        "@cloudflare/workers-types": "^4.20260305.1",
-        "@eslint/js": "^10.0.1",
-        "eslint": "^10.0.2",
-        "eslint-config-prettier": "^10.1.8",
-        "eslint-plugin-prettier": "^5.5.5",
-        "globals": "^17.4.0",
-        "oxfmt": "^0.42.0",
-        "prettier": "^3.8.1",
-        "typescript": "^5.9.3",
-        "typescript-eslint": "^8.57.1",
-        "vitest": "^4.0.18",
-        "wrangler": "^4.70.0"
-    }
+  "name": "@cmdr/api-server",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "preinstall": "npx only-allow pnpm",
+    "dev": "wrangler dev",
+    "cf:deploy": "wrangler deploy",
+    "setup-infra": "./scripts/setup-cf-infra.sh",
+    "generate-keys": "node scripts/generate-keys.js",
+    "test:checkout": "node test/server.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^3.0.0",
+    "hono": "^4.12.5",
+    "resend": "^6.9.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260305.1",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.4.0",
+    "oxfmt": "^0.42.0",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.57.1",
+    "vitest": "^4.0.18",
+    "wrangler": "^4.70.0"
+  }
 }

@@ -2,7 +2,8 @@
 
 Loading 20k+ files into Svelte reactive state causes multi-second UI freezes due to Svelte's internal tracking of large
 arrays. The solution: store file data in a plain JavaScript class (`FileDataStore`) outside of Svelte's reactivity
-system, and have the virtual scroll components request only the visible range (~50-100 items) to put into reactive state.
+system, and have the virtual scroll components request only the visible range (~50-100 items) to put into reactive
+state.
 
 ## The problem (benchmark data, 50k files)
 
@@ -21,7 +22,8 @@ over the entire array, and Svelte's reactivity system still processes the full a
 ## Alternatives rejected
 
 - **Web Worker**: `postMessage()` has serialization cost; Tauri IPC must still run on main thread; overkill.
-- **Chunked loading into Svelte**: Array concatenation is O(n²); Svelte still tracks full array; total work same or worse.
+- **Chunked loading into Svelte**: Array concatenation is O(n²); Svelte still tracks full array; total work same or
+  worse.
 
 ## Architecture
 
