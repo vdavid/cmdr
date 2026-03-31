@@ -12,12 +12,13 @@ Opens files in a read-only viewer with instant load for any file size, virtual s
 - **F3** in file list opens viewer for file under cursor
 - **Cmd+F / Ctrl+F** opens search bar (case-insensitive, 100ms debounce)
 - **Enter / Shift+Enter** navigates to next/previous match
-- **W** toggles word wrap (averaged-height virtual scroll)
+- **W** toggles word wrap (per-line heights for FullLoad, averaged for others)
 - **Escape** closes search bar (if open) or closes window
 
 ## Architecture
 
-- **Virtual scrolling** — only visible lines rendered. Fixed 18px line height (or averaged when wrap is on).
+- **Virtual scrolling** — only visible lines rendered. Fixed 18px line height, per-line pretext heights when wrap is on
+  (FullLoad), or averaged heights (ByteSeek/LineIndex).
 - **Session-based** — `viewer_open` returns session ID. All operations pass session ID. `viewer_close` frees resources.
 - **Three backends** (chosen by Rust based on file size):
   - FullLoad (<1MB) — entire file in RAM
@@ -49,11 +50,18 @@ a `WebPageProxy` while it's recalculating content insets. A single `requestAnima
 current frame to complete AND the next one to start. This also means you must NOT call `setFocus()` on another window
 before closing, as that can trigger the dying window to recalculate.
 
-**Decision**: Word wrap uses averaged line height for virtual scroll. **Why**: When lines wrap, each line has a
-different rendered height. Measuring every line would require rendering the entire file. Instead, the viewer measures
-the average height of currently-visible lines and uses that for the scroll spacer. This is slightly inaccurate (scroll
-thumb position drifts) but keeps the O(1) virtual scroll contract. The measurement effect depends on `scrollTop` rather
-than `visibleLines` to avoid a feedback loop:
+**Decision**: FullLoad files use `@chenglou/pretext` for per-line height calculation when word wrap is on. **Why**:
+Pretext runs `prepare()` on each line's text using canvas font metrics, then `layout()` computes wrapped height without
+rendering to the DOM. A prefix-sum array (`Float64Array`) gives O(1) `getLineTop(n)` and O(log n)
+`getLineAtPosition(y)`. Preparation runs async via `requestIdleCallback` (with a 2s timeout and 50k line cap). While it
+runs, the viewer falls back to averaged heights, so there's zero regression. Width changes call `reflow()` (re-runs
+`layout()` only, ~0.0002ms/line) instead of re-preparing. A generation counter discards stale preparations.
+
+**Decision**: Word wrap uses averaged line height as fallback for ByteSeek/LineIndex files and while pretext prepares.
+**Why**: When lines wrap, each line has a different rendered height. Measuring every line would require rendering the
+entire file. Instead, the viewer measures the average height of currently-visible lines and uses that for the scroll
+spacer. This is slightly inaccurate (scroll thumb position drifts) but keeps the O(1) virtual scroll contract. The
+measurement effect depends on `scrollTop` rather than `visibleLines` to avoid a feedback loop:
 `visibleLines -> measure -> avgHeight -> effectiveLineHeight -> visibleLines`.
 
 **Decision**: Proportional scroll compensation when `effectiveLineHeight` changes. **Why**: Toggling word wrap or

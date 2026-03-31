@@ -1,10 +1,10 @@
 import { SvelteMap } from 'svelte/reactivity'
 import { viewerGetLines, isIpcError } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
+import { createLineHeightMap, LINE_HEIGHT } from './viewer-line-heights.svelte'
 
 const log = getAppLogger('viewer')
 
-const LINE_HEIGHT = 18
 const BUFFER_LINES = 50
 const FETCH_BATCH = 500
 // WebKit caps element height at ~2^25 px (33.5M). Stay well below to avoid scroll cutoff.
@@ -18,12 +18,15 @@ interface ScrollDeps {
   getEstimatedLines: () => number
   getBackendType: () => 'fullLoad' | 'byteSeek' | 'lineIndex'
   onTimeoutError: () => void
+  getAllLines: () => string[] | null
+  getTextWidth: () => number
 }
 
 export { LINE_HEIGHT, MAX_SCROLL_HEIGHT }
 
 export function createViewerScroll(deps: ScrollDeps) {
   const lineCache = new SvelteMap<number, string>()
+  const heightMap = createLineHeightMap()
 
   let scrollTop = $state(0)
   let viewportHeight = $state(600)
@@ -47,16 +50,40 @@ export function createViewerScroll(deps: ScrollDeps) {
     return deps.getEstimatedLines()
   }
 
+
   const scrollScale = $derived.by(() => {
-    const fullHeight = estimatedTotalLines() * effectiveLineHeight
-    return fullHeight > MAX_SCROLL_HEIGHT ? MAX_SCROLL_HEIGHT / fullHeight : 1
+    const totalHeight = heightMap.ready ? heightMap.getTotalHeight() : estimatedTotalLines() * effectiveLineHeight
+    return totalHeight > MAX_SCROLL_HEIGHT ? MAX_SCROLL_HEIGHT / totalHeight : 1
   })
   const scrollLineHeight = $derived(effectiveLineHeight * scrollScale)
 
-  const visibleFrom = $derived(Math.max(0, Math.floor(scrollTop / scrollLineHeight) - BUFFER_LINES))
-  const visibleTo = $derived(
-    Math.min(estimatedTotalLines(), Math.ceil((scrollTop + viewportHeight) / scrollLineHeight) + BUFFER_LINES),
+
+  const visibleFrom = $derived.by(() => {
+    if (heightMap.ready) {
+      const unscaledY = scrollScale < 1 ? scrollTop / scrollScale : scrollTop
+      return Math.max(0, heightMap.getLineAtPosition(unscaledY) - BUFFER_LINES)
+    }
+    return Math.max(0, Math.floor(scrollTop / scrollLineHeight) - BUFFER_LINES)
+  })
+
+  const visibleTo = $derived.by(() => {
+    if (heightMap.ready) {
+      const unscaledY = scrollScale < 1 ? (scrollTop + viewportHeight) / scrollScale : scrollTop + viewportHeight
+      return Math.min(estimatedTotalLines(), heightMap.getLineAtPosition(unscaledY) + BUFFER_LINES)
+    }
+    return Math.min(estimatedTotalLines(), Math.ceil((scrollTop + viewportHeight) / scrollLineHeight) + BUFFER_LINES)
+  })
+
+
+  const spacerHeight = $derived(
+    heightMap.ready ? heightMap.getTotalHeight() * scrollScale : estimatedTotalLines() * scrollLineHeight,
   )
+
+
+  const linesOffset = $derived(
+    heightMap.ready ? heightMap.getLineTop(visibleFrom) * scrollScale : visibleFrom * scrollLineHeight,
+  )
+
   const visibleLines = $derived(getVisibleLines())
   const gutterWidth = $derived(String(estimatedTotalLines()).length)
 
@@ -67,6 +94,21 @@ export function createViewerScroll(deps: ScrollDeps) {
       result.push({ lineNumber: i, text: lineCache.get(i) ?? '' })
     }
     return result
+  }
+
+  /** Returns the scaled Y offset for line n. Used by search for scroll-to-match. */
+  function getLineTop(n: number): number {
+
+    if (heightMap.ready) {
+      return heightMap.getLineTop(n) * scrollScale
+    }
+    return n * scrollLineHeight
+  }
+
+  /** Returns the line at the current viewport top, using the height map (not the DOM buffer). */
+  function getAnchorLine(): number {
+    const unscaledY = scrollScale < 1 ? scrollTop / scrollScale : scrollTop
+    return heightMap.getLineAtPosition(unscaledY)
   }
 
   function needsFetch(from: number, to: number): boolean {
@@ -182,13 +224,28 @@ export function createViewerScroll(deps: ScrollDeps) {
   }
 
   function scrollByLines(lines: number) {
-    if (contentRef) {
+    if (!contentRef) return
+
+    if (heightMap.ready) {
+      // Find current line at the top of viewport, move by `lines` lines, look up new position
+      const unscaledY = scrollScale < 1 ? contentRef.scrollTop / scrollScale : contentRef.scrollTop
+      const currentLine = heightMap.getLineAtPosition(unscaledY)
+      const targetLine = Math.max(0, Math.min(estimatedTotalLines() - 1, currentLine + lines))
+      contentRef.scrollTop = Math.max(0, heightMap.getLineTop(targetLine) * scrollScale)
+    } else {
       contentRef.scrollTop = Math.max(0, contentRef.scrollTop + lines * scrollLineHeight)
     }
   }
 
   function scrollByPages(pages: number) {
-    if (contentRef) {
+    if (!contentRef) return
+
+    if (heightMap.ready) {
+      // Move by approximately one viewport worth of content
+      const pageHeight = contentRef.clientHeight
+      const newScrollTop = Math.max(0, contentRef.scrollTop + pages * pageHeight)
+      contentRef.scrollTop = newScrollTop
+    } else {
       const linesPerPage = Math.floor(contentRef.clientHeight / effectiveLineHeight) - 1
       contentRef.scrollTop = Math.max(0, contentRef.scrollTop + pages * linesPerPage * scrollLineHeight)
     }
@@ -233,6 +290,8 @@ export function createViewerScroll(deps: ScrollDeps) {
 
   function runWrappedLineHeightEffect() {
     if (!wordWrap) return
+
+    if (heightMap.ready) return // Height map replaces DOM-based averaging
     void scrollTop
     const rafId = requestAnimationFrame(() => {
       if (!linesContainerRef) return
@@ -258,13 +317,76 @@ export function createViewerScroll(deps: ScrollDeps) {
       prevScrollLineHeight = newSLH
       return
     }
-    const ratio = newSLH / prevScrollLineHeight
-    contentRef.scrollTop = Math.round(contentRef.scrollTop * ratio)
+
+    if (heightMap.ready) {
+      // With height map: find the line at current viewport top, look up its new position
+      const anchorLine = getAnchorLine()
+      contentRef.scrollTop = heightMap.getLineTop(anchorLine) * scrollScale
+    } else {
+      // Without height map: scale proportionally (existing behavior)
+      const ratio = newSLH / prevScrollLineHeight
+      contentRef.scrollTop = Math.round(contentRef.scrollTop * ratio)
+    }
     prevScrollLineHeight = newSLH
+  }
+
+  /**
+   * Watches wordWrap + getAllLines + getTextWidth and triggers height map preparation
+   * when all conditions are met (word wrap on, fullLoad lines available, width known).
+   * Does NOT re-prepare if the height map is already ready — width changes are handled
+   * by runHeightMapReflowEffect via reflow() instead.
+   */
+  function runHeightMapInitEffect() {
+    // Read reactive deps to establish tracking
+
+    const ww = wordWrap
+    const lines = deps.getAllLines()
+    const textWidth = deps.getTextWidth()
+
+    if (!ww) {
+      heightMap.cancel()
+      return
+    }
+
+    if (heightMap.ready) return // Width changes handled by reflow, not re-preparation
+
+    if (lines !== null && lines.length > 0 && textWidth > 0) {
+      heightMap.prepareLines(lines, textWidth)
+    }
+  }
+
+  /**
+   * Watches textWidth and calls heightMap.reflow() when it changes.
+   * Compensates scroll position synchronously to prevent feedback loops.
+   */
+  let prevTextWidth = 0
+  function runHeightMapReflowEffect() {
+    const textWidth = deps.getTextWidth()
+
+    // Only react to actual textWidth changes. The prevTextWidth guard prevents this
+    // effect from re-running due to other reactive dependencies (heightMap.ready, version).
+    if (textWidth <= 0 || textWidth === prevTextWidth) return
+    if (!heightMap.ready) {
+      prevTextWidth = textWidth
+      return
+    }
+    prevTextWidth = textWidth
+
+    // Reflow is a no-op if width hasn't changed (heightMap also guards internally).
+    heightMap.reflow(textWidth)
+
+    // Scroll compensation after reflow: preserve the scroll fraction.
+    if (contentRef) {
+      const totalHeight = heightMap.getTotalHeight() * scrollScale
+      if (totalHeight > 0 && spacerHeight > 0) {
+        contentRef.scrollTop = (contentRef.scrollTop / spacerHeight) * totalHeight
+      }
+    }
   }
 
   function destroy() {
     if (fetchDebounceTimer) clearTimeout(fetchDebounceTimer)
+    heightMap.cancel()
   }
 
   return {
@@ -320,7 +442,17 @@ export function createViewerScroll(deps: ScrollDeps) {
     get gutterWidth() {
       return gutterWidth
     },
+    get spacerHeight() {
+      return spacerHeight
+    },
+    get linesOffset() {
+      return linesOffset
+    },
+    get heightMapReady() {
+      return heightMap.ready
+    },
     estimatedTotalLines,
+    getLineTop,
     handleScroll,
     scrollByLines,
     scrollByPages,
@@ -330,6 +462,8 @@ export function createViewerScroll(deps: ScrollDeps) {
     runContentWidthEffect,
     runWrappedLineHeightEffect,
     runScrollCompensationEffect,
+    runHeightMapInitEffect,
+    runHeightMapReflowEffect,
     destroy,
   }
 }

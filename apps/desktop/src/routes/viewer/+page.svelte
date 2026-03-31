@@ -14,6 +14,7 @@
     import { onMount, onDestroy, tick } from 'svelte'
     import {
         viewerOpen,
+        viewerGetLines,
         viewerGetStatus,
         viewerClose,
         viewerSetupMenu,
@@ -31,6 +32,7 @@
 
     const log = getAppLogger('viewer')
 
+    let textWidth = $state(0)
     let fileName = $state('')
     let totalLines = $state<number | null>(null)
     let estimatedLines = $state(1) // Backend's estimate based on initial sample
@@ -72,6 +74,18 @@
             error = "Couldn't load the file — the volume may be slow or unresponsive."
             errorIsTimeout = true
         },
+        getAllLines: () => {
+            if (backendType !== 'fullLoad') return null
+            const total = totalLines
+            if (total === null || total === 0) return null
+            if (!scroll.lineCache.has(0) || !scroll.lineCache.has(total - 1)) return null
+            const lines: string[] = new Array<string>(total)
+            for (let i = 0; i < total; i++) {
+                lines[i] = scroll.lineCache.get(i) ?? ''
+            }
+            return lines
+        },
+        getTextWidth: () => textWidth,
     })
 
     const search = createViewerSearch({
@@ -80,6 +94,7 @@
         getTotalLines: () => totalLines,
         getEstimatedTotalLines: () => scroll.estimatedTotalLines(),
         getScrollLineHeight: () => scroll.scrollLineHeight,
+        getLineTop: (n: number) => scroll.getLineTop(n),
         getViewportHeight: () => scroll.viewportHeight,
         getContentRef: () => scroll.contentRef,
     })
@@ -102,6 +117,64 @@
     // Compensate scroll position when scrollLineHeight changes
     $effect(() => {
         scroll.runScrollCompensationEffect()
+    })
+
+    // Height map: trigger preparation when word wrap + fullLoad lines + textWidth are available
+    $effect(() => {
+        scroll.runHeightMapInitEffect()
+    })
+
+    // Height map: reflow when textWidth changes
+    $effect(() => {
+        scroll.runHeightMapReflowEffect()
+    })
+
+    // Track available text width for height map calculations via ResizeObserver + visible lines change
+    $effect(() => {
+        const ref = scroll.contentRef
+        if (!ref) return
+        const el = ref // Capture non-null ref for closures
+
+        function measureTextWidth() {
+            const lineText = el.querySelector('.line-text')
+            if (lineText) {
+                const w = lineText.getBoundingClientRect().width
+                if (w > 0 && Math.abs(w - textWidth) > 1) {
+                    textWidth = w
+                }
+            }
+        }
+
+        const observer = new ResizeObserver(() => {
+            measureTextWidth()
+        })
+        observer.observe(el)
+
+        // Initial measurement after mount
+        requestAnimationFrame(() => {
+            measureTextWidth()
+        })
+
+        return () => {
+            observer.disconnect()
+        }
+    })
+
+    // Re-measure text width when lines first appear (ResizeObserver won't fire if container size didn't change)
+    $effect(() => {
+        void scroll.visibleLines // Track when lines change
+        if (textWidth > 0) return // Already measured
+        requestAnimationFrame(() => {
+            const ref = scroll.contentRef
+            if (!ref) return
+            const lineText = ref.querySelector('.line-text')
+            if (lineText) {
+                const w = lineText.getBoundingClientRect().width
+                if (w > 0) {
+                    textWidth = w
+                }
+            }
+        })
     })
 
     // Debounce search input
@@ -275,7 +348,9 @@
     }
 
     async function openViewerSession(path: string) {
+        const t0 = performance.now()
         const result = await viewerOpen(path)
+        log.debug('viewer_open IPC took {ms}ms', { ms: Math.round(performance.now() - t0) })
 
         sessionId = result.sessionId
         fileName = result.fileName
@@ -307,6 +382,30 @@
         }
 
         log.debug('Initial cache: {count} lines loaded', { count: result.initialLines.lines.length })
+
+        // For FullLoad files, fetch ALL lines so the height map can prepare them.
+        // The initial chunk only contains ~200 lines, but FullLoad files are <1MB so
+        // fetching the rest in one IPC call is trivial.
+        if (
+            result.backendType === 'fullLoad' &&
+            result.totalLines !== null &&
+            result.initialLines.lines.length < result.totalLines
+        ) {
+            const remaining = result.totalLines - result.initialLines.lines.length
+            const startLine = result.initialLines.firstLineNumber + result.initialLines.lines.length
+            const tFetch = performance.now()
+            viewerGetLines(result.sessionId, 'line', startLine, remaining)
+                .then((chunk) => {
+                    log.debug('FullLoad fetch remaining {count} lines took {ms}ms', {
+                        count: chunk.lines.length,
+                        ms: Math.round(performance.now() - tFetch),
+                    })
+                    for (let i = 0; i < chunk.lines.length; i++) {
+                        scroll.lineCache.set(startLine + i, chunk.lines[i])
+                    }
+                })
+                .catch(() => {}) // Non-critical — height map just won't activate
+        }
 
         getCurrentWindow()
             .setTitle(`${result.fileName} — Viewer`)
@@ -529,14 +628,14 @@
         >
             <div
                 class="scroll-spacer"
-                style="height: {scroll.estimatedTotalLines() * scroll.scrollLineHeight}px; min-width: {scroll.wordWrap
+                style="height: {scroll.spacerHeight}px; min-width: {scroll.wordWrap
                     ? 0
                     : scroll.contentWidth}px"
             >
                 <div
                     class="lines-container"
                     bind:this={scroll.linesContainerRef}
-                    style="transform: translateY({scroll.visibleFrom * scroll.scrollLineHeight}px)"
+                    style="transform: translateY({scroll.linesOffset}px)"
                 >
                     {#each scroll.visibleLines as { lineNumber, text } (lineNumber)}
                         <div class="line" data-line={lineNumber}>

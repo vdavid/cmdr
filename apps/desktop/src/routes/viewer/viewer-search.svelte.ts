@@ -10,6 +10,7 @@ interface SearchDeps {
   getTotalLines: () => number | null
   getEstimatedTotalLines: () => number
   getScrollLineHeight: () => number
+  getLineTop: (n: number) => number
   getViewportHeight: () => number
   getContentRef: () => HTMLDivElement | undefined
 }
@@ -144,7 +145,7 @@ export function createViewerSearch(deps: SearchDeps) {
     } else {
       targetLine = totalBytes > 0 ? (match.byteOffset / totalBytes) * deps.getEstimatedTotalLines() : match.line
     }
-    const targetScroll = targetLine * deps.getScrollLineHeight() - deps.getViewportHeight() / 2
+    const targetScroll = deps.getLineTop(targetLine) - deps.getViewportHeight() / 2
     contentRef.scrollTop = Math.max(0, targetScroll)
   }
 
