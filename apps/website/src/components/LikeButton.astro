@@ -1,0 +1,152 @@
+---
+
+---
+
+<div class="like-section">
+    <button class="like-button" aria-label="Like this article">
+        <svg class="like-heart" viewBox="0 0 24 24" width="20" height="20">
+            <path
+                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+            ></path>
+        </svg>
+        <span class="like-count"></span>
+    </button>
+    <span class="like-error"></span>
+</div>
+
+<script is:inline>
+    ;(function () {
+        const section = document.querySelector('.like-section')
+        const button = section.querySelector('.like-button')
+        const heart = button.querySelector('.like-heart')
+        const countEl = button.querySelector('.like-count')
+        const errorEl = section.querySelector('.like-error')
+        const slug = window.location.pathname.replace(/^\/blog\//, '').replace(/\/$/, '')
+        const apiBase = 'https://api.getcmdr.com'
+        const storageKey = `liked:${slug}`
+        const countKey = `like-count:${slug}`
+        const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+
+        // Restore state instantly from localStorage
+        const cachedCount = localStorage.getItem(countKey)
+        if (localStorage.getItem(storageKey)) {
+            heart.classList.add('liked')
+        }
+        if (cachedCount) {
+            countEl.textContent = cachedCount
+        }
+
+        if (isDev) return
+
+        // Fetch current count and server-side liked status
+        fetch(`${apiBase}/likes/${encodeURIComponent(slug)}`)
+            .then(r => r.json())
+            .then(data => {
+                updateCount(data.count)
+                if (data.liked) {
+                    heart.classList.add('liked')
+                    localStorage.setItem(storageKey, '1')
+                } else {
+                    heart.classList.remove('liked')
+                    localStorage.removeItem(storageKey)
+                }
+            })
+            .catch(() => {})
+
+        function updateCount(count) {
+            countEl.textContent = count > 0 ? count : ''
+            if (count > 0) {
+                localStorage.setItem(countKey, String(count))
+            } else {
+                localStorage.removeItem(countKey)
+            }
+        }
+
+        button.addEventListener('click', () => {
+            const isLiked = heart.classList.contains('liked')
+            const prevCount = countEl.textContent
+
+            // Optimistic update
+            heart.classList.toggle('liked')
+            errorEl.textContent = ''
+            if (isLiked) {
+                localStorage.removeItem(storageKey)
+            } else {
+                localStorage.setItem(storageKey, '1')
+            }
+
+            fetch(`${apiBase}/likes/${encodeURIComponent(slug)}`, { method: isLiked ? 'DELETE' : 'POST' })
+                .then(r => {
+                    if (!r.ok) throw new Error()
+                    return r.json()
+                })
+                .then(data => updateCount(data.count))
+                .catch(() => {
+                    // Rollback
+                    heart.classList.toggle('liked')
+                    countEl.textContent = prevCount
+                    if (isLiked) {
+                        localStorage.setItem(storageKey, '1')
+                    } else {
+                        localStorage.removeItem(storageKey)
+                    }
+                    errorEl.textContent = 'Something went wrong — try again later.'
+                })
+        })
+    })()
+</script>
+
+<style>
+    .like-section {
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .like-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4em;
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        font-family: var(--font-sans);
+        font-size: 0.875rem;
+        color: var(--color-text-tertiary);
+        transition: color var(--duration-normal) var(--ease-out-expo);
+    }
+
+    .like-button:hover {
+        color: var(--color-accent);
+    }
+
+    .like-heart {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        transition:
+            fill var(--duration-normal) var(--ease-out-expo),
+            color var(--duration-normal) var(--ease-out-expo);
+    }
+
+    .like-heart.liked {
+        fill: var(--color-accent);
+        color: var(--color-accent);
+    }
+
+    .like-count {
+        line-height: 20px;
+    }
+
+    .like-error:empty {
+        display: none;
+    }
+
+    .like-error {
+        display: block;
+        margin-top: 0.3em;
+        font-family: var(--font-sans);
+        font-size: 0.75rem;
+        color: var(--color-text-tertiary);
+    }
+</style>
