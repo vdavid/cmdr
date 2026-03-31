@@ -180,7 +180,7 @@
         background: var(--color-warning-bg);
         border: 1px solid var(--color-warning);
         border-radius: var(--radius-md);
-        color: var(--color-warning);
+        color: var(--color-text-primary);
         font-size: var(--font-size-sm);
         margin-bottom: var(--spacing-lg);
     }
@@ -228,7 +228,7 @@
     }
 
     .modified-dot {
-        color: var(--color-accent);
+        color: var(--color-accent-text);
         font-size: var(--font-size-xs);
     }
 
@@ -258,7 +258,7 @@
         padding: 0;
         background: none;
         border: none;
-        color: var(--color-accent);
+        color: var(--color-accent-text);
         font-size: var(--font-size-sm);
         cursor: default;
         text-decoration: underline;

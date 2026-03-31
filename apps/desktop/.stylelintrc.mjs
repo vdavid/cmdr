@@ -36,6 +36,9 @@ export default {
       'z-index': ['/^\\d{2,}/'],
       'font-family': ['/^(?!var\\(|inherit|unset|initial)/'],
       cursor: ['pointer'],
+      // --color-accent has insufficient contrast as text on light backgrounds.
+      // Use --color-accent-text for foreground text (auto-darkened for a11y).
+      color: ['/var\\(--color-accent\\)/'],
     },
     'declaration-no-important': true,
     'declaration-property-value-allowed-list': {

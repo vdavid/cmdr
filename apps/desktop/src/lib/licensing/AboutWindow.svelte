@@ -212,7 +212,7 @@
     }
 
     .links a {
-        color: var(--color-accent);
+        color: var(--color-accent-text);
         text-decoration: none;
         font-size: var(--font-size-md);
     }

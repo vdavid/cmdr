@@ -124,6 +124,7 @@
         padding-top: var(--spacing-sm);
         border-top: 1px solid color-mix(in srgb, white, transparent 85%);
         font-weight: 500;
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- forced-dark bg */
         color: var(--color-accent);
     }
 

@@ -298,9 +298,12 @@ else
             if [ ! -f "/app/node_modules/.linux-installed" ]; then
                 echo "Installing Linux node_modules..."
                 pnpm install --frozen-lockfile
-                npx playwright install --with-deps chromium
                 touch /app/node_modules/.linux-installed
             fi
+
+            # Playwright browsers live in /root/.cache (ephemeral), not in the
+            # node_modules volume, so they must be reinstalled each container run.
+            npx playwright install --with-deps chromium
 
             SOCKET_PATH="/tmp/tauri-playwright.sock"
 

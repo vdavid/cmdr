@@ -597,7 +597,7 @@
     }
 
     .support-link {
-        color: var(--color-accent);
+        color: var(--color-accent-text);
         text-decoration: underline;
     }
 
@@ -606,7 +606,7 @@
     }
 
     .buy-link {
-        color: var(--color-accent);
+        color: var(--color-accent-text);
         text-decoration: underline;
     }
 

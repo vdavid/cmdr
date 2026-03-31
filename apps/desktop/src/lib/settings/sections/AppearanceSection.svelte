@@ -254,7 +254,7 @@
     }
 
     .appearance-link {
-        color: var(--color-accent);
+        color: var(--color-accent-text);
         font-size: var(--font-size-sm);
         text-decoration: underline;
         padding: 0;
@@ -309,7 +309,7 @@
         padding: 0;
         background: none;
         border: none;
-        color: var(--color-accent);
+        color: var(--color-accent-text);
         font-size: var(--font-size-sm);
         text-decoration: underline;
     }

@@ -348,7 +348,7 @@
         /* Always reserve space for the checkmark to prevent layout shift */
         min-width: 1em;
         text-align: center;
-        color: var(--color-accent);
+        color: var(--color-accent-text);
         visibility: hidden;
     }
 

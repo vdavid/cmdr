@@ -142,7 +142,7 @@
         padding: 0;
         background: none;
         border: none;
-        color: var(--color-accent);
+        color: var(--color-accent-text);
         cursor: default;
     }
 

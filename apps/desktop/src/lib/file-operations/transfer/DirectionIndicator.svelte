@@ -70,7 +70,7 @@
     }
 
     .folder-name.destination {
-        color: var(--color-accent);
+        color: var(--color-accent-text);
     }
 
     .arrow {

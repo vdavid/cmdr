@@ -903,7 +903,7 @@
     }
 
     .stage.active {
-        color: var(--color-accent);
+        color: var(--color-accent-text);
     }
 
     .stage.done {
@@ -1089,7 +1089,7 @@
     }
 
     .conflict-annotation.newer {
-        color: var(--color-accent);
+        color: var(--color-accent-text);
     }
 
     .conflict-annotation.larger {

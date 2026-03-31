@@ -63,7 +63,7 @@
     }
 
     .sortable-header.is-active {
-        color: var(--color-accent);
+        color: var(--color-accent-text);
         font-weight: 500;
     }
 

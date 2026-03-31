@@ -25,7 +25,7 @@
   /* === Text === */
   --color-text-primary: #1a1a1a;
   --color-text-secondary: #666666;
-  --color-text-tertiary: #737373;
+  --color-text-tertiary: #666666;
 
   /* === macOS system accent colors (for reference / testing) ===
      * These are the fixed colors returned by NSColor.controlAccentColor().
@@ -45,6 +45,7 @@
      * accent-color.ts → initAccentColor(). See src-tauri/src/accent_color.rs. */
   --color-accent: #d4a006;
   --color-accent-fg: #1a1a1a; /* Text on accent backgrounds — dark in both themes for a11y */
+  --color-accent-text: color-mix(in srgb, var(--color-accent), black 40%); /* Darkened accent for a11y when used as foreground text */
   --color-accent-hover: color-mix(in oklch, var(--color-accent), white 15%);
   --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
   --color-cmdr-gold: #d4a006;
@@ -183,6 +184,7 @@
 
     /* === Interactive States (fallbacks — see light-mode comment above) === */
     --color-accent: #ffc206;
+    --color-accent-text: var(--color-accent); /* Bright accent is already readable on dark backgrounds */
     --color-accent-hover: color-mix(in oklch, var(--color-accent), white 10%);
     --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
     --color-cmdr-gold: #ffc206;
@@ -617,7 +619,7 @@ body {
   font-family: var(--font-mono);
   font-weight: 500;
   line-height: 1;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   background: var(--color-accent-subtle);
   /* stylelint-disable-next-line declaration-property-value-disallowed-list */
   padding: 1px 4px;

@@ -53,13 +53,12 @@
         align-items: flex-start;
         gap: var(--spacing-xs);
         padding: var(--spacing-xxs) var(--spacing-sm);
-        background: var(--color-bg-secondary);
+        background: color-mix(in srgb, var(--color-bg-secondary) 85%, transparent);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
         font-size: var(--font-size-xs);
         color: var(--color-text-secondary);
         pointer-events: none;
-        opacity: 0.8;
         z-index: var(--z-sticky);
     }
 

@@ -805,7 +805,7 @@
     }
 
     .reset-shortcut:hover {
-        color: var(--color-accent);
+        color: var(--color-accent-text);
         border-color: var(--color-accent);
     }
 
