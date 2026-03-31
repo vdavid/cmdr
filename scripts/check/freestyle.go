@@ -20,25 +20,16 @@ const (
 )
 
 // freestyleRun offloads check runs to a freestyle.sh VM.
-// Only checks marked FreestyleCompat run (skips Rust compilation, Docker, etc.).
+// Checks marked FreestyleIncompat are skipped (Rust compilation, Docker, etc.).
 func freestyleRun(rootDir string, args []string) error {
 	apiKey, err := getFreestyleAPIKey()
 	if err != nil {
 		return err
 	}
 
-	vmID, err := ensureFreestyleVM(rootDir, apiKey)
+	vmID, err := ensureHealthyVM(rootDir, apiKey)
 	if err != nil {
 		return err
-	}
-
-	if err := wakeAndVerifyVM(apiKey, vmID); err != nil {
-		fmt.Printf("⚠️  VM unhealthy, replacing it...\n")
-		deleteVM(apiKey, vmID)
-		vmID, err = createFreestyleVM(rootDir, apiKey)
-		if err != nil {
-			return err
-		}
 	}
 
 	tempBranch, err := pushSyncBranch(rootDir)
@@ -183,7 +174,7 @@ func printSkippedChecksIfUnfiltered(args []string) {
 func countSkippedChecks() int {
 	count := 0
 	for _, c := range checks.AllChecks {
-		if !c.FreestyleCompat {
+		if c.FreestyleIncompat {
 			count++
 		}
 	}
@@ -257,27 +248,33 @@ func fetchSyncOnVM(apiKey string, vmID string, tempBranch string) error {
 	return execOnVMSilent(apiKey, vmID, cmd)
 }
 
-// ensureFreestyleVM returns the VM ID, creating one if needed.
-func ensureFreestyleVM(rootDir string, apiKey string) (string, error) {
+// ensureHealthyVM returns a VM ID that's verified healthy, creating or replacing as needed.
+// Silent until "☁️  VM ready!" — all setup noise is suppressed.
+func ensureHealthyVM(rootDir string, apiKey string) (string, error) {
 	vmIDPath := rootDir + "/" + freestyleVMIDFile
+
+	// Try existing VM
 	if data, err := os.ReadFile(vmIDPath); err == nil {
 		vmID := strings.TrimSpace(string(data))
 		if vmID != "" {
-			state, err := getVMState(apiKey, vmID)
-			if err == nil {
-				fmt.Printf("☁️  VM %s (state: %s)\n", vmID, state)
-				return vmID, nil
+			if _, err := getVMState(apiKey, vmID); err == nil {
+				// VM exists, check if toolchain is healthy
+				diag := `echo "vm_ok" && which go && which pnpm && which node`
+				if err := execOnVMSilent(apiKey, vmID, diag); err == nil {
+					fmt.Println("☁️  VM ready!")
+					return vmID, nil
+				}
 			}
-			fmt.Printf("⚠️  Saved VM %s not reachable, creating a new one...\n", vmID)
+			// Stale or broken — delete and recreate
+			deleteVM(apiKey, vmID)
 		}
 	}
 
+	// Create new VM
 	return createFreestyleVM(rootDir, apiKey)
 }
 
 func createFreestyleVM(rootDir string, apiKey string) (string, error) {
-	fmt.Println("☁️  Creating freestyle.sh VM (first-time setup)...")
-
 	body := map[string]any{
 		"persistence": map[string]any{"type": "sticky", "priority": 10},
 		"aptDeps":     []string{"curl", "build-essential", "pkg-config", "libssl-dev", "git"},
@@ -297,9 +294,9 @@ func createFreestyleVM(rootDir string, apiKey string) (string, error) {
 		return "", fmt.Errorf("unexpected create VM response: %s", string(resp))
 	}
 
-	fmt.Printf("☁️  VM created: %s — installing toolchain...\n", result.ID)
-
 	setupScript := `set -e
+
+# Phase 1: mise + shallow clone (sequential, both needed before phase 2)
 curl -fsSL https://mise.run | sh
 export PATH="$HOME/.local/bin:$PATH"
 
@@ -307,49 +304,36 @@ mkdir -p /root/.config/mise
 printf '[settings]\ndisable_tools = ["pnpm"]\n' > /root/.config/mise/config.toml
 printf 'export MISE_TRUSTED_CONFIG_PATHS=/root/cmdr\neval "$(/root/.local/bin/mise activate bash)"\n' >> ~/.bashrc
 
-git clone https://github.com/vdavid/cmdr.git /root/cmdr
+git clone --depth 1 https://github.com/vdavid/cmdr.git /root/cmdr
 export MISE_TRUSTED_CONFIG_PATHS=/root/cmdr
 cd /root/cmdr
 
 mise install
 eval "$(/root/.local/bin/mise activate bash)"
 
+# Phase 2: pnpm deps + playwright in parallel
 npm install -g pnpm@10
-pnpm install --frozen-lockfile
+pnpm install --frozen-lockfile &
+PID_PNPM=$!
+DEBIAN_FRONTEND=noninteractive npx playwright install --with-deps chromium &
+PID_PW=$!
 
-DEBIAN_FRONTEND=noninteractive pnpm --filter website exec playwright install --with-deps chromium
+wait $PID_PNPM || { echo "pnpm install failed"; exit 1; }
+wait $PID_PW || { echo "playwright install failed"; exit 1; }
 
 echo "SETUP_COMPLETE"
 `
-	if err := execOnVM(apiKey, result.ID, setupScript); err != nil {
+	if err := execOnVMSilentLong(apiKey, result.ID, setupScript); err != nil {
 		return "", fmt.Errorf("VM setup failed: %w", err)
 	}
 
 	vmIDPath := rootDir + "/" + freestyleVMIDFile
 	if err := os.WriteFile(vmIDPath, []byte(result.ID+"\n"), 0644); err != nil {
-		fmt.Printf("⚠️  Could not save VM ID to %s: %v\n", vmIDPath, err)
+		return "", err
 	}
 
 	fmt.Println("☁️  VM ready!")
 	return result.ID, nil
-}
-
-// wakeAndVerifyVM runs a lightweight command to wake a suspended VM and verify
-// that the basic toolchain (go, pnpm, node) is available. This catches environment
-// issues early with a clear error instead of a cryptic "status 255" from a later step.
-func wakeAndVerifyVM(apiKey string, vmID string) error {
-	fmt.Print("🔌 Waking VM and verifying toolchain... ")
-	startTime := time.Now()
-
-	diag := `echo "vm_ok" && which go && which pnpm && which node && go version && pnpm --version && node --version`
-	err := execOnVMSilent(apiKey, vmID, diag)
-	if err != nil {
-		fmt.Printf("%sstale%s\n", colorYellow, colorReset)
-		return fmt.Errorf("toolchain missing or broken: %w", err)
-	}
-
-	fmt.Printf("%sok%s %s\n", colorGreen, colorReset, formatDuration(time.Since(startTime)))
-	return nil
 }
 
 // --- API helpers ---
@@ -437,6 +421,43 @@ func execOnVMSilent(apiKey string, vmID string, command string) error {
 			msg = *result.Stdout
 		}
 		return fmt.Errorf("command failed (exit %d): %s", *result.StatusCode, msg)
+	}
+	return nil
+}
+
+// execOnVMSilentLong is like execOnVMSilent but with a 30 min timeout (for VM setup).
+// On failure, it shows the last 30 lines of output for debugging.
+func execOnVMSilentLong(apiKey string, vmID string, command string) error {
+	body, _ := json.Marshal(map[string]any{
+		"command":   command,
+		"timeoutMs": 1800000,
+	})
+
+	resp, err := freestyleRequest(apiKey, "POST", fmt.Sprintf("/v1/vms/%s/exec-await", vmID), body)
+	if err != nil {
+		return err
+	}
+
+	var result struct {
+		Stdout     *string `json:"stdout"`
+		Stderr     *string `json:"stderr"`
+		StatusCode *int    `json:"statusCode"`
+	}
+	if err := json.Unmarshal(resp, &result); err != nil {
+		return fmt.Errorf("failed to parse exec response: %w", err)
+	}
+
+	if result.StatusCode != nil && *result.StatusCode != 0 {
+		detail := ""
+		if result.Stderr != nil && *result.Stderr != "" {
+			detail = lastLines(*result.Stderr, 30)
+		} else if result.Stdout != nil && *result.Stdout != "" {
+			detail = lastLines(*result.Stdout, 30)
+		}
+		if detail != "" {
+			return fmt.Errorf("command failed (exit %d):\n%s", *result.StatusCode, detail)
+		}
+		return fmt.Errorf("command failed (exit %d, no output)", *result.StatusCode)
 	}
 	return nil
 }

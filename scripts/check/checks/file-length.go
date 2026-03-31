@@ -31,6 +31,7 @@ var fileLengthSourceExtensions = map[string]bool{
 }
 
 var fileLengthSkipDirs = map[string]bool{
+	"_ignored":     true,
 	"build":        true,
 	"dist":         true,
 	"node_modules": true,

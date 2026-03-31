@@ -45,7 +45,7 @@ type cliFlags struct {
 	noLog           bool
 	onlyFreestyle   bool
 	preferFreestyle bool
-	freestyleRemote bool // set on the VM side to filter FreestyleCompat checks
+	freestyleRemote bool // set on the VM side to filter freestyle-compatible checks
 }
 
 func main() {

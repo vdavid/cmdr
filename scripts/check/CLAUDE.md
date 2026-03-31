@@ -124,15 +124,15 @@ result (pass/fail/skip/blocked), and optional counts (total, issues, changes). `
 
 ```go
 CheckDefinition{
-    ID:              "desktop-svelte-eslint",  // unique, always accepted by --check
-    Nickname:        "",                       // short alias, also accepted by --check (optional)
-    DisplayName:     "eslint",                 // shown in output
-    App:             AppDesktop,
-    Tech:            "🎨 Svelte",
-    IsSlow:          false,
-    FreestyleCompat: true,                     // can run on freestyle.sh VMs
-    DependsOn:       []string{"desktop-svelte-prettier"},
-    Run:             RunDesktopESLint,
+    ID:                "desktop-svelte-eslint",  // unique, always accepted by --check
+    Nickname:          "",                       // short alias, also accepted by --check (optional)
+    DisplayName:       "eslint",                 // shown in output
+    App:               AppDesktop,
+    Tech:              "🎨 Svelte",
+    IsSlow:            false,
+    FreestyleIncompat: true,                    // can NOT run on freestyle.sh VMs (Rust, Docker)
+    DependsOn:         []string{"desktop-svelte-prettier"},
+    Run:               RunDesktopESLint,
 }
 ```
 
@@ -242,15 +242,15 @@ each successful install. On the next run, if the mtime matches, install is skipp
 
 Two modes for offloading checks to a freestyle.sh VM:
 
-- `--only-freestyle`: runs only `FreestyleCompat` checks on the VM, skips the rest entirely.
-- `--prefer-freestyle`: runs `FreestyleCompat` checks on the VM and the rest locally, in parallel. This is the "run
+- `--only-freestyle`: runs only freestyle-compatible checks on the VM, skips the rest entirely.
+- `--prefer-freestyle`: runs freestyle-compatible checks on the VM and the rest locally, in parallel. This is the "run
   everything as fast as possible" mode — Rust checks run on your Mac while Node/Go checks run on the VM simultaneously.
 
 **How it works:** Creates a temporary git commit of the full working tree (without modifying the local index/worktree),
 pushes it to a temp branch, fetches on the VM, runs checks, cleans up the branch.
 
-**What's freestyle-compatible:** Node/TS checks (Svelte, Astro, API server), Go checks, and metrics — any check with
-`FreestyleCompat: true`. The VM uses `--freestyle-remote` internally to filter to only these checks.
+**What's freestyle-compatible:** Node/TS checks (Svelte, Astro, API server), Go checks, and metrics — any check without
+`FreestyleIncompat: true`. The VM uses `--freestyle-remote` internally to filter to only these checks.
 
 **What's not:** Rust checks (dep compilation exceeds freestyle's ~15 min API timeout) and Docker checks (no Docker
 daemon on freestyle VMs). With `--prefer-freestyle` these run locally in parallel; with `--only-freestyle` they're
@@ -264,9 +264,10 @@ Playwright install and uses a shallow clone.
 **Key files:** `freestyle.go` (all freestyle logic including `preferFreestyleRun`), `main.go` (`handleFreestyleFlags`
 dispatches to the right mode).
 
-**Decision**: `FreestyleCompat` field on `CheckDefinition` instead of hardcoded check lists. **Why**: Keeps freestyle
-compatibility co-located with each check's definition. Easy to flip when freestyle constraints change. Positive-sense
-boolean (`true` = compatible) reads more naturally than the previous `NoFreestyle` negative.
+**Decision**: `FreestyleIncompat` field on `CheckDefinition` instead of hardcoded check lists. **Why**: Keeps freestyle
+compatibility co-located with each check's definition. Easy to flip when freestyle constraints change. Negative-sense
+boolean means the Go zero value (`false`) = compatible, so only the few incompatible checks (Rust, Docker) need to opt
+out.
 
 **Decision**: Skip Rust checks entirely on freestyle (not just slow ones). **Why**: Freestyle's free tier has a hard ~15
 min server-side timeout on `exec-await`. Compiling the full Tauri dependency tree (clippy, cargo-udeps, etc.) on 4 x86
