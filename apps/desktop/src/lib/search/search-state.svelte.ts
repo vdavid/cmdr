@@ -53,240 +53,240 @@ let excludeSystemDirs = $state(true)
 
 // Getters
 export function getIsIndexReady(): boolean {
-    return isIndexReady
+  return isIndexReady
 }
 export function getIndexEntryCount(): number {
-    return indexEntryCount
+  return indexEntryCount
 }
 export function getIsSearching(): boolean {
-    return isSearching
+  return isSearching
 }
 export function getNamePattern(): string {
-    return namePattern
+  return namePattern
 }
 export function getSizeFilter(): SizeFilter {
-    return sizeFilter
+  return sizeFilter
 }
 export function getSizeValue(): string {
-    return sizeValue
+  return sizeValue
 }
 export function getSizeUnit(): SizeUnit {
-    return sizeUnit
+  return sizeUnit
 }
 export function getSizeValueMax(): string {
-    return sizeValueMax
+  return sizeValueMax
 }
 export function getSizeUnitMax(): SizeUnit {
-    return sizeUnitMax
+  return sizeUnitMax
 }
 export function getDateFilter(): DateFilter {
-    return dateFilter
+  return dateFilter
 }
 export function getDateValue(): string {
-    return dateValue
+  return dateValue
 }
 export function getDateValueMax(): string {
-    return dateValueMax
+  return dateValueMax
 }
 export function getResults(): SearchResultEntry[] {
-    return results
+  return results
 }
 export function getTotalCount(): number {
-    return totalCount
+  return totalCount
 }
 export function getCursorIndex(): number {
-    return cursorIndex
+  return cursorIndex
 }
 export function getIsIndexAvailable(): boolean {
-    return isIndexAvailable
+  return isIndexAvailable
 }
 export function getPatternType(): PatternType {
-    return patternType
+  return patternType
 }
 export function getAiStatus(): string {
-    return aiStatus
+  return aiStatus
 }
 export function getAiPrompt(): string {
-    return aiPrompt
+  return aiPrompt
 }
 export function getCaseSensitive(): boolean {
-    return caseSensitive
+  return caseSensitive
 }
 export function getScope(): string {
-    return scope
+  return scope
 }
 export function getCaveat(): string {
-    return caveat
+  return caveat
 }
 export function getExcludeSystemDirs(): boolean {
-    return excludeSystemDirs
+  return excludeSystemDirs
 }
 
 // Setters
 export function setIsIndexReady(value: boolean): void {
-    isIndexReady = value
+  isIndexReady = value
 }
 export function setIndexEntryCount(value: number): void {
-    indexEntryCount = value
+  indexEntryCount = value
 }
 export function setIsSearching(value: boolean): void {
-    isSearching = value
+  isSearching = value
 }
 export function setNamePattern(value: string): void {
-    namePattern = value
+  namePattern = value
 }
 export function setSizeFilter(value: SizeFilter): void {
-    sizeFilter = value
+  sizeFilter = value
 }
 export function setSizeValue(value: string): void {
-    sizeValue = value
+  sizeValue = value
 }
 export function setSizeUnit(value: SizeUnit): void {
-    sizeUnit = value
+  sizeUnit = value
 }
 export function setSizeValueMax(value: string): void {
-    sizeValueMax = value
+  sizeValueMax = value
 }
 export function setSizeUnitMax(value: SizeUnit): void {
-    sizeUnitMax = value
+  sizeUnitMax = value
 }
 export function setDateFilter(value: DateFilter): void {
-    dateFilter = value
+  dateFilter = value
 }
 export function setDateValue(value: string): void {
-    dateValue = value
+  dateValue = value
 }
 export function setDateValueMax(value: string): void {
-    dateValueMax = value
+  dateValueMax = value
 }
 export function setResults(value: SearchResultEntry[]): void {
-    results = value
+  results = value
 }
 export function setTotalCount(value: number): void {
-    totalCount = value
+  totalCount = value
 }
 export function setCursorIndex(value: number): void {
-    cursorIndex = value
+  cursorIndex = value
 }
 export function setIsIndexAvailable(value: boolean): void {
-    isIndexAvailable = value
+  isIndexAvailable = value
 }
 export function setPatternType(value: PatternType): void {
-    patternType = value
+  patternType = value
 }
 export function setAiStatus(value: string): void {
-    aiStatus = value
+  aiStatus = value
 }
 export function setAiPrompt(value: string): void {
-    aiPrompt = value
+  aiPrompt = value
 }
 export function setCaseSensitive(value: boolean): void {
-    caseSensitive = value
+  caseSensitive = value
 }
 export function setScope(value: string): void {
-    scope = value
+  scope = value
 }
 export function setCaveat(text: string): void {
-    caveat = text
+  caveat = text
 }
 export function setExcludeSystemDirs(value: boolean): void {
-    excludeSystemDirs = value
+  excludeSystemDirs = value
 }
 
 /** Converts size input + unit to bytes. Returns undefined if empty or invalid. */
 export function parseSizeToBytes(value: string, unit: SizeUnit): number | undefined {
-    const num = parseFloat(value)
-    if (isNaN(num) || num <= 0) return undefined
-    const multipliers: Record<SizeUnit, number> = { KB: 1024, MB: 1024 * 1024, GB: 1024 * 1024 * 1024 }
-    return Math.round(num * multipliers[unit])
+  const num = parseFloat(value)
+  if (isNaN(num) || num <= 0) return undefined
+  const multipliers: Record<SizeUnit, number> = { KB: 1024, MB: 1024 * 1024, GB: 1024 * 1024 * 1024 }
+  return Math.round(num * multipliers[unit])
 }
 
 /** Converts ISO date string to unix timestamp (seconds). Returns undefined if empty/invalid. */
 export function parseDateToTimestamp(value: string): number | undefined {
-    if (!value) return undefined
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state, just parsing a timestamp
-    const date = new Date(value)
-    if (isNaN(date.getTime())) return undefined
-    return Math.floor(date.getTime() / 1000)
+  if (!value) return undefined
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state, just parsing a timestamp
+  const date = new Date(value)
+  if (isNaN(date.getTime())) return undefined
+  return Math.floor(date.getTime() / 1000)
 }
 
 /** Applies the current size filter state to the query. */
 function applySizeQuery(query: SearchQuery): void {
-    if (sizeFilter === 'any') return
-    const minBytes = parseSizeToBytes(sizeValue, sizeUnit)
-    if (sizeFilter === 'gte' && minBytes !== undefined) {
-        query.minSize = minBytes
-    } else if (sizeFilter === 'lte' && minBytes !== undefined) {
-        query.maxSize = minBytes
-    } else if (sizeFilter === 'between') {
-        if (minBytes !== undefined) query.minSize = minBytes
-        const maxBytes = parseSizeToBytes(sizeValueMax, sizeUnitMax)
-        if (maxBytes !== undefined) query.maxSize = maxBytes
-    }
+  if (sizeFilter === 'any') return
+  const minBytes = parseSizeToBytes(sizeValue, sizeUnit)
+  if (sizeFilter === 'gte' && minBytes !== undefined) {
+    query.minSize = minBytes
+  } else if (sizeFilter === 'lte' && minBytes !== undefined) {
+    query.maxSize = minBytes
+  } else if (sizeFilter === 'between') {
+    if (minBytes !== undefined) query.minSize = minBytes
+    const maxBytes = parseSizeToBytes(sizeValueMax, sizeUnitMax)
+    if (maxBytes !== undefined) query.maxSize = maxBytes
+  }
 }
 
 /** Applies the current date filter state to the query. */
 function applyDateQuery(query: SearchQuery): void {
-    if (dateFilter === 'any') return
-    const ts = parseDateToTimestamp(dateValue)
-    if (dateFilter === 'after' && ts !== undefined) {
-        query.modifiedAfter = ts
-    } else if (dateFilter === 'before' && ts !== undefined) {
-        query.modifiedBefore = ts
-    } else if (dateFilter === 'between') {
-        if (ts !== undefined) query.modifiedAfter = ts
-        const tsMax = parseDateToTimestamp(dateValueMax)
-        if (tsMax !== undefined) query.modifiedBefore = tsMax
-    }
+  if (dateFilter === 'any') return
+  const ts = parseDateToTimestamp(dateValue)
+  if (dateFilter === 'after' && ts !== undefined) {
+    query.modifiedAfter = ts
+  } else if (dateFilter === 'before' && ts !== undefined) {
+    query.modifiedBefore = ts
+  } else if (dateFilter === 'between') {
+    if (ts !== undefined) query.modifiedAfter = ts
+    const tsMax = parseDateToTimestamp(dateValueMax)
+    if (tsMax !== undefined) query.modifiedBefore = tsMax
+  }
 }
 
 /** Builds a SearchQuery from the current state. */
 export function buildSearchQuery(): SearchQuery {
-    const query: SearchQuery = {
-        patternType,
-        limit: 30,
-    }
+  const query: SearchQuery = {
+    patternType,
+    limit: 30,
+  }
 
-    // Only include caseSensitive when explicitly set, so Rust uses the platform default (None)
-    if (caseSensitive) {
-        query.caseSensitive = true
-    }
+  // Only include caseSensitive when explicitly set, so Rust uses the platform default (None)
+  if (caseSensitive) {
+    query.caseSensitive = true
+  }
 
-    if (namePattern.trim()) {
-        query.namePattern = namePattern.trim()
-    }
+  if (namePattern.trim()) {
+    query.namePattern = namePattern.trim()
+  }
 
-    if (!excludeSystemDirs) {
-        query.excludeSystemDirs = false
-    }
+  if (!excludeSystemDirs) {
+    query.excludeSystemDirs = false
+  }
 
-    applySizeQuery(query)
-    applyDateQuery(query)
+  applySizeQuery(query)
+  applyDateQuery(query)
 
-    return query
+  return query
 }
 
 /** Resets all search state to defaults (for dialog close). */
 export function resetSearchState(): void {
-    namePattern = ''
-    sizeFilter = 'any'
-    sizeValue = ''
-    sizeUnit = 'MB'
-    sizeValueMax = ''
-    sizeUnitMax = 'MB'
-    dateFilter = 'any'
-    dateValue = ''
-    dateValueMax = ''
-    results = []
-    totalCount = 0
-    cursorIndex = 0
-    isIndexAvailable = true
-    patternType = 'glob'
-    caseSensitive = false
-    aiStatus = ''
-    aiPrompt = ''
-    caveat = ''
-    scope = ''
-    excludeSystemDirs = true
-    isSearching = false
+  namePattern = ''
+  sizeFilter = 'any'
+  sizeValue = ''
+  sizeUnit = 'MB'
+  sizeValueMax = ''
+  sizeUnitMax = 'MB'
+  dateFilter = 'any'
+  dateValue = ''
+  dateValueMax = ''
+  results = []
+  totalCount = 0
+  cursorIndex = 0
+  isIndexAvailable = true
+  patternType = 'glob'
+  caseSensitive = false
+  aiStatus = ''
+  aiPrompt = ''
+  caveat = ''
+  scope = ''
+  excludeSystemDirs = true
+  isSearching = false
 }

@@ -1,50 +1,50 @@
 import { invoke } from '@tauri-apps/api/core'
 
 export interface ClipboardReadResult {
-    paths: string[]
-    isCut: boolean
+  paths: string[]
+  isCut: boolean
 }
 
 export async function copyFilesToClipboard(
-    listingId: string,
-    selectedIndices: number[],
-    cursorIndex: number,
-    hasParent: boolean,
-    includeHidden: boolean,
+  listingId: string,
+  selectedIndices: number[],
+  cursorIndex: number,
+  hasParent: boolean,
+  includeHidden: boolean,
 ): Promise<number> {
-    return invoke<number>('copy_files_to_clipboard', {
-        listingId,
-        selectedIndices,
-        cursorIndex,
-        hasParent,
-        includeHidden,
-    })
+  return invoke<number>('copy_files_to_clipboard', {
+    listingId,
+    selectedIndices,
+    cursorIndex,
+    hasParent,
+    includeHidden,
+  })
 }
 
 export async function cutFilesToClipboard(
-    listingId: string,
-    selectedIndices: number[],
-    cursorIndex: number,
-    hasParent: boolean,
-    includeHidden: boolean,
+  listingId: string,
+  selectedIndices: number[],
+  cursorIndex: number,
+  hasParent: boolean,
+  includeHidden: boolean,
 ): Promise<number> {
-    return invoke<number>('cut_files_to_clipboard', {
-        listingId,
-        selectedIndices,
-        cursorIndex,
-        hasParent,
-        includeHidden,
-    })
+  return invoke<number>('cut_files_to_clipboard', {
+    listingId,
+    selectedIndices,
+    cursorIndex,
+    hasParent,
+    includeHidden,
+  })
 }
 
 export async function readClipboardFiles(): Promise<ClipboardReadResult> {
-    return invoke<ClipboardReadResult>('read_clipboard_files')
+  return invoke<ClipboardReadResult>('read_clipboard_files')
 }
 
 export async function readClipboardText(): Promise<string | null> {
-    return invoke<string | null>('read_clipboard_text')
+  return invoke<string | null>('read_clipboard_text')
 }
 
 export async function clearClipboardCutState(): Promise<void> {
-    await invoke('clear_clipboard_cut_state')
+  await invoke('clear_clipboard_cut_state')
 }

@@ -239,12 +239,12 @@ operation. The cancellation flag is checked between sources, so the user can can
 ### Milestone 3 — Docs and final checks
 
 1. Update `write_operations/CLAUDE.md`:
-    - Document async rollback pattern (`rollback_in_background` vs `rollback`).
-    - Add gotcha: background cleanup is best-effort; files may remain if mount disconnects.
-    - Note that `start_write_operation` now emits `write-error` for handler errors.
+   - Document async rollback pattern (`rollback_in_background` vs `rollback`).
+   - Add gotcha: background cleanup is best-effort; files may remain if mount disconnects.
+   - Note that `start_write_operation` now emits `write-error` for handler errors.
 2. Run full `./scripts/check.sh`.
 3. Manual test on NAS/SMB:
-    - Copy NAS → local, cancel mid-copy → dialog closes instantly.
-    - Start copy from NAS while mount is stalled → dialog opens, is cancellable.
-    - Copy with invalid source → error dialog appears promptly.
-    - Cross-FS move with cancel → staging directory cleaned up in background.
+   - Copy NAS → local, cancel mid-copy → dialog closes instantly.
+   - Start copy from NAS while mount is stalled → dialog opens, is cancellable.
+   - Copy with invalid source → error dialog appears promptly.
+   - Cross-FS move with cancel → staging directory cleaned up in background.

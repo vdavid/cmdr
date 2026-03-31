@@ -4,34 +4,34 @@ import type { LicenseType } from './license'
  * Response from /validate endpoint
  */
 export interface ValidationResponse {
-    status: 'active' | 'expired' | 'invalid'
-    type: LicenseType | null
-    organizationName: string | null
-    expiresAt: string | null
+  status: 'active' | 'expired' | 'invalid'
+  type: LicenseType | null
+  organizationName: string | null
+  expiresAt: string | null
 }
 
 /**
  * Configuration for Paddle API
  */
 interface PaddleConfig {
-    apiKey: string
-    environment: 'sandbox' | 'live'
+  apiKey: string
+  environment: 'sandbox' | 'live'
 }
 
 /** Result from subscription status check */
 interface SubscriptionResult {
-    status: 'active' | 'expired' | 'canceled'
-    expiresAt: string | null
-    customData: { organizationName?: string } | null
-    customerId: string | null
+  status: 'active' | 'expired' | 'canceled'
+  expiresAt: string | null
+  customData: { organizationName?: string } | null
+  customerId: string | null
 }
 
 /** Thrown when the Paddle API is unreachable or returns a server error (not a "not found"). */
 export class PaddleApiError extends Error {
-    constructor(message: string) {
-        super(message)
-        this.name = 'PaddleApiError'
-    }
+  constructor(message: string) {
+    super(message)
+    this.name = 'PaddleApiError'
+  }
 }
 
 /**
@@ -40,37 +40,37 @@ export class PaddleApiError extends Error {
  * Throws PaddleApiError if the Paddle API is unreachable or returns a server error.
  */
 export async function getSubscriptionStatus(
-    transactionId: string,
-    config: PaddleConfig,
+  transactionId: string,
+  config: PaddleConfig,
 ): Promise<SubscriptionResult | null> {
-    const baseUrl = config.environment === 'sandbox' ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com'
+  const baseUrl = config.environment === 'sandbox' ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com'
 
-    const txnResult = await fetchTransaction(baseUrl, transactionId, config.apiKey)
-    if (!txnResult) return null
+  const txnResult = await fetchTransaction(baseUrl, transactionId, config.apiKey)
+  if (!txnResult) return null
 
-    const customData = txnResult.customData?.organizationName
-        ? { organizationName: txnResult.customData.organizationName }
-        : null
+  const customData = txnResult.customData?.organizationName
+    ? { organizationName: txnResult.customData.organizationName }
+    : null
 
-    // If no subscription, it's a one-time purchase (always active)
-    if (!txnResult.subscriptionId) {
-        return {
-            status: 'active',
-            expiresAt: null,
-            customData,
-            customerId: txnResult.customerId,
-        }
-    }
-
-    const subResult = await fetchSubscription(baseUrl, txnResult.subscriptionId, config.apiKey)
-    if (!subResult) return null
-
+  // If no subscription, it's a one-time purchase (always active)
+  if (!txnResult.subscriptionId) {
     return {
-        status: subResult.status,
-        expiresAt: subResult.expiresAt ?? null,
-        customData,
-        customerId: txnResult.customerId,
+      status: 'active',
+      expiresAt: null,
+      customData,
+      customerId: txnResult.customerId,
     }
+  }
+
+  const subResult = await fetchSubscription(baseUrl, txnResult.subscriptionId, config.apiKey)
+  if (!subResult) return null
+
+  return {
+    status: subResult.status,
+    expiresAt: subResult.expiresAt ?? null,
+    customData,
+    customerId: txnResult.customerId,
+  }
 }
 
 /**
@@ -78,32 +78,32 @@ export async function getSubscriptionStatus(
  * Returns null for 404 (transaction not found). Throws PaddleApiError on other failures.
  */
 async function fetchTransaction(
-    baseUrl: string,
-    transactionId: string,
-    apiKey: string,
+  baseUrl: string,
+  transactionId: string,
+  apiKey: string,
 ): Promise<{
-    subscriptionId: string | undefined
-    customData: { organizationName?: string } | undefined
-    customerId: string | null
+  subscriptionId: string | undefined
+  customData: { organizationName?: string } | undefined
+  customerId: string | null
 } | null> {
-    let response: Response
-    try {
-        response = await fetch(`${baseUrl}/transactions/${transactionId}`, {
-            headers: { Authorization: `Bearer ${apiKey}` },
-        })
-    } catch (error) {
-        throw new PaddleApiError(`Paddle API unreachable: ${error instanceof Error ? error.message : String(error)}`)
-    }
+  let response: Response
+  try {
+    response = await fetch(`${baseUrl}/transactions/${transactionId}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    })
+  } catch (error) {
+    throw new PaddleApiError(`Paddle API unreachable: ${error instanceof Error ? error.message : String(error)}`)
+  }
 
-    if (response.status === 404) {
-        return null
-    }
-    if (!response.ok) {
-        throw new PaddleApiError(`Paddle API returned HTTP ${String(response.status)} for transaction`)
-    }
+  if (response.status === 404) {
+    return null
+  }
+  if (!response.ok) {
+    throw new PaddleApiError(`Paddle API returned HTTP ${String(response.status)} for transaction`)
+  }
 
-    const json: unknown = await response.json()
-    return extractTransactionData(json)
+  const json: unknown = await response.json()
+  return extractTransactionData(json)
 }
 
 /**
@@ -111,90 +111,90 @@ async function fetchTransaction(
  * Returns null for 404 (subscription not found). Throws PaddleApiError on other failures.
  */
 async function fetchSubscription(
-    baseUrl: string,
-    subscriptionId: string,
-    apiKey: string,
+  baseUrl: string,
+  subscriptionId: string,
+  apiKey: string,
 ): Promise<{ status: 'active' | 'expired' | 'canceled'; expiresAt: string | undefined } | null> {
-    let response: Response
-    try {
-        response = await fetch(`${baseUrl}/subscriptions/${subscriptionId}`, {
-            headers: { Authorization: `Bearer ${apiKey}` },
-        })
-    } catch (error) {
-        throw new PaddleApiError(`Paddle API unreachable: ${error instanceof Error ? error.message : String(error)}`)
-    }
+  let response: Response
+  try {
+    response = await fetch(`${baseUrl}/subscriptions/${subscriptionId}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    })
+  } catch (error) {
+    throw new PaddleApiError(`Paddle API unreachable: ${error instanceof Error ? error.message : String(error)}`)
+  }
 
-    if (response.status === 404) {
-        return null
-    }
-    if (!response.ok) {
-        throw new PaddleApiError(`Paddle API returned HTTP ${String(response.status)} for subscription`)
-    }
+  if (response.status === 404) {
+    return null
+  }
+  if (!response.ok) {
+    throw new PaddleApiError(`Paddle API returned HTTP ${String(response.status)} for subscription`)
+  }
 
-    const json: unknown = await response.json()
-    return extractSubscriptionData(json)
+  const json: unknown = await response.json()
+  return extractSubscriptionData(json)
 }
 
 /** Unwraps the `{ data: ... }` envelope common to all Paddle API responses. */
 function unwrapPaddleData(json: unknown): Record<string, unknown> | null {
-    if (!json || typeof json !== 'object') return null
-    const obj = json as Record<string, unknown>
-    if (!obj.data || typeof obj.data !== 'object') return null
-    return obj.data as Record<string, unknown>
+  if (!json || typeof json !== 'object') return null
+  const obj = json as Record<string, unknown>
+  if (!obj.data || typeof obj.data !== 'object') return null
+  return obj.data as Record<string, unknown>
 }
 
 /** Extract transaction data from Paddle API response */
 function extractTransactionData(json: unknown): {
-    subscriptionId: string | undefined
-    customData: { organizationName?: string } | undefined
-    customerId: string | null
+  subscriptionId: string | undefined
+  customData: { organizationName?: string } | undefined
+  customerId: string | null
 } | null {
-    const data = unwrapPaddleData(json)
-    if (!data) return null
+  const data = unwrapPaddleData(json)
+  if (!data) return null
 
-    const subscriptionId = typeof data.subscription_id === 'string' ? data.subscription_id : undefined
-    const customerId = typeof data.customer_id === 'string' ? data.customer_id : null
+  const subscriptionId = typeof data.subscription_id === 'string' ? data.subscription_id : undefined
+  const customerId = typeof data.customer_id === 'string' ? data.customer_id : null
 
-    let customData: { organizationName?: string } | undefined
-    if (data.custom_data && typeof data.custom_data === 'object') {
-        const cd = data.custom_data as Record<string, unknown>
-        customData = {
-            organizationName: typeof cd.organizationName === 'string' ? cd.organizationName : undefined,
-        }
+  let customData: { organizationName?: string } | undefined
+  if (data.custom_data && typeof data.custom_data === 'object') {
+    const cd = data.custom_data as Record<string, unknown>
+    customData = {
+      organizationName: typeof cd.organizationName === 'string' ? cd.organizationName : undefined,
     }
+  }
 
-    return { subscriptionId, customData, customerId }
+  return { subscriptionId, customData, customerId }
 }
 
 /** Extract subscription data from Paddle API response */
 function extractSubscriptionData(json: unknown): {
-    status: 'active' | 'expired' | 'canceled'
-    expiresAt: string | undefined
+  status: 'active' | 'expired' | 'canceled'
+  expiresAt: string | undefined
 } | null {
-    const data = unwrapPaddleData(json)
-    if (!data) return null
+  const data = unwrapPaddleData(json)
+  if (!data) return null
 
-    const paddleStatus = typeof data.status === 'string' ? data.status : 'unknown'
-    const status = mapPaddleStatus(paddleStatus)
+  const paddleStatus = typeof data.status === 'string' ? data.status : 'unknown'
+  const status = mapPaddleStatus(paddleStatus)
 
-    let expiresAt: string | undefined
-    if (data.current_billing_period && typeof data.current_billing_period === 'object') {
-        const period = data.current_billing_period as Record<string, unknown>
-        expiresAt = typeof period.ends_at === 'string' ? period.ends_at : undefined
-    }
+  let expiresAt: string | undefined
+  if (data.current_billing_period && typeof data.current_billing_period === 'object') {
+    const period = data.current_billing_period as Record<string, unknown>
+    expiresAt = typeof period.ends_at === 'string' ? period.ends_at : undefined
+  }
 
-    return { status, expiresAt }
+  return { status, expiresAt }
 }
 
 /** Map Paddle subscription status to our status */
 function mapPaddleStatus(paddleStatus: string): 'active' | 'expired' | 'canceled' {
-    if (paddleStatus === 'active' || paddleStatus === 'trialing' || paddleStatus === 'past_due') {
-        return 'active'
-    }
-    if (paddleStatus === 'canceled') {
-        return 'canceled'
-    }
-    return 'expired'
+  if (paddleStatus === 'active' || paddleStatus === 'trialing' || paddleStatus === 'past_due') {
+    return 'active'
+  }
+  if (paddleStatus === 'canceled') {
+    return 'canceled'
+  }
+  return 'expired'
 }
 
 /**
@@ -202,25 +202,25 @@ function mapPaddleStatus(paddleStatus: string): 'active' | 'expired' | 'canceled
  * This mapping needs to be updated when products are created in Paddle.
  */
 export function getLicenseTypeFromPriceId(priceId: string, priceIds: PriceIdMapping): LicenseType | null {
-    if (priceIds.commercialSubscription && priceId === priceIds.commercialSubscription) {
-        return 'commercial_subscription'
-    }
-    if (priceIds.commercialPerpetual && priceId === priceIds.commercialPerpetual) {
-        return 'commercial_perpetual'
-    }
-    return null
+  if (priceIds.commercialSubscription && priceId === priceIds.commercialSubscription) {
+    return 'commercial_subscription'
+  }
+  if (priceIds.commercialPerpetual && priceId === priceIds.commercialPerpetual) {
+    return 'commercial_perpetual'
+  }
+  return null
 }
 
 export interface PriceIdMapping {
-    commercialSubscription?: string
-    commercialPerpetual?: string
+  commercialSubscription?: string
+  commercialPerpetual?: string
 }
 
 /** Customer details from Paddle API */
 export interface CustomerDetails {
-    email: string
-    name: string | null
-    businessName: string | null
+  email: string
+  name: string | null
+  businessName: string | null
 }
 
 /**
@@ -228,42 +228,42 @@ export interface CustomerDetails {
  * Returns null if customer not found or API error.
  */
 export async function getCustomerDetails(customerId: string, config: PaddleConfig): Promise<CustomerDetails | null> {
-    const baseUrl = config.environment === 'sandbox' ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com'
+  const baseUrl = config.environment === 'sandbox' ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com'
 
-    try {
-        const response = await fetch(`${baseUrl}/customers/${customerId}`, {
-            headers: { Authorization: `Bearer ${config.apiKey}` },
-        })
+  try {
+    const response = await fetch(`${baseUrl}/customers/${customerId}`, {
+      headers: { Authorization: `Bearer ${config.apiKey}` },
+    })
 
-        if (!response.ok) {
-            console.error('Failed to fetch customer:', response.status)
-            return null
-        }
-
-        const json: unknown = await response.json()
-        return extractCustomerData(json)
-    } catch (error) {
-        console.error('Paddle API error fetching customer:', error)
-        return null
+    if (!response.ok) {
+      console.error('Failed to fetch customer:', response.status)
+      return null
     }
+
+    const json: unknown = await response.json()
+    return extractCustomerData(json)
+  } catch (error) {
+    console.error('Paddle API error fetching customer:', error)
+    return null
+  }
 }
 
 /** Extract customer data from Paddle API response */
 function extractCustomerData(json: unknown): CustomerDetails | null {
-    const data = unwrapPaddleData(json)
-    if (!data) return null
+  const data = unwrapPaddleData(json)
+  if (!data) return null
 
-    const email = typeof data.email === 'string' ? data.email : null
-    if (!email) return null
+  const email = typeof data.email === 'string' ? data.email : null
+  if (!email) return null
 
-    const name = typeof data.name === 'string' ? data.name : null
+  const name = typeof data.name === 'string' ? data.name : null
 
-    // Extract business name from the business object (when customer adds business details)
-    let businessName: string | null = null
-    if (data.business && typeof data.business === 'object') {
-        const business = data.business as Record<string, unknown>
-        businessName = typeof business.name === 'string' ? business.name : null
-    }
+  // Extract business name from the business object (when customer adds business details)
+  let businessName: string | null = null
+  if (data.business && typeof data.business === 'object') {
+    const business = data.business as Record<string, unknown>
+    businessName = typeof business.name === 'string' ? business.name : null
+  }
 
-    return { email, name, businessName }
+  return { email, name, businessName }
 }

@@ -20,21 +20,21 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null
  * Call this once when the app initializes.
  */
 export async function initWindowStateListener(): Promise<void> {
-    // Avoid double-initialization
-    if (unlisten !== null) {
-        return
+  // Avoid double-initialization
+  if (unlisten !== null) {
+    return
+  }
+
+  const currentWindow = getCurrentWindow()
+  unlisten = await currentWindow.onResized(() => {
+    // Debounce: clear any pending save and schedule a new one
+    if (debounceTimer !== null) {
+      clearTimeout(debounceTimer)
     }
 
-    const currentWindow = getCurrentWindow()
-    unlisten = await currentWindow.onResized(() => {
-        // Debounce: clear any pending save and schedule a new one
-        if (debounceTimer !== null) {
-            clearTimeout(debounceTimer)
-        }
-
-        debounceTimer = setTimeout(() => {
-            void saveWindowState(StateFlags.ALL)
-            debounceTimer = null
-        }, RESIZE_DEBOUNCE_MS)
-    })
+    debounceTimer = setTimeout(() => {
+      void saveWindowState(StateFlags.ALL)
+      debounceTimer = null
+    }, RESIZE_DEBOUNCE_MS)
+  })
 }

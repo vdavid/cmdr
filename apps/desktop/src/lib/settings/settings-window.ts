@@ -21,27 +21,27 @@ const SETTINGS_MIN_HEIGHT = 400
  * instead of a module-level JS reference that can go stale.
  */
 export async function openSettingsWindow(): Promise<void> {
-    const existing = await WebviewWindow.getByLabel('settings')
-    if (existing) {
-        // Emit to the settings window so it can self-focus. Cross-window setFocus()
-        // doesn't reliably bring a window to front on macOS.
-        await emitTo('settings', 'focus-self')
-        return
-    }
+  const existing = await WebviewWindow.getByLabel('settings')
+  if (existing) {
+    // Emit to the settings window so it can self-focus. Cross-window setFocus()
+    // doesn't reliably bring a window to front on macOS.
+    await emitTo('settings', 'focus-self')
+    return
+  }
 
-    log.debug('Creating new settings window')
+  log.debug('Creating new settings window')
 
-    new WebviewWindow('settings', {
-        url: '/settings',
-        title: 'Settings',
-        width: SETTINGS_WIDTH,
-        height: SETTINGS_HEIGHT,
-        minWidth: SETTINGS_MIN_WIDTH,
-        minHeight: SETTINGS_MIN_HEIGHT,
-        maxWidth: SETTINGS_MAX_WIDTH,
-        center: true,
-        resizable: true,
-        decorations: true,
-        focus: true,
-    })
+  new WebviewWindow('settings', {
+    url: '/settings',
+    title: 'Settings',
+    width: SETTINGS_WIDTH,
+    height: SETTINGS_HEIGHT,
+    minWidth: SETTINGS_MIN_WIDTH,
+    minHeight: SETTINGS_MIN_HEIGHT,
+    maxWidth: SETTINGS_MAX_WIDTH,
+    center: true,
+    resizable: true,
+    decorations: true,
+    focus: true,
+  })
 }

@@ -11,40 +11,40 @@ let altKeyHeld = $state(false)
 let listenerAttached = false
 
 function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === 'Alt') {
-        altKeyHeld = true
-    }
+  if (e.key === 'Alt') {
+    altKeyHeld = true
+  }
 }
 
 function handleKeyUp(e: KeyboardEvent) {
-    if (e.key === 'Alt') {
-        altKeyHeld = false
-    }
+  if (e.key === 'Alt') {
+    altKeyHeld = false
+  }
 }
 
 /** Starts listening for Alt key changes on the document. Idempotent. */
 export function startModifierTracking(): void {
-    if (listenerAttached) return
-    document.addEventListener('keydown', handleKeyDown)
-    document.addEventListener('keyup', handleKeyUp)
-    listenerAttached = true
+  if (listenerAttached) return
+  document.addEventListener('keydown', handleKeyDown)
+  document.addEventListener('keyup', handleKeyUp)
+  listenerAttached = true
 }
 
 /** Stops listening and resets state. Idempotent. */
 export function stopModifierTracking(): void {
-    if (!listenerAttached) return
-    document.removeEventListener('keydown', handleKeyDown)
-    document.removeEventListener('keyup', handleKeyUp)
-    listenerAttached = false
-    altKeyHeld = false
+  if (!listenerAttached) return
+  document.removeEventListener('keydown', handleKeyDown)
+  document.removeEventListener('keyup', handleKeyUp)
+  listenerAttached = false
+  altKeyHeld = false
 }
 
 /** Returns whether the Alt/Option key is currently held. */
 export function getIsAltHeld(): boolean {
-    return altKeyHeld
+  return altKeyHeld
 }
 
 /** Sets the Alt state from an external source (native drag-modifiers event). */
 export function setAltHeld(held: boolean): void {
-    altKeyHeld = held
+  altKeyHeld = held
 }

@@ -47,12 +47,12 @@ This document lists all keyboard shortcuts available in Cmdr.
 ## Notes
 
 - **Brief mode**: The file list is displayed in multiple columns. Arrow keys navigate within and between columns.
-    - Page Up/Down: Moves horizontally by (number of visible columns - 1) and jumps to the bottommost item in the target
-      column. If the target would be at or past the leftmost/rightmost edge, it jumps to the first/last item instead.
-      This allows quick navigation across large file sets while maintaining context.
+  - Page Up/Down: Moves horizontally by (number of visible columns - 1) and jumps to the bottommost item in the target
+    column. If the target would be at or past the leftmost/rightmost edge, it jumps to the first/last item instead. This
+    allows quick navigation across large file sets while maintaining context.
 - **Full mode**: The file list is displayed in a single column with detailed metadata (size, date). Only up/down arrow
   keys navigate items; left/right arrows are not used.
-    - Page Up/Down: Moves vertically by (number of visible items - 1), adapting to the current window size.
+  - Page Up/Down: Moves vertically by (number of visible items - 1), adapting to the current window size.
 - All jump shortcuts (Home/End) work consistently in both Brief and Full modes.
 
 ## Shortcuts by category

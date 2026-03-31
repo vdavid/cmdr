@@ -3,15 +3,15 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 
 /** Shows a native context menu for a tab (fire-and-forget). */
 export async function showTabContextMenu(
-    isPinned: boolean,
-    canClose: boolean,
-    hasOtherUnpinnedTabs: boolean,
+  isPinned: boolean,
+  canClose: boolean,
+  hasOtherUnpinnedTabs: boolean,
 ): Promise<void> {
-    await invoke('show_tab_context_menu', {
-        isPinned,
-        canClose,
-        hasOtherUnpinnedTabs,
-    })
+  await invoke('show_tab_context_menu', {
+    isPinned,
+    canClose,
+    hasOtherUnpinnedTabs,
+  })
 }
 
 /**
@@ -20,7 +20,7 @@ export async function showTabContextMenu(
  * `MenuEvent` through the event loop.
  */
 export function onTabContextAction(handler: (action: string) => void): Promise<UnlistenFn> {
-    return listen<{ action: string }>('tab-context-action', (event) => {
-        handler(event.payload.action)
-    })
+  return listen<{ action: string }>('tab-context-action', (event) => {
+    handler(event.payload.action)
+  })
 }

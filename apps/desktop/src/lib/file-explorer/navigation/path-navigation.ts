@@ -14,8 +14,8 @@ import { withTimeout } from '$lib/utils/timing'
 export { withTimeout }
 
 export interface OtherPaneState {
-    otherPaneVolumeId: string
-    otherPanePath: string
+  otherPaneVolumeId: string
+  otherPanePath: string
 }
 
 /**
@@ -28,40 +28,40 @@ export interface OtherPaneState {
  * 4. Default: ~ for main volume, volume root for others
  */
 export async function determineNavigationPath(
-    volumeId: string,
-    volumePath: string,
-    targetPath: string,
-    otherPane: OtherPaneState,
+  volumeId: string,
+  volumePath: string,
+  targetPath: string,
+  otherPane: OtherPaneState,
 ): Promise<string> {
-    const pathExistsTimeoutMs = 500
+  const pathExistsTimeoutMs = 500
 
-    // User navigated to a favorite — go to the favorite's path directly
-    if (targetPath !== volumePath) {
-        return targetPath
-    }
+  // User navigated to a favorite — go to the favorite's path directly
+  if (targetPath !== volumePath) {
+    return targetPath
+  }
 
-    // Run both checks in parallel with timeouts
-    const [otherPaneValid, lastUsedResult] = await Promise.all([
-        otherPane.otherPaneVolumeId === volumeId
-            ? withTimeout(pathExists(otherPane.otherPanePath), pathExistsTimeoutMs, false)
-            : Promise.resolve(false),
-        getLastUsedPathForVolume(volumeId).then((p) =>
-            p ? withTimeout(pathExists(p), pathExistsTimeoutMs, false).then((ok) => (ok ? p : null)) : null,
-        ),
-    ])
+  // Run both checks in parallel with timeouts
+  const [otherPaneValid, lastUsedResult] = await Promise.all([
+    otherPane.otherPaneVolumeId === volumeId
+      ? withTimeout(pathExists(otherPane.otherPanePath), pathExistsTimeoutMs, false)
+      : Promise.resolve(false),
+    getLastUsedPathForVolume(volumeId).then((p) =>
+      p ? withTimeout(pathExists(p), pathExistsTimeoutMs, false).then((ok) => (ok ? p : null)) : null,
+    ),
+  ])
 
-    if (otherPaneValid) return otherPane.otherPanePath
-    if (lastUsedResult) return lastUsedResult
+  if (otherPaneValid) return otherPane.otherPanePath
+  if (lastUsedResult) return lastUsedResult
 
-    // Default: ~ for main volume (root), volume path for others
-    return volumeId === DEFAULT_VOLUME_ID ? '~' : volumePath
+  // Default: ~ for main volume (root), volume path for others
+  return volumeId === DEFAULT_VOLUME_ID ? '~' : volumePath
 }
 
 export interface ResolveValidPathOptions {
-    /** Custom path-existence checker. Defaults to the Tauri `pathExists` command. */
-    pathExistsFn?: (path: string) => Promise<boolean>
-    /** Timeout per step in ms. Set to 0 to skip timeout wrapping. Defaults to 1000. */
-    timeoutMs?: number
+  /** Custom path-existence checker. Defaults to the Tauri `pathExists` command. */
+  pathExistsFn?: (path: string) => Promise<boolean>
+  /** Timeout per step in ms. Set to 0 to skip timeout wrapping. Defaults to 1000. */
+  timeoutMs?: number
 }
 
 /**
@@ -71,28 +71,28 @@ export interface ResolveValidPathOptions {
  * Returns null if even the root doesn't exist (volume unmounted).
  */
 export async function resolveValidPath(targetPath: string, options?: ResolveValidPathOptions): Promise<string | null> {
-    const checkFn = options?.pathExistsFn ?? pathExists
-    const timeoutMs = options?.timeoutMs ?? 1000
+  const checkFn = options?.pathExistsFn ?? pathExists
+  const timeoutMs = options?.timeoutMs ?? 1000
 
-    const check = (p: string): Promise<boolean> =>
-        timeoutMs > 0 ? withTimeout(checkFn(p), timeoutMs, false) : checkFn(p)
+  const check = (p: string): Promise<boolean> =>
+    timeoutMs > 0 ? withTimeout(checkFn(p), timeoutMs, false) : checkFn(p)
 
-    let path = targetPath
-    while (path !== '/' && path !== '') {
-        if (await check(path)) {
-            return path
-        }
-        // Go to parent
-        const lastSlash = path.lastIndexOf('/')
-        path = lastSlash > 0 ? path.substring(0, lastSlash) : '/'
+  let path = targetPath
+  while (path !== '/' && path !== '') {
+    if (await check(path)) {
+      return path
     }
-    // Try user home before falling back to root (~ is expanded by the backend)
-    if (await check('~')) {
-        return '~'
-    }
-    // Check root
-    if (await check('/')) {
-        return '/'
-    }
-    return null
+    // Go to parent
+    const lastSlash = path.lastIndexOf('/')
+    path = lastSlash > 0 ? path.substring(0, lastSlash) : '/'
+  }
+  // Try user home before falling back to root (~ is expanded by the backend)
+  if (await check('~')) {
+    return '~'
+  }
+  // Check root
+  if (await check('/')) {
+    return '/'
+  }
+  return null
 }

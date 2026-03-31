@@ -14,7 +14,7 @@ import { listen, type UnlistenFn } from '$lib/tauri-commands'
  * Returns an unlisten function for cleanup.
  */
 export async function initIndexEvents(onDirUpdated: (paths: string[]) => void): Promise<UnlistenFn> {
-    return listen<{ paths: string[] }>('index-dir-updated', (event) => {
-        onDirUpdated(event.payload.paths)
-    })
+  return listen<{ paths: string[] }>('index-dir-updated', (event) => {
+    onDirUpdated(event.payload.paths)
+  })
 }

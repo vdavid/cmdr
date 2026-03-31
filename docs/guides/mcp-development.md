@@ -122,16 +122,16 @@ Add event listener in `+page.svelte`:
 ```typescript
 // In setupTauriEventListeners()
 try {
-    await listen<{ action: string; value?: string }>('my-event', (event) => {
-        const { action, value } = event.payload
-        if (action === 'doThing') {
-            explorerRef?.doThing()
-        } else if (action === 'paramAction') {
-            explorerRef?.paramAction(value!)
-        }
-    })
+  await listen<{ action: string; value?: string }>('my-event', (event) => {
+    const { action, value } = event.payload
+    if (action === 'doThing') {
+      explorerRef?.doThing()
+    } else if (action === 'paramAction') {
+      explorerRef?.paramAction(value!)
+    }
+  })
 } catch {
-    // Not in Tauri environment
+  // Not in Tauri environment
 }
 ```
 

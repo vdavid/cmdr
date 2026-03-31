@@ -11,62 +11,62 @@ export type SettingType = 'boolean' | 'number' | 'string' | 'enum' | 'duration'
 export type DurationUnit = 'ms' | 's' | 'min' | 'h' | 'd'
 
 export interface EnumOption {
-    value: string | number
-    label: string
-    description?: string
+  value: string | number
+  label: string
+  description?: string
 }
 
 export interface SettingConstraints {
-    // For 'number' type
-    min?: number
-    max?: number
-    step?: number
-    sliderStops?: number[] // Specific values the slider snaps to
+  // For 'number' type
+  min?: number
+  max?: number
+  step?: number
+  sliderStops?: number[] // Specific values the slider snaps to
 
-    // For 'enum' type
-    options?: EnumOption[]
-    allowCustom?: boolean
-    customMin?: number
-    customMax?: number
+  // For 'enum' type
+  options?: EnumOption[]
+  allowCustom?: boolean
+  customMin?: number
+  customMax?: number
 
-    // For 'duration' type
-    unit?: DurationUnit
-    minMs?: number
-    maxMs?: number
+  // For 'duration' type
+  unit?: DurationUnit
+  minMs?: number
+  maxMs?: number
 }
 
 export interface SettingDefinition {
-    // Identity
-    id: string
-    section: string[]
+  // Identity
+  id: string
+  section: string[]
 
-    // Display
-    label: string
-    description: string
-    keywords: string[]
+  // Display
+  label: string
+  description: string
+  keywords: string[]
 
-    // Type and constraints
-    type: SettingType
-    default: unknown
-    constraints?: SettingConstraints
+  // Type and constraints
+  type: SettingType
+  default: unknown
+  constraints?: SettingConstraints
 
-    // Behavior
-    requiresRestart?: boolean
-    disabled?: boolean
-    disabledReason?: string
+  // Behavior
+  requiresRestart?: boolean
+  disabled?: boolean
+  disabledReason?: string
 
-    // UI hints
-    component?:
-        | 'switch'
-        | 'select'
-        | 'radio'
-        | 'slider'
-        | 'toggle-group'
-        | 'number-input'
-        | 'text-input'
-        | 'password-input'
-        | 'duration'
-    showInAdvanced?: boolean
+  // UI hints
+  component?:
+    | 'switch'
+    | 'select'
+    | 'radio'
+    | 'slider'
+    | 'toggle-group'
+    | 'number-input'
+    | 'text-input'
+    | 'password-input'
+    | 'duration'
+  showInAdvanced?: boolean
 }
 
 // ============================================================================
@@ -86,65 +86,65 @@ export type AiProvider = 'off' | 'openai-compatible' | 'local'
 export type AiLocalContextSize = '2048' | '4096' | '8192' | '16384' | '32768' | '65536' | '131072' | '262144'
 
 export interface SettingsValues {
-    // Appearance
-    'appearance.appColor': AppColor
-    'appearance.uiDensity': UiDensity
-    'appearance.useAppIconsForDocuments': boolean
-    'appearance.fileSizeFormat': FileSizeFormat
-    'appearance.dateTimeFormat': DateTimeFormat
-    'appearance.customDateTimeFormat': string
+  // Appearance
+  'appearance.appColor': AppColor
+  'appearance.uiDensity': UiDensity
+  'appearance.useAppIconsForDocuments': boolean
+  'appearance.fileSizeFormat': FileSizeFormat
+  'appearance.dateTimeFormat': DateTimeFormat
+  'appearance.customDateTimeFormat': string
 
-    // Listing
-    'listing.directorySortMode': DirectorySortMode
-    'listing.sizeDisplay': SizeDisplayMode
-    'listing.sizeMismatchWarning': boolean
+  // Listing
+  'listing.directorySortMode': DirectorySortMode
+  'listing.sizeDisplay': SizeDisplayMode
+  'listing.sizeMismatchWarning': boolean
 
-    // File operations
-    'fileOperations.allowFileExtensionChanges': ExtensionChangePolicy
-    'fileOperations.progressUpdateInterval': number
-    'fileOperations.maxConflictsToShow': number
+  // File operations
+  'fileOperations.allowFileExtensionChanges': ExtensionChangePolicy
+  'fileOperations.progressUpdateInterval': number
+  'fileOperations.maxConflictsToShow': number
 
-    // Updates
-    'updates.autoCheck': boolean
-    'updates.crashReports': boolean
+  // Updates
+  'updates.autoCheck': boolean
+  'updates.crashReports': boolean
 
-    // Network
-    'network.shareCacheDuration': number
-    'network.timeoutMode': NetworkTimeoutMode
-    'network.customTimeout': number
+  // Network
+  'network.shareCacheDuration': number
+  'network.timeoutMode': NetworkTimeoutMode
+  'network.customTimeout': number
 
-    // Theme
-    'theme.mode': ThemeMode
+  // Theme
+  'theme.mode': ThemeMode
 
-    // Indexing
-    'indexing.enabled': boolean
+  // Indexing
+  'indexing.enabled': boolean
 
-    // Viewer
-    'viewer.wordWrap': boolean
+  // Viewer
+  'viewer.wordWrap': boolean
 
-    // AI
-    'ai.provider': AiProvider
-    'ai.openaiApiKey': string
-    'ai.openaiBaseUrl': string
-    'ai.openaiModel': string
-    'ai.localContextSize': AiLocalContextSize
-    'ai.cloudProvider': string
-    'ai.cloudProviderConfigs': string // JSON blob
+  // AI
+  'ai.provider': AiProvider
+  'ai.openaiApiKey': string
+  'ai.openaiBaseUrl': string
+  'ai.openaiModel': string
+  'ai.localContextSize': AiLocalContextSize
+  'ai.cloudProvider': string
+  'ai.cloudProviderConfigs': string // JSON blob
 
-    // Developer
-    'developer.mcpEnabled': boolean
-    'developer.mcpPort': number
-    'developer.verboseLogging': boolean
+  // Developer
+  'developer.mcpEnabled': boolean
+  'developer.mcpPort': number
+  'developer.verboseLogging': boolean
 
-    // Advanced
-    'advanced.dragThreshold': number
-    'advanced.prefetchBufferSize': number
-    'advanced.virtualizationBufferRows': number
-    'advanced.virtualizationBufferColumns': number
-    'advanced.fileWatcherDebounce': number
-    'advanced.serviceResolveTimeout': number
-    'advanced.mountTimeout': number
-    'advanced.updateCheckInterval': number
+  // Advanced
+  'advanced.dragThreshold': number
+  'advanced.prefetchBufferSize': number
+  'advanced.virtualizationBufferRows': number
+  'advanced.virtualizationBufferColumns': number
+  'advanced.fileWatcherDebounce': number
+  'advanced.serviceResolveTimeout': number
+  'advanced.mountTimeout': number
+  'advanced.updateCheckInterval': number
 }
 
 export type SettingId = keyof SettingsValues
@@ -154,9 +154,9 @@ export type SettingId = keyof SettingsValues
 // ============================================================================
 
 export interface SettingSearchResult {
-    setting: SettingDefinition
-    matchedIndices: number[]
-    searchableText: string
+  setting: SettingDefinition
+  matchedIndices: number[]
+  searchableText: string
 }
 
 // ============================================================================
@@ -164,13 +164,13 @@ export interface SettingSearchResult {
 // ============================================================================
 
 export class SettingValidationError extends Error {
-    constructor(
-        public settingId: string,
-        public reason: string,
-    ) {
-        super(`Invalid value for setting '${settingId}': ${reason}`)
-        this.name = 'SettingValidationError'
-    }
+  constructor(
+    public settingId: string,
+    public reason: string,
+  ) {
+    super(`Invalid value for setting '${settingId}': ${reason}`)
+    this.name = 'SettingValidationError'
+  }
 }
 
 // ============================================================================
@@ -178,15 +178,15 @@ export class SettingValidationError extends Error {
 // ============================================================================
 
 export interface DensityValues {
-    rowHeight: number
-    iconSize: number
-    spacing: number
+  rowHeight: number
+  iconSize: number
+  spacing: number
 }
 
 export const densityMappings: Record<UiDensity, DensityValues> = {
-    compact: { rowHeight: 16, iconSize: 24, spacing: 2 },
-    comfortable: { rowHeight: 20, iconSize: 32, spacing: 4 },
-    spacious: { rowHeight: 28, iconSize: 40, spacing: 8 },
+  compact: { rowHeight: 16, iconSize: 24, spacing: 2 },
+  comfortable: { rowHeight: 20, iconSize: 32, spacing: 4 },
+  spacious: { rowHeight: 28, iconSize: 40, spacing: 8 },
 }
 
 // ============================================================================
@@ -194,9 +194,9 @@ export const densityMappings: Record<UiDensity, DensityValues> = {
 // ============================================================================
 
 export function formatDuration(ms: number): string {
-    if (ms < 1000) return ms.toString() + 'ms'
-    if (ms < 60000) return (ms / 1000).toString() + 's'
-    if (ms < 3600000) return (ms / 60000).toString() + 'min'
-    if (ms < 86400000) return (ms / 3600000).toString() + 'h'
-    return (ms / 86400000).toString() + 'd'
+  if (ms < 1000) return ms.toString() + 'ms'
+  if (ms < 60000) return (ms / 1000).toString() + 's'
+  if (ms < 3600000) return (ms / 60000).toString() + 'min'
+  if (ms < 86400000) return (ms / 3600000).toString() + 'h'
+  return (ms / 86400000).toString() + 'd'
 }

@@ -8,70 +8,70 @@ import { invoke } from '@tauri-apps/api/core'
 
 /** File entry for pane state updates. */
 export interface PaneFileEntry {
-    name: string
-    path: string
-    isDirectory: boolean
-    size?: number
-    recursiveSize?: number
-    modified?: string
+  name: string
+  path: string
+  isDirectory: boolean
+  size?: number
+  recursiveSize?: number
+  modified?: string
 }
 
 /** State of a single pane. */
 export interface PaneState {
-    path: string
-    volumeId?: string
-    volumeName?: string
-    files: PaneFileEntry[]
-    cursorIndex: number
-    viewMode: string
-    selectedIndices: number[]
-    sortField?: string
-    sortOrder?: string
-    totalFiles?: number
-    loadedStart?: number
-    loadedEnd?: number
-    showHidden?: boolean
+  path: string
+  volumeId?: string
+  volumeName?: string
+  files: PaneFileEntry[]
+  cursorIndex: number
+  viewMode: string
+  selectedIndices: number[]
+  sortField?: string
+  sortOrder?: string
+  totalFiles?: number
+  loadedStart?: number
+  loadedEnd?: number
+  showHidden?: boolean
 }
 
 /**
  * Update left pane state for MCP context tools.
  */
 export async function updateLeftPaneState(state: PaneState): Promise<void> {
-    await invoke('update_left_pane_state', { state })
+  await invoke('update_left_pane_state', { state })
 }
 
 /**
  * Update right pane state for MCP context tools.
  */
 export async function updateRightPaneState(state: PaneState): Promise<void> {
-    await invoke('update_right_pane_state', { state })
+  await invoke('update_right_pane_state', { state })
 }
 
 /**
  * Update focused pane for MCP context tools.
  */
 export async function updateFocusedPane(pane: 'left' | 'right'): Promise<void> {
-    await invoke('update_focused_pane', { pane })
+  await invoke('update_focused_pane', { pane })
 }
 
 /** Tab info for MCP state sync. */
 export interface McpTabInfo {
-    id: string
-    path: string
-    pinned: boolean
-    active: boolean
+  id: string
+  path: string
+  pinned: boolean
+  active: boolean
 }
 
 /**
  * Update tab list for a pane (for MCP state reporting).
  */
 export async function updatePaneTabs(pane: string, tabs: McpTabInfo[]): Promise<void> {
-    await invoke('update_pane_tabs', { pane, tabs })
+  await invoke('update_pane_tabs', { pane, tabs })
 }
 
 /** Updates the File menu "Pin tab" / "Unpin tab" label based on active tab state. */
 export async function updatePinTabMenu(isPinned: boolean): Promise<void> {
-    await invoke('update_pin_tab_menu', { isPinned })
+  await invoke('update_pin_tab_menu', { isPinned })
 }
 
 // ============================================================================
@@ -80,17 +80,17 @@ export async function updatePinTabMenu(isPinned: boolean): Promise<void> {
 
 /** Notify backend that a soft (overlay) dialog opened. */
 export async function notifyDialogOpened(dialogType: string): Promise<void> {
-    await invoke('notify_dialog_opened', { dialogType })
+  await invoke('notify_dialog_opened', { dialogType })
 }
 
 /** Notify backend that a soft (overlay) dialog closed. */
 export async function notifyDialogClosed(dialogType: string): Promise<void> {
-    await invoke('notify_dialog_closed', { dialogType })
+  await invoke('notify_dialog_closed', { dialogType })
 }
 
 /** Register all known soft dialog types with the backend for the MCP "available dialogs" resource. */
 export async function registerKnownDialogs(dialogs: readonly { id: string; description?: string }[]): Promise<void> {
-    await invoke('register_known_dialogs', { dialogs })
+  await invoke('register_known_dialogs', { dialogs })
 }
 
 // ============================================================================
@@ -103,7 +103,7 @@ export async function registerKnownDialogs(dialogs: readonly { id: string; descr
  * @param filename - Name of the file.
  */
 export async function updateMenuContext(path: string, filename: string): Promise<void> {
-    await invoke('update_menu_context', { path, filename })
+  await invoke('update_menu_context', { path, filename })
 }
 
 /**
@@ -112,7 +112,7 @@ export async function updateMenuContext(path: string, filename: string): Promise
  * Settings or a file viewer window has focus.
  */
 export async function setMenuContext(context: 'explorer' | 'other'): Promise<void> {
-    await invoke('set_menu_context', { context })
+  await invoke('set_menu_context', { context })
 }
 
 /**
@@ -120,7 +120,7 @@ export async function setMenuContext(context: 'explorer' | 'other'): Promise<voi
  * @returns The new state of showHiddenFiles.
  */
 export async function toggleHiddenFiles(): Promise<boolean> {
-    return invoke<boolean>('toggle_hidden_files')
+  return invoke<boolean>('toggle_hidden_files')
 }
 
 /**
@@ -128,7 +128,7 @@ export async function toggleHiddenFiles(): Promise<boolean> {
  * @param mode - 'full' or 'brief'
  */
 export async function setViewMode(mode: 'full' | 'brief'): Promise<void> {
-    await invoke('set_view_mode', { mode })
+  await invoke('set_view_mode', { mode })
 }
 
 // ============================================================================
@@ -140,5 +140,5 @@ export async function setViewMode(mode: 'full' | 'brief'): Promise<void> {
  * Should be called when the frontend is ready to avoid white flash.
  */
 export async function showMainWindow(): Promise<void> {
-    await invoke('show_main_window')
+  await invoke('show_main_window')
 }

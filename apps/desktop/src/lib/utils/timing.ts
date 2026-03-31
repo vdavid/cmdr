@@ -1,13 +1,13 @@
 /** Races a promise against a timeout, returning the fallback if it doesn't resolve in time. */
 export function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
-    return Promise.race([
-        promise,
-        new Promise<T>((resolve) =>
-            setTimeout(() => {
-                resolve(fallback)
-            }, ms),
-        ),
-    ])
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) =>
+      setTimeout(() => {
+        resolve(fallback)
+      }, ms),
+    ),
+  ])
 }
 
 /**
@@ -15,33 +15,33 @@ export function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Pr
  * Only the final call in a burst fires. Good for "I only care about the end state."
  */
 export function createDebounce(fn: () => void, delayMs: number) {
-    let timer: ReturnType<typeof setTimeout> | null = null
+  let timer: ReturnType<typeof setTimeout> | null = null
 
-    function call() {
-        if (timer !== null) clearTimeout(timer)
-        timer = setTimeout(() => {
-            timer = null
-            fn()
-        }, delayMs)
+  function call() {
+    if (timer !== null) clearTimeout(timer)
+    timer = setTimeout(() => {
+      timer = null
+      fn()
+    }, delayMs)
+  }
+
+  function cancel() {
+    if (timer !== null) {
+      clearTimeout(timer)
+      timer = null
     }
+  }
 
-    function cancel() {
-        if (timer !== null) {
-            clearTimeout(timer)
-            timer = null
-        }
+  /** Cancel pending timer and fire immediately. */
+  function flush() {
+    if (timer !== null) {
+      clearTimeout(timer)
+      timer = null
+      fn()
     }
+  }
 
-    /** Cancel pending timer and fire immediately. */
-    function flush() {
-        if (timer !== null) {
-            clearTimeout(timer)
-            timer = null
-            fn()
-        }
-    }
-
-    return { call, cancel, flush }
+  return { call, cancel, flush }
 }
 
 /**
@@ -49,35 +49,35 @@ export function createDebounce(fn: () => void, delayMs: number) {
  * Trailing call guaranteed (last call always fires). Good for "show live progress at a steady cadence."
  */
 export function createThrottle(fn: () => void, delayMs: number) {
-    let timer: ReturnType<typeof setTimeout> | null = null
-    let lastFireTime = 0
+  let timer: ReturnType<typeof setTimeout> | null = null
+  let lastFireTime = 0
 
-    function call() {
-        const now = Date.now()
-        const elapsed = now - lastFireTime
+  function call() {
+    const now = Date.now()
+    const elapsed = now - lastFireTime
 
-        if (elapsed >= delayMs) {
-            lastFireTime = now
-            if (timer !== null) {
-                clearTimeout(timer)
-                timer = null
-            }
-            fn()
-        } else if (timer === null) {
-            timer = setTimeout(() => {
-                timer = null
-                lastFireTime = Date.now()
-                fn()
-            }, delayMs - elapsed)
-        }
+    if (elapsed >= delayMs) {
+      lastFireTime = now
+      if (timer !== null) {
+        clearTimeout(timer)
+        timer = null
+      }
+      fn()
+    } else if (timer === null) {
+      timer = setTimeout(() => {
+        timer = null
+        lastFireTime = Date.now()
+        fn()
+      }, delayMs - elapsed)
     }
+  }
 
-    function cancel() {
-        if (timer !== null) {
-            clearTimeout(timer)
-            timer = null
-        }
+  function cancel() {
+    if (timer !== null) {
+      clearTimeout(timer)
+      timer = null
     }
+  }
 
-    return { call, cancel }
+  return { call, cancel }
 }

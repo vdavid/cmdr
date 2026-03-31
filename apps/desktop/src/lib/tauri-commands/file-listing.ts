@@ -2,13 +2,13 @@
 
 import { invoke } from '@tauri-apps/api/core'
 import type {
-    FileEntry,
-    ListingStats,
-    ResortResult,
-    SortColumn,
-    SortOrder,
-    StreamingListingStartResult,
-    SyncStatus,
+  FileEntry,
+  ListingStats,
+  ResortResult,
+  SortColumn,
+  SortOrder,
+  StreamingListingStartResult,
+  SyncStatus,
 } from '../file-explorer/types'
 import type { TimedOut } from './ipc-types'
 import type { DirectorySortMode } from '$lib/settings'
@@ -26,23 +26,23 @@ import type { DirectorySortMode } from '$lib/settings'
  * @param directorySortMode - How to sort directories: like files or always by name.
  */
 export async function listDirectoryStart(
-    volumeId: string,
-    path: string,
-    includeHidden: boolean,
-    sortBy: SortColumn,
-    sortOrder: SortOrder,
-    listingId: string,
-    directorySortMode?: DirectorySortMode,
+  volumeId: string,
+  path: string,
+  includeHidden: boolean,
+  sortBy: SortColumn,
+  sortOrder: SortOrder,
+  listingId: string,
+  directorySortMode?: DirectorySortMode,
 ): Promise<StreamingListingStartResult> {
-    return invoke<StreamingListingStartResult>('list_directory_start_streaming', {
-        volumeId,
-        path,
-        includeHidden,
-        sortBy,
-        sortOrder,
-        listingId,
-        directorySortMode,
-    })
+  return invoke<StreamingListingStartResult>('list_directory_start_streaming', {
+    volumeId,
+    path,
+    includeHidden,
+    sortBy,
+    sortOrder,
+    listingId,
+    directorySortMode,
+  })
 }
 
 /**
@@ -51,7 +51,7 @@ export async function listDirectoryStart(
  * @param listingId - The listing ID to cancel.
  */
 export async function cancelListing(listingId: string): Promise<void> {
-    await invoke('cancel_listing', { listingId })
+  await invoke('cancel_listing', { listingId })
 }
 
 /**
@@ -68,25 +68,25 @@ export async function cancelListing(listingId: string): Promise<void> {
  * @public
  */
 export async function resortListing(
-    listingId: string,
-    sortBy: SortColumn,
-    sortOrder: SortOrder,
-    cursorFilename: string | undefined,
-    includeHidden: boolean,
-    selectedIndices?: number[],
-    allSelected?: boolean,
-    directorySortMode?: DirectorySortMode,
+  listingId: string,
+  sortBy: SortColumn,
+  sortOrder: SortOrder,
+  cursorFilename: string | undefined,
+  includeHidden: boolean,
+  selectedIndices?: number[],
+  allSelected?: boolean,
+  directorySortMode?: DirectorySortMode,
 ): Promise<ResortResult> {
-    return invoke<ResortResult>('resort_listing', {
-        listingId,
-        sortBy,
-        sortOrder,
-        cursorFilename,
-        includeHidden,
-        selectedIndices,
-        allSelected,
-        directorySortMode,
-    })
+  return invoke<ResortResult>('resort_listing', {
+    listingId,
+    sortBy,
+    sortOrder,
+    cursorFilename,
+    includeHidden,
+    selectedIndices,
+    allSelected,
+    directorySortMode,
+  })
 }
 
 /**
@@ -97,12 +97,12 @@ export async function resortListing(
  * @param includeHidden - Whether to include hidden files.
  */
 export async function getFileRange(
-    listingId: string,
-    start: number,
-    count: number,
-    includeHidden: boolean,
+  listingId: string,
+  start: number,
+  count: number,
+  includeHidden: boolean,
 ): Promise<FileEntry[]> {
-    return invoke<FileEntry[]>('get_file_range', { listingId, start, count, includeHidden })
+  return invoke<FileEntry[]>('get_file_range', { listingId, start, count, includeHidden })
 }
 
 /**
@@ -111,7 +111,7 @@ export async function getFileRange(
  * @param includeHidden - Whether to include hidden files in count.
  */
 export async function getTotalCount(listingId: string, includeHidden: boolean): Promise<number> {
-    return invoke<number>('get_total_count', { listingId, includeHidden })
+  return invoke<number>('get_total_count', { listingId, includeHidden })
 }
 
 /**
@@ -121,7 +121,7 @@ export async function getTotalCount(listingId: string, includeHidden: boolean): 
  * @param includeHidden - Whether to include hidden files.
  */
 export async function getMaxFilenameWidth(listingId: string, includeHidden: boolean): Promise<number | undefined> {
-    return invoke<number | undefined>('get_max_filename_width', { listingId, includeHidden })
+  return invoke<number | undefined>('get_max_filename_width', { listingId, includeHidden })
 }
 
 /**
@@ -131,7 +131,7 @@ export async function getMaxFilenameWidth(listingId: string, includeHidden: bool
  * @param includeHidden - Whether to include hidden files when calculating index.
  */
 export async function findFileIndex(listingId: string, name: string, includeHidden: boolean): Promise<number | null> {
-    return invoke<number | null>('find_file_index', { listingId, name, includeHidden })
+  return invoke<number | null>('find_file_index', { listingId, name, includeHidden })
 }
 
 /**
@@ -139,11 +139,11 @@ export async function findFileIndex(listingId: string, name: string, includeHidd
  * Returns only found names as keys; removed files are absent from the map.
  */
 export async function findFileIndices(
-    listingId: string,
-    names: string[],
-    includeHidden: boolean,
+  listingId: string,
+  names: string[],
+  includeHidden: boolean,
 ): Promise<Record<string, number>> {
-    return invoke<Record<string, number>>('find_file_indices', { listingId, names, includeHidden })
+  return invoke<Record<string, number>>('find_file_indices', { listingId, names, includeHidden })
 }
 
 /**
@@ -153,7 +153,7 @@ export async function findFileIndices(
  * @param includeHidden - Whether to include hidden files when calculating index.
  */
 export async function getFileAt(listingId: string, index: number, includeHidden: boolean): Promise<FileEntry | null> {
-    return invoke<FileEntry | null>('get_file_at', { listingId, index, includeHidden })
+  return invoke<FileEntry | null>('get_file_at', { listingId, index, includeHidden })
 }
 
 /**
@@ -161,12 +161,12 @@ export async function getFileAt(listingId: string, index: number, includeHidden:
  * @param listingId - The listing ID to clean up.
  */
 export async function listDirectoryEnd(listingId: string): Promise<void> {
-    await invoke('list_directory_end', { listingId })
+  await invoke('list_directory_end', { listingId })
 }
 
 /** Force a re-read of a watched listing, emitting any diff. */
 export async function refreshListing(listingId: string): Promise<TimedOut<null>> {
-    return invoke<TimedOut<null>>('refresh_listing', { listingId })
+  return invoke<TimedOut<null>>('refresh_listing', { listingId })
 }
 
 /**
@@ -179,15 +179,15 @@ export async function refreshListing(listingId: string): Promise<TimedOut<null>>
  */
 /** Re-enriches cached listing entries with fresh drive index data (recursive_size). */
 export async function refreshListingIndexSizes(listingId: string): Promise<void> {
-    await invoke('refresh_listing_index_sizes', { listingId })
+  await invoke('refresh_listing_index_sizes', { listingId })
 }
 
 export async function getListingStats(
-    listingId: string,
-    includeHidden: boolean,
-    selectedIndices?: number[],
+  listingId: string,
+  includeHidden: boolean,
+  selectedIndices?: number[],
 ): Promise<ListingStats> {
-    return invoke<ListingStats>('get_listing_stats', { listingId, includeHidden, selectedIndices })
+  return invoke<ListingStats>('get_listing_stats', { listingId, includeHidden, selectedIndices })
 }
 
 /**
@@ -201,14 +201,14 @@ export async function getListingStats(
  * @param iconPath - Path to the drag preview icon (temp file).
  */
 export async function startSelectionDrag(
-    listingId: string,
-    selectedIndices: number[],
-    includeHidden: boolean,
-    hasParent: boolean,
-    mode: 'copy' | 'move',
-    iconPath: string,
+  listingId: string,
+  selectedIndices: number[],
+  includeHidden: boolean,
+  hasParent: boolean,
+  mode: 'copy' | 'move',
+  iconPath: string,
 ): Promise<void> {
-    await invoke('start_selection_drag', { listingId, selectedIndices, includeHidden, hasParent, mode, iconPath })
+  await invoke('start_selection_drag', { listingId, selectedIndices, includeHidden, hasParent, mode, iconPath })
 }
 
 /**
@@ -218,24 +218,24 @@ export async function startSelectionDrag(
  * @param richImagePath - Path to the rich canvas-rendered drag image.
  */
 export async function prepareSelfDragOverlay(richImagePath: string): Promise<void> {
-    await invoke('prepare_self_drag_overlay', { richImagePath })
+  await invoke('prepare_self_drag_overlay', { richImagePath })
 }
 
 /**
  * Clears self-drag state after drop or cancellation.
  */
 export async function clearSelfDragOverlay(): Promise<void> {
-    await invoke('clear_self_drag_overlay')
+  await invoke('clear_self_drag_overlay')
 }
 
 export interface PathLimits {
-    maxNameBytes: number
-    maxPathBytes: number
+  maxNameBytes: number
+  maxPathBytes: number
 }
 
 /** Returns platform-specific filesystem path limits from the backend. */
 export async function getPathLimits(): Promise<PathLimits> {
-    return invoke<PathLimits>('get_path_limits')
+  return invoke<PathLimits>('get_path_limits')
 }
 
 /**
@@ -245,7 +245,7 @@ export async function getPathLimits(): Promise<PathLimits> {
  * @returns True if the path exists.
  */
 export async function pathExists(path: string, volumeId?: string): Promise<boolean> {
-    return invoke<boolean>('path_exists', { volumeId, path })
+  return invoke<boolean>('path_exists', { volumeId, path })
 }
 
 /**
@@ -256,7 +256,7 @@ export async function pathExists(path: string, volumeId?: string): Promise<boole
  * @returns The full path of the created directory.
  */
 export async function createDirectory(parentPath: string, name: string, volumeId?: string): Promise<string> {
-    return invoke<string>('create_directory', { volumeId, parentPath, name })
+  return invoke<string>('create_directory', { volumeId, parentPath, name })
 }
 
 /**
@@ -267,7 +267,7 @@ export async function createDirectory(parentPath: string, name: string, volumeId
  * @returns The full path of the created file.
  */
 export async function createFile(parentPath: string, name: string, volumeId?: string): Promise<string> {
-    return invoke<string>('create_file', { volumeId, parentPath, name })
+  return invoke<string>('create_file', { volumeId, parentPath, name })
 }
 
 // ============================================================================
@@ -282,12 +282,12 @@ export async function createFile(parentPath: string, name: string, volumeId?: st
  * @returns Map of path -> SyncStatus, with timeout flag
  */
 export async function getSyncStatus(paths: string[]): Promise<TimedOut<Record<string, SyncStatus>>> {
-    try {
-        return await invoke<TimedOut<Record<string, SyncStatus>>>('get_sync_status', { paths })
-    } catch {
-        // Command not available (non-macOS) - return empty map
-        return { data: {}, timedOut: false }
-    }
+  try {
+    return await invoke<TimedOut<Record<string, SyncStatus>>>('get_sync_status', { paths })
+  } catch {
+    // Command not available (non-macOS) - return empty map
+    return { data: {}, timedOut: false }
+  }
 }
 
 /**
@@ -296,7 +296,7 @@ export async function getSyncStatus(paths: string[]): Promise<TimedOut<Record<st
  * @param widths - Map of code point -> width in pixels
  */
 export async function storeFontMetrics(fontId: string, widths: Record<number, number>): Promise<void> {
-    await invoke('store_font_metrics', { fontId, widths })
+  await invoke('store_font_metrics', { fontId, widths })
 }
 
 /**
@@ -305,5 +305,5 @@ export async function storeFontMetrics(fontId: string, widths: Record<number, nu
  * @returns True if metrics are cached
  */
 export async function hasFontMetrics(fontId: string): Promise<boolean> {
-    return invoke<boolean>('has_font_metrics', { fontId })
+  return invoke<boolean>('has_font_metrics', { fontId })
 }

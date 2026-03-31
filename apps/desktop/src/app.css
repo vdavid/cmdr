@@ -7,250 +7,250 @@
  * Future: Can be modified at runtime for user theme customization. */
 
 :root {
-    /* Declare support for both color schemes so WKWebView adapts native
+  /* Declare support for both color schemes so WKWebView adapts native
      * elements (scrollbars, form controls) to the current system appearance. */
-    color-scheme: light dark;
+  color-scheme: light dark;
 
-    /* === Backgrounds === */
-    --color-bg-primary: #ffffff;
-    --color-bg-secondary: #f5f5f5;
-    --color-bg-tertiary: #e8e8e8;
-    --color-bg-header: #f0f0f0;
+  /* === Backgrounds === */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f5f5f5;
+  --color-bg-tertiary: #e8e8e8;
+  --color-bg-header: #f0f0f0;
 
-    /* === Borders === */
-    --color-border-strong: #bbb;
-    --color-border: #ddd;
-    --color-border-subtle: #e8e8e8;
+  /* === Borders === */
+  --color-border-strong: #bbb;
+  --color-border: #ddd;
+  --color-border-subtle: #e8e8e8;
 
-    /* === Text === */
-    --color-text-primary: #1a1a1a;
-    --color-text-secondary: #666666;
-    --color-text-tertiary: #737373;
+  /* === Text === */
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #737373;
 
-    /* === macOS system accent colors (for reference / testing) ===
+  /* === macOS system accent colors (for reference / testing) ===
      * These are the fixed colors returned by NSColor.controlAccentColor().
      * "Multicolor" (the default macOS option) returns Blue. */
-    --color-apple-blue: #087aff;
-    --color-apple-purple: #a54fa7;
-    --color-apple-pink: #f74f9f;
-    --color-apple-red: #ff5157;
-    --color-apple-orange: #f6821b;
-    --color-apple-yellow: #ffc601;
-    --color-apple-green: #61bb46;
-    --color-apple-graphite: #8b8c8c;
+  --color-apple-blue: #087aff;
+  --color-apple-purple: #a54fa7;
+  --color-apple-pink: #f74f9f;
+  --color-apple-red: #ff5157;
+  --color-apple-orange: #f6821b;
+  --color-apple-yellow: #ffc601;
+  --color-apple-green: #61bb46;
+  --color-apple-graphite: #8b8c8c;
 
-    /* === Interactive States ===
+  /* === Interactive States ===
      * These accent colors are CSS fallbacks only. At runtime, the Rust backend
      * reads the macOS system accent color and overrides --color-accent via
      * accent-color.ts → initAccentColor(). See src-tauri/src/accent_color.rs. */
-    --color-accent: #d4a006;
-    --color-accent-fg: #1a1a1a; /* Text on accent backgrounds — dark in both themes for a11y */
-    --color-accent-hover: color-mix(in oklch, var(--color-accent), white 15%);
+  --color-accent: #d4a006;
+  --color-accent-fg: #1a1a1a; /* Text on accent backgrounds — dark in both themes for a11y */
+  --color-accent-hover: color-mix(in oklch, var(--color-accent), white 15%);
+  --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
+  --color-cmdr-gold: #d4a006;
+  --color-cmdr-blue: #4a9eff;
+  --color-cmdr-purple: #7c3aed;
+  --color-system-accent: #d4a006; /* Updated at runtime by accent-color.ts */
+
+  /* === Cursor (row highlight in file lists) === */
+  --color-cursor-inactive: color-mix(in srgb, var(--color-bg-tertiary), transparent 60%);
+  --color-cursor-active: color-mix(in oklch, var(--color-accent), transparent 80%);
+
+  /* === Semantic Colors === */
+  --color-allow: #2e7d32;
+  --color-error: #d32f2f;
+  --color-error-bg: #fef2f2;
+  --color-error-border: #fecaca;
+  --color-warning: #e65100;
+  --color-warning-bg: rgba(230, 81, 0, 0.1);
+
+  /* Disk usage bar — solid colors mixed against the track for clean layering.
+     * Uses color-mix against the border color (not transparent) to avoid
+     * muddy blending when the semi-transparent fill sits atop the track. */
+  --color-disk-ok: color-mix(in srgb, var(--color-allow) 60%, var(--color-border));
+  --color-disk-warning: color-mix(in srgb, var(--color-warning) 70%, var(--color-border));
+  --color-disk-danger: var(--color-error);
+  --color-disk-track: var(--color-border);
+
+  /* === Toast tints (tuned per scheme so warn reads amber, error reads red) === */
+  --color-toast-warn-stripe: #d4a006;
+  --color-toast-warn-bg: #fef9ee;
+  --color-toast-error-bg: #fef2f2;
+  --color-toast-success-stripe: #16a34a;
+  --color-toast-success-bg: #f0fdf4;
+
+  /* === Selection === */
+  --color-selection-fg: #c9a227;
+
+  /* === Overlays === */
+  --color-overlay: color-mix(in srgb, black, transparent 50%);
+  --color-overlay-light: color-mix(in srgb, black, transparent 60%);
+  --color-overlay-heavy: color-mix(in srgb, black, transparent 40%);
+  --color-drag-overlay-bg: #1e1e1e;
+
+  /* === Hover tints (subtle background shifts for interactive items) === */
+  --color-tint-hover: color-mix(in srgb, black, transparent 96%);
+  --color-tint-hover-strong: color-mix(in srgb, black, transparent 85%);
+
+  /* === Focus ring shadow === */
+  --shadow-focus-contrast: 0 0 0 4px color-mix(in srgb, black, transparent 90%);
+
+  /* === Search Highlight === */
+  --color-highlight: rgba(255, 213, 0, 0.4);
+  --color-highlight-active: rgba(255, 150, 50, 0.6);
+
+  /* === Size tier colors (depth progression: bigger = deeper blue) === */
+  --color-size-bytes: color-mix(in srgb, var(--color-text-secondary) 85%, #88aacc);
+  --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 60%, #88aacc);
+  --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 60%, #5599dd);
+  --color-size-gb: color-mix(in srgb, var(--color-text-secondary) 60%, #2288ee);
+  --color-size-tb: color-mix(in srgb, var(--color-text-secondary) 60%, #0066ff);
+
+  /* === Size tier colors — selected state (gold depth progression) === */
+  --color-size-bytes-selected: color-mix(in srgb, var(--color-text-secondary) 40%, var(--color-selection-fg));
+  --color-size-kb-selected: color-mix(in srgb, var(--color-text-secondary) 25%, var(--color-selection-fg));
+  --color-size-mb-selected: color-mix(in srgb, var(--color-text-secondary) 15%, var(--color-selection-fg));
+  --color-size-gb-selected: color-mix(in srgb, var(--color-text-secondary) 5%, var(--color-selection-fg));
+  --color-size-tb-selected: var(--color-selection-fg);
+
+  /* === Spacing === */
+  --spacing-xxs: 2px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+
+  /* === Sizing === */
+  --spacing-tab-bar-height: 28px;
+
+  /* === Typography === */
+  --font-system: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+
+  /* === Border radius === */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
+
+  /* === Shadows (light) === */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.15);
+  --shadow-focus: 0 0 0 3px var(--color-accent-subtle);
+
+  /* === Transitions === */
+  --transition-fast: 100ms ease;
+  --transition-base: 150ms ease;
+  --transition-slow: 200ms ease;
+
+  /* === Z-index scale === */
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-dropdown: 100;
+  --z-overlay: 200;
+  --z-modal: 300;
+  --z-notification: 400;
+  /* Tooltips (above all other layers) */
+  --z-tooltip: 500;
+}
+
+/* Dark Mode - automatically applied when user's system prefers dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* === Backgrounds === */
+    --color-bg-primary: #1e1e1e;
+    --color-bg-secondary: #2a2a2a;
+    --color-bg-tertiary: #333333;
+    --color-bg-header: #252525;
+
+    /* === Borders === */
+    --color-border-strong: #555555;
+    --color-border: #444444;
+    --color-border-subtle: #333333;
+
+    /* === Text === */
+    --color-text-primary: #e8e8e8;
+    --color-text-secondary: #aaaaaa;
+    --color-text-tertiary: #a0a0a0;
+
+    /* === Interactive States (fallbacks — see light-mode comment above) === */
+    --color-accent: #ffc206;
+    --color-accent-hover: color-mix(in oklch, var(--color-accent), white 10%);
     --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
-    --color-cmdr-gold: #d4a006;
-    --color-cmdr-blue: #4a9eff;
-    --color-cmdr-purple: #7c3aed;
-    --color-system-accent: #d4a006; /* Updated at runtime by accent-color.ts */
+    --color-cmdr-gold: #ffc206;
+    --color-system-accent: #ffc206; /* Updated at runtime by accent-color.ts */
 
     /* === Cursor (row highlight in file lists) === */
     --color-cursor-inactive: color-mix(in srgb, var(--color-bg-tertiary), transparent 60%);
     --color-cursor-active: color-mix(in oklch, var(--color-accent), transparent 80%);
 
     /* === Semantic Colors === */
-    --color-allow: #2e7d32;
-    --color-error: #d32f2f;
-    --color-error-bg: #fef2f2;
-    --color-error-border: #fecaca;
-    --color-warning: #e65100;
-    --color-warning-bg: rgba(230, 81, 0, 0.1);
+    --color-allow: #66bb6a;
+    --color-error: #f44336;
+    --color-error-bg: #450a0a;
+    --color-error-border: #7f1d1d;
+    --color-warning: #f5a623;
+    --color-warning-bg: rgba(245, 166, 35, 0.15);
 
-    /* Disk usage bar — solid colors mixed against the track for clean layering.
-     * Uses color-mix against the border color (not transparent) to avoid
-     * muddy blending when the semi-transparent fill sits atop the track. */
+    /* Disk usage bar — solid colors, same mixing strategy as light mode */
     --color-disk-ok: color-mix(in srgb, var(--color-allow) 60%, var(--color-border));
     --color-disk-warning: color-mix(in srgb, var(--color-warning) 70%, var(--color-border));
     --color-disk-danger: var(--color-error);
     --color-disk-track: var(--color-border);
 
-    /* === Toast tints (tuned per scheme so warn reads amber, error reads red) === */
-    --color-toast-warn-stripe: #d4a006;
-    --color-toast-warn-bg: #fef9ee;
-    --color-toast-error-bg: #fef2f2;
-    --color-toast-success-stripe: #16a34a;
-    --color-toast-success-bg: #f0fdf4;
-
-    /* === Selection === */
-    --color-selection-fg: #c9a227;
+    /* === Toast tints === */
+    --color-toast-warn-stripe: var(--color-warning);
+    --color-toast-warn-bg: color-mix(in srgb, var(--color-warning) 8%, var(--color-bg-secondary));
+    --color-toast-error-bg: color-mix(in srgb, var(--color-error) 8%, var(--color-bg-secondary));
+    --color-toast-success-stripe: #22c55e;
+    --color-toast-success-bg: color-mix(in srgb, #22c55e 8%, var(--color-bg-secondary));
 
     /* === Overlays === */
     --color-overlay: color-mix(in srgb, black, transparent 50%);
     --color-overlay-light: color-mix(in srgb, black, transparent 60%);
     --color-overlay-heavy: color-mix(in srgb, black, transparent 40%);
-    --color-drag-overlay-bg: #1e1e1e;
 
-    /* === Hover tints (subtle background shifts for interactive items) === */
-    --color-tint-hover: color-mix(in srgb, black, transparent 96%);
-    --color-tint-hover-strong: color-mix(in srgb, black, transparent 85%);
+    /* === Hover tints === */
+    --color-tint-hover: color-mix(in srgb, white, transparent 94%);
+    --color-tint-hover-strong: color-mix(in srgb, white, transparent 75%);
 
     /* === Focus ring shadow === */
-    --shadow-focus-contrast: 0 0 0 4px color-mix(in srgb, black, transparent 90%);
+    --shadow-focus-contrast: 0 0 0 4px color-mix(in srgb, white, transparent 92%);
+
+    /* === Selection === */
+    --color-selection-fg: #d4a82a;
 
     /* === Search Highlight === */
-    --color-highlight: rgba(255, 213, 0, 0.4);
-    --color-highlight-active: rgba(255, 150, 50, 0.6);
+    --color-highlight: rgba(255, 213, 100, 0.9);
+    --color-highlight-active: rgba(255, 150, 100, 0.9);
 
-    /* === Size tier colors (depth progression: bigger = deeper blue) === */
-    --color-size-bytes: color-mix(in srgb, var(--color-text-secondary) 85%, #88aacc);
-    --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 60%, #88aacc);
-    --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 60%, #5599dd);
-    --color-size-gb: color-mix(in srgb, var(--color-text-secondary) 60%, #2288ee);
-    --color-size-tb: color-mix(in srgb, var(--color-text-secondary) 60%, #0066ff);
-
-    /* === Size tier colors — selected state (gold depth progression) === */
-    --color-size-bytes-selected: color-mix(in srgb, var(--color-text-secondary) 40%, var(--color-selection-fg));
-    --color-size-kb-selected: color-mix(in srgb, var(--color-text-secondary) 25%, var(--color-selection-fg));
-    --color-size-mb-selected: color-mix(in srgb, var(--color-text-secondary) 15%, var(--color-selection-fg));
-    --color-size-gb-selected: color-mix(in srgb, var(--color-text-secondary) 5%, var(--color-selection-fg));
-    --color-size-tb-selected: var(--color-selection-fg);
-
-    /* === Spacing === */
-    --spacing-xxs: 2px;
-    --spacing-xs: 4px;
-    --spacing-sm: 8px;
-    --spacing-md: 12px;
-    --spacing-lg: 16px;
-    --spacing-xl: 24px;
-    --spacing-2xl: 32px;
-
-    /* === Sizing === */
-    --spacing-tab-bar-height: 28px;
-
-    /* === Typography === */
-    --font-system: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    --font-size-xs: 10px;
-    --font-size-sm: 12px;
-    --font-size-md: 14px;
-    --font-size-lg: 16px;
-    --font-size-xl: 20px;
-
-    /* === Border radius === */
-    --radius-xs: 2px;
-    --radius-sm: 4px;
-    --radius-md: 6px;
-    --radius-lg: 8px;
-    --radius-full: 9999px;
-
-    /* === Shadows (light) === */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.15);
-    --shadow-focus: 0 0 0 3px var(--color-accent-subtle);
-
-    /* === Transitions === */
-    --transition-fast: 100ms ease;
-    --transition-base: 150ms ease;
-    --transition-slow: 200ms ease;
-
-    /* === Z-index scale === */
-    --z-base: 0;
-    --z-sticky: 10;
-    --z-dropdown: 100;
-    --z-overlay: 200;
-    --z-modal: 300;
-    --z-notification: 400;
-    /* Tooltips (above all other layers) */
-    --z-tooltip: 500;
-}
-
-/* Dark Mode - automatically applied when user's system prefers dark mode */
-@media (prefers-color-scheme: dark) {
-    :root {
-        /* === Backgrounds === */
-        --color-bg-primary: #1e1e1e;
-        --color-bg-secondary: #2a2a2a;
-        --color-bg-tertiary: #333333;
-        --color-bg-header: #252525;
-
-        /* === Borders === */
-        --color-border-strong: #555555;
-        --color-border: #444444;
-        --color-border-subtle: #333333;
-
-        /* === Text === */
-        --color-text-primary: #e8e8e8;
-        --color-text-secondary: #aaaaaa;
-        --color-text-tertiary: #a0a0a0;
-
-        /* === Interactive States (fallbacks — see light-mode comment above) === */
-        --color-accent: #ffc206;
-        --color-accent-hover: color-mix(in oklch, var(--color-accent), white 10%);
-        --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
-        --color-cmdr-gold: #ffc206;
-        --color-system-accent: #ffc206; /* Updated at runtime by accent-color.ts */
-
-        /* === Cursor (row highlight in file lists) === */
-        --color-cursor-inactive: color-mix(in srgb, var(--color-bg-tertiary), transparent 60%);
-        --color-cursor-active: color-mix(in oklch, var(--color-accent), transparent 80%);
-
-        /* === Semantic Colors === */
-        --color-allow: #66bb6a;
-        --color-error: #f44336;
-        --color-error-bg: #450a0a;
-        --color-error-border: #7f1d1d;
-        --color-warning: #f5a623;
-        --color-warning-bg: rgba(245, 166, 35, 0.15);
-
-        /* Disk usage bar — solid colors, same mixing strategy as light mode */
-        --color-disk-ok: color-mix(in srgb, var(--color-allow) 60%, var(--color-border));
-        --color-disk-warning: color-mix(in srgb, var(--color-warning) 70%, var(--color-border));
-        --color-disk-danger: var(--color-error);
-        --color-disk-track: var(--color-border);
-
-        /* === Toast tints === */
-        --color-toast-warn-stripe: var(--color-warning);
-        --color-toast-warn-bg: color-mix(in srgb, var(--color-warning) 8%, var(--color-bg-secondary));
-        --color-toast-error-bg: color-mix(in srgb, var(--color-error) 8%, var(--color-bg-secondary));
-        --color-toast-success-stripe: #22c55e;
-        --color-toast-success-bg: color-mix(in srgb, #22c55e 8%, var(--color-bg-secondary));
-
-        /* === Overlays === */
-        --color-overlay: color-mix(in srgb, black, transparent 50%);
-        --color-overlay-light: color-mix(in srgb, black, transparent 60%);
-        --color-overlay-heavy: color-mix(in srgb, black, transparent 40%);
-
-        /* === Hover tints === */
-        --color-tint-hover: color-mix(in srgb, white, transparent 94%);
-        --color-tint-hover-strong: color-mix(in srgb, white, transparent 75%);
-
-        /* === Focus ring shadow === */
-        --shadow-focus-contrast: 0 0 0 4px color-mix(in srgb, white, transparent 92%);
-
-        /* === Selection === */
-        --color-selection-fg: #d4a82a;
-
-        /* === Search Highlight === */
-        --color-highlight: rgba(255, 213, 100, 0.9);
-        --color-highlight-active: rgba(255, 150, 100, 0.9);
-
-        /* === Shadows (dark) === */
-        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
-        --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
-    }
+    /* === Shadows (dark) === */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+  }
 }
 
 /* Screen reader only — visually hidden but accessible to assistive technology */
 .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 /* =============================================================================
@@ -258,168 +258,168 @@
    ============================================================================= */
 
 @layer ress-reset {
-    html {
-        -webkit-text-size-adjust: 100%;
-        box-sizing: border-box;
-        tab-size: 4;
-        word-break: normal;
-    }
+  html {
+    -webkit-text-size-adjust: 100%;
+    box-sizing: border-box;
+    tab-size: 4;
+    word-break: normal;
+  }
 
-    *,
-    :after,
-    :before {
-        background-repeat: no-repeat;
-        box-sizing: inherit;
-    }
+  *,
+  :after,
+  :before {
+    background-repeat: no-repeat;
+    box-sizing: inherit;
+  }
 
-    :after,
-    :before {
-        text-decoration: inherit;
-        vertical-align: inherit;
-    }
+  :after,
+  :before {
+    text-decoration: inherit;
+    vertical-align: inherit;
+  }
 
-    * {
-        margin: 0;
-        padding: 0;
-    }
+  * {
+    margin: 0;
+    padding: 0;
+  }
 
-    hr {
-        color: inherit;
-        height: 0;
-        overflow: visible;
-    }
+  hr {
+    color: inherit;
+    height: 0;
+    overflow: visible;
+  }
 
-    details,
-    main {
-        display: block;
-    }
+  details,
+  main {
+    display: block;
+  }
 
-    summary {
-        display: list-item;
-    }
+  summary {
+    display: list-item;
+  }
 
-    abbr[title] {
-        border-bottom: none;
-        text-decoration: underline dotted;
-    }
+  abbr[title] {
+    border-bottom: none;
+    text-decoration: underline dotted;
+  }
 
-    a {
-        background-color: transparent;
-        cursor: default;
-    }
+  a {
+    background-color: transparent;
+    cursor: default;
+  }
 
-    a:active,
-    a:hover {
-        outline-width: 0;
-    }
+  a:active,
+  a:hover {
+    outline-width: 0;
+  }
 
-    code,
-    kbd,
-    pre,
-    samp {
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- CSS reset */
-        font-family: monospace, monospace;
-    }
+  code,
+  kbd,
+  pre,
+  samp {
+    /* stylelint-disable-next-line declaration-property-value-disallowed-list -- CSS reset */
+    font-family: monospace, monospace;
+  }
 
-    pre {
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- CSS reset */
-        font-size: 1em;
-    }
+  pre {
+    /* stylelint-disable-next-line declaration-property-value-disallowed-list -- CSS reset */
+    font-size: 1em;
+  }
 
-    b,
-    strong {
-        font-weight: bolder;
-    }
+  b,
+  strong {
+    font-weight: bolder;
+  }
 
-    sub,
-    sup {
-        font-size: 75%;
-        line-height: 0;
-        position: relative;
-        vertical-align: baseline;
-    }
+  sub,
+  sup {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+  }
 
-    sub {
-        bottom: -0.25em;
-    }
+  sub {
+    bottom: -0.25em;
+  }
 
-    sup {
-        top: -0.5em;
-    }
+  sup {
+    top: -0.5em;
+  }
 
-    table {
-        border-color: inherit;
-        text-indent: 0;
-    }
+  table {
+    border-color: inherit;
+    text-indent: 0;
+  }
 
-    iframe {
-        border-style: none;
-    }
+  iframe {
+    border-style: none;
+  }
 
-    input {
-        border-radius: 0;
-    }
+  input {
+    border-radius: 0;
+  }
 
-    textarea {
-        overflow: auto;
-        resize: vertical;
-    }
+  textarea {
+    overflow: auto;
+    resize: vertical;
+  }
 
-    button,
-    input,
-    optgroup,
-    select,
-    textarea {
-        font: inherit;
-    }
+  button,
+  input,
+  optgroup,
+  select,
+  textarea {
+    font: inherit;
+  }
 
-    optgroup {
-        font-weight: 700;
-    }
+  optgroup {
+    font-weight: 700;
+  }
 
-    button {
-        overflow: visible;
-    }
+  button {
+    overflow: visible;
+  }
 
-    button,
-    select {
-        text-transform: none;
-    }
+  button,
+  select {
+    text-transform: none;
+  }
 
-    [role='button'],
-    [type='button'],
-    [type='reset'],
-    [type='submit'],
-    button {
-        cursor: default;
-    }
+  [role='button'],
+  [type='button'],
+  [type='reset'],
+  [type='submit'],
+  button {
+    cursor: default;
+  }
 
-    [type='reset'],
-    [type='submit'],
-    button,
-    html [type='button'] {
-        appearance: button;
-    }
+  [type='reset'],
+  [type='submit'],
+  button,
+  html [type='button'] {
+    appearance: button;
+  }
 
-    button,
-    input,
-    select,
-    textarea {
-        background-color: transparent;
-        border-style: none;
-    }
+  button,
+  input,
+  select,
+  textarea {
+    background-color: transparent;
+    border-style: none;
+  }
 
-    a:focus,
-    button:focus,
-    input:focus,
-    select:focus,
-    textarea:focus {
-        outline-width: 0;
-    }
+  a:focus,
+  button:focus,
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline-width: 0;
+  }
 
-    progress {
-        vertical-align: baseline;
-    }
+  progress {
+    vertical-align: baseline;
+  }
 }
 
 /* =============================================================================
@@ -430,8 +430,8 @@
 button:focus-visible,
 a:focus-visible,
 [role='button']:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 /* =============================================================================
@@ -439,33 +439,33 @@ a:focus-visible,
    ============================================================================= */
 
 @layer typography {
-    ul,
-    ol,
-    dl {
-        list-style-position: inside;
-        padding-inline-start: 1lh;
-    }
+  ul,
+  ol,
+  dl {
+    list-style-position: inside;
+    padding-inline-start: 1lh;
+  }
 
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        text-wrap: balance;
-    }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    text-wrap: balance;
+  }
 
-    p {
-        text-wrap: pretty;
-        margin-block-start: var(--spacing-lg);
-        margin-block-end: var(--spacing-lg);
-    }
+  p {
+    text-wrap: pretty;
+    margin-block-start: var(--spacing-lg);
+    margin-block-end: var(--spacing-lg);
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    html {
-        interpolate-size: allow-keywords;
-    }
+  html {
+    interpolate-size: allow-keywords;
+  }
 }
 
 /* Fixed font-size for native-app-like behavior:
@@ -475,39 +475,39 @@ a:focus-visible,
  * This is intentional: we want macOS-native behavior, not web-browser behavior.
  */
 html {
-    /* stylelint-disable-next-line declaration-property-value-disallowed-list -- base size, not a component value */
-    font-size: 16px;
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list -- base size, not a component value */
+  font-size: 16px;
 }
 
 html,
 body {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background-color: var(--color-bg-primary);
-    color: var(--color-text-primary);
-    /* Disable text selection globally */
-    user-select: none;
-    -webkit-user-select: none;
-    /* Force default cursor everywhere */
-    cursor: default;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  /* Disable text selection globally */
+  user-select: none;
+  -webkit-user-select: none;
+  /* Force default cursor everywhere */
+  cursor: default;
 }
 
 body {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 /* SvelteKit's production build strips inline styles from its mount target.
  * Without this, the #app-root div defaults to display:block, breaking
  * the body flex layout (content overflows instead of fitting the window). */
 #app-root {
-    display: contents;
+  display: contents;
 }
 
 /* Disable scroll bounce on all scrollable elements */
 * {
-    overscroll-behavior: none;
+  overscroll-behavior: none;
 }
 
 /* =============================================================================
@@ -515,23 +515,23 @@ body {
    ============================================================================= */
 
 .size-bytes {
-    color: var(--color-size-bytes);
+  color: var(--color-size-bytes);
 }
 
 .size-kb {
-    color: var(--color-size-kb);
+  color: var(--color-size-kb);
 }
 
 .size-mb {
-    color: var(--color-size-mb);
+  color: var(--color-size-mb);
 }
 
 .size-gb {
-    color: var(--color-size-gb);
+  color: var(--color-size-gb);
 }
 
 .size-tb {
-    color: var(--color-size-tb);
+  color: var(--color-size-tb);
 }
 
 /* =============================================================================
@@ -539,37 +539,37 @@ body {
    ============================================================================= */
 
 @keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .spinner {
-    display: inline-block;
-    flex-shrink: 0;
-    border-radius: 50%;
-    border-style: solid;
-    border-color: var(--color-border);
-    border-top-color: var(--color-accent);
-    animation: spin 0.8s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border-style: solid;
+  border-color: var(--color-border);
+  border-top-color: var(--color-accent);
+  animation: spin 0.8s linear infinite;
 }
 
 .spinner-sm {
-    width: 12px;
-    height: 12px;
-    border-width: 2px;
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
 }
 
 .spinner-md {
-    width: 24px;
-    height: 24px;
-    border-width: 2.5px;
+  width: 24px;
+  height: 24px;
+  border-width: 2.5px;
 }
 
 .spinner-lg {
-    width: 32px;
-    height: 32px;
-    border-width: 2.5px;
+  width: 32px;
+  height: 32px;
+  border-width: 2.5px;
 }
 
 /* =============================================================================
@@ -577,70 +577,70 @@ body {
    ============================================================================= */
 
 .cmdr-tooltip {
-    position: fixed;
-    z-index: var(--z-tooltip);
-    pointer-events: none;
-    max-width: 320px;
-    white-space: pre-line;
+  position: fixed;
+  z-index: var(--z-tooltip);
+  pointer-events: none;
+  max-width: 320px;
+  white-space: pre-line;
 
-    /* Apple-style frosted glass */
-    background: rgba(245, 245, 245, 0.72);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    backdrop-filter: saturate(180%) blur(20px);
-    border: 0.5px solid rgba(0, 0, 0, 0.12);
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-sm);
+  /* Apple-style frosted glass */
+  background: rgba(245, 245, 245, 0.72);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border: 0.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
 
-    /* Typography */
-    font-size: var(--font-size-sm);
-    font-family: var(--font-system);
-    font-weight: 400;
-    line-height: 1.3;
-    color: var(--color-text-primary);
-    /* stylelint-disable-next-line declaration-property-value-disallowed-list */
-    padding: 3px 8px;
+  /* Typography */
+  font-size: var(--font-size-sm);
+  font-family: var(--font-system);
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--color-text-primary);
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+  padding: 3px 8px;
 
-    /* Entrance */
-    opacity: 0;
-    transform: translateY(2px);
-    transition:
-        opacity var(--transition-fast),
-        transform var(--transition-fast);
+  /* Entrance */
+  opacity: 0;
+  transform: translateY(2px);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .cmdr-tooltip.visible {
-    opacity: 1;
-    transform: translateY(0);
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Keyboard shortcut badge inside tooltip */
 .cmdr-tooltip-kbd {
-    font-size: var(--font-size-xs);
-    font-family: var(--font-mono);
-    font-weight: 500;
-    line-height: 1;
-    color: var(--color-accent);
-    background: var(--color-accent-subtle);
-    /* stylelint-disable-next-line declaration-property-value-disallowed-list */
-    padding: 1px 4px;
-    border-radius: var(--radius-sm);
-    margin-left: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+  padding: 1px 4px;
+  border-radius: var(--radius-sm);
+  margin-left: var(--spacing-sm);
 }
 
 @media (prefers-color-scheme: dark) {
-    .cmdr-tooltip {
-        background: rgba(42, 42, 42, 0.72);
-        border-color: rgba(255, 255, 255, 0.1);
-    }
+  .cmdr-tooltip {
+    background: rgba(42, 42, 42, 0.72);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .cmdr-tooltip {
-        transition: opacity var(--transition-fast);
-        transform: none;
-    }
+  .cmdr-tooltip {
+    transition: opacity var(--transition-fast);
+    transform: none;
+  }
 
-    .cmdr-tooltip.visible {
-        transform: none;
-    }
+  .cmdr-tooltip.visible {
+    transform: none;
+  }
 }

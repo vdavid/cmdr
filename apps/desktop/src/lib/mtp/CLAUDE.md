@@ -31,9 +31,9 @@ On macOS, `ptpcamerad` daemon auto-claims devices. When exclusive access error:
 1. Backend queries IORegistry (`ioreg`) for blocking process name
 2. Emits `mtp-exclusive-access-error` event with process info
 3. Frontend shows `PtpcameradDialog` with copyable Terminal command:
-    ```bash
-    while true; do pkill -9 ptpcamerad 2>/dev/null; sleep 1; done
-    ```
+   ```bash
+   while true; do pkill -9 ptpcamerad 2>/dev/null; sleep 1; done
+   ```
 4. User runs command, clicks "Retry connection"
 
 ### Linux USB permission handling

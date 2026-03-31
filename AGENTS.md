@@ -21,25 +21,25 @@ Core structure:
 
 - `/.github/workflows/` - GitHub Actions workflows
 - `/apps/`
-    - `analytics-dashboard/` - Private metrics dashboard (SvelteKit + CF Pages)
-    - `desktop/` - The Tauri desktop app
-        - `test/e2e-linux/` - WebDriverIO + tauri-driver tests (Docker, tests real Tauri app)
-        - `src/` - Svelte frontend. Uses SvelteKit with static adapter. TypeScript strict mode. Tailwind v4.
-            - `lib/` - Components
-            - `routes/` - Routes
-        - `src-tauri/` - Latest Rust, Tauri 2, serde, notify, tokio
-        - `static/` - Static assets
-        - `test/` - Vitest unit tests
-    - `api-server/` - Cloudflare Worker (Hono). Licensing, telemetry, crash reports, downloads, and admin endpoints.
-    - `website/` - Marketing website (getcmdr.com)
+  - `analytics-dashboard/` - Private metrics dashboard (SvelteKit + CF Pages)
+  - `desktop/` - The Tauri desktop app
+    - `test/e2e-linux/` - WebDriverIO + tauri-driver tests (Docker, tests real Tauri app)
+    - `src/` - Svelte frontend. Uses SvelteKit with static adapter. TypeScript strict mode. Tailwind v4.
+      - `lib/` - Components
+      - `routes/` - Routes
+    - `src-tauri/` - Latest Rust, Tauri 2, serde, notify, tokio
+    - `static/` - Static assets
+    - `test/` - Vitest unit tests
+  - `api-server/` - Cloudflare Worker (Hono). Licensing, telemetry, crash reports, downloads, and admin endpoints.
+  - `website/` - Marketing website (getcmdr.com)
 - `/scripts/check/` - Go-based unified check runner
 - `/docs/` - Dev docs
-    - `guides/` - How-to guides
-    - `notes/` - Temporary reference notes (benchmarks, analysis) linked from CLAUDE.md files
-    - `tooling/` - Internal tooling docs
-    - `architecture.md` - Map of all subsystems with links to their `CLAUDE.md` files
-    - `style-guide.md` - Writing, code, and design style rules
-    - `security.md` - Security policies
+  - `guides/` - How-to guides
+  - `notes/` - Temporary reference notes (benchmarks, analysis) linked from CLAUDE.md files
+  - `tooling/` - Internal tooling docs
+  - `architecture.md` - Map of all subsystems with links to their `CLAUDE.md` files
+  - `style-guide.md` - Writing, code, and design style rules
+  - `security.md` - Security policies
 - Feature-level docs live in **colocated `CLAUDE.md` files** next to the code (for example,
   `src/lib/settings/CLAUDE.md`). Claude Code auto-discovers these. See `docs/architecture.md` for the full map.
 
@@ -53,8 +53,8 @@ Always use the checker script for compilation, linting, formatting, and tests. I
 - All Rust/Svelte checks: `./scripts/check.sh --rust` or `--svelte`
 - All checks: `./scripts/check.sh`
 - Specific tests by name (the one exception where direct commands are fine):
-    - Rust: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`
-    - Svelte: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
+  - Rust: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`
+  - Svelte: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
 - E2E (Playwright): See `apps/desktop/test/e2e-playwright/CLAUDE.md` — build with `playwright-e2e` feature, start app,
   run tests
 - E2E (legacy): See `apps/desktop/test/e2e-linux/CLAUDE.md` and `apps/desktop/test/e2e-macos/CLAUDE.md`

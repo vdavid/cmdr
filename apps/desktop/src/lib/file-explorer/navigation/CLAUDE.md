@@ -133,16 +133,16 @@ Both `listVolumes()` and `getVolumeSpace()` return `TimedOut<T>` wrappers. The m
 reactive sets for the component to render inline indicators (no toasts):
 
 - **Volume space timeout** (`spaceTimedOutSet`): Three-state cycle with per-volume tracking:
-    - **Idle**: Dashed-outline placeholder bar with "?" icon, "Unavailable" text, tooltip "Couldn't fetch disk space --
-      click to retry". After a retry has been attempted, tooltip changes to "Still unavailable -- click to retry".
-    - **Retrying** (`spaceRetryingSet`): Spinner replaces "?", text shows "Retrying", tooltip "Retrying..." (manual) or
-      "Retrying automatically..." (auto). Clicks are debounced (ignored while in-flight).
-    - **Failed**: Brief shake animation (300ms), then returns to idle with "Still unavailable" tooltip.
-    - **Auto-retry**: 5s after initial timeout, an automatic retry fires with full visual feedback (spinner + shake on
-      failure). Tracked via `spaceAutoRetryingSet` for tooltip distinction.
-    - All retry sets are cleared via `clearAll()` on volume mount/unmount events. Auto-retry timers are cleaned up via
-      `destroy()`.
-    - Reduced motion: spinner degrades to pulsing opacity, shake degrades to opacity flash.
+  - **Idle**: Dashed-outline placeholder bar with "?" icon, "Unavailable" text, tooltip "Couldn't fetch disk space --
+    click to retry". After a retry has been attempted, tooltip changes to "Still unavailable -- click to retry".
+  - **Retrying** (`spaceRetryingSet`): Spinner replaces "?", text shows "Retrying", tooltip "Retrying..." (manual) or
+    "Retrying automatically..." (auto). Clicks are debounced (ignored while in-flight).
+  - **Failed**: Brief shake animation (300ms), then returns to idle with "Still unavailable" tooltip.
+  - **Auto-retry**: 5s after initial timeout, an automatic retry fires with full visual feedback (spinner + shake on
+    failure). Tracked via `spaceAutoRetryingSet` for tooltip distinction.
+  - All retry sets are cleared via `clearAll()` on volume mount/unmount events. Auto-retry timers are cleaned up via
+    `destroy()`.
+  - Reduced motion: spinner degrades to pulsing opacity, shake degrades to opacity flash.
 - **Volume list timeout** (`volumesTimedOut`): Tracked in the component itself (not in the manager) since it controls
   the warning row at the bottom of the dropdown.
 

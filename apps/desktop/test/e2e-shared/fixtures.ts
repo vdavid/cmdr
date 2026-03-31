@@ -13,66 +13,66 @@ import { execSync } from 'child_process'
 const smallFileContent = 'A'.repeat(1024) // ~1 KB
 
 const fixtureLayout = {
-    textFiles: [
-        { rel: 'left/file-a.txt', content: smallFileContent },
-        { rel: 'left/file-b.txt', content: smallFileContent },
-        { rel: 'left/sub-dir/nested-file.txt', content: smallFileContent },
-        { rel: 'left/.hidden-file', content: smallFileContent },
-    ],
-    directories: ['left/bulk', 'right'],
-    largeFiles: [
-        { rel: 'left/bulk/large-1.dat', sizeMb: 50 },
-        { rel: 'left/bulk/large-2.dat', sizeMb: 50 },
-        { rel: 'left/bulk/large-3.dat', sizeMb: 50 },
-    ],
-    mediumFiles: Array.from({ length: 20 }, (_, i) => ({
-        rel: `left/bulk/medium-${String(i + 1).padStart(2, '0')}.dat`,
-        sizeMb: 1,
-    })),
+  textFiles: [
+    { rel: 'left/file-a.txt', content: smallFileContent },
+    { rel: 'left/file-b.txt', content: smallFileContent },
+    { rel: 'left/sub-dir/nested-file.txt', content: smallFileContent },
+    { rel: 'left/.hidden-file', content: smallFileContent },
+  ],
+  directories: ['left/bulk', 'right'],
+  largeFiles: [
+    { rel: 'left/bulk/large-1.dat', sizeMb: 50 },
+    { rel: 'left/bulk/large-2.dat', sizeMb: 50 },
+    { rel: 'left/bulk/large-3.dat', sizeMb: 50 },
+  ],
+  mediumFiles: Array.from({ length: 20 }, (_, i) => ({
+    rel: `left/bulk/medium-${String(i + 1).padStart(2, '0')}.dat`,
+    sizeMb: 1,
+  })),
 } as const
 
 function generateDatFile(filePath: string, sizeMb: number): void {
-    execSync(`dd if=/dev/zero bs=1048576 count=${String(sizeMb)} of="${filePath}" 2>/dev/null`)
+  execSync(`dd if=/dev/zero bs=1048576 count=${String(sizeMb)} of="${filePath}" 2>/dev/null`)
 }
 
 export function createFixtures(): string {
-    const timestamp = Date.now()
-    const rootPath = `/tmp/cmdr-e2e-${String(timestamp)}`
+  const timestamp = Date.now()
+  const rootPath = `/tmp/cmdr-e2e-${String(timestamp)}`
 
-    // Create all directories first
-    for (const dir of fixtureLayout.directories) {
-        fs.mkdirSync(path.join(rootPath, dir), { recursive: true })
-    }
+  // Create all directories first
+  for (const dir of fixtureLayout.directories) {
+    fs.mkdirSync(path.join(rootPath, dir), { recursive: true })
+  }
 
-    // Create text files (also creates parent dirs as needed)
-    for (const file of fixtureLayout.textFiles) {
-        const filePath = path.join(rootPath, file.rel)
-        fs.mkdirSync(path.dirname(filePath), { recursive: true })
-        fs.writeFileSync(filePath, file.content)
-    }
+  // Create text files (also creates parent dirs as needed)
+  for (const file of fixtureLayout.textFiles) {
+    const filePath = path.join(rootPath, file.rel)
+    fs.mkdirSync(path.dirname(filePath), { recursive: true })
+    fs.writeFileSync(filePath, file.content)
+  }
 
-    // Create large .dat files via dd (much faster than writing from Node.js)
-    for (const file of fixtureLayout.largeFiles) {
-        generateDatFile(path.join(rootPath, file.rel), file.sizeMb)
-    }
+  // Create large .dat files via dd (much faster than writing from Node.js)
+  for (const file of fixtureLayout.largeFiles) {
+    generateDatFile(path.join(rootPath, file.rel), file.sizeMb)
+  }
 
-    // Create medium .dat files
-    for (const file of fixtureLayout.mediumFiles) {
-        generateDatFile(path.join(rootPath, file.rel), file.sizeMb)
-    }
+  // Create medium .dat files
+  for (const file of fixtureLayout.mediumFiles) {
+    generateDatFile(path.join(rootPath, file.rel), file.sizeMb)
+  }
 
-    // eslint-disable-next-line no-console
-    console.log(`Fixtures created at ${rootPath} (~170 MB)`)
-    return rootPath
+  // eslint-disable-next-line no-console
+  console.log(`Fixtures created at ${rootPath} (~170 MB)`)
+  return rootPath
 }
 
 export function cleanupFixtures(rootPath: string): void {
-    if (!rootPath.startsWith('/tmp/cmdr-e2e-')) {
-        throw new Error(`Refusing to delete path outside /tmp/cmdr-e2e-*: ${rootPath}`)
-    }
-    fs.rmSync(rootPath, { recursive: true, force: true })
-    // eslint-disable-next-line no-console
-    console.log(`Fixtures cleaned up: ${rootPath}`)
+  if (!rootPath.startsWith('/tmp/cmdr-e2e-')) {
+    throw new Error(`Refusing to delete path outside /tmp/cmdr-e2e-*: ${rootPath}`)
+  }
+  fs.rmSync(rootPath, { recursive: true, force: true })
+  // eslint-disable-next-line no-console
+  console.log(`Fixtures cleaned up: ${rootPath}`)
 }
 
 /**
@@ -88,57 +88,57 @@ export function cleanupFixtures(rootPath: string): void {
  * might have moved/deleted.
  */
 export function recreateFixtures(rootPath: string): void {
-    if (!rootPath.startsWith('/tmp/cmdr-e2e-')) {
-        throw new Error(`Refusing to recreate path outside /tmp/cmdr-e2e-*: ${rootPath}`)
-    }
+  if (!rootPath.startsWith('/tmp/cmdr-e2e-')) {
+    throw new Error(`Refusing to recreate path outside /tmp/cmdr-e2e-*: ${rootPath}`)
+  }
 
-    // Clean up left/ text files and sub-dir (tests may have moved/deleted them),
-    // but preserve left/bulk/ which has the large .dat files from onPrepare.
-    const leftDir = path.join(rootPath, 'left')
-    if (fs.existsSync(leftDir)) {
-        for (const entry of fs.readdirSync(leftDir)) {
-            if (entry === 'bulk') continue // preserve bulk .dat files
-            fs.rmSync(path.join(leftDir, entry), { recursive: true, force: true })
-        }
+  // Clean up left/ text files and sub-dir (tests may have moved/deleted them),
+  // but preserve left/bulk/ which has the large .dat files from onPrepare.
+  const leftDir = path.join(rootPath, 'left')
+  if (fs.existsSync(leftDir)) {
+    for (const entry of fs.readdirSync(leftDir)) {
+      if (entry === 'bulk') continue // preserve bulk .dat files
+      fs.rmSync(path.join(leftDir, entry), { recursive: true, force: true })
     }
+  }
 
-    // Clean up right/ contents (tests may have copied/moved files into it).
-    // Preserve the directory itself to keep the app's inotify watch intact —
-    // deleting and recreating would invalidate the watch (new inode).
-    const rightDir = path.join(rootPath, 'right')
-    if (fs.existsSync(rightDir)) {
-        for (const entry of fs.readdirSync(rightDir)) {
-            fs.rmSync(path.join(rightDir, entry), { recursive: true, force: true })
-        }
+  // Clean up right/ contents (tests may have copied/moved files into it).
+  // Preserve the directory itself to keep the app's inotify watch intact —
+  // deleting and recreating would invalidate the watch (new inode).
+  const rightDir = path.join(rootPath, 'right')
+  if (fs.existsSync(rightDir)) {
+    for (const entry of fs.readdirSync(rightDir)) {
+      fs.rmSync(path.join(rightDir, entry), { recursive: true, force: true })
     }
+  }
 
-    // Recreate directories (left/ and right/ already exist, ensure bulk/ exists)
-    for (const dir of fixtureLayout.directories) {
-        fs.mkdirSync(path.join(rootPath, dir), { recursive: true })
-    }
+  // Recreate directories (left/ and right/ already exist, ensure bulk/ exists)
+  for (const dir of fixtureLayout.directories) {
+    fs.mkdirSync(path.join(rootPath, dir), { recursive: true })
+  }
 
-    // Recreate text files
-    for (const file of fixtureLayout.textFiles) {
-        const filePath = path.join(rootPath, file.rel)
-        fs.mkdirSync(path.dirname(filePath), { recursive: true })
-        fs.writeFileSync(filePath, file.content)
-    }
+  // Recreate text files
+  for (const file of fixtureLayout.textFiles) {
+    const filePath = path.join(rootPath, file.rel)
+    fs.mkdirSync(path.dirname(filePath), { recursive: true })
+    fs.writeFileSync(filePath, file.content)
+  }
 
-    // Bulk .dat files are NOT recreated — they persist from createFixtures()
+  // Bulk .dat files are NOT recreated — they persist from createFixtures()
 }
 
 // Allow running directly for testing: npx tsx apps/desktop/test/e2e-shared/fixtures.ts
 if (process.argv[1]?.endsWith('fixtures.ts')) {
-    try {
-        const root = createFixtures()
-        // eslint-disable-next-line no-console
-        console.log('Self-test passed. Cleaning up...')
-        cleanupFixtures(root)
-        // eslint-disable-next-line no-console
-        console.log('Done.')
-    } catch (err: unknown) {
-        // eslint-disable-next-line no-console
-        console.error('Self-test failed:', err)
-        process.exit(1)
-    }
+  try {
+    const root = createFixtures()
+    // eslint-disable-next-line no-console
+    console.log('Self-test passed. Cleaning up...')
+    cleanupFixtures(root)
+    // eslint-disable-next-line no-console
+    console.log('Done.')
+  } catch (err: unknown) {
+    // eslint-disable-next-line no-console
+    console.error('Self-test failed:', err)
+    process.exit(1)
+  }
 }

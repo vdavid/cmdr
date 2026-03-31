@@ -4,6 +4,6 @@
 
 /** A conflict between commands sharing the same shortcut */
 export interface ShortcutConflict {
-    shortcut: string
-    commandIds: string[]
+  shortcut: string
+  commandIds: string[]
 }

@@ -11,22 +11,22 @@ const isBuild = args.includes('build')
 
 // If dev, inject the dev configuration
 if (isDev) {
-    // Add -c src-tauri/tauri.dev.json to merge config
-    args.push('-c', 'src-tauri/tauri.dev.json')
+  // Add -c src-tauri/tauri.dev.json to merge config
+  args.push('-c', 'src-tauri/tauri.dev.json')
 }
 
 // If build on macOS and no target specified, default to universal binary
 const isMacOS = process.platform === 'darwin'
 if (isBuild && isMacOS && !args.includes('--target') && !args.includes('-t')) {
-    args.push('--target', 'universal-apple-darwin')
+  args.push('--target', 'universal-apple-darwin')
 }
 
 // Spawn the tauri process via pnpm exec
 const tauriProcess = spawn('pnpm', ['exec', 'tauri', ...args], {
-    stdio: 'inherit',
+  stdio: 'inherit',
 })
 
 // Handle process exit
 tauriProcess.on('exit', (code) => {
-    process.exit(code ?? 0)
+  process.exit(code ?? 0)
 })

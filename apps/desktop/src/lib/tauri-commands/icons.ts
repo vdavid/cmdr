@@ -10,10 +10,10 @@ import type { TimedOut } from './ipc-types'
  * @returns Map of icon_id -> base64 WebP data URL, with timeout flag
  */
 export async function getIcons(
-    iconIds: string[],
-    useAppIconsForDocuments: boolean,
+  iconIds: string[],
+  useAppIconsForDocuments: boolean,
 ): Promise<TimedOut<Record<string, string>>> {
-    return invoke<TimedOut<Record<string, string>>>('get_icons', { iconIds, useAppIconsForDocuments })
+  return invoke<TimedOut<Record<string, string>>>('get_icons', { iconIds, useAppIconsForDocuments })
 }
 
 /**
@@ -25,15 +25,15 @@ export async function getIcons(
  * @returns Map of icon_id -> base64 WebP data URL, with timeout flag
  */
 export async function refreshDirectoryIcons(
-    directoryPaths: string[],
-    extensions: string[],
-    useAppIconsForDocuments: boolean,
+  directoryPaths: string[],
+  extensions: string[],
+  useAppIconsForDocuments: boolean,
 ): Promise<TimedOut<Record<string, string>>> {
-    return invoke<TimedOut<Record<string, string>>>('refresh_directory_icons', {
-        directoryPaths,
-        extensions,
-        useAppIconsForDocuments,
-    })
+  return invoke<TimedOut<Record<string, string>>>('refresh_directory_icons', {
+    directoryPaths,
+    extensions,
+    useAppIconsForDocuments,
+  })
 }
 
 /**
@@ -41,7 +41,7 @@ export async function refreshDirectoryIcons(
  * Called when the "use app icons for documents" setting changes.
  */
 export async function clearExtensionIconCache(): Promise<void> {
-    await invoke('clear_extension_icon_cache')
+  await invoke('clear_extension_icon_cache')
 }
 
 /**
@@ -49,5 +49,5 @@ export async function clearExtensionIconCache(): Promise<void> {
  * Called when the system theme or accent color changes.
  */
 export async function clearDirectoryIconCache(): Promise<void> {
-    await invoke('clear_directory_icon_cache')
+  await invoke('clear_directory_icon_cache')
 }

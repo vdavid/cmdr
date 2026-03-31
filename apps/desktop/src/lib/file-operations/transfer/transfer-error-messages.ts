@@ -9,19 +9,19 @@ import { getDevice } from '$lib/mtp/mtp-store.svelte'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 
 export interface FriendlyErrorMessage {
-    /** Short title for the error */
-    title: string
-    /** Main explanation of what happened */
-    message: string
-    /** Suggestion for what the user can do */
-    suggestion: string
+  /** Short title for the error */
+  title: string
+  /** Main explanation of what happened */
+  message: string
+  /** Suggestion for what the user can do */
+  suggestion: string
 }
 
 const operationVerbMap: Record<TransferOperationType, { verb: string; pastTense: string; gerund: string }> = {
-    copy: { verb: 'copy', pastTense: 'copied', gerund: 'copying' },
-    move: { verb: 'move', pastTense: 'moved', gerund: 'moving' },
-    delete: { verb: 'delete', pastTense: 'deleted', gerund: 'deleting' },
-    trash: { verb: 'move to trash', pastTense: 'moved to trash', gerund: 'moving to trash' },
+  copy: { verb: 'copy', pastTense: 'copied', gerund: 'copying' },
+  move: { verb: 'move', pastTense: 'moved', gerund: 'moving' },
+  delete: { verb: 'delete', pastTense: 'deleted', gerund: 'deleting' },
+  trash: { verb: 'move to trash', pastTense: 'moved to trash', gerund: 'moving to trash' },
 }
 
 /**
@@ -29,82 +29,81 @@ const operationVerbMap: Record<TransferOperationType, { verb: string; pastTense:
  * Volume-agnostic: doesn't mention MTP, SMB, etc. directly.
  */
 export function getUserFriendlyMessage(
-    error: WriteOperationError,
-    operationType: TransferOperationType = 'copy',
+  error: WriteOperationError,
+  operationType: TransferOperationType = 'copy',
 ): FriendlyErrorMessage {
-    const { verb, gerund } = operationVerbMap[operationType]
-    const Verb = verb.charAt(0).toUpperCase() + verb.slice(1)
+  const { verb, gerund } = operationVerbMap[operationType]
+  const Verb = verb.charAt(0).toUpperCase() + verb.slice(1)
 
-    switch (error.type) {
-        case 'source_not_found':
-            return {
-                title: "Couldn't find the file",
-                message: `The file or folder you tried to ${verb} no longer exists.`,
-                suggestion: 'It may have been moved, renamed, or deleted. Try refreshing the file list.',
-            }
-        case 'destination_exists':
-            return {
-                title: 'File already exists',
-                message: "There's already a file with this name at the destination.",
-                suggestion: 'Choose a different name or location, or delete the existing file first.',
-            }
-        case 'permission_denied': {
-            const isDeleteOp = operationType === 'delete' || operationType === 'trash'
-            return {
-                title: "Couldn't access this location",
-                message: `You don't have permission to ${verb} files here.`,
-                suggestion: isDeleteOp
-                    ? isMacOS()
-                        ? 'Check that you have write access to the parent folder. The file may be locked — unlock it in Finder (Get Info > uncheck Locked) and try again.'
-                        : 'Check that you have write access to the parent folder. The file may be protected — check its permissions (e.g. via chmod or your file manager) and try again.'
-                    : 'Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.',
-            }
-        }
-        case 'insufficient_space':
-            return {
-                title: 'Not enough space',
-                message: `The destination needs ${formatBytes(error.required)} but only has ${formatBytes(error.available)} available.`,
-                suggestion:
-                    'Free up some space on the destination by deleting unnecessary files, or choose a different location.',
-            }
-        case 'same_location':
-            return {
-                title: `Can't ${verb} to the same location`,
-                message: 'The source and destination are the same.',
-                suggestion: 'Choose a different destination folder.',
-            }
-        case 'destination_inside_source':
-            return {
-                title: `Can't ${verb} a folder into itself`,
-                message: `You're trying to ${verb} a folder into one of its own subfolders.`,
-                suggestion: `Choose a destination outside of the folder you are ${gerund}.`,
-            }
-        case 'symlink_loop':
-            return {
-                title: 'Link loop detected',
-                message: 'This folder contains symbolic links that create an infinite loop.',
-                suggestion:
-                    'The folder structure contains circular references. You may need to remove some symbolic links.',
-            }
-        case 'cancelled':
-            return {
-                title: `${Verb} cancelled`,
-                message: `The ${verb} operation was cancelled.`,
-                suggestion: 'You can try again when ready.',
-            }
-        case 'io_error':
-            return {
-                title: `${Verb} failed`,
-                message: getIoErrorMessage(error.message, operationType),
-                suggestion: getIoErrorSuggestion(error.message),
-            }
-        default:
-            return {
-                title: `${Verb} failed`,
-                message: `An unexpected error occurred while ${gerund}.`,
-                suggestion: 'Try again, or check the technical details below for more information.',
-            }
+  switch (error.type) {
+    case 'source_not_found':
+      return {
+        title: "Couldn't find the file",
+        message: `The file or folder you tried to ${verb} no longer exists.`,
+        suggestion: 'It may have been moved, renamed, or deleted. Try refreshing the file list.',
+      }
+    case 'destination_exists':
+      return {
+        title: 'File already exists',
+        message: "There's already a file with this name at the destination.",
+        suggestion: 'Choose a different name or location, or delete the existing file first.',
+      }
+    case 'permission_denied': {
+      const isDeleteOp = operationType === 'delete' || operationType === 'trash'
+      return {
+        title: "Couldn't access this location",
+        message: `You don't have permission to ${verb} files here.`,
+        suggestion: isDeleteOp
+          ? isMacOS()
+            ? 'Check that you have write access to the parent folder. The file may be locked — unlock it in Finder (Get Info > uncheck Locked) and try again.'
+            : 'Check that you have write access to the parent folder. The file may be protected — check its permissions (e.g. via chmod or your file manager) and try again.'
+          : 'Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.',
+      }
     }
+    case 'insufficient_space':
+      return {
+        title: 'Not enough space',
+        message: `The destination needs ${formatBytes(error.required)} but only has ${formatBytes(error.available)} available.`,
+        suggestion:
+          'Free up some space on the destination by deleting unnecessary files, or choose a different location.',
+      }
+    case 'same_location':
+      return {
+        title: `Can't ${verb} to the same location`,
+        message: 'The source and destination are the same.',
+        suggestion: 'Choose a different destination folder.',
+      }
+    case 'destination_inside_source':
+      return {
+        title: `Can't ${verb} a folder into itself`,
+        message: `You're trying to ${verb} a folder into one of its own subfolders.`,
+        suggestion: `Choose a destination outside of the folder you are ${gerund}.`,
+      }
+    case 'symlink_loop':
+      return {
+        title: 'Link loop detected',
+        message: 'This folder contains symbolic links that create an infinite loop.',
+        suggestion: 'The folder structure contains circular references. You may need to remove some symbolic links.',
+      }
+    case 'cancelled':
+      return {
+        title: `${Verb} cancelled`,
+        message: `The ${verb} operation was cancelled.`,
+        suggestion: 'You can try again when ready.',
+      }
+    case 'io_error':
+      return {
+        title: `${Verb} failed`,
+        message: getIoErrorMessage(error.message, operationType),
+        suggestion: getIoErrorSuggestion(error.message),
+      }
+    default:
+      return {
+        title: `${Verb} failed`,
+        message: `An unexpected error occurred while ${gerund}.`,
+        suggestion: 'Try again, or check the technical details below for more information.',
+      }
+  }
 }
 
 /**
@@ -112,169 +111,169 @@ export function getUserFriendlyMessage(
  * Falls back to "The target device" if device not found.
  */
 function getDeviceNameFromError(rawMessage: string): string {
-    // Extract device ID pattern like "mtp-35651584" from the message
-    const deviceIdMatch = rawMessage.match(/mtp-\d+/)
-    if (deviceIdMatch) {
-        const deviceId = deviceIdMatch[0]
-        const device = getDevice(deviceId)
-        if (device) {
-            return device.displayName
-        }
+  // Extract device ID pattern like "mtp-35651584" from the message
+  const deviceIdMatch = rawMessage.match(/mtp-\d+/)
+  if (deviceIdMatch) {
+    const deviceId = deviceIdMatch[0]
+    const device = getDevice(deviceId)
+    if (device) {
+      return device.displayName
     }
-    return 'The target device'
+  }
+  return 'The target device'
 }
 
 /** Checks for delete/trash-specific IO error patterns (locked files, no-trash volumes). */
 function getDeleteSpecificIoMessage(lower: string, operationType: TransferOperationType): string | undefined {
-    const isDeleteOp = operationType === 'delete' || operationType === 'trash'
+  const isDeleteOp = operationType === 'delete' || operationType === 'trash'
 
-    // Locked file detection (macOS: "Operation not permitted" from immutable flag)
-    if (isDeleteOp && (lower.includes('operation not permitted') || lower.includes('immutable'))) {
-        return "The file is locked and can't be deleted."
-    }
+  // Locked file detection (macOS: "Operation not permitted" from immutable flag)
+  if (isDeleteOp && (lower.includes('operation not permitted') || lower.includes('immutable'))) {
+    return "The file is locked and can't be deleted."
+  }
 
-    // Trash not supported on this volume
-    if (operationType === 'trash' && lower.includes("doesn't support trash")) {
-        return "This volume doesn't support trash."
-    }
+  // Trash not supported on this volume
+  if (operationType === 'trash' && lower.includes("doesn't support trash")) {
+    return "This volume doesn't support trash."
+  }
 
-    return undefined
+  return undefined
 }
 
 /** Checks for device/connection IO error patterns. */
 function getDeviceIoMessage(lower: string, rawMessage: string, verb: string): string | undefined {
-    // Read-only device (check BEFORE generic "read" + "error" check!)
-    if (lower.includes('read-only')) {
-        const deviceName = getDeviceNameFromError(rawMessage)
-        return `${deviceName} is read-only. You can copy files from it, but not to it.`
-    }
+  // Read-only device (check BEFORE generic "read" + "error" check!)
+  if (lower.includes('read-only')) {
+    const deviceName = getDeviceNameFromError(rawMessage)
+    return `${deviceName} is read-only. You can copy files from it, but not to it.`
+  }
 
-    // Device disconnected
-    if (lower.includes('disconnect') || lower.includes('not found') || lower.includes('no such device')) {
-        return `The device was disconnected during the ${verb}.`
-    }
+  // Device disconnected
+  if (lower.includes('disconnect') || lower.includes('not found') || lower.includes('no such device')) {
+    return `The device was disconnected during the ${verb}.`
+  }
 
-    // Connection errors
-    if (lower.includes('connection') || lower.includes('timeout') || lower.includes('timed out')) {
-        return 'The connection was interrupted.'
-    }
+  // Connection errors
+  if (lower.includes('connection') || lower.includes('timeout') || lower.includes('timed out')) {
+    return 'The connection was interrupted.'
+  }
 
-    return undefined
+  return undefined
 }
 
 /**
  * Parses IO error messages into user-friendly text.
  */
 function getIoErrorMessage(rawMessage: string, operationType: TransferOperationType): string {
-    const lower = rawMessage.toLowerCase()
-    const { verb } = operationVerbMap[operationType]
+  const lower = rawMessage.toLowerCase()
+  const { verb } = operationVerbMap[operationType]
 
-    const deleteMsg = getDeleteSpecificIoMessage(lower, operationType)
-    if (deleteMsg) return deleteMsg
+  const deleteMsg = getDeleteSpecificIoMessage(lower, operationType)
+  if (deleteMsg) return deleteMsg
 
-    const deviceMsg = getDeviceIoMessage(lower, rawMessage, verb)
-    if (deviceMsg) return deviceMsg
+  const deviceMsg = getDeviceIoMessage(lower, rawMessage, verb)
+  if (deviceMsg) return deviceMsg
 
-    // Read/write errors
-    if (lower.includes('read') && lower.includes('error')) {
-        return "Couldn't read from the source."
-    }
-    if (lower.includes('write') && lower.includes('error')) {
-        return "Couldn't write to the destination."
-    }
+  // Read/write errors
+  if (lower.includes('read') && lower.includes('error')) {
+    return "Couldn't read from the source."
+  }
+  if (lower.includes('write') && lower.includes('error')) {
+    return "Couldn't write to the destination."
+  }
 
-    // File system errors
-    if (lower.includes('name too long')) {
-        return 'The file name is too long for the destination.'
-    }
-    if (lower.includes('invalid') && lower.includes('name')) {
-        return 'The file name contains characters not allowed at the destination.'
-    }
+  // File system errors
+  if (lower.includes('name too long')) {
+    return 'The file name is too long for the destination.'
+  }
+  if (lower.includes('invalid') && lower.includes('name')) {
+    return 'The file name contains characters not allowed at the destination.'
+  }
 
-    // Default
-    return `Couldn't ${verb} the file.`
+  // Default
+  return `Couldn't ${verb} the file.`
 }
 
 /**
  * Returns a helpful suggestion based on the IO error.
  */
 function getIoErrorSuggestion(rawMessage: string): string {
-    const lower = rawMessage.toLowerCase()
+  const lower = rawMessage.toLowerCase()
 
-    // Locked file
-    if (lower.includes('operation not permitted') || lower.includes('immutable')) {
-        return isMacOS()
-            ? 'Unlock it in Finder (Get Info > uncheck Locked) and try again.'
-            : 'The file may be protected — check its permissions (e.g. via chmod or your file manager) and try again.'
-    }
+  // Locked file
+  if (lower.includes('operation not permitted') || lower.includes('immutable')) {
+    return isMacOS()
+      ? 'Unlock it in Finder (Get Info > uncheck Locked) and try again.'
+      : 'The file may be protected — check its permissions (e.g. via chmod or your file manager) and try again.'
+  }
 
-    // Trash not supported
-    if (lower.includes("doesn't support trash")) {
-        return 'Use Shift+F8 to delete permanently instead.'
-    }
+  // Trash not supported
+  if (lower.includes("doesn't support trash")) {
+    return 'Use Shift+F8 to delete permanently instead.'
+  }
 
-    // Read-only device - no action the user can take
-    if (lower.includes('read-only')) {
-        return 'Choose a different destination that supports writing.'
-    }
+  // Read-only device - no action the user can take
+  if (lower.includes('read-only')) {
+    return 'Choose a different destination that supports writing.'
+  }
 
-    if (lower.includes('disconnect') || lower.includes('not found') || lower.includes('no such device')) {
-        return 'Make sure the device is properly connected and try again.'
-    }
+  if (lower.includes('disconnect') || lower.includes('not found') || lower.includes('no such device')) {
+    return 'Make sure the device is properly connected and try again.'
+  }
 
-    if (lower.includes('connection') || lower.includes('timeout') || lower.includes('timed out')) {
-        return 'Check your connection and try again. If copying to a network location, ensure the server is reachable.'
-    }
+  if (lower.includes('connection') || lower.includes('timeout') || lower.includes('timed out')) {
+    return 'Check your connection and try again. If copying to a network location, ensure the server is reachable.'
+  }
 
-    if (lower.includes('name too long') || (lower.includes('invalid') && lower.includes('name'))) {
-        return 'Try renaming the file to use a shorter name or remove special characters.'
-    }
+  if (lower.includes('name too long') || (lower.includes('invalid') && lower.includes('name'))) {
+    return 'Try renaming the file to use a shorter name or remove special characters.'
+  }
 
-    return 'Try again. If the problem persists, check the technical details below.'
+  return 'Try again. If the problem persists, check the technical details below.'
 }
 
 /**
  * Returns the technical details for an error (path, raw error message, etc.)
  */
 export function getTechnicalDetails(error: WriteOperationError): string {
-    const lines: string[] = []
+  const lines: string[] = []
 
-    switch (error.type) {
-        case 'source_not_found':
-        case 'destination_exists':
-        case 'same_location':
-        case 'symlink_loop':
-            lines.push(`Path: ${error.path}`)
-            break
-        case 'permission_denied':
-            lines.push(`Path: ${error.path}`)
-            if (error.message) {
-                lines.push(`Details: ${error.message}`)
-            }
-            break
-        case 'insufficient_space':
-            lines.push(`Required: ${formatBytes(error.required)}`)
-            lines.push(`Available: ${formatBytes(error.available)}`)
-            if (error.volumeName) {
-                lines.push(`Volume: ${error.volumeName}`)
-            }
-            break
-        case 'destination_inside_source':
-            lines.push(`Source: ${error.source}`)
-            lines.push(`Destination: ${error.destination}`)
-            break
-        case 'cancelled':
-            if (error.message) {
-                lines.push(`Details: ${error.message}`)
-            }
-            break
-        case 'io_error':
-            lines.push(`Path: ${error.path}`)
-            lines.push(`Error: ${error.message}`)
-            break
-    }
+  switch (error.type) {
+    case 'source_not_found':
+    case 'destination_exists':
+    case 'same_location':
+    case 'symlink_loop':
+      lines.push(`Path: ${error.path}`)
+      break
+    case 'permission_denied':
+      lines.push(`Path: ${error.path}`)
+      if (error.message) {
+        lines.push(`Details: ${error.message}`)
+      }
+      break
+    case 'insufficient_space':
+      lines.push(`Required: ${formatBytes(error.required)}`)
+      lines.push(`Available: ${formatBytes(error.available)}`)
+      if (error.volumeName) {
+        lines.push(`Volume: ${error.volumeName}`)
+      }
+      break
+    case 'destination_inside_source':
+      lines.push(`Source: ${error.source}`)
+      lines.push(`Destination: ${error.destination}`)
+      break
+    case 'cancelled':
+      if (error.message) {
+        lines.push(`Details: ${error.message}`)
+      }
+      break
+    case 'io_error':
+      lines.push(`Path: ${error.path}`)
+      lines.push(`Error: ${error.message}`)
+      break
+  }
 
-    lines.push(`Error type: ${error.type}`)
+  lines.push(`Error type: ${error.type}`)
 
-    return lines.join('\n')
+  return lines.join('\n')
 }

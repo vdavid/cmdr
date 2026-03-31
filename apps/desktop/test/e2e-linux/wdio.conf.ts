@@ -38,150 +38,150 @@ let tauriDriver: ChildProcess | null = null
 let fixtureRootPath: string | null = null
 
 export const config: Options.Testrunner & { capabilities: Capabilities.TestrunnerCapabilities } = {
-    // Use WebDriver protocol (not DevTools)
-    runner: 'local',
+  // Use WebDriver protocol (not DevTools)
+  runner: 'local',
 
-    // Test files (relative to where wdio is invoked from, that is, apps/desktop)
-    specs: [path.join(__dirname, '*.spec.ts')],
-    exclude: [],
+  // Test files (relative to where wdio is invoked from, that is, apps/desktop)
+  specs: [path.join(__dirname, '*.spec.ts')],
+  exclude: [],
 
-    // Max parallel instances
-    maxInstances: 1,
+  // Max parallel instances
+  maxInstances: 1,
 
-    // WebDriver capabilities for Tauri
-    // See: https://tauri.app/v1/guides/testing/webdriver/introduction/
-    capabilities: [
-        {
-            browserName: 'wry',
-            platformName: 'linux',
-            'tauri:options': {
-                application: TAURI_BINARY,
-            },
-            // Disable WDIO features that might conflict
-            'wdio:enforceWebDriverClassic': true,
-        } as WebdriverIO.Capabilities,
-    ],
+  // WebDriver capabilities for Tauri
+  // See: https://tauri.app/v1/guides/testing/webdriver/introduction/
+  capabilities: [
+    {
+      browserName: 'wry',
+      platformName: 'linux',
+      'tauri:options': {
+        application: TAURI_BINARY,
+      },
+      // Disable WDIO features that might conflict
+      'wdio:enforceWebDriverClassic': true,
+    } as WebdriverIO.Capabilities,
+  ],
 
-    // Log level
-    logLevel: process.env.CI ? 'warn' : 'info',
+  // Log level
+  logLevel: process.env.CI ? 'warn' : 'info',
 
-    // Connection to tauri-driver
-    hostname: '127.0.0.1',
-    port: 4444,
-    path: '/',
+  // Connection to tauri-driver
+  hostname: '127.0.0.1',
+  port: 4444,
+  path: '/',
 
-    // Test framework
-    framework: 'mocha',
-    mochaOpts: {
-        ui: 'bdd',
-        timeout: 60000,
-    },
+  // Test framework
+  framework: 'mocha',
+  mochaOpts: {
+    ui: 'bdd',
+    timeout: 60000,
+  },
 
-    // Reporters
-    reporters: ['spec'],
+  // Reporters
+  reporters: ['spec'],
 
-    // Hooks
-    onPrepare: async function () {
-        // Create E2E fixtures and set env var so the app opens them
-        fixtureRootPath = await createFixtures()
-        process.env.CMDR_E2E_START_PATH = fixtureRootPath
+  // Hooks
+  onPrepare: async function () {
+    // Create E2E fixtures and set env var so the app opens them
+    fixtureRootPath = await createFixtures()
+    process.env.CMDR_E2E_START_PATH = fixtureRootPath
 
-        // Start tauri-driver before tests
-        console.log('Starting tauri-driver...')
-        console.log('TAURI_BINARY:', TAURI_BINARY)
+    // Start tauri-driver before tests
+    console.log('Starting tauri-driver...')
+    console.log('TAURI_BINARY:', TAURI_BINARY)
 
-        // On Linux, we need to specify the native WebDriver (WebKitWebDriver)
-        const webkitDriverPath = '/usr/bin/WebKitWebDriver'
-        const nativeDriver = fs.existsSync(webkitDriverPath) ? webkitDriverPath : undefined
-        const args = nativeDriver ? ['--native-driver', nativeDriver] : []
-        console.log('Native driver:', nativeDriver || 'auto-detect')
-        console.log('tauri-driver args:', args)
+    // On Linux, we need to specify the native WebDriver (WebKitWebDriver)
+    const webkitDriverPath = '/usr/bin/WebKitWebDriver'
+    const nativeDriver = fs.existsSync(webkitDriverPath) ? webkitDriverPath : undefined
+    const args = nativeDriver ? ['--native-driver', nativeDriver] : []
+    console.log('Native driver:', nativeDriver || 'auto-detect')
+    console.log('tauri-driver args:', args)
 
-        // Use absolute path to the Rust tauri-driver binary to avoid the
-        // CrabNebula npm @crabnebula/tauri-driver CLI shadowing it in PATH
-        const cargoHome = process.env.CARGO_HOME || path.join(os.homedir(), '.cargo')
-        const tauriDriverBin = path.join(cargoHome, 'bin', 'tauri-driver')
+    // Use absolute path to the Rust tauri-driver binary to avoid the
+    // CrabNebula npm @crabnebula/tauri-driver CLI shadowing it in PATH
+    const cargoHome = process.env.CARGO_HOME || path.join(os.homedir(), '.cargo')
+    const tauriDriverBin = path.join(cargoHome, 'bin', 'tauri-driver')
 
-        tauriDriver = spawn(tauriDriverBin, args, {
-            stdio: ['ignore', 'pipe', 'pipe'],
-            env: {
-                ...process.env,
-                RUST_LOG: process.env.CI ? 'warn' : 'debug',
-            },
-        })
+    tauriDriver = spawn(tauriDriverBin, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        RUST_LOG: process.env.CI ? 'warn' : 'debug',
+      },
+    })
 
-        tauriDriver.stdout?.on('data', (data) => {
-            console.log(`[tauri-driver stdout] ${data}`)
-        })
+    tauriDriver.stdout?.on('data', (data) => {
+      console.log(`[tauri-driver stdout] ${data}`)
+    })
 
-        tauriDriver.stderr?.on('data', (data) => {
-            console.error(`[tauri-driver stderr] ${data}`)
-        })
+    tauriDriver.stderr?.on('data', (data) => {
+      console.error(`[tauri-driver stderr] ${data}`)
+    })
 
-        // Wait for tauri-driver to be ready by polling its HTTP endpoint
-        const maxWaitMs = 30_000
-        const intervalMs = 500
-        const start = Date.now()
-        while (Date.now() - start < maxWaitMs) {
-            try {
-                const res = await fetch('http://127.0.0.1:4444/status')
-                if (res.ok) break
-            } catch {
-                // Not ready yet
-            }
-            await new Promise<void>((resolve) => setTimeout(resolve, intervalMs))
+    // Wait for tauri-driver to be ready by polling its HTTP endpoint
+    const maxWaitMs = 30_000
+    const intervalMs = 500
+    const start = Date.now()
+    while (Date.now() - start < maxWaitMs) {
+      try {
+        const res = await fetch('http://127.0.0.1:4444/status')
+        if (res.ok) break
+      } catch {
+        // Not ready yet
+      }
+      await new Promise<void>((resolve) => setTimeout(resolve, intervalMs))
+    }
+
+    console.log('tauri-driver started')
+  },
+
+  onComplete: async function () {
+    // Stop tauri-driver after tests
+    if (tauriDriver) {
+      console.log('Stopping tauri-driver...')
+      tauriDriver.kill()
+      tauriDriver = null
+    }
+
+    if (fixtureRootPath) {
+      await cleanupFixtures(fixtureRootPath)
+      fixtureRootPath = null
+    }
+  },
+
+  // Auto-retry failed tests in CI
+  specFileRetries: process.env.CI ? 2 : 0,
+
+  // Recreate fixtures before the app launches so retried spec files start
+  // with a clean filesystem (fixtureRootPath is only set in the launcher
+  // process via onPrepare, so workers must read from the env var).
+  beforeSession: async function () {
+    const fixturePath = process.env.CMDR_E2E_START_PATH
+    if (fixturePath) {
+      await recreateFixtures(fixturePath)
+    }
+  },
+
+  beforeTest: async function () {
+    const fixturePath = process.env.CMDR_E2E_START_PATH
+    if (fixturePath) {
+      await recreateFixtures(fixturePath)
+    }
+  },
+
+  // Take screenshots on failure (guarded: session may already be dead)
+  afterTest: async function (_test: unknown, _context: unknown, result: { passed: boolean }) {
+    if (!result.passed) {
+      try {
+        const testResultsDir = path.join(__dirname, '../../test-results')
+        if (!fs.existsSync(testResultsDir)) {
+          fs.mkdirSync(testResultsDir, { recursive: true })
         }
-
-        console.log('tauri-driver started')
-    },
-
-    onComplete: async function () {
-        // Stop tauri-driver after tests
-        if (tauriDriver) {
-            console.log('Stopping tauri-driver...')
-            tauriDriver.kill()
-            tauriDriver = null
-        }
-
-        if (fixtureRootPath) {
-            await cleanupFixtures(fixtureRootPath)
-            fixtureRootPath = null
-        }
-    },
-
-    // Auto-retry failed tests in CI
-    specFileRetries: process.env.CI ? 2 : 0,
-
-    // Recreate fixtures before the app launches so retried spec files start
-    // with a clean filesystem (fixtureRootPath is only set in the launcher
-    // process via onPrepare, so workers must read from the env var).
-    beforeSession: async function () {
-        const fixturePath = process.env.CMDR_E2E_START_PATH
-        if (fixturePath) {
-            await recreateFixtures(fixturePath)
-        }
-    },
-
-    beforeTest: async function () {
-        const fixturePath = process.env.CMDR_E2E_START_PATH
-        if (fixturePath) {
-            await recreateFixtures(fixturePath)
-        }
-    },
-
-    // Take screenshots on failure (guarded: session may already be dead)
-    afterTest: async function (_test: unknown, _context: unknown, result: { passed: boolean }) {
-        if (!result.passed) {
-            try {
-                const testResultsDir = path.join(__dirname, '../../test-results')
-                if (!fs.existsSync(testResultsDir)) {
-                    fs.mkdirSync(testResultsDir, { recursive: true })
-                }
-                const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-                await browser.saveScreenshot(path.join(testResultsDir, `failure-${timestamp}.png`))
-            } catch {
-                // Session may be dead (app crashed) — screenshot not possible
-            }
-        }
-    },
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+        await browser.saveScreenshot(path.join(testResultsDir, `failure-${timestamp}.png`))
+      } catch {
+        // Session may be dead (app crashed) — screenshot not possible
+      }
+    }
+  },
 }

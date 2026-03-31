@@ -16,17 +16,17 @@ Centralized command registry and fuzzy search engine for the command palette.
 
 ```ts
 interface Command {
-    id: string // dot-namespaced: 'app.quit', 'file.rename', 'nav.parent'
-    name: string // shown in palette
-    scope: CommandScope // hierarchical, display-only (does not enforce routing)
-    showInPalette: boolean
-    shortcuts: string[] // e.g. ['⌘Q'], ['Backspace', '⌘↑']
-    description?: string
+  id: string // dot-namespaced: 'app.quit', 'file.rename', 'nav.parent'
+  name: string // shown in palette
+  scope: CommandScope // hierarchical, display-only (does not enforce routing)
+  showInPalette: boolean
+  shortcuts: string[] // e.g. ['⌘Q'], ['Backspace', '⌘↑']
+  description?: string
 }
 
 interface CommandMatch {
-    command: Command
-    matchedIndices: number[] // flat char indices in command.name for highlight rendering
+  command: Command
+  matchedIndices: number[] // flat char indices in command.name for highlight rendering
 }
 ```
 

@@ -12,477 +12,477 @@ import type { Command } from './types'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 
 export const commands: Command[] = [
-    // ============================================================================
-    // App scope (work everywhere, regardless of window/modal state)
-    // ============================================================================
-    // Native-only: handled by PredefinedMenuItems via macOS selectors (hide:, hideOtherApplications:,
-    // unhideAllApplications:, terminate:). showInPalette: false keeps them out of the JS shortcut
-    // dispatch map — the native menu accelerators handle the keyboard shortcuts directly.
-    { id: 'app.quit', name: 'Quit Cmdr', scope: 'App', showInPalette: false, shortcuts: ['⌘Q'] },
-    { id: 'app.hide', name: 'Hide Cmdr', scope: 'App', showInPalette: false, shortcuts: ['⌘H'] },
-    { id: 'app.hideOthers', name: 'Hide others', scope: 'App', showInPalette: false, shortcuts: ['⌥⌘H'] },
-    { id: 'app.showAll', name: 'Show all', scope: 'App', showInPalette: false, shortcuts: [] },
-    { id: 'app.about', name: 'About Cmdr', scope: 'App', showInPalette: true, shortcuts: [] },
-    { id: 'app.licenseKey', name: 'See license details', scope: 'App', showInPalette: true, shortcuts: [] },
-    {
-        id: 'app.commandPalette',
-        name: 'Open command palette',
-        scope: 'App',
-        showInPalette: false, // Don't show the palette in itself
-        shortcuts: ['⌘⇧P'],
-    },
-    { id: 'app.settings', name: 'Open settings', scope: 'App', showInPalette: true, shortcuts: ['⌘,'] },
+  // ============================================================================
+  // App scope (work everywhere, regardless of window/modal state)
+  // ============================================================================
+  // Native-only: handled by PredefinedMenuItems via macOS selectors (hide:, hideOtherApplications:,
+  // unhideAllApplications:, terminate:). showInPalette: false keeps them out of the JS shortcut
+  // dispatch map — the native menu accelerators handle the keyboard shortcuts directly.
+  { id: 'app.quit', name: 'Quit Cmdr', scope: 'App', showInPalette: false, shortcuts: ['⌘Q'] },
+  { id: 'app.hide', name: 'Hide Cmdr', scope: 'App', showInPalette: false, shortcuts: ['⌘H'] },
+  { id: 'app.hideOthers', name: 'Hide others', scope: 'App', showInPalette: false, shortcuts: ['⌥⌘H'] },
+  { id: 'app.showAll', name: 'Show all', scope: 'App', showInPalette: false, shortcuts: [] },
+  { id: 'app.about', name: 'About Cmdr', scope: 'App', showInPalette: true, shortcuts: [] },
+  { id: 'app.licenseKey', name: 'See license details', scope: 'App', showInPalette: true, shortcuts: [] },
+  {
+    id: 'app.commandPalette',
+    name: 'Open command palette',
+    scope: 'App',
+    showInPalette: false, // Don't show the palette in itself
+    shortcuts: ['⌘⇧P'],
+  },
+  { id: 'app.settings', name: 'Open settings', scope: 'App', showInPalette: true, shortcuts: ['⌘,'] },
 
-    // ============================================================================
-    // Main window - Search
-    // ============================================================================
-    {
-        id: 'search.open',
-        name: 'Search files',
-        scope: 'Main window',
-        showInPalette: true,
-        shortcuts: ['⌘F', '⌥F7'],
-    },
+  // ============================================================================
+  // Main window - Search
+  // ============================================================================
+  {
+    id: 'search.open',
+    name: 'Search files',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘F', '⌥F7'],
+  },
 
-    // ============================================================================
-    // Main window - View commands
-    // ============================================================================
-    {
-        id: 'view.showHidden',
-        name: 'Toggle hidden files',
-        scope: 'Main window',
-        showInPalette: true,
-        shortcuts: ['⌘⇧.'],
-    },
-    {
-        id: 'view.briefMode',
-        name: 'Switch to Brief view',
-        scope: 'Main window',
-        showInPalette: true,
-        shortcuts: ['⌘2'],
-    },
-    {
-        id: 'view.fullMode',
-        name: 'Switch to Full view',
-        scope: 'Main window',
-        showInPalette: true,
-        shortcuts: ['⌘1'],
-    },
+  // ============================================================================
+  // Main window - View commands
+  // ============================================================================
+  {
+    id: 'view.showHidden',
+    name: 'Toggle hidden files',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘⇧.'],
+  },
+  {
+    id: 'view.briefMode',
+    name: 'Switch to Brief view',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘2'],
+  },
+  {
+    id: 'view.fullMode',
+    name: 'Switch to Full view',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘1'],
+  },
 
-    // ============================================================================
-    // Main window - Sort commands (also accessible via menu)
-    // ============================================================================
-    { id: 'sort.byName', name: 'Sort by name', scope: 'Main window', showInPalette: true, shortcuts: [] },
-    { id: 'sort.byExtension', name: 'Sort by extension', scope: 'Main window', showInPalette: true, shortcuts: [] },
-    { id: 'sort.bySize', name: 'Sort by size', scope: 'Main window', showInPalette: true, shortcuts: [] },
-    { id: 'sort.byModified', name: 'Sort by date modified', scope: 'Main window', showInPalette: true, shortcuts: [] },
-    { id: 'sort.byCreated', name: 'Sort by date created', scope: 'Main window', showInPalette: true, shortcuts: [] },
-    { id: 'sort.ascending', name: 'Sort ascending', scope: 'Main window', showInPalette: true, shortcuts: [] },
-    { id: 'sort.descending', name: 'Sort descending', scope: 'Main window', showInPalette: true, shortcuts: [] },
-    { id: 'sort.toggleOrder', name: 'Toggle sort order', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  // ============================================================================
+  // Main window - Sort commands (also accessible via menu)
+  // ============================================================================
+  { id: 'sort.byName', name: 'Sort by name', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  { id: 'sort.byExtension', name: 'Sort by extension', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  { id: 'sort.bySize', name: 'Sort by size', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  { id: 'sort.byModified', name: 'Sort by date modified', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  { id: 'sort.byCreated', name: 'Sort by date created', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  { id: 'sort.ascending', name: 'Sort ascending', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  { id: 'sort.descending', name: 'Sort descending', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  { id: 'sort.toggleOrder', name: 'Toggle sort order', scope: 'Main window', showInPalette: true, shortcuts: [] },
 
-    // ============================================================================
-    // Main window - Pane commands
-    // ============================================================================
-    { id: 'pane.switch', name: 'Switch pane', scope: 'Main window', showInPalette: true, shortcuts: ['Tab'] },
-    { id: 'pane.swap', name: 'Swap panes', scope: 'Main window', showInPalette: true, shortcuts: ['⌘U'] },
-    {
-        id: 'pane.leftVolumeChooser',
-        name: 'Open left volume chooser',
-        scope: 'Main window',
-        showInPalette: true,
-        shortcuts: ['⌥F1'],
-    },
-    {
-        id: 'pane.rightVolumeChooser',
-        name: 'Open right volume chooser',
-        scope: 'Main window',
-        showInPalette: true,
-        shortcuts: ['⌥F2'],
-    },
+  // ============================================================================
+  // Main window - Pane commands
+  // ============================================================================
+  { id: 'pane.switch', name: 'Switch pane', scope: 'Main window', showInPalette: true, shortcuts: ['Tab'] },
+  { id: 'pane.swap', name: 'Swap panes', scope: 'Main window', showInPalette: true, shortcuts: ['⌘U'] },
+  {
+    id: 'pane.leftVolumeChooser',
+    name: 'Open left volume chooser',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌥F1'],
+  },
+  {
+    id: 'pane.rightVolumeChooser',
+    name: 'Open right volume chooser',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌥F2'],
+  },
 
-    // ============================================================================
-    // Main window - Tab commands
-    // ============================================================================
-    { id: 'tab.new', name: 'New tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌘T'] },
-    { id: 'tab.close', name: 'Close tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌘W'] },
-    { id: 'tab.next', name: 'Next tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌃Tab'] },
-    { id: 'tab.prev', name: 'Previous tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌃⇧Tab'] },
-    { id: 'tab.togglePin', name: 'Toggle pin tab', scope: 'Main window', showInPalette: true, shortcuts: [] },
-    { id: 'tab.closeOthers', name: 'Close other tabs', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  // ============================================================================
+  // Main window - Tab commands
+  // ============================================================================
+  { id: 'tab.new', name: 'New tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌘T'] },
+  { id: 'tab.close', name: 'Close tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌘W'] },
+  { id: 'tab.next', name: 'Next tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌃Tab'] },
+  { id: 'tab.prev', name: 'Previous tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌃⇧Tab'] },
+  { id: 'tab.togglePin', name: 'Toggle pin tab', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  { id: 'tab.closeOthers', name: 'Close other tabs', scope: 'Main window', showInPalette: true, shortcuts: [] },
 
-    // ============================================================================
-    // File list - Navigation commands
-    // ============================================================================
-    {
-        id: 'nav.up',
-        name: 'Select previous file',
-        scope: 'Main window/File list',
-        showInPalette: false, // Too basic for palette
-        shortcuts: ['↑'],
-    },
-    {
-        id: 'nav.down',
-        name: 'Select next file',
-        scope: 'Main window/File list',
-        showInPalette: false,
-        shortcuts: ['↓'],
-    },
-    {
-        id: 'nav.open',
-        name: 'Open file or folder',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['Enter'],
-    },
-    {
-        id: 'nav.parent',
-        name: 'Go to parent folder',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['Backspace', '⌘↑'],
-    },
-    {
-        id: 'nav.home',
-        name: 'Go to first file',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['⌥↑', 'Home'],
-    },
-    {
-        id: 'nav.end',
-        name: 'Go to last file',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['⌥↓', 'End'],
-    },
-    {
-        id: 'nav.pageUp',
-        name: 'Page up',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['PageUp'],
-    },
-    {
-        id: 'nav.pageDown',
-        name: 'Page down',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['PageDown'],
-    },
-    { id: 'nav.back', name: 'Go back', scope: 'Main window/File list', showInPalette: true, shortcuts: ['⌘['] },
-    { id: 'nav.forward', name: 'Go forward', scope: 'Main window/File list', showInPalette: true, shortcuts: ['⌘]'] },
+  // ============================================================================
+  // File list - Navigation commands
+  // ============================================================================
+  {
+    id: 'nav.up',
+    name: 'Select previous file',
+    scope: 'Main window/File list',
+    showInPalette: false, // Too basic for palette
+    shortcuts: ['↑'],
+  },
+  {
+    id: 'nav.down',
+    name: 'Select next file',
+    scope: 'Main window/File list',
+    showInPalette: false,
+    shortcuts: ['↓'],
+  },
+  {
+    id: 'nav.open',
+    name: 'Open file or folder',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['Enter'],
+  },
+  {
+    id: 'nav.parent',
+    name: 'Go to parent folder',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['Backspace', '⌘↑'],
+  },
+  {
+    id: 'nav.home',
+    name: 'Go to first file',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌥↑', 'Home'],
+  },
+  {
+    id: 'nav.end',
+    name: 'Go to last file',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌥↓', 'End'],
+  },
+  {
+    id: 'nav.pageUp',
+    name: 'Page up',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['PageUp'],
+  },
+  {
+    id: 'nav.pageDown',
+    name: 'Page down',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['PageDown'],
+  },
+  { id: 'nav.back', name: 'Go back', scope: 'Main window/File list', showInPalette: true, shortcuts: ['⌘['] },
+  { id: 'nav.forward', name: 'Go forward', scope: 'Main window/File list', showInPalette: true, shortcuts: ['⌘]'] },
 
-    // ============================================================================
-    // Brief mode specific
-    // ============================================================================
-    {
-        id: 'nav.left',
-        name: 'Move to left column',
-        scope: 'Main window/Brief mode',
-        showInPalette: false,
-        shortcuts: ['←'],
-    },
-    {
-        id: 'nav.right',
-        name: 'Move to right column',
-        scope: 'Main window/Brief mode',
-        showInPalette: false,
-        shortcuts: ['→'],
-    },
+  // ============================================================================
+  // Brief mode specific
+  // ============================================================================
+  {
+    id: 'nav.left',
+    name: 'Move to left column',
+    scope: 'Main window/Brief mode',
+    showInPalette: false,
+    shortcuts: ['←'],
+  },
+  {
+    id: 'nav.right',
+    name: 'Move to right column',
+    scope: 'Main window/Brief mode',
+    showInPalette: false,
+    shortcuts: ['→'],
+  },
 
-    // ============================================================================
-    // Full mode specific (left/right jump to first/last in full mode)
-    // ============================================================================
-    {
-        id: 'nav.firstInFull',
-        name: 'Jump to first file',
-        scope: 'Main window/Full mode',
-        showInPalette: false,
-        shortcuts: ['←'],
-    },
-    {
-        id: 'nav.lastInFull',
-        name: 'Jump to last file',
-        scope: 'Main window/Full mode',
-        showInPalette: false,
-        shortcuts: ['→'],
-    },
+  // ============================================================================
+  // Full mode specific (left/right jump to first/last in full mode)
+  // ============================================================================
+  {
+    id: 'nav.firstInFull',
+    name: 'Jump to first file',
+    scope: 'Main window/Full mode',
+    showInPalette: false,
+    shortcuts: ['←'],
+  },
+  {
+    id: 'nav.lastInFull',
+    name: 'Jump to last file',
+    scope: 'Main window/Full mode',
+    showInPalette: false,
+    shortcuts: ['→'],
+  },
 
-    // ============================================================================
-    // File list - File action commands
-    // ============================================================================
-    {
-        id: 'file.rename',
-        name: 'Rename',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['F2', '⇧F6'],
-    },
-    { id: 'file.view', name: 'View', scope: 'Main window/File list', showInPalette: true, shortcuts: ['F3'] },
-    {
-        id: 'file.edit',
-        name: 'Edit in default editor',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['F4'],
-    },
-    { id: 'file.copy', name: 'Copy', scope: 'Main window/File list', showInPalette: true, shortcuts: ['F5'] },
-    { id: 'file.move', name: 'Move', scope: 'Main window/File list', showInPalette: true, shortcuts: ['F6'] },
+  // ============================================================================
+  // File list - File action commands
+  // ============================================================================
+  {
+    id: 'file.rename',
+    name: 'Rename',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['F2', '⇧F6'],
+  },
+  { id: 'file.view', name: 'View', scope: 'Main window/File list', showInPalette: true, shortcuts: ['F3'] },
+  {
+    id: 'file.edit',
+    name: 'Edit in default editor',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['F4'],
+  },
+  { id: 'file.copy', name: 'Copy', scope: 'Main window/File list', showInPalette: true, shortcuts: ['F5'] },
+  { id: 'file.move', name: 'Move', scope: 'Main window/File list', showInPalette: true, shortcuts: ['F6'] },
 
-    // ============================================================================
-    // File list - Edit commands (clipboard operations)
-    // ============================================================================
-    {
-        id: 'edit.copy',
-        name: 'Copy to clipboard',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['⌘C'],
-        description: 'Copy selected files to clipboard for pasting',
-    },
-    {
-        id: 'edit.cut',
-        name: 'Cut to clipboard',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['⌘X'],
-        description: 'Cut selected files (paste will move them)',
-    },
-    {
-        id: 'edit.paste',
-        name: 'Paste',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['⌘V'],
-        description: 'Paste files from clipboard into current folder',
-    },
-    {
-        id: 'edit.pasteAsMove',
-        name: 'Move here',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['⌥⌘V'],
-        description: 'Paste files from clipboard as a move',
-    },
-    {
-        id: 'file.newFolder',
-        name: 'New folder',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['F7'],
-    },
-    {
-        id: 'file.newFile',
-        name: 'Create new file',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['⇧F4'],
-    },
-    {
-        id: 'file.delete',
-        name: 'Delete',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['F8'],
-    },
-    {
-        id: 'file.deletePermanently',
-        name: 'Delete permanently',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['⇧F8'],
-    },
-    {
-        id: 'file.showInFinder',
-        name: isMacOS() ? 'Show in Finder' : 'Show in file manager',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['⌥⌘O'],
-    },
-    {
-        id: 'file.copyPath',
-        name: 'Copy path to clipboard',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['⌃⌘C'],
-    },
-    {
-        id: 'file.copyFilename',
-        name: 'Copy filename',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: [],
-    },
-    {
-        id: 'file.getInfo',
-        name: isMacOS() ? 'Get info' : 'File properties',
-        scope: 'Main window/File list',
-        showInPalette: isMacOS(),
-        shortcuts: isMacOS() ? ['⌘I'] : [],
-    },
-    {
-        id: 'file.quickLook',
-        name: isMacOS() ? 'Quick look' : 'Preview',
-        scope: 'Main window/File list',
-        showInPalette: isMacOS(),
-        shortcuts: [],
-    },
-    {
-        id: 'file.contextMenu',
-        name: 'Open context menu',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: [],
-        description: 'Opens the context menu for the file under the cursor',
-    },
+  // ============================================================================
+  // File list - Edit commands (clipboard operations)
+  // ============================================================================
+  {
+    id: 'edit.copy',
+    name: 'Copy to clipboard',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌘C'],
+    description: 'Copy selected files to clipboard for pasting',
+  },
+  {
+    id: 'edit.cut',
+    name: 'Cut to clipboard',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌘X'],
+    description: 'Cut selected files (paste will move them)',
+  },
+  {
+    id: 'edit.paste',
+    name: 'Paste',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌘V'],
+    description: 'Paste files from clipboard into current folder',
+  },
+  {
+    id: 'edit.pasteAsMove',
+    name: 'Move here',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌥⌘V'],
+    description: 'Paste files from clipboard as a move',
+  },
+  {
+    id: 'file.newFolder',
+    name: 'New folder',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['F7'],
+  },
+  {
+    id: 'file.newFile',
+    name: 'Create new file',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⇧F4'],
+  },
+  {
+    id: 'file.delete',
+    name: 'Delete',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['F8'],
+  },
+  {
+    id: 'file.deletePermanently',
+    name: 'Delete permanently',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⇧F8'],
+  },
+  {
+    id: 'file.showInFinder',
+    name: isMacOS() ? 'Show in Finder' : 'Show in file manager',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌥⌘O'],
+  },
+  {
+    id: 'file.copyPath',
+    name: 'Copy path to clipboard',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌃⌘C'],
+  },
+  {
+    id: 'file.copyFilename',
+    name: 'Copy filename',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: [],
+  },
+  {
+    id: 'file.getInfo',
+    name: isMacOS() ? 'Get info' : 'File properties',
+    scope: 'Main window/File list',
+    showInPalette: isMacOS(),
+    shortcuts: isMacOS() ? ['⌘I'] : [],
+  },
+  {
+    id: 'file.quickLook',
+    name: isMacOS() ? 'Quick look' : 'Preview',
+    scope: 'Main window/File list',
+    showInPalette: isMacOS(),
+    shortcuts: [],
+  },
+  {
+    id: 'file.contextMenu',
+    name: 'Open context menu',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: [],
+    description: 'Opens the context menu for the file under the cursor',
+  },
 
-    // ============================================================================
-    // File list - Selection commands
-    // ============================================================================
-    {
-        id: 'selection.toggle',
-        name: 'Toggle selection',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['Space'],
-    },
-    {
-        id: 'selection.selectAll',
-        name: 'Select all',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['⌘A'],
-    },
-    {
-        id: 'selection.deselectAll',
-        name: 'Deselect all',
-        scope: 'Main window/File list',
-        showInPalette: true,
-        shortcuts: ['⌘⇧A'],
-    },
+  // ============================================================================
+  // File list - Selection commands
+  // ============================================================================
+  {
+    id: 'selection.toggle',
+    name: 'Toggle selection',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['Space'],
+  },
+  {
+    id: 'selection.selectAll',
+    name: 'Select all',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌘A'],
+  },
+  {
+    id: 'selection.deselectAll',
+    name: 'Deselect all',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌘⇧A'],
+  },
 
-    // ============================================================================
-    // Network browser
-    // ============================================================================
-    {
-        id: 'network.selectHost',
-        name: 'Select network host',
-        scope: 'Main window/Network',
-        showInPalette: false,
-        shortcuts: ['Enter'],
-    },
-    {
-        id: 'network.refresh',
-        name: 'Refresh network hosts',
-        scope: 'Main window/Network',
-        showInPalette: true,
-        shortcuts: ['⌘R'],
-    },
+  // ============================================================================
+  // Network browser
+  // ============================================================================
+  {
+    id: 'network.selectHost',
+    name: 'Select network host',
+    scope: 'Main window/Network',
+    showInPalette: false,
+    shortcuts: ['Enter'],
+  },
+  {
+    id: 'network.refresh',
+    name: 'Refresh network hosts',
+    scope: 'Main window/Network',
+    showInPalette: true,
+    shortcuts: ['⌘R'],
+  },
 
-    // ============================================================================
-    // Share browser
-    // ============================================================================
-    {
-        id: 'share.back',
-        name: 'Back to host list',
-        scope: 'Main window/Share browser',
-        showInPalette: true,
-        shortcuts: ['Backspace', 'Escape'],
-    },
-    {
-        id: 'share.selectShare',
-        name: 'Connect to share',
-        scope: 'Main window/Share browser',
-        showInPalette: true,
-        shortcuts: ['Enter'],
-    },
+  // ============================================================================
+  // Share browser
+  // ============================================================================
+  {
+    id: 'share.back',
+    name: 'Back to host list',
+    scope: 'Main window/Share browser',
+    showInPalette: true,
+    shortcuts: ['Backspace', 'Escape'],
+  },
+  {
+    id: 'share.selectShare',
+    name: 'Connect to share',
+    scope: 'Main window/Share browser',
+    showInPalette: true,
+    shortcuts: ['Enter'],
+  },
 
-    // ============================================================================
-    // Volume chooser
-    // ============================================================================
-    {
-        id: 'volume.select',
-        name: 'Select volume',
-        scope: 'Main window/Volume chooser',
-        showInPalette: false,
-        shortcuts: ['Enter'],
-    },
-    {
-        id: 'volume.close',
-        name: 'Close volume chooser',
-        scope: 'Main window/Volume chooser',
-        showInPalette: false,
-        shortcuts: ['Escape'],
-    },
+  // ============================================================================
+  // Volume chooser
+  // ============================================================================
+  {
+    id: 'volume.select',
+    name: 'Select volume',
+    scope: 'Main window/Volume chooser',
+    showInPalette: false,
+    shortcuts: ['Enter'],
+  },
+  {
+    id: 'volume.close',
+    name: 'Close volume chooser',
+    scope: 'Main window/Volume chooser',
+    showInPalette: false,
+    shortcuts: ['Escape'],
+  },
 
-    // ============================================================================
-    // About window
-    // ============================================================================
-    {
-        id: 'about.openWebsite',
-        name: 'Open website',
-        scope: 'About window',
-        showInPalette: true,
-        shortcuts: [],
-    },
-    {
-        id: 'about.openUpgrade',
-        name: 'Open upgrade page',
-        scope: 'About window',
-        showInPalette: true,
-        shortcuts: [],
-    },
-    {
-        id: 'about.close',
-        name: 'Close About window',
-        scope: 'About window',
-        showInPalette: true,
-        shortcuts: ['Escape'],
-    },
+  // ============================================================================
+  // About window
+  // ============================================================================
+  {
+    id: 'about.openWebsite',
+    name: 'Open website',
+    scope: 'About window',
+    showInPalette: true,
+    shortcuts: [],
+  },
+  {
+    id: 'about.openUpgrade',
+    name: 'Open upgrade page',
+    scope: 'About window',
+    showInPalette: true,
+    shortcuts: [],
+  },
+  {
+    id: 'about.close',
+    name: 'Close About window',
+    scope: 'About window',
+    showInPalette: true,
+    shortcuts: ['Escape'],
+  },
 
-    // ============================================================================
-    // Command palette modal
-    // ============================================================================
-    {
-        id: 'palette.up',
-        name: 'Previous result',
-        scope: 'Command palette',
-        showInPalette: false,
-        shortcuts: ['↑'],
-    },
-    {
-        id: 'palette.down',
-        name: 'Next result',
-        scope: 'Command palette',
-        showInPalette: false,
-        shortcuts: ['↓'],
-    },
-    {
-        id: 'palette.execute',
-        name: 'Execute command',
-        scope: 'Command palette',
-        showInPalette: false,
-        shortcuts: ['Enter'],
-    },
-    {
-        id: 'palette.close',
-        name: 'Close palette',
-        scope: 'Command palette',
-        showInPalette: false,
-        shortcuts: ['Escape'],
-    },
+  // ============================================================================
+  // Command palette modal
+  // ============================================================================
+  {
+    id: 'palette.up',
+    name: 'Previous result',
+    scope: 'Command palette',
+    showInPalette: false,
+    shortcuts: ['↑'],
+  },
+  {
+    id: 'palette.down',
+    name: 'Next result',
+    scope: 'Command palette',
+    showInPalette: false,
+    shortcuts: ['↓'],
+  },
+  {
+    id: 'palette.execute',
+    name: 'Execute command',
+    scope: 'Command palette',
+    showInPalette: false,
+    shortcuts: ['Enter'],
+  },
+  {
+    id: 'palette.close',
+    name: 'Close palette',
+    scope: 'Command palette',
+    showInPalette: false,
+    shortcuts: ['Escape'],
+  },
 ]
 
 /** Get all commands that should appear in the command palette */
 export function getPaletteCommands(): Command[] {
-    return commands.filter((c) => c.showInPalette)
+  return commands.filter((c) => c.showInPalette)
 }
 
 /** Update the license command name based on whether a license exists. Keeps the command palette in sync with the native menu label. */
 export function updateLicenseCommandName(hasExistingLicense: boolean): void {
-    const cmd = commands.find((c) => c.id === 'app.licenseKey')
-    if (cmd) {
-        cmd.name = hasExistingLicense ? 'See license details' : 'Enter license key'
-    }
+  const cmd = commands.find((c) => c.id === 'app.licenseKey')
+  if (cmd) {
+    cmd.name = hasExistingLicense ? 'See license details' : 'Enter license key'
+  }
 }

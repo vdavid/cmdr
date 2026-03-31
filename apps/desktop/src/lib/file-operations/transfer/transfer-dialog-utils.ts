@@ -5,10 +5,10 @@
 import type { TransferOperationType } from '$lib/file-explorer/types'
 
 const operationLabelMap: Record<TransferOperationType, string> = {
-    copy: 'Copy',
-    move: 'Move',
-    delete: 'Delete',
-    trash: 'Move to trash',
+  copy: 'Copy',
+  move: 'Move',
+  delete: 'Delete',
+  trash: 'Move to trash',
 }
 
 /**
@@ -16,18 +16,18 @@ const operationLabelMap: Record<TransferOperationType, string> = {
  * @returns Formatted title string like "Copy 1 file", "Move 2 files and 3 folders"
  */
 export function generateTitle(operationType: TransferOperationType, files: number, folders: number): string {
-    const verb = operationLabelMap[operationType]
-    const parts: string[] = []
-    if (files > 0) {
-        parts.push(`${String(files)} ${files === 1 ? 'file' : 'files'}`)
-    }
-    if (folders > 0) {
-        parts.push(`${String(folders)} ${folders === 1 ? 'folder' : 'folders'}`)
-    }
-    if (parts.length === 0) {
-        return verb
-    }
-    return `${verb} ${parts.join(' and ')}`
+  const verb = operationLabelMap[operationType]
+  const parts: string[] = []
+  if (files > 0) {
+    parts.push(`${String(files)} ${files === 1 ? 'file' : 'files'}`)
+  }
+  if (folders > 0) {
+    parts.push(`${String(folders)} ${folders === 1 ? 'folder' : 'folders'}`)
+  }
+  if (parts.length === 0) {
+    return verb
+  }
+  return `${verb} ${parts.join(' and ')}`
 }
 
 /**
@@ -37,14 +37,14 @@ export function generateTitle(operationType: TransferOperationType, files: numbe
  * @returns The last path component, like "Documents"
  */
 export function getFolderName(path: string): string {
-    if (path === '/') return '/'
-    const normalized = path.endsWith('/') ? path.slice(0, -1) : path
-    const parts = normalized.split('/')
-    const last = parts[parts.length - 1] || '/'
-    // GVFS SMB share directories: extract just the share name
-    const smbMatch = last.match(/^smb-share:.*share=([^,]+)/)
-    if (smbMatch) return smbMatch[1]
-    return last
+  if (path === '/') return '/'
+  const normalized = path.endsWith('/') ? path.slice(0, -1) : path
+  const parts = normalized.split('/')
+  const last = parts[parts.length - 1] || '/'
+  // GVFS SMB share directories: extract just the share name
+  const smbMatch = last.match(/^smb-share:.*share=([^,]+)/)
+  if (smbMatch) return smbMatch[1]
+  return last
 }
 
 /**
@@ -65,7 +65,7 @@ export function getFolderName(path: string): string {
  * toBackendIndices([0, 1, 2], true) // => [0, 1]
  */
 export function toBackendIndices(frontendIndices: number[], hasParent: boolean): number[] {
-    return frontendIndices.map((i) => (hasParent ? i - 1 : i)).filter((i) => i >= 0)
+  return frontendIndices.map((i) => (hasParent ? i - 1 : i)).filter((i) => i >= 0)
 }
 
 /**
@@ -81,7 +81,7 @@ export function toBackendIndices(frontendIndices: number[], hasParent: boolean):
  * toBackendCursorIndex(-1, false) // => null (invalid index)
  */
 export function toBackendCursorIndex(frontendIndex: number, hasParent: boolean): number | null {
-    if (frontendIndex < 0) return null
-    if (hasParent && frontendIndex === 0) return null // ".." entry
-    return hasParent ? frontendIndex - 1 : frontendIndex
+  if (frontendIndex < 0) return null
+  if (hasParent && frontendIndex === 0) return null // ".." entry
+  return hasParent ? frontendIndex - 1 : frontendIndex
 }

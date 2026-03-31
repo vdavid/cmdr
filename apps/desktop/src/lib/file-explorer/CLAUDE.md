@@ -70,9 +70,9 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 - **Extension grouping** — dotfiles → no-extension → by extension alphabetically
 - **Per-tab sort** — each tab owns its `sortBy` + `sortOrder` (no global per-column memory)
 - **Directory sort mode** — setting `listing.directorySortMode` controls how dirs sort among themselves:
-    - `likeFiles` (default): dirs sort by the active column (uses `recursive_size` for Size). Dirs with unknown size
-      sort last.
-    - `alwaysByName`: dirs always sort by name, ignoring the active sort column.
+  - `likeFiles` (default): dirs sort by the active column (uses `recursive_size` for Size). Dirs with unknown size sort
+    last.
+  - `alwaysByName`: dirs always sort by name, ignoring the active sort column.
 - **Name ASC tiebreaker** — when primary sort values are equal, entries fall back to name ascending
 
 ### Implementation

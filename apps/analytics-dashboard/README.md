@@ -6,17 +6,17 @@ at `analdash.getcmdr.com`.
 ## Running locally
 
 1. Copy the example env file and fill in real values:
-    ```bash
-    cp .env.example .env
-    ```
+   ```bash
+   cp .env.example .env
+   ```
 2. Install dependencies (from the repo root):
-    ```bash
-    pnpm install
-    ```
+   ```bash
+   pnpm install
+   ```
 3. Start the dev server:
-    ```bash
-    pnpm dev:dashboard
-    ```
+   ```bash
+   pnpm dev:dashboard
+   ```
 4. Open [http://localhost:4830](http://localhost:4830).
 
 The dashboard works without env vars too, but each data source will show a "not configured" message instead of live

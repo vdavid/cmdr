@@ -16,10 +16,10 @@ cmdr supports two MCP transports:
 1. cmdr must be running with MCP enabled
 2. Default port is `9224` (configurable via `CMDR_MCP_PORT`)
 3. Verify the server is running:
-    ```bash
-    curl http://localhost:9224/mcp/health
-    # Should return: {"status":"ok"}
-    ```
+   ```bash
+   curl http://localhost:9224/mcp/health
+   # Should return: {"status":"ok"}
+   ```
 
 ## Claude Desktop
 
@@ -29,11 +29,11 @@ Add to your Claude Desktop configuration file:
 
 ```json
 {
-    "mcpServers": {
-        "cmdr": {
-            "url": "http://localhost:9224/mcp"
-        }
+  "mcpServers": {
+    "cmdr": {
+      "url": "http://localhost:9224/mcp"
     }
+  }
 }
 ```
 
@@ -53,11 +53,11 @@ Add to your VS Code settings (`settings.json`):
 
 ```json
 {
-    "amp.mcpServers": {
-        "cmdr": {
-            "url": "http://localhost:9224/mcp"
-        }
+  "amp.mcpServers": {
+    "cmdr": {
+      "url": "http://localhost:9224/mcp"
     }
+  }
 }
 ```
 
@@ -69,12 +69,12 @@ Add to your Cursor settings (`.cursor/mcp.json` in your project or global config
 
 ```json
 {
-    "mcpServers": {
-        "cmdr": {
-            "transport": "http",
-            "url": "http://localhost:9224/mcp"
-        }
+  "mcpServers": {
+    "cmdr": {
+      "transport": "http",
+      "url": "http://localhost:9224/mcp"
     }
+  }
 }
 ```
 
@@ -84,15 +84,15 @@ Add to your Continue configuration (`~/.continue/config.json`):
 
 ```json
 {
-    "mcpServers": [
-        {
-            "name": "cmdr",
-            "transport": {
-                "type": "http",
-                "url": "http://localhost:9224/mcp"
-            }
-        }
-    ]
+  "mcpServers": [
+    {
+      "name": "cmdr",
+      "transport": {
+        "type": "http",
+        "url": "http://localhost:9224/mcp"
+      }
+    }
+  ]
 }
 ```
 
@@ -112,11 +112,11 @@ For clients that prefer spawning a subprocess (rather than HTTP), use the `cmdr-
 
 ```json
 {
-    "mcpServers": {
-        "cmdr": {
-            "command": "/path/to/cmdr-mcp-stdio"
-        }
+  "mcpServers": {
+    "cmdr": {
+      "command": "/path/to/cmdr-mcp-stdio"
     }
+  }
 }
 ```
 

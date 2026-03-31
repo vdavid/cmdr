@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushSync } from 'svelte'
 
 vi.mock('./ai-state.svelte', () => ({
-    getAiState: vi.fn(),
-    handleDownload: vi.fn(),
-    handleCancel: vi.fn(),
-    handleDismiss: vi.fn(),
-    handleOptOut: vi.fn(),
-    handleGotIt: vi.fn(),
+  getAiState: vi.fn(),
+  handleDownload: vi.fn(),
+  handleCancel: vi.fn(),
+  handleDismiss: vi.fn(),
+  handleOptOut: vi.fn(),
+  handleGotIt: vi.fn(),
 }))
 
 import { getAiState, handleDownload, handleCancel, handleDismiss, handleOptOut, handleGotIt } from './ai-state.svelte'
@@ -16,192 +16,192 @@ import AiToastContent from './AiToastContent.svelte'
 type AiNotificationState = 'hidden' | 'offer' | 'downloading' | 'installing' | 'ready' | 'starting'
 
 let mockState = {
-    notificationState: 'hidden' as AiNotificationState,
-    downloadProgress: null as { bytesDownloaded: number; totalBytes: number; speed: number; etaSeconds: number } | null,
-    progressText: '',
-    modelInfo: {
+  notificationState: 'hidden' as AiNotificationState,
+  downloadProgress: null as { bytesDownloaded: number; totalBytes: number; speed: number; etaSeconds: number } | null,
+  progressText: '',
+  modelInfo: {
+    id: 'ministral-3b-instruct-q4km',
+    displayName: 'Ministral 3B',
+    sizeBytes: 2147023008,
+    sizeFormatted: '2.1 GB',
+    kvBytesPerToken: 106496,
+    baseOverheadBytes: 3500000000,
+  },
+}
+
+function mountToast() {
+  const target = document.createElement('div')
+  mount(AiToastContent, { target })
+  return target
+}
+
+describe('AiToastContent', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockState = {
+      notificationState: 'hidden',
+      downloadProgress: null,
+      progressText: '',
+      modelInfo: {
         id: 'ministral-3b-instruct-q4km',
         displayName: 'Ministral 3B',
         sizeBytes: 2147023008,
         sizeFormatted: '2.1 GB',
         kvBytesPerToken: 106496,
         baseOverheadBytes: 3500000000,
-    },
-}
+      },
+    }
+    vi.mocked(getAiState).mockReturnValue(mockState)
+  })
 
-function mountToast() {
-    const target = document.createElement('div')
-    mount(AiToastContent, { target })
-    return target
-}
+  it('renders offer notification with download size and settings hint', () => {
+    mockState.notificationState = 'offer'
+    const target = mountToast()
 
-describe('AiToastContent', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-        mockState = {
-            notificationState: 'hidden',
-            downloadProgress: null,
-            progressText: '',
-            modelInfo: {
-                id: 'ministral-3b-instruct-q4km',
-                displayName: 'Ministral 3B',
-                sizeBytes: 2147023008,
-                sizeFormatted: '2.1 GB',
-                kvBytesPerToken: 106496,
-                baseOverheadBytes: 3500000000,
-            },
-        }
-        vi.mocked(getAiState).mockReturnValue(mockState)
-    })
+    const description = target.querySelector('.ai-description')
+    expect(description?.textContent).toContain('2.1 GB')
 
-    it('renders offer notification with download size and settings hint', () => {
-        mockState.notificationState = 'offer'
-        const target = mountToast()
+    const hint = target.querySelector('.ai-hint')
+    expect(hint?.textContent).toContain('settings')
+  })
 
-        const description = target.querySelector('.ai-description')
-        expect(description?.textContent).toContain('2.1 GB')
+  it('renders nothing when state is hidden', () => {
+    const target = mountToast()
+    expect(target.querySelector('.ai-content')).toBeNull()
+  })
 
-        const hint = target.querySelector('.ai-hint')
-        expect(hint?.textContent).toContain('settings')
-    })
+  it("renders offer notification with Download, Not now, and I don't want AI buttons", () => {
+    mockState.notificationState = 'offer'
+    const target = mountToast()
 
-    it('renders nothing when state is hidden', () => {
-        const target = mountToast()
-        expect(target.querySelector('.ai-content')).toBeNull()
-    })
+    const title = target.querySelector('.ai-title')
+    expect(title?.textContent).toBe('AI features available')
 
-    it("renders offer notification with Download, Not now, and I don't want AI buttons", () => {
-        mockState.notificationState = 'offer'
-        const target = mountToast()
+    const buttons = target.querySelectorAll('.ai-actions button')
+    expect(buttons).toHaveLength(3)
+    expect(buttons[0].textContent).toBe('Download')
+    expect(buttons[1].textContent).toBe('Not now')
+    expect(buttons[2].textContent).toBe("I don't want AI")
+  })
 
-        const title = target.querySelector('.ai-title')
-        expect(title?.textContent).toBe('AI features available')
+  it('calls handleDownload when Download is clicked', () => {
+    mockState.notificationState = 'offer'
+    const target = mountToast()
 
-        const buttons = target.querySelectorAll('.ai-actions button')
-        expect(buttons).toHaveLength(3)
-        expect(buttons[0].textContent).toBe('Download')
-        expect(buttons[1].textContent).toBe('Not now')
-        expect(buttons[2].textContent).toBe("I don't want AI")
-    })
+    const downloadButton = target.querySelector('.btn-primary') as HTMLButtonElement
+    downloadButton.click()
+    flushSync()
 
-    it('calls handleDownload when Download is clicked', () => {
-        mockState.notificationState = 'offer'
-        const target = mountToast()
+    expect(handleDownload).toHaveBeenCalledOnce()
+  })
 
-        const downloadButton = target.querySelector('.btn-primary') as HTMLButtonElement
-        downloadButton.click()
-        flushSync()
+  it('calls handleDismiss when Not now is clicked', () => {
+    mockState.notificationState = 'offer'
+    const target = mountToast()
 
-        expect(handleDownload).toHaveBeenCalledOnce()
-    })
+    const dismissButton = target.querySelector('.btn-secondary') as HTMLButtonElement
+    dismissButton.click()
+    flushSync()
 
-    it('calls handleDismiss when Not now is clicked', () => {
-        mockState.notificationState = 'offer'
-        const target = mountToast()
+    expect(handleDismiss).toHaveBeenCalledOnce()
+  })
 
-        const dismissButton = target.querySelector('.btn-secondary') as HTMLButtonElement
-        dismissButton.click()
-        flushSync()
+  it("calls handleOptOut when I don't want AI is clicked", () => {
+    mockState.notificationState = 'offer'
+    const target = mountToast()
 
-        expect(handleDismiss).toHaveBeenCalledOnce()
-    })
+    const optOutButton = target.querySelector('.tertiary-link') as HTMLButtonElement
+    optOutButton.click()
+    flushSync()
 
-    it("calls handleOptOut when I don't want AI is clicked", () => {
-        mockState.notificationState = 'offer'
-        const target = mountToast()
+    expect(handleOptOut).toHaveBeenCalledOnce()
+  })
 
-        const optOutButton = target.querySelector('.tertiary-link') as HTMLButtonElement
-        optOutButton.click()
-        flushSync()
+  it('renders downloading state with progress text', () => {
+    mockState.notificationState = 'downloading'
+    mockState.downloadProgress = { bytesDownloaded: 500000, totalBytes: 4000000, speed: 100000, etaSeconds: 35 }
+    mockState.progressText = '12% — 500.0 KB / 4.0 MB — 100.0 KB/s — 35s remaining'
 
-        expect(handleOptOut).toHaveBeenCalledOnce()
-    })
+    const target = mountToast()
 
-    it('renders downloading state with progress text', () => {
-        mockState.notificationState = 'downloading'
-        mockState.downloadProgress = { bytesDownloaded: 500000, totalBytes: 4000000, speed: 100000, etaSeconds: 35 }
-        mockState.progressText = '12% — 500.0 KB / 4.0 MB — 100.0 KB/s — 35s remaining'
+    const title = target.querySelector('.ai-title')
+    expect(title?.textContent).toBe('Downloading AI model...')
 
-        const target = mountToast()
+    const progressText = target.querySelector('.ai-progress-text')
+    expect(progressText?.textContent).toContain('12%')
+  })
 
-        const title = target.querySelector('.ai-title')
-        expect(title?.textContent).toBe('Downloading AI model...')
+  it('renders downloading state with "Starting download..." when no total', () => {
+    mockState.notificationState = 'downloading'
+    mockState.downloadProgress = null
 
-        const progressText = target.querySelector('.ai-progress-text')
-        expect(progressText?.textContent).toContain('12%')
-    })
+    const target = mountToast()
 
-    it('renders downloading state with "Starting download..." when no total', () => {
-        mockState.notificationState = 'downloading'
-        mockState.downloadProgress = null
+    const progressText = target.querySelector('.ai-progress-text')
+    expect(progressText?.textContent).toBe('Starting download...')
+  })
 
-        const target = mountToast()
+  it('calls handleCancel when Cancel is clicked in downloading state', () => {
+    mockState.notificationState = 'downloading'
+    mockState.downloadProgress = { bytesDownloaded: 100, totalBytes: 1000, speed: 50, etaSeconds: 18 }
 
-        const progressText = target.querySelector('.ai-progress-text')
-        expect(progressText?.textContent).toBe('Starting download...')
-    })
+    const target = mountToast()
 
-    it('calls handleCancel when Cancel is clicked in downloading state', () => {
-        mockState.notificationState = 'downloading'
-        mockState.downloadProgress = { bytesDownloaded: 100, totalBytes: 1000, speed: 50, etaSeconds: 18 }
+    const cancelButton = target.querySelector('.btn-secondary') as HTMLButtonElement
+    cancelButton.click()
+    flushSync()
 
-        const target = mountToast()
+    expect(handleCancel).toHaveBeenCalledOnce()
+  })
 
-        const cancelButton = target.querySelector('.btn-secondary') as HTMLButtonElement
-        cancelButton.click()
-        flushSync()
+  it('renders installing state', () => {
+    mockState.notificationState = 'installing'
 
-        expect(handleCancel).toHaveBeenCalledOnce()
-    })
+    const target = mountToast()
 
-    it('renders installing state', () => {
-        mockState.notificationState = 'installing'
+    const title = target.querySelector('.ai-title')
+    expect(title?.textContent).toBe('Setting up AI...')
 
-        const target = mountToast()
+    const description = target.querySelector('.ai-description')
+    expect(description?.textContent).toBe('Starting inference server')
 
-        const title = target.querySelector('.ai-title')
-        expect(title?.textContent).toBe('Setting up AI...')
+    // No buttons in installing state
+    expect(target.querySelectorAll('.ai-actions button')).toHaveLength(0)
+  })
 
-        const description = target.querySelector('.ai-description')
-        expect(description?.textContent).toBe('Starting inference server')
+  it('renders ready state with Got it button', () => {
+    mockState.notificationState = 'ready'
 
-        // No buttons in installing state
-        expect(target.querySelectorAll('.ai-actions button')).toHaveLength(0)
-    })
+    const target = mountToast()
 
-    it('renders ready state with Got it button', () => {
-        mockState.notificationState = 'ready'
+    const title = target.querySelector('.ai-title')
+    expect(title?.textContent).toBe('AI ready')
 
-        const target = mountToast()
+    const button = target.querySelector('.btn-primary') as HTMLButtonElement
+    expect(button.textContent).toBe('Got it')
+  })
 
-        const title = target.querySelector('.ai-title')
-        expect(title?.textContent).toBe('AI ready')
+  it('calls handleGotIt when Got it is clicked', () => {
+    mockState.notificationState = 'ready'
 
-        const button = target.querySelector('.btn-primary') as HTMLButtonElement
-        expect(button.textContent).toBe('Got it')
-    })
+    const target = mountToast()
 
-    it('calls handleGotIt when Got it is clicked', () => {
-        mockState.notificationState = 'ready'
+    const button = target.querySelector('.btn-primary') as HTMLButtonElement
+    button.click()
+    flushSync()
 
-        const target = mountToast()
+    expect(handleGotIt).toHaveBeenCalledOnce()
+  })
 
-        const button = target.querySelector('.btn-primary') as HTMLButtonElement
-        button.click()
-        flushSync()
+  it('shows progress bar when downloading with known total', () => {
+    mockState.notificationState = 'downloading'
+    mockState.downloadProgress = { bytesDownloaded: 2000000, totalBytes: 4000000, speed: 100000, etaSeconds: 20 }
+    mockState.progressText = '50% — 2.0 MB / 4.0 MB'
 
-        expect(handleGotIt).toHaveBeenCalledOnce()
-    })
+    const target = mountToast()
 
-    it('shows progress bar when downloading with known total', () => {
-        mockState.notificationState = 'downloading'
-        mockState.downloadProgress = { bytesDownloaded: 2000000, totalBytes: 4000000, speed: 100000, etaSeconds: 20 }
-        mockState.progressText = '50% — 2.0 MB / 4.0 MB'
-
-        const target = mountToast()
-
-        const progressBar = target.querySelector('.progress-bar-fill') as HTMLElement
-        expect(progressBar).not.toBeNull()
-        expect(progressBar.style.width).toBe('50%')
-    })
+    const progressBar = target.querySelector('.progress-bar-fill') as HTMLElement
+    expect(progressBar).not.toBeNull()
+    expect(progressBar.style.width).toBe('50%')
+  })
 })

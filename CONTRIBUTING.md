@@ -98,7 +98,7 @@ How to use it for testing the app:
 2. `cd ~/cmdr`
 3. `pnpm install` if it's been a while or you've added new deps
 4. `mountpoint /mnt/cmdr/cmdr/target && mountpoint /mnt/cmdr/cmdr/node_modules` to verify the bind mounts are healthy
-    - If either mountpoint check fails, run `sudo mount -a` and re-check.
+   - If either mountpoint check fails, run `sudo mount -a` and re-check.
 5. `eval "$(mise activate bash)"` to activate mise. It sets up Node/pnpm/Go — not available in the default SSH shell.
 
 From here, either **run the app** or **run E2E tests**:
@@ -161,12 +161,12 @@ This snippet will likely come handy:
 
 ```json
 {
-    "mcpServers": {
-        "tauri": {
-            "command": "npx",
-            "args": ["-y", "@hypothesi/tauri-mcp-server"]
-        }
+  "mcpServers": {
+    "tauri": {
+      "command": "npx",
+      "args": ["-y", "@hypothesi/tauri-mcp-server"]
     }
+  }
 }
 ```
 
@@ -181,16 +181,16 @@ The API server is a Cloudflare Worker. To deploy it or run `wrangler` commands, 
 
 1. Go to https://dash.cloudflare.com/profile/api-tokens → **Create Token** → **Custom token**
 2. Permissions:
-    - `Account / Workers Scripts / Edit`
-    - `Account / Account Analytics / Read`
-    - `Account / Workers Scripts / Edit`
-    - `Zone / Workers Routes / Edit`
-    - `Zone / DNS / Edit`
+   - `Account / Workers Scripts / Edit`
+   - `Account / Account Analytics / Read`
+   - `Account / Workers Scripts / Edit`
+   - `Zone / Workers Routes / Edit`
+   - `Zone / DNS / Edit`
 3. Account resources: the Cmdr account only
 4. Add to macOS Keychain:
-    ```sh
-    security add-generic-password -a "$USER" -s "CLOUDFLARE_API_TOKEN" -w "your-token"
-    ```
+   ```sh
+   security add-generic-password -a "$USER" -s "CLOUDFLARE_API_TOKEN" -w "your-token"
+   ```
 
 Wrangler picks up `CLOUDFLARE_API_TOKEN` from the environment — the shell profile exports it from Keychain on startup.
 
@@ -202,9 +202,9 @@ update project settings), you need a personal API key.
 1. Go to https://eu.posthog.com/settings/user-api-keys → **Create personal API key**
 2. Scope it to the Cmdr project
 3. Add to macOS Keychain:
-    ```sh
-    security add-generic-password -a "$USER" -s "POSTHOG_API_KEY" -w "phx_your-key"
-    ```
+   ```sh
+   security add-generic-password -a "$USER" -s "POSTHOG_API_KEY" -w "phx_your-key"
+   ```
 
 See [posthog.md](docs/tooling/posthog.md) for API recipes.
 
@@ -215,10 +215,10 @@ Paddle handles payments and subscriptions. Two API keys are needed — one for l
 1. Go to https://vendors.paddle.com → **Developer tools** → **Authentication** → **Generate API key**
 2. Repeat for sandbox at https://sandbox-vendors.paddle.com
 3. Add both to macOS Keychain:
-    ```sh
-    security add-generic-password -a "$USER" -s "PADDLE_LIVE_API_KEY" -w "your-live-key"
-    security add-generic-password -a "$USER" -s "PADDLE_SANDBOX_API_KEY" -w "your-sandbox-key"
-    ```
+   ```sh
+   security add-generic-password -a "$USER" -s "PADDLE_LIVE_API_KEY" -w "your-live-key"
+   security add-generic-password -a "$USER" -s "PADDLE_SANDBOX_API_KEY" -w "your-sandbox-key"
+   ```
 
 See the Paddle generic tooling doc for API recipes.
 
@@ -229,10 +229,10 @@ service token.
 
 1. Go to https://one.dash.cloudflare.com → **Access** → **Service Auth** → **Create Service Token**
 2. Add both values to macOS Keychain:
-    ```sh
-    security add-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_ID_EXPIRES_2027_03_22" -w "your-client-id"
-    security add-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_SECRET_EXPIRES_2027_03_22" -w "your-client-secret"
-    ```
+   ```sh
+   security add-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_ID_EXPIRES_2027_03_22" -w "your-client-id"
+   security add-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_SECRET_EXPIRES_2027_03_22" -w "your-client-secret"
+   ```
 
 The token expires 2027-03-22. See [analytics-dashboard.md](docs/tooling/analytics-dashboard.md) for usage.
 
@@ -243,9 +243,9 @@ server.
 
 1. Go to https://dashboard.ngrok.com → **Your Authtoken** (or **API** → **API Keys** for the API key)
 2. Add to macOS Keychain:
-    ```sh
-    security add-generic-password -a "$USER" -s "NGROK_API_KEY" -w "your-api-key"
-    ```
+   ```sh
+   security add-generic-password -a "$USER" -s "NGROK_API_KEY" -w "your-api-key"
+   ```
 
 See the ngrok generic tooling doc for API recipes.
 
@@ -265,10 +265,10 @@ To set one up:
 2. Select **macOS** and **ARM64**
 3. Follow GitHub's instructions to download, configure, and register the runner, and run it to test it works.
 4. Quit it, then install it as a launchd service so it starts on boot:
-    ```bash
-    ./svc.sh install
-    ./svc.sh start
-    ```
+   ```bash
+   ./svc.sh install
+   ./svc.sh start
+   ```
 5. Make sure the runner has all build dependencies: Rust (`rustup`), Node, pnpm, Go (all via `mise install`), and Xcode
    CLI tools. You need these to build the app anyway.
 6. Prevent sleep in **System Settings → Energy** so the runner stays available during releases.

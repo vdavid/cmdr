@@ -2,222 +2,200 @@
 
 /* Self-hosted Inter font - eliminates Google Fonts round-trips for faster FCP */
 @font-face {
-    font-family: 'Inter';
-    font-style: normal;
-    font-weight: 100 900;
-    font-display: swap;
-    src: url('/fonts/inter-latin-variable.woff2') format('woff2');
-    unicode-range:
-        U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F,
-        U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin-variable.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
+    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 /* CSS-first Tailwind v4 configuration */
 @theme {
-    /* Colors - Warm dark palette */
-    --color-background: #14130f;
-    --color-surface: #1a1917;
-    --color-surface-elevated: #222120;
-    --color-border: #2e2d2a;
-    --color-border-subtle: #24231f;
+  /* Colors - Warm dark palette */
+  --color-background: #14130f;
+  --color-surface: #1a1917;
+  --color-surface-elevated: #222120;
+  --color-border: #2e2d2a;
+  --color-border-subtle: #24231f;
 
-    --color-text-primary: #fafafa;
-    --color-text-secondary: #a1a1aa;
-    --color-text-tertiary: #9e9ea8;
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-tertiary: #9e9ea8;
 
-    /* Accent - mustard yellow (use dark text on buttons for accessibility) */
-    --color-accent: #ffc206;
-    --color-accent-hover: #ffd23f;
-    --color-accent-text: #ffc206;
-    --color-accent-glow: rgba(255, 194, 6, 0.4);
-    --color-accent-contrast: #14130f;
+  /* Accent - mustard yellow (use dark text on buttons for accessibility) */
+  --color-accent: #ffc206;
+  --color-accent-hover: #ffd23f;
+  --color-accent-text: #ffc206;
+  --color-accent-glow: rgba(255, 194, 6, 0.4);
+  --color-accent-contrast: #14130f;
 
-    /* Semantic colors */
-    --color-warning: #ff4d6d;
+  /* Semantic colors */
+  --color-warning: #ff4d6d;
 
-    /* Fonts - Inter is self-hosted, monospace falls back to system */
-    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-    --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+  /* Fonts - Inter is self-hosted, monospace falls back to system */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
 
-    /* Spacing */
-    --spacing-section: 8rem;
+  /* Spacing */
+  --spacing-section: 8rem;
 
-    /* Animation */
-    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-    --duration-normal: 300ms;
-    --duration-slow: 500ms;
+  /* Animation */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
 }
 
 /* Global styles */
 html {
-    scroll-behavior: smooth;
+  scroll-behavior: smooth;
 }
 
 body {
-    background-color: var(--color-background);
-    color: var(--color-text-primary);
-    font-family: var(--font-sans) sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans) sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 /* Hide newsletter elements before JS hydration if user already subscribed/dismissed */
 .newsletter-hidden [data-newsletter-nav] {
-    display: none;
+  display: none;
 }
 
 /* Selection */
 ::selection {
-    background-color: var(--color-accent);
-    color: var(--color-accent-contrast);
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
 }
 
 /* Gradient text utility */
 .gradient-text {
-    background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+  background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 @media (prefers-color-scheme: light) {
-    :root:not([data-theme='dark']) .gradient-text {
-        background: linear-gradient(135deg, #1a1917 0%, #5c5c66 100%);
-        -webkit-background-clip: text;
-        background-clip: text;
-    }
-}
-
-:root[data-theme='light'] .gradient-text {
+  :root:not([data-theme='dark']) .gradient-text {
     background: linear-gradient(135deg, #1a1917 0%, #5c5c66 100%);
     -webkit-background-clip: text;
     background-clip: text;
+  }
+}
+
+:root[data-theme='light'] .gradient-text {
+  background: linear-gradient(135deg, #1a1917 0%, #5c5c66 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 /* Shiki dual theme: default to dark, switch to light via prefers-color-scheme or data-theme.
    Blog code blocks override this to stay dark (see blog-prose.css). */
 .astro-code,
 .astro-code span {
-    color: var(--shiki-dark) !important;
-    background-color: var(--shiki-dark-bg) !important;
-    font-style: var(--shiki-dark-font-style) !important;
-    font-weight: var(--shiki-dark-font-weight) !important;
-    text-decoration: var(--shiki-dark-text-decoration) !important;
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
 }
 
 @media (prefers-color-scheme: light) {
-    :root:not([data-theme='dark']) .astro-code,
-    :root:not([data-theme='dark']) .astro-code span {
-        color: var(--shiki-light) !important;
-        background-color: var(--shiki-light-bg) !important;
-        font-style: var(--shiki-light-font-style) !important;
-        font-weight: var(--shiki-light-font-weight) !important;
-        text-decoration: var(--shiki-light-text-decoration) !important;
-    }
-}
-
-:root[data-theme='light'] .astro-code,
-:root[data-theme='light'] .astro-code span {
+  :root:not([data-theme='dark']) .astro-code,
+  :root:not([data-theme='dark']) .astro-code span {
     color: var(--shiki-light) !important;
     background-color: var(--shiki-light-bg) !important;
     font-style: var(--shiki-light-font-style) !important;
     font-weight: var(--shiki-light-font-weight) !important;
     text-decoration: var(--shiki-light-text-decoration) !important;
+  }
+}
+
+:root[data-theme='light'] .astro-code,
+:root[data-theme='light'] .astro-code span {
+  color: var(--shiki-light) !important;
+  background-color: var(--shiki-light-bg) !important;
+  font-style: var(--shiki-light-font-style) !important;
+  font-weight: var(--shiki-light-font-weight) !important;
+  text-decoration: var(--shiki-light-text-decoration) !important;
 }
 
 /* Glow effect */
 .glow {
-    box-shadow: 0 0 40px var(--color-accent-glow);
-    transition: box-shadow var(--duration-normal);
+  box-shadow: 0 0 40px var(--color-accent-glow);
+  transition: box-shadow var(--duration-normal);
 }
 
 .glow:hover {
-    box-shadow:
-        0 0 60px var(--color-accent-glow),
-        0 0 20px var(--color-accent-glow);
+  box-shadow:
+    0 0 60px var(--color-accent-glow),
+    0 0 20px var(--color-accent-glow);
 }
 
 /* Fade in animation - GPU optimized to avoid layout shifts */
 @keyframes fade-in-up {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in-up {
-    animation: fade-in-up var(--duration-slow) var(--ease-out-expo) forwards;
-    will-change: opacity, transform;
-    contain: layout style;
+  animation: fade-in-up var(--duration-slow) var(--ease-out-expo) forwards;
+  will-change: opacity, transform;
+  contain: layout style;
 }
 
 /* Blur in animation - Modern entrance */
 @keyframes blur-in {
-    from {
-        opacity: 0;
-        filter: blur(10px);
-        transform: translateY(10px);
-    }
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(10px);
+  }
 
-    to {
-        opacity: 1;
-        filter: blur(0);
-        transform: translateY(0);
-    }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
 }
 
 .animate-blur-in {
-    animation: blur-in 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: blur-in 1s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Stagger delays */
 .delay-100 {
-    animation-delay: 100ms;
+  animation-delay: 100ms;
 }
 
 .delay-200 {
-    animation-delay: 200ms;
+  animation-delay: 200ms;
 }
 
 .delay-300 {
-    animation-delay: 300ms;
+  animation-delay: 300ms;
 }
 
 .delay-400 {
-    animation-delay: 400ms;
+  animation-delay: 400ms;
 }
 
 /* Light mode tokens — system preference fallback (no explicit theme set) */
 @media (prefers-color-scheme: light) {
-    :root:not([data-theme='dark']) {
-        --color-background: #fafaf8;
-        --color-surface: #f3f1ea;
-        --color-surface-elevated: #eae7df;
-        --color-border: #d9d5cb;
-        --color-border-subtle: #e4e0d7;
-
-        --color-text-primary: #1a1917;
-        --color-text-secondary: #56554e;
-        --color-text-tertiary: #6b6a63;
-
-        --color-accent: #f0b400;
-        --color-accent-hover: #dca400;
-        --color-accent-text: #866400;
-        --color-accent-glow: rgba(240, 180, 0, 0.4);
-        --color-accent-contrast: #14130f;
-
-        --color-warning: #d4365c;
-    }
-}
-
-/* Light mode tokens — explicit toggle override */
-:root[data-theme='light'] {
+  :root:not([data-theme='dark']) {
     --color-background: #fafaf8;
     --color-surface: #f3f1ea;
     --color-surface-elevated: #eae7df;
@@ -235,17 +213,39 @@ body {
     --color-accent-contrast: #14130f;
 
     --color-warning: #d4365c;
+  }
+}
+
+/* Light mode tokens — explicit toggle override */
+:root[data-theme='light'] {
+  --color-background: #fafaf8;
+  --color-surface: #f3f1ea;
+  --color-surface-elevated: #eae7df;
+  --color-border: #d9d5cb;
+  --color-border-subtle: #e4e0d7;
+
+  --color-text-primary: #1a1917;
+  --color-text-secondary: #56554e;
+  --color-text-tertiary: #6b6a63;
+
+  --color-accent: #f0b400;
+  --color-accent-hover: #dca400;
+  --color-accent-text: #866400;
+  --color-accent-glow: rgba(240, 180, 0, 0.4);
+  --color-accent-contrast: #14130f;
+
+  --color-warning: #d4365c;
 }
 
 /* Reduced motion: disable decorative hover scale effects, keep color transitions */
 @media (prefers-reduced-motion: reduce) {
-    html {
-        scroll-behavior: auto;
-    }
+  html {
+    scroll-behavior: auto;
+  }
 
-    .animate-fade-in-up {
-        animation: none;
-        opacity: 1;
-        transform: none;
-    }
+  .animate-fade-in-up {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }

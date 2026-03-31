@@ -40,10 +40,10 @@ Native is simpler and faster than cross-compilation.
 The Linux matrix entry needs different setup than macOS (no signing/notarization, different system deps):
 
 1. **System dependencies** — same as CI already uses:
-    ```bash
-    sudo apt-get update
-    sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev
-    ```
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev
+   ```
 2. **Checkout, mise, pnpm install, svelte-kit sync** — identical to macOS.
 3. **No Apple certificate / notarization steps** — skip via `if: matrix.platform == 'macos'` conditions on those steps.
 4. **Build with tauri-action** — same as macOS entries, just `--target ${{ matrix.target }}`. Override `bundle.targets`
@@ -114,12 +114,12 @@ Changes needed:
 
 ```ts
 export const appImageUrls = {
-    x86_64: `${base}/Cmdr_${version}_amd64.AppImage`,
-    aarch64: `${base}/Cmdr_${version}_arm64.AppImage`,
+  x86_64: `${base}/Cmdr_${version}_amd64.AppImage`,
+  aarch64: `${base}/Cmdr_${version}_arm64.AppImage`,
 }
 export const debUrls = {
-    x86_64: `${base}/cmdr_${version}_amd64.deb`,
-    aarch64: `${base}/cmdr_${version}_arm64.deb`,
+  x86_64: `${base}/cmdr_${version}_amd64.deb`,
+  aarch64: `${base}/cmdr_${version}_arm64.deb`,
 }
 ```
 
@@ -127,12 +127,12 @@ Add `appImageSizes` alongside `dmgSizes`, reading from `latest.json`:
 
 ```ts
 export const appImageSizes =
-    rawSizes.appImageSizes.x86_64 > 0
-        ? {
-              x86_64: formatBytes(rawSizes.appImageSizes.x86_64),
-              aarch64: formatBytes(rawSizes.appImageSizes.aarch64),
-          }
-        : null
+  rawSizes.appImageSizes.x86_64 > 0
+    ? {
+        x86_64: formatBytes(rawSizes.appImageSizes.x86_64),
+        aarch64: formatBytes(rawSizes.appImageSizes.aarch64),
+      }
+    : null
 ```
 
 Extend `latest.json` schema: add `appImageSizes: { x86_64: 0, aarch64: 0 }` next to `dmgSizes` so the publish job can
@@ -151,9 +151,9 @@ OS detection fallback chain (from most to least reliable):
 
 ```js
 var isLinux =
-    (navigator.userAgentData && navigator.userAgentData.platform === 'Linux') ||
-    /Linux/.test(navigator.platform) ||
-    /Linux/.test(navigator.userAgent)
+  (navigator.userAgentData && navigator.userAgentData.platform === 'Linux') ||
+  /Linux/.test(navigator.platform) ||
+  /Linux/.test(navigator.userAgent)
 ```
 
 When Linux is detected:
@@ -176,13 +176,13 @@ All download `<a>` tags that currently have `data-download-link` get one more at
 
 ```html
 <a
-    href="{dmgUrls.universal}"
-    data-download-link
-    data-dmg-arm="{dmgUrls.aarch64}"
-    data-dmg-intel="{dmgUrls.x86_64}"
-    data-linux-appimage-x86_64="{appImageUrls.x86_64}"
-    data-linux-appimage-aarch64="{appImageUrls.aarch64}"
-    ...
+  href="{dmgUrls.universal}"
+  data-download-link
+  data-dmg-arm="{dmgUrls.aarch64}"
+  data-dmg-intel="{dmgUrls.x86_64}"
+  data-linux-appimage-x86_64="{appImageUrls.x86_64}"
+  data-linux-appimage-aarch64="{appImageUrls.aarch64}"
+  ...
 ></a>
 ```
 
@@ -291,14 +291,14 @@ that passes E2E tests is the one that gets bundled.
 ## Verification
 
 1. **CI**: Push a test tag (for example, `v0.6.0-rc.1`) and verify:
-    - Two AppImages and two .debs (x86_64 + aarch64) appear on the GitHub release alongside the three DMGs
-    - `latest.json` has both `linux-x86_64` and `linux-aarch64` platform entries with valid signatures
-    - Both updater artifacts are present
+   - Two AppImages and two .debs (x86_64 + aarch64) appear on the GitHub release alongside the three DMGs
+   - `latest.json` has both `linux-x86_64` and `linux-aarch64` platform entries with valid signatures
+   - Both updater artifacts are present
 2. **Website**: `pnpm dev` in `apps/website/`, override `navigator.platform` in DevTools to `Linux x86_64`:
-    - Download buttons swap to AppImage links
-    - Download.astro shows the Linux card with x86_64 as default
-    - The "Also available for macOS" link is visible
-    - Switch back to macOS UA — verify macOS card shows as before, with "Also available for Linux" link
+   - Download buttons swap to AppImage links
+   - Download.astro shows the Linux card with x86_64 as default
+   - The "Also available for macOS" link is visible
+   - Switch back to macOS UA — verify macOS card shows as before, with "Also available for Linux" link
 3. **Updater**: Install from the AppImage on a Linux machine (or VM), verify it picks up the correct `linux-*` entry
    from `latest.json`. Confirm the platform key the Tauri updater requests matches exactly what `latest.json` provides
    (check updater logs)

@@ -8,9 +8,9 @@ The website (getcmdr.com) is automatically deployed when changes are pushed to t
 2. GitHub Actions runs the `website` job (Prettier, ESLint, typecheck, build, Playwright, Lighthouse)
 3. If all checks pass, the `deploy-website` job sends a webhook to the server
 4. The server verifies the signature and runs the deploy script:
-    - Pulls the latest code
-    - Rebuilds the Docker image
-    - Restarts the container
+   - Pulls the latest code
+   - Rebuilds the Docker image
+   - Restarts the container
 
 ## Server setup (one-time)
 

@@ -15,7 +15,7 @@ const PADDLE_PRICE_ID = process.env.PADDLE_PRICE_ID
 
 // Validate inputs
 if (!PADDLE_CLIENT_TOKEN || !PADDLE_PRICE_ID) {
-    console.error(`
+  console.error(`
 ╭──────────────────────────────────────────────────────────╮
 │  Missing required environment variables                  │
 ├──────────────────────────────────────────────────────────┤
@@ -35,12 +35,12 @@ if (!PADDLE_CLIENT_TOKEN || !PADDLE_PRICE_ID) {
 │  pnpm test:checkout                                      │
 ╰──────────────────────────────────────────────────────────╯
 `)
-    process.exit(1)
+  process.exit(1)
 }
 
 // Enforce sandbox-only
 if (!PADDLE_CLIENT_TOKEN.startsWith('test_')) {
-    console.error(`
+  console.error(`
 ╭──────────────────────────────────────────────────────────╮
 │  ERROR: This tester only works with sandbox tokens       │
 ├──────────────────────────────────────────────────────────┤
@@ -52,7 +52,7 @@ if (!PADDLE_CLIENT_TOKEN.startsWith('test_')) {
 │                                                          │
 ╰──────────────────────────────────────────────────────────╯
 `)
-    process.exit(1)
+  process.exit(1)
 }
 
 const html = readFileSync(join(__dirname, 'checkout.html'), 'utf-8')
@@ -69,12 +69,12 @@ const configScript = `<script>
 const injectedHtml = html.replace('</head>', `${configScript}\n</head>`)
 
 const server = createServer((req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/html' })
-    res.end(injectedHtml)
+  res.writeHead(200, { 'Content-Type': 'text/html' })
+  res.end(injectedHtml)
 })
 
 server.listen(PORT, () => {
-    console.log(`
+  console.log(`
 ╭───────────────────────────────────────────────────────────────────╮
 │  Paddle Checkout Test Server (SANDBOX ONLY)                       │
 ├───────────────────────────────────────────────────────────────────┤

@@ -98,7 +98,7 @@ instead:**
 
 ```typescript
 async function jsClick(element: WebdriverIO.Element): Promise<void> {
-    await browser.execute((el: HTMLElement) => el.click(), element as unknown as HTMLElement)
+  await browser.execute((el: HTMLElement) => el.click(), element as unknown as HTMLElement)
 }
 ```
 
@@ -118,8 +118,8 @@ runner or VM). **Dispatch on `.dual-pane-explorer`** (where `onkeydown` is bound
 
 ```typescript
 await browser.execute(() => {
-    const container = document.querySelector('.dual-pane-explorer') as HTMLElement | null
-    container?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }))
+  const container = document.querySelector('.dual-pane-explorer') as HTMLElement | null
+  container?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }))
 })
 ```
 

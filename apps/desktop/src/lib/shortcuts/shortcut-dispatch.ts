@@ -19,44 +19,44 @@ let unsubscribe: (() => void) | null = null
  * Tier 1 = showInPalette OR in the always-dispatch list.
  */
 function isTier1(command: { id: string; showInPalette: boolean }): boolean {
-    return command.showInPalette || ALWAYS_DISPATCH_IDS.has(command.id)
+  return command.showInPalette || ALWAYS_DISPATCH_IDS.has(command.id)
 }
 
 /** Build the reverse lookup map from scratch. */
 function buildShortcutMap(): Map<string, string> {
-    const map = new Map<string, string>()
+  const map = new Map<string, string>()
 
-    for (const command of commands) {
-        if (!isTier1(command)) continue
+  for (const command of commands) {
+    if (!isTier1(command)) continue
 
-        const shortcuts = getEffectiveShortcuts(command.id)
-        for (const shortcut of shortcuts) {
-            // First match wins — skip if shortcut already claimed
-            if (!map.has(shortcut)) {
-                map.set(shortcut, command.id)
-            }
-        }
+    const shortcuts = getEffectiveShortcuts(command.id)
+    for (const shortcut of shortcuts) {
+      // First match wins — skip if shortcut already claimed
+      if (!map.has(shortcut)) {
+        map.set(shortcut, command.id)
+      }
     }
+  }
 
-    return map
+  return map
 }
 
 /** Look up which command ID a shortcut string maps to, if any. */
 export function lookupCommand(shortcutString: string): string | undefined {
-    return shortcutMap.get(shortcutString)
+  return shortcutMap.get(shortcutString)
 }
 
 /** Initialize the dispatch map and subscribe to shortcut changes. */
 export function initShortcutDispatch(): void {
+  shortcutMap = buildShortcutMap()
+  unsubscribe = onShortcutChange(() => {
     shortcutMap = buildShortcutMap()
-    unsubscribe = onShortcutChange(() => {
-        shortcutMap = buildShortcutMap()
-    })
+  })
 }
 
 /** Tear down: unsubscribe from shortcut changes and clear the map. */
 export function destroyShortcutDispatch(): void {
-    unsubscribe?.()
-    unsubscribe = null
-    shortcutMap = new Map()
+  unsubscribe?.()
+  unsubscribe = null
+  shortcutMap = new Map()
 }

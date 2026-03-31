@@ -18,14 +18,13 @@
 - When shortcuts are available for a feature, always display the shortcut in a tooltip or somewhere less prominent than
   the main UI.
 - For longer processes:
-    1. Always run the process in the background. Blocking the UI or other actions is an absolute no-go.
-    2. Show some anim to communicate that the app is doing something.
-    3. If we know what the end state looks like and we can quantify the progress, show a progress bar and counter.
-    4. If we have a guess how long the operation will take, show an ETA.
-    5. Progress bars staying longer at 100% than at 99% or any other percentage is NOT allowed. If we're done with the
-       part of an operation that we could quantify and displayed a progress bar for it but we have something else to do
-       (e.g. we loaded the data and now we're making calculations on the data), then it's a new state, show another
-       state!
+  1. Always run the process in the background. Blocking the UI or other actions is an absolute no-go.
+  2. Show some anim to communicate that the app is doing something.
+  3. If we know what the end state looks like and we can quantify the progress, show a progress bar and counter.
+  4. If we have a guess how long the operation will take, show an ETA.
+  5. Progress bars staying longer at 100% than at 99% or any other percentage is NOT allowed. If we're done with the
+     part of an operation that we could quantify and displayed a progress bar for it but we have something else to do
+     (e.g. we loaded the data and now we're making calculations on the data), then it's a new state, show another state!
 - All actions longer than ~1 second should be immediately cancelable, canceling not just the UI but any background
   processes as well, to avoid wasting the user's resources. If rolling back is an option, we should consider that too.
 - Always keep accessibility in mind. Features should be available to people with impaired vision, hearing, and cognitive

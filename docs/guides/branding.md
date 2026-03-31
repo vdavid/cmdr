@@ -82,8 +82,8 @@ The two signature colors are **mustard yellow** (`#ffc206`) and **near-black** (
 ### Website
 
 - **Sans-serif:** Inter (self-hosted, variable weight 100-900)
-    - Font file: `apps/website/public/fonts/inter-latin-variable.woff2`
-    - Fallback stack: `'Inter', system-ui, -apple-system, sans-serif`
+  - Font file: `apps/website/public/fonts/inter-latin-variable.woff2`
+  - Fallback stack: `'Inter', system-ui, -apple-system, sans-serif`
 - **Monospace:** `ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace`
 
 ### Desktop app

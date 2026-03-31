@@ -2,8 +2,8 @@
 title: Kindle read/write support
 date: 2026-03-24
 description:
-    Kindles weren't detected as MTP devices. Fixed it in mtp-rs (the pure-Rust MTP library powering Cmdr's phone and
-    e-reader support), shipping in Cmdr v0.9.1.
+  Kindles weren't detected as MTP devices. Fixed it in mtp-rs (the pure-Rust MTP library powering Cmdr's phone and
+  e-reader support), shipping in Cmdr v0.9.1.
 ---
 
 Cmdr can browse Android phones and e-readers over USB via [MTP](https://github.com/vdavid/mtp-v1_1-spec-md). But Kindles

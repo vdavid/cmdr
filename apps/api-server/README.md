@@ -29,24 +29,24 @@ in [CLAUDE.md](CLAUDE.md).
    (adds DNS records to Cloudflare automatically).
 5. **Paddle**: Create accounts at https://paddle.com (live) and https://sandbox-vendors.paddle.com (sandbox).
 6. **Paddle (both environments)**: Create product "Cmdr" (standard tax category), then two prices:
-    - Commercial subscription: $59/year
-    - Commercial perpetual: $199, one-time
+   - Commercial subscription: $59/year
+   - Commercial perpetual: $199, one-time
 7. **Paddle (both environments)**: Create notification destination → webhook URL, subscribe to `transaction.completed`.
-    - Sandbox: `https://unsickerly-acclivitous-lala.ngrok-free.dev/webhook/paddle` (for local dev via ngrok)
-    - Live: `https://api.getcmdr.com/webhook/paddle`
+   - Sandbox: `https://unsickerly-acclivitous-lala.ngrok-free.dev/webhook/paddle` (for local dev via ngrok)
+   - Live: `https://api.getcmdr.com/webhook/paddle`
 8. **Cloudflare**: Set `CLOUDFLARE_API_TOKEN` — see [cloudflare.md](../../docs/tooling/cloudflare.md#api-token).
 9. **Wrangler secrets** (deployed worker — live values):
-    ```
-    npx wrangler secret put PADDLE_WEBHOOK_SECRET_LIVE
-    npx wrangler secret put PADDLE_WEBHOOK_SECRET_SANDBOX
-    npx wrangler secret put PADDLE_API_KEY_LIVE
-    npx wrangler secret put PADDLE_API_KEY_SANDBOX
-    npx wrangler secret put ED25519_PRIVATE_KEY
-    npx wrangler secret put RESEND_API_KEY
-    npx wrangler secret put PADDLE_ENVIRONMENT              # "live"
-    npx wrangler secret put PRICE_ID_COMMERCIAL_SUBSCRIPTION # live price ID
-    npx wrangler secret put PRICE_ID_COMMERCIAL_PERPETUAL   # live price ID
-    ```
+   ```
+   npx wrangler secret put PADDLE_WEBHOOK_SECRET_LIVE
+   npx wrangler secret put PADDLE_WEBHOOK_SECRET_SANDBOX
+   npx wrangler secret put PADDLE_API_KEY_LIVE
+   npx wrangler secret put PADDLE_API_KEY_SANDBOX
+   npx wrangler secret put ED25519_PRIVATE_KEY
+   npx wrangler secret put RESEND_API_KEY
+   npx wrangler secret put PADDLE_ENVIRONMENT              # "live"
+   npx wrangler secret put PRICE_ID_COMMERCIAL_SUBSCRIPTION # live price ID
+   npx wrangler secret put PRICE_ID_COMMERCIAL_PERPETUAL   # live price ID
+   ```
 10. **`.dev.vars`** (local dev — sandbox values): see [CLAUDE.md](CLAUDE.md#configuration) for the full table.
 11. Save `keys/private.key` in a secure store, then delete it from the filesystem.
 12. Deploy: `cd apps/api-server && npx wrangler deploy`

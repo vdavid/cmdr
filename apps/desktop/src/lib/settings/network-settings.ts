@@ -7,9 +7,9 @@ import { getSetting } from './settings-store'
 
 // Timeout values in milliseconds for each mode
 const timeoutModeToMs = {
-    normal: 15_000, // 15 seconds
-    slow: 45_000, // 45 seconds
-    custom: 15_000, // Will be overridden by customTimeout
+  normal: 15_000, // 15 seconds
+  slow: 45_000, // 45 seconds
+  custom: 15_000, // Will be overridden by customTimeout
 } as const
 
 /**
@@ -19,15 +19,15 @@ const timeoutModeToMs = {
  * For 'custom' mode: uses the customTimeout setting
  */
 export function getNetworkTimeoutMs(): number {
-    const mode = getSetting('network.timeoutMode')
+  const mode = getSetting('network.timeoutMode')
 
-    if (mode === 'custom') {
-        // customTimeout is in seconds, convert to ms
-        const customTimeoutSec = getSetting('network.customTimeout')
-        return customTimeoutSec * 1000
-    }
+  if (mode === 'custom') {
+    // customTimeout is in seconds, convert to ms
+    const customTimeoutSec = getSetting('network.customTimeout')
+    return customTimeoutSec * 1000
+  }
 
-    return timeoutModeToMs[mode]
+  return timeoutModeToMs[mode]
 }
 
 /**
@@ -35,7 +35,7 @@ export function getNetworkTimeoutMs(): number {
  * Uses the advanced.mountTimeout setting which is stored in milliseconds.
  */
 export function getMountTimeoutMs(): number {
-    return getSetting('advanced.mountTimeout')
+  return getSetting('advanced.mountTimeout')
 }
 
 /**
@@ -43,5 +43,5 @@ export function getMountTimeoutMs(): number {
  * Uses the network.shareCacheDuration setting which is stored in milliseconds.
  */
 export function getShareCacheTtlMs(): number {
-    return getSetting('network.shareCacheDuration')
+  return getSetting('network.shareCacheDuration')
 }

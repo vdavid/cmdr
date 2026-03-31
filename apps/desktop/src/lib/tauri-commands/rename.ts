@@ -3,33 +3,33 @@
 import { invoke } from '@tauri-apps/api/core'
 
 export interface RenameConflictFileInfo {
-    name: string
-    size: number
-    /** Unix timestamp in seconds, or null if unavailable. */
-    modified: number | null
-    isDirectory: boolean
+  name: string
+  size: number
+  /** Unix timestamp in seconds, or null if unavailable. */
+  modified: number | null
+  isDirectory: boolean
 }
 
 export interface RenameValidityResult {
-    valid: boolean
-    error: { type: string; message: string } | null
-    hasConflict: boolean
-    isCaseOnlyRename: boolean
-    conflict: RenameConflictFileInfo | null
+  valid: boolean
+  error: { type: string; message: string } | null
+  hasConflict: boolean
+  isCaseOnlyRename: boolean
+  conflict: RenameConflictFileInfo | null
 }
 
 export function checkRenamePermission(path: string): Promise<void> {
-    return invoke('check_rename_permission', { path })
+  return invoke('check_rename_permission', { path })
 }
 
 export function checkRenameValidity(dir: string, oldName: string, newName: string): Promise<RenameValidityResult> {
-    return invoke<RenameValidityResult>('check_rename_validity', { dir, oldName, newName })
+  return invoke<RenameValidityResult>('check_rename_validity', { dir, oldName, newName })
 }
 
 export function renameFile(from: string, to: string, force: boolean, volumeId?: string): Promise<void> {
-    return invoke('rename_file', { from, to, force, volumeId })
+  return invoke('rename_file', { from, to, force, volumeId })
 }
 
 export function moveToTrash(path: string): Promise<void> {
-    return invoke('move_to_trash', { path })
+  return invoke('move_to_trash', { path })
 }

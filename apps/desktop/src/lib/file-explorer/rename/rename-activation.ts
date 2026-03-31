@@ -12,24 +12,24 @@ const RENAME_DELAY_MS = 800
 const MOVE_THRESHOLD_PX = 10
 
 interface ClickToRenameState {
-    timer: ReturnType<typeof setTimeout> | null
-    startX: number
-    startY: number
-    moveHandler: ((e: MouseEvent) => void) | null
+  timer: ReturnType<typeof setTimeout> | null
+  startX: number
+  startY: number
+  moveHandler: ((e: MouseEvent) => void) | null
 }
 
 let current: ClickToRenameState | null = null
 
 /** Cancels any pending click-to-rename timer. Safe to call any time. */
 export function cancelClickToRename(): void {
-    if (!current) return
-    if (current.timer !== null) {
-        clearTimeout(current.timer)
-    }
-    if (current.moveHandler) {
-        document.removeEventListener('mousemove', current.moveHandler)
-    }
-    current = null
+  if (!current) return
+  if (current.timer !== null) {
+    clearTimeout(current.timer)
+  }
+  if (current.moveHandler) {
+    document.removeEventListener('mousemove', current.moveHandler)
+  }
+  current = null
 }
 
 /**
@@ -40,39 +40,39 @@ export function cancelClickToRename(): void {
  * under the cursor (not on first click to select).
  */
 export function startClickToRename(event: MouseEvent, onActivate: () => void): void {
-    // Cancel any existing timer
+  // Cancel any existing timer
+  cancelClickToRename()
+
+  const startX = event.clientX
+  const startY = event.clientY
+
+  const state: ClickToRenameState = {
+    timer: null,
+    startX,
+    startY,
+    moveHandler: null,
+  }
+
+  state.moveHandler = (e: MouseEvent) => {
+    const dx = e.clientX - startX
+    const dy = e.clientY - startY
+    if (Math.sqrt(dx * dx + dy * dy) > MOVE_THRESHOLD_PX) {
+      cancelClickToRename()
+    }
+  }
+
+  state.timer = setTimeout(() => {
+    // Timer fired — activate rename
     cancelClickToRename()
+    onActivate()
+  }, RENAME_DELAY_MS)
 
-    const startX = event.clientX
-    const startY = event.clientY
+  document.addEventListener('mousemove', state.moveHandler)
 
-    const state: ClickToRenameState = {
-        timer: null,
-        startX,
-        startY,
-        moveHandler: null,
-    }
-
-    state.moveHandler = (e: MouseEvent) => {
-        const dx = e.clientX - startX
-        const dy = e.clientY - startY
-        if (Math.sqrt(dx * dx + dy * dy) > MOVE_THRESHOLD_PX) {
-            cancelClickToRename()
-        }
-    }
-
-    state.timer = setTimeout(() => {
-        // Timer fired — activate rename
-        cancelClickToRename()
-        onActivate()
-    }, RENAME_DELAY_MS)
-
-    document.addEventListener('mousemove', state.moveHandler)
-
-    current = state
+  current = state
 }
 
 /** @public */
 export function isClickToRenamePending(): boolean {
-    return current !== null && current.timer !== null
+  return current !== null && current.timer !== null
 }

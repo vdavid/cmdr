@@ -3,10 +3,10 @@
 
 import { writable } from 'svelte/store'
 import {
-    getIcons,
-    refreshDirectoryIcons as refreshIconsCommand,
-    clearExtensionIconCache as clearExtensionIconCacheCommand,
-    clearDirectoryIconCache as clearDirectoryIconCacheCommand,
+  getIcons,
+  refreshDirectoryIcons as refreshIconsCommand,
+  clearExtensionIconCache as clearExtensionIconCacheCommand,
+  clearDirectoryIconCache as clearDirectoryIconCacheCommand,
 } from './tauri-commands'
 
 const STORAGE_KEY = 'cmdr-icon-cache'
@@ -36,52 +36,52 @@ export const iconCacheCleared = writable(0)
 
 /** Load persisted cache from localStorage */
 function loadFromStorage(): void {
-    try {
-        const stored = localStorage.getItem(STORAGE_KEY)
-        if (stored) {
-            const parsed = JSON.parse(stored) as Record<string, string>
-            for (const [id, url] of Object.entries(parsed)) {
-                memoryCache.set(id, url)
-            }
-        }
-    } catch {
-        // Ignore storage errors
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored) as Record<string, string>
+      for (const [id, url] of Object.entries(parsed)) {
+        memoryCache.set(id, url)
+      }
     }
+  } catch {
+    // Ignore storage errors
+  }
 }
 
 /** Persist cache to localStorage */
 function saveToStorage(): void {
-    try {
-        const obj: Record<string, string> = {}
-        for (const [id, url] of memoryCache) {
-            obj[id] = url
-        }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(obj))
-    } catch {
-        // Ignore storage errors
+  try {
+    const obj: Record<string, string> = {}
+    for (const [id, url] of memoryCache) {
+      obj[id] = url
     }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj))
+  } catch {
+    // Ignore storage errors
+  }
 }
 
 // Load on module init
 if (typeof localStorage !== 'undefined') {
-    loadFromStorage()
+  loadFromStorage()
 }
 
 /** Merges fetched icons into the cache, persists, and bumps the version counter. Returns true if any icons were added. */
 function applyIconsToCache(icons: Record<string, string>): boolean {
-    let changed = false
-    for (const [id, url] of Object.entries(icons)) {
-        const existing = memoryCache.get(id)
-        if (existing !== url) {
-            memoryCache.set(id, url)
-            changed = true
-        }
+  let changed = false
+  for (const [id, url] of Object.entries(icons)) {
+    const existing = memoryCache.get(id)
+    if (existing !== url) {
+      memoryCache.set(id, url)
+      changed = true
     }
-    if (changed) {
-        saveToStorage()
-        iconCacheVersion.update((v) => v + 1)
-    }
-    return changed
+  }
+  if (changed) {
+    saveToStorage()
+    iconCacheVersion.update((v) => v + 1)
+  }
+  return changed
 }
 
 /**
@@ -94,29 +94,29 @@ function applyIconsToCache(icons: Record<string, string>): boolean {
  * @param useAppIconsForDocuments - Whether to use app icons as fallback for documents
  */
 export async function prefetchIcons(iconIds: string[], useAppIconsForDocuments: boolean): Promise<void> {
-    const uncached = iconIds.filter((id) => !memoryCache.has(id))
-    if (uncached.length === 0) return
+  const uncached = iconIds.filter((id) => !memoryCache.has(id))
+  if (uncached.length === 0) return
 
-    // Cancel any pending retry — a new fetch supersedes it
-    clearTimeout(prefetchRetryTimer)
-    prefetchRetryTimer = undefined
+  // Cancel any pending retry — a new fetch supersedes it
+  clearTimeout(prefetchRetryTimer)
+  prefetchRetryTimer = undefined
 
-    // Deduplicate
-    const unique = [...new Set(uncached)]
-    const { data: icons, timedOut } = await getIcons(unique, useAppIconsForDocuments)
+  // Deduplicate
+  const unique = [...new Set(uncached)]
+  const { data: icons, timedOut } = await getIcons(unique, useAppIconsForDocuments)
 
-    applyIconsToCache(icons)
+  applyIconsToCache(icons)
 
-    if (timedOut) {
-        prefetchRetryTimer = setTimeout(() => {
-            prefetchRetryTimer = undefined
-            void getIcons(unique, useAppIconsForDocuments)
-                .then(({ data: retryIcons }) => applyIconsToCache(retryIcons))
-                .catch(() => {
-                    // Give up silently on retry failure
-                })
-        }, retryDelayMs)
-    }
+  if (timedOut) {
+    prefetchRetryTimer = setTimeout(() => {
+      prefetchRetryTimer = undefined
+      void getIcons(unique, useAppIconsForDocuments)
+        .then(({ data: retryIcons }) => applyIconsToCache(retryIcons))
+        .catch(() => {
+          // Give up silently on retry failure
+        })
+    }, retryDelayMs)
+  }
 }
 
 /**
@@ -124,7 +124,7 @@ export async function prefetchIcons(iconIds: string[], useAppIconsForDocuments: 
  * Returns undefined if not cached.
  */
 export function getCachedIcon(iconId: string): string | undefined {
-    return memoryCache.get(iconId)
+  return memoryCache.get(iconId)
 }
 
 /**
@@ -141,30 +141,30 @@ export function getCachedIcon(iconId: string): string | undefined {
  * @public
  */
 export async function refreshDirectoryIcons(
-    directoryPaths: string[],
-    extensions: string[],
-    useAppIconsForDocuments: boolean,
+  directoryPaths: string[],
+  extensions: string[],
+  useAppIconsForDocuments: boolean,
 ): Promise<void> {
-    if (directoryPaths.length === 0 && extensions.length === 0) return
+  if (directoryPaths.length === 0 && extensions.length === 0) return
 
-    // Cancel any pending retry — a new refresh supersedes it
-    clearTimeout(refreshRetryTimer)
-    refreshRetryTimer = undefined
+  // Cancel any pending retry — a new refresh supersedes it
+  clearTimeout(refreshRetryTimer)
+  refreshRetryTimer = undefined
 
-    const { data: icons, timedOut } = await refreshIconsCommand(directoryPaths, extensions, useAppIconsForDocuments)
+  const { data: icons, timedOut } = await refreshIconsCommand(directoryPaths, extensions, useAppIconsForDocuments)
 
-    applyIconsToCache(icons)
+  applyIconsToCache(icons)
 
-    if (timedOut) {
-        refreshRetryTimer = setTimeout(() => {
-            refreshRetryTimer = undefined
-            void refreshIconsCommand(directoryPaths, extensions, useAppIconsForDocuments)
-                .then(({ data: retryIcons }) => applyIconsToCache(retryIcons))
-                .catch(() => {
-                    // Give up silently on retry failure
-                })
-        }, retryDelayMs)
-    }
+  if (timedOut) {
+    refreshRetryTimer = setTimeout(() => {
+      refreshRetryTimer = undefined
+      void refreshIconsCommand(directoryPaths, extensions, useAppIconsForDocuments)
+        .then(({ data: retryIcons }) => applyIconsToCache(retryIcons))
+        .catch(() => {
+          // Give up silently on retry failure
+        })
+    }, retryDelayMs)
+  }
 }
 
 /**
@@ -173,32 +173,32 @@ export async function refreshDirectoryIcons(
  * After calling this, extension icons will be re-fetched with the new setting.
  */
 export async function clearExtensionIconCache(): Promise<void> {
-    // Cancel pending retries — old icon IDs are now invalidated
-    clearTimeout(prefetchRetryTimer)
-    prefetchRetryTimer = undefined
-    clearTimeout(refreshRetryTimer)
-    refreshRetryTimer = undefined
+  // Cancel pending retries — old icon IDs are now invalidated
+  clearTimeout(prefetchRetryTimer)
+  prefetchRetryTimer = undefined
+  clearTimeout(refreshRetryTimer)
+  refreshRetryTimer = undefined
 
-    // Clear backend cache
-    await clearExtensionIconCacheCommand()
+  // Clear backend cache
+  await clearExtensionIconCacheCommand()
 
-    // Clear frontend cache (extension icons only)
-    for (const key of memoryCache.keys()) {
-        if (key.startsWith('ext:')) {
-            memoryCache.delete(key)
-        }
+  // Clear frontend cache (extension icons only)
+  for (const key of memoryCache.keys()) {
+    if (key.startsWith('ext:')) {
+      memoryCache.delete(key)
     }
+  }
 
-    // Persist the change
-    saveToStorage()
+  // Persist the change
+  saveToStorage()
 
-    // Notify list components to re-fetch icons for visible files
-    // This must happen BEFORE incrementing iconCacheVersion so components
-    // can re-fetch before re-rendering with the cleared cache
-    iconCacheCleared.update((v) => v + 1)
+  // Notify list components to re-fetch icons for visible files
+  // This must happen BEFORE incrementing iconCacheVersion so components
+  // can re-fetch before re-rendering with the cleared cache
+  iconCacheCleared.update((v) => v + 1)
 
-    // Trigger reactive update so components re-fetch icons
-    iconCacheVersion.update((v) => v + 1)
+  // Trigger reactive update so components re-fetch icons
+  iconCacheVersion.update((v) => v + 1)
 }
 
 /**
@@ -207,21 +207,21 @@ export async function clearExtensionIconCache(): Promise<void> {
  * folder icons with the current accent color baked in.
  */
 export async function clearDirectoryIconCache(): Promise<void> {
-    // Cancel pending retries — old icon IDs are now invalidated
-    clearTimeout(prefetchRetryTimer)
-    prefetchRetryTimer = undefined
-    clearTimeout(refreshRetryTimer)
-    refreshRetryTimer = undefined
+  // Cancel pending retries — old icon IDs are now invalidated
+  clearTimeout(prefetchRetryTimer)
+  prefetchRetryTimer = undefined
+  clearTimeout(refreshRetryTimer)
+  refreshRetryTimer = undefined
 
-    await clearDirectoryIconCacheCommand()
+  await clearDirectoryIconCacheCommand()
 
-    for (const key of memoryCache.keys()) {
-        if (key === 'dir' || key === 'symlink-dir' || key.startsWith('path:')) {
-            memoryCache.delete(key)
-        }
+  for (const key of memoryCache.keys()) {
+    if (key === 'dir' || key === 'symlink-dir' || key.startsWith('path:')) {
+      memoryCache.delete(key)
     }
+  }
 
-    saveToStorage()
-    iconCacheCleared.update((v) => v + 1)
-    iconCacheVersion.update((v) => v + 1)
+  saveToStorage()
+  iconCacheCleared.update((v) => v + 1)
+  iconCacheVersion.update((v) => v + 1)
 }

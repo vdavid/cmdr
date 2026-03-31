@@ -218,8 +218,8 @@ many/few results, wrong filters. Error = regex/parse failure. MCP fail = timeout
 ### What's still imperfect
 
 - **Keyword/type confusion.** LLMs sometimes put the file format as a keyword alongside the type (e.g., `keywords: heic`
-    - `type: photos`). The redundant-keyword safety net in `merge_keyword_and_type` handles known extensions, and prompt
-      rules reduce the frequency, but novel combinations may still slip through.
+  - `type: photos`). The redundant-keyword safety net in `merge_keyword_and_type` handles known extensions, and prompt
+    rules reduce the frequency, but novel combinations may still slip through.
 - **Exclude reliability on local models.** The 2B model sometimes ignores "not in X" and omits the `exclude` field.
   Cloud models handle this reliably with the strengthened prompt rules.
 - **Synonym expansion.** Cloud models expand "kubernetes" to include k8s/kube/helm in keywords. Local models return only

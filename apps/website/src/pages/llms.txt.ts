@@ -3,15 +3,15 @@ import { getCollection } from 'astro:content'
 import { version, dmgUrls } from '../lib/release'
 
 export async function GET(context: APIContext) {
-    const site = context.site!.origin
-    const posts = await getCollection('blog')
-    const sortedPosts = posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  const site = context.site!.origin
+  const posts = await getCollection('blog')
+  const sortedPosts = posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
 
-    const blogLines = sortedPosts
-        .map((post) => `- [${post.data.title}](${site}/blog/${post.id}/): ${post.data.description}`)
-        .join('\n')
+  const blogLines = sortedPosts
+    .map((post) => `- [${post.data.title}](${site}/blog/${post.id}/): ${post.data.description}`)
+    .join('\n')
 
-    const body = `# Cmdr
+  const body = `# Cmdr
 
 > The fastest two-pane file manager for macOS. Every folder sized. Every file found.
 
@@ -59,7 +59,7 @@ BSL 1.1 (source-available). Converts to AGPL-3.0 after three years.
 ${blogLines}
 `
 
-    return new Response(body, {
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    })
+  return new Response(body, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  })
 }

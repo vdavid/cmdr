@@ -13,8 +13,8 @@ import { searchCommands } from '$lib/commands/fuzzy-search'
 // ============================================================================
 
 const fuzzy = new uFuzzy({
-    intraMode: 1, // Fuzzy matching within words (catches typos)
-    interIns: 3, // Max 3 insertions between matched characters
+  intraMode: 1, // Fuzzy matching within words (catches typos)
+  interIns: 3, // Max 3 insertions between matched characters
 })
 
 // ============================================================================
@@ -22,8 +22,8 @@ const fuzzy = new uFuzzy({
 // ============================================================================
 
 interface SearchIndexEntry {
-    setting: SettingDefinition
-    searchableText: string
+  setting: SettingDefinition
+  searchableText: string
 }
 
 let searchIndex: SearchIndexEntry[] | null = null
@@ -33,16 +33,16 @@ let searchIndex: SearchIndexEntry[] | null = null
  * Lazily initialized on first search.
  */
 function buildSearchIndex(): SearchIndexEntry[] {
-    if (searchIndex) return searchIndex
+  if (searchIndex) return searchIndex
 
-    searchIndex = settingsRegistry
-        .filter((s) => !s.showInAdvanced) // Advanced settings are searched separately
-        .map((setting) => ({
-            setting,
-            searchableText: buildSearchableText(setting),
-        }))
+  searchIndex = settingsRegistry
+    .filter((s) => !s.showInAdvanced) // Advanced settings are searched separately
+    .map((setting) => ({
+      setting,
+      searchableText: buildSearchableText(setting),
+    }))
 
-    return searchIndex
+  return searchIndex
 }
 
 /**
@@ -53,8 +53,8 @@ function buildSearchIndex(): SearchIndexEntry[] {
  * - Keywords
  */
 function buildSearchableText(setting: SettingDefinition): string {
-    const parts = [setting.section.join(' › '), setting.label, setting.description, ...setting.keywords]
-    return parts.join(' ').toLowerCase()
+  const parts = [setting.section.join(' › '), setting.label, setting.description, ...setting.keywords]
+  return parts.join(' ').toLowerCase()
 }
 
 // ============================================================================
@@ -66,115 +66,115 @@ function buildSearchableText(setting: SettingDefinition): string {
  * Returns settings that match the query with match indices for highlighting.
  */
 export function searchSettings(query: string): SettingSearchResult[] {
-    const index = buildSearchIndex()
+  const index = buildSearchIndex()
 
-    // Empty query returns all settings
-    if (!query.trim()) {
-        return index.map((entry) => ({
-            setting: entry.setting,
-            matchedIndices: [],
-            searchableText: entry.searchableText,
-        }))
-    }
+  // Empty query returns all settings
+  if (!query.trim()) {
+    return index.map((entry) => ({
+      setting: entry.setting,
+      matchedIndices: [],
+      searchableText: entry.searchableText,
+    }))
+  }
 
-    const haystack = index.map((e) => e.searchableText)
-    const results = fuzzy.search(haystack, query.toLowerCase())
+  const haystack = index.map((e) => e.searchableText)
+  const results = fuzzy.search(haystack, query.toLowerCase())
 
-    // uFuzzy can return null/undefined in some edge cases
+  // uFuzzy can return null/undefined in some edge cases
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (!results?.[0]) {
+    return []
+  }
+
+  const [matchedIndices, info, order] = results
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (!order || !info) {
+    return []
+  }
+
+  // Build results with match information
+  return order.map((idx) => {
+    const entry = index[matchedIndices[idx]]
+    const ranges = info.ranges[idx]
+
+    // Convert ranges to individual character indices
+    const indices: number[] = []
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (!results?.[0]) {
-        return []
+    if (ranges) {
+      for (let i = 0; i < ranges.length; i += 2) {
+        const start = ranges[i]
+        const end = ranges[i + 1]
+        for (let j = start; j < end; j++) {
+          indices.push(j)
+        }
+      }
     }
 
-    const [matchedIndices, info, order] = results
-
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (!order || !info) {
-        return []
+    return {
+      setting: entry.setting,
+      matchedIndices: indices,
+      searchableText: entry.searchableText,
     }
-
-    // Build results with match information
-    return order.map((idx) => {
-        const entry = index[matchedIndices[idx]]
-        const ranges = info.ranges[idx]
-
-        // Convert ranges to individual character indices
-        const indices: number[] = []
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (ranges) {
-            for (let i = 0; i < ranges.length; i += 2) {
-                const start = ranges[i]
-                const end = ranges[i + 1]
-                for (let j = start; j < end; j++) {
-                    indices.push(j)
-                }
-            }
-        }
-
-        return {
-            setting: entry.setting,
-            matchedIndices: indices,
-            searchableText: entry.searchableText,
-        }
-    })
+  })
 }
 
 /**
  * Search only advanced settings.
  */
 export function searchAdvancedSettings(query: string): SettingSearchResult[] {
-    const advancedSettings = settingsRegistry.filter((s) => s.showInAdvanced)
+  const advancedSettings = settingsRegistry.filter((s) => s.showInAdvanced)
 
-    if (!query.trim()) {
-        return advancedSettings.map((setting) => ({
-            setting,
-            matchedIndices: [],
-            searchableText: buildSearchableText(setting),
-        }))
-    }
-
-    const entries = advancedSettings.map((setting) => ({
-        setting,
-        searchableText: buildSearchableText(setting),
+  if (!query.trim()) {
+    return advancedSettings.map((setting) => ({
+      setting,
+      matchedIndices: [],
+      searchableText: buildSearchableText(setting),
     }))
+  }
 
-    const haystack = entries.map((e) => e.searchableText)
-    const results = fuzzy.search(haystack, query.toLowerCase())
+  const entries = advancedSettings.map((setting) => ({
+    setting,
+    searchableText: buildSearchableText(setting),
+  }))
 
+  const haystack = entries.map((e) => e.searchableText)
+  const results = fuzzy.search(haystack, query.toLowerCase())
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (!results?.[0]) {
+    return []
+  }
+
+  const [matchedIndices, info, order] = results
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (!order || !info) {
+    return []
+  }
+
+  return order.map((idx) => {
+    const entry = entries[matchedIndices[idx]]
+    const ranges = info.ranges[idx]
+
+    const indices: number[] = []
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (!results?.[0]) {
-        return []
+    if (ranges) {
+      for (let i = 0; i < ranges.length; i += 2) {
+        const start = ranges[i]
+        const end = ranges[i + 1]
+        for (let j = start; j < end; j++) {
+          indices.push(j)
+        }
+      }
     }
 
-    const [matchedIndices, info, order] = results
-
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (!order || !info) {
-        return []
+    return {
+      setting: entry.setting,
+      matchedIndices: indices,
+      searchableText: entry.searchableText,
     }
-
-    return order.map((idx) => {
-        const entry = entries[matchedIndices[idx]]
-        const ranges = info.ranges[idx]
-
-        const indices: number[] = []
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (ranges) {
-            for (let i = 0; i < ranges.length; i += 2) {
-                const start = ranges[i]
-                const end = ranges[i + 1]
-                for (let j = start; j < end; j++) {
-                    indices.push(j)
-                }
-            }
-        }
-
-        return {
-            setting: entry.setting,
-            matchedIndices: indices,
-            searchableText: entry.searchableText,
-        }
-    })
+  })
 }
 
 /**
@@ -182,51 +182,51 @@ export function searchAdvancedSettings(query: string): SettingSearchResult[] {
  * Used to filter the tree view during search.
  */
 export function getMatchingSections(query: string): Set<string> {
-    const results = searchSettings(query)
-    const sections = new Set<string>()
+  const results = searchSettings(query)
+  const sections = new Set<string>()
 
-    for (const result of results) {
-        // Add all parent sections
-        for (let i = 1; i <= result.setting.section.length; i++) {
-            sections.add(result.setting.section.slice(0, i).join('/'))
-        }
+  for (const result of results) {
+    // Add all parent sections
+    for (let i = 1; i <= result.setting.section.length; i++) {
+      sections.add(result.setting.section.slice(0, i).join('/'))
     }
+  }
 
-    // Also check if any commands match for Keyboard shortcuts section
-    if (query.trim()) {
-        const commandMatches = searchCommands(query)
-        if (commandMatches.length > 0) {
-            sections.add('Keyboard shortcuts')
-        }
+  // Also check if any commands match for Keyboard shortcuts section
+  if (query.trim()) {
+    const commandMatches = searchCommands(query)
+    if (commandMatches.length > 0) {
+      sections.add('Keyboard shortcuts')
     }
+  }
 
-    // Check if query matches license-related terms
-    if (query.trim()) {
-        const licenseKeywords = 'license key activation commercial personal upgrade buy purchase pricing'
-        const lowerQuery = query.toLowerCase()
-        if (licenseKeywords.includes(lowerQuery) || 'license'.includes(lowerQuery)) {
-            sections.add('License')
-        }
+  // Check if query matches license-related terms
+  if (query.trim()) {
+    const licenseKeywords = 'license key activation commercial personal upgrade buy purchase pricing'
+    const lowerQuery = query.toLowerCase()
+    if (licenseKeywords.includes(lowerQuery) || 'license'.includes(lowerQuery)) {
+      sections.add('License')
     }
+  }
 
-    // Check if query matches AI-related terms
-    if (query.trim()) {
-        const aiKeywords =
-            'ai artificial intelligence llm model openai api key local llama server provider context memory cloud anthropic groq together fireworks mistral ollama deepseek xai perplexity openrouter gemini azure lm-studio custom service'
-        const lowerQuery = query.toLowerCase()
-        if (aiKeywords.split(' ').some((kw) => kw.startsWith(lowerQuery)) || lowerQuery === 'ai') {
-            sections.add('AI')
-        }
+  // Check if query matches AI-related terms
+  if (query.trim()) {
+    const aiKeywords =
+      'ai artificial intelligence llm model openai api key local llama server provider context memory cloud anthropic groq together fireworks mistral ollama deepseek xai perplexity openrouter gemini azure lm-studio custom service'
+    const lowerQuery = query.toLowerCase()
+    if (aiKeywords.split(' ').some((kw) => kw.startsWith(lowerQuery)) || lowerQuery === 'ai') {
+      sections.add('AI')
     }
+  }
 
-    return sections
+  return sections
 }
 
 /**
  * Check if a section contains any matching settings.
  */
 export function sectionHasMatches(sectionPath: string[], matchingSections: Set<string>): boolean {
-    return matchingSections.has(sectionPath.join('/'))
+  return matchingSections.has(sectionPath.join('/'))
 }
 
 /**
@@ -234,34 +234,34 @@ export function sectionHasMatches(sectionPath: string[], matchingSections: Set<s
  * Returns an array of { text, matched } segments for rendering.
  */
 export function highlightMatches(text: string, matchedIndices: number[]): Array<{ text: string; matched: boolean }> {
-    if (matchedIndices.length === 0) {
-        return [{ text, matched: false }]
-    }
+  if (matchedIndices.length === 0) {
+    return [{ text, matched: false }]
+  }
 
-    const matchSet = new Set(matchedIndices)
-    const segments: Array<{ text: string; matched: boolean }> = []
-    let currentSegment = ''
-    let currentMatched = matchSet.has(0)
+  const matchSet = new Set(matchedIndices)
+  const segments: Array<{ text: string; matched: boolean }> = []
+  let currentSegment = ''
+  let currentMatched = matchSet.has(0)
 
-    for (let i = 0; i < text.length; i++) {
-        const isMatched = matchSet.has(i)
+  for (let i = 0; i < text.length; i++) {
+    const isMatched = matchSet.has(i)
 
-        if (isMatched !== currentMatched) {
-            if (currentSegment) {
-                segments.push({ text: currentSegment, matched: currentMatched })
-            }
-            currentSegment = text[i]
-            currentMatched = isMatched
-        } else {
-            currentSegment += text[i]
-        }
-    }
-
-    if (currentSegment) {
+    if (isMatched !== currentMatched) {
+      if (currentSegment) {
         segments.push({ text: currentSegment, matched: currentMatched })
+      }
+      currentSegment = text[i]
+      currentMatched = isMatched
+    } else {
+      currentSegment += text[i]
     }
+  }
 
-    return segments
+  if (currentSegment) {
+    segments.push({ text: currentSegment, matched: currentMatched })
+  }
+
+  return segments
 }
 
 /**
@@ -270,15 +270,15 @@ export function highlightMatches(text: string, matchedIndices: number[]): Array<
  * When the query is empty, all settings are shown.
  */
 export function createShouldShow(searchQuery: string): (id: string) => boolean {
-    const matchingIds = searchQuery.trim() ? getMatchingSettingIds(searchQuery) : null
-    return (id: string) => !matchingIds || matchingIds.has(id)
+  const matchingIds = searchQuery.trim() ? getMatchingSettingIds(searchQuery) : null
+  return (id: string) => !matchingIds || matchingIds.has(id)
 }
 
 /**
  * Clear the search index (for testing or when settings change).
  */
 export function clearSearchIndex(): void {
-    searchIndex = null
+  searchIndex = null
 }
 
 /**
@@ -286,25 +286,25 @@ export function clearSearchIndex(): void {
  * Used to filter which settings to display in section components.
  */
 export function getMatchingSettingIds(query: string): Set<string> {
-    const results = searchSettings(query)
-    return new Set(results.map((r) => r.setting.id))
+  const results = searchSettings(query)
+  return new Set(results.map((r) => r.setting.id))
 }
 
 /**
  * Get matching setting IDs within a specific section.
  */
 export function getMatchingSettingIdsInSection(query: string, sectionPath: string[]): Set<string> {
-    const results = searchSettings(query)
-    const sectionPrefix = sectionPath.join('/')
+  const results = searchSettings(query)
+  const sectionPrefix = sectionPath.join('/')
 
-    return new Set(
-        results
-            .filter((r) => {
-                const settingSectionPath = r.setting.section.join('/')
-                return settingSectionPath === sectionPrefix || settingSectionPath.startsWith(sectionPrefix + '/')
-            })
-            .map((r) => r.setting.id),
-    )
+  return new Set(
+    results
+      .filter((r) => {
+        const settingSectionPath = r.setting.section.join('/')
+        return settingSectionPath === sectionPrefix || settingSectionPath.startsWith(sectionPrefix + '/')
+      })
+      .map((r) => r.setting.id),
+  )
 }
 
 /**
@@ -312,21 +312,21 @@ export function getMatchingSettingIdsInSection(query: string, sectionPath: strin
  * Returns indices relative to the label text for highlighting.
  */
 export function getMatchIndicesForLabel(query: string, settingId: string): number[] {
-    if (!query.trim()) return []
+  if (!query.trim()) return []
 
-    const results = searchSettings(query)
-    const result = results.find((r) => r.setting.id === settingId)
-    if (!result) return []
+  const results = searchSettings(query)
+  const result = results.find((r) => r.setting.id === settingId)
+  if (!result) return []
 
-    // The matchedIndices are relative to searchableText which includes section path
-    // We need to find where the label starts in searchableText and adjust indices
-    const setting = result.setting
-    // Match the format used in buildSearchableText: section.join(' › ') + ' ' + label
-    const sectionText = setting.section.join(' › ') + ' '
-    // searchableText is lowercased, so we need to work with the lowercased label length
-    const labelStart = sectionText.toLowerCase().length
-    const labelEnd = labelStart + setting.label.toLowerCase().length
+  // The matchedIndices are relative to searchableText which includes section path
+  // We need to find where the label starts in searchableText and adjust indices
+  const setting = result.setting
+  // Match the format used in buildSearchableText: section.join(' › ') + ' ' + label
+  const sectionText = setting.section.join(' › ') + ' '
+  // searchableText is lowercased, so we need to work with the lowercased label length
+  const labelStart = sectionText.toLowerCase().length
+  const labelEnd = labelStart + setting.label.toLowerCase().length
 
-    // Filter indices that fall within the label range and adjust them
-    return result.matchedIndices.filter((idx) => idx >= labelStart && idx < labelEnd).map((idx) => idx - labelStart)
+  // Filter indices that fall within the label range and adjust them
+  return result.matchedIndices.filter((idx) => idx >= labelStart && idx < labelEnd).map((idx) => idx - labelStart)
 }

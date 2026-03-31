@@ -71,12 +71,12 @@ dismiss). The About window and modals read the cached value on mount.
 - **`handleActivate` uses verify/commit split** — calls `verifyLicense()` first (nothing stored), then
   `validateLicenseWithServer(transactionId)` passing the transaction ID explicitly, then decides whether to call
   `commitLicense()`. Four outcomes:
-    1. Server confirms active (commercial) → `commitLicense()` + `onSuccess()`.
-    2. Server says expired → `commitLicense()` + inline error with expiry date (key IS valid, just expired).
-    3. Server says invalid (returns `personal` type) → DON'T commit. Nothing stored. Tracks `serverInvalidRetryCount`
-       for escalating messaging. Cancel and X just close (no cleanup needed).
-    4. Network error (`newStatus` is null) → `commitLicense()` + constructs a fallback `LicenseStatus` from
-       `LicenseInfo` and calls `onSuccess()` with `pendingVerification` flag set.
+  1. Server confirms active (commercial) → `commitLicense()` + `onSuccess()`.
+  2. Server says expired → `commitLicense()` + inline error with expiry date (key IS valid, just expired).
+  3. Server says invalid (returns `personal` type) → DON'T commit. Nothing stored. Tracks `serverInvalidRetryCount` for
+     escalating messaging. Cancel and X just close (no cleanup needed).
+  4. Network error (`newStatus` is null) → `commitLicense()` + constructs a fallback `LicenseStatus` from `LicenseInfo`
+     and calls `onSuccess()` with `pendingVerification` flag set.
 - **`pendingVerification` flag** — tracked in `licensing-store.svelte.ts`. Derived from backend state on startup:
   `hasLicenseBeenValidated()` returns false when `last_validation_timestamp` is absent (license committed locally but
   never server-verified). Also set directly during activation when the network fallback path is used. Cleared when

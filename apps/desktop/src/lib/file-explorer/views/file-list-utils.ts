@@ -10,159 +10,159 @@ import { getSetting } from '$lib/settings/settings-store'
 
 /** Gets the prefetch buffer size from settings (items to load around visible range) */
 export function getPrefetchBufferSize(): number {
-    return getSetting('advanced.prefetchBufferSize')
+  return getSetting('advanced.prefetchBufferSize')
 }
 
 /** Sync status icon paths - returns undefined if no icon should be shown */
 export function getSyncIconPath(status: SyncStatus | undefined): string | undefined {
-    if (!status) return undefined
-    const iconMap: Record<SyncStatus, string | undefined> = {
-        synced: '/icons/sync-synced.svg',
-        online_only: '/icons/sync-online-only.svg',
-        uploading: '/icons/sync-uploading.svg',
-        downloading: '/icons/sync-downloading.svg',
-        unknown: undefined,
-    }
-    return iconMap[status]
+  if (!status) return undefined
+  const iconMap: Record<SyncStatus, string | undefined> = {
+    synced: '/icons/sync-synced.svg',
+    online_only: '/icons/sync-online-only.svg',
+    uploading: '/icons/sync-uploading.svg',
+    downloading: '/icons/sync-downloading.svg',
+    unknown: undefined,
+  }
+  return iconMap[status]
 }
 
 /** Creates a parent directory entry ("..") */
 export function createParentEntry(parentPath: string): FileEntry {
-    return {
-        name: '..',
-        path: parentPath,
-        isDirectory: true,
-        isSymlink: false,
-        permissions: 0o755,
-        owner: '',
-        group: '',
-        iconId: 'dir',
-        extendedMetadataLoaded: true,
-    }
+  return {
+    name: '..',
+    path: parentPath,
+    isDirectory: true,
+    isSymlink: false,
+    permissions: 0o755,
+    owner: '',
+    group: '',
+    iconId: 'dir',
+    extendedMetadataLoaded: true,
+  }
 }
 
 /** Gets entry at global index, handling ".." entry */
 export function getEntryAt(
-    globalIndex: number,
-    hasParent: boolean,
-    parentPath: string,
-    cachedEntries: FileEntry[],
-    cachedRange: { start: number; end: number },
+  globalIndex: number,
+  hasParent: boolean,
+  parentPath: string,
+  cachedEntries: FileEntry[],
+  cachedRange: { start: number; end: number },
 ): FileEntry | undefined {
-    if (hasParent && globalIndex === 0) {
-        return createParentEntry(parentPath)
-    }
+  if (hasParent && globalIndex === 0) {
+    return createParentEntry(parentPath)
+  }
 
-    // Backend index (without ".." entry)
-    const backendIndex = hasParent ? globalIndex - 1 : globalIndex
+  // Backend index (without ".." entry)
+  const backendIndex = hasParent ? globalIndex - 1 : globalIndex
 
-    // Find in cached entries
-    if (backendIndex >= cachedRange.start && backendIndex < cachedRange.end) {
-        return cachedEntries[backendIndex - cachedRange.start]
-    }
+  // Find in cached entries
+  if (backendIndex >= cachedRange.start && backendIndex < cachedRange.end) {
+    return cachedEntries[backendIndex - cachedRange.start]
+  }
 
-    return undefined
+  return undefined
 }
 
 /** Fallback emoji for files without icons */
 export function getFallbackEmoji(file: FileEntry): string {
-    if (file.isSymlink) return '🔗'
-    if (file.isDirectory) return '📁'
-    return '📄'
+  if (file.isSymlink) return '🔗'
+  if (file.isDirectory) return '📁'
+  return '📄'
 }
 
 /** Parameters for fetchVisibleRange */
 export interface FetchRangeParams {
-    listingId: string
-    startItem: number
-    endItem: number
-    hasParent: boolean
-    totalCount: number
-    includeHidden: boolean
-    cachedRange: { start: number; end: number }
-    onSyncStatusRequest?: (paths: string[]) => void
+  listingId: string
+  startItem: number
+  endItem: number
+  hasParent: boolean
+  totalCount: number
+  includeHidden: boolean
+  cachedRange: { start: number; end: number }
+  onSyncStatusRequest?: (paths: string[]) => void
 }
 
 /** Result of fetchVisibleRange */
 export interface FetchRangeResult {
-    entries: FileEntry[]
-    range: { start: number; end: number }
+  entries: FileEntry[]
+  range: { start: number; end: number }
 }
 
 /** Calculates the fetch range for visible items with prefetch buffer */
 export function calculateFetchRange(params: {
-    startItem: number
-    endItem: number
-    hasParent: boolean
-    totalCount: number
+  startItem: number
+  endItem: number
+  hasParent: boolean
+  totalCount: number
 }): { fetchStart: number; fetchEnd: number } {
-    const { startItem, endItem, hasParent, totalCount } = params
+  const { startItem, endItem, hasParent, totalCount } = params
 
-    // Account for ".." entry
-    let adjustedStart = startItem
-    let adjustedEnd = endItem
-    if (hasParent) {
-        adjustedStart = Math.max(0, adjustedStart - 1)
-        adjustedEnd = Math.max(0, adjustedEnd - 1)
-    }
+  // Account for ".." entry
+  let adjustedStart = startItem
+  let adjustedEnd = endItem
+  if (hasParent) {
+    adjustedStart = Math.max(0, adjustedStart - 1)
+    adjustedEnd = Math.max(0, adjustedEnd - 1)
+  }
 
-    // Add prefetch buffer
-    const prefetchBuffer = getPrefetchBufferSize()
-    const fetchStart = Math.max(0, adjustedStart - prefetchBuffer / 2)
-    const fetchEnd = Math.min(hasParent ? totalCount - 1 : totalCount, adjustedEnd + prefetchBuffer / 2)
+  // Add prefetch buffer
+  const prefetchBuffer = getPrefetchBufferSize()
+  const fetchStart = Math.max(0, adjustedStart - prefetchBuffer / 2)
+  const fetchEnd = Math.min(hasParent ? totalCount - 1 : totalCount, adjustedEnd + prefetchBuffer / 2)
 
-    return { fetchStart, fetchEnd }
+  return { fetchStart, fetchEnd }
 }
 
 /** Checks if the needed range is already cached */
 export function isRangeCached(
-    fetchStart: number,
-    fetchEnd: number,
-    cachedRange: { start: number; end: number },
+  fetchStart: number,
+  fetchEnd: number,
+  cachedRange: { start: number; end: number },
 ): boolean {
-    return fetchStart >= cachedRange.start && fetchEnd <= cachedRange.end
+  return fetchStart >= cachedRange.start && fetchEnd <= cachedRange.end
 }
 
 /** Fetches entries for a visible range with prefetch buffer */
 export async function fetchVisibleRange(params: FetchRangeParams): Promise<FetchRangeResult | null> {
-    const { listingId, startItem, endItem, hasParent, totalCount, includeHidden, cachedRange, onSyncStatusRequest } =
-        params
+  const { listingId, startItem, endItem, hasParent, totalCount, includeHidden, cachedRange, onSyncStatusRequest } =
+    params
 
-    const { fetchStart, fetchEnd } = calculateFetchRange({ startItem, endItem, hasParent, totalCount })
+  const { fetchStart, fetchEnd } = calculateFetchRange({ startItem, endItem, hasParent, totalCount })
 
-    // Only fetch if needed range isn't cached
-    if (isRangeCached(fetchStart, fetchEnd, cachedRange)) {
-        return null // Already cached
-    }
+  // Only fetch if needed range isn't cached
+  if (isRangeCached(fetchStart, fetchEnd, cachedRange)) {
+    return null // Already cached
+  }
 
-    const entries = await getFileRange(listingId, fetchStart, fetchEnd - fetchStart, includeHidden)
+  const entries = await getFileRange(listingId, fetchStart, fetchEnd - fetchStart, includeHidden)
 
-    // Prefetch icons for visible entries
-    const iconIds = entries.map((e) => e.iconId).filter((id) => id)
-    const useAppIcons = getUseAppIconsForDocuments()
-    void prefetchIcons(iconIds, useAppIcons)
+  // Prefetch icons for visible entries
+  const iconIds = entries.map((e) => e.iconId).filter((id) => id)
+  const useAppIcons = getUseAppIconsForDocuments()
+  void prefetchIcons(iconIds, useAppIcons)
 
-    // Request sync status for visible paths
-    const paths = entries.map((e) => e.path)
-    onSyncStatusRequest?.(paths)
+  // Request sync status for visible paths
+  const paths = entries.map((e) => e.path)
+  onSyncStatusRequest?.(paths)
 
-    return {
-        entries,
-        range: { start: fetchStart, end: fetchStart + entries.length },
-    }
+  return {
+    entries,
+    range: { start: fetchStart, end: fetchStart + entries.length },
+  }
 }
 
 /** Checks if cache props changed and returns whether reset is needed */
 export function shouldResetCache(
-    current: { listingId: string; includeHidden: boolean; totalCount: number; cacheGeneration: number },
-    previous: { listingId: string; includeHidden: boolean; totalCount: number; cacheGeneration: number },
+  current: { listingId: string; includeHidden: boolean; totalCount: number; cacheGeneration: number },
+  previous: { listingId: string; includeHidden: boolean; totalCount: number; cacheGeneration: number },
 ): boolean {
-    return (
-        current.listingId !== previous.listingId ||
-        current.includeHidden !== previous.includeHidden ||
-        current.totalCount !== previous.totalCount ||
-        current.cacheGeneration !== previous.cacheGeneration
-    )
+  return (
+    current.listingId !== previous.listingId ||
+    current.includeHidden !== previous.includeHidden ||
+    current.totalCount !== previous.totalCount ||
+    current.cacheGeneration !== previous.cacheGeneration
+  )
 }
 
 /**
@@ -170,10 +170,10 @@ export function shouldResetCache(
  * Called when the extension icon cache is cleared to refresh icons for visible files.
  */
 export function refetchIconsForEntries(entries: FileEntry[]): void {
-    if (entries.length === 0) return
-    const iconIds = entries.map((e) => e.iconId).filter((id) => id)
-    const useAppIcons = getUseAppIconsForDocuments()
-    void prefetchIcons(iconIds, useAppIcons)
+  if (entries.length === 0) return
+  const iconIds = entries.map((e) => e.iconId).filter((id) => id)
+  const useAppIcons = getUseAppIconsForDocuments()
+  void prefetchIcons(iconIds, useAppIcons)
 }
 
 /**
@@ -182,38 +182,38 @@ export function refetchIconsForEntries(entries: FileEntry[]): void {
  * Mutates entries directly so Svelte 5 fine-grained reactivity updates only affected DOM nodes.
  */
 export async function updateIndexSizesInPlace(cachedEntries: FileEntry[]): Promise<void> {
-    // Collect directory paths and their indices in the array
-    const dirIndices: number[] = []
-    const dirPaths: string[] = []
-    for (let i = 0; i < cachedEntries.length; i++) {
-        if (cachedEntries[i].isDirectory) {
-            dirIndices.push(i)
-            dirPaths.push(cachedEntries[i].path)
-        }
+  // Collect directory paths and their indices in the array
+  const dirIndices: number[] = []
+  const dirPaths: string[] = []
+  for (let i = 0; i < cachedEntries.length; i++) {
+    if (cachedEntries[i].isDirectory) {
+      dirIndices.push(i)
+      dirPaths.push(cachedEntries[i].path)
     }
-    if (dirPaths.length === 0) return
+  }
+  if (dirPaths.length === 0) return
 
-    let stats: ({
-        recursiveSize: number
-        recursivePhysicalSize: number
-        recursiveFileCount: number
-        recursiveDirCount: number
-    } | null)[]
-    try {
-        stats = await getDirStatsBatch(dirPaths)
-    } catch {
-        // Silently ignore -- indexing may not be initialized
-        return
-    }
+  let stats: ({
+    recursiveSize: number
+    recursivePhysicalSize: number
+    recursiveFileCount: number
+    recursiveDirCount: number
+  } | null)[]
+  try {
+    stats = await getDirStatsBatch(dirPaths)
+  } catch {
+    // Silently ignore -- indexing may not be initialized
+    return
+  }
 
-    for (let j = 0; j < dirIndices.length; j++) {
-        const entry = cachedEntries[dirIndices[j]]
-        const stat = stats[j]
-        if (stat) {
-            entry.recursiveSize = stat.recursiveSize
-            entry.recursivePhysicalSize = stat.recursivePhysicalSize
-            entry.recursiveFileCount = stat.recursiveFileCount
-            entry.recursiveDirCount = stat.recursiveDirCount
-        }
+  for (let j = 0; j < dirIndices.length; j++) {
+    const entry = cachedEntries[dirIndices[j]]
+    const stat = stats[j]
+    if (stat) {
+      entry.recursiveSize = stat.recursiveSize
+      entry.recursivePhysicalSize = stat.recursivePhysicalSize
+      entry.recursiveFileCount = stat.recursiveFileCount
+      entry.recursiveDirCount = stat.recursiveDirCount
     }
+  }
 }

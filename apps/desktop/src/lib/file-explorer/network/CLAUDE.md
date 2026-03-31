@@ -77,10 +77,10 @@ Rendered after user selects a host. Auth flow on mount:
 
 1. Check `shareStates` cache — use if loaded.
 2. If cache shows `auth_required` / `signing_required`: call `tryStoredCredentials()`.
-    - `tryStoredCredentials` calls `getSmbCredentials` directly — **no** `hasSmbCredentials` pre-check to avoid a
-      redundant macOS Keychain dialog.
-    - If stored creds work, `authenticatedCredentials` is set and auth is transparent to user.
-    - If no stored creds, show `NetworkLoginForm`.
+   - `tryStoredCredentials` calls `getSmbCredentials` directly — **no** `hasSmbCredentials` pre-check to avoid a
+     redundant macOS Keychain dialog.
+   - If stored creds work, `authenticatedCredentials` is set and auth is transparent to user.
+   - If no stored creds, show `NetworkLoginForm`.
 3. Otherwise fetch via `fetchShares(host)`, same auth fallback.
 
 `authenticatedCredentials` is passed to `onShareSelect` so the caller can mount the share without re-prompting.

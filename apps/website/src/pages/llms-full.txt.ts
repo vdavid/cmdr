@@ -4,22 +4,22 @@ import { version, dmgUrls } from '../lib/release'
 import latestRelease from '../../public/latest.json'
 
 export async function GET(context: APIContext) {
-    const site = context.site!.origin
-    const posts = await getCollection('blog')
-    const sortedPosts = posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  const site = context.site!.origin
+  const posts = await getCollection('blog')
+  const sortedPosts = posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
 
-    const blogLines = sortedPosts
-        .map((post) => `- [${post.data.title}](${site}/blog/${post.id}/): ${post.data.description}`)
-        .join('\n')
+  const blogLines = sortedPosts
+    .map((post) => `- [${post.data.title}](${site}/blog/${post.id}/): ${post.data.description}`)
+    .join('\n')
 
-    const releaseNotes = latestRelease.notes
-        .replace(/\[([a-f0-9]{7})\]\(https:\/\/github\.com\/[^)]+\)/g, '$1')
-        .replace(/, [a-f0-9]{7}(, [a-f0-9]{7})*/g, '')
-        .replace(/\(([a-f0-9]{7})\)/g, '')
-        .replace(/ +/g, ' ')
-        .trim()
+  const releaseNotes = latestRelease.notes
+    .replace(/\[([a-f0-9]{7})\]\(https:\/\/github\.com\/[^)]+\)/g, '$1')
+    .replace(/, [a-f0-9]{7}(, [a-f0-9]{7})*/g, '')
+    .replace(/\(([a-f0-9]{7})\)/g, '')
+    .replace(/ +/g, ' ')
+    .trim()
 
-    const body = `# Cmdr
+  const body = `# Cmdr
 
 > The fastest two-pane file manager for macOS. Every folder sized. Every file found.
 
@@ -147,7 +147,7 @@ ${releaseNotes}
 ${blogLines}
 `
 
-    return new Response(body, {
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    })
+  return new Response(body, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  })
 }

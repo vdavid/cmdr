@@ -2,14 +2,14 @@
 
 import { invoke } from '@tauri-apps/api/core'
 import type {
-    AuthOptions,
-    ConnectionMode,
-    DiscoveryState,
-    KnownNetworkShare,
-    MountResult,
-    NetworkHost,
-    ShareListResult,
-    SmbCredentials,
+  AuthOptions,
+  ConnectionMode,
+  DiscoveryState,
+  KnownNetworkShare,
+  MountResult,
+  NetworkHost,
+  ShareListResult,
+  SmbCredentials,
 } from '../file-explorer/types'
 
 // ============================================================================
@@ -22,12 +22,12 @@ import type {
  * @returns Array of NetworkHost objects
  */
 export async function listNetworkHosts(): Promise<NetworkHost[]> {
-    try {
-        return await invoke<NetworkHost[]>('list_network_hosts')
-    } catch {
-        // Command not available (non-macOS) - return empty array
-        return []
-    }
+  try {
+    return await invoke<NetworkHost[]>('list_network_hosts')
+  } catch {
+    // Command not available (non-macOS) - return empty array
+    return []
+  }
 }
 
 /**
@@ -36,12 +36,12 @@ export async function listNetworkHosts(): Promise<NetworkHost[]> {
  * @returns Current DiscoveryState
  */
 export async function getNetworkDiscoveryState(): Promise<DiscoveryState> {
-    try {
-        return await invoke<DiscoveryState>('get_network_discovery_state')
-    } catch {
-        // Command not available (non-macOS) - return idle
-        return 'idle'
-    }
+  try {
+    return await invoke<DiscoveryState>('get_network_discovery_state')
+  } catch {
+    // Command not available (non-macOS) - return idle
+    return 'idle'
+  }
 }
 
 /**
@@ -52,12 +52,12 @@ export async function getNetworkDiscoveryState(): Promise<DiscoveryState> {
  * @returns Updated NetworkHost with hostname and IP, or null if not found
  */
 export async function resolveNetworkHost(hostId: string): Promise<NetworkHost | null> {
-    try {
-        return await invoke<NetworkHost | null>('resolve_host', { hostId })
-    } catch {
-        // Command not available (non-macOS) - return null
-        return null
-    }
+  try {
+    return await invoke<NetworkHost | null>('resolve_host', { hostId })
+  } catch {
+    // Command not available (non-macOS) - return null
+    return null
+  }
 }
 
 // ============================================================================
@@ -77,16 +77,16 @@ export async function resolveNetworkHost(hostId: string): Promise<NetworkHost | 
  * @returns Result with shares and auth mode, or error
  */
 export async function listSharesOnHost(
-    hostId: string,
-    hostname: string,
-    ipAddress: string | undefined,
-    port: number,
-    timeoutMs?: number,
-    cacheTtlMs?: number,
+  hostId: string,
+  hostname: string,
+  ipAddress: string | undefined,
+  port: number,
+  timeoutMs?: number,
+  cacheTtlMs?: number,
 ): Promise<ShareListResult> {
-    // The Rust command returns Result<ShareListResult, ShareListError>
-    // Tauri auto-converts Ok to value and Err to thrown error
-    return invoke<ShareListResult>('list_shares_on_host', { hostId, hostname, ipAddress, port, timeoutMs, cacheTtlMs })
+  // The Rust command returns Result<ShareListResult, ShareListError>
+  // Tauri auto-converts Ok to value and Err to thrown error
+  return invoke<ShareListResult>('list_shares_on_host', { hostId, hostname, ipAddress, port, timeoutMs, cacheTtlMs })
 }
 
 /**
@@ -101,18 +101,18 @@ export async function listSharesOnHost(
  * @param cacheTtlMs Optional cache TTL in milliseconds (default: 30000)
  */
 export async function prefetchShares(
-    hostId: string,
-    hostname: string,
-    ipAddress: string | undefined,
-    port: number,
-    timeoutMs?: number,
-    cacheTtlMs?: number,
+  hostId: string,
+  hostname: string,
+  ipAddress: string | undefined,
+  port: number,
+  timeoutMs?: number,
+  cacheTtlMs?: number,
 ): Promise<void> {
-    try {
-        await invoke('prefetch_shares', { hostId, hostname, ipAddress, port, timeoutMs, cacheTtlMs })
-    } catch {
-        // Silently ignore prefetch errors
-    }
+  try {
+    await invoke('prefetch_shares', { hostId, hostname, ipAddress, port, timeoutMs, cacheTtlMs })
+  } catch {
+    // Silently ignore prefetch errors
+  }
 }
 
 // ============================================================================
@@ -127,12 +127,12 @@ export async function prefetchShares(
  * @returns KnownNetworkShare if found, null otherwise
  */
 export async function getKnownShareByName(serverName: string, shareName: string): Promise<KnownNetworkShare | null> {
-    try {
-        return await invoke<KnownNetworkShare | null>('get_known_share_by_name', { serverName, shareName })
-    } catch {
-        // Command not available (non-macOS) - return null
-        return null
-    }
+  try {
+    return await invoke<KnownNetworkShare | null>('get_known_share_by_name', { serverName, shareName })
+  } catch {
+    // Command not available (non-macOS) - return null
+    return null
+  }
 }
 
 /**
@@ -145,23 +145,23 @@ export async function getKnownShareByName(serverName: string, shareName: string)
  * @param username Username used (null for guest)
  */
 export async function updateKnownShare(
-    serverName: string,
-    shareName: string,
-    lastConnectionMode: ConnectionMode,
-    lastKnownAuthOptions: AuthOptions,
-    username: string | null,
+  serverName: string,
+  shareName: string,
+  lastConnectionMode: ConnectionMode,
+  lastKnownAuthOptions: AuthOptions,
+  username: string | null,
 ): Promise<void> {
-    try {
-        await invoke('update_known_share', {
-            serverName,
-            shareName,
-            lastConnectionMode,
-            lastKnownAuthOptions,
-            username,
-        })
-    } catch {
-        // Command not available (non-macOS) - silently fail
-    }
+  try {
+    await invoke('update_known_share', {
+      serverName,
+      shareName,
+      lastConnectionMode,
+      lastKnownAuthOptions,
+      username,
+    })
+  } catch {
+    // Command not available (non-macOS) - silently fail
+  }
 }
 
 /**
@@ -171,12 +171,12 @@ export async function updateKnownShare(
  * @returns Map of server name (lowercase) -> username
  */
 export async function getUsernameHints(): Promise<Record<string, string>> {
-    try {
-        return await invoke<Record<string, string>>('get_username_hints')
-    } catch {
-        // Command not available (non-macOS) - return empty map
-        return {}
-    }
+  try {
+    return await invoke<Record<string, string>>('get_username_hints')
+  } catch {
+    // Command not available (non-macOS) - return empty map
+    return {}
+  }
 }
 
 // ============================================================================
@@ -192,17 +192,17 @@ export async function getUsernameHints(): Promise<Record<string, string>> {
  * @param password Password for authentication
  */
 export async function saveSmbCredentials(
-    server: string,
-    share: string | null,
-    username: string,
-    password: string,
+  server: string,
+  share: string | null,
+  username: string,
+  password: string,
 ): Promise<void> {
-    await invoke('save_smb_credentials', { server, share, username, password })
+  await invoke('save_smb_credentials', { server, share, username, password })
 }
 
 /** Returns whether credential storage is using an encrypted file fallback instead of the system keyring. */
 export async function isUsingCredentialFileFallback(): Promise<boolean> {
-    return invoke<boolean>('is_using_credential_file_fallback')
+  return invoke<boolean>('is_using_credential_file_fallback')
 }
 
 /**
@@ -213,7 +213,7 @@ export async function isUsingCredentialFileFallback(): Promise<boolean> {
  * @throws KeychainError if credentials not found or access denied
  */
 export async function getSmbCredentials(server: string, share: string | null): Promise<SmbCredentials> {
-    return invoke<SmbCredentials>('get_smb_credentials', { server, share })
+  return invoke<SmbCredentials>('get_smb_credentials', { server, share })
 }
 
 /**
@@ -222,7 +222,7 @@ export async function getSmbCredentials(server: string, share: string | null): P
  * @param share Optional share name
  */
 export async function deleteSmbCredentials(server: string, share: string | null): Promise<void> {
-    await invoke('delete_smb_credentials', { server, share })
+  await invoke('delete_smb_credentials', { server, share })
 }
 
 /**
@@ -238,25 +238,25 @@ export async function deleteSmbCredentials(server: string, share: string | null)
  * @param cacheTtlMs Optional cache TTL in milliseconds (default: 30000)
  */
 export async function listSharesWithCredentials(
-    hostId: string,
-    hostname: string,
-    ipAddress: string | undefined,
-    port: number,
-    username: string | null,
-    password: string | null,
-    timeoutMs?: number,
-    cacheTtlMs?: number,
+  hostId: string,
+  hostname: string,
+  ipAddress: string | undefined,
+  port: number,
+  username: string | null,
+  password: string | null,
+  timeoutMs?: number,
+  cacheTtlMs?: number,
 ): Promise<ShareListResult> {
-    return invoke<ShareListResult>('list_shares_with_credentials', {
-        hostId,
-        hostname,
-        ipAddress,
-        port,
-        username,
-        password,
-        timeoutMs,
-        cacheTtlMs,
-    })
+  return invoke<ShareListResult>('list_shares_with_credentials', {
+    hostId,
+    hostname,
+    ipAddress,
+    port,
+    username,
+    password,
+    timeoutMs,
+    cacheTtlMs,
+  })
 }
 
 // ============================================================================
@@ -276,17 +276,17 @@ export async function listSharesWithCredentials(
  * @throws MountError on failure
  */
 export async function mountNetworkShare(
-    server: string,
-    share: string,
-    username: string | null,
-    password: string | null,
-    timeoutMs?: number,
+  server: string,
+  share: string,
+  username: string | null,
+  password: string | null,
+  timeoutMs?: number,
 ): Promise<MountResult> {
-    return invoke<MountResult>('mount_network_share', {
-        server,
-        share,
-        username,
-        password,
-        timeoutMs,
-    })
+  return invoke<MountResult>('mount_network_share', {
+    server,
+    share,
+    username,
+    password,
+    timeoutMs,
+  })
 }

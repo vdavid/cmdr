@@ -34,10 +34,10 @@ Implemented in `rename-operations.ts::executeRenameSave()`:
    `skipExtensionCheck=true`.
 
 2. **Backend validity check**: Call `checkRenameValidity(parentPath, originalName, trimmedName)`. Returns:
-    - `{ valid: false, error }` → return `{ type: 'error' }`
-    - `{ valid: true, hasConflict: true, isCaseOnlyRename: false }` → return `{ type: 'conflict', validity }`
-    - `{ valid: true, hasConflict: true, isCaseOnlyRename: true }` → proceed (same inode, just case change)
-    - `{ valid: true, hasConflict: false }` → proceed
+   - `{ valid: false, error }` → return `{ type: 'error' }`
+   - `{ valid: true, hasConflict: true, isCaseOnlyRename: false }` → return `{ type: 'conflict', validity }`
+   - `{ valid: true, hasConflict: true, isCaseOnlyRename: true }` → proceed (same inode, just case change)
+   - `{ valid: true, hasConflict: false }` → proceed
 
 3. **Perform rename**: Call `renameFile(from, to, force)`. On success, return `{ type: 'success', newName }`. On
    timeout, return `{ type: 'timeout', message }` — the caller shows a persistent warning toast and auto-refreshes the

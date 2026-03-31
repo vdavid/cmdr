@@ -2,40 +2,40 @@ import { Resend } from 'resend'
 import type { LicenseType } from './license'
 
 export interface CrashSummaryEntry {
-    topFunction: string
-    count: number
-    versions: string[]
-    mostRecent: string
+  topFunction: string
+  count: number
+  versions: string[]
+  mostRecent: string
 }
 
 interface CrashNotificationParams {
-    crashes: CrashSummaryEntry[]
-    totalCount: number
-    to: string
-    resendApiKey: string
+  crashes: CrashSummaryEntry[]
+  totalCount: number
+  to: string
+  resendApiKey: string
 }
 
 export async function sendCrashNotificationEmail(params: CrashNotificationParams): Promise<void> {
-    const resend = new Resend(params.resendApiKey)
-    const subject = `Cmdr: ${String(params.totalCount)} new crash report${params.totalCount === 1 ? '' : 's'}`
+  const resend = new Resend(params.resendApiKey)
+  const subject = `Cmdr: ${String(params.totalCount)} new crash report${params.totalCount === 1 ? '' : 's'}`
 
-    const tableRows = params.crashes
-        .map(
-            (entry) => `
+  const tableRows = params.crashes
+    .map(
+      (entry) => `
         <tr>
             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-family: monospace; font-size: 13px;">${escapeHtml(entry.topFunction)}</td>
             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: center;">${String(entry.count)}</td>
             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(entry.versions.join(', '))}</td>
             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(entry.mostRecent)}</td>
         </tr>`,
-        )
-        .join('\n')
+    )
+    .join('\n')
 
-    await resend.emails.send({
-        from: 'Cmdr Crash Alerts <noreply@getcmdr.com>',
-        to: params.to,
-        subject,
-        html: `
+  await resend.emails.send({
+    from: 'Cmdr Crash Alerts <noreply@getcmdr.com>',
+    to: params.to,
+    subject,
+    html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -64,35 +64,35 @@ export async function sendCrashNotificationEmail(params: CrashNotificationParams
 </body>
 </html>
         `.trim(),
-    })
+  })
 }
 
 interface DbSizeAlertParams {
-    sizeMb: number
-    tableCounts: Record<string, number>
-    to: string
-    resendApiKey: string
+  sizeMb: number
+  tableCounts: Record<string, number>
+  to: string
+  resendApiKey: string
 }
 
 export async function sendDbSizeAlert(params: DbSizeAlertParams): Promise<void> {
-    const resend = new Resend(params.resendApiKey)
-    const subject = `Cmdr: telemetry DB is ${String(Math.round(params.sizeMb))} MB`
+  const resend = new Resend(params.resendApiKey)
+  const subject = `Cmdr: telemetry DB is ${String(Math.round(params.sizeMb))} MB`
 
-    const tableRows = Object.entries(params.tableCounts)
-        .map(
-            ([table, count]) => `
+  const tableRows = Object.entries(params.tableCounts)
+    .map(
+      ([table, count]) => `
         <tr>
             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-family: monospace;">${escapeHtml(table)}</td>
             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: right;">${String(count)}</td>
         </tr>`,
-        )
-        .join('\n')
+    )
+    .join('\n')
 
-    await resend.emails.send({
-        from: 'Cmdr Crash Alerts <noreply@getcmdr.com>',
-        to: params.to,
-        subject,
-        html: `
+  await resend.emails.send({
+    from: 'Cmdr Crash Alerts <noreply@getcmdr.com>',
+    to: params.to,
+    subject,
+    html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -121,28 +121,28 @@ export async function sendDbSizeAlert(params: DbSizeAlertParams): Promise<void> 
 </body>
 </html>
         `.trim(),
-    })
+  })
 }
 
 interface DeviceCountAlertParams {
-    seatTransactionId: string
-    baseTransactionId: string
-    deviceCount: number
-    customerEmail: string
-    resendApiKey: string
-    paddleEnvironment: 'sandbox' | 'live'
+  seatTransactionId: string
+  baseTransactionId: string
+  deviceCount: number
+  customerEmail: string
+  resendApiKey: string
+  paddleEnvironment: 'sandbox' | 'live'
 }
 
 export async function sendDeviceCountAlert(params: DeviceCountAlertParams): Promise<void> {
-    const resend = new Resend(params.resendApiKey)
-    const paddleDomain = params.paddleEnvironment === 'sandbox' ? 'sandbox-vendors.paddle.com' : 'vendors.paddle.com'
-    const paddleUrl = `https://${paddleDomain}/transactions-v2/${params.baseTransactionId}`
+  const resend = new Resend(params.resendApiKey)
+  const paddleDomain = params.paddleEnvironment === 'sandbox' ? 'sandbox-vendors.paddle.com' : 'vendors.paddle.com'
+  const paddleUrl = `https://${paddleDomain}/transactions-v2/${params.baseTransactionId}`
 
-    await resend.emails.send({
-        from: 'Cmdr License Alerts <noreply@getcmdr.com>',
-        to: 'legal@getcmdr.com',
-        subject: `Device count alert: ${params.seatTransactionId} (${String(params.deviceCount)} devices)`,
-        html: `
+  await resend.emails.send({
+    from: 'Cmdr License Alerts <noreply@getcmdr.com>',
+    to: 'legal@getcmdr.com',
+    subject: `Device count alert: ${params.seatTransactionId} (${String(params.deviceCount)} devices)`,
+    html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -186,82 +186,82 @@ export async function sendDeviceCountAlert(params: DeviceCountAlertParams): Prom
 </body>
 </html>
         `.trim(),
-    })
+  })
 }
 
 const htmlEscapeMap: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 
 function escapeHtml(text: string): string {
-    return text.replace(/[&<>"']/g, (char) => htmlEscapeMap[char])
+  return text.replace(/[&<>"']/g, (char) => htmlEscapeMap[char])
 }
 
 interface EmailParams {
-    to: string
-    customerName: string
-    licenseKeys: string[]
-    productName: string
-    supportEmail: string
-    resendApiKey: string
-    organizationName?: string
-    licenseType?: LicenseType
+  to: string
+  customerName: string
+  licenseKeys: string[]
+  productName: string
+  supportEmail: string
+  resendApiKey: string
+  organizationName?: string
+  licenseType?: LicenseType
 }
 
 function getLicenseDescription(type: LicenseType | undefined, orgName?: string): string {
-    switch (type) {
-        case 'commercial_subscription':
-            return orgName
-                ? `Your commercial license for ${orgName} is valid for one year and will auto-renew.`
-                : 'Your commercial license is valid for one year and will auto-renew.'
-        case 'commercial_perpetual':
-            return orgName
-                ? `Your perpetual commercial license for ${orgName} is valid forever.`
-                : 'Your perpetual commercial license is valid forever.'
-        default:
-            return 'This is an unknown license type. This is weird. Please contact support.'
-    }
+  switch (type) {
+    case 'commercial_subscription':
+      return orgName
+        ? `Your commercial license for ${orgName} is valid for one year and will auto-renew.`
+        : 'Your commercial license is valid for one year and will auto-renew.'
+    case 'commercial_perpetual':
+      return orgName
+        ? `Your perpetual commercial license for ${orgName} is valid forever.`
+        : 'Your perpetual commercial license is valid forever.'
+    default:
+      return 'This is an unknown license type. This is weird. Please contact support.'
+  }
 }
 
 export async function sendLicenseEmail(params: EmailParams): Promise<void> {
-    const resend = new Resend(params.resendApiKey)
-    const escapedCustomerName = escapeHtml(params.customerName)
-    const escapedOrgName = params.organizationName ? escapeHtml(params.organizationName) : undefined
-    const licenseDescriptionHtml = getLicenseDescription(params.licenseType, escapedOrgName)
-    const licenseDescriptionText = getLicenseDescription(params.licenseType, params.organizationName)
-    const orgLine = escapedOrgName ? `<p><strong>Licensed to:</strong> ${escapedOrgName}</p>` : ''
-    const orgLineText = params.organizationName ? `Licensed to: ${params.organizationName}\n` : ''
+  const resend = new Resend(params.resendApiKey)
+  const escapedCustomerName = escapeHtml(params.customerName)
+  const escapedOrgName = params.organizationName ? escapeHtml(params.organizationName) : undefined
+  const licenseDescriptionHtml = getLicenseDescription(params.licenseType, escapedOrgName)
+  const licenseDescriptionText = getLicenseDescription(params.licenseType, params.organizationName)
+  const orgLine = escapedOrgName ? `<p><strong>Licensed to:</strong> ${escapedOrgName}</p>` : ''
+  const orgLineText = params.organizationName ? `Licensed to: ${params.organizationName}\n` : ''
 
-    const count = params.licenseKeys.length
-    const isMultiple = count > 1
-    const keyWord = isMultiple ? 'keys' : 'key'
-    const subject = `Your ${params.productName} license ${keyWord} 🎉`
+  const count = params.licenseKeys.length
+  const isMultiple = count > 1
+  const keyWord = isMultiple ? 'keys' : 'key'
+  const subject = `Your ${params.productName} license ${keyWord} 🎉`
 
-    // HTML: render keys as numbered boxes if multiple, single box otherwise
-    const licenseBoxesHtml = isMultiple
-        ? params.licenseKeys
-              .map(
-                  (key, i) => `
+  // HTML: render keys as numbered boxes if multiple, single box otherwise
+  const licenseBoxesHtml = isMultiple
+    ? params.licenseKeys
+        .map(
+          (key, i) => `
             <div class="license-box">
                 <div class="license-number">License ${String(i + 1)} of ${String(count)}</div>
                 ${key}
             </div>`,
-              )
-              .join('\n')
-        : `<div class="license-box">${params.licenseKeys[0]}</div>`
+        )
+        .join('\n')
+    : `<div class="license-box">${params.licenseKeys[0]}</div>`
 
-    // Plain text: render keys with headers if multiple
-    const licenseKeysText = isMultiple
-        ? params.licenseKeys.map((key, i) => `License ${String(i + 1)} of ${String(count)}:\n${key}`).join('\n\n')
-        : params.licenseKeys[0]
+  // Plain text: render keys with headers if multiple
+  const licenseKeysText = isMultiple
+    ? params.licenseKeys.map((key, i) => `License ${String(i + 1)} of ${String(count)}:\n${key}`).join('\n\n')
+    : params.licenseKeys[0]
 
-    const introText = isMultiple
-        ? `Thanks for purchasing ${String(count)} licenses for ${params.productName}! Here are your license keys:`
-        : `Thanks for purchasing ${params.productName}! Here's your license key:`
+  const introText = isMultiple
+    ? `Thanks for purchasing ${String(count)} licenses for ${params.productName}! Here are your license keys:`
+    : `Thanks for purchasing ${params.productName}! Here's your license key:`
 
-    await resend.emails.send({
-        from: `${params.productName} <noreply@getcmdr.com>`,
-        to: params.to,
-        subject,
-        html: `
+  await resend.emails.send({
+    from: `${params.productName} <noreply@getcmdr.com>`,
+    to: params.to,
+    subject,
+    html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -305,7 +305,7 @@ export async function sendLicenseEmail(params: EmailParams): Promise<void> {
 </body>
 </html>
         `.trim(),
-        text: `
+    text: `
 Welcome to ${params.productName}!
 
 Hey ${params.customerName},
@@ -328,5 +328,5 @@ Questions? Contact ${params.supportEmail}
 
 Happy file managing! ⌘
         `.trim(),
-    })
+  })
 }

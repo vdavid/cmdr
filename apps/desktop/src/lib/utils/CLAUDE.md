@@ -44,8 +44,8 @@ Key types:
 ```ts
 type ValidationSeverity = 'error' | 'warning' | 'ok'
 interface ValidationResult {
-    severity: ValidationSeverity
-    message: string
+  severity: ValidationSeverity
+  message: string
 }
 ```
 

@@ -20,9 +20,9 @@ Opens files in a read-only viewer with instant load for any file size, virtual s
 - **Virtual scrolling** — only visible lines rendered. Fixed 18px line height (or averaged when wrap is on).
 - **Session-based** — `viewer_open` returns session ID. All operations pass session ID. `viewer_close` frees resources.
 - **Three backends** (chosen by Rust based on file size):
-    - FullLoad (<1MB) — entire file in RAM
-    - ByteSeek (instant) — no pre-scan, seeks by byte offset
-    - LineIndex (after scan) — O(lines/256) memory, O(1) line seeks
+  - FullLoad (<1MB) — entire file in RAM
+  - ByteSeek (instant) — no pre-scan, seeks by byte offset
+  - LineIndex (after scan) — O(lines/256) memory, O(1) line seeks
 - **Background search** — frontend calls `search_start`, polls `search_poll` until done or canceled
 - **Multiple viewers** — each window has unique label (`viewer-${timestamp}`). No limit on open viewers.
 

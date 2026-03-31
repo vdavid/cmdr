@@ -16,44 +16,44 @@ import { createMockDirectoryListing, filterHiddenFiles, createMockEntriesWithCou
 // ============================================================================
 
 describe('Mock data helpers', () => {
-    it('createMockDirectoryListing includes hidden and visible files', () => {
-        const listing = createMockDirectoryListing()
+  it('createMockDirectoryListing includes hidden and visible files', () => {
+    const listing = createMockDirectoryListing()
 
-        const hidden = listing.filter((f) => f.name.startsWith('.'))
-        const visible = listing.filter((f) => !f.name.startsWith('.'))
+    const hidden = listing.filter((f) => f.name.startsWith('.'))
+    const visible = listing.filter((f) => !f.name.startsWith('.'))
 
-        expect(hidden.length).toBeGreaterThan(0)
-        expect(visible.length).toBeGreaterThan(0)
-    })
+    expect(hidden.length).toBeGreaterThan(0)
+    expect(visible.length).toBeGreaterThan(0)
+  })
 
-    it('filterHiddenFiles correctly filters', () => {
-        const listing = createMockDirectoryListing()
+  it('filterHiddenFiles correctly filters', () => {
+    const listing = createMockDirectoryListing()
 
-        const withHidden = filterHiddenFiles(listing, true)
-        const withoutHidden = filterHiddenFiles(listing, false)
+    const withHidden = filterHiddenFiles(listing, true)
+    const withoutHidden = filterHiddenFiles(listing, false)
 
-        expect(withHidden.length).toBe(listing.length)
-        expect(withoutHidden.length).toBeLessThan(listing.length)
-        expect(withoutHidden.every((f) => !f.name.startsWith('.') || f.name === '..')).toBe(true)
-    })
+    expect(withHidden.length).toBe(listing.length)
+    expect(withoutHidden.length).toBeLessThan(listing.length)
+    expect(withoutHidden.every((f) => !f.name.startsWith('.') || f.name === '..')).toBe(true)
+  })
 
-    it('createMockEntriesWithCount creates correct count', () => {
-        const entries = createMockEntriesWithCount(500)
-        expect(entries.length).toBe(500)
-    })
+  it('createMockEntriesWithCount creates correct count', () => {
+    const entries = createMockEntriesWithCount(500)
+    expect(entries.length).toBe(500)
+  })
 
-    it('createMockEntriesWithCount sorts directories first', () => {
-        const entries = createMockEntriesWithCount(100)
+  it('createMockEntriesWithCount sorts directories first', () => {
+    const entries = createMockEntriesWithCount(100)
 
-        const dirs = entries.filter((e) => e.isDirectory)
-        const files = entries.filter((e) => !e.isDirectory)
+    const dirs = entries.filter((e) => e.isDirectory)
+    const files = entries.filter((e) => !e.isDirectory)
 
-        if (dirs.length > 0 && files.length > 0) {
-            const lastDirIndex = entries.findIndex((e) => e === dirs[dirs.length - 1])
-            const firstFileIndex = entries.findIndex((e) => e === files[0])
-            expect(lastDirIndex).toBeLessThan(firstFileIndex)
-        }
-    })
+    if (dirs.length > 0 && files.length > 0) {
+      const lastDirIndex = entries.findIndex((e) => e === dirs[dirs.length - 1])
+      const firstFileIndex = entries.findIndex((e) => e === files[0])
+      expect(lastDirIndex).toBeLessThan(firstFileIndex)
+    }
+  })
 })
 
 // Note: Keyboard shortcuts logic tests are in keyboard-shortcuts.test.ts

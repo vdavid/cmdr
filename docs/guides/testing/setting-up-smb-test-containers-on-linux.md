@@ -60,18 +60,18 @@ Edit `test/smb-servers/docker-compose.pi.yml`:
 
 ```yaml
 networks:
-    smb_lan:
-        driver: macvlan
-        driver_opts:
-            # Change to your device's network interface
-            # Check with: ip link show
-            parent: eth0 # or wlan0 for Wi-Fi
-        ipam:
-            config:
-                # Update to match your LAN
-                - subnet: 192.168.1.0/24
-                  gateway: 192.168.1.1
-                  ip_range: 192.168.1.200/28
+  smb_lan:
+    driver: macvlan
+    driver_opts:
+      # Change to your device's network interface
+      # Check with: ip link show
+      parent: eth0 # or wlan0 for Wi-Fi
+    ipam:
+      config:
+        # Update to match your LAN
+        - subnet: 192.168.1.0/24
+          gateway: 192.168.1.1
+          ip_range: 192.168.1.200/28
 ```
 
 To find your network interface:
@@ -123,20 +123,20 @@ docker compose -f docker-compose.pi.yml down
 
 1. **Check Avahi is running**:
 
-    ```bash
-    docker exec smb-guest ps aux | grep avahi
-    ```
+   ```bash
+   docker exec smb-guest ps aux | grep avahi
+   ```
 
 2. **Check container has correct IP**:
 
-    ```bash
-    docker inspect smb-guest | grep IPAddress
-    ```
+   ```bash
+   docker inspect smb-guest | grep IPAddress
+   ```
 
 3. **Check macvlan network exists**:
-    ```bash
-    docker network ls | grep smb_lan
-    ```
+   ```bash
+   docker network ls | grep smb_lan
+   ```
 
 ### Can't connect from the Pi itself
 
@@ -147,14 +147,14 @@ With macvlan networking, the host can't directly communicate with containers. Th
 
 1. **Check container logs**:
 
-    ```bash
-    docker logs smb-guest
-    ```
+   ```bash
+   docker logs smb-guest
+   ```
 
 2. **Verify Samba is running**:
-    ```bash
-    docker exec smb-guest smbclient -L localhost -N
-    ```
+   ```bash
+   docker exec smb-guest smbclient -L localhost -N
+   ```
 
 ## Adding more containers
 

@@ -2,8 +2,8 @@
 title: Index DB shrunk 7x with one schema change
 date: 2026-03-04
 description:
-    How switching from text-path primary keys to an integer parent-child tree cut the Cmdr drive index from 3.85 GB to
-    540 MB.
+  How switching from text-path primary keys to an integer parent-child tree cut the Cmdr drive index from 3.85 GB to 540
+  MB.
 ---
 
 Cmdr is a keyboard-driven file manager I'm building in Rust. (See the rest of this website for details.) One of its

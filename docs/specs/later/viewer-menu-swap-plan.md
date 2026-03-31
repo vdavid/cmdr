@@ -37,20 +37,20 @@ An `active_menu_kind` tracker avoids redundant swaps (viewer→viewer, main→ma
 - Add `ViewerMenuItems<R>` struct: `{ menu: Menu<R>, word_wrap: CheckMenuItem<R> }`
 - Change `build_viewer_menu` return type from `Menu<R>` to `ViewerMenuItems<R>`
 - Add to `MenuState` (all `#[cfg(target_os = "macos")]`):
-    - `main_menu: Mutex<Option<Menu<R>>>`
-    - `viewer_menu: Mutex<Option<Menu<R>>>`
-    - `active_menu_kind: Mutex<ActiveMenuKind>`
-    - `viewer_word_wrap: Mutex<Option<CheckMenuItem<R>>>`
+  - `main_menu: Mutex<Option<Menu<R>>>`
+  - `viewer_menu: Mutex<Option<Menu<R>>>`
+  - `active_menu_kind: Mutex<ActiveMenuKind>`
+  - `viewer_word_wrap: Mutex<Option<CheckMenuItem<R>>>`
 - Add `cleanup_macos_menus_from_command(app)` — wraps `app.run_on_main_thread(cleanup_macos_menus)` for safe use from
   Tauri command threads
 
 **`apps/desktop/src-tauri/src/commands/ui.rs`**
 
 - Add `activate_window_menu` command (takes `kind: "main" | "viewer" | "other"`)
-    - `"main"`: on macOS, swap to main menu if needed + cleanup; then enable items (reuse existing `set_menu_context`
-      logic)
-    - `"viewer"`: on macOS, swap to viewer menu if needed + cleanup; on Linux, no-op
-    - `"other"`: on macOS, swap to main menu if needed + cleanup; then disable items
+  - `"main"`: on macOS, swap to main menu if needed + cleanup; then enable items (reuse existing `set_menu_context`
+    logic)
+  - `"viewer"`: on macOS, swap to viewer menu if needed + cleanup; on Linux, no-op
+  - `"other"`: on macOS, swap to main menu if needed + cleanup; then disable items
 - Keep `set_menu_context` as a private helper (remove `#[tauri::command]` and the public IPC registration)
 
 **`apps/desktop/src-tauri/src/commands/file_viewer.rs`**
@@ -87,8 +87,8 @@ An `active_menu_kind` tracker avoids redundant swaps (viewer→viewer, main→ma
 **`apps/desktop/src/routes/viewer/+page.svelte`**
 
 - Add `onFocusChanged` listener in `onMount`:
-    - On focus: `activateWindowMenu('viewer')` + `viewerSetWordWrap(label, wordWrap)` (syncs shared menu checkbox to
-      this viewer's word wrap state)
+  - On focus: `activateWindowMenu('viewer')` + `viewerSetWordWrap(label, wordWrap)` (syncs shared menu checkbox to this
+    viewer's word wrap state)
 - Add unlisten to `cleanupListeners()`
 
 **`apps/desktop/src/routes/settings/+page.svelte`**
@@ -121,15 +121,15 @@ An `active_menu_kind` tracker avoids redundant swaps (viewer→viewer, main→ma
 2. `pnpm vitest run` in `apps/desktop`
 3. `./scripts/check.sh --check rustfmt --check clippy --check svelte-check --check desktop-svelte-eslint --check desktop-svelte-prettier`
 4. Manual testing with MCP:
-    - Open app → verify main menu shows all items
-    - Open viewer (F3) → verify viewer menu appears (File: Close, Edit: Copy/Select All, View: Word wrap)
-    - Toggle word wrap in viewer → verify checkbox toggles
-    - Open second viewer → verify menu stays as viewer, word wrap reflects second viewer's state
-    - Click back to main → verify main menu restores with all items enabled
-    - Open Settings → verify main menu with items disabled
-    - Close Settings → verify main menu with items re-enabled
-    - Cmd+W in viewer → closes viewer
-    - Cmd+W in Settings → closes Settings
+   - Open app → verify main menu shows all items
+   - Open viewer (F3) → verify viewer menu appears (File: Close, Edit: Copy/Select All, View: Word wrap)
+   - Toggle word wrap in viewer → verify checkbox toggles
+   - Open second viewer → verify menu stays as viewer, word wrap reflects second viewer's state
+   - Click back to main → verify main menu restores with all items enabled
+   - Open Settings → verify main menu with items disabled
+   - Close Settings → verify main menu with items re-enabled
+   - Cmd+W in viewer → closes viewer
+   - Cmd+W in Settings → closes Settings
 
 ## Task list
 

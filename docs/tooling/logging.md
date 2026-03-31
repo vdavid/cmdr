@@ -51,7 +51,7 @@ To also see debug logs in browser devtools, add the feature to `debugCategories`
 
 ```typescript
 const debugCategories: string[] = [
-    'fileExplorer', // Now shows debug logs in browser devtools too
+  'fileExplorer', // Now shows debug logs in browser devtools too
 ]
 ```
 

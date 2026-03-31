@@ -47,12 +47,12 @@ JavaScript `dispatchEvent` instead:**
 
 ```typescript
 async function dispatchKey(key: string): Promise<void> {
-    await browser.execute((k: string) => {
-        const target = document.querySelector('.dual-pane-explorer') ?? document.activeElement ?? document.body
-        target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }))
-        target.dispatchEvent(new KeyboardEvent('keyup', { key: k, bubbles: true, cancelable: true }))
-    }, key)
-    await browser.pause(300)
+  await browser.execute((k: string) => {
+    const target = document.querySelector('.dual-pane-explorer') ?? document.activeElement ?? document.body
+    target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }))
+    target.dispatchEvent(new KeyboardEvent('keyup', { key: k, bubbles: true, cancelable: true }))
+  }, key)
+  await browser.pause(300)
 }
 ```
 
@@ -67,8 +67,8 @@ await browser.execute((el) => el.click(), someElement)
 
 // GOOD — query inside execute
 await browser.execute(() => {
-    const el = document.querySelector('.my-selector')
-    el?.click()
+  const el = document.querySelector('.my-selector')
+  el?.click()
 })
 ```
 

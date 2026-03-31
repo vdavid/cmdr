@@ -10,39 +10,39 @@ import path from 'path'
 import { ensureAppReady, getFixtureRoot, fileExistsInFocusedPane } from '../e2e-shared/helpers.js'
 
 describe('File watching', () => {
-    const createdDirs: string[] = []
+  const createdDirs: string[] = []
 
-    afterEach(() => {
-        for (const dir of createdDirs) {
-            try {
-                fs.rmSync(dir, { recursive: true, force: true })
-            } catch {
-                // Best-effort cleanup
-            }
-        }
-        createdDirs.length = 0
+  afterEach(() => {
+    for (const dir of createdDirs) {
+      try {
+        fs.rmSync(dir, { recursive: true, force: true })
+      } catch {
+        // Best-effort cleanup
+      }
+    }
+    createdDirs.length = 0
+  })
+
+  it('detects an externally created directory via inotify', async () => {
+    await ensureAppReady()
+    const fixtureRoot = getFixtureRoot()
+
+    const dirName = `inotify-test-${Date.now()}`
+    const dirPath = path.join(fixtureRoot, 'left', dirName)
+
+    // Verify the directory does not exist in the pane yet
+    const existsBefore = await fileExistsInFocusedPane(dirName)
+    expect(existsBefore).toBe(false)
+
+    // Create the directory externally (not through the app)
+    fs.mkdirSync(dirPath)
+    createdDirs.push(dirPath)
+
+    // Wait for inotify to pick up the change and the pane to refresh
+    await browser.waitUntil(async () => fileExistsInFocusedPane(dirName), {
+      timeout: 8000,
+      interval: 500,
+      timeoutMsg: `${dirName} did not appear in the file listing after external mkdir (inotify not working?)`,
     })
-
-    it('detects an externally created directory via inotify', async () => {
-        await ensureAppReady()
-        const fixtureRoot = getFixtureRoot()
-
-        const dirName = `inotify-test-${Date.now()}`
-        const dirPath = path.join(fixtureRoot, 'left', dirName)
-
-        // Verify the directory does not exist in the pane yet
-        const existsBefore = await fileExistsInFocusedPane(dirName)
-        expect(existsBefore).toBe(false)
-
-        // Create the directory externally (not through the app)
-        fs.mkdirSync(dirPath)
-        createdDirs.push(dirPath)
-
-        // Wait for inotify to pick up the change and the pane to refresh
-        await browser.waitUntil(async () => fileExistsInFocusedPane(dirName), {
-            timeout: 8000,
-            interval: 500,
-            timeoutMsg: `${dirName} did not appear in the file listing after external mkdir (inotify not working?)`,
-        })
-    })
+  })
 })

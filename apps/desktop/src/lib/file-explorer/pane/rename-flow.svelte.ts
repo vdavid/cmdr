@@ -10,293 +10,287 @@ import type { FileEntry } from '../types'
 import type { createRenameState } from '../rename/rename-state.svelte'
 
 export interface RenameFlowDeps {
-    rename: ReturnType<typeof createRenameState>
-    getListingId: () => string
-    getTotalCount: () => number
-    getIncludeHidden: () => boolean
-    getCurrentPath: () => string
-    getCursorIndex: () => number
-    getShowHiddenFiles: () => boolean
-    getVolumeId: () => string
-    getEntryUnderCursor: () => FileEntry | undefined
-    onRequestFocus: () => void
+  rename: ReturnType<typeof createRenameState>
+  getListingId: () => string
+  getTotalCount: () => number
+  getIncludeHidden: () => boolean
+  getCurrentPath: () => string
+  getCursorIndex: () => number
+  getShowHiddenFiles: () => boolean
+  getVolumeId: () => string
+  getEntryUnderCursor: () => FileEntry | undefined
+  onRequestFocus: () => void
 }
 
 export function createRenameFlow(deps: RenameFlowDeps) {
-    const { rename, onRequestFocus } = deps
+  const { rename, onRequestFocus } = deps
 
-    // Extension change dialog state
-    let extensionDialogState = $state<{ oldExtension: string; newExtension: string } | null>(null)
+  // Extension change dialog state
+  let extensionDialogState = $state<{ oldExtension: string; newExtension: string } | null>(null)
 
-    // Conflict dialog state
-    let conflictDialogState = $state<{
-        validity: RenameValidityResult
-        trimmedName: string
-    } | null>(null)
+  // Conflict dialog state
+  let conflictDialogState = $state<{
+    validity: RenameValidityResult
+    trimmedName: string
+  } | null>(null)
 
-    // Post-rename: name to select after file watcher refresh
-    let pendingCursorName = $state<string | null>(null)
+  // Post-rename: name to select after file watcher refresh
+  let pendingCursorName = $state<string | null>(null)
 
-    // Sibling names cache for rename conflict detection (loaded once when rename starts)
-    let renameSiblingNames: string[] = []
+  // Sibling names cache for rename conflict detection (loaded once when rename starts)
+  let renameSiblingNames: string[] = []
 
-    // When true, suppress the blur-cancel (a dialog is about to open)
-    let suppressBlurCancel = false
+  // When true, suppress the blur-cancel (a dialog is about to open)
+  let suppressBlurCancel = false
 
-    async function loadSiblingNames(excludeName: string): Promise<string[]> {
-        const listingId = deps.getListingId()
-        const totalCount = deps.getTotalCount()
-        const includeHidden = deps.getIncludeHidden()
-        if (!listingId || totalCount === 0) return []
-        try {
-            const batchSize = 500
-            const names: string[] = []
-            for (let start = 0; start < totalCount; start += batchSize) {
-                const count = Math.min(batchSize, totalCount - start)
-                const entries = await getFileRange(listingId, start, count, includeHidden)
-                for (const entry of entries) {
-                    if (entry.name !== excludeName) {
-                        names.push(entry.name)
-                    }
-                }
-            }
-            return names
-        } catch {
-            return []
+  async function loadSiblingNames(excludeName: string): Promise<string[]> {
+    const listingId = deps.getListingId()
+    const totalCount = deps.getTotalCount()
+    const includeHidden = deps.getIncludeHidden()
+    if (!listingId || totalCount === 0) return []
+    try {
+      const batchSize = 500
+      const names: string[] = []
+      for (let start = 0; start < totalCount; start += batchSize) {
+        const count = Math.min(batchSize, totalCount - start)
+        const entries = await getFileRange(listingId, start, count, includeHidden)
+        for (const entry of entries) {
+          if (entry.name !== excludeName) {
+            names.push(entry.name)
+          }
         }
+      }
+      return names
+    } catch {
+      return []
     }
+  }
 
-    function handleRenameResult(result: RenameResult, trimmedName: string) {
-        switch (result.type) {
-            case 'noop':
-                rename.cancel()
-                onRequestFocus()
-                break
-            case 'error':
-                rename.triggerShake()
-                addToast(result.message, { level: 'error' })
-                break
-            case 'timeout':
-                rename.cancel()
-                onRequestFocus()
-                addToast(result.message, { level: 'warn', dismissal: 'persistent' })
-                void refreshListing(deps.getListingId())
-                break
-            case 'extension-ask':
-                suppressBlurCancel = true
-                extensionDialogState = {
-                    oldExtension: result.oldExtension,
-                    newExtension: result.newExtension,
-                }
-                break
-            case 'conflict':
-                suppressBlurCancel = true
-                conflictDialogState = { validity: result.validity, trimmedName }
-                break
-            case 'success':
-                finalizeRename(result.newName)
-                break
-        }
-    }
-
-    function finalizeRename(newName: string) {
-        const wasHiddenRename = newName.startsWith('.') && !deps.getShowHiddenFiles()
-
+  function handleRenameResult(result: RenameResult, trimmedName: string) {
+    switch (result.type) {
+      case 'noop':
         rename.cancel()
-        extensionDialogState = null
-        conflictDialogState = null
         onRequestFocus()
-
-        pendingCursorName = newName
-
-        if (wasHiddenRename) {
-            addToast("Your file disappeared from view because hidden files aren't shown.")
+        break
+      case 'error':
+        rename.triggerShake()
+        addToast(result.message, { level: 'error' })
+        break
+      case 'timeout':
+        rename.cancel()
+        onRequestFocus()
+        addToast(result.message, { level: 'warn', dismissal: 'persistent' })
+        void refreshListing(deps.getListingId())
+        break
+      case 'extension-ask':
+        suppressBlurCancel = true
+        extensionDialogState = {
+          oldExtension: result.oldExtension,
+          newExtension: result.newExtension,
         }
+        break
+      case 'conflict':
+        suppressBlurCancel = true
+        conflictDialogState = { validity: result.validity, trimmedName }
+        break
+      case 'success':
+        finalizeRename(result.newName)
+        break
     }
+  }
 
-    async function executeFlow(skipExtensionCheck?: boolean) {
-        const target = rename.target
-        if (!target) return
+  function finalizeRename(newName: string) {
+    const wasHiddenRename = newName.startsWith('.') && !deps.getShowHiddenFiles()
 
-        const trimmedName = rename.getTrimmedName()
-        const extensionPolicy = getSetting('fileOperations.allowFileExtensionChanges')
-        const currentVolumeId = deps.getVolumeId()
+    rename.cancel()
+    extensionDialogState = null
+    conflictDialogState = null
+    onRequestFocus()
 
-        const result = await executeRenameSave(
-            target,
-            trimmedName,
-            extensionPolicy,
-            skipExtensionCheck,
-            currentVolumeId,
-        )
-        handleRenameResult(result, trimmedName)
+    pendingCursorName = newName
+
+    if (wasHiddenRename) {
+      addToast("Your file disappeared from view because hidden files aren't shown.")
     }
+  }
 
-    return {
-        get extensionDialogState() {
-            return extensionDialogState
-        },
-        get conflictDialogState() {
-            return conflictDialogState
-        },
-        get pendingCursorName() {
-            return pendingCursorName
-        },
-        set pendingCursorName(v: string | null) {
-            pendingCursorName = v
-        },
+  async function executeFlow(skipExtensionCheck?: boolean) {
+    const target = rename.target
+    if (!target) return
 
-        startRename(): void {
-            const entry = deps.getEntryUnderCursor()
-            if (!entry || entry.name === '..') return
+    const trimmedName = rename.getTrimmedName()
+    const extensionPolicy = getSetting('fileOperations.allowFileExtensionChanges')
+    const currentVolumeId = deps.getVolumeId()
 
-            const target = {
-                path: entry.path,
-                originalName: entry.name,
-                parentPath: deps.getCurrentPath(),
-                index: deps.getCursorIndex(),
-                isDirectory: entry.isDirectory,
-            }
+    const result = await executeRenameSave(target, trimmedName, extensionPolicy, skipExtensionCheck, currentVolumeId)
+    handleRenameResult(result, trimmedName)
+  }
 
-            rename.activate(target)
-            renameSiblingNames = []
+  return {
+    get extensionDialogState() {
+      return extensionDialogState
+    },
+    get conflictDialogState() {
+      return conflictDialogState
+    },
+    get pendingCursorName() {
+      return pendingCursorName
+    },
+    set pendingCursorName(v: string | null) {
+      pendingCursorName = v
+    },
 
-            void loadSiblingNames(entry.name).then((names) => {
-                renameSiblingNames = names
+    startRename(): void {
+      const entry = deps.getEntryUnderCursor()
+      if (!entry || entry.name === '..') return
+
+      const target = {
+        path: entry.path,
+        originalName: entry.name,
+        parentPath: deps.getCurrentPath(),
+        index: deps.getCursorIndex(),
+        isDirectory: entry.isDirectory,
+      }
+
+      rename.activate(target)
+      renameSiblingNames = []
+
+      void loadSiblingNames(entry.name).then((names) => {
+        renameSiblingNames = names
+      })
+
+      // Skip permission check for MTP volumes — it uses symlink_metadata
+      // which doesn't work on MTP virtual paths.
+      const currentVolumeId = deps.getVolumeId()
+      if (!currentVolumeId.startsWith('mtp-')) {
+        void checkPermission(entry.path).then((errorMsg) => {
+          if (errorMsg && rename.active && rename.target?.path === entry.path) {
+            rename.cancel()
+            addToast(errorMsg, { level: 'error' })
+            onRequestFocus()
+          }
+        })
+      }
+    },
+
+    cancelRename(): void {
+      cancelClickToRename()
+      rename.cancel()
+      renameSiblingNames = []
+      extensionDialogState = null
+      conflictDialogState = null
+      onRequestFocus()
+    },
+
+    handleRenameInput(value: string) {
+      rename.setCurrentName(value)
+      dismissTransientToasts()
+      const extensionPolicy = getSetting('fileOperations.allowFileExtensionChanges')
+      const result = validateFilename(
+        value,
+        rename.target?.originalName ?? '',
+        deps.getCurrentPath(),
+        renameSiblingNames,
+        extensionPolicy,
+      )
+      rename.setValidation(result)
+    },
+
+    handleRenameSubmit() {
+      if (rename.severity === 'error') {
+        rename.triggerShake()
+        addToast(rename.validation.message, { level: 'error' })
+        return
+      }
+      if (!rename.hasChanged()) {
+        rename.cancel()
+        onRequestFocus()
+        return
+      }
+      void executeFlow()
+    },
+
+    handleExtensionKeepOld() {
+      extensionDialogState = null
+      if (rename.target) {
+        const oldExt = getExtension(rename.target.originalName)
+        const nameWithoutExt = rename.getTrimmedName()
+        const newExt = getExtension(nameWithoutExt)
+        if (newExt) {
+          const base = nameWithoutExt.slice(0, -newExt.length)
+          rename.setCurrentName(base + oldExt)
+        }
+      }
+      rename.requestRefocus()
+    },
+
+    handleExtensionUseNew() {
+      extensionDialogState = null
+      void executeFlow(true)
+    },
+
+    handleConflictResolve(resolution: RenameConflictResolution) {
+      const target = rename.target
+      const trimmedName = conflictDialogState?.trimmedName
+      conflictDialogState = null
+
+      if (!target || !trimmedName) {
+        rename.cancel()
+        onRequestFocus()
+        return
+      }
+
+      const currentVolumeId = deps.getVolumeId()
+
+      switch (resolution) {
+        case 'overwrite-trash': {
+          const conflictPath = target.parentPath + '/' + trimmedName
+          void moveToTrash(conflictPath)
+            .then(() => performRename(target, trimmedName, true, currentVolumeId))
+            .then((result) => {
+              handleRenameResult(result, trimmedName)
             })
+            .catch((e: unknown) => {
+              if (isIpcError(e) && e.timedOut) {
+                addToast(
+                  "Couldn't confirm the file was moved to Trash. The volume may be slow — the file may still have been moved.",
+                  { level: 'warn', dismissal: 'persistent' },
+                )
+                void refreshListing(deps.getListingId())
+              } else {
+                addToast(getIpcErrorMessage(e), { level: 'error' })
+              }
+              rename.cancel()
+              onRequestFocus()
+            })
+          break
+        }
+        case 'overwrite-delete':
+          void performRename(target, trimmedName, true, currentVolumeId).then((result) => {
+            handleRenameResult(result, trimmedName)
+          })
+          break
+        case 'cancel':
+          rename.cancel()
+          onRequestFocus()
+          break
+        case 'continue':
+          rename.requestRefocus()
+          break
+      }
+    },
 
-            // Skip permission check for MTP volumes — it uses symlink_metadata
-            // which doesn't work on MTP virtual paths.
-            const currentVolumeId = deps.getVolumeId()
-            if (!currentVolumeId.startsWith('mtp-')) {
-                void checkPermission(entry.path).then((errorMsg) => {
-                    if (errorMsg && rename.active && rename.target?.path === entry.path) {
-                        rename.cancel()
-                        addToast(errorMsg, { level: 'error' })
-                        onRequestFocus()
-                    }
-                })
-            }
-        },
+    handleRenameCancel() {
+      if (suppressBlurCancel) {
+        suppressBlurCancel = false
+        return
+      }
+      rename.cancel()
+      onRequestFocus()
+    },
 
-        cancelRename(): void {
-            cancelClickToRename()
-            rename.cancel()
-            renameSiblingNames = []
-            extensionDialogState = null
-            conflictDialogState = null
-            onRequestFocus()
-        },
-
-        handleRenameInput(value: string) {
-            rename.setCurrentName(value)
-            dismissTransientToasts()
-            const extensionPolicy = getSetting('fileOperations.allowFileExtensionChanges')
-            const result = validateFilename(
-                value,
-                rename.target?.originalName ?? '',
-                deps.getCurrentPath(),
-                renameSiblingNames,
-                extensionPolicy,
-            )
-            rename.setValidation(result)
-        },
-
-        handleRenameSubmit() {
-            if (rename.severity === 'error') {
-                rename.triggerShake()
-                addToast(rename.validation.message, { level: 'error' })
-                return
-            }
-            if (!rename.hasChanged()) {
-                rename.cancel()
-                onRequestFocus()
-                return
-            }
-            void executeFlow()
-        },
-
-        handleExtensionKeepOld() {
-            extensionDialogState = null
-            if (rename.target) {
-                const oldExt = getExtension(rename.target.originalName)
-                const nameWithoutExt = rename.getTrimmedName()
-                const newExt = getExtension(nameWithoutExt)
-                if (newExt) {
-                    const base = nameWithoutExt.slice(0, -newExt.length)
-                    rename.setCurrentName(base + oldExt)
-                }
-            }
-            rename.requestRefocus()
-        },
-
-        handleExtensionUseNew() {
-            extensionDialogState = null
-            void executeFlow(true)
-        },
-
-        handleConflictResolve(resolution: RenameConflictResolution) {
-            const target = rename.target
-            const trimmedName = conflictDialogState?.trimmedName
-            conflictDialogState = null
-
-            if (!target || !trimmedName) {
-                rename.cancel()
-                onRequestFocus()
-                return
-            }
-
-            const currentVolumeId = deps.getVolumeId()
-
-            switch (resolution) {
-                case 'overwrite-trash': {
-                    const conflictPath = target.parentPath + '/' + trimmedName
-                    void moveToTrash(conflictPath)
-                        .then(() => performRename(target, trimmedName, true, currentVolumeId))
-                        .then((result) => {
-                            handleRenameResult(result, trimmedName)
-                        })
-                        .catch((e: unknown) => {
-                            if (isIpcError(e) && e.timedOut) {
-                                addToast(
-                                    "Couldn't confirm the file was moved to Trash. The volume may be slow — the file may still have been moved.",
-                                    { level: 'warn', dismissal: 'persistent' },
-                                )
-                                void refreshListing(deps.getListingId())
-                            } else {
-                                addToast(getIpcErrorMessage(e), { level: 'error' })
-                            }
-                            rename.cancel()
-                            onRequestFocus()
-                        })
-                    break
-                }
-                case 'overwrite-delete':
-                    void performRename(target, trimmedName, true, currentVolumeId).then((result) => {
-                        handleRenameResult(result, trimmedName)
-                    })
-                    break
-                case 'cancel':
-                    rename.cancel()
-                    onRequestFocus()
-                    break
-                case 'continue':
-                    rename.requestRefocus()
-                    break
-            }
-        },
-
-        handleRenameCancel() {
-            if (suppressBlurCancel) {
-                suppressBlurCancel = false
-                return
-            }
-            rename.cancel()
-            onRequestFocus()
-        },
-
-        handleRenameShakeEnd() {
-            rename.clearShake()
-        },
-    }
+    handleRenameShakeEnd() {
+      rename.clearShake()
+    },
+  }
 }

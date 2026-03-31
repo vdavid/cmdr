@@ -20,15 +20,15 @@ let offsetY = 0
  * Only runs in dev mode. Call on mount and on window resize.
  */
 export async function recalculateWebviewOffset(): Promise<void> {
-    if (!import.meta.env.DEV) return
-    try {
-        const dpr = window.devicePixelRatio || 1
-        const outerSize = await getCurrentWindow().outerSize()
-        offsetX = outerSize.width / dpr - window.innerWidth
-        offsetY = outerSize.height / dpr - window.innerHeight
-    } catch {
-        // Tauri API unavailable (tests, SSR). Offsets stay at zero.
-    }
+  if (!import.meta.env.DEV) return
+  try {
+    const dpr = window.devicePixelRatio || 1
+    const outerSize = await getCurrentWindow().outerSize()
+    offsetX = outerSize.width / dpr - window.innerWidth
+    offsetY = outerSize.height / dpr - window.innerHeight
+  } catch {
+    // Tauri API unavailable (tests, SSR). Offsets stay at zero.
+  }
 }
 
 /**
@@ -36,9 +36,9 @@ export async function recalculateWebviewOffset(): Promise<void> {
  * In production, returns the position unchanged (offset is always zero).
  */
 export function toViewportPosition(position: { x: number; y: number }): { x: number; y: number } {
-    if (offsetX === 0 && offsetY === 0) return position
-    return {
-        x: position.x + offsetX,
-        y: position.y + offsetY,
-    }
+  if (offsetX === 0 && offsetY === 0) return position
+  return {
+    x: position.x + offsetX,
+    y: position.y + offsetY,
+  }
 }

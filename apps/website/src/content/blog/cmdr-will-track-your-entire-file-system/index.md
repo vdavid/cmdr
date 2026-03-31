@@ -2,8 +2,8 @@
 title: Cmdr will track your entire file system
 date: 2026-02-18
 description:
-    Cmdr will soon scan your drive on startup and watch for changes, keeping a complete live index. This unlocks instant
-    search, live dir sizes, treemaps, all built-in.
+  Cmdr will soon scan your drive on startup and watch for changes, keeping a complete live index. This unlocks instant
+  search, live dir sizes, treemaps, all built-in.
 ---
 
 Last night around 1 am—as you do—I was thinking about displaying dir sizes.

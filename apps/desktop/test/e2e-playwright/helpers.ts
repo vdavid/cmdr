@@ -33,16 +33,16 @@ export const CTRL_OR_META = process.platform === 'darwin' ? 'Meta' : 'Control'
  * different values for some keys (for example, 'Space' -> ' ').
  */
 const KEY_MAP: Record<string, string> = {
-    Space: ' ',
-    Backspace: 'Backspace',
-    Enter: 'Enter',
-    Escape: 'Escape',
-    Tab: 'Tab',
+  Space: ' ',
+  Backspace: 'Backspace',
+  Enter: 'Enter',
+  Escape: 'Escape',
+  Tab: 'Tab',
 }
 
 /** Converts a Playwright key name to the DOM-compatible key value. */
 export function mapKey(key: string): string {
-    return KEY_MAP[key] ?? key
+  return KEY_MAP[key] ?? key
 }
 
 /**
@@ -50,17 +50,17 @@ export function mapKey(key: string): string {
  * Use this instead of tauriPage.keyboard.press() for keys that need mapping.
  */
 export async function pressKey(tauriPage: PageLike, key: string): Promise<void> {
-    const mapped = mapKey(key)
-    const parts = mapped.split('+')
-    const mainKey = parts[parts.length - 1]
-    const modifiers = parts.slice(0, -1)
-    const k = JSON.stringify(mainKey)
-    const ctrl = modifiers.includes('Control') || false
-    const shift = modifiers.includes('Shift') || false
-    const alt = modifiers.includes('Alt') || false
-    const meta = modifiers.includes('Meta') || false
+  const mapped = mapKey(key)
+  const parts = mapped.split('+')
+  const mainKey = parts[parts.length - 1]
+  const modifiers = parts.slice(0, -1)
+  const k = JSON.stringify(mainKey)
+  const ctrl = modifiers.includes('Control') || false
+  const shift = modifiers.includes('Shift') || false
+  const alt = modifiers.includes('Alt') || false
+  const meta = modifiers.includes('Meta') || false
 
-    await tauriPage.evaluate(`(function(){
+  await tauriPage.evaluate(`(function(){
         var el=document.activeElement||document.body;
         var o={key:${k},bubbles:true,ctrlKey:${ctrl},shiftKey:${shift},altKey:${alt},metaKey:${meta}};
         el.dispatchEvent(new KeyboardEvent('keydown',o));
@@ -78,44 +78,44 @@ export async function pressKey(tauriPage: PageLike, key: string): Promise<void> 
  * clicks a file entry, and focuses the explorer container.
  */
 export async function ensureAppReady(tauriPage: PageLike): Promise<void> {
-    // Navigate to the main route to ensure we're on the file explorer page.
-    // This does NOT reset the directory — just ensures we're on the right route.
-    await navigateToRoute(tauriPage, '/')
-    await sleep(500)
+  // Navigate to the main route to ensure we're on the file explorer page.
+  // This does NOT reset the directory — just ensures we're on the right route.
+  await navigateToRoute(tauriPage, '/')
+  await sleep(500)
 
-    // Wait for file entries to be visible (confirms app is fully loaded)
-    await tauriPage.waitForSelector('.file-entry', 15000)
+  // Wait for file entries to be visible (confirms app is fully loaded)
+  await tauriPage.waitForSelector('.file-entry', 15000)
 
-    // Wait for the HTML loading screen to be gone
-    await tauriPage.waitForFunction(
-        '!document.querySelector("#loading-screen") || document.querySelector("#loading-screen").style.display === "none" || !document.querySelector("#loading-screen").offsetParent',
-        5000,
-    )
+  // Wait for the HTML loading screen to be gone
+  await tauriPage.waitForFunction(
+    '!document.querySelector("#loading-screen") || document.querySelector("#loading-screen").style.display === "none" || !document.querySelector("#loading-screen").offsetParent',
+    5000,
+  )
 
-    // Close any lingering modal dialog from a prior test
-    await tauriPage.evaluate(`(function() {
+  // Close any lingering modal dialog from a prior test
+  await tauriPage.evaluate(`(function() {
         var overlay = document.querySelector('.modal-overlay');
         if (overlay) overlay.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
     })()`)
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
+  await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
 
-    // Dismiss any overlays (AI notification, etc.)
-    await tauriPage.evaluate(`(function() {
+  // Dismiss any overlays (AI notification, etc.)
+  await tauriPage.evaluate(`(function() {
         var btn = document.querySelector('.ai-notification .ai-button.secondary');
         if (btn) btn.click();
     })()`)
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.ai-notification')), 3000)
+  await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.ai-notification')), 3000)
 
-    // Navigate both panes to the fixture root's left/ and right/ directories.
-    // Previous tests may have entered sub-dir or navigated elsewhere.
-    // Route navigation (above) only ensures we're on the explorer PAGE —
-    // it doesn't change which directory the panes are showing.
-    // We emit mcp-nav-to-path Tauri events which the +page.svelte listener
-    // forwards to DualPaneExplorer.navigateToPath().
-    const fixtureRoot = getFixtureRoot()
-    const leftPanePath = fixtureRoot + '/left'
-    const rightPanePath = fixtureRoot + '/right'
-    await tauriPage.evaluate(`(function() {
+  // Navigate both panes to the fixture root's left/ and right/ directories.
+  // Previous tests may have entered sub-dir or navigated elsewhere.
+  // Route navigation (above) only ensures we're on the explorer PAGE —
+  // it doesn't change which directory the panes are showing.
+  // We emit mcp-nav-to-path Tauri events which the +page.svelte listener
+  // forwards to DualPaneExplorer.navigateToPath().
+  const fixtureRoot = getFixtureRoot()
+  const leftPanePath = fixtureRoot + '/left'
+  const rightPanePath = fixtureRoot + '/right'
+  await tauriPage.evaluate(`(function() {
         var invoke = window.__TAURI_INTERNALS__.invoke;
         invoke('plugin:event|emit', {
             event: 'mcp-nav-to-path',
@@ -126,13 +126,13 @@ export async function ensureAppReady(tauriPage: PageLike): Promise<void> {
             payload: { pane: 'right', path: ${JSON.stringify(rightPanePath)} }
         });
     })()`)
-    await sleep(300)
+  await sleep(300)
 
-    // Wait for the left pane to show the expected fixture files
-    await pollUntil(
-        tauriPage,
-        async () => {
-            return tauriPage.evaluate<boolean>(`(function() {
+  // Wait for the left pane to show the expected fixture files
+  await pollUntil(
+    tauriPage,
+    async () => {
+      return tauriPage.evaluate<boolean>(`(function() {
                 var pane = document.querySelectorAll('.file-pane')[0];
                 if (!pane) return false;
                 var entries = pane.querySelectorAll('.file-entry');
@@ -141,28 +141,28 @@ export async function ensureAppReady(tauriPage: PageLike): Promise<void> {
                 });
                 return names.indexOf('file-a.txt') >= 0 && names.indexOf('sub-dir') >= 0;
             })()`)
-        },
-        10000,
-    )
+    },
+    10000,
+  )
 
-    // Click on a file entry in the left pane to ensure focus, then focus the
-    // explorer container so keyboard events reach the handler.
-    await tauriPage.evaluate(`(function() {
+  // Click on a file entry in the left pane to ensure focus, then focus the
+  // explorer container so keyboard events reach the handler.
+  await tauriPage.evaluate(`(function() {
         var entry = document.querySelectorAll('.file-pane')[0]?.querySelector('.file-entry');
         if (entry) entry.click();
         var explorer = document.querySelector('.dual-pane-explorer');
         if (explorer) explorer.focus();
     })()`)
 
-    // Wait until a file entry has the cursor (focus confirmed)
-    await tauriPage.waitForSelector('.file-pane .file-entry.is-under-cursor', 3000)
+  // Wait until a file entry has the cursor (focus confirmed)
+  await tauriPage.waitForSelector('.file-pane .file-entry.is-under-cursor', 3000)
 }
 
 // ── DOM query helpers ────────────────────────────────────────────────────────
 
 /** Gets file entry name text from the cursor entry. Works with both view modes. */
 export async function getEntryName(tauriPage: PageLike, selector: string): Promise<string> {
-    return tauriPage.evaluate<string>(`(function() {
+  return tauriPage.evaluate<string>(`(function() {
         var entry = document.querySelector('${selector}');
         if (!entry) return '';
         var colName = entry.querySelector('.col-name');
@@ -175,7 +175,7 @@ export async function getEntryName(tauriPage: PageLike, selector: string): Promi
 
 /** Checks whether a given filename exists in the focused pane's DOM listing. */
 export async function fileExistsInFocusedPane(tauriPage: PageLike, targetName: string): Promise<boolean> {
-    return tauriPage.evaluate<boolean>(`(function() {
+  return tauriPage.evaluate<boolean>(`(function() {
         var pane = document.querySelector('.file-pane.is-focused');
         if (!pane) return false;
         var entries = pane.querySelectorAll('.file-entry');
@@ -187,7 +187,7 @@ export async function fileExistsInFocusedPane(tauriPage: PageLike, targetName: s
 
 /** Checks whether a given filename exists in a specific pane (left=0, right=1). */
 export async function fileExistsInPane(tauriPage: PageLike, targetName: string, paneIndex: number): Promise<boolean> {
-    return tauriPage.evaluate<boolean>(`(function() {
+  return tauriPage.evaluate<boolean>(`(function() {
         var panes = document.querySelectorAll('.file-pane');
         var pane = panes[${paneIndex}];
         if (!pane) return false;
@@ -203,10 +203,10 @@ export async function fileExistsInPane(tauriPage: PageLike, targetName: string, 
  * Returns the target index and total entry count, or an error object.
  */
 export async function findFileIndex(
-    tauriPage: PageLike,
-    fileName: string,
+  tauriPage: PageLike,
+  fileName: string,
 ): Promise<{ targetIndex: number; total: number } | { error: string }> {
-    return tauriPage.evaluate<{ targetIndex: number; total: number } | { error: string }>(`(function() {
+  return tauriPage.evaluate<{ targetIndex: number; total: number } | { error: string }>(`(function() {
         var pane = document.querySelector('.file-pane.is-focused');
         if (!pane) return { error: 'no focused pane' };
         var entries = pane.querySelectorAll('.file-entry');
@@ -226,26 +226,26 @@ export async function findFileIndex(
 
 /** If the cursor is on the ".." parent entry, moves it down one position. */
 export async function skipParentEntry(tauriPage: PageLike): Promise<void> {
-    const cursorText = await tauriPage.evaluate<string>(`(function() {
+  const cursorText = await tauriPage.evaluate<string>(`(function() {
         var entry = document.querySelector('.file-entry.is-under-cursor');
         if (!entry) return '';
         return (entry.querySelector('.col-name') || entry.querySelector('.name') || {}).textContent || '';
     })()`)
-    if (cursorText === '..') {
-        await tauriPage.keyboard.press('ArrowDown')
-        await pollUntil(
-            tauriPage,
-            async () => {
-                const name = await tauriPage.evaluate<string>(`(function() {
+  if (cursorText === '..') {
+    await tauriPage.keyboard.press('ArrowDown')
+    await pollUntil(
+      tauriPage,
+      async () => {
+        const name = await tauriPage.evaluate<string>(`(function() {
                     var entry = document.querySelector('.file-entry.is-under-cursor');
                     if (!entry) return '';
                     return (entry.querySelector('.col-name') || entry.querySelector('.name') || {}).textContent || '';
                 })()`)
-                return name !== '..'
-            },
-            3000,
-        )
-    }
+        return name !== '..'
+      },
+      3000,
+    )
+  }
 }
 
 /**
@@ -253,17 +253,17 @@ export async function skipParentEntry(tauriPage: PageLike): Promise<void> {
  * Uses findFileIndex() for DOM reading, then navigates with keyboard.
  */
 export async function moveCursorToFile(tauriPage: PageLike, targetName: string): Promise<boolean> {
-    const info = await findFileIndex(tauriPage, targetName)
-    if ('error' in info || info.targetIndex < 0) return false
+  const info = await findFileIndex(tauriPage, targetName)
+  if ('error' in info || info.targetIndex < 0) return false
 
-    await tauriPage.keyboard.press('Home')
-    await sleep(100)
-    for (let i = 0; i < info.targetIndex; i++) {
-        await tauriPage.keyboard.press('ArrowDown')
-        await sleep(50)
-    }
-    await sleep(100)
-    return true
+  await tauriPage.keyboard.press('Home')
+  await sleep(100)
+  for (let i = 0; i < info.targetIndex; i++) {
+    await tauriPage.keyboard.press('ArrowDown')
+    await sleep(50)
+  }
+  await sleep(100)
+  return true
 }
 
 // ── Navigation helpers ──────────────────────────────────────────────────────
@@ -274,7 +274,7 @@ export async function moveCursorToFile(tauriPage: PageLike, targetName: string):
  * and click it to trigger SvelteKit's client-side routing.
  */
 export async function navigateToRoute(tauriPage: PageLike, path: string): Promise<void> {
-    await tauriPage.evaluate(`(function() {
+  await tauriPage.evaluate(`(function() {
         var a = document.createElement('a');
         a.href = ${JSON.stringify(path)};
         document.body.appendChild(a);
@@ -287,9 +287,9 @@ export async function navigateToRoute(tauriPage: PageLike, path: string): Promis
 
 /** Returns the fixture root path from the CMDR_E2E_START_PATH environment variable. */
 export function getFixtureRoot(): string {
-    const root = process.env.CMDR_E2E_START_PATH
-    if (!root) throw new Error('CMDR_E2E_START_PATH env var is not set')
-    return root
+  const root = process.env.CMDR_E2E_START_PATH
+  if (!root) throw new Error('CMDR_E2E_START_PATH env var is not set')
+  return root
 }
 
 // ── Command palette ─────────────────────────────────────────────────────────
@@ -299,25 +299,25 @@ export function getFixtureRoot(): string {
  * query, and clicks the first matching result.
  */
 export async function executeViaCommandPalette(tauriPage: PageLike, query: string): Promise<void> {
-    await tauriPage.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', {
+  await tauriPage.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', {
         key: 'p', ctrlKey: ${CTRL_OR_META === 'Control'}, metaKey: ${CTRL_OR_META === 'Meta'}, shiftKey: true, bubbles: true
     }))`)
-    await tauriPage.waitForSelector('.palette-overlay', 5000)
-    await tauriPage.fill('.palette-overlay .search-input', query)
-    // Wait for filtered results to appear
-    await tauriPage.waitForSelector('.palette-overlay .result-item', 3000)
-    await tauriPage.evaluate(`(function() {
+  await tauriPage.waitForSelector('.palette-overlay', 5000)
+  await tauriPage.fill('.palette-overlay .search-input', query)
+  // Wait for filtered results to appear
+  await tauriPage.waitForSelector('.palette-overlay .result-item', 3000)
+  await tauriPage.evaluate(`(function() {
         var item = document.querySelector('.palette-overlay .result-item');
         if (item) item.click();
     })()`)
-    // Wait for palette to close after executing the command
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.palette-overlay')), 3000)
+  // Wait for palette to close after executing the command
+  await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.palette-overlay')), 3000)
 }
 
 // ── Utility ─────────────────────────────────────────────────────────────────
 
 export function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 /**
@@ -325,19 +325,19 @@ export function sleep(ms: number): Promise<void> {
  * Similar to WebDriverIO's browser.waitUntil().
  */
 export async function pollUntil(
-    _page: PageLike,
-    condition: () => Promise<boolean>,
-    timeout: number,
-    interval = 100,
+  _page: PageLike,
+  condition: () => Promise<boolean>,
+  timeout: number,
+  interval = 100,
 ): Promise<boolean> {
-    const deadline = Date.now() + timeout
-    while (Date.now() < deadline) {
-        try {
-            if (await condition()) return true
-        } catch {
-            // Element might not exist yet — keep polling
-        }
-        await sleep(interval)
+  const deadline = Date.now() + timeout
+  while (Date.now() < deadline) {
+    try {
+      if (await condition()) return true
+    } catch {
+      // Element might not exist yet — keep polling
     }
-    return false
+    await sleep(interval)
+  }
+  return false
 }

@@ -13,25 +13,25 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
 ### Transfer UI flow
 
 1. **TransferDialog** (destination picker + dry-run scan)
-    - Pre-fills destination from opposite pane
-    - Validates path structure via `validateDirectoryPath()` from `$lib/utils/filename-validation` (empty, absolute,
-      null bytes, length limits), then checks logical constraints (subfolder, same location)
-    - Optional dry-run scan to detect conflicts upfront
-    - Shows sampled conflicts (max 200) with streaming progress
-    - User makes conflict decisions before operation starts
+   - Pre-fills destination from opposite pane
+   - Validates path structure via `validateDirectoryPath()` from `$lib/utils/filename-validation` (empty, absolute, null
+     bytes, length limits), then checks logical constraints (subfolder, same location)
+   - Optional dry-run scan to detect conflicts upfront
+   - Shows sampled conflicts (max 200) with streaming progress
+   - User makes conflict decisions before operation starts
 
 2. **TransferProgressDialog** (operation execution)
-    - Calls `copyFiles()` or `moveFiles()` based on operationType
-    - Subscribes via `onWriteProgress`, `onWriteComplete`, `onWriteError`, `onWriteCancelled`, `onWriteConflict`
-      callback wrappers (which internally listen to Tauri events). Uses a `BufferedEvent` discriminated union
-      (`{ type: 'progress'; event: WriteProgressEvent }`, etc.) to buffer events until the `operationId` is known.
-    - Dual progress bars (size + file count) with speed, ETA, current file
-    - Dynamic stage indicator: "Scanning" → "Copying" (+ "Cleaning up" for cross-FS move)
-    - Conflict resolution inline (if using `Stop` mode instead of dry-run)
-    - Cancel button → rollback transaction (user chooses keep/rollback)
+   - Calls `copyFiles()` or `moveFiles()` based on operationType
+   - Subscribes via `onWriteProgress`, `onWriteComplete`, `onWriteError`, `onWriteCancelled`, `onWriteConflict` callback
+     wrappers (which internally listen to Tauri events). Uses a `BufferedEvent` discriminated union
+     (`{ type: 'progress'; event: WriteProgressEvent }`, etc.) to buffer events until the `operationId` is known.
+   - Dual progress bars (size + file count) with speed, ETA, current file
+   - Dynamic stage indicator: "Scanning" → "Copying" (+ "Cleaning up" for cross-FS move)
+   - Conflict resolution inline (if using `Stop` mode instead of dry-run)
+   - Cancel button → rollback transaction (user chooses keep/rollback)
 
 3. **TransferErrorDialog** (error display)
-    - Operation-specific error messaging via `transfer-error-messages.ts`
+   - Operation-specific error messaging via `transfer-error-messages.ts`
 
 ### Shared utilities (`transfer/`)
 

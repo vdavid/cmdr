@@ -8,41 +8,41 @@ import { vi } from 'vitest'
 // ResizeObserver is not available in jsdom
 // This mock allows components that use ResizeObserver to run in tests
 class ResizeObserverMock {
-    callback: ResizeObserverCallback
+  callback: ResizeObserverCallback
 
-    constructor(callback: ResizeObserverCallback) {
-        this.callback = callback
-    }
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback
+  }
 
-    observe() {
-        // No-op in tests
-    }
+  observe() {
+    // No-op in tests
+  }
 
-    unobserve() {
-        // No-op in tests
-    }
+  unobserve() {
+    // No-op in tests
+  }
 
-    disconnect() {
-        // No-op in tests
-    }
+  disconnect() {
+    // No-op in tests
+  }
 }
 
 vi.stubGlobal('ResizeObserver', ResizeObserverMock)
 
 // Mock Tauri event API to handle both static and dynamic imports
 vi.mock('@tauri-apps/api/event', () => ({
-    listen: vi.fn(() => Promise.resolve(() => {})),
-    emit: vi.fn(() => Promise.resolve()),
+  listen: vi.fn(() => Promise.resolve(() => {})),
+  emit: vi.fn(() => Promise.resolve()),
 }))
 
 // Mock Tauri path API (used by FilePane for ~ substitution in breadcrumbs)
 vi.mock('@tauri-apps/api/path', () => ({
-    homeDir: vi.fn(() => Promise.resolve('/Users/test')),
+  homeDir: vi.fn(() => Promise.resolve('/Users/test')),
 }))
 
 // Mock Tauri webview API for drag-and-drop
 vi.mock('@tauri-apps/api/webview', () => ({
-    getCurrentWebview: vi.fn(() => ({
-        onDragDropEvent: vi.fn(() => Promise.resolve(() => {})),
-    })),
+  getCurrentWebview: vi.fn(() => ({
+    onDragDropEvent: vi.fn(() => Promise.resolve(() => {})),
+  })),
 }))

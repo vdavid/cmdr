@@ -8,7 +8,7 @@ import { openPath, openUrl } from '@tauri-apps/plugin-opener'
  * @param path - Path to the file to open.
  */
 export async function openFile(path: string): Promise<void> {
-    await openPath(path)
+  await openPath(path)
 }
 
 /**
@@ -16,7 +16,7 @@ export async function openFile(path: string): Promise<void> {
  * @param url - URL to open (like "https://getcmdr.com/renew")
  */
 export async function openExternalUrl(url: string): Promise<void> {
-    await openUrl(url)
+  await openUrl(url)
 }
 
 /**
@@ -26,7 +26,7 @@ export async function openExternalUrl(url: string): Promise<void> {
  * @param isDirectory - Whether the entry is a directory.
  */
 export async function showFileContextMenu(path: string, filename: string, isDirectory: boolean): Promise<void> {
-    await invoke('show_file_context_menu', { path, filename, isDirectory })
+  await invoke('show_file_context_menu', { path, filename, isDirectory })
 }
 
 /**
@@ -35,7 +35,7 @@ export async function showFileContextMenu(path: string, filename: string, isDire
  * @param path - Absolute path to the file.
  */
 export async function showInFinder(path: string): Promise<void> {
-    await invoke('show_in_finder', { path })
+  await invoke('show_in_finder', { path })
 }
 
 /**
@@ -43,7 +43,7 @@ export async function showInFinder(path: string): Promise<void> {
  * @param text - Text to copy.
  */
 export async function copyToClipboard(text: string): Promise<void> {
-    await invoke('copy_to_clipboard', { text })
+  await invoke('copy_to_clipboard', { text })
 }
 
 /**
@@ -51,7 +51,7 @@ export async function copyToClipboard(text: string): Promise<void> {
  * @param path - Absolute path to the file.
  */
 export async function quickLook(path: string): Promise<void> {
-    await invoke('quick_look', { path })
+  await invoke('quick_look', { path })
 }
 
 /**
@@ -59,7 +59,7 @@ export async function quickLook(path: string): Promise<void> {
  * @param path - Absolute path to the file.
  */
 export async function getInfo(path: string): Promise<void> {
-    await invoke('get_info', { path })
+  await invoke('get_info', { path })
 }
 
 /**
@@ -68,5 +68,5 @@ export async function getInfo(path: string): Promise<void> {
  * @param path - Absolute path to the file.
  */
 export async function openInEditor(path: string): Promise<void> {
-    await invoke('open_in_editor', { path })
+  await invoke('open_in_editor', { path })
 }
