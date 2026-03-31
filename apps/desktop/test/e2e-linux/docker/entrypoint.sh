@@ -28,8 +28,6 @@ export XDG_RUNTIME_DIR=/tmp/runtime-root
 mkdir -p "$XDG_RUNTIME_DIR"
 chmod 700 "$XDG_RUNTIME_DIR"
 
-# E2E fixtures are created by wdio.conf.ts via the shared fixture helper
-
 # Verify environment
 echo "Environment:"
 echo "  DISPLAY=$DISPLAY"

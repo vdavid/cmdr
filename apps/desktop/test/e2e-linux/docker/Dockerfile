@@ -1,6 +1,6 @@
 # E2E Testing Container for Cmdr
 # This container provides a Linux environment for running Tauri E2E tests
-# with tauri-driver and Playwright/WebDriverIO.
+# via tauri-playwright (Unix socket bridge to the real Tauri webview).
 
 FROM ubuntu:24.04
 
@@ -22,8 +22,6 @@ RUN apt-get update && apt-get install -y \
     librsvg2-dev \
     # ACL support for file operations
     libacl1-dev \
-    # WebKitWebDriver for tauri-driver
-    webkit2gtk-driver \
     # X11 virtual framebuffer for headless GUI
     xvfb \
     dbus-x11 \
@@ -63,12 +61,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 # Install pnpm
 RUN npm install -g pnpm
 
-# Install Rust (for tauri-driver)
+# Install Rust (needed to compile the Tauri binary with --features playwright-e2e)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
-
-# Install tauri-driver
-RUN cargo install tauri-driver --locked
 
 # Set up display for Xvfb
 ENV DISPLAY=:99

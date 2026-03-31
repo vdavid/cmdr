@@ -81,6 +81,8 @@ filetime = "0.2"
 exacl = "0.12"
 sysinfo = { version = "0.38.4", default-features = false, features = ["system"] }
 time = { version = "0.3", features = ["parsing", "macros", "formatting"] }
+# Playwright E2E testing plugin — socket bridge for direct webview injection (optional, feature-gated)
+tauri-plugin-playwright = { version = "0.2.2", optional = true }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
@@ -143,9 +145,6 @@ semver = "1"
 
 # CrabNebula automation plugin for macOS E2E testing (optional, feature-gated)
 tauri-plugin-automation = { version = "0.1", optional = true }
-
-# Playwright E2E testing plugin — socket bridge for direct webview injection (optional, feature-gated)
-tauri-plugin-playwright = { git = "https://github.com/vdavid/tauri-playwright", optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.8.1", features = ["html_reports"] }

@@ -9,7 +9,7 @@ import (
 // RunDesktopE2ELinuxTypecheck runs TypeScript checking on the e2e-linux test files.
 func RunDesktopE2ELinuxTypecheck(ctx *CheckContext) (CheckResult, error) {
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
-	tsconfigPath := filepath.Join("test", "e2e-linux", "tsconfig.json")
+	tsconfigPath := filepath.Join("test", "e2e-playwright", "tsconfig.json")
 
 	cmd := exec.Command("pnpm", "tsc", "--noEmit", "-p", tsconfigPath)
 	cmd.Dir = desktopDir

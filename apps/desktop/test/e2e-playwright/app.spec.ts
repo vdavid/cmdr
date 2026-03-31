@@ -44,19 +44,19 @@ async function moveCursorToSubDir(tauriPage: PageLike): Promise<boolean> {
 
 test.describe('Basic rendering', () => {
   test('launches and shows the main window', async ({ tauriPage }) => {
-    await tauriPage.waitForSelector('.dual-pane-explorer', 15000)
+    await ensureAppReady(tauriPage)
     const title = await tauriPage.title()
     expect(title).toContain('Cmdr')
   })
 
   test('displays the dual pane interface', async ({ tauriPage }) => {
-    await tauriPage.waitForSelector('.dual-pane-explorer', 10000)
+    await ensureAppReady(tauriPage)
     const paneCount = await tauriPage.count('.file-pane')
     expect(paneCount).toBe(2)
   })
 
   test('shows file entries in the panes', async ({ tauriPage }) => {
-    await tauriPage.waitForSelector('.file-entry', 10000)
+    await ensureAppReady(tauriPage)
     const entryCount = await tauriPage.count('.file-entry')
     expect(entryCount).toBeGreaterThan(0)
   })

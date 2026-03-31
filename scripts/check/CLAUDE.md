@@ -37,7 +37,7 @@ go run ./scripts/check --only-freestyle
 ## Command-line options
 
 | Option                      | Description                                             |
-|-----------------------------|---------------------------------------------------------|
+| --------------------------- | ------------------------------------------------------- |
 | `--app NAME`                | Run checks for a specific app                           |
 | `--rust`, `--rust-only`     | Run only Rust checks (desktop)                          |
 | `--svelte`, `--svelte-only` | Run only Svelte checks (desktop)                        |
@@ -83,7 +83,7 @@ go run ./scripts/check --only-freestyle
 ## Key files
 
 | File                                                                      | Purpose                                                                                                                                                       |
-|---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `main.go`                                                                 | Entry point: flag parsing, root dir discovery, check selection, pnpm gating, runner delegation                                                                |
 | `runner.go`                                                               | Parallel executor: goroutine pool, dependency graph, fail-fast, live TTY status line                                                                          |
 | `checks/common.go`                                                        | Core types (`CheckDefinition`, `CheckResult`, `CheckContext`, `CheckFunc`), shared utils (`RunCommand`, `EnsureGoTool`, `runPrettierCheck`, `runESLintCheck`) |
@@ -173,7 +173,7 @@ before tests.
 ## Apps and check counts
 
 | App        | Tech    | Checks                                                                                                                                                                               |
-|------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Desktop    | Rust    | rustfmt, clippy, cargo-audit, cargo-deny, cargo-udeps, jscpd, tests, tests-linux (slow)                                                                                              |
 | Desktop    | Svelte  | prettier, eslint, eslint-typecheck (slow), stylelint, css-unused, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow) |
 | Website    | Astro   | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                                               |

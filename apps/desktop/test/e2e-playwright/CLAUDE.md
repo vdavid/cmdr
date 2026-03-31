@@ -16,7 +16,7 @@ Playwright (Node.js) --Unix socket--> tauri-plugin-playwright (Rust)
 Same tests run on macOS and Linux. Platform differences (Ctrl vs Meta) are handled by a single `CTRL_OR_META` constant
 in `helpers.ts`.
 
-## Running
+## Running on macOS
 
 ```bash
 cd apps/desktop
@@ -34,6 +34,19 @@ CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright
 The test suite does NOT launch the app itself. The app must be started manually (or by CI) with the
 `CMDR_E2E_START_PATH` env var pointing to a fixture directory created by `e2e-shared/fixtures.ts`.
 
+## Running on Linux (Docker)
+
+```bash
+cd apps/desktop
+
+pnpm test:e2e:linux          # Build binary + run tests in Docker (Ubuntu 24.04 + Xvfb)
+pnpm test:e2e:linux:shell    # Interactive shell for debugging
+pnpm test:e2e:linux:vnc      # VNC mode with hot reload
+```
+
+The Docker setup (`../e2e-linux/docker/`) builds the Tauri binary with `--features playwright-e2e`, launches it inside
+the container, waits for the socket, and runs these same test files. See `../e2e-linux/CLAUDE.md` for Docker details.
+
 ## Files
 
 | File                      | Purpose                                                          |
@@ -45,6 +58,7 @@ The test suite does NOT launch the app itself. The app must be started manually 
 | `helpers.ts`              | Ported helpers: `ensureAppReady`, `pollUntil`, DOM queries, etc. |
 | `app.spec.ts`             | 14 tests: rendering, keyboard nav, mouse interaction, dialogs    |
 | `file-operations.spec.ts` | 8 tests: copy, move, rename, mkdir, view modes, hidden, palette  |
+| `file-watching.spec.ts`   | 1 test: external filesystem change detection (inotify/FSEvents)  |
 | `settings.spec.ts`        | 5 tests: settings page rendering, sidebar, search                |
 | `viewer.spec.ts`          | 10 tests: file viewer, search, error handling                    |
 

@@ -241,7 +241,7 @@ else
 
             echo "Building Tauri app for target: $LINUX_TARGET"
             # --no-bundle to skip creating .deb/.rpm/.appimage (not needed for E2E tests)
-            pnpm tauri build --ci --target "$LINUX_TARGET" --no-bundle
+            pnpm tauri build --ci --target "$LINUX_TARGET" --no-bundle -- --features playwright-e2e
 
             # Mark that we have a Linux build
             touch "/target/$LINUX_TARGET/release/.linux-build"
@@ -298,11 +298,47 @@ else
             if [ ! -f "/app/node_modules/.linux-installed" ]; then
                 echo "Installing Linux node_modules..."
                 pnpm install --frozen-lockfile
+                npx playwright install --with-deps chromium
                 touch /app/node_modules/.linux-installed
             fi
 
-            # Run WebDriverIO tests with tauri-driver
-            pnpm test:e2e:linux:native
+            SOCKET_PATH="/tmp/tauri-playwright.sock"
+
+            # Create fixtures via the shared helper
+            export CMDR_E2E_START_PATH
+            CMDR_E2E_START_PATH=$(npx tsx -e "import { createFixtures } from \"./test/e2e-shared/fixtures.js\"; console.log(createFixtures())")
+            echo "Fixtures at: $CMDR_E2E_START_PATH"
+
+            # Remove stale socket from a previous run
+            rm -f "$SOCKET_PATH"
+
+            # Launch the Tauri app in the background
+            echo "Starting Tauri app..."
+            "$TAURI_BINARY" &
+            APP_PID=$!
+            trap "kill $APP_PID 2>/dev/null; wait $APP_PID 2>/dev/null" EXIT
+
+            # Wait for the Unix socket to appear (timeout 30s)
+            echo "Waiting for playwright socket at $SOCKET_PATH..."
+            for i in $(seq 1 60); do
+                [ -S "$SOCKET_PATH" ] && break
+                if ! kill -0 $APP_PID 2>/dev/null; then
+                    echo "ERROR: Tauri app exited prematurely"
+                    exit 1
+                fi
+                sleep 0.5
+            done
+            if [ ! -S "$SOCKET_PATH" ]; then
+                echo "ERROR: Socket did not appear within 30s"
+                exit 1
+            fi
+            echo "Socket ready."
+
+            # Run Playwright tests
+            npx playwright test \
+                --config test/e2e-playwright/playwright.config.ts \
+                --project tauri \
+                --reporter=list
         '
 fi
 

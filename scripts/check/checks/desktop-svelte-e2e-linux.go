@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-// RunDesktopE2ELinux runs end-to-end tests against the real Tauri app in Docker.
+// RunDesktopE2ELinux runs Playwright E2E tests against the real Tauri app in Docker.
 func RunDesktopE2ELinux(ctx *CheckContext) (CheckResult, error) {
 	// Check if Docker is available
 	if !CommandExists("docker") {
@@ -28,8 +28,8 @@ func RunDesktopE2ELinux(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, fmt.Errorf("linux E2E tests failed\n%s", indentOutput(output))
 	}
 
-	// Extract test count from WebDriverIO output (like "11 passing")
-	re := regexp.MustCompile(`(\d+) passing`)
+	// Extract test count from Playwright output (like "48 passed")
+	re := regexp.MustCompile(`(\d+) passed`)
 	matches := re.FindStringSubmatch(output)
 	if len(matches) > 1 {
 		count, _ := strconv.Atoi(matches[1])

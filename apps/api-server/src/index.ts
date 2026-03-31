@@ -876,7 +876,10 @@ type LikesData = { count: number; hashes: string[] }
 
 const likesAllowedOrigins = new Set(['https://getcmdr.com', 'https://www.getcmdr.com'])
 
-function likesCors(c: { req: { header: (name: string) => string | undefined }; header: (name: string, value: string) => void }) {
+function likesCors(c: {
+  req: { header: (name: string) => string | undefined }
+  header: (name: string, value: string) => void
+}) {
   const origin = c.req.header('origin')
   if (origin && likesAllowedOrigins.has(origin)) {
     c.header('Access-Control-Allow-Origin', origin)
@@ -888,7 +891,10 @@ function likesCors(c: { req: { header: (name: string) => string | undefined }; h
 
 async function hashIpForLikes(ip: string): Promise<string> {
   const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('cmdr-likes:' + ip))
-  return [...new Uint8Array(buffer)].slice(0, 8).map((b) => b.toString(16).padStart(2, '0')).join('')
+  return [...new Uint8Array(buffer)]
+    .slice(0, 8)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
 }
 
 async function getLikesData(kv: KVNamespace, slug: string): Promise<LikesData> {
