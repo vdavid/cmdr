@@ -37,7 +37,7 @@ go run ./scripts/check --only-freestyle
 ## Command-line options
 
 | Option                      | Description                                             |
-| --------------------------- | ------------------------------------------------------- |
+|-----------------------------|---------------------------------------------------------|
 | `--app NAME`                | Run checks for a specific app                           |
 | `--rust`, `--rust-only`     | Run only Rust checks (desktop)                          |
 | `--svelte`, `--svelte-only` | Run only Svelte checks (desktop)                        |
@@ -83,7 +83,7 @@ go run ./scripts/check --only-freestyle
 ## Key files
 
 | File                                                                      | Purpose                                                                                                                                                       |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `main.go`                                                                 | Entry point: flag parsing, root dir discovery, check selection, pnpm gating, runner delegation                                                                |
 | `runner.go`                                                               | Parallel executor: goroutine pool, dependency graph, fail-fast, live TTY status line                                                                          |
 | `checks/common.go`                                                        | Core types (`CheckDefinition`, `CheckResult`, `CheckContext`, `CheckFunc`), shared utils (`RunCommand`, `EnsureGoTool`, `runPrettierCheck`, `runESLintCheck`) |
@@ -124,15 +124,15 @@ result (pass/fail/skip/blocked), and optional counts (total, issues, changes). `
 
 ```go
 CheckDefinition{
-    ID:                "desktop-svelte-eslint",  // unique, always accepted by --check
-    Nickname:          "",                       // short alias, also accepted by --check (optional)
-    DisplayName:       "eslint",                 // shown in output
-    App:               AppDesktop,
-    Tech:              "🎨 Svelte",
-    IsSlow:            false,
-    FreestyleIncompat: true,                    // can NOT run on freestyle.sh VMs (Rust, Docker)
-    DependsOn:         []string{"desktop-svelte-prettier"},
-    Run:               RunDesktopESLint,
+ID:                "desktop-svelte-eslint", // unique, always accepted by --check
+Nickname:          "",                      // short alias, also accepted by --check (optional)
+DisplayName:       "eslint", // shown in output
+App:               AppDesktop,
+Tech:              "🎨 Svelte",
+IsSlow:            false,
+FreestyleIncompat: true, // can NOT run on freestyle.sh VMs (Rust, Docker)
+DependsOn:         []string{"desktop-svelte-prettier"},
+Run:               RunDesktopESLint,
 }
 ```
 
@@ -172,15 +172,15 @@ before tests.
 
 ## Apps and check counts
 
-| App        | Tech    | Checks                                                                                                                                                        |
-| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop    | Rust    | rustfmt, clippy, cargo-audit, cargo-deny, cargo-udeps, jscpd, tests, tests-linux (slow)                                                                       |
-| Desktop    | Svelte  | prettier, eslint, eslint-typecheck (slow), stylelint, css-unused, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow) |
-| Website    | Astro   | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                        |
-| Website    | Docker  | docker-build                                                                                                                                                  |
-| API server | TS      | oxfmt, eslint, typecheck, tests                                                                                                                               |
-| Scripts    | Go      | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests                                                                       |
-| Other      | Metrics | file-length (warn-only)                                                                                                                                       |
+| App        | Tech    | Checks                                                                                                                                                                               |
+|------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Desktop    | Rust    | rustfmt, clippy, cargo-audit, cargo-deny, cargo-udeps, jscpd, tests, tests-linux (slow)                                                                                              |
+| Desktop    | Svelte  | prettier, eslint, eslint-typecheck (slow), stylelint, css-unused, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow) |
+| Website    | Astro   | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                                               |
+| Website    | Docker  | docker-build                                                                                                                                                                         |
+| API server | TS      | oxfmt, eslint, typecheck, tests                                                                                                                                                      |
+| Scripts    | Go      | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests                                                                                              |
+| Other      | Metrics | file-length (warn-only)                                                                                                                                                              |
 
 ## Output format
 

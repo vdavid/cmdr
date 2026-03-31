@@ -211,6 +211,16 @@ var AllChecks = []CheckDefinition{
 		DependsOn:         []string{"desktop-svelte-e2e-linux-typecheck"},
 		Run:               RunDesktopE2ELinux,
 	},
+	{
+		ID:                "desktop-svelte-e2e-playwright",
+		Nickname:          "desktop-e2e-playwright",
+		DisplayName:       "e2e (Playwright)",
+		App:               AppDesktop,
+		Tech:              "🎨 Svelte",
+		IsSlow:            true,
+		FreestyleIncompat: true,
+		Run:               RunDesktopE2EPlaywright,
+	},
 
 	// Website checks (docker-build is FreestyleIncompat)
 	{
