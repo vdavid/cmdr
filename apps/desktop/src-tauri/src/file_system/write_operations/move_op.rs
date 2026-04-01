@@ -8,9 +8,7 @@ use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 use super::copy::copy_single_item;
-use super::helpers::{
-    is_same_filesystem, remove_dir_all_in_background, resolve_conflict, spawn_async_sync,
-};
+use super::helpers::{is_same_filesystem, remove_dir_all_in_background, resolve_conflict, spawn_async_sync};
 use super::scan::{SourceItemTracker, handle_dry_run, scan_sources};
 use super::state::{CopyTransaction, WriteOperationState, update_operation_status};
 use super::types::{
@@ -226,7 +224,7 @@ fn move_with_rename(
 /// The two look similar in structure but differ in every detail (copy has progress tracking,
 /// symlink handling, byte counting, transaction recording, strategy selection). A shared
 /// abstraction would be forced and fragile. See `copy.rs` `copy_single_item` for the copy side.
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "intentional — see doc comment above")]
 fn merge_move_directory(
     source_dir: &Path,
     dest_dir: &Path,

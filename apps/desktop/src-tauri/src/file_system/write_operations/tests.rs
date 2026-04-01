@@ -474,7 +474,10 @@ fn test_safe_overwrite_basic() {
     for entry in fs::read_dir(&temp_dir).unwrap() {
         let name = entry.unwrap().file_name().to_string_lossy().to_string();
         assert!(!name.contains(".cmdr-tmp-"), "temp file should be cleaned up: {name}");
-        assert!(!name.contains(".cmdr-backup-"), "backup file should be cleaned up: {name}");
+        assert!(
+            !name.contains(".cmdr-backup-"),
+            "backup file should be cleaned up: {name}"
+        );
     }
 
     cleanup_temp_dir(&temp_dir);

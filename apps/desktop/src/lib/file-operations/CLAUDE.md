@@ -21,6 +21,10 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
    - User makes conflict decisions before operation starts
 
 2. **TransferProgressDialog** (operation execution)
+   - If `scanInProgress` is true, subscribes to scan preview events (`scan-preview-progress`, `scan-preview-complete`,
+     etc.) to continue observing the same scan that TransferDialog started. Shows scanning progress UI until scan
+     completes, then dispatches the operation (guaranteed cache hit). Handles the race condition where the scan
+     completes between dialogs via `checkScanPreviewStatus()`.
    - Calls `copyFiles()` or `moveFiles()` based on operationType
    - Subscribes via `onWriteProgress`, `onWriteComplete`, `onWriteError`, `onWriteCancelled`, `onWriteConflict` callback
      wrappers (which internally listen to Tauri events). Uses a `BufferedEvent` discriminated union
@@ -115,3 +119,7 @@ When directory has parent entry shown at index 0, frontend indices are offset by
   Handle by checking operation status on mount and showing toast if already done.
 - **Source pane refresh**: Move operations must refresh **both** panes post-completion (source files disappeared). Copy
   only refreshes destination.
+- **Scan preview reuse**: TransferDialog starts a scan preview on mount. If the user confirms before the scan finishes,
+  the scan keeps running (TransferDialog sets `confirmed = true` and skips cancellation in `onDestroy`).
+  TransferProgressDialog picks up listening to the same scan events via `scanInProgress` prop. On mount, it first
+  checks `checkScanPreviewStatus()` to handle the race condition where the scan completed between dialogs.

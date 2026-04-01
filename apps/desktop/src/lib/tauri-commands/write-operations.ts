@@ -71,6 +71,11 @@ export async function cancelScanPreview(previewId: string): Promise<void> {
   await invoke('cancel_scan_preview', { previewId })
 }
 
+/** Checks whether scan preview results are cached (scan completed successfully). */
+export async function checkScanPreviewStatus(previewId: string): Promise<boolean> {
+  return invoke<boolean>('check_scan_preview_status', { previewId })
+}
+
 export async function onScanPreviewProgress(callback: (event: ScanPreviewProgressEvent) => void): Promise<UnlistenFn> {
   return listen<ScanPreviewProgressEvent>('scan-preview-progress', (event) => {
     callback(event.payload)

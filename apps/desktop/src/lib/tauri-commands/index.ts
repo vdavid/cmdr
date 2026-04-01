@@ -122,6 +122,7 @@ export {
   listen,
   startScanPreview,
   cancelScanPreview,
+  checkScanPreviewStatus,
   onScanPreviewProgress,
   onScanPreviewComplete,
   onScanPreviewError,

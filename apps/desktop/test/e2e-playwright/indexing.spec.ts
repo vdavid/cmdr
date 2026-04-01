@@ -13,6 +13,7 @@
 
 import fs from 'fs'
 import path from 'path'
+import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
@@ -23,6 +24,9 @@ import {
   pollUntil,
   sleep,
 } from './helpers.js'
+
+/** Union type for tauriPage — works in both Tauri and browser mode. */
+type PageLike = TauriPage | BrowserPageAdapter
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -39,7 +43,7 @@ interface DirStats {
  * Calls `get_dir_stats` IPC with the canonical path.
  * Returns null if the path is not indexed or indexing is not initialized.
  */
-async function getDirStats(tauriPage: any, dirPath: string): Promise<DirStats | null> {
+async function getDirStats(tauriPage: PageLike, dirPath: string): Promise<DirStats | null> {
   let canonicalPath: string
   try {
     canonicalPath = fs.realpathSync(dirPath)
@@ -61,7 +65,7 @@ async function getDirStats(tauriPage: any, dirPath: string): Promise<DirStats | 
  * Returns the stats if available, null otherwise.
  */
 async function waitForIndexData(
-  tauriPage: any,
+  tauriPage: PageLike,
   dirPath: string,
   timeoutMs = 90_000,
 ): Promise<DirStats | null> {
@@ -79,7 +83,7 @@ async function waitForIndexData(
  * Returns the final stats, or null on timeout.
  */
 async function waitForExactSize(
-  tauriPage: any,
+  tauriPage: PageLike,
   dirPath: string,
   expectedSize: number,
   timeoutMs = 30_000,
@@ -94,7 +98,7 @@ async function waitForExactSize(
 }
 
 /** Switches to Full view mode (needed to see the size column). */
-async function ensureFullView(tauriPage: any): Promise<void> {
+async function ensureFullView(tauriPage: PageLike): Promise<void> {
   const isFullView = await tauriPage.isVisible('.full-list-container')
   if (!isFullView) {
     await executeViaCommandPalette(tauriPage, 'Full view')
@@ -103,7 +107,7 @@ async function ensureFullView(tauriPage: any): Promise<void> {
 }
 
 /** Waits until a directory's size column shows a numeric value (not "<dir>" or "Scanning..."). */
-async function waitForNumericSize(tauriPage: any, entryName: string, timeoutMs = 15000): Promise<string> {
+async function waitForNumericSize(tauriPage: PageLike, entryName: string, timeoutMs = 15000): Promise<string> {
   await pollUntil(
     tauriPage,
     async () => {
@@ -139,7 +143,7 @@ test.describe('Drive indexing', () => {
     // Wait for the index to have data for sub-dir
     const stats = await waitForIndexData(tauriPage, subDirPath)
     if (!stats) {
-      console.warn('SKIPPED: Drive index not ready for fixture path within 90 s')
+      console.warn('SKIPPED: Drive index not ready for fixture path within 90 s') // eslint-disable-line no-console
       return
     }
 
@@ -164,7 +168,7 @@ test.describe('Drive indexing', () => {
 
     const initialStats = await waitForIndexData(tauriPage, subDirPath)
     if (!initialStats) {
-      console.warn('SKIPPED: Drive index not ready for fixture path within 90 s')
+      console.warn('SKIPPED: Drive index not ready for fixture path within 90 s') // eslint-disable-line no-console
       return
     }
 
@@ -179,8 +183,8 @@ test.describe('Drive indexing', () => {
     const expectedSize = NESTED_FILE_SIZE + EXTRA_FILE_SIZE
     const updatedStats = await waitForExactSize(tauriPage, subDirPath, expectedSize)
     expect(updatedStats).not.toBeNull()
-    expect(updatedStats!.recursiveSize).toBe(expectedSize)
-    expect(updatedStats!.recursiveFileCount).toBe(2)
+    expect(updatedStats?.recursiveSize).toBe(expectedSize)
+    expect(updatedStats?.recursiveFileCount).toBe(2)
 
     // Verify the UI also updated (Full view)
     await ensureFullView(tauriPage)
@@ -205,17 +209,17 @@ test.describe('Drive indexing', () => {
       // Index might not have data yet, or hasn't picked up the extra file
       const fallback = await waitForIndexData(tauriPage, subDirPath)
       if (!fallback) {
-        console.warn('SKIPPED: Drive index not ready for fixture path within 90 s')
+        console.warn('SKIPPED: Drive index not ready for fixture path within 90 s') // eslint-disable-line no-console
         return
       }
       // If the index has data but not the exact size, the extra file hasn't been indexed yet.
       // Wait a bit more.
-      console.warn(`Index has recursiveSize=${fallback.recursiveSize}, expected ${expectedSizeWithExtra}`)
+      console.warn(`Index has recursiveSize=${fallback.recursiveSize}, expected ${expectedSizeWithExtra}`) // eslint-disable-line no-console
     }
 
     expect(statsWithExtra).not.toBeNull()
-    expect(statsWithExtra!.recursiveSize).toBe(expectedSizeWithExtra)
-    expect(statsWithExtra!.recursiveFileCount).toBe(2)
+    expect(statsWithExtra?.recursiveSize).toBe(expectedSizeWithExtra)
+    expect(statsWithExtra?.recursiveFileCount).toBe(2)
 
     // Delete the extra file
     fs.unlinkSync(extraFile)
@@ -223,7 +227,7 @@ test.describe('Drive indexing', () => {
     // Size should decrease back to exactly NESTED_FILE_SIZE
     const statsAfterDelete = await waitForExactSize(tauriPage, subDirPath, NESTED_FILE_SIZE)
     expect(statsAfterDelete).not.toBeNull()
-    expect(statsAfterDelete!.recursiveSize).toBe(NESTED_FILE_SIZE)
-    expect(statsAfterDelete!.recursiveFileCount).toBe(1)
+    expect(statsAfterDelete?.recursiveSize).toBe(NESTED_FILE_SIZE)
+    expect(statsAfterDelete?.recursiveFileCount).toBe(1)
   })
 })

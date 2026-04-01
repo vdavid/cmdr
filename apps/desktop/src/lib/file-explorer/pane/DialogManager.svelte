@@ -68,6 +68,7 @@
             previewId: string | null,
             conflictResolution: ConflictResolution,
             operationType: TransferOperationType,
+            scanInProgress: boolean,
         ) => void
         onTransferCancel: () => void
         onTransferComplete: (filesProcessed: number, bytesProcessed: number) => void
@@ -123,6 +124,7 @@
         destVolumeId={transferProgressProps.destVolumeId}
         conflictResolution={transferProgressProps.conflictResolution}
         itemSizes={transferProgressProps.itemSizes}
+        scanInProgress={transferProgressProps.scanInProgress}
         onComplete={onTransferComplete}
         onCancelled={onTransferCancelled}
         onError={onTransferError}

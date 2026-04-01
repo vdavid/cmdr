@@ -56,6 +56,13 @@ pub fn start_scan_preview(
     ScanPreviewStartResult { preview_id }
 }
 
+/// Returns true if scan preview results are cached (scan completed successfully).
+pub fn is_scan_preview_complete(preview_id: &str) -> bool {
+    SCAN_PREVIEW_RESULTS
+        .read()
+        .is_ok_and(|cache| cache.contains_key(preview_id))
+}
+
 /// Cancels a running scan preview.
 pub fn cancel_scan_preview(preview_id: &str) {
     if let Ok(cache) = SCAN_PREVIEW_STATE.read()

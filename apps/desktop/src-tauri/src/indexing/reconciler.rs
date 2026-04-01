@@ -1868,7 +1868,7 @@ mod tests {
         //   with normalize_path() which resolves /tmp → /private/tmp
         tempfile::Builder::new()
             .prefix("cmdr_test_")
-            .tempdir_in(std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")))
+            .tempdir_in(std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
             .expect("tempdir in cwd")
     }
 }

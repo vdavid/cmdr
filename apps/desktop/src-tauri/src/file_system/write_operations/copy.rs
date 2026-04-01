@@ -92,9 +92,9 @@ pub(super) fn copy_files_with_progress(
             );
             cached
         } else {
-            // Cache miss or expired, do normal scan
-            log::debug!(
-                "copy_files_with_progress: preview_id={} cache miss, starting fresh scan for operation_id={}",
+            // Cache miss despite frontend coordination — scan may not have completed yet
+            log::warn!(
+                "preview_id={} cache miss despite frontend coordination, starting fresh scan for operation_id={}",
                 preview_id,
                 operation_id
             );
@@ -396,7 +396,10 @@ pub(super) fn copy_single_item(
                         // This is safe — if create_dir_all fails, we can restore the backup.
                         let backup_path = blocking.with_extension(format!(
                             "{}.cmdr-backup-{}",
-                            blocking.extension().map(|e| e.to_string_lossy().to_string()).unwrap_or_default(),
+                            blocking
+                                .extension()
+                                .map(|e| e.to_string_lossy().to_string())
+                                .unwrap_or_default(),
                             uuid::Uuid::new_v4()
                         ));
                         fs::rename(&blocking, &backup_path).with_path(&blocking)?;

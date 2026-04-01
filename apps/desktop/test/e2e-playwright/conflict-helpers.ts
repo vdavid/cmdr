@@ -8,12 +8,16 @@
 
 import fs from 'fs'
 import path from 'path'
+import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { expect } from './fixtures.js'
 import {
   pollUntil,
   sleep,
   TRANSFER_DIALOG,
 } from './helpers.js'
+
+/** Union type for tauriPage — works in both Tauri and browser mode. */
+type PageLike = TauriPage | BrowserPageAdapter
 
 // ── Fixture helpers ──────────────────────────────────────────────────────────
 
@@ -136,7 +140,7 @@ export function fileExists(fixtureRoot: string, relPath: string): boolean {
 // ── UI action helpers ────────────────────────────────────────────────────────
 
 /** Selects all items in the focused pane via Cmd+A / Ctrl+A. */
-export async function selectAll(tauriPage: any): Promise<void> {
+export async function selectAll(tauriPage: PageLike): Promise<void> {
   await tauriPage.evaluate(`(function(){
     var el=document.activeElement||document.body;
     el.dispatchEvent(new KeyboardEvent('keydown',{key:'a',bubbles:true,metaKey:${process.platform === 'darwin'},ctrlKey:${process.platform !== 'darwin'}}));
@@ -145,7 +149,7 @@ export async function selectAll(tauriPage: any): Promise<void> {
 }
 
 /** Waits for the dry-run scan to detect conflicts and show the policy radio buttons. */
-export async function waitForConflictPolicy(tauriPage: any): Promise<void> {
+export async function waitForConflictPolicy(tauriPage: PageLike): Promise<void> {
   const found = await pollUntil(
     tauriPage,
     async () => tauriPage.isVisible(`${TRANSFER_DIALOG} .conflict-policy`),
@@ -155,19 +159,19 @@ export async function waitForConflictPolicy(tauriPage: any): Promise<void> {
 }
 
 /** Selects a conflict resolution policy radio button (skip, overwrite, or stop). */
-export async function selectConflictPolicy(tauriPage: any, policy: 'skip' | 'overwrite' | 'stop'): Promise<void> {
+export async function selectConflictPolicy(tauriPage: PageLike, policy: 'skip' | 'overwrite' | 'stop'): Promise<void> {
   await tauriPage.click(`${TRANSFER_DIALOG} .conflict-policy input[value="${policy}"]`)
   await sleep(100)
 }
 
 /** Clicks the primary action button in the transfer dialog. */
-export async function clickTransferStart(tauriPage: any): Promise<void> {
+export async function clickTransferStart(tauriPage: PageLike): Promise<void> {
   await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
   await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
 }
 
 /** Waits for all modal dialogs to close after an operation completes. */
-export async function waitForDialogsToClose(tauriPage: any): Promise<void> {
+export async function waitForDialogsToClose(tauriPage: PageLike): Promise<void> {
   const closed = await pollUntil(
     tauriPage,
     async () => !(await tauriPage.isVisible('.modal-overlay')),

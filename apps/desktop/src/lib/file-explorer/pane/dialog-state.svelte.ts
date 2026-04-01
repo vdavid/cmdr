@@ -29,6 +29,8 @@ export interface TransferProgressPropsData {
   conflictResolution?: ConflictResolution
   /** Per-item sizes for trash progress (from scan or drive index) */
   itemSizes?: number[]
+  /** Whether the scan preview is still running (TransferProgressDialog should subscribe to scan events) */
+  scanInProgress?: boolean
 }
 
 export interface NewFolderDialogPropsData {
@@ -256,6 +258,7 @@ export function createDialogState(deps: DialogStateDeps) {
       previewId: string | null,
       conflictResolution: ConflictResolution,
       operationType: TransferOperationType,
+      scanInProgress: boolean,
     ) {
       if (!transferDialogProps) return
 
@@ -272,6 +275,7 @@ export function createDialogState(deps: DialogStateDeps) {
         sourceVolumeId: transferDialogProps.sourceVolumeId,
         destVolumeId: transferDialogProps.destVolumeId,
         conflictResolution,
+        scanInProgress,
       }
       snapshotSourcePaneSelection()
 
@@ -498,6 +502,7 @@ export function createDialogState(deps: DialogStateDeps) {
           null, // previewId not available when confirming programmatically
           resolution,
           transferDialogProps.operationType,
+          false, // scanInProgress not tracked when confirming programmatically
         )
       } else if (dialogType === 'delete-confirmation' && showDeleteDialog) {
         this.handleDeleteConfirm(null) // previewId not available

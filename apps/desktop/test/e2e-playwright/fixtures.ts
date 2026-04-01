@@ -17,6 +17,7 @@ export const { test, expect } = createTauriTest({
   // No devUrl — in Tauri mode, the app is already running with its built
   // frontend. Setting devUrl would redirect the webview to a nonexistent
   // dev server. devUrl is only used in browser mode (not applicable here).
+  devUrl: '',
 
   // Tauri mode config
   mcpSocket: '/tmp/tauri-playwright.sock',

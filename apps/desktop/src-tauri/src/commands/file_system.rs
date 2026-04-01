@@ -4,7 +4,8 @@
 use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
 use crate::file_system::write_operations::{
     ConflictResolution, ScanPreviewStartResult, cancel_scan_preview as ops_cancel_scan_preview,
-    resolve_write_conflict as ops_resolve_write_conflict, start_scan_preview as ops_start_scan_preview,
+    is_scan_preview_complete as ops_is_scan_preview_complete, resolve_write_conflict as ops_resolve_write_conflict,
+    start_scan_preview as ops_start_scan_preview,
 };
 use crate::file_system::{
     DirectorySortMode, FileEntry, ListingStartResult, ListingStats, OperationStatus, OperationSummary, ResortResult,
@@ -517,6 +518,14 @@ pub fn start_scan_preview(
 #[tauri::command]
 pub fn cancel_scan_preview(preview_id: String) {
     ops_cancel_scan_preview(&preview_id);
+}
+
+/// Checks whether scan preview results are cached (scan completed successfully).
+/// Used by TransferProgressDialog to handle the race condition where the scan completes
+/// between TransferDialog closing and TransferProgressDialog mounting.
+#[tauri::command]
+pub fn check_scan_preview_status(preview_id: String) -> bool {
+    ops_is_scan_preview_complete(&preview_id)
 }
 
 /// In Stop mode, the operation pauses on conflict and waits for this call to proceed.

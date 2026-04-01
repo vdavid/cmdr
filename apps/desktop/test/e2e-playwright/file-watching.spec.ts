@@ -18,7 +18,6 @@ import {
   getFixtureRoot,
   fileExistsInFocusedPane,
   fileExistsInPane,
-  countEntriesInPane,
   countEntriesWithPrefix,
   getSizeText,
   moveCursorToFile,

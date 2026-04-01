@@ -62,6 +62,7 @@
             previewId: string | null,
             conflictResolution: ConflictResolution,
             operationType: TransferOperationType,
+            scanInProgress: boolean,
         ) => void
         onCancel: () => void
     }
@@ -105,6 +106,9 @@
     let isScanning = $state(false)
     let scanComplete = $state(false)
     let unlisteners: UnlistenFn[] = []
+
+    // Whether the user confirmed (so we don't cancel the scan on destroy)
+    let confirmed = false
 
     // Conflict detection state
     let conflicts = $state<VolumeConflictInfo[]>([])
@@ -310,8 +314,9 @@
     })
 
     onDestroy(() => {
-        // Cancel scan preview if still running
-        if (previewId && isScanning) {
+        // Cancel scan preview if still running — but only if the user cancelled, not confirmed.
+        // On confirm, the TransferProgressDialog takes over listening to the same scan.
+        if (previewId && isScanning && !confirmed) {
             void cancelScanPreview(previewId)
         }
         cleanup()
@@ -319,8 +324,9 @@
 
     function handleConfirm() {
         if (pathError) return
-        // Pass the previewId, conflict policy, and (possibly toggled) operation type
-        onConfirm(editedPath, selectedVolumeId, previewId, conflictPolicy, activeOperationType)
+        confirmed = true
+        // Pass the previewId, conflict policy, (possibly toggled) operation type, and whether scan is still running
+        onConfirm(editedPath, selectedVolumeId, previewId, conflictPolicy, activeOperationType, isScanning)
     }
 
     function handleCancel() {

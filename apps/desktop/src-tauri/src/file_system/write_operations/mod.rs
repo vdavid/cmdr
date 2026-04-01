@@ -54,7 +54,7 @@ use state::{WRITE_OPERATION_STATE, register_operation_status, unregister_operati
 use trash::trash_files_with_progress;
 
 // Re-export public types
-pub use scan::{cancel_scan_preview, start_scan_preview};
+pub use scan::{cancel_scan_preview, is_scan_preview_complete, start_scan_preview};
 pub use state::{
     cancel_all_write_operations, cancel_write_operation, get_operation_status, list_active_operations,
     resolve_write_conflict,

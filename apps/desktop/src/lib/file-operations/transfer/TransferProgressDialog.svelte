@@ -13,6 +13,12 @@
         onWriteConflict,
         resolveWriteConflict,
         cancelWriteOperation,
+        cancelScanPreview,
+        checkScanPreviewStatus,
+        onScanPreviewProgress,
+        onScanPreviewComplete,
+        onScanPreviewError,
+        onScanPreviewCancelled,
         formatBytes,
         formatDuration,
         DEFAULT_VOLUME_ID,
@@ -74,6 +80,8 @@
         conflictResolution?: ConflictResolution
         /** Per-item sizes for trash progress (from scan or drive index, optional) */
         itemSizes?: number[]
+        /** Whether the scan preview is still running (this dialog should subscribe to scan events) */
+        scanInProgress?: boolean
         onComplete: (filesProcessed: number, bytesProcessed: number) => void
         onCancelled: (filesProcessed: number) => void
         onError: (error: WriteOperationError) => void
@@ -92,6 +100,7 @@
         destVolumeId,
         conflictResolution,
         itemSizes,
+        scanInProgress = false,
         onComplete,
         onCancelled,
         onError,
@@ -125,6 +134,13 @@
 
     /** Minimum display time (ms) to prevent jarring one-frame flash. */
     const MIN_DISPLAY_MS = 400
+
+    // Scan waiting state (when scan preview is still running from TransferDialog)
+    let waitingForScan = $state(false)
+    let scanFilesFound = $state(0)
+    let scanDirsFound = $state(0)
+    let scanBytesFound = $state(0)
+    let scanUnlisteners: UnlistenFn[] = []
 
     // Operation state
     let operationId = $state<string | null>(null)
@@ -599,6 +615,16 @@
     }
 
     async function handleCancel(rollback: boolean) {
+        // If still waiting for scan preview, cancel the scan and close
+        if (waitingForScan && previewId) {
+            log.info('Cancelling scan preview during wait: previewId={previewId}', { previewId })
+            void cancelScanPreview(previewId)
+            waitingForScan = false
+            cleanupScanListeners()
+            onCancelled(0)
+            return
+        }
+
         if (!operationId) {
             log.warn('Cancel requested but no operationId yet — will cancel after IPC resolves')
             destroyed = true
@@ -666,12 +692,106 @@
         }
     }
 
+    /** Cleans up scan preview event listeners. */
+    function cleanupScanListeners() {
+        for (const unlisten of scanUnlisteners) {
+            unlisten()
+        }
+        scanUnlisteners = []
+    }
+
+    /**
+     * Waits for the scan preview to complete, then starts the write operation.
+     * Subscribes to scan events to show progress while waiting.
+     */
+    async function waitForScanThenStart() {
+        if (!previewId) {
+            // No preview ID — fall back to normal operation (will do its own scan)
+            void startOperation()
+            return
+        }
+
+        // Check if the scan already completed (race condition: scan finished between
+        // TransferDialog closing and this dialog mounting)
+        const alreadyComplete = await checkScanPreviewStatus(previewId)
+        if (alreadyComplete) {
+            log.info('Scan preview already complete for previewId={previewId}, starting operation immediately', {
+                previewId,
+            })
+            void startOperation()
+            return
+        }
+
+        // Scan is still running — subscribe to events and show progress
+        log.info('Scan preview still running for previewId={previewId}, subscribing to events', { previewId })
+        waitingForScan = true
+
+        scanUnlisteners.push(
+            await onScanPreviewProgress((event) => {
+                if (event.previewId !== previewId) return
+                scanFilesFound = event.filesFound
+                scanDirsFound = event.dirsFound
+                scanBytesFound = event.bytesFound
+            }),
+        )
+
+        scanUnlisteners.push(
+            await onScanPreviewComplete((event) => {
+                if (event.previewId !== previewId) return
+                log.info('Scan preview complete: {filesTotal} files, {bytesTotal} bytes', {
+                    filesTotal: event.filesTotal,
+                    bytesTotal: event.bytesTotal,
+                })
+                scanFilesFound = event.filesTotal
+                scanDirsFound = event.dirsTotal
+                scanBytesFound = event.bytesTotal
+                waitingForScan = false
+                cleanupScanListeners()
+                // Scan results are now cached — start the operation (guaranteed cache hit)
+                void startOperation()
+            }),
+        )
+
+        scanUnlisteners.push(
+            await onScanPreviewError((event) => {
+                if (event.previewId !== previewId) return
+                log.error('Scan preview error: {message}', { message: event.message })
+                waitingForScan = false
+                cleanupScanListeners()
+                onError({
+                    type: 'io_error',
+                    path: sourcePaths[0] ?? '',
+                    message: `Scan failed: ${event.message}`,
+                })
+            }),
+        )
+
+        scanUnlisteners.push(
+            await onScanPreviewCancelled((event) => {
+                if (event.previewId !== previewId) return
+                log.info('Scan preview cancelled')
+                waitingForScan = false
+                cleanupScanListeners()
+                onCancelled(0)
+            }),
+        )
+    }
+
     onMount(() => {
-        void startOperation()
+        if (scanInProgress && previewId) {
+            void waitForScanThenStart()
+        } else {
+            void startOperation()
+        }
     })
 
     onDestroy(() => {
         destroyed = true
+        // Cancel scan preview if still waiting for it
+        if (waitingForScan && previewId) {
+            void cancelScanPreview(previewId)
+        }
+        cleanupScanListeners()
         if (operationId) {
             // Cancel with rollback on unexpected teardown (hot-reload, navigation, crash).
             // Normal user-initiated cancel/complete already ran cleanup() + callbacks,
@@ -690,7 +810,9 @@
     containerStyle="min-width: 420px; max-width: 500px"
 >
     {#snippet title()}
-        {#if isRollingBack}
+        {#if waitingForScan}
+            Scanning...
+        {:else if isRollingBack}
             Rolling back...
         {:else if conflictEvent}
             File already exists
@@ -701,7 +823,35 @@
         {/if}
     {/snippet}
 
-    {#if !isDeleteOrTrash && conflictEvent}
+    {#if waitingForScan}
+        <!-- Scan preview in progress (picked up from TransferDialog) -->
+        {#if !isDeleteOrTrash && destinationPath && direction}
+            <DirectionIndicator sourcePath={sourceFolderPath} {destinationPath} {direction} />
+        {/if}
+
+        <div class="scan-wait-section">
+            <div class="scan-wait-stats">
+                <div class="scan-stat">
+                    <span class="scan-value">{formatBytes(scanBytesFound)}</span>
+                </div>
+                <span class="scan-divider">/</span>
+                <div class="scan-stat">
+                    <span class="scan-value">{scanFilesFound}</span>
+                    <span class="scan-label">{scanFilesFound === 1 ? 'file' : 'files'}</span>
+                </div>
+                <span class="scan-divider">/</span>
+                <div class="scan-stat">
+                    <span class="scan-value">{scanDirsFound}</span>
+                    <span class="scan-label">{scanDirsFound === 1 ? 'dir' : 'dirs'}</span>
+                </div>
+                <span class="scan-spinner"></span>
+            </div>
+        </div>
+
+        <div class="button-row">
+            <Button variant="secondary" onclick={() => void handleCancel(false)}>Cancel</Button>
+        </div>
+    {:else if !isDeleteOrTrash && conflictEvent}
         <!-- Conflict resolution (copy/move only) -->
         {@const fileName = conflictEvent.destinationPath.split('/').pop() ?? ''}
         {@const existingIsNewer = conflictEvent.destinationIsNewer}
@@ -899,6 +1049,49 @@
 </ModalDialog>
 
 <style>
+    /* Scan wait section (waiting for scan preview from TransferDialog) */
+    .scan-wait-section {
+        padding: var(--spacing-md) var(--spacing-xl) var(--spacing-lg);
+    }
+
+    .scan-wait-stats {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-sm);
+        font-size: var(--font-size-sm);
+    }
+
+    .scan-stat {
+        display: flex;
+        align-items: baseline;
+        gap: var(--spacing-xs);
+    }
+
+    .scan-value {
+        color: var(--color-text-primary);
+        font-variant-numeric: tabular-nums;
+        font-weight: 500;
+    }
+
+    .scan-label {
+        color: var(--color-text-tertiary);
+    }
+
+    .scan-divider {
+        color: var(--color-text-tertiary);
+    }
+
+    .scan-spinner {
+        width: 12px;
+        height: 12px;
+        border: 2px solid var(--color-accent);
+        border-top-color: transparent;
+        border-radius: var(--radius-full);
+        animation: spin 0.8s linear infinite;
+        margin-left: var(--spacing-xs);
+    }
+
     /* Progress stages */
     .progress-stages {
         display: flex;
