@@ -101,6 +101,8 @@
             sourceVolumeId={transferDialogProps.sourceVolumeId}
             destVolumeId={transferDialogProps.destVolumeId}
             allowOperationToggle={transferDialogProps.allowOperationToggle}
+            autoConfirm={transferDialogProps.autoConfirm}
+            autoConfirmOnConflict={transferDialogProps.autoConfirmOnConflict}
             onConfirm={onTransferConfirm}
             onCancel={onTransferCancel}
         />
@@ -138,6 +140,7 @@
             isFromCursor={deleteDialogProps.isFromCursor}
             sortColumn={deleteDialogProps.sortColumn}
             sortOrder={deleteDialogProps.sortOrder}
+            autoConfirm={deleteDialogProps.autoConfirm}
             onConfirm={onDeleteConfirm}
             onCancel={onDeleteCancel}
         />

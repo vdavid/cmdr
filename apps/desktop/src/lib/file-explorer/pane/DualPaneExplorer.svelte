@@ -107,6 +107,7 @@
     import { getInitialFileName } from '$lib/file-operations/mkfile/new-file-operations'
     import { createDialogState } from './dialog-state.svelte'
     import { getCurrentWebview } from '@tauri-apps/api/webview'
+    import { isMacOS } from '$lib/shortcuts/key-capture'
     import { recalculateWebviewOffset, toViewportPosition } from '../drag/drag-position'
     import {
         getIsDraggingFromSelf,
@@ -1411,6 +1412,8 @@
         operationType: TransferOperationType,
         sourcePaneRef: FilePaneAPI | undefined,
         pane: 'left' | 'right',
+        autoConfirm?: boolean,
+        onConflict?: string,
     ) {
         const listingId = sourcePaneRef?.getListingId()
         if (!listingId) return
@@ -1441,12 +1444,20 @@
               )
 
         if (props) {
+            if (autoConfirm) {
+                props.autoConfirm = true
+                props.autoConfirmOnConflict = onConflict
+            }
             dialogs.showTransfer(props)
         }
     }
 
     /** Opens the transfer dialog with the current selection info. */
-    export async function openTransferDialog(operationType: TransferOperationType) {
+    export async function openTransferDialog(
+        operationType: TransferOperationType,
+        autoConfirm?: boolean,
+        onConflict?: string,
+    ) {
         const sourcePaneRef = getPaneRef(focusedPane)
         const destVolId = getPaneVolumeId(otherPane(focusedPane))
 
@@ -1459,17 +1470,17 @@
             return
         }
 
-        await openUnifiedTransferDialog(operationType, sourcePaneRef, focusedPane)
+        await openUnifiedTransferDialog(operationType, sourcePaneRef, focusedPane, autoConfirm, onConflict)
     }
 
     /** Opens the copy dialog (convenience wrapper for MCP/key binding). */
-    export async function openCopyDialog() {
-        await openTransferDialog('copy')
+    export async function openCopyDialog(autoConfirm?: boolean, onConflict?: string) {
+        await openTransferDialog('copy', autoConfirm, onConflict)
     }
 
     /** Opens the move dialog (convenience wrapper for MCP/key binding). */
-    export async function openMoveDialog() {
-        await openTransferDialog('move')
+    export async function openMoveDialog(autoConfirm?: boolean, onConflict?: string) {
+        await openTransferDialog('move', autoConfirm, onConflict)
     }
 
     /** Gathers pane state needed for clipboard copy/cut. Returns null if unavailable. */
@@ -1581,7 +1592,7 @@
     }
 
     /** Opens the delete confirmation dialog for the current selection or cursor item. */
-    export async function openDeleteDialog(permanent: boolean) {
+    export async function openDeleteDialog(permanent: boolean, autoConfirm?: boolean) {
         const sourcePaneRef = getPaneRef(focusedPane)
         const listingId = sourcePaneRef?.getListingId()
         if (!listingId) return
@@ -1631,6 +1642,7 @@
             sortColumn: sortBy,
             sortOrder,
             sourceVolumeId: sourceVolId,
+            autoConfirm,
         })
     }
 
@@ -1651,6 +1663,11 @@
             }
         }
     })
+
+    /** Programmatically confirms an already-open dialog (for MCP). */
+    export function confirmDialog(dialogType: string, onConflict?: string) {
+        dialogs.confirmOpenDialog(dialogType, onConflict)
+    }
 
     /**
      * Refocus the file explorer container.

@@ -1,6 +1,6 @@
 //! Soft dialog tracking for MCP context tools.
 //!
-//! Tracks in-page overlay dialogs (about, license, copy-confirmation, etc.).
+//! Tracks in-page overlay dialogs (about, license, transfer-confirmation, etc.).
 //! Window-based dialogs (settings, file viewers) are derived from Tauri's window manager
 //! in resources.rs — no manual tracking needed for those.
 //!
@@ -94,12 +94,12 @@ mod tests {
         assert_eq!(tracker.get_open_types().len(), 1);
         assert!(tracker.get_open_types().contains(&"about".to_string()));
 
-        tracker.open("copy-confirmation".to_string());
+        tracker.open("transfer-confirmation".to_string());
         assert_eq!(tracker.get_open_types().len(), 2);
 
         tracker.close("about");
         assert_eq!(tracker.get_open_types().len(), 1);
-        assert!(tracker.get_open_types().contains(&"copy-confirmation".to_string()));
+        assert!(tracker.get_open_types().contains(&"transfer-confirmation".to_string()));
     }
 
     #[test]
@@ -133,7 +133,7 @@ mod tests {
                 description: None,
             },
             KnownDialog {
-                id: "copy-confirmation".to_string(),
+                id: "transfer-confirmation".to_string(),
                 description: Some("Opened by the copy tool".to_string()),
             },
         ];

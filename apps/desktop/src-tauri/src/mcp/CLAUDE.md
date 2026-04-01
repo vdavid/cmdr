@@ -21,13 +21,13 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Tools (`tools.rs`)
 
-26 semantic tools grouped by category:
+27 semantic tools grouped by category:
 - Navigation (6): `select_volume`, `nav_to_path`, `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`
 - Cursor/Selection (3): `move_cursor`, `open_under_cursor`, `select`
-- File operations (5): `copy`, `delete`, `mkdir`, `mkfile`, `refresh`
+- File operations (6): `copy`, `move`, `delete`, `mkdir`, `mkfile`, `refresh`. `copy`/`move` accept optional `autoConfirm` (bool) and `onConflict` (`skip_all`|`overwrite_all`|`rename_all`). `delete` accepts optional `autoConfirm`. When `autoConfirm` is true, the dialog opens and immediately confirms.
 - View (3): `sort`, `toggle_hidden`, `set_view_mode`
 - Tabs (1): `tab` (unified: `action` = `new` | `close` | `close_others` | `activate` | `set_pinned`; `tab_id` defaults to active tab for close/close_others/set_pinned, required for activate; `pinned` boolean for set_pinned)
-- Dialogs (1): `dialog` (unified open/focus/close)
+- Dialogs (1): `dialog` (unified open/focus/close/confirm). `action: "confirm"` programmatically confirms an open dialog. For `transfer-confirmation`: accepts optional `onConflict`. For `delete-confirmation`: just confirms. `type: "transfer-confirmation"` is the primary name (covers copy and move); `"copy-confirmation"` is accepted as an alias.
 - App (3): `switch_pane`, `swap_panes`, `quit`
 - Search (2): `search` (structured file search across the drive index, optional `scope` for path/exclude filtering), `ai_search` (natural language search using configured LLM, optional `scope` merged with AI-inferred scope)
 - Settings (1): `set_setting` (change a setting value via round-trip to frontend)
@@ -135,7 +135,7 @@ The `cmdr://settings` resource and `set_setting` tool both use round-trips to th
 
 ### Tool execution is async but mostly synchronous
 
-`execute_tool()` is an async function. Most tools are fire-and-forget — they emit a Tauri event and return immediately (for example, "OK: Copy dialog opened" not "OK: Files copied"). Three categories of async tools exist: (1) `mcp_round_trip` tools (`nav_to_path`) that wait up to 5s for the frontend to confirm success/failure, (2) search tools (`search`, `ai_search`) that load the search index via `spawn_blocking` and (for `ai_search`) call the LLM API.
+`execute_tool()` is an async function. Most tools are fire-and-forget — they emit a Tauri event and return immediately (for example, "OK: Copy dialog opened" not "OK: Files copied"). This applies even with `autoConfirm: true` — the tool returns when the operation starts, not when it completes. Three categories of async tools exist: (1) `mcp_round_trip` tools (`nav_to_path`) that wait up to 5s for the frontend to confirm success/failure, (2) search tools (`search`, `ai_search`) that load the search index via `spawn_blocking` and (for `ai_search`) call the LLM API.
 
 ### Error codes are JSON-RPC standard
 

@@ -130,8 +130,58 @@ fn get_view_tools() -> Vec<Tool> {
 /// Get file operation tools.
 fn get_file_op_tools() -> Vec<Tool> {
     vec![
-        Tool::no_params("copy", "Copy selected files to other pane (triggers native dialog)"),
-        Tool::no_params("delete", "Delete selected files (triggers confirmation dialog)"),
+        Tool {
+            name: "copy".to_string(),
+            description: "Copy selected files to other pane (opens confirmation dialog)".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "autoConfirm": {
+                        "type": "boolean",
+                        "description": "When true, dialog opens and immediately confirms without waiting for user interaction. Returns once the operation starts."
+                    },
+                    "onConflict": {
+                        "type": "string",
+                        "enum": ["skip_all", "overwrite_all", "rename_all"],
+                        "description": "Conflict resolution policy (only when autoConfirm is true). Default: skip_all"
+                    }
+                },
+                "required": []
+            }),
+        },
+        Tool {
+            name: "move".to_string(),
+            description: "Move selected files to other pane (opens confirmation dialog)".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "autoConfirm": {
+                        "type": "boolean",
+                        "description": "When true, dialog opens and immediately confirms without waiting for user interaction. Returns once the operation starts."
+                    },
+                    "onConflict": {
+                        "type": "string",
+                        "enum": ["skip_all", "overwrite_all", "rename_all"],
+                        "description": "Conflict resolution policy (only when autoConfirm is true). Default: skip_all"
+                    }
+                },
+                "required": []
+            }),
+        },
+        Tool {
+            name: "delete".to_string(),
+            description: "Delete selected files (opens confirmation dialog)".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "autoConfirm": {
+                        "type": "boolean",
+                        "description": "When true, dialog opens and immediately confirms without waiting for user interaction. Returns once the operation starts."
+                    }
+                },
+                "required": []
+            }),
+        },
         Tool::no_params("mkdir", "Create folder in focused pane (triggers naming dialog)"),
         Tool::no_params("mkfile", "Create file in focused pane (triggers naming dialog)"),
         Tool::no_params("refresh", "Refresh focused pane"),
@@ -282,19 +332,19 @@ fn get_selection_tools() -> Vec<Tool> {
 fn get_dialog_tools() -> Vec<Tool> {
     vec![Tool {
         name: "dialog".to_string(),
-        description: "Open, focus, or close dialogs".to_string(),
+        description: "Open, focus, close, or confirm dialogs".to_string(),
         input_schema: json!({
             "type": "object",
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["open", "focus", "close"],
-                    "description": "Action to perform"
+                    "enum": ["open", "focus", "close", "confirm"],
+                    "description": "Action to perform. 'confirm' triggers the confirm button on an already-open dialog."
                 },
                 "type": {
                     "type": "string",
-                    "enum": ["settings", "file-viewer", "about", "copy-confirmation", "mkdir-confirmation", "new-file-confirmation", "delete-confirmation"],
-                    "description": "Dialog type"
+                    "enum": ["settings", "file-viewer", "about", "transfer-confirmation", "copy-confirmation", "mkdir-confirmation", "new-file-confirmation", "delete-confirmation"],
+                    "description": "Dialog type. 'transfer-confirmation' covers both copy and move dialogs (preferred over 'copy-confirmation')."
                 },
                 "section": {
                     "type": "string",
@@ -303,6 +353,11 @@ fn get_dialog_tools() -> Vec<Tool> {
                 "path": {
                     "type": "string",
                     "description": "For file-viewer: file path. On open without path, uses cursor file. On close without path, closes all."
+                },
+                "onConflict": {
+                    "type": "string",
+                    "enum": ["skip_all", "overwrite_all", "rename_all"],
+                    "description": "For confirm action on transfer-confirmation: conflict resolution policy. Default: skip_all"
                 }
             },
             "required": ["action", "type"]
@@ -503,8 +558,8 @@ mod tests {
     #[test]
     fn test_file_op_tools_count() {
         let tools = get_file_op_tools();
-        // copy, delete, mkdir, mkfile, refresh
-        assert_eq!(tools.len(), 5);
+        // copy, move, delete, mkdir, mkfile, refresh
+        assert_eq!(tools.len(), 6);
     }
 
     #[test]
@@ -578,8 +633,8 @@ mod tests {
     #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 6 nav + 2 cursor + 1 selection + 5 file_op + 3 view + 1 tab + 1 dialog + 3 app + 2 search + 1 settings + 1 await = 26
-        assert_eq!(tools.len(), 26);
+        // 6 nav + 2 cursor + 1 selection + 6 file_op + 3 view + 1 tab + 1 dialog + 3 app + 2 search + 1 settings + 1 await = 27
+        assert_eq!(tools.len(), 27);
     }
 
     #[test]
@@ -664,16 +719,21 @@ mod tests {
         assert!(action_enum.contains(&json!("open")));
         assert!(action_enum.contains(&json!("focus")));
         assert!(action_enum.contains(&json!("close")));
+        assert!(action_enum.contains(&json!("confirm")));
 
         // Check type enum values
         let type_enum = props.get("type").unwrap().get("enum").unwrap().as_array().unwrap();
         assert!(type_enum.contains(&json!("settings")));
         assert!(type_enum.contains(&json!("file-viewer")));
         assert!(type_enum.contains(&json!("about")));
+        assert!(type_enum.contains(&json!("transfer-confirmation")));
         assert!(type_enum.contains(&json!("copy-confirmation")));
         assert!(type_enum.contains(&json!("mkdir-confirmation")));
         assert!(type_enum.contains(&json!("new-file-confirmation")));
         assert!(type_enum.contains(&json!("delete-confirmation")));
+
+        // Check onConflict property exists
+        assert!(props.get("onConflict").is_some());
 
         // Check required fields
         let required = schema.get("required").unwrap().as_array().unwrap();

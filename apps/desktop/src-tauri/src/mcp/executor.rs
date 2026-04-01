@@ -129,8 +129,9 @@ pub async fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &V
         // Tab commands
         "tab" => execute_tab(app, params),
         // File operation commands
-        "copy" => execute_copy(app),
-        "delete" => execute_delete(app),
+        "copy" => execute_copy(app, params),
+        "move" => execute_move(app, params),
+        "delete" => execute_delete(app, params),
         "mkdir" => execute_mkdir(app),
         "mkfile" => execute_mkfile(app),
         "refresh" => execute_refresh(app),
@@ -565,9 +566,53 @@ async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &
 /// Note: We cannot validate whether files are selected because selection state
 /// is managed by the frontend. The validation happens in the frontend event handler
 /// which will show an appropriate error if no files are selected.
-fn execute_copy<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
-    app.emit("mcp-copy", ())?;
-    Ok(json!("OK: Copy dialog opened. Waiting for user confirmation."))
+fn execute_copy<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
+    let on_conflict = params.get("onConflict").and_then(|v| v.as_str()).unwrap_or("skip_all");
+
+    if auto_confirm && !["skip_all", "overwrite_all", "rename_all"].contains(&on_conflict) {
+        return Err(ToolError::invalid_params(
+            "onConflict must be 'skip_all', 'overwrite_all', or 'rename_all'",
+        ));
+    }
+
+    app.emit(
+        "mcp-copy",
+        json!({"autoConfirm": auto_confirm, "onConflict": on_conflict}),
+    )?;
+
+    if auto_confirm {
+        Ok(json!("OK: Copy started with auto-confirm."))
+    } else {
+        Ok(json!("OK: Copy dialog opened. Waiting for user confirmation."))
+    }
+}
+
+/// Execute move command.
+///
+/// Note: We cannot validate whether files are selected because selection state
+/// is managed by the frontend. The validation happens in the frontend event handler
+/// which will show an appropriate error if no files are selected.
+fn execute_move<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
+    let on_conflict = params.get("onConflict").and_then(|v| v.as_str()).unwrap_or("skip_all");
+
+    if auto_confirm && !["skip_all", "overwrite_all", "rename_all"].contains(&on_conflict) {
+        return Err(ToolError::invalid_params(
+            "onConflict must be 'skip_all', 'overwrite_all', or 'rename_all'",
+        ));
+    }
+
+    app.emit(
+        "mcp-move",
+        json!({"autoConfirm": auto_confirm, "onConflict": on_conflict}),
+    )?;
+
+    if auto_confirm {
+        Ok(json!("OK: Move started with auto-confirm."))
+    } else {
+        Ok(json!("OK: Move dialog opened. Waiting for user confirmation."))
+    }
 }
 
 /// Execute delete command.
@@ -575,9 +620,16 @@ fn execute_copy<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
 /// Note: We cannot validate whether files are selected because selection state
 /// is managed by the frontend. The validation happens in the frontend event handler
 /// which will show an appropriate error if no files are selected.
-fn execute_delete<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
-    app.emit("mcp-delete", ())?;
-    Ok(json!("OK: Delete dialog opened. Waiting for user confirmation."))
+fn execute_delete<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
+
+    app.emit("mcp-delete", json!({"autoConfirm": auto_confirm}))?;
+
+    if auto_confirm {
+        Ok(json!("OK: Delete started with auto-confirm."))
+    } else {
+        Ok(json!("OK: Delete dialog opened. Waiting for user confirmation."))
+    }
 }
 
 /// Execute mkdir command.
@@ -682,14 +734,22 @@ fn execute_dialog_command<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Too
         .and_then(|v| v.as_str())
         .ok_or_else(|| ToolError::invalid_params("Missing 'type' parameter"))?;
 
+    // Normalize dialog type: accept both "copy-confirmation" and "transfer-confirmation"
+    let dialog_type = match dialog_type {
+        "copy-confirmation" => "transfer-confirmation",
+        other => other,
+    };
+
     // Optional params
     let section = params.get("section").and_then(|v| v.as_str());
     let path = params.get("path").and_then(|v| v.as_str());
+    let on_conflict = params.get("onConflict").and_then(|v| v.as_str());
 
     match action {
         "open" => execute_dialog_open(app, dialog_type, section, path),
         "focus" => execute_dialog_focus(app, dialog_type, path),
         "close" => execute_dialog_close(app, dialog_type, path),
+        "confirm" => execute_dialog_confirm(app, dialog_type, on_conflict),
         _ => Err(ToolError::invalid_params(format!("Invalid action: {action}"))),
     }
 }
@@ -734,9 +794,9 @@ fn execute_dialog_open<R: Runtime>(
             app.emit_to("main", "execute-command", json!({"commandId": "app.about"}))?;
             Ok(json!("OK: Opened about dialog"))
         }
-        "copy-confirmation" | "mkdir-confirmation" | "new-file-confirmation" | "delete-confirmation" => {
+        "transfer-confirmation" | "mkdir-confirmation" | "new-file-confirmation" | "delete-confirmation" => {
             Err(ToolError::invalid_params(
-                "Cannot open confirmation dialogs directly. Use copy, delete, mkdir, or mkfile tools instead.",
+                "Cannot open confirmation dialogs directly. Use copy, move, delete, mkdir, or mkfile tools instead.",
             ))
         }
         _ => Err(ToolError::invalid_params(format!("Invalid dialog type: {dialog_type}"))),
@@ -768,7 +828,7 @@ fn execute_dialog_focus<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
             app.emit("focus-about", ())?;
             Ok(json!("OK: Focused about dialog"))
         }
-        "copy-confirmation" | "mkdir-confirmation" | "new-file-confirmation" | "delete-confirmation" => {
+        "transfer-confirmation" | "mkdir-confirmation" | "new-file-confirmation" | "delete-confirmation" => {
             app.emit("focus-confirmation", ())?;
             Ok(json!("OK: Focused confirmation dialog"))
         }
@@ -801,11 +861,40 @@ fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
             app.emit("close-about", ())?;
             Ok(json!("OK: Closed about dialog"))
         }
-        "copy-confirmation" | "mkdir-confirmation" | "new-file-confirmation" | "delete-confirmation" => {
+        "transfer-confirmation" | "mkdir-confirmation" | "new-file-confirmation" | "delete-confirmation" => {
             app.emit("close-confirmation", ())?;
             Ok(json!("OK: Cancelled confirmation dialog"))
         }
         _ => Err(ToolError::invalid_params(format!("Invalid dialog type: {dialog_type}"))),
+    }
+}
+
+/// Execute dialog confirm action.
+/// Programmatically confirms an already-open dialog.
+fn execute_dialog_confirm<R: Runtime>(
+    app: &AppHandle<R>,
+    dialog_type: &str,
+    on_conflict: Option<&str>,
+) -> ToolResult {
+    match dialog_type {
+        "transfer-confirmation" => {
+            let conflict_policy = on_conflict.unwrap_or("skip_all");
+            if !["skip_all", "overwrite_all", "rename_all"].contains(&conflict_policy) {
+                return Err(ToolError::invalid_params(
+                    "onConflict must be 'skip_all', 'overwrite_all', or 'rename_all'",
+                ));
+            }
+            app.emit("mcp-confirm-dialog", json!({"type": "transfer-confirmation", "onConflict": conflict_policy}))?;
+            Ok(json!("OK: Transfer dialog confirmed."))
+        }
+        "delete-confirmation" => {
+            app.emit("mcp-confirm-dialog", json!({"type": "delete-confirmation"}))?;
+            Ok(json!("OK: Delete dialog confirmed."))
+        }
+        _ => Err(ToolError::invalid_params(format!(
+            "Cannot confirm dialog type '{}'. Only 'transfer-confirmation' and 'delete-confirmation' support confirm.",
+            dialog_type
+        ))),
     }
 }
 

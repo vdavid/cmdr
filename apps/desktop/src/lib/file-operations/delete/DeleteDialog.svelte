@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte'
+    import { onMount, onDestroy, tick } from 'svelte'
     import {
         formatBytes,
         startScanPreview,
@@ -37,6 +37,8 @@
         sortColumn: SortColumn
         /** Current sort order on source pane */
         sortOrder: SortOrder
+        /** When true, dialog auto-confirms without user interaction (MCP). */
+        autoConfirm?: boolean
         onConfirm: (previewId: string | null) => void
         onCancel: () => void
     }
@@ -50,6 +52,7 @@
         isFromCursor,
         sortColumn,
         sortOrder,
+        autoConfirm = false,
         onConfirm,
         onCancel,
     }: Props = $props()
@@ -132,8 +135,14 @@
         unlisteners = []
     }
 
-    onMount(() => {
+    onMount(async () => {
         void startScan()
+
+        // Auto-confirm if MCP requested it (after a tick so the dialog is fully initialized)
+        if (autoConfirm) {
+            await tick()
+            handleConfirm()
+        }
     })
 
     onDestroy(() => {

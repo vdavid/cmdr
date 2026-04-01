@@ -74,15 +74,16 @@
         handleSelectionAction: (action: string, startIndex?: number, endIndex?: number) => void
         handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: string) => void
         startRename: () => void
-        openCopyDialog: () => Promise<void>
-        openMoveDialog: () => Promise<void>
+        openCopyDialog: (autoConfirm?: boolean, onConflict?: string) => Promise<void>
+        openMoveDialog: (autoConfirm?: boolean, onConflict?: string) => Promise<void>
         copyToClipboard: () => Promise<void>
         cutToClipboard: () => Promise<void>
         pasteFromClipboard: (forceMove: boolean) => Promise<void>
         openNewFolderDialog: () => Promise<void>
         openNewFileDialog: () => Promise<void>
-        openDeleteDialog: (permanent: boolean) => Promise<void>
+        openDeleteDialog: (permanent: boolean, autoConfirm?: boolean) => Promise<void>
         closeConfirmationDialog: () => void
+        confirmDialog: (dialogType: string, onConflict?: string) => void
         isConfirmationDialogOpen: () => boolean
         isRenaming: () => boolean
         openViewerForCursor: () => Promise<void>
@@ -430,8 +431,20 @@
             explorerRef?.refreshPane()
         })
 
-        await listenTauri('mcp-copy', () => {
-            void explorerRef?.openCopyDialog()
+        await listenTauri('mcp-copy', (event) => {
+            const { autoConfirm, onConflict } = event.payload as {
+                autoConfirm?: boolean
+                onConflict?: string
+            }
+            void explorerRef?.openCopyDialog(autoConfirm, onConflict)
+        })
+
+        await listenTauri('mcp-move', (event) => {
+            const { autoConfirm, onConflict } = event.payload as {
+                autoConfirm?: boolean
+                onConflict?: string
+            }
+            void explorerRef?.openMoveDialog(autoConfirm, onConflict)
         })
 
         await listenTauri('mcp-mkdir', () => {
@@ -442,8 +455,17 @@
             void explorerRef?.openNewFileDialog()
         })
 
-        await listenTauri('mcp-delete', () => {
-            void explorerRef?.openDeleteDialog(false)
+        await listenTauri('mcp-delete', (event) => {
+            const { autoConfirm } = event.payload as { autoConfirm?: boolean }
+            void explorerRef?.openDeleteDialog(false, autoConfirm)
+        })
+
+        await listenTauri('mcp-confirm-dialog', (event) => {
+            const { type, onConflict } = event.payload as {
+                type: string
+                onConflict?: string
+            }
+            explorerRef?.confirmDialog(type, onConflict)
         })
     }
 

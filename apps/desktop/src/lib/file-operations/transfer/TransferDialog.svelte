@@ -52,6 +52,10 @@
         destVolumeId: string
         /** When true, shows a copy/move segmented control (for drag-and-drop). */
         allowOperationToggle?: boolean
+        /** When true, dialog auto-confirms without user interaction (MCP). */
+        autoConfirm?: boolean
+        /** Conflict resolution policy for auto-confirm (MCP). */
+        autoConfirmOnConflict?: string
         onConfirm: (
             destination: string,
             volumeId: string,
@@ -78,6 +82,8 @@
         sourceVolumeId: _sourceVolumeId,
         destVolumeId,
         allowOperationToggle = false,
+        autoConfirm = false,
+        autoConfirmOnConflict,
         onConfirm,
         onCancel,
     }: Props = $props()
@@ -104,7 +110,17 @@
     let conflicts = $state<VolumeConflictInfo[]>([])
     let isCheckingConflicts = $state(false)
     let conflictCheckComplete = $state(false)
-    let conflictPolicy = $state<ConflictResolution>('stop') // Default to "ask for each"
+    // Map MCP onConflict string to ConflictResolution, or default to "ask for each"
+    const autoConfirmConflictMap: Record<string, ConflictResolution> = {
+        skip_all: 'skip',
+        overwrite_all: 'overwrite',
+        rename_all: 'rename',
+    }
+    let conflictPolicy = $state<ConflictResolution>(
+        autoConfirm && autoConfirmOnConflict
+            ? autoConfirmConflictMap[autoConfirmOnConflict] ?? 'skip'
+            : 'stop',
+    ) // Default to "ask for each" unless auto-confirming
 
     // Filter to only actual volumes (not favorites)
     const actualVolumes = $derived(volumes.filter((v) => v.category !== 'favorite' && v.category !== 'network'))
@@ -285,6 +301,12 @@
 
         // Start scanning files immediately
         void startScan()
+
+        // Auto-confirm if MCP requested it (after a tick so the dialog is fully initialized)
+        if (autoConfirm) {
+            await tick()
+            handleConfirm()
+        }
     })
 
     onDestroy(() => {

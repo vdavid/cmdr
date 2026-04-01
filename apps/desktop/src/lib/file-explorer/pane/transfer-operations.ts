@@ -28,6 +28,10 @@ export interface TransferDialogPropsData {
   destVolumeId: string
   /** When true, shows a copy/move toggle in the transfer dialog (used for drag-and-drop). */
   allowOperationToggle?: boolean
+  /** When true, dialog auto-confirms without user interaction (MCP auto-confirm). */
+  autoConfirm?: boolean
+  /** Conflict resolution policy for auto-confirm (MCP). Maps to ConflictResolution. */
+  autoConfirmOnConflict?: string
 }
 
 interface MtpVolumeInfo {

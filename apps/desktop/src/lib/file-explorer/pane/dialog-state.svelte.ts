@@ -67,6 +67,8 @@ export interface DeleteDialogPropsData {
   sortColumn: SortColumn
   sortOrder: SortOrder
   sourceVolumeId: string
+  /** When true, dialog auto-confirms without user interaction (MCP auto-confirm). */
+  autoConfirm?: boolean
 }
 
 export interface DialogStateDeps {
@@ -478,6 +480,28 @@ export function createDialogState(deps: DialogStateDeps) {
     /** Whether any transfer/delete-related dialog is open (used by canSwapPanes). */
     isAnyTransferDialogOpen(): boolean {
       return showTransferDialog || showTransferProgressDialog || showDeleteDialog
+    },
+
+    /** Programmatically confirm an open dialog (for MCP confirm action). */
+    confirmOpenDialog(dialogType: string, onConflict?: string) {
+      if (dialogType === 'transfer-confirmation' && showTransferDialog && transferDialogProps) {
+        // Map onConflict to ConflictResolution
+        const conflictMap: Record<string, ConflictResolution> = {
+          skip_all: 'skip',
+          overwrite_all: 'overwrite',
+          rename_all: 'rename',
+        }
+        const resolution: ConflictResolution = (onConflict && conflictMap[onConflict]) || 'skip'
+        this.handleTransferConfirm(
+          transferDialogProps.destinationPath,
+          transferDialogProps.destVolumeId,
+          null, // previewId not available when confirming programmatically
+          resolution,
+          transferDialogProps.operationType,
+        )
+      } else if (dialogType === 'delete-confirmation' && showDeleteDialog) {
+        this.handleDeleteConfirm(null) // previewId not available
+      }
     },
   }
 }
