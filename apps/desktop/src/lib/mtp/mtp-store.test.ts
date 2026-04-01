@@ -354,6 +354,8 @@ describe('mtp-store', () => {
       expect(volumes[0].storageId).toBe(0)
       expect(volumes[0].name).toBe('Pixel 8')
       expect(volumes[0].isConnected).toBe(false)
+      expect(volumes[0].totalBytes).toBeUndefined()
+      expect(volumes[0].availableBytes).toBeUndefined()
     })
 
     it('returns one volume per storage for connected device', async () => {
@@ -383,9 +385,13 @@ describe('mtp-store', () => {
       expect(volumes[0].name).toBe('Pixel 8 - Internal shared storage')
       expect(volumes[0].storageId).toBe(65537)
       expect(volumes[0].isConnected).toBe(true)
+      expect(volumes[0].totalBytes).toBe(128_000_000_000)
+      expect(volumes[0].availableBytes).toBe(64_000_000_000)
       expect(volumes[1].id).toBe('mtp-336592896:65538')
       expect(volumes[1].name).toBe('Pixel 8 - SD Card')
       expect(volumes[1].storageId).toBe(65538)
+      expect(volumes[1].totalBytes).toBe(64_000_000_000)
+      expect(volumes[1].availableBytes).toBe(32_000_000_000)
     })
 
     it('propagates isReadOnly flag from storage to volume', async () => {

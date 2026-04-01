@@ -307,6 +307,10 @@ pub fn run() {
             #[cfg(target_os = "linux")]
             volumes_linux::watcher::start_volume_watcher(app.handle());
 
+            // Register virtual MTP device for E2E testing (before watcher so it's in the initial snapshot)
+            #[cfg(feature = "virtual-mtp")]
+            mtp::virtual_device::setup_virtual_mtp_device();
+
             // Start MTP device hotplug watcher (Android device support)
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             mtp::start_mtp_watcher(app.handle());
@@ -600,6 +604,7 @@ pub fn run() {
             commands::file_system::cancel_all_write_operations,
             commands::file_system::start_scan_preview,
             commands::file_system::cancel_scan_preview,
+            commands::file_system::check_scan_preview_status,
             commands::file_system::resolve_write_conflict,
             commands::file_system::list_active_operations,
             commands::file_system::get_operation_status,

@@ -417,6 +417,10 @@ export interface MtpVolume {
   isConnected: boolean
   /** Whether this storage is read-only (for example, PTP cameras) */
   isReadOnly: boolean
+  /** Total storage capacity in bytes (only available when connected) */
+  totalBytes?: number
+  /** Available space in bytes (only available when connected) */
+  availableBytes?: number
 }
 
 /**
@@ -444,6 +448,8 @@ export function getMtpVolumes(): MtpVolume[] {
           path: `mtp://${deviceState.device.id}/${String(storage.id)}`,
           isConnected: true,
           isReadOnly: storage.isReadOnly,
+          totalBytes: storage.totalBytes,
+          availableBytes: storage.availableBytes,
         })
       }
     } else {

@@ -121,6 +121,9 @@ fn build_pane_yaml(state: &PaneState, indent: &str) -> String {
         indent,
         state.volume_name.as_deref().unwrap_or("unknown")
     ));
+    if let Some(ref vid) = state.volume_id {
+        lines.push(format!("{}volumeId: {}", indent, vid));
+    }
     lines.push(format!("{}path: {}", indent, state.path));
     lines.push(format!("{}view: {}", indent, state.view_mode));
     lines.push(format!(
@@ -337,6 +340,32 @@ pub async fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> 
             #[cfg(not(target_os = "macos"))]
             {
                 yaml.push_str("  - root\n");
+            }
+
+            // MTP volumes (from connected devices)
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            {
+                let devices = crate::mtp::connection::connection_manager()
+                    .get_all_connected_devices()
+                    .await;
+                for device_info in &devices {
+                    let has_multiple = device_info.storages.len() > 1;
+                    let device_name = device_info
+                        .device
+                        .product
+                        .as_deref()
+                        .or(device_info.device.manufacturer.as_deref())
+                        .unwrap_or(&device_info.device.id);
+                    for storage in &device_info.storages {
+                        let display_name = if has_multiple {
+                            format!("{} - {}", device_name, storage.name)
+                        } else {
+                            device_name.to_string()
+                        };
+                        let volume_id = format!("{}:{}", device_info.device.id, storage.id);
+                        yaml.push_str(&format!("  - name: {}\n    id: {}\n", display_name, volume_id));
+                    }
+                }
             }
 
             // Dialogs — derived from window manager + soft dialog tracker
@@ -691,6 +720,7 @@ mod tests {
         let yaml = build_pane_yaml(&state, "  ");
 
         assert!(yaml.contains("volume: Macintosh HD"));
+        assert!(yaml.contains("volumeId: root"));
         assert!(yaml.contains("path: /Users/test"));
         assert!(yaml.contains("view: brief"));
         assert!(yaml.contains("sort: \"name:asc\""));

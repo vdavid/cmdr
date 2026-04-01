@@ -13,6 +13,8 @@ publish = false  # Private application, not for crates.io
 automation = ["dep:tauri-plugin-automation"]
 # Playwright E2E testing plugin (socket bridge to real webview). Never enable in production builds.
 playwright-e2e = ["dep:tauri-plugin-playwright"]
+# Virtual MTP device for E2E testing (registers a fake Android device). Never enable in production builds.
+virtual-mtp = ["mtp-rs/virtual-device"]
 
 [[bin]]
 name = "Cmdr"
@@ -105,7 +107,7 @@ mime_guess = "2"
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 # MTP (Android device) support via pure Rust implementation
-mtp-rs = "0.4.1"
+mtp-rs = "0.5.1"
 # USB hotplug detection for MTP device watcher
 nusb = "0.2.3"
 bytes = "1"

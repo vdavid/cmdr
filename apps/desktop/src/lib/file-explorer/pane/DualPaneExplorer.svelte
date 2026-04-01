@@ -1968,6 +1968,21 @@
         }
     }
 
+    /** Check if an MTP path matches the pane's current volume. Returns an error string if not. */
+    function validateMtpNavigation(path: string, volumeId: string, volumeName: string | undefined): string | null {
+        if (path.startsWith('mtp://')) {
+            const mtpMatch = path.match(/^mtp:\/\/([^/]+)\/(\d+)/)
+            const pathDeviceId = mtpMatch?.[1]
+            const pathStorageId = mtpMatch?.[2]
+            if (!pathDeviceId || !pathStorageId || volumeId !== `${pathDeviceId}:${pathStorageId}`) {
+                return `Pane is not on this MTP volume \u2014 call select_volume first.`
+            }
+        } else if (volumeId.includes(':') && volumeId.startsWith('mtp-')) {
+            return `Pane is on the ${volumeName ?? volumeId} MTP volume. Use select_volume to switch to a local volume first.`
+        }
+        return null
+    }
+
     /**
      * Navigate a pane to a specific path.
      * Used by MCP nav_to_path tool.
@@ -1976,10 +1991,15 @@
      */
     export function navigateToPath(pane: 'left' | 'right', path: string): string | Promise<void> {
         const volumeId = pane === 'left' ? leftVolumeId : rightVolumeId
-        if (volumeId === 'network' || volumeId.startsWith('mtp-')) {
-            const volumeName = pane === 'left' ? leftVolumeName : rightVolumeName
+        const volumeName = pane === 'left' ? leftVolumeName : rightVolumeName
+
+        if (volumeId === 'network') {
             return `Pane is on the ${volumeName ?? volumeId} volume. Use select_volume to switch to a local volume first.`
         }
+
+        const mtpError = validateMtpNavigation(path, volumeId, volumeName)
+        if (mtpError) return mtpError
+
         const paneRef = getPaneRef(pane)
         if (!paneRef) return 'Pane not available'
         return paneRef.navigateToPath(path)
@@ -2048,11 +2068,19 @@
         }
 
         const index = volumes.findIndex((v) => v.name === name)
-        if (index === -1) {
-            log.warn('Volume not found: {name}', { name })
-            return false
+        if (index !== -1) {
+            return selectVolumeByIndex(pane, index)
         }
-        return selectVolumeByIndex(pane, index)
+
+        // Check MTP volumes
+        const mtpVolume = getMtpVolumes().find((v) => v.name === name)
+        if (mtpVolume) {
+            await handleVolumeChange(pane, mtpVolume.id, mtpVolume.path, mtpVolume.path)
+            return true
+        }
+
+        log.warn('Volume not found: {name}', { name })
+        return false
     }
 
     /**
@@ -2333,8 +2361,9 @@
         prevId: string | null,
         resolution: ConflictResolution,
         opType: TransferOperationType,
+        scanning: boolean,
     ) => {
-        dialogs.handleTransferConfirm(dest, volId, prevId, resolution, opType)
+        dialogs.handleTransferConfirm(dest, volId, prevId, resolution, opType, scanning)
     }}
     onTransferCancel={() => {
         dialogs.handleTransferCancel()

@@ -411,7 +411,35 @@ async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &
             {
                 let locations = crate::volumes::list_locations();
                 let is_virtual = volume_name == "Network";
-                if !is_virtual && !locations.iter().any(|loc| loc.name == volume_name) {
+                let is_local = locations.iter().any(|loc| loc.name == volume_name);
+
+                // Check MTP volumes if not a local or virtual volume
+                let is_mtp = if !is_virtual && !is_local {
+                    let devices = crate::mtp::connection::connection_manager()
+                        .get_all_connected_devices()
+                        .await;
+                    devices.iter().any(|d| {
+                        let has_multiple = d.storages.len() > 1;
+                        let device_name = d
+                            .device
+                            .product
+                            .as_deref()
+                            .or(d.device.manufacturer.as_deref())
+                            .unwrap_or(&d.device.id);
+                        d.storages.iter().any(|s| {
+                            let name = if has_multiple {
+                                format!("{} - {}", device_name, s.name)
+                            } else {
+                                device_name.to_string()
+                            };
+                            name == volume_name
+                        })
+                    })
+                } else {
+                    false
+                };
+
+                if !is_virtual && !is_local && !is_mtp {
                     let mut available: Vec<&str> = locations.iter().map(|l| l.name.as_str()).collect();
                     available.push("Network");
                     return Err(ToolError::invalid_params(format!(
@@ -469,8 +497,8 @@ async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &
                 return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
             }
 
-            // Validate that the path exists
-            if !Path::new(path).exists() {
+            // Validate that the path exists (skip for mtp:// virtual paths)
+            if !path.starts_with("mtp://") && !Path::new(path).exists() {
                 return Err(ToolError::invalid_params(format!("Path does not exist: {}", path)));
             }
 
@@ -871,11 +899,7 @@ fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
 
 /// Execute dialog confirm action.
 /// Programmatically confirms an already-open dialog.
-fn execute_dialog_confirm<R: Runtime>(
-    app: &AppHandle<R>,
-    dialog_type: &str,
-    on_conflict: Option<&str>,
-) -> ToolResult {
+fn execute_dialog_confirm<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, on_conflict: Option<&str>) -> ToolResult {
     match dialog_type {
         "transfer-confirmation" => {
             let conflict_policy = on_conflict.unwrap_or("skip_all");
@@ -884,7 +908,10 @@ fn execute_dialog_confirm<R: Runtime>(
                     "onConflict must be 'skip_all', 'overwrite_all', or 'rename_all'",
                 ));
             }
-            app.emit("mcp-confirm-dialog", json!({"type": "transfer-confirmation", "onConflict": conflict_policy}))?;
+            app.emit(
+                "mcp-confirm-dialog",
+                json!({"type": "transfer-confirmation", "onConflict": conflict_policy}),
+            )?;
             Ok(json!("OK: Transfer dialog confirmed."))
         }
         "delete-confirmation" => {
@@ -914,11 +941,7 @@ async fn execute_await<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolRe
         .get("value")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ToolError::invalid_params("Missing 'value' parameter"))?;
-    let timeout_s = params
-        .get("timeout_s")
-        .and_then(|v| v.as_u64())
-        .unwrap_or(15)
-        .min(60);
+    let timeout_s = params.get("timeout_s").and_then(|v| v.as_u64()).unwrap_or(15).min(60);
     let after_generation = params.get("after_generation").and_then(|v| v.as_u64());
 
     if !["left", "right"].contains(&pane) {
@@ -940,16 +963,16 @@ async fn execute_await<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolRe
     loop {
         // Check generation gate
         let current_gen = store.get_generation();
-        if let Some(min_gen) = after_generation {
-            if current_gen <= min_gen {
-                if tokio::time::Instant::now() >= deadline {
-                    return Err(ToolError::internal(format!(
-                        "Timed out after {timeout_s}s waiting for condition '{condition}' = \"{value}\" on {pane} pane (no state update since generation {min_gen})"
-                    )));
-                }
-                tokio::time::sleep(poll_interval).await;
-                continue;
+        if let Some(min_gen) = after_generation
+            && current_gen <= min_gen
+        {
+            if tokio::time::Instant::now() >= deadline {
+                return Err(ToolError::internal(format!(
+                    "Timed out after {timeout_s}s waiting for condition '{condition}' = \"{value}\" on {pane} pane (no state update since generation {min_gen})"
+                )));
             }
+            tokio::time::sleep(poll_interval).await;
+            continue;
         }
 
         let state = match pane {
@@ -986,7 +1009,11 @@ async fn execute_await<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolRe
                 "OK: Condition met (generation {current_gen})\npane: {pane}\npath: {}\nfiles: {} total\nitems:\n{}",
                 state.path,
                 file_count,
-                first_items.iter().map(|i| format!("  - {i}")).collect::<Vec<_>>().join("\n")
+                first_items
+                    .iter()
+                    .map(|i| format!("  - {i}"))
+                    .collect::<Vec<_>>()
+                    .join("\n")
             );
             return Ok(json!(result));
         }

@@ -105,8 +105,9 @@ real containing volume, not the `volumeId` prop (which may be a favorite's virtu
 Keyboard/mouse mode: entering keyboard nav sets `isKeyboardMode = true`, suppressing CSS `:hover` highlights. Mouse
 movement > 5px threshold exits keyboard mode.
 
-MTP volumes are refreshed with a 100ms delay after hotplug events (`mtp-device-detected`, `mtp-device-connected`,
-`mtp-device-removed`) to let `mtp-store`'s own event handler finish first.
+MTP volumes are `$derived` from `getMtpVolumes()` — reactively updated when `mtp-store`'s `state.devices` changes (on
+connect/disconnect/hotplug). No separate event listeners needed. MTP space info (`totalBytes`/`availableBytes`) is
+rendered directly from the `MtpVolume` data, not via `volumeSpaceMap` (which is for local volumes only).
 
 Exported methods for parent components: `toggle()`, `open()`, `close()`, `getIsOpen()`, `handleKeyDown(e)`.
 

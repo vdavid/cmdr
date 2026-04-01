@@ -419,6 +419,18 @@ impl MtpConnectionManager {
         })
     }
 
+    /// Gets information about all connected devices.
+    pub async fn get_all_connected_devices(&self) -> Vec<ConnectedDeviceInfo> {
+        let devices = self.devices.lock().await;
+        devices
+            .values()
+            .map(|entry| ConnectedDeviceInfo {
+                device: entry.info.clone(),
+                storages: entry.storages.clone(),
+            })
+            .collect()
+    }
+
     /// Queries live storage space from the device and updates the cache.
     ///
     /// Returns `(total_bytes, available_bytes)` freshly read from the device,

@@ -23,6 +23,8 @@ mod discovery;
 #[cfg(target_os = "macos")]
 pub mod macos_workaround;
 pub mod types;
+#[cfg(feature = "virtual-mtp")]
+pub mod virtual_device;
 pub mod watcher;
 
 pub use connection::{ConnectedDeviceInfo, MtpConnectionError, MtpObjectInfo, MtpOperationResult, connection_manager};
