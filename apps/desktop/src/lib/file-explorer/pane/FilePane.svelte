@@ -533,6 +533,12 @@
         openingFolder = false
         loadingCount = undefined
         finalizingCount = undefined
+        // Reject pending load promise on error/cancel
+        if (errorMessage) {
+            rejectPendingLoad(errorMessage)
+        } else {
+            rejectPendingLoad('Loading cancelled')
+        }
     }
 
     // Sync status map for visible files
@@ -685,6 +691,23 @@
     let visibleRangeStart = $state(0)
     let visibleRangeEnd = $state(100)
 
+    // Pending load completion resolver — used by navigateToPath to signal when listing is done.
+    // Set at the start of loadDirectory, resolved by handleListingComplete / error / cancel handlers.
+    let pendingLoadResolve: (() => void) | null = null
+    let pendingLoadReject: ((reason: string) => void) | null = null
+
+    function resolvePendingLoad() {
+        pendingLoadResolve?.()
+        pendingLoadResolve = null
+        pendingLoadReject = null
+    }
+
+    function rejectPendingLoad(reason: string) {
+        pendingLoadReject?.(reason)
+        pendingLoadResolve = null
+        pendingLoadReject = null
+    }
+
     async function loadDirectory(path: string, selectName?: string) {
         // Cancel any active rename when navigating
         rename.cancel()
@@ -700,6 +723,9 @@
             '[FilePane] loadDirectory called: paneId={paneId}, volumeId={volumeId}, path={path}, selectName={selectName}, currentLoading={loading}, currentListingId={listingId}',
             { paneId, volumeId, path, selectName: selectName ?? 'none', loading, listingId },
         )
+
+        // Reject any pending load from a previous navigation
+        rejectPendingLoad('Superseded by new navigation')
 
         // Increment generation to cancel any in-flight requests
         const thisGeneration = ++loadGeneration
@@ -887,6 +913,9 @@
         // Fetch listing stats for SelectionInfo
         void fetchListingStats()
 
+        // Resolve pending load promise (for MCP round-trips waiting on directory load)
+        resolvePendingLoad()
+
         // Sync state to MCP for context tools
         debouncedSyncMcp.call()
 
@@ -912,11 +941,18 @@
         onCancelLoading?.(currentPath, folderName)
     }
 
-    // Navigate to a specific path with optional item selection (used when cancelling navigation)
+    // Navigate to a specific path with optional item selection (used when cancelling navigation).
+    // Returns a Promise that resolves when the directory listing completes, or rejects on error.
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
-    export function navigateToPath(path: string, selectName?: string) {
+    export function navigateToPath(path: string, selectName?: string): Promise<void> {
         currentPath = path
+        // Start loadDirectory first — it rejects any previous pending load
         void loadDirectory(path, selectName)
+        // Then set up our promise (after the previous one was rejected)
+        return new Promise<void>((resolve, reject) => {
+            pendingLoadResolve = resolve
+            pendingLoadReject = (reason: string) => reject(new Error(reason))
+        })
     }
 
     // Fetch the entry currently under the cursor for SelectionInfo

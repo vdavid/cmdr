@@ -1938,9 +1938,10 @@
     /**
      * Navigate a pane to a specific path.
      * Used by MCP nav_to_path tool.
-     * Returns an error message if navigation can't proceed, or undefined on success.
+     * Returns a Promise that resolves when directory listing completes.
+     * Returns an error string synchronously if navigation can't even start.
      */
-    export function navigateToPath(pane: 'left' | 'right', path: string): string | undefined {
+    export function navigateToPath(pane: 'left' | 'right', path: string): string | Promise<void> {
         const volumeId = pane === 'left' ? leftVolumeId : rightVolumeId
         if (volumeId === 'network' || volumeId.startsWith('mtp-')) {
             const volumeName = pane === 'left' ? leftVolumeName : rightVolumeName
@@ -1948,8 +1949,7 @@
         }
         const paneRef = getPaneRef(pane)
         if (!paneRef) return 'Pane not available'
-        paneRef.navigateToPath(path)
-        return undefined
+        return paneRef.navigateToPath(path)
     }
 
     /**

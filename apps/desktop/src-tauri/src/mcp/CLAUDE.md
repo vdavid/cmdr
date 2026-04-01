@@ -21,7 +21,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Tools (`tools.rs`)
 
-25 semantic tools grouped by category:
+26 semantic tools grouped by category:
 - Navigation (6): `select_volume`, `nav_to_path`, `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`
 - Cursor/Selection (3): `move_cursor`, `open_under_cursor`, `select`
 - File operations (5): `copy`, `delete`, `mkdir`, `mkfile`, `refresh`
@@ -31,6 +31,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 - App (3): `switch_pane`, `swap_panes`, `quit`
 - Search (2): `search` (structured file search across the drive index, optional `scope` for path/exclude filtering), `ai_search` (natural language search using configured LLM, optional `scope` merged with AI-inferred scope)
 - Settings (1): `set_setting` (change a setting value via round-trip to frontend)
+- Async (1): `await` (poll PaneStateStore until a condition is met — `has_item`, `item_count_gte`, `path`, or `path_contains`. Supports `after_generation` to avoid matching stale state)
 
 ### Resources (`resources.rs`)
 
@@ -43,7 +44,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
  Routes tool calls to implementations. Most tools are fire-and-forget: emit a Tauri event and return "OK" immediately.
 
-Tools where the backend can't fully validate preconditions use `mcp_round_trip`: emit an event with a `requestId`, wait for the frontend to respond via `mcp-response` with `{ requestId, ok, error? }`, and return the actual outcome. Used by `nav_to_path` and `set_setting`. Resources that need frontend data use `resource_round_trip` (same pattern but returns `data` from the response). Used by `cmdr://settings`. Use these patterns for any new tool/resource where the backend would otherwise need to replicate frontend knowledge.
+Tools where the backend can't fully validate preconditions use `mcp_round_trip`: emit an event with a `requestId`, wait for the frontend to respond via `mcp-response` with `{ requestId, ok, error? }`, and return the actual outcome. Used by `set_setting` (5s timeout). `nav_to_path` uses `mcp_round_trip_with_timeout` with a 30s timeout because it waits for the directory listing to complete (the frontend delays the response until `handleListingComplete` fires in FilePane). Resources that need frontend data use `resource_round_trip` (same pattern but returns `data` from the response). Used by `cmdr://settings`. Use these patterns for any new tool/resource where the backend would otherwise need to replicate frontend knowledge.
 
 ### Configuration (`config.rs`)
 
@@ -55,7 +56,7 @@ Constants and configuration for the MCP server (port, bind address, transport se
 
 ### State stores
 
-- `PaneStateStore`: Current state of left/right panes (path, files, cursor, selection, tabs)
+- `PaneStateStore`: Current state of left/right panes (path, files, cursor, selection, tabs). Includes a monotonic `generation` counter (AtomicU64) bumped on every `set_left`/`set_right`. Exposed in `cmdr://state` as `generation:` and used by the `await` tool's `after_generation` param to avoid matching stale state.
 - `SoftDialogTracker`: Which dialogs MCP thinks are open (in `dialog_state.rs`)
 
 Frontend syncs state to these stores via Tauri commands (`update_left_pane_state`, `update_pane_tabs`, etc.). Settings are fetched on-demand via round-trip to the frontend rather than stored in a state store.
@@ -127,6 +128,10 @@ Unlike tools (which need a session via `initialize`), resources can be read imme
 ### Settings are fetched on-demand, not synced
 
 The `cmdr://settings` resource and `set_setting` tool both use round-trips to the main window frontend. This means settings are always fetched fresh from the source of truth, rather than being synced to a Rust-side store. The tradeoff is a ~5s timeout if the frontend is unresponsive, but this avoids stale state issues.
+
+### `select_volume` times out when re-selecting the same volume
+
+`select_volume` polls the target pane's path in `PaneStateStore` until it changes. If the pane is already on the requested volume (same path), no change is detected and the tool times out after 30s. This is harmless — re-selecting the same volume is a no-op.
 
 ### Tool execution is async but mostly synchronous
 

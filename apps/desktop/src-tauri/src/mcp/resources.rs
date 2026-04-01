@@ -301,7 +301,11 @@ pub async fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> 
             let left = store.get_left();
             let right = store.get_right();
 
+            let generation = store.get_generation();
             let mut yaml = String::new();
+
+            // Generation counter (for `await` tool's `after_generation` param)
+            yaml.push_str(&format!("generation: {}\n", generation));
 
             // Focused pane
             yaml.push_str(&format!("focused: {}\n", focused));

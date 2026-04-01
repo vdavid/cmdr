@@ -4,6 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::sync::RwLock;
+use std::sync::atomic::{AtomicU64, Ordering};
 use tauri::{AppHandle, Manager};
 
 /// Represents a tab in a pane (for MCP state reporting).
@@ -63,11 +64,25 @@ pub struct PaneState {
 }
 
 /// Shared state for both panes.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct PaneStateStore {
     pub left: RwLock<PaneState>,
     pub right: RwLock<PaneState>,
     pub focused_pane: RwLock<String>,
+    /// Monotonically increasing counter, bumped on every pane state update.
+    /// Used by the `await` tool to detect stale state.
+    pub generation: AtomicU64,
+}
+
+impl Default for PaneStateStore {
+    fn default() -> Self {
+        Self {
+            left: RwLock::new(PaneState::default()),
+            right: RwLock::new(PaneState::default()),
+            focused_pane: RwLock::new("left".to_string()),
+            generation: AtomicU64::new(0),
+        }
+    }
 }
 
 impl PaneStateStore {
@@ -76,6 +91,7 @@ impl PaneStateStore {
             left: RwLock::new(PaneState::default()),
             right: RwLock::new(PaneState::default()),
             focused_pane: RwLock::new("left".to_string()),
+            generation: AtomicU64::new(0),
         }
     }
 
@@ -93,10 +109,16 @@ impl PaneStateStore {
 
     pub fn set_left(&self, state: PaneState) {
         *self.left.write().unwrap() = state;
+        self.generation.fetch_add(1, Ordering::Relaxed);
     }
 
     pub fn set_right(&self, state: PaneState) {
         *self.right.write().unwrap() = state;
+        self.generation.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub fn get_generation(&self) -> u64 {
+        self.generation.load(Ordering::Relaxed)
     }
 
     pub fn set_focused_pane(&self, pane: String) {

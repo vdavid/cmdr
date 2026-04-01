@@ -394,6 +394,42 @@ fn get_search_tools() -> Vec<Tool> {
     ]
 }
 
+/// Get async waiting tools.
+fn get_await_tools() -> Vec<Tool> {
+    vec![Tool {
+        name: "await".to_string(),
+        description: "Wait until a condition is met on a pane. Use after fire-and-forget actions or to wait for async events like network discovery.".to_string(),
+        input_schema: json!({
+            "type": "object",
+            "properties": {
+                "pane": {
+                    "type": "string",
+                    "enum": ["left", "right"],
+                    "description": "Which pane to watch"
+                },
+                "condition": {
+                    "type": "string",
+                    "enum": ["has_item", "item_count_gte", "path", "path_contains"],
+                    "description": "Condition to wait for: has_item (file list contains item named value), item_count_gte (file list has >= value items), path (pane path equals value), path_contains (pane path contains value)"
+                },
+                "value": {
+                    "type": "string",
+                    "description": "Value for the condition (item name, count, path, or substring)"
+                },
+                "timeout_s": {
+                    "type": "integer",
+                    "description": "Timeout in seconds (default 15, max 60)"
+                },
+                "after_generation": {
+                    "type": "integer",
+                    "description": "Only consider state updates after this generation number. Prevents matching stale state from before an action. Get the current generation from cmdr://state or a previous await result."
+                }
+            },
+            "required": ["pane", "condition", "value"]
+        }),
+    }]
+}
+
 /// Get settings tools.
 fn get_settings_tools() -> Vec<Tool> {
     vec![Tool {
@@ -428,6 +464,7 @@ pub fn get_all_tools() -> Vec<Tool> {
     tools.extend(get_app_tools());
     tools.extend(get_search_tools());
     tools.extend(get_settings_tools());
+    tools.extend(get_await_tools());
     tools
 }
 
@@ -541,8 +578,8 @@ mod tests {
     #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 6 nav + 2 cursor + 1 selection + 5 file_op + 3 view + 1 tab + 1 dialog + 3 app + 2 search + 1 settings = 25
-        assert_eq!(tools.len(), 25);
+        // 6 nav + 2 cursor + 1 selection + 5 file_op + 3 view + 1 tab + 1 dialog + 3 app + 2 search + 1 settings + 1 await = 26
+        assert_eq!(tools.len(), 26);
     }
 
     #[test]

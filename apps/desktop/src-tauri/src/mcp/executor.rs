@@ -46,16 +46,26 @@ impl From<tauri::Error> for ToolError {
     }
 }
 
-/// Emit an event to the frontend and wait for a response.
+/// Emit an event to the frontend and wait for a response (5s timeout).
 ///
 /// The frontend must emit `mcp-response` with `{ requestId, ok, error? }`.
 /// Returns `success_msg` on success, or the frontend's error message on failure.
-/// Times out after 5 seconds.
 async fn mcp_round_trip<R: Runtime>(
+    app: &AppHandle<R>,
+    event: &str,
+    payload: Value,
+    success_msg: String,
+) -> ToolResult {
+    mcp_round_trip_with_timeout(app, event, payload, success_msg, 5).await
+}
+
+/// Like `mcp_round_trip` but with a configurable timeout.
+async fn mcp_round_trip_with_timeout<R: Runtime>(
     app: &AppHandle<R>,
     event: &str,
     mut payload: Value,
     success_msg: String,
+    timeout_secs: u64,
 ) -> ToolResult {
     let request_id = uuid::Uuid::new_v4().to_string();
     payload["requestId"] = json!(request_id);
@@ -86,14 +96,16 @@ async fn mcp_round_trip<R: Runtime>(
 
     app.emit(event, payload)?;
 
-    let result = tokio::time::timeout(std::time::Duration::from_secs(5), rx).await;
+    let result = tokio::time::timeout(std::time::Duration::from_secs(timeout_secs), rx).await;
     app.unlisten(listener_id);
 
     match result {
         Ok(Ok(Ok(()))) => Ok(json!(success_msg)),
         Ok(Ok(Err(err))) => Err(ToolError::internal(err)),
         Ok(Err(_)) => Err(ToolError::internal("Frontend response channel dropped")),
-        Err(_) => Err(ToolError::internal("Frontend did not respond within 5 seconds")),
+        Err(_) => Err(ToolError::internal(format!(
+            "Frontend did not respond within {timeout_secs} seconds"
+        ))),
     }
 }
 
@@ -131,6 +143,8 @@ pub async fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &V
         "ai_search" => execute_ai_search(params).await,
         // Settings commands
         "set_setting" => execute_set_setting(app, params).await,
+        // Async wait
+        "await" => execute_await(app, params).await,
         _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
     }
 }
@@ -407,11 +421,37 @@ async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &
                 }
             }
 
-            if let Some(store) = app.try_state::<PaneStateStore>() {
-                store.set_focused_pane(pane.to_string());
-            }
-
+            let store = app
+                .try_state::<PaneStateStore>()
+                .ok_or_else(|| ToolError::internal("Pane state not available"))?;
+            store.set_focused_pane(pane.to_string());
+            let path_before = match pane {
+                "left" => store.get_left().path,
+                "right" => store.get_right().path,
+                _ => unreachable!(),
+            };
             app.emit("mcp-volume-select", json!({"pane": pane, "name": volume_name}))?;
+
+            // Wait for the target pane's path to change (meaning the volume switch
+            // and directory listing completed, and state was pushed to the store).
+            let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(30);
+            let poll_interval = std::time::Duration::from_millis(250);
+            loop {
+                let current_path = match pane {
+                    "left" => store.get_left().path,
+                    "right" => store.get_right().path,
+                    _ => unreachable!(),
+                };
+                if current_path != path_before {
+                    break;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(ToolError::internal(format!(
+                        "Timed out waiting for volume '{volume_name}' to load on {pane} pane"
+                    )));
+                }
+                tokio::time::sleep(poll_interval).await;
+            }
             Ok(json!(format!("OK: Switched {pane} pane to volume {volume_name}")))
         }
         "nav_to_path" => {
@@ -437,11 +477,12 @@ async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &
                 store.set_focused_pane(pane.to_string());
             }
 
-            mcp_round_trip(
+            mcp_round_trip_with_timeout(
                 app,
                 "mcp-nav-to-path",
                 json!({"pane": pane, "path": path}),
                 format!("OK: Navigated {pane} pane to {path}"),
+                30,
             )
             .await
         }
@@ -765,6 +806,111 @@ fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, path:
             Ok(json!("OK: Cancelled confirmation dialog"))
         }
         _ => Err(ToolError::invalid_params(format!("Invalid dialog type: {dialog_type}"))),
+    }
+}
+
+// ── Await tool ────────────────────────────────────────────────────────
+
+/// Execute the `await` tool: poll PaneStateStore until a condition is met.
+async fn execute_await<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    let pane = params
+        .get("pane")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'pane' parameter"))?;
+    let condition = params
+        .get("condition")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'condition' parameter"))?;
+    let value = params
+        .get("value")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'value' parameter"))?;
+    let timeout_s = params
+        .get("timeout_s")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(15)
+        .min(60);
+    let after_generation = params.get("after_generation").and_then(|v| v.as_u64());
+
+    if !["left", "right"].contains(&pane) {
+        return Err(ToolError::invalid_params("pane must be 'left' or 'right'"));
+    }
+    if !["has_item", "item_count_gte", "path", "path_contains"].contains(&condition) {
+        return Err(ToolError::invalid_params(
+            "condition must be 'has_item', 'item_count_gte', 'path', or 'path_contains'",
+        ));
+    }
+
+    let store = app
+        .try_state::<PaneStateStore>()
+        .ok_or_else(|| ToolError::internal("Pane state not available"))?;
+
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(timeout_s);
+    let poll_interval = std::time::Duration::from_millis(250);
+
+    loop {
+        // Check generation gate
+        let current_gen = store.get_generation();
+        if let Some(min_gen) = after_generation {
+            if current_gen <= min_gen {
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(ToolError::internal(format!(
+                        "Timed out after {timeout_s}s waiting for condition '{condition}' = \"{value}\" on {pane} pane (no state update since generation {min_gen})"
+                    )));
+                }
+                tokio::time::sleep(poll_interval).await;
+                continue;
+            }
+        }
+
+        let state = match pane {
+            "left" => store.get_left(),
+            "right" => store.get_right(),
+            _ => unreachable!(),
+        };
+
+        let matched = match condition {
+            "has_item" => state.files.iter().any(|f| f.name == value),
+            "item_count_gte" => {
+                let min_count: usize = value.parse().unwrap_or(1);
+                state.files.len() >= min_count
+            }
+            "path" => state.path == value,
+            "path_contains" => state.path.contains(value),
+            _ => unreachable!(),
+        };
+
+        if matched {
+            // Build a compact state summary to return
+            let file_count = state.files.len();
+            let first_items: Vec<String> = state
+                .files
+                .iter()
+                .take(20)
+                .map(|f| {
+                    let kind = if f.is_directory { "d" } else { "f" };
+                    format!("{} {}", kind, f.name)
+                })
+                .collect();
+
+            let result = format!(
+                "OK: Condition met (generation {current_gen})\npane: {pane}\npath: {}\nfiles: {} total\nitems:\n{}",
+                state.path,
+                file_count,
+                first_items.iter().map(|i| format!("  - {i}")).collect::<Vec<_>>().join("\n")
+            );
+            return Ok(json!(result));
+        }
+
+        if tokio::time::Instant::now() >= deadline {
+            let file_names: Vec<&str> = state.files.iter().take(10).map(|f| f.name.as_str()).collect();
+            return Err(ToolError::internal(format!(
+                "Timed out after {timeout_s}s waiting for condition '{condition}' = \"{value}\" on {pane} pane. Current path: \"{}\", current generation: {current_gen}, files (first 10): {:?}",
+                state.path, file_names
+            )));
+        }
+
+        tokio::time::sleep(poll_interval).await;
     }
 }
 

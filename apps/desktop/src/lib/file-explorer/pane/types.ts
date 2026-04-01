@@ -55,7 +55,7 @@ export interface FilePaneAPI {
   refreshIndexSizes(): void
 
   navigateToParent(): Promise<boolean>
-  navigateToPath(path: string, selectName?: string): void
+  navigateToPath(path: string, selectName?: string): Promise<void>
   handleCancelLoading(): void
 
   handleKeyDown(e: KeyboardEvent): void

@@ -86,7 +86,7 @@
         isConfirmationDialogOpen: () => boolean
         isRenaming: () => boolean
         openViewerForCursor: () => Promise<void>
-        navigateToPath: (pane: 'left' | 'right', path: string) => void
+        navigateToPath: (pane: 'left' | 'right', path: string) => string | Promise<void>
         moveCursor: (pane: 'left' | 'right', to: number | string) => Promise<void>
         scrollTo: (pane: 'left' | 'right', index: number) => void
         refreshPane: () => void
@@ -265,35 +265,44 @@
         })
     }
 
+    // Unlisten functions for MCP and dialog listeners — cleaned up on destroy (important for HMR)
+    const tauriUnlistenFns: UnlistenFn[] = []
+
+    /** Like safeListenTauri but also stores the unlisten function for cleanup. */
+    async function listenTauri(event: string, handler: (event: { payload: unknown }) => void): Promise<void> {
+        const unlisten = await safeListenTauri(event, handler)
+        if (unlisten) tauriUnlistenFns.push(unlisten)
+    }
+
     /** Set up MCP dialog event listeners (close/focus) */
     async function setupDialogListeners() {
         // Settings with section (MCP-specific: "dialog open settings --section shortcuts")
-        await safeListenTauri('open-settings', () => {
+        await listenTauri('open-settings', () => {
             void openSettingsWindow()
         })
 
         // About dialog
-        await safeListenTauri('close-about', () => {
+        await listenTauri('close-about', () => {
             showAboutWindow = false
         })
-        await safeListenTauri('focus-about', () => {
+        await listenTauri('focus-about', () => {
             // Already shown, just ensure it's visible
             showAboutWindow = true
         })
 
         // Volume picker
-        await safeListenTauri('open-volume-picker', () => {
+        await listenTauri('open-volume-picker', () => {
             explorerRef?.openVolumeChooser()
         })
-        await safeListenTauri('close-volume-picker', () => {
+        await listenTauri('close-volume-picker', () => {
             explorerRef?.closeVolumeChooser()
         })
-        await safeListenTauri('focus-volume-picker', () => {
+        await listenTauri('focus-volume-picker', () => {
             // Volume picker is handled by DualPaneExplorer
         })
 
         // File viewer
-        await safeListenTauri('open-file-viewer', (event) => {
+        await listenTauri('open-file-viewer', (event) => {
             const payload = event.payload as { path?: string } | undefined
             if (payload?.path) {
                 // Open viewer for specific path
@@ -303,23 +312,23 @@
                 void explorerRef?.openViewerForCursor()
             }
         })
-        await safeListenTauri('close-file-viewer', (event) => {
+        await listenTauri('close-file-viewer', (event) => {
             const payload = event.payload as { path?: string } | undefined
             void closeFileViewer(payload?.path)
         })
-        await safeListenTauri('close-all-file-viewers', () => {
+        await listenTauri('close-all-file-viewers', () => {
             void closeAllFileViewers()
         })
-        await safeListenTauri('focus-file-viewer', (event) => {
+        await listenTauri('focus-file-viewer', (event) => {
             const payload = event.payload as { path?: string } | undefined
             void focusFileViewer(payload?.path)
         })
 
         // Confirmation dialog - handled by DualPaneExplorer
-        await safeListenTauri('close-confirmation', () => {
+        await listenTauri('close-confirmation', () => {
             explorerRef?.closeConfirmationDialog()
         })
-        await safeListenTauri('focus-confirmation', () => {
+        await listenTauri('focus-confirmation', () => {
             // The confirmation dialog is a modal overlay in the main window.
             // If it's open, ensure the main window is focused so the dialog is visible.
             if (explorerRef?.isConfirmationDialogOpen()) {
@@ -330,7 +339,7 @@
 
     /** Set up MCP-related event listeners */
     async function setupMcpListeners() {
-        await safeListenTauri('mcp-key', (event) => {
+        await listenTauri('mcp-key', (event) => {
             const { key } = event.payload as { key: string }
             if (key === 'GoBack') {
                 explorerRef?.navigate('back')
@@ -341,7 +350,7 @@
             }
         })
 
-        await safeListenTauri('menu-sort', (event) => {
+        await listenTauri('menu-sort', (event) => {
             const { action, value } = event.payload as { action: string; value: string }
             if (action === 'sortBy') {
                 const column = value as 'name' | 'extension' | 'size' | 'modified' | 'created'
@@ -352,18 +361,18 @@
             }
         })
 
-        await safeListenTauri('mcp-sort', (event) => {
+        await listenTauri('mcp-sort', (event) => {
             const { pane, by, order } = event.payload as { pane: 'left' | 'right'; by: string; order: string }
             const column = by === 'ext' ? 'extension' : (by as 'name' | 'extension' | 'size' | 'modified' | 'created')
             void explorerRef?.setSort(column, order as 'asc' | 'desc', pane)
         })
 
-        await safeListenTauri('mcp-volume-select', (event) => {
+        await listenTauri('mcp-volume-select', (event) => {
             const { pane, name } = event.payload as { pane: 'left' | 'right'; name: string }
             void explorerRef?.selectVolumeByName(pane, name)
         })
 
-        await safeListenTauri('mcp-select', (event) => {
+        await listenTauri('mcp-select', (event) => {
             const { pane, start, count, mode } = event.payload as {
                 pane: 'left' | 'right'
                 start: number
@@ -373,53 +382,67 @@
             explorerRef?.handleMcpSelect(pane, start, count, mode)
         })
 
-        await safeListenTauri('mcp-nav-to-path', (event) => {
+        await listenTauri('mcp-nav-to-path', (event) => {
             const { pane, path, requestId } = event.payload as {
                 pane: 'left' | 'right'
                 path: string
                 requestId?: string
             }
-            const error = explorerRef?.navigateToPath(pane, path)
+            // explorerRef may be null during HMR — skip silently, let the backend timeout handle it
+            if (!explorerRef) return
+            const result = explorerRef.navigateToPath(pane, path)
             if (requestId) {
                 void (async () => {
                     const { emit } = await import('@tauri-apps/api/event')
-                    await emit('mcp-response', { requestId, ok: !error, error })
+                    if (typeof result === 'string') {
+                        // Synchronous error (pane not available, wrong volume, etc.)
+                        await emit('mcp-response', { requestId, ok: false, error: result })
+                    } else {
+                        // Promise — wait for directory listing to complete
+                        try {
+                            await result
+                            await emit('mcp-response', { requestId, ok: true })
+                        } catch (e) {
+                            const error = e instanceof Error ? e.message : String(e)
+                            await emit('mcp-response', { requestId, ok: false, error })
+                        }
+                    }
                 })()
             }
         })
 
-        await safeListenTauri('mcp-move-cursor', (event) => {
+        await listenTauri('mcp-move-cursor', (event) => {
             const { pane, to } = event.payload as { pane: 'left' | 'right'; to: number | string }
             void explorerRef?.moveCursor(pane, to)
         })
 
-        await safeListenTauri('mcp-scroll-to', (event) => {
+        await listenTauri('mcp-scroll-to', (event) => {
             const { pane, index } = event.payload as { pane: 'left' | 'right'; index: number }
             explorerRef?.scrollTo(pane, index)
         })
 
-        await safeListenTauri('mcp-set-view-mode', (event) => {
+        await listenTauri('mcp-set-view-mode', (event) => {
             const { pane, mode } = event.payload as { pane: 'left' | 'right'; mode: string }
             explorerRef?.setViewMode(mode as ViewMode, pane)
         })
 
-        await safeListenTauri('mcp-refresh', () => {
+        await listenTauri('mcp-refresh', () => {
             explorerRef?.refreshPane()
         })
 
-        await safeListenTauri('mcp-copy', () => {
+        await listenTauri('mcp-copy', () => {
             void explorerRef?.openCopyDialog()
         })
 
-        await safeListenTauri('mcp-mkdir', () => {
+        await listenTauri('mcp-mkdir', () => {
             void explorerRef?.openNewFolderDialog()
         })
 
-        await safeListenTauri('mcp-mkfile', () => {
+        await listenTauri('mcp-mkfile', () => {
             void explorerRef?.openNewFileDialog()
         })
 
-        await safeListenTauri('mcp-delete', () => {
+        await listenTauri('mcp-delete', () => {
             void explorerRef?.openDeleteDialog(false)
         })
     }
@@ -598,6 +621,11 @@
         if (unlistenWindowFocus) {
             unlistenWindowFocus()
         }
+        // Clean up MCP and dialog listeners (prevents duplicate listeners after HMR)
+        for (const unlisten of tauriUnlistenFns) {
+            unlisten()
+        }
+        tauriUnlistenFns.length = 0
     })
 
     function handleFdaComplete() {
@@ -642,17 +670,15 @@
 
     function handleSearchNavigate(path: string) {
         showSearchDialog = false
-        // Navigate the focused pane to the file's parent directory, selecting the file
+        // Navigate the focused pane to the file's parent directory, then move cursor to the file
         const lastSlash = path.lastIndexOf('/')
         const parentDir = lastSlash > 0 ? path.slice(0, lastSlash) : '/'
         const fileName = path.slice(lastSlash + 1)
         const pane = explorerRef?.getFocusedPane() ?? 'left'
-        // navigateToPath on FilePane accepts (path, selectName)
-        // DualPaneExplorer's navigateToPath only accepts (pane, path) without selectName,
-        // so we navigate then move cursor by name
-        explorerRef?.navigateToPath(pane, parentDir)
-        // After navigation completes, move cursor to the file
-        void explorerRef?.moveCursor(pane, fileName)
+        const result = explorerRef?.navigateToPath(pane, parentDir)
+        if (result instanceof Promise) {
+            void result.then(() => explorerRef?.moveCursor(pane, fileName))
+        }
     }
 
     function handleFnView() {
