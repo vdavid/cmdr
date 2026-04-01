@@ -62,7 +62,8 @@ the container, waits for the socket, and runs these same test files. See `../e2e
 | `conflict-copy.spec.ts`       | 7 tests: copy conflict policies, per-file decisions, rename      |
 | `conflict-move.spec.ts`       | 3 tests: move merge, skip, rollback                              |
 | `conflict-edge-cases.spec.ts` | 7 tests: rollback, sequential conflicts, symlinks, type mismatch |
-| `file-watching.spec.ts`       | 1 test: external filesystem change detection (inotify/FSEvents)  |
+| `file-watching.spec.ts`       | 11 tests: external CRUD, batch/threshold, cross-pane, dedup, hidden |
+| `indexing.spec.ts`            | 3 tests: directory sizes from index, size updates on create/delete |
 | `settings.spec.ts`            | 5 tests: settings page rendering, sidebar, search                |
 | `viewer.spec.ts`              | 10 tests: file viewer, search, error handling                    |
 

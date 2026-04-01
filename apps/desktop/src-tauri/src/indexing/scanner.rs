@@ -521,17 +521,14 @@ mod tests {
     /// Create a temp dir for volume-scan tests. On Linux, `/tmp/` is in the exclusion list,
     /// so we use the current directory to avoid false rejections.
     fn scan_test_tempdir() -> tempfile::TempDir {
-        #[cfg(target_os = "linux")]
-        {
-            tempfile::Builder::new()
-                .prefix("cmdr-scan-test-")
-                .tempdir_in(std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
-                .expect("failed to create temp dir outside /tmp/")
-        }
-        #[cfg(not(target_os = "linux"))]
-        {
-            tempfile::tempdir().expect("failed to create temp dir")
-        }
+        // Create in CWD instead of /tmp/ to avoid:
+        // - Linux: /tmp/ is in EXCLUDED_PREFIXES
+        // - macOS: /tmp is a symlink to /private/tmp, causing path mismatches
+        //   with normalize_path() which resolves /tmp → /private/tmp
+        tempfile::Builder::new()
+            .prefix("cmdr-scan-test-")
+            .tempdir_in(std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
+            .expect("failed to create temp dir in cwd")
     }
 
     /// Create a temp directory with a known file tree and return the root path.
@@ -699,7 +696,7 @@ mod tests {
 
     #[test]
     fn scan_subtree_only() {
-        let scan_root = tempfile::tempdir().expect("scan root");
+        let scan_root = scan_test_tempdir();
         create_test_tree(scan_root.path());
 
         let (writer, db_path, _db_dir) = setup_writer();
@@ -757,7 +754,7 @@ mod tests {
 
     #[test]
     fn scan_empty_directory() {
-        let scan_root = tempfile::tempdir().expect("scan root");
+        let scan_root = scan_test_tempdir();
         let (writer, _db_path, _db_dir) = setup_writer();
 
         let config = ScanConfig {

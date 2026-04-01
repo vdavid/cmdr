@@ -323,6 +323,54 @@ export async function executeViaCommandPalette(tauriPage: PageLike, query: strin
   await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.palette-overlay')), 3000)
 }
 
+// ── Size and count helpers ───────────────────────────────────────────────────
+
+/** Gets the size column text for a named entry (Full view only). */
+export async function getSizeText(tauriPage: PageLike, entryName: string, paneIndex = -1): Promise<string> {
+  const paneSelector =
+    paneIndex >= 0
+      ? `document.querySelectorAll('.file-pane')[${paneIndex}]`
+      : `document.querySelector('.file-pane.is-focused')`
+  const nameJson = JSON.stringify(entryName)
+  return tauriPage.evaluate<string>(`(function() {
+        var pane = ${paneSelector};
+        if (!pane) return '';
+        var entries = pane.querySelectorAll('.file-entry');
+        for (var i = 0; i < entries.length; i++) {
+            var name = (entries[i].querySelector('.col-name') || entries[i].querySelector('.name') || {}).textContent;
+            if (name === ${nameJson}) {
+                var sizeEl = entries[i].querySelector('.col-size');
+                return sizeEl ? sizeEl.textContent.trim() : '';
+            }
+        }
+        return '';
+    })()`)
+}
+
+/** Counts file entries in a specific pane (0=left, 1=right). */
+export async function countEntriesInPane(tauriPage: PageLike, paneIndex: number): Promise<number> {
+  return tauriPage.evaluate<number>(`(function() {
+        var pane = document.querySelectorAll('.file-pane')[${paneIndex}];
+        return pane ? pane.querySelectorAll('.file-entry').length : 0;
+    })()`)
+}
+
+/** Counts entries whose name starts with a given prefix in the focused pane. */
+export async function countEntriesWithPrefix(tauriPage: PageLike, prefix: string): Promise<number> {
+  const prefixJson = JSON.stringify(prefix)
+  return tauriPage.evaluate<number>(`(function() {
+        var pane = document.querySelector('.file-pane.is-focused');
+        if (!pane) return 0;
+        var entries = pane.querySelectorAll('.file-entry');
+        var c = 0;
+        for (var i = 0; i < entries.length; i++) {
+            var name = (entries[i].querySelector('.col-name') || entries[i].querySelector('.name') || {}).textContent || '';
+            if (name.indexOf(${prefixJson}) === 0) c++;
+        }
+        return c;
+    })()`)
+}
+
 // ── Utility ─────────────────────────────────────────────────────────────────
 
 export function sleep(ms: number): Promise<void> {

@@ -1862,16 +1862,13 @@ mod tests {
     /// Create a temp directory outside indexing-excluded paths.
     /// On Linux, `/tmp/` is excluded from indexing; use the current directory instead.
     fn non_excluded_tempdir() -> tempfile::TempDir {
-        #[cfg(target_os = "linux")]
-        {
-            tempfile::Builder::new()
-                .prefix("cmdr_test_")
-                .tempdir_in(std::env::current_dir().unwrap())
-                .expect("tempdir in cwd")
-        }
-        #[cfg(not(target_os = "linux"))]
-        {
-            tempfile::tempdir().expect("tempdir")
-        }
+        // Create in CWD instead of /tmp/ to avoid:
+        // - Linux: /tmp/ is in EXCLUDED_PREFIXES
+        // - macOS: /tmp is a symlink to /private/tmp, causing path mismatches
+        //   with normalize_path() which resolves /tmp → /private/tmp
+        tempfile::Builder::new()
+            .prefix("cmdr_test_")
+            .tempdir_in(std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")))
+            .expect("tempdir in cwd")
     }
 }

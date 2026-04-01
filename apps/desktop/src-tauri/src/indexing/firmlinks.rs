@@ -59,12 +59,38 @@ fn load_firmlinks() -> Vec<(String, String)> {
     pairs
 }
 
-/// Normalize a path by replacing any `/System/Volumes/Data/` prefix with the
-/// canonical firmlinked path.
+/// Well-known macOS symlinks that point into `/private/`.
+/// These are regular symlinks (not firmlinks) that exist on every macOS install.
+#[cfg(target_os = "macos")]
+const PRIVATE_SYMLINK_DIRS: &[&str] = &["/tmp", "/var", "/etc"];
+
+/// Normalize a path for index lookups.
 ///
-/// Example: `/System/Volumes/Data/Users/foo` becomes `/Users/foo`.
-/// Paths that don't match any firmlink are returned unchanged.
+/// On macOS, two normalizations are applied:
+/// 1. Resolve well-known `/private` symlinks: `/tmp/foo` → `/private/tmp/foo`
+///    (the index stores canonical paths because the scanner follows symlinks).
+/// 2. Replace `/System/Volumes/Data/` firmlink prefixes:
+///    `/System/Volumes/Data/Users/foo` → `/Users/foo`.
+///
+/// Paths that don't match any pattern are returned unchanged.
 pub fn normalize_path(path: &str) -> String {
+    // macOS: resolve well-known /private symlinks (/tmp → /private/tmp, etc.)
+    // The scanner walks the real filesystem and stores canonical paths under
+    // /private/tmp, /private/var, /private/etc. But users (and the listing)
+    // navigate via the symlinks /tmp, /var, /etc. Without this, enrichment
+    // fails to match listing paths against index paths.
+    #[cfg(target_os = "macos")]
+    for prefix in PRIVATE_SYMLINK_DIRS {
+        if path == *prefix {
+            return format!("/private{path}");
+        }
+        // Check for prefix + "/" to avoid matching "/tmpdir" or "/variable"
+        let prefix_slash = format!("{prefix}/");
+        if path.starts_with(&prefix_slash) {
+            return format!("/private{path}");
+        }
+    }
+
     if !path.starts_with(DATA_VOLUME_PREFIX) {
         return path.to_string();
     }
@@ -258,6 +284,26 @@ mod tests {
         } else {
             assert_eq!(result, "/System/Volumes/Data/Users/foo");
         }
+    }
+
+    #[test]
+    #[cfg(target_os = "macos")]
+    fn normalize_resolves_private_symlinks() {
+        assert_eq!(normalize_path("/tmp"), "/private/tmp");
+        assert_eq!(normalize_path("/tmp/foo/bar"), "/private/tmp/foo/bar");
+        assert_eq!(normalize_path("/var"), "/private/var");
+        assert_eq!(normalize_path("/var/folders/ab/123"), "/private/var/folders/ab/123");
+        assert_eq!(normalize_path("/etc"), "/private/etc");
+        assert_eq!(normalize_path("/etc/hosts"), "/private/etc/hosts");
+    }
+
+    #[test]
+    #[cfg(target_os = "macos")]
+    fn normalize_does_not_match_similar_prefixes() {
+        // "/tmpdir" should NOT become "/private/tmpdir"
+        assert_eq!(normalize_path("/tmpdir"), "/tmpdir");
+        assert_eq!(normalize_path("/variable"), "/variable");
+        assert_eq!(normalize_path("/etcetera"), "/etcetera");
     }
 
     #[test]
