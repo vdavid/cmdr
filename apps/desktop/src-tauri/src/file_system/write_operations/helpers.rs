@@ -544,30 +544,14 @@ pub(super) fn safe_overwrite_file(
     }
 
     // Step 4: Delete backup (non-critical, ignore errors)
-    let _ = fs::remove_file(&backup_path);
+    // Use remove_dir_all for directory backups (type mismatch: file overwrites directory)
+    if backup_path.is_dir() {
+        let _ = fs::remove_dir_all(&backup_path);
+    } else {
+        let _ = fs::remove_file(&backup_path);
+    }
 
     Ok(bytes)
-}
-
-/// Performs a safe overwrite for directories using temp+rename pattern.
-pub(super) fn safe_overwrite_dir(dest: &Path) -> Result<PathBuf, WriteOperationError> {
-    let uuid = Uuid::new_v4();
-    let parent = dest.parent().unwrap_or(Path::new("."));
-    let file_name = dest
-        .file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_default();
-
-    let backup_path = parent.join(format!("{}.cmdr-backup-{}", file_name, uuid));
-
-    // Rename original dest to backup
-    fs::rename(dest, &backup_path).map_err(|e| WriteOperationError::IoError {
-        path: dest.display().to_string(),
-        message: format!("Failed to backup existing directory: {}", e),
-    })?;
-
-    // Return the backup path so caller can delete it after successful copy
-    Ok(backup_path)
 }
 
 // ============================================================================

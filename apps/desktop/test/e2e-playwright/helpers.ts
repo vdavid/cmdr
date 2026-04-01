@@ -76,8 +76,15 @@ export async function pressKey(tauriPage: PageLike, key: string): Promise<void> 
  * Waits for file entries, dismisses overlays, navigates the left pane back to
  * the fixture root's `left/` directory (in case a previous test changed it),
  * clicks a file entry, and focuses the explorer container.
+ *
+ * By default, waits for `['file-a.txt', 'sub-dir']` in the left pane.
+ * Pass `expectedFiles` to wait for different files (useful after setting up
+ * conflict fixtures with a different directory layout).
  */
-export async function ensureAppReady(tauriPage: PageLike): Promise<void> {
+export async function ensureAppReady(
+  tauriPage: PageLike,
+  expectedFiles?: { leftPane?: string[]; rightPane?: string[] },
+): Promise<void> {
   // Navigate to the main route to ensure we're on the file explorer page.
   // This does NOT reset the directory — just ensures we're on the right route.
   await navigateToRoute(tauriPage, '/')
@@ -129,6 +136,7 @@ export async function ensureAppReady(tauriPage: PageLike): Promise<void> {
   await sleep(300)
 
   // Wait for the left pane to show the expected fixture files
+  const leftExpected = expectedFiles?.leftPane ?? ['file-a.txt', 'sub-dir']
   await pollUntil(
     tauriPage,
     async () => {
@@ -139,7 +147,8 @@ export async function ensureAppReady(tauriPage: PageLike): Promise<void> {
                 var names = Array.from(entries).map(function(e) {
                     return (e.querySelector('.col-name') || e.querySelector('.name') || {}).textContent || '';
                 });
-                return names.indexOf('file-a.txt') >= 0 && names.indexOf('sub-dir') >= 0;
+                var expected = ${JSON.stringify(leftExpected)};
+                return expected.every(function(name) { return names.indexOf(name) >= 0; });
             })()`)
     },
     10000,

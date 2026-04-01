@@ -113,6 +113,7 @@
     const operationGerund = $derived(operationGerundMap[operationType])
     const isDeleteOrTrash = $derived(operationType === 'delete' || operationType === 'trash')
     const isCopy = $derived(operationType === 'copy')
+    const isMove = $derived(operationType === 'move')
 
     /** Whether this is a move involving an MTP volume (implemented as copy + delete). */
     const isMtpMove = $derived(
@@ -740,7 +741,7 @@
             </div>
 
             <!-- Question -->
-            <p class="conflict-question">Do you want to keep the existing file or overwrite it?</p>
+            <p class="conflict-question">Do you want to skip, rename, or overwrite?</p>
 
             <!-- Buttons in two rows -->
             <div class="conflict-buttons">
@@ -751,6 +752,13 @@
                         disabled={isResolvingConflict}
                     >
                         Skip
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        onclick={() => handleConflictResolution('rename', false)}
+                        disabled={isResolvingConflict}
+                    >
+                        Rename
                     </Button>
                     <Button
                         variant="secondary"
@@ -770,6 +778,13 @@
                     </Button>
                     <Button
                         variant="secondary"
+                        onclick={() => handleConflictResolution('rename', true)}
+                        disabled={isResolvingConflict}
+                    >
+                        Rename all
+                    </Button>
+                    <Button
+                        variant="secondary"
                         onclick={() => handleConflictResolution('overwrite', true)}
                         disabled={isResolvingConflict}
                     >
@@ -780,7 +795,7 @@
 
             <!-- Cancel at bottom -->
             <div class="conflict-cancel">
-                {#if isCopy}
+                {#if isCopy || isMove}
                     <button
                         class="danger-text"
                         onclick={() => handleCancel(true)}
@@ -799,7 +814,7 @@
                 {/if}
             </div>
         </div>
-    {:else if isCopy && isRollingBack}
+    {:else if (isCopy || isMove) && isRollingBack}
         <!-- Rollback in progress (copy only) -->
         <div class="rollback-section">
             <div class="rollback-indicator">
@@ -873,7 +888,7 @@
         <!-- Action buttons -->
         <div class="button-row">
             <Button variant="secondary" onclick={() => handleCancel(false)} disabled={isCancelling}>Cancel</Button>
-            {#if isCopy}
+            {#if isCopy || isMove}
                 <span use:tooltip={'Cancel and delete any partial target files created'}>
                     <Button variant="danger" onclick={() => handleCancel(true)} disabled={isCancelling}>Rollback</Button
                     >

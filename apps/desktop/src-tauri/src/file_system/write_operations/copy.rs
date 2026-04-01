@@ -13,7 +13,8 @@ use super::macos_copy::copy_symlink;
 use super::chunked_copy::ChunkedCopyProgressFn;
 use super::copy_strategy::copy_file_with_strategy;
 use super::helpers::{
-    is_same_file, resolve_conflict, run_cancellable, spawn_async_sync, validate_disk_space, validate_path_length,
+    find_unique_name, is_same_file, resolve_conflict, run_cancellable, spawn_async_sync, validate_disk_space,
+    validate_path_length,
 };
 use super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result};
 use super::state::{CopyTransaction, WriteOperationState, update_operation_status};
@@ -306,6 +307,11 @@ pub(super) fn copy_files_with_progress(
 /// Copies a single file or symlink to its destination.
 /// Ensures parent directories exist before copying.
 /// Used by both copy and cross-filesystem move operations.
+///
+/// Note: The parent-directory-creation and conflict-resolution pattern here is similar to
+/// `merge_move_directory` in `move_op.rs`. The duplication is intentional — copy has progress
+/// tracking, symlink handling, byte counting, strategy selection, and transaction recording
+/// that don't apply to same-FS move's simple rename. A shared abstraction would be forced.
 #[allow(
     clippy::too_many_arguments,
     reason = "File copy requires passing state through multiple levels"
@@ -346,31 +352,117 @@ pub(super) fn copy_single_item(
     // Ensure parent directories exist
     if let Some(parent) = dest_path.parent()
         && !created_dirs.contains(parent)
-        && !parent.exists()
     {
-        // Collect directories that don't exist BEFORE creating them
-        // (so we know exactly which ones we're creating for rollback)
-        let mut dirs_to_create: Vec<PathBuf> = Vec::new();
-        let mut dir = parent.to_path_buf();
-        while !dir.exists() && !created_dirs.contains(&dir) {
-            dirs_to_create.push(dir.clone());
-            match dir.parent() {
-                Some(p) => dir = p.to_path_buf(),
-                None => break,
+        // Fast path: parent already exists and is a directory — record it and skip the ancestor walk
+        if parent.is_dir() {
+            created_dirs.insert(parent.to_path_buf());
+        } else {
+            // Check for type mismatch: a file exists where we need a directory.
+            // This happens when source has a directory and dest has a file with the same name.
+            // Walk up from parent to find any file blocking directory creation.
+            let blocking_file = {
+                let mut check = parent.to_path_buf();
+                let mut found: Option<PathBuf> = None;
+                loop {
+                    if check.exists() && !check.is_dir() {
+                        found = Some(check);
+                        break;
+                    }
+                    if check.exists() || created_dirs.contains(&check) {
+                        break;
+                    }
+                    match check.parent() {
+                        Some(p) => check = p.to_path_buf(),
+                        None => break,
+                    }
+                }
+                found
+            };
+
+            if let Some(blocking) = blocking_file {
+                // A file exists where we need a directory — resolve as a conflict.
+                // Use the blocking file path (not source) so the conflict dialog shows correct metadata.
+                match resolve_conflict(
+                    &blocking,
+                    &blocking,
+                    config,
+                    app,
+                    operation_id,
+                    state,
+                    apply_to_all_resolution,
+                )? {
+                    Some(resolved) if resolved.needs_safe_overwrite => {
+                        // Overwrite: rename blocking file to backup, create directory, then delete backup.
+                        // This is safe — if create_dir_all fails, we can restore the backup.
+                        let backup_path = blocking.with_extension(format!(
+                            "{}.cmdr-backup-{}",
+                            blocking.extension().map(|e| e.to_string_lossy().to_string()).unwrap_or_default(),
+                            uuid::Uuid::new_v4()
+                        ));
+                        fs::rename(&blocking, &backup_path).with_path(&blocking)?;
+
+                        if let Err(e) = fs::create_dir_all(parent) {
+                            // Restore backup on failure
+                            let _ = fs::rename(&backup_path, &blocking);
+                            return Err(WriteOperationError::IoError {
+                                path: parent.display().to_string(),
+                                message: format!("Failed to create directory after removing blocking file: {}", e),
+                            });
+                        }
+
+                        // Directory created successfully — delete backup in background
+                        super::helpers::remove_file_in_background(backup_path);
+                        log::info!(
+                            "copy: replaced file with directory at {} (type mismatch)",
+                            blocking.display()
+                        );
+                    }
+                    Some(_) => {
+                        // Rename: preserve the blocking file by renaming it, then create directory
+                        let unique_path = find_unique_name(&blocking);
+                        fs::rename(&blocking, &unique_path).with_path(&blocking)?;
+                        log::info!(
+                            "copy: renamed blocking file {} to {} (type mismatch)",
+                            blocking.display(),
+                            unique_path.display()
+                        );
+                    }
+                    None => {
+                        // Skip: don't copy this file
+                        let metadata = fs::symlink_metadata(source).with_path(source)?;
+                        *files_done += 1;
+                        *bytes_done += metadata.len();
+                        return Ok(());
+                    }
+                }
             }
-        }
 
-        // Create all directories
-        fs::create_dir_all(parent).map_err(|e| WriteOperationError::IoError {
-            path: parent.display().to_string(),
-            message: format!("Failed to create directory: {}", e),
-        })?;
+            if !parent.exists() {
+                // Collect directories that don't exist BEFORE creating them
+                // (so we know exactly which ones we're creating for rollback)
+                let mut dirs_to_create: Vec<PathBuf> = Vec::new();
+                let mut dir = parent.to_path_buf();
+                while !dir.exists() && !created_dirs.contains(&dir) {
+                    dirs_to_create.push(dir.clone());
+                    match dir.parent() {
+                        Some(p) => dir = p.to_path_buf(),
+                        None => break,
+                    }
+                }
 
-        // Record only the directories we actually created (in creation order: deepest last)
-        // dirs_to_create is in reverse order (deepest first), so iterate in reverse
-        for created_dir in dirs_to_create.into_iter().rev() {
-            transaction.record_dir(created_dir.clone());
-            created_dirs.insert(created_dir);
+                // Create all directories
+                fs::create_dir_all(parent).map_err(|e| WriteOperationError::IoError {
+                    path: parent.display().to_string(),
+                    message: format!("Failed to create directory: {}", e),
+                })?;
+
+                // Record only the directories we actually created (in creation order: deepest last)
+                // dirs_to_create is in reverse order (deepest first), so iterate in reverse
+                for created_dir in dirs_to_create.into_iter().rev() {
+                    transaction.record_dir(created_dir.clone());
+                    created_dirs.insert(created_dir);
+                }
+            }
         }
     }
 

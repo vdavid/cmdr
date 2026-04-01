@@ -49,18 +49,22 @@ the container, waits for the socket, and runs these same test files. See `../e2e
 
 ## Files
 
-| File                      | Purpose                                                          |
-| ------------------------- | ---------------------------------------------------------------- |
-| `playwright.config.ts`    | Playwright config: Tauri mode only, sequential execution         |
-| `fixtures.ts`             | Test fixture using `createTauriTest` from tauri-playwright       |
-| `global-setup.ts`         | Creates or refreshes the fixture directory tree (~170 MB)        |
-| `global-teardown.ts`      | Cleans up the fixture directory (if created by globalSetup)      |
-| `helpers.ts`              | Ported helpers: `ensureAppReady`, `pollUntil`, DOM queries, etc. |
-| `app.spec.ts`             | 14 tests: rendering, keyboard nav, mouse interaction, dialogs    |
-| `file-operations.spec.ts` | 8 tests: copy, move, rename, mkdir, view modes, hidden, palette  |
-| `file-watching.spec.ts`   | 1 test: external filesystem change detection (inotify/FSEvents)  |
-| `settings.spec.ts`        | 5 tests: settings page rendering, sidebar, search                |
-| `viewer.spec.ts`          | 10 tests: file viewer, search, error handling                    |
+| File                          | Purpose                                                          |
+| ----------------------------- | ---------------------------------------------------------------- |
+| `playwright.config.ts`        | Playwright config: Tauri mode only, sequential execution         |
+| `fixtures.ts`                 | Test fixture using `createTauriTest` from tauri-playwright       |
+| `global-setup.ts`             | Creates or refreshes the fixture directory tree (~170 MB)        |
+| `global-teardown.ts`          | Cleans up the fixture directory (if created by globalSetup)      |
+| `helpers.ts`                  | Ported helpers: `ensureAppReady`, `pollUntil`, DOM queries, etc. |
+| `conflict-helpers.ts`         | Shared fixtures and UI helpers for conflict resolution tests     |
+| `app.spec.ts`                 | 14 tests: rendering, keyboard nav, mouse interaction, dialogs    |
+| `file-operations.spec.ts`     | 8 tests: copy, move, rename, mkdir, view modes, hidden, palette  |
+| `conflict-copy.spec.ts`       | 7 tests: copy conflict policies, per-file decisions, rename      |
+| `conflict-move.spec.ts`       | 3 tests: move merge, skip, rollback                              |
+| `conflict-edge-cases.spec.ts` | 7 tests: rollback, sequential conflicts, symlinks, type mismatch |
+| `file-watching.spec.ts`       | 1 test: external filesystem change detection (inotify/FSEvents)  |
+| `settings.spec.ts`            | 5 tests: settings page rendering, sidebar, search                |
+| `viewer.spec.ts`              | 10 tests: file viewer, search, error handling                    |
 
 ## Key decisions
 

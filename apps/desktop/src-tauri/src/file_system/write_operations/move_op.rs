@@ -9,7 +9,7 @@ use std::time::Instant;
 
 use super::copy::copy_single_item;
 use super::helpers::{
-    is_same_filesystem, remove_dir_all_in_background, resolve_conflict, safe_overwrite_dir, spawn_async_sync,
+    is_same_filesystem, remove_dir_all_in_background, resolve_conflict, spawn_async_sync,
 };
 use super::scan::{SourceItemTracker, handle_dry_run, scan_sources};
 use super::state::{CopyTransaction, WriteOperationState, update_operation_status};
@@ -17,6 +17,41 @@ use super::types::{
     ConflictResolution, IoResultExt, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
+
+// ============================================================================
+// Move rollback tracking
+// ============================================================================
+
+/// Tracks renames performed during same-FS move for rollback on cancellation.
+/// Each entry is `(original_source, moved_to_dest)` — rollback reverses them.
+struct MoveTransaction {
+    renames: Vec<(PathBuf, PathBuf)>,
+}
+
+impl MoveTransaction {
+    fn new() -> Self {
+        Self { renames: Vec::new() }
+    }
+
+    fn record(&mut self, source: PathBuf, dest: PathBuf) {
+        self.renames.push((source, dest));
+    }
+
+    /// Reverses all recorded renames (dest → source) in reverse order.
+    /// Same-FS rename is instant, so this runs synchronously.
+    fn rollback(&self) {
+        for (original_source, moved_to_dest) in self.renames.iter().rev() {
+            if let Err(e) = fs::rename(moved_to_dest, original_source) {
+                log::warn!(
+                    "move rollback: failed to rename {} back to {}: {}",
+                    moved_to_dest.display(),
+                    original_source.display(),
+                    e
+                );
+            }
+        }
+    }
+}
 
 // ============================================================================
 // Move implementation
@@ -71,82 +106,100 @@ fn move_with_rename(
 
     let mut files_done = 0;
     let mut apply_to_all_resolution: Option<ConflictResolution> = None;
+    let mut move_tx = MoveTransaction::new();
 
-    for source in sources {
-        // Check cancellation
-        if state.cancelled.load(Ordering::Relaxed) {
-            let _ = app.emit(
-                "write-cancelled",
-                WriteCancelledEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Move,
-                    files_processed: files_done,
-                    rolled_back: false, // Same-filesystem moves are atomic, nothing to rollback
-                },
-            );
-            return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
-            });
-        }
-
-        let file_name = source.file_name().ok_or_else(|| WriteOperationError::IoError {
-            path: source.display().to_string(),
-            message: "Invalid source path".to_string(),
-        })?;
-        let dest_path = destination.join(file_name);
-
-        // Handle conflicts
-        let (actual_dest, needs_safe_overwrite) = if dest_path.exists() {
-            match resolve_conflict(
-                source,
-                &dest_path,
-                config,
-                app,
-                operation_id,
-                state,
-                &mut apply_to_all_resolution,
-            )? {
-                Some(resolved) => (resolved.path, resolved.needs_safe_overwrite),
-                None => {
-                    // Skip this file
-                    continue;
-                }
-            }
-        } else {
-            (dest_path, false)
-        };
-
-        // For same-FS move with overwrite:
-        // - For files: rename() atomically replaces the destination
-        // - For directories: need to remove dest first (rename fails on non-empty dirs)
-        if needs_safe_overwrite && actual_dest.is_dir() {
-            // Safe directory overwrite: backup, then rename
-            let backup_path = safe_overwrite_dir(&actual_dest)?;
-            if let Err(e) = fs::rename(source, &actual_dest) {
-                // Restore backup on failure
-                let _ = fs::rename(&backup_path, &actual_dest);
-                return Err(WriteOperationError::IoError {
-                    path: source.display().to_string(),
-                    message: e.to_string(),
+    let result: Result<(), WriteOperationError> = (|| {
+        for source in sources {
+            // Check cancellation
+            if state.cancelled.load(Ordering::Relaxed) {
+                return Err(WriteOperationError::Cancelled {
+                    message: "Operation cancelled by user".to_string(),
                 });
             }
-            // Remove backup
-            let _ = fs::remove_dir_all(&backup_path);
-        } else {
-            // For files or non-overwrite: rename() handles it (atomic for files)
-            fs::rename(source, &actual_dest).with_path(source)?;
-        }
 
-        files_done += 1;
+            let file_name = source.file_name().ok_or_else(|| WriteOperationError::IoError {
+                path: source.display().to_string(),
+                message: "Invalid source path".to_string(),
+            })?;
+            let dest_path = destination.join(file_name);
+
+            // When both source and dest are directories, merge recursively
+            // instead of replacing (which would destroy dest-only files).
+            if source.is_dir() && dest_path.exists() && dest_path.is_dir() {
+                merge_move_directory(
+                    source,
+                    &dest_path,
+                    config,
+                    app,
+                    operation_id,
+                    state,
+                    &mut apply_to_all_resolution,
+                    &mut move_tx,
+                )?;
+            } else if dest_path.exists() {
+                // File-to-file (or type mismatch) conflict
+                match resolve_conflict(
+                    source,
+                    &dest_path,
+                    config,
+                    app,
+                    operation_id,
+                    state,
+                    &mut apply_to_all_resolution,
+                )? {
+                    Some(resolved) => {
+                        fs::rename(source, &resolved.path).with_path(source)?;
+                        move_tx.record(source.clone(), resolved.path);
+                    }
+                    None => {
+                        // Skip this file
+                        continue;
+                    }
+                }
+            } else {
+                // No conflict — just rename
+                fs::rename(source, &dest_path).with_path(source)?;
+                move_tx.record(source.clone(), dest_path);
+            }
+
+            files_done += 1;
+
+            let _ = app.emit(
+                "write-source-item-done",
+                WriteSourceItemDoneEvent {
+                    operation_id: operation_id.to_string(),
+                    source_path: source.display().to_string(),
+                },
+            );
+        }
+        Ok(())
+    })();
+
+    // Handle cancellation: emit write-cancelled so the frontend can close the dialog.
+    // The outer start_write_operation wrapper treats Cancelled as "already handled",
+    // so we must emit the event here.
+    if let Err(WriteOperationError::Cancelled { .. }) = &result {
+        let skip_rollback = state.skip_rollback.load(Ordering::Relaxed);
+        let rolled_back = if skip_rollback {
+            false
+        } else {
+            move_tx.rollback();
+            true
+        };
 
         let _ = app.emit(
-            "write-source-item-done",
-            WriteSourceItemDoneEvent {
+            "write-cancelled",
+            WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
-                source_path: source.display().to_string(),
+                operation_type: WriteOperationType::Move,
+                files_processed: files_done,
+                rolled_back,
             },
         );
+        return result;
     }
+
+    result?;
 
     // Spawn async sync for durability (non-blocking)
     spawn_async_sync();
@@ -161,6 +214,93 @@ fn move_with_rename(
             bytes_processed: 0, // Rename doesn't track bytes
         },
     );
+
+    Ok(())
+}
+
+/// Recursively merges a source directory into an existing destination directory
+/// using rename() for individual files. Dest-only files are preserved.
+/// After all contents are moved, removes the now-empty source directory.
+///
+/// Note: This duplicates the recursive-merge-with-conflict-resolution pattern from `copy.rs`.
+/// The two look similar in structure but differ in every detail (copy has progress tracking,
+/// symlink handling, byte counting, transaction recording, strategy selection). A shared
+/// abstraction would be forced and fragile. See `copy.rs` `copy_single_item` for the copy side.
+#[allow(clippy::too_many_arguments)]
+fn merge_move_directory(
+    source_dir: &Path,
+    dest_dir: &Path,
+    config: &WriteOperationConfig,
+    app: &tauri::AppHandle,
+    operation_id: &str,
+    state: &Arc<WriteOperationState>,
+    apply_to_all_resolution: &mut Option<ConflictResolution>,
+    move_tx: &mut MoveTransaction,
+) -> Result<(), WriteOperationError> {
+    let entries = fs::read_dir(source_dir).with_path(source_dir)?;
+
+    for entry in entries {
+        let entry = entry.with_path(source_dir)?;
+        let source_child = entry.path();
+        let file_name = match source_child.file_name() {
+            Some(n) => n.to_owned(),
+            None => continue,
+        };
+        let dest_child = dest_dir.join(&file_name);
+
+        // Check cancellation
+        if state.cancelled.load(Ordering::Relaxed) {
+            return Err(WriteOperationError::Cancelled {
+                message: "Operation cancelled by user".to_string(),
+            });
+        }
+
+        if source_child.is_dir() && dest_child.exists() && dest_child.is_dir() {
+            // Both are directories — recurse
+            merge_move_directory(
+                &source_child,
+                &dest_child,
+                config,
+                app,
+                operation_id,
+                state,
+                apply_to_all_resolution,
+                move_tx,
+            )?;
+        } else if dest_child.exists() {
+            // File conflict (or type mismatch)
+            match resolve_conflict(
+                &source_child,
+                &dest_child,
+                config,
+                app,
+                operation_id,
+                state,
+                apply_to_all_resolution,
+            )? {
+                Some(resolved) => {
+                    fs::rename(&source_child, &resolved.path).with_path(&source_child)?;
+                    move_tx.record(source_child, resolved.path);
+                }
+                None => {
+                    // Skip — source file stays in place
+                    continue;
+                }
+            }
+        } else {
+            // No conflict — just rename
+            fs::rename(&source_child, &dest_child).with_path(&source_child)?;
+            move_tx.record(source_child, dest_child);
+        }
+    }
+
+    // Remove the source directory if it's now empty
+    if fs::read_dir(source_dir)
+        .map(|mut d| d.next().is_none())
+        .unwrap_or(false)
+    {
+        let _ = fs::remove_dir(source_dir);
+    }
 
     Ok(())
 }
@@ -301,8 +441,22 @@ fn move_with_staging(
             let staged_path = staging_dir.join(file_name);
             let final_path = destination.join(file_name);
 
-            // Handle conflicts at final destination
-            let (actual_dest, needs_safe_overwrite) = if final_path.exists() {
+            // When both staged and final are directories, merge recursively.
+            // No MoveTransaction needed here — staging cleanup handles rollback.
+            let mut staging_move_tx = MoveTransaction::new();
+            if staged_path.is_dir() && final_path.exists() && final_path.is_dir() {
+                merge_move_directory(
+                    &staged_path,
+                    &final_path,
+                    config,
+                    app,
+                    operation_id,
+                    state,
+                    &mut apply_to_all_resolution,
+                    &mut staging_move_tx,
+                )?;
+            } else if final_path.exists() {
+                // File conflict (or type mismatch)
                 match resolve_conflict(
                     source,
                     &final_path,
@@ -312,7 +466,12 @@ fn move_with_staging(
                     state,
                     &mut apply_to_all_resolution,
                 )? {
-                    Some(resolved) => (resolved.path, resolved.needs_safe_overwrite),
+                    Some(resolved) => {
+                        fs::rename(&staged_path, &resolved.path).map_err(|e| WriteOperationError::IoError {
+                            path: staged_path.display().to_string(),
+                            message: format!("Failed to move from staging: {}", e),
+                        })?;
+                    }
                     None => {
                         // Skip - remove from staging
                         if staged_path.is_dir() {
@@ -324,25 +483,8 @@ fn move_with_staging(
                     }
                 }
             } else {
-                (final_path, false)
-            };
-
-            // Rename from staging to final (atomic on same filesystem)
-            // For overwrite of directories, need to backup first
-            if needs_safe_overwrite && actual_dest.is_dir() {
-                let backup_path = safe_overwrite_dir(&actual_dest)?;
-                if let Err(e) = fs::rename(&staged_path, &actual_dest) {
-                    // Restore backup on failure
-                    let _ = fs::rename(&backup_path, &actual_dest);
-                    return Err(WriteOperationError::IoError {
-                        path: staged_path.display().to_string(),
-                        message: format!("Failed to move from staging: {}", e),
-                    });
-                }
-                let _ = fs::remove_dir_all(&backup_path);
-            } else {
-                // For files: rename atomically replaces
-                fs::rename(&staged_path, &actual_dest).map_err(|e| WriteOperationError::IoError {
+                // No conflict — just rename from staging to final
+                fs::rename(&staged_path, &final_path).map_err(|e| WriteOperationError::IoError {
                     path: staged_path.display().to_string(),
                     message: format!("Failed to move from staging: {}", e),
                 })?;

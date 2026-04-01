@@ -444,3 +444,121 @@ fn test_copy_transaction_commit_prevents_drop_rollback() {
 
     cleanup_temp_dir(&temp_dir);
 }
+
+// ============================================================================
+// safe_overwrite_file tests
+// ============================================================================
+
+use super::helpers::safe_overwrite_file;
+
+#[test]
+fn test_safe_overwrite_basic() {
+    let temp_dir = create_temp_dir("safe_overwrite_basic");
+    let source = temp_dir.join("source.txt");
+    let dest = temp_dir.join("dest.txt");
+
+    fs::write(&source, "new-data!!").unwrap();
+    fs::write(&dest, "old-data").unwrap();
+
+    #[cfg(target_os = "macos")]
+    let result = safe_overwrite_file(&source, &dest, None);
+    #[cfg(not(target_os = "macos"))]
+    let result = safe_overwrite_file(&source, &dest);
+
+    let bytes = result.expect("safe_overwrite_file should succeed");
+    assert_eq!(bytes, 10, "should report 10 bytes copied");
+    assert_eq!(fs::read_to_string(&dest).unwrap(), "new-data!!");
+    assert!(source.exists(), "source should still exist");
+
+    // No leftover temp/backup files
+    for entry in fs::read_dir(&temp_dir).unwrap() {
+        let name = entry.unwrap().file_name().to_string_lossy().to_string();
+        assert!(!name.contains(".cmdr-tmp-"), "temp file should be cleaned up: {name}");
+        assert!(!name.contains(".cmdr-backup-"), "backup file should be cleaned up: {name}");
+    }
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_safe_overwrite_preserves_dest_on_missing_source() {
+    let temp_dir = create_temp_dir("safe_overwrite_missing_src");
+    let source = temp_dir.join("nonexistent.txt");
+    let dest = temp_dir.join("dest.txt");
+
+    fs::write(&dest, "old-data").unwrap();
+
+    #[cfg(target_os = "macos")]
+    let result = safe_overwrite_file(&source, &dest, None);
+    #[cfg(not(target_os = "macos"))]
+    let result = safe_overwrite_file(&source, &dest);
+
+    assert!(result.is_err(), "should fail when source doesn't exist");
+    assert_eq!(
+        fs::read_to_string(&dest).unwrap(),
+        "old-data",
+        "original dest content must be untouched"
+    );
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_safe_overwrite_dest_has_new_content_after_completion() {
+    let temp_dir = create_temp_dir("safe_overwrite_atomic");
+    let source = temp_dir.join("source.txt");
+    let dest = temp_dir.join("dest.txt");
+
+    let new_content = "replacement-content-here";
+    fs::write(&source, new_content).unwrap();
+    fs::write(&dest, "original").unwrap();
+
+    #[cfg(target_os = "macos")]
+    let result = safe_overwrite_file(&source, &dest, None);
+    #[cfg(not(target_os = "macos"))]
+    let result = safe_overwrite_file(&source, &dest);
+
+    result.expect("safe_overwrite_file should succeed");
+
+    // After completion, reading dest returns the full new content (no partial writes)
+    assert_eq!(fs::read_to_string(&dest).unwrap(), new_content);
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_safe_overwrite_different_sizes() {
+    let temp_dir = create_temp_dir("safe_overwrite_sizes");
+
+    // Case 1: source much larger than dest
+    let source_large = temp_dir.join("large_source.txt");
+    let dest_small = temp_dir.join("small_dest.txt");
+    let large_content = "x".repeat(100_000);
+    fs::write(&source_large, &large_content).unwrap();
+    fs::write(&dest_small, "tiny").unwrap();
+
+    #[cfg(target_os = "macos")]
+    let result = safe_overwrite_file(&source_large, &dest_small, None);
+    #[cfg(not(target_os = "macos"))]
+    let result = safe_overwrite_file(&source_large, &dest_small);
+
+    result.expect("large-to-small overwrite should succeed");
+    assert_eq!(fs::read_to_string(&dest_small).unwrap(), large_content);
+
+    // Case 2: source much smaller than dest
+    let source_small = temp_dir.join("small_source.txt");
+    let dest_large = temp_dir.join("large_dest.txt");
+    let large_dest_content = "y".repeat(100_000);
+    fs::write(&source_small, "tiny").unwrap();
+    fs::write(&dest_large, &large_dest_content).unwrap();
+
+    #[cfg(target_os = "macos")]
+    let result = safe_overwrite_file(&source_small, &dest_large, None);
+    #[cfg(not(target_os = "macos"))]
+    let result = safe_overwrite_file(&source_small, &dest_large);
+
+    result.expect("small-to-large overwrite should succeed");
+    assert_eq!(fs::read_to_string(&dest_large).unwrap(), "tiny");
+
+    cleanup_temp_dir(&temp_dir);
+}

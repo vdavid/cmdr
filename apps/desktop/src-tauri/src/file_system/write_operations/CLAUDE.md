@@ -84,6 +84,15 @@ actual `copy_files_start` can consume the cache via `preview_id` in `WriteOperat
 **Move strategy.** Same filesystem detected via device ID comparison (`MetadataExt::dev`). Cross-filesystem move uses a
 `.cmdr-staging-<uuid>` dir at the destination root, then atomic `rename` into place, then source deletion.
 
+**Move rollback (same-FS).** `MoveTransaction` in `move_op.rs` tracks `(source, dest)` pairs for each rename. On
+cancellation, renames are reversed in reverse order. Same-FS rename rollback is instant (just another rename), so it
+runs synchronously. Cross-FS move rollback is handled by `CopyTransaction` (deletes the staging directory).
+
+**Intentional duplication: `merge_move_directory` vs `copy_single_item`.** Both implement recursive merge with conflict
+resolution, but differ in every detail: copy has progress tracking, symlink handling, byte counting, strategy selection,
+and `CopyTransaction` recording. Move uses simple `fs::rename`. A shared abstraction would be forced and fragile.
+Cross-references are in the doc comments of both functions.
+
 **Copy strategy selection** (`copy_strategy.rs`):
 - macOS, same APFS volume → `copyfile(3)` with `COPYFILE_CLONE` for instant clonefile
 - macOS, everything else → `chunked_copy_with_metadata` (1 MB chunks, cancellation between chunks)
