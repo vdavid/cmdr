@@ -880,6 +880,22 @@
         return path.endsWith('/') ? path : path + '/'
     }
 
+    /**
+     * Resolves well-known macOS symlinks to their canonical `/private/` targets.
+     * The drive index stores canonical paths (scanner follows symlinks), but the
+     * listing uses the raw navigation path. Without this, `index-dir-updated`
+     * events for paths under `/tmp/`, `/var/`, or `/etc/` would never match.
+     */
+    function resolvePrivateSymlinks(path: string): string {
+        if (!isMacOS()) return path
+        for (const prefix of ['/tmp', '/var', '/etc']) {
+            if (path === prefix || path.startsWith(prefix + '/')) {
+                return '/private' + path
+            }
+        }
+        return path
+    }
+
     /** Returns true if any updated path is a descendant of `dir`. */
     function hasDescendantUpdate(paths: string[], dir: string): boolean {
         return paths.some((p) => {
@@ -911,8 +927,8 @@
 
     /** Called when the drive index updates directory stats. Refreshes only index sizes (no full list rebuild). */
     function handleIndexDirUpdated(paths: string[]) {
-        const refreshLeft = hasDescendantUpdate(paths, ensureTrailingSlash(leftPath))
-        const refreshRight = hasDescendantUpdate(paths, ensureTrailingSlash(rightPath))
+        const refreshLeft = hasDescendantUpdate(paths, ensureTrailingSlash(resolvePrivateSymlinks(leftPath)))
+        const refreshRight = hasDescendantUpdate(paths, ensureTrailingSlash(resolvePrivateSymlinks(rightPath)))
 
         throttledRefresh(refreshLeft, leftThrottleUntil, (v) => (leftThrottleUntil = v), getPaneRef('left'))
         throttledRefresh(refreshRight, rightThrottleUntil, (v) => (rightThrottleUntil = v), getPaneRef('right'))
