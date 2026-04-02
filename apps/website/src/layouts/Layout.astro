@@ -70,7 +70,7 @@ const {
                 try {
                     var t = localStorage.getItem('theme')
                     if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
-                } catch (e) {}
+                } catch { /* localStorage unavailable */ }
                 // Preserve theme across Client Router navigations (register once)
                 if (!window.__themeSwapRegistered) {
                     window.__themeSwapRegistered = true
@@ -105,7 +105,7 @@ const {
                 ) {
                     document.documentElement.classList.add('newsletter-hidden')
                 }
-            } catch (e) {}
+            } catch { /* localStorage unavailable */ }
         </script>
 
         {/* Umami analytics — self-hosted, cookieless */}
@@ -172,7 +172,7 @@ const {
                         var renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)
                         if (/Apple M|Apple GPU/.test(renderer)) return 'aarch64'
                         if (/Intel|AMD/.test(renderer)) return 'x86_64'
-                    } catch (e) {}
+                    } catch { /* WebGL unavailable */ }
                     return null
                 }
 
@@ -180,7 +180,7 @@ const {
                 if (!syncArch) {
                     try {
                         syncArch = localStorage.getItem('cmdr-arch')
-                    } catch (e) {
+                    } catch {
                         /* localStorage unavailable */
                     }
                 }
@@ -195,7 +195,7 @@ const {
                         if (!arch) return
                         try {
                             localStorage.setItem('cmdr-arch', arch)
-                        } catch (e) {
+                        } catch {
                             /* localStorage unavailable */
                         }
                         applyArch(arch)

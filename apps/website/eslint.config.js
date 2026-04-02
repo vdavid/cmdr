@@ -71,6 +71,7 @@ export default tseslint.config(
     // Scripts extracted from .astro files by eslint-plugin-astro
     files: ['**/*.astro/*.js', '**/*.astro/*.ts'],
     languageOptions: {
+      parser: tseslint.parser,
       globals: {
         ...globals.browser,
         Paddle: 'readonly', // Paddle payment SDK loaded via script tag
