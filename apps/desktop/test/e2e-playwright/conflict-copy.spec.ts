@@ -161,11 +161,7 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
     await tauriPage.waitForSelector('[data-dialog-id="transfer-progress"]', 10000)
 
     // Wait for first conflict to appear
-    const conflictAppeared = await pollUntil(
-      tauriPage,
-      async () => tauriPage.isVisible('.conflict-section'),
-      15000,
-    )
+    const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 15000)
     expect(conflictAppeared).toBe(true)
 
     // First conflict: click "Overwrite" (single file, not "Overwrite all")
@@ -180,11 +176,7 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
     await sleep(500)
 
     // Second conflict: click "Skip all" (applies to all remaining)
-    const nextConflict = await pollUntil(
-      tauriPage,
-      async () => tauriPage.isVisible('.conflict-section'),
-      10000,
-    )
+    const nextConflict = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 10000)
     if (nextConflict) {
       await tauriPage.evaluate(`(function(){
         var btns = document.querySelectorAll('.conflict-buttons-row button');
@@ -235,11 +227,7 @@ test.describe('Rename conflict resolution', () => {
 
     // Wait for progress dialog with conflict
     await tauriPage.waitForSelector('[data-dialog-id="transfer-progress"]', 10000)
-    const conflictAppeared = await pollUntil(
-      tauriPage,
-      async () => tauriPage.isVisible('.conflict-section'),
-      15000,
-    )
+    const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 15000)
     expect(conflictAppeared).toBe(true)
 
     // Click "Rename" — keeps both files, incoming gets " (1)" suffix
@@ -275,11 +263,7 @@ test.describe('Rename conflict resolution', () => {
     await clickTransferStart(tauriPage)
     await tauriPage.waitForSelector('[data-dialog-id="transfer-progress"]', 10000)
 
-    const conflictAppeared = await pollUntil(
-      tauriPage,
-      async () => tauriPage.isVisible('.conflict-section'),
-      15000,
-    )
+    const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 15000)
     expect(conflictAppeared).toBe(true)
 
     await tauriPage.evaluate(`(function(){

@@ -50,13 +50,11 @@ export function createViewerScroll(deps: ScrollDeps) {
     return deps.getEstimatedLines()
   }
 
-
   const scrollScale = $derived.by(() => {
     const totalHeight = heightMap.ready ? heightMap.getTotalHeight() : estimatedTotalLines() * effectiveLineHeight
     return totalHeight > MAX_SCROLL_HEIGHT ? MAX_SCROLL_HEIGHT / totalHeight : 1
   })
   const scrollLineHeight = $derived(effectiveLineHeight * scrollScale)
-
 
   const visibleFrom = $derived.by(() => {
     if (heightMap.ready) {
@@ -74,11 +72,9 @@ export function createViewerScroll(deps: ScrollDeps) {
     return Math.min(estimatedTotalLines(), Math.ceil((scrollTop + viewportHeight) / scrollLineHeight) + BUFFER_LINES)
   })
 
-
   const spacerHeight = $derived(
     heightMap.ready ? heightMap.getTotalHeight() * scrollScale : estimatedTotalLines() * scrollLineHeight,
   )
-
 
   const linesOffset = $derived(
     heightMap.ready ? heightMap.getLineTop(visibleFrom) * scrollScale : visibleFrom * scrollLineHeight,
@@ -98,7 +94,6 @@ export function createViewerScroll(deps: ScrollDeps) {
 
   /** Returns the scaled Y offset for line n. Used by search for scroll-to-match. */
   function getLineTop(n: number): number {
-
     if (heightMap.ready) {
       return heightMap.getLineTop(n) * scrollScale
     }

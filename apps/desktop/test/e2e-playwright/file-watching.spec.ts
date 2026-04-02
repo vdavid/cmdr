@@ -85,11 +85,7 @@ test.describe('File watching', () => {
 
     fs.unlinkSync(path.join(fixtureRoot, 'left', 'file-a.txt'))
 
-    await pollUntil(
-      tauriPage,
-      async () => !(await fileExistsInFocusedPane(tauriPage, 'file-a.txt')),
-      8000,
-    )
+    await pollUntil(tauriPage, async () => !(await fileExistsInFocusedPane(tauriPage, 'file-a.txt')), 8000)
   })
 
   test('detects an externally renamed file', async ({ tauriPage }) => {
@@ -98,17 +94,18 @@ test.describe('File watching', () => {
 
     expect(await fileExistsInFocusedPane(tauriPage, 'file-a.txt')).toBe(true)
 
-    fs.renameSync(
-      path.join(fixtureRoot, 'left', 'file-a.txt'),
-      path.join(fixtureRoot, 'left', 'file-a-renamed.txt'),
-    )
+    fs.renameSync(path.join(fixtureRoot, 'left', 'file-a.txt'), path.join(fixtureRoot, 'left', 'file-a-renamed.txt'))
 
     // Both old name gone AND new name present
-    await pollUntil(tauriPage, async () => {
-      const oldGone = !(await fileExistsInFocusedPane(tauriPage, 'file-a.txt'))
-      const newPresent = await fileExistsInFocusedPane(tauriPage, 'file-a-renamed.txt')
-      return oldGone && newPresent
-    }, 8000)
+    await pollUntil(
+      tauriPage,
+      async () => {
+        const oldGone = !(await fileExistsInFocusedPane(tauriPage, 'file-a.txt'))
+        const newPresent = await fileExistsInFocusedPane(tauriPage, 'file-a-renamed.txt')
+        return oldGone && newPresent
+      },
+      8000,
+    )
   })
 
   test('updates displayed size when a file is modified externally', async ({ tauriPage }) => {
@@ -128,10 +125,14 @@ test.describe('File watching', () => {
     fs.appendFileSync(path.join(fixtureRoot, 'left', 'file-a.txt'), 'X'.repeat(50_000))
 
     // Wait for the watcher to update the entry with the new size
-    await pollUntil(tauriPage, async () => {
-      const newSize = await getSizeText(tauriPage, 'file-a.txt')
-      return newSize !== '' && newSize !== initialSize
-    }, 8000)
+    await pollUntil(
+      tauriPage,
+      async () => {
+        const newSize = await getSizeText(tauriPage, 'file-a.txt')
+        return newSize !== '' && newSize !== initialSize
+      },
+      8000,
+    )
   })
 
   // ── Batch operations ────────────────────────────────────────────────────
@@ -143,18 +144,11 @@ test.describe('File watching', () => {
 
     // Create 25 files in a tight loop
     for (let i = 0; i < 25; i++) {
-      fs.writeFileSync(
-        path.join(fixtureRoot, 'left', `${prefix}-${String(i).padStart(3, '0')}.txt`),
-        `content ${i}`,
-      )
+      fs.writeFileSync(path.join(fixtureRoot, 'left', `${prefix}-${String(i).padStart(3, '0')}.txt`), `content ${i}`)
     }
 
     // All 25 should appear in the listing
-    await pollUntil(
-      tauriPage,
-      async () => (await countEntriesWithPrefix(tauriPage, prefix)) === 25,
-      10000,
-    )
+    await pollUntil(tauriPage, async () => (await countEntriesWithPrefix(tauriPage, prefix)) === 25, 10000)
   })
 
   test('handles 600+ files crossing the full-reread threshold', async ({ tauriPage }, testInfo) => {
@@ -167,18 +161,11 @@ test.describe('File watching', () => {
     // This exceeds the 500-event threshold, triggering the full-reread path
     // instead of the incremental path.
     for (let i = 0; i < 600; i++) {
-      fs.writeFileSync(
-        path.join(leftDir, `mass-${String(i).padStart(4, '0')}.txt`),
-        `content ${i}`,
-      )
+      fs.writeFileSync(path.join(leftDir, `mass-${String(i).padStart(4, '0')}.txt`), `content ${i}`)
     }
 
     // Verify files appear in the focused pane
-    const found = await pollUntil(
-      tauriPage,
-      async () => fileExistsInFocusedPane(tauriPage, 'mass-0000.txt'),
-      30000,
-    )
+    const found = await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, 'mass-0000.txt'), 30000)
     expect(found).toBe(true)
   })
 
@@ -199,11 +186,7 @@ test.describe('File watching', () => {
             payload: { pane: 'right', path: ${JSON.stringify(tempDir)} }
         })`)
     await sleep(500)
-    await pollUntil(
-      tauriPage,
-      async () => fileExistsInPane(tauriPage, 'temp-file.txt', 1),
-      8000,
-    )
+    await pollUntil(tauriPage, async () => fileExistsInPane(tauriPage, 'temp-file.txt', 1), 8000)
 
     // Delete the directory externally while the pane is watching it
     fs.rmSync(tempDir, { recursive: true, force: true })
@@ -234,22 +217,22 @@ test.describe('File watching', () => {
             payload: { pane: 'right', path: ${JSON.stringify(leftDir)} }
         })`)
     await sleep(500)
-    await pollUntil(
-      tauriPage,
-      async () => fileExistsInPane(tauriPage, 'file-a.txt', 1),
-      8000,
-    )
+    await pollUntil(tauriPage, async () => fileExistsInPane(tauriPage, 'file-a.txt', 1), 8000)
 
     // Create a new file externally
     const fileName = `dual-pane-${Date.now()}.txt`
     fs.writeFileSync(path.join(leftDir, fileName), 'dual pane test')
 
     // Both panes should show the new file
-    await pollUntil(tauriPage, async () => {
-      const inLeft = await fileExistsInPane(tauriPage, fileName, 0)
-      const inRight = await fileExistsInPane(tauriPage, fileName, 1)
-      return inLeft && inRight
-    }, 8000)
+    await pollUntil(
+      tauriPage,
+      async () => {
+        const inLeft = await fileExistsInPane(tauriPage, fileName, 0)
+        const inRight = await fileExistsInPane(tauriPage, fileName, 1)
+        return inLeft && inRight
+      },
+      8000,
+    )
   })
 
   test('in-app copy shows file in target pane without duplicates', async ({ tauriPage }) => {
@@ -263,18 +246,10 @@ test.describe('File watching', () => {
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
     await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
-    await pollUntil(
-      tauriPage,
-      async () => !(await tauriPage.isVisible('.modal-overlay')),
-      10000,
-    )
+    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 10000)
 
     // File should appear in right pane
-    await pollUntil(
-      tauriPage,
-      async () => fileExistsInPane(tauriPage, 'file-a.txt', 1),
-      5000,
-    )
+    await pollUntil(tauriPage, async () => fileExistsInPane(tauriPage, 'file-a.txt', 1), 5000)
 
     // Wait for the watcher to fire after the synthetic diff, then verify
     // there is exactly one entry (no duplicate from watcher re-adding it).
@@ -301,11 +276,7 @@ test.describe('File watching', () => {
     const hiddenFilesShown = await fileExistsInFocusedPane(tauriPage, '.hidden-file')
     if (!hiddenFilesShown) {
       await executeViaCommandPalette(tauriPage, 'Toggle hidden')
-      await pollUntil(
-        tauriPage,
-        async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'),
-        5000,
-      )
+      await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 5000)
     }
 
     // Create a new hidden file externally
@@ -313,28 +284,16 @@ test.describe('File watching', () => {
     fs.writeFileSync(path.join(fixtureRoot, 'left', hiddenName), 'hidden content')
 
     // It should appear (hidden files are visible)
-    await pollUntil(
-      tauriPage,
-      async () => fileExistsInFocusedPane(tauriPage, hiddenName),
-      8000,
-    )
+    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, hiddenName), 8000)
 
     // Toggle hidden files OFF — the dotfile should disappear
     await executeViaCommandPalette(tauriPage, 'Toggle hidden')
-    await pollUntil(
-      tauriPage,
-      async () => !(await fileExistsInFocusedPane(tauriPage, hiddenName)),
-      5000,
-    )
+    await pollUntil(tauriPage, async () => !(await fileExistsInFocusedPane(tauriPage, hiddenName)), 5000)
 
     // Restore original state
     if (hiddenFilesShown) {
       await executeViaCommandPalette(tauriPage, 'Toggle hidden')
-      await pollUntil(
-        tauriPage,
-        async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'),
-        5000,
-      )
+      await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 5000)
     }
   })
 })

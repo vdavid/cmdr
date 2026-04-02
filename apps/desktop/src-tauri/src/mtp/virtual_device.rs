@@ -13,7 +13,7 @@ use std::time::Duration;
 
 /// Root directory for the virtual device's backing files.
 /// The TypeScript E2E fixture helper references the same path — see
-/// `tests/e2e/fixtures/mtp-fixtures.ts` (added in Milestone 2).
+/// `test/e2e-shared/mtp-fixtures.ts`.
 pub const MTP_FIXTURE_ROOT: &str = "/tmp/cmdr-mtp-e2e-fixtures";
 
 /// Registers a virtual MTP device with two storages and pre-populated test files.

@@ -25,7 +25,8 @@ const PREPARE_TIMEOUT_MS = 2_000
 const scheduleIdle: (cb: IdleRequestCallback) => number =
   typeof requestIdleCallback === 'function'
     ? requestIdleCallback
-    : (cb) => setTimeout(() => cb({ didTimeout: false, timeRemaining: () => 10 } as IdleDeadline), 1) as unknown as number
+    : (cb) =>
+        setTimeout(() => cb({ didTimeout: false, timeRemaining: () => 10 } as IdleDeadline), 1) as unknown as number
 const FONT_VALIDATION_TEST_STRING = 'ABCDabcd1234!@#$%^&*()_+-=[]{}|;:,./<>?'
 const FONT_VALIDATION_TOLERANCE_PX = 1
 

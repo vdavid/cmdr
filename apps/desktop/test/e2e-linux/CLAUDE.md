@@ -7,7 +7,7 @@ Docker setup for running the Playwright E2E tests (`../e2e-playwright/`) on Linu
 
 ```
 e2e-linux.sh
-├─ Build Tauri binary in Docker (--features playwright-e2e)
+├─ Build Tauri binary in Docker (--features playwright-e2e,virtual-mtp)
 ├─ Launch Docker container
 │   ├─ entrypoint.sh: Xvfb + dbus + optional VNC
 │   ├─ Create fixtures, start Tauri app

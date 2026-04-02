@@ -16,14 +16,7 @@ import path from 'path'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import {
-  ensureAppReady,
-  getFixtureRoot,
-  executeViaCommandPalette,
-  getSizeText,
-  pollUntil,
-  sleep,
-} from './helpers.js'
+import { ensureAppReady, getFixtureRoot, executeViaCommandPalette, getSizeText, pollUntil, sleep } from './helpers.js'
 
 /** Union type for tauriPage — works in both Tauri and browser mode. */
 type PageLike = TauriPage | BrowserPageAdapter
@@ -64,11 +57,7 @@ async function getDirStats(tauriPage: PageLike, dirPath: string): Promise<DirSta
  * Polls `get_dir_stats` until `recursiveFileCount > 0` or timeout.
  * Returns the stats if available, null otherwise.
  */
-async function waitForIndexData(
-  tauriPage: PageLike,
-  dirPath: string,
-  timeoutMs = 90_000,
-): Promise<DirStats | null> {
+async function waitForIndexData(tauriPage: PageLike, dirPath: string, timeoutMs = 90_000): Promise<DirStats | null> {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     const stats = await getDirStats(tauriPage, dirPath)

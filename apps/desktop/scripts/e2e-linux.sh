@@ -241,7 +241,7 @@ else
 
             echo "Building Tauri app for target: $LINUX_TARGET"
             # --no-bundle to skip creating .deb/.rpm/.appimage (not needed for E2E tests)
-            pnpm tauri build --ci --target "$LINUX_TARGET" --no-bundle -- --features playwright-e2e
+            pnpm tauri build --ci --target "$LINUX_TARGET" --no-bundle -- --features playwright-e2e,virtual-mtp
 
             # Mark that we have a Linux build
             touch "/target/$LINUX_TARGET/release/.linux-build"

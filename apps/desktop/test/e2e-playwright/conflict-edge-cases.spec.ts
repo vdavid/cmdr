@@ -9,14 +9,7 @@ import fs from 'fs'
 import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import {
-  ensureAppReady,
-  getFixtureRoot,
-  moveCursorToFile,
-  pollUntil,
-  sleep,
-  TRANSFER_DIALOG,
-} from './helpers.js'
+import { ensureAppReady, getFixtureRoot, moveCursorToFile, pollUntil, sleep, TRANSFER_DIALOG } from './helpers.js'
 import {
   createSymlinkFixture,
   createTypeMismatchFixture,

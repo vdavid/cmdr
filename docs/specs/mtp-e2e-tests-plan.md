@@ -21,7 +21,8 @@ Two design principles work together:
 1. On startup (feature-gated), Rust code creates a backing directory with test files and calls
    `mtp_rs::register_virtual_device()`.
 2. `start_mtp_watcher()` snapshots current devices — virtual device is included.
-3. Frontend's `mtp-store.initialize()` calls `scanDevices()` → `listMtpDevices()` → finds virtual device → auto-connects.
+3. Frontend's `mtp-store.initialize()` calls `scanDevices()` → `listMtpDevices()` → finds virtual device →
+   auto-connects.
 4. `MtpConnectionManager::connect()` calls `open_by_location()` — mtp-rs finds the registered virtual device.
 5. Write probe, Volume registration, event loop — all run normally against the virtual device.
 6. Tests use MCP tools (`select_volume`, `nav_to_path`, `copy`, `move`, etc.) to navigate and operate on the MTP volume,
@@ -34,6 +35,7 @@ couldn't use MTP at all before), not test scaffolding. The tests exercise the fu
 ### mtp-rs API (verified)
 
 The mtp-rs 0.5.1 virtual device API has been implemented and verified. Key facts:
+
 - `register_virtual_device(&config)` adds the device to a global registry
 - `MtpDevice::list_devices()` includes registered virtual devices (discovery works)
 - `MtpDevice::builder().open_by_location(id)` / `.open_by_serial(serial)` opens virtual devices
@@ -116,35 +118,35 @@ Run `./scripts/check.sh --check clippy --check rustfmt` to verify compilation.
 Run a manual test: build with `--features playwright-e2e,virtual-mtp`, start the app, and verify:
 
 1. Virtual device appears in the volume picker under "Mobile".
-2. Both storages show as separate entries (for example "Virtual Pixel 9 - Internal Storage" and
-   "Virtual Pixel 9 - SD Card"). **Note the exact text** — the MCP `select_volume` will need it.
+2. Both storages show as separate entries (for example "Virtual Pixel 9 - Internal Storage" and "Virtual Pixel 9 - SD
+   Card"). **Note the exact text** — the MCP `select_volume` will need it.
 3. Browsing the writable storage shows the pre-populated files.
-4. The read-only storage (SD Card) is actually detected as read-only — check the log for
-   `access_capability=ReadOnly` and `is_read_only=true` on the SD Card storage (lines 608-611 of `connection/mod.rs`).
-   Note: if mtp-rs reports the `AccessCapability` as read-only, the write probe is skipped entirely (the
-   `storage_reports_read_only` branch at line 588-591). So the expected log is the storage info line, not the probe line.
+4. The read-only storage (SD Card) is actually detected as read-only — check the log for `access_capability=ReadOnly`
+   and `is_read_only=true` on the SD Card storage (lines 608-611 of `connection/mod.rs`). Note: if mtp-rs reports the
+   `AccessCapability` as read-only, the write probe is skipped entirely (the `storage_reports_read_only` branch at line
+   588-591). So the expected log is the storage info line, not the probe line.
 5. **Check the device ID** in the volume picker DOM or logs — virtual devices get location IDs in the
-   `0xFFFF_0000_0000_0000+` range. The decimal representation exceeds JavaScript's `Number.MAX_SAFE_INTEGER`. Verify
-   the ID is handled as a string everywhere and never parsed as a number.
+   `0xFFFF_0000_0000_0000+` range. The decimal representation exceeds JavaScript's `Number.MAX_SAFE_INTEGER`. Verify the
+   ID is handled as a string everywhere and never parsed as a number.
 6. Note the exact volume names and DOM structure for Milestone 2's MCP work.
 
 ---
 
 ## Milestone 2: MCP support for MTP volumes
 
-Currently, the MCP server can't interact with MTP volumes at all — `select_volume` rejects them, `nav_to_path` fails
-on `mtp://` paths, and `cmdr://state` doesn't list them. This milestone fixes that. These are genuine improvements,
-not test scaffolding — agents need MTP access.
+Currently, the MCP server can't interact with MTP volumes at all — `select_volume` rejects them, `nav_to_path` fails on
+`mtp://` paths, and `cmdr://state` doesn't list them. This milestone fixes that. These are genuine improvements, not
+test scaffolding — agents need MTP access.
 
 ### Current state (what's broken)
 
-| Tool/Resource | What happens with MTP | Why |
-|---|---|---|
-| `select_volume` | Rejects with "Volume not found" | Validates against `list_locations()` which doesn't include MTP |
-| `nav_to_path` | Rejects with "Path does not exist" | Uses `Path::new(path).exists()` which fails for `mtp://` paths |
-| `cmdr://state` volumes section | MTP volumes missing | Only shows `list_locations()` results |
-| `copy`/`move`/`delete`/`mkdir` | Should work | Fire-and-forget to frontend; frontend dialogs operate on current pane |
-| `await` tool | Should work | Polls `PaneStateStore` which already syncs `volume_id` from frontend |
+| Tool/Resource                  | What happens with MTP              | Why                                                                   |
+| ------------------------------ | ---------------------------------- | --------------------------------------------------------------------- |
+| `select_volume`                | Rejects with "Volume not found"    | Validates against `list_locations()` which doesn't include MTP        |
+| `nav_to_path`                  | Rejects with "Path does not exist" | Uses `Path::new(path).exists()` which fails for `mtp://` paths        |
+| `cmdr://state` volumes section | MTP volumes missing                | Only shows `list_locations()` results                                 |
+| `copy`/`move`/`delete`/`mkdir` | Should work                        | Fire-and-forget to frontend; frontend dialogs operate on current pane |
+| `await` tool                   | Should work                        | Polls `PaneStateStore` which already syncs `volume_id` from frontend  |
 
 ### 2a. Add MTP volumes to `cmdr://state`
 
@@ -154,12 +156,13 @@ registry. Each connected MTP storage should appear as a volume entry with its na
 **Why include the volume ID**: Tests need to pass the volume ID to `select_volume`. The `cmdr://state` resource is how
 agents discover available volumes.
 
-Also expose `volume_id` (not just `volume_name`) in the per-pane state section, so agents can see which volume a pane
-is currently on.
+Also expose `volume_id` (not just `volume_name`) in the per-pane state section, so agents can see which volume a pane is
+currently on.
 
 ### 2b. Extend `select_volume` for MTP
 
 **Backend** (`executor.rs` ~line 395-457):
+
 - Accept MTP volume names in addition to local volumes. The `#[cfg(target_os = "macos")]` validation block at lines
   410-423 checks against `list_locations()`. Add a branch: if the name matches a connected MTP device's storage name
   (from `mtp::connection_manager().get_device_info()` or similar), accept it. On Linux, the validation block doesn't
@@ -174,15 +177,17 @@ name, and if found, call `handleVolumeChange` with the MTP volume's ID and path.
 ### 2c. Extend `nav_to_path` for MTP paths
 
 **Backend** (`executor.rs` ~line 458-489):
+
 - Recognize `mtp://` paths and skip the `Path::new(path).exists()` check.
 - Pass the path through to the frontend via the existing `mcp-nav-to-path` event.
 
 **Frontend** (`DualPaneExplorer.navigateToPath()` ~line 1960-1968):
+
 - **Remove the MTP rejection** (`if (volumeId.startsWith('mtp-'))` returns an error string). This check was added when
   MCP didn't support MTP, but now it should work — the pane can navigate to MTP paths via the Volume trait.
-- **Require `select_volume` first**: If the pane is not currently on the matching MTP volume, return a clear error
-  like "Pane is not on this MTP volume — call select_volume first". This is simpler than auto-switching and matches how
-  the tests are structured (they always call `select_volume` then `nav_to_path`). The `mtp://` path contains the
+- **Require `select_volume` first**: If the pane is not currently on the matching MTP volume, return a clear error like
+  "Pane is not on this MTP volume — call select_volume first". This is simpler than auto-switching and matches how the
+  tests are structured (they always call `select_volume` then `nav_to_path`). The `mtp://` path contains the
   device/storage ID, so the check is: parse the volume ID from the path, compare with the pane's current `volumeId`.
 
 ### 2d. Verify `copy`/`move`/`delete`/`mkdir` work on MTP panes
@@ -196,6 +201,7 @@ during manual testing** — no code changes expected.
 Run `./scripts/check.sh --check clippy --check rustfmt`.
 
 Manual test with the MCP via curl or `mcp-call.sh`:
+
 ```bash
 # Read state — verify MTP volumes appear
 ./scripts/mcp-call.sh --read-resource 'cmdr://state'
@@ -219,10 +225,11 @@ Manual test with the MCP via curl or `mcp-call.sh`:
 New file: `apps/desktop/test/e2e-shared/mtp-fixtures.ts`
 
 Functions:
+
 - `recreateMtpFixtures()` — recreates the file structure in `/tmp/cmdr-mtp-e2e-fixtures/internal/` and `readonly/`.
-  Deletes ALL contents of both directories (not just known files — tests like F7 mkdir create artifacts), preserves
-  the root directories themselves (to keep the virtual device's backing dir inodes stable), then recreates the fixture
-  file tree.
+  Deletes ALL contents of both directories (not just known files — tests like F7 mkdir create artifacts), preserves the
+  root directories themselves (to keep the virtual device's backing dir inodes stable), then recreates the fixture file
+  tree.
 - `MTP_FIXTURE_ROOT` constant — `/tmp/cmdr-mtp-e2e-fixtures`. A comment points to the Rust constant at
   `src-tauri/src/mtp/virtual_device.rs::MTP_FIXTURE_ROOT`.
 - Self-test block at the bottom (like `fixtures.ts` has) for standalone verification.
@@ -238,9 +245,7 @@ let mcpPort: number | null = null
 
 /** Discovers the actual MCP port from the running app via Tauri IPC. */
 export async function initMcpClient(tauriPage: PageLike): Promise<void> {
-  mcpPort = await tauriPage.evaluate<number>(
-    `window.__TAURI_INTERNALS__.invoke('get_mcp_port')`
-  )
+  mcpPort = await tauriPage.evaluate<number>(`window.__TAURI_INTERNALS__.invoke('get_mcp_port')`)
   if (!mcpPort) throw new Error('MCP server not running')
 }
 
@@ -250,10 +255,11 @@ export async function mcpCall(tool: string, args: Record<string, unknown>): Prom
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      jsonrpc: '2.0', id: Date.now(),
+      jsonrpc: '2.0',
+      id: Date.now(),
       method: 'tools/call',
-      params: { name: tool, arguments: args }
-    })
+      params: { name: tool, arguments: args },
+    }),
   })
   const json = await res.json()
   if (json.error) throw new Error(json.error.message)
@@ -270,13 +276,13 @@ The port is discovered at test initialization via the `get_mcp_port` Tauri comma
 
 ### 3c. Update global setup
 
-Modify `apps/desktop/test/e2e-playwright/global-setup.ts` to also call `recreateMtpFixtures()` — ensures clean MTP
-state at the start of the test run.
+Modify `apps/desktop/test/e2e-playwright/global-setup.ts` to also call `recreateMtpFixtures()` — ensures clean MTP state
+at the start of the test run.
 
 ### After this milestone
 
-Verify fixture helpers: `npx tsx apps/desktop/test/e2e-shared/mtp-fixtures.ts`
-Verify MCP client: start the app, run a quick script that calls `mcpReadResource('cmdr://state')`.
+Verify fixture helpers: `npx tsx apps/desktop/test/e2e-shared/mtp-fixtures.ts` Verify MCP client: start the app, run a
+quick script that calls `mcpReadResource('cmdr://state')`.
 
 ---
 
@@ -291,14 +297,15 @@ New file: `apps/desktop/test/e2e-playwright/mtp.spec.ts`
 ```ts
 test.beforeEach(async () => {
   recreateFixtures(getFixtureRoot()) // Local fixtures needed for cross-storage tests (MTP↔local)
-  recreateMtpFixtures()             // MTP backing dir: delete ALL contents, recreate fixture tree
-  await sleep(500)                  // Let the virtual device's event loop settle
+  recreateMtpFixtures() // MTP backing dir: delete ALL contents, recreate fixture tree
+  await sleep(500) // Let the virtual device's event loop settle
 })
 ```
 
 #### Test approach: MCP for operations, DOM for visual assertions
 
 Most tests follow this pattern:
+
 1. `ensureAppReady(tauriPage)` — route, loading screen, focus (navigates both panes to local fixtures).
 2. MCP `select_volume` + `nav_to_path` — navigate pane(s) to MTP volumes/directories.
 3. MCP `copy`/`move`/`delete`/`mkdir` with `autoConfirm` — perform file operations.
@@ -437,6 +444,7 @@ event loop picks up and sends as `directory-diff` to the frontend.
 ### After this milestone
 
 Run the full MTP test suite:
+
 ```bash
 cd apps/desktop
 pnpm test:e2e:playwright:build  # Rebuild with --features playwright-e2e,virtual-mtp

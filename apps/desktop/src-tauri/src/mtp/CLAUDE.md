@@ -21,6 +21,7 @@ On Linux, users may need udev rules for USB device permissions (see `resources/9
 | `connection/file_ops.rs` | `download_file()`, `upload_file()` — emit `mtp-transfer-progress` Tauri events |
 | `connection/mutation_ops.rs` | `delete()` (recursive, children-first), `create_folder()`, `rename()`, `move_object()` — no copy+delete fallback |
 | `connection/bulk_ops.rs` | `scan_for_copy()`, `download_recursive()`, `upload_recursive()` — use `Box::pin` for async recursion |
+| `virtual_device.rs` | Virtual MTP device for E2E testing; creates backing dirs + registers device via `mtp-rs`. Gated behind `virtual-mtp` feature. |
 
 ## Architecture / data flow
 

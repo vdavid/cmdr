@@ -11,16 +11,19 @@
 
 import fs from 'fs'
 import { createFixtures, recreateFixtures } from '../e2e-shared/fixtures.js'
+import { recreateMtpFixtures } from '../e2e-shared/mtp-fixtures.js'
 
 export default function globalSetup(): void {
   const existingRoot = process.env.CMDR_E2E_START_PATH
   if (existingRoot && fs.existsSync(existingRoot)) {
     // App already running with this fixture dir — refresh text files
     recreateFixtures(existingRoot)
-    return
+  } else {
+    const fixtureRoot = createFixtures()
+    process.env.CMDR_E2E_START_PATH = fixtureRoot
+    globalThis.__PLAYWRIGHT_CREATED_FIXTURES = true
   }
 
-  const fixtureRoot = createFixtures()
-  process.env.CMDR_E2E_START_PATH = fixtureRoot
-  globalThis.__PLAYWRIGHT_CREATED_FIXTURES = true
+  // Ensure clean MTP virtual device state (independent of local fixtures)
+  recreateMtpFixtures()
 }

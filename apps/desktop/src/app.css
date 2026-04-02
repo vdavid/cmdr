@@ -45,7 +45,11 @@
      * accent-color.ts → initAccentColor(). See src-tauri/src/accent_color.rs. */
   --color-accent: #d4a006;
   --color-accent-fg: #1a1a1a; /* Text on accent backgrounds — dark in both themes for a11y */
-  --color-accent-text: color-mix(in srgb, var(--color-accent), black 40%); /* Darkened accent for a11y when used as foreground text */
+  --color-accent-text: color-mix(
+    in srgb,
+    var(--color-accent),
+    black 40%
+  ); /* Darkened accent for a11y when used as foreground text */
   --color-accent-hover: color-mix(in oklch, var(--color-accent), white 15%);
   --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
   --color-cmdr-gold: #d4a006;

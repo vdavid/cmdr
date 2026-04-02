@@ -109,11 +109,7 @@ test.describe('Move rollback', () => {
     await tauriPage.waitForSelector('[data-dialog-id="transfer-progress"]', 10000)
 
     // Wait for conflict dialog (bravo/foxtrot/golf.txt conflicts)
-    const conflictAppeared = await pollUntil(
-      tauriPage,
-      async () => tauriPage.isVisible('.conflict-section'),
-      15000,
-    )
+    const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 15000)
     expect(conflictAppeared).toBe(true)
 
     // Verify the Rollback button is shown (not just "Cancel")

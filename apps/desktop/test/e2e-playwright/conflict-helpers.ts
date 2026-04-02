@@ -10,11 +10,7 @@ import fs from 'fs'
 import path from 'path'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { expect } from './fixtures.js'
-import {
-  pollUntil,
-  sleep,
-  TRANSFER_DIALOG,
-} from './helpers.js'
+import { pollUntil, sleep, TRANSFER_DIALOG } from './helpers.js'
 
 /** Union type for tauriPage — works in both Tauri and browser mode. */
 type PageLike = TauriPage | BrowserPageAdapter
@@ -172,10 +168,6 @@ export async function clickTransferStart(tauriPage: PageLike): Promise<void> {
 
 /** Waits for all modal dialogs to close after an operation completes. */
 export async function waitForDialogsToClose(tauriPage: PageLike): Promise<void> {
-  const closed = await pollUntil(
-    tauriPage,
-    async () => !(await tauriPage.isVisible('.modal-overlay')),
-    15000,
-  )
+  const closed = await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 15000)
   expect(closed).toBe(true)
 }

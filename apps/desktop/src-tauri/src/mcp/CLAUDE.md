@@ -22,7 +22,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 ### Tools (`tools.rs`)
 
 27 semantic tools grouped by category:
-- Navigation (6): `select_volume`, `nav_to_path`, `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`
+- Navigation (6): `select_volume` (also accepts MTP volume names), `nav_to_path` (supports `mtp://` paths, skips filesystem existence check), `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`
 - Cursor/Selection (3): `move_cursor`, `open_under_cursor`, `select`
 - File operations (6): `copy`, `move`, `delete`, `mkdir`, `mkfile`, `refresh`. `copy`/`move` accept optional `autoConfirm` (bool) and `onConflict` (`skip_all`|`overwrite_all`|`rename_all`). `delete` accepts optional `autoConfirm`. When `autoConfirm` is true, the dialog opens and immediately confirms.
 - View (3): `sort`, `toggle_hidden`, `set_view_mode`
@@ -35,7 +35,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Resources (`resources.rs`)
 
-- `cmdr://state`: Complete app state in YAML (both panes, volumes, dialogs)
+- `cmdr://state`: Complete app state in YAML (both panes, volumes, dialogs). Includes MTP volumes with `name` and `id`, and per-pane `volumeId`.
 - `cmdr://dialogs/available`: Static metadata about available dialogs
 - `cmdr://indexing`: Drive indexing status in plain text (current phase, timeline history, DB stats). Calls `indexing::get_debug_status()` and formats as human-readable text.
 - `cmdr://settings`: All settings with current values, defaults, types, and constraints. Fetched via round-trip to the frontend (`mcp-get-all-settings` event).

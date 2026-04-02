@@ -121,5 +121,5 @@ When directory has parent entry shown at index 0, frontend indices are offset by
   only refreshes destination.
 - **Scan preview reuse**: TransferDialog starts a scan preview on mount. If the user confirms before the scan finishes,
   the scan keeps running (TransferDialog sets `confirmed = true` and skips cancellation in `onDestroy`).
-  TransferProgressDialog picks up listening to the same scan events via `scanInProgress` prop. On mount, it first
-  checks `checkScanPreviewStatus()` to handle the race condition where the scan completed between dialogs.
+  TransferProgressDialog picks up listening to the same scan events via `scanInProgress` prop. On mount, it first checks
+  `checkScanPreviewStatus()` to handle the race condition where the scan completed between dialogs.
