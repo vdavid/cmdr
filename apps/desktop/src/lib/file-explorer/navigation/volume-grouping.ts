@@ -1,5 +1,4 @@
 import type { VolumeInfo, LocationCategory } from '../types'
-import type { MtpVolume } from '$lib/mtp'
 
 export interface VolumeGroup {
   category: LocationCategory
@@ -16,22 +15,12 @@ const categoryOrder: { category: LocationCategory; label: string }[] = [
   { category: 'network', label: 'Network' },
 ]
 
-export function groupByCategory(vols: VolumeInfo[], mtpVols: MtpVolume[]): VolumeGroup[] {
+export function groupByCategory(vols: VolumeInfo[]): VolumeGroup[] {
   const groups: VolumeGroup[] = []
 
   for (const { category, label } of categoryOrder) {
     if (category === 'mobile_device') {
-      // Mobile section: show MTP volumes (one per storage on connected devices)
-      const mobileItems: VolumeInfo[] = mtpVols.map((v) => ({
-        id: v.id,
-        name: v.name,
-        path: v.path,
-        category: 'mobile_device' as const,
-        icon: undefined, // Will use placeholder
-        isEjectable: true,
-        isReadOnly: v.isReadOnly,
-      }))
-
+      const mobileItems = vols.filter((v) => v.category === 'mobile_device')
       if (mobileItems.length > 0) {
         groups.push({ category, label, items: mobileItems })
       }

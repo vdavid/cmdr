@@ -27,7 +27,7 @@
     import DirectionIndicator from './DirectionIndicator.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
-    import { generateTitle } from './transfer-dialog-utils'
+    import { generateTitle, toVolumeRelativePath } from './transfer-dialog-utils'
     import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('transferDialog')
@@ -91,7 +91,10 @@
 
     let activeOperationType = $state<TransferOperationType>(initialOperationType)
 
-    let editedPath = $state(destinationPath)
+    // Compute initial volume-relative path. Can't use $derived selectedVolume here (not yet available),
+    // so look up the volume path directly from the props.
+    const initialVolumePath = volumes.find((v) => v.id === currentVolumeId)?.path ?? '/'
+    let editedPath = $state(toVolumeRelativePath(destinationPath, initialVolumePath))
     let selectedVolumeId = $state(currentVolumeId)
     let pathInputRef: HTMLInputElement | undefined = $state()
 
@@ -181,20 +184,24 @@
         }
     }
 
-    // Update path when volume changes
+    // Reset to volume root when volume changes — the current path is meaningless on a different volume
     function handleVolumeChange() {
-        const volume = selectedVolume
-        if (volume && !editedPath.startsWith(volume.path)) {
-            // Update path to be relative to new volume
-            editedPath = volume.path === '/' ? editedPath : volume.path
-        }
+        editedPath = '/'
         void loadVolumeSpace()
     }
 
+    let isInitialVolumeEffect = true
     $effect(() => {
         // Watch for volume changes - read the reactive value to track it
         void selectedVolumeId
-        handleVolumeChange()
+        if (isInitialVolumeEffect) {
+            // Skip the first run — editedPath is already initialized with the correct volume-relative path.
+            // Only load volume space on init.
+            isInitialVolumeEffect = false
+            void loadVolumeSpace()
+        } else {
+            handleVolumeChange()
+        }
     })
 
     /** Cleans up event listeners for scan preview. */
@@ -224,7 +231,7 @@
             })
 
             const maxConflicts = getSetting('fileOperations.maxConflictsToShow')
-            const foundConflicts = await scanVolumeForConflicts(destVolumeId, sourceItems, editedPath)
+            const foundConflicts = await scanVolumeForConflicts(selectedVolumeId, sourceItems, editedPath)
 
             // Limit the conflicts shown
             conflicts = foundConflicts.slice(0, maxConflicts)
@@ -300,8 +307,7 @@
         pathInputRef?.focus()
         pathInputRef?.select()
 
-        // Load initial volume space
-        await loadVolumeSpace()
+        // Volume space is loaded by the $effect watching selectedVolumeId
 
         // Start scanning files immediately
         void startScan()

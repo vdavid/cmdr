@@ -105,9 +105,9 @@ real containing volume, not the `volumeId` prop (which may be a favorite's virtu
 Keyboard/mouse mode: entering keyboard nav sets `isKeyboardMode = true`, suppressing CSS `:hover` highlights. Mouse
 movement > 5px threshold exits keyboard mode.
 
-MTP volumes are `$derived` from `getMtpVolumes()` — reactively updated when `mtp-store`'s `state.devices` changes (on
-connect/disconnect/hotplug). No separate event listeners needed. MTP space info (`totalBytes`/`availableBytes`) is
-rendered directly from the `MtpVolume` data, not via `volumeSpaceMap` (which is for local volumes only).
+MTP volumes come from the unified `volumes` list (returned by `listVolumes()`). The parent component
+(`DualPaneExplorer`) re-fetches volumes on `mtp-device-connected`/`mtp-device-disconnected` events, so the breadcrumb
+stays current. MTP volume space is fetched via `getVolumeSpace()` like any other volume.
 
 Exported methods for parent components: `toggle()`, `open()`, `close()`, `getIsOpen()`, `handleKeyDown(e)`.
 
@@ -115,12 +115,12 @@ Exported methods for parent components: `toggle()`, `open()`, `close()`, `getIsO
 
 Pure logic for organizing volumes into display groups. No reactive state.
 
-`groupByCategory(vols, mtpVols)` — groups volumes by category in display order:
+`groupByCategory(vols)` — groups volumes by category in display order:
 
 1. Favorites — no checkmark shown even if current path is a favorite
 2. main_volume + attached_volume — merged into one group
 3. Cloud drives
-4. Mobile (MTP) devices — mapped from `MtpVolume[]`
+4. Mobile (MTP) devices — filtered from unified volume list (`category === 'mobile_device'`)
 5. Network — always includes a synthetic `'network'` entry (`smb://`) plus any mounted SMB shares
 
 `getIconForVolume(volume)` — returns the appropriate icon path for a volume based on its category.
@@ -152,5 +152,5 @@ reactive sets for the component to render inline indicators (no toasts):
 - `$lib/tauri-commands` — `listVolumes`, `findContainingVolume`, `listen`, `pathExists`
 - `$lib/utils/timing` — `withTimeout` (defense-in-depth IPC timeout wrapper)
 - `$lib/app-status-store` — `getLastUsedPathForVolume`
-- `$lib/mtp` — `getMtpVolumes`, `initialize`, `scanDevices`
+- `$lib/mtp` — `initialize`, `scanDevices`
 - `../types` — `VolumeInfo`, `LocationCategory`, `NetworkHost`

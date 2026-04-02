@@ -24,6 +24,7 @@ pub enum LocationCategory {
     AttachedVolume,
     CloudDrive,
     Network,
+    MobileDevice,
 }
 
 /// Information about a location (volume, folder, or cloud drive).
@@ -43,6 +44,8 @@ pub struct LocationInfo {
     pub fs_type: Option<String>,
     /// Whether this volume supports macOS trash. Derived from `fs_type`.
     pub supports_trash: bool,
+    /// Whether this location is read-only (for example, MTP devices with locked storage).
+    pub is_read_only: bool,
 }
 
 /// Default volume ID for the root filesystem.
@@ -189,6 +192,7 @@ fn get_favorites() -> Vec<LocationInfo> {
                 is_ejectable: false,
                 fs_type,
                 supports_trash,
+                is_read_only: false,
             }
         })
         .collect()
@@ -228,6 +232,7 @@ fn get_main_volume() -> Option<LocationInfo> {
                     is_ejectable: false,
                     fs_type,
                     supports_trash,
+                    is_read_only: false,
                 });
             }
         }
@@ -293,6 +298,7 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
                 is_ejectable,
                 fs_type,
                 supports_trash,
+                is_read_only: false,
             });
         }
 
@@ -322,6 +328,7 @@ pub fn get_cloud_drives() -> Vec<LocationInfo> {
             is_ejectable: false,
             fs_type,
             supports_trash,
+            is_read_only: false,
         });
     }
 
@@ -348,6 +355,7 @@ pub fn get_cloud_drives() -> Vec<LocationInfo> {
                         is_ejectable: false,
                         fs_type,
                         supports_trash,
+                        is_read_only: false,
                     });
                 }
             }
@@ -409,6 +417,7 @@ fn get_network_locations() -> Vec<LocationInfo> {
         is_ejectable: false,
         fs_type: None,
         supports_trash: false,
+        is_read_only: false,
     });
 
     locations

@@ -5,7 +5,7 @@
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import type { VolumeInfo } from '../types'
-    import { getMtpVolumes, initialize as initMtpStore, scanDevices as scanMtpDevices } from '$lib/mtp'
+    import { initialize as initMtpStore, scanDevices as scanMtpDevices } from '$lib/mtp'
     import { groupByCategory, getIconForVolume } from './volume-grouping'
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
 
@@ -18,8 +18,6 @@
     const { volumeId, currentPath, onVolumeChange }: Props = $props()
 
     let volumes = $state<VolumeInfo[]>([])
-    // Derived reactively from mtp-store — updates automatically when devices connect/disconnect
-    const mtpVolumes = $derived(getMtpVolumes())
     let isOpen = $state(false)
     let highlightedIndex = $state(-1)
     let dropdownRef: HTMLDivElement | undefined = $state()
@@ -51,32 +49,18 @@
 
     // Current volume info derived from volumes list (the actual containing volume)
     // Special case: 'network' is a virtual volume, not from the backend
-    // Special case: MTP volumes are handled via mtp:// paths
+    // For MTP volumes, look up by volumeId directly; for filesystem volumes, use containingVolumeId
     const currentVolume = $derived(
         volumeId === 'network'
             ? { id: 'network', name: 'Network', path: 'smb://', category: 'network' as const, isEjectable: false }
-            : volumeId.startsWith('mtp-')
-              ? (() => {
-                    // Try to find the exact MTP volume (device:storage format)
-                    const mtpVolume = mtpVolumes.find((v) => v.id === volumeId || v.deviceId === volumeId)
-                    return mtpVolume
-                        ? {
-                              id: mtpVolume.id,
-                              name: mtpVolume.name,
-                              path: mtpVolume.path,
-                              category: 'mobile_device' as const,
-                              isEjectable: true,
-                              isReadOnly: mtpVolume.isReadOnly,
-                          }
-                        : undefined
-                })()
-              : volumes.find((v) => v.id === containingVolumeId),
+            : volumes.find((v) => v.id === volumeId && v.category === 'mobile_device')
+              ?? volumes.find((v) => v.id === containingVolumeId),
     )
     const currentVolumeName = $derived(currentVolume?.name ?? 'Volume')
     const currentVolumeIcon = $derived(getIconForVolume(currentVolume))
 
     // Group volumes by category for display
-    const groupedVolumes = $derived(groupByCategory(volumes, mtpVolumes))
+    const groupedVolumes = $derived(groupByCategory(volumes))
 
     // Flat list of all volumes for keyboard navigation
     const allVolumes = $derived(groupedVolumes.flatMap((g) => g.items))
@@ -294,10 +278,6 @@
     // before the mount event is received
     $effect(() => {
         if (volumeId && volumeId !== 'network') {
-            // Skip check for MTP volumes - they're tracked separately in mtpVolumes
-            if (volumeId.startsWith('mtp-')) {
-                return
-            }
             const found = volumes.find((v) => v.id === volumeId)
             if (!found && volumes.length > 0) {
                 // Volume not found but we have a list - might be a newly mounted volume
@@ -325,10 +305,6 @@
             void loadVolumes()
         })
 
-        // MTP volumes are derived reactively from mtp-store — no event listeners needed here.
-        // The store's own initialize() sets up hotplug/connect/disconnect handlers that update
-        // state.devices, which triggers the $derived mtpVolumes to re-evaluate automatically.
-
         // Close on click outside
         document.addEventListener('click', handleClickOutside)
         document.addEventListener('keydown', handleDocumentKeyDown)
@@ -352,14 +328,6 @@
         return volume.id === containingVolumeId
     }
 
-    // Helper: get MTP volume space info for rendering the disk space bar
-    function getMtpVolumeSpace(volumeId: string): { totalBytes: number; availableBytes: number } | undefined {
-        const mtpVol = mtpVolumes.find((v) => v.id === volumeId)
-        if (mtpVol?.totalBytes != null && mtpVol.availableBytes != null) {
-            return { totalBytes: mtpVol.totalBytes, availableBytes: mtpVol.availableBytes }
-        }
-        return undefined
-    }
 </script>
 
 <div class="volume-breadcrumb" bind:this={dropdownRef}>
@@ -437,20 +405,6 @@
                                     ></div>
                                 </div>
                                 <span class="volume-space-text">{formatDiskSpaceShort(space, formatFileSize)}</span>
-                            </div>
-                        {/if}
-                    {:else if volume.category === 'mobile_device'}
-                        {@const mtpSpace = getMtpVolumeSpace(volume.id)}
-                        {#if mtpSpace}
-                            <div class="volume-space-info">
-                                <div class="volume-space-bar">
-                                    <div
-                                        class="volume-space-fill"
-                                        style:width="{getUsedPercent(mtpSpace)}%"
-                                        style:background-color="var({getDiskUsageLevel(getUsedPercent(mtpSpace)).cssVar})"
-                                    ></div>
-                                </div>
-                                <span class="volume-space-text">{formatDiskSpaceShort(mtpSpace, formatFileSize)}</span>
                             </div>
                         {/if}
                     {:else if spaceRetryingSet.has(volume.id)}

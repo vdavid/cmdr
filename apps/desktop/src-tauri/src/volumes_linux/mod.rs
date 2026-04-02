@@ -24,6 +24,7 @@ pub enum LocationCategory {
     AttachedVolume,
     CloudDrive,
     Network,
+    MobileDevice,
 }
 
 /// Information about a location (volume, folder, or cloud drive).
@@ -40,6 +41,8 @@ pub struct LocationInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fs_type: Option<String>,
     pub supports_trash: bool,
+    /// Whether this location is read-only (for example, MTP devices with locked storage).
+    pub is_read_only: bool,
 }
 
 /// Information about volume space.
@@ -193,6 +196,7 @@ fn get_favorites(mounts: &[MountEntry]) -> Vec<LocationInfo> {
                 is_ejectable: false,
                 fs_type,
                 supports_trash,
+                is_read_only: false,
             }
         })
         .collect()
@@ -211,6 +215,7 @@ fn get_main_volume(mounts: &[MountEntry]) -> Option<LocationInfo> {
         is_ejectable: false,
         fs_type,
         supports_trash,
+        is_read_only: false,
     })
 }
 
@@ -256,6 +261,7 @@ pub fn get_mounted_volumes(mounts: &[MountEntry]) -> Vec<LocationInfo> {
             is_ejectable: is_removable,
             fs_type,
             supports_trash,
+            is_read_only: false,
         });
     }
 
@@ -289,6 +295,7 @@ fn get_cloud_drives(mounts: &[MountEntry]) -> Vec<LocationInfo> {
                 is_ejectable: false,
                 fs_type,
                 supports_trash,
+                is_read_only: false,
             });
         }
     }
@@ -354,6 +361,7 @@ fn get_network_mounts() -> Vec<LocationInfo> {
                 is_ejectable: true,
                 fs_type: None,
                 supports_trash: false,
+                is_read_only: false,
             });
         }
     }

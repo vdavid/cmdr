@@ -47,40 +47,51 @@ describe('getDestinationVolumeInfo', () => {
       isEjectable: true,
       isReadOnly: true,
     },
-  ]
-
-  const mtpVolumes = [
-    { id: 'mtp-device-1', deviceId: 'device-1', name: 'Phone Storage', isReadOnly: false },
-    { id: 'mtp-device-2', deviceId: 'device-2', name: 'Read-only Device', isReadOnly: true },
+    {
+      id: 'mtp-device-1:65537',
+      name: 'Phone Storage',
+      path: 'mtp://device-1/65537',
+      category: 'mobile_device',
+      isEjectable: true,
+      isReadOnly: false,
+    },
+    {
+      id: 'mtp-device-2:65537',
+      name: 'Read-only Device',
+      path: 'mtp://device-2/65537',
+      category: 'mobile_device',
+      isEjectable: true,
+      isReadOnly: true,
+    },
   ]
 
   it('returns info for regular volume', () => {
-    expect(getDestinationVolumeInfo('vol-1', volumes, mtpVolumes)).toEqual({
+    expect(getDestinationVolumeInfo('vol-1', volumes)).toEqual({
       name: 'Main Drive',
       isReadOnly: false,
     })
   })
 
   it('returns info for read-only regular volume', () => {
-    expect(getDestinationVolumeInfo('vol-2', volumes, mtpVolumes)).toEqual({ name: 'Backup', isReadOnly: true })
+    expect(getDestinationVolumeInfo('vol-2', volumes)).toEqual({ name: 'Backup', isReadOnly: true })
   })
 
   it('returns info for MTP volume', () => {
-    expect(getDestinationVolumeInfo('mtp-device-1', volumes, mtpVolumes)).toEqual({
+    expect(getDestinationVolumeInfo('mtp-device-1:65537', volumes)).toEqual({
       name: 'Phone Storage',
       isReadOnly: false,
     })
   })
 
   it('returns info for read-only MTP volume', () => {
-    expect(getDestinationVolumeInfo('mtp-device-2', volumes, mtpVolumes)).toEqual({
+    expect(getDestinationVolumeInfo('mtp-device-2:65537', volumes)).toEqual({
       name: 'Read-only Device',
       isReadOnly: true,
     })
   })
 
   it('returns undefined when not found', () => {
-    expect(getDestinationVolumeInfo('nonexistent', volumes, mtpVolumes)).toBeUndefined()
+    expect(getDestinationVolumeInfo('nonexistent', volumes)).toBeUndefined()
   })
 })
 

@@ -2,7 +2,13 @@
  * Tests for transfer dialog utility functions
  */
 import { describe, it, expect } from 'vitest'
-import { generateTitle, getFolderName, toBackendIndices, toBackendCursorIndex } from './transfer-dialog-utils'
+import {
+  generateTitle,
+  getFolderName,
+  toBackendIndices,
+  toBackendCursorIndex,
+  toVolumeRelativePath,
+} from './transfer-dialog-utils'
 
 describe('generateTitle', () => {
   describe('copy operation', () => {
@@ -163,5 +169,35 @@ describe('toBackendCursorIndex', () => {
       expect(toBackendCursorIndex(-1, false)).toBeNull()
       expect(toBackendCursorIndex(-1, true)).toBeNull()
     })
+  })
+})
+
+describe('toVolumeRelativePath', () => {
+  it('returns the full path unchanged for root volume (/)', () => {
+    expect(toVolumeRelativePath('/Users/david/Desktop', '/')).toBe('/Users/david/Desktop')
+  })
+
+  it('returns / for MTP volume root', () => {
+    expect(toVolumeRelativePath('mtp://dev/65537', 'mtp://dev/65537')).toBe('/')
+  })
+
+  it('strips prefix for MTP subdirectory', () => {
+    expect(toVolumeRelativePath('mtp://dev/65537/DCIM', 'mtp://dev/65537')).toBe('/DCIM')
+  })
+
+  it('strips prefix for MTP deep path', () => {
+    expect(toVolumeRelativePath('mtp://dev/65537/DCIM/Camera', 'mtp://dev/65537')).toBe('/DCIM/Camera')
+  })
+
+  it('strips prefix for USB volume subdirectory', () => {
+    expect(toVolumeRelativePath('/Volumes/USB/Documents', '/Volumes/USB')).toBe('/Documents')
+  })
+
+  it('returns / for USB volume root', () => {
+    expect(toVolumeRelativePath('/Volumes/USB', '/Volumes/USB')).toBe('/')
+  })
+
+  it('returns / when path does not match volume', () => {
+    expect(toVolumeRelativePath('/some/path', '/Volumes/USB')).toBe('/')
   })
 })

@@ -85,3 +85,12 @@ export function toBackendCursorIndex(frontendIndex: number, hasParent: boolean):
   if (hasParent && frontendIndex === 0) return null // ".." entry
   return hasParent ? frontendIndex - 1 : frontendIndex
 }
+
+/** Strips the volume prefix to get a volume-relative path. Always returns a `/`-prefixed string. */
+export function toVolumeRelativePath(fullPath: string, volumePath: string): string {
+  if (volumePath === '/') return fullPath
+  if (fullPath.startsWith(volumePath)) {
+    return fullPath.slice(volumePath.length) || '/'
+  }
+  return '/'
+}

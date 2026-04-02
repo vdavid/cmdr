@@ -32,6 +32,8 @@
         cutFilesToClipboard,
         readClipboardFiles,
         clearClipboardCutState,
+        onMtpDeviceConnected,
+        onMtpDeviceDisconnected,
     } from '$lib/tauri-commands'
     import type {
         VolumeInfo,
@@ -91,7 +93,6 @@
     import { initNetworkDiscovery, cleanupNetworkDiscovery } from '../network/network-store.svelte'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { getAppLogger } from '$lib/logging/logger'
-    import { getMtpVolumes } from '$lib/mtp'
     import { getNewSortOrder, applySortResult, collectSortState } from './sorting-handlers'
     import {
         type TransferContext,
@@ -168,6 +169,8 @@
     let unlistenViewMode: UnlistenFn | undefined
     let unlistenVolumeMount: UnlistenFn | undefined
     let unlistenVolumeUnmount: UnlistenFn | undefined
+    let unlistenMtpConnect: UnlistenFn | undefined
+    let unlistenMtpDisconnect: UnlistenFn | undefined
     let unlistenDragDrop: UnlistenFn | undefined
     let unlistenDragImageSize: UnlistenFn | undefined
     let unlistenDragModifiers: UnlistenFn | undefined
@@ -1123,6 +1126,14 @@
             })()
         })
 
+        // Re-fetch volumes when MTP devices connect or disconnect
+        unlistenMtpConnect = await onMtpDeviceConnected(async () => {
+            volumes = (await listVolumes()).data
+        })
+        unlistenMtpDisconnect = await onMtpDeviceDisconnected(async () => {
+            volumes = (await listVolumes()).data
+        })
+
         // Listen for drag image size from native swizzle (macOS).
         // Fires before the Tauri drag enter event, so the flag is ready when handleDragEnter runs.
         unlistenDragImageSize = await listen<{ width: number; height: number }>('drag-image-size', (event) => {
@@ -1272,6 +1283,8 @@
         unlistenViewMode?.()
         unlistenVolumeMount?.()
         unlistenVolumeUnmount?.()
+        unlistenMtpConnect?.()
+        unlistenMtpDisconnect?.()
         unlistenDragImageSize?.()
         unlistenDragModifiers?.()
         unlistenDragDrop?.()
@@ -1302,7 +1315,7 @@
     export function startRename() {
         // Check if the volume is read-only before starting rename
         const volId = getPaneVolumeId(focusedPane)
-        const volumeInfo = getDestinationVolumeInfo(volId, volumes, getMtpVolumes())
+        const volumeInfo = getDestinationVolumeInfo(volId, volumes)
         if (volumeInfo?.isReadOnly) {
             dialogs.showAlert('Read-only volume', "This is a read-only volume. Renaming isn't possible here.")
             return
@@ -1461,7 +1474,7 @@
         const sourcePaneRef = getPaneRef(focusedPane)
         const destVolId = getPaneVolumeId(otherPane(focusedPane))
 
-        const destVolume = getDestinationVolumeInfo(destVolId, volumes, getMtpVolumes())
+        const destVolume = getDestinationVolumeInfo(destVolId, volumes)
         if (destVolume?.isReadOnly) {
             dialogs.showAlert(
                 'Read-only device',
@@ -2070,13 +2083,6 @@
         const index = volumes.findIndex((v) => v.name === name)
         if (index !== -1) {
             return selectVolumeByIndex(pane, index)
-        }
-
-        // Check MTP volumes
-        const mtpVolume = getMtpVolumes().find((v) => v.name === name)
-        if (mtpVolume) {
-            await handleVolumeChange(pane, mtpVolume.id, mtpVolume.path, mtpVolume.path)
-            return true
         }
 
         log.warn('Volume not found: {name}', { name })

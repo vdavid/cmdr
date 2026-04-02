@@ -3,13 +3,12 @@
 use super::util::TimedOut;
 use crate::volumes_linux::{self, DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo, VolumeSpaceInfo};
 
-/// Lists all mounted volumes.
+/// Lists all mounted volumes, including connected MTP devices.
 #[tauri::command]
-pub fn list_volumes() -> TimedOut<Vec<VolumeInfo>> {
-    TimedOut {
-        data: volumes_linux::list_mounted_volumes(),
-        timed_out: false,
-    }
+pub async fn list_volumes() -> TimedOut<Vec<VolumeInfo>> {
+    let mut data = volumes_linux::list_mounted_volumes();
+    append_mtp_volumes(&mut data).await;
+    TimedOut { data, timed_out: false }
 }
 
 /// Gets the default volume ID (root filesystem).
@@ -20,10 +19,12 @@ pub fn get_default_volume_id() -> String {
 
 /// Finds the actual volume (not a favorite) that contains a given path.
 #[tauri::command]
-pub fn find_containing_volume(path: String) -> TimedOut<Option<VolumeInfo>> {
-    let locations = volumes_linux::list_locations();
+pub async fn find_containing_volume(path: String) -> TimedOut<Option<VolumeInfo>> {
+    let mut all_locations = volumes_linux::list_locations();
+    append_mtp_volumes(&mut all_locations).await;
 
-    let volumes: Vec<_> = locations
+    // Only consider actual volumes, not favorites
+    let volumes: Vec<_> = all_locations
         .into_iter()
         .filter(|loc| loc.category != LocationCategory::Favorite)
         .collect();
@@ -57,6 +58,39 @@ pub async fn get_volume_space(path: String) -> TimedOut<Option<VolumeSpaceInfo>>
     TimedOut {
         data: volumes_linux::get_volume_space(&path),
         timed_out: false,
+    }
+}
+
+/// Appends connected MTP device storages to the volume list.
+/// Each storage becomes a separate volume entry with category `MobileDevice`.
+async fn append_mtp_volumes(volumes: &mut Vec<VolumeInfo>) {
+    let devices = crate::mtp::connection_manager().get_all_connected_devices().await;
+    for device in devices {
+        let multi = device.storages.len() > 1;
+        let device_name = device
+            .device
+            .product
+            .as_deref()
+            .or(device.device.manufacturer.as_deref())
+            .unwrap_or("Mobile device");
+        for storage in &device.storages {
+            let name = if multi {
+                format!("{} - {}", device_name, storage.name)
+            } else {
+                device_name.to_string()
+            };
+            volumes.push(VolumeInfo {
+                id: format!("{}:{}", device.device.id, storage.id),
+                name,
+                path: format!("mtp://{}/{}", device.device.id, storage.id),
+                category: LocationCategory::MobileDevice,
+                icon: None,
+                is_ejectable: true,
+                is_read_only: storage.is_read_only,
+                fs_type: Some("mtp".to_string()),
+                supports_trash: false,
+            });
+        }
     }
 }
 

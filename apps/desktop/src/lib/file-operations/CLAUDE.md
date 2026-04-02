@@ -40,7 +40,8 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
 ### Shared utilities (`transfer/`)
 
 - **transfer/transfer-dialog-utils.ts**: `generateTitle(operationType, files, folders)` → "Copy 3 files and 1 folder",
-  `toBackendIndices()` / `toBackendCursorIndex()` for ".." offset handling
+  `toBackendIndices()` / `toBackendCursorIndex()` for ".." offset handling, `toVolumeRelativePath(fullPath, volumePath)`
+  strips the volume prefix to get a `/`-prefixed relative path
 - **transfer/DirectionIndicator.svelte**: Arrow graphic showing source → destination (operation-agnostic)
 - **transfer/TransferDialog.svelte**, **transfer/TransferProgressDialog.svelte**,
   **transfer/TransferErrorDialog.svelte**: Transfer UI components

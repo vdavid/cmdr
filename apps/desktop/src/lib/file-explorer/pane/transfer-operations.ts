@@ -34,13 +34,6 @@ export interface TransferDialogPropsData {
   autoConfirmOnConflict?: string
 }
 
-interface MtpVolumeInfo {
-  id: string
-  deviceId: string
-  name: string
-  isReadOnly: boolean
-}
-
 export async function getSelectedFilePaths(
   listingId: string,
   backendIndices: number[],
@@ -178,21 +171,10 @@ export function buildTransferPropsFromDroppedPaths(
 export function getDestinationVolumeInfo(
   volumeId: string,
   volumes: VolumeInfo[],
-  mtpVolumes: MtpVolumeInfo[],
 ): { name: string; isReadOnly: boolean } | undefined {
-  // Check MTP volumes first (they have the isReadOnly flag)
-  if (volumeId.startsWith('mtp-')) {
-    const mtpVolume = mtpVolumes.find((v) => v.id === volumeId || v.deviceId === volumeId)
-    if (mtpVolume) {
-      return { name: mtpVolume.name, isReadOnly: mtpVolume.isReadOnly }
-    }
-  }
-
-  // Regular volumes
   const volume = volumes.find((v) => v.id === volumeId)
   if (volume) {
     return { name: volume.name, isReadOnly: volume.isReadOnly ?? false }
   }
-
   return undefined
 }

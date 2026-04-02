@@ -7,10 +7,12 @@ use crate::volumes::{self, DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo, Volu
 
 const VOLUME_TIMEOUT: Duration = Duration::from_secs(2);
 
-/// Lists all mounted volumes.
+/// Lists all mounted volumes, including connected MTP devices.
 #[tauri::command]
 pub async fn list_volumes() -> TimedOut<Vec<VolumeInfo>> {
-    blocking_with_timeout_flag(VOLUME_TIMEOUT, vec![], volumes::list_mounted_volumes).await
+    let mut result = blocking_with_timeout_flag(VOLUME_TIMEOUT, vec![], volumes::list_mounted_volumes).await;
+    append_mtp_volumes(&mut result.data).await;
+    result
 }
 
 /// Gets the default volume ID (root filesystem).
@@ -24,29 +26,31 @@ pub fn get_default_volume_id() -> String {
 /// This is used to determine which volume to set as active when a favorite is chosen.
 #[tauri::command]
 pub async fn find_containing_volume(path: String) -> TimedOut<Option<VolumeInfo>> {
-    blocking_with_timeout_flag(VOLUME_TIMEOUT, None, move || {
-        let locations = volumes::list_locations();
+    let mut result = blocking_with_timeout_flag(VOLUME_TIMEOUT, vec![], volumes::list_locations).await;
+    append_mtp_volumes(&mut result.data).await;
 
-        // Only consider actual volumes, not favorites
-        let volumes: Vec<_> = locations
-            .into_iter()
-            .filter(|loc| loc.category != LocationCategory::Favorite)
-            .collect();
+    // Only consider actual volumes, not favorites
+    let volumes: Vec<_> = result
+        .data
+        .into_iter()
+        .filter(|loc| loc.category != LocationCategory::Favorite)
+        .collect();
 
-        // Find the volume with the longest matching path prefix
-        let mut best_match: Option<VolumeInfo> = None;
-        let mut best_len = 0;
+    // Find the volume with the longest matching path prefix
+    let mut best_match: Option<VolumeInfo> = None;
+    let mut best_len = 0;
 
-        for vol in volumes {
-            if path.starts_with(&vol.path) && vol.path.len() > best_len {
-                best_len = vol.path.len();
-                best_match = Some(vol);
-            }
+    for vol in volumes {
+        if path.starts_with(&vol.path) && vol.path.len() > best_len {
+            best_len = vol.path.len();
+            best_match = Some(vol);
         }
+    }
 
-        best_match
-    })
-    .await
+    TimedOut {
+        data: best_match,
+        timed_out: result.timed_out,
+    }
 }
 
 /// Gets space information for a volume at the given path.
@@ -61,6 +65,39 @@ pub async fn get_volume_space(path: String) -> TimedOut<Option<VolumeSpaceInfo>>
         };
     }
     blocking_with_timeout_flag(VOLUME_TIMEOUT, None, move || volumes::get_volume_space(&path)).await
+}
+
+/// Appends connected MTP device storages to the volume list.
+/// Each storage becomes a separate volume entry with category `MobileDevice`.
+async fn append_mtp_volumes(volumes: &mut Vec<VolumeInfo>) {
+    let devices = crate::mtp::connection_manager().get_all_connected_devices().await;
+    for device in devices {
+        let multi = device.storages.len() > 1;
+        let device_name = device
+            .device
+            .product
+            .as_deref()
+            .or(device.device.manufacturer.as_deref())
+            .unwrap_or("Mobile device");
+        for storage in &device.storages {
+            let name = if multi {
+                format!("{} - {}", device_name, storage.name)
+            } else {
+                device_name.to_string()
+            };
+            volumes.push(VolumeInfo {
+                id: format!("{}:{}", device.device.id, storage.id),
+                name,
+                path: format!("mtp://{}/{}", device.device.id, storage.id),
+                category: LocationCategory::MobileDevice,
+                icon: None,
+                is_ejectable: true,
+                is_read_only: storage.is_read_only,
+                fs_type: Some("mtp".to_string()),
+                supports_trash: false,
+            });
+        }
+    }
 }
 
 /// Queries live MTP space info from a `mtp://{device_id}/{storage_id}/...` path.

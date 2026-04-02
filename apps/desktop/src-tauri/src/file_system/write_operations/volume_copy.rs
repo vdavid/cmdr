@@ -89,7 +89,7 @@ pub async fn copy_between_volumes(
 
         // Convert relative paths to absolute paths
         let absolute_sources: Vec<PathBuf> = source_paths.iter().map(|p| src_root.join(p)).collect();
-        let absolute_dest = dest_root.join(&dest_path);
+        let absolute_dest = dest_root.join(dest_path.strip_prefix("/").unwrap_or(&dest_path));
 
         // Convert VolumeCopyConfig to WriteOperationConfig
         let write_config = WriteOperationConfig {

@@ -14,6 +14,7 @@ pub enum LocationCategory {
     AttachedVolume,
     CloudDrive,
     Network,
+    MobileDevice,
 }
 
 /// Information about a location (volume, folder, or cloud drive).
@@ -27,6 +28,13 @@ pub struct VolumeInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
     pub is_ejectable: bool,
+    /// Filesystem type (for example, "ext4", "apfs"). Stubs don't detect this.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fs_type: Option<String>,
+    /// Whether this volume supports trash operations.
+    pub supports_trash: bool,
+    /// Whether this location is read-only.
+    pub is_read_only: bool,
 }
 
 /// Information about volume space.
@@ -62,6 +70,9 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
                 category: LocationCategory::Favorite,
                 icon: None,
                 is_ejectable: false,
+                fs_type: None,
+                supports_trash: true,
+                is_read_only: false,
             });
         }
     }
@@ -74,6 +85,9 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         category: LocationCategory::MainVolume,
         icon: None,
         is_ejectable: false,
+        fs_type: None,
+        supports_trash: true,
+        is_read_only: false,
     });
 
     // Add home directory
@@ -84,6 +98,9 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         category: LocationCategory::Favorite,
         icon: None,
         is_ejectable: false,
+        fs_type: None,
+        supports_trash: true,
+        is_read_only: false,
     });
 
     locations

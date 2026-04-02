@@ -254,7 +254,7 @@ export function createDialogState(deps: DialogStateDeps) {
 
     handleTransferConfirm(
       destination: string,
-      _volumeId: string,
+      volumeId: string,
       previewId: string | null,
       conflictResolution: ConflictResolution,
       operationType: TransferOperationType,
@@ -273,7 +273,7 @@ export function createDialogState(deps: DialogStateDeps) {
         sortOrder: transferDialogProps.sortOrder,
         previewId,
         sourceVolumeId: transferDialogProps.sourceVolumeId,
-        destVolumeId: transferDialogProps.destVolumeId,
+        destVolumeId: volumeId,
         conflictResolution,
         scanInProgress,
       }
