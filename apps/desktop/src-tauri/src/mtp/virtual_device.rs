@@ -77,6 +77,7 @@ pub fn setup_virtual_mtp_device() -> u64 {
         ],
         supports_rename: true,
         event_poll_interval: Duration::from_millis(100),
+        watch_backing_dirs: true,
     };
 
     let device_info = mtp_rs::register_virtual_device(&config);
