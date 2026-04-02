@@ -194,6 +194,7 @@ export async function initIndexState(): Promise<void> {
   }>('index-replay-progress', (event) => {
     if (!replaying) {
       replaying = true
+      scanning = false
       replayStartedAt = Date.now()
     }
     replayEventsProcessed = event.payload.eventsProcessed
