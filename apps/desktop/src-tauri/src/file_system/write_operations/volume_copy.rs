@@ -24,6 +24,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
+use super::scan::take_cached_scan_result;
 use super::state::{
     WRITE_OPERATION_STATE, WriteOperationState, register_operation_status, unregister_operation_status,
     update_operation_status,
@@ -91,11 +92,12 @@ pub async fn copy_between_volumes(
         let absolute_sources: Vec<PathBuf> = source_paths.iter().map(|p| src_root.join(p)).collect();
         let absolute_dest = dest_root.join(dest_path.strip_prefix("/").unwrap_or(&dest_path));
 
-        // Convert VolumeCopyConfig to WriteOperationConfig
+        // Convert VolumeCopyConfig to WriteOperationConfig, preserving preview_id
         let write_config = WriteOperationConfig {
             progress_interval_ms: config.progress_interval_ms,
             conflict_resolution: config.conflict_resolution,
             max_conflicts_to_show: config.max_conflicts_to_show,
+            preview_id: config.preview_id,
             ..Default::default()
         };
 
@@ -305,53 +307,66 @@ fn copy_volumes_with_progress(
         source_paths.len()
     );
 
-    // Phase 1: Scan sources
-    log::debug!(
-        "copy_volumes_with_progress: scanning sources for operation_id={}",
-        operation_id
-    );
+    // Phase 1: Scan sources (or reuse cached scan from preview)
+    let mut total_files;
+    let mut total_bytes;
 
-    let _ = app.emit(
-        "write-progress",
-        WriteProgressEvent {
-            operation_id: operation_id.to_string(),
-            operation_type: WriteOperationType::Copy,
-            phase: WriteOperationPhase::Scanning,
-            current_file: None,
-            files_done: 0,
-            files_total: 0,
-            bytes_done: 0,
-            bytes_total: 0,
-        },
-    );
+    if let Some(cached) = config.preview_id.as_deref().and_then(take_cached_scan_result) {
+        total_files = cached.file_count;
+        total_bytes = cached.total_bytes;
+        log::info!(
+            "copy_volumes_with_progress: reused cached scan for operation_id={}, files={}, bytes={}",
+            operation_id,
+            total_files,
+            total_bytes
+        );
+    } else {
+        log::debug!(
+            "copy_volumes_with_progress: scanning sources for operation_id={}",
+            operation_id
+        );
 
-    let mut total_files = 0;
-    let mut total_dirs = 0;
-    let mut total_bytes = 0u64;
+        let _ = app.emit(
+            "write-progress",
+            WriteProgressEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Copy,
+                phase: WriteOperationPhase::Scanning,
+                current_file: None,
+                files_done: 0,
+                files_total: 0,
+                bytes_done: 0,
+                bytes_total: 0,
+            },
+        );
 
-    for source_path in source_paths {
-        // Check cancellation
-        if state.cancelled.load(Ordering::Relaxed) {
-            return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
-            });
+        total_files = 0;
+        total_bytes = 0u64;
+        let mut total_dirs = 0;
+
+        for source_path in source_paths {
+            if state.cancelled.load(Ordering::Relaxed) {
+                return Err(WriteOperationError::Cancelled {
+                    message: "Operation cancelled by user".to_string(),
+                });
+            }
+
+            let scan = source_volume
+                .scan_for_copy(source_path)
+                .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
+            total_files += scan.file_count;
+            total_dirs += scan.dir_count;
+            total_bytes += scan.total_bytes;
         }
 
-        let scan = source_volume
-            .scan_for_copy(source_path)
-            .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
-        total_files += scan.file_count;
-        total_dirs += scan.dir_count;
-        total_bytes += scan.total_bytes;
+        log::info!(
+            "copy_volumes_with_progress: scan complete for operation_id={}, files={}, dirs={}, bytes={}",
+            operation_id,
+            total_files,
+            total_dirs,
+            total_bytes
+        );
     }
-
-    log::info!(
-        "copy_volumes_with_progress: scan complete for operation_id={}, files={}, dirs={}, bytes={}",
-        operation_id,
-        total_files,
-        total_dirs,
-        total_bytes
-    );
 
     // Phase 2: Check destination space
     let dest_space = dest_volume
@@ -423,10 +438,13 @@ fn copy_volumes_with_progress(
         };
 
         // Check for conflict: does destination already exist?
-        if dest_volume.exists(&dest_item_path) {
-            // Check if both source and destination are directories - directories merge, not conflict
+        // Use get_metadata() once to avoid redundant list_directory calls.
+        // On MTP, exists() + is_directory() would each list the parent directory
+        // separately; get_metadata() does it once (and the listing cache covers
+        // the source side too).
+        if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path) {
             let source_is_dir = source_volume.is_directory(source_path).unwrap_or(false);
-            let dest_is_dir = dest_volume.is_directory(&dest_item_path).unwrap_or(false);
+            let dest_is_dir = dest_meta.is_directory;
 
             if source_is_dir && dest_is_dir {
                 // Both are directories - this is a merge, not a conflict
@@ -568,15 +586,79 @@ mod tests {
     }
 
     #[test]
-    fn test_scan_for_volume_copy_empty_source_returns_error_for_in_memory() {
-        // InMemoryVolume doesn't support get_space_info, so scan_for_volume_copy
-        // will return an error. This is expected behavior.
+    fn test_scan_for_volume_copy_empty_source_returns_error_without_space_info() {
+        // InMemoryVolume without configured space_info returns NotSupported for get_space_info
         let source = InMemoryVolume::new("Source");
         let dest = InMemoryVolume::new("Dest");
 
         let result = scan_for_volume_copy(&source, &[], &dest, Path::new("/"), 10);
-        // InMemoryVolume doesn't support get_space_info, so this should fail
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_scan_for_volume_copy_with_in_memory_volumes() {
+        let source = InMemoryVolume::new("Source").with_space_info(1_000_000, 500_000);
+        source.create_file(Path::new("/file1.txt"), b"Hello").unwrap();
+        source.create_file(Path::new("/file2.txt"), b"World").unwrap();
+
+        let dest = InMemoryVolume::new("Dest").with_space_info(1_000_000, 900_000);
+
+        let result = scan_for_volume_copy(
+            &source,
+            &[PathBuf::from("/file1.txt"), PathBuf::from("/file2.txt")],
+            &dest,
+            Path::new("/"),
+            10,
+        )
+        .unwrap();
+
+        assert_eq!(result.file_count, 2);
+        assert_eq!(result.total_bytes, 10); // "Hello" + "World"
+        assert!(result.conflicts.is_empty());
+        assert!(result.dest_space.available_bytes >= result.total_bytes);
+    }
+
+    #[test]
+    fn test_scan_for_volume_copy_detects_conflicts_in_memory() {
+        let source = InMemoryVolume::new("Source").with_space_info(1_000_000, 500_000);
+        source.create_file(Path::new("/report.txt"), b"new content").unwrap();
+
+        let dest = InMemoryVolume::new("Dest").with_space_info(1_000_000, 900_000);
+        dest.create_file(Path::new("/report.txt"), b"old content").unwrap();
+
+        let result = scan_for_volume_copy(&source, &[PathBuf::from("/report.txt")], &dest, Path::new("/"), 10).unwrap();
+
+        assert_eq!(result.file_count, 1);
+        assert_eq!(result.conflicts.len(), 1);
+        assert_eq!(result.conflicts[0].source_path, "report.txt");
+    }
+
+    #[test]
+    fn test_scan_for_volume_copy_insufficient_space() {
+        let source = InMemoryVolume::new("Source").with_space_info(1_000_000, 500_000);
+        source.create_file(Path::new("/big.bin"), &vec![0u8; 1000]).unwrap();
+
+        // Dest has only 500 bytes available
+        let dest = InMemoryVolume::new("Dest").with_space_info(1000, 500);
+
+        let result = scan_for_volume_copy(&source, &[PathBuf::from("/big.bin")], &dest, Path::new("/"), 10);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_scan_for_volume_copy_directory_tree() {
+        let source = InMemoryVolume::new("Source").with_space_info(1_000_000, 500_000);
+        source.create_directory(Path::new("/docs")).unwrap();
+        source.create_file(Path::new("/docs/readme.txt"), b"Read me").unwrap();
+        source.create_file(Path::new("/docs/notes.txt"), b"Notes here").unwrap();
+
+        let dest = InMemoryVolume::new("Dest").with_space_info(1_000_000, 900_000);
+
+        let result = scan_for_volume_copy(&source, &[PathBuf::from("/docs")], &dest, Path::new("/"), 10).unwrap();
+
+        assert_eq!(result.file_count, 2);
+        assert_eq!(result.total_bytes, 17); // 7 + 10
     }
 
     #[test]

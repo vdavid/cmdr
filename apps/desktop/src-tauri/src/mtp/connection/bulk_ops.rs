@@ -6,6 +6,7 @@ use std::path::Path;
 use super::errors::MtpConnectionError;
 use super::{MtpConnectionManager, normalize_mtp_path};
 use crate::file_system::CopyScanResult;
+use crate::file_system::listing::FileEntry;
 
 impl MtpConnectionManager {
     /// Scans an MTP path recursively to get statistics for a copy operation.
@@ -30,12 +31,27 @@ impl MtpConnectionManager {
             device_id, storage_id, path
         );
 
-        // Try to list the directory - if it fails or returns empty, it might be a file
-        let entries = match self.list_directory(device_id, storage_id, path).await {
-            Ok(entries) => entries,
+        // Try to list the path as a directory
+        match self.list_directory(device_id, storage_id, path).await {
+            Ok(entries) if !entries.is_empty() => {
+                // Directory with contents — recurse using entries directly
+                self.scan_entries_recursive(device_id, storage_id, entries).await
+            }
+            Ok(_) => {
+                // Empty result: either an empty directory or a file (some MTP devices
+                // return empty for files instead of an error). Check parent to disambiguate.
+                if let Some(result) = self.try_scan_as_file(device_id, storage_id, path).await {
+                    return Ok(result);
+                }
+                // Empty directory
+                Ok(CopyScanResult {
+                    file_count: 0,
+                    dir_count: 1,
+                    total_bytes: 0,
+                })
+            }
             Err(e) => {
-                // list_directory failed - this might be because path is a file, not a directory.
-                // Try to check by listing the parent directory.
+                // list_directory failed — likely because path is a file, not a directory.
                 debug!(
                     "MTP scan_for_copy: list_directory failed for '{}', checking if it's a file: {:?}",
                     path, e
@@ -43,38 +59,41 @@ impl MtpConnectionManager {
                 if let Some(result) = self.try_scan_as_file(device_id, storage_id, path).await {
                     return Ok(result);
                 }
-                // Not a file either, propagate the original error
-                return Err(e);
+                Err(e)
             }
-        };
+        }
+    }
 
+    /// Recursively accumulates scan stats from a list of directory entries.
+    ///
+    /// Unlike `scan_for_copy`, this function takes entries that are already known
+    /// from a parent listing. For file entries, it counts them directly without
+    /// any USB calls. For directory entries, it lists their contents (one USB call
+    /// per directory) and recurses.
+    ///
+    /// This ensures exactly one `list_directory` call per directory in the tree,
+    /// with zero calls for files.
+    async fn scan_entries_recursive(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        entries: Vec<FileEntry>,
+    ) -> Result<CopyScanResult, MtpConnectionError> {
         let mut file_count = 0usize;
         let mut dir_count = 0usize;
         let mut total_bytes = 0u64;
 
-        // If entries is empty, it might be an empty directory OR a file (some MTP devices
-        // return empty for files instead of an error)
-        if entries.is_empty() {
-            if let Some(result) = self.try_scan_as_file(device_id, storage_id, path).await {
-                return Ok(result);
-            }
-            // Empty directory
-            return Ok(CopyScanResult {
-                file_count: 0,
-                dir_count: 1,
-                total_bytes: 0,
-            });
-        }
-
-        // Process entries recursively
         for entry in &entries {
             if entry.is_directory {
                 dir_count += 1;
-                // Recursively scan subdirectory
-                let child_result = Box::pin(self.scan_for_copy(device_id, storage_id, &entry.path)).await?;
-                file_count += child_result.file_count;
-                dir_count += child_result.dir_count;
-                total_bytes += child_result.total_bytes;
+                // One list_directory call per subdirectory
+                let children = self.list_directory(device_id, storage_id, &entry.path).await?;
+                if !children.is_empty() {
+                    let child_result = Box::pin(self.scan_entries_recursive(device_id, storage_id, children)).await?;
+                    file_count += child_result.file_count;
+                    dir_count += child_result.dir_count;
+                    total_bytes += child_result.total_bytes;
+                }
             } else {
                 file_count += 1;
                 total_bytes += entry.size.unwrap_or(0);
@@ -82,8 +101,8 @@ impl MtpConnectionManager {
         }
 
         debug!(
-            "MTP scan_for_copy: {} files, {} dirs, {} bytes for {}",
-            file_count, dir_count, total_bytes, path
+            "MTP scan_entries_recursive: {} files, {} dirs, {} bytes",
+            file_count, dir_count, total_bytes
         );
 
         Ok(CopyScanResult {
@@ -108,7 +127,7 @@ impl MtpConnectionManager {
         let entry = parent_entries.iter().find(|e| e.name == name)?;
 
         if entry.is_directory {
-            // It's a directory, not a file - let caller handle it
+            // It's a directory, not a file — let caller handle it
             return None;
         }
 
@@ -152,62 +171,16 @@ impl MtpConnectionManager {
             local_dest.display()
         );
 
-        // Try to list the path as a directory first
-        let entries = self.list_directory(device_id, storage_id, object_path).await;
-
-        match entries {
+        // Try to list the path as a directory
+        match self.list_directory(device_id, storage_id, object_path).await {
             Ok(entries) if !entries.is_empty() => {
-                // It's a directory with contents - create local directory and download contents
-                debug!(
-                    "MTP download_recursive: {} is a directory with {} entries",
-                    object_path,
-                    entries.len()
-                );
-
-                tokio::fs::create_dir_all(local_dest)
+                // Directory with contents — download all entries
+                self.download_entries_recursive(device_id, storage_id, &entries, local_dest)
                     .await
-                    .map_err(|e| MtpConnectionError::Other {
-                        device_id: device_id.to_string(),
-                        message: format!("Failed to create local directory: {}", e),
-                    })?;
-
-                let mut total_bytes = 0u64;
-                for entry in entries {
-                    let child_dest = local_dest.join(&entry.name);
-                    let bytes =
-                        Box::pin(self.download_recursive(device_id, storage_id, &entry.path, &child_dest)).await?;
-                    total_bytes += bytes;
-                }
-
-                debug!(
-                    "MTP download_recursive: directory {} complete, {} bytes",
-                    object_path, total_bytes
-                );
-                Ok(total_bytes)
             }
             Ok(_) => {
-                // Empty directory or file - check if it's a file by checking parent listing
-                let path_buf = normalize_mtp_path(object_path);
-                let is_file = if let Some(parent) = path_buf.parent() {
-                    let parent_str = parent.to_string_lossy();
-                    if let Ok(parent_entries) = self.list_directory(device_id, storage_id, &parent_str).await {
-                        if let Some(name) = path_buf.file_name().and_then(|n| n.to_str()) {
-                            parent_entries
-                                .iter()
-                                .find(|e| e.name == name)
-                                .is_some_and(|e| !e.is_directory)
-                        } else {
-                            false
-                        }
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                };
-
-                if is_file {
-                    // It's a file - download it
+                // Empty result — disambiguate file vs empty directory
+                if self.is_file_by_parent(device_id, storage_id, object_path).await {
                     debug!("MTP download_recursive: {} is a file, downloading", object_path);
                     let operation_id = format!("download-{}", uuid::Uuid::new_v4());
                     let result = self
@@ -215,7 +188,6 @@ impl MtpConnectionManager {
                         .await?;
                     Ok(result.bytes_transferred)
                 } else {
-                    // Empty directory - create it
                     debug!("MTP download_recursive: {} is an empty directory", object_path);
                     tokio::fs::create_dir_all(local_dest)
                         .await
@@ -227,33 +199,12 @@ impl MtpConnectionManager {
                 }
             }
             Err(e) => {
-                // list_directory failed - might be a file (MTP returns ObjectNotFound when
-                // trying to list children of a file). Try to check by listing the parent.
+                // list_directory failed — check if it's a file
                 debug!(
                     "MTP download_recursive: list failed for '{}', checking if it's a file: {:?}",
                     object_path, e
                 );
-
-                let path_buf = normalize_mtp_path(object_path);
-                let is_file = if let Some(parent) = path_buf.parent() {
-                    let parent_str = parent.to_string_lossy();
-                    if let Ok(parent_entries) = self.list_directory(device_id, storage_id, &parent_str).await {
-                        if let Some(name) = path_buf.file_name().and_then(|n| n.to_str()) {
-                            parent_entries
-                                .iter()
-                                .find(|e| e.name == name)
-                                .is_some_and(|entry| !entry.is_directory)
-                        } else {
-                            false
-                        }
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                };
-
-                if is_file {
+                if self.is_file_by_parent(device_id, storage_id, object_path).await {
                     debug!("MTP download_recursive: {} is a file, downloading", object_path);
                     let operation_id = format!("download-{}", uuid::Uuid::new_v4());
                     let result = self
@@ -261,10 +212,87 @@ impl MtpConnectionManager {
                         .await?;
                     Ok(result.bytes_transferred)
                 } else {
-                    // Not a file, propagate the original error
                     Err(e)
                 }
             }
+        }
+    }
+
+    /// Downloads a list of already-known directory entries to a local path.
+    ///
+    /// Like `scan_entries_recursive`, this takes entries from a parent listing,
+    /// so files are handled directly and directories get one `list_directory` call each.
+    async fn download_entries_recursive(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        entries: &[FileEntry],
+        local_dest: &Path,
+    ) -> Result<u64, MtpConnectionError> {
+        tokio::fs::create_dir_all(local_dest)
+            .await
+            .map_err(|e| MtpConnectionError::Other {
+                device_id: device_id.to_string(),
+                message: format!("Failed to create local directory: {}", e),
+            })?;
+
+        let mut total_bytes = 0u64;
+
+        for entry in entries {
+            let child_dest = local_dest.join(&entry.name);
+
+            if entry.is_directory {
+                let children = self.list_directory(device_id, storage_id, &entry.path).await?;
+                if children.is_empty() {
+                    tokio::fs::create_dir_all(&child_dest)
+                        .await
+                        .map_err(|e| MtpConnectionError::Other {
+                            device_id: device_id.to_string(),
+                            message: format!("Failed to create local directory: {}", e),
+                        })?;
+                } else {
+                    let bytes =
+                        Box::pin(self.download_entries_recursive(device_id, storage_id, &children, &child_dest))
+                            .await?;
+                    total_bytes += bytes;
+                }
+            } else {
+                let operation_id = format!("download-{}", uuid::Uuid::new_v4());
+                let result = self
+                    .download_file(device_id, storage_id, &entry.path, &child_dest, None, &operation_id)
+                    .await?;
+                total_bytes += result.bytes_transferred;
+            }
+        }
+
+        debug!(
+            "MTP download_entries_recursive: directory {} complete, {} bytes",
+            local_dest.display(),
+            total_bytes
+        );
+        Ok(total_bytes)
+    }
+
+    /// Checks if a path is a file by looking it up in its parent directory listing.
+    async fn is_file_by_parent(&self, device_id: &str, storage_id: u32, path: &str) -> bool {
+        let path_buf = normalize_mtp_path(path);
+        let Some(parent) = path_buf.parent() else {
+            return false;
+        };
+        let Some(name) = path_buf.file_name().and_then(|n| n.to_str()) else {
+            return false;
+        };
+
+        if let Ok(parent_entries) = self
+            .list_directory(device_id, storage_id, &parent.to_string_lossy())
+            .await
+        {
+            parent_entries
+                .iter()
+                .find(|e| e.name == name)
+                .is_some_and(|e| !e.is_directory)
+        } else {
+            false
         }
     }
 

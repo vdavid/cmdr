@@ -425,6 +425,9 @@ pub struct VolumeCopyConfig {
     pub conflict_resolution: ConflictResolution,
     /// Maximum returned in pre-flight scan.
     pub max_conflicts_to_show: usize,
+    /// Preview scan ID to reuse cached scan results (from start_scan_preview).
+    #[serde(default)]
+    pub preview_id: Option<String>,
 }
 
 impl Default for VolumeCopyConfig {
@@ -433,6 +436,7 @@ impl Default for VolumeCopyConfig {
             progress_interval_ms: 200,
             conflict_resolution: ConflictResolution::Stop,
             max_conflicts_to_show: 100,
+            preview_id: None,
         }
     }
 }
@@ -443,6 +447,7 @@ impl From<&WriteOperationConfig> for VolumeCopyConfig {
             progress_interval_ms: config.progress_interval_ms,
             conflict_resolution: config.conflict_resolution,
             max_conflicts_to_show: config.max_conflicts_to_show,
+            preview_id: config.preview_id.clone(),
         }
     }
 }

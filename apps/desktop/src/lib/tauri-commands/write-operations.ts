@@ -57,14 +57,23 @@ export type {
 // Scan preview (for Copy dialog live stats)
 // ============================================================================
 
-/** Starts scanning source files immediately, emitting progress events for the Copy dialog. */
+/** Starts scanning source files immediately, emitting progress events for the Copy dialog.
+ * When sourceVolumeId is provided and is not "root", the backend uses the Volume trait
+ * (enabling MTP and other non-local volumes). */
 export async function startScanPreview(
   sources: string[],
   sortColumn: SortColumn,
   sortOrder: SortOrder,
   progressIntervalMs?: number,
+  sourceVolumeId?: string,
 ): Promise<ScanPreviewStartResult> {
-  return invoke<ScanPreviewStartResult>('start_scan_preview', { sources, sortColumn, sortOrder, progressIntervalMs })
+  return invoke<ScanPreviewStartResult>('start_scan_preview', {
+    sources,
+    sourceVolumeId,
+    sortColumn,
+    sortOrder,
+    progressIntervalMs,
+  })
 }
 
 export async function cancelScanPreview(previewId: string): Promise<void> {

@@ -180,41 +180,25 @@ impl Volume for MtpVolume {
     }
 
     fn get_metadata(&self, path: &Path) -> Result<FileEntry, VolumeError> {
-        // MTP doesn't have a direct "get metadata" API - we need to list the parent
-        // and find the entry. For now, return NotSupported.
-        // The listing pipeline doesn't use get_metadata for directory browsing.
-        let _ = path;
-        Err(VolumeError::NotSupported)
-    }
-
-    fn exists(&self, path: &Path) -> bool {
-        // Check by trying to list the parent directory and finding the entry
-        let Some(parent) = path.parent() else {
-            // Root always exists
-            return true;
-        };
-
-        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
-            return false;
-        };
-
-        match self.list_directory(parent) {
-            Ok(entries) => entries.iter().any(|e| e.name == name),
-            Err(_) => false,
-        }
-    }
-
-    fn is_directory(&self, path: &Path) -> Result<bool, VolumeError> {
-        // Empty path or root is always a directory
+        // MTP has no single-file stat — list the parent directory and find the entry.
         let path_str = path.to_string_lossy();
         if path_str.is_empty() || path_str == "/" || path_str == "." {
-            return Ok(true);
+            // Root: synthesize a directory entry
+            return Ok(FileEntry::new(
+                self.name.clone(),
+                self.root.display().to_string(),
+                true,
+                false,
+            ));
         }
 
-        // Check by listing the parent directory and finding the entry
         let Some(parent) = path.parent() else {
-            // Root is a directory
-            return Ok(true);
+            return Ok(FileEntry::new(
+                self.name.clone(),
+                self.root.display().to_string(),
+                true,
+                false,
+            ));
         };
 
         let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
@@ -223,10 +207,17 @@ impl Volume for MtpVolume {
 
         let entries = self.list_directory(parent)?;
         entries
-            .iter()
+            .into_iter()
             .find(|e| e.name == name)
-            .map(|e| e.is_directory)
             .ok_or_else(|| VolumeError::NotFound(path.display().to_string()))
+    }
+
+    fn exists(&self, path: &Path) -> bool {
+        self.get_metadata(path).is_ok()
+    }
+
+    fn is_directory(&self, path: &Path) -> Result<bool, VolumeError> {
+        self.get_metadata(path).map(|e| e.is_directory)
     }
 
     fn supports_watching(&self) -> bool {

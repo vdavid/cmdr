@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
+
 use uuid::Uuid;
 
 use super::helpers::{calculate_dest_path, create_conflict_info, is_symlink_loop, run_cancellable, sample_conflicts};
@@ -21,6 +22,7 @@ use super::types::{
     WriteOperationType, WriteProgressEvent,
 };
 use crate::file_system::listing::{SortColumn, SortOrder};
+use crate::file_system::volume::Volume;
 
 // ============================================================================
 // Scan preview (for Copy dialog live stats)
@@ -28,9 +30,13 @@ use crate::file_system::listing::{SortColumn, SortOrder};
 
 /// Starts a scan preview for the Copy dialog.
 /// Returns a preview_id that can be used to cancel or to pass to copy_files.
+///
+/// When `source_volume` is provided, uses `Volume::scan_for_copy()` instead of `std::fs`,
+/// enabling MTP and other non-local volumes to produce scan previews.
 pub fn start_scan_preview(
     app: tauri::AppHandle,
     sources: Vec<PathBuf>,
+    source_volume: Option<Arc<dyn Volume>>,
     sort_column: SortColumn,
     sort_order: SortOrder,
     progress_interval_ms: u64,
@@ -50,7 +56,11 @@ pub fn start_scan_preview(
 
     // Spawn background task
     std::thread::spawn(move || {
-        run_scan_preview(app, preview_id_clone, sources, sort_column, sort_order, state);
+        if let Some(volume) = source_volume {
+            run_volume_scan_preview(app, preview_id_clone, sources, volume, state);
+        } else {
+            run_scan_preview(app, preview_id_clone, sources, sort_column, sort_order, state);
+        }
     });
 
     ScanPreviewStartResult { preview_id }
@@ -166,6 +176,102 @@ fn run_scan_preview(
                         preview_id,
                         files_total: file_count,
                         dirs_total: dirs_count,
+                        bytes_total: total_bytes,
+                    },
+                );
+            }
+        }
+        Err(message) => {
+            let _ = app.emit("scan-preview-error", ScanPreviewErrorEvent { preview_id, message });
+        }
+    }
+}
+
+/// Runs a volume-based scan preview (for MTP and other non-local volumes).
+///
+/// Uses `Volume::scan_for_copy()` per source path instead of `walk_dir_recursive`.
+/// Emits the same events as `run_scan_preview` so the frontend can't tell the difference.
+fn run_volume_scan_preview(
+    app: tauri::AppHandle,
+    preview_id: String,
+    sources: Vec<PathBuf>,
+    volume: Arc<dyn Volume>,
+    state: Arc<ScanPreviewState>,
+) {
+    use tauri::Emitter;
+
+    let mut total_files = 0usize;
+    let mut total_dirs = 0usize;
+    let mut total_bytes = 0u64;
+    let mut last_progress_time = Instant::now();
+
+    let result: Result<(), String> = (|| {
+        for source in &sources {
+            if state.cancelled.load(Ordering::Relaxed) {
+                return Err("Cancelled".to_string());
+            }
+
+            let scan = volume
+                .scan_for_copy(source)
+                .map_err(|e| format!("Scan failed for {}: {}", source.display(), e))?;
+
+            total_files += scan.file_count;
+            total_dirs += scan.dir_count;
+            total_bytes += scan.total_bytes;
+
+            // Emit progress between source items
+            if last_progress_time.elapsed() >= state.progress_interval {
+                let _ = app.emit(
+                    "scan-preview-progress",
+                    ScanPreviewProgressEvent {
+                        preview_id: preview_id.clone(),
+                        files_found: total_files,
+                        dirs_found: total_dirs,
+                        bytes_found: total_bytes,
+                        current_path: source.file_name().map(|n| n.to_string_lossy().to_string()),
+                    },
+                );
+                last_progress_time = Instant::now();
+            }
+        }
+        Ok(())
+    })();
+
+    // Clean up state
+    if let Ok(mut cache) = SCAN_PREVIEW_STATE.write() {
+        cache.remove(&preview_id);
+    }
+
+    match result {
+        Ok(()) => {
+            if state.cancelled.load(Ordering::Relaxed) {
+                let _ = app.emit(
+                    "scan-preview-cancelled",
+                    ScanPreviewCancelledEvent {
+                        preview_id: preview_id.clone(),
+                    },
+                );
+            } else {
+                // Cache results — volume scans don't produce per-file FileInfo,
+                // but the cache stores aggregate stats that copy_between_volumes can reuse.
+                if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
+                    cache.insert(
+                        preview_id.clone(),
+                        CachedScanResult {
+                            files: Vec::new(),
+                            dirs: Vec::new(),
+                            file_count: total_files,
+                            total_bytes,
+                        },
+                    );
+                }
+
+                let _ = app.emit(
+                    "scan-preview-complete",
+                    ScanPreviewCompleteEvent {
+                        preview_id,
+                        files_total: total_files,
+                        dirs_total: total_dirs,
                         bytes_total: total_bytes,
                     },
                 );

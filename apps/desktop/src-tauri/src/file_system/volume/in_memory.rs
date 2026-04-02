@@ -4,7 +4,7 @@
 //! including create, delete, and list. Useful for unit and integration tests
 //! without touching the real file system.
 
-use super::{Volume, VolumeError};
+use super::{CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError};
 use crate::file_system::listing::FileEntry;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -30,6 +30,8 @@ pub struct InMemoryVolume {
     name: String,
     root: PathBuf,
     entries: RwLock<HashMap<PathBuf, InMemoryEntry>>,
+    /// Configurable space info for testing. None means get_space_info returns NotSupported.
+    space_info: Option<SpaceInfo>,
 }
 
 impl InMemoryVolume {
@@ -39,7 +41,18 @@ impl InMemoryVolume {
             name: name.into(),
             root: PathBuf::from("/"),
             entries: RwLock::new(HashMap::new()),
+            space_info: None,
         }
+    }
+
+    /// Sets configurable space info so get_space_info() works in tests.
+    pub fn with_space_info(mut self, total_bytes: u64, available_bytes: u64) -> Self {
+        self.space_info = Some(SpaceInfo {
+            total_bytes,
+            available_bytes,
+            used_bytes: total_bytes.saturating_sub(available_bytes),
+        });
+        self
     }
 
     /// Creates an in-memory volume pre-populated with entries.
@@ -299,5 +312,83 @@ impl Volume for InMemoryVolume {
 
         entries.insert(to_normalized, entry);
         Ok(())
+    }
+
+    fn supports_export(&self) -> bool {
+        true
+    }
+
+    fn scan_for_copy(&self, path: &Path) -> Result<CopyScanResult, VolumeError> {
+        let normalized = self.normalize(path);
+        let entries = self
+            .entries
+            .read()
+            .map_err(|_| VolumeError::IoError("Lock poisoned".into()))?;
+
+        // Check if the path is a file
+        if let Some(entry) = entries.get(&normalized)
+            && !entry.metadata.is_directory {
+                return Ok(CopyScanResult {
+                    file_count: 1,
+                    dir_count: 0,
+                    total_bytes: entry.metadata.size.unwrap_or(0),
+                });
+            }
+
+        // Recursively scan all descendants
+        let mut file_count = 0;
+        let mut dir_count = 0;
+        let mut total_bytes = 0u64;
+
+        for (entry_path, entry) in entries.iter() {
+            // Skip the root path itself, only count descendants
+            if entry_path == &normalized {
+                continue;
+            }
+            if !entry_path.starts_with(&normalized) {
+                continue;
+            }
+            if entry.metadata.is_directory {
+                dir_count += 1;
+            } else {
+                file_count += 1;
+                total_bytes += entry.metadata.size.unwrap_or(0);
+            }
+        }
+
+        Ok(CopyScanResult {
+            file_count,
+            dir_count,
+            total_bytes,
+        })
+    }
+
+    fn get_space_info(&self) -> Result<SpaceInfo, VolumeError> {
+        self.space_info.clone().ok_or(VolumeError::NotSupported)
+    }
+
+    fn scan_for_conflicts(
+        &self,
+        source_items: &[SourceItemInfo],
+        dest_path: &Path,
+    ) -> Result<Vec<ScanConflict>, VolumeError> {
+        let dest_entries = self.list_directory(dest_path)?;
+        let mut conflicts = Vec::new();
+
+        for item in source_items {
+            if let Some(existing) = dest_entries.iter().find(|e| e.name == item.name) {
+                let dest_modified = existing.modified_at.map(|ms| (ms / 1000) as i64);
+                conflicts.push(ScanConflict {
+                    source_path: item.name.clone(),
+                    dest_path: existing.path.clone(),
+                    source_size: item.size,
+                    dest_size: existing.size.unwrap_or(0),
+                    source_modified: item.modified,
+                    dest_modified,
+                });
+            }
+        }
+
+        Ok(conflicts)
     }
 }

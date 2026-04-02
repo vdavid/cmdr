@@ -422,3 +422,120 @@ fn test_concurrent_create_delete() {
     // Permanent file should still exist
     assert!(volume.exists(Path::new("/permanent.txt")));
 }
+
+// ============================================================================
+// scan_for_copy tests
+// ============================================================================
+
+#[test]
+fn test_scan_for_copy_single_file() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_file(Path::new("/report.txt"), b"Hello, World!").unwrap();
+
+    let result = volume.scan_for_copy(Path::new("/report.txt")).unwrap();
+    assert_eq!(result.file_count, 1);
+    assert_eq!(result.dir_count, 0);
+    assert_eq!(result.total_bytes, 13);
+}
+
+#[test]
+fn test_scan_for_copy_empty_directory() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/empty")).unwrap();
+
+    let result = volume.scan_for_copy(Path::new("/empty")).unwrap();
+    assert_eq!(result.file_count, 0);
+    assert_eq!(result.dir_count, 0);
+    assert_eq!(result.total_bytes, 0);
+}
+
+#[test]
+fn test_scan_for_copy_directory_with_files() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/docs")).unwrap();
+    volume.create_file(Path::new("/docs/readme.txt"), b"Read me").unwrap();
+    volume.create_file(Path::new("/docs/notes.txt"), b"Notes here").unwrap();
+
+    let result = volume.scan_for_copy(Path::new("/docs")).unwrap();
+    assert_eq!(result.file_count, 2);
+    assert_eq!(result.dir_count, 0);
+    assert_eq!(result.total_bytes, 17); // 7 + 10
+}
+
+#[test]
+fn test_scan_for_copy_nested_directory_tree() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/root")).unwrap();
+    volume.create_directory(Path::new("/root/sub")).unwrap();
+    volume.create_directory(Path::new("/root/sub/deep")).unwrap();
+    volume.create_file(Path::new("/root/file1.txt"), b"AAA").unwrap();
+    volume.create_file(Path::new("/root/sub/file2.txt"), b"BBBBB").unwrap();
+    volume.create_file(Path::new("/root/sub/deep/file3.txt"), b"C").unwrap();
+
+    let result = volume.scan_for_copy(Path::new("/root")).unwrap();
+    assert_eq!(result.file_count, 3);
+    assert_eq!(result.dir_count, 2); // sub + deep (root not counted)
+    assert_eq!(result.total_bytes, 9); // 3 + 5 + 1
+}
+
+// ============================================================================
+// get_space_info tests
+// ============================================================================
+
+#[test]
+fn test_get_space_info_not_supported_by_default() {
+    let volume = InMemoryVolume::new("Test");
+    assert!(matches!(volume.get_space_info(), Err(VolumeError::NotSupported)));
+}
+
+#[test]
+fn test_get_space_info_with_configured_space() {
+    let volume = InMemoryVolume::new("Test").with_space_info(1_000_000, 500_000);
+    let space = volume.get_space_info().unwrap();
+    assert_eq!(space.total_bytes, 1_000_000);
+    assert_eq!(space.available_bytes, 500_000);
+    assert_eq!(space.used_bytes, 500_000);
+}
+
+// ============================================================================
+// scan_for_conflicts tests
+// ============================================================================
+
+#[test]
+fn test_scan_for_conflicts_no_conflicts() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_file(Path::new("/existing.txt"), b"data").unwrap();
+
+    let source_items = vec![SourceItemInfo {
+        name: "other.txt".to_string(),
+        size: 100,
+        modified: None,
+    }];
+
+    let conflicts = volume.scan_for_conflicts(&source_items, Path::new("/")).unwrap();
+    assert!(conflicts.is_empty());
+}
+
+#[test]
+fn test_scan_for_conflicts_detects_conflict() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_file(Path::new("/report.txt"), b"old content").unwrap();
+
+    let source_items = vec![SourceItemInfo {
+        name: "report.txt".to_string(),
+        size: 200,
+        modified: Some(1_700_000_000),
+    }];
+
+    let conflicts = volume.scan_for_conflicts(&source_items, Path::new("/")).unwrap();
+    assert_eq!(conflicts.len(), 1);
+    assert_eq!(conflicts[0].source_path, "report.txt");
+    assert_eq!(conflicts[0].source_size, 200);
+    assert_eq!(conflicts[0].dest_size, 11); // "old content"
+}
+
+#[test]
+fn test_supports_export() {
+    let volume = InMemoryVolume::new("Test");
+    assert!(volume.supports_export());
+}

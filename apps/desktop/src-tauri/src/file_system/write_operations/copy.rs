@@ -81,8 +81,11 @@ pub(super) fn copy_files_with_progress(
 
     // Phase 1: Scan (or reuse cached preview results)
     let scan_result = if let Some(preview_id) = &config.preview_id {
-        // Try to reuse cached scan results from preview
-        if let Some(cached) = take_cached_scan_result(preview_id) {
+        // Try to reuse cached scan results from preview.
+        // Volume scans (MTP, etc.) cache aggregate stats only (empty `files` list).
+        // This per-file copy path needs the file list, so treat an empty-files cache
+        // hit the same as a miss and fall through to a fresh local scan.
+        if let Some(cached) = take_cached_scan_result(preview_id).filter(|c| !c.files.is_empty()) {
             log::info!(
                 "copy_files_with_progress: reusing cached scan for operation_id={}, preview_id={}, files={}, bytes={}",
                 operation_id,

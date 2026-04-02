@@ -488,6 +488,8 @@ export interface VolumeCopyConfig {
   progressIntervalMs?: number
   conflictResolution?: ConflictResolution
   maxConflictsToShow?: number
+  /** Preview scan ID to reuse cached scan results (from startScanPreview). */
+  previewId?: string | null
 }
 
 /** Input for source item in conflict scanning. */

@@ -1,7 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
     import {
-        copyFiles,
         copyBetweenVolumes,
         moveFiles,
         deleteFiles,
@@ -460,6 +459,7 @@
                         conflictResolution,
                         progressIntervalMs,
                         maxConflictsToShow,
+                        previewId,
                     },
                 )
             }
@@ -472,28 +472,19 @@
                 previewId,
             })
         }
-        // Copy: use unified copyBetweenVolumes for cross-volume operations (including MTP)
-        const isLocalToLocal = sourceVolumeId === DEFAULT_VOLUME_ID && (destVolumeId ?? '') === DEFAULT_VOLUME_ID
-        return isLocalToLocal
-            ? copyFiles(sourcePaths, destinationPath ?? '', {
-                  conflictResolution,
-                  progressIntervalMs,
-                  maxConflictsToShow,
-                  sortColumn,
-                  sortOrder,
-                  previewId,
-              })
-            : copyBetweenVolumes(
-                  sourceVolumeId,
-                  sourcePaths,
-                  destVolumeId ?? DEFAULT_VOLUME_ID,
-                  destinationPath ?? '',
-                  {
-                      conflictResolution,
-                      progressIntervalMs,
-                      maxConflictsToShow,
-                  },
-              )
+        // Copy: always use copyBetweenVolumes — the backend handles local-to-local optimization
+        return copyBetweenVolumes(
+            sourceVolumeId,
+            sourcePaths,
+            destVolumeId ?? DEFAULT_VOLUME_ID,
+            destinationPath ?? '',
+            {
+                conflictResolution,
+                progressIntervalMs,
+                maxConflictsToShow,
+                previewId,
+            },
+        )
     }
 
     /** Starts the delete phase of an MTP move after the copy phase completes. */

@@ -502,17 +502,36 @@ pub fn cancel_all_write_operations() {
 
 /// Scans source files for Copy dialog stats. Results are cached for reuse by the actual copy.
 /// Emits scan-preview-progress, scan-preview-complete, scan-preview-error, scan-preview-cancelled.
+///
+/// When `source_volume_id` is provided and is not "root", the scan uses the Volume trait
+/// (enabling MTP and other non-local volumes). Otherwise, uses `std::fs` for local scanning.
 #[tauri::command]
 pub fn start_scan_preview(
     app: tauri::AppHandle,
     sources: Vec<String>,
+    source_volume_id: Option<String>,
     sort_column: SortColumn,
     sort_order: SortOrder,
     progress_interval_ms: Option<u64>,
 ) -> ScanPreviewStartResult {
-    let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
+    let volume_id = source_volume_id.unwrap_or_else(|| "root".to_string());
+    let is_local = volume_id == "root";
+
+    // Only expand tilde for local paths
+    let sources: Vec<PathBuf> = if is_local {
+        sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect()
+    } else {
+        sources.iter().map(PathBuf::from).collect()
+    };
+
+    let source_volume = if is_local {
+        None
+    } else {
+        get_volume_manager().get(&volume_id)
+    };
+
     let progress_interval = progress_interval_ms.unwrap_or(500);
-    ops_start_scan_preview(app, sources, sort_column, sort_order, progress_interval)
+    ops_start_scan_preview(app, sources, source_volume, sort_column, sort_order, progress_interval)
 }
 
 #[tauri::command]

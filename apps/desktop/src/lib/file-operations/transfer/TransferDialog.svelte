@@ -79,8 +79,8 @@
         sourceFolderPath,
         sortColumn,
         sortOrder,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Passed through for consistency; conflict check uses destVolumeId
-        sourceVolumeId: _sourceVolumeId,
+        sourceVolumeId,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Part of Props interface, used by parent
         destVolumeId,
         allowOperationToggle = false,
         autoConfirm = false,
@@ -297,7 +297,7 @@
         // Start the scan
         isScanning = true
         const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
-        const result = await startScanPreview(sourcePaths, sortColumn, sortOrder, progressIntervalMs)
+        const result = await startScanPreview(sourcePaths, sortColumn, sortOrder, progressIntervalMs, sourceVolumeId)
         previewId = result.previewId
     }
 
