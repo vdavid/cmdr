@@ -2023,6 +2023,7 @@
      * Used by MCP move_cursor tool.
      */
     export async function moveCursor(pane: 'left' | 'right', to: number | string) {
+        focusedPane = pane
         const paneRef = getPaneRef(pane)
         if (!paneRef) return
 

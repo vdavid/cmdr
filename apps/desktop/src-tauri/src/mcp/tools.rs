@@ -264,7 +264,8 @@ fn get_cursor_tools() -> Vec<Tool> {
         // Cursor movement
         Tool {
             name: "move_cursor".to_string(),
-            description: "Move cursor to index or filename. Provide either index or filename".to_string(),
+            description: "Focuses pane and moves cursor to index or filename. Provide either index or filename"
+                .to_string(),
             input_schema: json!({
                 "type": "object",
                 "properties": {
