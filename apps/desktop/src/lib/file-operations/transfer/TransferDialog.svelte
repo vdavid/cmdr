@@ -16,7 +16,6 @@
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import type {
-        VolumeInfo,
         SortColumn,
         SortOrder,
         ConflictResolution,
@@ -28,6 +27,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { generateTitle, toVolumeRelativePath } from './transfer-dialog-utils'
+    import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('transferDialog')
@@ -37,7 +37,6 @@
         sourcePaths: string[]
         destinationPath: string
         direction: 'left' | 'right'
-        volumes: VolumeInfo[]
         currentVolumeId: string
         fileCount: number
         folderCount: number
@@ -67,12 +66,13 @@
         onCancel: () => void
     }
 
+    const volumes = $derived(getVolumes())
+
     const {
         operationType: initialOperationType,
         sourcePaths,
         destinationPath,
         direction,
-        volumes,
         currentVolumeId,
         fileCount,
         folderCount,

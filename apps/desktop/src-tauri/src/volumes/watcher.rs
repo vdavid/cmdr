@@ -117,18 +117,23 @@ fn check_for_volume_changes() {
     let mounted: Vec<_> = current_volumes.difference(&known_guard).cloned().collect();
     let unmounted: Vec<_> = known_guard.difference(&current_volumes).cloned().collect();
 
-    if !mounted.is_empty() || !unmounted.is_empty() {
-        super::invalidate_locations_cache();
-    }
-
     for path in &mounted {
         debug!("Volume mounted: {}", path);
         emit_volume_mounted(path);
+        // Wait for macOS to settle the mount, then re-broadcast.
+        // FSEvents fire before NSFileManager metadata is ready — the fsid
+        // still matches root. We poll until it differs, then emit.
+        spawn_mount_settle_watcher(path.clone());
     }
 
     for path in &unmounted {
         debug!("Volume unmounted: {}", path);
         emit_volume_unmounted(path);
+    }
+
+    // Broadcast updated volume list to frontend
+    if !mounted.is_empty() || !unmounted.is_empty() {
+        crate::volume_broadcast::emit_volumes_changed();
     }
 
     // Update known volumes
@@ -220,6 +225,47 @@ fn unregister_volume_from_manager(volume_path: &str) {
 
     get_volume_manager().unregister(&volume_id);
     debug!("Unregistered volume: {} ({})", volume_id, volume_path);
+}
+
+/// Spawns a task that waits for a newly mounted volume's metadata to settle.
+///
+/// macOS fires FSEvents before `NSFileManager` metadata is ready — `statfs`
+/// on the mount point still returns the root filesystem's ID. We poll up to
+/// 10 times (1s apart) until the fsid differs from root, then re-broadcast
+/// the volume list so the frontend picks up the volume with correct metadata.
+fn spawn_mount_settle_watcher(volume_path: String) {
+    tauri::async_runtime::spawn(async move {
+        let root_fsid = super::get_fsid("/");
+        let Some(root) = root_fsid else { return };
+
+        for attempt in 1..=10 {
+            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+            // Volume was unmounted while we were waiting
+            if !Path::new(&volume_path).exists() {
+                debug!("Mount settle: {} disappeared, stopping", volume_path);
+                return;
+            }
+
+            match super::get_fsid(&volume_path) {
+                Some(fsid) if fsid != root => {
+                    debug!(
+                        "Mount settle: {} ready after {}s (fsid differs from root)",
+                        volume_path, attempt
+                    );
+                    crate::volume_broadcast::emit_volumes_changed();
+                    return;
+                }
+                _ => {
+                    debug!("Mount settle: {} not ready yet (attempt {}/10)", volume_path, attempt);
+                }
+            }
+        }
+
+        // Give up after 10s — emit anyway as best effort
+        debug!("Mount settle: {} timed out after 10s, emitting anyway", volume_path);
+        crate::volume_broadcast::emit_volumes_changed();
+    });
 }
 
 #[cfg(test)]

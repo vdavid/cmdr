@@ -7,7 +7,7 @@ macOS volume and location discovery, plus live mount/unmount watching via FSEven
 | File | Purpose |
 |---|---|
 | `mod.rs` | `LocationInfo` type and `VolumeInfo` type alias (`pub use LocationInfo as VolumeInfo` for backwards compatibility), `LocationCategory` enum. `list_locations()`, `get_volume_space()`, `parse_cloud_provider_name()`, and private helpers using `objc2`/`objc2_foundation`. |
-| `watcher.rs` | `notify` (FSEvents) watcher on `/Volumes`. Detects mount/unmount by diffing against `KNOWN_VOLUMES`. Registers/unregisters with `VolumeManager` via `register_volume_with_manager`/`unregister_volume_from_manager` (coupling to `file_system::get_volume_manager()`). Emits `volume-mounted` / `volume-unmounted` Tauri events. |
+| `watcher.rs` | `notify` (FSEvents) watcher on `/Volumes`. Detects mount/unmount by diffing against `KNOWN_VOLUMES`. Registers/unregisters with `VolumeManager` via `register_volume_with_manager`/`unregister_volume_from_manager` (coupling to `file_system::get_volume_manager()`). Emits `volume-mounted` / `volume-unmounted` Tauri events (still needed — `DualPaneExplorer` uses `volume-unmounted` with the volume path to redirect panes off ejected volumes). Triggers `volume_broadcast::emit_volumes_changed()` on changes. Spawns a mount-settle watcher that polls `fsid` until the volume metadata is ready. |
 
 ## Location categories
 

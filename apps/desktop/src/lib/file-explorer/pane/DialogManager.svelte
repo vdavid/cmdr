@@ -15,12 +15,11 @@
         TransferErrorPropsData,
         DeleteDialogPropsData,
     } from './dialog-state.svelte'
-    import type { VolumeInfo, ConflictResolution, TransferOperationType, WriteOperationError } from '../types'
+    import type { ConflictResolution, TransferOperationType, WriteOperationError } from '../types'
 
     const {
         showTransferDialog,
         transferDialogProps,
-        volumes,
         showTransferProgressDialog,
         transferProgressProps,
         showNewFolderDialog,
@@ -49,7 +48,6 @@
     }: {
         showTransferDialog: boolean
         transferDialogProps: TransferDialogPropsData | null
-        volumes: VolumeInfo[]
         showTransferProgressDialog: boolean
         transferProgressProps: TransferProgressPropsData | null
         showNewFolderDialog: boolean
@@ -92,7 +90,6 @@
             sourcePaths={transferDialogProps.sourcePaths}
             destinationPath={transferDialogProps.destinationPath}
             direction={transferDialogProps.direction}
-            {volumes}
             currentVolumeId={transferDialogProps.currentVolumeId}
             fileCount={transferDialogProps.fileCount}
             folderCount={transferDialogProps.folderCount}

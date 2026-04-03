@@ -327,13 +327,14 @@ impl Volume for InMemoryVolume {
 
         // Check if the path is a file
         if let Some(entry) = entries.get(&normalized)
-            && !entry.metadata.is_directory {
-                return Ok(CopyScanResult {
-                    file_count: 1,
-                    dir_count: 0,
-                    total_bytes: entry.metadata.size.unwrap_or(0),
-                });
-            }
+            && !entry.metadata.is_directory
+        {
+            return Ok(CopyScanResult {
+                file_count: 1,
+                dir_count: 0,
+                total_bytes: entry.metadata.size.unwrap_or(0),
+            });
+        }
 
         // Recursively scan all descendants
         let mut file_count = 0;

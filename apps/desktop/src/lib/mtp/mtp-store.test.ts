@@ -15,8 +15,6 @@ vi.mock('$lib/tauri-commands', async () => {
     onMtpDeviceDisconnected: vi.fn(),
     onMtpExclusiveAccessError: vi.fn(),
     onMtpPermissionError: vi.fn(),
-    onMtpDeviceDetected: vi.fn(),
-    onMtpDeviceRemoved: vi.fn(),
   }
 })
 
@@ -29,8 +27,6 @@ import {
   onMtpDeviceDisconnected,
   onMtpExclusiveAccessError,
   onMtpPermissionError,
-  onMtpDeviceDetected,
-  onMtpDeviceRemoved,
 } from '$lib/tauri-commands'
 import {
   getDevices,
@@ -81,8 +77,6 @@ describe('mtp-store', () => {
     vi.mocked(onMtpDeviceDisconnected).mockResolvedValue(vi.fn())
     vi.mocked(onMtpExclusiveAccessError).mockResolvedValue(vi.fn())
     vi.mocked(onMtpPermissionError).mockResolvedValue(vi.fn())
-    vi.mocked(onMtpDeviceDetected).mockResolvedValue(vi.fn())
-    vi.mocked(onMtpDeviceRemoved).mockResolvedValue(vi.fn())
   })
 
   describe('initial state', () => {
@@ -278,28 +272,24 @@ describe('mtp-store', () => {
   })
 
   describe('initialize', () => {
-    it('sets up event listeners and scans devices', async () => {
-      vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
-
+    it('sets up event listeners (passive consumer, no scan)', async () => {
       await initialize()
 
       expect(isInitialized()).toBe(true)
-      expect(getDevices()).toHaveLength(1)
+      // No scan — backend auto-connects devices, store is passive
+      expect(getDevices()).toHaveLength(0)
       expect(onMtpDeviceConnected).toHaveBeenCalledWith(expect.any(Function))
       expect(onMtpDeviceDisconnected).toHaveBeenCalledWith(expect.any(Function))
       expect(onMtpExclusiveAccessError).toHaveBeenCalledWith(expect.any(Function))
       expect(onMtpPermissionError).toHaveBeenCalledWith(expect.any(Function))
-      expect(onMtpDeviceDetected).toHaveBeenCalledWith(expect.any(Function))
-      expect(onMtpDeviceRemoved).toHaveBeenCalledWith(expect.any(Function))
     })
 
     it('is idempotent (only initializes once)', async () => {
-      vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
-
       await initialize()
       await initialize()
 
-      expect(listMtpDevices).toHaveBeenCalledTimes(1)
+      // Event listeners should only be registered once
+      expect(onMtpDeviceConnected).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -309,20 +299,14 @@ describe('mtp-store', () => {
       const unlistenDisconnected = vi.fn()
       const unlistenExclusive = vi.fn()
       const unlistenPermission = vi.fn()
-      const unlistenDetected = vi.fn()
-      const unlistenRemoved = vi.fn()
 
       vi.mocked(onMtpDeviceConnected).mockResolvedValue(unlistenConnected)
       vi.mocked(onMtpDeviceDisconnected).mockResolvedValue(unlistenDisconnected)
       vi.mocked(onMtpExclusiveAccessError).mockResolvedValue(unlistenExclusive)
       vi.mocked(onMtpPermissionError).mockResolvedValue(unlistenPermission)
-      vi.mocked(onMtpDeviceDetected).mockResolvedValue(unlistenDetected)
-      vi.mocked(onMtpDeviceRemoved).mockResolvedValue(unlistenRemoved)
-      vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
 
       await initialize()
       expect(isInitialized()).toBe(true)
-      expect(getDevices()).toHaveLength(1)
 
       cleanup()
 
@@ -330,8 +314,6 @@ describe('mtp-store', () => {
       expect(unlistenDisconnected).toHaveBeenCalled()
       expect(unlistenExclusive).toHaveBeenCalled()
       expect(unlistenPermission).toHaveBeenCalled()
-      expect(unlistenDetected).toHaveBeenCalled()
-      expect(unlistenRemoved).toHaveBeenCalled()
       expect(isInitialized()).toBe(false)
       expect(getDevices()).toHaveLength(0)
     })
@@ -453,19 +435,24 @@ describe('mtp-store', () => {
     })
 
     it('updates state on mtp-device-disconnected event', async () => {
+      let connectedCallback: ((event: { deviceId: string; storages: MtpStorageInfo[] }) => void) | undefined
       let disconnectedCallback: ((event: { deviceId: string; reason: 'user' | 'disconnected' }) => void) | undefined
+      vi.mocked(onMtpDeviceConnected).mockImplementation((callback) => {
+        connectedCallback = callback
+        return Promise.resolve(vi.fn())
+      })
       vi.mocked(onMtpDeviceDisconnected).mockImplementation((callback) => {
         disconnectedCallback = callback
         return Promise.resolve(vi.fn())
       })
-      vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
-      vi.mocked(connectMtpDevice).mockResolvedValue(mockConnectedInfo)
 
       await initialize()
-      await connect('mtp-336592896')
+
+      // Simulate backend auto-connect (populates the store)
+      connectedCallback?.({ deviceId: 'mtp-336592896', storages: [mockStorage] })
       expect(getDevice('mtp-336592896')?.connectionState).toBe('connected')
 
-      // Simulate event from backend
+      // Simulate disconnect event from backend
       disconnectedCallback?.({ deviceId: 'mtp-336592896', reason: 'disconnected' })
 
       const device = getDevice('mtp-336592896')
@@ -491,45 +478,9 @@ describe('mtp-store', () => {
       expect(device?.error).toContain('ptpcamerad')
     })
 
-    it('rescans on mtp-device-detected event', async () => {
-      let detectedCallback:
-        | ((event: { deviceId: string; name?: string; vendorId: number; productId: number }) => void)
-        | undefined
-      vi.mocked(onMtpDeviceDetected).mockImplementation((callback) => {
-        detectedCallback = callback
-        return Promise.resolve(vi.fn())
-      })
-      vi.mocked(listMtpDevices).mockResolvedValue([])
-
-      await initialize()
-      expect(listMtpDevices).toHaveBeenCalledTimes(1)
-
-      // Simulate device hotplug
-      detectedCallback?.({ deviceId: 'mtp-336592896', vendorId: 0x18d1, productId: 0x4ee1 })
-
-      // Wait for async rescan
-      await new Promise((resolve) => setTimeout(resolve, 10))
-      expect(listMtpDevices).toHaveBeenCalledTimes(2)
-    })
-
-    it('removes device and rescans on mtp-device-removed event', async () => {
-      let removedCallback: ((event: { deviceId: string }) => void) | undefined
-      vi.mocked(onMtpDeviceRemoved).mockImplementation((callback) => {
-        removedCallback = callback
-        return Promise.resolve(vi.fn())
-      })
-      vi.mocked(listMtpDevices).mockResolvedValue([mockDevice])
-
-      await initialize()
-      expect(getDevice('mtp-336592896')).toBeDefined()
-
-      // Simulate device removal
-      vi.mocked(listMtpDevices).mockResolvedValue([])
-      removedCallback?.({ deviceId: 'mtp-336592896' })
-
-      // Device should be removed immediately
-      expect(getDevice('mtp-336592896')).toBeUndefined()
-    })
+    // Note: mtp-device-detected and mtp-device-removed events are no longer
+    // handled by the frontend store — the backend auto-connects/disconnects
+    // and emits mtp-device-connected/mtp-device-disconnected instead.
   })
 
   describe('display name generation', () => {

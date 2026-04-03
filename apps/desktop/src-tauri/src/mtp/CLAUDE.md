@@ -11,7 +11,7 @@ On Linux, users may need udev rules for USB device permissions (see `resources/9
 | `mod.rs` | Re-exports public surface; module-level doc |
 | `types.rs` | `MtpDeviceInfo`, `MtpStorageInfo` — camelCase JSON via `serde(rename_all)` |
 | `discovery.rs` | `list_mtp_devices()` via `mtp_rs::MtpDevice::list_devices()`; device IDs formatted as `"mtp-{location_id}"` |
-| `watcher.rs` | `start_mtp_watcher()` — nusb hotplug watcher; 500 ms delay on connect before re-checking; emits `mtp-device-detected` / `mtp-device-removed` Tauri events |
+| `watcher.rs` | `start_mtp_watcher()` — nusb hotplug watcher; 500 ms delay on connect before re-checking; auto-connects detected devices via `MtpConnectionManager::connect()` and auto-disconnects removed ones |
 | `macos_workaround.rs` | macOS-only (`#[cfg(target_os = "macos")]`). Detects `ptpcamerad` via `ioreg`; exposes `PTPCAMERAD_WORKAROUND_COMMAND` (a bash one-liner) |
 | `connection/mod.rs` | `MtpConnectionManager` singleton (`LazyLock`); `DeviceEntry` map; `connect()` (idempotent, probes write capability, registers `MtpVolume`); `disconnect()` |
 | `connection/cache.rs` | `PathHandleCache` (path → MTP object handle), `ListingCache` (5 s TTL), `EventDebouncer` (500 ms per device) |
@@ -21,7 +21,7 @@ On Linux, users may need udev rules for USB device permissions (see `resources/9
 | `connection/file_ops.rs` | `download_file()`, `upload_file()` — emit `mtp-transfer-progress` Tauri events |
 | `connection/mutation_ops.rs` | `delete()` (recursive, children-first), `create_folder()`, `rename()`, `move_object()` — no copy+delete fallback |
 | `connection/bulk_ops.rs` | `scan_for_copy()`, `download_recursive()`, `upload_recursive()` — use `Box::pin` for async recursion |
-| `virtual_device.rs` | Virtual MTP device for E2E testing; creates backing dirs + registers device via `mtp-rs`. Gated behind `virtual-mtp` feature. |
+| `virtual_device.rs` | Virtual MTP device for E2E testing; creates backing dirs + registers device via `mtp-rs`. Gated behind `virtual-mtp` feature. Run with: `cd apps/desktop && pnpm tauri dev -c src-tauri/tauri.dev.json --features virtual-mtp` |
 
 ## Architecture / data flow
 
@@ -30,21 +30,31 @@ USB plug-in
   → nusb hotplug event (watcher.rs)
   → 500 ms delay
   → list_mtp_devices() (discovery.rs)
-  → emit mtp-device-detected
+  → auto_connect_device() (watcher.rs)
+    → MtpConnectionManager::connect()
+    → open_device() via MtpDeviceBuilder
+    → probe_write_capability() per storage
+    → register MtpVolume in global VolumeManager
+    → start_event_loop() per device
+    → emit mtp-device-connected
+    → broadcast::emit_volumes_changed()
 
-Frontend calls connect_mtp_device
-  → MtpConnectionManager::connect()
-  → open_device() via MtpDeviceBuilder
-  → probe_write_capability() per storage
-  → register MtpVolume in global VolumeManager
-  → start_event_loop() per device
-  → emit mtp-device-connected
+USB unplug
+  → nusb hotplug event (watcher.rs)
+  → auto_disconnect_device() (watcher.rs)
+    → MtpConnectionManager::disconnect()
+    → emit mtp-device-disconnected
+    → broadcast::emit_volumes_changed()
 
 Event loop (event_loop.rs)
   → device.next_event()
   → compute_diff()
   → emit directory-diff (same format as local file watching)
 ```
+
+The frontend is a passive consumer: it subscribes to `volumes-changed` (for the volume picker)
+and `mtp-device-connected`/`mtp-device-disconnected` (for device connection state tracking).
+It never orchestrates MTP connections.
 
 ## Key patterns and gotchas
 

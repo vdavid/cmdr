@@ -351,6 +351,9 @@ impl MtpConnectionManager {
             );
         }
 
+        // Broadcast updated volume list (includes new MTP volumes)
+        crate::volume_broadcast::emit_volumes_changed();
+
         info!(
             "MTP device connected: {} ({} storages)",
             device_id,
@@ -405,6 +408,9 @@ impl MtpConnectionManager {
                 }),
             );
         }
+
+        // Broadcast updated volume list (MTP volume removed)
+        crate::volume_broadcast::emit_volumes_changed();
 
         info!("MTP device disconnected: {}", device_id);
         Ok(())

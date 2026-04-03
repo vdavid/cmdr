@@ -125,11 +125,14 @@ fn check_for_mount_changes() {
         Err(_) => return,
     };
 
+    let mut changed = false;
+
     // Newly mounted
     for path in current.keys() {
         if !known_guard.contains_key(path) {
             debug!("Volume mounted: {}", path);
             emit_volume_mounted(path);
+            changed = true;
         }
     }
 
@@ -138,10 +141,16 @@ fn check_for_mount_changes() {
         if !current.contains_key(path) {
             debug!("Volume unmounted: {}", path);
             emit_volume_unmounted(path);
+            changed = true;
         }
     }
 
     *known_guard = current;
+
+    // Broadcast updated volume list to frontend
+    if changed {
+        crate::volume_broadcast::emit_volumes_changed();
+    }
 }
 
 /// Build a map of real (non-virtual) mount points from /proc/mounts.
@@ -250,11 +259,14 @@ fn check_for_gvfs_changes(gvfs_dir: &str) {
         Err(_) => return,
     };
 
+    let mut changed = false;
+
     // Newly mounted shares
     for path in &current {
         if !known_guard.contains(path) {
             debug!("GVFS SMB share mounted: {}", path);
             emit_volume_mounted(path);
+            changed = true;
         }
     }
 
@@ -263,10 +275,16 @@ fn check_for_gvfs_changes(gvfs_dir: &str) {
         if !current.contains(path) {
             debug!("GVFS SMB share unmounted: {}", path);
             emit_volume_unmounted(path);
+            changed = true;
         }
     }
 
     *known_guard = current;
+
+    // Broadcast updated volume list to frontend
+    if changed {
+        crate::volume_broadcast::emit_volumes_changed();
+    }
 }
 
 /// Scan the GVFS directory for current SMB share mount paths.

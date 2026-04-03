@@ -94,8 +94,9 @@ Brief PageUp/PageDown lands on the **bottom row** of the target column (TUI conv
 
 ## `VolumeBreadcrumb.svelte`
 
-Clickable label that opens a grouped dropdown of all available volumes. Volume grouping logic and disk-space retry state
-are extracted into `volume-grouping.ts` and `volume-space-manager.svelte.ts` respectively.
+Pure presentational component. Reads the volume list from the shared `volume-store.svelte.ts` (no fetching, no event
+listeners for volume changes). Volume grouping logic and disk-space retry state are extracted into `volume-grouping.ts`
+and `volume-space-manager.svelte.ts` respectively.
 
 Props: `volumeId`, `currentPath`, `onVolumeChange?`.
 
@@ -105,9 +106,8 @@ real containing volume, not the `volumeId` prop (which may be a favorite's virtu
 Keyboard/mouse mode: entering keyboard nav sets `isKeyboardMode = true`, suppressing CSS `:hover` highlights. Mouse
 movement > 5px threshold exits keyboard mode.
 
-MTP volumes come from the unified `volumes` list (returned by `listVolumes()`). The parent component
-(`DualPaneExplorer`) re-fetches volumes on `mtp-device-connected`/`mtp-device-disconnected` events, so the breadcrumb
-stays current. MTP volume space is fetched via `getVolumeSpace()` like any other volume.
+Volumes (including MTP) come from the shared `volume-store` which is pushed by the backend via a single
+`volumes-changed` event. MTP volume space is fetched via `getVolumeSpace()` like any other volume.
 
 Exported methods for parent components: `toggle()`, `open()`, `close()`, `getIsOpen()`, `handleKeyDown(e)`.
 
@@ -130,7 +130,7 @@ Pure logic for organizing volumes into display groups. No reactive state.
 Reactive state machine for fetching, retrying, and caching disk space info per volume. Created via
 `createVolumeSpaceManager()` (functional factory, no classes).
 
-Both `listVolumes()` and `getVolumeSpace()` return `TimedOut<T>` wrappers. The manager tracks timeout state and exposes
+`getVolumeSpace()` returns `TimedOut<T>` wrappers. The manager tracks timeout state and exposes
 reactive sets for the component to render inline indicators (no toasts):
 
 - **Volume space timeout** (`spaceTimedOutSet`): Three-state cycle with per-volume tracking:
@@ -144,13 +144,13 @@ reactive sets for the component to render inline indicators (no toasts):
   - All retry sets are cleared via `clearAll()` on volume mount/unmount events. Auto-retry timers are cleaned up via
     `destroy()`.
   - Reduced motion: spinner degrades to pulsing opacity, shake degrades to opacity flash.
-- **Volume list timeout** (`volumesTimedOut`): Tracked in the component itself (not in the manager) since it controls
-  the warning row at the bottom of the dropdown.
+- **Volume list timeout** (`volumesTimedOut`): Tracked in `volume-store.svelte.ts` (not in the manager). The component
+  reads it via `getVolumesTimedOut()` and shows a warning row with a retry button at the bottom of the dropdown.
 
 ## Dependencies
 
-- `$lib/tauri-commands` — `listVolumes`, `findContainingVolume`, `listen`, `pathExists`
+- `$lib/stores/volume-store.svelte` — `getVolumes` (backend-pushed reactive volume list)
+- `$lib/tauri-commands` — `findContainingVolume`, `pathExists`
 - `$lib/utils/timing` — `withTimeout` (defense-in-depth IPC timeout wrapper)
 - `$lib/app-status-store` — `getLastUsedPathForVolume`
-- `$lib/mtp` — `initialize`, `scanDevices`
 - `../types` — `VolumeInfo`, `LocationCategory`, `NetworkHost`

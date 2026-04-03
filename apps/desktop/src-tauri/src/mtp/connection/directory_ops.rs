@@ -633,6 +633,9 @@ impl MtpConnectionManager {
                     device_id
                 );
             }
+
+            // Broadcast updated volume list (MTP volume removed)
+            crate::volume_broadcast::emit_volumes_changed();
         } else {
             debug!(
                 "handle_device_disconnected: device {} was not in registry (already cleaned up?)",

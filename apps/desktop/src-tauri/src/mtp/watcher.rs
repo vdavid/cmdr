@@ -1,13 +1,15 @@
 //! USB hotplug watcher for MTP devices.
 //!
-//! Watches for USB device connect/disconnect events and emits Tauri events
-//! when MTP devices are detected or removed. Uses nusb's hotplug API.
+//! Watches for USB device connect/disconnect events via nusb's hotplug API.
+//! On detection, auto-connects devices and emits `mtp-device-connected` /
+//! `mtp-device-disconnected` events (via the connection manager). The frontend
+//! is a passive consumer — it never orchestrates connections.
 
 use log::{debug, error, info, warn};
 use nusb::hotplug::HotplugEvent;
 use std::collections::HashSet;
 use std::sync::{Mutex, OnceLock};
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 
 /// Global app handle for emitting events from the watcher
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
@@ -18,28 +20,6 @@ static KNOWN_DEVICES: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 /// Flag to indicate watcher has been started
 static WATCHER_STARTED: OnceLock<()> = OnceLock::new();
 
-/// Payload for MTP device detected event
-#[derive(Clone, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MtpDeviceDetectedPayload {
-    /// The device ID
-    pub device_id: String,
-    /// Device name (if available)
-    pub name: Option<String>,
-    /// USB vendor ID
-    pub vendor_id: u16,
-    /// USB product ID
-    pub product_id: u16,
-}
-
-/// Payload for MTP device removed event
-#[derive(Clone, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MtpDeviceRemovedPayload {
-    /// The device ID
-    pub device_id: String,
-}
-
 /// Gets the current set of MTP devices using mtp-rs discovery.
 fn get_current_mtp_devices() -> HashSet<String> {
     let devices = super::list_mtp_devices();
@@ -47,7 +27,7 @@ fn get_current_mtp_devices() -> HashSet<String> {
 }
 
 /// Checks for MTP device changes by comparing current state with known state.
-/// Emits events for newly detected and removed devices.
+/// Auto-connects newly detected devices and disconnects removed ones.
 fn check_for_device_changes() {
     let current_devices = get_current_mtp_devices();
 
@@ -61,60 +41,62 @@ fn check_for_device_changes() {
         Err(_) => return,
     };
 
-    // Find newly detected devices
-    for device_id in current_devices.difference(&known_guard) {
-        debug!("MTP device detected: {}", device_id);
-        emit_device_detected(device_id);
-    }
+    let new_devices: Vec<_> = current_devices.difference(&known_guard).cloned().collect();
+    let removed_devices: Vec<_> = known_guard.difference(&current_devices).cloned().collect();
 
-    // Find removed devices
-    for device_id in known_guard.difference(&current_devices) {
-        debug!("MTP device removed: {}", device_id);
-        emit_device_removed(device_id);
-    }
-
-    // Update known devices
+    // Update known devices before async work to avoid re-triggering
     *known_guard = current_devices;
-}
+    drop(known_guard);
 
-/// Emit a device detected event to the frontend.
-fn emit_device_detected(device_id: &str) {
-    if let Some(app) = APP_HANDLE.get() {
-        // Try to get full device info
-        let devices = super::list_mtp_devices();
-        let device_info = devices.iter().find(|d| d.id == device_id);
+    // Auto-connect newly detected devices
+    for device_id in new_devices {
+        info!("MTP device detected, auto-connecting: {}", device_id);
+        auto_connect_device(device_id);
+    }
 
-        let payload = MtpDeviceDetectedPayload {
-            device_id: device_id.to_string(),
-            name: device_info.and_then(|d| d.product.clone()),
-            vendor_id: device_info.map(|d| d.vendor_id).unwrap_or(0),
-            product_id: device_info.map(|d| d.product_id).unwrap_or(0),
-        };
-
-        if let Err(e) = app.emit("mtp-device-detected", payload) {
-            error!("Failed to emit mtp-device-detected event: {}", e);
-        } else {
-            info!("Emitted mtp-device-detected for {}", device_id);
-        }
+    // Disconnect removed devices
+    for device_id in removed_devices {
+        info!("MTP device removed, disconnecting: {}", device_id);
+        auto_disconnect_device(device_id);
     }
 }
 
-/// Emit a device removed event to the frontend.
-fn emit_device_removed(device_id: &str) {
-    if let Some(app) = APP_HANDLE.get() {
-        let payload = MtpDeviceRemovedPayload {
-            device_id: device_id.to_string(),
-        };
-
-        if let Err(e) = app.emit("mtp-device-removed", payload) {
-            error!("Failed to emit mtp-device-removed event: {}", e);
-        } else {
-            info!("Emitted mtp-device-removed for {}", device_id);
+/// Spawns an async task to connect a newly detected MTP device.
+fn auto_connect_device(device_id: String) {
+    let app = APP_HANDLE.get().cloned();
+    tauri::async_runtime::spawn(async move {
+        let cm = super::connection_manager();
+        match cm.connect(&device_id, app.as_ref()).await {
+            Ok(info) => {
+                info!(
+                    "Auto-connected MTP device: {} ({} storages)",
+                    device_id,
+                    info.storages.len()
+                );
+            }
+            Err(e) => {
+                // Connection errors (exclusive access, permission) are already
+                // emitted as events by the connection manager
+                warn!("Failed to auto-connect MTP device {}: {:?}", device_id, e);
+            }
         }
-    }
+    });
+}
+
+/// Spawns an async task to disconnect a removed MTP device.
+fn auto_disconnect_device(device_id: String) {
+    let app = APP_HANDLE.get().cloned();
+    tauri::async_runtime::spawn(async move {
+        let cm = super::connection_manager();
+        if let Err(e) = cm.disconnect(&device_id, app.as_ref()).await {
+            // NotConnected is fine — device may not have been connected yet
+            debug!("Disconnect for removed device {} returned: {:?}", device_id, e);
+        }
+    });
 }
 
 /// Starts the USB hotplug watcher for MTP devices.
+/// Also auto-connects any devices that are already plugged in at startup.
 /// Call this once at app initialization.
 pub fn start_mtp_watcher(app: &AppHandle) {
     // Only start once
@@ -140,6 +122,11 @@ pub fn start_mtp_watcher(app: &AppHandle) {
         "Starting MTP device watcher (found {} initial device(s))",
         initial_devices.len()
     );
+
+    // Auto-connect any devices already plugged in at startup
+    for device_id in &initial_devices {
+        auto_connect_device(device_id.clone());
+    }
 
     // Spawn the async hotplug watcher using Tauri's async runtime
     // (tokio::spawn doesn't work here as we're in a synchronous setup hook)
@@ -192,30 +179,6 @@ async fn run_hotplug_watcher(_app: AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_device_detected_payload_serialization() {
-        let payload = MtpDeviceDetectedPayload {
-            device_id: "mtp-336592896".to_string(),
-            name: Some("Pixel 8".to_string()),
-            vendor_id: 0x18d1,
-            product_id: 0x4ee1,
-        };
-        let json = serde_json::to_string(&payload).unwrap();
-        assert!(json.contains("deviceId"));
-        assert!(json.contains("mtp-336592896"));
-        assert!(json.contains("vendorId"));
-    }
-
-    #[test]
-    fn test_device_removed_payload_serialization() {
-        let payload = MtpDeviceRemovedPayload {
-            device_id: "mtp-336592896".to_string(),
-        };
-        let json = serde_json::to_string(&payload).unwrap();
-        assert!(json.contains("deviceId"));
-        assert!(json.contains("mtp-336592896"));
-    }
 
     #[test]
     fn test_get_current_mtp_devices() {

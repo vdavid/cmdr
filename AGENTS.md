@@ -67,7 +67,8 @@ Always use the checker script for compilation, linting, formatting, and tests. I
   `~/Library/Application Support/com.veszelovszki.cmdr-dev/`. Set by `resolved_app_data_dir()` in
   `src-tauri/src/config.rs`.
 - **Logging**: Frontend and backend logs appear together in terminal and in `~/Library/Logs/com.veszelovszki.cmdr/`.
-  Full reference with `RUST_LOG` recipes: [docs/tooling/logging.md](docs/tooling/logging.md).
+  **Read [docs/tooling/logging.md](docs/tooling/logging.md) before using `RUST_LOG`** — it has copy-paste recipes for
+  every subsystem. Key gotcha: the Rust library target is `cmdr_lib`, not `cmdr`. Use `RUST_LOG=cmdr_lib::module=debug`.
 - **Crash reports**: When the app crashes, it writes a crash file to the data dir (`crash-report.json` alongside
   `settings.json`). On next launch, the app detects this file and offers to send a crash report. See
   `src-tauri/src/crash_reporter/CLAUDE.md` for architecture details.

@@ -25,6 +25,19 @@ export async function listVolumes(): Promise<TimedOut<VolumeInfo[]>> {
 }
 
 /**
+ * Triggers a fresh `volumes-changed` broadcast from the backend.
+ * The result arrives via the event, not as a return value.
+ */
+export async function refreshVolumes(): Promise<void> {
+  try {
+    await invoke('refresh_volumes')
+  } catch {
+    // Command not available — fall back to listVolumes (shouldn't happen)
+    log.warn('refresh_volumes command not available')
+  }
+}
+
+/**
  * Gets the default volume ID (root filesystem).
  * @returns The default volume ID string
  */

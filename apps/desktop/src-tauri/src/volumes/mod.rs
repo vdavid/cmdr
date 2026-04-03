@@ -12,8 +12,6 @@ pub mod watcher;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::Path;
-use std::sync::Mutex;
-use std::time::Instant;
 
 /// Category of a location item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -71,6 +69,28 @@ pub fn supports_trash_for_fs_type(fs_type: Option<&str>) -> bool {
 ///
 /// Returns `None` if the `statfs` call fails (for example, the volume was
 /// ejected between listing and probing).
+/// Returns the filesystem ID (`f_fsid`) for a path via `statfs`, as raw bytes.
+/// Two paths on the same filesystem have the same `f_fsid`.
+/// Used to detect whether a mount point has settled (differs from root's fsid).
+///
+/// We compare as bytes because `libc::fsid_t`'s fields are private on macOS.
+pub(crate) fn get_fsid(path: &str) -> Option<[u8; size_of::<libc::fsid_t>()]> {
+    use std::ffi::CString;
+
+    let c_path = CString::new(path).ok()?;
+    let mut stat: std::mem::MaybeUninit<libc::statfs> = std::mem::MaybeUninit::uninit();
+
+    let result = unsafe { libc::statfs(c_path.as_ptr(), stat.as_mut_ptr()) };
+    if result != 0 {
+        return None;
+    }
+
+    let stat = unsafe { stat.assume_init() };
+    // Safe: fsid_t is a plain-old-data struct, reading as bytes is well-defined
+    let bytes: [u8; size_of::<libc::fsid_t>()] = unsafe { std::mem::transmute(stat.f_fsid) };
+    Some(bytes)
+}
+
 fn get_fs_type(path: &str) -> Option<String> {
     use std::ffi::CString;
 
@@ -93,31 +113,8 @@ fn get_fs_type(path: &str) -> Option<String> {
     String::from_utf8(name_bytes).ok()
 }
 
-/// Short-lived cache for `list_locations()`. During app init the frontend calls
-/// `list_volumes` + `find_containing_volume` × N tabs within milliseconds — each
-/// one calling `list_locations()` which does expensive NSFileManager + icon work.
-/// Caching the result for a few seconds collapses all of those into a single real call.
-static LOCATIONS_CACHE: Mutex<Option<(Instant, Vec<LocationInfo>)>> = Mutex::new(None);
-const LOCATIONS_CACHE_TTL_SECS: u64 = 5;
-
-/// Invalidate the locations cache. Called by the volume watcher on mount/unmount.
-pub fn invalidate_locations_cache() {
-    *LOCATIONS_CACHE.lock().unwrap() = None;
-}
-
 /// Get all locations organized by category, deduplicated.
 pub fn list_locations() -> Vec<LocationInfo> {
-    if let Some((ts, cached)) = LOCATIONS_CACHE.lock().unwrap().as_ref()
-        && ts.elapsed().as_secs() < LOCATIONS_CACHE_TTL_SECS
-    {
-        return cached.clone();
-    }
-    let result = list_locations_uncached();
-    *LOCATIONS_CACHE.lock().unwrap() = Some((Instant::now(), result.clone()));
-    result
-}
-
-fn list_locations_uncached() -> Vec<LocationInfo> {
     let mut locations = Vec::new();
     let mut seen_paths: HashSet<String> = HashSet::new();
 
@@ -245,6 +242,8 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
     use objc2::rc::autoreleasepool;
     use objc2_foundation::{NSArray, NSFileManager, NSURL, NSVolumeEnumerationOptions};
 
+    let root_fsid = get_fsid("/");
+
     // Drain autoreleased ObjC objects (NSFileManager, NSArray, NSURL).
     // Called from spawn_blocking threads that lack AppKit's autorelease pool.
     autoreleasepool(|_| {
@@ -283,6 +282,16 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
             if !path.starts_with("/Volumes/") {
                 continue;
             }
+
+            // Skip volumes whose mount hasn't settled yet. macOS fires the
+            // FSEvent before NSFileManager metadata is ready — the path exists
+            // but statfs still reports the root filesystem's ID. Including it
+            // would show wrong metadata (root volume's name/icon/type).
+            if let Some(root) = root_fsid
+                && get_fsid(&path) == Some(root) {
+                    log::debug!("Skipping {} (fsid matches root — mount not settled)", path);
+                    continue;
+                }
 
             let name = get_volume_name(&url, &path);
             let is_ejectable = get_bool_resource(&url, "NSURLVolumeIsEjectableKey").unwrap_or(false);

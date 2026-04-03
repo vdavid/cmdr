@@ -1,11 +1,17 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
-    import { listVolumes, findContainingVolume, listen, type UnlistenFn } from '$lib/tauri-commands'
+    import { findContainingVolume } from '$lib/tauri-commands'
     import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import type { VolumeInfo } from '../types'
-    import { initialize as initMtpStore, scanDevices as scanMtpDevices } from '$lib/mtp'
+    import {
+        getVolumes,
+        getVolumesTimedOut,
+        isVolumesRefreshing,
+        isVolumeRetryFailed,
+        requestVolumeRefresh,
+    } from '$lib/stores/volume-store.svelte'
     import { groupByCategory, getIconForVolume } from './volume-grouping'
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
 
@@ -17,25 +23,22 @@
 
     const { volumeId, currentPath, onVolumeChange }: Props = $props()
 
-    let volumes = $state<VolumeInfo[]>([])
+    // Volumes come from the shared store (pushed by backend)
+    const volumes = $derived(getVolumes())
+    const volumesTimedOut = $derived(getVolumesTimedOut())
+    const volumesRefreshing = $derived(isVolumesRefreshing())
+    const volumeRetryFailed = $derived(isVolumeRetryFailed())
+
     let isOpen = $state(false)
     let highlightedIndex = $state(-1)
     let dropdownRef: HTMLDivElement | undefined = $state()
     // Keyboard mode: when true, CSS :hover is suppressed to avoid double-highlight
     let isKeyboardMode = $state(false)
     let lastMousePos = $state<{ x: number; y: number } | null>(null)
-    let unlistenMount: UnlistenFn | undefined
-    let unlistenUnmount: UnlistenFn | undefined
 
     // The ID of the actual volume that contains the current path
     // This is used to show the checkmark on the correct volume, not on favorites
     let containingVolumeId = $state<string | null>(null)
-
-    // Timeout tracking for listVolumes
-    let volumesTimedOut = $state(false)
-    let isRetryingVolumes = $state(false)
-    let volumeRetryFailed = $state(false)
-    let retryFailedRevertTimer: ReturnType<typeof setTimeout> | null = null
 
     const spaceManager = createVolumeSpaceManager()
     const {
@@ -78,35 +81,26 @@
         }
     })
 
+    // Clear cached space info when the volume list changes (mount/unmount/MTP connect)
+    // and re-fetch if the dropdown is open
+    let prevVolumeIds = ''
+    $effect(() => {
+        const ids = volumes.map((v) => v.id).join(',')
+        if (prevVolumeIds && ids !== prevVolumeIds) {
+            spaceManager.clearAll()
+            if (isOpen) {
+                void spaceManager.fetchVolumeSpaces(volumes)
+            }
+        }
+        prevVolumeIds = ids
+    })
+
     async function fitDropdownToViewport() {
         await tick()
         const dropdown = dropdownRef?.querySelector('.volume-dropdown') as HTMLElement | null
         if (dropdown) {
             const top = dropdown.getBoundingClientRect().top
             dropdown.style.maxHeight = `${String(window.innerHeight - top - 8)}px`
-        }
-    }
-
-    async function loadVolumes() {
-        const result = await listVolumes()
-        volumes = result.data
-        volumesTimedOut = result.timedOut
-    }
-
-    async function retryLoadVolumes() {
-        isRetryingVolumes = true
-        volumeRetryFailed = false
-        if (retryFailedRevertTimer) clearTimeout(retryFailedRevertTimer)
-        try {
-            await loadVolumes()
-            if (volumesTimedOut) {
-                volumeRetryFailed = true
-                retryFailedRevertTimer = setTimeout(() => {
-                    volumeRetryFailed = false
-                }, 3000)
-            }
-        } finally {
-            isRetryingVolumes = false
         }
     }
 
@@ -273,37 +267,8 @@
         void updateContainingVolume(currentPath)
     })
 
-    // Refresh volumes if the current volumeId is not in our list
-    // This handles the race condition where we navigate to a newly mounted volume
-    // before the mount event is received
-    $effect(() => {
-        if (volumeId && volumeId !== 'network') {
-            const found = volumes.find((v) => v.id === volumeId)
-            if (!found && volumes.length > 0) {
-                // Volume not found but we have a list - might be a newly mounted volume
-                void loadVolumes()
-            }
-        }
-    })
-
-    onMount(async () => {
-        await loadVolumes()
-        // Initialize the MTP store — mtpVolumes is derived reactively from the store,
-        // so it updates automatically when devices connect and storages become available
-        await initMtpStore()
-        await scanMtpDevices()
-        await updateContainingVolume(currentPath)
-
-        // Listen for volume mount/unmount events
-        unlistenMount = await listen<{ volumeId: string }>('volume-mounted', () => {
-            spaceManager.clearAll()
-            void loadVolumes()
-        })
-
-        unlistenUnmount = await listen<{ volumeId: string }>('volume-unmounted', () => {
-            spaceManager.clearAll()
-            void loadVolumes()
-        })
+    onMount(() => {
+        void updateContainingVolume(currentPath)
 
         // Close on click outside
         document.addEventListener('click', handleClickOutside)
@@ -311,8 +276,6 @@
     })
 
     onDestroy(() => {
-        unlistenMount?.()
-        unlistenUnmount?.()
         spaceManager.destroy()
         document.removeEventListener('click', handleClickOutside)
         document.removeEventListener('keydown', handleDocumentKeyDown)
@@ -451,13 +414,13 @@
                     >
                     <button
                         class="timeout-retry-button"
-                        disabled={isRetryingVolumes}
+                        disabled={volumesRefreshing}
                         use:tooltip={'Refresh volume list'}
                         onclick={() => {
-                            void retryLoadVolumes()
+                            requestVolumeRefresh()
                         }}
                     >
-                        <span class="timeout-retry-icon" class:is-retrying={isRetryingVolumes}>↻</span>
+                        <span class="timeout-retry-icon" class:is-retrying={volumesRefreshing}>↻</span>
                     </button>
                 </div>
             {/if}

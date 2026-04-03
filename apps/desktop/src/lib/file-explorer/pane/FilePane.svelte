@@ -29,7 +29,7 @@
         listDirectoryEnd,
         listDirectoryStart,
         listen,
-        onMtpDeviceRemoved,
+        onMtpDeviceDisconnected,
         openFile,
         refreshListingIndexSizes,
         showFileContextMenu,
@@ -951,7 +951,9 @@
         // Then set up our promise (after the previous one was rejected)
         return new Promise<void>((resolve, reject) => {
             pendingLoadResolve = resolve
-            pendingLoadReject = (reason: string) => reject(new Error(reason))
+            pendingLoadReject = (reason: string) => {
+                reject(new Error(reason))
+            }
         })
     }
 
@@ -1552,8 +1554,8 @@
             return
         }
 
-        const listenerPromise = onMtpDeviceRemoved((event) => {
-            // Check if the removed device matches our current MTP volume
+        const listenerPromise = onMtpDeviceDisconnected((event) => {
+            // Check if the disconnected device matches our current MTP volume
             if (event.deviceId === deviceIdFromVolume) {
                 log.warn('MTP device disconnected while viewing: {deviceId}, triggering fallback', {
                     deviceId: event.deviceId,

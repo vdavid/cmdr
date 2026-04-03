@@ -14,9 +14,7 @@ import {
   getMtpDeviceDisplayName,
   listMtpDevices,
   onMtpDeviceConnected,
-  onMtpDeviceDetected,
   onMtpDeviceDisconnected,
-  onMtpDeviceRemoved,
   onMtpExclusiveAccessError,
   onMtpPermissionError,
 } from '$lib/tauri-commands'
@@ -60,8 +58,6 @@ let unlistenConnected: UnlistenFn | undefined
 let unlistenDisconnected: UnlistenFn | undefined
 let unlistenExclusiveAccess: UnlistenFn | undefined
 let unlistenPermissionError: UnlistenFn | undefined
-let unlistenDeviceDetected: UnlistenFn | undefined
-let unlistenDeviceRemoved: UnlistenFn | undefined
 
 /**
  * Gets all devices as an array (for iteration in components).
@@ -281,22 +277,34 @@ export async function disconnect(deviceId: string): Promise<void> {
 
 /**
  * Initializes the MTP store.
- * Sets up event listeners and performs initial device scan.
+ * Sets up event listeners for device connection state tracking.
+ * The backend handles device detection and auto-connection — this store
+ * is a passive consumer that tracks connection state for UI purposes.
  * Should be called once when the app starts.
  */
 export async function initialize(): Promise<void> {
   if (state.initialized) return
 
-  // Set up event listeners
+  // Track device connections (backend auto-connects on USB hotplug)
   unlistenConnected = await onMtpDeviceConnected((event) => {
-    const deviceState = state.devices.get(event.deviceId)
-    if (deviceState) {
-      state.devices.set(event.deviceId, {
-        ...deviceState,
-        connectionState: 'connected',
-        storages: event.storages,
-      })
+    // Ensure device exists in store, or create it
+    const existing = state.devices.get(event.deviceId)
+    const device = existing?.device ?? {
+      id: event.deviceId,
+      locationId: 0,
+      vendorId: 0,
+      productId: 0,
     }
+    state.devices.set(event.deviceId, {
+      device,
+      connectionState: 'connected',
+      storages: event.storages,
+      displayName: existing?.displayName ?? getMtpDeviceDisplayName(device),
+    })
+    logger.info('MTP device connected: {deviceId} ({count} storages)', {
+      deviceId: event.deviceId,
+      count: event.storages.length,
+    })
   })
 
   unlistenDisconnected = await onMtpDeviceDisconnected((event) => {
@@ -315,50 +323,39 @@ export async function initialize(): Promise<void> {
   })
 
   unlistenExclusiveAccess = await onMtpExclusiveAccessError((event) => {
-    const deviceState = state.devices.get(event.deviceId)
-    if (deviceState) {
-      const blockingInfo = event.blockingProcess ? ` (blocked by ${event.blockingProcess})` : ''
-      state.devices.set(event.deviceId, {
-        ...deviceState,
-        connectionState: 'error',
-        error: `Another process has exclusive access${blockingInfo}`,
-      })
+    const existing = state.devices.get(event.deviceId)
+    const blockingInfo = event.blockingProcess ? ` (blocked by ${event.blockingProcess})` : ''
+    const device = existing?.device ?? {
+      id: event.deviceId,
+      locationId: 0,
+      vendorId: 0,
+      productId: 0,
     }
+    state.devices.set(event.deviceId, {
+      device,
+      connectionState: 'error',
+      storages: [],
+      displayName: existing?.displayName ?? getMtpDeviceDisplayName(device),
+      error: `Another process has exclusive access${blockingInfo}`,
+    })
   })
 
   unlistenPermissionError = await onMtpPermissionError((event) => {
-    const deviceState = state.devices.get(event.deviceId)
-    if (deviceState) {
-      state.devices.set(event.deviceId, {
-        ...deviceState,
-        connectionState: 'error',
-        error: 'USB permission denied — install udev rules and reconnect',
-      })
+    const existing = state.devices.get(event.deviceId)
+    const device = existing?.device ?? {
+      id: event.deviceId,
+      locationId: 0,
+      vendorId: 0,
+      productId: 0,
     }
+    state.devices.set(event.deviceId, {
+      device,
+      connectionState: 'error',
+      storages: [],
+      displayName: existing?.displayName ?? getMtpDeviceDisplayName(device),
+      error: 'USB permission denied — install udev rules and reconnect',
+    })
   })
-
-  // USB hotplug: device detected
-  unlistenDeviceDetected = await onMtpDeviceDetected((event) => {
-    logger.info('MTP device detected via hotplug: {deviceId}', { deviceId: event.deviceId })
-    // Rescan devices to pick up the new device
-    void scanDevices()
-  })
-
-  // USB hotplug: device removed
-  unlistenDeviceRemoved = await onMtpDeviceRemoved((event) => {
-    logger.info('MTP device removed via hotplug: {deviceId}', { deviceId: event.deviceId })
-    // Remove from store immediately, then rescan to confirm
-    const deviceState = state.devices.get(event.deviceId)
-    if (deviceState) {
-      state.devices.delete(event.deviceId)
-      logger.info('Removed {displayName} from store', { displayName: deviceState.displayName })
-    }
-    // Rescan to ensure store is in sync
-    void scanDevices()
-  })
-
-  // Initial scan
-  await scanDevices()
 
   state.initialized = true
   logger.debug('MTP store initialized')
@@ -375,8 +372,6 @@ export function resetForTesting(): void {
   unlistenDisconnected = undefined
   unlistenExclusiveAccess = undefined
   unlistenPermissionError = undefined
-  unlistenDeviceDetected = undefined
-  unlistenDeviceRemoved = undefined
 }
 
 /**
@@ -388,8 +383,6 @@ export function cleanup(): void {
   unlistenDisconnected?.()
   unlistenExclusiveAccess?.()
   unlistenPermissionError?.()
-  unlistenDeviceDetected?.()
-  unlistenDeviceRemoved?.()
 
   state = {
     devices: new SvelteMap(),

@@ -18,7 +18,6 @@
     import {
         pathExists,
         listen,
-        listVolumes,
         getDefaultVolumeId,
         findContainingVolume,
         resortListing,
@@ -32,8 +31,6 @@
         cutFilesToClipboard,
         readClipboardFiles,
         clearClipboardCutState,
-        onMtpDeviceConnected,
-        onMtpDeviceDisconnected,
     } from '$lib/tauri-commands'
     import type {
         VolumeInfo,
@@ -91,6 +88,8 @@
         getTabsForPane as tabOpsGetTabsForPane,
     } from './tab-operations'
     import { initNetworkDiscovery, cleanupNetworkDiscovery } from '../network/network-store.svelte'
+    import { initVolumeStore, getVolumes as getStoreVolumes, cleanupVolumeStore } from '$lib/stores/volume-store.svelte'
+    import { initialize as initMtpStore } from '$lib/mtp'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { getAppLogger } from '$lib/logging/logger'
     import { getNewSortOrder, applySortResult, collectSortState } from './sorting-handlers'
@@ -159,7 +158,8 @@
 
     let focusedPane = $state<'left' | 'right'>('left')
     let showHiddenFiles = $state(true)
-    let volumes = $state<VolumeInfo[]>([])
+    // Volumes come from the shared store (pushed by backend via `volumes-changed` event)
+    const volumes = $derived(getStoreVolumes())
     let initialized = $state(false)
     let leftPaneWidthPercent = $state(50)
 
@@ -167,10 +167,7 @@
     const paneRefs = $state<Record<'left' | 'right', FilePaneAPI | undefined>>({ left: undefined, right: undefined })
     let unlistenSettings: UnlistenFn | undefined
     let unlistenViewMode: UnlistenFn | undefined
-    let unlistenVolumeMount: UnlistenFn | undefined
     let unlistenVolumeUnmount: UnlistenFn | undefined
-    let unlistenMtpConnect: UnlistenFn | undefined
-    let unlistenMtpDisconnect: UnlistenFn | undefined
     let unlistenDragDrop: UnlistenFn | undefined
     let unlistenDragImageSize: UnlistenFn | undefined
     let unlistenDragModifiers: UnlistenFn | undefined
@@ -495,7 +492,7 @@
         })
     })
 
-    async function handleVolumeChange(
+    function handleVolumeChange(
         pane: 'left' | 'right',
         volumeId: string,
         volumePath: string,
@@ -505,10 +502,6 @@
         const activeTab = getActiveTab(mgr)
         const oldPath = activeTab.path
         void saveLastUsedPathForVolume(activeTab.volumeId, oldPath)
-
-        if (!volumes.find((v) => v.id === volumeId)) {
-            volumes = (await listVolumes()).data
-        }
 
         // Pinned tab: open a new tab with the target volume instead of navigating in-place
         if (activeTab.pinned && (volumeId !== activeTab.volumeId || targetPath !== activeTab.path)) {
@@ -633,7 +626,7 @@
 
         // Listing didn't complete — history still points at the previous folder (correct destination).
         // setPanePath won't trigger FilePane's $effect (path unchanged), so call navigateToPath directly.
-        paneRef?.navigateToPath(entry.path, selectName)
+        void paneRef?.navigateToPath(entry.path, selectName)
         containerElement?.focus()
     }
 
@@ -949,8 +942,9 @@
         // Start network discovery in background (non-blocking)
         void initNetworkDiscovery()
 
-        // Load volumes first
-        volumes = (await listVolumes()).data
+        // Initialize volume store (subscribes to backend-pushed volume list)
+        // and MTP store (subscribes to device connection events)
+        await Promise.all([initVolumeStore(), initMtpStore()])
 
         // Load persisted state (tabs + app status + settings) in parallel
         const [leftPaneTabs, rightPaneTabs, status, settings] = await Promise.all([
@@ -1105,33 +1099,12 @@
             saveTabsForPaneSide(focusedPane)
         })
 
-        // Subscribe to volume mount events (refresh volume list when new volumes appear)
-        unlistenVolumeMount = await listen<{ volumePath: string }>('volume-mounted', () => {
-            void (async () => {
-                volumes = (await listVolumes()).data
-            })()
-        })
-
-        // Subscribe to volume unmount events
+        // Subscribe to volume unmount events (redirect panes off ejected volumes)
         unlistenVolumeUnmount = await listen<{ volumePath: string }>('volume-unmounted', (event) => {
-            void (async () => {
-                // Find the volume ID from the path
-                const volume = volumes.find((v) => v.path === event.payload.volumePath)
-                if (volume) {
-                    void handleVolumeUnmount(volume.id)
-                } else {
-                    // Volume already gone, just refresh the list
-                    volumes = (await listVolumes()).data
-                }
-            })()
-        })
-
-        // Re-fetch volumes when MTP devices connect or disconnect
-        unlistenMtpConnect = await onMtpDeviceConnected(async () => {
-            volumes = (await listVolumes()).data
-        })
-        unlistenMtpDisconnect = await onMtpDeviceDisconnected(async () => {
-            volumes = (await listVolumes()).data
+            const volume = volumes.find((v) => v.path === event.payload.volumePath)
+            if (volume) {
+                void handleVolumeUnmount(volume.id)
+            }
         })
 
         // Listen for drag image size from native swizzle (macOS).
@@ -1225,8 +1198,7 @@
             saveTabsForPaneSide('right')
         }
 
-        // Refresh volume list
-        volumes = (await listVolumes()).data
+        // Volume list is now maintained reactively by the volume store
     }
 
     function updatePaneAfterHistoryNavigation(
@@ -1281,10 +1253,7 @@
     onDestroy(() => {
         unlistenSettings?.()
         unlistenViewMode?.()
-        unlistenVolumeMount?.()
         unlistenVolumeUnmount?.()
-        unlistenMtpConnect?.()
-        unlistenMtpDisconnect?.()
         unlistenDragImageSize?.()
         unlistenDragModifiers?.()
         unlistenDragDrop?.()
@@ -1293,6 +1262,7 @@
         unlistenMcpTab?.()
         if (tabSyncTimer) clearTimeout(tabSyncTimer)
         // No cleanup needed for throttle (no pending timers)
+        cleanupVolumeStore()
         cleanupNetworkDiscovery()
         stopModifierTracking()
         window.removeEventListener('resize', handleResizeForDevTools) // No-op in non-dev, safe to always call
@@ -1939,14 +1909,14 @@
             const { data: containingVolume } = await findContainingVolume(volume.path)
             if (containingVolume) {
                 // Navigate to the favorite's path, but set the volume to the containing volume
-                await handleVolumeChange(pane, containingVolume.id, containingVolume.path, volume.path)
+                handleVolumeChange(pane, containingVolume.id, containingVolume.path, volume.path)
             } else {
                 // Fallback: use root volume
-                await handleVolumeChange(pane, 'root', '/', volume.path)
+                handleVolumeChange(pane, 'root', '/', volume.path)
             }
         } else {
             // For actual volumes, navigate to the volume's root
-            await handleVolumeChange(pane, volume.id, volume.path, volume.path)
+            handleVolumeChange(pane, volume.id, volume.path, volume.path)
         }
 
         return true
@@ -2077,7 +2047,7 @@
     export async function selectVolumeByName(pane: 'left' | 'right', name: string): Promise<boolean> {
         // "Network" is a virtual volume not in the volumes list
         if (name === 'Network') {
-            await handleVolumeChange(pane, 'network', 'smb://', 'smb://')
+            handleVolumeChange(pane, 'network', 'smb://', 'smb://')
             return true
         }
 
@@ -2303,8 +2273,9 @@
                 onPathChange={(path: string) => {
                     handlePathChange(paneId, path)
                 }}
-                onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) =>
-                    handleVolumeChange(paneId, volumeId, volumePath, targetPath)}
+                onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) => {
+                    handleVolumeChange(paneId, volumeId, volumePath, targetPath)
+                }}
                 onRequestFocus={() => {
                     handleFocus(paneId)
                 }}
@@ -2351,7 +2322,6 @@
 <DialogManager
     showTransferDialog={dialogs.showTransferDialog}
     transferDialogProps={dialogs.transferDialogProps}
-    {volumes}
     showTransferProgressDialog={dialogs.showTransferProgressDialog}
     transferProgressProps={dialogs.transferProgressProps}
     showNewFolderDialog={dialogs.showNewFolderDialog}

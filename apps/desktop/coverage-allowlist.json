@@ -242,6 +242,9 @@
     },
     "ui/ProgressBar.svelte": {
       "reason": "Pure UI component, no logic to test beyond rendering"
+    },
+    "stores/volume-store.svelte.ts": {
+      "reason": "Depends on Tauri listen/invoke APIs, integration point between backend events and frontend state"
     }
   }
 }

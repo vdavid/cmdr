@@ -107,8 +107,6 @@ vi.mock('$lib/tauri-commands', () => ({
   onMtpDeviceDisconnected: vi.fn().mockResolvedValue(() => {}),
   onMtpExclusiveAccessError: vi.fn().mockResolvedValue(() => {}),
   onMtpPermissionError: vi.fn().mockResolvedValue(() => {}),
-  onMtpDeviceDetected: vi.fn().mockResolvedValue(() => {}),
-  onMtpDeviceRemoved: vi.fn().mockResolvedValue(() => {}),
   // Dialog state tracking for MCP
   notifyDialogOpened: vi.fn().mockResolvedValue(undefined),
   notifyDialogClosed: vi.fn().mockResolvedValue(undefined),
@@ -133,6 +131,24 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
 
 vi.mock('$lib/drag-drop', () => ({
   startDragTracking: vi.fn(),
+}))
+
+vi.mock('$lib/stores/volume-store.svelte', () => ({
+  getVolumes: vi.fn().mockReturnValue([
+    {
+      id: 'root',
+      name: 'Macintosh HD',
+      path: '/',
+      category: 'main_volume',
+      isEjectable: false,
+    },
+  ]),
+  getVolumesTimedOut: vi.fn().mockReturnValue(false),
+  isVolumesRefreshing: vi.fn().mockReturnValue(false),
+  isVolumeRetryFailed: vi.fn().mockReturnValue(false),
+  requestVolumeRefresh: vi.fn(),
+  initVolumeStore: vi.fn().mockResolvedValue(undefined),
+  cleanupVolumeStore: vi.fn(),
 }))
 
 // Helper to wait for async updates

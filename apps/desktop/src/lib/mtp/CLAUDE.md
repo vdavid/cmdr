@@ -55,9 +55,9 @@ clipboard requires local file paths, which MTP virtual paths can't provide — t
 
 ## Gotchas
 
-- **Device list is NOT reactive to USB hotplug in store**: `mtp-store.svelte.ts` updates devices on
-  `mtp-device-detected/removed` events, but initial list requires calling `listMtpDevices()` on mount. Hotplug works
-  after first fetch.
+- **Backend auto-connects**: The backend watcher auto-connects MTP devices on USB hotplug. The frontend MTP store is a
+  passive consumer that tracks connection state via `mtp-device-connected`/`mtp-device-disconnected` events. It never
+  orchestrates connections.
 - **Storage ID is hex string in Tauri, number in mtp-rs**: Backend converts `u32` to hex string for frontend. Parse with
   `parseInt(storageId, 16)` if needed.
 - **Directory cache invalidation is coarse**: Any `ObjectAdded` event invalidates entire directory cache for that

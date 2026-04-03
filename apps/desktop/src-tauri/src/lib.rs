@@ -108,6 +108,7 @@ pub mod search;
 mod settings;
 #[cfg(target_os = "macos")]
 mod updater;
+mod volume_broadcast;
 #[cfg(target_os = "macos")]
 mod volumes;
 #[cfg(target_os = "linux")]
@@ -300,6 +301,9 @@ pub fn run() {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::start_discovery(app.handle().clone());
 
+            // Initialize volume broadcast (must be before watchers so they can emit)
+            volume_broadcast::init(app.handle());
+
             // Start volume mount/unmount watcher
             #[cfg(target_os = "macos")]
             volumes::watcher::start_volume_watcher(app.handle());
@@ -312,8 +316,12 @@ pub fn run() {
             mtp::virtual_device::setup_virtual_mtp_device();
 
             // Start MTP device hotplug watcher (Android device support)
+            // This also auto-connects any devices already plugged in at startup
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             mtp::start_mtp_watcher(app.handle());
+
+            // Emit initial volume list (after watchers start so MTP devices can connect)
+            volume_broadcast::emit_volumes_changed_now();
 
             // Load known network shares from disk
             #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -716,6 +724,8 @@ pub fn run() {
             stubs::mtp::move_mtp_object,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::scan_mtp_for_copy,
+            // Volume broadcast (cross-platform)
+            volume_broadcast::refresh_volumes,
             // Volume commands (platform-specific)
             #[cfg(target_os = "macos")]
             commands::volumes::list_volumes,
