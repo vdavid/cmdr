@@ -150,8 +150,7 @@ fn send_native_clipboard_action(menu_id: &str) {
         _ => return,
     };
 
-    let mtm = objc2::MainThreadMarker::new()
-        .expect("send_native_clipboard_action must be called from the main thread");
+    let mtm = objc2::MainThreadMarker::new().expect("send_native_clipboard_action must be called from the main thread");
     let ns_app = NSApplication::sharedApplication(mtm);
 
     // sendAction:to:from: with nil `to` sends to the first responder, exactly like
@@ -618,6 +617,7 @@ pub fn run() {
             commands::file_system::get_operation_status,
             // Unified volume copy commands
             commands::file_system::copy_between_volumes,
+            commands::file_system::move_between_volumes,
             commands::file_system::scan_volume_for_copy,
             commands::file_system::scan_volume_for_conflicts,
             commands::file_system::get_listing_stats,

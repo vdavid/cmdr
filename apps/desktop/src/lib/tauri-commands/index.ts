@@ -226,6 +226,7 @@ export {
   onMtpTransferProgress,
   scanMtpForCopy,
   copyBetweenVolumes,
+  moveBetweenVolumes,
   scanVolumeForCopy,
   scanVolumeForConflicts,
 } from './mtp'

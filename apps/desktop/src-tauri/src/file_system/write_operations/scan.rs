@@ -40,6 +40,7 @@ pub fn start_scan_preview(
     sort_column: SortColumn,
     sort_order: SortOrder,
     progress_interval_ms: u64,
+    runtime_handle: Option<tokio::runtime::Handle>,
 ) -> ScanPreviewStartResult {
     let preview_id = Uuid::new_v4().to_string();
     let preview_id_clone = preview_id.clone();
@@ -54,14 +55,21 @@ pub fn start_scan_preview(
         cache.insert(preview_id.clone(), Arc::clone(&state));
     }
 
-    // Spawn background task
-    std::thread::spawn(move || {
-        if let Some(volume) = source_volume {
+    // Spawn background task.
+    // Volume scans need a Tokio runtime context (MtpVolume uses Handle::block_on),
+    // so we capture the runtime handle and enter it on the spawned thread.
+    // Local scans use std::thread directly (no runtime needed).
+    if let Some(volume) = source_volume {
+        let handle = runtime_handle.expect("runtime_handle required for volume scan preview");
+        std::thread::spawn(move || {
+            let _guard = handle.enter();
             run_volume_scan_preview(app, preview_id_clone, sources, volume, state);
-        } else {
+        });
+    } else {
+        std::thread::spawn(move || {
             run_scan_preview(app, preview_id_clone, sources, sort_column, sort_order, state);
-        }
-    });
+        });
+    }
 
     ScanPreviewStartResult { preview_id }
 }

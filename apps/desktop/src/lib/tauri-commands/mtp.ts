@@ -498,6 +498,29 @@ export async function copyBetweenVolumes(
 }
 
 /**
+ * Moves files between any two volumes (local, MTP, etc.).
+ * The backend picks the best strategy:
+ * - Same volume: native rename/move (instant for MTP MoveObject)
+ * - Both local: native move (rename for same-fs, copy+delete for cross-fs)
+ * - Cross-volume: copy to destination, then delete source
+ */
+export async function moveBetweenVolumes(
+  sourceVolumeId: string,
+  sourcePaths: string[],
+  destVolumeId: string,
+  destPath: string,
+  config?: VolumeCopyConfig,
+): Promise<WriteOperationStartResult> {
+  return invoke<WriteOperationStartResult>('move_between_volumes', {
+    sourceVolumeId,
+    sourcePaths,
+    destVolumeId,
+    destPath,
+    config: config ?? {},
+  })
+}
+
+/**
  * Scans source files for a volume copy operation without executing it.
  * Performs a "pre-flight" scan to determine:
  * - Total file count and bytes to copy

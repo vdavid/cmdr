@@ -281,27 +281,75 @@ impl Volume for MtpVolume {
             return Err(VolumeError::AlreadyExists(to.display().to_string()));
         }
 
-        let mtp_path = self.to_mtp_path(from);
-        // Extract the new name from the destination path
-        let new_name = to
+        let from_mtp = self.to_mtp_path(from);
+        let to_mtp = self.to_mtp_path(to);
+
+        let from_parent = Path::new(&from_mtp).parent().unwrap_or(Path::new(""));
+        let to_parent = Path::new(&to_mtp).parent().unwrap_or(Path::new(""));
+        let same_parent = from_parent == to_parent;
+
+        let from_name = Path::new(&from_mtp)
             .file_name()
             .and_then(|n| n.to_str())
-            .ok_or_else(|| VolumeError::IoError("Invalid destination path".into()))?
-            .to_string();
+            .ok_or_else(|| VolumeError::IoError("Invalid source path".into()))?;
+        let to_name = Path::new(&to_mtp)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| VolumeError::IoError("Invalid destination path".into()))?;
+        let same_name = from_name == to_name;
 
         let device_id = self.device_id.clone();
         let storage_id = self.storage_id;
-
         let handle = tokio::runtime::Handle::current();
 
-        handle
-            .block_on(async move {
-                connection_manager()
-                    .rename_object(&device_id, storage_id, &mtp_path, &new_name)
-                    .await
-            })
-            .map(|_| ())
-            .map_err(map_mtp_error)
+        if same_parent {
+            // Same directory — just rename
+            let new_name = to_name.to_string();
+            handle
+                .block_on(async {
+                    connection_manager()
+                        .rename_object(&device_id, storage_id, &from_mtp, &new_name)
+                        .await
+                })
+                .map(|_| ())
+                .map_err(map_mtp_error)
+        } else {
+            // Different directory — use MTP MoveObject
+            let to_parent_str = to_parent.to_string_lossy().to_string();
+            handle
+                .block_on(async {
+                    connection_manager()
+                        .move_object(&device_id, storage_id, &from_mtp, &to_parent_str)
+                        .await
+                })
+                .map(|_| ())
+                .map_err(map_mtp_error)?;
+
+            // If the name also changed, rename after moving
+            if !same_name {
+                let moved_path = format!(
+                    "{}{}{}",
+                    to_parent_str,
+                    if to_parent_str.is_empty() || to_parent_str.ends_with('/') {
+                        ""
+                    } else {
+                        "/"
+                    },
+                    from_name
+                );
+                let new_name = to_name.to_string();
+                handle
+                    .block_on(async {
+                        connection_manager()
+                            .rename_object(&device_id, storage_id, &moved_path, &new_name)
+                            .await
+                    })
+                    .map(|_| ())
+                    .map_err(map_mtp_error)?;
+            }
+
+            Ok(())
+        }
     }
 
     fn supports_export(&self) -> bool {

@@ -19,7 +19,8 @@ use crate::file_system::{
     get_max_filename_width as ops_get_max_filename_width, get_operation_status as ops_get_operation_status,
     get_total_count as ops_get_total_count, get_volume_manager, list_active_operations as ops_list_active_operations,
     list_directory_end as ops_list_directory_end, list_directory_start_streaming as ops_list_directory_start_streaming,
-    list_directory_start_with_volume as ops_list_directory_start_with_volume, move_files_start as ops_move_files_start,
+    list_directory_start_with_volume as ops_list_directory_start_with_volume,
+    move_between_volumes as ops_move_between_volumes, move_files_start as ops_move_files_start,
     refresh_listing_index_sizes as ops_refresh_listing_index_sizes, resort_listing as ops_resort_listing,
     scan_for_volume_copy as ops_scan_for_volume_copy, trash_files_start as ops_trash_files_start,
 };
@@ -506,7 +507,7 @@ pub fn cancel_all_write_operations() {
 /// When `source_volume_id` is provided and is not "root", the scan uses the Volume trait
 /// (enabling MTP and other non-local volumes). Otherwise, uses `std::fs` for local scanning.
 #[tauri::command]
-pub fn start_scan_preview(
+pub async fn start_scan_preview(
     app: tauri::AppHandle,
     sources: Vec<String>,
     source_volume_id: Option<String>,
@@ -530,8 +531,16 @@ pub fn start_scan_preview(
         get_volume_manager().get(&volume_id)
     };
 
+    // Volume scans need a Tokio runtime handle (MtpVolume uses Handle::block_on).
+    // Async Tauri commands run on the Tokio runtime, so Handle::current() works here.
+    let runtime_handle = if source_volume.is_some() {
+        Some(tokio::runtime::Handle::current())
+    } else {
+        None
+    };
+
     let progress_interval = progress_interval_ms.unwrap_or(500);
-    ops_start_scan_preview(app, sources, source_volume, sort_column, sort_order, progress_interval)
+    ops_start_scan_preview(app, sources, source_volume, sort_column, sort_order, progress_interval, runtime_handle)
 }
 
 #[tauri::command]
@@ -684,6 +693,38 @@ pub async fn copy_between_volumes(
     let config = config.unwrap_or_default();
 
     ops_copy_between_volumes(app, source_volume, source_paths, dest_volume, dest_path, config).await
+}
+
+/// Unified move across volume types. Same events as `copy_between_volumes`.
+/// Handles same-volume (native rename/move), both-local (native move), and cross-volume (copy+delete).
+#[tauri::command]
+pub async fn move_between_volumes(
+    app: tauri::AppHandle,
+    source_volume_id: String,
+    source_paths: Vec<String>,
+    dest_volume_id: String,
+    dest_path: String,
+    config: Option<VolumeCopyConfig>,
+) -> Result<WriteOperationStartResult, WriteOperationError> {
+    let source_volume = get_volume_manager()
+        .get(&source_volume_id)
+        .ok_or_else(|| WriteOperationError::IoError {
+            path: source_volume_id.clone(),
+            message: format!("Source volume '{}' not found", source_volume_id),
+        })?;
+
+    let dest_volume = get_volume_manager()
+        .get(&dest_volume_id)
+        .ok_or_else(|| WriteOperationError::IoError {
+            path: dest_volume_id.clone(),
+            message: format!("Destination volume '{}' not found", dest_volume_id),
+        })?;
+
+    let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
+    let dest_path = PathBuf::from(dest_path);
+    let config = config.unwrap_or_default();
+
+    ops_move_between_volumes(app, source_volume, source_paths, dest_volume, dest_path, config).await
 }
 
 /// Pre-flight scan: total count/bytes, available space, conflicts. Doesn't copy anything.

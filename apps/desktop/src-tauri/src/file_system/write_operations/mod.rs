@@ -81,7 +81,7 @@ pub(crate) use state::{CopyTransaction, WriteOperationState};
 
 // Re-export volume copy types and functions
 pub use types::{VolumeCopyConfig, VolumeCopyScanResult};
-pub use volume_copy::{copy_between_volumes, scan_for_volume_copy};
+pub use volume_copy::{copy_between_volumes, move_between_volumes, scan_for_volume_copy};
 
 // ============================================================================
 // Public API functions

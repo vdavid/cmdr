@@ -288,10 +288,11 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
             // but statfs still reports the root filesystem's ID. Including it
             // would show wrong metadata (root volume's name/icon/type).
             if let Some(root) = root_fsid
-                && get_fsid(&path) == Some(root) {
-                    log::debug!("Skipping {} (fsid matches root — mount not settled)", path);
-                    continue;
-                }
+                && get_fsid(&path) == Some(root)
+            {
+                log::debug!("Skipping {} (fsid matches root — mount not settled)", path);
+                continue;
+            }
 
             let name = get_volume_name(&url, &path);
             let is_ejectable = get_bool_resource(&url, "NSURLVolumeIsEjectableKey").unwrap_or(false);

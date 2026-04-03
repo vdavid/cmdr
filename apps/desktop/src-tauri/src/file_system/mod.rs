@@ -56,7 +56,9 @@ pub use write_operations::{
 // Re-export volume copy types and functions
 // TODO: Remove this allow once volume_copy is integrated into Tauri commands (Phase 5)
 #[allow(unused_imports, reason = "Volume copy not yet integrated into Tauri commands")]
-pub use write_operations::{VolumeCopyConfig, VolumeCopyScanResult, copy_between_volumes, scan_for_volume_copy};
+pub use write_operations::{
+    VolumeCopyConfig, VolumeCopyScanResult, copy_between_volumes, move_between_volumes, scan_for_volume_copy,
+};
 
 /// Global volume manager instance
 static VOLUME_MANAGER: LazyLock<VolumeManager> = LazyLock::new(VolumeManager::new);
