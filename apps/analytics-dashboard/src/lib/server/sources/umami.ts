@@ -120,7 +120,7 @@ export function parseUmamiMetrics(raw: unknown): UmamiMetricItem[] {
 }
 
 export async function fetchUmamiData(env: UmamiEnv, range: TimeRange): Promise<SourceResult<UmamiData>> {
-  const cached = await cacheGet<UmamiData>('umami', range)
+  const cached = await cacheGet<UmamiData>('umami-v2', range)
   if (cached) return { ok: true, data: cached }
 
   try {
@@ -137,7 +137,7 @@ export async function fetchUmamiData(env: UmamiEnv, range: TimeRange): Promise<S
     ])
 
     const data: UmamiData = { personalSite, website, websiteReferrers, websitePages, websiteCountries, downloadEvents }
-    await cacheSet('umami', range, data)
+    await cacheSet('umami-v2', range, data)
     return { ok: true, data }
   } catch (e) {
     return { ok: false, error: `Umami: ${e instanceof Error ? e.message : String(e)}` }

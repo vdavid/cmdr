@@ -89,6 +89,12 @@ aggregate numbers. A true funnel would require cross-site user identity tracking
 
 **Decision**: Dark mode only. **Why**: Internal tool, always viewed on a laptop. Saves effort.
 
+**Decision**: Consistent color coding across the dashboard. **Why**: Visual clarity when scanning metrics.
+- **Gold (`#ffc206`)**: getcmdr.com / vdavid/cmdr — the primary product
+- **Purple (`#a78bfa`)**: vdavid/mtp-rs — the library repo
+- **Autumn green (`#8faa3b`)**: veszelovszki.com — David's personal site
+These colors are used in metric dots, chart strokes, and chart fills. Keep them consistent when adding new UI.
+
 **Decision**: Single page, not multi-page. **Why**: Only six sections. Scroll is simpler than navigation.
 
 **Decision**: uPlot for charts. **Why**: ~45 KB, fast canvas rendering, simple API. No wrapper needed.

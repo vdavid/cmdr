@@ -81,6 +81,17 @@
     const ranges = ['24h', '7d', '30d'] as const
     const downloadSyncKey = 'dl-timelines'
 
+    // Color palette
+    const COLOR_GOLD = '#ffc206'
+    const COLOR_PURPLE = '#a78bfa'
+    const COLOR_GREEN = '#8faa3b' // autumn-y green for veszelovszki.com
+
+    /** Time range in seconds for the selected range. Used as default zoom for star charts. */
+    const rangeSeconds: Record<string, number> = { '24h': 86400, '7d': 7 * 86400, '30d': 30 * 86400 }
+    function starChartXMin(): number {
+        return Date.now() / 1000 - (rangeSeconds[data.range] ?? 7 * 86400)
+    }
+
     const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
     function formatCountry(code: string): string {
         const name = regionNames.of(code.toUpperCase())
@@ -153,23 +164,23 @@
     }
 </script>
 
-<div class="mx-auto max-w-6xl px-6 py-8">
-    <!-- Header -->
-    <header class="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <h1 class="text-2xl font-bold text-text-primary">Cmdr analytics</h1>
+<div class="mx-auto max-w-[1800px] px-6 pb-8 pt-14">
+    <!-- Header (sticky) -->
+    <header class="fixed inset-x-0 top-0 z-40 flex items-center justify-between gap-4 border-b border-border bg-surface/90 px-6 py-2 backdrop-blur-sm">
+        <h1 class="text-lg font-bold text-text-primary">Cmdr analytics</h1>
 
         <div class="flex items-center gap-3">
             <div class="flex rounded-lg border border-border bg-surface p-0.5">
                 {#each ranges as r}
-                    <a
-                        href="?range={r}"
-                        class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors
+                    <button
+                        onclick={() => { zoomXMin = null; zoomXMax = null; if (r !== data.range) window.location.href = `?range=${r}` }}
+                        class="rounded-md px-3 py-1 text-sm font-medium transition-colors
                             {data.range === r
                             ? 'bg-accent text-accent-contrast'
                             : 'text-text-secondary hover:text-text-primary'}"
                     >
                         {r}
-                    </a>
+                    </button>
                 {/each}
             </div>
             <span class="text-xs text-text-tertiary">
@@ -179,7 +190,7 @@
     </header>
 
     <!-- Sections -->
-    <div class="space-y-8">
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         <!-- 1. Awareness -->
         <section class="rounded-xl border border-border bg-surface p-6">
             <div class="mb-4">
@@ -197,8 +208,8 @@
 
                 {@render metricRow([
                     { label: 'Total page views', value: formatNumber(totalPageviews), delta },
-                    { label: 'veszelovszki.com views', value: formatNumber(umami.personalSite.pageviews.value) },
-                    { label: 'getcmdr.com views', value: formatNumber(umami.website.pageviews.value) },
+                    { label: 'veszelovszki.com views', value: formatNumber(umami.personalSite.pageviews.value), color: COLOR_GREEN },
+                    { label: 'getcmdr.com views', value: formatNumber(umami.website.pageviews.value), color: COLOR_GOLD },
                 ])}
 
                 {#if umami.websiteReferrers.length > 0}
@@ -210,23 +221,30 @@
 
                 {#if data.githubStars.ok}
                     {@const stars = data.githubStars.data}
+                    {@const repoColors: Record<string, string> = { 'vdavid/cmdr': COLOR_GOLD, 'vdavid/mtp-rs': COLOR_PURPLE }}
                     <div class="mt-4">
                         <h3 class="mb-2 text-sm font-medium text-text-secondary">GitHub stars</h3>
                         {@render metricRow(
-                            stars.repos.map((r) => ({ label: r.repo, value: formatNumber(r.totalStars) }))
+                            stars.repos.map((r) => ({ label: r.repo, value: formatNumber(r.totalStars), color: repoColors[r.repo] }))
                         )}
-                        {#if stars.combinedDaily.length > 1}
-                            <div class="mt-2">
-                                <Chart
-                                    data={[
-                                        stars.combinedDaily.map((d) => new Date(d.day).getTime() / 1000),
-                                        stars.combinedDaily.map((d) => d.cumulative),
-                                    ]}
-                                    labels={['Total stars']}
-                                    height={160}
-                                />
-                            </div>
-                        {/if}
+                        {#each stars.repos as repo}
+                            {@const c = repoColors[repo.repo] ?? COLOR_GOLD}
+                            {#if repo.daily.length > 1}
+                                <div class="mt-2">
+                                    <Chart
+                                        data={[
+                                            repo.daily.map((d) => new Date(d.day).getTime() / 1000),
+                                            repo.daily.map((d) => d.cumulative),
+                                        ]}
+                                        labels={[repo.repo]}
+                                        colors={[c]}
+                                        height={120}
+                                        xMin={starChartXMin()}
+                                        xMax={Date.now() / 1000}
+                                    />
+                                </div>
+                            {/if}
+                        {/each}
                     </div>
                 {/if}
 
@@ -605,11 +623,16 @@
     </div>
 {/snippet}
 
-{#snippet metricRow(metrics: Array<{ label: string; value: string; delta?: { text: string; positive: boolean } }>)}
+{#snippet metricRow(metrics: Array<{ label: string; value: string; delta?: { text: string; positive: boolean }; color?: string }>)}
     <div class="flex flex-wrap gap-6">
         {#each metrics as metric}
             <div>
-                <p class="text-xs text-text-tertiary">{metric.label}</p>
+                <p class="flex items-center gap-1.5 text-xs text-text-tertiary">
+                    {#if metric.color}
+                        <span class="inline-block h-2 w-2 rounded-full" style="background: {metric.color}"></span>
+                    {/if}
+                    {metric.label}
+                </p>
                 <div class="flex items-baseline gap-2">
                     <p class="text-2xl font-bold tabular-nums text-text-primary">{metric.value}</p>
                     {#if metric.delta}
