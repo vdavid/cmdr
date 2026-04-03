@@ -9,10 +9,14 @@ const args = process.argv.slice(2)
 const isDev = args.includes('dev')
 const isBuild = args.includes('build')
 
-// If dev, inject the dev configuration
+// If dev, inject the dev configuration before any `--` separator
 if (isDev) {
-  // Add -c src-tauri/tauri.dev.json to merge config
-  args.push('-c', 'src-tauri/tauri.dev.json')
+  const dashDashIndex = args.indexOf('--')
+  if (dashDashIndex >= 0) {
+    args.splice(dashDashIndex, 0, '-c', 'src-tauri/tauri.dev.json')
+  } else {
+    args.push('-c', 'src-tauri/tauri.dev.json')
+  }
 }
 
 // If build on macOS and no target specified, default to universal binary

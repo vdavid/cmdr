@@ -24,6 +24,12 @@ pnpm dev
 
 This starts both the Svelte frontend and the Rust backend with hot reload.
 
+To test with a virtual MTP device (simulated Android phone):
+
+```bash
+cd apps/desktop && pnpm tauri dev -c src-tauri/tauri.dev.json --features virtual-mtp
+```
+
 ## Debug window
 
 In dev mode, press **Cmd+D** to open a debug window. This window is only available in dev builds and provides:
