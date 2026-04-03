@@ -314,54 +314,36 @@ fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperationError {
     let msg = e.to_string();
     let lower = msg.to_lowercase();
 
+    // Message-based heuristics (apply regardless of ErrorKind — checked first because they're
+    // more specific than the generic kind-based mapping below)
+    if lower.contains("disconnect") || lower.contains("no such device") {
+        return WriteOperationError::DeviceDisconnected { path };
+    }
+    if lower.contains("read-only") || lower.contains("read only") {
+        return WriteOperationError::ReadOnlyDevice { path, device_name: None };
+    }
+    if lower.contains("connection") || lower.contains("timed out") || lower.contains("timeout") {
+        return WriteOperationError::ConnectionInterrupted { path };
+    }
+    if lower.contains("name too long") || lower.contains("file name too long") {
+        return WriteOperationError::NameTooLong { path };
+    }
+    if lower.contains("invalid") && lower.contains("name") {
+        return WriteOperationError::InvalidName { path, message: msg };
+    }
+
+    // ErrorKind-based fallback, with one kind-specific heuristic
     match e.kind() {
-        std::io::ErrorKind::NotFound => {
-            if lower.contains("disconnect") || lower.contains("no such device") {
-                return WriteOperationError::DeviceDisconnected { path };
-            }
-            WriteOperationError::SourceNotFound { path }
-        }
+        std::io::ErrorKind::NotFound => WriteOperationError::SourceNotFound { path },
         std::io::ErrorKind::PermissionDenied => {
-            if lower.contains("read-only") || lower.contains("read only") {
-                return WriteOperationError::ReadOnlyDevice {
-                    path,
-                    device_name: None,
-                };
-            }
+            // macOS immutable flag manifests as PermissionDenied + "operation not permitted"
             if lower.contains("immutable") || lower.contains("operation not permitted") {
                 return WriteOperationError::FileLocked { path };
             }
             WriteOperationError::PermissionDenied { path, message: msg }
         }
         std::io::ErrorKind::AlreadyExists => WriteOperationError::DestinationExists { path },
-        std::io::ErrorKind::InvalidInput => {
-            if lower.contains("name too long") || lower.contains("file name too long") {
-                return WriteOperationError::NameTooLong { path };
-            }
-            if lower.contains("invalid") && lower.contains("name") {
-                return WriteOperationError::InvalidName { path, message: msg };
-            }
-            WriteOperationError::IoError { path, message: msg }
-        }
-        _ => {
-            // Heuristic classification based on message content
-            if lower.contains("disconnect") || lower.contains("no such device") {
-                return WriteOperationError::DeviceDisconnected { path };
-            }
-            if lower.contains("read-only") || lower.contains("read only") {
-                return WriteOperationError::ReadOnlyDevice {
-                    path,
-                    device_name: None,
-                };
-            }
-            if lower.contains("connection") || lower.contains("timed out") || lower.contains("timeout") {
-                return WriteOperationError::ConnectionInterrupted { path };
-            }
-            if lower.contains("name too long") || lower.contains("file name too long") {
-                return WriteOperationError::NameTooLong { path };
-            }
-            WriteOperationError::IoError { path, message: msg }
-        }
+        _ => WriteOperationError::IoError { path, message: msg },
     }
 }
 
