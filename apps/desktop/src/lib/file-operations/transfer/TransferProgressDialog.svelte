@@ -153,6 +153,9 @@
     let isCancelling = $state(false)
     let isRollingBack = $state(false)
     let destroyed = false
+    /** Set when the operation reaches a terminal state (complete, error, cancel, rollback).
+     *  Prevents onDestroy's safety-net cancel from interfering with an already-handled outcome. */
+    let operationSettled = false
 
     // Events that arrived before we know our operationId (from the command response).
     // Without buffering, a stale event from a previous operation could claim the ID slot first.
@@ -299,6 +302,7 @@
             bytesProcessed: event.bytesProcessed,
         })
 
+        operationSettled = true
         cleanup()
 
         const totalFiles = event.filesProcessed
@@ -321,6 +325,7 @@
 
         log.error('{op} error: {errorType}', { op: operationLabel, errorType: event.error.type, error: event.error })
 
+        operationSettled = true
         cleanup()
         onError(event.error)
     }
@@ -334,6 +339,7 @@
             rolledBack: event.rolledBack,
         })
 
+        operationSettled = true
         cleanup()
         onCancelled(event.filesProcessed)
     }
@@ -511,6 +517,7 @@
         if (rollback) {
             // Rollback: keep dialog open, show "Rolling back...", wait for event
             log.info('Rolling back operation: {operationId}', { operationId })
+            operationSettled = true
             isRollingBack = true
             isCancelling = true
             try {
@@ -530,6 +537,7 @@
                 await cancelWriteOperation(operationId, false)
                 log.debug('Cancel request sent successfully')
                 // Close immediately without waiting for backend confirmation
+                operationSettled = true
                 cleanup()
                 onCancelled(filesDone)
             } catch (err) {
@@ -665,11 +673,10 @@
             void cancelScanPreview(previewId)
         }
         cleanupScanListeners()
-        if (operationId) {
-            // Cancel with rollback on unexpected teardown (hot-reload, navigation, crash).
-            // Normal user-initiated cancel/complete already ran cleanup() + callbacks,
-            // and the backend ignores cancel on finished operations (idempotent).
-            void cancelWriteOperation(operationId, true)
+        if (operationId && !operationSettled) {
+            // Unexpected teardown (hot-reload, navigation, window close): stop the operation
+            // but don't roll back — never do silent background work without visual feedback.
+            void cancelWriteOperation(operationId, false)
         }
         cleanup()
     })

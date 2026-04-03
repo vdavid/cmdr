@@ -185,7 +185,12 @@ pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
     if let Ok(cache) = WRITE_OPERATION_STATE.read()
         && let Some(state) = cache.get(operation_id)
     {
-        state.cancelled.store(true, Ordering::Relaxed);
+        // If already cancelled, don't overwrite skip_rollback — the first caller's
+        // decision wins. This prevents a later safety-net cancel from changing the
+        // rollback policy that the user explicitly chose.
+        if state.cancelled.swap(true, Ordering::Relaxed) {
+            return;
+        }
         state.skip_rollback.store(!rollback, Ordering::Relaxed);
         // Wake up any waiting conflict resolution
         let _guard = state.conflict_mutex.lock();
