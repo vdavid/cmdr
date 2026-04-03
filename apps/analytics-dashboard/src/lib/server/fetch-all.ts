@@ -2,13 +2,13 @@ import type { TimeRange, SourceResult } from './types.js'
 import type { UmamiData } from './sources/umami.js'
 import type { CloudflareData } from './sources/cloudflare.js'
 import type { PaddleData } from './sources/paddle.js'
-import type { GitHubData } from './sources/github.js'
+import type { GitHubData, GitHubStarsData } from './sources/github.js'
 import type { PostHogData } from './sources/posthog.js'
 import type { LicenseData } from './sources/license.js'
 import { fetchUmamiData } from './sources/umami.js'
 import { fetchCloudflareData } from './sources/cloudflare.js'
 import { fetchPaddleData } from './sources/paddle.js'
-import { fetchGitHubData } from './sources/github.js'
+import { fetchGitHubData, fetchGitHubStarsData } from './sources/github.js'
 import { fetchPostHogData } from './sources/posthog.js'
 import { fetchLicenseData } from './sources/license.js'
 
@@ -19,6 +19,7 @@ export interface DashboardData {
   cloudflare: SourceResult<CloudflareData>
   paddle: SourceResult<PaddleData>
   github: SourceResult<GitHubData>
+  githubStars: SourceResult<GitHubStarsData>
   posthog: SourceResult<PostHogData>
   license: SourceResult<LicenseData>
 }
@@ -61,7 +62,7 @@ export async function fetchDashboardData(
   const range: TimeRange = validRanges.has(rangeParam as TimeRange) ? (rangeParam as TimeRange) : '7d'
   const env = await resolveEnv(platform)
 
-  const [umami, cloudflare, paddle, github, posthog, license] = await Promise.all([
+  const [umami, cloudflare, paddle, github, githubStars, posthog, license] = await Promise.all([
     guardedFetch(env?.UMAMI_API_URL, 'Umami', () =>
       fetchUmamiData(
         {
@@ -81,6 +82,7 @@ export async function fetchDashboardData(
       fetchPaddleData({ PADDLE_API_KEY_LIVE: env.PADDLE_API_KEY_LIVE }, range),
     ),
     fetchGitHubData({ GITHUB_TOKEN: env?.GITHUB_TOKEN }),
+    fetchGitHubStarsData({ GITHUB_TOKEN: env?.GITHUB_TOKEN }),
     guardedFetch(env?.POSTHOG_API_KEY, 'PostHog', () =>
       fetchPostHogData(
         {
@@ -96,5 +98,5 @@ export async function fetchDashboardData(
     ),
   ])
 
-  return { range, updatedAt: new Date().toISOString(), umami, cloudflare, paddle, github, posthog, license }
+  return { range, updatedAt: new Date().toISOString(), umami, cloudflare, paddle, github, githubStars, posthog, license }
 }

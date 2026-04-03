@@ -81,6 +81,17 @@ function formatReport(data: DashboardData): string {
       `- getcmdr.com visitors: ${num(u.website.visitors.value)}${delta(u.website.visitors.value, u.website.visitors.prev)}`,
     )
 
+    if (data.githubStars.ok) {
+      const s = data.githubStars.data
+      blank()
+      line(`GitHub stars: ${num(s.totalStars)} total`)
+      for (const repo of s.repos) {
+        const recent7 = repo.daily.filter((d) => new Date(d.day) >= new Date(Date.now() - 7 * 86_400_000)).reduce((sum, d) => sum + d.newStars, 0)
+        const recent30 = repo.daily.filter((d) => new Date(d.day) >= new Date(Date.now() - 30 * 86_400_000)).reduce((sum, d) => sum + d.newStars, 0)
+        line(`  ${repo.repo}: ${num(repo.totalStars)} (last 7d: +${recent7}, last 30d: +${recent30})`)
+      }
+    }
+
     if (u.websiteReferrers.length > 0) {
       blank()
       line('Top referrers:')

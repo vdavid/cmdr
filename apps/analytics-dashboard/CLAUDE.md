@@ -43,7 +43,7 @@ Each source gets its own module under `src/lib/server/sources/`:
 | `umami.ts`      | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com + getcmdr.com                                    |
 | `cloudflare.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Download counts, active users by version/arch/country — fetched from worker endpoints (`/admin/downloads`, `/admin/active-users`) |
 | `paddle.ts`     | Bearer token, cursor pagination                 | Completed transactions, subscriptions by status                                                                                   |
-| `github.ts`     | Optional Bearer token                           | Release download counts per asset                                                                                                 |
+| `github.ts`     | Optional Bearer token                           | Release download counts per asset; star history (daily + cumulative) for cmdr and mtp-rs via stargazers API with pagination        |
 | `posthog.ts`    | Bearer personal API key                         | Pageview trends via Trends API (EU endpoint)                                                                                      |
 | `license.ts`    | Bearer admin token                              | Activation count + active devices from `/admin/stats`                                                                             |
 

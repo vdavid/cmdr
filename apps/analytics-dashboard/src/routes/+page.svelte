@@ -208,9 +208,33 @@
                     </div>
                 {/if}
 
+                {#if data.githubStars.ok}
+                    {@const stars = data.githubStars.data}
+                    <div class="mt-4">
+                        <h3 class="mb-2 text-sm font-medium text-text-secondary">GitHub stars</h3>
+                        {@render metricRow(
+                            stars.repos.map((r) => ({ label: r.repo, value: formatNumber(r.totalStars) }))
+                        )}
+                        {#if stars.combinedDaily.length > 1}
+                            <div class="mt-2">
+                                <Chart
+                                    data={[
+                                        stars.combinedDaily.map((d) => new Date(d.day).getTime() / 1000),
+                                        stars.combinedDaily.map((d) => d.cumulative),
+                                    ]}
+                                    labels={['Total stars']}
+                                    height={160}
+                                />
+                            </div>
+                        {/if}
+                    </div>
+                {/if}
+
                 {@render externalLinks([
                     { label: 'View veszelovszki.com in Umami', href: 'https://anal.veszelovszki.com' },
                     { label: 'View getcmdr.com in Umami', href: 'https://anal.veszelovszki.com' },
+                    { label: 'cmdr on GitHub', href: 'https://github.com/vdavid/cmdr' },
+                    { label: 'mtp-rs on GitHub', href: 'https://github.com/vdavid/mtp-rs' },
                 ])}
             {/if}
         </section>
