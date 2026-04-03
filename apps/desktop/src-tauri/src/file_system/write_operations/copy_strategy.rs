@@ -22,7 +22,7 @@
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::AtomicU8;
 
 #[cfg(target_os = "linux")]
 use super::linux_copy::copy_single_file_linux;
@@ -110,7 +110,7 @@ pub(super) fn copy_file_with_strategy(
     source: &Path,
     dest: &Path,
     needs_safe_overwrite: bool,
-    cancelled: &Arc<AtomicBool>,
+    cancelled: &Arc<AtomicU8>,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<u64, WriteOperationError> {
     if is_same_apfs_volume(source, dest) {
@@ -140,7 +140,7 @@ pub(super) fn copy_file_with_strategy(
     source: &Path,
     dest: &Path,
     needs_safe_overwrite: bool,
-    cancelled: &Arc<AtomicBool>,
+    cancelled: &Arc<AtomicU8>,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<u64, WriteOperationError> {
     if is_network_filesystem(source) || is_network_filesystem(dest) {
@@ -162,7 +162,7 @@ pub(super) fn copy_file_with_strategy(
     source: &Path,
     dest: &Path,
     needs_safe_overwrite: bool,
-    cancelled: &Arc<AtomicBool>,
+    cancelled: &Arc<AtomicU8>,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<u64, WriteOperationError> {
     let _ = (cancelled, progress_callback); // Unused on this platform
@@ -177,7 +177,7 @@ pub(super) fn copy_file_with_strategy(
 mod tests {
     use super::*;
     use std::fs;
-    use std::sync::atomic::AtomicBool;
+    use std::sync::atomic::AtomicU8;
 
     fn create_temp_dir(name: &str) -> std::path::PathBuf {
         let temp_dir = std::env::temp_dir().join(format!("cmdr_copy_strategy_test_{}", name));
@@ -198,7 +198,7 @@ mod tests {
 
         fs::write(&src, "Hello, copy strategy!").unwrap();
 
-        let cancelled = Arc::new(AtomicBool::new(false));
+        let cancelled = Arc::new(AtomicU8::new(0));
         let result = copy_file_with_strategy(&src, &dst, false, &cancelled, None);
 
         assert!(result.is_ok());
@@ -218,7 +218,7 @@ mod tests {
         fs::write(&src, "New content").unwrap();
         fs::write(&dst, "Old content").unwrap();
 
-        let cancelled = Arc::new(AtomicBool::new(false));
+        let cancelled = Arc::new(AtomicU8::new(0));
         let result = copy_file_with_strategy(&src, &dst, true, &cancelled, None);
 
         assert!(result.is_ok());
@@ -239,7 +239,7 @@ mod tests {
         fs::write(&src, "#!/bin/bash").unwrap();
         fs::set_permissions(&src, fs::Permissions::from_mode(0o755)).unwrap();
 
-        let cancelled = Arc::new(AtomicBool::new(false));
+        let cancelled = Arc::new(AtomicU8::new(0));
         let result = copy_file_with_strategy(&src, &dst, false, &cancelled, None);
 
         assert!(result.is_ok());
@@ -257,7 +257,7 @@ mod tests {
 
         fs::write(&src, "").unwrap();
 
-        let cancelled = Arc::new(AtomicBool::new(false));
+        let cancelled = Arc::new(AtomicU8::new(0));
         let result = copy_file_with_strategy(&src, &dst, false, &cancelled, None);
 
         assert!(result.is_ok());

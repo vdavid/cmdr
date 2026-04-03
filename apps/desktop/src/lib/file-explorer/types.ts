@@ -341,7 +341,7 @@ export type WriteOperationType = 'copy' | 'move' | 'delete' | 'trash'
 export type TransferOperationType = 'copy' | 'move' | 'delete' | 'trash'
 
 /** Phase of a write operation. */
-export type WriteOperationPhase = 'scanning' | 'copying' | 'deleting' | 'trashing'
+export type WriteOperationPhase = 'scanning' | 'copying' | 'deleting' | 'trashing' | 'rolling_back'
 
 /** How to handle conflicts when destination files already exist. */
 export type ConflictResolution = 'stop' | 'skip' | 'overwrite' | 'rename'

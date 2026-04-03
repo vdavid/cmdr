@@ -11,7 +11,6 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::Ordering;
 
 use super::state::WriteOperationState;
 use super::types::{ConflictResolution, VolumeCopyConfig, WriteConflictEvent, WriteOperationError};
@@ -88,13 +87,13 @@ pub(super) fn resolve_volume_conflict(
                     // 1. No pending resolution
                     // 2. Not cancelled
                     let has_resolution = state.pending_resolution.read().map(|r| r.is_some()).unwrap_or(false);
-                    let is_cancelled = state.cancelled.load(Ordering::Relaxed);
+                    let is_cancelled = super::state::is_cancelled(&state.intent);
                     !has_resolution && !is_cancelled
                 })
                 .unwrap();
 
             // Check if cancelled
-            if state.cancelled.load(Ordering::Relaxed) {
+            if super::state::is_cancelled(&state.intent) {
                 return Err(WriteOperationError::Cancelled {
                     message: "Operation cancelled by user".to_string(),
                 });

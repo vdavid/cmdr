@@ -36,6 +36,8 @@ pub enum WriteOperationPhase {
     Deleting,
     /// Moving items to trash
     Trashing,
+    /// Rolling back: deleting files created during a cancelled copy/move
+    RollingBack,
 }
 
 // ============================================================================

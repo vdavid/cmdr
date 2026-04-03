@@ -8,7 +8,9 @@
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicU8;
+#[cfg(test)]
+use std::sync::atomic::Ordering;
 
 use super::types::WriteOperationError;
 
@@ -59,7 +61,7 @@ pub fn is_network_filesystem(path: &Path) -> bool {
 pub fn chunked_copy_with_metadata(
     source: &Path,
     dest: &Path,
-    cancelled: &Arc<AtomicBool>,
+    cancelled: &Arc<AtomicU8>,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<u64, WriteOperationError> {
     log::info!(
@@ -98,7 +100,7 @@ pub fn chunked_copy_with_metadata(
 fn copy_data_chunked(
     source: &Path,
     dest: &Path,
-    cancelled: &Arc<AtomicBool>,
+    cancelled: &Arc<AtomicU8>,
     source_size: u64,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<u64, WriteOperationError> {
@@ -117,7 +119,7 @@ fn copy_data_chunked(
 
     loop {
         // Check cancellation BEFORE each read
-        if cancelled.load(Ordering::Relaxed) {
+        if super::state::is_cancelled(cancelled) {
             log::info!(
                 "chunked_copy: cancellation detected after {} bytes, cleaning up",
                 total_bytes
@@ -312,7 +314,7 @@ mod tests {
 
         fs::write(&src, "Hello, chunked copy!").unwrap();
 
-        let cancelled = Arc::new(AtomicBool::new(false));
+        let cancelled = Arc::new(AtomicU8::new(0));
         let result = chunked_copy_with_metadata(&src, &dst, &cancelled, None);
 
         assert!(result.is_ok());
@@ -334,7 +336,7 @@ mod tests {
         fs::write(&src, &large_content).unwrap();
 
         // Pre-cancelled
-        let cancelled = Arc::new(AtomicBool::new(true));
+        let cancelled = Arc::new(AtomicU8::new(2));
         let result = chunked_copy_with_metadata(&src, &dst, &cancelled, None);
 
         assert!(matches!(result, Err(WriteOperationError::Cancelled { .. })));
@@ -355,7 +357,7 @@ mod tests {
         fs::write(&src, "#!/bin/bash").unwrap();
         fs::set_permissions(&src, fs::Permissions::from_mode(0o755)).unwrap();
 
-        let cancelled = Arc::new(AtomicBool::new(false));
+        let cancelled = Arc::new(AtomicU8::new(0));
         let result = chunked_copy_with_metadata(&src, &dst, &cancelled, None);
 
         assert!(result.is_ok());
@@ -373,7 +375,7 @@ mod tests {
 
         fs::write(&src, "").unwrap();
 
-        let cancelled = Arc::new(AtomicBool::new(false));
+        let cancelled = Arc::new(AtomicU8::new(0));
         let result = chunked_copy_with_metadata(&src, &dst, &cancelled, None);
 
         assert!(result.is_ok());
@@ -397,7 +399,7 @@ mod tests {
         let expected_size = large_content.len() as u64;
         fs::write(&src, &large_content).unwrap();
 
-        let cancelled = Arc::new(AtomicBool::new(false));
+        let cancelled = Arc::new(AtomicU8::new(0));
         let callback_count = Arc::new(AtomicU64::new(0));
         let last_bytes = Arc::new(AtomicU64::new(0));
 

@@ -4,11 +4,52 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, LazyLock, RwLock};
 use std::time::Duration;
 
 use super::types::{ConflictResolution, OperationStatus, OperationSummary, WriteOperationPhase, WriteOperationType};
+
+// ============================================================================
+// Operation intent (state machine for cancellation)
+// ============================================================================
+
+/// What the operation should do next.
+///
+/// State machine: `Running` → `RollingBack` or `Stopped`, `RollingBack` → `Stopped`.
+/// No reverse transitions. Encoded as `AtomicU8` for lock-free sharing with native
+/// copy callbacks (macOS `copyfile`, chunked copy, etc.).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub(crate) enum OperationIntent {
+    /// Continue the operation normally.
+    Running = 0,
+    /// Stop the forward operation and delete created files.
+    RollingBack = 1,
+    /// Stop immediately, keep partial files.
+    Stopped = 2,
+}
+
+impl OperationIntent {
+    fn from_u8(v: u8) -> Self {
+        match v {
+            1 => Self::RollingBack,
+            2 => Self::Stopped,
+            _ => Self::Running,
+        }
+    }
+}
+
+/// Loads the current intent from an `AtomicU8`.
+pub(crate) fn load_intent(intent: &AtomicU8) -> OperationIntent {
+    OperationIntent::from_u8(intent.load(Ordering::Relaxed))
+}
+
+/// Returns true if the operation should stop (intent is not `Running`).
+/// Use this for the common cancellation check in copy/delete/move loops.
+pub(crate) fn is_cancelled(intent: &AtomicU8) -> bool {
+    intent.load(Ordering::Relaxed) != OperationIntent::Running as u8
+}
 
 // ============================================================================
 // Operation state
@@ -16,10 +57,9 @@ use super::types::{ConflictResolution, OperationStatus, OperationSummary, WriteO
 
 /// State for an in-progress write operation.
 pub struct WriteOperationState {
-    /// Arc so it can be shared with native copy operations.
-    pub cancelled: Arc<AtomicBool>,
-    /// When true, keep partial files on cancellation.
-    pub skip_rollback: AtomicBool,
+    /// Shared with native copy operations for cancellation checks.
+    /// Encodes `OperationIntent` as a `u8`. Use `is_cancelled()` / `load_intent()` to read.
+    pub intent: Arc<AtomicU8>,
     pub progress_interval: Duration,
     /// Set by `resolve_write_conflict`.
     pub pending_resolution: RwLock<Option<ConflictResolutionResponse>>,
@@ -178,36 +218,56 @@ pub fn get_operation_status(operation_id: &str) -> Option<OperationStatus> {
 
 /// Cancels an in-progress write operation.
 ///
+/// State transitions: `Running → RollingBack` (rollback=true), `Running → Stopped` (rollback=false),
+/// `RollingBack → Stopped` (cancel during rollback). Other transitions are no-ops.
+///
 /// # Arguments
 /// * `operation_id` - The operation ID to cancel
-/// * `rollback` - If true, delete any partial files created. If false, keep them.
+/// * `rollback` - If true, roll back (delete created files). If false, stop and keep partial files.
 pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
     if let Ok(cache) = WRITE_OPERATION_STATE.read()
         && let Some(state) = cache.get(operation_id)
     {
-        // If already cancelled, don't overwrite skip_rollback — the first caller's
-        // decision wins. This prevents a later safety-net cancel from changing the
-        // rollback policy that the user explicitly chose.
-        if state.cancelled.swap(true, Ordering::Relaxed) {
+        let target = if rollback {
+            OperationIntent::RollingBack
+        } else {
+            OperationIntent::Stopped
+        };
+        let current = OperationIntent::from_u8(state.intent.load(Ordering::Relaxed));
+
+        // Valid transitions: Running → RollingBack/Stopped, RollingBack → Stopped.
+        // Stopped is terminal — no further transitions.
+        let valid = matches!(
+            (current, target),
+            (OperationIntent::Running, _) | (OperationIntent::RollingBack, OperationIntent::Stopped)
+        );
+        if !valid {
             return;
         }
-        state.skip_rollback.store(!rollback, Ordering::Relaxed);
+
+        state
+            .intent
+            .store(target as u8, Ordering::Relaxed);
         // Wake up any waiting conflict resolution
         let _guard = state.conflict_mutex.lock();
         state.conflict_condvar.notify_all();
     }
 }
 
-/// Cancels all in-progress write operations with rollback.
+/// Stops all in-progress write operations without rollback.
 ///
 /// Used as a safety net when the frontend is tearing down (beforeunload, hot-reload).
+/// Transitions to `Stopped` (not `RollingBack`) because teardown must never silently
+/// delete files in the background without visual feedback.
 pub fn cancel_all_write_operations() {
     if let Ok(cache) = WRITE_OPERATION_STATE.read() {
         for (id, state) in cache.iter() {
-            if !state.cancelled.load(Ordering::Relaxed) {
-                log::info!("cancel_all_write_operations: cancelling op={id}");
-                state.cancelled.store(true, Ordering::Relaxed);
-                state.skip_rollback.store(false, Ordering::Relaxed);
+            let current = load_intent(&state.intent);
+            if current != OperationIntent::Stopped {
+                log::info!("cancel_all_write_operations: stopping op={id}");
+                state
+                    .intent
+                    .store(OperationIntent::Stopped as u8, Ordering::Relaxed);
                 let _guard = state.conflict_mutex.lock();
                 state.conflict_condvar.notify_all();
             }
@@ -392,33 +452,6 @@ impl CopyTransaction {
         for dir in self.created_dirs.iter().rev() {
             let _ = std::fs::remove_dir(dir);
         }
-    }
-
-    /// Rolls back on a detached thread. Returns immediately.
-    /// Use for user-initiated cancel where the calling thread must not block.
-    /// Best-effort: if the background thread fails, files remain on disk.
-    pub fn rollback_in_background(mut self) {
-        let files = std::mem::take(&mut self.created_files);
-        let dirs = std::mem::take(&mut self.created_dirs);
-        self.committed = true; // Prevent Drop from synchronous double-rollback
-        if files.is_empty() && dirs.is_empty() {
-            return;
-        }
-        log::info!(
-            "rollback_in_background: cleaning up {} files and {} dirs",
-            files.len(),
-            dirs.len()
-        );
-        std::thread::spawn(move || {
-            for file in files.iter().rev() {
-                if let Err(e) = std::fs::remove_file(file) {
-                    log::warn!("rollback: failed to remove {}: {}", file.display(), e);
-                }
-            }
-            for dir in dirs.iter().rev() {
-                let _ = std::fs::remove_dir(dir);
-            }
-        });
     }
 
     /// Marks the transaction as committed, preventing rollback on drop.

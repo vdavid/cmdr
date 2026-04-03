@@ -17,7 +17,7 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicU8;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
@@ -113,8 +113,7 @@ pub async fn copy_between_volumes(
     );
 
     let state = Arc::new(WriteOperationState {
-        cancelled: Arc::new(AtomicBool::new(false)),
-        skip_rollback: AtomicBool::new(false),
+        intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(config.progress_interval_ms),
         pending_resolution: std::sync::RwLock::new(None),
         conflict_condvar: std::sync::Condvar::new(),
@@ -342,7 +341,7 @@ fn copy_volumes_with_progress(
         let mut total_dirs = 0;
 
         for source_path in source_paths {
-            if state.cancelled.load(Ordering::Relaxed) {
+            if super::state::is_cancelled(&state.intent) {
                 return Err(WriteOperationError::Cancelled {
                     message: "Operation cancelled by user".to_string(),
                 });
@@ -412,7 +411,7 @@ fn copy_volumes_with_progress(
 
     for source_path in source_paths {
         // Check cancellation
-        if state.cancelled.load(Ordering::Relaxed) {
+        if super::state::is_cancelled(&state.intent) {
             let _ = app.emit(
                 "write-cancelled",
                 WriteCancelledEvent {
@@ -605,8 +604,7 @@ pub async fn move_between_volumes(
     let operation_id_for_spawn = operation_id.clone();
 
     let state = Arc::new(WriteOperationState {
-        cancelled: Arc::new(AtomicBool::new(false)),
-        skip_rollback: AtomicBool::new(false),
+        intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(config.progress_interval_ms),
         pending_resolution: std::sync::RwLock::new(None),
         conflict_condvar: std::sync::Condvar::new(),
@@ -634,7 +632,7 @@ pub async fn move_between_volumes(
             // Copy+delete per file: on partial failure, already-moved files exist at dest,
             // remaining files stay at source. No data loss, but the move is partial.
             for source_path in &source_paths {
-                if state.cancelled.load(Ordering::Relaxed) {
+                if super::state::is_cancelled(&state.intent) {
                     return Err(WriteOperationError::Cancelled {
                         message: "Operation cancelled by user".to_string(),
                     });
@@ -763,8 +761,7 @@ async fn move_within_same_volume(
     let progress_interval_ms = config.progress_interval_ms;
 
     let state = Arc::new(WriteOperationState {
-        cancelled: Arc::new(AtomicBool::new(false)),
-        skip_rollback: AtomicBool::new(false),
+        intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(progress_interval_ms),
         pending_resolution: std::sync::RwLock::new(None),
         conflict_condvar: std::sync::Condvar::new(),
@@ -790,7 +787,7 @@ async fn move_within_same_volume(
             let progress_interval = Duration::from_millis(progress_interval_ms);
 
             for source_path in &source_paths {
-                if state.cancelled.load(Ordering::Relaxed) {
+                if super::state::is_cancelled(&state.intent) {
                     return Err(WriteOperationError::Cancelled {
                         message: "Operation cancelled by user".to_string(),
                     });

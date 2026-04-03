@@ -3,7 +3,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 use super::helpers::spawn_async_sync;
@@ -66,7 +65,7 @@ pub(super) fn delete_files_with_progress(
     // Delete files
     for file_info in &scan_result.files {
         // Check cancellation
-        if state.cancelled.load(Ordering::Relaxed) {
+        if super::state::is_cancelled(&state.intent) {
             let _ = app.emit(
                 "write-cancelled",
                 WriteCancelledEvent {
@@ -131,7 +130,7 @@ pub(super) fn delete_files_with_progress(
     // Delete directories (in reverse order - deepest first)
     for dir in scan_result.dirs.iter().rev() {
         // Check cancellation
-        if state.cancelled.load(Ordering::Relaxed) {
+        if super::state::is_cancelled(&state.intent) {
             let _ = app.emit(
                 "write-cancelled",
                 WriteCancelledEvent {
@@ -197,7 +196,7 @@ fn scan_volume_recursive(
 ) -> Result<(), WriteOperationError> {
     use tauri::Emitter;
 
-    if state.cancelled.load(Ordering::Relaxed) {
+    if super::state::is_cancelled(&state.intent) {
         return Err(WriteOperationError::Cancelled {
             message: "Operation cancelled by user".to_string(),
         });
@@ -380,7 +379,7 @@ pub(super) fn delete_volume_files_with_progress(
 
     // Delete files
     for entry in entries.iter().filter(|e| !e.is_dir) {
-        if state.cancelled.load(Ordering::Relaxed) {
+        if super::state::is_cancelled(&state.intent) {
             let _ = app.emit(
                 "write-cancelled",
                 WriteCancelledEvent {
@@ -432,7 +431,7 @@ pub(super) fn delete_volume_files_with_progress(
 
     // Delete directories (already in deepest-first order from scan_volume_recursive)
     for entry in entries.iter().filter(|e| e.is_dir) {
-        if state.cancelled.load(Ordering::Relaxed) {
+        if super::state::is_cancelled(&state.intent) {
             let _ = app.emit(
                 "write-cancelled",
                 WriteCancelledEvent {

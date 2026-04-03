@@ -36,7 +36,7 @@ mod volume_strategy;
 
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::AtomicU8;
 use std::time::Duration;
 use uuid::Uuid;
 
@@ -77,7 +77,7 @@ pub(crate) use helpers::{
     validate_sources,
 };
 #[cfg(test)]
-pub(crate) use state::{CopyTransaction, WriteOperationState};
+pub(crate) use state::{CopyTransaction, OperationIntent, WriteOperationState, is_cancelled, load_intent};
 
 // Re-export volume copy types and functions
 pub use types::{VolumeCopyConfig, VolumeCopyScanResult};
@@ -103,8 +103,7 @@ where
 {
     let operation_id = Uuid::new_v4().to_string();
     let state = Arc::new(WriteOperationState {
-        cancelled: Arc::new(AtomicBool::new(false)),
-        skip_rollback: AtomicBool::new(false),
+        intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(progress_interval_ms),
         pending_resolution: std::sync::RwLock::new(None),
         conflict_condvar: std::sync::Condvar::new(),

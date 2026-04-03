@@ -6,7 +6,7 @@
 use super::*;
 use std::fs;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
@@ -28,19 +28,21 @@ fn cleanup_temp_dir(path: &PathBuf) {
 // ============================================================================
 
 #[test]
-fn test_cancel_sets_flag() {
+fn test_cancel_sets_intent() {
     let state = Arc::new(WriteOperationState {
-        cancelled: Arc::new(AtomicBool::new(false)),
-        skip_rollback: AtomicBool::new(false),
+        intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(200),
         pending_resolution: RwLock::new(None),
         conflict_condvar: std::sync::Condvar::new(),
         conflict_mutex: std::sync::Mutex::new(false),
     });
 
-    assert!(!state.cancelled.load(Ordering::Relaxed));
-    state.cancelled.store(true, Ordering::Relaxed);
-    assert!(state.cancelled.load(Ordering::Relaxed));
+    assert!(!is_cancelled(&state.intent));
+    assert_eq!(load_intent(&state.intent), OperationIntent::Running);
+
+    state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
+    assert!(is_cancelled(&state.intent));
+    assert_eq!(load_intent(&state.intent), OperationIntent::Stopped);
 }
 
 // ============================================================================
@@ -242,37 +244,38 @@ fn test_copy_transaction_rollback_handles_already_deleted_files() {
 }
 
 #[test]
-fn test_skip_rollback_flag_behavior() {
-    // Test that skip_rollback flag controls rollback behavior
+fn test_operation_intent_transitions() {
     let state = Arc::new(WriteOperationState {
-        cancelled: Arc::new(AtomicBool::new(false)),
-        skip_rollback: AtomicBool::new(false),
+        intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(200),
         pending_resolution: RwLock::new(None),
         conflict_condvar: std::sync::Condvar::new(),
         conflict_mutex: std::sync::Mutex::new(false),
     });
 
-    // Initially skip_rollback is false (rollback enabled)
-    assert!(!state.skip_rollback.load(Ordering::Relaxed));
+    // Running → RollingBack
+    assert_eq!(load_intent(&state.intent), OperationIntent::Running);
+    state
+        .intent
+        .store(OperationIntent::RollingBack as u8, Ordering::Relaxed);
+    assert_eq!(load_intent(&state.intent), OperationIntent::RollingBack);
+    assert!(is_cancelled(&state.intent), "RollingBack should count as cancelled");
 
-    // Set cancelled with rollback=true (skip_rollback stays false)
-    state.cancelled.store(true, Ordering::Relaxed);
-    state.skip_rollback.store(false, Ordering::Relaxed); // !rollback where rollback=true
-    assert!(state.cancelled.load(Ordering::Relaxed));
-    assert!(
-        !state.skip_rollback.load(Ordering::Relaxed),
-        "skip_rollback should be false when rollback=true"
-    );
+    // RollingBack → Stopped
+    state
+        .intent
+        .store(OperationIntent::Stopped as u8, Ordering::Relaxed);
+    assert_eq!(load_intent(&state.intent), OperationIntent::Stopped);
+    assert!(is_cancelled(&state.intent), "Stopped should count as cancelled");
 
-    // Reset and set cancelled with rollback=false (skip_rollback becomes true)
-    state.cancelled.store(true, Ordering::Relaxed);
-    state.skip_rollback.store(true, Ordering::Relaxed); // !rollback where rollback=false
-    assert!(state.cancelled.load(Ordering::Relaxed));
-    assert!(
-        state.skip_rollback.load(Ordering::Relaxed),
-        "skip_rollback should be true when rollback=false"
-    );
+    // Running → Stopped (direct, no rollback)
+    state
+        .intent
+        .store(OperationIntent::Running as u8, Ordering::Relaxed);
+    state
+        .intent
+        .store(OperationIntent::Stopped as u8, Ordering::Relaxed);
+    assert_eq!(load_intent(&state.intent), OperationIntent::Stopped);
 }
 
 // ============================================================================
@@ -292,8 +295,7 @@ fn test_cancel_flag_stops_delete_loop() {
     }
 
     let state = Arc::new(WriteOperationState {
-        cancelled: Arc::new(AtomicBool::new(false)),
-        skip_rollback: AtomicBool::new(false),
+        intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(200),
         pending_resolution: RwLock::new(None),
         conflict_condvar: std::sync::Condvar::new(),
@@ -303,7 +305,7 @@ fn test_cancel_flag_stops_delete_loop() {
     // Simulate the delete loop from delete.rs, setting cancelled after 2 files
     let mut files_done = 0;
     for file in &files {
-        if state.cancelled.load(Ordering::Relaxed) {
+        if is_cancelled(&state.intent) {
             break;
         }
 
@@ -312,7 +314,7 @@ fn test_cancel_flag_stops_delete_loop() {
 
         // Cancel after deleting 2 files
         if files_done == 2 {
-            state.cancelled.store(true, Ordering::Relaxed);
+            state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
         }
     }
 
@@ -330,8 +332,7 @@ fn test_cancel_flag_stops_delete_loop() {
 #[test]
 fn test_cancel_during_directory_deletion_phase() {
     let state = Arc::new(WriteOperationState {
-        cancelled: Arc::new(AtomicBool::new(false)),
-        skip_rollback: AtomicBool::new(false),
+        intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(200),
         pending_resolution: RwLock::new(None),
         conflict_condvar: std::sync::Condvar::new(),
@@ -339,12 +340,12 @@ fn test_cancel_during_directory_deletion_phase() {
     });
 
     // Set cancellation before directory phase
-    state.cancelled.store(true, Ordering::Relaxed);
+    state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
 
-    // Verify that the cancelled flag is detectable (matches the check in delete.rs line 123)
+    // Verify that the intent is detectable (matches the check in delete.rs)
     assert!(
-        state.cancelled.load(Ordering::Relaxed),
-        "cancelled flag should be set before directory deletion phase"
+        is_cancelled(&state.intent),
+        "intent should indicate cancellation before directory deletion phase"
     );
 }
 

@@ -6,7 +6,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 use super::helpers::spawn_async_sync;
@@ -110,7 +109,7 @@ pub(super) fn trash_files_with_progress(
 
     for (i, source) in sources.iter().enumerate() {
         // Check cancellation between items
-        if state.cancelled.load(Ordering::Relaxed) {
+        if super::state::is_cancelled(&state.intent) {
             let _ = app.emit(
                 "write-cancelled",
                 WriteCancelledEvent {
@@ -258,7 +257,7 @@ pub(super) fn trash_files_with_progress(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::AtomicBool;
+    use std::sync::atomic::AtomicU8;
     use std::sync::{Arc, RwLock};
     use std::time::Duration;
 
@@ -360,16 +359,15 @@ mod tests {
     #[test]
     fn test_cancellation_flag_checked_by_state() {
         let state = Arc::new(WriteOperationState {
-            cancelled: Arc::new(AtomicBool::new(false)),
-            skip_rollback: AtomicBool::new(false),
+            intent: Arc::new(AtomicU8::new(0)),
             progress_interval: Duration::from_millis(200),
             pending_resolution: RwLock::new(None),
             conflict_condvar: std::sync::Condvar::new(),
             conflict_mutex: std::sync::Mutex::new(false),
         });
 
-        assert!(!state.cancelled.load(Ordering::Relaxed));
-        state.cancelled.store(true, Ordering::Relaxed);
-        assert!(state.cancelled.load(Ordering::Relaxed));
+        assert!(!crate::file_system::write_operations::is_cancelled(&state.intent));
+        state.intent.store(2u8, std::sync::atomic::Ordering::Relaxed);
+        assert!(crate::file_system::write_operations::is_cancelled(&state.intent));
     }
 }

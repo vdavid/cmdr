@@ -233,15 +233,18 @@
         return 0.9 * recentSpeed + 0.1 * overallSpeed
     }
 
-    // Speed and ETA calculation (both use the same blended speed)
+    // Speed and ETA calculation (both use the same blended speed).
+    // During rollback, values decrease so the raw speed is negative — take absolute
+    // value and calculate ETA as time to reach 0 (not time to reach bytesTotal).
     const stats = $derived.by(() => {
         if (startTime === 0) {
             return { bytesPerSecond: 0, estimatedSecondsRemaining: null }
         }
-        const bytesPerSecond = getBlendedSpeed()
-        const bytesRemaining = bytesTotal - bytesDone
-        const estimatedSecondsRemaining = bytesPerSecond > 0 ? bytesRemaining / bytesPerSecond : null
-        return { bytesPerSecond, estimatedSecondsRemaining }
+        const rawSpeed = getBlendedSpeed()
+        const speed = Math.abs(rawSpeed)
+        const remaining = phase === 'rolling_back' ? bytesDone : bytesTotal - bytesDone
+        const estimatedSecondsRemaining = speed > 0 ? remaining / speed : null
+        return { bytesPerSecond: speed, estimatedSecondsRemaining }
     })
 
     // Progress stages for visualization — the active phase label adapts to operation type.
@@ -254,7 +257,9 @@
     ])
 
     function getStageStatus(stageId: WriteOperationPhase): 'done' | 'active' | 'pending' {
-        const currentIndex = stages.findIndex((s) => s.id === phase)
+        // During rollback, show the active phase (copying/moving) as still active
+        const effectivePhase = phase === 'rolling_back' ? activePhaseId : phase
+        const currentIndex = stages.findIndex((s) => s.id === effectivePhase)
         const stageIndex = stages.findIndex((s) => s.id === stageId)
 
         if (stageIndex < currentIndex) return 'done'
@@ -280,6 +285,11 @@
             activePhaseStartTime = Date.now()
         }
 
+        // When entering rolling_back phase, set isRollingBack from the backend event
+        if (event.phase === 'rolling_back' && !isRollingBack) {
+            isRollingBack = true
+        }
+
         phase = event.phase
         currentFile = event.currentFile
         filesDone = event.filesDone
@@ -287,7 +297,7 @@
         bytesDone = event.bytesDone
         bytesTotal = event.bytesTotal
 
-        // Only collect speed samples during active phases (not scanning)
+        // Collect speed samples during active phases (not scanning)
         if (event.phase !== 'scanning') {
             progressSamples.push({ timestamp: Date.now(), bytesDone: event.bytesDone })
         }
@@ -509,25 +519,44 @@
             destroyed = true
             return
         }
-        if (isCancelling || isRollingBack) {
-            log.debug('Cancel/rollback already in progress')
+        if (isCancelling) {
+            log.debug('Cancel already in progress')
+            return
+        }
+
+        if (isRollingBack && !rollback) {
+            // Cancel during rollback: stop deleting, keep remaining files
+            log.info('Cancelling rollback for operation: {operationId}', { operationId })
+            isCancelling = true
+            try {
+                await cancelWriteOperation(operationId, false)
+                log.debug('Rollback cancel request sent successfully')
+                // Dialog will close when write-cancelled event is received
+            } catch (err) {
+                log.error('Failed to cancel rollback: {error}', { error: err })
+                isCancelling = false
+            }
+            return
+        }
+
+        if (isRollingBack) {
+            log.debug('Rollback already in progress')
             return
         }
 
         if (rollback) {
-            // Rollback: keep dialog open, show "Rolling back...", wait for event
+            // Rollback: keep dialog open, backend will enter rolling_back phase with progress events
             log.info('Rolling back operation: {operationId}', { operationId })
             operationSettled = true
             isRollingBack = true
-            isCancelling = true
             try {
                 await cancelWriteOperation(operationId, true)
                 log.debug('Rollback request sent successfully')
-                // Dialog will close when write-cancelled event is received
+                // Dialog stays open — progress events with phase=rolling_back will update the UI.
+                // Dialog closes when write-cancelled event is received.
             } catch (err) {
                 log.error('Failed to rollback operation: {error}', { error: err })
                 isRollingBack = false
-                isCancelling = false
             }
         } else {
             // Cancel: close immediately, keep partial files
@@ -842,16 +871,6 @@
                 {/if}
             </div>
         </div>
-    {:else if (isCopy || isMove) && isRollingBack}
-        <!-- Rollback in progress (copy only) -->
-        <div class="rollback-section">
-            <div class="rollback-indicator">
-                <span class="spinner spinner-md rollback-spinner"></span>
-            </div>
-            <p class="rollback-message">
-                Deleting {filesDone} copied files...
-            </p>
-        </div>
     {:else}
         <!-- Direction indicator (copy/move only) -->
         {#if !isDeleteOrTrash && destinationPath && direction}
@@ -917,10 +936,15 @@
         <div class="button-row">
             <Button variant="secondary" onclick={() => handleCancel(false)} disabled={isCancelling}>Cancel</Button>
             {#if isCopy || isMove}
-                <span use:tooltip={'Cancel and delete any partial target files created'}>
-                    <Button variant="danger" onclick={() => handleCancel(true)} disabled={isCancelling}>Rollback</Button
-                    >
-                </span>
+                {#if isRollingBack}
+                    <Button variant="danger" disabled>Rolling back...</Button>
+                {:else}
+                    <span use:tooltip={'Cancel and delete any partial target files created'}>
+                        <Button variant="danger" onclick={() => handleCancel(true)} disabled={isCancelling}
+                            >Rollback</Button
+                        >
+                    </span>
+                {/if}
             {/if}
         </div>
     {/if}
@@ -1089,36 +1113,6 @@
         gap: var(--spacing-md);
         justify-content: center;
         padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl);
-    }
-
-    /* Rollback section */
-    .rollback-section {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: var(--spacing-2xl) var(--spacing-xl);
-        gap: var(--spacing-lg);
-    }
-
-    .rollback-indicator {
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .rollback-spinner {
-        border-color: var(--color-error);
-        border-top-color: transparent;
-    }
-
-    .rollback-message {
-        margin: 0;
-        font-size: var(--font-size-md);
-        color: var(--color-text-secondary);
-        text-align: center;
     }
 
     /* Conflict section */

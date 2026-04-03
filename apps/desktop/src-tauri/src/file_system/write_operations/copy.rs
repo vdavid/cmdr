@@ -4,7 +4,6 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 #[cfg(target_os = "macos")]
@@ -17,7 +16,9 @@ use super::helpers::{
     validate_path_length,
 };
 use super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result};
-use super::state::{CopyTransaction, WriteOperationState, update_operation_status};
+use super::state::{
+    CopyTransaction, OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status,
+};
 use super::types::{
     ConflictResolution, IoResultExt, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
@@ -255,35 +256,63 @@ pub(super) fn copy_files_with_progress(
         }
         Err(e) => {
             if matches!(e, WriteOperationError::Cancelled { .. }) {
-                // Cancellation - check if user wants to keep partial files
-                let skip_rollback = state.skip_rollback.load(Ordering::Relaxed);
-                let rolled_back = !skip_rollback;
+                let intent = load_intent(&state.intent);
 
-                if skip_rollback {
-                    log::info!(
-                        "copy_files_with_progress: cancelled op={}, keeping {} partial files",
-                        operation_id,
-                        transaction.created_files.len()
-                    );
-                    transaction.commit();
-                } else {
-                    log::info!(
-                        "copy_files_with_progress: cancelled op={}, rolling back {} files",
-                        operation_id,
-                        transaction.created_files.len()
-                    );
-                    transaction.rollback_in_background();
+                match intent {
+                    OperationIntent::RollingBack => {
+                        // User requested rollback — tracked rollback with progress events.
+                        // Pass the progress state at cancellation so the frontend sees
+                        // the bars counting backwards from where they were.
+                        log::info!(
+                            "copy_files_with_progress: rolling back op={}, {} files",
+                            operation_id,
+                            transaction.created_files.len()
+                        );
+                        let rollback_completed = rollback_with_progress(
+                            &transaction,
+                            app,
+                            operation_id,
+                            state,
+                            WriteOperationType::Copy,
+                            files_done,
+                            bytes_done,
+                            scan_result.file_count,
+                            scan_result.total_bytes,
+                        );
+                        // rollback_with_progress already deleted the files — commit to
+                        // prevent Drop from trying to delete them again.
+                        transaction.commit();
+
+                        let _ = app.emit(
+                            "write-cancelled",
+                            WriteCancelledEvent {
+                                operation_id: operation_id.to_string(),
+                                operation_type: WriteOperationType::Copy,
+                                files_processed: files_done,
+                                rolled_back: rollback_completed,
+                            },
+                        );
+                    }
+                    _ => {
+                        // Stopped (or unknown) — keep partial files
+                        log::info!(
+                            "copy_files_with_progress: cancelled op={}, keeping {} partial files",
+                            operation_id,
+                            transaction.created_files.len()
+                        );
+                        transaction.commit();
+
+                        let _ = app.emit(
+                            "write-cancelled",
+                            WriteCancelledEvent {
+                                operation_id: operation_id.to_string(),
+                                operation_type: WriteOperationType::Copy,
+                                files_processed: files_done,
+                                rolled_back: false,
+                            },
+                        );
+                    }
                 }
-
-                let _ = app.emit(
-                    "write-cancelled",
-                    WriteCancelledEvent {
-                        operation_id: operation_id.to_string(),
-                        operation_type: WriteOperationType::Copy,
-                        files_processed: files_done,
-                        rolled_back,
-                    },
-                );
             } else {
                 // Non-cancellation error - always rollback
                 log::error!(
@@ -341,7 +370,7 @@ pub(super) fn copy_single_item(
     use tauri::Emitter;
 
     // Check cancellation
-    if state.cancelled.load(Ordering::Relaxed) {
+    if is_cancelled(&state.intent) {
         log::debug!(
             "copy: cancellation detected op={} files_done={}",
             operation_id,
@@ -570,7 +599,7 @@ pub(super) fn copy_single_item(
         }
 
         // Check cancellation before copy
-        if state.cancelled.load(Ordering::Relaxed) {
+        if is_cancelled(&state.intent) {
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });
@@ -623,7 +652,7 @@ pub(super) fn copy_single_item(
             source,
             &actual_dest,
             needs_safe_overwrite,
-            &state.cancelled,
+            &state.intent,
             Some(progress_cb),
         )?;
 
@@ -669,4 +698,128 @@ pub(super) fn copy_single_item(
     }
 
     Ok(())
+}
+
+// ============================================================================
+// Tracked rollback
+// ============================================================================
+
+/// Rolls back created files with progress events, checking for cancellation between deletions.
+///
+/// Emits progress events with _decreasing_ `files_done` / `bytes_done` so the frontend's
+/// progress bars count backwards from the cancellation point toward zero — no UI flicker,
+/// no separate rollback view.
+///
+/// Returns `true` if rollback completed fully, `false` if the user cancelled it
+/// (intent transitioned to `Stopped`). Does NOT call `transaction.rollback()` or
+/// `transaction.commit()` — the caller must commit unconditionally (this function
+/// already deleted whatever it deleted).
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Needs the full progress state at cancellation time to emit reverse progress"
+)]
+fn rollback_with_progress(
+    transaction: &CopyTransaction,
+    app: &tauri::AppHandle,
+    operation_id: &str,
+    state: &Arc<WriteOperationState>,
+    operation_type: WriteOperationType,
+    files_at_cancel: usize,
+    bytes_at_cancel: u64,
+    files_total: usize,
+    bytes_total: u64,
+) -> bool {
+    use tauri::Emitter;
+
+    let files_to_delete = transaction.created_files.len();
+    let mut files_deleted = 0usize;
+    let mut last_progress_time = Instant::now();
+
+    // Emit initial rollback phase event (same values as cancellation point)
+    let _ = app.emit(
+        "write-progress",
+        WriteProgressEvent {
+            operation_id: operation_id.to_string(),
+            operation_type,
+            phase: WriteOperationPhase::RollingBack,
+            current_file: None,
+            files_done: files_at_cancel,
+            files_total,
+            bytes_done: bytes_at_cancel,
+            bytes_total,
+        },
+    );
+    update_operation_status(
+        operation_id,
+        WriteOperationPhase::RollingBack,
+        None,
+        files_at_cancel,
+        files_total,
+        bytes_at_cancel,
+        bytes_total,
+    );
+
+    // Delete files in reverse order (newest first), checking for cancellation
+    for file in transaction.created_files.iter().rev() {
+        // Check if user cancelled the rollback (RollingBack → Stopped)
+        if load_intent(&state.intent) == OperationIntent::Stopped {
+            log::info!(
+                "rollback_with_progress: rollback cancelled at {}/{} files, keeping remaining",
+                files_deleted,
+                files_to_delete,
+            );
+            return false;
+        }
+
+        if let Err(e) = fs::remove_file(file) {
+            log::warn!("rollback: failed to remove {}: {}", file.display(), e);
+        }
+        files_deleted += 1;
+
+        // Throttled progress events with decreasing values
+        if last_progress_time.elapsed() >= state.progress_interval {
+            // Linearly interpolate bytes based on file deletion progress
+            let remaining_files = files_at_cancel.saturating_sub(files_deleted);
+            let remaining_bytes = if files_to_delete > 0 {
+                bytes_at_cancel - (bytes_at_cancel as f64 * files_deleted as f64 / files_to_delete as f64) as u64
+            } else {
+                0
+            };
+
+            let current_file_name = file
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default();
+            let _ = app.emit(
+                "write-progress",
+                WriteProgressEvent {
+                    operation_id: operation_id.to_string(),
+                    operation_type,
+                    phase: WriteOperationPhase::RollingBack,
+                    current_file: Some(current_file_name.clone()),
+                    files_done: remaining_files,
+                    files_total,
+                    bytes_done: remaining_bytes,
+                    bytes_total,
+                },
+            );
+            update_operation_status(
+                operation_id,
+                WriteOperationPhase::RollingBack,
+                Some(current_file_name),
+                remaining_files,
+                files_total,
+                remaining_bytes,
+                bytes_total,
+            );
+            last_progress_time = Instant::now();
+        }
+    }
+
+    // Delete created directories (no progress events — this is fast)
+    for dir in transaction.created_dirs.iter().rev() {
+        let _ = fs::remove_dir(dir);
+    }
+
+    true
 }

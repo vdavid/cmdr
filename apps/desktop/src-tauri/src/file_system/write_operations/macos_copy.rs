@@ -7,7 +7,7 @@
 use std::ffi::{CString, c_int, c_void};
 use std::path::Path;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
 use crate::file_system::write_operations::WriteOperationError;
 use crate::file_system::write_operations::types::IoResultExt;
@@ -88,7 +88,7 @@ type CopyfileCallback = extern "C" fn(
 /// Context passed to the progress callback.
 pub struct CopyProgressContext {
     /// Cancellation flag - checked during copy
-    pub cancelled: Arc<AtomicBool>,
+    pub cancelled: Arc<AtomicU8>,
     /// Whether we've already logged the cancellation (avoids log spam from repeated callbacks)
     cancel_logged: AtomicBool,
     /// Callback to report progress (bytes_copied for current file)
@@ -102,7 +102,7 @@ pub struct CopyProgressContext {
 impl Default for CopyProgressContext {
     fn default() -> Self {
         Self {
-            cancelled: Arc::new(AtomicBool::new(false)),
+            cancelled: Arc::new(AtomicU8::new(0)),
             cancel_logged: AtomicBool::new(false),
             on_progress: None,
             on_file_start: None,
@@ -113,7 +113,7 @@ impl Default for CopyProgressContext {
 
 impl CopyProgressContext {
     /// Creates a context with only cancellation support (no callbacks).
-    pub fn with_cancellation(cancelled: Arc<AtomicBool>) -> Self {
+    pub fn with_cancellation(cancelled: Arc<AtomicU8>) -> Self {
         Self {
             cancelled,
             cancel_logged: AtomicBool::new(false),
@@ -150,7 +150,7 @@ extern "C" fn copy_progress_callback(
 
     // Check cancellation (log only once to avoid spam — macOS may call this hundreds of times
     // after COPYFILE_QUIT while draining buffers)
-    if context.cancelled.load(Ordering::Relaxed) {
+    if super::state::is_cancelled(&context.cancelled) {
         if !context.cancel_logged.swap(true, Ordering::Relaxed) {
             log::info!("copyfile callback: cancellation detected, returning COPYFILE_QUIT");
         }
@@ -343,7 +343,7 @@ pub fn copy_file_native(
     // even after the callback returned COPYFILE_QUIT, because it may continue draining
     // buffered I/O (especially common when the source is on a network mount).
     if let Some(ctx) = context
-        && ctx.cancelled.load(Ordering::Relaxed)
+        && super::state::is_cancelled(&ctx.cancelled)
     {
         let _ = std::fs::remove_file(destination);
         return Err(WriteOperationError::Cancelled {
@@ -610,7 +610,7 @@ mod tests {
 
         fs::write(&src, "content").unwrap();
 
-        let context = CopyProgressContext::with_cancellation(Arc::new(AtomicBool::new(true))); // Pre-cancelled
+        let context = CopyProgressContext::with_cancellation(Arc::new(AtomicU8::new(1))); // Pre-cancelled
 
         let _result = copy_single_file_native(&src, &dst, false, Some(&context));
         // Note: cancellation is checked in the callback, so for small files it may complete

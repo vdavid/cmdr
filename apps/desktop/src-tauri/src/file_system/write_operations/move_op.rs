@@ -4,13 +4,12 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 use super::copy::copy_single_item;
 use super::helpers::{is_same_filesystem, remove_dir_all_in_background, resolve_conflict, spawn_async_sync};
 use super::scan::{SourceItemTracker, handle_dry_run, scan_sources};
-use super::state::{CopyTransaction, WriteOperationState, update_operation_status};
+use super::state::{CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status};
 use super::types::{
     ConflictResolution, IoResultExt, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
@@ -109,7 +108,7 @@ fn move_with_rename(
     let result: Result<(), WriteOperationError> = (|| {
         for source in sources {
             // Check cancellation
-            if state.cancelled.load(Ordering::Relaxed) {
+            if super::state::is_cancelled(&state.intent) {
                 return Err(WriteOperationError::Cancelled {
                     message: "Operation cancelled by user".to_string(),
                 });
@@ -177,12 +176,12 @@ fn move_with_rename(
     // The outer start_write_operation wrapper treats Cancelled as "already handled",
     // so we must emit the event here.
     if let Err(WriteOperationError::Cancelled { .. }) = &result {
-        let skip_rollback = state.skip_rollback.load(Ordering::Relaxed);
-        let rolled_back = if skip_rollback {
-            false
-        } else {
-            move_tx.rollback();
-            true
+        let rolled_back = match load_intent(&state.intent) {
+            OperationIntent::RollingBack => {
+                move_tx.rollback();
+                true
+            }
+            _ => false,
         };
 
         let _ = app.emit(
@@ -247,7 +246,7 @@ fn merge_move_directory(
         let dest_child = dest_dir.join(&file_name);
 
         // Check cancellation
-        if state.cancelled.load(Ordering::Relaxed) {
+        if super::state::is_cancelled(&state.intent) {
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });
@@ -539,7 +538,7 @@ fn delete_sources_after_move(
 
     for source in sources {
         // Check cancellation
-        if state.cancelled.load(Ordering::Relaxed) {
+        if super::state::is_cancelled(&state.intent) {
             let _ = app.emit(
                 "write-cancelled",
                 WriteCancelledEvent {

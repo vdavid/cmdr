@@ -9,7 +9,7 @@ use std::fs;
 use std::os::unix::io::AsRawFd;
 use std::path::Path;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicU8, Ordering};
 
 use super::types::WriteOperationError;
 
@@ -33,7 +33,7 @@ pub fn copy_single_file_linux(
     source: &Path,
     destination: &Path,
     overwrite: bool,
-    cancelled: &Arc<AtomicBool>,
+    cancelled: &Arc<AtomicU8>,
     progress_callback: Option<&dyn Fn(u64, u64)>,
 ) -> Result<u64, WriteOperationError> {
     let src_file = fs::File::open(source).map_err(|e| map_io_error(e, source, destination))?;
@@ -65,7 +65,7 @@ pub fn copy_single_file_linux(
 
     while bytes_copied < total_size {
         // Check cancellation before each chunk
-        if cancelled.load(Ordering::Relaxed) {
+        if super::state::is_cancelled(cancelled) {
             log::info!("linux_copy: cancelled after {} bytes, cleaning up", bytes_copied);
             drop(dst_file);
             let _ = fs::remove_file(destination);
@@ -207,7 +207,7 @@ mod tests {
         let dst = dir.join("dest.txt");
 
         fs::write(&src, "Hello, Linux!").unwrap();
-        let cancelled = Arc::new(AtomicBool::new(false));
+        let cancelled = Arc::new(AtomicU8::new(0));
 
         let result = copy_single_file_linux(&src, &dst, false, &cancelled, None);
         assert!(result.is_ok());
@@ -227,7 +227,7 @@ mod tests {
 
         fs::write(&src, "#!/bin/bash\necho hi").unwrap();
         fs::set_permissions(&src, fs::Permissions::from_mode(0o755)).unwrap();
-        let cancelled = Arc::new(AtomicBool::new(false));
+        let cancelled = Arc::new(AtomicU8::new(0));
 
         let result = copy_single_file_linux(&src, &dst, false, &cancelled, None);
         assert!(result.is_ok());
@@ -245,7 +245,7 @@ mod tests {
         let dst = dir.join("dest.txt");
 
         fs::write(&src, "").unwrap();
-        let cancelled = Arc::new(AtomicBool::new(false));
+        let cancelled = Arc::new(AtomicU8::new(0));
 
         let result = copy_single_file_linux(&src, &dst, false, &cancelled, None);
         assert!(result.is_ok());
@@ -265,7 +265,7 @@ mod tests {
         fs::write(&src, "content").unwrap();
 
         // Pre-cancelled
-        let cancelled = Arc::new(AtomicBool::new(true));
+        let cancelled = Arc::new(AtomicU8::new(2));
         let result = copy_single_file_linux(&src, &dst, false, &cancelled, None);
 
         assert!(matches!(result, Err(WriteOperationError::Cancelled { .. })));
@@ -283,7 +283,7 @@ mod tests {
         fs::write(&src, "source").unwrap();
         fs::write(&dst, "existing").unwrap();
 
-        let cancelled = Arc::new(AtomicBool::new(false));
+        let cancelled = Arc::new(AtomicU8::new(0));
         let result = copy_single_file_linux(&src, &dst, false, &cancelled, None);
         assert!(result.is_err());
         assert_eq!(fs::read_to_string(&dst).unwrap(), "existing");
@@ -300,7 +300,7 @@ mod tests {
         fs::write(&src, "new content").unwrap();
         fs::write(&dst, "old content").unwrap();
 
-        let cancelled = Arc::new(AtomicBool::new(false));
+        let cancelled = Arc::new(AtomicU8::new(0));
         let result = copy_single_file_linux(&src, &dst, true, &cancelled, None);
         assert!(result.is_ok());
         assert_eq!(fs::read_to_string(&dst).unwrap(), "new content");
@@ -319,7 +319,7 @@ mod tests {
         let content = "x".repeat(1000);
         fs::write(&src, &content).unwrap();
 
-        let cancelled = Arc::new(AtomicBool::new(false));
+        let cancelled = Arc::new(AtomicU8::new(0));
         let last_bytes = Arc::new(AtomicU64::new(0));
         let last_bytes_clone = Arc::clone(&last_bytes);
 

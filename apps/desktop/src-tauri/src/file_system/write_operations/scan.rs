@@ -527,7 +527,7 @@ fn scan_sources_internal(
 
     let ctx = WalkContext {
         progress_interval,
-        is_cancelled: &|| state.cancelled.load(Ordering::Relaxed),
+        is_cancelled: &|| super::state::is_cancelled(&state.intent),
         on_io_error: &|path, e| WriteOperationError::IoError {
             path: path.display().to_string(),
             message: e.to_string(),
@@ -748,7 +748,7 @@ fn dry_run_scan_recursive(
     use tauri::Emitter;
 
     // Check cancellation
-    if state.cancelled.load(Ordering::Relaxed) {
+    if super::state::is_cancelled(&state.intent) {
         return Err(WriteOperationError::Cancelled {
             message: "Operation cancelled by user".to_string(),
         });

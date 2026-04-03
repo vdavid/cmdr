@@ -43,7 +43,8 @@ Frontend
           → execute phase: per-file copy/delete
               → throttled write-progress events (200ms default)
           → success: CopyTransaction::commit(), emit write-complete
-          → cancel: CopyTransaction::rollback_in_background(), emit write-cancelled
+          → cancel (Stopped): CopyTransaction::commit(), emit write-cancelled (rolled_back: false)
+          → cancel (RollingBack): rollback_with_progress() → emit write-progress (phase: rolling_back) → emit write-cancelled
           → error: CopyTransaction::rollback(), emit write-error
       → safety net: start_write_operation emits write-error for unhandled handler errors
   → state removed from both caches
@@ -53,14 +54,18 @@ Frontend
 
 **All blocking work in `spawn_blocking`.** Never call blocking I/O on the async executor.
 
-**Two-layer cancellation.** `AtomicBool` for fast in-loop checks. `run_cancellable` wraps blocking operations (e.g.,
+**`OperationIntent` state machine.** Replaces the old `cancelled: AtomicBool` + `skip_rollback: AtomicBool` pair with a
+single `AtomicU8`-backed enum: `Running → RollingBack` (user clicks Rollback), `Running → Stopped` (user clicks Cancel
+or teardown), `RollingBack → Stopped` (user cancels the rollback). `Stopped` is terminal. The `is_cancelled()` helper
+returns true for both `RollingBack` and `Stopped`, so the 40+ cancellation check sites just call `is_cancelled(&state.intent)`.
+
+**Two-layer cancellation.** `AtomicU8` for fast in-loop checks. `run_cancellable` wraps blocking operations (e.g.,
 network-mount copies that may block indefinitely) in a separate thread, polling the flag every 100ms via `mpsc::channel`.
 
-**`CopyTransaction` rollback: sync vs async.** Two rollback paths: `rollback()` (synchronous, for error paths where
-cleanup must complete before the error event) and `rollback_in_background()` (fire-and-forget on a detached thread, for
-user-initiated cancel where the UI must respond instantly). `rollback_in_background` sets `committed = true` to prevent
-`Drop` from triggering a synchronous double-rollback, then moves the file/dir lists into the detached thread. The
-synchronous `rollback()` and auto-rollback-on-panic via `Drop` remain unchanged. Delete operations are not rollbackable.
+**`CopyTransaction` rollback: sync with progress.** `rollback()` (synchronous, for error paths) and tracked
+`rollback_with_progress()` in `copy.rs` (for user-initiated rollback — emits `write-progress` events with
+`phase: RollingBack`, checks for `Stopped` between file deletions so the user can cancel the rollback). Auto-rollback
+via `Drop` remains as a panic safety net. Delete operations are not rollbackable.
 
 **Symlinks never dereferenced.** All stat calls use `symlink_metadata`. Symlink loop detection uses a `HashSet<PathBuf>`
 of canonicalized paths.
@@ -72,7 +77,10 @@ rename temp → dest, delete backup. The original is intact until step 3 complet
 Frontend calls `resolve_write_conflict(operation_id, resolution, apply_to_all)` which stores a `ConflictResolutionResponse`
 and notifies the condvar. `cancel_write_operation` also notifies the condvar to unblock.
 
-**`skip_rollback` is stored inverted.** `cancel_write_operation(rollback: bool)` stores `!rollback` in `skip_rollback`.
+**`cancel_write_operation` does state transitions.** `rollback=true` → `Running → RollingBack`, `rollback=false` →
+`Running → Stopped` or `RollingBack → Stopped`. First caller's decision wins — subsequent calls with different intent
+are no-ops (unless transitioning from `RollingBack → Stopped`). `cancel_all_write_operations` always transitions to
+`Stopped` (teardown should never silently roll back without visual feedback).
 
 **Scan preview caching.** `start_scan_preview` runs a background scan, caches the result in `SCAN_PREVIEW_RESULTS`. The
 actual `copy_files_start` can consume the cache via `preview_id` in `WriteOperationConfig`, skipping a redundant scan.
@@ -121,9 +129,9 @@ the progress dialog and offer cancel, even if a network mount is stalled.
 emits `write-error` as a safety net, and `Err(join_error)` handles panics. Double-emit is harmless because the
 frontend's `handleError` removes all listeners on first receipt.
 
-**Background cleanup is best-effort.** `rollback_in_background`, `remove_file_in_background`, and
-`remove_dir_all_in_background` run on detached threads. If the network mount disconnects or the app exits, partial
-files or staging directories may remain on disk. These use the `.cmdr-` prefix, so they're recognizable.
+**Background cleanup is best-effort.** `remove_file_in_background` and `remove_dir_all_in_background` run on detached
+threads (used for temp/backup file cleanup, not for user-visible rollback). If the network mount disconnects or the app
+exits, partial files or staging directories may remain on disk. These use the `.cmdr-` prefix, so they're recognizable.
 
 **`volume_copy` path is incomplete.** The three `volume_*` files are Phase 5 work, but are publicly re-exported from `mod.rs` and at least partially wired up.
 

@@ -6,7 +6,6 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::Ordering;
 use std::time::Duration;
 use uuid::Uuid;
 
@@ -389,8 +388,8 @@ pub(super) fn resolve_conflict(
                     // 1. No pending resolution
                     // 2. Not cancelled
                     let has_resolution = state.pending_resolution.read().map(|r| r.is_some()).unwrap_or(false);
-                    let is_cancelled = state.cancelled.load(Ordering::Relaxed);
-                    !has_resolution && !is_cancelled
+                    let cancelled = super::state::is_cancelled(&state.intent);
+                    !has_resolution && !cancelled
                 })
                 .unwrap();
 
@@ -402,7 +401,7 @@ pub(super) fn resolve_conflict(
             }
 
             // Check if cancelled
-            if state.cancelled.load(Ordering::Relaxed) {
+            if super::state::is_cancelled(&state.intent) {
                 return Err(WriteOperationError::Cancelled {
                     message: "Operation cancelled by user".to_string(),
                 });
@@ -683,7 +682,7 @@ where
     });
 
     loop {
-        if state.cancelled.load(Ordering::Relaxed) {
+        if super::state::is_cancelled(&state.intent) {
             log::debug!("{context}: cancellation detected during polling op={operation_id}");
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),

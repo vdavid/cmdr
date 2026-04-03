@@ -12,7 +12,6 @@
 
 use std::path::Path;
 use std::sync::Arc;
-use std::sync::atomic::Ordering;
 
 use uuid::Uuid;
 
@@ -42,7 +41,7 @@ pub(super) fn copy_single_path(
     state: &Arc<WriteOperationState>,
 ) -> Result<u64, VolumeError> {
     // Check cancellation
-    if state.cancelled.load(Ordering::Relaxed) {
+    if super::state::is_cancelled(&state.intent) {
         return Err(VolumeError::IoError("Operation cancelled".to_string()));
     }
 
@@ -167,7 +166,7 @@ mod tests {
     use super::*;
     use std::path::Path;
     use std::sync::Arc;
-    use std::sync::atomic::AtomicBool;
+    use std::sync::atomic::AtomicU8;
     use std::time::Duration;
 
     use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
@@ -189,8 +188,7 @@ mod tests {
         let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
         let state = Arc::new(WriteOperationState {
-            cancelled: Arc::new(AtomicBool::new(false)),
-            skip_rollback: AtomicBool::new(false),
+            intent: Arc::new(AtomicU8::new(0)),
             progress_interval: Duration::from_millis(200),
             pending_resolution: std::sync::RwLock::new(None),
             conflict_condvar: std::sync::Condvar::new(),
@@ -223,8 +221,7 @@ mod tests {
         let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
         let state = Arc::new(WriteOperationState {
-            cancelled: Arc::new(AtomicBool::new(true)), // Already cancelled
-            skip_rollback: AtomicBool::new(false),
+            intent: Arc::new(AtomicU8::new(2)), // Already cancelled (Stopped)
             progress_interval: Duration::from_millis(200),
             pending_resolution: std::sync::RwLock::new(None),
             conflict_condvar: std::sync::Condvar::new(),
