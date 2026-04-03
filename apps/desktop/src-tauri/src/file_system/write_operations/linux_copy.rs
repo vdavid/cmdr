@@ -164,8 +164,7 @@ fn map_io_error(err: std::io::Error, source: &Path, destination: &Path) -> Write
                             device_name: None,
                         };
                     }
-                    libc::ENOTCONN | libc::ENETDOWN | libc::ENETUNREACH
-                    | libc::EHOSTUNREACH | libc::ETIMEDOUT => {
+                    libc::ENOTCONN | libc::ENETDOWN | libc::ENETUNREACH | libc::EHOSTUNREACH | libc::ETIMEDOUT => {
                         return WriteOperationError::ConnectionInterrupted {
                             path: source.display().to_string(),
                         };

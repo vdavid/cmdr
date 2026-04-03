@@ -65,6 +65,100 @@ pub fn supports_trash_for_fs_type(fs_type: Option<&str>) -> bool {
     }
 }
 
+/// Resolve a path to its mount point and filesystem type via `statfs()`.
+///
+/// On APFS firmlinks, normalizes `/System/Volumes/Data` to `/` (because
+/// `statfs("/Users/foo")` returns `/System/Volumes/Data` on modern macOS).
+///
+/// If `statfs` fails (ENOENT for a deleted directory), walks up parent
+/// directories until one succeeds. Returns `None` only if even `/` fails.
+pub(crate) fn get_mount_point(path: &str) -> Option<(String, String)> {
+    use std::ffi::CString;
+
+    let mut current = path.to_string();
+    loop {
+        if let Ok(c_path) = CString::new(current.as_str()) {
+            let mut stat: std::mem::MaybeUninit<libc::statfs> = std::mem::MaybeUninit::uninit();
+            let result = unsafe { libc::statfs(c_path.as_ptr(), stat.as_mut_ptr()) };
+            if result == 0 {
+                let stat = unsafe { stat.assume_init() };
+
+                let mount_point: String = stat
+                    .f_mntonname
+                    .iter()
+                    .take_while(|&&c| c != 0)
+                    .map(|&c| c as u8 as char)
+                    .collect();
+
+                let fs_type: String = stat
+                    .f_fstypename
+                    .iter()
+                    .take_while(|&&c| c != 0)
+                    .map(|&c| c as u8 as char)
+                    .collect();
+
+                // APFS firmlink normalization: /System/Volumes/Data → /
+                let mount_point = if mount_point == "/System/Volumes/Data" {
+                    "/".to_string()
+                } else {
+                    mount_point
+                };
+
+                return Some((mount_point, fs_type));
+            }
+        }
+
+        // Walk up to parent on failure (handles deleted directories)
+        if current == "/" || current.is_empty() {
+            return None;
+        }
+        current = Path::new(&current)
+            .parent()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_default();
+        if current.is_empty() {
+            current = "/".to_string();
+        }
+    }
+}
+
+/// Build a `VolumeInfo` for the volume containing `path` using only
+/// `statfs()` and per-path NSURL resource queries. Does NOT call
+/// `list_locations()` — avoids the blocking NSFileManager volume enumeration.
+pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
+    use objc2::rc::autoreleasepool;
+    use objc2_foundation::{NSString, NSURL};
+
+    let (mount_point, fs_type) = get_mount_point(path)?;
+
+    // Drain autoreleased ObjC objects (NSURL, NSString).
+    autoreleasepool(|_| {
+        let url = NSURL::fileURLWithPath(&NSString::from_str(&mount_point));
+
+        let name = get_volume_name(&url, &mount_point);
+        let is_ejectable = get_bool_resource(&url, "NSURLVolumeIsEjectableKey").unwrap_or(false);
+        let supports_trash = supports_trash_for_fs_type(Some(&fs_type));
+        let category = if mount_point == "/" {
+            LocationCategory::MainVolume
+        } else {
+            LocationCategory::AttachedVolume
+        };
+        let icon = get_icon_for_path(&mount_point);
+
+        Some(VolumeInfo {
+            id: path_to_id(&mount_point),
+            name,
+            path: mount_point,
+            category,
+            icon,
+            is_ejectable,
+            fs_type: Some(fs_type),
+            supports_trash,
+            is_read_only: false,
+        })
+    })
+}
+
 /// Read the filesystem type for a path using `libc::statfs`.
 ///
 /// Returns `None` if the `statfs` call fails (for example, the volume was
@@ -455,7 +549,7 @@ fn get_volume_name(url: &objc2_foundation::NSURL, path: &str) -> String {
 }
 
 /// Convert path to a safe ID.
-fn path_to_id(path: &str) -> String {
+pub(crate) fn path_to_id(path: &str) -> String {
     if path == "/" {
         return DEFAULT_VOLUME_ID.to_string();
     }
@@ -701,6 +795,54 @@ mod tests {
     #[test]
     fn test_supports_trash_none_defaults_true() {
         assert!(supports_trash_for_fs_type(None));
+    }
+
+    // ========================================================================
+    // Mount point resolution tests
+    // ========================================================================
+
+    #[test]
+    fn test_get_mount_point_root() {
+        let result = get_mount_point("/");
+        assert!(result.is_some(), "Root should resolve to a mount point");
+        let (mount_point, fs_type) = result.unwrap();
+        assert_eq!(mount_point, "/", "Root mount point should be /");
+        assert!(
+            fs_type == "apfs" || fs_type == "hfs",
+            "Root should be apfs or hfs, got: {fs_type}"
+        );
+    }
+
+    #[test]
+    fn test_get_mount_point_home() {
+        let home = dirs::home_dir().expect("Should have home dir");
+        let result = get_mount_point(home.to_str().unwrap());
+        assert!(result.is_some(), "Home should resolve to a mount point");
+        let (mount_point, _fs_type) = result.unwrap();
+        // APFS firmlink normalization: must NOT return /System/Volumes/Data
+        assert_eq!(
+            mount_point, "/",
+            "Home mount point should be / (not /System/Volumes/Data)"
+        );
+    }
+
+    #[test]
+    fn test_get_mount_point_nonexistent() {
+        let result = get_mount_point("/nonexistent/deeply/nested/path");
+        assert!(result.is_some(), "Nonexistent path should walk up to root");
+        let (mount_point, _fs_type) = result.unwrap();
+        assert_eq!(mount_point, "/", "Nonexistent path should resolve to /");
+    }
+
+    #[test]
+    fn test_resolve_path_volume_fast_root() {
+        let result = resolve_path_volume_fast("/");
+        assert!(result.is_some(), "Root should resolve to a VolumeInfo");
+        let vol = result.unwrap();
+        assert_eq!(vol.id, "root");
+        assert_eq!(vol.path, "/");
+        assert_eq!(vol.category, LocationCategory::MainVolume);
+        assert!(vol.fs_type.is_some());
     }
 
     #[test]

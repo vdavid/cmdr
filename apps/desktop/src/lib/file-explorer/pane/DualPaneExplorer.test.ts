@@ -68,8 +68,8 @@ vi.mock('$lib/tauri-commands', () => ({
     data: [{ id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false }],
     timedOut: false,
   }),
-  findContainingVolume: vi.fn().mockResolvedValue({
-    data: {
+  resolvePathVolume: vi.fn().mockResolvedValue({
+    volume: {
       id: 'root',
       name: 'Macintosh HD',
       path: '/',
@@ -132,7 +132,7 @@ describe('DualPaneExplorer', () => {
     const target = document.createElement('div')
     mount(DualPaneExplorer, { target })
 
-    // Wait for async initialization (paths, volumes, settings, findContainingVolume)
+    // Wait for async initialization (paths, volumes, settings, resolvePathVolume)
     // The initialization now includes more async calls, so we need more ticks
     for (let i = 0; i < 10; i++) {
       await tick()

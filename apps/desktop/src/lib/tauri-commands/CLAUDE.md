@@ -67,8 +67,8 @@ returning safe empty/null fallbacks so the same code runs on other platforms.
 distinguish "timed out" from "genuinely empty/none":
 
 - `TimedOut<T>` (`{ data: T, timedOut: boolean }`) — for commands returning collections, `Option`, or `()`. Callers
-  unwrap `.data` for the value and check `.timedOut` to detect timeouts. Used by `listVolumes`, `findContainingVolume`,
-  `getVolumeSpace`, `getSyncStatus`, `getIcons`, `refreshDirectoryIcons`, `refreshListing`.
+  unwrap `.data` for the value and check `.timedOut` to detect timeouts. Used by `listVolumes`, `getVolumeSpace`,
+  `getSyncStatus`, `getIcons`, `refreshDirectoryIcons`, `refreshListing`.
 - `IpcError` (`{ message: string, timedOut: boolean }`) — thrown as exception by commands returning `Result<T, _>`. Use
   `isIpcError(e)` type guard and `getIpcErrorMessage(e)` helper in catch blocks. Used by `viewerOpen`, `viewerGetLines`,
   `createDirectory`, `createFile`, `listDirectoryStart`, `moveToTrash`, `checkRenamePermission`, `checkRenameValidity`,

@@ -176,12 +176,7 @@ fn register_volume_with_manager(volume_path: &str) {
     use std::path::Path;
     use std::sync::Arc;
 
-    // Generate volume ID from path (same logic as path_to_id in mod.rs)
-    let volume_id: String = volume_path
-        .chars()
-        .filter(|c| c.is_alphanumeric() || *c == '-')
-        .collect::<String>()
-        .to_lowercase();
+    let volume_id = super::path_to_id(volume_path);
 
     // Get volume name from path
     let name = Path::new(volume_path)
@@ -216,12 +211,7 @@ fn emit_volume_unmounted(volume_path: &str) {
 fn unregister_volume_from_manager(volume_path: &str) {
     use crate::file_system::get_volume_manager;
 
-    // Generate volume ID from path (same logic as path_to_id in mod.rs)
-    let volume_id: String = volume_path
-        .chars()
-        .filter(|c| c.is_alphanumeric() || *c == '-')
-        .collect::<String>()
-        .to_lowercase();
+    let volume_id = super::path_to_id(volume_path);
 
     get_volume_manager().unregister(&volume_id);
     debug!("Unregistered volume: {} ({})", volume_id, volume_path);

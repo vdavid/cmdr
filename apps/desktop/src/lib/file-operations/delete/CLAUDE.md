@@ -18,7 +18,7 @@ dialog before acting. Reuses `TransferProgressDialog` for progress display.
 
 ## How delete flows
 
-1. **Shortcut**: F8 / Cmd+Backspace (trash) or Shift+F8 / Shift+Cmd+Backspace (permanent delete)
+1. **Shortcut**: F8 or Shift+F8 (permanent delete)
 2. **Command**: `file.delete` or `file.deletePermanently` in `command-registry.ts`, handled in `+page.svelte`
 3. **Selection**: `DualPaneExplorer.openDeleteDialog(permanent)` builds props from selection or cursor item (same
    pattern as copy/move). Looks up `supportsTrash` from the source volume's `VolumeInfo`.

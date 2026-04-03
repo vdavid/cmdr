@@ -50,18 +50,24 @@ export async function getDefaultVolumeId(): Promise<string> {
   }
 }
 
+/** Result of resolving a path to its containing volume via `statfs()`. */
+export interface PathVolumeResolution {
+  volume: VolumeInfo | null
+  timedOut: boolean
+}
+
 /**
- * Finds the actual volume (not a favorite) that contains a given path.
- * This is used to determine which volume to set as active when the user navigates to a "favorite folder".
- * @param path - Path to find the containing volume for
- * @returns The VolumeInfo for the containing volume, or null if not found
+ * Resolves a path to its containing volume without enumerating all volumes.
+ * Uses `statfs()` for local paths (<1ms), protocol dispatch for MTP/SMB.
+ * @param path - The path to resolve
+ * @returns The volume resolution result
  */
-export async function findContainingVolume(path: string): Promise<TimedOut<VolumeInfo | null>> {
+export async function resolvePathVolume(path: string): Promise<PathVolumeResolution> {
   try {
-    return await invoke<TimedOut<VolumeInfo | null>>('find_containing_volume', { path })
+    return await invoke<PathVolumeResolution>('resolve_path_volume', { path })
   } catch {
-    // Command not available (non-macOS) - return null
-    return { data: null, timedOut: false }
+    // Command not available — return no volume, not timed out
+    return { volume: null, timedOut: false }
   }
 }
 

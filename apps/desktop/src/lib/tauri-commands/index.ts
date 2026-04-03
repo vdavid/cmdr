@@ -92,13 +92,13 @@ export {
   listVolumes,
   refreshVolumes,
   getDefaultVolumeId,
-  findContainingVolume,
+  resolvePathVolume,
   getVolumeSpace,
   checkFullDiskAccess,
   openPrivacySettings,
   openAppearanceSettings,
 } from './storage'
-export type { VolumeSpaceInfo } from './storage'
+export type { PathVolumeResolution, VolumeSpaceInfo } from './storage'
 
 // Networking (SMB, keychain, mounting)
 export {

@@ -10,7 +10,7 @@ immediately to business-logic modules. No significant logic lives here.
 | `mod.rs` | Re-exports | `mtp`, `network` gated behind `#[cfg(any(target_os = "macos", target_os = "linux"))]`; `volumes` behind `#[cfg(target_os = "macos")]`; `volumes_linux` behind `#[cfg(target_os = "linux")]` |
 | `util.rs` | Shared helpers | `TimedOut<T>`, `IpcError`, `blocking_with_timeout`, `blocking_with_timeout_flag`, `blocking_result_with_timeout`. See "Timeout-aware return types" below. |
 | `file_system.rs` | File listing & writes | Largest file. Streaming + virtual-scroll listing API, write ops (copy, move, delete, trash), scan preview, conflict resolution, volume copy, native drag, self-drag overlay. Contains `expand_tilde()`. |
-| `volumes.rs` | Volume management (macOS) | `list_volumes`, `get_default_volume_id`, `find_containing_volume`, `get_volume_space` |
+| `volumes.rs` | Volume management (macOS) | `list_volumes`, `get_default_volume_id`, `get_volume_space`, `resolve_path_volume` (statfs-based, no volume enumeration) |
 | `volumes_linux.rs` | Volume management (Linux) | Same interface as `volumes.rs`, delegates to `volumes_linux` module |
 | `mtp.rs` | MTP devices | Full MTP command surface (connect, disconnect, list, download, upload, delete, rename, move, scan) |
 | `network.rs` | SMB/network shares | Discovery, share listing, keychain, mounting. |

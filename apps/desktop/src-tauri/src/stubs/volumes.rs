@@ -112,19 +112,6 @@ pub fn get_default_volume_id() -> String {
     DEFAULT_VOLUME_ID.to_string()
 }
 
-/// Finds the volume that contains a given path.
-#[tauri::command]
-pub fn find_containing_volume(path: String) -> Option<VolumeInfo> {
-    let volumes = list_volumes();
-
-    // Find the volume with the longest matching path prefix (excluding favorites)
-    volumes
-        .into_iter()
-        .filter(|v| v.category != LocationCategory::Favorite)
-        .filter(|v| path.starts_with(&v.path))
-        .max_by_key(|v| v.path.len())
-}
-
 /// Gets space information for a volume at the given path.
 #[tauri::command]
 pub fn get_volume_space(path: String) -> Option<VolumeSpaceInfo> {
@@ -143,6 +130,23 @@ pub fn get_volume_space(path: String) -> Option<VolumeSpaceInfo> {
         } else {
             None
         }
+    }
+}
+
+/// Result of resolving a path to its containing volume.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PathVolumeResolution {
+    pub volume: Option<VolumeInfo>,
+    pub timed_out: bool,
+}
+
+/// Resolves a path to its containing volume (stub).
+#[tauri::command]
+pub fn resolve_path_volume(_path: String) -> PathVolumeResolution {
+    PathVolumeResolution {
+        volume: None,
+        timed_out: false,
     }
 }
 

@@ -320,11 +320,12 @@ fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperationError {
                 return WriteOperationError::ReadOnlyDevice {
                     path,
                     device_name: None,
-                }
+                };
             }
             libc::ENAMETOOLONG => return WriteOperationError::NameTooLong { path },
-            libc::ENOTCONN | libc::ENETDOWN | libc::ENETUNREACH | libc::EHOSTUNREACH
-            | libc::ETIMEDOUT => return WriteOperationError::ConnectionInterrupted { path },
+            libc::ENOTCONN | libc::ENETDOWN | libc::ENETUNREACH | libc::EHOSTUNREACH | libc::ETIMEDOUT => {
+                return WriteOperationError::ConnectionInterrupted { path };
+            }
             libc::ENODEV => return WriteOperationError::DeviceDisconnected { path },
             _ => {} // Fall through to ErrorKind/message-based classification
         }
@@ -351,10 +352,7 @@ fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperationError {
         return WriteOperationError::NameTooLong { path };
     }
     if lower.contains("invalid") && lower.contains("name") {
-        return WriteOperationError::InvalidName {
-            path,
-            message: msg,
-        };
+        return WriteOperationError::InvalidName { path, message: msg };
     }
 
     // ErrorKind-based fallback, with one kind-specific heuristic
@@ -365,16 +363,10 @@ fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperationError {
             if lower.contains("immutable") || lower.contains("operation not permitted") {
                 return WriteOperationError::FileLocked { path };
             }
-            WriteOperationError::PermissionDenied {
-                path,
-                message: msg,
-            }
+            WriteOperationError::PermissionDenied { path, message: msg }
         }
         std::io::ErrorKind::AlreadyExists => WriteOperationError::DestinationExists { path },
-        _ => WriteOperationError::IoError {
-            path,
-            message: msg,
-        },
+        _ => WriteOperationError::IoError { path, message: msg },
     }
 }
 

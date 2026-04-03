@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
-    import { findContainingVolume } from '$lib/tauri-commands'
+    import { resolvePathVolume } from '$lib/tauri-commands'
     import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -105,7 +105,7 @@
     }
 
     async function updateContainingVolume(path: string) {
-        const { data: containing } = await findContainingVolume(path)
+        const { volume: containing } = await resolvePathVolume(path)
         containingVolumeId = containing?.id ?? volumeId
     }
 
@@ -115,7 +115,7 @@
         // Check if this is a favorite (shortcut) or an actual volume
         if (volume.category === 'favorite') {
             // For favorites, find the actual containing volume
-            const { data: containingVolume } = await findContainingVolume(volume.path)
+            const { volume: containingVolume } = await resolvePathVolume(volume.path)
             if (containingVolume) {
                 // Navigate to the favorite's path, but set the volume to the containing volume
                 onVolumeChange?.(containingVolume.id, containingVolume.path, volume.path)

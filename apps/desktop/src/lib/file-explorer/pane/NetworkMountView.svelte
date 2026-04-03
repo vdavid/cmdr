@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { MountError, NetworkHost, ShareInfo } from '../types'
-    import { mountNetworkShare, listVolumes, findContainingVolume } from '$lib/tauri-commands'
+    import { mountNetworkShare, resolvePathVolume } from '$lib/tauri-commands'
     import { getMountTimeoutMs } from '$lib/settings/network-settings'
     import { getAppLogger } from '$lib/logging/logger'
     import type { NetworkBrowserAPI, BrowserAPI } from './types'
@@ -98,12 +98,10 @@
             // The mount path is typically /Volumes/<ShareName>
             const mountPath = result.mountPath
 
-            // Refresh the volume list first - the new mount needs to be recognized
-            await listVolumes()
-
             // Find the actual volume for the mounted path
             // This ensures proper breadcrumb display and volume context
-            const { data: mountedVolume } = await findContainingVolume(mountPath)
+            // (No need to refresh volume list — the mount event triggers a volumes-changed broadcast)
+            const { volume: mountedVolume } = await resolvePathVolume(mountPath)
 
             if (mountedVolume) {
                 // Use the real volume ID and path from the system

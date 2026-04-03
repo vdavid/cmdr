@@ -732,25 +732,25 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             commands::volumes::get_default_volume_id,
             #[cfg(target_os = "macos")]
-            commands::volumes::find_containing_volume,
-            #[cfg(target_os = "macos")]
             commands::volumes::get_volume_space,
+            #[cfg(target_os = "macos")]
+            commands::volumes::resolve_path_volume,
             #[cfg(target_os = "linux")]
             commands::volumes_linux::list_volumes,
             #[cfg(target_os = "linux")]
             commands::volumes_linux::get_default_volume_id,
             #[cfg(target_os = "linux")]
-            commands::volumes_linux::find_containing_volume,
-            #[cfg(target_os = "linux")]
             commands::volumes_linux::get_volume_space,
+            #[cfg(target_os = "linux")]
+            commands::volumes_linux::resolve_path_volume,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::volumes::list_volumes,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::volumes::get_default_volume_id,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-            stubs::volumes::find_containing_volume,
-            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::volumes::get_volume_space,
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+            stubs::volumes::resolve_path_volume,
             // Network commands (macOS + Linux, stubs for other platforms)
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::list_network_hosts,

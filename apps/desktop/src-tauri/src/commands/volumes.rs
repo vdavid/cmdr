@@ -1,9 +1,20 @@
 //! Tauri commands for volume operations.
 
+use serde::Serialize;
 use tokio::time::Duration;
 
 use super::util::{TimedOut, blocking_with_timeout_flag};
 use crate::volumes::{self, DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo, VolumeSpaceInfo};
+
+/// Result of resolving a path to its containing volume.
+/// Unlike `TimedOut<Option<VolumeInfo>>`, `timed_out: true` means "the filesystem
+/// didn't respond, we genuinely don't know" — not "here's a fallback."
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PathVolumeResolution {
+    pub volume: Option<VolumeInfo>,
+    pub timed_out: bool,
+}
 
 const VOLUME_TIMEOUT: Duration = Duration::from_secs(2);
 
@@ -21,38 +32,6 @@ pub fn get_default_volume_id() -> String {
     DEFAULT_VOLUME_ID.to_string()
 }
 
-/// Finds the actual volume (not a favorite) that contains a given path.
-/// Returns the volume info for the best matching volume, excluding favorites.
-/// This is used to determine which volume to set as active when a favorite is chosen.
-#[tauri::command]
-pub async fn find_containing_volume(path: String) -> TimedOut<Option<VolumeInfo>> {
-    let mut result = blocking_with_timeout_flag(VOLUME_TIMEOUT, vec![], volumes::list_locations).await;
-    append_mtp_volumes(&mut result.data).await;
-
-    // Only consider actual volumes, not favorites
-    let volumes: Vec<_> = result
-        .data
-        .into_iter()
-        .filter(|loc| loc.category != LocationCategory::Favorite)
-        .collect();
-
-    // Find the volume with the longest matching path prefix
-    let mut best_match: Option<VolumeInfo> = None;
-    let mut best_len = 0;
-
-    for vol in volumes {
-        if path.starts_with(&vol.path) && vol.path.len() > best_len {
-            best_len = vol.path.len();
-            best_match = Some(vol);
-        }
-    }
-
-    TimedOut {
-        data: best_match,
-        timed_out: result.timed_out,
-    }
-}
-
 /// Gets space information for a volume at the given path.
 /// Returns total and available bytes for the volume.
 /// For MTP paths (`mtp://`), fetches from the MTP connection manager instead of macOS NSURL.
@@ -65,6 +44,64 @@ pub async fn get_volume_space(path: String) -> TimedOut<Option<VolumeSpaceInfo>>
         };
     }
     blocking_with_timeout_flag(VOLUME_TIMEOUT, None, move || volumes::get_volume_space(&path)).await
+}
+
+/// Resolves a path to its containing volume without enumerating all volumes.
+/// Uses `statfs()` for filesystem paths (<1ms for local disks), protocol
+/// dispatch for MTP/SMB paths. Returns `timed_out: true` if the filesystem
+/// didn't respond within 2s.
+#[tauri::command]
+pub async fn resolve_path_volume(path: String) -> PathVolumeResolution {
+    // MTP protocol dispatch
+    if path.starts_with("mtp://") {
+        let mtp_volume = find_mtp_volume_for_path(&path).await;
+        return PathVolumeResolution {
+            volume: mtp_volume,
+            timed_out: false,
+        };
+    }
+
+    // SMB/network protocol paths → return the virtual network volume
+    if path.starts_with("smb://") {
+        return PathVolumeResolution {
+            volume: Some(VolumeInfo {
+                id: "network".to_string(),
+                name: "Network".to_string(),
+                path: "smb://".to_string(),
+                category: LocationCategory::Network,
+                icon: None,
+                is_ejectable: false,
+                fs_type: Some("smbfs".to_string()),
+                supports_trash: false,
+                is_read_only: false,
+            }),
+            timed_out: false,
+        };
+    }
+
+    // Filesystem paths: resolve via statfs with timeout
+    let result =
+        blocking_with_timeout_flag(VOLUME_TIMEOUT, None, move || volumes::resolve_path_volume_fast(&path)).await;
+
+    PathVolumeResolution {
+        volume: result.data,
+        timed_out: result.timed_out,
+    }
+}
+
+/// Finds the MTP volume matching a `mtp://device_id/storage_id/...` path.
+async fn find_mtp_volume_for_path(path: &str) -> Option<VolumeInfo> {
+    let rest = path.strip_prefix("mtp://")?;
+    let mut parts = rest.splitn(3, '/');
+    let device_id = parts.next()?;
+    let storage_id_str = parts.next()?;
+    let _storage_id: u32 = storage_id_str.parse().ok()?;
+
+    let mut volumes = Vec::new();
+    append_mtp_volumes(&mut volumes).await;
+    // Match on the path prefix (mtp://device_id/storage_id)
+    let prefix = format!("mtp://{}/{}", device_id, storage_id_str);
+    volumes.into_iter().find(|v| v.path == prefix)
 }
 
 /// Appends connected MTP device storages to the volume list.

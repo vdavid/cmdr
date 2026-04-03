@@ -6,7 +6,7 @@ macOS volume and location discovery, plus live mount/unmount watching via FSEven
 
 | File | Purpose |
 |---|---|
-| `mod.rs` | `LocationInfo` type and `VolumeInfo` type alias (`pub use LocationInfo as VolumeInfo` for backwards compatibility), `LocationCategory` enum. `list_locations()`, `get_volume_space()`, `parse_cloud_provider_name()`, and private helpers using `objc2`/`objc2_foundation`. |
+| `mod.rs` | `LocationInfo` type and `VolumeInfo` type alias (`pub use LocationInfo as VolumeInfo` for backwards compatibility), `LocationCategory` enum. `list_locations()`, `get_volume_space()`, `parse_cloud_provider_name()`, `get_mount_point()` (statfs-based mount resolution with APFS firmlink normalization), `resolve_path_volume_fast()` (builds `VolumeInfo` from statfs without enumerating volumes), and private helpers using `objc2`/`objc2_foundation`. |
 | `watcher.rs` | `notify` (FSEvents) watcher on `/Volumes`. Detects mount/unmount by diffing against `KNOWN_VOLUMES`. Registers/unregisters with `VolumeManager` via `register_volume_with_manager`/`unregister_volume_from_manager` (coupling to `file_system::get_volume_manager()`). Emits `volume-mounted` / `volume-unmounted` Tauri events (still needed — `DualPaneExplorer` uses `volume-unmounted` with the volume path to redirect panes off ejected volumes). Triggers `volume_broadcast::emit_volumes_changed()` on changes. Spawns a mount-settle watcher that polls `fsid` until the volume metadata is ready. |
 
 ## Location categories
@@ -31,9 +31,9 @@ WATCHER:       OnceLock<Mutex<Option<RecommendedWatcher>>>
 KNOWN_VOLUMES: OnceLock<Mutex<HashSet<String>>>
 ```
 
-## `path_to_id` duplication
+## `path_to_id`
 
-The `path_to_id` logic (keep only alphanumeric + `-`, lowercase, `/` → `"root"`) is duplicated between `mod.rs` and `watcher.rs`. Keep them in sync if either changes. The constant `DEFAULT_VOLUME_ID = "root"` is defined in `mod.rs` and used in both files.
+`path_to_id` (keep only alphanumeric + `-`, lowercase, `/` → `"root"`) is `pub(crate)` in `mod.rs` and called from `watcher.rs`. The constant `DEFAULT_VOLUME_ID = "root"` is defined in `mod.rs` and used in both files.
 
 ## Volume space
 
@@ -71,8 +71,8 @@ The `path_to_id` logic (keep only alphanumeric + `-`, lowercase, `/` → `"root"
 
 ## Gotchas
 
-**Gotcha**: `path_to_id` logic is duplicated between `mod.rs` and `watcher.rs`
-**Why**: `watcher.rs` generates volume IDs when registering with `VolumeManager` on mount events. It can't call `mod.rs::path_to_id` because the function is private. Making it `pub(crate)` would work but the duplication predates this refactor. If either copy changes, the other must too — otherwise the watcher registers volumes with IDs that don't match what `list_locations()` returns.
+**Gotcha**: `path_to_id` was previously duplicated between `mod.rs` and `watcher.rs`
+**Why**: Fixed — `path_to_id` is now `pub(crate)` in `mod.rs` and `watcher.rs` calls `super::path_to_id()` directly.
 
 **Gotcha**: `VolumeInfo` is a type alias for `LocationInfo`, not a separate type
 **Why**: The module was originally called "volumes" and used `VolumeInfo` everywhere. It was renamed to "locations" (since favorites and cloud drives aren't volumes), but the frontend still sends/receives `VolumeInfo`. The alias preserves backwards compatibility without a migration.

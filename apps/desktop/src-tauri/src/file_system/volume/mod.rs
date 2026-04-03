@@ -77,7 +77,9 @@ pub enum VolumeError {
     /// Device or volume is read-only.
     ReadOnly(String),
     /// Device storage is full.
-    StorageFull { message: String },
+    StorageFull {
+        message: String,
+    },
     /// Connection timed out.
     ConnectionTimeout(String),
     IoError(String),

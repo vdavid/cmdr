@@ -47,47 +47,44 @@ Key files:
 
 ## Key decisions
 
-**Decision**: Always show confirmation dialog on drop **Why**: Drag-and-drop is imprecise. Default operation is copy
-(safer than move).
-
-**Decision**: Same-pane pane-level drops are no-ops **Why**: Dropping onto a subfolder within the same pane is valid.
-
-**Decision**: Rich PNG drag image for external visibility, transparent 1x1 inside window **Why**: Self-drags swap images
-mid-drag via `setDraggingFrame:contents:` (entered → transparent, exited → rich). DOM overlay provides feedback inside.
-
-**Decision**: Modifier keys tracked via NSEvent.modifierFlags **Why**: Tauri doesn't expose modifier state in
-DragDropEvent. Emits `drag-modifiers` event only when state changes.
-
-**Decision**: Viewport position correction only in dev mode **Why**: DevTools docked mode shrinks viewport but Tauri
-reports window-relative positions. Offset computed via `outerSize()` vs `innerHeight`. Zero overhead in prod.
+- **Decision**: Always show confirmation dialog on drop
+  - **Why**: Drag-and-drop is imprecise. Default operation is copy (safer than move).
+- **Decision**: Same-pane pane-level drops are no-ops
+  - **Why**: Dropping onto a subfolder within the same pane is valid.
+- **Decision**: Rich PNG drag image for external visibility, transparent 1x1 inside window
+  - **Why**: Self-drags swap images mid-drag via `setDraggingFrame:contents:` (entered → transparent, exited → rich).
+    DOM overlay provides feedback inside.
+- **Decision**: Modifier keys tracked via NSEvent.modifierFlags
+  - **Why**: Tauri doesn't expose modifier state in DragDropEvent. Emits `drag-modifiers` event only when state changes.
+- **Decision**: Viewport position correction only in dev mode
+  - **Why**: DevTools docked mode shrinks viewport but Tauri reports window-relative positions. Offset computed via
+    `outerSize()` vs `innerHeight`. Zero overhead in prod.
 
 ## Gotchas
 
-**Gotcha**: `startDrag()` resolves before macOS delivers drag events **Why**: Self-drag state (rich image path, active
-flag) must NOT be cleared from async JS after `startDrag`. Only cleared on drop/leave via `endSelfDragSession()`. Temp
-PNG files survive entire drag session (cleanup deferred to `pendingImageCleanup`).
-
-**Gotcha**: Swizzle must catch panics across FFI boundary **Why**: All native calls wrapped in `catch_unwind` +
-`warn_once` to prevent crashes mid-drag. Gracefully degrades if wry renames `WryWebView` or Apple removes deprecated
-APIs.
-
-**Gotcha**: `setDraggingFrame:contents:` modifications persist globally **Why**: Transparent swap in `draggingEntered:`
-would remain visible outside without swap-back in `draggingExited:`. Session-level image (from `startDrag`) is separate.
-
-**Gotcha**: Re-entry detection uses fingerprint (count + first 5 paths) **Why**: O(1) check on drag enter, avoids
-iterating 50k+ paths. Restores `isDraggingFromSelf` flag if match.
-
-**Gotcha**: Icon loading is async **Why**: Canvas renderer preloads all icons in parallel. Falls back to geometric
-shapes (filled rect = file, open rect = folder) on cache miss.
-
-**Gotcha**: Middle-truncation preserves extensions **Why**: `"very-long-filename.txt"` → `"very-lon…me.txt"`. Splits
-basename, keeps extension intact.
-
-**Gotcha**: External drags with large images suppress overlay **Why**: If source preview is > 32x32, hide Cmdr's
-overlay. Self-drags always show overlay (OS image is transparent inside).
-
-**Gotcha**: Drag image shows 12 names max, overlay shows 20 max **Why**: Different limits: canvas is fixed-size
-retina-aware, DOM is flexible. Truncation: first 8/10 + "and N more".
+- **Gotcha**: `startDrag()` resolves before macOS delivers drag events
+  - **Why**: Self-drag state (rich image path, active flag) must NOT be cleared from async JS after `startDrag`. Only
+    cleared on drop/leave via `endSelfDragSession()`. Temp PNG files survive entire drag session (cleanup deferred to
+    `pendingImageCleanup`).
+- **Gotcha**: Swizzle must catch panics across FFI boundary
+  - **Why**: All native calls wrapped in `catch_unwind` + `warn_once` to prevent crashes mid-drag. Gracefully degrades
+    if wry renames `WryWebView` or Apple removes deprecated APIs.
+- **Gotcha**: `setDraggingFrame:contents:` modifications persist globally
+  - **Why**: Transparent swap in `draggingEntered:` would remain visible outside without swap-back in `draggingExited:`.
+    Session-level image (from `startDrag`) is separate.
+- **Gotcha**: Re-entry detection uses fingerprint (count + first 5 paths)
+  - **Why**: O(1) check on drag enter, avoids iterating 50k+ paths. Restores `isDraggingFromSelf` flag if match.
+- **Gotcha**: Icon loading is async
+  - **Why**: Canvas renderer preloads all icons in parallel. Falls back to geometric shapes (filled rect = file, open
+    rect = folder) on cache miss.
+- **Gotcha**: Middle-truncation preserves extensions
+  - **Why**: `"very-long-filename.txt"` → `"very-lon…me.txt"`. Splits basename, keeps extension intact.
+- **Gotcha**: External drags with large images suppress overlay
+  - **Why**: If source preview is > 32x32, hide Cmdr's overlay. Self-drags always show overlay (OS image is transparent
+    inside).
+- **Gotcha**: Drag image shows 12 names max, overlay shows 20 max
+  - **Why**: Different limits: canvas is fixed-size retina-aware, DOM is flexible. Truncation: first 8/10 + "and N
+    more".
 
 ## Platform support
 

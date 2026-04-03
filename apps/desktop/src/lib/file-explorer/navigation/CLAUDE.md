@@ -51,7 +51,8 @@ timeouts) and at startup via `app-status-store.ts`'s `resolvePersistedPath` wrap
 
 `withTimeout(promise, ms, fallback)` — imported from `$lib/utils/timing` and re-exported. Races a promise against a
 timeout, returning the fallback on expiry. Used by both functions above, and also by `VolumeBreadcrumb.svelte` (wraps
-`getVolumeSpace`) and `DualPaneExplorer.svelte` (wraps `findContainingVolume` during startup tab restore).
+`getVolumeSpace`). `DualPaneExplorer.svelte` uses `resolvePathVolume` for startup tab restore (backend has its own 2s
+timeout, no frontend wrapper needed).
 
 ### Non-blocking navigation pattern
 
@@ -100,8 +101,8 @@ and `volume-space-manager.svelte.ts` respectively.
 
 Props: `volumeId`, `currentPath`, `onVolumeChange?`.
 
-`containingVolumeId` is derived separately via `findContainingVolume(currentPath)` — the active checkmark tracks the
-real containing volume, not the `volumeId` prop (which may be a favorite's virtual ID).
+`containingVolumeId` is derived separately via `resolvePathVolume(currentPath)` — the active checkmark tracks the real
+containing volume, not the `volumeId` prop (which may be a favorite's virtual ID).
 
 Keyboard/mouse mode: entering keyboard nav sets `isKeyboardMode = true`, suppressing CSS `:hover` highlights. Mouse
 movement > 5px threshold exits keyboard mode.
@@ -150,7 +151,7 @@ component to render inline indicators (no toasts):
 ## Dependencies
 
 - `$lib/stores/volume-store.svelte` — `getVolumes` (backend-pushed reactive volume list)
-- `$lib/tauri-commands` — `findContainingVolume`, `pathExists`
+- `$lib/tauri-commands` — `resolvePathVolume`, `pathExists`
 - `$lib/utils/timing` — `withTimeout` (defense-in-depth IPC timeout wrapper)
 - `$lib/app-status-store` — `getLastUsedPathForVolume`
 - `../types` — `VolumeInfo`, `LocationCategory`, `NetworkHost`

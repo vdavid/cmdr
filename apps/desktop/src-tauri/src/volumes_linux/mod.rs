@@ -390,6 +390,49 @@ pub fn get_volume_space(path: &str) -> Option<VolumeSpaceInfo> {
     }
 }
 
+/// Resolve a path to its mount point and filesystem type by finding the
+/// longest mount-point prefix match in `/proc/mounts`. Always succeeds
+/// because `/` is always mounted — even nonexistent paths match root.
+pub(crate) fn get_mount_point(path: &str) -> Option<(String, String)> {
+    let mounts = linux_mounts::parse_proc_mounts();
+    let fs_type = linux_mounts::fs_type_for_path_from_entries(Path::new(path), &mounts)?;
+    let mount_point = mounts
+        .iter()
+        .filter(|entry| {
+            path == entry.mountpoint || path.starts_with(&format!("{}/", entry.mountpoint)) || entry.mountpoint == "/"
+        })
+        .max_by_key(|entry| entry.mountpoint.len())
+        .map(|entry| entry.mountpoint.clone())
+        .unwrap_or_else(|| "/".to_string());
+    Some((mount_point, fs_type))
+}
+
+/// Build a `VolumeInfo` for the volume containing `path` using only
+/// mount table data. Does NOT call `list_locations()`.
+pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
+    let (mount_point, fs_type) = get_mount_point(path)?;
+
+    let name = mount_display_name(&mount_point);
+    let supports_trash = supports_trash_for_fs_type(Some(&fs_type));
+    let category = if mount_point == "/" {
+        LocationCategory::MainVolume
+    } else {
+        LocationCategory::AttachedVolume
+    };
+
+    Some(VolumeInfo {
+        id: path_to_id(&mount_point),
+        name,
+        path: mount_point,
+        category,
+        icon: None,
+        is_ejectable: false,
+        fs_type: Some(fs_type),
+        supports_trash,
+        is_read_only: false,
+    })
+}
+
 /// Find the volume that contains a given path using longest-prefix match.
 #[allow(dead_code, reason = "Utility kept for future path-to-volume resolution")]
 pub fn find_volume_for_path(path: &str) -> Option<String> {

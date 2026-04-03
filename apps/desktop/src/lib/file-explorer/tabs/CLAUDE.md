@@ -47,7 +47,7 @@ at the tab cap (10) to avoid blocking the user.
 
 ## Unreachable tabs
 
-When a tab's `findContainingVolume` call times out during startup restoration, the tab enters an "unreachable" state
+When a tab's `resolvePathVolume` call times out during startup restoration, the tab enters an "unreachable" state
 (`TabState.unreachable: UnreachableState`). Instead of silently falling back to the default volume, the tab shows an
 inline banner (`VolumeUnreachableBanner.svelte`) with the original path, a "Retry" button, and an "Open home folder"
 button. The tab bar shows a small warning icon on affected tabs. This is runtime-only state (not persisted) — on next

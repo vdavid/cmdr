@@ -19,7 +19,7 @@
         pathExists,
         listen,
         getDefaultVolumeId,
-        findContainingVolume,
+        resolvePathVolume,
         resortListing,
         DEFAULT_VOLUME_ID,
         type UnlistenFn,
@@ -43,7 +43,7 @@
     import { defaultSortOrders } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { determineNavigationPath, resolveValidPath } from '../navigation/path-navigation'
-    import { withTimeout } from '$lib/utils/timing'
+
     import {
         createHistory,
         push,
@@ -88,7 +88,12 @@
         getTabsForPane as tabOpsGetTabsForPane,
     } from './tab-operations'
     import { initNetworkDiscovery, cleanupNetworkDiscovery } from '../network/network-store.svelte'
-    import { initVolumeStore, getVolumes as getStoreVolumes, cleanupVolumeStore } from '$lib/stores/volume-store.svelte'
+    import {
+        initVolumeStore,
+        getVolumes as getStoreVolumes,
+        cleanupVolumeStore,
+        requestVolumeRefresh,
+    } from '$lib/stores/volume-store.svelte'
     import { initialize as initMtpStore } from '$lib/mtp'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { getAppLogger } from '$lib/logging/logger'
@@ -650,12 +655,10 @@
         const originalPath = tab.unreachable.originalPath
         tab.unreachable = { originalPath, retrying: true }
 
-        // Try to resolve the volume, but don't block on it — navigate directly if it times out
-        const volumeResolveTimeoutMs = 3000
-        const result = await withTimeout(findContainingVolume(originalPath), volumeResolveTimeoutMs, null)
+        // Try to resolve the volume via statfs (backend has its own 2s timeout)
+        const result = await resolvePathVolume(originalPath)
 
-        const resolved = result !== null && !result.timedOut && result.data !== null
-        const volumeId = resolved && result.data ? result.data.id : await getDefaultVolumeId()
+        const volumeId = result.volume ? result.volume.id : await getDefaultVolumeId()
 
         // Clear unreachable and navigate — let FilePane try to load the directory directly.
         // Even if volume resolution timed out, the directory itself may be reachable.
@@ -664,6 +667,10 @@
         setPanePath(pane, originalPath)
         setPaneHistory(pane, push(getPaneHistory(pane), { volumeId, path: originalPath }))
         saveTabsForPaneSide(pane)
+
+        // Sync the volume selector — retry may have fixed a mount that was stale
+        requestVolumeRefresh()
+
         log.info('Volume retry navigating to {path} on volume {vol}', {
             path: originalPath,
             vol: volumeId,
@@ -966,8 +973,6 @@
         // Exception: 'network' is a virtual volume, trust the stored ID for that
         const defaultId = await getDefaultVolumeId()
 
-        const volumeResolveTimeoutMs = 3000
-
         interface VolumeResolution {
             volumeId: string
             timedOut: boolean
@@ -979,18 +984,14 @@
             hasE2eOverride: boolean,
         ): Promise<VolumeResolution> {
             if (volumeId === 'network' && !hasE2eOverride) return { volumeId: 'network', timedOut: false }
-            const result = await withTimeout(findContainingVolume(path), volumeResolveTimeoutMs, null)
-            // Frontend timeout: withTimeout returned null
-            if (result === null) {
-                log.warn('Volume resolution timed out (frontend) for path: {path}', { path })
+            const result = await resolvePathVolume(path)
+            if (result.volume) return { volumeId: result.volume.id, timedOut: false }
+            if (result.timedOut) {
+                log.warn('Volume resolution timed out for path: {path}', { path })
                 return { volumeId: defaultId, timedOut: true }
             }
-            // Backend timeout: findContainingVolume returned { data: null, timedOut: true }
-            if (result.timedOut && result.data === null) {
-                log.warn('Volume resolution timed out (backend) for path: {path}', { path })
-                return { volumeId: defaultId, timedOut: true }
-            }
-            return { volumeId: result.data?.id ?? defaultId, timedOut: false }
+            // Path doesn't exist, but volume is reachable
+            return { volumeId: defaultId, timedOut: false }
         }
 
         // Resolve volume IDs for all tabs in parallel, tracking timeouts
@@ -1906,7 +1907,7 @@
         // Handle favorites differently from actual volumes (same as VolumeBreadcrumb)
         if (volume.category === 'favorite') {
             // For favorites, find the actual containing volume
-            const { data: containingVolume } = await findContainingVolume(volume.path)
+            const { volume: containingVolume } = await resolvePathVolume(volume.path)
             if (containingVolume) {
                 // Navigate to the favorite's path, but set the volume to the containing volume
                 handleVolumeChange(pane, containingVolume.id, containingVolume.path, volume.path)
