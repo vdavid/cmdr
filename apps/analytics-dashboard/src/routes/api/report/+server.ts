@@ -337,10 +337,17 @@ function formatReport(data: DashboardData): string {
 }
 
 export const GET: RequestHandler = async ({ url, platform }) => {
-  const data = await fetchDashboardData(platform, url.searchParams.get('range') ?? '7d')
-  const report = formatReport(data)
+  try {
+    const data = await fetchDashboardData(platform, url.searchParams.get('range') ?? '7d')
+    const report = formatReport(data)
 
-  return new Response(report, {
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-  })
+    return new Response(report, {
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    })
+  } catch (e) {
+    const err = e instanceof Error ? `${e.message}\n${e.stack}` : String(e)
+    return new Response(`Report generation failed:\n${err}`, {
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    })
+  }
 }
