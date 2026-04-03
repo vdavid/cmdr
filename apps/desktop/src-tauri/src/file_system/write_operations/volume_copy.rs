@@ -15,9 +15,6 @@
 //! - Local → MTP: Uses volume.import_from_local()
 //! - MTP → Local: Uses volume.export_to_local()
 
-// TODO: Remove this once volume_copy is integrated into Tauri commands (Phase 5)
-#![allow(dead_code, reason = "Volume copy not yet integrated into Tauri commands")]
-
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};

@@ -18,7 +18,7 @@ func RunDesktopE2EPlaywright(ctx *CheckContext) (CheckResult, error) {
 	cmd.Dir = desktopDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("Playwright E2E tests failed\n%s", indentOutput(output))
+		return CheckResult{}, fmt.Errorf("playwright E2E tests failed\n%s", indentOutput(output))
 	}
 
 	// Extract test count from Playwright output (like "42 passed")
