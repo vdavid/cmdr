@@ -451,6 +451,15 @@ export type WriteOperationError =
   | { type: 'destination_inside_source'; source: string; destination: string }
   | { type: 'symlink_loop'; path: string }
   | { type: 'cancelled'; message: string }
+  | { type: 'device_disconnected'; path: string }
+  | { type: 'read_only_device'; path: string; deviceName: string | null }
+  | { type: 'file_locked'; path: string }
+  | { type: 'trash_not_supported'; path: string }
+  | { type: 'connection_interrupted'; path: string }
+  | { type: 'read_error'; path: string; message: string }
+  | { type: 'write_error'; path: string; message: string }
+  | { type: 'name_too_long'; path: string }
+  | { type: 'invalid_name'; path: string; message: string }
   | { type: 'io_error'; path: string; message: string }
 
 /** Progress event during scanning phase (emitted in dry-run mode). */

@@ -38,7 +38,7 @@ pub fn copy_single_file_linux(
 ) -> Result<u64, WriteOperationError> {
     let src_file = fs::File::open(source).map_err(|e| map_io_error(e, source, destination))?;
 
-    let src_metadata = src_file.metadata().map_err(|e| WriteOperationError::IoError {
+    let src_metadata = src_file.metadata().map_err(|e| WriteOperationError::ReadError {
         path: source.display().to_string(),
         message: format!("Failed to read source metadata: {}", e),
     })?;
@@ -151,6 +151,21 @@ fn map_io_error(err: std::io::Error, source: &Path, destination: &Path) -> Write
                     required: 0,
                     available: 0,
                     volume_name: None,
+                };
+            }
+            // ENAMETOOLONG = 36 on Linux
+            if let Some(os_err) = err.raw_os_error()
+                && os_err == libc::ENAMETOOLONG
+            {
+                return WriteOperationError::NameTooLong {
+                    path: destination.display().to_string(),
+                };
+            }
+            let lower = err.to_string().to_lowercase();
+            if lower.contains("read-only") {
+                return WriteOperationError::ReadOnlyDevice {
+                    path: destination.display().to_string(),
+                    device_name: None,
                 };
             }
             WriteOperationError::IoError {

@@ -1,11 +1,14 @@
 /**
  * User-friendly error message generation for transfer (copy/move) operations.
  * Extracted from TransferErrorDialog.svelte for testability.
+ *
+ * Error classification happens on the backend — each WriteOperationError variant
+ * carries structured data, so the frontend just maps variant → user-facing text.
+ * No string parsing needed.
  */
 
 import type { WriteOperationError, TransferOperationType } from '$lib/file-explorer/types'
 import { formatBytes } from '$lib/tauri-commands'
-import { getDevice } from '$lib/mtp/mtp-store.svelte'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 
 export interface FriendlyErrorMessage {
@@ -91,11 +94,68 @@ export function getUserFriendlyMessage(
         message: `The ${verb} operation was cancelled.`,
         suggestion: 'You can try again when ready.',
       }
+    case 'device_disconnected':
+      return {
+        title: 'Device disconnected',
+        message: `The device was disconnected during the ${verb}.`,
+        suggestion: 'Make sure the device is properly connected and try again.',
+      }
+    case 'read_only_device':
+      return {
+        title: 'Read-only device',
+        message: `${error.deviceName ?? 'The target device'} is read-only. You can copy files from it, but not to it.`,
+        suggestion: 'Choose a different destination that supports writing.',
+      }
+    case 'file_locked':
+      return {
+        title: "File is locked",
+        message: "The file is locked and can't be deleted.",
+        suggestion: isMacOS()
+          ? 'Unlock it in Finder (Get Info > uncheck Locked) and try again.'
+          : 'The file may be protected — check its permissions (e.g. via chmod or your file manager) and try again.',
+      }
+    case 'trash_not_supported':
+      return {
+        title: "Trash not supported",
+        message: "This volume doesn't support trash.",
+        suggestion: 'Use Shift+F8 to delete permanently instead.',
+      }
+    case 'connection_interrupted':
+      return {
+        title: 'Connection interrupted',
+        message: 'The connection was interrupted.',
+        suggestion:
+          'Check your connection and try again. If copying to a network location, ensure the server is reachable.',
+      }
+    case 'read_error':
+      return {
+        title: `${Verb} failed`,
+        message: "Couldn't read from the source.",
+        suggestion: 'Try again. If the problem persists, check the technical details below.',
+      }
+    case 'write_error':
+      return {
+        title: `${Verb} failed`,
+        message: "Couldn't write to the destination.",
+        suggestion: 'Try again. If the problem persists, check the technical details below.',
+      }
+    case 'name_too_long':
+      return {
+        title: 'Name too long',
+        message: 'The file name is too long for the destination.',
+        suggestion: 'Try renaming the file to use a shorter name.',
+      }
+    case 'invalid_name':
+      return {
+        title: 'Invalid file name',
+        message: 'The file name contains characters not allowed at the destination.',
+        suggestion: 'Try renaming the file to remove special characters.',
+      }
     case 'io_error':
       return {
         title: `${Verb} failed`,
-        message: getIoErrorMessage(error.message, operationType),
-        suggestion: getIoErrorSuggestion(error.message),
+        message: `Couldn't ${verb} the file.`,
+        suggestion: 'Try again. If the problem persists, check the technical details below.',
       }
     default:
       return {
@@ -104,132 +164,6 @@ export function getUserFriendlyMessage(
         suggestion: 'Try again, or check the technical details below for more information.',
       }
   }
-}
-
-/**
- * Extracts a friendly device name from an MTP device ID in an error message.
- * Falls back to "The target device" if device not found.
- */
-function getDeviceNameFromError(rawMessage: string): string {
-  // Extract device ID pattern like "mtp-35651584" from the message
-  const deviceIdMatch = rawMessage.match(/mtp-\d+/)
-  if (deviceIdMatch) {
-    const deviceId = deviceIdMatch[0]
-    const device = getDevice(deviceId)
-    if (device) {
-      return device.displayName
-    }
-  }
-  return 'The target device'
-}
-
-/** Checks for delete/trash-specific IO error patterns (locked files, no-trash volumes). */
-function getDeleteSpecificIoMessage(lower: string, operationType: TransferOperationType): string | undefined {
-  const isDeleteOp = operationType === 'delete' || operationType === 'trash'
-
-  // Locked file detection (macOS: "Operation not permitted" from immutable flag)
-  if (isDeleteOp && (lower.includes('operation not permitted') || lower.includes('immutable'))) {
-    return "The file is locked and can't be deleted."
-  }
-
-  // Trash not supported on this volume
-  if (operationType === 'trash' && lower.includes("doesn't support trash")) {
-    return "This volume doesn't support trash."
-  }
-
-  return undefined
-}
-
-/** Checks for device/connection IO error patterns. */
-function getDeviceIoMessage(lower: string, rawMessage: string, verb: string): string | undefined {
-  // Read-only device (check BEFORE generic "read" + "error" check!)
-  if (lower.includes('read-only')) {
-    const deviceName = getDeviceNameFromError(rawMessage)
-    return `${deviceName} is read-only. You can copy files from it, but not to it.`
-  }
-
-  // Device disconnected
-  if (lower.includes('disconnect') || lower.includes('not found') || lower.includes('no such device')) {
-    return `The device was disconnected during the ${verb}.`
-  }
-
-  // Connection errors
-  if (lower.includes('connection') || lower.includes('timeout') || lower.includes('timed out')) {
-    return 'The connection was interrupted.'
-  }
-
-  return undefined
-}
-
-/**
- * Parses IO error messages into user-friendly text.
- */
-function getIoErrorMessage(rawMessage: string, operationType: TransferOperationType): string {
-  const lower = rawMessage.toLowerCase()
-  const { verb } = operationVerbMap[operationType]
-
-  const deleteMsg = getDeleteSpecificIoMessage(lower, operationType)
-  if (deleteMsg) return deleteMsg
-
-  const deviceMsg = getDeviceIoMessage(lower, rawMessage, verb)
-  if (deviceMsg) return deviceMsg
-
-  // Read/write errors
-  if (lower.includes('read') && lower.includes('error')) {
-    return "Couldn't read from the source."
-  }
-  if (lower.includes('write') && lower.includes('error')) {
-    return "Couldn't write to the destination."
-  }
-
-  // File system errors
-  if (lower.includes('name too long')) {
-    return 'The file name is too long for the destination.'
-  }
-  if (lower.includes('invalid') && lower.includes('name')) {
-    return 'The file name contains characters not allowed at the destination.'
-  }
-
-  // Default
-  return `Couldn't ${verb} the file.`
-}
-
-/**
- * Returns a helpful suggestion based on the IO error.
- */
-function getIoErrorSuggestion(rawMessage: string): string {
-  const lower = rawMessage.toLowerCase()
-
-  // Locked file
-  if (lower.includes('operation not permitted') || lower.includes('immutable')) {
-    return isMacOS()
-      ? 'Unlock it in Finder (Get Info > uncheck Locked) and try again.'
-      : 'The file may be protected — check its permissions (e.g. via chmod or your file manager) and try again.'
-  }
-
-  // Trash not supported
-  if (lower.includes("doesn't support trash")) {
-    return 'Use Shift+F8 to delete permanently instead.'
-  }
-
-  // Read-only device - no action the user can take
-  if (lower.includes('read-only')) {
-    return 'Choose a different destination that supports writing.'
-  }
-
-  if (lower.includes('disconnect') || lower.includes('not found') || lower.includes('no such device')) {
-    return 'Make sure the device is properly connected and try again.'
-  }
-
-  if (lower.includes('connection') || lower.includes('timeout') || lower.includes('timed out')) {
-    return 'Check your connection and try again. If copying to a network location, ensure the server is reachable.'
-  }
-
-  if (lower.includes('name too long') || (lower.includes('invalid') && lower.includes('name'))) {
-    return 'Try renaming the file to use a shorter name or remove special characters.'
-  }
-
-  return 'Try again. If the problem persists, check the technical details below.'
 }
 
 /**
@@ -243,7 +177,18 @@ export function getTechnicalDetails(error: WriteOperationError): string {
     case 'destination_exists':
     case 'same_location':
     case 'symlink_loop':
+    case 'device_disconnected':
+    case 'file_locked':
+    case 'trash_not_supported':
+    case 'connection_interrupted':
+    case 'name_too_long':
       lines.push(`Path: ${error.path}`)
+      break
+    case 'read_only_device':
+      lines.push(`Path: ${error.path}`)
+      if (error.deviceName) {
+        lines.push(`Device: ${error.deviceName}`)
+      }
       break
     case 'permission_denied':
       lines.push(`Path: ${error.path}`)
@@ -267,6 +212,9 @@ export function getTechnicalDetails(error: WriteOperationError): string {
         lines.push(`Details: ${error.message}`)
       }
       break
+    case 'read_error':
+    case 'write_error':
+    case 'invalid_name':
     case 'io_error':
       lines.push(`Path: ${error.path}`)
       lines.push(`Error: ${error.message}`)

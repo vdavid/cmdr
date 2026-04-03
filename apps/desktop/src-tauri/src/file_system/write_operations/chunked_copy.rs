@@ -102,12 +102,12 @@ fn copy_data_chunked(
     source_size: u64,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<u64, WriteOperationError> {
-    let mut src_file = std::fs::File::open(source).map_err(|e| WriteOperationError::IoError {
+    let mut src_file = std::fs::File::open(source).map_err(|e| WriteOperationError::ReadError {
         path: source.display().to_string(),
         message: format!("Failed to open source file: {}", e),
     })?;
 
-    let mut dst_file = std::fs::File::create(dest).map_err(|e| WriteOperationError::IoError {
+    let mut dst_file = std::fs::File::create(dest).map_err(|e| WriteOperationError::WriteError {
         path: dest.display().to_string(),
         message: format!("Failed to create destination file: {}", e),
     })?;
@@ -130,7 +130,7 @@ fn copy_data_chunked(
             });
         }
 
-        let bytes_read = src_file.read(&mut buffer).map_err(|e| WriteOperationError::IoError {
+        let bytes_read = src_file.read(&mut buffer).map_err(|e| WriteOperationError::ReadError {
             path: source.display().to_string(),
             message: format!("Failed to read from source: {}", e),
         })?;
@@ -141,7 +141,7 @@ fn copy_data_chunked(
 
         dst_file
             .write_all(&buffer[..bytes_read])
-            .map_err(|e| WriteOperationError::IoError {
+            .map_err(|e| WriteOperationError::WriteError {
                 path: dest.display().to_string(),
                 message: format!("Failed to write to destination: {}", e),
             })?;

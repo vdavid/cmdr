@@ -161,72 +161,91 @@ describe('getUserFriendlyMessage', () => {
       expect(result.message).toBe("Couldn't move the file.")
     })
 
-    it('uses "move" for device disconnection io_error', () => {
-      const error: WriteOperationError = { type: 'io_error', path: '/path', message: 'Device disconnected' }
+    it('uses "move" for device disconnection', () => {
+      const error: WriteOperationError = { type: 'device_disconnected', path: '/path' }
       const result = getUserFriendlyMessage(error, 'move')
 
       expect(result.message).toContain('disconnected during the move')
     })
   })
 
-  describe('io_error messages', () => {
-    it('detects device disconnection', () => {
-      const error: WriteOperationError = {
-        type: 'io_error',
-        path: '/path',
-        message: 'Device disconnected during transfer',
-      }
+  describe('structured error variants', () => {
+    it('handles device_disconnected', () => {
+      const error: WriteOperationError = { type: 'device_disconnected', path: '/path' }
       const result = getUserFriendlyMessage(error)
 
+      expect(result.title).toBe('Device disconnected')
       expect(result.message).toContain('disconnected')
       expect(result.suggestion).toContain('properly connected')
     })
 
-    it('detects connection timeout', () => {
-      const error: WriteOperationError = {
-        type: 'io_error',
-        path: '/path',
-        message: 'Connection timed out',
-      }
+    it('handles connection_interrupted', () => {
+      const error: WriteOperationError = { type: 'connection_interrupted', path: '/path' }
       const result = getUserFriendlyMessage(error)
 
       expect(result.message).toContain('interrupted')
     })
 
-    it('detects read errors', () => {
+    it('handles read_error', () => {
       const error: WriteOperationError = {
-        type: 'io_error',
+        type: 'read_error',
         path: '/path',
-        message: 'Read error on source file',
+        message: 'Failed to read from source',
       }
       const result = getUserFriendlyMessage(error)
 
       expect(result.message).toContain("Couldn't read")
     })
 
-    it('detects write errors', () => {
+    it('handles write_error', () => {
       const error: WriteOperationError = {
-        type: 'io_error',
+        type: 'write_error',
         path: '/path',
-        message: 'Write error on destination',
+        message: 'Failed to write to destination',
       }
       const result = getUserFriendlyMessage(error)
 
       expect(result.message).toContain("Couldn't write")
     })
 
-    it('detects filename too long', () => {
-      const error: WriteOperationError = {
-        type: 'io_error',
-        path: '/path',
-        message: 'File name too long for destination filesystem',
-      }
+    it('handles name_too_long', () => {
+      const error: WriteOperationError = { type: 'name_too_long', path: '/path/very-long-name' }
       const result = getUserFriendlyMessage(error)
 
+      expect(result.title).toBe('Name too long')
       expect(result.message).toContain('too long')
     })
 
-    it('returns generic message for unknown IO errors', () => {
+    it('handles read_only_device', () => {
+      const error: WriteOperationError = { type: 'read_only_device', path: '/path', deviceName: 'My Phone' }
+      const result = getUserFriendlyMessage(error)
+
+      expect(result.message).toContain('My Phone')
+      expect(result.message).toContain('read-only')
+      expect(result.suggestion).toContain('different destination')
+    })
+
+    it('handles read_only_device without device name', () => {
+      const error: WriteOperationError = { type: 'read_only_device', path: '/path', deviceName: null }
+      const result = getUserFriendlyMessage(error)
+
+      expect(result.message).toContain('The target device')
+      expect(result.message).toContain('read-only')
+    })
+
+    it('handles invalid_name', () => {
+      const error: WriteOperationError = {
+        type: 'invalid_name',
+        path: '/path/bad:name',
+        message: 'Colon not allowed',
+      }
+      const result = getUserFriendlyMessage(error)
+
+      expect(result.title).toBe('Invalid file name')
+      expect(result.message).toContain('characters not allowed')
+    })
+
+    it('returns generic message for unknown io_error', () => {
       const error: WriteOperationError = {
         type: 'io_error',
         path: '/path',
@@ -235,30 +254,6 @@ describe('getUserFriendlyMessage', () => {
       const result = getUserFriendlyMessage(error)
 
       expect(result.message).toBe("Couldn't copy the file.")
-    })
-
-    it('detects read-only device errors', () => {
-      const error: WriteOperationError = {
-        type: 'io_error',
-        path: '',
-        message: 'Error for mtp-35651584: This device is read-only. You can copy files from it, but not to it.',
-      }
-      const result = getUserFriendlyMessage(error)
-
-      expect(result.message).toContain('read-only')
-      expect(result.suggestion).toContain('different destination')
-    })
-
-    it('does not misinterpret read-only as read error', () => {
-      const error: WriteOperationError = {
-        type: 'io_error',
-        path: '',
-        message: 'Error for mtp-35651584: This device is read-only.',
-      }
-      const result = getUserFriendlyMessage(error)
-
-      expect(result.message).not.toContain("Couldn't read from the source")
-      expect(result.message).toContain('read-only')
     })
   })
 })
@@ -314,13 +309,42 @@ describe('getTechnicalDetails', () => {
     const error: WriteOperationError = {
       type: 'io_error',
       path: '/path/to/file',
-      message: 'Device disconnected',
+      message: 'Unexpected error',
     }
     const result = getTechnicalDetails(error)
 
     expect(result).toContain('Path: /path/to/file')
-    expect(result).toContain('Error: Device disconnected')
+    expect(result).toContain('Error: Unexpected error')
     expect(result).toContain('Error type: io_error')
+  })
+
+  it('includes path for device_disconnected', () => {
+    const error: WriteOperationError = { type: 'device_disconnected', path: '/mtp/device' }
+    const result = getTechnicalDetails(error)
+
+    expect(result).toContain('Path: /mtp/device')
+    expect(result).toContain('Error type: device_disconnected')
+  })
+
+  it('includes device name for read_only_device', () => {
+    const error: WriteOperationError = { type: 'read_only_device', path: '/path', deviceName: 'Pixel 8' }
+    const result = getTechnicalDetails(error)
+
+    expect(result).toContain('Path: /path')
+    expect(result).toContain('Device: Pixel 8')
+    expect(result).toContain('Error type: read_only_device')
+  })
+
+  it('includes path and message for read_error', () => {
+    const error: WriteOperationError = {
+      type: 'read_error',
+      path: '/source/file',
+      message: 'Failed to read: I/O error',
+    }
+    const result = getTechnicalDetails(error)
+
+    expect(result).toContain('Path: /source/file')
+    expect(result).toContain('Error: Failed to read: I/O error')
   })
 })
 
@@ -365,26 +389,18 @@ describe('getUserFriendlyMessage — delete operation', () => {
     expect(result.suggestion).not.toContain('Finder')
   })
 
-  it('gives macOS-specific suggestion for locked file IO error on delete', () => {
+  it('gives macOS-specific suggestion for file_locked on delete', () => {
     setMacOS(true)
-    const error: WriteOperationError = {
-      type: 'io_error',
-      path: '/path/to/locked.txt',
-      message: 'Operation not permitted',
-    }
+    const error: WriteOperationError = { type: 'file_locked', path: '/path/to/locked.txt' }
     const result = getUserFriendlyMessage(error, 'delete')
 
     expect(result.message).toContain('locked')
     expect(result.suggestion).toContain('Finder')
   })
 
-  it('gives Linux-specific suggestion for locked file IO error on delete', () => {
+  it('gives Linux-specific suggestion for file_locked on delete', () => {
     setMacOS(false)
-    const error: WriteOperationError = {
-      type: 'io_error',
-      path: '/path/to/locked.txt',
-      message: 'Operation not permitted',
-    }
+    const error: WriteOperationError = { type: 'file_locked', path: '/path/to/locked.txt' }
     const result = getUserFriendlyMessage(error, 'delete')
 
     expect(result.message).toContain('locked')
@@ -434,12 +450,8 @@ describe('getUserFriendlyMessage — trash operation', () => {
     expect(result.suggestion).not.toContain('Finder')
   })
 
-  it('detects trash-not-supported error', () => {
-    const error: WriteOperationError = {
-      type: 'io_error',
-      path: '/Volumes/USB/file.txt',
-      message: "This volume doesn't support trash",
-    }
+  it('handles trash_not_supported variant', () => {
+    const error: WriteOperationError = { type: 'trash_not_supported', path: '/Volumes/USB/file.txt' }
     const result = getUserFriendlyMessage(error, 'trash')
 
     expect(result.message).toContain("doesn't support trash")
@@ -459,7 +471,8 @@ describe('error messages are volume-agnostic', () => {
     const errors: WriteOperationError[] = [
       { type: 'source_not_found', path: '/mtp-device/file.txt' },
       { type: 'permission_denied', path: '/mtp-device/protected', message: 'MTP error' },
-      { type: 'io_error', path: '/mtp', message: 'MTP transfer failed' },
+      { type: 'device_disconnected', path: '/mtp-device/file.txt' },
+      { type: 'read_only_device', path: '/mtp-device', deviceName: null },
     ]
 
     for (const error of errors) {
@@ -473,7 +486,7 @@ describe('error messages are volume-agnostic', () => {
     const errors: WriteOperationError[] = [
       { type: 'source_not_found', path: '//server/share/file.txt' },
       { type: 'permission_denied', path: '//server/share', message: 'SMB error' },
-      { type: 'io_error', path: '/smb', message: 'SMB connection failed' },
+      { type: 'connection_interrupted', path: '//server/share/file.txt' },
     ]
 
     for (const error of errors) {

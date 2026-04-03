@@ -261,10 +261,108 @@ pub enum WriteOperationError {
     Cancelled {
         message: String,
     },
+    /// Device was disconnected during the operation (USB, MTP, etc.).
+    DeviceDisconnected {
+        path: String,
+    },
+    /// Target device or volume is read-only.
+    ReadOnlyDevice {
+        path: String,
+        device_name: Option<String>,
+    },
+    /// File is locked (macOS immutable flag, "Operation not permitted" on delete).
+    FileLocked {
+        path: String,
+    },
+    /// Volume doesn't support trash (network mounts, FAT, etc.).
+    TrashNotSupported {
+        path: String,
+    },
+    /// Network connection was interrupted or timed out.
+    ConnectionInterrupted {
+        path: String,
+    },
+    /// Couldn't read from the source.
+    ReadError {
+        path: String,
+        message: String,
+    },
+    /// Couldn't write to the destination.
+    WriteError {
+        path: String,
+        message: String,
+    },
+    /// File name exceeds the destination filesystem's length limit.
+    NameTooLong {
+        path: String,
+    },
+    /// File name contains characters not allowed at the destination.
+    InvalidName {
+        path: String,
+        message: String,
+    },
+    /// Catch-all for genuinely unexpected IO errors.
     IoError {
         path: String,
         message: String,
     },
+}
+
+/// Classifies a raw `std::io::Error` into a specific `WriteOperationError` variant based on its
+/// `ErrorKind` and message content. Used by both `IoResultExt::with_path` and the `From` impl.
+fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperationError {
+    let msg = e.to_string();
+    let lower = msg.to_lowercase();
+
+    match e.kind() {
+        std::io::ErrorKind::NotFound => {
+            if lower.contains("disconnect") || lower.contains("no such device") {
+                return WriteOperationError::DeviceDisconnected { path };
+            }
+            WriteOperationError::SourceNotFound { path }
+        }
+        std::io::ErrorKind::PermissionDenied => {
+            if lower.contains("read-only") || lower.contains("read only") {
+                return WriteOperationError::ReadOnlyDevice {
+                    path,
+                    device_name: None,
+                };
+            }
+            if lower.contains("immutable") || lower.contains("operation not permitted") {
+                return WriteOperationError::FileLocked { path };
+            }
+            WriteOperationError::PermissionDenied { path, message: msg }
+        }
+        std::io::ErrorKind::AlreadyExists => WriteOperationError::DestinationExists { path },
+        std::io::ErrorKind::InvalidInput => {
+            if lower.contains("name too long") || lower.contains("file name too long") {
+                return WriteOperationError::NameTooLong { path };
+            }
+            if lower.contains("invalid") && lower.contains("name") {
+                return WriteOperationError::InvalidName { path, message: msg };
+            }
+            WriteOperationError::IoError { path, message: msg }
+        }
+        _ => {
+            // Heuristic classification based on message content
+            if lower.contains("disconnect") || lower.contains("no such device") {
+                return WriteOperationError::DeviceDisconnected { path };
+            }
+            if lower.contains("read-only") || lower.contains("read only") {
+                return WriteOperationError::ReadOnlyDevice {
+                    path,
+                    device_name: None,
+                };
+            }
+            if lower.contains("connection") || lower.contains("timed out") || lower.contains("timeout") {
+                return WriteOperationError::ConnectionInterrupted { path };
+            }
+            if lower.contains("name too long") || lower.contains("file name too long") {
+                return WriteOperationError::NameTooLong { path };
+            }
+            WriteOperationError::IoError { path, message: msg }
+        }
+    }
 }
 
 /// Extension trait for converting `io::Result` to `Result<T, WriteOperationError>` with path context.
@@ -274,26 +372,13 @@ pub(super) trait IoResultExt<T> {
 
 impl<T> IoResultExt<T> for std::io::Result<T> {
     fn with_path(self, path: &Path) -> Result<T, WriteOperationError> {
-        self.map_err(|e| WriteOperationError::IoError {
-            path: path.display().to_string(),
-            message: e.to_string(),
-        })
+        self.map_err(|e| classify_io_error(&e, path.display().to_string()))
     }
 }
+
 impl From<std::io::Error> for WriteOperationError {
     fn from(err: std::io::Error) -> Self {
-        match err.kind() {
-            std::io::ErrorKind::NotFound => WriteOperationError::SourceNotFound { path: err.to_string() },
-            std::io::ErrorKind::PermissionDenied => WriteOperationError::PermissionDenied {
-                path: String::new(),
-                message: err.to_string(),
-            },
-            std::io::ErrorKind::AlreadyExists => WriteOperationError::DestinationExists { path: err.to_string() },
-            _ => WriteOperationError::IoError {
-                path: String::new(),
-                message: err.to_string(),
-            },
-        }
+        classify_io_error(&err, String::new())
     }
 }
 
