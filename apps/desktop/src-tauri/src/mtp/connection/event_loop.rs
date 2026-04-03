@@ -38,10 +38,16 @@ impl MtpConnectionManager {
         tokio::spawn(async move {
             let mut shutdown_rx = shutdown_tx.subscribe();
 
+            // Clone the MtpDevice for event polling. MtpDevice is cheaply cloneable (Arc
+            // internally) and next_event() reads from the USB interrupt endpoint, which is
+            // independent from the bulk endpoints used by file operations. This lets us poll
+            // for events WITHOUT holding Cmdr's device mutex, so file operations (copy, move,
+            // scan) aren't blocked by event polling.
+            let event_device: MtpDevice = device.lock().await.clone();
+
             debug!("MTP event loop started for device: {}", device_id_clone);
 
             loop {
-                // Try to acquire the device lock with a short timeout to check for shutdown
                 let poll_result = tokio::select! {
                     biased;
 
@@ -51,26 +57,9 @@ impl MtpConnectionManager {
                         break;
                     }
 
-                    // Poll for next event (mtp-rs 0.4+ awaits indefinitely, so we
-                    // wrap in a timeout to release the device lock periodically)
-                    result = async {
-                        // Try to lock the device - use a timeout to prevent deadlocks
-                        match tokio::time::timeout(Duration::from_secs(5), device.lock()).await {
-                            Ok(guard) => {
-                                // Poll for event with timeout so the lock is released periodically,
-                                // allowing other MTP operations to proceed
-                                tokio::time::timeout(Duration::from_secs(5), guard.next_event())
-                                    .await
-                                    .unwrap_or(Err(mtp_rs::Error::Timeout))
-                            }
-                            Err(_) => {
-                                // Timeout acquiring lock - device might be busy with another operation
-                                // Return timeout to continue polling
-                                Err(mtp_rs::Error::Timeout)
-                            }
-                        }
-                    } => {
-                        result
+                    // Poll for next event — no device lock needed (interrupt endpoint is independent)
+                    result = tokio::time::timeout(Duration::from_secs(5), event_device.next_event()) => {
+                        result.unwrap_or(Err(mtp_rs::Error::Timeout))
                     }
                 };
 
