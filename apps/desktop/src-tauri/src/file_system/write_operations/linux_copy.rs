@@ -143,30 +143,40 @@ fn map_io_error(err: std::io::Error, source: &Path, destination: &Path) -> Write
             path: destination.display().to_string(),
         },
         _ => {
-            // ENOSPC = 28 on Linux
-            if let Some(os_err) = err.raw_os_error()
-                && os_err == libc::ENOSPC
-            {
-                return WriteOperationError::InsufficientSpace {
-                    required: 0,
-                    available: 0,
-                    volume_name: None,
-                };
-            }
-            // ENAMETOOLONG = 36 on Linux
-            if let Some(os_err) = err.raw_os_error()
-                && os_err == libc::ENAMETOOLONG
-            {
-                return WriteOperationError::NameTooLong {
-                    path: destination.display().to_string(),
-                };
-            }
-            let lower = err.to_string().to_lowercase();
-            if lower.contains("read-only") {
-                return WriteOperationError::ReadOnlyDevice {
-                    path: destination.display().to_string(),
-                    device_name: None,
-                };
+            if let Some(os_err) = err.raw_os_error() {
+                match os_err {
+                    libc::ENOSPC => {
+                        return WriteOperationError::InsufficientSpace {
+                            required: 0,
+                            available: 0,
+                            volume_name: None,
+                        };
+                    }
+                    // These use destination path (classify_io_error can't pick the right one)
+                    libc::ENAMETOOLONG => {
+                        return WriteOperationError::NameTooLong {
+                            path: destination.display().to_string(),
+                        };
+                    }
+                    libc::EROFS => {
+                        return WriteOperationError::ReadOnlyDevice {
+                            path: destination.display().to_string(),
+                            device_name: None,
+                        };
+                    }
+                    libc::ENOTCONN | libc::ENETDOWN | libc::ENETUNREACH
+                    | libc::EHOSTUNREACH | libc::ETIMEDOUT => {
+                        return WriteOperationError::ConnectionInterrupted {
+                            path: source.display().to_string(),
+                        };
+                    }
+                    libc::ENODEV => {
+                        return WriteOperationError::DeviceDisconnected {
+                            path: source.display().to_string(),
+                        };
+                    }
+                    _ => {}
+                }
             }
             WriteOperationError::IoError {
                 path: source.display().to_string(),

@@ -33,6 +33,9 @@ pub enum MtpConnectionError {
     StorageFull {
         device_id: String,
     },
+    StoreReadOnly {
+        device_id: String,
+    },
     /// Linux: USB device file not accessible (missing udev rules).
     PermissionDenied {
         device_id: String,
@@ -81,6 +84,9 @@ impl std::fmt::Display for MtpConnectionError {
             Self::StorageFull { device_id } => {
                 write!(f, "Storage full on device: {device_id}")
             }
+            Self::StoreReadOnly { device_id } => {
+                write!(f, "Device is read-only: {device_id}")
+            }
             Self::PermissionDenied { device_id } => {
                 write!(f, "Permission denied for device: {device_id}")
             }
@@ -124,9 +130,8 @@ pub(super) fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionE
                 ResponseCode::StoreFull => MtpConnectionError::StorageFull {
                     device_id: device_id.to_string(),
                 },
-                ResponseCode::StoreReadOnly => MtpConnectionError::Other {
+                ResponseCode::StoreReadOnly => MtpConnectionError::StoreReadOnly {
                     device_id: device_id.to_string(),
-                    message: "This device is read-only. You can copy files from it, but not to it.".to_string(),
                 },
                 ResponseCode::InvalidObjectHandle | ResponseCode::InvalidParentObject => {
                     MtpConnectionError::ObjectNotFound {
@@ -286,6 +291,9 @@ mod tests {
                 device_id: "test".to_string(),
             },
             MtpConnectionError::StorageFull {
+                device_id: "test".to_string(),
+            },
+            MtpConnectionError::StoreReadOnly {
                 device_id: "test".to_string(),
             },
             MtpConnectionError::PermissionDenied {

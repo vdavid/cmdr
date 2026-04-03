@@ -13,6 +13,7 @@ use super::types::{
     DryRunResult, IoResultExt, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig, WriteOperationError,
     WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
+use super::volume_copy::map_volume_error;
 use crate::file_system::volume::Volume;
 
 // ============================================================================
@@ -202,19 +203,13 @@ fn scan_volume_recursive(
         });
     }
 
-    let is_dir = volume.is_directory(path).map_err(|e| WriteOperationError::IoError {
-        path: path.display().to_string(),
-        message: e.to_string(),
-    })?;
+    let is_dir = volume.is_directory(path).map_err(|e| map_volume_error(&path.display().to_string(), e))?;
 
     if is_dir {
         // Recurse into children first — list_directory returns FileEntry with size,
         // so we use child.size directly instead of calling get_metadata (which returns
         // NotSupported on MTP).
-        let children = volume.list_directory(path).map_err(|e| WriteOperationError::IoError {
-            path: path.display().to_string(),
-            message: e.to_string(),
-        })?;
+        let children = volume.list_directory(path).map_err(|e| map_volume_error(&path.display().to_string(), e))?;
 
         for child in &children {
             let child_path = PathBuf::from(&child.path);
@@ -396,10 +391,7 @@ pub(super) fn delete_volume_files_with_progress(
             });
         }
 
-        volume.delete(&entry.path).map_err(|e| WriteOperationError::IoError {
-            path: entry.path.display().to_string(),
-            message: e.to_string(),
-        })?;
+        volume.delete(&entry.path).map_err(|e| map_volume_error(&entry.path.display().to_string(), e))?;
 
         files_done += 1;
         bytes_done += entry.size;

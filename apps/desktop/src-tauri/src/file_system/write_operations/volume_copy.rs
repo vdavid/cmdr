@@ -892,7 +892,7 @@ async fn move_within_same_volume(
 }
 
 /// Maps VolumeError to WriteOperationError, attaching path context where the original error lacks one.
-fn map_volume_error(context_path: &str, e: VolumeError) -> WriteOperationError {
+pub(super) fn map_volume_error(context_path: &str, e: VolumeError) -> WriteOperationError {
     match e {
         VolumeError::NotFound(path) => WriteOperationError::SourceNotFound { path },
         VolumeError::PermissionDenied(msg) => WriteOperationError::PermissionDenied {
@@ -904,28 +904,25 @@ fn map_volume_error(context_path: &str, e: VolumeError) -> WriteOperationError {
             path: context_path.to_string(),
             message: "Operation not supported by this volume type".to_string(),
         },
-        VolumeError::IoError(msg) => {
-            let lower = msg.to_lowercase();
-            if lower.contains("disconnect") || lower.contains("no such device") || lower.contains("not found") {
-                WriteOperationError::DeviceDisconnected {
-                    path: context_path.to_string(),
-                }
-            } else if lower.contains("read-only") || lower.contains("read only") {
-                WriteOperationError::ReadOnlyDevice {
-                    path: context_path.to_string(),
-                    device_name: None,
-                }
-            } else if lower.contains("connection") || lower.contains("timed out") || lower.contains("timeout") {
-                WriteOperationError::ConnectionInterrupted {
-                    path: context_path.to_string(),
-                }
-            } else {
-                WriteOperationError::IoError {
-                    path: context_path.to_string(),
-                    message: msg,
-                }
-            }
-        }
+        VolumeError::DeviceDisconnected(_) => WriteOperationError::DeviceDisconnected {
+            path: context_path.to_string(),
+        },
+        VolumeError::ReadOnly(_) => WriteOperationError::ReadOnlyDevice {
+            path: context_path.to_string(),
+            device_name: None,
+        },
+        VolumeError::StorageFull { .. } => WriteOperationError::InsufficientSpace {
+            required: 0,
+            available: 0,
+            volume_name: None,
+        },
+        VolumeError::ConnectionTimeout(_) => WriteOperationError::ConnectionInterrupted {
+            path: context_path.to_string(),
+        },
+        VolumeError::IoError(msg) => WriteOperationError::IoError {
+            path: context_path.to_string(),
+            message: msg,
+        },
     }
 }
 

@@ -602,7 +602,13 @@ fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
             VolumeError::NotFound(e.to_string())
         }
         MtpConnectionError::ObjectNotFound { path, .. } => VolumeError::NotFound(path),
-        MtpConnectionError::ExclusiveAccess { .. } => VolumeError::PermissionDenied(e.to_string()),
+        MtpConnectionError::ExclusiveAccess { .. } | MtpConnectionError::PermissionDenied { .. } => {
+            VolumeError::PermissionDenied(e.to_string())
+        }
+        MtpConnectionError::Disconnected { .. } => VolumeError::DeviceDisconnected(e.to_string()),
+        MtpConnectionError::Timeout { .. } => VolumeError::ConnectionTimeout(e.to_string()),
+        MtpConnectionError::StorageFull { .. } => VolumeError::StorageFull { message: e.to_string() },
+        MtpConnectionError::StoreReadOnly { .. } => VolumeError::ReadOnly(e.to_string()),
         _ => VolumeError::IoError(e.to_string()),
     }
 }

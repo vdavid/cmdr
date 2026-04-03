@@ -309,18 +309,40 @@ pub enum WriteOperationError {
 }
 
 /// Classifies a raw `std::io::Error` into a specific `WriteOperationError` variant based on its
-/// `ErrorKind` and message content. Used by both `IoResultExt::with_path` and the `From` impl.
+/// errno code, `ErrorKind`, and message content. Used by both `IoResultExt::with_path` and the
+/// `From` impl.
 fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperationError {
+    // Prefer errno when available (local FS operations always have one)
+    #[cfg(unix)]
+    if let Some(code) = e.raw_os_error() {
+        match code {
+            libc::EROFS => {
+                return WriteOperationError::ReadOnlyDevice {
+                    path,
+                    device_name: None,
+                }
+            }
+            libc::ENAMETOOLONG => return WriteOperationError::NameTooLong { path },
+            libc::ENOTCONN | libc::ENETDOWN | libc::ENETUNREACH | libc::EHOSTUNREACH
+            | libc::ETIMEDOUT => return WriteOperationError::ConnectionInterrupted { path },
+            libc::ENODEV => return WriteOperationError::DeviceDisconnected { path },
+            _ => {} // Fall through to ErrorKind/message-based classification
+        }
+    }
+
     let msg = e.to_string();
     let lower = msg.to_lowercase();
 
-    // Message-based heuristics (apply regardless of ErrorKind — checked first because they're
-    // more specific than the generic kind-based mapping below)
+    // Message-based heuristics as fallback for errors without raw OS codes
+    // (synthetic/wrapped errors from libraries)
     if lower.contains("disconnect") || lower.contains("no such device") {
         return WriteOperationError::DeviceDisconnected { path };
     }
     if lower.contains("read-only") || lower.contains("read only") {
-        return WriteOperationError::ReadOnlyDevice { path, device_name: None };
+        return WriteOperationError::ReadOnlyDevice {
+            path,
+            device_name: None,
+        };
     }
     if lower.contains("connection") || lower.contains("timed out") || lower.contains("timeout") {
         return WriteOperationError::ConnectionInterrupted { path };
@@ -329,7 +351,10 @@ fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperationError {
         return WriteOperationError::NameTooLong { path };
     }
     if lower.contains("invalid") && lower.contains("name") {
-        return WriteOperationError::InvalidName { path, message: msg };
+        return WriteOperationError::InvalidName {
+            path,
+            message: msg,
+        };
     }
 
     // ErrorKind-based fallback, with one kind-specific heuristic
@@ -340,10 +365,16 @@ fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperationError {
             if lower.contains("immutable") || lower.contains("operation not permitted") {
                 return WriteOperationError::FileLocked { path };
             }
-            WriteOperationError::PermissionDenied { path, message: msg }
+            WriteOperationError::PermissionDenied {
+                path,
+                message: msg,
+            }
         }
         std::io::ErrorKind::AlreadyExists => WriteOperationError::DestinationExists { path },
-        _ => WriteOperationError::IoError { path, message: msg },
+        _ => WriteOperationError::IoError {
+            path,
+            message: msg,
+        },
     }
 }
 

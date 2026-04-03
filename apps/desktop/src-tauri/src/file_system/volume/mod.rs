@@ -72,6 +72,14 @@ pub enum VolumeError {
     AlreadyExists(String),
     /// Not supported by this volume type.
     NotSupported,
+    /// Device went away mid-operation.
+    DeviceDisconnected(String),
+    /// Device or volume is read-only.
+    ReadOnly(String),
+    /// Device storage is full.
+    StorageFull { message: String },
+    /// Connection timed out.
+    ConnectionTimeout(String),
     IoError(String),
 }
 
@@ -82,6 +90,10 @@ impl std::fmt::Display for VolumeError {
             Self::PermissionDenied(path) => write!(f, "Permission denied: {}", path),
             Self::AlreadyExists(path) => write!(f, "Already exists: {}", path),
             Self::NotSupported => write!(f, "Operation not supported"),
+            Self::DeviceDisconnected(msg) => write!(f, "Device disconnected: {}", msg),
+            Self::ReadOnly(msg) => write!(f, "Read-only: {}", msg),
+            Self::StorageFull { message } => write!(f, "Storage full: {}", message),
+            Self::ConnectionTimeout(msg) => write!(f, "Connection timed out: {}", msg),
             Self::IoError(msg) => write!(f, "I/O error: {}", msg),
         }
     }
