@@ -63,7 +63,7 @@ test.setTimeout(120_000)
 test.beforeEach(async ({ tauriPage }) => {
   recreateFixtures(getFixtureRoot()) // Local fixtures for cross-storage tests
   recreateMtpFixtures() // MTP backing dir
-  await sleep(500) // Let the virtual device's event loop settle
+  await sleep(2500) // Let the virtual device's file watcher settle after fixture recreation
   await initMcpClient(tauriPage) // Discover MCP port
 
   // Force both panes back to a local volume. Previous tests may have left a pane
@@ -101,15 +101,19 @@ test.describe('MTP device discovery', () => {
     // Wait for the dropdown to appear
     await pollUntil(tauriPage, async () => tauriPage.isVisible('.volume-dropdown'), 5000)
 
-    // Check for "Mobile" category label (MTP devices are grouped under "Mobile")
-    const hasMobileGroup = await tauriPage.evaluate<boolean>(`(function() {
+    // Wait for "Mobile" category label to appear (MTP volumes load reactively)
+    await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(`(function() {
             var labels = document.querySelectorAll('.volume-dropdown .category-label');
             for (var i = 0; i < labels.length; i++) {
                 if (labels[i].textContent.trim() === 'Mobile') return true;
             }
             return false;
-        })()`)
-    expect(hasMobileGroup).toBe(true)
+        })()`),
+      10000,
+    )
 
     // Check that Internal Storage is listed
     const hasInternal = await tauriPage.evaluate<boolean>(`(function() {
@@ -518,15 +522,12 @@ test.describe('MTP file watching', () => {
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'report.txt')
 
-    // Write a new file directly to the backing dir (simulating external change)
+    // Write a new file directly to the backing dir (simulating external change).
+    // mtp-rs 0.6.0 watches the backing dir and emits ObjectAdded events,
+    // which Cmdr's event loop picks up and sends as directory-diff to the frontend.
     fs.writeFileSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'new-file.txt'), 'hello from external write')
 
-    // Wait for the virtual device's event loop to detect the change, then force refresh
-    // as a fallback in case the event loop doesn't pick it up in time
-    await sleep(2000)
-    await mcpCall('refresh', {})
-
-    // Wait for the file to appear in the left pane
+    // Wait for the file to appear via the virtual device's file watcher → event loop → directory-diff pipeline
     await mcpAwaitItem('left', 'new-file.txt', 30)
 
     // Verify it shows up in the DOM too
