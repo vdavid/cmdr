@@ -413,8 +413,17 @@
         })
 
         await listenTauri('mcp-move-cursor', (event) => {
-            const { pane, to } = event.payload as { pane: 'left' | 'right'; to: number | string }
-            void explorerRef?.moveCursor(pane, to)
+            const { pane, to, requestId } = event.payload as { pane: 'left' | 'right'; to: number | string; requestId: string }
+            void (async () => {
+                const { emit } = await import('@tauri-apps/api/event')
+                try {
+                    await explorerRef?.moveCursor(pane, to)
+                    await emit('mcp-response', { requestId, ok: true })
+                } catch (e) {
+                    const error = e instanceof Error ? e.message : String(e)
+                    await emit('mcp-response', { requestId, ok: false, error })
+                }
+            })()
         })
 
         await listenTauri('mcp-scroll-to', (event) => {

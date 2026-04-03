@@ -44,7 +44,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
  Routes tool calls to implementations. Most tools are fire-and-forget: emit a Tauri event and return "OK" immediately.
 
-Tools where the backend can't fully validate preconditions use `mcp_round_trip`: emit an event with a `requestId`, wait for the frontend to respond via `mcp-response` with `{ requestId, ok, error? }`, and return the actual outcome. Used by `set_setting` (5s timeout). `nav_to_path` uses `mcp_round_trip_with_timeout` with a 30s timeout because it waits for the directory listing to complete (the frontend delays the response until `handleListingComplete` fires in FilePane). Resources that need frontend data use `resource_round_trip` (same pattern but returns `data` from the response). Used by `cmdr://settings`. Use these patterns for any new tool/resource where the backend would otherwise need to replicate frontend knowledge.
+Tools where the backend can't fully validate preconditions use `mcp_round_trip`: emit an event with a `requestId`, wait for the frontend to respond via `mcp-response` with `{ requestId, ok, error? }`, and return the actual outcome. Used by `move_cursor` and `set_setting` (5s timeout). `nav_to_path` uses `mcp_round_trip_with_timeout` with a 30s timeout because it waits for the directory listing to complete (the frontend delays the response until `handleListingComplete` fires in FilePane). Resources that need frontend data use `resource_round_trip` (same pattern but returns `data` from the response). Used by `cmdr://settings`. Use these patterns for any new tool/resource where the backend would otherwise need to replicate frontend knowledge.
 
 ### Configuration (`config.rs`)
 
@@ -135,7 +135,7 @@ The `cmdr://settings` resource and `set_setting` tool both use round-trips to th
 
 ### Tool execution is async but mostly synchronous
 
-`execute_tool()` is an async function. Most tools are fire-and-forget — they emit a Tauri event and return immediately (for example, "OK: Copy dialog opened" not "OK: Files copied"). This applies even with `autoConfirm: true` — the tool returns when the operation starts, not when it completes. Three categories of async tools exist: (1) `mcp_round_trip` tools (`nav_to_path`) that wait up to 5s for the frontend to confirm success/failure, (2) search tools (`search`, `ai_search`) that load the search index via `spawn_blocking` and (for `ai_search`) call the LLM API.
+`execute_tool()` is an async function. Most tools are fire-and-forget — they emit a Tauri event and return immediately (for example, "OK: Copy dialog opened" not "OK: Files copied"). This applies even with `autoConfirm: true` — the tool returns when the operation starts, not when it completes. Three categories of async tools exist: (1) `mcp_round_trip` tools (`nav_to_path`, `move_cursor`) that wait up to 5s for the frontend to confirm success/failure, (2) search tools (`search`, `ai_search`) that load the search index via `spawn_blocking` and (for `ai_search`) call the LLM API.
 
 ### Error codes are JSON-RPC standard
 

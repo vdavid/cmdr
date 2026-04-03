@@ -558,8 +558,13 @@ async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &
                 store.set_focused_pane(pane.to_string());
             }
 
-            app.emit("mcp-move-cursor", json!({"pane": pane, "to": to}))?;
-            Ok(json!(format!("OK: Moved cursor in {pane} pane to {to}")))
+            mcp_round_trip(
+                app,
+                "mcp-move-cursor",
+                json!({"pane": pane, "to": to}),
+                format!("OK: Moved cursor in {pane} pane to {to}"),
+            )
+            .await
         }
         "scroll_to" => {
             let pane = params
