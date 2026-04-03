@@ -340,8 +340,8 @@ pub(crate) fn cleanup_macos_menus() {
 }
 
 fn cleanup_macos_menus_inner() {
-    // This runs during Tauri setup on the main thread.
-    let mtm = unsafe { MainThreadMarker::new_unchecked() };
+    let mtm = MainThreadMarker::new()
+        .expect("cleanup_macos_menus_inner must be called from the main thread");
     let app = NSApplication::sharedApplication(mtm);
     let Some(main_menu) = app.mainMenu() else {
         return;
@@ -413,7 +413,8 @@ pub(crate) fn set_macos_menu_icons() {
 }
 
 fn set_macos_menu_icons_inner() {
-    let mtm = unsafe { MainThreadMarker::new_unchecked() };
+    let mtm = MainThreadMarker::new()
+        .expect("set_macos_menu_icons_inner must be called from the main thread");
     let app = NSApplication::sharedApplication(mtm);
     let Some(main_menu) = app.mainMenu() else {
         return;

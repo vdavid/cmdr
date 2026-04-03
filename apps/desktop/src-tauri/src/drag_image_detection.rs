@@ -184,6 +184,9 @@ fn emit_modifiers_forced() {
 unsafe fn call_original_entered(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) -> usize {
     unsafe {
         if let Some(&original) = ORIGINAL_ENTERED_IMP.get() {
+            // SAFETY: The original IMP was obtained from `draggingEntered:` which has the ObjC
+            // signature `- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender`, matching
+            // the C ABI as `fn(&AnyObject, Sel, &AnyObject) -> usize`.
             let f =
                 std::mem::transmute::<Imp, unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject) -> usize>(original);
             f(this, cmd, drag_info)
@@ -197,6 +200,7 @@ unsafe fn call_original_entered(this: &AnyObject, cmd: Sel, drag_info: &AnyObjec
 unsafe fn call_original_updated(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) -> usize {
     unsafe {
         if let Some(&original) = ORIGINAL_UPDATED_IMP.get() {
+            // SAFETY: Same as call_original_entered — `draggingUpdated:` has an identical signature.
             let f =
                 std::mem::transmute::<Imp, unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject) -> usize>(original);
             f(this, cmd, drag_info)
@@ -211,6 +215,8 @@ unsafe fn call_original_updated(this: &AnyObject, cmd: Sel, drag_info: &AnyObjec
 unsafe fn call_original_exited(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) {
     unsafe {
         if let Some(&original) = ORIGINAL_EXITED_IMP.get() {
+            // SAFETY: Same as call_original_entered — `draggingExited:` has the same parameter
+            // signature but returns void instead of NSDragOperation.
             let f = std::mem::transmute::<Imp, unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject)>(original);
             f(this, cmd, drag_info)
         }

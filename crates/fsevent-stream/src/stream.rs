@@ -175,15 +175,15 @@ pub(crate) struct StreamContextInfo {
 
 impl_release_callback!(release_context, StreamContextInfo);
 
-struct SendWrapper<T>(T);
+/// A CFRunLoop that can be sent across threads.
+///
+/// SAFETY: CFRunLoop is a Core Foundation type. Apple documents that CF objects can be
+/// retained/released and used across threads. CFRunLoopStop (the only cross-thread operation
+/// we perform) is explicitly documented as thread-safe.
+/// https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/ThreadSafetySummary/ThreadSafetySummary.html
+struct SendableCFRunLoop(CFRunLoop);
 
-unsafe impl<T> Send for SendWrapper<T> {}
-
-impl<T> SendWrapper<T> {
-    const unsafe fn new(t: T) -> Self {
-        Self(t)
-    }
-}
+unsafe impl Send for SendableCFRunLoop {}
 
 /// Create a new [`EventStream`](EventStream) and [`EventStreamHandler`](EventStreamHandler) pair.
 ///
@@ -265,11 +265,8 @@ pub fn create_event_stream<P: AsRef<Path>>(
         stream.start();
 
         // the calling to CFRunLoopRun will be terminated by CFRunLoopStop call in drop()
-        // Safety:
-        // - According to the Apple documentation, it's safe to move `CFRef`s across threads.
-        //   https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/ThreadSafetySummary/ThreadSafetySummary.html
         runloop_tx
-            .send(unsafe { SendWrapper::new(current_runloop) })
+            .send(SendableCFRunLoop(current_runloop))
             .expect("send runloop to stream");
 
         CFRunLoop::run_current();

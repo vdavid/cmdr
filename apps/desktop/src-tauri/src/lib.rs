@@ -150,8 +150,8 @@ fn send_native_clipboard_action(menu_id: &str) {
         _ => return,
     };
 
-    // Safety: we're on the main thread (called from on_menu_event which runs on the main thread).
-    let mtm = unsafe { objc2::MainThreadMarker::new_unchecked() };
+    let mtm = objc2::MainThreadMarker::new()
+        .expect("send_native_clipboard_action must be called from the main thread");
     let ns_app = NSApplication::sharedApplication(mtm);
 
     // sendAction:to:from: with nil `to` sends to the first responder, exactly like
