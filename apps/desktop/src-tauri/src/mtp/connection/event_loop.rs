@@ -155,12 +155,22 @@ impl MtpConnectionManager {
     /// Uses the unified diff system shared with local file watching, providing
     /// smooth incremental UI updates without full directory reloads.
     fn emit_directory_changed(device_id: &str, app: &AppHandle) {
-        // Check debouncer via the global connection manager
+        // Check debouncer via the global connection manager.
+        // When suppressed, schedule a trailing emit after the debounce window
+        // so the last event in a burst is never permanently dropped.
         if !connection_manager().event_debouncer.should_emit(device_id) {
             debug!(
-                "MTP event loop: directory change DEBOUNCED for device={} (within {}ms window)",
+                "MTP event loop: directory change DEBOUNCED for device={} (within {}ms window), scheduling trailing emit",
                 device_id, EVENT_DEBOUNCE_MS
             );
+            let device_id_owned = device_id.to_string();
+            let app_clone = app.clone();
+            tokio::spawn(async move {
+                tokio::time::sleep(Duration::from_millis(EVENT_DEBOUNCE_MS + 50)).await;
+                // Re-emit — this goes through the debouncer again (which will pass
+                // since the window has expired) to avoid duplicate processing.
+                Self::emit_directory_changed(&device_id_owned, &app_clone);
+            });
             return;
         }
 

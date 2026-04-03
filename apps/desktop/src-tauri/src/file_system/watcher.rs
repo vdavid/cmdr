@@ -356,14 +356,15 @@ pub fn handle_directory_change(listing_id: &str) {
         use crate::file_system::listing::caching::LISTING_CACHE;
         if let Ok(cache) = LISTING_CACHE.read()
             && let Some(listing) = cache.get(listing_id)
-                && let Some(vol) = crate::file_system::get_volume_manager().get(&listing.volume_id)
-                    && !vol.supports_watching() {
-                        log::debug!(
-                            "handle_directory_change: skipping non-watchable volume (volume={})",
-                            listing.volume_id
-                        );
-                        return;
-                    }
+            && let Some(vol) = crate::file_system::get_volume_manager().get(&listing.volume_id)
+            && !vol.supports_watching()
+        {
+            log::debug!(
+                "handle_directory_change: skipping non-watchable volume (volume={})",
+                listing.volume_id
+            );
+            return;
+        }
     }
 
     // Get old entries and path from the unified LISTING_CACHE
