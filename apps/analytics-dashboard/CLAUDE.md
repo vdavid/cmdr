@@ -40,7 +40,7 @@ Each source gets its own module under `src/lib/server/sources/`:
 
 | Module          | Auth                                            | Data                                                                                                                              |
 | --------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `umami.ts`      | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for blog + getcmdr.com                                                |
+| `umami.ts`      | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com + getcmdr.com                                    |
 | `cloudflare.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Download counts, active users by version/arch/country — fetched from worker endpoints (`/admin/downloads`, `/admin/active-users`) |
 | `paddle.ts`     | Bearer token, cursor pagination                 | Completed transactions, subscriptions by status                                                                                   |
 | `github.ts`     | Optional Bearer token                           | Release download counts per asset                                                                                                 |
@@ -73,7 +73,7 @@ All set as CF Pages secrets, never in code.
 | `UMAMI_USERNAME`             | Existing Umami credentials                                    |
 | `UMAMI_PASSWORD`             | Existing Umami credentials                                    |
 | `UMAMI_WEBSITE_ID`           | getcmdr.com website ID                                        |
-| `UMAMI_BLOG_WEBSITE_ID`      | Blog website ID                                               |
+| `UMAMI_BLOG_WEBSITE_ID`      | veszelovszki.com website ID (env var name kept for CF secrets compatibility) |
 | `PADDLE_API_KEY_LIVE`        | Live API key (not sandbox)                                    |
 | `POSTHOG_API_KEY`            | Personal `phx_...` key (not the public `phc_...` project key) |
 | `POSTHOG_PROJECT_ID`         | `136072`                                                      |

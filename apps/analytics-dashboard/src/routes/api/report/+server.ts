@@ -69,16 +69,16 @@ function formatReport(data: DashboardData): string {
     line(`Couldn't load: ${data.umami.error}`)
   } else {
     const u = data.umami.data
-    const totalPv = u.blog.pageviews.value + u.website.pageviews.value
-    const prevPv = u.blog.pageviews.prev + u.website.pageviews.prev
+    const totalPv = u.personalSite.pageviews.value + u.website.pageviews.value
+    const prevPv = u.personalSite.pageviews.prev + u.website.pageviews.prev
     line(`- Total page views: ${num(totalPv)}${delta(totalPv, prevPv)}`)
-    line(`- Blog views: ${num(u.blog.pageviews.value)}${delta(u.blog.pageviews.value, u.blog.pageviews.prev)}`)
+    line(`- veszelovszki.com views: ${num(u.personalSite.pageviews.value)}${delta(u.personalSite.pageviews.value, u.personalSite.pageviews.prev)}`)
     line(
-      `- Website views: ${num(u.website.pageviews.value)}${delta(u.website.pageviews.value, u.website.pageviews.prev)}`,
+      `- getcmdr.com views: ${num(u.website.pageviews.value)}${delta(u.website.pageviews.value, u.website.pageviews.prev)}`,
     )
-    line(`- Blog visitors: ${num(u.blog.visitors.value)}${delta(u.blog.visitors.value, u.blog.visitors.prev)}`)
+    line(`- veszelovszki.com visitors: ${num(u.personalSite.visitors.value)}${delta(u.personalSite.visitors.value, u.personalSite.visitors.prev)}`)
     line(
-      `- Website visitors: ${num(u.website.visitors.value)}${delta(u.website.visitors.value, u.website.visitors.prev)}`,
+      `- getcmdr.com visitors: ${num(u.website.visitors.value)}${delta(u.website.visitors.value, u.website.visitors.prev)}`,
     )
 
     if (u.websiteReferrers.length > 0) {

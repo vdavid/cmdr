@@ -16,7 +16,7 @@ export interface UmamiMetricItem {
 }
 
 export interface UmamiData {
-  blog: UmamiSiteStats
+  personalSite: UmamiSiteStats
   website: UmamiSiteStats
   /** Top referrers for getcmdr.com */
   websiteReferrers: UmamiMetricItem[]
@@ -127,7 +127,7 @@ export async function fetchUmamiData(env: UmamiEnv, range: TimeRange): Promise<S
     const token = await authenticate(env.UMAMI_API_URL, env.UMAMI_USERNAME, env.UMAMI_PASSWORD)
     const { startAt, endAt } = toTimeWindow(range)
 
-    const [blog, website, websiteReferrers, websitePages, websiteCountries, downloadEvents] = await Promise.all([
+    const [personalSite, website, websiteReferrers, websitePages, websiteCountries, downloadEvents] = await Promise.all([
       fetchStats(env.UMAMI_API_URL, token, env.UMAMI_BLOG_WEBSITE_ID, startAt, endAt),
       fetchStats(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt),
       fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt, 'referrer'),
@@ -136,7 +136,7 @@ export async function fetchUmamiData(env: UmamiEnv, range: TimeRange): Promise<S
       fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt, 'event'),
     ])
 
-    const data: UmamiData = { blog, website, websiteReferrers, websitePages, websiteCountries, downloadEvents }
+    const data: UmamiData = { personalSite, website, websiteReferrers, websitePages, websiteCountries, downloadEvents }
     await cacheSet('umami', range, data)
     return { ok: true, data }
   } catch (e) {

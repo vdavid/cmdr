@@ -191,14 +191,14 @@
                 {@render errorState(data.umami.error)}
             {:else}
                 {@const umami = data.umami.data}
-                {@const totalPageviews = umami.blog.pageviews.value + umami.website.pageviews.value}
-                {@const prevPageviews = umami.blog.pageviews.prev + umami.website.pageviews.prev}
+                {@const totalPageviews = umami.personalSite.pageviews.value + umami.website.pageviews.value}
+                {@const prevPageviews = umami.personalSite.pageviews.prev + umami.website.pageviews.prev}
                 {@const delta = formatDelta(totalPageviews, prevPageviews)}
 
                 {@render metricRow([
                     { label: 'Total page views', value: formatNumber(totalPageviews), delta },
-                    { label: 'Blog views', value: formatNumber(umami.blog.pageviews.value) },
-                    { label: 'Website views', value: formatNumber(umami.website.pageviews.value) },
+                    { label: 'veszelovszki.com views', value: formatNumber(umami.personalSite.pageviews.value) },
+                    { label: 'getcmdr.com views', value: formatNumber(umami.website.pageviews.value) },
                 ])}
 
                 {#if umami.websiteReferrers.length > 0}
@@ -209,8 +209,8 @@
                 {/if}
 
                 {@render externalLinks([
-                    { label: 'View blog in Umami', href: 'https://anal.veszelovszki.com' },
-                    { label: 'View website in Umami', href: 'https://anal.veszelovszki.com' },
+                    { label: 'View veszelovszki.com in Umami', href: 'https://anal.veszelovszki.com' },
+                    { label: 'View getcmdr.com in Umami', href: 'https://anal.veszelovszki.com' },
                 ])}
             {/if}
         </section>

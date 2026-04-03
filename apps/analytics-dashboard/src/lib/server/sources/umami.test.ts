@@ -62,11 +62,19 @@ describe('fetchUmamiData', () => {
       json: async () => ({ token: 'test-jwt-token' }),
     })
 
-    // 6 parallel requests: blog stats, website stats, referrers, pages, countries, events
+    // 6 parallel requests: personalSite stats, website stats, referrers, pages, countries, events
+    const rawStats = {
+      pageviews: 1200,
+      visitors: 450,
+      visits: 600,
+      bounces: 200,
+      totaltime: 86400,
+      comparison: { pageviews: 1000, visitors: 400, visits: 550, bounces: 180, totaltime: 72000 },
+    }
     for (let i = 0; i < 6; i++) {
       fetchMock.mockResolvedValueOnce({
         ok: true,
-        json: async () => (i < 2 ? sampleStats : sampleMetrics),
+        json: async () => (i < 2 ? rawStats : sampleMetrics),
       })
     }
 
@@ -76,7 +84,7 @@ describe('fetchUmamiData', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
 
-    expect(result.data.blog.pageviews.value).toBe(1200)
+    expect(result.data.personalSite.pageviews.value).toBe(1200)
     expect(result.data.website.visitors.value).toBe(450)
     expect(result.data.websitePages).toHaveLength(3)
 
