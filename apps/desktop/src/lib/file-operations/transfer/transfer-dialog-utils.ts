@@ -88,6 +88,11 @@ export function toBackendCursorIndex(frontendIndex: number, hasParent: boolean):
 
 /** Strips the volume prefix to get a volume-relative path. Always returns a `/`-prefixed string. */
 export function toVolumeRelativePath(fullPath: string, volumePath: string): string {
+  // MTP/non-local volumes: fullPath may already be volume-relative (like "/DCIM")
+  // while volumePath is a URL (like "mtp://device/storage"). Just pass through.
+  if (!fullPath.startsWith(volumePath) && volumePath.includes('://')) {
+    return fullPath || '/'
+  }
   if (volumePath === '/') return fullPath
   if (fullPath.startsWith(volumePath)) {
     return fullPath.slice(volumePath.length) || '/'

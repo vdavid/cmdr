@@ -179,7 +179,6 @@ export interface MtpDeviceDisconnectedEvent {
   reason: 'user' | 'disconnected'
 }
 
-
 /**
  * Subscribes to MTP exclusive access error events.
  * Emitted when connecting fails because another process (like ptpcamerad) has the device.

@@ -130,8 +130,8 @@ Pure logic for organizing volumes into display groups. No reactive state.
 Reactive state machine for fetching, retrying, and caching disk space info per volume. Created via
 `createVolumeSpaceManager()` (functional factory, no classes).
 
-`getVolumeSpace()` returns `TimedOut<T>` wrappers. The manager tracks timeout state and exposes
-reactive sets for the component to render inline indicators (no toasts):
+`getVolumeSpace()` returns `TimedOut<T>` wrappers. The manager tracks timeout state and exposes reactive sets for the
+component to render inline indicators (no toasts):
 
 - **Volume space timeout** (`spaceTimedOutSet`): Three-state cycle with per-volume tracking:
   - **Idle**: Dashed-outline placeholder bar with "?" icon, "Unavailable" text, tooltip "Couldn't fetch disk space --

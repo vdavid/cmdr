@@ -113,6 +113,7 @@ pub fn init_watcher_manager(app: AppHandle) {
 ///
 /// Note: Initial entries are read from LISTING_CACHE when needed.
 pub fn start_watching(listing_id: &str, path: &Path) -> Result<(), String> {
+    log::debug!("start_watching: listing_id={}, path={}", listing_id, path.display());
     let listing_id_owned = listing_id.to_string();
     let listing_for_closure = listing_id_owned.clone();
 
@@ -346,6 +347,28 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
 /// Called by the file watcher on change events, and also available as a Tauri
 /// command for cases where the watcher doesn't fire (e.g. rename-move on Linux).
 pub fn handle_directory_change(listing_id: &str) {
+    log::debug!("handle_directory_change: listing_id={}", listing_id);
+
+    // This function uses std::fs which only works for local volumes.
+    // Non-local volumes (MTP, network, etc.) have their own change detection mechanisms.
+    // Check via supports_watching() — the same guard used when starting watchers.
+    {
+        use crate::file_system::listing::caching::LISTING_CACHE;
+        if let Ok(cache) = LISTING_CACHE.read() {
+            if let Some(listing) = cache.get(listing_id) {
+                if let Some(vol) = crate::file_system::get_volume_manager().get(&listing.volume_id) {
+                    if !vol.supports_watching() {
+                        log::debug!(
+                            "handle_directory_change: skipping non-watchable volume (volume={})",
+                            listing.volume_id
+                        );
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
     // Get old entries and path from the unified LISTING_CACHE
     let Some((path, old_entries)) = get_listing_entries(listing_id) else {
         return; // Listing no longer exists

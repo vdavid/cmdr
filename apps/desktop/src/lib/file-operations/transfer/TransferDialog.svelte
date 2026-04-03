@@ -95,6 +95,9 @@
     // so look up the volume path directly from the props.
     const initialVolumePath = volumes.find((v) => v.id === currentVolumeId)?.path ?? '/'
     let editedPath = $state(toVolumeRelativePath(destinationPath, initialVolumePath))
+    log.debug('Initial path resolution: destinationPath={destinationPath}, currentVolumeId={currentVolumeId}, initialVolumePath={initialVolumePath}, editedPath={editedPath}', {
+        destinationPath, currentVolumeId, initialVolumePath, editedPath,
+    })
     let selectedVolumeId = $state(currentVolumeId)
     let pathInputRef: HTMLInputElement | undefined = $state()
 

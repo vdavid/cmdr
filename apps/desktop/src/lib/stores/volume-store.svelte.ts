@@ -17,8 +17,8 @@ const logger = getAppLogger('volume-store')
 
 /** Payload shape matching Rust's `VolumesChangedPayload`. */
 interface VolumesChangedPayload {
-    data: VolumeInfo[]
-    timedOut: boolean
+  data: VolumeInfo[]
+  timedOut: boolean
 }
 
 let volumes = $state<VolumeInfo[]>([])
@@ -32,23 +32,23 @@ let unlistenVolumesChanged: UnlistenFn | undefined
 
 /** Returns the current volume list. Reactive. */
 export function getVolumes(): VolumeInfo[] {
-    return volumes
+  return volumes
 }
 
 /** Returns whether the last volume listing timed out (some volumes may be missing). Reactive. */
 export function getVolumesTimedOut(): boolean {
-    return timedOut
+  return timedOut
 }
 
 /** Returns whether a volume refresh is in progress. Reactive. */
 export function isVolumesRefreshing(): boolean {
-    return refreshing
+  return refreshing
 }
 
 /** Returns whether a retry just completed but the listing is still timed out. Reactive.
  *  Auto-resets to false after 3 seconds. */
 export function isVolumeRetryFailed(): boolean {
-    return retryFailed
+  return retryFailed
 }
 
 /**
@@ -57,15 +57,15 @@ export function isVolumeRetryFailed(): boolean {
  * Used by the retry button when the initial listing timed out.
  */
 export function requestVolumeRefresh(): void {
-    if (refreshing) return
+  if (refreshing) return
 
-    refreshing = true
-    retryFailed = false
-    if (retryFailedTimer) clearTimeout(retryFailedTimer)
+  refreshing = true
+  retryFailed = false
+  if (retryFailedTimer) clearTimeout(retryFailedTimer)
 
-    // Tell the backend to re-broadcast. The result arrives via the
-    // `volumes-changed` event listener, which handles retryFailed.
-    void refreshVolumes()
+  // Tell the backend to re-broadcast. The result arrives via the
+  // `volumes-changed` event listener, which handles retryFailed.
+  void refreshVolumes()
 }
 
 /**
@@ -79,55 +79,55 @@ export function requestVolumeRefresh(): void {
  * Idempotent — calling multiple times is safe.
  */
 export async function initVolumeStore(): Promise<void> {
-    if (initialized) return
+  if (initialized) return
 
-    // Subscribe to backend-pushed volume list updates
-    unlistenVolumesChanged = await listen<VolumesChangedPayload>('volumes-changed', (event) => {
-        receivedEvent = true
-        volumes = event.payload.data
-        timedOut = event.payload.timedOut
+  // Subscribe to backend-pushed volume list updates
+  unlistenVolumesChanged = await listen<VolumesChangedPayload>('volumes-changed', (event) => {
+    receivedEvent = true
+    volumes = event.payload.data
+    timedOut = event.payload.timedOut
 
-        // Detect retry failure: we were refreshing and it's still timed out
-        if (refreshing) {
-            refreshing = false
-            if (event.payload.timedOut) {
-                retryFailed = true
-                retryFailedTimer = setTimeout(() => {
-                    retryFailed = false
-                }, 3000)
-            }
-        }
-
-        logger.debug('volumes-changed: {count} volumes, timedOut={timedOut}', {
-            count: event.payload.data.length,
-            timedOut: event.payload.timedOut,
-        })
-    })
-
-    // Bootstrap: fetch initial list via IPC (in case the backend event
-    // fired before we subscribed, or hasn't fired yet)
-    const result = await listVolumes()
-    // Only use bootstrap data if no event has arrived yet
-    if (!receivedEvent) {
-        volumes = result.data
-        timedOut = result.timedOut
-        logger.debug('Bootstrap: {count} volumes', { count: result.data.length })
+    // Detect retry failure: we were refreshing and it's still timed out
+    if (refreshing) {
+      refreshing = false
+      if (event.payload.timedOut) {
+        retryFailed = true
+        retryFailedTimer = setTimeout(() => {
+          retryFailed = false
+        }, 3000)
+      }
     }
 
-    initialized = true
-    logger.debug('Volume store initialized')
+    logger.debug('volumes-changed: {count} volumes, timedOut={timedOut}', {
+      count: event.payload.data.length,
+      timedOut: event.payload.timedOut,
+    })
+  })
+
+  // Bootstrap: fetch initial list via IPC (in case the backend event
+  // fired before we subscribed, or hasn't fired yet)
+  const result = await listVolumes()
+  // Only use bootstrap data if no event has arrived yet
+  if (!receivedEvent) {
+    volumes = result.data
+    timedOut = result.timedOut
+    logger.debug('Bootstrap: {count} volumes', { count: result.data.length })
+  }
+
+  initialized = true
+  logger.debug('Volume store initialized')
 }
 
 /** Cleans up the volume store. Call on app shutdown. */
 export function cleanupVolumeStore(): void {
-    unlistenVolumesChanged?.()
-    unlistenVolumesChanged = undefined
-    volumes = []
-    timedOut = false
-    refreshing = false
-    retryFailed = false
-    if (retryFailedTimer) clearTimeout(retryFailedTimer)
-    retryFailedTimer = null
-    receivedEvent = false
-    initialized = false
+  unlistenVolumesChanged?.()
+  unlistenVolumesChanged = undefined
+  volumes = []
+  timedOut = false
+  refreshing = false
+  retryFailed = false
+  if (retryFailedTimer) clearTimeout(retryFailedTimer)
+  retryFailedTimer = null
+  receivedEvent = false
+  initialized = false
 }
