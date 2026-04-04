@@ -41,11 +41,11 @@ jobs:
               - 'apps/desktop/src/**'
               - 'apps/desktop/static/**'
               - 'apps/desktop/package.json'
-              - 'apps/desktop/pnpm-lock.yaml'
               - 'apps/desktop/svelte.config.js'
               - 'apps/desktop/vite.config.ts'
               - 'apps/desktop/tsconfig.json'
               - 'apps/desktop/tailwind.config.ts'
+              - 'pnpm-lock.yaml'
             desktop:
               - 'apps/desktop/**'
             website:
@@ -58,7 +58,7 @@ jobs:
               - 'scripts/**'
             packages:
               - '**/package.json'
-              - '**/pnpm-lock.yaml'
+              - 'pnpm-lock.yaml'
 
   # ===========================================
   # Desktop app - Rust backend
@@ -134,13 +134,12 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-desktop-${{ hashFiles('apps/desktop/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-desktop-
+            ${{ runner.os }}-pnpm-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: ./apps/desktop
 
       - name: Generate SvelteKit types
         run: pnpm exec svelte-kit sync
@@ -150,8 +149,8 @@ jobs:
         run: go build -o check .
         working-directory: ./scripts/check
 
-      - name: Check Prettier
-        run: ./scripts/check/check --check desktop-svelte-prettier --ci
+      - name: Check oxfmt
+        run: ./scripts/check/check --check oxfmt --ci
 
       - name: Run ESLint
         run: ./scripts/check/check --check desktop-svelte-eslint --ci
@@ -164,6 +163,9 @@ jobs:
 
       - name: Run svelte-check
         run: ./scripts/check/check --check desktop-svelte-check --ci
+
+      - name: Check import cycles
+        run: ./scripts/check/check --check desktop-svelte-import-cycles --ci
 
       - name: Run Knip
         run: ./scripts/check/check --check desktop-svelte-knip --ci
@@ -212,9 +214,9 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-desktop-${{ hashFiles('apps/desktop/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-desktop-
+            ${{ runner.os }}-pnpm-
 
       - name: Install Tauri dependencies
         run: |
@@ -231,7 +233,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: ./apps/desktop
 
       - name: Install tauri-driver
         run: cargo install tauri-driver --locked
@@ -277,20 +278,19 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-website-${{ hashFiles('apps/website/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-website-
+            ${{ runner.os }}-pnpm-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: ./apps/website
 
       - name: Build check tool
         run: go build -o check .
         working-directory: ./scripts/check
 
-      - name: Check Prettier
-        run: ./scripts/check/check --check website-prettier --ci
+      - name: Check oxfmt
+        run: ./scripts/check/check --check oxfmt --ci
 
       - name: Run ESLint
         run: ./scripts/check/check --check website-eslint --ci
@@ -300,6 +300,9 @@ jobs:
 
       - name: Build website
         run: ./scripts/check/check --check website-build --ci
+
+      - name: Run html-validate
+        run: ./scripts/check/check --check website-html-validate --ci
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
@@ -345,20 +348,19 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-api-server-${{ hashFiles('apps/api-server/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-api-server-
+            ${{ runner.os }}-pnpm-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: ./apps/api-server
 
       - name: Build check tool
         run: go build -o check .
         working-directory: ./scripts/check
 
-      - name: Check Prettier
-        run: ./scripts/check/check --check api-server-prettier --ci
+      - name: Check oxfmt
+        run: ./scripts/check/check --check oxfmt --ci
 
       - name: Run ESLint
         run: ./scripts/check/check --check api-server-eslint --ci
