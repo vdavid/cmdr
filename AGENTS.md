@@ -43,9 +43,11 @@ These are general principles for the whole project. These are not just empty sen
    technically merge a Svelte component with its Rust counterpart into one feature unit, we would.
 5. **Thin IPC layer.** Tauri commands are pass-throughs. no branching, no transformation. Business logic lives in
    subsystem modules that can be tested independently.
-6. **Invest in testability.** We have virtual MTP devices, Docker-based SMB servers, feature flags for E2E. Tools to
+6. **Subscribe, don't poll.** Whenever possible, we make it so that consumers can subscribe to events and receive
+   updates. If not possible, we resort to polling. But we make an effort to avoid polling.
+7. **Invest in testability.** We have virtual MTP devices, Docker-based SMB servers, feature flags for E2E. Tools to
    guarantee stability.
-7. **Invest in tooling.** We have check runners, linters, coverage, CI. Tooling must be fast so we use it, and strict so
+8. **Invest in tooling.** We have check runners, linters, coverage, CI. Tooling must be fast so we use it, and strict so
    it doesn't allow us to make mistakes.
 
 ## File structure
