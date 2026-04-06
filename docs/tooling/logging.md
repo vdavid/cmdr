@@ -38,6 +38,16 @@ From lowest to highest: `debug` < `info` < `warning` < `error` < `fatal`
 - **Dev mode**: Shows `info` and above
 - **Prod mode**: Shows `error` and above
 
+## Log levels
+
+- **ERROR**: Something broke. Needs developer or user action.
+- **WARN**: Unexpected but handled, or a degraded state worth noticing.
+- **INFO**: Noteworthy lifecycle events. App started, operation canceled, errors that are part of normal functioning.
+  Only a few selected interesting events, without noise.
+- **DEBUG**: Routine operational details. Individual file copies, per-item MTP operations, intermediate steps. Disabled
+  by default. Enable per scope with `RUST_LOG=module=debug` when investigating.
+- **TRACE**: Protocol-level internals, full data structures, per-iteration details
+
 ### Enabling debug logs for a feature
 
 Use `RUST_LOG` to enable FE debug logs in the terminal (no code changes needed):

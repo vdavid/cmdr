@@ -326,7 +326,7 @@ func (r *Runner) printStatusLine() {
 		return
 	}
 
-	const maxLen = 80
+	const maxLen = 120
 	const prefix = "Waiting for: "
 
 	// Try to fit as many checks as possible with "... and N more" suffix

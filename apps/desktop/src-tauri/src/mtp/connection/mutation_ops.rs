@@ -1,6 +1,6 @@
 //! MTP mutation operations: delete, create folder, rename, and move.
 
-use log::{debug, info, warn};
+use log::{debug, warn};
 use mtp_rs::{ObjectHandle, StorageId};
 use std::path::Path;
 use std::sync::Arc;
@@ -153,7 +153,7 @@ impl MtpConnectionManager {
             self.invalidate_listing_cache(device_id, storage_id, parent).await;
         }
 
-        info!("MTP delete complete: {}", object_path);
+        debug!("MTP delete complete: {}", object_path);
         Ok(())
     }
 
@@ -242,7 +242,7 @@ impl MtpConnectionManager {
         self.invalidate_listing_cache(device_id, storage_id, &parent_path_normalized)
             .await;
 
-        info!("MTP folder created: {}", new_path_str);
+        debug!("MTP folder created: {}", new_path_str);
 
         Ok(MtpObjectInfo {
             handle: new_handle.0,
@@ -346,7 +346,7 @@ impl MtpConnectionManager {
         // Invalidate the parent directory's listing cache (rename affects the parent listing)
         self.invalidate_listing_cache(device_id, storage_id, parent).await;
 
-        info!("MTP rename complete: {} -> {}", object_path, new_path_str);
+        debug!("MTP rename complete: {} -> {}", object_path, new_path_str);
 
         Ok(MtpObjectInfo {
             handle: object_handle.0,
@@ -462,7 +462,7 @@ impl MtpConnectionManager {
                 let new_parent = normalize_mtp_path(new_parent_path);
                 self.invalidate_listing_cache(device_id, storage_id, &new_parent).await;
 
-                info!("MTP move complete: {} -> {}", object_path, new_path_str);
+                debug!("MTP move complete: {} -> {}", object_path, new_path_str);
 
                 Ok(MtpObjectInfo {
                     handle: object_handle.0,

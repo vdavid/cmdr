@@ -64,7 +64,7 @@ pub fn chunked_copy_with_metadata(
     cancelled: &Arc<AtomicU8>,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<u64, WriteOperationError> {
-    log::info!(
+    log::debug!(
         "chunked_copy: starting chunked copy from {} to {}",
         source.display(),
         dest.display()
@@ -86,7 +86,7 @@ pub fn chunked_copy_with_metadata(
         );
     }
 
-    log::info!(
+    log::debug!(
         "chunked_copy: completed {} bytes from {} to {}",
         bytes,
         source.display(),
@@ -120,7 +120,7 @@ fn copy_data_chunked(
     loop {
         // Check cancellation BEFORE each read
         if super::state::is_cancelled(cancelled) {
-            log::info!(
+            log::debug!(
                 "chunked_copy: cancellation detected after {} bytes, cleaning up",
                 total_bytes
             );

@@ -1,6 +1,6 @@
 //! MTP file transfer operations (download, upload, and streaming).
 
-use log::{debug, info};
+use log::debug;
 use mtp_rs::{NewObjectInfo, ObjectHandle, StorageId};
 use std::path::Path;
 use std::sync::Arc;
@@ -155,7 +155,7 @@ impl MtpConnectionManager {
             );
         }
 
-        info!(
+        debug!(
             "MTP download complete: {} bytes to {}",
             bytes_written,
             local_dest.display()
@@ -325,7 +325,7 @@ impl MtpConnectionManager {
             );
         }
 
-        info!("MTP upload complete: {} -> {}", local_path.display(), new_path_str);
+        debug!("MTP upload complete: {} -> {}", local_path.display(), new_path_str);
 
         // Invalidate the parent directory's listing cache
         let dest_folder_path = normalize_mtp_path(dest_folder);
@@ -526,7 +526,7 @@ impl MtpConnectionManager {
         self.invalidate_listing_cache(device_id, storage_id, &dest_folder_path)
             .await;
 
-        info!(
+        debug!(
             "MTP upload_from_chunks complete: {} bytes to {}/{}",
             size, dest_folder, filename
         );

@@ -66,7 +66,7 @@ pub fn copy_single_file_linux(
     while bytes_copied < total_size {
         // Check cancellation before each chunk
         if super::state::is_cancelled(cancelled) {
-            log::info!("linux_copy: cancelled after {} bytes, cleaning up", bytes_copied);
+            log::debug!("linux_copy: cancelled after {} bytes, cleaning up", bytes_copied);
             drop(dst_file);
             let _ = fs::remove_file(destination);
             return Err(WriteOperationError::Cancelled {
@@ -119,7 +119,7 @@ pub fn copy_single_file_linux(
         );
     }
 
-    log::info!(
+    log::debug!(
         "linux_copy: copied {} bytes from {} to {}",
         bytes_copied,
         source.display(),

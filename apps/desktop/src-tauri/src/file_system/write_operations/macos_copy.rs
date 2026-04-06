@@ -152,7 +152,7 @@ extern "C" fn copy_progress_callback(
     // after COPYFILE_QUIT while draining buffers)
     if super::state::is_cancelled(&context.cancelled) {
         if !context.cancel_logged.swap(true, Ordering::Relaxed) {
-            log::info!("copyfile callback: cancellation detected, returning COPYFILE_QUIT");
+            log::debug!("copyfile callback: cancellation detected, returning COPYFILE_QUIT");
         }
         return COPYFILE_QUIT;
     }
@@ -325,14 +325,14 @@ pub fn copy_file_native(
     }
 
     // Perform the copy
-    log::info!(
+    log::debug!(
         "copyfile: starting copy from {} to {} (flags={:#x})",
         source.display(),
         destination.display(),
         flags
     );
     let result = unsafe { copyfile(src_cstring.as_ptr(), dst_cstring.as_ptr(), state, flags) };
-    log::info!("copyfile: completed with result={}", result);
+    log::debug!("copyfile: completed with result={}", result);
 
     // Free state
     unsafe {

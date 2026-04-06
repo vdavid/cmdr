@@ -79,7 +79,7 @@ pub async fn copy_between_volumes(
     // Optimization: If both volumes are local filesystem paths, use the battle-tested
     // copy.rs implementation which has proper cancellation support via macOS copyfile API.
     if let (Some(src_root), Some(dest_root)) = (source_volume.local_path(), dest_volume.local_path()) {
-        log::info!(
+        log::debug!(
             "copy_between_volumes: both volumes are local, delegating to native copy (src={}, dest={})",
             src_root.display(),
             dest_root.display()
@@ -310,7 +310,7 @@ fn copy_volumes_with_progress(
     if let Some(cached) = config.preview_id.as_deref().and_then(take_cached_scan_result) {
         total_files = cached.file_count;
         total_bytes = cached.total_bytes;
-        log::info!(
+        log::debug!(
             "copy_volumes_with_progress: reused cached scan for operation_id={}, files={}, bytes={}",
             operation_id,
             total_files,
@@ -355,7 +355,7 @@ fn copy_volumes_with_progress(
             total_bytes += scan.total_bytes;
         }
 
-        log::info!(
+        log::debug!(
             "copy_volumes_with_progress: scan complete for operation_id={}, files={}, dirs={}, bytes={}",
             operation_id,
             total_files,
@@ -572,7 +572,7 @@ pub async fn move_between_volumes(
 
     // Both local — delegate to the battle-tested move implementation
     if let (Some(src_root), Some(dest_root)) = (source_volume.local_path(), dest_volume.local_path()) {
-        log::info!(
+        log::debug!(
             "move_between_volumes: both volumes are local, delegating to native move (src={}, dest={})",
             src_root.display(),
             dest_root.display()

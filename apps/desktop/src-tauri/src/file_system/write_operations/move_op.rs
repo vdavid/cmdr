@@ -364,7 +364,7 @@ fn move_with_staging(
         scan_result.total_bytes,
     );
 
-    log::info!(
+    log::debug!(
         "move_with_staging: starting copy loop for operation_id={}, {} files",
         operation_id,
         scan_result.files.len()

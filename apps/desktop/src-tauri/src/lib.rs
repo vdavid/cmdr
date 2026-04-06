@@ -254,7 +254,11 @@ pub fn run() {
                     };
                     out.finish(format_args!("{ts} {color}{level:<5}\x1b[0m {target}  {message}"))
                 })
-                .level_for("nusb", log::LevelFilter::Warn);
+                .level_for("nusb", log::LevelFilter::Warn)
+                .level_for("zbus", log::LevelFilter::Warn)
+                .level_for("tracing::span", log::LevelFilter::Warn)
+                .level_for("smb", log::LevelFilter::Warn)
+                .level_for("sspi", log::LevelFilter::Warn);
 
             // Parse RUST_LOG env var for per-module level overrides
             if let Ok(rust_log) = std::env::var("RUST_LOG") {

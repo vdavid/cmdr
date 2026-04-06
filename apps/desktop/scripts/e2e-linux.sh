@@ -141,7 +141,7 @@ if $VNC_MODE; then
         -e VNC=1 \
         -e CARGO_TARGET_DIR=/target \
         -e TAURI_DEV_HOST=0.0.0.0 \
-        -e RUST_LOG=smb=warn,sspi=warn,info \
+        -e RUST_LOG=info \
         "$IMAGE_NAME" \
         bash -c '
             set -e

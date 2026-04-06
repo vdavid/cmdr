@@ -87,7 +87,7 @@ pub(super) fn copy_files_with_progress(
         // This per-file copy path needs the file list, so treat an empty-files cache
         // hit the same as a miss and fall through to a fresh local scan.
         if let Some(cached) = take_cached_scan_result(preview_id).filter(|c| !c.files.is_empty()) {
-            log::info!(
+            log::debug!(
                 "copy_files_with_progress: reusing cached scan for operation_id={}, preview_id={}, files={}, bytes={}",
                 operation_id,
                 preview_id,
@@ -128,7 +128,7 @@ pub(super) fn copy_files_with_progress(
             config.sort_order,
         )?
     };
-    log::info!(
+    log::debug!(
         "copy_files_with_progress: scan complete for operation_id={}, files={}, bytes={}",
         operation_id,
         scan_result.file_count,
@@ -137,12 +137,12 @@ pub(super) fn copy_files_with_progress(
 
     // Pre-flight disk space check: verify destination has enough free space
     // Use polling-based cancellation to remain responsive on slow network drives
-    log::info!(
+    log::debug!(
         "copy_files_with_progress: starting disk space check for operation_id={}",
         operation_id
     );
     validate_disk_space_cancellable(destination, scan_result.total_bytes, state, operation_id)?;
-    log::info!(
+    log::debug!(
         "copy_files_with_progress: disk space check complete for operation_id={}",
         operation_id
     );
@@ -179,7 +179,7 @@ pub(super) fn copy_files_with_progress(
         scan_result.total_bytes,
     );
 
-    log::info!(
+    log::debug!(
         "copy_files_with_progress: starting copy loop for operation_id={}, {} files",
         operation_id,
         scan_result.files.len()
@@ -447,7 +447,7 @@ pub(super) fn copy_single_item(
 
                         // Directory created successfully — delete backup in background
                         super::helpers::remove_file_in_background(backup_path);
-                        log::info!(
+                        log::debug!(
                             "copy: replaced file with directory at {} (type mismatch)",
                             blocking.display()
                         );
@@ -456,7 +456,7 @@ pub(super) fn copy_single_item(
                         // Rename: preserve the blocking file by renaming it, then create directory
                         let unique_path = find_unique_name(&blocking);
                         fs::rename(&blocking, &unique_path).with_path(&blocking)?;
-                        log::info!(
+                        log::debug!(
                             "copy: renamed blocking file {} to {} (type mismatch)",
                             blocking.display(),
                             unique_path.display()

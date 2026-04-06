@@ -287,7 +287,7 @@ impl MtpConnectionManager {
             if let Err(e) = app.emit("directory-diff", &diff) {
                 warn!("MTP diff: failed to emit event: {}", e);
             } else {
-                info!(
+                debug!(
                     "MTP diff: emitted directory-diff for listing_id={}, sequence={}",
                     listing_id, sequence
                 );
