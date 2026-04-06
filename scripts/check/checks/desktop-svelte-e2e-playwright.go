@@ -240,7 +240,7 @@ func stopProcessOnPort(port string) {
 // extractE2ETestOutput returns everything from "Starting Tauri app..." onward,
 // stripping the setup preamble (Docker, apt-get, pnpm install, Playwright download).
 func extractE2ETestOutput(output string) string {
-	idx := strings.Index(output, "Starting Tauri app...")
+	idx := strings.LastIndex(output, "Starting Tauri app...")
 	if idx >= 0 {
 		return output[idx:]
 	}
