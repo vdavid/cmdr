@@ -217,12 +217,17 @@ pub fn run() {
                 }
             }
 
-            // In debug builds, log to a `-dev` suffixed directory to match
-            // the data dir separation in config::resolved_app_data_dir.
-            let log_target = if cfg!(debug_assertions) {
-                let log_dir = dirs::home_dir()
-                    .expect("home dir")
-                    .join("Library/Logs/com.veszelovszki.cmdr-dev");
+            // Log directory priority:
+            // 1. CMDR_LOG_DIR env var (explicit override)
+            // 2. CMDR_DATA_DIR env var → <CMDR_DATA_DIR>/logs/ (dev and E2E test isolation)
+            // 3. Default Tauri log dir (production)
+            let log_target = if let Ok(log_dir) = std::env::var("CMDR_LOG_DIR") {
+                Target::new(TargetKind::Folder {
+                    path: std::path::PathBuf::from(log_dir),
+                    file_name: None,
+                })
+            } else if let Ok(data_dir) = std::env::var("CMDR_DATA_DIR") {
+                let log_dir = std::path::PathBuf::from(data_dir).join("logs");
                 Target::new(TargetKind::Folder {
                     path: log_dir,
                     file_name: None,
@@ -299,6 +304,10 @@ pub fn run() {
             // Start network host discovery (mDNS)
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::start_discovery(app.handle().clone());
+
+            // Register virtual SMB hosts for E2E testing (after discovery start so they appear alongside real hosts)
+            #[cfg(feature = "smb-e2e")]
+            network::virtual_smb_hosts::setup_virtual_smb_hosts(app.handle());
 
             // Initialize volume broadcast (must be before watchers so they can emit)
             volume_broadcast::init(app.handle());
