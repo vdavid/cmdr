@@ -395,6 +395,7 @@
     function handleRetry() {
         error = null
         showLoginForm = false
+        clearShareState(host.id)
         void loadShares()
     }
 </script>

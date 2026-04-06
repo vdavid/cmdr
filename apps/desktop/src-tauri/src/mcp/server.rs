@@ -61,6 +61,26 @@ impl<R: Runtime> McpState<R> {
     }
 }
 
+/// Try to bind a tokio TcpListener starting at `start_port`, probing up to 100 ports.
+/// Returns the bound listener and the port it's on. This avoids the TOCTOU race of
+/// checking port availability with a sync TcpListener then re-binding with tokio.
+async fn bind_with_probe(start_port: u16) -> Result<(tokio::net::TcpListener, u16), String> {
+    for offset in 0u16..100 {
+        let port = start_port.saturating_add(offset);
+        let addr = SocketAddr::from(([127, 0, 0, 1], port));
+        match tokio::net::TcpListener::bind(addr).await {
+            Ok(listener) => return Ok((listener, port)),
+            Err(e) => {
+                log::debug!("MCP server: port {} unavailable ({}), trying next", port, e);
+            }
+        }
+    }
+    Err(format!(
+        "No available port found starting from {} (tried 100 ports).",
+        start_port
+    ))
+}
+
 /// Start the MCP server. Binds to the configured port and spawns the server task.
 /// If the configured port is taken, auto-probes upward to find the next available port.
 pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: McpConfig) -> Result<(), String> {
@@ -77,17 +97,6 @@ pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: M
 
     let configured_port = config.port;
 
-    // Auto-probe: if the configured port is taken, find the next available one
-    let port = crate::net::find_available_port(configured_port)
-        .ok_or_else(|| format!("No available port found starting from {}.", configured_port))?;
-    if port != configured_port {
-        log::info!(
-            "MCP server: port {} is in use, using port {} instead",
-            configured_port,
-            port
-        );
-    }
-
     let state = Arc::new(McpState::new(app));
 
     let cors = CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any);
@@ -99,15 +108,20 @@ pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: M
         .layer(cors)
         .with_state(state);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
-    log::debug!("MCP server attempting to bind on http://{}", addr);
+    // Bind directly with retry to avoid TOCTOU race. The old approach used
+    // find_available_port() (sync TcpListener check) then bound again with
+    // tokio — the port could be taken between the two steps.
+    let (listener, port) = bind_with_probe(configured_port).await?;
 
-    // Bind before spawning so we can report errors synchronously
-    let listener = tokio::net::TcpListener::bind(addr)
-        .await
-        .map_err(|e| format!("Couldn't start the server on port {}. {}", port, e))?;
+    if port != configured_port {
+        log::info!(
+            "MCP server: port {} is in use, using port {} instead",
+            configured_port,
+            port
+        );
+    }
 
-    log::info!("MCP server listening on http://{}", addr);
+    log::info!("MCP server listening on http://127.0.0.1:{}", port);
 
     MCP_ACTUAL_PORT.store(port, Ordering::Relaxed);
 

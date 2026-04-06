@@ -15,6 +15,8 @@ automation = ["dep:tauri-plugin-automation"]
 playwright-e2e = ["dep:tauri-plugin-playwright"]
 # Virtual MTP device for E2E testing (registers a fake Android device). Never enable in production builds.
 virtual-mtp = ["mtp-rs/virtual-device"]
+# Virtual SMB hosts for E2E testing (injects synthetic network hosts). Never enable in production builds.
+smb-e2e = []
 
 [[bin]]
 name = "Cmdr"

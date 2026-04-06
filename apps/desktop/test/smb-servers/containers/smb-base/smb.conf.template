@@ -13,5 +13,6 @@ path = /share
 browseable = yes
 read only = __READ_ONLY__
 guest ok = __GUEST_OK__
-create mask = 0644
-directory mask = 0755
+__FORCE_USER__
+create mask = 0666
+directory mask = 0777

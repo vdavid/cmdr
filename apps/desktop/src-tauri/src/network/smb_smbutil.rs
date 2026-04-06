@@ -204,7 +204,13 @@ pub fn build_smbutil_url(
     port: u16,
     credentials: Option<(&str, &str)>,
 ) -> (String, String) {
-    let host = ip_address.unwrap_or(hostname);
+    // Prefer hostname over loopback IPs: macOS smbutil fails with //127.0.0.1:PORT
+    // ("Broken pipe") but works with //localhost:PORT on non-standard ports.
+    let host = match ip_address {
+        Some(ip) if ip == "127.0.0.1" || ip == "::1" => hostname,
+        Some(ip) => ip,
+        None => hostname,
+    };
 
     match credentials {
         Some((username, password)) => {
@@ -353,9 +359,59 @@ pub fn parse_smbutil_output(output: &str) -> Vec<ShareInfo> {
     shares
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "macos"))]
 mod tests {
     use super::*;
+
+    #[test]
+    fn build_smbutil_url_uses_ip_when_not_loopback() {
+        let (url, _) = build_smbutil_url("nas.local", Some("192.168.1.50"), 445, None);
+        assert_eq!(url, "//192.168.1.50");
+    }
+
+    #[test]
+    fn build_smbutil_url_falls_back_to_hostname_for_127_0_0_1() {
+        let (url, _) = build_smbutil_url("localhost", Some("127.0.0.1"), 9445, None);
+        assert_eq!(url, "//localhost:9445");
+    }
+
+    #[test]
+    fn build_smbutil_url_falls_back_to_hostname_for_ipv6_loopback() {
+        let (url, _) = build_smbutil_url("localhost", Some("::1"), 9445, None);
+        assert_eq!(url, "//localhost:9445");
+    }
+
+    #[test]
+    fn build_smbutil_url_uses_hostname_when_no_ip() {
+        let (url, _) = build_smbutil_url("mynas.local", None, 445, None);
+        assert_eq!(url, "//mynas.local");
+    }
+
+    #[test]
+    fn build_smbutil_url_omits_port_for_445() {
+        let (url, _) = build_smbutil_url("nas.local", Some("10.0.0.5"), 445, None);
+        assert_eq!(url, "//10.0.0.5");
+    }
+
+    #[test]
+    fn build_smbutil_url_includes_non_standard_port() {
+        let (url, _) = build_smbutil_url("nas.local", Some("10.0.0.5"), 9445, None);
+        assert_eq!(url, "//10.0.0.5:9445");
+    }
+
+    #[test]
+    fn build_smbutil_url_with_credentials_and_loopback() {
+        let (url, safe) = build_smbutil_url("localhost", Some("127.0.0.1"), 9446, Some(("testuser", "testpass")));
+        assert_eq!(url, "//testuser:testpass@localhost:9446");
+        assert_eq!(safe, "//testuser:***@localhost:9446");
+    }
+
+    #[test]
+    fn build_smbutil_url_with_credentials_standard_port() {
+        let (url, safe) = build_smbutil_url("nas.local", Some("10.0.0.5"), 445, Some(("admin", "s3cret")));
+        assert_eq!(url, "//admin:s3cret@10.0.0.5");
+        assert_eq!(safe, "//admin:***@10.0.0.5");
+    }
 
     #[test]
     fn test_parse_smbutil_output() {

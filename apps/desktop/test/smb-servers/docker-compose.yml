@@ -16,7 +16,7 @@ services:
       context: ./containers/smb-base
       args:
         GUEST_OK: 'yes'
-        FORCE_USER: ''
+        FORCE_USER: 'root'
     container_name: smb-guest
     ports:
       - '9445:445'

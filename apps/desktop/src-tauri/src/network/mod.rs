@@ -39,6 +39,9 @@ mod smb_smbutil;
 mod smb_types;
 mod smb_util;
 
+#[cfg(feature = "smb-e2e")]
+pub mod virtual_smb_hosts;
+
 use crate::ignore_poison::IgnorePoison;
 use log::debug;
 use serde::{Deserialize, Serialize};

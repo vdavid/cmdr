@@ -48,6 +48,16 @@ RUN apt-get update && apt-get install -y \
     x11vnc \
     novnc \
     python3-websockify \
+    # SMB support for network E2E tests
+    smbclient \
+    cifs-utils \
+    # GVFS for gio mount (used by Cmdr's mount_linux.rs for user-space SMB mounting)
+    gvfs \
+    gvfs-backends \
+    gvfs-daemons \
+    gvfs-fuse \
+    gvfs-common \
+    gvfs-libs \
     # Useful utilities
     ca-certificates \
     # Clean up

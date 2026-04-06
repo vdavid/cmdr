@@ -18,6 +18,18 @@ in `helpers.ts`.
 
 ## Running on macOS
 
+**Via the checker (recommended):** The checker handles the full lifecycle automatically — build, fixture creation, app
+startup, test execution, and cleanup:
+
+```bash
+./scripts/check.sh --check desktop-e2e-playwright
+```
+
+Logs go to `/tmp/cmdr-e2e-playwright-<timestamp>.log`. The app runs in an isolated data dir (`CMDR_DATA_DIR`) and uses
+MCP port 9429. Stale processes on that port are killed before starting.
+
+**Manually (for debugging):**
+
 ```bash
 cd apps/desktop
 
@@ -31,8 +43,8 @@ CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures /path/to/target/.../release/Cmdr
 CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright
 ```
 
-The test suite does NOT launch the app itself. The app must be started manually (or by CI) with the
-`CMDR_E2E_START_PATH` env var pointing to a fixture directory created by `e2e-shared/fixtures.ts`.
+When running manually, the test suite does NOT launch the app. The app must be started with `CMDR_E2E_START_PATH`
+pointing to a fixture directory created by `e2e-shared/fixtures.ts`.
 
 ## Running on Linux (Docker)
 
@@ -68,6 +80,7 @@ details.
 | `settings.spec.ts`            | 5 tests: settings page rendering, sidebar, search                                                                                                                                                              |
 | `viewer.spec.ts`              | 10 tests: file viewer, search, error handling                                                                                                                                                                  |
 | `mtp.spec.ts`                 | MTP E2E tests: volume selection, navigation, file ops via virtual device. Uses `e2e-shared/mcp-client.ts` (MCP client helper) and `e2e-shared/mtp-fixtures.ts` (MTP fixtures). Requires `virtual-mtp` feature. |
+| `smb.spec.ts`                 | SMB E2E tests: virtual host discovery, share listing, mounting, cross-storage copy. Uses `e2e-shared/smb-fixtures.ts` and Docker SMB containers. Requires `smb-e2e` feature + Docker.                          |
 
 ## Key decisions
 

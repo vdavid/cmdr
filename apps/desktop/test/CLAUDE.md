@@ -18,7 +18,8 @@ the Tauri binary with `--features playwright-e2e,virtual-mtp` inside Docker, lau
 
 All E2E suites share `e2e-shared/fixtures.ts`, which creates a temp directory at `/tmp/cmdr-e2e-<timestamp>/`. MTP E2E
 tests use a virtual MTP device (pure Rust, no USB needed) via the `virtual-mtp` feature flag, with helpers in
-`e2e-shared/mcp-client.ts` and `e2e-shared/mtp-fixtures.ts`.
+`e2e-shared/mcp-client.ts` and `e2e-shared/mtp-fixtures.ts`. SMB E2E tests use virtual hosts injected via the `smb-e2e`
+feature flag pointing at Docker SMB containers, with helpers in `e2e-shared/smb-fixtures.ts`.
 
 Filesystem fixtures layout:
 

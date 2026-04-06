@@ -9,7 +9,7 @@ use std::fs;
 use std::os::unix::io::AsRawFd;
 use std::path::Path;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::AtomicU8;
 
 use super::types::WriteOperationError;
 
@@ -188,6 +188,7 @@ fn map_io_error(err: std::io::Error, source: &Path, destination: &Path) -> Write
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::Ordering;
 
     fn create_temp_dir(name: &str) -> std::path::PathBuf {
         let dir = std::env::temp_dir().join(format!("cmdr_linux_copy_test_{}", name));

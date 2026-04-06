@@ -23,10 +23,15 @@ echo "Starting dbus..."
 eval "$(dbus-launch --sh-syntax)"
 export DBUS_SESSION_BUS_ADDRESS
 
-# Set XDG runtime directory (needed by some GTK apps)
-export XDG_RUNTIME_DIR=/tmp/runtime-root
+# Set XDG runtime directory (needed by some GTK apps and GVFS)
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
 mkdir -p "$XDG_RUNTIME_DIR"
 chmod 700 "$XDG_RUNTIME_DIR"
+
+# Start GVFS daemon (needed for gio mount — Cmdr uses this for SMB mounting on Linux)
+echo "Starting GVFS daemon..."
+/usr/libexec/gvfsd &
+sleep 0.5
 
 # Verify environment
 echo "Environment:"

@@ -5,6 +5,7 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 ## Architecture
 
 - **Discovery**: `mdns_discovery.rs` — Pure Rust mDNS using `mdns-sd` crate. Cross-platform.
+- **E2E testing**: `virtual_smb_hosts.rs` — Injects synthetic `NetworkHost` entries for Docker SMB containers. Gated behind `smb-e2e` Cargo feature. Never enabled in production.
 - **Share listing**: Split across multiple files:
   - `smb_client.rs` — Top-level share-listing entry point; orchestrates guest -> keychain -> prompt auth flow; tries smb-rs first, falls back to smbutil (macOS only)
   - `smb_connection.rs` — TCP connection establishment and IPC-level share listing calls
@@ -96,3 +97,5 @@ On Linux, `keychain_linux.rs` tries Secret Service (GNOME Keyring / KDE Wallet) 
 - **Account name is lowercase**: `make_account_name` lowercases server name for consistency. Prevents duplicate entries for "SERVER" vs "server".
 - **Linux `gio mount` requires GVFS**: The `gvfs-smb` package must be installed. Standard on Ubuntu/Fedora GNOME desktops. KDE desktops may need it explicitly.
 - **`ShareListError` uses internally tagged serde format** (`#[serde(tag = "type")]`) with struct variants. This keeps a flat JSON shape (`{ "type": "protocol_error", "message": "..." }`). The `MissingDependency` variant adds an optional `installCommand` field. When adding new variants, use struct syntax (not tuple).
+- **macOS smbutil and NetFSMountURLSync fail with loopback IP + non-standard port**: `//127.0.0.1:9445` gives "Broken pipe", but `//localhost:9445` works. `build_smbutil_url` and `NetworkMountView.svelte` both fall back to hostname when IP is `127.0.0.1` or `::1`. This matters for E2E testing against Docker containers on localhost.
+- **Mount URL must include port when non-standard**: `NetworkMountView.svelte` appends `:PORT` to the server string when `port !== 445`. Without this, `NetFSMountURLSync` defaults to port 445 and can't reach Docker containers on custom ports.

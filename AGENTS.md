@@ -104,11 +104,12 @@ Always use the checker script for compilation, linting, formatting, and tests. I
 ## Debugging
 
 - **Data dirs (dev and prod are separate!)**: Prod: `~/Library/Application Support/com.veszelovszki.cmdr/`, Dev:
-  `~/Library/Application Support/com.veszelovszki.cmdr-dev/`. Set by `resolved_app_data_dir()` in
-  `src-tauri/src/config.rs`.
-- **Logging**: Frontend and backend logs appear together in terminal and in `~/Library/Logs/com.veszelovszki.cmdr/`.
-  **Read [docs/tooling/logging.md](docs/tooling/logging.md) before using `RUST_LOG`** — it has copy-paste recipes for
-  every subsystem. Key gotcha: the Rust library target is `cmdr_lib`, not `cmdr`. Use `RUST_LOG=cmdr_lib::module=debug`.
+  `~/Library/Application Support/com.veszelovszki.cmdr-dev/`. Dev path is set via `CMDR_DATA_DIR` env var by
+  `tauri-wrapper.js`; resolved in `src-tauri/src/config.rs`.
+- **Logging**: Frontend and backend logs appear together in terminal and in the log dir (dev: `<CMDR_DATA_DIR>/logs/`,
+  prod: `~/Library/Logs/com.veszelovszki.cmdr/`). **Read [docs/tooling/logging.md](docs/tooling/logging.md) before using
+  `RUST_LOG`** — it has copy-paste recipes for every subsystem. Key gotcha: the Rust library target is `cmdr_lib`, not
+  `cmdr`. Use `RUST_LOG=cmdr_lib::module=debug`.
 - **Crash reports**: When the app crashes, it writes a crash file to the data dir (`crash-report.json` alongside
   `settings.json`). On next launch, the app detects this file and offers to send a crash report. See
   `src-tauri/src/crash_reporter/CLAUDE.md` for architecture details.
@@ -154,6 +155,15 @@ resilience, and common pitfalls.
   tested. Name the specific untestable API in the reason.
 - When adding a new user-facing action, add it to `command-registry.ts` and `handleCommandExecute` in `+page.svelte`.
 - If you added a new Tauri command touching the filesystem, check `docs/architecture.md` § Platform constraints.
+- We use [mise](https://mise.jdx.dev/) to manage tool versions (Go, Node, etc.), pinned in `.mise.toml`. Shims are on
+  PATH via `~/.bashrc` and `~/.zshenv`, so `go` and `node` should just work. If `go` is "not found", check that
+  `~/.local/share/mise/shims` is on `$PATH`.
+- ❌ **NEVER build the Tauri app with raw `cargo build`.** It produces a binary without the embedded frontend (white
+  screen). Always build via `pnpm tauri build` or the `node scripts/tauri-wrapper.js build` wrapper from
+  `apps/desktop/`. The `beforeBuildCommand` in `tauri.conf.json` runs the llama-server download (Go) and frontend build
+  — skipping it breaks the app. For E2E builds:
+  `node scripts/tauri-wrapper.js build --no-bundle --target $(rustc -vV | grep host | cut -d' ' -f2) -- --features playwright-e2e,virtual-mtp,smb-e2e`.
+  The binary lands in `<repo>/target/<triple>/release/Cmdr`.
 
 ## Workflow
 

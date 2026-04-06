@@ -49,31 +49,44 @@ FORCE_BUILD=false
 INTERACTIVE=false
 VNC_MODE=false
 CLEAN=false
+GREP_FILTER=""
 
-for arg in "$@"; do
-    case $arg in
+while [[ $# -gt 0 ]]; do
+    case $1 in
         --build)
             FORCE_BUILD=true
+            shift
             ;;
         --shell)
             INTERACTIVE=true
+            shift
             ;;
         --vnc)
             VNC_MODE=true
+            shift
             ;;
         --clean)
             CLEAN=true
+            shift
+            ;;
+        --grep)
+            GREP_FILTER="$2"
+            shift 2
             ;;
         --help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --build    Force rebuild of Docker image"
-            echo "  --shell    Start interactive shell in container"
-            echo "  --vnc      Interactive VNC mode with hot reload (pnpm dev)"
-            echo "  --clean    Clean Linux build cache (forces rebuild)"
-            echo "  --help     Show this help message"
+            echo "  --build           Force rebuild of Docker image"
+            echo "  --shell           Start interactive shell in container"
+            echo "  --vnc             Interactive VNC mode with hot reload (pnpm dev)"
+            echo "  --clean           Clean Linux build cache (forces rebuild)"
+            echo "  --grep <pattern>  Filter tests by title pattern (passed to Playwright --grep)"
+            echo "  --help            Show this help message"
             exit 0
+            ;;
+        *)
+            shift
             ;;
     esac
 done
@@ -160,101 +173,70 @@ if $VNC_MODE; then
     exit 0
 fi
 
-# Check if a Linux binary exists in the Docker volume
-# Override entrypoint to avoid Xvfb output
-check_linux_build() {
-    docker run --rm \
-        --entrypoint /bin/bash \
-        -v "$TARGET_VOLUME:/target" \
-        "$IMAGE_NAME" \
-        -c '
-            # Check for either architecture marker
-            if [ -f "/target/aarch64-unknown-linux-gnu/release/.linux-build" ]; then
-                echo "aarch64-unknown-linux-gnu"
-            elif [ -f "/target/x86_64-unknown-linux-gnu/release/.linux-build" ]; then
-                echo "x86_64-unknown-linux-gnu"
-            else
-                echo ""
-            fi
-        ' 2>/dev/null || echo ""
-}
+# Always build — cargo handles incrementality (fast when nothing changed, correct when
+# something did). Skipping based on binary existence caused stale-binary bugs.
+log_info "Building Linux Tauri binary inside Docker..."
 
-LINUX_TARGET=$(check_linux_build)
+docker run --rm \
+    -v "$REPO_ROOT:/app" \
+    -v "$CARGO_VOLUME:/root/.cargo" \
+    -v "$TARGET_VOLUME:/target" \
+    -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
+    -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
+    -w /app/apps/desktop \
+    -e CI=true \
+    -e CARGO_TARGET_DIR=/target \
+    "$IMAGE_NAME" \
+    bash -c '
+        set -e
 
-if [ -n "$LINUX_TARGET" ]; then
-    log_info "Found existing Linux build for: $LINUX_TARGET"
-else
-    log_warn "Linux Tauri binary not found, building inside Docker..."
-    log_info "This may take a while on first run (compiling Rust code)..."
+        # Detect architecture inside the container
+        ARCH=$(uname -m)
+        if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+            LINUX_TARGET="aarch64-unknown-linux-gnu"
+        else
+            LINUX_TARGET="x86_64-unknown-linux-gnu"
+        fi
+        echo "Detected architecture: $ARCH -> $LINUX_TARGET"
 
-    # Build inside the container since host may be macOS
-    # Use Docker volumes for cargo, target, and node_modules to avoid cross-platform issues
-    # Both root and desktop node_modules are Docker volumes to prevent Linux binaries
-    # from contaminating the host's node_modules
-    docker run --rm \
-        -v "$REPO_ROOT:/app" \
-        -v "$CARGO_VOLUME:/root/.cargo" \
-        -v "$TARGET_VOLUME:/target" \
-        -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
-        -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
-        -w /app/apps/desktop \
-        -e CI=true \
-        -e CARGO_TARGET_DIR=/target \
-        "$IMAGE_NAME" \
-        bash -c '
-            set -e
+        # Install Tauri build dependencies (dev packages)
+        apt-get update && apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libacl1-dev \
+            patchelf
 
-            # Detect architecture inside the container
-            ARCH=$(uname -m)
-            if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
-                LINUX_TARGET="aarch64-unknown-linux-gnu"
-            else
-                LINUX_TARGET="x86_64-unknown-linux-gnu"
-            fi
-            echo "Detected architecture: $ARCH -> $LINUX_TARGET"
+        # Temporarily clear .cargo/config.toml if present -- it is a gitignored dev
+        # override that patches mtp-rs to a local path which does not exist in Docker.
+        # Uses trap to guarantee restore even if the build fails.
+        CARGO_CONFIG="/app/apps/desktop/src-tauri/.cargo/config.toml"
+        if [ -f "$CARGO_CONFIG" ]; then
+            cp "$CARGO_CONFIG" "${CARGO_CONFIG}.docker-bak"
+            > "$CARGO_CONFIG"
+            trap "mv ${CARGO_CONFIG}.docker-bak $CARGO_CONFIG 2>/dev/null || true" EXIT
+        fi
 
-            # Install Tauri build dependencies (dev packages)
-            apt-get update && apt-get install -y \
-                libwebkit2gtk-4.1-dev \
-                libayatana-appindicator3-dev \
-                librsvg2-dev \
-                libacl1-dev \
-                patchelf
+        # Install dependencies if needed (node_modules is a Docker volume)
+        # Check root node_modules marker since that is where pnpm writes the marker
+        if [ ! -f "/app/node_modules/.linux-installed" ]; then
+            echo "Installing Linux node_modules..."
+            pnpm install --frozen-lockfile
+            touch /app/node_modules/.linux-installed
+        fi
 
-            # Temporarily clear .cargo/config.toml if present -- it is a gitignored dev
-            # override that patches mtp-rs to a local path which does not exist in Docker.
-            # Uses trap to guarantee restore even if the build fails.
-            CARGO_CONFIG="/app/apps/desktop/src-tauri/.cargo/config.toml"
-            if [ -f "$CARGO_CONFIG" ]; then
-                cp "$CARGO_CONFIG" "${CARGO_CONFIG}.docker-bak"
-                > "$CARGO_CONFIG"
-                trap "mv ${CARGO_CONFIG}.docker-bak $CARGO_CONFIG 2>/dev/null || true" EXIT
-            fi
+        echo "Building Tauri app for target: $LINUX_TARGET"
+        # --no-bundle to skip creating .deb/.rpm/.appimage (not needed for E2E tests)
+        pnpm tauri build --ci --target "$LINUX_TARGET" --no-bundle -- --features playwright-e2e,virtual-mtp,smb-e2e
 
-            # Install dependencies if needed (node_modules is a Docker volume)
-            # Check root node_modules marker since that is where pnpm writes the marker
-            if [ ! -f "/app/node_modules/.linux-installed" ]; then
-                echo "Installing Linux node_modules..."
-                pnpm install --frozen-lockfile
-                touch /app/node_modules/.linux-installed
-            fi
+        # Write the target triple so the host script can find the binary
+        echo "$LINUX_TARGET" > /target/.linux-target
+    '
 
-            echo "Building Tauri app for target: $LINUX_TARGET"
-            # --no-bundle to skip creating .deb/.rpm/.appimage (not needed for E2E tests)
-            pnpm tauri build --ci --target "$LINUX_TARGET" --no-bundle -- --features playwright-e2e,virtual-mtp
-
-            # Mark that we have a Linux build
-            touch "/target/$LINUX_TARGET/release/.linux-build"
-        '
-
-    log_info "Linux build complete!"
-
-    # Get the target that was built
-    LINUX_TARGET=$(check_linux_build)
-    if [ -z "$LINUX_TARGET" ]; then
-        log_error "Build completed but marker file not found"
-        exit 1
-    fi
+LINUX_TARGET=$(docker run --rm --entrypoint cat -v "$TARGET_VOLUME:/target" "$IMAGE_NAME" /target/.linux-target 2>/dev/null)
+if [ -z "$LINUX_TARGET" ]; then
+    log_error "Build completed but target marker not found"
+    exit 1
 fi
 
 log_info "Using Linux target: $LINUX_TARGET"
@@ -263,10 +245,48 @@ log_info "Using Linux target: $LINUX_TARGET"
 # The binary is named "Cmdr" (capital C) not "cmdr"
 DOCKER_TAURI_BINARY="/target/$LINUX_TARGET/release/Cmdr"
 
+# ── SMB container management ────────────────────────────────────────────────
+# Start Docker SMB containers for network E2E tests. The E2E test container
+# joins the smb-servers_default network so it can reach smb-guest:445 and
+# smb-auth:445 by container name (no host port mapping needed).
+
+SMB_COMPOSE_DIR="$DESKTOP_DIR/test/smb-servers"
+SMB_NETWORK="smb-servers_default"
+
+start_smb_containers() {
+    if docker compose -f "$SMB_COMPOSE_DIR/docker-compose.yml" ps --format json 2>/dev/null | grep -q '"smb-guest"'; then
+        log_info "SMB containers already running"
+    else
+        log_info "Starting SMB containers (minimal)..."
+        "$SMB_COMPOSE_DIR/start.sh" minimal
+    fi
+
+    # Wait for the network to exist (docker compose creates it)
+    for i in $(seq 1 10); do
+        docker network inspect "$SMB_NETWORK" > /dev/null 2>&1 && break
+        sleep 1
+    done
+    if ! docker network inspect "$SMB_NETWORK" > /dev/null 2>&1; then
+        log_error "SMB network '$SMB_NETWORK' not found after starting containers"
+        exit 1
+    fi
+}
+
+start_smb_containers
+
+# SMB env vars: inside the Docker network, containers are addressable by name on port 445
+# CMDR_MCP_ENABLED: release builds disable MCP by default — tests need it
+# --privileged: needed for mount -t cifs inside the container (SYS_ADMIN alone is
+# blocked by Docker's default seccomp profile which denies the mount syscall)
+SMB_ENV_ARGS="-e SMB_E2E_GUEST_HOST=smb-guest -e SMB_E2E_GUEST_PORT=445 -e SMB_E2E_AUTH_HOST=smb-auth -e SMB_E2E_AUTH_PORT=445 -e CMDR_MCP_ENABLED=true -e RUST_LOG=cmdr_lib::mcp=info"
+SMB_DOCKER_ARGS="--privileged"
+
 if $INTERACTIVE; then
     log_info "Starting interactive shell in container..."
     log_info "Binary path: $DOCKER_TAURI_BINARY"
     docker run -it --rm \
+        --network "$SMB_NETWORK" \
+        $SMB_DOCKER_ARGS \
         -v "$REPO_ROOT:/app" \
         -v "$CARGO_VOLUME:/root/.cargo" \
         -v "$TARGET_VOLUME:/target" \
@@ -276,12 +296,16 @@ if $INTERACTIVE; then
         -p 5900:5900 \
         -e TAURI_BINARY="$DOCKER_TAURI_BINARY" \
         -e CI=true \
+        -e "E2E_GREP=${GREP_FILTER:-}" \
+        $SMB_ENV_ARGS \
         "$IMAGE_NAME" \
         bash
 else
     log_info "Running E2E tests in Docker..."
     log_info "Binary path: $DOCKER_TAURI_BINARY"
     docker run --rm \
+        --network "$SMB_NETWORK" \
+        $SMB_DOCKER_ARGS \
         -v "$REPO_ROOT:/app" \
         -v "$TARGET_VOLUME:/target" \
         -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
@@ -289,6 +313,8 @@ else
         -w /app/apps/desktop \
         -e TAURI_BINARY="$DOCKER_TAURI_BINARY" \
         -e CI=true \
+        -e "E2E_GREP=${GREP_FILTER:-}" \
+        $SMB_ENV_ARGS \
         "$IMAGE_NAME" \
         bash -c '
             set -e
@@ -338,10 +364,18 @@ else
             echo "Socket ready."
 
             # Run Playwright tests
-            npx playwright test \
-                --config test/e2e-playwright/playwright.config.ts \
-                --project tauri \
-                --reporter=list
+            if [ -n "${E2E_GREP:-}" ]; then
+                npx playwright test \
+                    --config test/e2e-playwright/playwright.config.ts \
+                    --project tauri \
+                    --reporter=list \
+                    --grep "$E2E_GREP"
+            else
+                npx playwright test \
+                    --config test/e2e-playwright/playwright.config.ts \
+                    --project tauri \
+                    --reporter=list
+            fi
         '
 fi
 

@@ -68,6 +68,16 @@
         // Stay on the share list (currentNetworkHost remains set)
     }
 
+    /** Resolves the server address for mounting, preferring IP but falling back to hostname for loopback. */
+    function resolveServerAddress(networkHost: NetworkHost): string {
+        const ip = networkHost.ipAddress
+        const isLoopback = ip === '127.0.0.1' || ip === '::1'
+        const host = (isLoopback ? networkHost.hostname : ip) ?? networkHost.hostname ?? networkHost.name
+        return networkHost.port && networkHost.port !== 445
+            ? `${host}:${String(networkHost.port)}`
+            : host
+    }
+
     async function handleShareSelect(share: ShareInfo, credentials: { username: string; password: string } | null) {
         if (!currentNetworkHost) return
 
@@ -78,8 +88,7 @@
         mountError = null
 
         try {
-            // Get server address - prefer IP, fall back to hostname
-            const server = currentNetworkHost.ipAddress ?? currentNetworkHost.hostname ?? currentNetworkHost.name
+            const server = resolveServerAddress(currentNetworkHost)
 
             // Use provided credentials if available
             const result = await mountNetworkShare(

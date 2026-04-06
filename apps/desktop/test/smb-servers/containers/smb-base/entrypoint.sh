@@ -9,12 +9,20 @@ SERVER_STRING="${SERVER_STRING:-Samba Test Server}"
 SMB_SHARE_NAME="${SMB_SHARE_NAME:-share}"
 MDNS_NAME="${MDNS_NAME:-}"
 
+# Build force user directive (empty string means no directive)
+if [ -n "${FORCE_USER}" ]; then
+    FORCE_USER_DIRECTIVE="force user = ${FORCE_USER}"
+else
+    FORCE_USER_DIRECTIVE=""
+fi
+
 # Generate smb.conf from template
 sed -e "s/__SERVER_STRING__/${SERVER_STRING}/" \
     -e "s/__SERVER_SIGNING__/${SERVER_SIGNING}/" \
     -e "s/__SHARE_NAME__/${SMB_SHARE_NAME}/" \
     -e "s/__READ_ONLY__/${READ_ONLY}/" \
     -e "s/__GUEST_OK__/${GUEST_OK}/" \
+    -e "s/__FORCE_USER__/${FORCE_USER_DIRECTIVE}/" \
     /etc/samba/smb.conf.template > /etc/samba/smb.conf
 
 # Create user if specified (format: username:password)
@@ -55,7 +63,7 @@ fi
 # Start dbus (required by avahi)
 echo "Starting dbus..."
 mkdir -p /run/dbus
-rm -f /run/dbus/pid
+rm -f /run/dbus/dbus.pid
 dbus-daemon --system --fork
 
 # Start avahi-daemon for mDNS advertisement
