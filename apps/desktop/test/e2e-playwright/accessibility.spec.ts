@@ -77,7 +77,15 @@ async function runAxeAudit(
 }> {
   await injectAxe(tauriPage)
 
-  const axeCall = scope ? `axe.run(document.querySelector(${JSON.stringify(scope)}))` : 'axe.run()'
+  // Exclude disabled elements from color-contrast checks — WCAG exempts them
+  const axeConfig = JSON.stringify({
+    rules: { 'color-contrast': { enabled: true } },
+    checks: [{ id: 'color-contrast', options: { contrastRatio: { normal: { expected: 4.5 } } } }],
+    exclude: [['[disabled]'], [':disabled']],
+  })
+  const axeCall = scope
+    ? `axe.run(document.querySelector(${JSON.stringify(scope)}), ${axeConfig})`
+    : `axe.run(${axeConfig})`
   const results = await tauriPage.evaluate<AxeResults>(axeCall)
 
   const critical = results.violations.filter((v) => v.impact === 'critical')
@@ -136,10 +144,22 @@ async function openSearchDialog(tauriPage: PageLike): Promise<void> {
   await tauriPage.waitForSelector('.search-overlay', 5000)
 }
 
-/** Switch the app theme via Tauri's setTheme API. */
+/** Switch the app theme via Tauri's setTheme API and verify it applied. */
 async function setTheme(tauriPage: PageLike, mode: 'dark' | 'light'): Promise<void> {
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:app|set_app_theme', { theme: '${mode}' })`)
-  await sleep(500) // Let the theme transition settle
+  // Verify the theme actually applied by checking a CSS variable value.
+  // WKWebView on macOS can be slow to update prefers-color-scheme after set_app_theme.
+  const expectedBg = mode === 'light' ? '#ffffff' : '#1e1e1e'
+  await pollUntil(
+    tauriPage,
+    async () => {
+      const bg = await tauriPage.evaluate<string>(
+        `getComputedStyle(document.documentElement).getPropertyValue('--color-bg-primary').trim()`,
+      )
+      return bg === expectedBg
+    },
+    3000,
+  )
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────

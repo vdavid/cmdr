@@ -657,7 +657,7 @@
     }
 
     .size-scanning {
-        color: var(--color-text-tertiary);
+        color: var(--color-text-secondary);
         font-size: var(--font-size-xs);
         white-space: nowrap;
     }

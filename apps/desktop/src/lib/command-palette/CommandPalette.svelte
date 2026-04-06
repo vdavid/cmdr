@@ -155,7 +155,7 @@
             autocapitalize="off"
         />
 
-        <div class="results-container" bind:this={resultsContainer} role="listbox" aria-label="Commands">
+        <div class="results-container" bind:this={resultsContainer} role="listbox" aria-label="Commands" tabindex="-1">
             {#if results.length === 0 && query.trim()}
                 <div class="no-results">No commands found</div>
             {:else}
