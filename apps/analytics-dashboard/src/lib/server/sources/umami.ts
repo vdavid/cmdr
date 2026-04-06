@@ -127,14 +127,16 @@ export async function fetchUmamiData(env: UmamiEnv, range: TimeRange): Promise<S
     const token = await authenticate(env.UMAMI_API_URL, env.UMAMI_USERNAME, env.UMAMI_PASSWORD)
     const { startAt, endAt } = toTimeWindow(range)
 
-    const [personalSite, website, websiteReferrers, websitePages, websiteCountries, downloadEvents] = await Promise.all([
-      fetchStats(env.UMAMI_API_URL, token, env.UMAMI_BLOG_WEBSITE_ID, startAt, endAt),
-      fetchStats(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt),
-      fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt, 'referrer'),
-      fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt, 'path'),
-      fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt, 'country'),
-      fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt, 'event'),
-    ])
+    const [personalSite, website, websiteReferrers, websitePages, websiteCountries, downloadEvents] = await Promise.all(
+      [
+        fetchStats(env.UMAMI_API_URL, token, env.UMAMI_BLOG_WEBSITE_ID, startAt, endAt),
+        fetchStats(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt),
+        fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt, 'referrer'),
+        fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt, 'path'),
+        fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt, 'country'),
+        fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt, 'event'),
+      ],
+    )
 
     const data: UmamiData = { personalSite, website, websiteReferrers, websitePages, websiteCountries, downloadEvents }
     await cacheSet('umami-v2', range, data)

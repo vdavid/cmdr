@@ -98,5 +98,15 @@ export async function fetchDashboardData(
     ),
   ])
 
-  return { range, updatedAt: new Date().toISOString(), umami, cloudflare, paddle, github, githubStars, posthog, license }
+  return {
+    range,
+    updatedAt: new Date().toISOString(),
+    umami,
+    cloudflare,
+    paddle,
+    github,
+    githubStars,
+    posthog,
+    license,
+  }
 }

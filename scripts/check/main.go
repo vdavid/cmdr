@@ -21,7 +21,7 @@ func (s *stringSlice) String() string {
 }
 
 func (s *stringSlice) Set(value string) error {
-	for _, v := range strings.Split(value, ",") {
+	for v := range strings.SplitSeq(value, ",") {
 		v = strings.TrimSpace(v)
 		if v != "" {
 			*s = append(*s, v)
@@ -276,7 +276,7 @@ func selectChecksByApp(appName string) ([]checks.CheckDefinition, error) {
 
 // runChecks executes the checks and prints results.
 func runChecks(ctx *checks.CheckContext, checksToRun []checks.CheckDefinition, failFast, noLog bool) {
-	fmt.Printf("🔍 Running %d checks...\n\n", len(checksToRun))
+	fmt.Printf("🔍 Running %d %s...\n\n", len(checksToRun), checks.Pluralize(len(checksToRun), "check", "checks"))
 
 	startTime := time.Now()
 	runner := NewRunner(ctx, checksToRun, failFast, noLog)

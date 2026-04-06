@@ -306,7 +306,7 @@ func runOxfmtCheck(ctx *CheckContext, dir string, extensions []string) (CheckRes
 		}
 
 		var needsFormat int
-		for _, line := range strings.Split(strings.TrimSpace(checkOutput), "\n") {
+		for line := range strings.SplitSeq(strings.TrimSpace(checkOutput), "\n") {
 			if strings.TrimSpace(line) != "" && !strings.HasPrefix(line, "Checking") && !strings.HasPrefix(line, "Finished") && !strings.HasPrefix(line, "Format") {
 				needsFormat++
 			}
@@ -328,7 +328,7 @@ func runOxfmtCheck(ctx *CheckContext, dir string, extensions []string) (CheckRes
 
 // parseOxfmtFileCount extracts the file count from oxfmt output like "Finished in 150ms on 25 files using 16 threads."
 func parseOxfmtFileCount(output string) int {
-	for _, line := range strings.Split(output, "\n") {
+	for line := range strings.SplitSeq(output, "\n") {
 		if strings.HasPrefix(line, "Finished in ") {
 			var count int
 			if _, err := fmt.Sscanf(line, "Finished in %s on %d files", new(string), &count); err == nil {
@@ -415,7 +415,7 @@ func FindGoModules(rootDir string) ([]string, error) {
 	}
 
 	var modules []string
-	for _, line := range strings.Split(strings.TrimSpace(output), "\n") {
+	for line := range strings.SplitSeq(strings.TrimSpace(output), "\n") {
 		if line != "" {
 			// Get directory containing go.mod
 			dir := strings.TrimSuffix(line, "/go.mod")

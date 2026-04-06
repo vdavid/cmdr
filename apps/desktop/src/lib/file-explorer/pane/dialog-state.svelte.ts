@@ -495,7 +495,8 @@ export function createDialogState(deps: DialogStateDeps) {
           overwrite_all: 'overwrite',
           rename_all: 'rename',
         }
-        const resolution: ConflictResolution = (onConflict && conflictMap[onConflict]) || 'skip'
+        const resolution: ConflictResolution =
+          (onConflict ? (conflictMap[onConflict] as ConflictResolution | undefined) : undefined) ?? 'skip'
         this.handleTransferConfirm(
           transferDialogProps.destinationPath,
           transferDialogProps.destVolumeId,

@@ -245,9 +245,7 @@ pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
             return;
         }
 
-        state
-            .intent
-            .store(target as u8, Ordering::Relaxed);
+        state.intent.store(target as u8, Ordering::Relaxed);
         // Wake up any waiting conflict resolution
         let _guard = state.conflict_mutex.lock();
         state.conflict_condvar.notify_all();
@@ -265,9 +263,7 @@ pub fn cancel_all_write_operations() {
             let current = load_intent(&state.intent);
             if current != OperationIntent::Stopped {
                 log::info!("cancel_all_write_operations: stopping op={id}");
-                state
-                    .intent
-                    .store(OperationIntent::Stopped as u8, Ordering::Relaxed);
+                state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
                 let _guard = state.conflict_mutex.lock();
                 state.conflict_condvar.notify_all();
             }

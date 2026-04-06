@@ -28,7 +28,7 @@ func RunRustfmt(ctx *CheckContext) (CheckResult, error) {
 	// Parse files that need formatting
 	var needsFormat []string
 	if strings.TrimSpace(checkOutput) != "" {
-		for _, line := range strings.Split(strings.TrimSpace(checkOutput), "\n") {
+		for line := range strings.SplitSeq(strings.TrimSpace(checkOutput), "\n") {
 			// Only count lines that look like file paths (end with .rs)
 			if strings.HasSuffix(line, ".rs") {
 				needsFormat = append(needsFormat, line)

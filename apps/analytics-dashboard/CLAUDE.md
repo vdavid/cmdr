@@ -43,7 +43,7 @@ Each source gets its own module under `src/lib/server/sources/`:
 | `umami.ts`      | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com + getcmdr.com                                    |
 | `cloudflare.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Download counts, active users by version/arch/country — fetched from worker endpoints (`/admin/downloads`, `/admin/active-users`) |
 | `paddle.ts`     | Bearer token, cursor pagination                 | Completed transactions, subscriptions by status                                                                                   |
-| `github.ts`     | Optional Bearer token                           | Release download counts per asset; star history (daily + cumulative) for cmdr and mtp-rs via stargazers API with pagination        |
+| `github.ts`     | Optional Bearer token                           | Release download counts per asset; star history (daily + cumulative) for cmdr and mtp-rs via stargazers API with pagination       |
 | `posthog.ts`    | Bearer personal API key                         | Pageview trends via Trends API (EU endpoint)                                                                                      |
 | `license.ts`    | Bearer admin token                              | Activation count + active devices from `/admin/stats`                                                                             |
 
@@ -67,19 +67,19 @@ Auto-deploys to Cloudflare Pages on push to `main` when files in `apps/analytics
 
 All set as CF Pages secrets, never in code.
 
-| Variable                     | Notes                                                         |
-| ---------------------------- | ------------------------------------------------------------- |
-| `UMAMI_API_URL`              | `https://anal.veszelovszki.com`                               |
-| `UMAMI_USERNAME`             | Existing Umami credentials                                    |
-| `UMAMI_PASSWORD`             | Existing Umami credentials                                    |
-| `UMAMI_WEBSITE_ID`           | getcmdr.com website ID                                        |
+| Variable                     | Notes                                                                        |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| `UMAMI_API_URL`              | `https://anal.veszelovszki.com`                                              |
+| `UMAMI_USERNAME`             | Existing Umami credentials                                                   |
+| `UMAMI_PASSWORD`             | Existing Umami credentials                                                   |
+| `UMAMI_WEBSITE_ID`           | getcmdr.com website ID                                                       |
 | `UMAMI_BLOG_WEBSITE_ID`      | veszelovszki.com website ID (env var name kept for CF secrets compatibility) |
-| `PADDLE_API_KEY_LIVE`        | Live API key (not sandbox)                                    |
-| `POSTHOG_API_KEY`            | Personal `phx_...` key (not the public `phc_...` project key) |
-| `POSTHOG_PROJECT_ID`         | `136072`                                                      |
-| `POSTHOG_API_URL`            | `https://eu.posthog.com` (must be EU)                         |
-| `GITHUB_TOKEN`               | Optional, avoids rate limits on public repo API               |
-| `LICENSE_SERVER_ADMIN_TOKEN` | Dedicated admin secret, also set on the API server            |
+| `PADDLE_API_KEY_LIVE`        | Live API key (not sandbox)                                                   |
+| `POSTHOG_API_KEY`            | Personal `phx_...` key (not the public `phc_...` project key)                |
+| `POSTHOG_PROJECT_ID`         | `136072`                                                                     |
+| `POSTHOG_API_URL`            | `https://eu.posthog.com` (must be EU)                                        |
+| `GITHUB_TOKEN`               | Optional, avoids rate limits on public repo API                              |
+| `LICENSE_SERVER_ADMIN_TOKEN` | Dedicated admin secret, also set on the API server                           |
 
 ## Key decisions
 
@@ -90,10 +90,11 @@ aggregate numbers. A true funnel would require cross-site user identity tracking
 **Decision**: Dark mode only. **Why**: Internal tool, always viewed on a laptop. Saves effort.
 
 **Decision**: Consistent color coding across the dashboard. **Why**: Visual clarity when scanning metrics.
+
 - **Gold (`#ffc206`)**: getcmdr.com / vdavid/cmdr — the primary product
 - **Purple (`#a78bfa`)**: vdavid/mtp-rs — the library repo
-- **Autumn green (`#8faa3b`)**: veszelovszki.com — David's personal site
-These colors are used in metric dots, chart strokes, and chart fills. Keep them consistent when adding new UI.
+- **Autumn green (`#8faa3b`)**: veszelovszki.com — David's personal site These colors are used in metric dots, chart
+  strokes, and chart fills. Keep them consistent when adding new UI.
 
 **Decision**: Single page, not multi-page. **Why**: Only six sections. Scroll is simpler than navigation.
 

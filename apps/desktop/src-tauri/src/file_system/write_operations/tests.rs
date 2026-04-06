@@ -262,19 +262,13 @@ fn test_operation_intent_transitions() {
     assert!(is_cancelled(&state.intent), "RollingBack should count as cancelled");
 
     // RollingBack → Stopped
-    state
-        .intent
-        .store(OperationIntent::Stopped as u8, Ordering::Relaxed);
+    state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
     assert_eq!(load_intent(&state.intent), OperationIntent::Stopped);
     assert!(is_cancelled(&state.intent), "Stopped should count as cancelled");
 
     // Running → Stopped (direct, no rollback)
-    state
-        .intent
-        .store(OperationIntent::Running as u8, Ordering::Relaxed);
-    state
-        .intent
-        .store(OperationIntent::Stopped as u8, Ordering::Relaxed);
+    state.intent.store(OperationIntent::Running as u8, Ordering::Relaxed);
+    state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
     assert_eq!(load_intent(&state.intent), OperationIntent::Stopped);
 }
 

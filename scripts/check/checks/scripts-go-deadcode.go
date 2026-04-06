@@ -40,7 +40,7 @@ func RunDeadcode(ctx *CheckContext) (CheckResult, error) {
 			// Parse output - each line is a dead code issue
 			output = strings.TrimSpace(output)
 			if output != "" {
-				for _, line := range strings.Split(output, "\n") {
+				for line := range strings.SplitSeq(output, "\n") {
 					if line != "" {
 						// Prefix with module path for clarity
 						relPath := filepath.Join(baseDir, subModule)

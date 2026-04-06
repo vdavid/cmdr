@@ -72,11 +72,15 @@ function formatReport(data: DashboardData): string {
     const totalPv = u.personalSite.pageviews.value + u.website.pageviews.value
     const prevPv = u.personalSite.pageviews.prev + u.website.pageviews.prev
     line(`- Total page views: ${num(totalPv)}${delta(totalPv, prevPv)}`)
-    line(`- veszelovszki.com views: ${num(u.personalSite.pageviews.value)}${delta(u.personalSite.pageviews.value, u.personalSite.pageviews.prev)}`)
+    line(
+      `- veszelovszki.com views: ${num(u.personalSite.pageviews.value)}${delta(u.personalSite.pageviews.value, u.personalSite.pageviews.prev)}`,
+    )
     line(
       `- getcmdr.com views: ${num(u.website.pageviews.value)}${delta(u.website.pageviews.value, u.website.pageviews.prev)}`,
     )
-    line(`- veszelovszki.com visitors: ${num(u.personalSite.visitors.value)}${delta(u.personalSite.visitors.value, u.personalSite.visitors.prev)}`)
+    line(
+      `- veszelovszki.com visitors: ${num(u.personalSite.visitors.value)}${delta(u.personalSite.visitors.value, u.personalSite.visitors.prev)}`,
+    )
     line(
       `- getcmdr.com visitors: ${num(u.website.visitors.value)}${delta(u.website.visitors.value, u.website.visitors.prev)}`,
     )
@@ -86,8 +90,12 @@ function formatReport(data: DashboardData): string {
       blank()
       line(`GitHub stars: ${num(s.totalStars)} total`)
       for (const repo of s.repos) {
-        const recent7 = repo.daily.filter((d) => new Date(d.day) >= new Date(Date.now() - 7 * 86_400_000)).reduce((sum, d) => sum + d.newStars, 0)
-        const recent30 = repo.daily.filter((d) => new Date(d.day) >= new Date(Date.now() - 30 * 86_400_000)).reduce((sum, d) => sum + d.newStars, 0)
+        const recent7 = repo.daily
+          .filter((d) => new Date(d.day) >= new Date(Date.now() - 7 * 86_400_000))
+          .reduce((sum, d) => sum + d.newStars, 0)
+        const recent30 = repo.daily
+          .filter((d) => new Date(d.day) >= new Date(Date.now() - 30 * 86_400_000))
+          .reduce((sum, d) => sum + d.newStars, 0)
         line(`  ${repo.repo}: ${num(repo.totalStars)} (last 7d: +${recent7}, last 30d: +${recent30})`)
       }
     }

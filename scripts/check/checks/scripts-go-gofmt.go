@@ -36,7 +36,7 @@ func RunGoFmt(ctx *CheckContext) (CheckResult, error) {
 
 		// Parse files that need formatting
 		if strings.TrimSpace(checkOutput) != "" {
-			for _, file := range strings.Split(strings.TrimSpace(checkOutput), "\n") {
+			for file := range strings.SplitSeq(strings.TrimSpace(checkOutput), "\n") {
 				allNeedsFormat = append(allNeedsFormat, filepath.Join(goDir, file))
 			}
 			allCheckOutput.WriteString(checkOutput)

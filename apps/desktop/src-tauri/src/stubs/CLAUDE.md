@@ -10,11 +10,11 @@ On other platforms (not macOS, not Linux), all stubs are used. Never compiled on
 | File | Purpose |
 |------|---------|
 | `mod.rs` | Declares sub-modules; all gated with `#[cfg(not(target_os = "linux"))]` since Linux has real implementations for everything |
-| `volumes.rs` | Returns root `/`, Home, and existing Desktop/Documents/Downloads; `get_volume_space` uses `libc::statvfs`; `start_volume_watcher` is a no-op. Only compiled on non-macOS, non-Linux platforms. |
-| `permissions.rs` | `check_full_disk_access` always returns `true`; `open_privacy_settings` returns an error. Only compiled on non-macOS, non-Linux platforms. |
-| `network.rs` | All ~20 network commands return empty results or errors; types mirror the macOS shapes for JSON compatibility. Only compiled on non-macOS, non-Linux platforms. |
 | `accent_color.rs` | `get_accent_color` returns `"#d4a006"` (brand gold fallback). Only compiled on non-macOS, non-Linux platforms. |
 | `mtp.rs` | All MTP commands return `MtpConnectionError::NotSupported`; defines its own local `FileEntry` subset and additional stub types: `ConnectedDeviceInfo`, `MtpOperationResult`, `MtpObjectInfo`, `MtpScanResult`. Only compiled on non-macOS, non-Linux platforms. |
+| `network.rs` | All ~20 network commands return empty results or errors; types mirror the macOS shapes for JSON compatibility. Only compiled on non-macOS, non-Linux platforms. |
+| `permissions.rs` | `check_full_disk_access` always returns `true`; `open_privacy_settings` returns an error. Only compiled on non-macOS, non-Linux platforms. |
+| `volumes.rs` | Returns root `/`, Home, and existing Desktop/Documents/Downloads; `get_volume_space` uses `libc::statvfs`; `start_volume_watcher` is a no-op. Only compiled on non-macOS, non-Linux platforms. |
 
 ## Key decisions
 
