@@ -139,7 +139,7 @@ export function fileExists(fixtureRoot: string, relPath: string): boolean {
 export async function selectAll(tauriPage: PageLike): Promise<void> {
   await tauriPage.evaluate(`(function(){
     var el=document.activeElement||document.body;
-    el.dispatchEvent(new KeyboardEvent('keydown',{key:'a',bubbles:true,metaKey:${process.platform === 'darwin'},ctrlKey:${process.platform !== 'darwin'}}));
+    el.dispatchEvent(new KeyboardEvent('keydown',{key:'a',bubbles:true,metaKey:${String(process.platform === 'darwin')},ctrlKey:${String(process.platform !== 'darwin')}}));
   })()`)
   await sleep(200)
 }

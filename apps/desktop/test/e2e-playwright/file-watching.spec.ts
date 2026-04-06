@@ -52,7 +52,7 @@ test.describe('File watching', () => {
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
 
-    const dirName = `watch-test-dir-${Date.now()}`
+    const dirName = `watch-test-dir-${String(Date.now())}`
     const dirPath = path.join(fixtureRoot, 'left', dirName)
 
     expect(await fileExistsInFocusedPane(tauriPage, dirName)).toBe(false)
@@ -66,7 +66,7 @@ test.describe('File watching', () => {
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
 
-    const fileName = `watch-file-${Date.now()}.txt`
+    const fileName = `watch-file-${String(Date.now())}.txt`
     const filePath = path.join(fixtureRoot, 'left', fileName)
 
     expect(await fileExistsInFocusedPane(tauriPage, fileName)).toBe(false)
@@ -140,11 +140,14 @@ test.describe('File watching', () => {
   test('detects batch creation of 25 files', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
-    const prefix = `batch-${Date.now()}`
+    const prefix = `batch-${String(Date.now())}`
 
     // Create 25 files in a tight loop
     for (let i = 0; i < 25; i++) {
-      fs.writeFileSync(path.join(fixtureRoot, 'left', `${prefix}-${String(i).padStart(3, '0')}.txt`), `content ${i}`)
+      fs.writeFileSync(
+        path.join(fixtureRoot, 'left', `${prefix}-${String(i).padStart(3, '0')}.txt`),
+        `content ${String(i)}`,
+      )
     }
 
     // All 25 should appear in the listing
@@ -161,7 +164,7 @@ test.describe('File watching', () => {
     // This exceeds the 500-event threshold, triggering the full-reread path
     // instead of the incremental path.
     for (let i = 0; i < 600; i++) {
-      fs.writeFileSync(path.join(leftDir, `mass-${String(i).padStart(4, '0')}.txt`), `content ${i}`)
+      fs.writeFileSync(path.join(leftDir, `mass-${String(i).padStart(4, '0')}.txt`), `content ${String(i)}`)
     }
 
     // Verify files appear in the focused pane
@@ -220,7 +223,7 @@ test.describe('File watching', () => {
     await pollUntil(tauriPage, async () => fileExistsInPane(tauriPage, 'file-a.txt', 1), 8000)
 
     // Create a new file externally
-    const fileName = `dual-pane-${Date.now()}.txt`
+    const fileName = `dual-pane-${String(Date.now())}.txt`
     fs.writeFileSync(path.join(leftDir, fileName), 'dual pane test')
 
     // Both panes should show the new file

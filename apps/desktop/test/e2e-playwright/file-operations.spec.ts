@@ -176,7 +176,7 @@ test.describe('Create folder round-trip', () => {
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
 
-    const folderName = `new-test-folder-${Date.now()}`
+    const folderName = `new-test-folder-${String(Date.now())}`
 
     await tauriPage.keyboard.press('F7')
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
@@ -261,7 +261,7 @@ test.describe('Command palette', () => {
     // Open command palette via keyboard shortcut
     const isMac = process.platform === 'darwin'
     await tauriPage.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', {
-            key: 'p', ctrlKey: ${!isMac}, metaKey: ${isMac}, shiftKey: true, bubbles: true
+            key: 'p', ctrlKey: ${String(!isMac)}, metaKey: ${String(isMac)}, shiftKey: true, bubbles: true
         }))`)
 
     await tauriPage.waitForSelector('.palette-overlay', 5000)

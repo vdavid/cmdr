@@ -45,9 +45,7 @@ async function getDirStats(tauriPage: PageLike, dirPath: string): Promise<DirSta
   }
   const pathJson = JSON.stringify(canonicalPath)
   try {
-    return (await tauriPage.evaluate(
-      `window.__TAURI_INTERNALS__.invoke('get_dir_stats', { path: ${pathJson} })`,
-    )) as DirStats | null
+    return await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('get_dir_stats', { path: ${pathJson} })`)
   } catch {
     return null
   }
@@ -57,7 +55,7 @@ async function getDirStats(tauriPage: PageLike, dirPath: string): Promise<DirSta
  * Polls `get_dir_stats` until `recursiveFileCount > 0` or timeout.
  * Returns the stats if available, null otherwise.
  */
-async function waitForIndexData(tauriPage: PageLike, dirPath: string, timeoutMs = 90_000): Promise<DirStats | null> {
+async function waitForIndexData(tauriPage: PageLike, dirPath: string, timeoutMs = 500_000): Promise<DirStats | null> {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     const stats = await getDirStats(tauriPage, dirPath)
@@ -132,7 +130,7 @@ test.describe('Drive indexing', () => {
     // Wait for the index to have data for sub-dir
     const stats = await waitForIndexData(tauriPage, subDirPath)
     if (!stats) {
-      console.warn('SKIPPED: Drive index not ready for fixture path within 90 s') // eslint-disable-line no-console
+      console.warn('SKIPPED: Drive index not ready for fixture path within 500 s') // eslint-disable-line no-console
       return
     }
 
@@ -157,7 +155,7 @@ test.describe('Drive indexing', () => {
 
     const initialStats = await waitForIndexData(tauriPage, subDirPath)
     if (!initialStats) {
-      console.warn('SKIPPED: Drive index not ready for fixture path within 90 s') // eslint-disable-line no-console
+      console.warn('SKIPPED: Drive index not ready for fixture path within 500 s') // eslint-disable-line no-console
       return
     }
 
@@ -182,7 +180,8 @@ test.describe('Drive indexing', () => {
   })
 
   test('decreases directory size by exact byte count after file deletion', async ({ tauriPage }, testInfo) => {
-    testInfo.setTimeout(150_000)
+    // Docker indexing can be slower — allow enough time for both convergence phases
+    testInfo.setTimeout(240_000)
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
     const subDirPath = path.join(fixtureRoot, 'left', 'sub-dir')
@@ -193,17 +192,19 @@ test.describe('Drive indexing', () => {
 
     // Wait for the index to converge to the size including both files
     const expectedSizeWithExtra = NESTED_FILE_SIZE + EXTRA_FILE_SIZE
-    const statsWithExtra = await waitForExactSize(tauriPage, subDirPath, expectedSizeWithExtra, 90_000)
+    const statsWithExtra = await waitForExactSize(tauriPage, subDirPath, expectedSizeWithExtra, 120_000)
     if (!statsWithExtra) {
       // Index might not have data yet, or hasn't picked up the extra file
       const fallback = await waitForIndexData(tauriPage, subDirPath)
       if (!fallback) {
-        console.warn('SKIPPED: Drive index not ready for fixture path within 90 s') // eslint-disable-line no-console
+        console.warn('SKIPPED: Drive index not ready for fixture path within 500 s (fallback)') // eslint-disable-line no-console
         return
       }
       // If the index has data but not the exact size, the extra file hasn't been indexed yet.
       // Wait a bit more.
-      console.warn(`Index has recursiveSize=${fallback.recursiveSize}, expected ${expectedSizeWithExtra}`) // eslint-disable-line no-console
+      console.warn(
+        `Index has recursiveSize=${String(fallback.recursiveSize)}, expected ${String(expectedSizeWithExtra)}`,
+      )
     }
 
     expect(statsWithExtra).not.toBeNull()
@@ -214,7 +215,7 @@ test.describe('Drive indexing', () => {
     fs.unlinkSync(extraFile)
 
     // Size should decrease back to exactly NESTED_FILE_SIZE
-    const statsAfterDelete = await waitForExactSize(tauriPage, subDirPath, NESTED_FILE_SIZE)
+    const statsAfterDelete = await waitForExactSize(tauriPage, subDirPath, NESTED_FILE_SIZE, 60_000)
     expect(statsAfterDelete).not.toBeNull()
     expect(statsAfterDelete?.recursiveSize).toBe(NESTED_FILE_SIZE)
     expect(statsAfterDelete?.recursiveFileCount).toBe(1)

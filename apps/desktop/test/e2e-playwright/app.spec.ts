@@ -231,13 +231,13 @@ test.describe('Mouse interactions', () => {
         })()`)
 
     // Pick a different entry to click — if cursor is on [0], click [1]; otherwise click [0]
-    const targetIndex = initialCursorIndex === 1 ? 0 : 1
+    const targetIndex: number = initialCursorIndex === 1 ? 0 : 1
 
     // Dispatch mousedown then click — the cursor movement handler is on
     // onmousedown, not onclick. Must set button:0 (handleMouseDown checks it).
     await tauriPage.evaluate(`(function() {
             var pane = document.querySelectorAll('.file-pane')[0];
-            var entry = pane?.querySelectorAll('.file-entry')[${targetIndex}];
+            var entry = pane?.querySelectorAll('.file-entry')[${String(targetIndex)}];
             if (entry) {
                 entry.scrollIntoView({block:'center'});
                 var r = entry.getBoundingClientRect();
@@ -255,14 +255,14 @@ test.describe('Mouse interactions', () => {
         return tauriPage.evaluate<boolean>(`(function() {
                     var pane = document.querySelectorAll('.file-pane')[0];
                     var entries = pane.querySelectorAll('.file-entry');
-                    return entries[${targetIndex}]?.classList.contains('is-under-cursor') || false;
+                    return entries[${String(targetIndex)}]?.classList.contains('is-under-cursor') || false;
                 })()`)
       },
       5000,
     )
 
     const entryClass = await tauriPage.evaluate<string>(
-      `document.querySelectorAll('.file-pane')[0]?.querySelectorAll('.file-entry')[${targetIndex}]?.getAttribute('class') || ''`,
+      `document.querySelectorAll('.file-pane')[0]?.querySelectorAll('.file-entry')[${String(targetIndex)}]?.getAttribute('class') || ''`,
     )
     expect(entryClass).toContain('is-under-cursor')
   })
@@ -441,7 +441,7 @@ test.describe('New folder dialog', () => {
     await tauriPage.keyboard.press('F7')
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
 
-    const folderName = `test-folder-${Date.now()}`
+    const folderName = `test-folder-${String(Date.now())}`
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
     await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, folderName)
     await sleep(200)

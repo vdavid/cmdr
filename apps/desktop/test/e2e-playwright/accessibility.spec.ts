@@ -97,10 +97,10 @@ async function runAxeAudit(
 
   if (results.violations.length > 0) {
     const counts = [
-      critical.length && `${critical.length} critical`,
-      serious.length && `${serious.length} serious`,
-      moderate.length && `${moderate.length} moderate`,
-      minor.length && `${minor.length} minor`,
+      critical.length && `${String(critical.length)} critical`,
+      serious.length && `${String(serious.length)} serious`,
+      moderate.length && `${String(moderate.length)} moderate`,
+      minor.length && `${String(minor.length)} minor`,
     ]
       .filter(Boolean)
       .join(', ')
@@ -123,7 +123,7 @@ async function dismissDialog(tauriPage: PageLike): Promise<void> {
 /** Open the command palette overlay. */
 async function openCommandPalette(tauriPage: PageLike): Promise<void> {
   await tauriPage.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', {
-        key: 'p', ctrlKey: ${CTRL_OR_META === 'Control'}, metaKey: ${CTRL_OR_META === 'Meta'}, shiftKey: true, bubbles: true
+        key: 'p', ctrlKey: ${String(CTRL_OR_META === 'Control')}, metaKey: ${String(CTRL_OR_META === 'Meta')}, shiftKey: true, bubbles: true
     }))`)
   await tauriPage.waitForSelector('.palette-overlay', 5000)
 }
@@ -131,7 +131,7 @@ async function openCommandPalette(tauriPage: PageLike): Promise<void> {
 /** Open the search dialog overlay. */
 async function openSearchDialog(tauriPage: PageLike): Promise<void> {
   await tauriPage.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', {
-        key: 'f', ctrlKey: ${CTRL_OR_META === 'Control'}, metaKey: ${CTRL_OR_META === 'Meta'}, bubbles: true
+        key: 'f', ctrlKey: ${String(CTRL_OR_META === 'Control')}, metaKey: ${String(CTRL_OR_META === 'Meta')}, bubbles: true
     }))`)
   await tauriPage.waitForSelector('.search-overlay', 5000)
 }
@@ -144,7 +144,7 @@ async function setTheme(tauriPage: PageLike, mode: 'dark' | 'light'): Promise<vo
 
 // ── Tests ───────────────────────────────────────────────────────────────────
 
-for (const mode of ['dark', 'light'] as const) {
+for (const mode of ['light', 'dark'] as const) {
   test.describe(`${mode} mode`, () => {
     test.beforeEach(async ({ tauriPage }) => {
       await setTheme(tauriPage, mode)
@@ -155,7 +155,7 @@ for (const mode of ['dark', 'light'] as const) {
       await ensureAppReady(tauriPage)
 
       const { all } = await runAxeAudit(tauriPage, `Main explorer (${mode})`)
-      expect(all, `Found ${all.length} violation(s) in main explorer (${mode})`).toHaveLength(0)
+      expect(all, `Found ${String(all.length)} violation(s) in main explorer (${mode})`).toHaveLength(0)
     })
 
     test(`Copy dialog`, async ({ tauriPage }) => {
@@ -168,7 +168,7 @@ for (const mode of ['dark', 'light'] as const) {
 
       const { all } = await runAxeAudit(tauriPage, `Copy dialog (${mode})`, TRANSFER_DIALOG)
       await dismissDialog(tauriPage)
-      expect(all, `Found ${all.length} violation(s) in Copy dialog (${mode})`).toHaveLength(0)
+      expect(all, `Found ${String(all.length)} violation(s) in Copy dialog (${mode})`).toHaveLength(0)
     })
 
     test(`Delete dialog`, async ({ tauriPage }) => {
@@ -182,7 +182,7 @@ for (const mode of ['dark', 'light'] as const) {
 
       const { all } = await runAxeAudit(tauriPage, `Delete dialog (${mode})`, deleteDialog)
       await dismissDialog(tauriPage)
-      expect(all, `Found ${all.length} violation(s) in Delete dialog (${mode})`).toHaveLength(0)
+      expect(all, `Found ${String(all.length)} violation(s) in Delete dialog (${mode})`).toHaveLength(0)
     })
 
     test(`Move dialog`, async ({ tauriPage }) => {
@@ -195,7 +195,7 @@ for (const mode of ['dark', 'light'] as const) {
 
       const { all } = await runAxeAudit(tauriPage, `Move dialog (${mode})`, TRANSFER_DIALOG)
       await dismissDialog(tauriPage)
-      expect(all, `Found ${all.length} violation(s) in Move dialog (${mode})`).toHaveLength(0)
+      expect(all, `Found ${String(all.length)} violation(s) in Move dialog (${mode})`).toHaveLength(0)
     })
 
     test(`About dialog`, async ({ tauriPage }) => {
@@ -207,7 +207,7 @@ for (const mode of ['dark', 'light'] as const) {
 
       const { all } = await runAxeAudit(tauriPage, `About dialog (${mode})`, '[data-dialog-id="about"]')
       await dismissDialog(tauriPage)
-      expect(all, `Found ${all.length} violation(s) in About dialog (${mode})`).toHaveLength(0)
+      expect(all, `Found ${String(all.length)} violation(s) in About dialog (${mode})`).toHaveLength(0)
     })
 
     test(`License dialog`, async ({ tauriPage }) => {
@@ -219,7 +219,7 @@ for (const mode of ['dark', 'light'] as const) {
 
       const { all } = await runAxeAudit(tauriPage, `License dialog (${mode})`, '[data-dialog-id="license"]')
       await dismissDialog(tauriPage)
-      expect(all, `Found ${all.length} violation(s) in License dialog (${mode})`).toHaveLength(0)
+      expect(all, `Found ${String(all.length)} violation(s) in License dialog (${mode})`).toHaveLength(0)
     })
 
     test(`Command palette`, async ({ tauriPage }) => {
@@ -234,7 +234,7 @@ for (const mode of ['dark', 'light'] as const) {
       await tauriPage.keyboard.press('Escape')
       await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.palette-overlay')), 3000)
 
-      expect(all, `Found ${all.length} violation(s) in command palette (${mode})`).toHaveLength(0)
+      expect(all, `Found ${String(all.length)} violation(s) in command palette (${mode})`).toHaveLength(0)
     })
 
     test(`Search dialog`, async ({ tauriPage }) => {
@@ -249,7 +249,7 @@ for (const mode of ['dark', 'light'] as const) {
       await tauriPage.keyboard.press('Escape')
       await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.search-overlay')), 3000)
 
-      expect(all, `Found ${all.length} violation(s) in search dialog (${mode})`).toHaveLength(0)
+      expect(all, `Found ${String(all.length)} violation(s) in search dialog (${mode})`).toHaveLength(0)
     })
 
     test(`Settings: all sections`, async ({ tauriPage }) => {
@@ -314,7 +314,7 @@ for (const mode of ['dark', 'light'] as const) {
       }
 
       const totalViolations = allViolations.reduce((sum, s) => sum + s.violations.length, 0)
-      const failedSections = allViolations.map((s) => `${s.section} (${s.violations.length})`).join(', ')
+      const failedSections = allViolations.map((s) => `${s.section} (${String(s.violations.length)})`).join(', ')
       expect(totalViolations, `Violations in settings (${mode}): ${failedSections}`).toBe(0)
     })
 
@@ -329,7 +329,7 @@ for (const mode of ['dark', 'light'] as const) {
       await tauriPage.waitForSelector('.file-content', 10000)
 
       const { all } = await runAxeAudit(tauriPage, `File viewer (${mode})`)
-      expect(all, `Found ${all.length} violation(s) in file viewer (${mode})`).toHaveLength(0)
+      expect(all, `Found ${String(all.length)} violation(s) in file viewer (${mode})`).toHaveLength(0)
     })
   })
 }

@@ -62,7 +62,7 @@ export async function pressKey(tauriPage: PageLike, key: string): Promise<void> 
 
   await tauriPage.evaluate(`(function(){
         var el=document.activeElement||document.body;
-        var o={key:${k},bubbles:true,ctrlKey:${ctrl},shiftKey:${shift},altKey:${alt},metaKey:${meta}};
+        var o={key:${k},bubbles:true,ctrlKey:${String(ctrl)},shiftKey:${String(shift)},altKey:${String(alt)},metaKey:${String(meta)}};
         el.dispatchEvent(new KeyboardEvent('keydown',o));
         el.dispatchEvent(new KeyboardEvent('keypress',o));
         el.dispatchEvent(new KeyboardEvent('keyup',o));
@@ -198,7 +198,7 @@ export async function fileExistsInFocusedPane(tauriPage: PageLike, targetName: s
 export async function fileExistsInPane(tauriPage: PageLike, targetName: string, paneIndex: number): Promise<boolean> {
   return tauriPage.evaluate<boolean>(`(function() {
         var panes = document.querySelectorAll('.file-pane');
-        var pane = panes[${paneIndex}];
+        var pane = panes[${String(paneIndex)}];
         if (!pane) return false;
         var entries = pane.querySelectorAll('.file-entry');
         return Array.from(entries).some(function(e) {
@@ -309,7 +309,7 @@ export function getFixtureRoot(): string {
  */
 export async function executeViaCommandPalette(tauriPage: PageLike, query: string): Promise<void> {
   await tauriPage.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', {
-        key: 'p', ctrlKey: ${CTRL_OR_META === 'Control'}, metaKey: ${CTRL_OR_META === 'Meta'}, shiftKey: true, bubbles: true
+        key: 'p', ctrlKey: ${String(CTRL_OR_META === 'Control')}, metaKey: ${String(CTRL_OR_META === 'Meta')}, shiftKey: true, bubbles: true
     }))`)
   await tauriPage.waitForSelector('.palette-overlay', 5000)
   await tauriPage.fill('.palette-overlay .search-input', query)
@@ -329,7 +329,7 @@ export async function executeViaCommandPalette(tauriPage: PageLike, query: strin
 export async function getSizeText(tauriPage: PageLike, entryName: string, paneIndex = -1): Promise<string> {
   const paneSelector =
     paneIndex >= 0
-      ? `document.querySelectorAll('.file-pane')[${paneIndex}]`
+      ? `document.querySelectorAll('.file-pane')[${String(paneIndex)}]`
       : `document.querySelector('.file-pane.is-focused')`
   const nameJson = JSON.stringify(entryName)
   return tauriPage.evaluate<string>(`(function() {
@@ -350,7 +350,7 @@ export async function getSizeText(tauriPage: PageLike, entryName: string, paneIn
 /** Counts file entries in a specific pane (0=left, 1=right). */
 export async function countEntriesInPane(tauriPage: PageLike, paneIndex: number): Promise<number> {
   return tauriPage.evaluate<number>(`(function() {
-        var pane = document.querySelectorAll('.file-pane')[${paneIndex}];
+        var pane = document.querySelectorAll('.file-pane')[${String(paneIndex)}];
         return pane ? pane.querySelectorAll('.file-entry').length : 0;
     })()`)
 }

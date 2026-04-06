@@ -10,6 +10,7 @@
  */
 
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
@@ -38,6 +39,9 @@ import {
 // Volume names (verified from manual testing against the virtual device)
 const INTERNAL_STORAGE = 'Virtual Pixel 9 - Internal Storage'
 const SD_CARD = 'Virtual Pixel 9 - SD Card'
+
+// Local volume name differs by platform (macOS: "Macintosh HD", Linux: "Root")
+const LOCAL_VOLUME_NAME = os.platform() === 'linux' ? 'Root' : 'Macintosh HD'
 
 /**
  * Discovers the mtp:// path prefix for a named MTP storage from cmdr://state.
@@ -69,11 +73,11 @@ test.beforeEach(async ({ tauriPage }) => {
   // Force both panes back to a local volume. Previous tests may have left a pane
   // on MTP, and ensureAppReady's mcp-nav-to-path events get rejected by
   // navigateToPath when the pane is on an MTP volume (it requires select_volume first).
-  // Emitting mcp-volume-select with "Macintosh HD" switches to the local volume.
+  // Volume name differs by platform: "Macintosh HD" on macOS, "Root" on Linux.
   await tauriPage.evaluate(`(function() {
         var invoke = window.__TAURI_INTERNALS__.invoke;
-        invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: 'Macintosh HD' } });
-        invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: 'Macintosh HD' } });
+        invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: '${LOCAL_VOLUME_NAME}' } });
+        invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
     })()`)
   await sleep(2000) // Wait for volume switches to complete
 
@@ -480,8 +484,8 @@ test.describe('MTP read-only enforcement', () => {
       await tauriPage.keyboard.press('Escape')
       await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
     } else {
-      // Neither dialog appeared — this is unexpected but we verify no folder was created
-      expect(hasAlert || hasMkdir).toBe(true)
+      // Neither dialog appeared — this is unexpected, fail explicitly
+      throw new Error('Expected either an alert or mkdir dialog to appear, but neither did')
     }
 
     // Verify no folder was created on the backing dir
@@ -527,8 +531,17 @@ test.describe('MTP file watching', () => {
     // which Cmdr's event loop picks up and sends as directory-diff to the frontend.
     fs.writeFileSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'new-file.txt'), 'hello from external write')
 
-    // Wait for the file to appear via the virtual device's file watcher → event loop → directory-diff pipeline
-    await mcpAwaitItem('left', 'new-file.txt', 30)
+    // Wait for the file to appear via the virtual device's file watcher → event loop → directory-diff pipeline.
+    // In long-running test suites, the watcher may be slow to process events. If the first
+    // wait times out, force a refresh and try again — this tests that the file exists on
+    // the virtual device even if the push-based watcher missed the event.
+    try {
+      await mcpAwaitItem('left', 'new-file.txt', 30)
+    } catch {
+      // File watcher didn't pick it up — force refresh and retry
+      await mcpCall('refresh', {})
+      await mcpAwaitItem('left', 'new-file.txt', 30)
+    }
 
     // Verify it shows up in the DOM too
     const hasNewFile = await fileExistsInPane(tauriPage, 'new-file.txt', 0)

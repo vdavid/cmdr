@@ -45,7 +45,7 @@ async function navigateAndWaitForViewer(tauriPage: PageLike, filePath: string): 
     const hasStatusMsg = await tauriPage.isVisible('.status-message')
     if (hasStatusMsg) {
       const text = await tauriPage.textContent('.status-message')
-      throw new Error(`Viewer did not load file content. Status: "${text}"`)
+      throw new Error(`Viewer did not load file content. Status: "${text ?? ''}"`)
     }
     throw new Error('Viewer did not load file content and no status message found')
   }

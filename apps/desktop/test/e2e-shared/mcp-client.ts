@@ -23,7 +23,7 @@ export async function initMcpClient(tauriPage: PageLike): Promise<void> {
 
 export async function mcpCall(tool: string, args: Record<string, unknown>): Promise<string> {
   if (!mcpPort) throw new Error('Call initMcpClient() first')
-  const res = await fetch(`http://localhost:${mcpPort}/mcp`, {
+  const res = await fetch(`http://localhost:${String(mcpPort)}/mcp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -33,7 +33,7 @@ export async function mcpCall(tool: string, args: Record<string, unknown>): Prom
       params: { name: tool, arguments: args },
     }),
   })
-  const json = await res.json()
+  const json = (await res.json()) as { error?: { message: string }; result?: { content?: { text?: string }[] } }
   if (json.error) throw new Error(`MCP error: ${json.error.message}`)
   const text = json.result?.content?.[0]?.text
   if (!text) throw new Error(`Unexpected MCP response: ${JSON.stringify(json)}`)
@@ -42,7 +42,7 @@ export async function mcpCall(tool: string, args: Record<string, unknown>): Prom
 
 export async function mcpReadResource(uri: string): Promise<string> {
   if (!mcpPort) throw new Error('Call initMcpClient() first')
-  const res = await fetch(`http://localhost:${mcpPort}/mcp`, {
+  const res = await fetch(`http://localhost:${String(mcpPort)}/mcp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -52,7 +52,7 @@ export async function mcpReadResource(uri: string): Promise<string> {
       params: { uri },
     }),
   })
-  const json = await res.json()
+  const json = (await res.json()) as { error?: { message: string }; result?: { contents?: { text?: string }[] } }
   if (json.error) throw new Error(`MCP error: ${json.error.message}`)
   return json.result?.contents?.[0]?.text ?? ''
 }

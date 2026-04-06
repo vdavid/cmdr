@@ -9,7 +9,6 @@ import { cleanupFixtures } from '../e2e-shared/fixtures.js'
 
 // Set by global-setup.ts when it creates a NEW fixture directory
 declare global {
-  // eslint-disable-next-line no-var
   var __PLAYWRIGHT_CREATED_FIXTURES: boolean | undefined
 }
 

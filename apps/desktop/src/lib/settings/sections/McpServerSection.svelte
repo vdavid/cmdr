@@ -237,17 +237,17 @@
 
     .port-status.available,
     .port-status.active {
-        background: color-mix(in srgb, var(--color-allow) 10%, transparent);
+        background: color-mix(in srgb, var(--color-allow) 7%, transparent);
         color: var(--color-allow);
     }
 
     .port-status.warning {
-        background: color-mix(in srgb, var(--color-warning) 10%, transparent);
+        background: color-mix(in srgb, var(--color-warning) 7%, transparent);
         color: var(--color-warning);
     }
 
     .port-status.unavailable {
-        background: color-mix(in srgb, var(--color-error) 10%, transparent);
+        background: color-mix(in srgb, var(--color-error) 7%, transparent);
         color: var(--color-error);
         display: flex;
         align-items: center;
