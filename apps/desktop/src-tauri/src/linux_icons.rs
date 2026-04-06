@@ -5,13 +5,13 @@
 //! Thread-safe — works with rayon parallelism unlike GTK-based icon providers.
 
 use image::DynamicImage;
-use log::{info, warn};
+use log::{debug, warn};
 use std::sync::LazyLock;
 
 /// Current GTK icon theme name, detected once at startup.
 static ICON_THEME: LazyLock<String> = LazyLock::new(|| {
     let theme = freedesktop_icons::default_theme_gtk().unwrap_or_else(|| "Adwaita".to_string());
-    info!("XDG icon theme detected: {theme}");
+    debug!("XDG icon theme detected: {theme}");
     theme
 });
 
@@ -21,7 +21,7 @@ static ICON_THEME: LazyLock<String> = LazyLock::new(|| {
 /// `"symlink"`, and `"ext:<extension>"` (for example, `"ext:png"`).
 pub fn get_icon_for_id(icon_id: &str, size: u16) -> Option<DynamicImage> {
     let icon_names = icon_names_for_id(icon_id);
-    info!("Icon lookup: {icon_id} -> names: {icon_names:?}");
+    debug!("Icon lookup: {icon_id} -> names: {icon_names:?}");
     lookup_first_icon(&icon_names, size)
 }
 
@@ -79,11 +79,11 @@ fn lookup_first_icon(names: &[String], size: u16) -> Option<DynamicImage> {
         match &found {
             Some(path) => {
                 let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("?");
-                info!("  {name}: found {path:?} (format: {ext})");
+                debug!("  {name}: found {path:?} (format: {ext})");
 
                 // Skip SVGs — we don't have an SVG renderer and adding resvg would be heavy
                 if ext == "svg" {
-                    info!("  {name}: skipped (SVG)");
+                    debug!("  {name}: skipped (SVG)");
                     continue;
                 }
 
@@ -93,7 +93,7 @@ fn lookup_first_icon(names: &[String], size: u16) -> Option<DynamicImage> {
                 }
             }
             None => {
-                info!("  {name}: not found in theme '{theme}'");
+                debug!("  {name}: not found in theme '{theme}'");
             }
         }
     }
