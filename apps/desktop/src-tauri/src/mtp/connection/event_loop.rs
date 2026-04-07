@@ -11,7 +11,7 @@ use tauri::{AppHandle, Emitter};
 use tokio::sync::{Mutex, broadcast};
 
 use super::cache::EVENT_DEBOUNCE_MS;
-use super::{MtpConnectionManager, connection_manager};
+use super::{MtpConnectionManager, connection_manager, normalize_mtp_path};
 use crate::file_system::listing::{get_listings_by_volume_prefix, update_listing_entries};
 use crate::file_system::{DirectoryDiff, FileEntry, compute_diff};
 use std::path::PathBuf;
@@ -243,10 +243,12 @@ impl MtpConnectionManager {
                 mtp_path.strip_prefix('/').unwrap_or(&mtp_path).to_string()
             };
 
-            // Invalidate the MTP listing cache before re-reading so we get fresh data
-            // (otherwise we'd compare stale cached data with itself and detect no changes)
+            // Invalidate the MTP listing cache before re-reading so we get fresh data.
+            // Must use the normalized MTP path (e.g., "/Documents") — not the raw LISTING_CACHE
+            // path (e.g., "mtp://mtp-device/65537/Documents") — because that's what list_directory
+            // uses as the cache key.
             connection_manager()
-                .invalidate_listing_cache(device_id, storage_id, &path)
+                .invalidate_listing_cache(device_id, storage_id, &normalize_mtp_path(&mtp_path))
                 .await;
 
             // Re-read the directory from the MTP device
