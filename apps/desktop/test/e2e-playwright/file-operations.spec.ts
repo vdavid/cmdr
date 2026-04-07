@@ -27,6 +27,7 @@ import {
   sleep,
   MKDIR_DIALOG,
   TRANSFER_DIALOG,
+  CTRL_OR_META,
 } from './helpers.js'
 
 // Recreate lightweight fixtures (text files + dirs, not bulk .dat files)
@@ -228,29 +229,36 @@ test.describe('Hidden files toggle', () => {
   test('toggles hidden file visibility', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
-    const initiallyVisible = await fileExistsInFocusedPane(tauriPage, '.hidden-file')
+    // Use the keyboard shortcut (Cmd+Shift+. on macOS, Ctrl+Shift+. on Linux)
+    // instead of the command palette to avoid fuzzy-match timing issues.
+    const toggleHidden = async () => {
+      await tauriPage.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', {
+        key: '.', shiftKey: true,
+        ctrlKey: ${String(CTRL_OR_META === 'Control')},
+        metaKey: ${String(CTRL_OR_META === 'Meta')},
+        bubbles: true
+      }))`)
+      await sleep(500)
+    }
 
-    await executeViaCommandPalette(tauriPage, 'Toggle hidden')
+    // Ensure hidden files are visible first. On macOS the default state
+    // may not have propagated to the DOM yet (async IPC + virtual scroll),
+    // so poll and toggle if needed rather than trusting the initial render.
+    const hiddenVisibleAtStart = await fileExistsInFocusedPane(tauriPage, '.hidden-file')
+    if (!hiddenVisibleAtStart) {
+      await toggleHidden()
+      await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 5000)
+    }
 
-    await pollUntil(
-      tauriPage,
-      async () => (await fileExistsInFocusedPane(tauriPage, '.hidden-file')) !== initiallyVisible,
-      3000,
-    )
+    // Now hidden files are visible — toggle them OFF
+    await toggleHidden()
+    await pollUntil(tauriPage, async () => !(await fileExistsInFocusedPane(tauriPage, '.hidden-file')), 5000)
+    expect(await fileExistsInFocusedPane(tauriPage, '.hidden-file')).toBe(false)
 
-    const afterToggleVisible = await fileExistsInFocusedPane(tauriPage, '.hidden-file')
-    expect(afterToggleVisible).not.toBe(initiallyVisible)
-
-    // Toggle again to restore original state
-    await executeViaCommandPalette(tauriPage, 'Toggle hidden')
-
-    await pollUntil(
-      tauriPage,
-      async () => (await fileExistsInFocusedPane(tauriPage, '.hidden-file')) === initiallyVisible,
-      3000,
-    )
-
-    expect(await fileExistsInFocusedPane(tauriPage, '.hidden-file')).toBe(initiallyVisible)
+    // Toggle back ON — hidden file should reappear
+    await toggleHidden()
+    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 5000)
+    expect(await fileExistsInFocusedPane(tauriPage, '.hidden-file')).toBe(true)
   })
 })
 

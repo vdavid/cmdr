@@ -128,7 +128,13 @@ async function shareExistsInPane(tauriPage: Parameters<typeof pollUntil>[0], sha
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
-test.describe('SMB host discovery', () => {
+// macOS: SMB mounting requires OS-level permission dialogs (mkdir /Volumes/*)
+// that can't be approved in headless E2E. Linux uses GVFS mounts which work
+// without elevated permissions, so all SMB functionality is tested there.
+// eslint-disable-next-line @typescript-eslint/unbound-method -- conditional skip
+const describeSmb = process.platform === 'darwin' ? test.describe.skip : test.describe
+
+describeSmb('SMB host discovery', () => {
   test('virtual hosts appear in Network view', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
@@ -163,7 +169,7 @@ test.describe('SMB host discovery', () => {
   })
 })
 
-test.describe('SMB share browsing', () => {
+describeSmb('SMB share browsing', () => {
   test('opening guest host shows share list with public share', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
@@ -184,7 +190,7 @@ test.describe('SMB share browsing', () => {
   })
 })
 
-test.describe('SMB mounting and file browsing', () => {
+describeSmb('SMB mounting and file browsing', () => {
   test('mounting guest share navigates to mounted path', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
@@ -231,7 +237,7 @@ test.describe('SMB mounting and file browsing', () => {
   })
 })
 
-test.describe('SMB cross-storage copy', () => {
+describeSmb('SMB cross-storage copy', () => {
   test('copies file from local to mounted SMB share', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
@@ -310,7 +316,7 @@ test.describe('SMB cross-storage copy', () => {
 // These tests verify the auth host's share discovery and the share listing
 // via IPC with credentials (the backend path used by the login form).
 
-test.describe('SMB authentication', () => {
+describeSmb('SMB authentication', () => {
   test('auth host shows share count after discovery', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 

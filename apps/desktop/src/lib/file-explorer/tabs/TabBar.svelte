@@ -167,7 +167,7 @@
         border: none;
         border-radius: var(--radius-sm) var(--radius-sm) 0 0;
         background-color: transparent;
-        color: var(--color-text-tertiary);
+        color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
         font-family: var(--font-system);
         cursor: default;

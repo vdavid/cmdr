@@ -105,8 +105,8 @@
 
   /* === Size tier colors (depth progression: bigger = deeper blue) === */
   --color-size-bytes: color-mix(in srgb, var(--color-text-secondary) 85%, #88aacc);
-  --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 60%, #88aacc);
-  --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 60%, #5599dd);
+  --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 72%, #88aacc);
+  --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 70%, #5599dd);
   --color-size-gb: color-mix(in srgb, var(--color-text-secondary) 60%, #2288ee);
   --color-size-tb: color-mix(in srgb, var(--color-text-secondary) 60%, #0066ff);
 
@@ -183,7 +183,7 @@
 
     /* === Text === */
     --color-text-primary: #e8e8e8;
-    --color-text-secondary: #aaaaaa;
+    --color-text-secondary: #b0b0b0;
     --color-text-tertiary: #a0a0a0;
 
     /* === Interactive States (fallbacks — see light-mode comment above) === */

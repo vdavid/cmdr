@@ -69,7 +69,10 @@ export function createSymlinkFixture(fixtureRoot: string): void {
   // left/
   writeFile(fixtureRoot, 'left/link-target.txt', 'link-target-content')
   // Create symlink: left/my-link → link-target.txt (relative target)
+  // Defensive remove: on macOS, the app's file watcher can race with fixture
+  // cleanup and recreate the path between clearFixtureDirs and symlinkSync.
   const symlinkPath = path.join(fixtureRoot, 'left', 'my-link')
+  fs.rmSync(symlinkPath, { force: true })
   fs.symlinkSync('link-target.txt', symlinkPath)
 
   // right/
