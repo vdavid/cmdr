@@ -156,10 +156,12 @@ if $VNC_MODE; then
                 > /dev/null
 
             # Install dependencies if needed (node_modules is a Docker volume)
-            if [ ! -f "/app/node_modules/.linux-installed" ]; then
+            # Compare lockfile hash to detect changes since last install
+            LOCK_HASH=$(md5sum /app/pnpm-lock.yaml | cut -d' ' -f1)
+            if [ ! -f "/app/node_modules/.linux-installed" ] || [ "$(cat /app/node_modules/.linux-installed)" != "$LOCK_HASH" ]; then
                 echo "Installing Linux node_modules..."
                 pnpm install --frozen-lockfile
-                touch /app/node_modules/.linux-installed
+                echo "$LOCK_HASH" > /app/node_modules/.linux-installed
             fi
 
             echo "Starting Cmdr in dev mode (Vite HMR + Tauri)..."
@@ -218,11 +220,12 @@ docker run --rm \
         fi
 
         # Install dependencies if needed (node_modules is a Docker volume)
-        # Check root node_modules marker since that is where pnpm writes the marker
-        if [ ! -f "/app/node_modules/.linux-installed" ]; then
+        # Compare lockfile hash to detect changes since last install
+        LOCK_HASH=$(md5sum /app/pnpm-lock.yaml | cut -d' ' -f1)
+        if [ ! -f "/app/node_modules/.linux-installed" ] || [ "$(cat /app/node_modules/.linux-installed)" != "$LOCK_HASH" ]; then
             echo "Installing Linux node_modules..."
             pnpm install --frozen-lockfile
-            touch /app/node_modules/.linux-installed
+            echo "$LOCK_HASH" > /app/node_modules/.linux-installed
         fi
 
         echo "Building Tauri app for target: $LINUX_TARGET"
@@ -320,11 +323,12 @@ else
             set -e
 
             # Install dependencies if needed (node_modules is a Docker volume)
-            # Check root node_modules marker since that is where pnpm writes the marker
-            if [ ! -f "/app/node_modules/.linux-installed" ]; then
+            # Compare lockfile hash to detect changes since last install
+            LOCK_HASH=$(md5sum /app/pnpm-lock.yaml | cut -d' ' -f1)
+            if [ ! -f "/app/node_modules/.linux-installed" ] || [ "$(cat /app/node_modules/.linux-installed)" != "$LOCK_HASH" ]; then
                 echo "Installing Linux node_modules..."
                 pnpm install --frozen-lockfile
-                touch /app/node_modules/.linux-installed
+                echo "$LOCK_HASH" > /app/node_modules/.linux-installed
             fi
 
             # Playwright browsers live in /root/.cache (ephemeral), not in the
