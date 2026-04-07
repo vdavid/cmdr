@@ -77,15 +77,15 @@ async function runAxeAudit(
 }> {
   await injectAxe(tauriPage)
 
-  // Exclude disabled elements from color-contrast checks — WCAG exempts them
-  const axeConfig = JSON.stringify({
+  // axe.run(context, options) — context controls WHAT to scan, options controls HOW.
+  // Exclude disabled elements from scanning — WCAG exempts inactive UI components from contrast.
+  const axeContext = scope
+    ? JSON.stringify({ include: [[scope]], exclude: [['[disabled]'], [':disabled']] })
+    : JSON.stringify({ exclude: [['[disabled]'], [':disabled']] })
+  const axeOptions = JSON.stringify({
     rules: { 'color-contrast': { enabled: true } },
-    checks: [{ id: 'color-contrast', options: { contrastRatio: { normal: { expected: 4.5 } } } }],
-    exclude: [['[disabled]'], [':disabled']],
   })
-  const axeCall = scope
-    ? `axe.run(document.querySelector(${JSON.stringify(scope)}), ${axeConfig})`
-    : `axe.run(${axeConfig})`
+  const axeCall = `axe.run(${axeContext}, ${axeOptions})`
   const results = await tauriPage.evaluate<AxeResults>(axeCall)
 
   const critical = results.violations.filter((v) => v.impact === 'critical')
@@ -147,16 +147,20 @@ async function openSearchDialog(tauriPage: PageLike): Promise<void> {
 /** Switch the app theme via Tauri's setTheme API and verify it applied. */
 async function setTheme(tauriPage: PageLike, mode: 'dark' | 'light'): Promise<void> {
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:app|set_app_theme', { theme: '${mode}' })`)
-  // Verify the theme actually applied by checking a CSS variable value.
+  // Verify the theme actually applied by checking CSS variable values.
   // WKWebView on macOS can be slow to update prefers-color-scheme after set_app_theme.
+  // Check both background AND text variables to ensure the full theme propagated,
+  // not just a partial switch (which causes false-positive axe contrast failures).
   const expectedBg = mode === 'light' ? '#ffffff' : '#1e1e1e'
+  const expectedText = mode === 'light' ? '#666666' : '#b0b0b0'
   await pollUntil(
     tauriPage,
     async () => {
-      const bg = await tauriPage.evaluate<string>(
-        `getComputedStyle(document.documentElement).getPropertyValue('--color-bg-primary').trim()`,
+      const [bg, text] = await tauriPage.evaluate<[string, string]>(
+        `[getComputedStyle(document.documentElement).getPropertyValue('--color-bg-primary').trim(),
+          getComputedStyle(document.documentElement).getPropertyValue('--color-text-secondary').trim()]`,
       )
-      return bg === expectedBg
+      return bg === expectedBg && text === expectedText
     },
     3000,
   )
