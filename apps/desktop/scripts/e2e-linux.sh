@@ -278,7 +278,7 @@ start_smb_containers
 # CMDR_MCP_ENABLED: release builds disable MCP by default — tests need it
 # --privileged: needed for mount -t cifs inside the container (SYS_ADMIN alone is
 # blocked by Docker's default seccomp profile which denies the mount syscall)
-SMB_ENV_ARGS="-e SMB_E2E_GUEST_HOST=smb-guest -e SMB_E2E_GUEST_PORT=445 -e SMB_E2E_AUTH_HOST=smb-auth -e SMB_E2E_AUTH_PORT=445 -e CMDR_MCP_ENABLED=true -e RUST_LOG=cmdr_lib::mcp=info"
+SMB_ENV_ARGS="-e SMB_E2E_GUEST_HOST=smb-guest -e SMB_E2E_GUEST_PORT=445 -e SMB_E2E_AUTH_HOST=smb-auth -e SMB_E2E_AUTH_PORT=445 -e CMDR_MCP_ENABLED=true"
 SMB_DOCKER_ARGS="--privileged"
 
 if $INTERACTIVE; then
@@ -335,7 +335,7 @@ else
 
             # Create fixtures via the shared helper
             export CMDR_E2E_START_PATH
-            CMDR_E2E_START_PATH=$(npx tsx -e "import { createFixtures } from \"./test/e2e-shared/fixtures.js\"; console.log(createFixtures())")
+            CMDR_E2E_START_PATH=$(npx tsx -e "import { createFixtures } from \"./test/e2e-shared/fixtures.js\"; console.log(createFixtures())" | tail -1)
             echo "Fixtures at: $CMDR_E2E_START_PATH"
 
             # Remove stale socket from a previous run

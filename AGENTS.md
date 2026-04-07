@@ -111,7 +111,8 @@ Always use the checker script for compilation, linting, formatting, and tests. I
 - **Logging**: Frontend and backend logs appear together in terminal and in the log dir (dev: `<CMDR_DATA_DIR>/logs/`,
   prod: `~/Library/Logs/com.veszelovszki.cmdr/`). **Read [docs/tooling/logging.md](docs/tooling/logging.md) before using
   `RUST_LOG`** — it has copy-paste recipes for every subsystem. Key gotcha: the Rust library target is `cmdr_lib`, not
-  `cmdr`. Use `RUST_LOG=cmdr_lib::module=debug`.
+  `cmdr`. Use `RUST_LOG=cmdr_lib::module=debug`. Note: `cmdr_lib` (lib) and `Cmdr` (bin) are both in the `cmdr` Cargo
+  package, so `Compiling cmdr` in build output covers BOTH targets. Cargo won't show `Compiling cmdr_lib` separately.
 - **Crash reports**: When the app crashes, it writes a crash file to the data dir (`crash-report.json` alongside
   `settings.json`). On next launch, the app detects this file and offers to send a crash report. See
   `src-tauri/src/crash_reporter/CLAUDE.md` for architecture details.

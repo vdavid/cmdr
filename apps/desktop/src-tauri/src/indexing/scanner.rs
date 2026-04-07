@@ -10,6 +10,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::sync::OnceLock;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Instant;
 
@@ -406,6 +407,10 @@ fn run_scan(
 
     // Flush final batch
     flush_batch(&mut batch, writer)?;
+    log::debug!(
+        "Scanner: walk complete — {total_entries} entries, {total_dirs} dirs in {}ms",
+        start.elapsed().as_millis()
+    );
 
     Ok(ScanSummary {
         total_entries,
@@ -447,8 +452,48 @@ fn build_walker(root: &Path, num_threads: usize, is_volume_root: bool) -> WalkDi
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
+/// Returns the E2E allowlist path from `CMDR_E2E_START_PATH`, if set.
+///
+/// When running E2E tests, the fixture directory may be under an excluded prefix
+/// (for example, `/tmp/cmdr-e2e-*` on Linux where `/tmp/` is excluded). This allowlist
+/// ensures the scanner, reconciler, verifier, and event loop all include the fixture path.
+fn e2e_allowlist_path() -> Option<&'static str> {
+    static E2E_PATH: OnceLock<Option<String>> = OnceLock::new();
+    E2E_PATH
+        .get_or_init(|| {
+            let raw = std::env::var("CMDR_E2E_START_PATH").ok()?;
+            // Canonicalize to resolve symlinks (macOS: /tmp → /private/tmp).
+            // The process_read_dir callback sees raw filesystem paths BEFORE
+            // firmlink normalization, so the E2E path must match the canonical
+            // form. Falls back to raw if canonicalize fails (path not yet created).
+            let path = std::fs::canonicalize(&raw)
+                .ok()
+                .and_then(|p| p.to_str().map(String::from))
+                .unwrap_or_else(|| raw.clone());
+            log::debug!("E2E scan restriction: only indexing under {path}");
+            Some(path)
+        })
+        .as_deref()
+}
+
 /// Check if a path should be excluded from scanning.
 pub(super) fn should_exclude(path_str: &str) -> bool {
+    // E2E mode: restrict scanning to only the fixture path and its ancestors.
+    // Without this, the scanner traverses the entire filesystem from `/` which
+    // is too slow in Docker containers (Linux E2E tests time out).
+    if let Some(e2e_path) = e2e_allowlist_path() {
+        // Allow the fixture path and its children
+        if path_str.starts_with(e2e_path) {
+            return false;
+        }
+        // Allow ancestors of the fixture path (so the scanner descends into them)
+        if e2e_path.starts_with(path_str) {
+            return false;
+        }
+        // Exclude everything else — we only care about the fixture subtree
+        return true;
+    }
+
     // Check explicit exclusion prefixes
     for prefix in EXCLUDED_PREFIXES {
         if path_str.starts_with(prefix) {
@@ -634,6 +679,11 @@ mod tests {
         assert!(!should_exclude("/etc/config"));
         assert!(!should_exclude("/var/lib"));
     }
+
+    // E2E scan restriction is tested end-to-end by the indexing E2E tests
+    // (indexing.spec.ts) which verify that get_dir_stats returns data for
+    // fixture paths under /tmp on Linux Docker. A unit test here would require
+    // mutating the env (unsafe set_var) and nextest (OnceLock is per-process).
 
     #[test]
     fn compute_parent_path_cases() {

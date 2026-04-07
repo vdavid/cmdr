@@ -314,9 +314,17 @@ impl IndexManager {
         let (event_tx, event_rx) = tokio::sync::mpsc::channel(WATCHER_CHANNEL_CAPACITY);
         let scan_start_event_id = watcher::current_event_id();
 
+        // In E2E mode, scope the watcher to the fixture directory instead of `/`.
+        // On Linux, inotify's RecursiveMode::Recursive adds a watch per subdirectory,
+        // so watching `/` blocks for minutes on a container with thousands of dirs.
+        let watcher_root = std::env::var("CMDR_E2E_START_PATH")
+            .ok()
+            .map(PathBuf::from)
+            .unwrap_or_else(|| self.volume_root.clone());
+
         // watcher_overflow is None if the watcher failed to start (non-fatal).
         let watcher_overflow: Option<Arc<AtomicBool>>;
-        match DriveWatcher::start(&self.volume_root, 0, event_tx) {
+        match DriveWatcher::start(&watcher_root, 0, event_tx) {
             Ok(watcher) => {
                 watcher_overflow = Some(watcher.overflow_flag());
                 self.drive_watcher = Some(watcher);
