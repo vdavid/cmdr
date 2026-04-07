@@ -67,8 +67,11 @@ read-only volume. Renaming isn't possible here."
 - Byte limits (255 for name, 1024 for path)
 - Extension change vs setting
 
-**Backend (authoritative)**: `validation.rs` + `check_rename_validity` Tauri command. Uses inode comparison to detect
-case-only renames (same dev+ino on case-insensitive APFS).
+**Backend (authoritative)**: `validation.rs` + `check_rename_validity` Tauri command. Accepts an optional `volumeId`:
+
+- Local FS (`volumeId` is `None` or `"root"`): uses `symlink_metadata` + inode comparison for case-only rename detection
+- Non-local volumes (MTP, etc.): uses `Volume::get_metadata()` for conflict detection, `is_case_only_rename` is always
+  `false` (MTP is case-sensitive)
 
 Both use platform-dependent logic with TODOs for future OSes.
 
@@ -120,9 +123,10 @@ trimmed value.
 - **App-level shortcut suppression**: While rename active, Cmd+C/A/Z/X/V work as text editing shortcuts (not app
   commands). Implemented by setting flag in keyboard handler (same mechanism as dialogs). Other shortcuts (Cmd+O, arrow
   keys, etc.) are suppressed.
-- **MTP volume ID threading**: `rename-operations.ts` passes `volumeId` through to `renameFile` and
-  `checkRenamePermission`. Permission checks are skipped for non-root volumes (MTP doesn't support Unix `access()`
-  checks).
+- **MTP volume ID threading**: `rename-operations.ts` passes `volumeId` through to `renameFile`, `checkRenameValidity`,
+  and `checkRenamePermission`. Validity checks (conflict detection) work for all volumes via the Volume trait.
+  Permission checks are still skipped for MTP volumes (they use Unix `access()` which doesn't work on MTP virtual
+  paths).
 - **Refresh timing**: File watcher event arrives asynchronously. `moveCursorToNewFolder()` pattern: subscribe to
   `directory-diff`, wait 50ms after event for listing cache update, then query `findFileIndex()`. Cleanup listener after
   3s timeout.

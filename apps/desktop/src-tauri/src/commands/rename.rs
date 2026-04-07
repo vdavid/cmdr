@@ -73,17 +73,23 @@ pub struct ConflictFileInfo {
 
 /// Validates a new filename and checks for conflicts in the same directory.
 /// Uses inode comparison to detect case-only renames (valid on case-insensitive APFS).
+/// When `volume_id` is provided and not `"root"`, uses the Volume trait for conflict detection
+/// (needed for MTP and other non-local volumes).
 #[tauri::command]
 pub async fn check_rename_validity(
     dir: String,
     old_name: String,
     new_name: String,
+    volume_id: Option<String>,
 ) -> Result<RenameValidityResult, IpcError> {
     let expanded_dir = expand_tilde(&dir);
+    let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
 
     tokio::time::timeout(
         Duration::from_secs(2),
-        tokio::task::spawn_blocking(move || check_rename_validity_sync(&expanded_dir, &old_name, &new_name)),
+        tokio::task::spawn_blocking(move || {
+            check_rename_validity_sync(&expanded_dir, &old_name, &new_name, &volume_id_str)
+        }),
     )
     .await
     .map_err(|_| IpcError::timeout())?
@@ -222,7 +228,12 @@ fn check_macos_flags(path: &Path) -> Result<(), String> {
 }
 
 /// Synchronous validity check implementation.
-fn check_rename_validity_sync(dir: &str, old_name: &str, new_name: &str) -> Result<RenameValidityResult, String> {
+fn check_rename_validity_sync(
+    dir: &str,
+    old_name: &str,
+    new_name: &str,
+    volume_id: &str,
+) -> Result<RenameValidityResult, String> {
     use crate::file_system::validation::{validate_filename, validate_path_length};
 
     let trimmed = new_name.trim();
@@ -252,15 +263,29 @@ fn check_rename_validity_sync(dir: &str, old_name: &str, new_name: &str) -> Resu
 
     // Check for conflict: does a sibling with this name already exist?
     let old_path = PathBuf::from(dir).join(old_name);
-    let conflict_info = check_sibling_conflict(&old_path, &new_path);
 
-    Ok(RenameValidityResult {
-        valid: true,
-        error: None,
-        has_conflict: conflict_info.0,
-        is_case_only_rename: conflict_info.1,
-        conflict: conflict_info.2,
-    })
+    if volume_id != "root" {
+        // Non-local volume: use Volume trait for conflict detection
+        let conflict_info = check_sibling_conflict_via_volume(volume_id, &new_path);
+        Ok(RenameValidityResult {
+            valid: true,
+            error: None,
+            has_conflict: conflict_info.0,
+            // MTP is case-sensitive, no case-only rename ambiguity
+            is_case_only_rename: false,
+            conflict: conflict_info.1,
+        })
+    } else {
+        // Local filesystem: use symlink_metadata with inode comparison
+        let conflict_info = check_sibling_conflict(&old_path, &new_path);
+        Ok(RenameValidityResult {
+            valid: true,
+            error: None,
+            has_conflict: conflict_info.0,
+            is_case_only_rename: conflict_info.1,
+            conflict: conflict_info.2,
+        })
+    }
 }
 
 /// Checks if a file with `new_path` exists and whether it's the same inode as `old_path`
@@ -325,6 +350,28 @@ fn check_sibling_conflict(_old_path: &Path, new_path: &Path) -> (bool, bool, Opt
     (true, false, Some(conflict))
 }
 
+/// Checks if a file with `new_path` exists on a non-local volume using the Volume trait's `get_metadata`.
+fn check_sibling_conflict_via_volume(volume_id: &str, new_path: &Path) -> (bool, Option<ConflictFileInfo>) {
+    let volume = match crate::file_system::get_volume_manager().get(volume_id) {
+        Some(v) => v,
+        None => return (false, None),
+    };
+
+    let entry = match volume.get_metadata(new_path) {
+        Ok(e) => e,
+        Err(_) => return (false, None), // No conflict — file doesn't exist
+    };
+
+    let conflict = ConflictFileInfo {
+        name: entry.name,
+        size: entry.size.unwrap_or(0),
+        modified: entry.modified_at.map(|t| t as i64),
+        is_directory: entry.is_directory,
+    };
+
+    (true, Some(conflict))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -371,7 +418,7 @@ mod tests {
         let tmp = create_test_dir("rename_valid_ok");
         let dir = tmp.to_string_lossy().to_string();
         fs::write(tmp.join("old.txt"), "content").unwrap();
-        let result = check_rename_validity(dir, "old.txt".to_string(), "new.txt".to_string()).await;
+        let result = check_rename_validity(dir, "old.txt".to_string(), "new.txt".to_string(), None).await;
         assert!(result.is_ok());
         let check = result.unwrap();
         assert!(check.valid);
@@ -385,7 +432,7 @@ mod tests {
     async fn test_check_rename_validity_empty_name() {
         let tmp = create_test_dir("rename_valid_empty");
         let dir = tmp.to_string_lossy().to_string();
-        let result = check_rename_validity(dir, "old.txt".to_string(), "   ".to_string()).await;
+        let result = check_rename_validity(dir, "old.txt".to_string(), "   ".to_string(), None).await;
         assert!(result.is_ok());
         let check = result.unwrap();
         assert!(!check.valid);
@@ -397,7 +444,7 @@ mod tests {
     async fn test_check_rename_validity_slash_in_name() {
         let tmp = create_test_dir("rename_valid_slash");
         let dir = tmp.to_string_lossy().to_string();
-        let result = check_rename_validity(dir, "old.txt".to_string(), "foo/bar".to_string()).await;
+        let result = check_rename_validity(dir, "old.txt".to_string(), "foo/bar".to_string(), None).await;
         assert!(result.is_ok());
         let check = result.unwrap();
         assert!(!check.valid);
@@ -410,7 +457,7 @@ mod tests {
         let dir = tmp.to_string_lossy().to_string();
         fs::write(tmp.join("old.txt"), "old content").unwrap();
         fs::write(tmp.join("existing.txt"), "existing content").unwrap();
-        let result = check_rename_validity(dir, "old.txt".to_string(), "existing.txt".to_string()).await;
+        let result = check_rename_validity(dir, "old.txt".to_string(), "existing.txt".to_string(), None).await;
         assert!(result.is_ok());
         let check = result.unwrap();
         assert!(check.valid);
@@ -430,7 +477,7 @@ mod tests {
         let dir = tmp.to_string_lossy().to_string();
         fs::write(tmp.join("MyFile.txt"), "content").unwrap();
         // On case-insensitive APFS, "myfile.txt" resolves to the same inode as "MyFile.txt"
-        let result = check_rename_validity(dir, "MyFile.txt".to_string(), "myfile.txt".to_string()).await;
+        let result = check_rename_validity(dir, "MyFile.txt".to_string(), "myfile.txt".to_string(), None).await;
         assert!(result.is_ok());
         let check = result.unwrap();
         assert!(check.valid);

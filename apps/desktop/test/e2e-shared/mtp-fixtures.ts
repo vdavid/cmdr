@@ -13,7 +13,7 @@ import path from 'path'
 export const MTP_FIXTURE_ROOT = '/tmp/cmdr-mtp-e2e-fixtures'
 
 const fixtureLayout = {
-  directories: ['internal/Documents', 'internal/DCIM', 'internal/Music', 'readonly/photos'],
+  directories: ['internal/Documents', 'internal/DCIM', 'internal/DCIM/Burst', 'internal/Music', 'readonly/photos'],
   files: [
     {
       rel: 'internal/Documents/report.txt',
@@ -26,6 +26,10 @@ const fixtureLayout = {
     {
       rel: 'internal/DCIM/photo-001.jpg',
       content: Buffer.from([0xff, 0xd8, 0xff, 0xe0, ...Buffer.from('dummy-jpeg-bytes')]),
+    },
+    {
+      rel: 'internal/DCIM/Burst/burst-001.jpg',
+      content: Buffer.from([0xff, 0xd8, 0xff, 0xe0, ...Buffer.from('dummy-burst-bytes')]),
     },
     {
       rel: 'readonly/photos/sunset.jpg',

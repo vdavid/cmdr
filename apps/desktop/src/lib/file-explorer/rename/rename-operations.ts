@@ -62,27 +62,22 @@ export async function executeRenameSave(
     }
   }
 
-  // Skip permission and validity checks for MTP volumes — they use symlink_metadata
-  // which doesn't work on MTP virtual paths.
-  const isMtp = volumeId?.startsWith('mtp-') ?? false
+  // Backend validity check (authoritative, checks conflicts via inode comparison on local FS,
+  // or Volume trait's get_metadata on MTP and other non-local volumes)
+  let validity: RenameValidityResult
+  try {
+    validity = await checkRenameValidity(target.parentPath, target.originalName, trimmedName, volumeId)
+  } catch (e) {
+    return { type: 'error', message: getIpcErrorMessage(e) }
+  }
 
-  if (!isMtp) {
-    // Backend validity check (authoritative, checks conflicts via inode comparison)
-    let validity: RenameValidityResult
-    try {
-      validity = await checkRenameValidity(target.parentPath, target.originalName, trimmedName)
-    } catch (e) {
-      return { type: 'error', message: getIpcErrorMessage(e) }
-    }
+  if (!validity.valid) {
+    return { type: 'error', message: validity.error?.message ?? 'Invalid filename' }
+  }
 
-    if (!validity.valid) {
-      return { type: 'error', message: validity.error?.message ?? 'Invalid filename' }
-    }
-
-    // Conflict detected (and not a case-only rename of the same file)
-    if (validity.hasConflict && !validity.isCaseOnlyRename) {
-      return { type: 'conflict', validity }
-    }
+  // Conflict detected (and not a case-only rename of the same file)
+  if (validity.hasConflict && !validity.isCaseOnlyRename) {
+    return { type: 'conflict', validity }
   }
 
   // Perform the rename

@@ -320,3 +320,14 @@ pub async fn scan_mtp_for_copy(
         total_bytes: result.total_bytes,
     })
 }
+
+/// Forces the virtual MTP device to rescan its backing directories, syncing
+/// its in-memory object tree with the actual filesystem. Call after recreating
+/// test fixtures to avoid sleeping for the file watcher.
+///
+/// Only available with `--features virtual-mtp`. Returns (added, removed) counts.
+#[cfg(feature = "virtual-mtp")]
+#[tauri::command]
+pub fn rescan_virtual_mtp() -> Result<(usize, usize), String> {
+    crate::mtp::virtual_device::rescan_virtual_device().ok_or_else(|| "Virtual MTP device not found".to_string())
+}

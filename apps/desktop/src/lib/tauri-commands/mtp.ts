@@ -492,7 +492,7 @@ export async function copyBetweenVolumes(
     sourcePaths,
     destVolumeId,
     destPath,
-    config: config ?? {},
+    config: config ?? null,
   })
 }
 
@@ -515,7 +515,7 @@ export async function moveBetweenVolumes(
     sourcePaths,
     destVolumeId,
     destPath,
-    config: config ?? {},
+    config: config ?? null,
   })
 }
 

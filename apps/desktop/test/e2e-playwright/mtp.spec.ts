@@ -34,7 +34,34 @@ import {
   pressKey,
   fileExistsInPane,
   MKDIR_DIALOG,
+  CTRL_OR_META,
 } from './helpers.js'
+
+import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
+type PageLike = TauriPage | BrowserPageAdapter
+
+/**
+ * Polls until a function returns a non-empty string, then returns that string.
+ * Useful for waiting for toast messages or dynamic text to appear.
+ */
+async function pollUntilValue(
+  _page: PageLike,
+  getValue: () => Promise<string>,
+  timeout: number,
+  interval = 200,
+): Promise<string> {
+  const deadline = Date.now() + timeout
+  while (Date.now() < deadline) {
+    try {
+      const val = await getValue()
+      if (val.length > 0) return val
+    } catch {
+      // Element might not exist yet
+    }
+    await sleep(interval)
+  }
+  return ''
+}
 
 // Volume names (verified from manual testing against the virtual device)
 const INTERNAL_STORAGE = 'Virtual Pixel 9 - Internal Storage'
@@ -67,8 +94,12 @@ test.setTimeout(120_000)
 test.beforeEach(async ({ tauriPage }) => {
   recreateFixtures(getFixtureRoot()) // Local fixtures for cross-storage tests
   recreateMtpFixtures() // MTP backing dir
-  await sleep(2500) // Let the virtual device's file watcher settle after fixture recreation
   await initMcpClient(tauriPage) // Discover MCP port
+
+  // Force the virtual device to rescan its backing dirs, syncing its in-memory
+  // object tree with the recreated fixtures. This replaces the old 2.5s sleep
+  // that waited for the file watcher — rescan is synchronous and instant.
+  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('rescan_virtual_mtp')`)
 
   // Force both panes back to a local volume. Previous tests may have left a pane
   // on MTP, and ensureAppReady's mcp-nav-to-path events get rejected by
@@ -315,7 +346,7 @@ test.describe('MTP file operations', () => {
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Music', 'notes.txt'))).toBe(true)
   })
 
-  test('deletes file on MTP', async ({ tauriPage }) => {
+  test('deletes file on MTP with "Delete permanently" dialog', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
 
@@ -325,21 +356,115 @@ test.describe('MTP file operations', () => {
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'report.txt')
 
-    // Move cursor to report.txt and delete
-    await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
-    await mcpCall('delete', { autoConfirm: true })
+    // Move cursor to report.txt via keyboard (to test full keyboard flow)
+    await moveCursorToFile(tauriPage, 'report.txt')
 
-    // MTP listings don't auto-refresh after delete — wait for operation, then force refresh
+    // Press F8 to open delete dialog (not autoConfirm — we want to inspect the dialog)
+    await pressKey(tauriPage, 'F8')
+    await tauriPage.waitForSelector('[data-dialog-id="delete-confirmation"]', 10000)
+
+    // Verify the dialog shows "Delete permanently" (not "Move to trash") for MTP
+    const confirmLabel = await tauriPage.evaluate<string>(`(function() {
+            var dialog = document.querySelector('[data-dialog-id="delete-confirmation"]');
+            if (!dialog) return '';
+            var btn = dialog.querySelector('.btn-primary, .btn-danger');
+            return btn ? btn.textContent.trim() : '';
+        })()`)
+    expect(confirmLabel).toBe('Delete permanently')
+
+    // Verify the warning banner about trash not being supported
+    const hasWarning = await tauriPage.evaluate<boolean>(`(function() {
+            var dialog = document.querySelector('[data-dialog-id="delete-confirmation"]');
+            if (!dialog) return false;
+            var warning = dialog.querySelector('.warning-banner');
+            return warning ? warning.textContent.includes('trash') : false;
+        })()`)
+    expect(hasWarning).toBe(true)
+
+    // Confirm the delete
+    await tauriPage.evaluate(`(function() {
+            var dialog = document.querySelector('[data-dialog-id="delete-confirmation"]');
+            if (!dialog) return;
+            var btn = dialog.querySelector('.btn-danger');
+            if (btn) btn.click();
+        })()`)
+
+    // Wait for dialog to close
+    await pollUntil(
+      tauriPage,
+      async () => !(await tauriPage.isVisible('[data-dialog-id="delete-confirmation"]')),
+      10000,
+    )
+
+    // Wait for operation, then force refresh
     await sleep(2000)
     await mcpCall('refresh', {})
 
     // Wait for report.txt to disappear from the UI listing
     await pollUntil(tauriPage, async () => !(await fileExistsInPane(tauriPage, 'report.txt', 0)), 15000)
 
-    // TODO: Verify backing dir deletion once Trash-on-MTP bug is fixed.
-    // Currently, the delete dialog defaults to Trash mode, but MTP paths can't be trashed
-    // (no local filesystem path), so the backing dir file may persist even though the UI
-    // removes it. See: Trash error: source_not_found in logs.
+    // Verify on backing dir
+    expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(false)
+  })
+
+  test('deletes multiple selected files on MTP', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
+
+    // Navigate left pane to MTP Documents (has report.txt and notes.txt)
+    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpAwaitItem('left', 'Documents')
+    await mcpNavToPath('left', `${mtpPath}/Documents`)
+    await mcpAwaitItem('left', 'report.txt')
+
+    // Select both files: move to report.txt, Space to select, move to notes.txt, Space to select
+    await moveCursorToFile(tauriPage, 'report.txt')
+    await pressKey(tauriPage, 'Space')
+    await sleep(200)
+    await moveCursorToFile(tauriPage, 'notes.txt')
+    await pressKey(tauriPage, 'Space')
+    await sleep(200)
+
+    // Delete via MCP with autoConfirm
+    await mcpCall('delete', { autoConfirm: true })
+
+    // Wait for operation, then force refresh
+    await sleep(2000)
+    await mcpCall('refresh', {})
+
+    // Wait for both files to disappear
+    await pollUntil(tauriPage, async () => !(await fileExistsInPane(tauriPage, 'report.txt', 0)), 15000)
+    await pollUntil(tauriPage, async () => !(await fileExistsInPane(tauriPage, 'notes.txt', 0)), 15000)
+
+    // Verify on backing dir
+    expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(false)
+    expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt'))).toBe(false)
+  })
+
+  test('deletes folder with nested files recursively on MTP', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+
+    // Navigate left pane to MTP Internal Storage root (has DCIM folder with nested files)
+    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpAwaitItem('left', 'DCIM')
+
+    // Verify DCIM has nested content before delete
+    expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'DCIM', 'photo-001.jpg'))).toBe(true)
+    expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'DCIM', 'Burst', 'burst-001.jpg'))).toBe(true)
+
+    // Move cursor to DCIM and delete
+    await mcpCall('move_cursor', { pane: 'left', filename: 'DCIM' })
+    await mcpCall('delete', { autoConfirm: true })
+
+    // Wait for operation, then force refresh
+    await sleep(3000)
+    await mcpCall('refresh', {})
+
+    // Wait for DCIM to disappear from listing
+    await pollUntil(tauriPage, async () => !(await fileExistsInPane(tauriPage, 'DCIM', 0)), 15000)
+
+    // Verify entire tree gone from backing dir
+    expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'DCIM'))).toBe(false)
   })
 
   test('creates folder on MTP', async ({ tauriPage }) => {
@@ -418,6 +543,237 @@ test.describe('MTP rename', () => {
     // Verify on backing dir
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'renamed-report.txt'))).toBe(true)
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(false)
+  })
+
+  test('rename to existing name is rejected on MTP', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
+
+    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpAwaitItem('left', 'Documents')
+    await mcpNavToPath('left', `${mtpPath}/Documents`)
+    await mcpAwaitItem('left', 'report.txt')
+
+    await moveCursorToFile(tauriPage, 'report.txt')
+    await tauriPage.keyboard.press('F2')
+    await tauriPage.waitForSelector('.rename-input', 10000)
+
+    await tauriPage.evaluate(`(function() {
+            var input = document.querySelector('.rename-input');
+            if (!input) return;
+            input.focus();
+            var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+            if (desc && desc.set) desc.set.call(input, '');
+            else input.value = '';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        })()`)
+    await sleep(100)
+    await tauriPage.type('.rename-input', 'notes.txt')
+    await sleep(500)
+    await tauriPage.press('.rename-input', 'Enter')
+
+    // Conflict dialog should appear since notes.txt already exists
+    await tauriPage.waitForSelector('[data-dialog-id="rename-conflict"]', 10000)
+    const dialogText = await tauriPage.evaluate(
+      `document.querySelector('[data-dialog-id="rename-conflict"]')?.textContent ?? ''`,
+    )
+    expect(dialogText).toContain('already exists')
+
+    // Cancel the dialog — both files should remain unchanged
+    await tauriPage.keyboard.press('Escape')
+    await sleep(500)
+
+    expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(true)
+    expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt'))).toBe(true)
+  })
+})
+
+test.describe('MTP cross-storage move', () => {
+  test('moves file from MTP to local', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+    const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
+
+    // Navigate left pane to MTP Documents
+    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpAwaitItem('left', 'Documents')
+    await mcpNavToPath('left', `${mtpPath}/Documents`)
+    await mcpAwaitItem('left', 'report.txt')
+
+    // Right pane is on local right/ (from ensureAppReady)
+    // Move cursor to report.txt and move (F6)
+    await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
+    await mcpCall('move', { autoConfirm: true })
+
+    // Wait for file to appear in right pane (local)
+    await sleep(2000)
+    await mcpCall('refresh', {})
+    await mcpAwaitItem('right', 'report.txt', 30)
+
+    // Verify file arrived on local disk
+    expect(fs.existsSync(path.join(fixtureRoot, 'right', 'report.txt'))).toBe(true)
+
+    // Verify source removed from MTP backing dir
+    // MTP move = copy + delete, so source should be gone
+    await pollUntil(
+      tauriPage,
+      () => Promise.resolve(!fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))),
+      15000,
+    )
+  })
+
+  test('moves file from local to MTP', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+
+    // Left pane is on local left/ (has file-a.txt from fixtures)
+    // Navigate right pane to MTP Internal Storage root
+    await mcpSelectVolume('right', INTERNAL_STORAGE)
+    await mcpAwaitItem('right', 'Documents')
+
+    // Move cursor to file-a.txt in left pane and move
+    await mcpCall('move_cursor', { pane: 'left', filename: 'file-a.txt' })
+    await mcpCall('move', { autoConfirm: true })
+
+    // Wait for operation, then force refresh
+    await sleep(2000)
+    await mcpCall('refresh', {})
+
+    // Wait for file to appear in right pane (MTP root)
+    await mcpAwaitItem('right', 'file-a.txt', 30)
+
+    // Verify file arrived in MTP backing dir
+    expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'file-a.txt'))).toBe(true)
+
+    // Verify source removed from local disk
+    await pollUntil(
+      tauriPage,
+      () => Promise.resolve(!fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))),
+      15000,
+    )
+  })
+})
+
+test.describe('MTP clipboard rejection', () => {
+  test('Cmd+C on MTP file shows rejection toast', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+
+    // Navigate left pane to MTP Internal Storage
+    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpAwaitItem('left', 'Documents')
+
+    // Focus the left pane and move cursor to Documents
+    await mcpCall('move_cursor', { pane: 'left', filename: 'Documents' })
+    await sleep(300)
+
+    // Press Cmd+C (copy to clipboard)
+    await pressKey(tauriPage, `${CTRL_OR_META}+c`)
+    await sleep(500)
+
+    // Verify toast appears with MTP clipboard message
+    const toastText = await pollUntil(
+      tauriPage,
+      async () => {
+        const text = await tauriPage.evaluate<string>(`(function() {
+                var toasts = document.querySelectorAll('.toast-message');
+                for (var i = 0; i < toasts.length; i++) {
+                    if (toasts[i].textContent.includes('F5')) return toasts[i].textContent;
+                }
+                return '';
+            })()`)
+        return text.length > 0
+      },
+      5000,
+    )
+    expect(toastText).toBe(true)
+
+    // Verify exact message
+    const message = await tauriPage.evaluate<string>(`(function() {
+            var toasts = document.querySelectorAll('.toast-message');
+            for (var i = 0; i < toasts.length; i++) {
+                if (toasts[i].textContent.includes('F5')) return toasts[i].textContent;
+            }
+            return '';
+        })()`)
+    expect(message).toBe('Use F5 to copy files from MTP devices')
+  })
+
+  test('Cmd+X on MTP file shows rejection toast', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+
+    // Navigate left pane to MTP Internal Storage
+    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpAwaitItem('left', 'Documents')
+
+    // Focus and move cursor
+    await mcpCall('move_cursor', { pane: 'left', filename: 'Documents' })
+    await sleep(300)
+
+    // Press Cmd+X (cut to clipboard)
+    await pressKey(tauriPage, `${CTRL_OR_META}+x`)
+    await sleep(500)
+
+    // Verify toast with F6 message
+    const message = await pollUntilValue(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<string>(`(function() {
+            var toasts = document.querySelectorAll('.toast-message');
+            for (var i = 0; i < toasts.length; i++) {
+                if (toasts[i].textContent.includes('F6')) return toasts[i].textContent;
+            }
+            return '';
+        })()`),
+      5000,
+    )
+    expect(message).toBe('Use F6 to move files from MTP devices')
+  })
+
+  test('Cmd+V into MTP folder shows rejection toast', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+
+    // Switch right pane to MTP
+    await mcpSelectVolume('right', INTERNAL_STORAGE)
+    await mcpAwaitItem('right', 'Documents')
+
+    // Switch focus to right pane (paste targets the focused pane).
+    // Click on the right pane to ensure DOM focus matches app state.
+    await tauriPage.evaluate(`(function(){
+            var panes = document.querySelectorAll('.file-pane');
+            if (panes[1]) {
+                var entry = panes[1].querySelector('.file-entry');
+                if (entry) entry.click();
+            }
+        })()`)
+    await sleep(500)
+
+    // Verify right pane is focused (has MTP volume)
+    const rightFocused = await tauriPage.evaluate<boolean>(`(function(){
+            var pane = document.querySelectorAll('.file-pane')[1];
+            return pane ? pane.classList.contains('is-focused') : false;
+        })()`)
+    expect(rightFocused).toBe(true)
+
+    // Dispatch Cmd+V on document directly to trigger centralized shortcut dispatch.
+    await tauriPage.evaluate(`(function(){
+            var o = {key:'v', bubbles:true, cancelable:true, metaKey:true, ctrlKey:false, shiftKey:false, altKey:false};
+            document.dispatchEvent(new KeyboardEvent('keydown', o));
+        })()`)
+    await sleep(500)
+
+    // Verify toast with F5 message about copying TO MTP.
+    // Check for ANY toast first to diagnose what's happening.
+    const message = await pollUntilValue(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<string>(`(function() {
+            var toasts = document.querySelectorAll('.toast-message');
+            if (toasts.length > 0) return toasts[toasts.length - 1].textContent || 'empty';
+            return '';
+        })()`),
+      5000,
+    )
+    expect(message).toBe('Use F5 to copy files to MTP devices')
   })
 })
 

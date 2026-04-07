@@ -22,8 +22,13 @@ export function checkRenamePermission(path: string): Promise<void> {
   return invoke('check_rename_permission', { path })
 }
 
-export function checkRenameValidity(dir: string, oldName: string, newName: string): Promise<RenameValidityResult> {
-  return invoke<RenameValidityResult>('check_rename_validity', { dir, oldName, newName })
+export function checkRenameValidity(
+  dir: string,
+  oldName: string,
+  newName: string,
+  volumeId?: string,
+): Promise<RenameValidityResult> {
+  return invoke<RenameValidityResult>('check_rename_validity', { dir, oldName, newName, volumeId })
 }
 
 export function renameFile(from: string, to: string, force: boolean, volumeId?: string): Promise<void> {

@@ -90,3 +90,20 @@ pub fn setup_virtual_mtp_device() -> u64 {
 
     location_id
 }
+
+/// Serial number of the virtual device, used to look it up for rescan.
+pub const VIRTUAL_DEVICE_SERIAL: &str = "cmdr-e2e-virtual";
+
+/// Forces the virtual MTP device to rescan its backing directories, syncing
+/// its in-memory object tree with the actual filesystem state.
+///
+/// Call this after recreating test fixtures to avoid waiting for the file watcher.
+/// Returns the number of objects added and removed, or None if the device wasn't found.
+pub fn rescan_virtual_device() -> Option<(usize, usize)> {
+    let summary = mtp_rs::rescan_virtual_device(VIRTUAL_DEVICE_SERIAL)?;
+    info!(
+        "Virtual MTP device rescan: {} added, {} removed",
+        summary.added, summary.removed
+    );
+    Some((summary.added as usize, summary.removed as usize))
+}

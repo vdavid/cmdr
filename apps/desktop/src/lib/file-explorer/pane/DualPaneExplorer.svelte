@@ -1532,16 +1532,18 @@
     /** Pastes files from the system clipboard into the current directory. */
     export async function pasteFromClipboard(forceMove: boolean) {
         try {
+            // Check MTP before reading clipboard — MTP paste is always rejected,
+            // no point reading the system clipboard just to reject it.
+            const volumeId = getPaneVolumeId(focusedPane)
+            if (volumeId.startsWith('mtp-')) {
+                addToast('Use F5 to copy files to MTP devices')
+                return
+            }
+
             const result = await readClipboardFiles()
 
             if (result.paths.length === 0) {
                 addToast('No files on the clipboard. Copy files first with \u2318C.')
-                return
-            }
-
-            const volumeId = getPaneVolumeId(focusedPane)
-            if (volumeId.startsWith('mtp-')) {
-                addToast('Use F5 to copy files to MTP devices')
                 return
             }
 
