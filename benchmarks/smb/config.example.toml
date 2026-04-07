@@ -1,0 +1,21 @@
+# SMB benchmark configuration
+# Copy this file to config.toml and fill in your values.
+# config.toml is gitignored — never commit credentials.
+
+[[targets]]
+name = "qnap"
+host = "192.168.1.111"
+share = "naspi"
+username = "your-username"
+password = "your-password"
+# Where the share is mounted on macOS (for native comparison)
+native_mount = "/Volumes/naspi"
+
+[[targets]]
+name = "pi"
+host = "192.168.1.150"
+share = "PiHDD"
+guest = true
+native_mount = "/Volumes/PiHDD"
+# Override max chunk size in KB (default: 1024). Pi's Samba hangs on 1MB.
+max_chunk_kb = 64

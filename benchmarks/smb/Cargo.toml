@@ -1,0 +1,23 @@
+[package]
+name = "smb-benchmark"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "smb-benchmark"
+path = "src/main.rs"
+
+[dependencies]
+smb = "0.11.1"
+sspi = "=0.18.7"
+smb-rpc = "=0.11.1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+serde = { version = "1", features = ["derive"] }
+toml = "1"
+rand = "0.9"
+chrono = "0.4"
+futures-util = "0.3"
+binrw = "0.15"
+env_logger = "0.11"
+log = "0.4"

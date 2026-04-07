@@ -1,3 +1,4 @@
 [workspace]
 members = ["apps/desktop/src-tauri", "crates/fsevent-stream", "crates/index-query"]
+exclude = ["benchmarks/smb"]
 resolver = "2"
