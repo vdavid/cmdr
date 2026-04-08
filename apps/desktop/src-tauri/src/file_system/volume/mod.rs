@@ -269,6 +269,13 @@ pub trait Volume: Send + Sync {
         false
     }
 
+    /// Whether this volume's paths can be accessed via `std::fs` operations
+    /// (stat, read_dir, metadata, etc.). True for local filesystems and
+    /// OS-mounted network shares. False for protocol-only volumes like MTP.
+    fn supports_local_fs_access(&self) -> bool {
+        true
+    }
+
     // ========================================
     // Indexing: Optional, default None
     // ========================================

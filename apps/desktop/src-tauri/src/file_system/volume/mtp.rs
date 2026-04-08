@@ -234,6 +234,10 @@ impl Volume for MtpVolume {
         false
     }
 
+    fn supports_local_fs_access(&self) -> bool {
+        false
+    }
+
     fn create_directory(&self, path: &Path) -> Result<(), VolumeError> {
         let Some(parent) = path.parent() else {
             return Err(VolumeError::IoError("Cannot create root directory".into()));

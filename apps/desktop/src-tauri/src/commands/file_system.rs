@@ -81,9 +81,13 @@ pub async fn create_directory(
     parent_path: String,
     name: String,
 ) -> Result<String, IpcError> {
-    let (new_path, expanded_path) = create_directory_core(volume_id, &parent_path, &name).await?;
+    let (new_path, expanded_path) = create_directory_core(volume_id.clone(), &parent_path, &name).await?;
 
-    emit_synthetic_entry_diff(&app, &new_path, &PathBuf::from(&expanded_path));
+    // Synthetic diff only works for volumes backed by the local filesystem.
+    // Protocol-only volumes (MTP) handle UI updates through their own event systems.
+    if should_emit_synthetic_diff(volume_id.as_deref()) {
+        emit_synthetic_entry_diff(&app, &new_path, &PathBuf::from(&expanded_path));
+    }
     Ok(new_path.to_string_lossy().to_string())
 }
 
@@ -94,9 +98,11 @@ pub async fn create_file(
     parent_path: String,
     name: String,
 ) -> Result<String, IpcError> {
-    let (new_path, expanded_path) = create_file_core(volume_id, &parent_path, &name).await?;
+    let (new_path, expanded_path) = create_file_core(volume_id.clone(), &parent_path, &name).await?;
 
-    emit_synthetic_entry_diff(&app, &new_path, &PathBuf::from(&expanded_path));
+    if should_emit_synthetic_diff(volume_id.as_deref()) {
+        emit_synthetic_entry_diff(&app, &new_path, &PathBuf::from(&expanded_path));
+    }
     Ok(new_path.to_string_lossy().to_string())
 }
 
@@ -847,6 +853,18 @@ pub fn clear_self_drag_overlay() {
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
 pub fn clear_self_drag_overlay() {}
+
+/// Returns true if a synthetic entry diff should be emitted for this volume.
+/// Protocol-only volumes (like MTP) don't support `std::fs` access, so synthetic
+/// diffs would fail. These volumes handle UI updates through their own event systems.
+fn should_emit_synthetic_diff(volume_id: Option<&str>) -> bool {
+    match volume_id {
+        None => true, // No volume_id means local filesystem
+        Some(id) => get_volume_manager()
+            .get(id)
+            .map_or(true, |v| v.supports_local_fs_access()),
+    }
+}
 
 /// Emits a synthetic `directory-diff` event for a newly created entry (file or directory).
 ///
