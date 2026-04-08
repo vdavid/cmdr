@@ -33,6 +33,25 @@ impl VolumeManager {
         }
     }
 
+    /// Registers a volume only if no volume with this ID exists yet.
+    ///
+    /// Returns `true` if the volume was registered, `false` if a volume
+    /// with this ID already exists (the existing volume is kept).
+    pub fn register_if_absent(&self, id: &str, volume: Arc<dyn Volume>) -> bool {
+        if let Ok(mut volumes) = self.volumes.write() {
+            use std::collections::hash_map::Entry;
+            match volumes.entry(id.to_string()) {
+                Entry::Occupied(_) => false,
+                Entry::Vacant(e) => {
+                    e.insert(volume);
+                    true
+                }
+            }
+        } else {
+            false
+        }
+    }
+
     /// Unregisters a volume by ID.
     ///
     /// If this was the default volume, the default is cleared.
@@ -183,6 +202,29 @@ mod tests {
         assert_eq!(list.len(), 2);
         assert!(list.iter().any(|(id, name)| id == "vol1" && name == "Volume One"));
         assert!(list.iter().any(|(id, name)| id == "vol2" && name == "Volume Two"));
+    }
+
+    #[test]
+    fn test_register_if_absent_new_volume() {
+        let manager = VolumeManager::new();
+        let volume = Arc::new(InMemoryVolume::new("Test Volume"));
+
+        assert!(manager.register_if_absent("test", volume));
+        assert_eq!(manager.count(), 1);
+        assert_eq!(manager.get("test").unwrap().name(), "Test Volume");
+    }
+
+    #[test]
+    fn test_register_if_absent_existing_volume_keeps_original() {
+        let manager = VolumeManager::new();
+        let original = Arc::new(InMemoryVolume::new("Original"));
+        let replacement = Arc::new(InMemoryVolume::new("Replacement"));
+
+        manager.register("test", original);
+        assert!(!manager.register_if_absent("test", replacement));
+
+        // Original should be kept
+        assert_eq!(manager.get("test").unwrap().name(), "Original");
     }
 
     #[test]

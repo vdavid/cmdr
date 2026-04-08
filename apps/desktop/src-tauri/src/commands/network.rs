@@ -264,23 +264,100 @@ use crate::network::mount::{self, MountError, MountResult};
 /// provided, they are used for authentication. If the share is already mounted,
 /// returns the existing mount path without re-mounting.
 ///
+/// After a successful OS mount, also establishes a direct smb2 connection and
+/// registers the share as an `SmbVolume` in the `VolumeManager`. This means
+/// Cmdr's own file operations go through smb2 (fast), while Finder/Terminal
+/// use the OS mount (compatible). If smb2 connection fails, the volume falls
+/// through to a regular `LocalPosixVolume` (registered by the watcher).
+///
 /// # Arguments
 /// * `server` - Server hostname or IP address
 /// * `share` - Name of the share to mount
 /// * `username` - Optional username for authentication
 /// * `password` - Optional password for authentication
+/// * `port` - SMB port (default 445)
 /// * `timeout_ms` - Optional timeout in milliseconds (default: 20000)
 ///
 /// # Returns
 /// * `Ok(MountResult)` - Mount successful, with path to mount point
 /// * `Err(MountError)` - Mount failed with specific error type
 #[tauri::command]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Tauri command requires all parameters to be top-level"
+)]
 pub async fn mount_network_share(
     server: String,
     share: String,
     username: Option<String>,
     password: Option<String>,
+    port: Option<u16>,
     timeout_ms: Option<u64>,
 ) -> Result<MountResult, MountError> {
-    mount::mount_share(server, share, username, password, timeout_ms).await
+    let result = mount::mount_share(
+        server.clone(),
+        share.clone(),
+        username.clone(),
+        password.clone(),
+        timeout_ms,
+    )
+    .await?;
+
+    // Try to establish a direct smb2 connection and register as SmbVolume.
+    // If this fails, the FSEvents watcher will register a LocalPosixVolume
+    // as fallback (slower but still functional).
+    register_smb_volume(
+        &server,
+        &share,
+        &result.mount_path,
+        username.as_deref(),
+        password.as_deref(),
+        port.unwrap_or(445),
+    )
+    .await;
+
+    Ok(result)
+}
+
+/// Tries to establish a direct smb2 connection and register as `SmbVolume`.
+///
+/// Best-effort: logs a warning and returns quietly on failure. The FSEvents
+/// watcher will register a `LocalPosixVolume` as fallback.
+async fn register_smb_volume(
+    server: &str,
+    share: &str,
+    mount_path: &str,
+    username: Option<&str>,
+    password: Option<&str>,
+    port: u16,
+) {
+    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::smb::connect_smb_volume;
+    use std::sync::Arc;
+
+    log::debug!(
+        "Establishing smb2 connection for SmbVolume: {}:{}/{}",
+        server,
+        port,
+        share
+    );
+
+    match connect_smb_volume(share, mount_path, server, share, username, password, port).await {
+        Ok(volume) => {
+            let volume_id = crate::volumes::path_to_id(mount_path);
+            // Use register (overwrite) so SmbVolume always wins over any
+            // LocalPosixVolume the watcher may have registered in the race window.
+            get_volume_manager().register(&volume_id, Arc::new(volume));
+            log::info!("Registered SmbVolume for {} (id={})", mount_path, volume_id);
+        }
+        Err(e) => {
+            log::warn!(
+                "Failed to establish smb2 connection for {}/{}: {}. \
+                 Falling back to LocalPosixVolume via OS mount.",
+                server,
+                share,
+                e
+            );
+        }
+    }
 }

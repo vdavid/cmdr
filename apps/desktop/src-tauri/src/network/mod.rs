@@ -32,7 +32,7 @@ pub mod smb_client;
 #[cfg(target_os = "linux")]
 mod linux_distro;
 mod smb_cache;
-mod smb_connection;
+pub(crate) mod smb_connection;
 #[cfg(target_os = "linux")]
 mod smb_smbclient;
 mod smb_smbutil;

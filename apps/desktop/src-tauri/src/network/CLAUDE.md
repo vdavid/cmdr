@@ -87,6 +87,10 @@ After first credential fetch, credentials cached in `CREDENTIAL_CACHE` (LazyLock
 
 On Linux, `keychain_linux.rs` tries Secret Service (GNOME Keyring / KDE Wallet) first. If unavailable (no D-Bus service, headless server, minimal DE), it falls back to an encrypted file at `~/.local/share/cmdr/credentials.enc`. The file is encrypted with `cocoon` (Chacha20-Poly1305) using `/etc/machine-id` as the password, with 0600 file permissions. A static `USING_FILE_FALLBACK` flag tracks whether the fallback is active for the frontend to show a one-time info toast. Corrupted credential files are handled gracefully (start fresh, log warning).
 
+### "Sneaky mount" for SmbVolume
+
+When the user mounts an SMB share, we establish a parallel smb2 connection alongside the OS mount. The OS mount provides Finder/Terminal/drag-drop compatibility, while Cmdr's file operations use the smb2 session for better performance and fail-fast behavior. The `SmbVolume` is registered in `VolumeManager` before the FSEvents watcher fires, using `register` (overwrite). When the watcher fires, `register_if_absent` is a no-op since the SmbVolume is already registered. See `file_system/volume/smb.rs` for the implementation.
+
 ### Linux mounting via GVFS
 
 `gio mount` is used for user-space SMB mounting on Linux. It requires the `gvfs-smb` package. If `gio` is not available, a helpful error message is returned. Mounts appear under `/run/user/<uid>/gvfs/`.

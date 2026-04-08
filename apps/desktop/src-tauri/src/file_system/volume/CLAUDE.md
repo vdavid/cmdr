@@ -14,6 +14,7 @@ Every file system operation (listing, copy, rename, delete, indexing, watching) 
 | `manager.rs` | `VolumeManager` — thread-safe `RwLock<HashMap>` registry; supports a default volume |
 | `local_posix.rs` | `LocalPosixVolume` — real filesystem; delegates listing to `file_system::listing`, indexing to `indexing::scanner`, watching to `indexing::watcher` (FSEvents), copy scanning via `walkdir`. Uses `libc::statvfs` FFI for space info. |
 | `mtp.rs` | `MtpVolume` — MTP device storage; synchronous `Volume` trait bridged to async MTP calls via `tokio::runtime::Handle::block_on`. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
+| `smb.rs` | `SmbVolume` — SMB share storage; synchronous `Volume` trait bridged to async smb2 calls via `Handle::block_on`. Uses `Mutex<Option<(SmbClient, Tree)>>` + `AtomicU8` connection state. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
 | `in_memory.rs` | `InMemoryVolume` — `RwLock<HashMap>` store for tests; also used for stress tests (`with_file_count`) |
 
 ## Architecture
@@ -23,6 +24,7 @@ VolumeManager (registry)
   └─ Arc<dyn Volume>
         ├─ LocalPosixVolume   → real FS, FSEvents watcher, jwalk scanner
         ├─ MtpVolume          → async MTP ops via block_on (spawn_blocking context)
+        ├─ SmbVolume          → async smb2 ops via block_on (direct protocol, not OS mount)
         └─ InMemoryVolume     → HashMap, test/stress use only
 ```
 
@@ -35,7 +37,8 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `supports_watching()` — enables the `notify`-based *listing* file watcher in `operations.rs` (separate from the `VolumeWatcher` trait used for drive indexing). `MtpVolume` returns `false` (it has its own USB event loop).
 - `supports_export()` — enables copy/move UI. Both local and MTP return `true`.
 - `supports_streaming()` — enables chunked MTP-to-MTP transfers. Only `MtpVolume` returns `true`.
-- `local_path()` — returns `Some` only for local volumes; allows `copyfile(2)` fast-path in copy operations.
+- `local_path()` — returns `Some` only for local volumes; allows `copyfile(2)` fast-path in copy operations. `SmbVolume` returns `None` so copies go through smb2 instead of the slow OS mount.
+- `on_unmount()` — lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
 - `scanner()` / `watcher()` — drive indexing hooks; `None` by default.
 
 ## Path handling gotchas
@@ -63,6 +66,9 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 **Decision**: `VolumeManager` uses `RwLock<HashMap>` (not `DashMap` or `Mutex`)
 **Why**: Volume registration/unregistration is rare (mount/unmount events); reads are frequent (every file operation resolves a volume). `RwLock` gives concurrent read access without pulling in an extra dependency. `DashMap` would work but is heavier than needed for a registry that rarely exceeds ~10 entries.
 
+**Decision**: `VolumeManager::register_if_absent` for watcher registrations
+**Why**: When the mount flow pre-registers an `SmbVolume`, the FSEvents watcher would overwrite it with a `LocalPosixVolume` via `register`. `register_if_absent` is a no-op if a volume is already registered, preserving the `SmbVolume`. The existing `register` (overwrite) is kept for explicit replacement (like SmbVolume replacing itself on reconnect).
+
 **Decision**: `MtpVolume` bridges sync `Volume` trait to async MTP calls via `Handle::block_on`
 **Why**: The `Volume` trait is synchronous because local filesystem ops are blocking and shouldn't touch the async executor. MTP operations are inherently async (USB bulk transfers), so `block_on` bridges the gap. This is safe because MTP methods are always called from `spawn_blocking` contexts (separate OS thread pool), avoiding nested-runtime panics.
 
@@ -83,6 +89,15 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 **Gotcha**: `MtpVolume::get_metadata` returns `NotSupported`
 **Why**: MTP has no single-file stat call — you must list the parent directory and search for the entry by name. The listing pipeline doesn't use `get_metadata` during normal browsing (it gets metadata from `list_directory` results), so implementing it would add an expensive round-trip for a code path that's currently unused.
 
+**Decision**: `SmbVolume` uses `Mutex<Option<(SmbClient, Tree)>>`, not `RwLock`
+**Why**: Every `SmbClient` method takes `&mut self` — there is no read-only access path. An `RwLock` where you only ever take write locks is strictly worse than a `Mutex` (higher overhead). The `Option` allows graceful cleanup on disconnect (set to `None`).
+
+**Decision**: `SmbVolume::local_path()` returns `None`
+**Why**: `local_path()` is checked in `volume_copy.rs` to decide whether to use native OS copy APIs. If SmbVolume returned `Some(mount_path)`, copies would go through the slow OS mount — exactly what we're trying to avoid. `root()` still returns the mount path for frontend path resolution.
+
+**Decision**: `on_unmount()` trait method instead of `Any` downcasting
+**Why**: Avoids runtime type checking, extensible for future volume types (S3, FTP might also need cleanup), consistent with the trait's design of optional methods with default no-ops.
+
 ## Testing
 
 - `in_memory_test.rs` — unit tests for `InMemoryVolume` (CRUD, sorting, concurrency, stress 50k entries)
@@ -90,3 +105,4 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `local_posix_test.rs` — real-FS tests (write ops, symlinks, copy, space info) using `std::env::temp_dir()`
 - `manager.rs` inline tests — concurrent registration/read/write-mix scenarios
 - `mtp.rs` inline tests — path conversion and capability flags (no device needed)
+- `smb.rs` inline tests — type mapping (DirectoryEntry→FileEntry, FsInfo→SpaceInfo, Error→VolumeError), connection state transitions, path conversion, capability flags (no server needed)

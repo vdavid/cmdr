@@ -170,6 +170,9 @@ fn emit_volume_mounted(volume_path: &str) {
 }
 
 /// Register a mounted volume with the VolumeManager.
+///
+/// Uses `register_if_absent` so that a pre-registered `SmbVolume` (from the
+/// mount flow) is not replaced by a `LocalPosixVolume`.
 fn register_volume_with_manager(volume_path: &str) {
     use crate::file_system::get_volume_manager;
     use crate::file_system::volume::LocalPosixVolume;
@@ -186,12 +189,27 @@ fn register_volume_with_manager(volume_path: &str) {
         .to_string();
 
     let volume = Arc::new(LocalPosixVolume::new(&name, volume_path));
-    get_volume_manager().register(&volume_id, volume);
-    debug!("Registered mounted volume: {} -> {}", volume_id, volume_path);
+    let was_registered = get_volume_manager().register_if_absent(&volume_id, volume);
+    if was_registered {
+        debug!("Registered mounted volume: {} -> {}", volume_id, volume_path);
+    } else {
+        debug!(
+            "Skipped registration for {} (already registered, likely SmbVolume)",
+            volume_id
+        );
+    }
 }
 
 /// Emit a volume unmounted event to the frontend and unregister from VolumeManager.
 fn emit_volume_unmounted(volume_path: &str) {
+    // Call on_unmount before unregistering (lets SmbVolume disconnect its smb2 session)
+    {
+        let volume_id = super::path_to_id(volume_path);
+        if let Some(volume) = crate::file_system::get_volume_manager().get(&volume_id) {
+            volume.on_unmount();
+        }
+    }
+
     // Unregister the volume from VolumeManager
     unregister_volume_from_manager(volume_path);
 

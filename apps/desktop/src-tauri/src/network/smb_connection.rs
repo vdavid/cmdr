@@ -7,6 +7,15 @@ use log::debug;
 use smb2::{ClientConfig, SmbClient};
 use std::time::Duration;
 
+/// Builds an smb2 address string from a hostname/IP and port.
+///
+/// Strips `.local` suffix from hostnames because smb2 uses the addr host
+/// component in UNC paths (`\\server\IPC$`), and some servers reject `.local`.
+pub fn build_smb_addr(hostname: &str, port: u16) -> String {
+    let host = hostname.strip_suffix(".local").unwrap_or(hostname);
+    format!("{}:{}", host, port)
+}
+
 /// Determines the server address string for smb2.
 /// Prefers IP address over hostname. Strips `.local` suffix from hostnames
 /// because smb2 uses the addr host component in UNC paths (`\\server\IPC$`),

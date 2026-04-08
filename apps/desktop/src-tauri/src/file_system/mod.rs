@@ -36,6 +36,9 @@ pub use listing::get_paths_at_indices;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use volume::MtpVolume;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+#[allow(unused_imports, reason = "Public API re-exports for future use")]
+pub use volume::SmbVolume;
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use volume::manager::VolumeManager;
 #[allow(unused_imports, reason = "Public API re-exports for future use")]

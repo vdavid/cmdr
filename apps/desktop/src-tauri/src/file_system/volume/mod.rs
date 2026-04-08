@@ -251,6 +251,16 @@ pub trait Volume: Send + Sync {
     }
 
     // ========================================
+    // Lifecycle: Optional, default no-op
+    // ========================================
+
+    /// Called when the volume is about to be unmounted/unregistered.
+    ///
+    /// Implementations can use this to clean up resources (disconnect network
+    /// sessions, cancel background tasks, etc.). Default is a no-op.
+    fn on_unmount(&self) {}
+
+    // ========================================
     // Watching: Optional, default no-op
     // ========================================
 
@@ -370,11 +380,15 @@ mod local_posix;
 pub(crate) mod manager;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) mod smb;
 
 pub use in_memory::InMemoryVolume;
 pub use local_posix::LocalPosixVolume;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use mtp::MtpVolume;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub use smb::SmbVolume;
 
 // Re-export types defined in this module for convenience
 // (they're already public since defined in mod.rs)
