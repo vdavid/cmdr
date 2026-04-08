@@ -10,6 +10,11 @@ export default defineConfig(async () => ({
 
   build: {
     chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      // Suppress Rolldown's PLUGIN_TIMINGS warning — sveltekit-guard taking 80%+ of
+      // build time is normal and expected for SvelteKit builds, not actionable.
+      checks: { pluginTimings: false },
+    },
   },
 
   clearScreen: false,

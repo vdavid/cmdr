@@ -170,7 +170,7 @@ async function migrateSettings(store: Store, fromVersion: number): Promise<void>
  */
 export function getSetting<K extends SettingId>(id: K): SettingsValues[K] {
   if (!initialized) {
-    log.warn('Settings not initialized, returning default for {id}', { id })
+    log.debug('Settings not initialized, returning default for {id}', { id })
     return getDefaultValue(id)
   }
 
