@@ -39,6 +39,7 @@ scripts/check/check
 playwright-report/
 test-results/
 coverage/
+.vitest-localstorage*
 
 # Rust build artifacts
 target/
