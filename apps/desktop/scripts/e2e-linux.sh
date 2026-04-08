@@ -157,7 +157,7 @@ if $VNC_MODE; then
 
             # Install dependencies if needed (node_modules is a Docker volume)
             # Compare lockfile hash to detect changes since last install
-            LOCK_HASH=$(md5sum /app/pnpm-lock.yaml | cut -d' ' -f1)
+            LOCK_HASH=$(md5sum /app/pnpm-lock.yaml | awk '{print $1}')
             if [ ! -f "/app/node_modules/.linux-installed" ] || [ "$(cat /app/node_modules/.linux-installed)" != "$LOCK_HASH" ]; then
                 echo "Installing Linux node_modules..."
                 pnpm install --frozen-lockfile
@@ -221,7 +221,7 @@ docker run --rm \
 
         # Install dependencies if needed (node_modules is a Docker volume)
         # Compare lockfile hash to detect changes since last install
-        LOCK_HASH=$(md5sum /app/pnpm-lock.yaml | cut -d' ' -f1)
+        LOCK_HASH=$(md5sum /app/pnpm-lock.yaml | awk '{print $1}')
         if [ ! -f "/app/node_modules/.linux-installed" ] || [ "$(cat /app/node_modules/.linux-installed)" != "$LOCK_HASH" ]; then
             echo "Installing Linux node_modules..."
             pnpm install --frozen-lockfile
@@ -324,7 +324,7 @@ else
 
             # Install dependencies if needed (node_modules is a Docker volume)
             # Compare lockfile hash to detect changes since last install
-            LOCK_HASH=$(md5sum /app/pnpm-lock.yaml | cut -d' ' -f1)
+            LOCK_HASH=$(md5sum /app/pnpm-lock.yaml | awk '{print $1}')
             if [ ! -f "/app/node_modules/.linux-installed" ] || [ "$(cat /app/node_modules/.linux-installed)" != "$LOCK_HASH" ]; then
                 echo "Installing Linux node_modules..."
                 pnpm install --frozen-lockfile
