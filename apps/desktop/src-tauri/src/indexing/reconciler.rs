@@ -18,8 +18,8 @@
 
 use std::collections::{HashSet, VecDeque};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use rusqlite::Connection;
@@ -50,8 +50,9 @@ pub struct EventReconciler {
     /// Set when the buffer cap is hit. Forces a full rescan after the
     /// current scan completes instead of replaying individual events.
     pub(super) buffer_overflow: bool,
-    /// Paths pending MustScanSubDirs rescans, deduplicated.
-    pending_rescans: HashSet<PathBuf>,
+    /// Paths pending MustScanSubDirs rescans, deduplicated. Shared with
+    /// spawned rescan tasks so they can start the next rescan on completion.
+    pending_rescans: Arc<Mutex<HashSet<PathBuf>>>,
     /// Whether a MustScanSubDirs rescan is currently running.
     rescan_active: Arc<AtomicBool>,
 }
@@ -63,7 +64,7 @@ impl EventReconciler {
             buffer: Vec::new(),
             buffering: true,
             buffer_overflow: false,
-            pending_rescans: HashSet::new(),
+            pending_rescans: Arc::new(Mutex::new(HashSet::new())),
             rescan_active: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -183,7 +184,7 @@ impl EventReconciler {
     /// Queue a MustScanSubDirs rescan, throttled to max 1 concurrent.
     pub(super) fn queue_must_scan_sub_dirs(&mut self, path: PathBuf, writer: &IndexWriter) {
         DEBUG_STATS.record_must_scan(&path.to_string_lossy());
-        self.pending_rescans.insert(path.clone());
+        self.pending_rescans.lock().unwrap().insert(path.clone());
 
         if self.rescan_active.load(Ordering::Relaxed) {
             log::debug!(
@@ -193,67 +194,11 @@ impl EventReconciler {
             return;
         }
 
-        self.start_next_rescan(writer);
-    }
-
-    /// Start the next pending MustScanSubDirs rescan, if any.
-    fn start_next_rescan(&mut self, writer: &IndexWriter) {
-        let path = match self.pending_rescans.iter().next().cloned() {
-            Some(p) => p,
-            None => return,
-        };
-        self.pending_rescans.remove(&path);
-        self.rescan_active.store(true, Ordering::Relaxed);
-
-        let writer = writer.clone();
-        let rescan_active = Arc::clone(&self.rescan_active);
-
-        log::info!("MustScanSubDirs: reconcile starting for {}", path.display());
-
-        tokio::task::spawn_blocking(move || {
-            let cancelled = AtomicBool::new(false);
-            let conn = match IndexStore::open_write_connection(&writer.db_path()) {
-                Ok(c) => c,
-                Err(e) => {
-                    log::warn!(
-                        "MustScanSubDirs: couldn't open read connection for {} — {e}",
-                        path.display()
-                    );
-                    rescan_active.store(false, Ordering::Relaxed);
-                    return;
-                }
-            };
-
-            match reconcile_subtree(&path, &conn, &writer, &cancelled) {
-                Ok(summary) => {
-                    if summary.duration.as_secs() > 10 {
-                        log::warn!(
-                            "MustScanSubDirs: reconcile slow for {} (+{} -{} ~{}, {}s)",
-                            path.display(),
-                            summary.added,
-                            summary.removed,
-                            summary.updated,
-                            summary.duration.as_secs(),
-                        );
-                    } else {
-                        log::info!(
-                            "MustScanSubDirs: reconcile complete for {} (+{} -{} ~{}, {}ms)",
-                            path.display(),
-                            summary.added,
-                            summary.removed,
-                            summary.updated,
-                            summary.duration.as_millis(),
-                        );
-                    }
-                }
-                Err(e) => {
-                    log::warn!("MustScanSubDirs: reconcile failed for {} — {e}", path.display());
-                }
-            }
-
-            DEBUG_STATS.record_rescan_completed();
-            rescan_active.store(false, Ordering::Relaxed);
-        });
+        start_next_rescan(
+            Arc::clone(&self.pending_rescans),
+            Arc::clone(&self.rescan_active),
+            writer,
+        );
     }
 
     /// Whether the reconciler's event buffer overflowed during the scan.
@@ -272,6 +217,84 @@ impl EventReconciler {
     pub fn is_buffering(&self) -> bool {
         self.buffering
     }
+}
+
+/// Start the next pending MustScanSubDirs rescan, if any.
+///
+/// Standalone function (not a method) so the spawned task can call it
+/// after completion to drain the pending queue automatically.
+fn start_next_rescan(
+    pending_rescans: Arc<Mutex<HashSet<PathBuf>>>,
+    rescan_active: Arc<AtomicBool>,
+    writer: &IndexWriter,
+) {
+    let path = {
+        let mut pending = pending_rescans.lock().unwrap();
+        match pending.iter().next().cloned() {
+            Some(p) => {
+                pending.remove(&p);
+                p
+            }
+            None => return,
+        }
+    };
+    rescan_active.store(true, Ordering::Relaxed);
+
+    let writer = writer.clone();
+    let pending_for_task = Arc::clone(&pending_rescans);
+    let active_for_task = Arc::clone(&rescan_active);
+
+    log::info!("MustScanSubDirs: reconcile starting for {}", path.display());
+
+    tokio::task::spawn_blocking(move || {
+        let cancelled = AtomicBool::new(false);
+        let conn = match IndexStore::open_write_connection(&writer.db_path()) {
+            Ok(c) => c,
+            Err(e) => {
+                log::warn!(
+                    "MustScanSubDirs: couldn't open read connection for {} — {e}",
+                    path.display()
+                );
+                active_for_task.store(false, Ordering::Relaxed);
+                // Try the next pending rescan even if this one failed
+                start_next_rescan(pending_for_task, active_for_task, &writer);
+                return;
+            }
+        };
+
+        match reconcile_subtree(&path, &conn, &writer, &cancelled) {
+            Ok(summary) => {
+                if summary.duration.as_secs() > 10 {
+                    log::warn!(
+                        "MustScanSubDirs: reconcile slow for {} (+{} -{} ~{}, {}s)",
+                        path.display(),
+                        summary.added,
+                        summary.removed,
+                        summary.updated,
+                        summary.duration.as_secs(),
+                    );
+                } else {
+                    log::info!(
+                        "MustScanSubDirs: reconcile complete for {} (+{} -{} ~{}, {}ms)",
+                        path.display(),
+                        summary.added,
+                        summary.removed,
+                        summary.updated,
+                        summary.duration.as_millis(),
+                    );
+                }
+            }
+            Err(e) => {
+                log::warn!("MustScanSubDirs: reconcile failed for {} — {e}", path.display());
+            }
+        }
+
+        DEBUG_STATS.record_rescan_completed();
+        active_for_task.store(false, Ordering::Relaxed);
+
+        // Automatically start the next queued rescan
+        start_next_rescan(pending_for_task, active_for_task, &writer);
+    });
 }
 
 // ── Subtree reconciliation ───────────────────────────────────────────
@@ -305,13 +328,74 @@ pub(super) fn reconcile_subtree(
     let root_id = match store::resolve_path(conn, &root_str) {
         Ok(Some(id)) => id,
         Ok(None) => {
-            log::debug!("reconcile_subtree: root not in DB, skipping: {root_str}");
-            return Ok(ReconcileSummary {
-                added: 0,
-                removed: 0,
-                updated: 0,
-                duration: start.elapsed(),
+            // Root not in DB — this happens when must_scan_sub_dirs fires for a
+            // newly created/copied directory. Try to create it: resolve the parent,
+            // stat the root, and upsert it via the writer.
+            let parent_path = compute_parent_path(&root_str);
+            let parent_id = match store::resolve_path(conn, &parent_path) {
+                Ok(Some(id)) => id,
+                Ok(None) => {
+                    log::debug!("reconcile_subtree: neither root nor parent in DB, skipping: {root_str}");
+                    return Ok(ReconcileSummary {
+                        added: 0,
+                        removed: 0,
+                        updated: 0,
+                        duration: start.elapsed(),
+                    });
+                }
+                Err(e) => return Err(format!("resolve_path for parent: {e}")),
+            };
+
+            // Stat the root directory and upsert it
+            let metadata = match std::fs::symlink_metadata(root) {
+                Ok(m) => m,
+                Err(e) => {
+                    log::debug!("reconcile_subtree: can't stat root {root_str}: {e}");
+                    return Ok(ReconcileSummary {
+                        added: 0,
+                        removed: 0,
+                        updated: 0,
+                        duration: start.elapsed(),
+                    });
+                }
+            };
+
+            let name = root
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default();
+            let snap = extract_metadata(&metadata, metadata.is_dir(), metadata.is_symlink());
+            let _ = writer.send(WriteMessage::UpsertEntryV2 {
+                parent_id,
+                name,
+                is_directory: metadata.is_dir(),
+                is_symlink: metadata.is_symlink(),
+                logical_size: snap.logical_size,
+                physical_size: snap.physical_size,
+                modified_at: snap.modified_at,
+                inode: snap.inode,
+                nlink: snap.nlink,
             });
+
+            // Flush so the read connection can see the new entry
+            if let Err(e) = writer.flush_blocking() {
+                log::warn!("reconcile_subtree: flush after root upsert failed: {e}");
+            }
+            added += 1;
+
+            match store::resolve_path(conn, &root_str) {
+                Ok(Some(id)) => id,
+                Ok(None) => {
+                    log::warn!("reconcile_subtree: root still not in DB after upsert, skipping: {root_str}");
+                    return Ok(ReconcileSummary {
+                        added,
+                        removed: 0,
+                        updated: 0,
+                        duration: start.elapsed(),
+                    });
+                }
+                Err(e) => return Err(format!("resolve_path for root after upsert: {e}")),
+            }
         }
         Err(e) => return Err(format!("resolve_path for root: {e}")),
     };
@@ -682,6 +766,7 @@ mod tests {
     use super::*;
     use crate::indexing::store::{IndexStore, ROOT_ID};
     use crate::indexing::watcher::FsEventFlags;
+    use std::time::Duration;
 
     fn make_event(path: &str, event_id: u64, flags: FsEventFlags) -> FsChangeEvent {
         FsChangeEvent {
@@ -837,7 +922,7 @@ mod tests {
 
         // Should not have any pending rescans after starting one
         // (it was popped from the set and started)
-        assert!(reconciler.pending_rescans.is_empty());
+        assert!(reconciler.pending_rescans.lock().unwrap().is_empty());
         assert!(reconciler.rescan_active.load(Ordering::Relaxed));
 
         writer.shutdown();
@@ -857,7 +942,7 @@ mod tests {
         reconciler.queue_must_scan_sub_dirs(PathBuf::from("/test/other"), &writer);
 
         // Deduplication: only 2 unique paths should be queued
-        assert_eq!(reconciler.pending_rescans.len(), 2);
+        assert_eq!(reconciler.pending_rescans.lock().unwrap().len(), 2);
 
         writer.shutdown();
     }
@@ -1648,6 +1733,106 @@ mod tests {
         assert_eq!(c_children.len(), 1);
         assert_eq!(c_children[0].name, "file.txt");
         assert!(!c_children[0].is_directory);
+    }
+
+    // ── Bug regression tests ────────────────────────────────────────
+
+    /// Bug 1: reconcile_subtree on a NEW directory (exists on disk, parent in
+    /// DB, but the directory itself NOT in DB) should create the directory entry
+    /// and index its children. Previously it returned early with added=0 because
+    /// resolve_path for the root returned None.
+    #[test]
+    fn reconcile_subtree_indexes_new_directory_not_in_db() {
+        let (writer, dir, conn) = setup_test_writer();
+        let db_path = dir.path().join("test-reconciler.db");
+
+        // Create a directory with children on disk
+        let test_dir = non_excluded_tempdir();
+        let new_dir = test_dir.path().join("brand_new");
+        std::fs::create_dir(&new_dir).unwrap();
+        std::fs::write(new_dir.join("file1.txt"), "aaa").unwrap();
+        std::fs::write(new_dir.join("file2.txt"), "bbb").unwrap();
+
+        // Only the PARENT is in the DB — the new directory itself is NOT.
+        // This simulates what happens when FSEvents fires must_scan_sub_dirs
+        // for a newly copied/created directory.
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+
+        let cancelled = AtomicBool::new(false);
+        let result = reconcile_subtree(&new_dir, &conn, &writer, &cancelled);
+        assert!(result.is_ok());
+        let summary = result.unwrap();
+
+        // The directory's children should be indexed
+        assert!(
+            summary.added >= 2,
+            "expected at least 2 entries added, got {}",
+            summary.added
+        );
+
+        writer.flush_blocking().unwrap();
+        writer.shutdown();
+
+        // Verify the children are in the DB
+        let store = IndexStore::open(&db_path).unwrap();
+        let new_dir_id = store::resolve_path(store.read_conn(), &new_dir.to_string_lossy())
+            .unwrap()
+            .expect("new directory should be in the DB after reconcile");
+        let children = store.list_children(new_dir_id).unwrap();
+        assert_eq!(children.len(), 2, "both child files should be indexed");
+    }
+
+    /// Bug 2: after a MustScanSubDirs rescan completes, pending queued rescans
+    /// should be started automatically. Previously the spawned task set
+    /// rescan_active=false but never called start_next_rescan, so queued paths
+    /// were abandoned unless a new must_scan_sub_dirs event happened to arrive.
+    #[tokio::test]
+    async fn queued_rescans_start_after_active_completes() {
+        let mut reconciler = EventReconciler::new();
+        reconciler.switch_to_live();
+
+        let (writer, _dir, _conn) = setup_test_writer();
+
+        // Start a rescan for a nonexistent path (completes almost immediately
+        // because reconcile_subtree returns early when root isn't in DB).
+        reconciler.queue_must_scan_sub_dirs(PathBuf::from("/nonexistent_cmdr_test/first"), &writer);
+        assert!(reconciler.rescan_active.load(Ordering::Relaxed));
+
+        // Queue a second path while the first is active
+        reconciler.queue_must_scan_sub_dirs(PathBuf::from("/nonexistent_cmdr_test/second"), &writer);
+        assert_eq!(
+            reconciler.pending_rescans.lock().unwrap().len(),
+            1,
+            "second path should be queued"
+        );
+
+        // Wait for the first rescan to complete (it should be near-instant since
+        // the path doesn't exist in the DB).
+        for _ in 0..100 {
+            if !reconciler.rescan_active.load(Ordering::Relaxed) {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        assert!(
+            !reconciler.rescan_active.load(Ordering::Relaxed),
+            "first rescan should have completed"
+        );
+
+        // Give the system a moment for the completion handler to start the next rescan
+        tokio::time::sleep(Duration::from_millis(50)).await;
+
+        // The second queued rescan should have started automatically after
+        // the first completed. Without the fix, it stays in pending_rescans
+        // forever.
+        let remaining = reconciler.pending_rescans.lock().unwrap().len();
+        assert!(
+            remaining == 0,
+            "pending rescans should be drained after active rescan completes, \
+             but {remaining} paths remain"
+        );
+
+        writer.shutdown();
     }
 
     // ── Replay tests ─────────────────────────────────────────────────

@@ -240,6 +240,15 @@ pub(super) async fn run_live_event_loop(
 
 /// Drain the pending events map, process each through the reconciler, and
 /// send a single `UpdateLastEventId` for the batch.
+///
+/// Uses a two-pass approach to handle parent-before-child ordering:
+/// 1. Process directory creation events first (sorted by path depth)
+/// 2. Flush the writer so the read connection can resolve new parent IDs
+/// 3. Process remaining events (file creations, modifications, removals)
+///
+/// Without this, child file events in the same batch as their parent
+/// directory's creation event would fail to resolve the parent ID and be
+/// silently skipped ("parent not in DB").
 pub(super) fn process_live_batch(
     pending_events: &mut HashMap<String, watcher::FsChangeEvent>,
     reconciler: &mut EventReconciler,
@@ -251,10 +260,40 @@ pub(super) fn process_live_batch(
         return;
     }
 
+    // Partition into directory creations and everything else
+    let mut dir_creations: Vec<(String, watcher::FsChangeEvent)> = Vec::new();
+    let mut other_events: Vec<(String, watcher::FsChangeEvent)> = Vec::new();
+
+    for (path, event) in pending_events.drain() {
+        if event.flags.item_created && event.flags.item_is_dir && !event.flags.must_scan_sub_dirs {
+            dir_creations.push((path, event));
+        } else {
+            other_events.push((path, event));
+        }
+    }
+
     let mut max_event_id = 0u64;
-    for (_path, event) in pending_events.drain() {
+
+    // Pass 1: process directory creations (shorter paths first = parents before children)
+    if !dir_creations.is_empty() {
+        dir_creations.sort_by_key(|(path, _)| path.len());
+        for (_path, event) in &dir_creations {
+            max_event_id = max_event_id.max(event.event_id);
+            reconciler.process_live_event(event, conn, writer, pending_paths);
+        }
+        // Flush so the read connection can resolve the newly created directories
+        // when processing child events in pass 2. Uses block_in_place because
+        // flush_blocking() panics inside a tokio runtime, and the Connection
+        // borrow prevents making this function async.
+        tokio::task::block_in_place(|| {
+            let _ = writer.flush_blocking();
+        });
+    }
+
+    // Pass 2: process everything else
+    for (_path, event) in &other_events {
         max_event_id = max_event_id.max(event.event_id);
-        reconciler.process_live_event(&event, conn, writer, pending_paths);
+        reconciler.process_live_event(event, conn, writer, pending_paths);
     }
 
     if max_event_id > 0 {
