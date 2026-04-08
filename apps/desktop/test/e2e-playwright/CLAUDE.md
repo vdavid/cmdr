@@ -106,6 +106,11 @@ removes it when the feature is not active. The file is gitignored.
 
 ## Gotchas
 
+**Gotcha**: `npx playwright test` alone will fail with `ECONNREFUSED`. **Why**: The test suite does NOT launch the Cmdr
+binary — it connects to an already-running app via `/tmp/tauri-playwright.sock`. Use
+`./scripts/check.sh --check desktop-e2e-playwright` which handles the full lifecycle (build → launch → test → cleanup),
+or start the app manually first (see "Manually" section above).
+
 **Gotcha**: Navigation destroys page context. **Why**: After triggering SvelteKit navigation (settings, viewer), any
 in-flight `evaluate()` result will be lost. Always `waitForSelector()` on the target page's element before evaluating
 further JS.

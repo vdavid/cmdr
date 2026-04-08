@@ -105,7 +105,7 @@
 
   /* === Size tier colors (depth progression: bigger = deeper blue) === */
   --color-size-bytes: color-mix(in srgb, var(--color-text-secondary) 85%, #88aacc);
-  --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 72%, #88aacc);
+  --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 78%, #88aacc);
   --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 70%, #5599dd);
   --color-size-gb: color-mix(in srgb, var(--color-text-secondary) 60%, #2288ee);
   --color-size-tb: color-mix(in srgb, var(--color-text-secondary) 60%, #0066ff);

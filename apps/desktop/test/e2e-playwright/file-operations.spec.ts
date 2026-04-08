@@ -229,15 +229,10 @@ test.describe('Hidden files toggle', () => {
   test('toggles hidden file visibility', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
-    // Use the keyboard shortcut (Cmd+Shift+. on macOS, Ctrl+Shift+. on Linux)
-    // instead of the command palette to avoid fuzzy-match timing issues.
+    // Use the Tauri command directly — synthetic keyboard events via dispatchEvent
+    // don't reliably reach Tauri's shortcut handler on all runs.
     const toggleHidden = async () => {
-      await tauriPage.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', {
-        key: '.', shiftKey: true,
-        ctrlKey: ${String(CTRL_OR_META === 'Control')},
-        metaKey: ${String(CTRL_OR_META === 'Meta')},
-        bubbles: true
-      }))`)
+      await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('toggle_hidden_files')`)
       await sleep(500)
     }
 

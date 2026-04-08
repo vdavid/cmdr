@@ -79,9 +79,13 @@ async function runAxeAudit(
 
   // axe.run(context, options) — context controls WHAT to scan, options controls HOW.
   // Exclude disabled elements from scanning — WCAG exempts inactive UI components from contrast.
+  // Note: axe-core's color-contrast rule has built-in disabled detection, but it relies on
+  // the element being natively disabled AND having an opacity < 1. When opacity-based disabled
+  // styling is applied, axe may still flag the element if it doesn't recognize the pattern.
+  // Explicit context exclusion is more reliable.
   const axeContext = scope
-    ? JSON.stringify({ include: [[scope]], exclude: [['[disabled]'], [':disabled']] })
-    : JSON.stringify({ exclude: [['[disabled]'], [':disabled']] })
+    ? JSON.stringify({ include: [[scope]], exclude: [['[disabled]'], ['.btn:disabled']] })
+    : JSON.stringify({ exclude: [['[disabled]'], ['.btn:disabled']] })
   const axeOptions = JSON.stringify({
     rules: { 'color-contrast': { enabled: true } },
   })
@@ -144,15 +148,22 @@ async function openSearchDialog(tauriPage: PageLike): Promise<void> {
   await tauriPage.waitForSelector('.search-overlay', 5000)
 }
 
-/** Switch the app theme via Tauri's setTheme API and verify it applied. */
+/** Switch the app theme via Tauri's setTheme API and verify it applied.
+ *
+ * WKWebView on macOS can lag behind when updating computed styles after a theme
+ * change: :root CSS variables update first, but descendant elements may still
+ * return stale cached values from getComputedStyle(). If axe runs during this
+ * window it reads mixed light/dark colors and reports false contrast violations.
+ *
+ * We wait for :root variables to match, then force a reflow + sleep to let
+ * WKWebView fully flush cached computed styles on descendant elements.
+ */
 async function setTheme(tauriPage: PageLike, mode: 'dark' | 'light'): Promise<void> {
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:app|set_app_theme', { theme: '${mode}' })`)
-  // Verify the theme actually applied by checking CSS variable values.
-  // WKWebView on macOS can be slow to update prefers-color-scheme after set_app_theme.
-  // Check both background AND text variables to ensure the full theme propagated,
-  // not just a partial switch (which causes false-positive axe contrast failures).
+
   const expectedBg = mode === 'light' ? '#ffffff' : '#1e1e1e'
   const expectedText = mode === 'light' ? '#666666' : '#b0b0b0'
+
   await pollUntil(
     tauriPage,
     async () => {
@@ -162,8 +173,13 @@ async function setTheme(tauriPage: PageLike, mode: 'dark' | 'light'): Promise<vo
       )
       return bg === expectedBg && text === expectedText
     },
-    3000,
+    5000,
   )
+
+  // Force a synchronous reflow so WKWebView invalidates cached computed styles,
+  // then sleep to give the browser time to propagate to all descendant elements.
+  await tauriPage.evaluate(`document.documentElement.offsetHeight`)
+  await sleep(500)
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
