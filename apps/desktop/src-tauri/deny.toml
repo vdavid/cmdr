@@ -39,4 +39,4 @@ allow-wildcard-paths = true  # cmdr is private (BSL)
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-allow-git = []
+allow-git = ["https://github.com/vdavid/smb2"]
