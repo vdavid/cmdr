@@ -38,16 +38,27 @@ export async function moveCursorToNewFolder(
   listen: ListenFn,
   findFileIndex: FindFileIndexFn,
 ): Promise<void> {
+  // Try to find the folder immediately — the directory-diff event often fires
+  // before this listener is set up (the folder is created before onCreated runs).
+  const tryMoveCursor = async (): Promise<boolean> => {
+    const index = await findFileIndex(paneListingId, folderName, showHiddenFiles)
+    if (index !== null) {
+      const frontendIndex = hasParent ? index + 1 : index
+      void paneRef?.setCursorIndex(frontendIndex)
+      return true
+    }
+    return false
+  }
+
+  // First attempt: folder may already be in the listing
+  if (await tryMoveCursor()) return
+
+  // Fallback: wait for directory-diff in case the listing hasn't updated yet
   const unlisten = await listen('directory-diff', (event) => {
     if (event.payload.listingId !== paneListingId) return
-    // Small delay to ensure listing cache is fully updated before querying
     setTimeout(() => {
-      void findFileIndex(paneListingId, folderName, showHiddenFiles).then((index) => {
-        if (index !== null) {
-          const frontendIndex = hasParent ? index + 1 : index
-          void paneRef?.setCursorIndex(frontendIndex)
-          unlisten()
-        }
+      void tryMoveCursor().then((found) => {
+        if (found) unlisten()
       })
     }, 50)
   })
