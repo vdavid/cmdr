@@ -1,5 +1,8 @@
 # SMB benchmark
 
+> **Note**: This benchmark uses the old `smb` crate (smb-rs). The main Cmdr app has migrated to `smb2`. This benchmark
+> has its own `Cargo.toml` and is not affected by the migration.
+
 See [README.md](README.md) for setup and usage.
 
 ## `smb` crate API patterns

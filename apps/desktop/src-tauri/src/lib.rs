@@ -22,12 +22,9 @@ use notify as _;
 // drag is used by tauri-plugin-drag for drag-and-drop support
 use drag as _;
 //noinspection ALL
-// smb crates are used in network/smb_client module (macOS + Linux)
+// smb2 crate is used in network/smb_client module (macOS + Linux)
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-use smb as _;
-//noinspection ALL
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-use smb_rpc as _;
+use smb2 as _;
 
 //noinspection ALL
 // trash crate is used in write_operations/trash.rs (Linux only)
@@ -257,8 +254,7 @@ pub fn run() {
                 .level_for("nusb", log::LevelFilter::Warn)
                 .level_for("zbus", log::LevelFilter::Warn)
                 .level_for("tracing::span", log::LevelFilter::Warn)
-                .level_for("smb", log::LevelFilter::Warn)
-                .level_for("sspi", log::LevelFilter::Warn)
+                .level_for("smb2", log::LevelFilter::Warn)
                 .level_for("tao", log::LevelFilter::Warn);
 
             // Parse RUST_LOG env var for per-module level overrides

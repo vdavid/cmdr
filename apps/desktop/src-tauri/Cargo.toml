@@ -115,9 +115,8 @@ nusb = "0.2.3"
 bytes = "1"
 # mDNS discovery for network host browsing (pure Rust, cross-platform)
 mdns-sd = { version = "0.18", features = ["logging"] }
-# SMB protocol client for share enumeration (pure Rust)
-smb = "0.11.1"
-smb-rpc = "=0.11.1"
+# SMB2/3 protocol client for share enumeration (pure Rust, pipelined I/O)
+smb2 = { git = "https://github.com/vdavid/smb2", branch = "main" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # Drive indexing: NFD normalization for APFS case-insensitive collation

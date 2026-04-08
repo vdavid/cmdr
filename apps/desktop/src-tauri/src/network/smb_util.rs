@@ -1,105 +1,47 @@
 //! SMB utility functions.
 //!
-//! Contains error classification, share filtering, and NDR string parsing utilities.
+//! Contains error classification and share type conversion utilities.
 
 use crate::network::smb_types::{ShareInfo, ShareListError};
-use smb_rpc::interface::ShareInfo1;
+use smb2::ErrorKind;
 
 /// Checks if an error is an authentication error (including signing requirement).
-pub fn is_auth_error(err: &str) -> bool {
-    let lower = err.to_lowercase();
-    lower.contains("logon failure")
-        || lower.contains("access denied")
-        || lower.contains("auth")
-        || lower.contains("0xc000006d") // STATUS_LOGON_FAILURE
-        || lower.contains("signing is required") // SMB signing required
+pub fn is_auth_error(err: &smb2::Error) -> bool {
+    matches!(
+        err.kind(),
+        ErrorKind::AuthRequired | ErrorKind::AccessDenied | ErrorKind::SigningRequired
+    )
 }
 
-/// Classifies an error string into a ShareListError.
-pub fn classify_error(err: &str) -> ShareListError {
-    let lower = err.to_lowercase();
+/// Classifies an smb2 error into a ShareListError.
+pub fn classify_error(err: &smb2::Error) -> ShareListError {
     let message = err.to_string();
-
-    if lower.contains("timeout") {
-        ShareListError::Timeout { message }
-    } else if lower.contains("no route") || lower.contains("unreachable") || lower.contains("connection refused") {
-        ShareListError::HostUnreachable { message }
-    } else if lower.contains("signing is required") || lower.contains("not signed or encrypted") {
-        // Server requires SMB signing - guest/anonymous access won't work
-        ShareListError::SigningRequired { message }
-    } else if lower.contains("logon failure") || lower.contains("0xc000006d") {
-        ShareListError::AuthFailed { message }
-    } else if lower.contains("access denied") || lower.contains("auth") {
-        ShareListError::AuthRequired { message }
-    } else {
-        ShareListError::ProtocolError { message }
+    match err.kind() {
+        ErrorKind::AuthRequired => ShareListError::AuthRequired { message },
+        ErrorKind::AccessDenied => ShareListError::AuthFailed { message },
+        ErrorKind::SigningRequired => ShareListError::SigningRequired { message },
+        ErrorKind::NotFound => ShareListError::ProtocolError { message },
+        ErrorKind::ConnectionLost => ShareListError::HostUnreachable { message },
+        ErrorKind::TimedOut => ShareListError::Timeout { message },
+        _ => ShareListError::ProtocolError { message },
     }
 }
 
-/// Filters raw SMB share info to show only disk shares.
-pub fn filter_disk_shares(shares: Vec<ShareInfo1>) -> Vec<ShareInfo> {
+/// Converts smb2 share info to Cmdr's ShareInfo type.
+/// smb2's `list_shares()` already filters to disk shares and strips `$` shares.
+pub fn convert_shares(shares: Vec<smb2::ShareInfo>) -> Vec<ShareInfo> {
     shares
         .into_iter()
-        .filter_map(|share| {
-            // Get the share name
-            let name = extract_share_name(&share);
-
-            // Skip hidden/admin shares (ending with $)
-            if name.ends_with('$') {
-                return None;
-            }
-
-            // Check if it's a disk share (type 0 in SMB)
-            let share_type_str = format!("{:?}", share.share_type);
-            let is_disk = share_type_str.contains("Disk") || share_type_str.contains("DiskTree");
-
-            if !is_disk {
-                return None;
-            }
-
-            // Extract comment
-            let comment = extract_share_comment(&share);
-
-            Some(ShareInfo {
-                name,
-                is_disk: true,
-                comment,
-            })
+        .map(|share| ShareInfo {
+            name: share.name,
+            is_disk: true,
+            comment: if share.comment.is_empty() {
+                None
+            } else {
+                Some(share.comment)
+            },
         })
         .collect()
-}
-
-/// Extracts the share name from SMB share info.
-pub fn extract_share_name(share: &ShareInfo1) -> String {
-    // The netname is an NdrPtr<NdrString<u16>>
-    // Use Debug format and clean up
-    let debug_str = format!("{:?}", share.netname);
-    clean_ndr_string(&debug_str)
-}
-
-/// Extracts the comment from SMB share info.
-pub fn extract_share_comment(share: &ShareInfo1) -> Option<String> {
-    let debug_str = format!("{:?}", share.remark);
-    let cleaned = clean_ndr_string(&debug_str);
-    if cleaned.is_empty() || cleaned == "None" {
-        None
-    } else {
-        Some(cleaned)
-    }
-}
-
-/// Cleans up an NDR string from Debug format.
-pub fn clean_ndr_string(debug_str: &str) -> String {
-    // NDR strings come out as things like:
-    // Some(NdrAlign { inner: NdrString("Documents") })
-    // We extract just the string content
-    if let Some(start) = debug_str.find('"')
-        && let Some(end) = debug_str.rfind('"')
-        && start < end
-    {
-        return debug_str[start + 1..end].to_string();
-    }
-    debug_str.trim_matches('"').to_string()
 }
 
 #[cfg(test)]
@@ -107,39 +49,64 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_clean_ndr_string() {
-        assert_eq!(
-            clean_ndr_string(r#"Some(NdrAlign { inner: NdrString("Documents") })"#),
-            "Documents"
-        );
-        assert_eq!(clean_ndr_string(r#""Media""#), "Media");
-        assert_eq!(clean_ndr_string("None"), "None");
-    }
-
-    #[test]
     fn test_is_auth_error() {
-        assert!(is_auth_error("Logon Failure (0xc000006d)"));
-        assert!(is_auth_error("access denied"));
-        assert!(is_auth_error("Authentication failed"));
-        assert!(!is_auth_error("Connection refused"));
-        assert!(!is_auth_error("Timeout"));
+        assert!(is_auth_error(&smb2::Error::Auth {
+            message: "Logon failure".to_string(),
+        }));
+        assert!(!is_auth_error(&smb2::Error::Timeout));
+        assert!(!is_auth_error(&smb2::Error::Disconnected));
     }
 
     #[test]
-    fn test_classify_error() {
-        match classify_error("Timeout after 15s") {
+    fn test_classify_error_timeout() {
+        match classify_error(&smb2::Error::Timeout) {
             ShareListError::Timeout { .. } => {}
             e => panic!("Expected Timeout, got {:?}", e),
         }
+    }
 
-        match classify_error("no route to host") {
+    #[test]
+    fn test_classify_error_disconnected() {
+        match classify_error(&smb2::Error::Disconnected) {
             ShareListError::HostUnreachable { .. } => {}
             e => panic!("Expected HostUnreachable, got {:?}", e),
         }
+    }
 
-        match classify_error("Logon Failure (0xc000006d)") {
-            ShareListError::AuthFailed { .. } => {}
-            e => panic!("Expected AuthFailed, got {:?}", e),
+    #[test]
+    fn test_classify_error_auth() {
+        match classify_error(&smb2::Error::Auth {
+            message: "bad password".to_string(),
+        }) {
+            ShareListError::AuthRequired { .. } => {}
+            e => panic!("Expected AuthRequired, got {:?}", e),
         }
+    }
+
+    #[test]
+    fn test_convert_shares() {
+        let smb2_shares = vec![
+            smb2::ShareInfo {
+                name: "Documents".to_string(),
+                share_type: 0,
+                comment: "My documents".to_string(),
+            },
+            smb2::ShareInfo {
+                name: "Public".to_string(),
+                share_type: 0,
+                comment: String::new(),
+            },
+        ];
+
+        let result = convert_shares(smb2_shares);
+        assert_eq!(result.len(), 2);
+
+        assert_eq!(result[0].name, "Documents");
+        assert!(result[0].is_disk);
+        assert_eq!(result[0].comment.as_deref(), Some("My documents"));
+
+        assert_eq!(result[1].name, "Public");
+        assert!(result[1].is_disk);
+        assert!(result[1].comment.is_none());
     }
 }

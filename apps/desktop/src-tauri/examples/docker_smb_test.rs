@@ -3,12 +3,12 @@
 //! Run with:
 //!   cargo run --example docker_smb_test
 //!
-//! NOTE: This example only works on macOS (requires the `smb` crate).
+//! NOTE: This example only works on macOS/Linux (requires the `smb2` crate).
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 mod inner {
-    use smb::{Client, ClientConfig};
-    use std::net::SocketAddr;
+    use smb2::{ClientConfig, SmbClient};
+    use std::time::Duration;
 
     const TEST_PORT: u16 = 9445; // smb-guest Docker container
     const TEST_IP: &str = "127.0.0.1";
@@ -17,65 +17,54 @@ mod inner {
     pub async fn main() {
         println!("Testing Docker SMB container at {}:{}", TEST_IP, TEST_PORT);
 
-        // Create client with unsigned guest access allowed (required for test Docker servers)
-        let mut config = ClientConfig::default();
-        config.connection.allow_unsigned_guest_access = true;
-        let client = Client::new(config);
+        let config = ClientConfig {
+            addr: format!("{}:{}", TEST_IP, TEST_PORT),
+            timeout: Duration::from_secs(5),
+            username: "Guest".to_string(),
+            password: String::new(),
+            domain: String::new(),
+            auto_reconnect: false,
+            compression: false,
+        };
 
-        // Step 1: Connect to address with custom port
-        // KEY FIX: Use IP address as server name to ensure consistent connection lookup
-        let socket_addr: SocketAddr = format!("{}:{}", TEST_IP, TEST_PORT).parse().unwrap();
-        println!("Step 1: connect_to_address('{}', {:?})", TEST_IP, socket_addr);
-
-        match client.connect_to_address(TEST_IP, socket_addr).await {
-            Ok(_conn) => println!("  ✅ connect_to_address succeeded"),
+        // Step 1: Connect
+        println!("Step 1: Connecting as Guest...");
+        let mut client = match SmbClient::connect(config).await {
+            Ok(client) => {
+                println!("  Connected");
+                client
+            }
             Err(e) => {
-                println!("  ❌ connect_to_address failed: {:?}", e);
+                println!("  Connect failed: {:?}", e);
                 return;
             }
-        }
+        };
 
-        // Step 2: Try ipc_connect with the IP address as server name
-        println!("Step 2: ipc_connect('{}', 'Guest', '')", TEST_IP);
-
-        match client.ipc_connect(TEST_IP, "Guest", String::new()).await {
-            Ok(_) => println!("  ✅ ipc_connect succeeded"),
-            Err(e) => {
-                println!("  ❌ ipc_connect failed: {:?}", e);
-
-                // Try an alternative approach - let's see if the connection is really established
-                println!("\nDiagnostic: Checking if connection exists for '{}'...", TEST_IP);
-                match client.get_connection(TEST_IP).await {
-                    Ok(_conn) => println!("  Connection exists"),
-                    Err(e) => println!("  No connection found: {:?}", e),
-                }
-                return;
-            }
-        }
-
-        // Step 3: List shares
-        println!("Step 3: list_shares('{}')", TEST_IP);
-
-        match client.list_shares(TEST_IP).await {
+        // Step 2: List shares
+        println!("Step 2: Listing shares...");
+        match client.list_shares().await {
             Ok(shares) => {
-                println!("  ✅ Found {} shares:", shares.len());
+                println!("  Found {} shares:", shares.len());
                 for share in shares {
-                    println!("    - {:?}", share.netname);
+                    println!(
+                        "    - {} (type={}, comment={:?})",
+                        share.name, share.share_type, share.comment
+                    );
                 }
             }
             Err(e) => {
-                println!("  ❌ list_shares failed: {:?}", e);
+                println!("  list_shares failed: {:?}", e);
             }
         }
     }
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 fn main() {
     inner::main();
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 fn main() {
-    println!("This example only works on macOS (requires the `smb` crate).");
+    println!("This example only works on macOS/Linux (requires the `smb2` crate).");
 }

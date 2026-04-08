@@ -7,14 +7,14 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 - **Discovery**: `mdns_discovery.rs` — Pure Rust mDNS using `mdns-sd` crate. Cross-platform.
 - **E2E testing**: `virtual_smb_hosts.rs` — Injects synthetic `NetworkHost` entries for Docker SMB containers. Gated behind `smb-e2e` Cargo feature. Never enabled in production.
 - **Share listing**: Split across multiple files:
-  - `smb_client.rs` — Top-level share-listing entry point; orchestrates guest -> keychain -> prompt auth flow; tries smb-rs first, falls back to smbutil (macOS only)
-  - `smb_connection.rs` — TCP connection establishment and IPC-level share listing calls
+  - `smb_client.rs` — Top-level share-listing entry point; orchestrates guest -> keychain -> prompt auth flow; tries smb2 first, falls back to smbutil (macOS only)
+  - `smb_connection.rs` — TCP connection establishment and share listing via `smb2::SmbClient`
   - `smb_cache.rs` — 30-second in-memory cache for share lists, keyed by server address
   - `smb_smbutil.rs` — `smbutil view -G` fallback for older Samba/NAS servers (macOS); on Linux delegates to `smb_smbclient`
   - `smb_smbclient.rs` — `smbclient -L` fallback for Linux (requires `samba-client` package)
   - `linux_distro.rs` — Thin wrapper calling `crate::linux_distro::LinuxDistro` for smbclient install hints; `cfg(target_os = "linux")` gated
   - `smb_types.rs` — Shared types (`ShareInfo`, `AuthMode`, `ShareListError`, etc.)
-  - `smb_util.rs` — Helpers: hostname derivation, IP resolution, account-name normalization
+  - `smb_util.rs` — Helpers: error classification (`classify_error`, `is_auth_error`) and `convert_shares` (maps `smb2::ShareInfo` to Cmdr's `ShareInfo`)
 - **Mounting** (platform-specific via `#[path]` in `mod.rs`):
   - `mount.rs` — macOS `NetFSMountURLSync` for native `/Volumes/` mounts
   - `mount_linux.rs` — Linux `gio mount` for GVFS-based user-space mounts
@@ -28,7 +28,7 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 | Component | macOS | Linux |
 |-----------|-------|-------|
 | mDNS discovery | `mdns-sd` (pure Rust) | `mdns-sd` (same) |
-| SMB share listing | `smb` + `smb-rpc` crates | `smb` + `smb-rpc` (same) |
+| SMB share listing | `smb2` crate (pure Rust) | `smb2` (same) |
 | smbutil fallback | `smbutil view -G` | `smbclient -L` (from `samba-client` package) |
 | Credential storage | `security-framework` (macOS Keychain) | `keyring` (Secret Service) → `cocoon` encrypted file fallback |
 | Mounting | `NetFSMountURLSync` → `/Volumes/` | `gio mount` → `/run/user/<uid>/gvfs/` |
@@ -47,16 +47,19 @@ Full UX control (login form appears in-pane), smart defaults (pre-fill username 
 guest/credentials toggle. Uses `security-framework` crate for Keychain access. Passwords never stored in our settings
 file — only in Keychain. Linux uses `keyring` crate (Secret Service) with encrypted file fallback.
 
-### `smb-rs` for SMB share enumeration (not `pavao`/libsmbclient or `smbutil`)
+### `smb2` for SMB share enumeration (not `pavao`/libsmbclient, `smb-rs`, or `smbutil`)
 
 MIT license (compatible with BSL, allows dual-licensing for enterprise), pure Rust (no C dependencies), async-native
-(built on tokio), and cross-platform (macOS, Linux, Windows). `pavao` (libsmbclient wrapper) was rejected for its GPLv3
-license. `smbutil` CLI was rejected for fragile text parsing and process spawning. Fallback to `smbutil`/`smbclient` is
-available for older Samba servers where smb-rs's RPC fails.
+(built on tokio), cross-platform, and typed errors (`smb2::Error` variants vs string pattern matching). David's own
+crate — single dependency replaces the old `smb` + `smb-rpc` pair. `smb2::list_shares()` returns pre-filtered disk
+shares with clean `String` fields (no NDR parsing needed). Fallback to `smbutil`/`smbclient` is available for older
+Samba servers where smb2's RPC fails.
 
 ### Always use IP when available
 
-smb-rs doesn't resolve `.local` hostnames reliably (std lib DNS doesn't handle mDNS). Always pass resolved IP from mDNS discovery. If IP unavailable, use derived hostname (`service_name_to_hostname`).
+smb2 uses the addr host component in UNC paths (`\\server\IPC$`). When hostname has a `.local` suffix, strip it
+before passing as addr (some servers reject `.local` in UNC paths). Always pass resolved IP from mDNS discovery when
+available. If IP unavailable, use derived hostname with `.local` stripped.
 
 ### Guest-first auth flow
 
@@ -67,14 +70,14 @@ smb-rs doesn't resolve `.local` hostnames reliably (std lib DNS doesn't handle m
 
 ### smbutil / smbclient fallback
 
-`smb` crate fails on older Samba servers (for example, Raspberry Pi) with RPC incompatibility. Classify error as `ProtocolError`, then try a platform-specific CLI fallback:
+`smb2` crate may fail on older Samba servers with RPC incompatibility. Classify error as `ProtocolError`, then try a platform-specific CLI fallback:
 - **macOS:** `smbutil view -G` (built-in).
 - **Linux:** `smbclient -L` (from `samba-client` package). If `smbclient` is not installed, returns a `MissingDependency` error with a distro-specific install command (detected via `/etc/os-release`). The `smb_smbutil.rs` Linux stubs delegate to `smb_smbclient.rs`.
 - **Other platforms:** stubs return `ProtocolError`.
 
 ### No persistent connection pool
 
-smb-rs connections are lightweight and created on-demand. Caching is at the share list level (30s TTL), not TCP connection level.
+smb2 connections are lightweight (one `SmbClient` per connection) and created on-demand. Caching is at the share list level (30s TTL), not TCP connection level.
 
 ### In-memory credential cache
 
@@ -99,3 +102,4 @@ On Linux, `keychain_linux.rs` tries Secret Service (GNOME Keyring / KDE Wallet) 
 - **`ShareListError` uses internally tagged serde format** (`#[serde(tag = "type")]`) with struct variants. This keeps a flat JSON shape (`{ "type": "protocol_error", "message": "..." }`). The `MissingDependency` variant adds an optional `installCommand` field. When adding new variants, use struct syntax (not tuple).
 - **macOS smbutil and NetFSMountURLSync fail with loopback IP + non-standard port**: `//127.0.0.1:9445` gives "Broken pipe", but `//localhost:9445` works. `build_smbutil_url` and `NetworkMountView.svelte` both fall back to hostname when IP is `127.0.0.1` or `::1`. This matters for E2E testing against Docker containers on localhost.
 - **Mount URL must include port when non-standard**: `NetworkMountView.svelte` appends `:PORT` to the server string when `port !== 445`. Without this, `NetFSMountURLSync` defaults to port 445 and can't reach Docker containers on custom ports.
+- **Strip `.local` from addr for smb2**: `smb2::Connection::connect()` extracts `server_name` from the addr string and uses it in UNC paths. Passing `"foo.local:445"` creates `\\foo.local\IPC$` which some servers reject. The `build_addr` helper in `smb_connection.rs` handles this.

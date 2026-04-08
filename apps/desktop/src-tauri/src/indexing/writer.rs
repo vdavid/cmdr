@@ -661,32 +661,33 @@ fn handle_upsert_entry_v2(
             // would leave counts wrong because the old type's count isn't decremented.
             let old_entry = IndexStore::get_entry_by_id(conn, existing_id).ok().flatten();
             if let Some(ref old) = old_entry
-                && old.is_directory != is_directory {
-                    log::debug!(
-                        "Writer: UpsertEntryV2 type change for id={existing_id} \
+                && old.is_directory != is_directory
+            {
+                log::debug!(
+                    "Writer: UpsertEntryV2 type change for id={existing_id} \
                          (was_dir={}, now_dir={is_directory}), converting to delete+insert",
-                        old.is_directory
-                    );
-                    if old.is_directory {
-                        handle_delete_subtree_by_id(conn, existing_id);
-                    } else {
-                        handle_delete_entry_by_id(conn, existing_id);
-                    }
-                    upsert_insert_new(
-                        conn,
-                        parent_id,
-                        &name,
-                        is_directory,
-                        is_symlink,
-                        logical_size,
-                        physical_size,
-                        modified_at,
-                        inode,
-                        should_dedup,
-                        next_id,
-                    );
-                    return;
+                    old.is_directory
+                );
+                if old.is_directory {
+                    handle_delete_subtree_by_id(conn, existing_id);
+                } else {
+                    handle_delete_entry_by_id(conn, existing_id);
                 }
+                upsert_insert_new(
+                    conn,
+                    parent_id,
+                    &name,
+                    is_directory,
+                    is_symlink,
+                    logical_size,
+                    physical_size,
+                    modified_at,
+                    inode,
+                    should_dedup,
+                    next_id,
+                );
+                return;
+            }
 
             upsert_update_existing(
                 conn,
