@@ -112,6 +112,35 @@ Volumes (including MTP) come from the shared `volume-store` which is pushed by t
 
 Exported methods for parent components: `toggle()`, `open()`, `close()`, `getIsOpen()`, `handleKeyDown(e)`.
 
+### SMB connection indicator
+
+SMB volumes with an active `SmbVolume` in the backend carry `smbConnectionState: 'direct' | 'os_mount'`. The component
+renders a small colored circle (green = direct smb2 session, yellow = OS mount fallback) both in the dropdown and in the
+closed breadcrumb label. Yellow state has a submenu trigger in the dropdown and a clickable button (circle + down arrow)
+in the breadcrumb, both opening a "Connect directly for faster access" menu item (no-op for now). Submenu supports full
+keyboard navigation (ArrowRight to open, ArrowLeft/Escape to close, Enter to activate).
+
+### Dropdown and submenu UI patterns
+
+These patterns emerged during the volume picker implementation and should be followed in future dropdown/submenu work:
+
+- **CSS triangles for arrows/chevrons**, not font characters. Font-based arrows (`▾`, `›`) render at inconsistent sizes
+  across fonts and OS versions. Use the CSS border trick (`border-left: 4px solid transparent; border-right: 4px solid
+  transparent; border-top: 5px solid currentcolor`) for pixel-perfect control.
+- **Single cursor rule.** When a submenu opens, suppress the main menu highlight. Exactly one cursor should be visible
+  at all times. Use a state flag (like `submenuVolumeId`) to conditionally remove the `is-focused-and-under-cursor`
+  class from the main menu.
+- **Elements with independent actions must be outside their parent's click area.** If a button inside another button
+  has a different action (like "Volume options" inside "Volume selector"), it must be a sibling, not a child. Otherwise
+  `stopPropagation` fights with the parent's click handler.
+- **Fixed positioning for submenus inside scrollable containers.** A submenu inside a `overflow-y: auto` dropdown gets
+  clipped. Use `position: fixed` with coordinates calculated from `getBoundingClientRect()` of the trigger element.
+- **Tooltip dismissal.** Pass empty string to the `use:tooltip` directive when the element's popup is open. The
+  directive's `update` handler calls `hideTooltip()` automatically.
+- **macOS-native menu feel.** Submenu overlaps the parent slightly (~5px). Hovering the row opens the submenu (not just
+  the arrow). Submenu highlight appears only on direct interaction (mouse hover on the item, or keyboard navigation) —
+  not automatically when the submenu opens via row hover.
+
 ## `volume-grouping.ts`
 
 Pure logic for organizing volumes into display groups. No reactive state.

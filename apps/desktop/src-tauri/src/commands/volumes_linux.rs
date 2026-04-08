@@ -73,6 +73,7 @@ pub async fn resolve_path_volume(path: String) -> PathVolumeResolution {
                 fs_type: Some("cifs".to_string()),
                 supports_trash: false,
                 is_read_only: false,
+                smb_connection_state: None,
             }),
             timed_out: false,
         };
@@ -132,6 +133,7 @@ async fn append_mtp_volumes(volumes: &mut Vec<VolumeInfo>) {
                 is_read_only: storage.is_read_only,
                 fs_type: Some("mtp".to_string()),
                 supports_trash: false,
+                smb_connection_state: None,
             });
         }
     }

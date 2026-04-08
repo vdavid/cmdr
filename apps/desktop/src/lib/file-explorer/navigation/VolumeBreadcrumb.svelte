@@ -4,7 +4,7 @@
     import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import type { VolumeInfo } from '../types'
+    import type { VolumeInfo, SmbConnectionState } from '../types'
     import {
         getVolumes,
         getVolumesTimedOut,
@@ -39,6 +39,16 @@
     // The ID of the actual volume that contains the current path
     // This is used to show the checkmark on the correct volume, not on favorites
     let containingVolumeId = $state<string | null>(null)
+
+    // Submenu state for "Connect directly" option on os_mount volumes
+    let submenuVolumeId = $state<string | null>(null)
+    let submenuRef: HTMLDivElement | undefined = $state()
+    let submenuPosition = $state<{ top: number; left: number } | null>(null)
+    let submenuHighlighted = $state(false)
+
+    // Breadcrumb inline popup state (for yellow indicator in closed breadcrumb)
+    let breadcrumbPopupOpen = $state(false)
+    let breadcrumbPopupRef: HTMLSpanElement | undefined = $state()
 
     const spaceManager = createVolumeSpaceManager()
     const {
@@ -160,9 +170,37 @@
         void spaceManager.fetchVolumeSpaces(volumes)
     }
 
+    /** Handles keyboard events when the submenu is open. Returns true if handled. */
+    function handleSubmenuKeyDown(key: string): boolean | null {
+        if (!submenuVolumeId) return null // submenu not open, let caller handle
+        switch (key) {
+            case 'ArrowDown':
+            case 'ArrowUp':
+            case 'ArrowRight':
+                return true // absorb — single-item submenu
+            case 'ArrowLeft':
+                closeSubmenu()
+                return true
+            case 'Enter':
+                handleSubmenuAction()
+                return true
+            case 'Escape':
+                closeSubmenu()
+                return true
+            default:
+                return null
+        }
+    }
+
     // Export keyboard handler for parent components to call
     export function handleKeyDown(e: KeyboardEvent): boolean {
         if (!isOpen) return false
+
+        const submenuResult = handleSubmenuKeyDown(e.key)
+        if (submenuResult !== null) {
+            e.preventDefault()
+            return submenuResult
+        }
 
         switch (e.key) {
             case 'ArrowDown':
@@ -174,6 +212,18 @@
                 e.preventDefault()
                 highlightedIndex = Math.max(highlightedIndex - 1, 0)
                 enterKeyboardMode()
+                return true
+            case 'ArrowRight':
+                e.preventDefault()
+                if (
+                    highlightedIndex >= 0 &&
+                    allVolumes[highlightedIndex]?.smbConnectionState === 'os_mount'
+                ) {
+                    const el = dropdownRef?.querySelector(
+                        `.volume-item[data-index="${String(highlightedIndex)}"]`,
+                    ) as HTMLElement | null
+                    if (el) openSubmenu(allVolumes[highlightedIndex].id, el, true)
+                }
                 return true
             case 'Enter':
                 e.preventDefault()
@@ -272,13 +322,70 @@
 
         // Close on click outside
         document.addEventListener('click', handleClickOutside)
+        document.addEventListener('click', handleBreadcrumbPopupClickOutside)
         document.addEventListener('keydown', handleDocumentKeyDown)
+        document.addEventListener('keydown', handleBreadcrumbPopupKeyDown)
     })
 
     onDestroy(() => {
         spaceManager.destroy()
         document.removeEventListener('click', handleClickOutside)
+        document.removeEventListener('click', handleBreadcrumbPopupClickOutside)
         document.removeEventListener('keydown', handleDocumentKeyDown)
+        document.removeEventListener('keydown', handleBreadcrumbPopupKeyDown)
+    })
+
+    function getConnectionTooltip(state: SmbConnectionState): string {
+        return state === 'direct'
+            ? 'Connected directly for fast file operations'
+            : 'Using system connection. Use the "Connect directly for faster access" menu item for faster access.'
+    }
+
+    function openSubmenu(volumeId: string, triggerEl?: HTMLElement, fromKeyboard = false) {
+        submenuVolumeId = volumeId
+        submenuHighlighted = fromKeyboard
+        if (triggerEl) {
+            const rect = triggerEl.getBoundingClientRect()
+            submenuPosition = { top: rect.top - 4, left: rect.right - 5 }
+        }
+    }
+
+    function closeSubmenu() {
+        submenuVolumeId = null
+        submenuPosition = null
+        submenuHighlighted = false
+    }
+
+    function handleSubmenuAction() {
+        // No-op for now — will connect directly in the future
+        closeSubmenu()
+    }
+
+    function toggleBreadcrumbPopup() {
+        breadcrumbPopupOpen = !breadcrumbPopupOpen
+    }
+
+    function closeBreadcrumbPopup() {
+        breadcrumbPopupOpen = false
+    }
+
+    function handleBreadcrumbPopupClickOutside(event: MouseEvent) {
+        if (breadcrumbPopupRef && !breadcrumbPopupRef.contains(event.target as Node)) {
+            closeBreadcrumbPopup()
+        }
+    }
+
+    function handleBreadcrumbPopupKeyDown(event: KeyboardEvent) {
+        if (event.key === 'Escape' && breadcrumbPopupOpen) {
+            closeBreadcrumbPopup()
+        }
+    }
+
+    // Close submenu on click outside dropdown
+    $effect(() => {
+        if (!isOpen) {
+            closeSubmenu()
+        }
     })
 
     // Helper: check if a volume should show the checkmark
@@ -306,8 +413,46 @@
         {#if currentVolume?.isReadOnly}
             <span class="read-only-indicator" use:tooltip={'Read-only'}>🔒</span>
         {/if}
-        <span class="chevron">▾</span>
+        <span class="chevron"></span>
     </span>
+    {#if currentVolume?.smbConnectionState === 'direct'}
+        <span
+            class="smb-indicator breadcrumb-smb-indicator smb-indicator-direct"
+            use:tooltip={getConnectionTooltip('direct')}
+        ></span>
+    {:else if currentVolume?.smbConnectionState === 'os_mount'}
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <span
+            class="breadcrumb-options-trigger"
+            class:is-open={breadcrumbPopupOpen}
+            bind:this={breadcrumbPopupRef}
+            use:tooltip={breadcrumbPopupOpen ? '' : 'Volume options'}
+            onclick={(e: MouseEvent) => {
+                e.stopPropagation()
+                isOpen = false
+                toggleBreadcrumbPopup()
+            }}
+        >
+            <span class="smb-indicator smb-indicator-os_mount"></span>
+            <span class="chevron"></span>
+        </span>
+        {#if breadcrumbPopupOpen}
+            <div class="breadcrumb-popup">
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                    class="breadcrumb-popup-item"
+                    onclick={(e: MouseEvent) => {
+                        e.stopPropagation()
+                        closeBreadcrumbPopup()
+                    }}
+                >
+                    Connect directly for faster access
+                </div>
+            </div>
+        {/if}
+    {/if}
 
     {#if isOpen && (groupedVolumes.length > 0 || volumesTimedOut)}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -326,13 +471,18 @@
                     <div
                         class="volume-item"
                         class:is-under-cursor={shouldShowCheckmark(volume)}
-                        class:is-focused-and-under-cursor={allVolumes.indexOf(volume) === highlightedIndex}
+                        class:is-focused-and-under-cursor={allVolumes.indexOf(volume) === highlightedIndex && !submenuVolumeId}
                         data-index={allVolumes.indexOf(volume)}
                         onclick={() => {
                             void handleVolumeSelect(volume)
                         }}
-                        onmouseover={() => {
+                        onmouseover={(e: MouseEvent) => {
                             handleVolumeHover(volume)
+                            if (volume.smbConnectionState === 'os_mount') {
+                                openSubmenu(volume.id, e.currentTarget as HTMLElement)
+                            } else if (submenuVolumeId) {
+                                closeSubmenu()
+                            }
                         }}
                     >
                         {#if shouldShowCheckmark(volume)}
@@ -355,7 +505,46 @@
                         {#if volume.isReadOnly}
                             <span class="read-only-indicator" use:tooltip={'Read-only'}>🔒</span>
                         {/if}
+                        {#if volume.smbConnectionState}
+                            <span
+                                class="smb-indicator smb-indicator-{volume.smbConnectionState}"
+                                use:tooltip={getConnectionTooltip(volume.smbConnectionState)}
+                            ></span>
+                            {#if volume.smbConnectionState === 'os_mount'}
+                                <span class="submenu-trigger"></span>
+                            {/if}
+                        {/if}
                     </div>
+                    {#if submenuVolumeId === volume.id && submenuPosition}
+                        <!-- svelte-ignore a11y_no_static_element_interactions -->
+                        <!-- svelte-ignore a11y_click_events_have_key_events -->
+                        <div
+                            class="connection-submenu"
+                            bind:this={submenuRef}
+                            style:position="fixed"
+                            style:top="{submenuPosition.top}px"
+                            style:left="{submenuPosition.left}px"
+                            onmouseleave={() => {
+                                submenuHighlighted = false
+                                closeSubmenu()
+                            }}
+                        >
+                            <!-- svelte-ignore a11y_mouse_events_have_key_events -->
+                            <div
+                                class="connection-submenu-item"
+                                class:is-highlighted={submenuHighlighted}
+                                onmouseover={() => {
+                                    submenuHighlighted = true
+                                }}
+                                onclick={(e: MouseEvent) => {
+                                    e.stopPropagation()
+                                    handleSubmenuAction()
+                                }}
+                            >
+                                Connect directly for faster access
+                            </div>
+                        </div>
+                    {/if}
                     {#if volumeSpaceMap.has(volume.id)}
                         {@const space = volumeSpaceMap.get(volume.id)}
                         {#if space}
@@ -433,7 +622,8 @@
 <style>
     .volume-breadcrumb {
         position: relative;
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
     }
 
     .volume-name {
@@ -467,8 +657,23 @@
     }
 
     .chevron {
-        font-size: var(--font-size-xs);
-        opacity: 0.7;
+        /* CSS triangle — consistent size across fonts. Uses currentcolor
+           so the parent element controls the color via hover/active states. */
+        display: inline-block;
+        width: 0;
+        height: 0;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-top: 5px solid currentcolor;
+        vertical-align: middle;
+        color: var(--color-text-tertiary);
+    }
+
+    .volume-name:hover .chevron,
+    .volume-name.is-open .chevron,
+    .breadcrumb-options-trigger:hover .chevron,
+    .breadcrumb-options-trigger.is-open .chevron {
+        color: var(--color-text-primary);
     }
 
     .path-separator {
@@ -510,6 +715,7 @@
     }
 
     .volume-item {
+        position: relative;
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
@@ -731,5 +937,118 @@
         50% {
             opacity: 0.3;
         }
+    }
+
+    /* ── SMB connection indicators ───────────────────────────────── */
+
+    .smb-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        opacity: 0.8;
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .smb-indicator-direct {
+        background-color: var(--color-allow);
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .smb-indicator-os_mount {
+        background-color: var(--color-warning);
+    }
+
+    /* In the dropdown, push the indicator to the far right */
+    .volume-item .smb-indicator {
+        margin-left: auto;
+    }
+
+    /* If read-only badge is also present, don't double-auto-margin */
+    .volume-item .read-only-indicator + .smb-indicator {
+        margin-left: var(--spacing-sm);
+    }
+
+    .submenu-trigger {
+        /* CSS right-pointing triangle — matches macOS submenu arrow */
+        display: inline-block;
+        width: 0;
+        height: 0;
+        border-top: 4px solid transparent;
+        border-bottom: 4px solid transparent;
+        border-left: 5px solid var(--color-text-tertiary);
+        flex-shrink: 0;
+        margin-left: auto;
+        padding: 0;
+    }
+
+    .connection-submenu {
+        min-width: 220px;
+        background-color: var(--color-bg-secondary);
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        /* Must be above the dropdown (--z-dropdown: 100) */
+        z-index: calc(var(--z-dropdown) + 1);
+        padding: var(--spacing-xs) 0;
+    }
+
+    .connection-submenu-item {
+        padding: var(--spacing-sm) var(--spacing-md);
+        cursor: default;
+        white-space: nowrap;
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .connection-submenu-item.is-highlighted,
+    .connection-submenu-item:hover {
+        background-color: var(--color-accent-subtle);
+    }
+
+    /* ── Breadcrumb inline popup ───────────────────────────────── */
+
+    .breadcrumb-options-trigger {
+        color: var(--color-text-tertiary);
+        cursor: default;
+        padding: var(--spacing-xxs) var(--spacing-xs);
+        border-radius: var(--radius-sm);
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        margin-left: var(--spacing-xxs);
+    }
+
+    .breadcrumb-options-trigger:hover,
+    .breadcrumb-options-trigger.is-open {
+        color: var(--color-text-primary);
+        background-color: var(--color-bg-tertiary);
+    }
+
+    .breadcrumb-smb-indicator {
+        margin-left: var(--spacing-xs);
+    }
+
+    .breadcrumb-popup {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: var(--spacing-xs);
+        min-width: 220px;
+        background-color: var(--color-bg-secondary);
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        z-index: var(--z-dropdown);
+        padding: var(--spacing-xs) 0;
+    }
+
+    .breadcrumb-popup-item {
+        padding: var(--spacing-sm) var(--spacing-md);
+        cursor: default;
+        white-space: nowrap;
+    }
+
+    .breadcrumb-popup-item:hover {
+        background-color: var(--color-accent-subtle);
     }
 </style>

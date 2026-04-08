@@ -133,6 +133,9 @@ export type LocationCategory =
   | 'network'
   | 'mobile_device'
 
+/** SMB connection quality. `direct` = smb2 session active, `os_mount` = OS mount fallback. */
+export type SmbConnectionState = 'direct' | 'os_mount'
+
 /**
  * Information about a location (volume, folder, or cloud drive).
  */
@@ -155,6 +158,8 @@ export interface VolumeInfo {
   fsType?: string
   /** Whether this volume supports macOS trash. `undefined` means unknown (treat as `true`). */
   supportsTrash?: boolean
+  /** SMB connection state. Only set for volumes with an active SmbVolume in the backend. */
+  smbConnectionState?: SmbConnectionState
 }
 
 // ============================================================================

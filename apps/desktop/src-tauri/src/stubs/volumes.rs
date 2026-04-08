@@ -35,6 +35,9 @@ pub struct VolumeInfo {
     pub supports_trash: bool,
     /// Whether this location is read-only.
     pub is_read_only: bool,
+    /// SMB connection state indicator. Always `None` on stub platforms.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub smb_connection_state: Option<String>,
 }
 
 /// Information about volume space.
@@ -73,6 +76,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
                 fs_type: None,
                 supports_trash: true,
                 is_read_only: false,
+                smb_connection_state: None,
             });
         }
     }
@@ -88,6 +92,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         fs_type: None,
         supports_trash: true,
         is_read_only: false,
+        smb_connection_state: None,
     });
 
     // Add home directory
@@ -101,6 +106,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         fs_type: None,
         supports_trash: true,
         is_read_only: false,
+        smb_connection_state: None,
     });
 
     locations

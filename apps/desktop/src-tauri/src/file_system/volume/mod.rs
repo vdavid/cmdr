@@ -254,6 +254,14 @@ pub trait Volume: Send + Sync {
     // Lifecycle: Optional, default no-op
     // ========================================
 
+    /// Returns the SMB connection state if this is an SMB volume.
+    ///
+    /// Only `SmbVolume` returns `Some`. Used by the frontend to show a connection
+    /// quality indicator (green = direct smb2, yellow = OS mount fallback).
+    fn smb_connection_state(&self) -> Option<crate::volumes::SmbConnectionState> {
+        None
+    }
+
     /// Called when the volume is about to be unmounted/unregistered.
     ///
     /// Implementations can use this to clean up resources (disconnect network

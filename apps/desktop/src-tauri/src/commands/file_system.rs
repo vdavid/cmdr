@@ -862,7 +862,7 @@ fn should_emit_synthetic_diff(volume_id: Option<&str>) -> bool {
         None => true, // No volume_id means local filesystem
         Some(id) => get_volume_manager()
             .get(id)
-            .map_or(true, |v| v.supports_local_fs_access()),
+            .is_none_or(|v| v.supports_local_fs_access()),
     }
 }
 

@@ -4,6 +4,7 @@ use serde::Serialize;
 use tokio::time::Duration;
 
 use super::util::{TimedOut, blocking_with_timeout_flag};
+use crate::file_system::get_volume_manager;
 use crate::volumes::{self, DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo, VolumeSpaceInfo};
 
 /// Result of resolving a path to its containing volume.
@@ -19,11 +20,35 @@ pub struct PathVolumeResolution {
 const VOLUME_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Lists all mounted volumes, including connected MTP devices.
+/// Enriches SMB volumes with their connection state from the VolumeManager.
 #[tauri::command]
 pub async fn list_volumes() -> TimedOut<Vec<VolumeInfo>> {
     let mut result = blocking_with_timeout_flag(VOLUME_TIMEOUT, vec![], volumes::list_mounted_volumes).await;
     append_mtp_volumes(&mut result.data).await;
+    enrich_smb_connection_state(&mut result.data);
     result
+}
+
+/// Enriches volume entries with SMB connection state from the VolumeManager.
+///
+/// For each volume, looks up the registered Volume in VolumeManager and checks
+/// if it reports an `smb_connection_state`. This adds the green/yellow indicator
+/// for SMB shares in the frontend volume picker.
+fn enrich_smb_connection_state(volumes: &mut [VolumeInfo]) {
+    use crate::volumes::SmbConnectionState;
+
+    let manager = get_volume_manager();
+    for vol in volumes.iter_mut() {
+        if let Some(registered) = manager.get(&vol.id) {
+            vol.smb_connection_state = registered.smb_connection_state();
+        }
+
+        // SMB shares without a direct smb2 connection show as OsMount (yellow).
+        // This covers pre-existing mounts registered as LocalPosixVolume at startup.
+        if vol.smb_connection_state.is_none() && volumes::is_smb_fs_type(vol.fs_type.as_deref()) {
+            vol.smb_connection_state = Some(SmbConnectionState::OsMount);
+        }
+    }
 }
 
 /// Gets the default volume ID (root filesystem).
@@ -74,6 +99,7 @@ pub async fn resolve_path_volume(path: String) -> PathVolumeResolution {
                 fs_type: Some("smbfs".to_string()),
                 supports_trash: false,
                 is_read_only: false,
+                smb_connection_state: None,
             }),
             timed_out: false,
         };
@@ -132,6 +158,7 @@ async fn append_mtp_volumes(volumes: &mut Vec<VolumeInfo>) {
                 is_read_only: storage.is_read_only,
                 fs_type: Some("mtp".to_string()),
                 supports_trash: false,
+                smb_connection_state: None,
             });
         }
     }

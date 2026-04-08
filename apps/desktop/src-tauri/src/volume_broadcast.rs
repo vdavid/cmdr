@@ -156,6 +156,10 @@ async fn do_emit() {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     append_mtp_volumes(&mut volumes).await;
 
+    // Enrich SMB volumes with connection state from VolumeManager
+    #[cfg(target_os = "macos")]
+    enrich_smb_connection_state(&mut volumes);
+
     debug!(
         "Emitting volumes-changed ({} volumes, timed_out={})",
         volumes.len(),
@@ -167,6 +171,24 @@ async fn do_emit() {
     };
     if let Err(e) = app.emit("volumes-changed", &payload) {
         error!("Failed to emit volumes-changed: {}", e);
+    }
+}
+
+/// Enriches volume entries with SMB connection state from the VolumeManager.
+#[cfg(target_os = "macos")]
+fn enrich_smb_connection_state(volumes: &mut [LocationInfo]) {
+    use crate::volumes::SmbConnectionState;
+
+    let manager = crate::file_system::get_volume_manager();
+    for vol in volumes.iter_mut() {
+        if let Some(registered) = manager.get(&vol.id) {
+            vol.smb_connection_state = registered.smb_connection_state();
+        }
+
+        // SMB shares without a direct smb2 connection show as OsMount (yellow)
+        if vol.smb_connection_state.is_none() && crate::volumes::is_smb_fs_type(vol.fs_type.as_deref()) {
+            vol.smb_connection_state = Some(SmbConnectionState::OsMount);
+        }
     }
 }
 
@@ -198,6 +220,7 @@ async fn append_mtp_volumes(volumes: &mut Vec<LocationInfo>) {
                 is_read_only: storage.is_read_only,
                 fs_type: Some("mtp".to_string()),
                 supports_trash: false,
+                smb_connection_state: None,
             });
         }
     }

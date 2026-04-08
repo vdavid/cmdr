@@ -369,6 +369,14 @@ impl Volume for SmbVolume {
         Ok(fs_info_to_space_info(&info))
     }
 
+    fn smb_connection_state(&self) -> Option<crate::volumes::SmbConnectionState> {
+        match self.connection_state() {
+            ConnectionState::Direct => Some(crate::volumes::SmbConnectionState::Direct),
+            ConnectionState::OsMount => Some(crate::volumes::SmbConnectionState::OsMount),
+            ConnectionState::Disconnected => None,
+        }
+    }
+
     fn on_unmount(&self) {
         debug!("SmbVolume::on_unmount: disconnecting share={}", self.share_name);
 

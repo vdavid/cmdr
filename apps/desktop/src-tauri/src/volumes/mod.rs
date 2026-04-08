@@ -13,6 +13,20 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::Path;
 
+/// SMB connection state for the frontend indicator.
+///
+/// Only set for volumes backed by an `SmbVolume` in the `VolumeManager`.
+/// `Direct` means Cmdr's smb2 session is active (fast path).
+/// `OsMount` means only the OS mount is alive (fallback path).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SmbConnectionState {
+    /// smb2 session active — fast path (green indicator).
+    Direct,
+    /// Using OS mount only — slower fallback (yellow indicator).
+    OsMount,
+}
+
 /// Category of a location item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -44,6 +58,9 @@ pub struct LocationInfo {
     pub supports_trash: bool,
     /// Whether this location is read-only (for example, MTP devices with locked storage).
     pub is_read_only: bool,
+    /// SMB connection state indicator. Only set for volumes with an active `SmbVolume`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub smb_connection_state: Option<SmbConnectionState>,
 }
 
 /// Default volume ID for the root filesystem.
@@ -63,6 +80,11 @@ pub fn supports_trash_for_fs_type(fs_type: Option<&str>) -> bool {
         "smbfs" | "nfs" | "afpfs" | "webdav" | "cifs" | "fuse.sshfs" | "msdos" | "exfat" => false,
         _ => true,
     }
+}
+
+/// Returns true if the filesystem type is SMB (macOS `smbfs` or Linux `cifs`).
+pub fn is_smb_fs_type(fs_type: Option<&str>) -> bool {
+    matches!(fs_type, Some("smbfs" | "cifs"))
 }
 
 /// Resolve a path to its mount point and filesystem type via `statfs()`.
@@ -155,6 +177,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
             fs_type: Some(fs_type),
             supports_trash,
             is_read_only: false,
+            smb_connection_state: None,
         })
     })
 }
@@ -284,6 +307,7 @@ fn get_favorites() -> Vec<LocationInfo> {
                 fs_type,
                 supports_trash,
                 is_read_only: false,
+                smb_connection_state: None,
             }
         })
         .collect()
@@ -324,6 +348,7 @@ fn get_main_volume() -> Option<LocationInfo> {
                     fs_type,
                     supports_trash,
                     is_read_only: false,
+                    smb_connection_state: None,
                 });
             }
         }
@@ -403,6 +428,7 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
                 fs_type,
                 supports_trash,
                 is_read_only: false,
+                smb_connection_state: None,
             });
         }
 
@@ -433,6 +459,7 @@ pub fn get_cloud_drives() -> Vec<LocationInfo> {
             fs_type,
             supports_trash,
             is_read_only: false,
+            smb_connection_state: None,
         });
     }
 
@@ -460,6 +487,7 @@ pub fn get_cloud_drives() -> Vec<LocationInfo> {
                         fs_type,
                         supports_trash,
                         is_read_only: false,
+                        smb_connection_state: None,
                     });
                 }
             }
@@ -522,6 +550,7 @@ fn get_network_locations() -> Vec<LocationInfo> {
         fs_type: None,
         supports_trash: false,
         is_read_only: false,
+        smb_connection_state: None,
     });
 
     locations

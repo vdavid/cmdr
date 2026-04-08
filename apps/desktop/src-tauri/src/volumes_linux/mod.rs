@@ -43,6 +43,9 @@ pub struct LocationInfo {
     pub supports_trash: bool,
     /// Whether this location is read-only (for example, MTP devices with locked storage).
     pub is_read_only: bool,
+    /// SMB connection state indicator. Always `None` on Linux (no smb2 session tracking yet).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub smb_connection_state: Option<String>,
 }
 
 /// Information about volume space.
@@ -197,6 +200,7 @@ fn get_favorites(mounts: &[MountEntry]) -> Vec<LocationInfo> {
                 fs_type,
                 supports_trash,
                 is_read_only: false,
+                smb_connection_state: None,
             }
         })
         .collect()
@@ -216,6 +220,7 @@ fn get_main_volume(mounts: &[MountEntry]) -> Option<LocationInfo> {
         fs_type,
         supports_trash,
         is_read_only: false,
+        smb_connection_state: None,
     })
 }
 
@@ -262,6 +267,7 @@ pub fn get_mounted_volumes(mounts: &[MountEntry]) -> Vec<LocationInfo> {
             fs_type,
             supports_trash,
             is_read_only: false,
+            smb_connection_state: None,
         });
     }
 
@@ -296,6 +302,7 @@ fn get_cloud_drives(mounts: &[MountEntry]) -> Vec<LocationInfo> {
                 fs_type,
                 supports_trash,
                 is_read_only: false,
+                smb_connection_state: None,
             });
         }
     }
@@ -362,6 +369,7 @@ fn get_network_mounts() -> Vec<LocationInfo> {
                 fs_type: None,
                 supports_trash: false,
                 is_read_only: false,
+                smb_connection_state: None,
             });
         }
     }
@@ -430,6 +438,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
         fs_type: Some(fs_type),
         supports_trash,
         is_read_only: false,
+        smb_connection_state: None,
     })
 }
 

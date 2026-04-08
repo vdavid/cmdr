@@ -6,7 +6,7 @@ macOS volume and location discovery, plus live mount/unmount watching via FSEven
 
 | File | Purpose |
 |---|---|
-| `mod.rs` | `LocationInfo` type and `VolumeInfo` type alias (`pub use LocationInfo as VolumeInfo` for backwards compatibility), `LocationCategory` enum. `list_locations()`, `get_volume_space()`, `parse_cloud_provider_name()`, `get_mount_point()` (statfs-based mount resolution with APFS firmlink normalization), `resolve_path_volume_fast()` (builds `VolumeInfo` from statfs without enumerating volumes), and private helpers using `objc2`/`objc2_foundation`. |
+| `mod.rs` | `LocationInfo` type and `VolumeInfo` type alias (`pub use LocationInfo as VolumeInfo` for backwards compatibility), `LocationCategory` enum, `SmbConnectionState` enum. `list_locations()`, `get_volume_space()`, `parse_cloud_provider_name()`, `get_mount_point()` (statfs-based mount resolution with APFS firmlink normalization), `resolve_path_volume_fast()` (builds `VolumeInfo` from statfs without enumerating volumes), and private helpers using `objc2`/`objc2_foundation`. |
 | `watcher.rs` | `notify` (FSEvents) watcher on `/Volumes`. Detects mount/unmount by diffing against `KNOWN_VOLUMES`. Registers/unregisters with `VolumeManager` via `register_volume_with_manager`/`unregister_volume_from_manager` (coupling to `file_system::get_volume_manager()`). Emits `volume-mounted` / `volume-unmounted` Tauri events (still needed — `DualPaneExplorer` uses `volume-unmounted` with the volume path to redirect panes off ejected volumes). Triggers `volume_broadcast::emit_volumes_changed()` on changes. Spawns a mount-settle watcher that polls `fsid` until the volume metadata is ready. |
 
 ## Location categories
@@ -51,6 +51,14 @@ KNOWN_VOLUMES: OnceLock<Mutex<HashSet<String>>>
 | `Box` | Box |
 | `pCloud` | pCloud |
 | anything else | first `-`-delimited segment |
+
+## Gotchas
+
+**Gotcha**: Use `is_smb_fs_type()` to detect SMB volumes, never raw `"smbfs"` / `"cifs"` string comparisons
+**Why**: The helper in `mod.rs` handles both macOS (`smbfs`) and Linux (`cifs`) in one place. Raw string comparisons scatter platform knowledge and are easy to get wrong.
+
+**Gotcha**: `LocationInfo` enrichment with `VolumeManager` data happens in two places
+**Why**: `commands/volumes.rs::enrich_smb_connection_state` (for `list_volumes` IPC calls) and `volume_broadcast.rs::enrich_smb_connection_state` (for `volumes-changed` push events). Both must stay in sync. The pattern is: build the base `LocationInfo` from OS APIs, then cross-reference `VolumeManager` to add runtime state (`smb_connection_state`). If new enrichment fields are added, update both call sites.
 
 ## Key decisions
 
