@@ -155,7 +155,7 @@ jobs:
 
           BASE_URL="https://github.com/${{ github.repository }}/releases/download/$TAG"
 
-          jq -n --indent 4 \
+          jq -n --indent 2 \
             --arg version "$VERSION" \
             --argjson size_aarch64 "$SIZE_AARCH64" \
             --argjson size_x86_64 "$SIZE_X86_64" \
