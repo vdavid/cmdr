@@ -10,8 +10,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - Copy rollback is now visible — progress bars count backwards from the cancellation point, rollback button shows
-  "Rolling back...", Cancel stays active to stop the rollback
-  ([0ac5d0](https://github.com/vdavid/cmdr/commit/0ac5d0))
+  "Rolling back...", Cancel stays active to stop the rollback ([0ac5d0](https://github.com/vdavid/cmdr/commit/0ac5d0))
 - Dual progress bars in transfer dialogs — size-based and file-count-based, hidden during scanning phase
   ([ced9d2](https://github.com/vdavid/cmdr/commit/ced9d2))
 - MCP: `cmdr://settings` resource and `set_setting` tool — inspect and change all settings without opening the Settings
@@ -21,9 +20,8 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- MTP: move conflicts no longer silently overwrite — both cross-volume and same-volume moves now show the conflict dialog
-  with Skip/Overwrite options, same as copy
-  ([27f2ff](https://github.com/vdavid/cmdr/commit/27f2ff))
+- MTP: move conflicts no longer silently overwrite — both cross-volume and same-volume moves now show the conflict
+  dialog with Skip/Overwrite options, same as copy ([27f2ff](https://github.com/vdavid/cmdr/commit/27f2ff))
 - MTP: fix watcher missing external file changes — listing cache key mismatch made every invalidation a no-op, masked on
   macOS by the 5s cache TTL but visible on Linux where inotify fires instantly
   ([266026](https://github.com/vdavid/cmdr/commit/266026))
@@ -34,8 +32,8 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 - MTP: fix volumes missing from copy/move dialog, fix destination volume dropdown not updating on change
   ([cd6603](https://github.com/vdavid/cmdr/commit/cd6603))
 - MTP: fix event loop lock contention — clone `MtpDevice` for event polling instead of holding mutex during
-  `next_event()`, unblocking copy/move/scan operations
-  ([0461e3](https://github.com/vdavid/cmdr/commit/0461e3), [547a41](https://github.com/vdavid/cmdr/commit/547a41))
+  `next_event()`, unblocking copy/move/scan operations ([0461e3](https://github.com/vdavid/cmdr/commit/0461e3),
+  [547a41](https://github.com/vdavid/cmdr/commit/547a41))
 - MTP: fix scan preview showing 0/0/0 in confirmation dialog, reduce USB round-trips for conflict checks
   ([4e1efa](https://github.com/vdavid/cmdr/commit/4e1efa))
 - MTP: fix rename conflicts not showing dialog on non-local volumes, fix paste guard checking clipboard before MTP
@@ -58,8 +56,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 ### Improved
 
 - Typed write operation errors replace string parsing — 9 specific variants (`DeviceDisconnected`, `ReadOnlyDevice`,
-  `FileLocked`, etc.) instead of `IoError(String)` catch-all
-  ([c10e06](https://github.com/vdavid/cmdr/commit/c10e06))
+  `FileLocked`, etc.) instead of `IoError(String)` catch-all ([c10e06](https://github.com/vdavid/cmdr/commit/c10e06))
 - Typed volume errors — MTP errors stop being erased into `IoError(String)` and guessed back via string matching
   ([8f2296](https://github.com/vdavid/cmdr/commit/8f2296))
 - MTP: unified backend move — frontend no longer orchestrates three-stage MTP moves, backend handles strategy
@@ -74,10 +71,8 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   [438046](https://github.com/vdavid/cmdr/commit/438046), [6e6230](https://github.com/vdavid/cmdr/commit/6e6230))
 - E2E: port all tests from WebDriverIO to Playwright, add 80+ new tests covering MTP operations, SMB, file conflicts,
   accessibility, and indexing
-- E2E: replace all test sleeps with event-driven waits
-  ([3b5565](https://github.com/vdavid/cmdr/commit/3b5565))
-- Tooling: replace Prettier with oxfmt (10–20x faster)
-  ([995f8c](https://github.com/vdavid/cmdr/commit/995f8c))
+- E2E: replace all test sleeps with event-driven waits ([3b5565](https://github.com/vdavid/cmdr/commit/3b5565))
+- Tooling: replace Prettier with oxfmt (10–20x faster) ([995f8c](https://github.com/vdavid/cmdr/commit/995f8c))
 - Tooling: auto-invalidate Docker `node_modules` on lockfile change
   ([ac4e26](https://github.com/vdavid/cmdr/commit/ac4e26))
 - Refactor: split indexing module (1951 lines → focused files), extract shared `compute_bottom_up()`, unify
