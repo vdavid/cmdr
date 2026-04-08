@@ -904,3 +904,70 @@ test.describe('MTP file watching', () => {
     expect(hasNewFile).toBe(true)
   })
 })
+
+test.describe('MTP large file transfer', () => {
+  test('copies 50 MB file from local to MTP', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+
+    // Create a 50 MB file in local left/ (chunked write to avoid large buffer)
+    const largePath = path.join(fixtureRoot, 'left', 'large-test.dat')
+    const fd = fs.openSync(largePath, 'w')
+    const chunk = Buffer.alloc(1024 * 1024, 0x42) // 1 MB of 'B'
+    for (let i = 0; i < 50; i++) fs.writeSync(fd, chunk)
+    fs.closeSync(fd)
+
+    // Right pane: MTP Internal Storage root
+    await mcpSelectVolume('right', INTERNAL_STORAGE)
+    await mcpAwaitItem('right', 'Documents')
+
+    // Re-navigate left pane so it picks up the new file (file watcher may be slow)
+    await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
+    await mcpAwaitItem('left', 'large-test.dat', 30)
+
+    // Copy
+    await mcpCall('move_cursor', { pane: 'left', filename: 'large-test.dat' })
+    await mcpCall('copy', { autoConfirm: true })
+
+    // Large file transfer through MTP protocol stack takes longer
+    await sleep(10000)
+    await mcpCall('refresh', {})
+    await mcpAwaitItem('right', 'large-test.dat', 60)
+
+    // Verify file size in MTP backing dir
+    const stat = fs.statSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'large-test.dat'))
+    expect(stat.size).toBe(50 * 1024 * 1024)
+  })
+
+  test('copies 50 MB file from MTP to local', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+    const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
+
+    // Create a 50 MB file in MTP backing dir
+    const largeMtpPath = path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'large-mtp.dat')
+    const fd = fs.openSync(largeMtpPath, 'w')
+    const chunk = Buffer.alloc(1024 * 1024, 0x43) // 1 MB of 'C'
+    for (let i = 0; i < 50; i++) fs.writeSync(fd, chunk)
+    fs.closeSync(fd)
+    await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('rescan_virtual_mtp')`)
+
+    // Left pane: MTP Documents
+    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpAwaitItem('left', 'Documents')
+    await mcpNavToPath('left', `${mtpPath}/Documents`)
+    await mcpAwaitItem('left', 'large-mtp.dat', 30)
+
+    // Copy to local right/
+    await mcpCall('move_cursor', { pane: 'left', filename: 'large-mtp.dat' })
+    await mcpCall('copy', { autoConfirm: true })
+
+    await sleep(10000)
+    await mcpCall('refresh', {})
+    await mcpAwaitItem('right', 'large-mtp.dat', 60)
+
+    // Verify file size on local disk
+    const stat = fs.statSync(path.join(fixtureRoot, 'right', 'large-mtp.dat'))
+    expect(stat.size).toBe(50 * 1024 * 1024)
+  })
+})

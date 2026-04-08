@@ -79,7 +79,8 @@ details.
 | `indexing.spec.ts`            | 3 tests: directory sizes from index, size updates on create/delete                                                                                                                                             |
 | `settings.spec.ts`            | 5 tests: settings page rendering, sidebar, search                                                                                                                                                              |
 | `viewer.spec.ts`              | 10 tests: file viewer, search, error handling                                                                                                                                                                  |
-| `mtp.spec.ts`                 | MTP E2E tests: volume selection, navigation, file ops via virtual device. Uses `e2e-shared/mcp-client.ts` (MCP client helper) and `e2e-shared/mtp-fixtures.ts` (MTP fixtures). Requires `virtual-mtp` feature. |
+| `mtp.spec.ts`                 | MTP E2E tests: volume selection, navigation, file ops, large file transfer via virtual device. Uses `e2e-shared/mcp-client.ts` (MCP client helper) and `e2e-shared/mtp-fixtures.ts` (MTP fixtures). Requires `virtual-mtp` feature. |
+| `mtp-conflicts.spec.ts`       | MTP conflict resolution: cross-volume move (MTP↔local) and same-volume move (MTP→MTP) with overwrite/skip policies. Requires `virtual-mtp` feature. |
 | `smb.spec.ts`                 | SMB E2E tests: virtual host discovery, share listing, mounting, cross-storage copy. Uses `e2e-shared/smb-fixtures.ts` and Docker SMB containers. Requires `smb-e2e` feature + Docker.                          |
 
 ## Key decisions
