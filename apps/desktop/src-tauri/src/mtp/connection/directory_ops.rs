@@ -542,6 +542,22 @@ impl MtpConnectionManager {
         entries
     }
 
+    /// Clears all listing caches for all connected devices. Call after rescan
+    /// to ensure stale cached listings don't mask changes to the object tree.
+    #[allow(dead_code, reason = "used by rescan_virtual_mtp (virtual-mtp feature)")]
+    pub async fn clear_all_listing_caches(&self) {
+        let devices = self.devices.lock().await;
+        for (device_id, entry) in devices.iter() {
+            if let Ok(mut cache_map) = entry.listing_cache.write() {
+                let count: usize = cache_map.values().map(|sc| sc.listings.len()).sum();
+                cache_map.clear();
+                if count > 0 {
+                    debug!("Cleared {} listing cache entries for device {}", count, device_id);
+                }
+            }
+        }
+    }
+
     /// Invalidates the listing cache for a specific directory.
     /// Call this after any operation that modifies the directory contents.
     pub(super) async fn invalidate_listing_cache(&self, device_id: &str, storage_id: u32, dir_path: &Path) {

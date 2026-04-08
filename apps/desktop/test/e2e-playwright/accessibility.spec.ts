@@ -178,8 +178,10 @@ async function setTheme(tauriPage: PageLike, mode: 'dark' | 'light'): Promise<vo
 
   // Force a synchronous reflow so WKWebView invalidates cached computed styles,
   // then sleep to give the browser time to propagate to all descendant elements.
+  // 2s is generous but WKWebView's style cache invalidation can lag significantly
+  // under load (the first theme switch after app launch is the worst case).
   await tauriPage.evaluate(`document.documentElement.offsetHeight`)
-  await sleep(500)
+  await sleep(2000)
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -346,6 +348,10 @@ for (const mode of ['light', 'dark'] as const) {
           console.log(`⚠ Settings section "${section.name}" not visible, skipping`)
           continue
         }
+
+        // Extra settle time for sections with async data (for example, Drive indexing
+        // loads dbFileSize which controls the "Clear index" button's disabled state).
+        await sleep(500)
 
         const { all } = await runAxeAudit(tauriPage, `Settings: ${section.name} (${mode})`)
         if (all.length > 0) {

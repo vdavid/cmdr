@@ -328,8 +328,14 @@ pub async fn scan_mtp_for_copy(
 /// Only available with `--features virtual-mtp`. Returns (added, removed) counts.
 #[cfg(feature = "virtual-mtp")]
 #[tauri::command]
-pub fn rescan_virtual_mtp() -> Result<(usize, usize), String> {
-    mtp::virtual_device::rescan_virtual_device().ok_or_else(|| "Virtual MTP device not found".to_string())
+pub async fn rescan_virtual_mtp() -> Result<(usize, usize), String> {
+    let result =
+        mtp::virtual_device::rescan_virtual_device().ok_or_else(|| "Virtual MTP device not found".to_string())?;
+    // Clear Cmdr's listing cache so stale entries from before the rescan
+    // don't mask the new state (the mtp-rs object tree is updated but Cmdr
+    // caches directory listings with a 5s TTL).
+    mtp::connection_manager().clear_all_listing_caches().await;
+    Ok(result)
 }
 
 /// Pauses the virtual device's filesystem watcher. Call before externally

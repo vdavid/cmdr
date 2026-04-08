@@ -72,7 +72,7 @@ command list grew to thousands.
 
 **Decision**: `formatShortcuts()` caps display at 2 shortcuts via `.slice(0, 2)`. **Why**: Some commands have many
 shortcuts (e.g., `nav.parent` has `Backspace` and `Cmd+Up`). Showing all of them would crowd the result row. Two is
-enough for discoverability; the full list lives in the shortcuts settings.
+enough for discoverability; the full list lives in the shortcut settings.
 
 ## Gotchas
 

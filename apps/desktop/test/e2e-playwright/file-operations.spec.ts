@@ -229,10 +229,15 @@ test.describe('Hidden files toggle', () => {
   test('toggles hidden file visibility', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
-    // Use the Tauri command directly — synthetic keyboard events via dispatchEvent
-    // don't reliably reach Tauri's shortcut handler on all runs.
+    // Use tauriPage.keyboard to dispatch trusted key events through the webview.
+    // Synthetic dispatchEvent() fires with isTrusted:false and may not reach the
+    // handler depending on event target (document vs window).
     const toggleHidden = async () => {
-      await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('toggle_hidden_files')`)
+      await tauriPage.keyboard.down(CTRL_OR_META)
+      await tauriPage.keyboard.down('Shift')
+      await tauriPage.keyboard.press('.')
+      await tauriPage.keyboard.up('Shift')
+      await tauriPage.keyboard.up(CTRL_OR_META)
       await sleep(500)
     }
 
