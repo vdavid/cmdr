@@ -225,15 +225,19 @@ impl SmbVolume {
             Ok(val) => Ok(val),
             Err(e) => {
                 let kind = e.kind();
-                let volume_err = map_smb_error(e);
 
                 // On connection loss, transition to Disconnected
                 if matches!(kind, smb2::ErrorKind::ConnectionLost | smb2::ErrorKind::SessionExpired) {
-                    warn!("SmbVolume::{}: connection lost, transitioning to Disconnected", op_name);
+                    warn!(
+                        "SmbVolume::{}(share={}): connection lost ({}), transitioning to Disconnected",
+                        op_name, self.share_name, e
+                    );
                     self.state.store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
+                } else {
+                    warn!("SmbVolume::{}(share={}): {}", op_name, self.share_name, e);
                 }
 
-                Err(volume_err)
+                Err(map_smb_error(e))
             }
         }
     }
@@ -254,8 +258,8 @@ impl Volume for SmbVolume {
         let handle = self.runtime_handle.clone();
 
         debug!(
-            "SmbVolume::list_directory: share={}, smb_path={}",
-            self.share_name, smb_path
+            "SmbVolume::list_directory: share={}, input={:?}, smb_path={:?}",
+            self.share_name, path, smb_path
         );
 
         let start = std::time::Instant::now();
@@ -296,8 +300,8 @@ impl Volume for SmbVolume {
         let handle = self.runtime_handle.clone();
 
         debug!(
-            "SmbVolume::get_metadata: share={}, smb_path={}",
-            self.share_name, smb_path
+            "SmbVolume::get_metadata: share={}, input={:?}, smb_path={:?}",
+            self.share_name, path, smb_path
         );
 
         // For root, synthesize a directory entry

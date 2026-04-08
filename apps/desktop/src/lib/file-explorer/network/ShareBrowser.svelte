@@ -180,7 +180,7 @@
         }
     }
 
-    /** Try to use stored credentials. Returns true if successful. */
+    /** Try to use stored credentials. Returns true if shares were loaded. */
     async function tryStoredCredentials(): Promise<boolean> {
         const serverName = host.name
 
@@ -191,7 +191,9 @@
             // Store credentials in memory for mounting later
             authenticatedCredentials = { username: creds.username, password: creds.password }
             await connectWithCredentials(creds.username, creds.password, false)
-            return true
+            // connectWithCredentials never throws — it sets loginError on failure.
+            // Only return true if shares were actually loaded.
+            return shares.length > 0
         } catch {
             // No stored credentials or retrieval failed
             return false
@@ -438,8 +440,11 @@
         <div class="empty-state">
             <div class="empty-icon">📁</div>
             <div class="empty-title">No shares available</div>
-            <div class="empty-message">This host has no accessible shares.</div>
-            <Button variant="secondary" onclick={onBack}>Back</Button>
+            <div class="empty-message">This host has no accessible shares, or authentication is needed.</div>
+            <div class="error-actions">
+                <Button variant="secondary" onclick={() => (showLoginForm = true)}>Sign in</Button>
+                <Button variant="secondary" onclick={onBack}>Back</Button>
+            </div>
         </div>
     {:else}
         <div class="header-row">
