@@ -612,9 +612,7 @@ mod tests {
         }
         // Sync the writer's next_id counter with what we just inserted
         let db_next_id = IndexStore::get_next_id(&conn).unwrap();
-        writer
-            .next_id()
-            .fetch_max(db_next_id, Ordering::Relaxed);
+        writer.next_id().fetch_max(db_next_id, Ordering::Relaxed);
     }
 
     #[test]

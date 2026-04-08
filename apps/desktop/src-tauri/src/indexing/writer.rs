@@ -656,6 +656,38 @@ fn handle_upsert_entry_v2(
     // PropagateDeltaById for upserted entries.
     match IndexStore::resolve_component(conn, parent_id, &name) {
         Ok(Some(existing_id)) => {
+            // Type change (file↔dir): delete old entry and insert fresh so
+            // file_count/dir_count deltas propagate correctly. An in-place update
+            // would leave counts wrong because the old type's count isn't decremented.
+            let old_entry = IndexStore::get_entry_by_id(conn, existing_id).ok().flatten();
+            if let Some(ref old) = old_entry
+                && old.is_directory != is_directory {
+                    log::debug!(
+                        "Writer: UpsertEntryV2 type change for id={existing_id} \
+                         (was_dir={}, now_dir={is_directory}), converting to delete+insert",
+                        old.is_directory
+                    );
+                    if old.is_directory {
+                        handle_delete_subtree_by_id(conn, existing_id);
+                    } else {
+                        handle_delete_entry_by_id(conn, existing_id);
+                    }
+                    upsert_insert_new(
+                        conn,
+                        parent_id,
+                        &name,
+                        is_directory,
+                        is_symlink,
+                        logical_size,
+                        physical_size,
+                        modified_at,
+                        inode,
+                        should_dedup,
+                        next_id,
+                    );
+                    return;
+                }
+
             upsert_update_existing(
                 conn,
                 existing_id,
@@ -667,6 +699,7 @@ fn handle_upsert_entry_v2(
                 modified_at,
                 inode,
                 should_dedup,
+                old_entry,
             );
         }
         Ok(None) => {
@@ -707,6 +740,7 @@ fn upsert_update_existing(
     modified_at: Option<u64>,
     inode: Option<u64>,
     should_dedup: bool,
+    old_entry: Option<EntryRow>,
 ) {
     // Dedup: override sizes if another entry already has sizes for this inode
     let (logical_size, physical_size) = if should_dedup
@@ -716,9 +750,6 @@ fn upsert_update_existing(
     } else {
         (logical_size, physical_size)
     };
-
-    // Read old entry to compute delta after update
-    let old_entry = IndexStore::get_entry_by_id(conn, existing_id).ok().flatten();
     if let Err(e) = IndexStore::update_entry(
         conn,
         existing_id,
@@ -731,15 +762,6 @@ fn upsert_update_existing(
     ) {
         log::warn!("Index writer: update_entry failed for id={existing_id}: {e}");
     } else if let Some(old) = old_entry {
-        // Type change (file↔dir) via update is not supported — callers must
-        // delete+insert for type changes so counts propagate correctly.
-        if old.is_directory != is_directory {
-            log::warn!(
-                "Writer: UpsertEntryV2 type change detected for id={existing_id} \
-                 (was_dir={}, now_dir={is_directory}). Callers should delete+insert instead.",
-                old.is_directory
-            );
-        }
         // Propagate size delta if anything changed
         let old_logical = old.logical_size.unwrap_or(0) as i64;
         let new_logical = logical_size.unwrap_or(0) as i64;

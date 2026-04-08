@@ -443,10 +443,16 @@ pub(super) fn reconcile_subtree(
                 };
 
                 if changed {
-                    // If the entry changed from directory to file (or vice versa),
-                    // delete the old subtree first to avoid orphaning children.
-                    if db_row.is_directory != is_dir && db_row.is_directory {
-                        let _ = writer.send(WriteMessage::DeleteSubtreeById(db_row.id));
+                    // Type change (file↔dir): delete first so counts propagate correctly.
+                    // Dir→file: DeleteSubtreeById removes children + propagates negative deltas.
+                    // File→dir: DeleteEntryById propagates negative file_count delta.
+                    // Then UpsertEntryV2 inserts fresh with the correct type and positive deltas.
+                    if db_row.is_directory != is_dir {
+                        if db_row.is_directory {
+                            let _ = writer.send(WriteMessage::DeleteSubtreeById(db_row.id));
+                        } else {
+                            let _ = writer.send(WriteMessage::DeleteEntryById(db_row.id));
+                        }
                     }
 
                     let _ = writer.send(WriteMessage::UpsertEntryV2 {
@@ -2044,9 +2050,7 @@ mod tests {
         }
         // Sync the writer's next_id counter with what we just inserted
         let db_next_id = IndexStore::get_next_id(&conn).unwrap();
-        writer
-            .next_id()
-            .fetch_max(db_next_id, Ordering::Relaxed);
+        writer.next_id().fetch_max(db_next_id, Ordering::Relaxed);
     }
 
     /// Create a temp directory outside indexing-excluded paths.
