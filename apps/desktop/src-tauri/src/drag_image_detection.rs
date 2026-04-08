@@ -1,4 +1,4 @@
-//! Native drag interception for macOS via method swizzling on WryWebView.
+//! Native drag interception for macOS via method swizzling on wry's webview class.
 //!
 //! Swizzles `draggingEntered:`, `draggingUpdated:`, and `draggingExited:` to:
 //! 1. Read drag image dimensions via `enumerateDraggingItems` (for overlay suppression)
@@ -11,8 +11,9 @@
 //!
 //! ## Resilience
 //!
-//! All native API calls are guarded against class/method removal. If wry renames its
-//! internal webview class or macOS deprecates APIs we rely on, the swizzle degrades gracefully:
+//! All native API calls are guarded against method removal. The webview class is discovered
+//! from the actual webview instance (not a hardcoded name), so wry version changes are safe.
+//! If macOS deprecates APIs we rely on, the swizzle degrades gracefully:
 //! - Drag image detection disabled → the DOM overlay is always shown (redundant but functional)
 //! - Modifier key detection disabled → falls back to JS keydown/keyup (works when webview has focus)
 //! - Image swapping disabled → self-drags show the OS drag image over the window (functional)
@@ -30,7 +31,7 @@ use objc2::{msg_send, sel};
 use objc2_app_kit::{NSDragOperation, NSDraggingItem, NSDraggingItemEnumerationOptions};
 use objc2_foundation::{NSDictionary, NSInteger, NSRect, NSSize};
 use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::drag_image_swap;
 
@@ -72,69 +73,107 @@ pub(crate) fn warn_once(flag: &AtomicBool, msg: &str) {
     }
 }
 
-/// Installs swizzles on WryWebView. Call once during app setup.
+/// Installs swizzles on wry's webview class. Call once during app setup after the
+/// webview is created (e.g. `RunEvent::Ready`).
+///
+/// Gets the ObjC class from the actual webview instance rather than looking up a
+/// hardcoded class name, so this is resilient to wry renaming its internal class.
 pub fn install(app_handle: AppHandle) {
-    APP_HANDLE.set(app_handle).ok();
+    APP_HANDLE.set(app_handle.clone()).ok();
 
-    unsafe {
-        let Some(cls) = AnyClass::get(c"WryWebView") else {
-            log::warn!(
-                "drag_image_detection: WryWebView class not found — swizzle skipped. \
-                 Drag image detection and modifier tracking during drags are disabled. \
-                 This is likely caused by a wry update that renamed the webview class; \
-                 search wry's source for the ObjC class name and update the c\"WryWebView\" \
-                 lookup in drag_image_detection.rs."
-            );
-            return;
-        };
+    let Some((_label, webview_window)) = app_handle.webview_windows().into_iter().next() else {
+        log::warn!(
+            "drag_image_detection: no webview windows found — swizzle skipped. \
+             Drag image detection and modifier tracking during drags are disabled."
+        );
+        return;
+    };
 
-        // Swizzle draggingEntered:
-        if let Some(method) = cls.instance_method(sel!(draggingEntered:)) {
-            ORIGINAL_ENTERED_IMP.set(method.implementation()).ok();
+    if let Err(e) = webview_window.with_webview(|webview| {
+        unsafe { install_swizzles(webview.inner()) };
+    }) {
+        log::warn!(
+            "drag_image_detection: with_webview failed ({e}) — swizzle skipped. \
+             Drag image detection and modifier tracking during drags are disabled."
+        );
+    }
+}
+
+/// Performs the actual swizzle installation given the native webview pointer.
+///
+/// # Safety
+/// `webview_ptr` must be a valid pointer to the ObjC webview object (from `PlatformWebview::inner()`).
+unsafe fn install_swizzles(webview_ptr: *mut std::ffi::c_void) {
+    let obj = webview_ptr as *const AnyObject;
+    if obj.is_null() {
+        log::warn!(
+            "drag_image_detection: native webview pointer is null — swizzle skipped. \
+             Drag image detection and modifier tracking during drags are disabled."
+        );
+        return;
+    }
+
+    let cls: *const AnyClass = unsafe { msg_send![obj, class] };
+    let Some(cls) = (unsafe { cls.as_ref() }) else {
+        log::warn!(
+            "drag_image_detection: could not get ObjC class from webview — swizzle skipped. \
+             Drag image detection and modifier tracking during drags are disabled."
+        );
+        return;
+    };
+
+    // Swizzle draggingEntered:
+    if let Some(method) = cls.instance_method(sel!(draggingEntered:)) {
+        ORIGINAL_ENTERED_IMP.set(method.implementation()).ok();
+        unsafe {
             method.set_implementation(std::mem::transmute::<*const (), Imp>(
                 swizzled_dragging_entered as *const (),
             ));
-        } else {
-            log::warn!(
-                "drag_image_detection: draggingEntered: not found on WryWebView — \
-                 drag image size detection is disabled. \
-                 Wry may have changed how it implements NSDraggingDestination; \
-                 check wry's drag-and-drop event handling in its ObjC layer."
-            );
         }
+    } else {
+        log::warn!(
+            "drag_image_detection: draggingEntered: not found on webview class — \
+             drag image size detection is disabled. \
+             Wry may have changed how it implements NSDraggingDestination; \
+             check wry's drag-and-drop event handling in its ObjC layer."
+        );
+    }
 
-        // Swizzle draggingUpdated:
-        if let Some(method) = cls.instance_method(sel!(draggingUpdated:)) {
-            ORIGINAL_UPDATED_IMP.set(method.implementation()).ok();
+    // Swizzle draggingUpdated:
+    if let Some(method) = cls.instance_method(sel!(draggingUpdated:)) {
+        ORIGINAL_UPDATED_IMP.set(method.implementation()).ok();
+        unsafe {
             method.set_implementation(std::mem::transmute::<*const (), Imp>(
                 swizzled_dragging_updated as *const (),
             ));
-        } else {
-            log::warn!(
-                "drag_image_detection: draggingUpdated: not found on WryWebView — \
-                 live modifier key tracking during drags is disabled. \
-                 Wry may have changed how it implements NSDraggingDestination; \
-                 check wry's drag-and-drop event handling in its ObjC layer."
-            );
         }
+    } else {
+        log::warn!(
+            "drag_image_detection: draggingUpdated: not found on webview class — \
+             live modifier key tracking during drags is disabled. \
+             Wry may have changed how it implements NSDraggingDestination; \
+             check wry's drag-and-drop event handling in its ObjC layer."
+        );
+    }
 
-        // Swizzle draggingExited: for self-drag image swapping (transparent → rich on window exit)
-        if let Some(method) = cls.instance_method(sel!(draggingExited:)) {
-            ORIGINAL_EXITED_IMP.set(method.implementation()).ok();
+    // Swizzle draggingExited: for self-drag image swapping (transparent → rich on window exit)
+    if let Some(method) = cls.instance_method(sel!(draggingExited:)) {
+        ORIGINAL_EXITED_IMP.set(method.implementation()).ok();
+        unsafe {
             method.set_implementation(std::mem::transmute::<*const (), Imp>(
                 swizzled_dragging_exited as *const (),
             ));
-        } else {
-            log::warn!(
-                "drag_image_detection: draggingExited: not found on WryWebView — \
-                 drag image swapping on window exit is disabled. \
-                 Wry may have changed how it implements NSDraggingDestination; \
-                 check wry's drag-and-drop event handling in its ObjC layer."
-            );
         }
-
-        log::debug!("drag_image_detection: swizzles installed on WryWebView");
+    } else {
+        log::warn!(
+            "drag_image_detection: draggingExited: not found on webview class — \
+             drag image swapping on window exit is disabled. \
+             Wry may have changed how it implements NSDraggingDestination; \
+             check wry's drag-and-drop event handling in its ObjC layer."
+        );
     }
+
+    log::debug!("drag_image_detection: swizzles installed on {:?}", cls.name());
 }
 
 // --- Modifier key detection ---
