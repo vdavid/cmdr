@@ -304,6 +304,12 @@ pub async fn mount_network_share(
     })
 }
 
+/// Upgrades an SMB volume to use direct smb2 (stub: returns error).
+#[tauri::command]
+pub async fn upgrade_to_smb_volume(_volume_id: String) -> Result<String, String> {
+    Err("Direct SMB connection not supported on this platform".to_string())
+}
+
 // ============================================================================
 // Non-command functions (kept for API compatibility, not called on Linux)
 // ============================================================================

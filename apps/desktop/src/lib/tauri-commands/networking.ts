@@ -290,3 +290,17 @@ export async function mountNetworkShare(
     timeoutMs,
   })
 }
+
+/**
+ * Upgrades an existing OS-mounted SMB volume to use a direct smb2 connection.
+ *
+ * Extracts server/share info from the mount, connects via smb2, and replaces
+ * the LocalPosixVolume with an SmbVolume in the backend.
+ *
+ * @param volumeId The volume ID to upgrade
+ * @returns "direct" on success
+ * @throws Error string on failure
+ */
+export async function upgradeToSmbVolume(volumeId: string): Promise<string> {
+  return invoke<string>('upgrade_to_smb_volume', { volumeId })
+}

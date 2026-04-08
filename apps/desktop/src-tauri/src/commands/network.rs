@@ -361,3 +361,94 @@ async fn register_smb_volume(
         }
     }
 }
+
+/// Upgrades an existing OS-mounted SMB volume to use a direct smb2 connection.
+///
+/// Extracts server/share/username from `statfs`, connects via smb2,
+/// and replaces the `LocalPosixVolume` with an `SmbVolume` in `VolumeManager`.
+///
+/// Called from the "Connect directly for faster access" UI action.
+#[tauri::command]
+pub async fn upgrade_to_smb_volume(volume_id: String) -> Result<String, String> {
+    use crate::file_system::get_volume_manager;
+    use crate::volumes::get_smb_mount_info;
+
+    let manager = get_volume_manager();
+
+    // Get the current volume's root path
+    let volume = manager.get(&volume_id).ok_or("Volume not found")?;
+    let mount_path = volume.root().to_string_lossy().to_string();
+
+    // Check if already an SmbVolume
+    if volume.smb_connection_state().is_some() {
+        return Ok("direct".to_string());
+    }
+
+    // Extract SMB connection info from statfs
+    let info = get_smb_mount_info(&mount_path).ok_or_else(|| {
+        format!(
+            "Can't determine SMB server info for {}. Is this an SMB mount?",
+            mount_path
+        )
+    })?;
+
+    log::info!(
+        "Upgrading volume {} to SmbVolume: server={}, share={}, user={:?}",
+        volume_id,
+        info.server,
+        info.share,
+        info.username
+    );
+
+    // Try to get credentials from Keychain (using the username/server from the mount).
+    // If that fails, try guest access.
+    let creds = get_keychain_password(&info.server, &info.share).await;
+    let (username, password) = match &creds {
+        Some((u, p)) => (Some(u.as_str()), Some(p.as_str())),
+        None => (None, None),
+    };
+
+    register_smb_volume(&info.server, &info.share, &mount_path, username, password, 445).await;
+
+    // Check if it worked
+    if let Some(vol) = manager.get(&volume_id)
+        && vol.smb_connection_state().is_some() {
+            return Ok("direct".to_string());
+        }
+
+    Err(format!(
+        "Failed to establish direct smb2 connection to {}/{}",
+        info.server, info.share
+    ))
+}
+
+/// Tries to retrieve SMB credentials from the Keychain.
+///
+/// Checks share-level first (more specific), then server-level.
+async fn get_keychain_password(server: &str, share: &str) -> Option<(String, String)> {
+    let server = server.to_string();
+    let share = share.to_string();
+
+    // Keychain access can block, so run in a blocking task
+    tokio::task::spawn_blocking(move || {
+        use crate::network::keychain;
+
+        // Try share-level credentials first (more specific)
+        if let Ok(creds) = keychain::get_credentials(&server, Some(&share)) {
+            log::debug!("Found Keychain credentials for {}/{}", server, share);
+            return Some((creds.username, creds.password));
+        }
+
+        // Try server-level credentials
+        if let Ok(creds) = keychain::get_credentials(&server, None) {
+            log::debug!("Found Keychain credentials for {} (server-level)", server);
+            return Some((creds.username, creds.password));
+        }
+
+        log::debug!("No Keychain credentials for {}/{}", server, share);
+        None
+    })
+    .await
+    .ok()
+    .flatten()
+}

@@ -87,6 +87,84 @@ pub fn is_smb_fs_type(fs_type: Option<&str>) -> bool {
     matches!(fs_type, Some("smbfs" | "cifs"))
 }
 
+/// Information about an SMB mount extracted from `statfs`.
+#[derive(Debug, Clone)]
+pub struct SmbMountInfo {
+    /// Server hostname or IP (for example, "192.168.1.111").
+    pub server: String,
+    /// Share name (for example, "naspi").
+    pub share: String,
+    /// Username if present in the mount source (for example, "david").
+    pub username: Option<String>,
+}
+
+/// Extracts SMB server, share, and username from a mount path via `statfs`.
+///
+/// On macOS, `statfs.f_mntfromname` for SMB mounts looks like:
+/// - `//user@192.168.1.111/share` (authenticated)
+/// - `//192.168.1.111/share` (guest)
+///
+/// Returns `None` if the path is not an SMB mount or parsing fails.
+pub fn get_smb_mount_info(mount_path: &str) -> Option<SmbMountInfo> {
+    use std::ffi::CString;
+
+    let c_path = CString::new(mount_path).ok()?;
+    let mut stat: std::mem::MaybeUninit<libc::statfs> = std::mem::MaybeUninit::uninit();
+    let result = unsafe { libc::statfs(c_path.as_ptr(), stat.as_mut_ptr()) };
+    if result != 0 {
+        return None;
+    }
+    let stat = unsafe { stat.assume_init() };
+
+    // Check filesystem type is SMB
+    let fs_type: String = stat
+        .f_fstypename
+        .iter()
+        .take_while(|&&c| c != 0)
+        .map(|&c| c as u8 as char)
+        .collect();
+    if !is_smb_fs_type(Some(&fs_type)) {
+        return None;
+    }
+
+    // Extract mount source (for example, "//david@192.168.1.111/naspi")
+    let mount_from: String = stat
+        .f_mntfromname
+        .iter()
+        .take_while(|&&c| c != 0)
+        .map(|&c| c as u8 as char)
+        .collect();
+
+    parse_smb_mount_source(&mount_from)
+}
+
+/// Parses an SMB mount source string like `//user@host/share` or `//host/share`.
+fn parse_smb_mount_source(source: &str) -> Option<SmbMountInfo> {
+    // Strip leading "//"
+    let rest = source.strip_prefix("//")?;
+
+    // Split into "user@host/share" or "host/share"
+    let (server_part, share) = rest.split_once('/')?;
+    if share.is_empty() {
+        return None;
+    }
+
+    let (username, server) = if let Some((user, host)) = server_part.split_once('@') {
+        (Some(user.to_string()), host.to_string())
+    } else {
+        (None, server_part.to_string())
+    };
+
+    // Strip port if present (for example, "192.168.1.111:9445")
+    let server = server.split(':').next().unwrap_or(&server).to_string();
+
+    Some(SmbMountInfo {
+        server,
+        share: share.to_string(),
+        username,
+    })
+}
+
 /// Resolve a path to its mount point and filesystem type via `statfs()`.
 ///
 /// On APFS firmlinks, normalizes `/System/Volumes/Data` to `/` (because

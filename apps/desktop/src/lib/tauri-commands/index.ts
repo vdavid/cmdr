@@ -116,6 +116,7 @@ export {
   isUsingCredentialFileFallback,
   listSharesWithCredentials,
   mountNetworkShare,
+  upgradeToSmbVolume,
 } from './networking'
 
 // Write operations (copy, move, delete)

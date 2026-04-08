@@ -802,6 +802,8 @@ pub fn run() {
             commands::network::list_shares_with_credentials,
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::mount_network_share,
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            commands::network::upgrade_to_smb_volume,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::list_network_hosts,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
@@ -836,6 +838,8 @@ pub fn run() {
             stubs::network::list_shares_with_credentials,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::mount_network_share,
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+            stubs::network::upgrade_to_smb_volume,
             // Accent color command (macOS reads NSColor, Linux reads gsettings, others return fallback)
             #[cfg(target_os = "macos")]
             accent_color::get_accent_color,

@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
-    import { resolvePathVolume } from '$lib/tauri-commands'
+    import { resolvePathVolume, upgradeToSmbVolume } from '$lib/tauri-commands'
+    import { addToast, dismissToast } from '$lib/ui/toast'
     import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -356,9 +357,24 @@
         submenuHighlighted = false
     }
 
-    function handleSubmenuAction() {
-        // No-op for now — will connect directly in the future
+    async function handleSubmenuAction(overrideVolumeId?: string) {
+        const volumeId = overrideVolumeId ?? submenuVolumeId
         closeSubmenu()
+        closeBreadcrumbPopup()
+        if (!volumeId) return
+
+        const connectingToastId = addToast('Connecting directly...', { dismissal: 'persistent' })
+
+        try {
+            await upgradeToSmbVolume(volumeId)
+            dismissToast(connectingToastId)
+            addToast('Connected directly for faster access', { level: 'success' })
+            // Refresh volumes so the indicator updates from yellow to green
+            requestVolumeRefresh()
+        } catch (e) {
+            dismissToast(connectingToastId)
+            addToast(`Direct connection failed: ${e}`, { level: 'error' })
+        }
     }
 
     function toggleBreadcrumbPopup() {
@@ -445,7 +461,7 @@
                     class="breadcrumb-popup-item"
                     onclick={(e: MouseEvent) => {
                         e.stopPropagation()
-                        closeBreadcrumbPopup()
+                        handleSubmenuAction(currentVolume?.id)
                     }}
                 >
                     Connect directly for faster access
