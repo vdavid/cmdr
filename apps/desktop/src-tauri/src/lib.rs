@@ -711,6 +711,10 @@ pub fn run() {
             commands::mtp::scan_mtp_for_copy,
             #[cfg(feature = "virtual-mtp")]
             commands::mtp::rescan_virtual_mtp,
+            #[cfg(feature = "virtual-mtp")]
+            commands::mtp::pause_virtual_mtp_watcher,
+            #[cfg(feature = "virtual-mtp")]
+            commands::mtp::resume_virtual_mtp_watcher,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::list_mtp_devices,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]

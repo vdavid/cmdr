@@ -6,10 +6,15 @@
 //! Gated behind `--features virtual-mtp`. Never enable in production builds.
 
 use log::info;
-use mtp_rs::{VirtualDeviceConfig, VirtualStorageConfig};
+use mtp_rs::{VirtualDeviceConfig, VirtualStorageConfig, WatcherGuard};
 use std::fs;
 use std::path::Path;
+use std::sync::Mutex;
 use std::time::Duration;
+
+/// Holds the watcher guard while the watcher is paused. Protected by a mutex
+/// so it can be accessed from Tauri commands (which run on arbitrary threads).
+static WATCHER_GUARD: Mutex<Option<WatcherGuard>> = Mutex::new(None);
 
 /// Root directory for the virtual device's backing files.
 /// The TypeScript E2E fixture helper references the same path — see
@@ -106,4 +111,25 @@ pub fn rescan_virtual_device() -> Option<(usize, usize)> {
         summary.added, summary.removed
     );
     Some((summary.added as usize, summary.removed as usize))
+}
+
+/// Pauses the virtual device's filesystem watcher. While paused, all OS-level
+/// filesystem events are silently dropped. Call before manipulating backing dir
+/// files externally, then call [`resume_virtual_watcher`] after rescanning.
+pub fn pause_virtual_watcher() -> bool {
+    let guard = mtp_rs::pause_watcher(VIRTUAL_DEVICE_SERIAL);
+    let paused = guard.is_some();
+    if paused {
+        *WATCHER_GUARD.lock().unwrap() = guard;
+        info!("Virtual MTP watcher paused");
+    }
+    paused
+}
+
+/// Resumes the virtual device's filesystem watcher by dropping the guard.
+pub fn resume_virtual_watcher() {
+    let had_guard = WATCHER_GUARD.lock().unwrap().take().is_some();
+    if had_guard {
+        info!("Virtual MTP watcher resumed");
+    }
 }

@@ -329,5 +329,20 @@ pub async fn scan_mtp_for_copy(
 #[cfg(feature = "virtual-mtp")]
 #[tauri::command]
 pub fn rescan_virtual_mtp() -> Result<(usize, usize), String> {
-    crate::mtp::virtual_device::rescan_virtual_device().ok_or_else(|| "Virtual MTP device not found".to_string())
+    mtp::virtual_device::rescan_virtual_device().ok_or_else(|| "Virtual MTP device not found".to_string())
+}
+
+/// Pauses the virtual device's filesystem watcher. Call before externally
+/// manipulating backing dir files to prevent stale events from corrupting state.
+#[cfg(feature = "virtual-mtp")]
+#[tauri::command]
+pub fn pause_virtual_mtp_watcher() -> bool {
+    mtp::virtual_device::pause_virtual_watcher()
+}
+
+/// Resumes the virtual device's filesystem watcher after a pause.
+#[cfg(feature = "virtual-mtp")]
+#[tauri::command]
+pub fn resume_virtual_mtp_watcher() {
+    mtp::virtual_device::resume_virtual_watcher();
 }

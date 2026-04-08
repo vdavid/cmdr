@@ -53,9 +53,13 @@ test.setTimeout(120_000)
 
 test.beforeEach(async ({ tauriPage }) => {
   recreateFixtures(getFixtureRoot())
-  recreateMtpFixtures()
   await initMcpClient(tauriPage)
+
+  // Pause watcher → recreate fixtures → rescan → resume to prevent stale events
+  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('pause_virtual_mtp_watcher')`)
+  recreateMtpFixtures()
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('rescan_virtual_mtp')`)
+  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('resume_virtual_mtp_watcher')`)
 
   // Reset both panes to local volume
   await tauriPage.evaluate(`(function() {

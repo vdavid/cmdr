@@ -93,13 +93,17 @@ test.setTimeout(120_000)
 
 test.beforeEach(async ({ tauriPage }) => {
   recreateFixtures(getFixtureRoot()) // Local fixtures for cross-storage tests
-  recreateMtpFixtures() // MTP backing dir
   await initMcpClient(tauriPage) // Discover MCP port
 
-  // Force the virtual device to rescan its backing dirs, syncing its in-memory
-  // object tree with the recreated fixtures. This replaces the old 2.5s sleep
-  // that waited for the file watcher — rescan is synchronous and instant.
+  // Pause the filesystem watcher before recreating MTP fixtures. Without this,
+  // the watcher may process stale deletion events after the rescan, removing
+  // objects that were just re-added.
+  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('pause_virtual_mtp_watcher')`)
+  recreateMtpFixtures() // MTP backing dir
+
+  // Rescan to sync state with disk, then resume the watcher.
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('rescan_virtual_mtp')`)
+  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('resume_virtual_mtp_watcher')`)
 
   // Force both panes back to a local volume. Previous tests may have left a pane
   // on MTP, and ensureAppReady's mcp-nav-to-path events get rejected by
