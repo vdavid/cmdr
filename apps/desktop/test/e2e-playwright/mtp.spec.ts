@@ -758,11 +758,10 @@ test.describe('MTP clipboard rejection', () => {
         })()`)
     expect(rightFocused).toBe(true)
 
-    // Dispatch Cmd+V on document directly to trigger centralized shortcut dispatch.
-    await tauriPage.evaluate(`(function(){
-            var o = {key:'v', bubbles:true, cancelable:true, metaKey:true, ctrlKey:false, shiftKey:false, altKey:false};
-            document.dispatchEvent(new KeyboardEvent('keydown', o));
-        })()`)
+    // Dispatch Cmd+V (macOS) / Ctrl+V (Linux) via trusted keyboard events.
+    await tauriPage.keyboard.down(CTRL_OR_META)
+    await tauriPage.keyboard.press('v')
+    await tauriPage.keyboard.up(CTRL_OR_META)
     await sleep(500)
 
     // Verify toast with F5 message about copying TO MTP.
