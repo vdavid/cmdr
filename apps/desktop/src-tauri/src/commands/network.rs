@@ -400,9 +400,16 @@ pub async fn upgrade_to_smb_volume(volume_id: String) -> Result<String, String> 
         info.username
     );
 
-    // Try to get credentials from Keychain (using the username/server from the mount).
-    // If that fails, try guest access.
-    let creds = get_keychain_password(&info.server, &info.share).await;
+    // Try to get credentials from Keychain. The mount source has the IP, but Cmdr
+    // stores Keychain credentials keyed by hostname (from mDNS). Try both.
+    let hostname = resolve_ip_to_hostname(&info.server);
+    let creds = get_keychain_password(&info.server, hostname.as_deref(), &info.share).await;
+
+    match &creds {
+        Some((u, _)) => log::info!("Found Keychain credentials for user={}", u),
+        None => log::info!("No Keychain credentials found, trying guest access"),
+    }
+
     let (username, password) = match &creds {
         Some((u, p)) => (Some(u.as_str()), Some(p.as_str())),
         None => (None, None),
@@ -422,30 +429,62 @@ pub async fn upgrade_to_smb_volume(volume_id: String) -> Result<String, String> 
     ))
 }
 
+/// Looks up the mDNS hostname for an IP address from discovered hosts.
+///
+/// Returns the hostname (like "naspolya") without `.local` suffix.
+fn resolve_ip_to_hostname(ip: &str) -> Option<String> {
+    let hosts = get_discovered_hosts();
+    for host in &hosts {
+        if host.ip_address.as_deref() == Some(ip) {
+            // Return the service name (lowercased), which is what Keychain keys use
+            return Some(host.name.to_lowercase());
+        }
+    }
+    None
+}
+
 /// Tries to retrieve SMB credentials from the Keychain.
 ///
-/// Checks share-level first (more specific), then server-level.
-async fn get_keychain_password(server: &str, share: &str) -> Option<(String, String)> {
-    let server = server.to_string();
+/// Tries multiple keys: by IP (from statfs), by hostname (from mDNS discovery),
+/// at both share-level and server-level.
+async fn get_keychain_password(
+    server_ip: &str,
+    hostname: Option<&str>,
+    share: &str,
+) -> Option<(String, String)> {
+    let server_ip = server_ip.to_string();
+    let hostname = hostname.map(|s| s.to_string());
     let share = share.to_string();
 
-    // Keychain access can block, so run in a blocking task
     tokio::task::spawn_blocking(move || {
         use crate::network::keychain;
 
-        // Try share-level credentials first (more specific)
-        if let Ok(creds) = keychain::get_credentials(&server, Some(&share)) {
-            log::debug!("Found Keychain credentials for {}/{}", server, share);
-            return Some((creds.username, creds.password));
+        // Build a list of server names to try (hostname first, then IP)
+        let mut servers_to_try: Vec<&str> = Vec::new();
+        if let Some(ref h) = hostname {
+            servers_to_try.push(h);
+        }
+        servers_to_try.push(&server_ip);
+
+        for server in &servers_to_try {
+            // Try share-level credentials first (more specific)
+            if let Ok(creds) = keychain::get_credentials(server, Some(&share)) {
+                log::debug!("Found Keychain credentials via {}/{}", server, share);
+                return Some((creds.username, creds.password));
+            }
+            // Try server-level credentials
+            if let Ok(creds) = keychain::get_credentials(server, None) {
+                log::debug!("Found Keychain credentials via {} (server-level)", server);
+                return Some((creds.username, creds.password));
+            }
         }
 
-        // Try server-level credentials
-        if let Ok(creds) = keychain::get_credentials(&server, None) {
-            log::debug!("Found Keychain credentials for {} (server-level)", server);
-            return Some((creds.username, creds.password));
-        }
-
-        log::debug!("No Keychain credentials for {}/{}", server, share);
+        log::debug!(
+            "No Keychain credentials for {:?} / {} / {}",
+            hostname,
+            server_ip,
+            share
+        );
         None
     })
     .await
