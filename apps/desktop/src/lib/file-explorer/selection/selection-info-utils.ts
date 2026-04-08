@@ -67,7 +67,7 @@ export function getSizeDisplay(
   displaySize?: number,
 ): { value: string; tierClass: string }[] | 'DIR' | null {
   if (!entry || isBrokenSymlink || isPermissionDenied) return null
-  if (entry.isDirectory) return 'DIR'
+  if (entry.isDirectory) return displaySize !== undefined ? formatSizeTriads(displaySize) : 'DIR'
   const size = displaySize ?? entry.size
   if (size === undefined) return null
   return formatSizeTriads(size)

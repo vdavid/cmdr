@@ -12,7 +12,12 @@
     } from './selection-info-utils'
     import { measureDateColumnWidth } from '../views/full-list-utils'
     import { formatFileSize, formatDateTime, getSizeDisplayMode } from '$lib/settings/reactive-settings.svelte'
-    import { getDisplaySize, buildFileSizeTooltip, buildSelectionSizeTooltip } from '../views/full-list-utils'
+    import {
+        getDisplaySize,
+        buildFileSizeTooltip,
+        buildDirSizeTooltip,
+        buildSelectionSizeTooltip,
+    } from '../views/full-list-utils'
     import { isScanning } from '$lib/indexing/index-state.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { Hourglass } from '@lucide/svelte'
@@ -66,17 +71,39 @@
     // File info mode (Brief mode without selection)
     // ========================================================================
 
+    // Drive index scanning state — used for stale indicator when dirs are shown
+    const scanning = $derived(isScanning())
+
     const sizeDisplayMode = $derived(getSizeDisplayMode())
     const displayName = $derived(entry?.name ?? '')
     const isDirectory = $derived(entry?.isDirectory ?? false)
     const isBrokenSymlink = $derived(checkBrokenSymlink(entry))
     const isPermissionDenied = $derived(checkPermissionDenied(entry))
-    const fileDisplaySize = $derived(
-        entry && !isDirectory ? getDisplaySize(entry.size, entry.physicalSize, sizeDisplayMode) : undefined,
+    const displaySize = $derived(
+        entry
+            ? getDisplaySize(
+                  isDirectory ? entry.recursiveSize : entry.size,
+                  isDirectory ? entry.recursivePhysicalSize : entry.physicalSize,
+                  sizeDisplayMode,
+              )
+            : undefined,
     )
-    const sizeDisplay = $derived(getSizeDisplay(entry, isBrokenSymlink, isPermissionDenied, fileDisplaySize))
+    const sizeDisplay = $derived(getSizeDisplay(entry, isBrokenSymlink, isPermissionDenied, displaySize))
     const sizeTooltip = $derived(
-        entry && !isDirectory ? buildFileSizeTooltip(entry.size, entry.physicalSize, formatFileSize) : undefined,
+        entry
+            ? isDirectory
+                ? buildDirSizeTooltip(
+                      entry.recursiveSize,
+                      entry.recursivePhysicalSize,
+                      entry.recursiveFileCount ?? 0,
+                      entry.recursiveDirCount ?? 0,
+                      scanning,
+                      formatFileSize,
+                      formatNumber,
+                      pluralize,
+                  ) || undefined
+                : buildFileSizeTooltip(entry.size, entry.physicalSize, formatFileSize)
+            : undefined,
     )
     // Use formatDateTime from reactive-settings for consistent date formatting with Full mode
     const dateDisplay = $derived.by(() => {
@@ -198,9 +225,6 @@
     // ========================================================================
     // Selection summary mode
     // ========================================================================
-
-    // Drive index scanning state — used for stale indicator when dirs are selected
-    const scanning = $derived(isScanning())
 
     // Computed values for selection summary
     const selectedFiles = $derived(stats?.selectedFiles ?? 0)
