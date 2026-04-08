@@ -451,7 +451,8 @@ mod tests {
 
     /// Insert the parent directory chain for a filesystem path into the DB.
     /// Returns the entry ID of the deepest directory.
-    fn ensure_path_in_db(db_path: &Path, path: &Path) -> i64 {
+    /// Also syncs the writer's shared `next_id` counter with the DB.
+    fn ensure_path_in_db(db_path: &Path, path: &Path, writer: &IndexWriter) -> i64 {
         let conn = IndexStore::open_write_connection(db_path).unwrap();
         let path_str = path.to_string_lossy();
         let components: Vec<&str> = path_str.split('/').filter(|c| !c.is_empty()).collect();
@@ -463,6 +464,11 @@ mod tests {
                     .unwrap(),
             };
         }
+        // Sync the writer's next_id counter with what we just inserted
+        let db_next_id = IndexStore::get_next_id(&conn).unwrap();
+        writer
+            .next_id()
+            .fetch_max(db_next_id, std::sync::atomic::Ordering::Relaxed);
         parent_id
     }
 
@@ -503,7 +509,7 @@ mod tests {
         fs::create_dir(fs_root.path().join("subdir")).unwrap();
 
         let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path());
+        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
         insert_children_from_disk(&writer, parent_id, fs_root.path());
         install_read_pool(&db_path);
 
@@ -529,7 +535,7 @@ mod tests {
         fs::write(fs_root.path().join("file1.txt"), "hello").unwrap();
 
         let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path());
+        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
         insert_children_from_disk(&writer, parent_id, fs_root.path());
         install_read_pool(&db_path);
 
@@ -557,7 +563,7 @@ mod tests {
         fs::write(fs_root.path().join("file2.txt"), "world").unwrap();
 
         let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path());
+        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
         insert_children_from_disk(&writer, parent_id, fs_root.path());
         install_read_pool(&db_path);
 
@@ -586,7 +592,7 @@ mod tests {
         fs::write(fs_root.path().join("file1.txt"), "x").unwrap();
 
         let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path());
+        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
         insert_children_from_disk(&writer, parent_id, fs_root.path());
         install_read_pool(&db_path);
 
@@ -622,7 +628,7 @@ mod tests {
         fs::write(fs_root.path().join("file1.txt"), "hello").unwrap();
 
         let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path());
+        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
         insert_children_from_disk(&writer, parent_id, fs_root.path());
         install_read_pool(&db_path);
 
@@ -653,7 +659,7 @@ mod tests {
         fs::write(subdir.join("nested.txt"), "nested").unwrap();
 
         let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path());
+        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
         insert_children_from_disk(&writer, parent_id, fs_root.path());
         install_read_pool(&db_path);
 
@@ -685,7 +691,7 @@ mod tests {
         fs::write(subdir.join("nested.txt"), "nested").unwrap();
 
         let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path());
+        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
         insert_children_from_disk(&writer, parent_id, fs_root.path());
         install_read_pool(&db_path);
 
@@ -769,7 +775,7 @@ mod tests {
         // Empty directory, no files
 
         let (writer, db_path, _db_dir) = setup_writer();
-        let parent_id = ensure_path_in_db(&db_path, fs_root.path());
+        let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
         // No children to insert
         install_read_pool(&db_path);
 

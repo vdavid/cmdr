@@ -263,10 +263,9 @@ fn run_scan(
     // Files with nlink == 1 (the vast majority) skip the set entirely.
     let mut seen_inodes: HashSet<u64> = HashSet::new();
 
-    // Initialize the scan context: seed root mapping and get next_id from DB.
+    // Initialize the scan context: seed root mapping and get the shared ID counter.
     // Volume-root scans need a write connection (to create the root sentinel).
-    // Subtree scans only read (next_id + resolve_path), so use a read connection
-    // to avoid contending with the writer thread's write lock.
+    // Subtree scans only need a read connection (for resolve_path).
     let mut scan_ctx = {
         let db_path = writer.db_path();
         let conn = if is_volume_root {
@@ -276,7 +275,8 @@ fn run_scan(
         };
         conn.busy_timeout(std::time::Duration::from_secs(5))
             .map_err(|e| ScanError::WriterSend(e.to_string()))?;
-        ScanContext::new(&conn, root, is_volume_root).map_err(|e| ScanError::WriterSend(e.to_string()))?
+        ScanContext::new(&conn, root, is_volume_root, Arc::clone(writer.next_id()))
+            .map_err(|e| ScanError::WriterSend(e.to_string()))?
     };
 
     // For subtree rescans, delete existing descendants first to prevent orphaned entries.
@@ -597,7 +597,8 @@ mod tests {
 
     /// Insert the full parent directory chain for a path into the DB so that
     /// `ScanContext::new` can resolve the subtree root for subtree scans.
-    fn ensure_path_in_db(db_path: &Path, path: &Path) {
+    /// Also syncs the writer's shared `next_id` counter with the DB.
+    fn ensure_path_in_db(db_path: &Path, path: &Path, writer: &IndexWriter) {
         let conn = IndexStore::open_write_connection(db_path).unwrap();
         let path_str = path.to_string_lossy();
         let components: Vec<&str> = path_str.split('/').filter(|c| !c.is_empty()).collect();
@@ -609,6 +610,11 @@ mod tests {
                     .unwrap(),
             };
         }
+        // Sync the writer's next_id counter with what we just inserted
+        let db_next_id = IndexStore::get_next_id(&conn).unwrap();
+        writer
+            .next_id()
+            .fetch_max(db_next_id, Ordering::Relaxed);
     }
 
     #[test]
@@ -755,7 +761,7 @@ mod tests {
         let subtree_root = scan_root.path().join("subdir");
 
         // Pre-insert the subtree root's parent chain so ScanContext can resolve it
-        ensure_path_in_db(&db_path, &subtree_root);
+        ensure_path_in_db(&db_path, &subtree_root, &writer);
 
         let summary = scan_subtree(&subtree_root, &writer, &cancelled).unwrap();
 
@@ -957,19 +963,23 @@ mod tests {
 
     #[test]
     fn scan_context_id_allocation() {
+        use std::sync::Arc;
+        use std::sync::atomic::AtomicI64;
+
         // Verify ScanContext properly assigns monotonically increasing IDs
         let dir = tempfile::tempdir().expect("temp dir");
         let db_path = dir.path().join("test-ctx.db");
         let _store = IndexStore::open(&db_path).expect("open store");
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        let root_path = Path::new("/test/root");
-        let mut ctx = ScanContext::new(&conn, root_path, true).unwrap();
+        // Seed the counter from the DB (root sentinel is id=1, so next_id=2)
+        let next_id = Arc::new(AtomicI64::new(IndexStore::get_next_id(&conn).unwrap()));
 
-        // Root sentinel exists (id=1), so next_id should be >= 2
-        assert!(ctx.next_id >= 2);
+        let root_path = Path::new("/test/root");
+        let mut ctx = ScanContext::new(&conn, root_path, true, next_id).unwrap();
 
         let id1 = ctx.alloc_id();
+        assert!(id1 >= 2);
         let id2 = ctx.alloc_id();
         let id3 = ctx.alloc_id();
         assert_eq!(id2, id1 + 1);
@@ -989,6 +999,9 @@ mod tests {
 
     #[test]
     fn scan_context_subtree_resolves_actual_id() {
+        use std::sync::Arc;
+        use std::sync::atomic::AtomicI64;
+
         // When the subtree root exists in the DB, ScanContext should use its actual ID
         let dir = tempfile::tempdir().expect("temp dir");
         let db_path = dir.path().join("test-ctx-subtree.db");
@@ -1002,9 +1015,12 @@ mod tests {
             IndexStore::insert_entry_v2(&conn, volumes_id, "NO NAME", true, false, None, None, None, None).unwrap();
         assert_ne!(noname_id, ROOT_ID);
 
+        // Seed counter from DB after inserts
+        let next_id = Arc::new(AtomicI64::new(IndexStore::get_next_id(&conn).unwrap()));
+
         // Create ScanContext for the subtree root
         let subtree_root = Path::new("/Volumes/NO NAME");
-        let ctx = ScanContext::new(&conn, subtree_root, false).unwrap();
+        let ctx = ScanContext::new(&conn, subtree_root, false, next_id).unwrap();
 
         // Should resolve to the actual entry ID, NOT ROOT_ID
         assert_eq!(ctx.lookup_parent(subtree_root), Some(noname_id));

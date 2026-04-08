@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
 use std::sync::mpsc;
 use std::thread;
 use std::time::Instant;
@@ -141,6 +141,10 @@ pub struct IndexWriter {
     /// completes. The writer thread reads this to report flushing progress as
     /// it processes remaining `InsertEntriesV2` batches.
     expected_total_entries: Arc<AtomicU64>,
+    /// Shared ID counter for entry allocation. The scanner atomically increments
+    /// this to get unique IDs, and the writer bumps it after `UpsertEntryV2` inserts
+    /// (which let SQLite auto-assign). Reset to 2 on `TruncateData`.
+    next_id: Arc<AtomicI64>,
 }
 
 impl IndexWriter {
@@ -152,13 +156,16 @@ impl IndexWriter {
     /// events during `ComputeAllAggregates`.
     pub fn spawn(db_path: &Path, app_handle: Option<AppHandle>) -> Result<Self, IndexStoreError> {
         let conn = IndexStore::open_write_connection(db_path)?;
+        let initial_next_id = IndexStore::get_next_id(&conn)?;
         let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(WRITER_CHANNEL_CAPACITY);
         let expected_total_entries = Arc::new(AtomicU64::new(0));
         let expected_total_clone = Arc::clone(&expected_total_entries);
+        let next_id = Arc::new(AtomicI64::new(initial_next_id));
+        let next_id_clone = Arc::clone(&next_id);
 
         let handle = thread::Builder::new()
             .name("index-writer".into())
-            .spawn(move || writer_loop(conn, receiver, app_handle, expected_total_clone))
+            .spawn(move || writer_loop(conn, receiver, app_handle, expected_total_clone, next_id_clone))
             .map_err(IndexStoreError::Io)?;
 
         Ok(Self {
@@ -166,6 +173,7 @@ impl IndexWriter {
             thread_handle: Arc::new(std::sync::Mutex::new(Some(handle))),
             db_path: db_path.to_path_buf(),
             expected_total_entries,
+            next_id,
         })
     }
 
@@ -173,6 +181,12 @@ impl IndexWriter {
     /// temporary connection for `ScanContext` initialization.
     pub fn db_path(&self) -> PathBuf {
         self.db_path.clone()
+    }
+
+    /// Shared ID counter for entry allocation. The scanner uses this to
+    /// allocate unique IDs without reading from the DB (which can be stale).
+    pub fn next_id(&self) -> &Arc<AtomicI64> {
+        &self.next_id
     }
 
     /// Set the expected total entries from a completed scan. The writer thread
@@ -399,6 +413,7 @@ fn writer_loop(
     receiver: mpsc::Receiver<WriteMessage>,
     app_handle: Option<AppHandle>,
     expected_total_entries: Arc<AtomicU64>,
+    next_id: Arc<AtomicI64>,
 ) {
     log::debug!("Writer: thread started");
     let mut stats = WriterStats::new();
@@ -420,6 +435,7 @@ fn writer_loop(
                 &mut accumulator,
                 &app_handle,
                 &expected_total_entries,
+                &next_id,
             )
         });
         #[cfg(not(target_os = "macos"))]
@@ -430,6 +446,7 @@ fn writer_loop(
             &mut accumulator,
             &app_handle,
             &expected_total_entries,
+            &next_id,
         );
         if should_exit {
             log::debug!("Writer: shutdown after processing {} messages", stats.current.total);
@@ -452,6 +469,7 @@ fn process_message(
     accumulator: &mut AccumulatorMaps,
     app_handle: &Option<AppHandle>,
     expected_total_entries: &AtomicU64,
+    next_id: &AtomicI64,
 ) -> bool {
     match msg {
         // ── Integer-keyed variants ───────────────────────────────────
@@ -480,6 +498,7 @@ fn process_message(
                 modified_at,
                 inode,
                 nlink,
+                next_id,
             );
         }
         WriteMessage::DeleteEntryById(entry_id) => {
@@ -512,7 +531,7 @@ fn process_message(
             );
         }
         WriteMessage::TruncateData => {
-            handle_truncate_data(conn, accumulator, expected_total_entries);
+            handle_truncate_data(conn, accumulator, expected_total_entries, next_id);
         }
         WriteMessage::ComputeAllAggregates => {
             handle_compute_all_aggregates(conn, accumulator, app_handle, expected_total_entries);
@@ -586,7 +605,7 @@ fn handle_insert_entries_v2(
     accumulator.accumulate(&entries);
     let t = Instant::now();
     if let Err(e) = IndexStore::insert_entries_v2_batch(conn, &entries) {
-        log::warn!("Index writer: insert_entries_v2_batch failed: {e}");
+        log::error!("Index writer: insert_entries_v2_batch failed: {e}");
     }
     let elapsed = t.elapsed().as_millis();
     if elapsed > 100 {
@@ -624,6 +643,7 @@ fn handle_upsert_entry_v2(
     modified_at: Option<u64>,
     inode: Option<u64>,
     nlink: Option<u64>,
+    next_id: &AtomicI64,
 ) {
     // Hardlink dedup: if this file has nlink > 1, check whether another entry
     // for the same inode already has non-NULL sizes. If so, override sizes to
@@ -661,6 +681,7 @@ fn handle_upsert_entry_v2(
                 modified_at,
                 inode,
                 should_dedup,
+                next_id,
             );
         }
         Err(e) => {
@@ -745,6 +766,7 @@ fn upsert_insert_new(
     modified_at: Option<u64>,
     inode: Option<u64>,
     should_dedup: bool,
+    next_id: &AtomicI64,
 ) {
     // Dedup: override sizes if another entry already has sizes for this inode
     let (logical_size, physical_size) =
@@ -754,8 +776,10 @@ fn upsert_insert_new(
             (logical_size, physical_size)
         };
 
-    match IndexStore::insert_entry_v2(
+    let new_entry_id = next_id.fetch_add(1, Ordering::Relaxed);
+    match IndexStore::insert_entry_v2_with_id(
         conn,
+        new_entry_id,
         parent_id,
         name,
         is_directory,
@@ -850,6 +874,7 @@ fn handle_truncate_data(
     conn: &rusqlite::Connection,
     accumulator: &mut AccumulatorMaps,
     expected_total_entries: &AtomicU64,
+    next_id: &AtomicI64,
 ) {
     accumulator.clear();
     expected_total_entries.store(0, Ordering::Relaxed);
@@ -858,6 +883,8 @@ fn handle_truncate_data(
         "DELETE FROM dir_stats; DELETE FROM entries; INSERT OR IGNORE INTO entries (id, parent_id, name, is_directory, is_symlink) VALUES (1, 0, '', 1, 0);",
     ) {
         Ok(()) => {
+            // Root sentinel is id=1, so next assignable ID is 2
+            next_id.store(2, Ordering::Relaxed);
             log::info!(
                 "Writer: truncated entries + dir_stats ({}ms)",
                 t.elapsed().as_millis(),

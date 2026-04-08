@@ -14,6 +14,8 @@
 
 use rusqlite::{Connection, OptionalExtension, params};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicI64, Ordering};
 
 const SCHEMA_VERSION: &str = "9";
 
@@ -73,27 +75,33 @@ pub struct EntryRow {
 pub struct ScanContext {
     /// Map from directory absolute path to its assigned entry ID.
     pub dir_ids: std::collections::HashMap<PathBuf, i64>,
-    /// Next ID to assign. Always >= 2 (root sentinel is 1).
-    pub next_id: i64,
+    /// Shared ID counter. Atomically incremented to allocate unique IDs.
+    /// Owned by `IndexWriter`, shared with all scanners and the writer thread.
+    next_id: Arc<AtomicI64>,
 }
 
 impl ScanContext {
-    /// Create a new scan context, seeding the map with the root's entry ID
-    /// and fetching `next_id` from the DB.
+    /// Create a new scan context, seeding the map with the root's entry ID.
+    ///
+    /// `next_id` is the shared atomic counter from `IndexWriter` — the single
+    /// source of truth for ID allocation.
     ///
     /// `is_volume_root`: true for full volume scans (always maps root → ROOT_ID).
     /// When false (subtree scans), resolves the root's actual entry ID from the DB.
     /// Returns an error if the root isn't indexed yet (for example, a subtree scan
     /// racing with an ongoing full scan — the full scan will cover it).
-    pub fn new(conn: &Connection, root: &Path, is_volume_root: bool) -> Result<Self, IndexStoreError> {
+    pub fn new(
+        conn: &Connection,
+        root: &Path,
+        is_volume_root: bool,
+        next_id: Arc<AtomicI64>,
+    ) -> Result<Self, IndexStoreError> {
         // Only volume-root scans need to create the sentinel — subtree scans
         // run after the full scan has already inserted it, and their connection
         // may be read-only or contending with the writer thread's write lock.
         if is_volume_root {
             ensure_root_sentinel(conn)?;
         }
-
-        let next_id = IndexStore::get_next_id(conn)?;
 
         let root_id = if is_volume_root {
             ROOT_ID
@@ -140,9 +148,7 @@ impl ScanContext {
 
     /// Allocate the next entry ID and advance the counter.
     pub fn alloc_id(&mut self) -> i64 {
-        let id = self.next_id;
-        self.next_id += 1;
-        id
+        self.next_id.fetch_add(1, Ordering::Relaxed)
     }
 
     /// Register a directory path with its assigned ID, so children can
@@ -783,6 +789,45 @@ impl IndexStore {
         Ok(conn.last_insert_rowid())
     }
 
+    /// Insert a single entry with an explicit ID. Used by the writer thread
+    /// when processing `UpsertEntryV2` inserts, so the ID comes from the shared
+    /// `next_id` counter rather than SQLite auto-assignment.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "refactoring to take &EntryRow would cascade into many callers"
+    )]
+    pub fn insert_entry_v2_with_id(
+        conn: &Connection,
+        id: i64,
+        parent_id: i64,
+        name: &str,
+        is_directory: bool,
+        is_symlink: bool,
+        logical_size: Option<u64>,
+        physical_size: Option<u64>,
+        modified_at: Option<u64>,
+        inode: Option<u64>,
+    ) -> Result<i64, IndexStoreError> {
+        let name_folded = normalize_for_comparison(name);
+        conn.execute(
+            "INSERT INTO entries (id, parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            params![
+                id,
+                parent_id,
+                name,
+                name_folded,
+                is_directory as i32,
+                is_symlink as i32,
+                logical_size,
+                physical_size,
+                modified_at,
+                inode,
+            ],
+        )?;
+        Ok(id)
+    }
+
     /// Batch insert entries with pre-assigned IDs inside a savepoint.
     ///
     /// Uses a savepoint instead of `unchecked_transaction()` so it nests correctly
@@ -792,9 +837,9 @@ impl IndexStore {
             return Ok(());
         }
         with_savepoint(conn, "insert_entries", |conn| {
-            // Plain INSERT: the only unique constraint is the integer PK (`id`), and
-            // ScanContext assigns unique IDs, so conflicts shouldn't occur. The table is
-            // truncated before full scans and descendants are deleted before subtree scans.
+            // Plain INSERT: IDs are allocated from a shared AtomicI64 counter owned by
+            // IndexWriter, so conflicts shouldn't occur. The table is truncated before
+            // full scans and descendants are deleted before subtree scans.
             let mut stmt = conn.prepare_cached(
                 "INSERT INTO entries (id, parent_id, name, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at, inode)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",

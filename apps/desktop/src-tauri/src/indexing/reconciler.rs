@@ -961,7 +961,7 @@ mod tests {
         // Pre-populate DB with the parent directory chain so resolve_path works.
         // In production, the full scan populates all directories before live events.
         let db_path = dir.path().join("test-reconciler.db");
-        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
         let event = make_event(&file_path.to_string_lossy(), 50, created_file_flags());
 
@@ -1029,7 +1029,7 @@ mod tests {
 
         // Pre-populate DB with the parent directory chain
         let db_path = dir.path().join("test-reconciler.db");
-        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
         let event = make_event(&new_dir.to_string_lossy(), 70, created_dir_flags());
 
@@ -1119,7 +1119,7 @@ mod tests {
         std::fs::write(&real_file, "I exist!").unwrap();
 
         // Pre-populate DB with the parent directory chain + the file
-        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
         {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
             let parent_id = store::resolve_path(&wconn, &test_dir.path().to_string_lossy())
@@ -1175,7 +1175,7 @@ mod tests {
         let file_path = test_dir.path().join("swapped.txt");
         std::fs::write(&file_path, "new content after swap").unwrap();
 
-        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
         {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
             let parent_id = store::resolve_path(&wconn, &test_dir.path().to_string_lossy())
@@ -1238,7 +1238,7 @@ mod tests {
         std::fs::write(sub_dir.join("child2.txt"), "bbb").unwrap();
 
         // Populate DB with the directory tree matching disk
-        ensure_path_in_db(&db_path, &sub_dir.to_string_lossy());
+        ensure_path_in_db(&db_path, &sub_dir.to_string_lossy(), &writer);
         {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
             let sub_id = store::resolve_path(&wconn, &sub_dir.to_string_lossy())
@@ -1316,7 +1316,7 @@ mod tests {
         std::fs::write(target_dir.join("precious.txt"), "don't delete me").unwrap();
 
         // Populate DB with the directory tree
-        ensure_path_in_db(&db_path, &target_dir.to_string_lossy());
+        ensure_path_in_db(&db_path, &target_dir.to_string_lossy(), &writer);
         {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
             let dir_id = store::resolve_path(&wconn, &target_dir.to_string_lossy())
@@ -1387,7 +1387,7 @@ mod tests {
         let file_path = test_dir.path().join("new_file.txt");
         std::fs::write(&file_path, "hello reconcile").unwrap();
 
-        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
         let cancelled = AtomicBool::new(false);
         let result = reconcile_subtree(test_dir.path(), &conn, &writer, &cancelled);
@@ -1416,7 +1416,7 @@ mod tests {
         let test_dir = non_excluded_tempdir();
 
         // Insert the test dir and a file entry into the DB, but don't create the file on disk
-        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
         {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
             let parent_str = test_dir.path().to_string_lossy().to_string();
@@ -1462,7 +1462,7 @@ mod tests {
         std::fs::write(&file_path, "no changes").unwrap();
 
         // Insert the directory into the DB
-        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
         // Get the file's actual metadata and insert a matching DB entry
         let meta = std::fs::symlink_metadata(&file_path).unwrap();
@@ -1505,7 +1505,7 @@ mod tests {
         let file_path = test_dir.path().join("changed.txt");
         std::fs::write(&file_path, "original content").unwrap();
 
-        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
         // Insert DB entry with stale metadata (different size)
         {
@@ -1565,7 +1565,7 @@ mod tests {
         std::fs::write(new_dir.join("child.txt"), "nested child").unwrap();
 
         // DB only knows about /parent/ — new_dir and child.txt are unknown
-        ensure_path_in_db(&db_path, &parent.to_string_lossy());
+        ensure_path_in_db(&db_path, &parent.to_string_lossy(), &writer);
 
         let cancelled = AtomicBool::new(false);
         let result = reconcile_subtree(&parent, &conn, &writer, &cancelled);
@@ -1616,7 +1616,7 @@ mod tests {
         std::fs::write(parent.join("item"), "I am a file now").unwrap();
 
         // DB: /parent/item/ is a directory with a child
-        ensure_path_in_db(&db_path, &parent.to_string_lossy());
+        ensure_path_in_db(&db_path, &parent.to_string_lossy(), &writer);
         {
             let wconn = IndexStore::open_write_connection(&db_path).unwrap();
             let parent_id = store::resolve_path(&wconn, &parent.to_string_lossy()).unwrap().unwrap();
@@ -1687,7 +1687,7 @@ mod tests {
         std::fs::write(dir_c.join("file.txt"), "deep content").unwrap();
 
         // DB only knows about /root_dir/ — everything inside is new
-        ensure_path_in_db(&db_path, &root_dir.to_string_lossy());
+        ensure_path_in_db(&db_path, &root_dir.to_string_lossy(), &writer);
 
         let cancelled = AtomicBool::new(false);
         let result = reconcile_subtree(&root_dir, &conn, &writer, &cancelled);
@@ -1756,7 +1756,7 @@ mod tests {
         // Only the PARENT is in the DB — the new directory itself is NOT.
         // This simulates what happens when FSEvents fires must_scan_sub_dirs
         // for a newly copied/created directory.
-        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
         let cancelled = AtomicBool::new(false);
         let result = reconcile_subtree(&new_dir, &conn, &writer, &cancelled);
@@ -1845,7 +1845,7 @@ mod tests {
         let test_dir = non_excluded_tempdir();
         let file_path = test_dir.path().join("old.txt");
         std::fs::write(&file_path, "old").unwrap();
-        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
         let mut reconciler = EventReconciler::new();
         reconciler.buffer_event(make_event(&file_path.to_string_lossy(), 5, created_file_flags()));
@@ -1880,7 +1880,7 @@ mod tests {
         let test_dir = non_excluded_tempdir();
         let file_path = test_dir.path().join("new.txt");
         std::fs::write(&file_path, "new content").unwrap();
-        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
         let mut reconciler = EventReconciler::new();
         reconciler.buffer_event(make_event(&file_path.to_string_lossy(), 20, created_file_flags()));
@@ -1911,7 +1911,7 @@ mod tests {
         let file_b = test_dir.path().join("b.txt");
         std::fs::write(&file_a, "a").unwrap();
         std::fs::write(&file_b, "b").unwrap();
-        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
         let mut reconciler = EventReconciler::new();
         reconciler.buffer_event(make_event(&file_a.to_string_lossy(), 15, created_file_flags()));
@@ -1939,7 +1939,7 @@ mod tests {
         let test_dir = non_excluded_tempdir();
         let file_path = test_dir.path().join("notify.txt");
         std::fs::write(&file_path, "hi").unwrap();
-        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
         let mut reconciler = EventReconciler::new();
         reconciler.buffer_event(make_event(&file_path.to_string_lossy(), 20, created_file_flags()));
@@ -1988,7 +1988,7 @@ mod tests {
         let test_dir = non_excluded_tempdir();
         let file_path = test_dir.path().join("stale.txt");
         std::fs::write(&file_path, "stale").unwrap();
-        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy());
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
         let mut reconciler = EventReconciler::new();
         reconciler.buffer_event(make_event(&file_path.to_string_lossy(), 3, created_file_flags()));
@@ -2021,8 +2021,8 @@ mod tests {
     ///
     /// Walks from root downward, inserting each missing component. This simulates
     /// what the full scan does in production: all directories are indexed before
-    /// live events arrive.
-    fn ensure_path_in_db(db_path: &Path, abs_path: &str) {
+    /// live events arrive. Also syncs the writer's shared `next_id` counter.
+    fn ensure_path_in_db(db_path: &Path, abs_path: &str, writer: &IndexWriter) {
         let conn = IndexStore::open_write_connection(db_path).unwrap();
         let components: Vec<&str> = abs_path
             .strip_prefix('/')
@@ -2042,6 +2042,11 @@ mod tests {
                 }
             }
         }
+        // Sync the writer's next_id counter with what we just inserted
+        let db_next_id = IndexStore::get_next_id(&conn).unwrap();
+        writer
+            .next_id()
+            .fetch_max(db_next_id, Ordering::Relaxed);
     }
 
     /// Create a temp directory outside indexing-excluded paths.
