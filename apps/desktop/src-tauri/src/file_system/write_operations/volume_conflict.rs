@@ -6,9 +6,6 @@
 //! - Overwrite: Delete existing, return same path
 //! - Rename: Find unique name like "file (1).txt"
 
-// TODO: Remove this once volume_copy is integrated into Tauri commands (Phase 5)
-#![allow(dead_code, reason = "Volume copy not yet integrated into Tauri commands")]
-
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 

@@ -7,9 +7,6 @@
 //! - MTP → MTP file: streaming transfer
 //! - MTP → MTP directory: export to temp local, then import
 
-// TODO: Remove this once volume_copy is integrated into Tauri commands (Phase 5)
-#![allow(dead_code, reason = "Volume copy not yet integrated into Tauri commands")]
-
 use std::path::Path;
 use std::sync::Arc;
 

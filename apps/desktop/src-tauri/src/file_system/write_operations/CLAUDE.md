@@ -25,7 +25,7 @@ network mounts, cross-filesystem moves, and name/path length limits.
 | `macos_copy.rs` | FFI to macOS `copyfile(3)`. Preserves xattrs, ACLs, resource forks, Finder metadata. Supports APFS `clonefile`. |
 | `linux_copy.rs` | Linux `copy_file_range(2)` with reflink support on btrfs/XFS. 4 MB chunks, cancellation between iterations. |
 | `chunked_copy.rs` | 1 MB chunked read/write — the default copy method for all non-APFS-clonefile copies on macOS and network copies on Linux. Checks cancellation between chunks. Copies xattrs, ACLs, timestamps. |
-| `volume_copy.rs`, `volume_conflict.rs`, `volume_strategy.rs` | Volume-to-volume copy (Local↔MTP abstraction). Publicly re-exported from `mod.rs` and at least partially wired up. |
+| `volume_copy.rs`, `volume_conflict.rs`, `volume_strategy.rs` | Volume-to-volume copy/move (Local↔MTP abstraction). Handles conflict detection, resolution (Stop/Skip/Overwrite/Rename), and progress. Wired into Tauri commands `copy_between_volumes` and `move_between_volumes`. |
 | `tests.rs`, `integration_test.rs` | Unit and integration tests. |
 
 ## Architecture / data flow
@@ -133,7 +133,7 @@ frontend's `handleError` removes all listeners on first receipt.
 threads (used for temp/backup file cleanup, not for user-visible rollback). If the network mount disconnects or the app
 exits, partial files or staging directories may remain on disk. These use the `.cmdr-` prefix, so they're recognizable.
 
-**`volume_copy` path is incomplete.** The three `volume_*` files are Phase 5 work, but are publicly re-exported from `mod.rs` and at least partially wired up.
+**`volume_copy` path is fully wired up.** The three `volume_*` files are re-exported from `mod.rs` and called by the `copy_between_volumes` and `move_between_volumes` Tauri commands. Both copy and move operations support conflict detection and resolution (Stop/Skip/Overwrite/Rename) for all volume combinations (Local↔MTP, MTP↔MTP).
 
 ## Events emitted
 

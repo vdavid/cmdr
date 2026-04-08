@@ -567,7 +567,7 @@ pub async fn move_between_volumes(
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Same volume — use native rename/move (instant for MTP)
     if Arc::ptr_eq(&source_volume, &dest_volume) {
-        return move_within_same_volume(app, source_volume, source_paths, dest_path, &config).await;
+        return move_within_same_volume(app, source_volume, source_paths, dest_path, config).await;
     }
 
     // Both local — delegate to the battle-tested move implementation
@@ -631,6 +631,8 @@ pub async fn move_between_volumes(
 
             // Copy+delete per file: on partial failure, already-moved files exist at dest,
             // remaining files stay at source. No data loss, but the move is partial.
+            let mut apply_to_all_resolution: Option<ConflictResolution> = None;
+
             for source_path in &source_paths {
                 if super::state::is_cancelled(&state.intent) {
                     return Err(WriteOperationError::Cancelled {
@@ -643,7 +645,55 @@ pub async fn move_between_volumes(
                     message: "Invalid source path".to_string(),
                 })?;
 
-                let dest_item = dest_path.join(file_name);
+                let mut dest_item = dest_path.join(file_name);
+
+                // Check for conflict: does destination already exist?
+                if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item) {
+                    let source_is_dir = source_volume.is_directory(source_path).unwrap_or(false);
+                    let dest_is_dir = dest_meta.is_directory;
+
+                    if source_is_dir && dest_is_dir {
+                        // Both are directories — merge, not a conflict
+                        log::debug!(
+                            "move_between_volumes: merging directories {} -> {}",
+                            source_path.display(),
+                            dest_item.display()
+                        );
+                    } else {
+                        log::debug!(
+                            "move_between_volumes: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
+                            dest_item.display(),
+                            source_is_dir,
+                            dest_is_dir
+                        );
+
+                        let resolved = resolve_volume_conflict(
+                            &source_volume,
+                            source_path,
+                            &dest_volume,
+                            &dest_item,
+                            &config,
+                            &app,
+                            &operation_id_for_spawn,
+                            &state,
+                            &mut apply_to_all_resolution,
+                        )?;
+
+                        match resolved {
+                            None => {
+                                // Skip — don't copy and don't delete source
+                                log::debug!(
+                                    "move_between_volumes: skipping {} due to conflict resolution",
+                                    source_path.display()
+                                );
+                                continue;
+                            }
+                            Some(resolved_path) => {
+                                dest_item = resolved_path;
+                            }
+                        }
+                    }
+                }
 
                 // Copy to destination
                 let bytes = copy_single_path(&source_volume, source_path, &dest_volume, &dest_item, &state)
@@ -745,7 +795,7 @@ async fn move_within_same_volume(
     volume: Arc<dyn Volume>,
     source_paths: Vec<PathBuf>,
     dest_path: PathBuf,
-    config: &VolumeCopyConfig,
+    config: VolumeCopyConfig,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let operation_id = Uuid::new_v4().to_string();
     let operation_id_for_spawn = operation_id.clone();
@@ -785,6 +835,7 @@ async fn move_within_same_volume(
             let mut bytes_moved = 0u64;
             let mut last_progress_time = Instant::now();
             let progress_interval = Duration::from_millis(progress_interval_ms);
+            let mut apply_to_all_resolution: Option<ConflictResolution> = None;
 
             for source_path in &source_paths {
                 if super::state::is_cancelled(&state.intent) {
@@ -798,7 +849,55 @@ async fn move_within_same_volume(
                     message: "Invalid source path".to_string(),
                 })?;
 
-                let dest_item = dest_path.join(file_name);
+                let mut dest_item = dest_path.join(file_name);
+
+                // Check for conflict: does destination already exist?
+                if let Ok(dest_meta) = volume.get_metadata(&dest_item) {
+                    let source_is_dir = volume.is_directory(source_path).unwrap_or(false);
+                    let dest_is_dir = dest_meta.is_directory;
+
+                    if source_is_dir && dest_is_dir {
+                        // Both are directories — merge, not a conflict
+                        log::debug!(
+                            "move_within_same_volume: merging directories {} -> {}",
+                            source_path.display(),
+                            dest_item.display()
+                        );
+                    } else {
+                        log::debug!(
+                            "move_within_same_volume: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
+                            dest_item.display(),
+                            source_is_dir,
+                            dest_is_dir
+                        );
+
+                        let resolved = resolve_volume_conflict(
+                            &volume,
+                            source_path,
+                            &volume,
+                            &dest_item,
+                            &config,
+                            &app,
+                            &operation_id_for_spawn,
+                            &state,
+                            &mut apply_to_all_resolution,
+                        )?;
+
+                        match resolved {
+                            None => {
+                                // Skip — don't move this file
+                                log::debug!(
+                                    "move_within_same_volume: skipping {} due to conflict resolution",
+                                    source_path.display()
+                                );
+                                continue;
+                            }
+                            Some(resolved_path) => {
+                                dest_item = resolved_path;
+                            }
+                        }
+                    }
+                }
 
                 let size = volume.get_metadata(source_path).ok().and_then(|m| m.size).unwrap_or(0);
 
