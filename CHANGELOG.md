@@ -5,6 +5,86 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-04-08
+
+### Added
+
+- Copy rollback is now visible — progress bars count backwards from the cancellation point, rollback button shows
+  "Rolling back...", Cancel stays active to stop the rollback
+  ([0ac5d0](https://github.com/vdavid/cmdr/commit/0ac5d0))
+- Dual progress bars in transfer dialogs — size-based and file-count-based, hidden during scanning phase
+  ([ced9d2](https://github.com/vdavid/cmdr/commit/ced9d2))
+- MCP: `cmdr://settings` resource and `set_setting` tool — inspect and change all settings without opening the Settings
+  window ([c71115](https://github.com/vdavid/cmdr/commit/c71115))
+- MCP: `move_cursor` now awaits frontend confirmation, fixing race where `copy` fires before cursor has moved
+  ([634125](https://github.com/vdavid/cmdr/commit/634125))
+
+### Fixed
+
+- MTP: move conflicts no longer silently overwrite — both cross-volume and same-volume moves now show the conflict dialog
+  with Skip/Overwrite options, same as copy
+  ([27f2ff](https://github.com/vdavid/cmdr/commit/27f2ff))
+- MTP: fix watcher missing external file changes — listing cache key mismatch made every invalidation a no-op, masked on
+  macOS by the 5s cache TTL but visible on Linux where inotify fires instantly
+  ([266026](https://github.com/vdavid/cmdr/commit/266026))
+- MTP: fix event debouncer permanently dropping events — suppressed events in the 500ms window are now scheduled for a
+  trailing emit ([21b3bc](https://github.com/vdavid/cmdr/commit/21b3bc))
+- MTP: fix pane falling back to local root after copy — `refresh_listing` was calling `std::fs` on MTP paths, emitting a
+  spurious `directory-deleted` event ([9deba7](https://github.com/vdavid/cmdr/commit/9deba7))
+- MTP: fix volumes missing from copy/move dialog, fix destination volume dropdown not updating on change
+  ([cd6603](https://github.com/vdavid/cmdr/commit/cd6603))
+- MTP: fix event loop lock contention — clone `MtpDevice` for event polling instead of holding mutex during
+  `next_event()`, unblocking copy/move/scan operations
+  ([0461e3](https://github.com/vdavid/cmdr/commit/0461e3), [547a41](https://github.com/vdavid/cmdr/commit/547a41))
+- MTP: fix scan preview showing 0/0/0 in confirmation dialog, reduce USB round-trips for conflict checks
+  ([4e1efa](https://github.com/vdavid/cmdr/commit/4e1efa))
+- MTP: fix rename conflicts not showing dialog on non-local volumes, fix paste guard checking clipboard before MTP
+  rejection ([25f2b2](https://github.com/vdavid/cmdr/commit/25f2b2))
+- Copy: fix "Cancel" (keep partial files) triggering unintended rollback — `onDestroy` race condition overwrote the
+  user's choice ([3042f2](https://github.com/vdavid/cmdr/commit/3042f2))
+- Copy: fix cancellation hanging 30+ seconds on network mounts — use chunked copy instead of `copyfile(3)` for all
+  non-APFS-clone copies ([816e9e](https://github.com/vdavid/cmdr/commit/816e9e))
+- Fix UI blocking on network filesystem operations — move validation into `spawn_blocking`, emit `write-error` for
+  handler errors ([bed59d](https://github.com/vdavid/cmdr/commit/bed59d))
+- Indexing: fix replay progress showing "Scanning..." instead of the replay overlay with progress bar and ETA
+  ([32c053](https://github.com/vdavid/cmdr/commit/32c053))
+- Volume selector: push-based model replaces polling, fix race conditions on mount/unmount
+  ([b09665](https://github.com/vdavid/cmdr/commit/b09665))
+- Volume path resolution via `statfs` — resolves in <1ms regardless of network mount health, handles APFS firmlinks
+  ([5a1f78](https://github.com/vdavid/cmdr/commit/5a1f78))
+- Harden unsafe Rust code — checked main thread markers, scoped `Send` impls, `SAFETY` comments on `transmute` calls
+  ([541804](https://github.com/vdavid/cmdr/commit/541804))
+
+### Improved
+
+- Typed write operation errors replace string parsing — 9 specific variants (`DeviceDisconnected`, `ReadOnlyDevice`,
+  `FileLocked`, etc.) instead of `IoError(String)` catch-all
+  ([c10e06](https://github.com/vdavid/cmdr/commit/c10e06))
+- Typed volume errors — MTP errors stop being erased into `IoError(String)` and guessed back via string matching
+  ([8f2296](https://github.com/vdavid/cmdr/commit/8f2296))
+- MTP: unified backend move — frontend no longer orchestrates three-stage MTP moves, backend handles strategy
+  ([547a41](https://github.com/vdavid/cmdr/commit/547a41))
+- Demote noisy per-file copy/move/MTP logs from INFO to DEBUG, add `level_for` filters for third-party crates
+  ([357fef](https://github.com/vdavid/cmdr/commit/357fef))
+
+### Non-app
+
+- Accessibility: fix all WCAG violations found by axe-core — proper ARIA roles, focus indicators, color contrast, screen
+  reader landmarks ([d29a7c](https://github.com/vdavid/cmdr/commit/d29a7c),
+  [438046](https://github.com/vdavid/cmdr/commit/438046), [6e6230](https://github.com/vdavid/cmdr/commit/6e6230))
+- E2E: port all tests from WebDriverIO to Playwright, add 80+ new tests covering MTP operations, SMB, file conflicts,
+  accessibility, and indexing
+- E2E: replace all test sleeps with event-driven waits
+  ([3b5565](https://github.com/vdavid/cmdr/commit/3b5565))
+- Tooling: replace Prettier with oxfmt (10–20x faster)
+  ([995f8c](https://github.com/vdavid/cmdr/commit/995f8c))
+- Tooling: auto-invalidate Docker `node_modules` on lockfile change
+  ([ac4e26](https://github.com/vdavid/cmdr/commit/ac4e26))
+- Refactor: split indexing module (1951 lines → focused files), extract shared `compute_bottom_up()`, unify
+  `name_folded` across platforms ([390864](https://github.com/vdavid/cmdr/commit/390864))
+- Website: light/dark theme with toggle, features page, OG images, blog Like buttons
+- Dashboard: color-coded charts, GitHub star tracking, improved error reporting
+
 ## [0.9.1] - 2026-03-24
 
 ### Fixed
