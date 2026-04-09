@@ -53,6 +53,22 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 
 `MtpVolume` is called from `tokio::task::spawn_blocking`, so `Handle::block_on` is safe inside its methods. However, `write_from_stream` must collect all chunks **before** entering `block_on` to avoid nested-runtime panics (stream chunks also use `block_on` internally).
 
+## SMB auto-upgrade lifecycle
+
+SMB mounts are automatically upgraded to `SmbVolume` (direct smb2 connection) in two scenarios:
+
+1. **Startup** (`file_system::upgrade_existing_smb_mounts`): Scans registered volumes for `smbfs` type. Waits for mDNS
+   discovery to reach `Active` state (polls every 500ms, up to 15s) because Keychain credentials are keyed by hostname
+   (from mDNS), not IP (from `statfs`). Uses `tauri::async_runtime::spawn` (not `tokio::spawn` — runs during `setup()`
+   before Tokio is fully available). Emits `volumes-changed` after upgrades so the frontend refreshes indicators.
+
+2. **Mount detection** (`volumes/watcher.rs::try_upgrade_smb_mount`): When FSEvents detects a new volume in `/Volumes/`
+   and it's `smbfs`, spawns a background upgrade attempt. By this point mDNS is already active.
+
+Both paths check the `network.directSmbConnection` setting (global `AtomicBool`). Both are best-effort — failures log a
+warning and the volume stays as `LocalPosixVolume`. The "Connect directly" UI action (`upgrade_to_smb_volume` command)
+provides a manual upgrade path.
+
 ## Integration status
 
 `LocalPosixVolume` is wired into the indexing subsystem. `VolumeManager` is actively used.

@@ -166,13 +166,18 @@ impl SmbVolume {
     ///
     /// The frontend sends paths relative to the volume root (which is the mount path).
     /// smb2 expects paths relative to the share root with `/` separators.
+    /// NFC-normalizes the result because macOS sends NFD (decomposed) paths
+    /// but SMB servers expect NFC (composed). Without this, paths with accented
+    /// characters (like "ä") fail with STATUS_OBJECT_PATH_NOT_FOUND.
     fn to_smb_path(&self, path: &Path) -> String {
+        use unicode_normalization::UnicodeNormalization;
+
         let path_str = path.to_string_lossy();
 
         // Handle paths that start with the mount path (absolute paths from frontend)
         if let Some(relative) = path_str.strip_prefix(self.mount_path.to_string_lossy().as_ref()) {
             let trimmed = relative.trim_start_matches('/');
-            return trimmed.to_string();
+            return trimmed.nfc().collect();
         }
 
         // Handle empty or root paths
@@ -181,7 +186,8 @@ impl SmbVolume {
         }
 
         // Strip leading slash for absolute paths
-        path_str.strip_prefix('/').unwrap_or(&path_str).to_string()
+        let raw = path_str.strip_prefix('/').unwrap_or(&path_str);
+        raw.nfc().collect()
     }
 
     /// Returns the full absolute path for a relative SMB path (under mount point).
