@@ -33,15 +33,15 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
 
 ### Sections (`sections/`)
 
-13 section components rendered inside the settings window. `ListingSection` includes:
+14 section components rendered inside the settings window. `ListingSection` includes:
 
 - `listing.sizeDisplay` — enum (smart/logical/physical), default smart, toggle-group. Reactive getter:
   `getSizeDisplayMode()`.
 - `listing.sizeMismatchWarning` — boolean, default true, switch. Reactive getter: `getSizeMismatchWarning()`.
 
-Full list: `AppearanceSection`, `ListingSection`, `FileOperationsSection`, `KeyboardShortcutsSection`, `NetworkSection`,
-`LoggingSection`, `McpServerSection`, `UpdatesSection`, `ThemesSection`, `AdvancedSection`, `DriveIndexingSection`,
-`AiSection`, `LicenseSection`.
+Full list: `AppearanceSection`, `ListingSection`, `FileOperationsSection`, `MtpSection`, `KeyboardShortcutsSection`,
+`NetworkSection`, `LoggingSection`, `McpServerSection`, `UpdatesSection`, `ThemesSection`, `AdvancedSection`,
+`DriveIndexingSection`, `AiSection`, `LicenseSection`, `ViewerSection`.
 
 `AiSection` is a hybrid special section (like `LicenseSection` above): it combines dynamic runtime state from the
 backend (via `getAiRuntimeStatus()` and Tauri events) with registry settings (`ai.provider`, `ai.cloudProvider`,
@@ -58,11 +58,11 @@ models are available, the Model field becomes a combobox with filtered dropdown;
 
 ### Components (`components/`)
 
-11 reusable setting UI primitives used by section components: `SettingsSection` (wrapper providing shared section title
-and action button styles), `SettingRow`, `SettingSwitch`, `SettingSelect`, `SettingSlider`, `SettingNumberInput`,
-`SettingPasswordInput` (supports both settings-store-driven and controlled/external value+onchange modes),
-`SettingRadioGroup`, `SettingToggleGroup`, `SettingsSidebar`, `SettingsContent`. Also `SectionSummary` for
-collapsed-section previews.
+12 reusable setting UI primitives used by section components: `SettingsSection` (wrapper providing shared section title
+and action button styles), `SettingRow`, `SettingSwitch`, `SettingCheckbox` (less prominent than switch, for secondary
+boolean options), `SettingSelect`, `SettingSlider`, `SettingNumberInput`, `SettingPasswordInput` (supports both
+settings-store-driven and controlled/external value+onchange modes), `SettingRadioGroup`, `SettingToggleGroup`,
+`SettingsSidebar`, `SettingsContent`. Also `SectionSummary` for collapsed-section previews.
 
 ### 50-50 split layout guideline
 

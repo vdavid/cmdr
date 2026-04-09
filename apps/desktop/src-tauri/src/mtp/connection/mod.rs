@@ -346,6 +346,7 @@ impl MtpConnectionManager {
                 "mtp-device-connected",
                 serde_json::json!({
                     "deviceId": device_id,
+                    "deviceName": connected_info.device.product.clone().unwrap_or_default(),
                     "storages": connected_info.storages
                 }),
             );

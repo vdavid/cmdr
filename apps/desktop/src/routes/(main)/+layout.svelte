@@ -14,8 +14,7 @@
     import {
         onMtpExclusiveAccessError,
         onMtpPermissionError,
-        onPtpcameradSuppressed,
-        onPtpcameradRestored,
+        onMtpDeviceConnected,
         connectMtpDevice,
         cancelAllWriteOperations,
         configureAi,
@@ -31,6 +30,9 @@
     import { addToast } from '$lib/ui/toast'
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
     import { MtpPermissionDialog, PtpcameradDialog } from '$lib/mtp'
+    import MtpConnectedToastContent, {
+        setLastConnectedDeviceName,
+    } from '$lib/mtp/MtpConnectedToastContent.svelte'
     import CrashReportDialog from '$lib/crash-reporter/CrashReportDialog.svelte'
     import CrashReportToastContent from '$lib/crash-reporter/CrashReportToastContent.svelte'
     import { getAppLogger } from '$lib/logging/logger'
@@ -143,8 +145,7 @@
     // Cleanup functions stored for onDestroy
     let mtpExclusiveUnlistenPromise: Promise<() => void> | undefined
     let mtpPermissionUnlistenPromise: Promise<() => void> | undefined
-    let ptpcameradSuppressedUnlistenPromise: Promise<() => void> | undefined
-    let ptpcameradRestoredUnlistenPromise: Promise<() => void> | undefined
+    let mtpConnectedUnlistenPromise: Promise<() => void> | undefined
     let updateCleanup: (() => void) | undefined
     let aiCleanup: (() => void) | undefined
 
@@ -190,12 +191,15 @@
             mtpExclusiveUnlistenPromise = onMtpExclusiveAccessError(handleMtpExclusiveAccessError)
             mtpPermissionUnlistenPromise = onMtpPermissionError(handleMtpPermissionError)
 
-            // Listen for ptpcamerad auto-suppression (macOS)
-            ptpcameradSuppressedUnlistenPromise = onPtpcameradSuppressed(() => {
-                addToast('Paused macOS camera daemon for MTP access', { level: 'info', timeoutMs: 4000 })
-            })
-            ptpcameradRestoredUnlistenPromise = onPtpcameradRestored(() => {
-                addToast('Restored macOS camera daemon', { level: 'info', timeoutMs: 3000 })
+            // Listen for MTP device connections and show info toast
+            mtpConnectedUnlistenPromise = onMtpDeviceConnected((event) => {
+                if (!getSetting('fileOperations.mtpConnectionWarning')) return
+                setLastConnectedDeviceName(event.deviceName || 'MTP device')
+                addToast(MtpConnectedToastContent, {
+                    id: 'mtp-connected',
+                    dismissal: 'persistent',
+                    level: 'info',
+                })
             })
 
             // Check for pending crash reports from a previous session
@@ -223,10 +227,7 @@
         void mtpPermissionUnlistenPromise?.then((unlisten) => {
             unlisten()
         })
-        void ptpcameradSuppressedUnlistenPromise?.then((unlisten) => {
-            unlisten()
-        })
-        void ptpcameradRestoredUnlistenPromise?.then((unlisten) => {
+        void mtpConnectedUnlistenPromise?.then((unlisten) => {
             unlisten()
         })
         // Cleanup update checker

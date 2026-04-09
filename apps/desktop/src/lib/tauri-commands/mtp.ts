@@ -178,6 +178,7 @@ export interface MtpPermissionErrorEvent {
 /** Event payload for mtp-device-connected. */
 export interface MtpDeviceConnectedEvent {
   deviceId: string
+  deviceName?: string
   storages: MtpStorageInfo[]
 }
 
@@ -227,22 +228,6 @@ export async function onMtpDeviceDisconnected(
   return listen<MtpDeviceDisconnectedEvent>('mtp-device-disconnected', (event) => {
     callback(event.payload)
   })
-}
-
-/**
- * Subscribes to ptpcamerad auto-suppression events (macOS only).
- * Emitted when the backend disables ptpcamerad to allow MTP device access.
- */
-export async function onPtpcameradSuppressed(callback: () => void): Promise<UnlistenFn> {
-  return listen('mtp-ptpcamerad-suppressed', () => callback())
-}
-
-/**
- * Subscribes to ptpcamerad restoration events (macOS only).
- * Emitted when the backend re-enables ptpcamerad after all MTP devices disconnect.
- */
-export async function onPtpcameradRestored(callback: () => void): Promise<UnlistenFn> {
-  return listen('mtp-ptpcamerad-restored', () => callback())
 }
 
 // NOTE: MTP file watching now uses the unified directory-diff event system (same as local volumes).

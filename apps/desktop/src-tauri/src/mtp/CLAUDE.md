@@ -37,7 +37,7 @@ USB plug-in
     → probe_write_capability() per storage
     → register MtpVolume in global VolumeManager
     → start_event_loop() per device
-    → emit mtp-device-connected
+    → emit mtp-device-connected (JSON payload includes `deviceName`: from `connected_info.device.product`, empty string if unknown)
     → broadcast::emit_volumes_changed()
 
 USB unplug

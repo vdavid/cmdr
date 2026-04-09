@@ -2,6 +2,7 @@
 
 export { default as MtpPermissionDialog } from './MtpPermissionDialog.svelte'
 export { default as PtpcameradDialog } from './PtpcameradDialog.svelte'
+export { default as MtpConnectedToastContent } from './MtpConnectedToastContent.svelte'
 
 // MTP store for device state management
 export * from './mtp-store.svelte'

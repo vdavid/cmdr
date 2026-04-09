@@ -193,29 +193,18 @@
         }
     }
 
-    // Export keyboard handler for parent components to call
-    export function handleKeyDown(e: KeyboardEvent): boolean {
-        if (!isOpen) return false
-
-        const submenuResult = handleSubmenuKeyDown(e.key)
-        if (submenuResult !== null) {
-            e.preventDefault()
-            return submenuResult
-        }
-
-        switch (e.key) {
+    /** Handles a single key in the main dropdown (not submenu). Returns true if handled. */
+    function handleDropdownKey(key: string): boolean {
+        switch (key) {
             case 'ArrowDown':
-                e.preventDefault()
                 highlightedIndex = Math.min(highlightedIndex + 1, allVolumes.length - 1)
                 enterKeyboardMode()
                 return true
             case 'ArrowUp':
-                e.preventDefault()
                 highlightedIndex = Math.max(highlightedIndex - 1, 0)
                 enterKeyboardMode()
                 return true
             case 'ArrowRight':
-                e.preventDefault()
                 if (
                     highlightedIndex >= 0 &&
                     allVolumes[highlightedIndex]?.smbConnectionState === 'os_mount'
@@ -227,28 +216,39 @@
                 }
                 return true
             case 'Enter':
-                e.preventDefault()
                 if (highlightedIndex >= 0 && highlightedIndex < allVolumes.length) {
                     void handleVolumeSelect(allVolumes[highlightedIndex])
                 }
                 return true
             case 'Escape':
-                e.preventDefault()
                 isOpen = false
                 return true
             case 'Home':
-                e.preventDefault()
                 highlightedIndex = 0
                 enterKeyboardMode()
                 return true
             case 'End':
-                e.preventDefault()
                 highlightedIndex = allVolumes.length - 1
                 enterKeyboardMode()
                 return true
             default:
                 return false
         }
+    }
+
+    // Export keyboard handler for parent components to call
+    export function handleKeyDown(e: KeyboardEvent): boolean {
+        if (!isOpen) return false
+
+        const submenuResult = handleSubmenuKeyDown(e.key)
+        if (submenuResult !== null) {
+            e.preventDefault()
+            return submenuResult
+        }
+
+        const handled = handleDropdownKey(e.key)
+        if (handled) e.preventDefault()
+        return handled
     }
 
     function enterKeyboardMode() {

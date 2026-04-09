@@ -88,6 +88,7 @@
     "settings/components/SettingRow.svelte": { "reason": "UI component, layout only" },
     "settings/components/SettingSelect.svelte": { "reason": "UI component, logic is simple" },
     "settings/components/SettingSlider.svelte": { "reason": "UI component, logic is simple" },
+    "settings/components/SettingCheckbox.svelte": { "reason": "UI component, logic is simple" },
     "settings/components/SettingSwitch.svelte": { "reason": "UI component, logic is simple" },
     "settings/components/SettingToggleGroup.svelte": { "reason": "UI component, logic is simple" },
     "settings/components/SettingsContent.svelte": { "reason": "UI layout component" },
@@ -106,6 +107,7 @@
     "settings/mcp-main-bridge.ts": { "reason": "MCP bridge, depends on Tauri event APIs (listen/emit)" },
     "settings/mcp-settings-bridge.ts": { "reason": "MCP bridge, depends on Tauri APIs and events" },
     "settings/sections/McpServerSection.svelte": { "reason": "UI section, depends on Tauri APIs" },
+    "settings/sections/MtpSection.svelte": { "reason": "UI section, simple rendering" },
     "settings/sections/NetworkSection.svelte": { "reason": "UI section, simple rendering" },
     "settings/sections/ThemesSection.svelte": { "reason": "UI section, simple rendering" },
     "settings/sections/DriveIndexingSection.svelte": { "reason": "UI section, depends on Tauri invoke" },
@@ -233,6 +235,9 @@
     },
     "crash-reporter/CrashReportToastContent.svelte": {
       "reason": "UI toast content, depends on Tauri window APIs"
+    },
+    "mtp/MtpConnectedToastContent.svelte": {
+      "reason": "UI toast content, depends on Tauri IPC (setSetting, dismissToast)"
     },
     "tauri-commands/crash-reporter.ts": {
       "reason": "Tauri command wrappers, tested via integration"

@@ -7,6 +7,10 @@ UI and state management for Android device file browsing via MTP (Media Transfer
 - **State**: `mtp-store.svelte.ts` — Reactive device list, connection status, Tauri event listeners
 - **Path utils**: `mtp-path-utils.ts` — Parse/construct MTP paths (`mtp://{deviceId}:{storageId}/path`)
 - **Dialog**: `PtpcameradDialog.svelte` — macOS-specific helper for `ptpcamerad` workaround (shows Terminal command)
+- **Toast**: `MtpConnectedToastContent.svelte` — Sticky toast shown when an MTP device connects. Explains ptpcamerad
+  suppression (macOS) or generic info (Linux). Offers "Don't show again" checkbox and "Disable MTP..." link. Uses
+  module-level `$state` (`lastConnectedDeviceName`) set by `+layout.svelte` before `addToast()`, since the toast system
+  renders components with zero props. Gated by `fileOperations.mtpConnectionWarning` setting (default `true`).
 - **Backend**: See `src-tauri/src/mtp/` for device management, file operations, event loop
 
 ## Key decisions
@@ -26,9 +30,9 @@ sends event with `deviceId`. Frontend re-fetches current directory if viewing th
 
 ### Settings toggle (`fileOperations.mtpEnabled`)
 
-MTP support can be disabled entirely from Settings > General > File operations. The toggle calls `setMtpEnabled()`
-(wired through `settings-applier.ts`), which invokes the `set_mtp_enabled` Tauri command. When disabled, all devices
-disconnect and hotplug events are ignored. The frontend is passive — it reacts to `volumes-changed` events as usual.
+MTP support can be disabled entirely from Settings > General > MTP. The toggle calls `setMtpEnabled()` (wired through
+`settings-applier.ts`), which invokes the `set_mtp_enabled` Tauri command. When disabled, all devices disconnect and
+hotplug events are ignored. The frontend is passive — it reacts to `volumes-changed` events as usual.
 
 ### Automatic ptpcamerad suppression (macOS)
 

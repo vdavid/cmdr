@@ -162,14 +162,24 @@ export const settingsRegistry: SettingDefinition[] = [
   // ========================================================================
   {
     id: 'fileOperations.mtpEnabled',
-    section: ['General', 'File operations'],
-    label: 'Android device support (MTP)',
+    section: ['General', 'MTP'],
+    label: 'Android/Kindle/camera support (PTP and MTP)',
     description:
-      "Detect and connect to Android devices over USB for file browsing and transfers. When off, Cmdr won't watch for USB devices.",
+      'Detect and connect to Android and other devices over a USB cable for file browsing and transfers. To use this feature on an Android phone, I\'ll want to use a USB cable, then on your phone, go to something like Settings > USB Preferences, and set the connection to "File transfer", "Android Auto", or similar. (Varies by device.)',
     keywords: ['mtp', 'android', 'usb', 'device', 'phone', 'ptpcamerad', 'mobile'],
     type: 'boolean',
     default: true,
     component: 'switch',
+  },
+  {
+    id: 'fileOperations.mtpConnectionWarning',
+    section: ['General', 'MTP'],
+    label: 'Warn when a device connects',
+    description: 'Show a notification when an Android or camera device connects over USB.',
+    keywords: ['mtp', 'warning', 'notification', 'connect', 'toast', 'android'],
+    type: 'boolean',
+    default: true,
+    component: 'checkbox',
   },
   {
     id: 'fileOperations.allowFileExtensionChanges',

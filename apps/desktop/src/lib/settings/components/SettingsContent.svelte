@@ -4,6 +4,7 @@
     import ListingSection from '$lib/settings/sections/ListingSection.svelte'
     import DriveIndexingSection from '$lib/settings/sections/DriveIndexingSection.svelte'
     import UpdatesSection from '$lib/settings/sections/UpdatesSection.svelte'
+    import MtpSection from '$lib/settings/sections/MtpSection.svelte'
     import NetworkSection from '$lib/settings/sections/NetworkSection.svelte'
     import KeyboardShortcutsSection from '$lib/settings/sections/KeyboardShortcutsSection.svelte'
     import ThemesSection from '$lib/settings/sections/ThemesSection.svelte'
@@ -113,6 +114,12 @@
         {#if shouldShowSection(['General', 'Viewer'])}
             <section data-section-id="general-viewer">
                 <ViewerSection {searchQuery} />
+            </section>
+        {/if}
+
+        {#if shouldShowSection(['General', 'MTP'])}
+            <section data-section-id="general-mtp">
+                <MtpSection {searchQuery} />
             </section>
         {/if}
 

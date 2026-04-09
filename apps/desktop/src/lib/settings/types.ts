@@ -58,6 +58,7 @@ export interface SettingDefinition {
   // UI hints
   component?:
     | 'switch'
+    | 'checkbox'
     | 'select'
     | 'radio'
     | 'slider'
@@ -101,6 +102,7 @@ export interface SettingsValues {
 
   // File operations
   'fileOperations.mtpEnabled': boolean
+  'fileOperations.mtpConnectionWarning': boolean
   'fileOperations.allowFileExtensionChanges': ExtensionChangePolicy
   'fileOperations.progressUpdateInterval': number
   'fileOperations.maxConflictsToShow': number
