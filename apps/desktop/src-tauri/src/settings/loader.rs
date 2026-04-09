@@ -51,6 +51,8 @@ pub struct Settings {
     pub verbose_logging: Option<bool>,
     #[serde(alias = "network.directSmbConnection", default)]
     pub direct_smb_connection: Option<bool>,
+    #[serde(alias = "fileOperations.mtpEnabled", default)]
+    pub mtp_enabled: Option<bool>,
 }
 
 fn default_show_hidden() -> bool {
@@ -69,6 +71,7 @@ impl Default for Settings {
             ai_provider: None,
             verbose_logging: None,
             direct_smb_connection: None,
+            mtp_enabled: None,
         }
     }
 }
@@ -116,6 +119,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let ai_provider = json.get("ai.provider").and_then(|v| v.as_str()).map(String::from);
     let verbose_logging = json.get("developer.verboseLogging").and_then(|v| v.as_bool());
     let direct_smb_connection = json.get("network.directSmbConnection").and_then(|v| v.as_bool());
+    let mtp_enabled = json.get("fileOperations.mtpEnabled").and_then(|v| v.as_bool());
 
     Ok(Settings {
         show_hidden_files,
@@ -127,5 +131,6 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         ai_provider,
         verbose_logging,
         direct_smb_connection,
+        mtp_enabled,
     })
 }

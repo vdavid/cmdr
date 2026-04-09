@@ -205,6 +205,7 @@ export type {
 
 // MTP (Android device support)
 export {
+  setMtpEnabled,
   getMtpDeviceDisplayName,
   listMtpDevices,
   isMtpConnectionError,

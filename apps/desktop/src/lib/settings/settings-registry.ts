@@ -161,6 +161,17 @@ export const settingsRegistry: SettingDefinition[] = [
   // General › File operations
   // ========================================================================
   {
+    id: 'fileOperations.mtpEnabled',
+    section: ['General', 'File operations'],
+    label: 'Android device support (MTP)',
+    description:
+      "Detect and connect to Android devices over USB for file browsing and transfers. When off, Cmdr won't watch for USB devices.",
+    keywords: ['mtp', 'android', 'usb', 'device', 'phone', 'ptpcamerad', 'mobile'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
     id: 'fileOperations.allowFileExtensionChanges',
     section: ['General', 'File operations'],
     label: 'Allow file extension changes',

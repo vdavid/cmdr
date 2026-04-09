@@ -125,13 +125,14 @@ keyboard navigation (ArrowRight to open, ArrowLeft/Escape to close, Enter to act
 These patterns emerged during the volume picker implementation and should be followed in future dropdown/submenu work:
 
 - **CSS triangles for arrows/chevrons**, not font characters. Font-based arrows (`▾`, `›`) render at inconsistent sizes
-  across fonts and OS versions. Use the CSS border trick (`border-left: 4px solid transparent; border-right: 4px solid
-  transparent; border-top: 5px solid currentcolor`) for pixel-perfect control.
+  across fonts and OS versions. Use the CSS border trick
+  (`border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentcolor`) for
+  pixel-perfect control.
 - **Single cursor rule.** When a submenu opens, suppress the main menu highlight. Exactly one cursor should be visible
   at all times. Use a state flag (like `submenuVolumeId`) to conditionally remove the `is-focused-and-under-cursor`
   class from the main menu.
-- **Elements with independent actions must be outside their parent's click area.** If a button inside another button
-  has a different action (like "Volume options" inside "Volume selector"), it must be a sibling, not a child. Otherwise
+- **Elements with independent actions must be outside their parent's click area.** If a button inside another button has
+  a different action (like "Volume options" inside "Volume selector"), it must be a sibling, not a child. Otherwise
   `stopPropagation` fights with the parent's click handler.
 - **Fixed positioning for submenus inside scrollable containers.** A submenu inside a `overflow-y: auto` dropdown gets
   clipped. Use `position: fixed` with coordinates calculated from `getBoundingClientRect()` of the trigger element.

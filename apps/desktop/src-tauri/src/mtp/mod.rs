@@ -30,7 +30,7 @@ pub mod watcher;
 pub use connection::{ConnectedDeviceInfo, MtpConnectionError, MtpObjectInfo, MtpOperationResult, connection_manager};
 pub use discovery::list_mtp_devices;
 pub use types::{MtpDeviceInfo, MtpStorageInfo};
-pub use watcher::start_mtp_watcher;
+pub use watcher::{set_mtp_enabled, set_mtp_enabled_flag, start_mtp_watcher};
 
 /// The Terminal command that users can run to work around ptpcamerad on macOS.
 /// Returns an empty string on non-macOS platforms (ptpcamerad doesn't exist there).

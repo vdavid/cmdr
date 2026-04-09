@@ -2,8 +2,8 @@
 
 Replace OS-level filesystem calls with direct `smb2` protocol operations for mounted SMB shares. The share remains
 OS-mounted (for Finder/Terminal/drag-drop compatibility), but all Cmdr file operations go through `smb2`'s pipelined I/O
-for ~4x faster performance. **macOS first** — Linux (`gio mount`, `/run/user/<uid>/gvfs/`) follows with the same
-pattern but different mount paths and watcher.
+for ~4x faster performance. **macOS first** — Linux (`gio mount`, `/run/user/<uid>/gvfs/`) follows with the same pattern
+but different mount paths and watcher.
 
 ## Why
 
@@ -35,11 +35,11 @@ Cmdr's own operations are fast.
 
 `SmbVolume` tracks its connection health and can degrade gracefully:
 
-| State | Meaning | Behavior |
-|-------|---------|----------|
-| `Direct` | smb2 session active | All ops through smb2 (fast path) |
-| `OsMount` | smb2 down, OS mount alive | Fall through to filesystem calls on mount path (slow but works) |
-| `Disconnected` | Both down | Return errors immediately |
+| State          | Meaning                   | Behavior                                                        |
+| -------------- | ------------------------- | --------------------------------------------------------------- |
+| `Direct`       | smb2 session active       | All ops through smb2 (fast path)                                |
+| `OsMount`      | smb2 down, OS mount alive | Fall through to filesystem calls on mount path (slow but works) |
+| `Disconnected` | Both down                 | Return errors immediately                                       |
 
 **Why include OS mount fallback**: There may be exotic auth scenarios, protocol extensions, or edge cases where smb2
 fails but the OS client handles it. The fallback is cheap to implement (delegate to `std::fs` calls on the mount path,
@@ -50,6 +50,7 @@ exposed to the frontend so it can show connection quality (green/yellow/red indi
 machine can be `Direct` or `Disconnected` only. Adding `OsMount` is a follow-up once the direct path is validated.
 
 **State transitions:**
+
 - `Direct` → `OsMount`: smb2 operation fails with `Disconnected`/`SessionExpired`. Try `auto_reconnect` first. If
   reconnect fails and the mount path still exists, degrade to `OsMount`.
 - `OsMount` → `Direct`: Periodic reconnect attempt succeeds (background task, exponential backoff).
@@ -67,8 +68,8 @@ When the user unmounts externally (Finder eject, `umount` CLI, network loss):
    trait (default no-op). `SmbVolume` implements it to disconnect the smb2 session and transition to `Disconnected`.
 5. The frontend receives `volume-unmounted` and navigates away — same as today.
 
-**Why `on_unmount` trait method instead of downcast**: Avoids `Any` downcasting, extensible for future volume types
-(S3, FTP might also need cleanup), consistent with the trait's design of optional methods with default no-ops.
+**Why `on_unmount` trait method instead of downcast**: Avoids `Any` downcasting, extensible for future volume types (S3,
+FTP might also need cleanup), consistent with the trait's design of optional methods with default no-ops.
 
 **Why disconnect smb2 on external unmount**: The user's mental model is "I ejected the share." Keeping a hidden smb2
 connection alive would violate that expectation and waste resources. We respect the user's action.
@@ -97,15 +98,15 @@ SmbVolume {
 `RwLock` where you only ever take write locks is strictly worse than a `Mutex` (higher overhead due to writer starvation
 prevention). `Mutex` is the correct choice.
 
-**Why `(SmbClient, Tree)` together**: `Tree` is a plain data struct (`tree_id`, `share_name`, etc.) passed by `&Tree`
-to all `SmbClient` methods. It doesn't need its own lock. Storing client and tree together avoids lock-ordering
-concerns and simplifies the code.
+**Why `(SmbClient, Tree)` together**: `Tree` is a plain data struct (`tree_id`, `share_name`, etc.) passed by `&Tree` to
+all `SmbClient` methods. It doesn't need its own lock. Storing client and tree together avoids lock-ordering concerns
+and simplifies the code.
 
 **Why `Option`**: Allows graceful cleanup on disconnect — set to `None` when the connection is dropped.
 
 **Threading model**: Same as MtpVolume — `Volume` trait methods are synchronous, called from `spawn_blocking` contexts.
-Use `Handle::block_on` to bridge to smb2's async API. This is safe because `spawn_blocking` runs on a separate OS
-thread pool.
+Use `Handle::block_on` to bridge to smb2's async API. This is safe because `spawn_blocking` runs on a separate OS thread
+pool.
 
 Implement `Volume` trait:
 
@@ -126,8 +127,8 @@ Implement `Volume` trait:
   for mounted SMB shares). Add smb2-native watching later.
 - `get_space_info()` → `client.fs_info(&tree)` via `block_on`, map to `SpaceInfo`.
 
-**Why `local_path()` returns `None`**: `local_path()` is checked in `volume_copy.rs` to decide whether to use native
-OS copy APIs (`copyfile(3)`). If `SmbVolume` returned `Some(mount_path)`, copies would go through the slow OS mount —
+**Why `local_path()` returns `None`**: `local_path()` is checked in `volume_copy.rs` to decide whether to use native OS
+copy APIs (`copyfile(3)`). If `SmbVolume` returned `Some(mount_path)`, copies would go through the slow OS mount —
 exactly what we're trying to avoid. By returning `None`, the copy system uses `export_to_local`/`import_from_local`
 (streaming through smb2). No new trait method is needed — `root()` already returns the mount path, and OS integration
 features (Quick Look, Finder reveal, drag & drop) construct paths from `root()`, not `local_path()`.
@@ -167,14 +168,15 @@ fn list_directory(&self, path) {
 - `created` → `created`
 
 `smb2::FsInfo` → `SpaceInfo` mapping:
+
 - `total_bytes` → `total`
 - `free_bytes` → `available`
 
 `smb2::Error` → `VolumeError` mapping: Use `ErrorKind` for clean classification, similar to the share listing code.
 
 **Path translation note**: `SmbVolume` receives paths relative to the volume root (like `Documents/report.pdf`). smb2's
-`Tree` methods also expect relative paths with `/` separators. smb2 normalizes `/` to `\\` internally
-(`normalize_path` in `tree.rs`), so no explicit translation is needed on Cmdr's side.
+`Tree` methods also expect relative paths with `/` separators. smb2 normalizes `/` to `\\` internally (`normalize_path`
+in `tree.rs`), so no explicit translation is needed on Cmdr's side.
 
 #### 3. Register `SmbVolume` on mount
 
@@ -183,19 +185,20 @@ Modify the mount flow in `commands/network.rs`:
 Currently: `mount_share()` → OS mount → FSEvents watcher registers `LocalPosixVolume`.
 
 New flow:
+
 1. `mount_share()` → OS mount → get `mount_path`.
 2. **Before** the FSEvents watcher fires, connect smb2 to the same server/share.
 3. Create `SmbVolume` with the mount path, smb2 client, and tree.
 4. Register it in `VolumeManager` with the same volume ID that the watcher would use.
-5. When the FSEvents watcher fires, it calls `register_volume_with_manager()` — this should **skip** registration if
-   the volume ID already exists (it's already an `SmbVolume`).
+5. When the FSEvents watcher fires, it calls `register_volume_with_manager()` — this should **skip** registration if the
+   volume ID already exists (it's already an `SmbVolume`).
 
 **Why register before the watcher**: Race condition prevention. If we let the watcher register a `LocalPosixVolume`
 first, it would **replace** our `SmbVolume` (because `VolumeManager::register` does `HashMap::insert` which overwrites).
 Registering the `SmbVolume` first means the watcher's registration is a no-op.
 
-**Modification to `VolumeManager`**: Add `register_if_absent(id, volume)` → returns `true` if registered, `false` if
-ID already exists. The watcher calls this instead of `register` for mount events. The existing `register` (which
+**Modification to `VolumeManager`**: Add `register_if_absent(id, volume)` → returns `true` if registered, `false` if ID
+already exists. The watcher calls this instead of `register` for mount events. The existing `register` (which
 overwrites) is kept for explicit re-registration (like `SmbVolume` replacing itself on reconnect).
 
 **Modification to `volumes/watcher.rs`**: `register_volume_with_manager()` calls `register_if_absent` instead of
@@ -204,8 +207,8 @@ explicit `SmbVolume` registration.
 
 **Race window note**: If the FSEvents watcher fires before the smb2 connection completes (step 2), the watcher would
 register a `LocalPosixVolume` via `register_if_absent`. Then when smb2 connects, the `SmbVolume` registration uses
-`register` (overwrite) to replace it. This is the correct behavior — the `SmbVolume` always wins. The brief window
-where a `LocalPosixVolume` exists is harmless (it works, just slower).
+`register` (overwrite) to replace it. This is the correct behavior — the `SmbVolume` always wins. The brief window where
+a `LocalPosixVolume` exists is harmless (it works, just slower).
 
 #### 4. Handle external unmount
 
@@ -215,6 +218,7 @@ Modify `volumes/watcher.rs` `emit_volume_unmounted()`: Before calling `unregiste
 volume from `VolumeManager::get(id)` and call `volume.on_unmount()`.
 
 `SmbVolume::on_unmount()`:
+
 1. Transition state to `Disconnected` (atomic store).
 2. Take the mutex, set `smb` to `None` (drops `SmbClient` and `Tree`, disconnects gracefully).
 3. Cancel any background reconnection task.
@@ -229,10 +233,10 @@ Then `unregister_volume_from_manager()` removes it from the registry as normal.
   overwrites. The `Volume` trait's `create_file` has the same semantics in practice (no existing callers depend on
   create-only behavior).
 - `create_directory(path)` → `client.create_directory(&tree, path)`
-- `delete(path)` → `client.delete_file(&tree, path)` or `client.delete_directory(&tree, path)` based on a `stat`
-  check. Note: `Volume::delete` says "file or empty directory." Recursive deletion is handled by the caller
-  (`delete_volume_files_with_progress` in `delete.rs`), which calls `list_directory` + `delete` for each item
-  bottom-up. This already works with the `Volume` trait.
+- `delete(path)` → `client.delete_file(&tree, path)` or `client.delete_directory(&tree, path)` based on a `stat` check.
+  Note: `Volume::delete` says "file or empty directory." Recursive deletion is handled by the caller
+  (`delete_volume_files_with_progress` in `delete.rs`), which calls `list_directory` + `delete` for each item bottom-up.
+  This already works with the `Volume` trait.
 - `rename(from, to, force)` → `client.rename(&tree, from, to)`. Handle `force` by deleting dest first if needed.
 - `supports_export()` → `true`
 - `export_to_local(source, local_dest)` → smb2 `read_file` or `read_file_pipelined`, write to local file. For large
@@ -240,8 +244,8 @@ Then `unregister_volume_from_manager()` removes it from the registry as normal.
   download's lifetime, which holds the mutex for the entire transfer and blocks other operations. For v1, use
   `read_file_pipelined` (which reads the full file into memory and releases the lock). Streaming downloads can be
   optimized later with a dedicated transfer session.
-- `import_from_local(local_source, dest)` → read local file into memory, `client.write_file_pipelined`. Same
-  trade-off as above.
+- `import_from_local(local_source, dest)` → read local file into memory, `client.write_file_pipelined`. Same trade-off
+  as above.
 - `scan_for_copy(path)` → recursive smb2 listing to count files/dirs/bytes.
 - `scan_for_conflicts(source_items, dest_path)` → smb2 `stat` each item at dest.
 
@@ -345,8 +349,8 @@ resources and could overwhelm the server.
 - **FileTime conversion**: smb2's `FileTime` is Windows FILETIME (100ns intervals since 1601-01-01). Need correct
   conversion to `SystemTime`. Off-by-one in the epoch offset would silently corrupt timestamps.
 - **Linux**: This plan is macOS-first. Linux uses `gio mount` (different mount paths, no FSEvents). The `SmbVolume`
-  itself is cross-platform, but the mount + watcher integration needs platform-specific work. Linux support follows as
-  a separate effort.
+  itself is cross-platform, but the mount + watcher integration needs platform-specific work. Linux support follows as a
+  separate effort.
 
 ## Not changing
 

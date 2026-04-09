@@ -4,6 +4,14 @@ import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import type { ConflictResolution, FileEntry, WriteOperationStartResult } from '../file-explorer/types'
 
+/**
+ * Enables or disables MTP (Android device) support at runtime.
+ * When disabled, stops USB device detection and disconnects all MTP devices.
+ */
+export async function setMtpEnabled(enabled: boolean): Promise<void> {
+  await invoke('set_mtp_enabled', { enabled })
+}
+
 /** Information about a connected MTP device. */
 export interface MtpDeviceInfo {
   /** Unique identifier for the device (format: "mtp-{locationId}"). */

@@ -1,6 +1,7 @@
 <script lang="ts">
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
+    import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingSelect from '../components/SettingSelect.svelte'
     import SettingSlider from '../components/SettingSlider.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
@@ -16,12 +17,24 @@
     const shouldShow = $derived(createShouldShow(searchQuery))
 
     const defaultDef = { label: '', description: '', disabled: false, disabledReason: '' }
+    const mtpEnabledDef = getSettingDefinition('fileOperations.mtpEnabled') ?? defaultDef
     const extensionChangesDef = getSettingDefinition('fileOperations.allowFileExtensionChanges') ?? defaultDef
     const progressIntervalDef = getSettingDefinition('fileOperations.progressUpdateInterval') ?? defaultDef
     const maxConflictsDef = getSettingDefinition('fileOperations.maxConflictsToShow') ?? defaultDef
 </script>
 
 <SettingsSection title="File operations">
+    {#if shouldShow('fileOperations.mtpEnabled')}
+        <SettingRow
+            id="fileOperations.mtpEnabled"
+            label={mtpEnabledDef.label}
+            description={mtpEnabledDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="fileOperations.mtpEnabled" />
+        </SettingRow>
+    {/if}
+
     {#if shouldShow('fileOperations.allowFileExtensionChanges')}
         <SettingRow
             id="fileOperations.allowFileExtensionChanges"

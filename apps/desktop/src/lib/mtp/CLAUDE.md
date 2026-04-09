@@ -24,6 +24,12 @@ Multiple storages (Internal + SD Card) become separate volumes in UI. Each has d
 Listen to `mtp-directory-changed` events from backend. When device emits MTP `ObjectAdded/Removed/Changed`, backend
 sends event with `deviceId`. Frontend re-fetches current directory if viewing that device.
 
+### Settings toggle (`fileOperations.mtpEnabled`)
+
+MTP support can be disabled entirely from Settings > General > File operations. The toggle calls `setMtpEnabled()`
+(wired through `settings-applier.ts`), which invokes the `set_mtp_enabled` Tauri command. When disabled, all devices
+disconnect and hotplug events are ignored. The frontend is passive — it reacts to `volumes-changed` events as usual.
+
 ### Automatic ptpcamerad suppression (macOS)
 
 On macOS, `ptpcamerad` daemon auto-claims MTP/PTP devices. The backend now handles this automatically:

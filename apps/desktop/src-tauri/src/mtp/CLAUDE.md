@@ -29,6 +29,7 @@ On Linux, users may need udev rules for USB device permissions (see `resources/9
 USB plug-in
   → nusb hotplug event (watcher.rs)
   → 500 ms delay
+  → check MTP_ENABLED gate — skip if disabled
   → list_mtp_devices() (discovery.rs)
   → auto_connect_device() (watcher.rs)
     → MtpConnectionManager::connect()
@@ -51,6 +52,15 @@ Event loop (event_loop.rs)
   → compute_diff()
   → emit directory-diff (same format as local file watching)
 ```
+
+### MTP enabled/disabled toggle
+
+`MTP_ENABLED` (`AtomicBool`, default `true`) in `watcher.rs` gates all auto-connect behavior. The watcher loop always runs (it's `OnceLock`-based, no shutdown channel), but `check_for_device_changes()` returns early when disabled.
+
+- **`set_mtp_enabled_flag(bool)`** — Sets the flag without side effects. Called at startup from `lib.rs` before `start_mtp_watcher()` so the initial auto-connect respects the persisted setting.
+- **`set_mtp_enabled(bool, app)`** — Async. Called at runtime via the `set_mtp_enabled` Tauri command. When disabling: disconnects all devices, clears `KNOWN_DEVICES`, restores ptpcamerad (macOS). When enabling: calls `check_for_device_changes()` to pick up already-plugged devices.
+- **Setting key**: `fileOperations.mtpEnabled` in `settings.json`, read by `settings/loader.rs` at startup.
+- **Interaction with ptpcamerad**: disabling MTP calls `restore_ptpcamerad_unconditionally()`. Re-enabling triggers auto-connect, which re-suppresses ptpcamerad if devices are found.
 
 The frontend is a passive consumer: it subscribes to `volumes-changed` (for the volume picker)
 and `mtp-device-connected`/`mtp-device-disconnected` (for device connection state tracking).

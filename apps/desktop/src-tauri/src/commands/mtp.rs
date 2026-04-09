@@ -22,6 +22,16 @@ pub struct MtpScanResult {
     pub total_bytes: u64,
 }
 
+/// Enables or disables MTP support at runtime.
+///
+/// When disabled: disconnects all devices, stops auto-connecting, and restores
+/// ptpcamerad (macOS). When enabled: resumes auto-connecting and checks for
+/// already-plugged-in devices.
+#[tauri::command]
+pub async fn set_mtp_enabled(enabled: bool) {
+    mtp::set_mtp_enabled(enabled).await;
+}
+
 /// Lists all connected MTP devices.
 ///
 /// This returns devices detected via USB that support MTP protocol.

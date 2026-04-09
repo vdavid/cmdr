@@ -329,6 +329,13 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             mtp::macos_workaround::ensure_ptpcamerad_enabled();
 
+            // Load persisted settings early so MTP enabled flag is set before the watcher starts
+            let saved_settings = settings::load_settings(app.handle());
+
+            // Apply MTP enabled setting (default: true) before starting the watcher
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            mtp::set_mtp_enabled_flag(saved_settings.mtp_enabled.unwrap_or(true));
+
             // Start MTP device hotplug watcher (Android device support)
             // This also auto-connects any devices already plugged in at startup
             #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -354,9 +361,6 @@ pub fn run() {
 
             // Initialize font metrics for default font (system font at 12px)
             font_metrics::init_font_metrics(app.handle(), "system-400-12");
-
-            // Load persisted settings to initialize menu with correct state
-            let saved_settings = settings::load_settings(app.handle());
 
             // Apply direct SMB connection setting (default: true)
             file_system::set_direct_smb_enabled(saved_settings.direct_smb_connection.unwrap_or(true));
@@ -691,6 +695,8 @@ pub fn run() {
             commands::sync_status::get_sync_status,
             // MTP commands (macOS + Linux - Android device support)
             #[cfg(any(target_os = "macos", target_os = "linux"))]
+            commands::mtp::set_mtp_enabled,
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::list_mtp_devices,
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::mtp::connect_mtp_device,
@@ -724,6 +730,8 @@ pub fn run() {
             commands::mtp::pause_virtual_mtp_watcher,
             #[cfg(feature = "virtual-mtp")]
             commands::mtp::resume_virtual_mtp_watcher,
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+            stubs::mtp::set_mtp_enabled,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::mtp::list_mtp_devices,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]

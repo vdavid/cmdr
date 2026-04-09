@@ -8,6 +8,7 @@
 use log::{debug, error, info, warn};
 use nusb::hotplug::HotplugEvent;
 use std::collections::HashSet;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
 use tauri::AppHandle;
 
@@ -20,6 +21,55 @@ static KNOWN_DEVICES: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 /// Flag to indicate watcher has been started
 static WATCHER_STARTED: OnceLock<()> = OnceLock::new();
 
+/// Whether MTP support is enabled. When false, the watcher loop still runs
+/// but `check_for_device_changes()` returns early and no auto-connects happen.
+static MTP_ENABLED: AtomicBool = AtomicBool::new(true);
+
+/// Sets the MTP enabled flag without side effects. Used at startup before the
+/// watcher starts, so the initial auto-connect respects the persisted setting.
+pub fn set_mtp_enabled_flag(enabled: bool) {
+    MTP_ENABLED.store(enabled, Ordering::SeqCst);
+    debug!("MTP enabled flag set to {}", enabled);
+}
+
+/// Enables or disables MTP support at runtime.
+///
+/// When disabling: disconnects all connected devices, clears known devices,
+/// and restores ptpcamerad (macOS). When enabling: re-checks for plugged-in
+/// devices so they get auto-connected.
+pub async fn set_mtp_enabled(enabled: bool) {
+    let was_enabled = MTP_ENABLED.swap(enabled, Ordering::SeqCst);
+    if was_enabled == enabled {
+        debug!("MTP enabled unchanged ({})", enabled);
+        return;
+    }
+
+    info!("MTP support {}", if enabled { "enabled" } else { "disabled" });
+
+    if enabled {
+        check_for_device_changes();
+    } else {
+        // Disconnect all connected devices
+        let cm = super::connection_manager();
+        let connected = cm.get_all_connected_devices().await;
+        for device in &connected {
+            let device_id = device.device.id.clone();
+            auto_disconnect_device(device_id);
+        }
+
+        // Clear known devices so re-enable detects everything as new
+        if let Some(known) = KNOWN_DEVICES.get()
+            && let Ok(mut guard) = known.lock()
+        {
+            guard.clear();
+        }
+
+        // Restore ptpcamerad on macOS
+        #[cfg(target_os = "macos")]
+        restore_ptpcamerad_unconditionally();
+    }
+}
+
 /// Gets the current set of MTP devices using mtp-rs discovery.
 fn get_current_mtp_devices() -> HashSet<String> {
     let devices = super::list_mtp_devices();
@@ -28,7 +78,12 @@ fn get_current_mtp_devices() -> HashSet<String> {
 
 /// Checks for MTP device changes by comparing current state with known state.
 /// Auto-connects newly detected devices and disconnects removed ones.
+/// Returns early if MTP is disabled.
 fn check_for_device_changes() {
+    if !MTP_ENABLED.load(Ordering::SeqCst) {
+        return;
+    }
+
     let current_devices = get_current_mtp_devices();
 
     let known = match KNOWN_DEVICES.get() {
@@ -133,8 +188,8 @@ pub fn start_mtp_watcher(app: &AppHandle) {
         initial_devices.len()
     );
 
-    // Auto-connect any devices already plugged in at startup
-    if !initial_devices.is_empty() {
+    // Auto-connect any devices already plugged in at startup (skip if MTP is disabled)
+    if !initial_devices.is_empty() && MTP_ENABLED.load(Ordering::SeqCst) {
         #[cfg(target_os = "macos")]
         suppress_ptpcamerad_if_needed();
 
@@ -214,6 +269,24 @@ fn suppress_ptpcamerad_if_needed() {
     }
 }
 
+/// Restores ptpcamerad unconditionally (used when MTP is disabled).
+/// Emits `mtp-ptpcamerad-restored` event on success.
+#[cfg(target_os = "macos")]
+fn restore_ptpcamerad_unconditionally() {
+    use tauri::Emitter;
+
+    match super::macos_workaround::restore_ptpcamerad() {
+        Ok(true) => {
+            info!("Restored ptpcamerad (MTP disabled)");
+            if let Some(app) = APP_HANDLE.get() {
+                let _ = app.emit("mtp-ptpcamerad-restored", ());
+            }
+        }
+        Ok(false) => {} // Wasn't suppressed
+        Err(e) => warn!("Failed to restore ptpcamerad: {}", e),
+    }
+}
+
 /// Restores ptpcamerad when no MTP devices remain connected.
 /// Emits `mtp-ptpcamerad-restored` event on success.
 #[cfg(target_os = "macos")]
@@ -243,9 +316,28 @@ mod tests {
 
     #[test]
     fn test_get_current_mtp_devices() {
-        // This test just verifies the function runs without panicking
+        // This test verifies the function runs without panicking
         let devices = get_current_mtp_devices();
         // The function should complete without error (even if empty)
         assert!(devices.is_empty() || !devices.is_empty());
+    }
+
+    #[test]
+    fn test_mtp_enabled_flag_defaults_to_true() {
+        assert!(MTP_ENABLED.load(Ordering::SeqCst));
+    }
+
+    #[test]
+    fn test_set_mtp_enabled_flag() {
+        let original = MTP_ENABLED.load(Ordering::SeqCst);
+
+        set_mtp_enabled_flag(false);
+        assert!(!MTP_ENABLED.load(Ordering::SeqCst));
+
+        set_mtp_enabled_flag(true);
+        assert!(MTP_ENABLED.load(Ordering::SeqCst));
+
+        // Restore original state
+        MTP_ENABLED.store(original, Ordering::SeqCst);
     }
 }

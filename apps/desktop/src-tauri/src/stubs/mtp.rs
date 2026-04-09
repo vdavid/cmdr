@@ -59,6 +59,10 @@ impl std::fmt::Display for MtpConnectionError {
 
 impl std::error::Error for MtpConnectionError {}
 
+/// Enables or disables MTP support (stub - no-op).
+#[tauri::command]
+pub async fn set_mtp_enabled(_enabled: bool) {}
+
 /// Lists connected MTP devices (stub - always returns empty).
 #[tauri::command]
 pub fn list_mtp_devices() -> Vec<MtpDeviceInfo> {

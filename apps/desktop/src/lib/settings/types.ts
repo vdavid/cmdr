@@ -100,6 +100,7 @@ export interface SettingsValues {
   'listing.sizeMismatchWarning': boolean
 
   // File operations
+  'fileOperations.mtpEnabled': boolean
   'fileOperations.allowFileExtensionChanges': ExtensionChangePolicy
   'fileOperations.progressUpdateInterval': number
   'fileOperations.maxConflictsToShow': number
