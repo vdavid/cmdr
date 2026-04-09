@@ -232,6 +232,32 @@ impl SmbVolume {
         Ok(len)
     }
 
+    /// Exports a single file from SMB to a local path with progress reporting.
+    fn export_single_file_with_progress(
+        &self,
+        smb_path: &str,
+        local_dest: &Path,
+        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
+    ) -> Result<u64, VolumeError> {
+        let handle = self.runtime_handle.clone();
+        let sp = smb_path.to_string();
+
+        let data = self.with_smb("export_to_local_with_progress(read)", |client, tree| {
+            handle.block_on(client.read_file_with_progress(tree, &sp, |p| {
+                on_progress(p.bytes_transferred, p.total_bytes.unwrap_or(0))
+            }))
+        })?;
+
+        // Ensure parent directory exists
+        if let Some(parent) = local_dest.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        }
+
+        let len = data.len() as u64;
+        std::fs::write(local_dest, &data).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        Ok(len)
+    }
+
     /// Recursively exports a directory from SMB to a local path. Returns total bytes.
     fn export_directory_recursive(&self, smb_path: &str, local_dest: &Path) -> Result<u64, VolumeError> {
         std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError(e.to_string()))?;
@@ -252,6 +278,37 @@ impl SmbVolume {
                 total_bytes += self.export_directory_recursive(&child_smb, &child_local)?;
             } else {
                 total_bytes += self.export_single_file(&child_smb, &child_local)?;
+            }
+        }
+
+        Ok(total_bytes)
+    }
+
+    /// Recursively exports an SMB directory to local with progress. Returns total bytes.
+    fn export_directory_recursive_with_progress(
+        &self,
+        smb_path: &str,
+        local_dest: &Path,
+        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
+    ) -> Result<u64, VolumeError> {
+        std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError(e.to_string()))?;
+
+        let display_path = self.to_display_path(smb_path);
+        let entries = self.list_directory(Path::new(&display_path))?;
+        let mut total_bytes = 0u64;
+
+        for entry in &entries {
+            let child_smb = if smb_path.is_empty() {
+                entry.name.clone()
+            } else {
+                format!("{}/{}", smb_path, entry.name)
+            };
+            let child_local = local_dest.join(&entry.name);
+
+            if entry.is_directory {
+                total_bytes += self.export_directory_recursive_with_progress(&child_smb, &child_local, on_progress)?;
+            } else {
+                total_bytes += self.export_single_file_with_progress(&child_smb, &child_local, on_progress)?;
             }
         }
 
@@ -298,6 +355,64 @@ impl SmbVolume {
                 total_bytes += self.import_directory_recursive(&child_local, &child_smb)?;
             } else {
                 total_bytes += self.import_single_file(&child_local, &child_smb)?;
+            }
+        }
+
+        Ok(total_bytes)
+    }
+
+    /// Imports a single local file to SMB with progress reporting. Returns bytes written.
+    fn import_single_file_with_progress(
+        &self,
+        local_source: &Path,
+        smb_path: &str,
+        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
+    ) -> Result<u64, VolumeError> {
+        let data = std::fs::read(local_source).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        let len = data.len() as u64;
+        let handle = self.runtime_handle.clone();
+        let sp = smb_path.to_string();
+
+        self.with_smb("import_from_local_with_progress(write)", |client, tree| {
+            handle.block_on(client.write_file_with_progress(tree, &sp, &data, |p| {
+                on_progress(p.bytes_transferred, p.total_bytes.unwrap_or(len))
+            }))
+        })?;
+
+        Ok(len)
+    }
+
+    /// Recursively imports a local directory to SMB with progress. Returns total bytes.
+    fn import_directory_recursive_with_progress(
+        &self,
+        local_source: &Path,
+        smb_path: &str,
+        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
+    ) -> Result<u64, VolumeError> {
+        let handle = self.runtime_handle.clone();
+        let sp = smb_path.to_string();
+
+        self.with_smb("import_from_local_with_progress(mkdir)", |client, tree| {
+            handle.block_on(client.create_directory(tree, &sp))
+        })?;
+
+        let read_dir = std::fs::read_dir(local_source).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        let mut total_bytes = 0u64;
+
+        for dir_entry in read_dir {
+            let dir_entry = dir_entry.map_err(|e| VolumeError::IoError(e.to_string()))?;
+            let child_local = dir_entry.path();
+            let child_name = dir_entry.file_name().to_string_lossy().to_string();
+            let child_smb = if smb_path.is_empty() {
+                child_name
+            } else {
+                format!("{}/{}", smb_path, child_name)
+            };
+
+            if child_local.is_dir() {
+                total_bytes += self.import_directory_recursive_with_progress(&child_local, &child_smb, on_progress)?;
+            } else {
+                total_bytes += self.import_single_file_with_progress(&child_local, &child_smb, on_progress)?;
             }
         }
 
@@ -805,6 +920,62 @@ impl Volume for SmbVolume {
             self.import_directory_recursive(local_source, &smb_path)
         } else {
             self.import_single_file(local_source, &smb_path)
+        }
+    }
+
+    fn export_to_local_with_progress(
+        &self,
+        source: &Path,
+        local_dest: &Path,
+        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
+    ) -> Result<u64, VolumeError> {
+        let smb_path = self.to_smb_path(source);
+        let handle = self.runtime_handle.clone();
+
+        debug!(
+            "SmbVolume::export_to_local_with_progress: share={}, source={:?}, dest={}",
+            self.share_name,
+            smb_path,
+            local_dest.display()
+        );
+
+        let is_dir = if smb_path.is_empty() {
+            true
+        } else {
+            let h = handle.clone();
+            let sp = smb_path.clone();
+            self.with_smb("export_to_local_with_progress(stat)", |client, tree| {
+                h.block_on(client.stat(tree, &sp))
+            })?
+            .is_directory
+        };
+
+        if is_dir {
+            self.export_directory_recursive_with_progress(&smb_path, local_dest, on_progress)
+        } else {
+            self.export_single_file_with_progress(&smb_path, local_dest, on_progress)
+        }
+    }
+
+    fn import_from_local_with_progress(
+        &self,
+        local_source: &Path,
+        dest: &Path,
+        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
+    ) -> Result<u64, VolumeError> {
+        let smb_path = self.to_smb_path(dest);
+
+        debug!(
+            "SmbVolume::import_from_local_with_progress: share={}, source={}, dest={:?}",
+            self.share_name,
+            local_source.display(),
+            smb_path
+        );
+
+        if local_source.is_dir() {
+            self.import_directory_recursive_with_progress(local_source, &smb_path, on_progress)
+        } else {
+            self.import_single_file_with_progress(local_source, &smb_path, on_progress)
         }
     }
 

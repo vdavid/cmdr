@@ -7,6 +7,7 @@
 //! - MTP → MTP file: streaming transfer
 //! - MTP → MTP directory: export to temp local, then import
 
+use std::ops::ControlFlow;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -38,6 +39,7 @@ pub(super) fn copy_single_path(
     dest_volume: &Arc<dyn Volume>,
     dest_path: &Path,
     state: &Arc<WriteOperationState>,
+    on_file_progress: &dyn Fn(u64, u64) -> ControlFlow<()>,
 ) -> Result<u64, VolumeError> {
     // Check cancellation
     if super::state::is_cancelled(&state.intent) {
@@ -88,9 +90,9 @@ pub(super) fn copy_single_path(
         // For directories, walk the tree ourselves so we can check cancellation between files.
         // import_from_local(dir) would import everything in one shot with no cancellation.
         if local_source.is_dir() {
-            import_directory_cancellable(&local_source, dest_path, dest_volume, state)
+            import_directory_cancellable(&local_source, dest_path, dest_volume, state, on_file_progress)
         } else {
-            dest_volume.import_from_local(&local_source, dest_path)
+            dest_volume.import_from_local_with_progress(&local_source, dest_path, on_file_progress)
         }
     } else if !source_is_local && dest_is_local {
         // Source is not local, dest is local (like SMB/MTP → Local)
@@ -102,9 +104,9 @@ pub(super) fn copy_single_path(
         // For directories, walk the tree ourselves for cancellation support.
         let is_dir = source_volume.is_directory(source_path).unwrap_or(false);
         if is_dir {
-            export_directory_cancellable(source_path, &local_dest, source_volume, state)
+            export_directory_cancellable(source_path, &local_dest, source_volume, state, on_file_progress)
         } else {
-            source_volume.export_to_local(source_path, &local_dest)
+            source_volume.export_to_local_with_progress(source_path, &local_dest, on_file_progress)
         }
     } else {
         // Both are local, use export which resolves paths internally
@@ -127,6 +129,7 @@ fn import_directory_cancellable(
     dest_path: &Path,
     dest_volume: &Arc<dyn Volume>,
     state: &Arc<WriteOperationState>,
+    on_file_progress: &dyn Fn(u64, u64) -> ControlFlow<()>,
 ) -> Result<u64, VolumeError> {
     // Create the directory on the destination
     dest_volume.create_directory(dest_path)?;
@@ -146,9 +149,10 @@ fn import_directory_cancellable(
         let child_dest = dest_path.join(&child_name);
 
         if child_local.is_dir() {
-            total_bytes += import_directory_cancellable(&child_local, &child_dest, dest_volume, state)?;
+            total_bytes +=
+                import_directory_cancellable(&child_local, &child_dest, dest_volume, state, on_file_progress)?;
         } else {
-            total_bytes += dest_volume.import_from_local(&child_local, &child_dest)?;
+            total_bytes += dest_volume.import_from_local_with_progress(&child_local, &child_dest, on_file_progress)?;
         }
     }
 
@@ -162,6 +166,7 @@ fn export_directory_cancellable(
     local_dest: &Path,
     source_volume: &Arc<dyn Volume>,
     state: &Arc<WriteOperationState>,
+    on_file_progress: &dyn Fn(u64, u64) -> ControlFlow<()>,
 ) -> Result<u64, VolumeError> {
     // Create the local directory
     std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError(e.to_string()))?;
@@ -180,9 +185,10 @@ fn export_directory_cancellable(
         let child_local = local_dest.join(&entry.name);
 
         if entry.is_directory {
-            total_bytes += export_directory_cancellable(child_source, &child_local, source_volume, state)?;
+            total_bytes +=
+                export_directory_cancellable(child_source, &child_local, source_volume, state, on_file_progress)?;
         } else {
-            total_bytes += source_volume.export_to_local(child_source, &child_local)?;
+            total_bytes += source_volume.export_to_local_with_progress(child_source, &child_local, on_file_progress)?;
         }
     }
 
@@ -250,6 +256,10 @@ mod tests {
 
     use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
 
+    fn no_progress(_bytes_done: u64, _bytes_total: u64) -> ControlFlow<()> {
+        ControlFlow::Continue(())
+    }
+
     #[test]
     fn test_copy_single_path_local_to_local() {
         use std::fs;
@@ -274,7 +284,15 @@ mod tests {
             conflict_mutex: std::sync::Mutex::new(false),
         });
 
-        let bytes = copy_single_path(&source, Path::new("source.txt"), &dest, Path::new("dest.txt"), &state).unwrap();
+        let bytes = copy_single_path(
+            &source,
+            Path::new("source.txt"),
+            &dest,
+            Path::new("dest.txt"),
+            &state,
+            &no_progress,
+        )
+        .unwrap();
 
         assert_eq!(bytes, 14); // "Source content"
         assert_eq!(fs::read_to_string(dst_dir.join("dest.txt")).unwrap(), "Source content");
@@ -307,7 +325,14 @@ mod tests {
             conflict_mutex: std::sync::Mutex::new(false),
         });
 
-        let result = copy_single_path(&source, Path::new("source.txt"), &dest, Path::new("dest.txt"), &state);
+        let result = copy_single_path(
+            &source,
+            Path::new("source.txt"),
+            &dest,
+            Path::new("dest.txt"),
+            &state,
+            &no_progress,
+        );
 
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), VolumeError::IoError(msg) if msg.contains("cancelled")));

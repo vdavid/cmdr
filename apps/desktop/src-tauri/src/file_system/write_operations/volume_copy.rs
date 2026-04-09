@@ -15,9 +15,11 @@
 //! - Local → MTP: Uses volume.import_from_local()
 //! - MTP → Local: Uses volume.export_to_local()
 
+use std::cell::Cell;
+use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::AtomicU8;
+use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
@@ -418,7 +420,7 @@ fn copy_volumes_with_progress(
                     operation_id: operation_id.to_string(),
                     operation_type: WriteOperationType::Copy,
                     files_processed: files_done,
-                    rolled_back: false, // Volume copies don't have rollback yet
+                    rolled_back: false, // TODO: support Rollback (delete all copied files in reverse) and Cancel cleanup (delete only the last partial file)
                 },
             );
             return Err(WriteOperationError::Cancelled {
@@ -494,38 +496,74 @@ fn copy_volumes_with_progress(
             dest_item_path.display()
         );
 
-        let bytes_copied = copy_single_path(&source_volume, source_path, &dest_volume, &dest_item_path, state)
-            .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
+        // Build a per-file progress callback that updates overall bytes_done and
+        // emits throttled write-progress events. Uses AtomicU64 + Cell so the
+        // closure is Fn (required by the Volume trait's dyn Fn signature).
+        let atomic_bytes_done = AtomicU64::new(bytes_done);
+        let last_file_bytes = AtomicU64::new(0);
+        let last_progress_cell = Cell::new(last_progress_time);
+        let file_name_for_cb = file_name.clone();
+
+        let on_file_progress = |file_bytes_done: u64, _file_bytes_total: u64| -> ControlFlow<()> {
+            // Check cancellation
+            if super::state::is_cancelled(&state.intent) {
+                return ControlFlow::Break(());
+            }
+
+            // Update overall bytes_done: add the delta since last callback
+            let prev = last_file_bytes.swap(file_bytes_done, Ordering::Relaxed);
+            let delta = file_bytes_done.saturating_sub(prev);
+            let current_total = atomic_bytes_done.fetch_add(delta, Ordering::Relaxed) + delta;
+
+            // Throttled progress emission
+            let last = last_progress_cell.get();
+            if last.elapsed() >= progress_interval {
+                last_progress_cell.set(Instant::now());
+                let _ = app.emit(
+                    "write-progress",
+                    WriteProgressEvent {
+                        operation_id: operation_id.to_string(),
+                        operation_type: WriteOperationType::Copy,
+                        phase: WriteOperationPhase::Copying,
+                        current_file: file_name_for_cb.clone(),
+                        files_done,
+                        files_total: total_files,
+                        bytes_done: current_total,
+                        bytes_total: total_bytes,
+                    },
+                );
+                update_operation_status(
+                    operation_id,
+                    WriteOperationPhase::Copying,
+                    file_name_for_cb.clone(),
+                    files_done,
+                    total_files,
+                    current_total,
+                    total_bytes,
+                );
+            }
+
+            ControlFlow::Continue(())
+        };
+
+        let bytes_copied = copy_single_path(
+            &source_volume,
+            source_path,
+            &dest_volume,
+            &dest_item_path,
+            state,
+            &on_file_progress,
+        )
+        .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
 
         files_done += 1;
-        bytes_done += bytes_copied;
-
-        // Emit progress
-        if last_progress_time.elapsed() >= progress_interval {
-            let _ = app.emit(
-                "write-progress",
-                WriteProgressEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Copy,
-                    phase: WriteOperationPhase::Copying,
-                    current_file: file_name.clone(),
-                    files_done,
-                    files_total: total_files,
-                    bytes_done,
-                    bytes_total: total_bytes,
-                },
-            );
-            update_operation_status(
-                operation_id,
-                WriteOperationPhase::Copying,
-                file_name,
-                files_done,
-                total_files,
-                bytes_done,
-                total_bytes,
-            );
-            last_progress_time = Instant::now();
+        // Sync bytes_done from the atomic (the callback may have updated it mid-file)
+        bytes_done = atomic_bytes_done.load(Ordering::Relaxed);
+        // If the volume didn't call the progress callback (default impl), add bytes_copied
+        if last_file_bytes.load(Ordering::Relaxed) == 0 && bytes_copied > 0 {
+            bytes_done += bytes_copied;
         }
+        last_progress_time = last_progress_cell.get();
     }
 
     // Success
@@ -695,9 +733,22 @@ pub async fn move_between_volumes(
                     }
                 }
 
-                // Copy to destination
-                let bytes = copy_single_path(&source_volume, source_path, &dest_volume, &dest_item, &state)
-                    .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
+                // Copy to destination (no per-file progress for moves — total_bytes is 0)
+                let no_progress = |_: u64, _: u64| -> ControlFlow<()> {
+                    if super::state::is_cancelled(&state.intent) {
+                        return ControlFlow::Break(());
+                    }
+                    ControlFlow::Continue(())
+                };
+                let bytes = copy_single_path(
+                    &source_volume,
+                    source_path,
+                    &dest_volume,
+                    &dest_item,
+                    &state,
+                    &no_progress,
+                )
+                .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
 
                 // Delete source
                 source_volume

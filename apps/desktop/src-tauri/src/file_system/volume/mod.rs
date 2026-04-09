@@ -397,12 +397,42 @@ pub trait Volume: Send + Sync {
         Err(VolumeError::NotSupported)
     }
 
+    /// Exports a file from this volume to a local path, reporting progress.
+    ///
+    /// `on_progress(bytes_done, bytes_total)` is called periodically during the transfer.
+    /// Return `ControlFlow::Break(())` from the callback to cancel the transfer.
+    /// Default implementation delegates to `export_to_local` (no per-file progress).
+    fn export_to_local_with_progress(
+        &self,
+        source: &Path,
+        local_dest: &Path,
+        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
+    ) -> Result<u64, VolumeError> {
+        let _ = on_progress;
+        self.export_to_local(source, local_dest)
+    }
+
     /// Imports/uploads a file or directory from a local path to this volume.
     /// For local volumes, this is a file copy. For MTP, this uploads.
     /// Returns bytes transferred.
     fn import_from_local(&self, local_source: &Path, dest: &Path) -> Result<u64, VolumeError> {
         let _ = (local_source, dest);
         Err(VolumeError::NotSupported)
+    }
+
+    /// Imports a file from a local path to this volume, reporting progress.
+    ///
+    /// `on_progress(bytes_done, bytes_total)` is called periodically during the transfer.
+    /// Return `ControlFlow::Break(())` from the callback to cancel the transfer.
+    /// Default implementation delegates to `import_from_local` (no per-file progress).
+    fn import_from_local_with_progress(
+        &self,
+        local_source: &Path,
+        dest: &Path,
+        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
+    ) -> Result<u64, VolumeError> {
+        let _ = on_progress;
+        self.import_from_local(local_source, dest)
     }
 
     /// Checks destination for conflicts with source items.

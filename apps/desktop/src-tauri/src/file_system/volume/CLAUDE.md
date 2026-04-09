@@ -43,6 +43,7 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `smb_connection_state()` — returns `Some(SmbConnectionState)` for SMB volumes (green/yellow indicator in volume picker). Default `None`. Only `SmbVolume` implements it.
 - `on_unmount()` — lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
 - `scanner()` / `watcher()` — drive indexing hooks; `None` by default.
+- `export_to_local_with_progress()` / `import_from_local_with_progress()` — per-file progress callbacks during copy. Default delegates to the non-progress version. `SmbVolume` overrides both, using smb2's `read_file_with_progress`/`write_file_with_progress`. The callback takes `(bytes_done, bytes_total)` for the current file and returns `ControlFlow::Break(())` to cancel. `MtpVolume` and `LocalPosixVolume` use the default (no intra-file progress).
 
 ## Path handling gotchas
 
@@ -140,6 +141,9 @@ provides a manual upgrade path.
 
 **Gotcha**: Watcher filenames are NFC (from server) but macOS mount paths are NFD
 **Why**: SMB servers return NFC-normalized filenames. macOS filesystem paths use NFD. The watcher NFD-normalizes filenames before constructing display paths used for cache lookups.
+
+**Decision**: Progress callbacks use `&dyn Fn(u64, u64) -> ControlFlow<()>`, not `FnMut`
+**Why**: The Volume trait is object-safe (`dyn Volume`), so callbacks must be `Fn` (not `FnMut`). Callers use `AtomicU64` for byte counters and `Cell<Instant>` for timestamps to mutate state inside a `Fn` closure. This avoids needing `RefCell` or `Mutex` in the hot path.
 
 ## Testing
 

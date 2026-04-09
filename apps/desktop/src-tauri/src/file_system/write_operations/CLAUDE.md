@@ -59,6 +59,14 @@ single `AtomicU8`-backed enum: `Running → RollingBack` (user clicks Rollback),
 or teardown), `RollingBack → Stopped` (user cancels the rollback). `Stopped` is terminal. The `is_cancelled()` helper
 returns true for both `RollingBack` and `Stopped`, so the 40+ cancellation check sites just call `is_cancelled(&state.intent)`.
 
+**Cancel vs Rollback — distinct behaviors:**
+- **Cancel (`Stopped`)**: Stop immediately. Keep all fully-copied files. Delete only the last *partial* file (a
+  half-written file is corrupted data, not useful to keep). `rolled_back: false`.
+- **Rollback (`RollingBack`)**: Stop copying, then delete ALL files copied so far in reverse order with progress
+  events (`phase: RollingBack`). The progress bars go backwards. User can cancel the rollback (→ `Stopped`), which
+  keeps whatever hasn't been deleted yet. `rolled_back: true`.
+- Both are triggered from the same `cancel_write_operation` IPC call, distinguished by the `rollback` parameter.
+
 **Two-layer cancellation.** `AtomicU8` for fast in-loop checks. `run_cancellable` wraps blocking operations (e.g.,
 network-mount copies that may block indefinitely) in a separate thread, polling the flag every 100ms via `mpsc::channel`.
 
