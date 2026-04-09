@@ -210,6 +210,11 @@ impl SmbVolume {
             handle.block_on(client.read_file_pipelined(tree, &sp))
         })?;
 
+        // Ensure parent directory exists
+        if let Some(parent) = local_dest.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        }
+
         let len = data.len() as u64;
         std::fs::write(local_dest, &data).map_err(|e| VolumeError::IoError(e.to_string()))?;
         Ok(len)
@@ -1036,5 +1041,360 @@ mod tests {
             runtime_handle: rt.handle().clone(),
         };
         (vol, rt)
+    }
+
+    // ── Integration tests (require Docker SMB containers) ──────────
+    //
+    // Run with: cargo nextest run smb_integration --run-ignored all
+    // Prerequisites: ./apps/desktop/test/smb-servers/start.sh
+
+    /// Connects to the Docker smb-guest container (127.0.0.1:9445, share "public").
+    ///
+    /// Uses a multi-threaded runtime because `SmbVolume` methods call `Handle::block_on`
+    /// internally (from `with_smb`). A single-threaded runtime would deadlock since
+    /// the test thread is already inside `rt.block_on`.
+    fn make_docker_volume() -> (SmbVolume, tokio::runtime::Runtime) {
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(2)
+            .enable_all()
+            .build()
+            .unwrap();
+        let vol = rt.block_on(async {
+            connect_smb_volume("public", "/tmp/smb-test-mount", "127.0.0.1", "public", None, None, 9445)
+                .await
+                .expect("Failed to connect to Docker SMB container at 127.0.0.1:9445. Is it running?")
+        });
+        (vol, rt)
+    }
+
+    /// Unique directory name for test isolation.
+    fn test_dir_name() -> String {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        format!("cmdr-test-{}", ts)
+    }
+
+    /// Ensures a test directory is clean before use (deletes recursively if it exists).
+    fn ensure_clean(vol: &SmbVolume, dir: &str) {
+        if vol.exists(Path::new(dir)) {
+            // Delete contents recursively
+            if let Ok(entries) = vol.list_directory(Path::new(dir)) {
+                for entry in entries {
+                    let child = format!("{}/{}", dir, entry.name);
+                    if entry.is_directory {
+                        ensure_clean(vol, &child);
+                    } else {
+                        let _ = vol.delete(Path::new(&child));
+                    }
+                }
+            }
+            let _ = vol.delete(Path::new(dir));
+        }
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_list_directory() {
+        let (vol, _rt) = make_docker_volume();
+        let entries = vol.list_directory(Path::new("")).unwrap();
+        // The public share should be listable (may have files from other tests)
+        assert!(entries.iter().all(|e| e.name != "." && e.name != ".."));
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_create_and_read_file() {
+        let (vol, _rt) = make_docker_volume();
+        let dir = test_dir_name();
+        ensure_clean(&vol, &dir);
+
+        // Create a directory
+        vol.create_directory(Path::new(&dir)).unwrap();
+
+        // Create a file inside it
+        let file_path = format!("{}/test.txt", dir);
+        let content = b"hello from cmdr integration test";
+        vol.create_file(Path::new(&file_path), content).unwrap();
+
+        // Verify it exists
+        assert!(vol.exists(Path::new(&file_path)));
+        assert!(!vol.is_directory(Path::new(&file_path)).unwrap());
+
+        // Verify metadata
+        let meta = vol.get_metadata(Path::new(&file_path)).unwrap();
+        assert_eq!(meta.name, "test.txt");
+        assert_eq!(meta.size, Some(content.len() as u64));
+        assert!(!meta.is_directory);
+
+        // List the directory and verify the file is there
+        let entries = vol.list_directory(Path::new(&dir)).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].name, "test.txt");
+
+        // Clean up
+        vol.delete(Path::new(&file_path)).unwrap();
+        vol.delete(Path::new(&dir)).unwrap();
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_rename() {
+        let (vol, _rt) = make_docker_volume();
+        let dir = test_dir_name();
+
+        vol.create_directory(Path::new(&dir)).unwrap();
+        let old_path = format!("{}/old.txt", dir);
+        let new_path = format!("{}/new.txt", dir);
+
+        vol.create_file(Path::new(&old_path), b"rename me").unwrap();
+
+        // Rename
+        vol.rename(Path::new(&old_path), Path::new(&new_path), false).unwrap();
+
+        // Old is gone, new exists
+        assert!(!vol.exists(Path::new(&old_path)));
+        assert!(vol.exists(Path::new(&new_path)));
+
+        // Clean up
+        vol.delete(Path::new(&new_path)).unwrap();
+        vol.delete(Path::new(&dir)).unwrap();
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_rename_force_overwrites() {
+        let (vol, _rt) = make_docker_volume();
+        let dir = test_dir_name();
+
+        vol.create_directory(Path::new(&dir)).unwrap();
+        let src = format!("{}/src.txt", dir);
+        let dst = format!("{}/dst.txt", dir);
+
+        vol.create_file(Path::new(&src), b"source content").unwrap();
+        vol.create_file(Path::new(&dst), b"will be overwritten").unwrap();
+
+        // Non-force should fail
+        let err = vol.rename(Path::new(&src), Path::new(&dst), false);
+        assert!(matches!(err, Err(VolumeError::AlreadyExists(_))));
+
+        // Force should succeed
+        vol.rename(Path::new(&src), Path::new(&dst), true).unwrap();
+        assert!(!vol.exists(Path::new(&src)));
+        assert!(vol.exists(Path::new(&dst)));
+
+        // Clean up
+        vol.delete(Path::new(&dst)).unwrap();
+        vol.delete(Path::new(&dir)).unwrap();
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_delete_directory() {
+        let (vol, _rt) = make_docker_volume();
+        let dir = test_dir_name();
+
+        vol.create_directory(Path::new(&dir)).unwrap();
+        assert!(vol.exists(Path::new(&dir)));
+        assert!(vol.is_directory(Path::new(&dir)).unwrap());
+
+        vol.delete(Path::new(&dir)).unwrap();
+        assert!(!vol.exists(Path::new(&dir)));
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_export_to_local() {
+        let (vol, _rt) = make_docker_volume();
+        let dir = test_dir_name();
+        let local_tmp = std::env::temp_dir().join(&dir);
+
+        // Create a file on the SMB share
+        vol.create_directory(Path::new(&dir)).unwrap();
+        let smb_file = format!("{}/export-test.txt", dir);
+        let content = b"exported content";
+        vol.create_file(Path::new(&smb_file), content).unwrap();
+
+        // Export to local
+        let bytes = vol
+            .export_to_local(Path::new(&smb_file), &local_tmp.join("export-test.txt"))
+            .unwrap();
+        assert_eq!(bytes, content.len() as u64);
+
+        // Verify local file
+        let local_content = std::fs::read(local_tmp.join("export-test.txt")).unwrap();
+        assert_eq!(local_content, content);
+
+        // Clean up
+        let _ = std::fs::remove_dir_all(&local_tmp);
+        vol.delete(Path::new(&smb_file)).unwrap();
+        vol.delete(Path::new(&dir)).unwrap();
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_import_from_local() {
+        let (vol, _rt) = make_docker_volume();
+        let dir = test_dir_name();
+        let local_tmp = std::env::temp_dir().join(format!("{}-import", dir));
+
+        // Create a local file
+        std::fs::create_dir_all(&local_tmp).unwrap();
+        let local_file = local_tmp.join("import-test.txt");
+        let content = b"imported content";
+        std::fs::write(&local_file, content).unwrap();
+
+        // Create target dir on SMB
+        vol.create_directory(Path::new(&dir)).unwrap();
+
+        // Import to SMB
+        let smb_file = format!("{}/import-test.txt", dir);
+        let bytes = vol.import_from_local(&local_file, Path::new(&smb_file)).unwrap();
+        assert_eq!(bytes, content.len() as u64);
+
+        // Verify on SMB
+        assert!(vol.exists(Path::new(&smb_file)));
+        let meta = vol.get_metadata(Path::new(&smb_file)).unwrap();
+        assert_eq!(meta.size, Some(content.len() as u64));
+
+        // Clean up
+        let _ = std::fs::remove_dir_all(&local_tmp);
+        vol.delete(Path::new(&smb_file)).unwrap();
+        vol.delete(Path::new(&dir)).unwrap();
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_export_directory_recursive() {
+        let (vol, _rt) = make_docker_volume();
+        let dir = test_dir_name();
+        let local_tmp = std::env::temp_dir().join(format!("{}-export-dir", dir));
+
+        // Create a directory tree on SMB
+        vol.create_directory(Path::new(&dir)).unwrap();
+        let sub = format!("{}/subdir", dir);
+        vol.create_directory(Path::new(&sub)).unwrap();
+        vol.create_file(Path::new(&format!("{}/a.txt", dir)), b"file a")
+            .unwrap();
+        vol.create_file(Path::new(&format!("{}/subdir/b.txt", dir)), b"file b")
+            .unwrap();
+
+        // Export entire directory
+        let bytes = vol.export_to_local(Path::new(&dir), &local_tmp).unwrap();
+        assert_eq!(bytes, 12); // "file a" (6) + "file b" (6)
+
+        // Verify local structure
+        assert!(local_tmp.join("a.txt").exists());
+        assert!(local_tmp.join("subdir").is_dir());
+        assert!(local_tmp.join("subdir/b.txt").exists());
+        assert_eq!(std::fs::read_to_string(local_tmp.join("a.txt")).unwrap(), "file a");
+        assert_eq!(
+            std::fs::read_to_string(local_tmp.join("subdir/b.txt")).unwrap(),
+            "file b"
+        );
+
+        // Clean up
+        let _ = std::fs::remove_dir_all(&local_tmp);
+        vol.delete(Path::new(&format!("{}/subdir/b.txt", dir))).unwrap();
+        vol.delete(Path::new(&format!("{}/a.txt", dir))).unwrap();
+        vol.delete(Path::new(&sub)).unwrap();
+        vol.delete(Path::new(&dir)).unwrap();
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_import_directory_recursive() {
+        let (vol, _rt) = make_docker_volume();
+        let dir = test_dir_name();
+        let local_tmp = std::env::temp_dir().join(format!("{}-import-dir", dir));
+
+        // Create a local directory tree
+        std::fs::create_dir_all(local_tmp.join("subdir")).unwrap();
+        std::fs::write(local_tmp.join("x.txt"), "file x").unwrap();
+        std::fs::write(local_tmp.join("subdir/y.txt"), "file y").unwrap();
+
+        // Import to SMB
+        let bytes = vol.import_from_local(&local_tmp, Path::new(&dir)).unwrap();
+        assert_eq!(bytes, 12); // "file x" (6) + "file y" (6)
+
+        // Verify on SMB
+        assert!(vol.is_directory(Path::new(&dir)).unwrap());
+        assert!(vol.exists(Path::new(&format!("{}/x.txt", dir))));
+        assert!(vol.is_directory(Path::new(&format!("{}/subdir", dir))).unwrap());
+        assert!(vol.exists(Path::new(&format!("{}/subdir/y.txt", dir))));
+
+        // Clean up
+        let _ = std::fs::remove_dir_all(&local_tmp);
+        vol.delete(Path::new(&format!("{}/subdir/y.txt", dir))).unwrap();
+        vol.delete(Path::new(&format!("{}/x.txt", dir))).unwrap();
+        vol.delete(Path::new(&format!("{}/subdir", dir))).unwrap();
+        vol.delete(Path::new(&dir)).unwrap();
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_scan_for_copy() {
+        let (vol, _rt) = make_docker_volume();
+        let dir = test_dir_name();
+
+        // Create a small tree
+        vol.create_directory(Path::new(&dir)).unwrap();
+        let sub = format!("{}/inner", dir);
+        vol.create_directory(Path::new(&sub)).unwrap();
+        vol.create_file(Path::new(&format!("{}/f1.txt", dir)), b"aaa").unwrap();
+        vol.create_file(Path::new(&format!("{}/inner/f2.txt", dir)), b"bbbbbb")
+            .unwrap();
+
+        let result = vol.scan_for_copy(Path::new(&dir)).unwrap();
+        assert_eq!(result.file_count, 2);
+        assert_eq!(result.dir_count, 2); // dir + inner
+        assert_eq!(result.total_bytes, 9); // 3 + 6
+
+        // Clean up
+        vol.delete(Path::new(&format!("{}/inner/f2.txt", dir))).unwrap();
+        vol.delete(Path::new(&format!("{}/f1.txt", dir))).unwrap();
+        vol.delete(Path::new(&sub)).unwrap();
+        vol.delete(Path::new(&dir)).unwrap();
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_scan_for_conflicts() {
+        let (vol, _rt) = make_docker_volume();
+        let dir = test_dir_name();
+
+        vol.create_directory(Path::new(&dir)).unwrap();
+        vol.create_file(Path::new(&format!("{}/exists.txt", dir)), b"data")
+            .unwrap();
+
+        let source_items = vec![
+            SourceItemInfo {
+                name: "exists.txt".to_string(),
+                size: 100,
+                modified: Some(0),
+            },
+            SourceItemInfo {
+                name: "missing.txt".to_string(),
+                size: 200,
+                modified: Some(0),
+            },
+        ];
+
+        let conflicts = vol.scan_for_conflicts(&source_items, Path::new(&dir)).unwrap();
+        assert_eq!(conflicts.len(), 1);
+        assert_eq!(conflicts[0].source_path, "exists.txt");
+
+        // Clean up
+        vol.delete(Path::new(&format!("{}/exists.txt", dir))).unwrap();
+        vol.delete(Path::new(&dir)).unwrap();
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_space_info() {
+        let (vol, _rt) = make_docker_volume();
+        let space = vol.get_space_info().unwrap();
+        assert!(space.total_bytes > 0);
+        assert!(space.available_bytes > 0);
+        assert!(space.used_bytes <= space.total_bytes);
     }
 }
