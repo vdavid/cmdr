@@ -79,23 +79,33 @@ pub(super) fn copy_single_path(
     }
 
     if source_is_local && !dest_is_local {
-        // Source is local, dest is not (like Local → MTP)
-        // Use import_from_local on destination
+        // Source is local, dest is not (like Local → SMB/MTP)
         let local_source = if source_path.is_absolute() {
             source_path.to_path_buf()
         } else {
             source_volume.root().join(source_path)
         };
-        dest_volume.import_from_local(&local_source, dest_path)
+        // For directories, walk the tree ourselves so we can check cancellation between files.
+        // import_from_local(dir) would import everything in one shot with no cancellation.
+        if local_source.is_dir() {
+            import_directory_cancellable(&local_source, dest_path, dest_volume, state)
+        } else {
+            dest_volume.import_from_local(&local_source, dest_path)
+        }
     } else if !source_is_local && dest_is_local {
-        // Source is not local, dest is local (like MTP → Local)
-        // Use export_to_local on source
+        // Source is not local, dest is local (like SMB/MTP → Local)
         let local_dest = if dest_path.is_absolute() {
             dest_path.to_path_buf()
         } else {
             dest_volume.root().join(dest_path)
         };
-        source_volume.export_to_local(source_path, &local_dest)
+        // For directories, walk the tree ourselves for cancellation support.
+        let is_dir = source_volume.is_directory(source_path).unwrap_or(false);
+        if is_dir {
+            export_directory_cancellable(source_path, &local_dest, source_volume, state)
+        } else {
+            source_volume.export_to_local(source_path, &local_dest)
+        }
     } else {
         // Both are local, use export which resolves paths internally
         // Note: export_to_local takes a path relative to the volume root for source,
@@ -107,6 +117,76 @@ pub(super) fn copy_single_path(
         };
         source_volume.export_to_local(source_path, &local_dest)
     }
+}
+
+/// Recursively imports a local directory to a non-local volume, checking cancellation
+/// between each file. This replaces `Volume::import_from_local(dir)` in the copy path
+/// to ensure the user can cancel mid-directory.
+fn import_directory_cancellable(
+    local_source: &Path,
+    dest_path: &Path,
+    dest_volume: &Arc<dyn Volume>,
+    state: &Arc<WriteOperationState>,
+) -> Result<u64, VolumeError> {
+    // Create the directory on the destination
+    dest_volume.create_directory(dest_path)?;
+
+    let read_dir = std::fs::read_dir(local_source).map_err(|e| VolumeError::IoError(e.to_string()))?;
+    let mut total_bytes = 0u64;
+
+    for dir_entry in read_dir {
+        // Check cancellation between files
+        if super::state::is_cancelled(&state.intent) {
+            return Err(VolumeError::IoError("Operation cancelled".to_string()));
+        }
+
+        let dir_entry = dir_entry.map_err(|e| VolumeError::IoError(e.to_string()))?;
+        let child_local = dir_entry.path();
+        let child_name = dir_entry.file_name();
+        let child_dest = dest_path.join(&child_name);
+
+        if child_local.is_dir() {
+            total_bytes += import_directory_cancellable(&child_local, &child_dest, dest_volume, state)?;
+        } else {
+            total_bytes += dest_volume.import_from_local(&child_local, &child_dest)?;
+        }
+    }
+
+    Ok(total_bytes)
+}
+
+/// Recursively exports a non-local volume directory to local, checking cancellation
+/// between each file.
+fn export_directory_cancellable(
+    source_path: &Path,
+    local_dest: &Path,
+    source_volume: &Arc<dyn Volume>,
+    state: &Arc<WriteOperationState>,
+) -> Result<u64, VolumeError> {
+    // Create the local directory
+    std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError(e.to_string()))?;
+
+    // List the source directory via the Volume trait
+    let entries = source_volume.list_directory(source_path)?;
+    let mut total_bytes = 0u64;
+
+    for entry in &entries {
+        // Check cancellation between files
+        if super::state::is_cancelled(&state.intent) {
+            return Err(VolumeError::IoError("Operation cancelled".to_string()));
+        }
+
+        let child_source = Path::new(&entry.path);
+        let child_local = local_dest.join(&entry.name);
+
+        if entry.is_directory {
+            total_bytes += export_directory_cancellable(child_source, &child_local, source_volume, state)?;
+        } else {
+            total_bytes += source_volume.export_to_local(child_source, &child_local)?;
+        }
+    }
+
+    Ok(total_bytes)
 }
 
 /// Copies a path between two non-local volumes via a temporary local directory.
