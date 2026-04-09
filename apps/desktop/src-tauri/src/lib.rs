@@ -324,6 +324,11 @@ pub fn run() {
             #[cfg(feature = "virtual-mtp")]
             mtp::virtual_device::setup_virtual_mtp_device();
 
+            // Ensure ptpcamerad is re-enabled in case a previous session crashed
+            // while it was suppressed. No-op if it was already enabled.
+            #[cfg(target_os = "macos")]
+            mtp::macos_workaround::ensure_ptpcamerad_enabled();
+
             // Start MTP device hotplug watcher (Android device support)
             // This also auto-connects any devices already plugged in at startup
             #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -985,6 +990,13 @@ pub fn run() {
                     drag_image_detection::install(_app.clone());
                 }
                 tauri::RunEvent::Exit => {
+                    // Restore ptpcamerad before exit so we don't leave the system
+                    // with the daemon disabled after Cmdr closes
+                    #[cfg(target_os = "macos")]
+                    if let Err(e) = mtp::macos_workaround::restore_ptpcamerad() {
+                        log::warn!("Failed to restore ptpcamerad on exit: {}", e);
+                    }
+
                     ai::manager::shutdown();
                     mcp::stop_mcp_server();
                     #[cfg(any(target_os = "macos", target_os = "linux"))]

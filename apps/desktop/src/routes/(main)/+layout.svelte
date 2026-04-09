@@ -14,6 +14,8 @@
     import {
         onMtpExclusiveAccessError,
         onMtpPermissionError,
+        onPtpcameradSuppressed,
+        onPtpcameradRestored,
         connectMtpDevice,
         cancelAllWriteOperations,
         configureAi,
@@ -141,6 +143,8 @@
     // Cleanup functions stored for onDestroy
     let mtpExclusiveUnlistenPromise: Promise<() => void> | undefined
     let mtpPermissionUnlistenPromise: Promise<() => void> | undefined
+    let ptpcameradSuppressedUnlistenPromise: Promise<() => void> | undefined
+    let ptpcameradRestoredUnlistenPromise: Promise<() => void> | undefined
     let updateCleanup: (() => void) | undefined
     let aiCleanup: (() => void) | undefined
 
@@ -186,6 +190,14 @@
             mtpExclusiveUnlistenPromise = onMtpExclusiveAccessError(handleMtpExclusiveAccessError)
             mtpPermissionUnlistenPromise = onMtpPermissionError(handleMtpPermissionError)
 
+            // Listen for ptpcamerad auto-suppression (macOS)
+            ptpcameradSuppressedUnlistenPromise = onPtpcameradSuppressed(() => {
+                addToast('Paused macOS camera daemon for MTP access', { level: 'info', timeoutMs: 4000 })
+            })
+            ptpcameradRestoredUnlistenPromise = onPtpcameradRestored(() => {
+                addToast('Restored macOS camera daemon', { level: 'info', timeoutMs: 3000 })
+            })
+
             // Check for pending crash reports from a previous session
             void checkForPendingCrashReport()
 
@@ -209,6 +221,12 @@
             unlisten()
         })
         void mtpPermissionUnlistenPromise?.then((unlisten) => {
+            unlisten()
+        })
+        void ptpcameradSuppressedUnlistenPromise?.then((unlisten) => {
+            unlisten()
+        })
+        void ptpcameradRestoredUnlistenPromise?.then((unlisten) => {
             unlisten()
         })
         // Cleanup update checker

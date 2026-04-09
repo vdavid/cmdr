@@ -49,15 +49,25 @@ fn check_for_device_changes() {
     drop(known_guard);
 
     // Auto-connect newly detected devices
-    for device_id in new_devices {
-        info!("MTP device detected, auto-connecting: {}", device_id);
-        auto_connect_device(device_id);
+    if !new_devices.is_empty() {
+        #[cfg(target_os = "macos")]
+        suppress_ptpcamerad_if_needed();
+
+        for device_id in new_devices {
+            info!("MTP device detected, auto-connecting: {}", device_id);
+            auto_connect_device(device_id);
+        }
     }
 
     // Disconnect removed devices
-    for device_id in removed_devices {
-        info!("MTP device removed, disconnecting: {}", device_id);
-        auto_disconnect_device(device_id);
+    if !removed_devices.is_empty() {
+        for device_id in &removed_devices {
+            info!("MTP device removed, disconnecting: {}", device_id);
+            auto_disconnect_device(device_id.clone());
+        }
+
+        #[cfg(target_os = "macos")]
+        restore_ptpcamerad_if_no_devices();
     }
 }
 
@@ -124,8 +134,13 @@ pub fn start_mtp_watcher(app: &AppHandle) {
     );
 
     // Auto-connect any devices already plugged in at startup
-    for device_id in &initial_devices {
-        auto_connect_device(device_id.clone());
+    if !initial_devices.is_empty() {
+        #[cfg(target_os = "macos")]
+        suppress_ptpcamerad_if_needed();
+
+        for device_id in &initial_devices {
+            auto_connect_device(device_id.clone());
+        }
     }
 
     // Spawn the async hotplug watcher using Tauri's async runtime
@@ -174,6 +189,52 @@ async fn run_hotplug_watcher(_app: AppHandle) {
     }
 
     warn!("USB hotplug watcher stream ended unexpectedly");
+}
+
+/// Suppresses ptpcamerad before connecting to MTP devices.
+/// Emits `mtp-ptpcamerad-suppressed` event on success so the frontend can show a toast.
+#[cfg(target_os = "macos")]
+fn suppress_ptpcamerad_if_needed() {
+    use tauri::Emitter;
+
+    match super::macos_workaround::suppress_ptpcamerad() {
+        Ok(true) => {
+            info!("Suppressed ptpcamerad for MTP device access");
+            if let Some(app) = APP_HANDLE.get() {
+                let _ = app.emit("mtp-ptpcamerad-suppressed", ());
+            }
+            // Give the daemon time to die before we try to claim the USB device
+            std::thread::sleep(std::time::Duration::from_millis(200));
+        }
+        Ok(false) => {} // Already suppressed
+        Err(e) => warn!(
+            "Failed to suppress ptpcamerad: {} — falling back to manual workaround dialog",
+            e
+        ),
+    }
+}
+
+/// Restores ptpcamerad when no MTP devices remain connected.
+/// Emits `mtp-ptpcamerad-restored` event on success.
+#[cfg(target_os = "macos")]
+fn restore_ptpcamerad_if_no_devices() {
+    use tauri::Emitter;
+
+    let remaining = get_current_mtp_devices();
+    if !remaining.is_empty() {
+        return;
+    }
+
+    match super::macos_workaround::restore_ptpcamerad() {
+        Ok(true) => {
+            info!("Restored ptpcamerad (no MTP devices remaining)");
+            if let Some(app) = APP_HANDLE.get() {
+                let _ = app.emit("mtp-ptpcamerad-restored", ());
+            }
+        }
+        Ok(false) => {} // Wasn't suppressed
+        Err(e) => warn!("Failed to restore ptpcamerad: {}", e),
+    }
 }
 
 #[cfg(test)]

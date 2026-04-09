@@ -24,17 +24,16 @@ Multiple storages (Internal + SD Card) become separate volumes in UI. Each has d
 Listen to `mtp-directory-changed` events from backend. When device emits MTP `ObjectAdded/Removed/Changed`, backend
 sends event with `deviceId`. Frontend re-fetches current directory if viewing that device.
 
-### Graceful ptpcamerad handling
+### Automatic ptpcamerad suppression (macOS)
 
-On macOS, `ptpcamerad` daemon auto-claims devices. When exclusive access error:
+On macOS, `ptpcamerad` daemon auto-claims MTP/PTP devices. The backend now handles this automatically:
 
-1. Backend queries IORegistry (`ioreg`) for blocking process name
-2. Emits `mtp-exclusive-access-error` event with process info
-3. Frontend shows `PtpcameradDialog` with copyable Terminal command:
-   ```bash
-   while true; do pkill -9 ptpcamerad 2>/dev/null; sleep 1; done
-   ```
-4. User runs command, clicks "Retry connection"
+1. When MTP devices are detected (watcher), backend runs `launchctl disable` + `pkill -9 ptpcamerad`
+2. Emits `mtp-ptpcamerad-suppressed` event → frontend shows a brief info toast
+3. When all MTP devices disconnect (or app exits), backend runs `launchctl enable` to restore the daemon
+4. On startup, `ensure_ptpcamerad_enabled()` runs unconditionally to recover from a previous crash
+
+If automatic suppression fails, the existing `PtpcameradDialog` (manual Terminal command) serves as a fallback.
 
 ### Linux USB permission handling
 

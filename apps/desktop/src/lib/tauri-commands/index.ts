@@ -230,6 +230,8 @@ export {
   moveBetweenVolumes,
   scanVolumeForCopy,
   scanVolumeForConflicts,
+  onPtpcameradSuppressed,
+  onPtpcameradRestored,
 } from './mtp'
 export type {
   MtpDeviceInfo,

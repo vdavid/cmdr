@@ -221,6 +221,22 @@ export async function onMtpDeviceDisconnected(
   })
 }
 
+/**
+ * Subscribes to ptpcamerad auto-suppression events (macOS only).
+ * Emitted when the backend disables ptpcamerad to allow MTP device access.
+ */
+export async function onPtpcameradSuppressed(callback: () => void): Promise<UnlistenFn> {
+  return listen('mtp-ptpcamerad-suppressed', () => callback())
+}
+
+/**
+ * Subscribes to ptpcamerad restoration events (macOS only).
+ * Emitted when the backend re-enables ptpcamerad after all MTP devices disconnect.
+ */
+export async function onPtpcameradRestored(callback: () => void): Promise<UnlistenFn> {
+  return listen('mtp-ptpcamerad-restored', () => callback())
+}
+
 // NOTE: MTP file watching now uses the unified directory-diff event system (same as local volumes).
 // The mtp-directory-changed event and onMtpDirectoryChanged function have been removed.
 // MTP events are now handled by the existing directory-diff listener in FilePane.svelte.

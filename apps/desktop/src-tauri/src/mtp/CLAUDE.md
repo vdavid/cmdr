@@ -12,7 +12,7 @@ On Linux, users may need udev rules for USB device permissions (see `resources/9
 | `types.rs` | `MtpDeviceInfo`, `MtpStorageInfo` — camelCase JSON via `serde(rename_all)` |
 | `discovery.rs` | `list_mtp_devices()` via `mtp_rs::MtpDevice::list_devices()`; device IDs formatted as `"mtp-{location_id}"` |
 | `watcher.rs` | `start_mtp_watcher()` — nusb hotplug watcher; 500 ms delay on connect before re-checking; auto-connects detected devices via `MtpConnectionManager::connect()` and auto-disconnects removed ones |
-| `macos_workaround.rs` | macOS-only (`#[cfg(target_os = "macos")]`). Detects `ptpcamerad` via `ioreg`; exposes `PTPCAMERAD_WORKAROUND_COMMAND` (a bash one-liner) |
+| `macos_workaround.rs` | macOS-only (`#[cfg(target_os = "macos")]`). Auto-suppresses `ptpcamerad` via `launchctl disable` + `pkill`; restores on disconnect/exit; `ensure_ptpcamerad_enabled()` on startup for crash recovery. Falls back to manual `PTPCAMERAD_WORKAROUND_COMMAND` dialog if suppression fails |
 | `connection/mod.rs` | `MtpConnectionManager` singleton (`LazyLock`); `DeviceEntry` map; `connect()` (idempotent, probes write capability, registers `MtpVolume`); `disconnect()` |
 | `connection/cache.rs` | `PathHandleCache` (path → MTP object handle), `ListingCache` (5 s TTL), `EventDebouncer` (500 ms per device) |
 | `connection/errors.rs` | `MtpConnectionError` enum with typed variants and `map_mtp_error()` from `mtp_rs::Error` |
@@ -61,7 +61,8 @@ It never orchestrates MTP connections.
 - **Device lock**: `Arc<tokio::sync::Mutex<MtpDevice>>` held for the entire USB I/O call (tokio's Mutex can be held across `.await` points, unlike `std::sync::Mutex`). Operations are serialized per device with a 30 s timeout (`MTP_TIMEOUT_SECS`). Holding the lock too long logs a warning.
 - **Cache-only path resolution**: `resolve_path_to_handle()` fails if the path has not appeared in a prior `list_directory()` call. There is no on-demand path walk.
 - **Write capability probe**: `probe_write_capability()` creates a hidden `.cmdr_write_probe` folder to detect cameras that advertise write support but reject writes at runtime (`StoreReadOnly`). Timeout or non-fatal errors are treated as writable (benefit of the doubt).
-- **ExclusiveAccess errors**: on macOS, when `ptpcamerad` claims a device, `connect()` emits `mtp-exclusive-access-error` with the blocking process name (from `ioreg`) so the frontend can show a dialog with the workaround command. On Linux, the blocking process is reported as `None`.
+- **Automatic ptpcamerad suppression**: on macOS, the watcher auto-suppresses `ptpcamerad` via `launchctl disable` + `pkill -9` before connecting to MTP devices, and restores it when all devices disconnect or the app exits. On startup, `ensure_ptpcamerad_enabled()` runs to recover from a previous crash. If suppression fails, the existing `ExclusiveAccess` dialog serves as a manual fallback.
+- **ExclusiveAccess errors (fallback)**: when `ptpcamerad` claims a device despite suppression, `connect()` emits `mtp-exclusive-access-error` with the blocking process name (from `ioreg`) so the frontend can show a dialog with the workaround command. On Linux, the blocking process is reported as `None`.
 - **PermissionDenied errors (Linux)**: when `open_device()` fails with "permission denied" (missing udev rules), `connect()` emits `mtp-permission-error`. Frontend shows `MtpPermissionDialog` with a copyable udev install command. Rules file at `resources/99-cmdr-mtp.rules`.
 - **Async recursion**: all recursive operations in `bulk_ops.rs` use `Box::pin(async move { ... })`.
 - **Event loop shutdown**: uses a biased `tokio::select!` so the shutdown signal (broadcast channel) is always checked first.
