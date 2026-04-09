@@ -5,6 +5,7 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 ## Architecture
 
 - **Discovery**: `mdns_discovery.rs` — Pure Rust mDNS using `mdns-sd` crate. Cross-platform.
+- **Manual servers**: `manual_servers.rs` — User-added servers via "Connect to server..." dialog. Parses addresses, checks TCP reachability, persists to `manual-servers.json`, and injects synthetic `NetworkHost` entries with `source: Manual` into `DISCOVERY_STATE`. Loaded at startup.
 - **E2E testing**: `virtual_smb_hosts.rs` — Injects synthetic `NetworkHost` entries for Docker SMB containers. Gated behind `smb-e2e` Cargo feature. Never enabled in production.
 - **Share listing**: Split across multiple files:
   - `smb_client.rs` — Top-level share-listing entry point; orchestrates guest -> keychain -> prompt auth flow; tries smb2 first, falls back to smbutil (macOS only)
@@ -95,6 +96,14 @@ When the user mounts an SMB share, we establish a parallel smb2 connection along
 
 `gio mount` is used for user-space SMB mounting on Linux. It requires the `gvfs-smb` package. If `gio` is not available, a helpful error message is returned. Mounts appear under `/run/user/<uid>/gvfs/`.
 
+### `HostSource` enum on `NetworkHost`
+
+`NetworkHost.source` distinguishes mDNS-discovered hosts (`Discovered`, default) from user-added ones (`Manual`). Defaults to `Discovered` via `#[serde(default)]` for backward compatibility with existing serialized data. The frontend uses this to determine which hosts show a "Remove" option and to skip mDNS resolution for manual hosts.
+
+### Manual server ID convention
+
+Manual server IDs use the format `manual-{address}-{port}` with dots/colons replaced by dashes. This is deterministic (same address+port always produces the same ID), preventing duplicates. The `manual-` prefix avoids collision with mDNS-derived IDs.
+
 ## Gotchas
 
 - **Don't hold mutex during DNS resolution**: `get_host_for_resolution` / `update_host_resolution` extract host info and release the mutex before blocking DNS, then re-acquire to update. Holding the mutex across network calls risks deadlock.
@@ -107,3 +116,4 @@ When the user mounts an SMB share, we establish a parallel smb2 connection along
 - **macOS smbutil and NetFSMountURLSync fail with loopback IP + non-standard port**: `//127.0.0.1:9445` gives "Broken pipe", but `//localhost:9445` works. `build_smbutil_url` and `NetworkMountView.svelte` both fall back to hostname when IP is `127.0.0.1` or `::1`. This matters for E2E testing against Docker containers on localhost.
 - **Mount URL must include port when non-standard**: `NetworkMountView.svelte` appends `:PORT` to the server string when `port !== 445`. Without this, `NetFSMountURLSync` defaults to port 445 and can't reach Docker containers on custom ports.
 - **Strip `.local` from addr for smb2**: `smb2::Connection::connect()` extracts `server_name` from the addr string and uses it in UNC paths. Passing `"foo.local:445"` creates `\\foo.local\IPC$` which some servers reject. The `build_addr` helper in `smb_connection.rs` handles this.
+- **Manual hosts always set `hostname`**: The share listing pipeline guards on `host.hostname` being truthy. `create_network_host` always sets `hostname` (to the address, even for IPs) so manual hosts flow through the pipeline correctly.

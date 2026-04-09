@@ -231,6 +231,8 @@ export interface NetworkHost {
   ipAddress?: string
   /** SMB port (usually 445) */
   port: number
+  /** How this host was added: mDNS discovery or manual user entry */
+  source?: 'discovered' | 'manual'
 }
 
 // ============================================================================
@@ -314,6 +316,14 @@ export interface SmbCredentials {
 // ============================================================================
 // Mount types
 // ============================================================================
+
+/** Result of connecting to a manually-specified server. */
+export interface ManualConnectResult {
+  /** The injected network host */
+  host: NetworkHost
+  /** Optional share path (when user typed smb://host/share) */
+  sharePath: string | null
+}
 
 /** Result of a successful mount operation. */
 export interface MountResult {

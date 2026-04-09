@@ -450,6 +450,41 @@ fn get_search_tools() -> Vec<Tool> {
     ]
 }
 
+/// Get network tools.
+fn get_network_tools() -> Vec<Tool> {
+    vec![
+        Tool {
+            name: "connect_to_server".to_string(),
+            description: "Add a manual SMB server by address. Checks TCP reachability then adds to the host list."
+                .to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "address": {
+                        "type": "string",
+                        "description": "Server address: hostname, IP, IP:port, or smb:// URL"
+                    }
+                },
+                "required": ["address"]
+            }),
+        },
+        Tool {
+            name: "remove_manual_server".to_string(),
+            description: "Remove a manually-added server from the host list.".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "host_id": {
+                        "type": "string",
+                        "description": "Host ID to remove (for example, manual-192-168-1-100-9445)"
+                    }
+                },
+                "required": ["host_id"]
+            }),
+        },
+    ]
+}
+
 /// Get async waiting tools.
 fn get_await_tools() -> Vec<Tool> {
     vec![Tool {
@@ -520,6 +555,7 @@ pub fn get_all_tools() -> Vec<Tool> {
     tools.extend(get_app_tools());
     tools.extend(get_search_tools());
     tools.extend(get_settings_tools());
+    tools.extend(get_network_tools());
     tools.extend(get_await_tools());
     tools
 }
@@ -632,10 +668,17 @@ mod tests {
     }
 
     #[test]
+    fn test_network_tools_count() {
+        let tools = get_network_tools();
+        // connect_to_server, remove_manual_server
+        assert_eq!(tools.len(), 2);
+    }
+
+    #[test]
     fn test_all_tools_count() {
         let tools = get_all_tools();
-        // 6 nav + 2 cursor + 1 selection + 6 file_op + 3 view + 1 tab + 1 dialog + 3 app + 2 search + 1 settings + 1 await = 27
-        assert_eq!(tools.len(), 27);
+        // 6 nav + 2 cursor + 1 selection + 6 file_op + 3 view + 1 tab + 1 dialog + 3 app + 2 search + 1 settings + 2 network + 1 await = 29
+        assert_eq!(tools.len(), 29);
     }
 
     #[test]

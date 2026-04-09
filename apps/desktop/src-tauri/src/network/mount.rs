@@ -256,6 +256,60 @@ pub async fn mount_share(
     }
 }
 
+/// Unmounts all SMB shares mounted from a given server.
+///
+/// Iterates `/Volumes/`, uses `statfs` to find SMB mounts whose server matches
+/// the given `server_name` or `server_ip`. Unmounts each via `diskutil unmount`.
+/// Returns the list of mount paths that were successfully unmounted.
+pub fn unmount_smb_shares_from_host(server_name: &str, server_ip: Option<&str>) -> Vec<String> {
+    use crate::volumes::get_smb_mount_info;
+    use std::fs;
+
+    let mut unmounted = Vec::new();
+
+    let Ok(entries) = fs::read_dir("/Volumes") else {
+        return unmounted;
+    };
+
+    let server_name_lower = server_name.to_lowercase();
+
+    for entry in entries.flatten() {
+        let mount_path = entry.path().to_string_lossy().to_string();
+        let Some(info) = get_smb_mount_info(&mount_path) else {
+            continue;
+        };
+
+        let server_lower = info.server.to_lowercase();
+        let matches =
+            server_lower == server_name_lower || server_ip.is_some_and(|ip| server_lower == ip.to_lowercase());
+
+        if !matches {
+            continue;
+        }
+
+        log::info!("Unmounting SMB share at {}", mount_path);
+        let output = std::process::Command::new("diskutil")
+            .args(["unmount", &mount_path])
+            .output();
+
+        match output {
+            Ok(o) if o.status.success() => {
+                log::info!("Unmounted {}", mount_path);
+                unmounted.push(mount_path);
+            }
+            Ok(o) => {
+                let stderr = String::from_utf8_lossy(&o.stderr);
+                log::warn!("Failed to unmount {}: {}", mount_path, stderr.trim());
+            }
+            Err(e) => {
+                log::warn!("Failed to run diskutil unmount for {}: {}", mount_path, e);
+            }
+        }
+    }
+
+    unmounted
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

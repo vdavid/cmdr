@@ -34,6 +34,7 @@ pub async fn resolve_host(host_id: String) -> Option<NetworkHost> {
             hostname: info.hostname,
             ip_address: info.ip_address,
             port: info.port,
+            source: info.source,
         });
     }
 
@@ -486,4 +487,38 @@ pub(crate) async fn get_keychain_password(
     .await
     .ok()
     .flatten()
+}
+
+// --- Disconnect Command ---
+
+/// Unmounts all SMB shares mounted from a given server.
+/// Returns the list of mount paths that were unmounted.
+#[tauri::command]
+pub async fn disconnect_network_host(
+    _host_id: String,
+    host_name: String,
+    ip_address: Option<String>,
+) -> Result<Vec<String>, String> {
+    let result =
+        tokio::task::spawn_blocking(move || mount::unmount_smb_shares_from_host(&host_name, ip_address.as_deref()))
+            .await
+            .map_err(|e| format!("Disconnect task failed: {}", e))?;
+
+    Ok(result)
+}
+
+// --- Manual Server Commands ---
+
+use crate::network::manual_servers::{self, ManualConnectResult};
+
+/// Connects to a manually-specified server: parses, checks reachability, persists, and injects.
+#[tauri::command]
+pub async fn connect_to_server(address: String, app_handle: tauri::AppHandle) -> Result<ManualConnectResult, String> {
+    manual_servers::add_manual_server(&address, &app_handle).await
+}
+
+/// Removes a manually-added server by ID.
+#[tauri::command]
+pub fn remove_manual_server(server_id: String, app_handle: tauri::AppHandle) -> Result<(), String> {
+    manual_servers::remove_manual_server(&server_id, &app_handle)
 }

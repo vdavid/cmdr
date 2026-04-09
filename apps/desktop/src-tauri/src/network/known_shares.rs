@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 /// Connection mode used for the last successful connection.
@@ -57,6 +57,23 @@ fn get_known_shares_mutex() -> &'static Mutex<KnownSharesStore> {
     KNOWN_SHARES.get_or_init(|| Mutex::new(KnownSharesStore::default()))
 }
 
+/// Atomically writes content to a file using write-to-temp + rename.
+/// On failure, the original file (if any) remains intact.
+fn atomic_write_json(path: &Path, content: &str) -> std::io::Result<()> {
+    let tmp = path.with_extension("json.tmp");
+    fs::write(&tmp, content)?;
+    fs::rename(&tmp, path)?;
+    Ok(())
+}
+
+/// Removes a stale `.tmp` file left over from a crash during atomic write.
+fn cleanup_tmp_file(path: &Path) {
+    let tmp = path.with_extension("json.tmp");
+    if tmp.exists() {
+        let _ = fs::remove_file(&tmp);
+    }
+}
+
 /// Returns the path to the known shares store file.
 fn get_store_path<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Option<PathBuf> {
     crate::config::resolved_app_data_dir(app)
@@ -69,6 +86,8 @@ pub fn load_known_shares<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     let Some(path) = get_store_path(app) else {
         return;
     };
+
+    cleanup_tmp_file(&path);
 
     let store = if let Ok(contents) = fs::read_to_string(&path) {
         serde_json::from_str(&contents).unwrap_or_default()
@@ -97,8 +116,10 @@ fn save_known_shares<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
         let _ = fs::create_dir_all(parent);
     }
 
-    if let Ok(json) = serde_json::to_string_pretty(&store) {
-        let _ = fs::write(&path, json);
+    if let Ok(json) = serde_json::to_string_pretty(&store)
+        && let Err(e) = atomic_write_json(&path, &json)
+    {
+        log::warn!("Couldn't write known shares store: {}", e);
     }
 }
 

@@ -21,7 +21,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Tools (`tools.rs`)
 
-27 semantic tools grouped by category:
+29 semantic tools grouped by category:
 - Navigation (6): `select_volume` (also accepts MTP volume names), `nav_to_path` (supports `mtp://` paths, skips filesystem existence check), `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`
 - Cursor/Selection (3): `move_cursor`, `open_under_cursor`, `select`
 - File operations (6): `copy`, `move`, `delete`, `mkdir`, `mkfile`, `refresh`. `copy`/`move` accept optional `autoConfirm` (bool) and `onConflict` (`skip_all`|`overwrite_all`|`rename_all`). `delete` accepts optional `autoConfirm`. When `autoConfirm` is true, the dialog opens and immediately confirms.
@@ -31,6 +31,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 - App (3): `switch_pane`, `swap_panes`, `quit`
 - Search (2): `search` (structured file search across the drive index, optional `scope` for path/exclude filtering), `ai_search` (natural language search using configured LLM, optional `scope` merged with AI-inferred scope)
 - Settings (1): `set_setting` (change a setting value via round-trip to frontend)
+- Network (2): `connect_to_server` (add a manual SMB server by address, checks TCP reachability), `remove_manual_server` (remove a manually-added server by host ID)
 - Async (1): `await` (poll PaneStateStore until a condition is met — `has_item`, `item_count_gte`, `path`, or `path_contains`. Supports `after_generation` to avoid matching stale state)
 
 ### Resources (`resources.rs`)

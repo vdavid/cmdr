@@ -261,6 +261,34 @@ Specifically, smb-rs uses NDR64 transfer syntax which Samba may not support for 
 
 This doesn't affect production use with real network devices, only Docker-based testing.
 
+## Using `connect_to_server` MCP tool with Docker containers
+
+Docker SMB containers don't advertise via mDNS, so they won't appear in the network browser automatically. Use the
+`connect_to_server` MCP tool to add them:
+
+```bash
+# Start the test containers
+./test/smb-servers/start.sh minimal
+
+# Via MCP (port 9224), add the guest container
+curl -s http://localhost:9224/mcp -d '{
+  "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+  "params": { "name": "connect_to_server", "arguments": { "address": "localhost:9445" } }
+}'
+
+# The host appears in the network browser as "localhost:9445" with source=manual
+# Browse shares, mount, test file operations as usual
+
+# Clean up when done
+curl -s http://localhost:9224/mcp -d '{
+  "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+  "params": { "name": "remove_manual_server", "arguments": { "hostId": "manual-localhost-9445" } }
+}'
+```
+
+This is the recommended way to test network features against Docker containers on macOS, where mDNS from containers
+can't reach the host.
+
 ## Related
 
 - [SMB feature documentation](../../features/network-smb/index.md)

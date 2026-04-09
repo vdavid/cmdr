@@ -6,7 +6,7 @@
 
 use crate::ignore_poison::IgnorePoison;
 use crate::network::{
-    DiscoveryState, NetworkHost, on_discovery_state_changed, on_host_found, on_host_lost, on_host_resolved,
+    DiscoveryState, HostSource, NetworkHost, on_discovery_state_changed, on_host_found, on_host_lost, on_host_resolved,
     service_name_to_id,
 };
 use log::{debug, warn};
@@ -143,6 +143,7 @@ fn process_events(receiver: Receiver<ServiceEvent>) {
                     hostname: None,
                     ip_address: None,
                     port: SMB_DEFAULT_PORT,
+                    source: HostSource::Discovered,
                 };
                 on_host_found(host, &app_handle);
 

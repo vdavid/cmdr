@@ -4,12 +4,13 @@ SMB network discovery UI: host list, per-host share list, login form, and a sing
 
 ## Key files
 
-| File                      | Purpose                                                         |
-| ------------------------- | --------------------------------------------------------------- |
-| `network-store.svelte.ts` | Module-level `$state` singleton for all network data            |
-| `NetworkBrowser.svelte`   | Host list table — rendered when pane is on the `network` volume |
-| `ShareBrowser.svelte`     | Share list for a specific host, handles auth flow               |
-| `NetworkLoginForm.svelte` | Credential form rendered inside `ShareBrowser`                  |
+| File                           | Purpose                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------- |
+| `network-store.svelte.ts`      | Module-level `$state` singleton for all network data                      |
+| `NetworkBrowser.svelte`        | Host list table — rendered when pane is on the `network` volume           |
+| `ShareBrowser.svelte`          | Share list for a specific host, handles auth flow                         |
+| `NetworkLoginForm.svelte`      | Credential form rendered inside `ShareBrowser`                            |
+| `ConnectToServerDialog.svelte` | Modal dialog for manually connecting to a server by address/IP/smb:// URL |
 
 ## `network-store.svelte.ts`
 
@@ -60,16 +61,25 @@ Key exported functions:
 
 Displays the host table (Name, IP, Hostname, Shares, Status). Reads from `network-store` getters.
 
+A **"Connect to server..." pseudo-row** is always at the bottom with a "+" icon and italic text. It's keyboard navigable
+(cursor can land on it). Enter or double-click fires `onConnectToServer` prop. Not counted in the status bar host count.
+Total navigable items = `hosts.length + 1`.
+
 Keyboard navigation via `handleNavigationShortcut` from `../navigation/keyboard-shortcuts`. Arrow keys also handled
 directly (Left/Right jump to first/last).
 
 Syncs to MCP pane API (`updateLeftPaneState` / `updateRightPaneState`) on every cursor/hosts change. Host metadata is
-encoded into the synthetic `name` field so MCP agents can read IP, hostname, share count, and status.
+encoded into the synthetic `name` field so MCP agents can read IP, hostname, share count, and status. The connect row is
+included in MCP sync as `+ Connect to server...` with path `smb://connect`.
 
 Exported for parent: `setCursorIndex(index)`, `findItemIndex(name)`, `handleKeyDown(e)`.
 
-Right-click on a host row with stored credentials shows a confirmation dialog to forget the saved password (calls
-`forgetCredentials`).
+**F8** on a host row triggers removal for manual hosts (with confirmation dialog) or shows "Can't remove discovered
+hosts" toast for discovered hosts. F8 is ignored on the connect row.
+
+**Right-click** on a manual host shows the "Remove server" confirmation. On a discovered host with stored credentials,
+shows the "Forget saved password" confirmation. Cursor auto-clamps when a host is removed via a `$effect` on
+`totalNavigableItems`.
 
 ## `ShareBrowser.svelte`
 
@@ -117,6 +127,13 @@ User double-clicks host
   └─ ShareBrowser mounts → loadShares()
        ├─ cache hit → render
        └─ auth required → tryStoredCredentials() → login form if needed
+
+User activates "Connect to server..." row
+  └─ ConnectToServerDialog opens
+       └─ connectToServer(address) → TCP check → inject host
+            └─ onConnect(host, sharePath)
+                 ├─ ShareBrowser mounts (host set)
+                 └─ if sharePath → autoMountShare triggers mount
 ```
 
 ## Key decisions
@@ -165,7 +182,8 @@ status into the name string is a workaround so MCP agents can read the same info
 
 - `$lib/tauri-commands` — `listNetworkHosts`, `resolveNetworkHost`, `listSharesOnHost`, `listSharesWithCredentials`,
   `prefetchShares`, `getSmbCredentials`, `saveSmbCredentials`, `deleteSmbCredentials`, `getUsernameHints`,
-  `getKnownShareByName`, `updateKnownShare`, `updateLeftPaneState`, `updateRightPaneState`
+  `getKnownShareByName`, `updateKnownShare`, `updateLeftPaneState`, `updateRightPaneState`, `connectToServer`,
+  `removeManualServer`
 - `$lib/settings/network-settings` — `getNetworkTimeoutMs`, `getShareCacheTtlMs`
 - `$lib/utils/confirm-dialog` — `confirmDialog` (used by `NetworkBrowser` for forget-password confirmation)
 - `$lib/ui/toast` — `addToast` (feedback after credential operations)

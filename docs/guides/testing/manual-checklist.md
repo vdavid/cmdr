@@ -49,6 +49,25 @@ Use this checklist before each release to verify features that cannot be automat
 - [ ] Network volumes appear (if mounted)
 - [ ] Ejecting a volume gracefully switches pane to default
 
+### Connect to server (network)
+
+- [ ] Network view shows "Connect to server..." row at the bottom
+- [ ] Arrow keys can navigate to the connect row
+- [ ] Enter on the connect row opens the dialog
+- [ ] Connect with hostname, IP, IP:port, smb:// URL
+- [ ] Error shown for unreachable server
+- [ ] Error shown for unsupported protocol (afp://, nfs://)
+- [ ] Successful connect adds host, navigates to share list
+- [ ] smb://server/share auto-mounts the specified share
+- [ ] F8 on manual host shows confirmation, removes on confirm
+- [ ] F8 on discovered host shows "Can't remove" toast
+- [ ] Right-click manual host shows "Remove" confirmation
+- [ ] Manual hosts persist across app restart
+- [ ] Removing a manual host persists across app restart
+- [ ] MCP `connect_to_server` tool works
+- [ ] MCP `remove_manual_server` tool works
+- [ ] MCP state shows `source=manual` for manual hosts
+
 ### Performance
 
 - [ ] Directory with 1000 files loads in < 1 sec

@@ -117,8 +117,9 @@ mod volumes_linux;
 mod stubs;
 
 use menu::{
-    CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, MenuState, SHOW_HIDDEN_FILES_ID,
-    SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
+    CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, MenuState, NETWORK_HOST_DISCONNECT_ID,
+    NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID,
+    SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
     SORT_DESCENDING_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID,
     VIEWER_WORD_WRAP_ID, ViewMode, menu_id_to_command,
 };
@@ -348,6 +349,10 @@ pub fn run() {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::known_shares::load_known_shares(app.handle());
 
+            // Load manually-added servers and inject into discovery state
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            network::manual_servers::load_manual_servers(app.handle());
+
             // Drag image detection swizzle is installed in RunEvent::Ready (not here)
             // because wry 0.54+ registers the WryWebView ObjC class lazily — it doesn't
             // exist in the runtime until the first webview is created, which happens after
@@ -562,6 +567,32 @@ pub fn run() {
                 return;
             }
 
+            // === Network host context menu actions ===
+            if id == NETWORK_HOST_FORGET_SERVER_ID
+                || id == NETWORK_HOST_FORGET_PASSWORD_ID
+                || id == NETWORK_HOST_DISCONNECT_ID
+            {
+                let menu_state = app.state::<MenuState<tauri::Wry>>();
+                let ctx = menu_state.network_host_context.lock_ignore_poison();
+                let action = if id == NETWORK_HOST_FORGET_SERVER_ID {
+                    "forget-server"
+                } else if id == NETWORK_HOST_FORGET_PASSWORD_ID {
+                    "forget-password"
+                } else {
+                    "disconnect"
+                };
+                let _ = app.emit_to(
+                    "main",
+                    "network-host-context-action",
+                    serde_json::json!({
+                        "action": action,
+                        "hostId": ctx.host_id,
+                        "hostName": ctx.host_name,
+                    }),
+                );
+                return;
+            }
+
             // === Clipboard exception: file clipboard in main window, native text clipboard elsewhere ===
             // Custom MenuItems for Cut/Copy/Paste route through execute-command in the main window
             // so the frontend can decide between file and text clipboard. In non-main windows
@@ -673,6 +704,7 @@ pub fn run() {
             commands::icons::clear_directory_icon_cache,
             commands::ui::show_file_context_menu,
             commands::ui::show_tab_context_menu,
+            commands::ui::show_network_host_context_menu,
             commands::ui::update_pin_tab_menu,
             commands::ui::show_main_window,
             commands::ui::update_menu_context,
@@ -824,6 +856,12 @@ pub fn run() {
             commands::network::mount_network_share,
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::upgrade_to_smb_volume,
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            commands::network::connect_to_server,
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            commands::network::remove_manual_server,
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            commands::network::disconnect_network_host,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::list_network_hosts,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
@@ -860,6 +898,12 @@ pub fn run() {
             stubs::network::mount_network_share,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::upgrade_to_smb_volume,
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+            stubs::network::connect_to_server,
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+            stubs::network::remove_manual_server,
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+            stubs::network::disconnect_network_host,
             // Accent color command (macOS reads NSColor, Linux reads gsettings, others return fallback)
             #[cfg(target_os = "macos")]
             accent_color::get_accent_color,

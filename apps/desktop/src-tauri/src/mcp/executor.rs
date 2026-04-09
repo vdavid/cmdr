@@ -144,6 +144,9 @@ pub async fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &V
         "ai_search" => execute_ai_search(params).await,
         // Settings commands
         "set_setting" => execute_set_setting(app, params).await,
+        // Network commands
+        "connect_to_server" => execute_connect_to_server(app, params).await,
+        "remove_manual_server" => execute_remove_manual_server(app, params),
         // Async wait
         "await" => execute_await(app, params).await,
         _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
@@ -1032,6 +1035,37 @@ async fn execute_await<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolRe
         }
 
         tokio::time::sleep(poll_interval).await;
+    }
+}
+
+// ── Network tools ────────────────────────────────────────────────────
+
+/// Execute `connect_to_server`: parse address, TCP check, persist, inject.
+async fn execute_connect_to_server<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    let address = params
+        .get("address")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'address' parameter"))?;
+
+    match crate::network::manual_servers::add_manual_server(address, app).await {
+        Ok(result) => Ok(json!(format!(
+            "OK: Connected to {} (host ID: {})",
+            result.host.name, result.host.id
+        ))),
+        Err(e) => Err(ToolError::internal(e)),
+    }
+}
+
+/// Execute `remove_manual_server`: remove from storage and discovery state.
+fn execute_remove_manual_server<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    let host_id = params
+        .get("host_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'host_id' parameter"))?;
+
+    match crate::network::manual_servers::remove_manual_server(host_id, app) {
+        Ok(()) => Ok(json!(format!("OK: Removed server {}", host_id))),
+        Err(e) => Err(ToolError::internal(e)),
     }
 }
 

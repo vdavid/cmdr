@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { tick } from 'svelte'
     import type { MountError, NetworkHost, ShareInfo } from '../types'
     import { mountNetworkShare, resolvePathVolume } from '$lib/tauri-commands'
     import { getMountTimeoutMs } from '$lib/settings/network-settings'
@@ -6,6 +7,7 @@
     import type { NetworkBrowserAPI, BrowserAPI } from './types'
     import NetworkBrowser from '../network/NetworkBrowser.svelte'
     import ShareBrowser from '../network/ShareBrowser.svelte'
+    import ConnectToServerDialog from '../network/ConnectToServerDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
 
     const log = getAppLogger('fileExplorer')
@@ -32,6 +34,10 @@
     // eslint-disable-next-line svelte/prefer-writable-derived -- bidirectional sync with local overrides
     let currentNetworkHost = $state<NetworkHost | null>(initialNetworkHost)
 
+    // Connect-to-server dialog
+    let showConnectDialog = $state(false)
+    let autoMountShare = $state<string | undefined>(undefined)
+
     // Mounting state
     let isMounting = $state(false)
     let mountError = $state<MountError | null>(null)
@@ -54,6 +60,22 @@
     function handleNetworkHostSelect(host: NetworkHost) {
         currentNetworkHost = host
         onNetworkHostChange?.(host)
+    }
+
+    function handleConnectToServerSuccess(host: NetworkHost, sharePath: string | null) {
+        showConnectDialog = false
+        currentNetworkHost = host
+        onNetworkHostChange?.(host)
+        if (sharePath) {
+            autoMountShare = sharePath
+        }
+    }
+
+    async function handleConnectDialogClose() {
+        showConnectDialog = false
+        await tick()
+        // Restore focus to the explorer container so keyboard navigation resumes
+        document.querySelector<HTMLElement>('.dual-pane-explorer')?.focus()
     }
 
     function handleNetworkBack() {
@@ -96,6 +118,7 @@
                 share.name,
                 credentials?.username ?? null,
                 credentials?.password ?? null,
+                currentNetworkHost.port,
                 getMountTimeoutMs(),
             )
 
@@ -192,11 +215,25 @@
         host={currentNetworkHost}
         {paneId}
         {isFocused}
+        {autoMountShare}
         onShareSelect={handleShareSelect}
         onBack={handleNetworkBack}
     />
 {:else}
-    <NetworkBrowser bind:this={networkBrowserRef} {paneId} {isFocused} onHostSelect={handleNetworkHostSelect} />
+    <NetworkBrowser
+        bind:this={networkBrowserRef}
+        {paneId}
+        {isFocused}
+        onHostSelect={handleNetworkHostSelect}
+        onConnectToServer={() => (showConnectDialog = true)}
+    />
+{/if}
+
+{#if showConnectDialog}
+    <ConnectToServerDialog
+        onConnect={handleConnectToServerSuccess}
+        onClose={handleConnectDialogClose}
+    />
 {/if}
 
 <style>

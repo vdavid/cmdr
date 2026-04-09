@@ -48,13 +48,15 @@
         paneId?: 'left' | 'right'
         /** Whether this pane is focused */
         isFocused?: boolean
+        /** Auto-mount this share name after loading (from smb://host/share URL) */
+        autoMountShare?: string
         /** Callback when user selects a share, includes credentials if auth was used */
         onShareSelect?: (share: ShareInfo, credentials: { username: string; password: string } | null) => void
         /** Callback to go back to host list */
         onBack?: () => void
     }
 
-    const { host, paneId, isFocused = false, onShareSelect, onBack }: Props = $props()
+    const { host, paneId, isFocused = false, autoMountShare, onShareSelect, onBack }: Props = $props()
 
     // Local state
     let shares = $state<ShareInfo[]>([])
@@ -76,6 +78,9 @@
     // Track authenticated credentials for mounting
     let authenticatedCredentials = $state<{ username: string; password: string } | null>(null)
 
+    // Auto-mount tracking (for smb://host/share URLs)
+    let autoMountAttempted = $state(false)
+
     // Container tracking for PageUp/PageDown
     let listContainer: HTMLDivElement | undefined = $state()
     let containerHeight = $state(0)
@@ -91,6 +96,22 @@
         void cursorIndex
         void loading
         void syncPaneStateToMcp()
+    })
+
+    // Auto-mount a share if requested (from smb://host/share URL)
+    $effect(() => {
+        const shareName = autoMountShare
+        if (autoMountAttempted || !shareName || loading || sortedShares.length === 0) return
+        autoMountAttempted = true
+
+        const match = sortedShares.find(
+            (s) => s.name.localeCompare(shareName, undefined, { sensitivity: 'base' }) === 0,
+        )
+        if (match) {
+            onShareSelect?.(match, authenticatedCredentials)
+        } else {
+            addToast(`Share '${shareName}' not found on ${host.name}`, { level: 'warn' })
+        }
     })
 
     /** Sync share list to MCP so agents see the same data as the UI. */

@@ -25,6 +25,7 @@ export const SOFT_DIALOG_REGISTRY = [
   { id: 'delete-confirmation', description: 'Opened by the delete tool, not directly' },
   { id: 'delete-ai-model', description: 'Confirmation before deleting the local AI model' },
   { id: 'search', description: 'Whole-drive file search' },
+  { id: 'connect-to-server', description: 'Manual SMB server address entry' },
 ] as const satisfies readonly { id: string; description?: string }[]
 
 export type SoftDialogId = (typeof SOFT_DIALOG_REGISTRY)[number]['id']

@@ -725,15 +725,18 @@ impl Volume for SmbVolume {
     }
 
     fn on_unmount(&self) {
-        debug!("SmbVolume::on_unmount: disconnecting share={}", self.share_name);
-
         // Transition to Disconnected
         self.state.store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
 
-        // Drop the smb2 session (graceful disconnect)
+        // Drop the smb2 session. This is fully synchronous — dropping the TCP
+        // stream calls close() on the socket fd. The server handles abrupt
+        // disconnects fine, so no async graceful disconnect is needed.
+        // Important: this runs on the notify-rs fsevents thread (no Tokio runtime).
         if let Ok(mut guard) = self.smb.lock() {
             *guard = None;
         }
+
+        debug!("SmbVolume cleanup for {}: smb2 session dropped", self.share_name);
     }
 }
 

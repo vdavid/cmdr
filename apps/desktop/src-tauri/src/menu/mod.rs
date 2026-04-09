@@ -187,6 +187,13 @@ pub struct MenuContext {
     pub filename: String,
 }
 
+/// Context for the network host context menu (stored so on_menu_event can emit it).
+#[derive(Clone, Default)]
+pub struct NetworkHostMenuContext {
+    pub host_id: String,
+    pub host_name: String,
+}
+
 /// A menu item tracked for accelerator updates, with its parent submenu and position.
 pub struct MenuItemEntry<R: Runtime> {
     pub item: MenuItem<R>,
@@ -211,6 +218,8 @@ pub struct MenuState<R: Runtime> {
     pub items: Mutex<HashMap<String, MenuItemEntry<R>>>,
     /// Sort by submenu (disabled when not in explorer context)
     pub sort_submenu: Mutex<Option<Submenu<R>>>,
+    /// Context for the most recent network host context menu (host_id + host_name)
+    pub network_host_context: Mutex<NetworkHostMenuContext>,
 }
 
 impl<R: Runtime> Default for MenuState<R> {
@@ -226,6 +235,7 @@ impl<R: Runtime> Default for MenuState<R> {
             pin_tab: Mutex::new(None),
             items: Mutex::new(HashMap::new()),
             sort_submenu: Mutex::new(None),
+            network_host_context: Mutex::new(NetworkHostMenuContext::default()),
         }
     }
 }
@@ -273,6 +283,11 @@ pub const CLOSE_OTHER_TABS_ID: &str = "close_other_tabs";
 pub const TAB_PIN_ID: &str = "tab_pin";
 pub const TAB_CLOSE_OTHERS_ID: &str = "tab_close_others";
 pub const TAB_CLOSE_ID: &str = "tab_close";
+
+/// Menu item IDs for network host context menu.
+pub const NETWORK_HOST_FORGET_SERVER_ID: &str = "network_host_forget_server";
+pub const NETWORK_HOST_FORGET_PASSWORD_ID: &str = "network_host_forget_password";
+pub const NETWORK_HOST_DISCONNECT_ID: &str = "network_host_disconnect";
 
 /// Menu item ID for About window.
 pub const ABOUT_ID: &str = "about";
@@ -751,6 +766,43 @@ pub fn build_tab_context_menu(
     menu.append(&PredefinedMenuItem::separator(app)?)?;
     menu.append(&close_others_item)?;
     menu.append(&close_item)?;
+
+    Ok(menu)
+}
+
+/// Builds a context menu for a network host.
+/// Always includes "Disconnect". Conditionally adds "Forget server" (manual hosts)
+/// and "Forget saved password" (hosts with stored credentials).
+pub fn build_network_host_context_menu(
+    app: &AppHandle<Wry>,
+    is_manual: bool,
+    has_credentials: bool,
+) -> tauri::Result<Menu<Wry>> {
+    let menu = Menu::new(app)?;
+
+    // "Disconnect" is always shown — if nothing is mounted, the backend handles it gracefully
+    let disconnect = MenuItem::with_id(app, NETWORK_HOST_DISCONNECT_ID, "Disconnect", true, None::<&str>)?;
+    menu.append(&disconnect)?;
+
+    if is_manual {
+        menu.append(&PredefinedMenuItem::separator(app)?)?;
+        let forget_server = MenuItem::with_id(app, NETWORK_HOST_FORGET_SERVER_ID, "Forget server", true, None::<&str>)?;
+        menu.append(&forget_server)?;
+    }
+
+    if has_credentials {
+        if !is_manual {
+            menu.append(&PredefinedMenuItem::separator(app)?)?;
+        }
+        let forget_password = MenuItem::with_id(
+            app,
+            NETWORK_HOST_FORGET_PASSWORD_ID,
+            "Forget saved password",
+            true,
+            None::<&str>,
+        )?;
+        menu.append(&forget_password)?;
+    }
 
     Ok(menu)
 }

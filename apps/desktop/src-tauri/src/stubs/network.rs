@@ -10,6 +10,20 @@ use std::collections::HashMap;
 // Types (mirroring the macOS implementation)
 // ============================================================================
 
+/// Whether a host was discovered via mDNS or added manually.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HostSource {
+    Discovered,
+    Manual,
+}
+
+impl Default for HostSource {
+    fn default() -> Self {
+        Self::Discovered
+    }
+}
+
 /// A discovered network host.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -21,6 +35,8 @@ pub struct NetworkHost {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ip_address: Option<String>,
     pub port: u16,
+    #[serde(default)]
+    pub source: HostSource,
 }
 
 /// State of network discovery.
@@ -159,6 +175,14 @@ pub enum MountError {
     Cancelled { message: String },
     ProtocolError { message: String },
     MountPathConflict { message: String },
+}
+
+/// Result of connecting to a manual server.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManualConnectResult {
+    pub host: NetworkHost,
+    pub share_path: Option<String>,
 }
 
 // ============================================================================
@@ -308,6 +332,28 @@ pub async fn mount_network_share(
 #[tauri::command]
 pub async fn upgrade_to_smb_volume(_volume_id: String) -> Result<String, String> {
     Err("Direct SMB connection not supported on this platform".to_string())
+}
+
+/// Connects to a manual server (stub: returns error).
+#[tauri::command]
+pub async fn connect_to_server(_address: String, _app_handle: tauri::AppHandle) -> Result<ManualConnectResult, String> {
+    Err("Manual server connection not supported on this platform".to_string())
+}
+
+/// Removes a manual server (stub: returns error).
+#[tauri::command]
+pub fn remove_manual_server(_server_id: String, _app_handle: tauri::AppHandle) -> Result<(), String> {
+    Err("Manual server removal not supported on this platform".to_string())
+}
+
+/// Unmounts all SMB shares from a host (stub: returns empty).
+#[tauri::command]
+pub async fn disconnect_network_host(
+    _host_id: String,
+    _host_name: String,
+    _ip_address: Option<String>,
+) -> Result<Vec<String>, String> {
+    Ok(vec![])
 }
 
 // ============================================================================

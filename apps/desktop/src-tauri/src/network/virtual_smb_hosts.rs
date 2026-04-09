@@ -13,7 +13,7 @@
 use log::info;
 use tauri::AppHandle;
 
-use super::NetworkHost;
+use super::{HostSource, NetworkHost};
 
 /// Reads an env var or returns a default value.
 fn env_or(key: &str, default: &str) -> String {
@@ -41,6 +41,7 @@ pub fn setup_virtual_smb_hosts(app_handle: &AppHandle) {
             hostname: Some(guest_host.clone()),
             ip_address: None,
             port: guest_port,
+            source: HostSource::Discovered,
         },
         NetworkHost {
             id: "virtual-smb-auth".to_string(),
@@ -48,6 +49,7 @@ pub fn setup_virtual_smb_hosts(app_handle: &AppHandle) {
             hostname: Some(auth_host.clone()),
             ip_address: None,
             port: auth_port,
+            source: HostSource::Discovered,
         },
     ];
 

@@ -117,6 +117,11 @@ export {
   listSharesWithCredentials,
   mountNetworkShare,
   upgradeToSmbVolume,
+  connectToServer,
+  removeManualServer,
+  showNetworkHostContextMenu,
+  onNetworkHostContextAction,
+  disconnectNetworkHost,
 } from './networking'
 
 // Write operations (copy, move, delete)
@@ -145,6 +150,9 @@ export {
   formatDuration,
 } from './write-operations'
 export type { Event, UnlistenFn } from './write-operations'
+
+// Network types
+export type { ManualConnectResult } from '../file-explorer/types'
 
 // Re-export types from write-operations (originally from file-explorer/types)
 export type {

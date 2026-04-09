@@ -1,6 +1,7 @@
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
-    CLOSE_TAB_ID, CommandScope, MenuState, build_context_menu, build_tab_context_menu, menu_id_to_command,
+    CLOSE_TAB_ID, CommandScope, MenuState, build_context_menu, build_network_host_context_menu, build_tab_context_menu,
+    menu_id_to_command,
 };
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use std::process::Command;
@@ -214,6 +215,34 @@ pub fn show_tab_context_menu(
 
     let menu =
         build_tab_context_menu(&app, is_pinned, can_close, has_other_unpinned_tabs).map_err(|e| e.to_string())?;
+    menu.popup(window).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+/// Shows a native context menu for a network host (fire-and-forget).
+/// The selected action is delivered asynchronously via a `network-host-context-action` Tauri event
+/// from `on_menu_event`.
+#[tauri::command]
+pub fn show_network_host_context_menu(
+    window: Window<tauri::Wry>,
+    host_id: String,
+    host_name: String,
+    is_manual: bool,
+    has_credentials: bool,
+) -> Result<(), String> {
+    let app = window.app_handle().clone();
+
+    let menu = build_network_host_context_menu(&app, is_manual, has_credentials).map_err(|e| e.to_string())?;
+
+    // Store context so on_menu_event can include host info in the emitted event
+    {
+        let state = app.state::<MenuState<tauri::Wry>>();
+        let mut ctx = state.network_host_context.lock_ignore_poison();
+        ctx.host_id = host_id;
+        ctx.host_name = host_name;
+    }
+
     menu.popup(window).map_err(|e| e.to_string())?;
 
     Ok(())

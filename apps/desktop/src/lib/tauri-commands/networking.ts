@@ -1,11 +1,13 @@
 // Network hosts, SMB shares, keychain, and mounting
 
 import { invoke } from '@tauri-apps/api/core'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import type {
   AuthOptions,
   ConnectionMode,
   DiscoveryState,
   KnownNetworkShare,
+  ManualConnectResult,
   MountResult,
   NetworkHost,
   ShareListResult,
@@ -280,6 +282,7 @@ export async function mountNetworkShare(
   share: string,
   username: string | null,
   password: string | null,
+  port?: number,
   timeoutMs?: number,
 ): Promise<MountResult> {
   return invoke<MountResult>('mount_network_share', {
@@ -287,6 +290,7 @@ export async function mountNetworkShare(
     share,
     username,
     password,
+    port,
     timeoutMs,
   })
 }
@@ -303,4 +307,70 @@ export async function mountNetworkShare(
  */
 export async function upgradeToSmbVolume(volumeId: string): Promise<string> {
   return invoke<string>('upgrade_to_smb_volume', { volumeId })
+}
+
+// ============================================================================
+// Manual server management (macOS only)
+// ============================================================================
+
+/**
+ * Connects to a manually-specified server: parses address, checks TCP reachability,
+ * persists the entry, and injects a synthetic host into the discovery state.
+ * @param address Hostname, IP, IP:port, or smb:// URL
+ * @returns The injected host and optional share path
+ * @throws Plain string error on parse failure or unreachable host
+ */
+export async function connectToServer(address: string): Promise<ManualConnectResult> {
+  return invoke<ManualConnectResult>('connect_to_server', { address })
+}
+
+/**
+ * Removes a manually-added server by ID.
+ * Deletes from persistent storage and removes from discovery state.
+ * @param serverId The manual server's host ID (like "manual-192-168-1-100-445")
+ */
+export async function removeManualServer(serverId: string): Promise<void> {
+  await invoke('remove_manual_server', { serverId })
+}
+
+// ============================================================================
+// Network host context menu
+// ============================================================================
+
+/**
+ * Shows a native context menu for a network host (fire-and-forget).
+ * The menu always includes "Disconnect", plus "Forget server" for manual hosts
+ * and "Forget saved password" for hosts with stored credentials.
+ */
+export async function showNetworkHostContextMenu(
+  hostId: string,
+  hostName: string,
+  isManual: boolean,
+  hasCredentials: boolean,
+): Promise<void> {
+  await invoke('show_network_host_context_menu', { hostId, hostName, isManual, hasCredentials })
+}
+
+/**
+ * Listens for the network host context menu action event emitted by `on_menu_event` in Rust.
+ * The event fires asynchronously after `popup()` returns.
+ */
+export function onNetworkHostContextAction(
+  handler: (payload: { action: string; hostId: string; hostName: string }) => void,
+): Promise<UnlistenFn> {
+  return listen<{ action: string; hostId: string; hostName: string }>('network-host-context-action', (event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * Unmounts all SMB shares mounted from a given server.
+ * Returns the list of mount paths that were unmounted.
+ */
+export async function disconnectNetworkHost(
+  hostId: string,
+  hostName: string,
+  ipAddress: string | undefined,
+): Promise<string[]> {
+  return invoke<string[]>('disconnect_network_host', { hostId, hostName, ipAddress })
 }

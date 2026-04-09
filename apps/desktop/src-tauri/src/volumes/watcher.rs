@@ -297,7 +297,7 @@ fn try_upgrade_smb_mount(volume_path: &str) {
     };
 
     let mount_path = volume_path.to_string();
-    tokio::spawn(async move {
+    tauri::async_runtime::spawn(async move {
         let hostname = crate::commands::network::resolve_ip_to_hostname(&info.server);
         let creds =
             crate::commands::network::get_keychain_password(&info.server, hostname.as_deref(), &info.share).await;

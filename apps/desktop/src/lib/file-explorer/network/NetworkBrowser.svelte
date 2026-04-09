@@ -4,7 +4,7 @@
      * Rendered when user selects "Network" in the volume selector.
      * Uses the shared network-store for host data (initialized at app startup).
      */
-    import { onMount } from 'svelte'
+    import { onMount, onDestroy } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
     import {
         getNetworkHosts,
@@ -23,7 +23,16 @@
     } from './network-store.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import type { NetworkHost } from '../types'
-    import { updateLeftPaneState, updateRightPaneState, type PaneState, type PaneFileEntry } from '$lib/tauri-commands'
+    import {
+        updateLeftPaneState,
+        updateRightPaneState,
+        removeManualServer,
+        showNetworkHostContextMenu,
+        onNetworkHostContextAction,
+        disconnectNetworkHost,
+        type PaneState,
+        type PaneFileEntry,
+    } from '$lib/tauri-commands'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { confirmDialog } from '$lib/utils/confirm-dialog'
     import { addToast } from '$lib/ui/toast'
@@ -35,9 +44,10 @@
         paneId?: 'left' | 'right'
         isFocused?: boolean
         onHostSelect?: (host: NetworkHost) => void
+        onConnectToServer?: () => void
     }
 
-    const { paneId, isFocused = false, onHostSelect }: Props = $props()
+    const { paneId, isFocused = false, onHostSelect, onConnectToServer }: Props = $props()
 
     // Get reactive state from the network store
     const hosts = $derived(getNetworkHosts())
@@ -50,6 +60,9 @@
     // Container tracking for PageUp/PageDown
     let listContainer: HTMLDivElement | undefined = $state()
     let containerHeight = $state(0)
+
+    // Event listener cleanup for network host context menu
+    let unlistenContextAction: (() => void) | undefined
 
     // Refresh stale shares when component mounts (entering network view)
     onMount(() => {
@@ -64,6 +77,17 @@
                 void checkCredentialsForHost(host.name)
             }
         }
+
+        // Listen for network host context menu actions
+        void onNetworkHostContextAction((payload) => {
+            void handleContextAction(payload)
+        }).then((fn) => {
+            unlistenContextAction = fn
+        })
+    })
+
+    onDestroy(() => {
+        unlistenContextAction?.()
     })
 
     // Re-sync MCP state when hosts or cursor change
@@ -72,6 +96,14 @@
         void hosts.length
         void cursorIndex
         void syncPaneStateToMcp()
+    })
+
+    // Clamp cursor when hosts change (e.g. a host is removed)
+    $effect(() => {
+        const maxIndex = totalNavigableItems - 1
+        if (cursorIndex > maxIndex) {
+            cursorIndex = Math.max(0, maxIndex)
+        }
     })
 
     /**
@@ -89,10 +121,17 @@
                 const shares = getSharesDisplay(host)
                 const status = getStatusDisplay(host)
                 return {
-                    name: `${host.name}  ip=${ip}  hostname=${hostname}  shares=${shares}  status="${status}"`,
+                    name: `${host.name}  ip=${ip}  hostname=${hostname}  source=${host.source ?? 'discovered'}  shares=${shares}  status="${status}"`,
                     path: `smb://${host.ipAddress ?? host.name}`,
                     isDirectory: true,
                 }
+            })
+
+            // Add the "Connect to server..." pseudo-row for MCP visibility
+            files.push({
+                name: '+ Connect to server...',
+                path: 'smb://connect',
+                isDirectory: false,
             })
 
             const state: PaneState = {
@@ -134,9 +173,12 @@
     }
 
     /** Move cursor to a specific index. */
+    /** Total navigable items: hosts + the "Connect to server..." pseudo-row. */
+    const totalNavigableItems = $derived(hosts.length + 1)
+
     // noinspection JSUnusedGlobalSymbols -- used dynamically by MCP move_cursor tool
     export function setCursorIndex(index: number) {
-        cursorIndex = Math.max(0, Math.min(index, hosts.length - 1))
+        cursorIndex = Math.max(0, Math.min(index, totalNavigableItems - 1))
         scrollToIndex(cursorIndex)
     }
 
@@ -156,6 +198,40 @@
         return e.key === 'r' && e.metaKey && !e.shiftKey && !e.altKey && !e.ctrlKey
     }
 
+    /** Whether the cursor is on the "Connect to server..." pseudo-row. */
+    const isCursorOnConnectRow = $derived(cursorIndex === hosts.length)
+
+    /** Handle arrow keys and Enter for host list navigation. */
+    function handleArrowAndEnter(key: string): boolean {
+        switch (key) {
+            case 'ArrowDown':
+                cursorIndex = Math.min(cursorIndex + 1, totalNavigableItems - 1)
+                scrollToIndex(cursorIndex)
+                return true
+            case 'ArrowUp':
+                cursorIndex = Math.max(cursorIndex - 1, 0)
+                scrollToIndex(cursorIndex)
+                return true
+            case 'ArrowLeft':
+                cursorIndex = 0
+                scrollToIndex(cursorIndex)
+                return true
+            case 'ArrowRight':
+                cursorIndex = totalNavigableItems - 1
+                scrollToIndex(cursorIndex)
+                return true
+            case 'Enter':
+                if (isCursorOnConnectRow) {
+                    onConnectToServer?.()
+                } else if (cursorIndex >= 0 && cursorIndex < hosts.length) {
+                    onHostSelect?.(hosts[cursorIndex])
+                }
+                return true
+            default:
+                return false
+        }
+    }
+
     // Handle keyboard navigation
     // noinspection JSUnusedGlobalSymbols -- used dynamically
     export function handleKeyDown(e: KeyboardEvent): boolean {
@@ -166,13 +242,14 @@
             return true
         }
 
-        if (hosts.length === 0) return false
+        // The connect row is always present, so totalNavigableItems >= 1
+        if (totalNavigableItems === 0) return false
 
         // Try centralized navigation shortcuts first (PageUp, PageDown, Home, End, Option+arrows)
         const visibleItems = Math.max(1, Math.floor(containerHeight / HOST_ROW_HEIGHT))
         const navResult = handleNavigationShortcut(e, {
             currentIndex: cursorIndex,
-            totalCount: hosts.length,
+            totalCount: totalNavigableItems,
             visibleItems,
         })
         if (navResult?.handled) {
@@ -182,33 +259,17 @@
             return true
         }
 
-        switch (e.key) {
-            case 'ArrowDown':
-                e.preventDefault()
-                cursorIndex = Math.min(cursorIndex + 1, hosts.length - 1)
-                scrollToIndex(cursorIndex)
-                return true
-            case 'ArrowUp':
-                e.preventDefault()
-                cursorIndex = Math.max(cursorIndex - 1, 0)
-                scrollToIndex(cursorIndex)
-                return true
-            case 'ArrowLeft':
-                e.preventDefault()
-                cursorIndex = 0
-                scrollToIndex(cursorIndex)
-                return true
-            case 'ArrowRight':
-                e.preventDefault()
-                cursorIndex = hosts.length - 1
-                scrollToIndex(cursorIndex)
-                return true
-            case 'Enter':
-                e.preventDefault()
-                if (cursorIndex >= 0 && cursorIndex < hosts.length) {
-                    onHostSelect?.(hosts[cursorIndex])
-                }
-                return true
+        // F8 — remove manual host
+        if (e.key === 'F8' && !isCursorOnConnectRow && cursorIndex < hosts.length) {
+            e.preventDefault()
+            const host = hosts[cursorIndex]
+            void handleRemoveHost(host)
+            return true
+        }
+
+        if (handleArrowAndEnter(e.key)) {
+            e.preventDefault()
+            return true
         }
         return false
     }
@@ -222,6 +283,14 @@
         if (index >= 0 && index < hosts.length) {
             onHostSelect?.(hosts[index])
         }
+    }
+
+    function handleConnectRowClick() {
+        cursorIndex = hosts.length
+    }
+
+    function handleConnectRowDoubleClick() {
+        onConnectToServer?.()
     }
 
     // Helper to get display text for IP/hostname column
@@ -350,18 +419,72 @@
         return undefined
     }
 
-    async function handleHostContextMenu(e: MouseEvent, host: NetworkHost) {
-        e.preventDefault()
-        if (getCredentialStatus(host.name) !== 'has_creds') return
+    /** Remove a manual host after confirmation. For discovered hosts, show a toast. */
+    async function handleRemoveHost(host: NetworkHost) {
+        if (host.source !== 'manual') {
+            addToast(`Can't remove discovered hosts`, { level: 'info' })
+            return
+        }
 
-        const confirmed = await confirmDialog(`Remove saved password for "${host.name}"?`, 'Forget saved password')
+        const confirmed = await confirmDialog(`Remove ${host.name} from the server list?`, 'Remove')
         if (!confirmed) return
 
         try {
-            await forgetCredentials(host.name)
-            addToast(`Forgot saved password for ${host.name}`, { level: 'info' })
+            await removeManualServer(host.id)
+            addToast(`Removed ${host.name}`, { level: 'info' })
         } catch {
-            addToast(`Couldn't delete saved password`, { level: 'error' })
+            addToast(`Couldn't remove ${host.name}`, { level: 'error' })
+        }
+    }
+
+    /** Show native context menu for a network host. */
+    async function handleHostContextMenu(e: MouseEvent, host: NetworkHost) {
+        e.preventDefault()
+
+        const isManual = host.source === 'manual'
+
+        // Ensure we have current credential status (may need Keychain lookup)
+        if (getCredentialStatus(host.name) === 'unknown') {
+            await checkCredentialsForHost(host.name)
+        }
+
+        const hasCredentials = getCredentialStatus(host.name) === 'has_creds'
+
+        void showNetworkHostContextMenu(host.id, host.name, isManual, hasCredentials)
+    }
+
+    /** Handle actions dispatched from the native network host context menu. */
+    async function handleContextAction(payload: { action: string; hostId: string; hostName: string }) {
+        switch (payload.action) {
+            case 'forget-server': {
+                const host = hosts.find((h: NetworkHost) => h.id === payload.hostId)
+                if (host) void handleRemoveHost(host)
+                break
+            }
+            case 'forget-password': {
+                try {
+                    await forgetCredentials(payload.hostName)
+                    addToast(`Forgot saved password for ${payload.hostName}`, { level: 'info' })
+                } catch {
+                    addToast(`Couldn't delete saved password`, { level: 'error' })
+                }
+                break
+            }
+            case 'disconnect': {
+                const host = hosts.find((h: NetworkHost) => h.id === payload.hostId)
+                if (!host) break
+                try {
+                    const unmounted = await disconnectNetworkHost(host.id, host.name, host.ipAddress)
+                    if (unmounted.length > 0) {
+                        addToast(`Disconnected from ${payload.hostName}`, { level: 'info' })
+                    } else {
+                        addToast(`No mounted shares from ${payload.hostName}`, { level: 'info' })
+                    }
+                } catch (e) {
+                    addToast(`Couldn't disconnect: ${String(e)}`, { level: 'error' })
+                }
+                break
+            }
         }
     }
 
@@ -435,7 +558,26 @@
                 <span class="spinner spinner-sm"></span>
                 Searching...
             </div>
-        {:else if hosts.length === 0}
+        {/if}
+
+        <!-- "Connect to server..." pseudo-row — always at the bottom, keyboard navigable -->
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <div
+            class="host-row connect-row"
+            class:is-under-cursor={isCursorOnConnectRow}
+            class:is-focused-and-under-cursor={isFocused && isCursorOnConnectRow}
+            role="listitem"
+            onclick={handleConnectRowClick}
+            ondblclick={handleConnectRowDoubleClick}
+            onkeydown={() => {}}
+        >
+            <span class="col-name connect-label">
+                <span class="connect-icon">+</span>
+                <span>Connect to server...</span>
+            </span>
+        </div>
+
+        {#if !isSearching && hosts.length === 0}
             <div class="empty-state">
                 <img class="empty-icon" src="/icons/network-no-hosts.svg" alt="" />
                 <div class="empty-title">No network hosts found</div>
@@ -530,6 +672,18 @@
 
     .host-icon {
         font-size: var(--font-size-md);
+    }
+
+    .connect-row .connect-label {
+        color: var(--color-text-tertiary);
+        font-style: italic;
+    }
+
+    .connect-icon {
+        font-style: normal;
+        font-weight: 600;
+        font-size: var(--font-size-md);
+        color: var(--color-text-tertiary);
     }
 
     .searching-indicator {

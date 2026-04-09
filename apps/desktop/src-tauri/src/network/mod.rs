@@ -16,6 +16,7 @@ pub mod keychain;
 pub mod keychain;
 
 pub mod known_shares;
+pub mod manual_servers;
 pub mod mdns_discovery;
 
 #[cfg(target_os = "macos")]
@@ -52,6 +53,16 @@ use tauri::{AppHandle, Emitter};
 pub use mdns_discovery::start_discovery;
 pub use smb_client::{AuthMode, ShareListError, ShareListResult};
 
+/// Whether a host was discovered via mDNS or added manually by the user.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[derive(Default)]
+pub enum HostSource {
+    #[default]
+    Discovered,
+    Manual,
+}
+
 /// A discovered network host advertising SMB services.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -68,6 +79,9 @@ pub struct NetworkHost {
     pub ip_address: Option<String>,
     /// Usually 445.
     pub port: u16,
+    /// How this host was added to the list.
+    #[serde(default)]
+    pub source: HostSource,
 }
 
 /// State of network discovery.
@@ -115,7 +129,7 @@ pub fn get_discovery_state_value() -> DiscoveryState {
 }
 
 /// Called by the mDNS discovery module when a host is discovered.
-pub(crate) fn on_host_found(host: NetworkHost, app_handle: &AppHandle) {
+pub(crate) fn on_host_found<R: tauri::Runtime>(host: NetworkHost, app_handle: &impl Emitter<R>) {
     let mut state = get_discovery_state().lock_ignore_poison();
 
     let is_new = !state.hosts.contains_key(&host.id);
@@ -136,7 +150,7 @@ pub(crate) fn on_host_found(host: NetworkHost, app_handle: &AppHandle) {
 }
 
 /// Called by the mDNS discovery module when a host disappears.
-pub(crate) fn on_host_lost(host_id: &str, app_handle: &AppHandle) {
+pub(crate) fn on_host_lost<R: tauri::Runtime>(host_id: &str, app_handle: &impl Emitter<R>) {
     let mut state = get_discovery_state().lock_ignore_poison();
 
     if let Some(removed) = state.hosts.remove(host_id) {
@@ -184,6 +198,7 @@ pub(crate) fn on_host_resolved(
             hostname: None,
             ip_address: None,
             port,
+            source: HostSource::Discovered,
         };
         state.hosts.insert(host_id.to_string(), host.clone());
         let _ = app_handle.emit("network-host-found", &host);
@@ -280,6 +295,7 @@ pub struct HostResolutionInfo {
     pub hostname: Option<String>,
     pub ip_address: Option<String>,
     pub port: u16,
+    pub source: HostSource,
 }
 
 /// Gets the information needed to resolve a host. Brief mutex hold.
@@ -291,6 +307,7 @@ pub fn get_host_for_resolution(host_id: &str) -> Option<HostResolutionInfo> {
         hostname: h.hostname.clone(),
         ip_address: h.ip_address.clone(),
         port: h.port,
+        source: h.source,
     })
 }
 
@@ -325,6 +342,7 @@ mod tests {
             hostname: Some("test.local".to_string()),
             ip_address: Some("192.168.1.100".to_string()),
             port: 445,
+            source: HostSource::default(),
         };
 
         let json = serde_json::to_string(&host).unwrap();
@@ -341,6 +359,7 @@ mod tests {
             hostname: None,
             ip_address: None,
             port: 445,
+            source: HostSource::default(),
         };
 
         let json = serde_json::to_string(&host).unwrap();
