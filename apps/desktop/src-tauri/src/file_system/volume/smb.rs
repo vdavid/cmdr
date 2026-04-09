@@ -504,6 +504,9 @@ impl SmbVolume {
                         op_name, self.share_name, e
                     );
                     self.state.store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
+                } else if matches!(kind, smb2::ErrorKind::NotFound) {
+                    // NotFound is expected for existence checks (rename dest, conflict detection)
+                    debug!("SmbVolume::{}(share={}): {}", op_name, self.share_name, e);
                 } else {
                     warn!("SmbVolume::{}(share={}): {}", op_name, self.share_name, e);
                 }
@@ -754,22 +757,24 @@ impl Volume for SmbVolume {
 
         debug!("SmbVolume::delete: share={}, path={:?}", self.share_name, smb_path);
 
-        // Stat first to determine file vs directory
-        let is_dir = {
+        // Try delete_file first (one round-trip). If the path is a directory,
+        // the server returns STATUS_FILE_IS_A_DIRECTORY — then try delete_directory.
+        // This avoids a stat round-trip for every file in bulk deletes.
+        let file_result = {
             let h = handle.clone();
             let sp = smb_path.clone();
-            self.with_smb("delete(stat)", |client, tree| h.block_on(client.stat(tree, &sp)))?
-                .is_directory
+            self.with_smb("delete_file", |client, tree| h.block_on(client.delete_file(tree, &sp)))
         };
 
-        if is_dir {
-            self.with_smb("delete_directory", |client, tree| {
-                handle.block_on(client.delete_directory(tree, &smb_path))
-            })?;
-        } else {
-            self.with_smb("delete_file", |client, tree| {
-                handle.block_on(client.delete_file(tree, &smb_path))
-            })?;
+        match file_result {
+            Ok(()) => {} // File deleted successfully
+            Err(VolumeError::IoError(ref msg)) if msg.contains("FILE_IS_A_DIRECTORY") => {
+                // It's a directory — try delete_directory
+                self.with_smb("delete_directory", |client, tree| {
+                    handle.block_on(client.delete_directory(tree, &smb_path))
+                })?;
+            }
+            Err(e) => return Err(e),
         }
 
         if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
@@ -1152,6 +1157,14 @@ async fn run_smb_watcher(
                     .file_name()
                     .map(|n| n.to_string_lossy().to_string())
                     .unwrap_or_else(|| filename.clone());
+
+                // Skip macOS safe-save temp files (like "file.txt.sb-1e64c894-vFWIzN").
+                // These are transient artifacts from TextEdit/Preview/etc. that create a
+                // temp dir, write the new version, then atomically swap. Showing them in
+                // the listing confuses users. Controlled by advanced.filterSafeSaveArtifacts.
+                if crate::file_system::is_filter_safe_save_artifacts_enabled() && file_name_only.contains(".sb-") {
+                    continue;
+                }
 
                 match action {
                     FileNotifyAction::Added => {

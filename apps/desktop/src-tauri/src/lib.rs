@@ -369,6 +369,7 @@ pub fn run() {
 
             // Apply direct SMB connection setting (default: true)
             file_system::set_direct_smb_enabled(saved_settings.direct_smb_connection.unwrap_or(true));
+            file_system::set_filter_safe_save_artifacts(saved_settings.filter_safe_save_artifacts.unwrap_or(true));
 
             // Upgrade existing SMB mounts to direct smb2 connections (background, non-blocking)
             #[cfg(any(target_os = "macos", target_os = "linux"))]

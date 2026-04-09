@@ -25,8 +25,8 @@ use uuid::Uuid;
 
 use super::scan::take_cached_scan_result;
 use super::state::{
-    WRITE_OPERATION_STATE, WriteOperationState, register_operation_status, unregister_operation_status,
-    update_operation_status,
+    OperationIntent, WRITE_OPERATION_STATE, WriteOperationState, is_cancelled, load_intent, register_operation_status,
+    unregister_operation_status, update_operation_status,
 };
 use super::types::{
     ConflictResolution, VolumeCopyConfig, VolumeCopyScanResult, WriteCancelledEvent, WriteCompleteEvent,
@@ -343,7 +343,7 @@ fn copy_volumes_with_progress(
         let mut total_dirs = 0;
 
         for source_path in source_paths {
-            if super::state::is_cancelled(&state.intent) {
+            if is_cancelled(&state.intent) {
                 return Err(WriteOperationError::Cancelled {
                     message: "Operation cancelled by user".to_string(),
                 });
@@ -411,21 +411,16 @@ fn copy_volumes_with_progress(
     // Track "apply to all" resolution for conflicts
     let mut apply_to_all_resolution: Option<ConflictResolution> = None;
 
+    // Track successfully copied destination paths for rollback/cleanup
+    let mut copied_paths: Vec<PathBuf> = Vec::new();
+    // Track the last destination path being copied (for partial-file cleanup on cancel)
+    let mut last_dest_path: Option<PathBuf> = None;
+    let mut copy_error: Option<WriteOperationError> = None;
+
     for source_path in source_paths {
         // Check cancellation
-        if super::state::is_cancelled(&state.intent) {
-            let _ = app.emit(
-                "write-cancelled",
-                WriteCancelledEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Copy,
-                    files_processed: files_done,
-                    rolled_back: false, // TODO: support Rollback (delete all copied files in reverse) and Cancel cleanup (delete only the last partial file)
-                },
-            );
-            return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
-            });
+        if is_cancelled(&state.intent) {
+            break;
         }
 
         let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
@@ -506,7 +501,7 @@ fn copy_volumes_with_progress(
 
         let on_file_progress = |file_bytes_done: u64, _file_bytes_total: u64| -> ControlFlow<()> {
             // Check cancellation
-            if super::state::is_cancelled(&state.intent) {
+            if is_cancelled(&state.intent) {
                 return ControlFlow::Break(());
             }
 
@@ -546,45 +541,307 @@ fn copy_volumes_with_progress(
             ControlFlow::Continue(())
         };
 
-        let bytes_copied = copy_single_path(
+        // Remember the destination path before copying (for partial-file cleanup)
+        last_dest_path = Some(dest_item_path.clone());
+
+        match copy_single_path(
             &source_volume,
             source_path,
             &dest_volume,
             &dest_item_path,
             state,
             &on_file_progress,
-        )
-        .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
+        ) {
+            Ok(bytes_copied) => {
+                // Copy succeeded — record destination path for potential rollback
+                copied_paths.push(dest_item_path);
+                last_dest_path = None;
 
-        files_done += 1;
-        // Sync bytes_done from the atomic (the callback may have updated it mid-file)
-        bytes_done = atomic_bytes_done.load(Ordering::Relaxed);
-        // If the volume didn't call the progress callback (default impl), add bytes_copied
-        if last_file_bytes.load(Ordering::Relaxed) == 0 && bytes_copied > 0 {
-            bytes_done += bytes_copied;
+                files_done += 1;
+                // Sync bytes_done from the atomic (the callback may have updated it mid-file)
+                bytes_done = atomic_bytes_done.load(Ordering::Relaxed);
+                // If the volume didn't call the progress callback (default impl), add bytes_copied
+                if last_file_bytes.load(Ordering::Relaxed) == 0 && bytes_copied > 0 {
+                    bytes_done += bytes_copied;
+                }
+                last_progress_time = last_progress_cell.get();
+            }
+            Err(e) => {
+                // Sync bytes_done before handling the error
+                bytes_done = atomic_bytes_done.load(Ordering::Relaxed);
+                copy_error = Some(map_volume_error(&source_path.display().to_string(), e));
+                break;
+            }
         }
-        last_progress_time = last_progress_cell.get();
     }
 
-    // Success
-    log::info!(
-        "copy_volumes_with_progress: completed op={} files={} bytes={}",
-        operation_id,
-        files_done,
-        bytes_done
-    );
+    // Post-loop: handle success, cancellation, or error
+    let intent = load_intent(&state.intent);
 
+    if copy_error.is_none() && !is_cancelled(&state.intent) {
+        // All files copied successfully
+        log::info!(
+            "copy_volumes_with_progress: completed op={} files={} bytes={}",
+            operation_id,
+            files_done,
+            bytes_done
+        );
+
+        let _ = app.emit(
+            "write-complete",
+            WriteCompleteEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Copy,
+                files_processed: files_done,
+                bytes_processed: bytes_done,
+            },
+        );
+
+        return Ok(());
+    }
+
+    // Cancelled or errored — decide between rollback and cancel
+    if intent == OperationIntent::RollingBack {
+        // Include the last in-progress item in rollback (it was partially created)
+        if let Some(partial_path) = last_dest_path.take() {
+            copied_paths.push(partial_path);
+        }
+
+        // User requested rollback — delete all copied files in reverse order with progress
+        log::info!(
+            "copy_volumes_with_progress: rolling back op={}, {} paths to delete",
+            operation_id,
+            copied_paths.len()
+        );
+
+        let rollback_completed = volume_rollback_with_progress(
+            &dest_volume,
+            &copied_paths,
+            app,
+            operation_id,
+            state,
+            files_done,
+            bytes_done,
+            total_files,
+            total_bytes,
+        );
+
+        let _ = app.emit(
+            "write-cancelled",
+            WriteCancelledEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Copy,
+                files_processed: files_done,
+                rolled_back: rollback_completed,
+            },
+        );
+    } else {
+        // Stopped or error — keep completed files, clean up only the last partial file
+        if let Some(partial_path) = &last_dest_path {
+            log::debug!(
+                "copy_volumes_with_progress: cleaning up partial file {} for op={}",
+                partial_path.display(),
+                operation_id,
+            );
+            if let Err(e) = delete_volume_path_recursive(&dest_volume, partial_path) {
+                log::warn!(
+                    "copy_volumes_with_progress: failed to clean up partial file {}: {:?}",
+                    partial_path.display(),
+                    e
+                );
+            }
+        }
+
+        if copy_error.is_none() {
+            // Pure cancellation (Stopped)
+            log::info!(
+                "copy_volumes_with_progress: cancelled op={}, keeping {} copied files",
+                operation_id,
+                copied_paths.len()
+            );
+            let _ = app.emit(
+                "write-cancelled",
+                WriteCancelledEvent {
+                    operation_id: operation_id.to_string(),
+                    operation_type: WriteOperationType::Copy,
+                    files_processed: files_done,
+                    rolled_back: false,
+                },
+            );
+        }
+    }
+
+    if let Some(err) = copy_error {
+        return Err(err);
+    }
+
+    Err(WriteOperationError::Cancelled {
+        message: "Operation cancelled by user".to_string(),
+    })
+}
+
+// ============================================================================
+// Volume rollback helpers
+// ============================================================================
+
+/// Rolls back copied files on a volume with progress events, matching the local copy's
+/// `rollback_with_progress` pattern. Deletes paths in reverse order so that files inside
+/// directories are removed before the directories themselves.
+///
+/// Returns `true` if rollback completed fully, `false` if the user cancelled it.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Needs the full progress state at cancellation time to emit reverse progress"
+)]
+fn volume_rollback_with_progress(
+    volume: &Arc<dyn Volume>,
+    copied_paths: &[PathBuf],
+    app: &tauri::AppHandle,
+    operation_id: &str,
+    state: &Arc<WriteOperationState>,
+    files_at_cancel: usize,
+    bytes_at_cancel: u64,
+    files_total: usize,
+    bytes_total: u64,
+) -> bool {
+    use tauri::Emitter;
+
+    let paths_to_delete = copied_paths.len();
+    let mut paths_deleted = 0usize;
+    let mut last_progress_time = Instant::now();
+
+    // Emit initial rollback phase event
     let _ = app.emit(
-        "write-complete",
-        WriteCompleteEvent {
+        "write-progress",
+        WriteProgressEvent {
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Copy,
-            files_processed: files_done,
-            bytes_processed: bytes_done,
+            phase: WriteOperationPhase::RollingBack,
+            current_file: None,
+            files_done: files_at_cancel,
+            files_total,
+            bytes_done: bytes_at_cancel,
+            bytes_total,
         },
     );
+    update_operation_status(
+        operation_id,
+        WriteOperationPhase::RollingBack,
+        None,
+        files_at_cancel,
+        files_total,
+        bytes_at_cancel,
+        bytes_total,
+    );
 
-    Ok(())
+    // Delete in reverse order (newest first)
+    for path in copied_paths.iter().rev() {
+        // Check if user cancelled the rollback (RollingBack → Stopped)
+        if load_intent(&state.intent) == OperationIntent::Stopped {
+            log::info!(
+                "volume_rollback_with_progress: rollback cancelled at {}/{} paths, keeping remaining",
+                paths_deleted,
+                paths_to_delete,
+            );
+            return false;
+        }
+
+        // Each copied path may be a file or a directory tree — delete recursively
+        if let Err(e) = delete_volume_path_recursive(volume, path) {
+            log::warn!(
+                "volume_rollback_with_progress: failed to delete {}: {:?}",
+                path.display(),
+                e
+            );
+        }
+        paths_deleted += 1;
+
+        // Throttled progress events with decreasing values
+        if last_progress_time.elapsed() >= state.progress_interval {
+            let remaining_files = files_at_cancel.saturating_sub(paths_deleted);
+            let remaining_bytes = if paths_to_delete > 0 {
+                bytes_at_cancel - (bytes_at_cancel as f64 * paths_deleted as f64 / paths_to_delete as f64) as u64
+            } else {
+                0
+            };
+
+            let current_file_name = path
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default();
+            let _ = app.emit(
+                "write-progress",
+                WriteProgressEvent {
+                    operation_id: operation_id.to_string(),
+                    operation_type: WriteOperationType::Copy,
+                    phase: WriteOperationPhase::RollingBack,
+                    current_file: Some(current_file_name.clone()),
+                    files_done: remaining_files,
+                    files_total,
+                    bytes_done: remaining_bytes,
+                    bytes_total,
+                },
+            );
+            update_operation_status(
+                operation_id,
+                WriteOperationPhase::RollingBack,
+                Some(current_file_name),
+                remaining_files,
+                files_total,
+                remaining_bytes,
+                bytes_total,
+            );
+            last_progress_time = Instant::now();
+        }
+    }
+
+    true
+}
+
+/// Recursively deletes a file or directory on a volume.
+///
+/// For files: calls `volume.delete()` directly.
+/// For directories: lists contents, deletes children (files first, then subdirs),
+/// then deletes the directory itself. Best-effort — logs errors but continues.
+fn delete_volume_path_recursive(volume: &Arc<dyn Volume>, path: &Path) -> Result<(), VolumeError> {
+    let is_dir = match volume.is_directory(path) {
+        Ok(true) => true,
+        Ok(false) => false,
+        Err(_) => {
+            // Path may not exist (already deleted or never fully created) — nothing to do
+            return Ok(());
+        }
+    };
+
+    if !is_dir {
+        return volume.delete(path);
+    }
+
+    // List directory contents and delete children first
+    let children = volume.list_directory(path)?;
+
+    // Delete files first, then recurse into subdirectories
+    for child in &children {
+        let child_path = PathBuf::from(&child.path);
+        if child.is_directory {
+            if let Err(e) = delete_volume_path_recursive(volume, &child_path) {
+                log::warn!(
+                    "delete_volume_path_recursive: failed to delete subdirectory {}: {:?}",
+                    child_path.display(),
+                    e
+                );
+            }
+        } else if let Err(e) = volume.delete(&child_path) {
+            log::warn!(
+                "delete_volume_path_recursive: failed to delete file {}: {:?}",
+                child_path.display(),
+                e
+            );
+        }
+    }
+
+    // Delete the now-empty directory
+    volume.delete(path)
 }
 
 /// Unified move across volume types.
@@ -672,7 +929,7 @@ pub async fn move_between_volumes(
             let mut apply_to_all_resolution: Option<ConflictResolution> = None;
 
             for source_path in &source_paths {
-                if super::state::is_cancelled(&state.intent) {
+                if is_cancelled(&state.intent) {
                     return Err(WriteOperationError::Cancelled {
                         message: "Operation cancelled by user".to_string(),
                     });
@@ -735,7 +992,7 @@ pub async fn move_between_volumes(
 
                 // Copy to destination (no per-file progress for moves — total_bytes is 0)
                 let no_progress = |_: u64, _: u64| -> ControlFlow<()> {
-                    if super::state::is_cancelled(&state.intent) {
+                    if is_cancelled(&state.intent) {
                         return ControlFlow::Break(());
                     }
                     ControlFlow::Continue(())
@@ -889,7 +1146,7 @@ async fn move_within_same_volume(
             let mut apply_to_all_resolution: Option<ConflictResolution> = None;
 
             for source_path in &source_paths {
-                if super::state::is_cancelled(&state.intent) {
+                if is_cancelled(&state.intent) {
                     return Err(WriteOperationError::Cancelled {
                         message: "Operation cancelled by user".to_string(),
                     });

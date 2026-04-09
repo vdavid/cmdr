@@ -149,6 +149,7 @@ export interface SettingsValues {
   'advanced.serviceResolveTimeout': number
   'advanced.mountTimeout': number
   'advanced.updateCheckInterval': number
+  'advanced.filterSafeSaveArtifacts': boolean
 }
 
 export type SettingId = keyof SettingsValues

@@ -72,6 +72,10 @@ static VOLUME_MANAGER: LazyLock<VolumeManager> = LazyLock::new(VolumeManager::ne
 /// Set from the `network.directSmbConnection` setting at startup.
 static DIRECT_SMB_ENABLED: AtomicBool = AtomicBool::new(true);
 
+/// Whether to filter macOS safe-save artifacts (.sb- files) in the SMB watcher.
+/// Set from the `advanced.filterSafeSaveArtifacts` setting at startup.
+static FILTER_SAFE_SAVE_ARTIFACTS: AtomicBool = AtomicBool::new(true);
+
 /// Sets the direct SMB connection preference. Call from app setup after loading settings.
 pub fn set_direct_smb_enabled(enabled: bool) {
     DIRECT_SMB_ENABLED.store(enabled, Ordering::Relaxed);
@@ -80,6 +84,16 @@ pub fn set_direct_smb_enabled(enabled: bool) {
 /// Returns whether direct SMB connection is enabled.
 pub fn is_direct_smb_enabled() -> bool {
     DIRECT_SMB_ENABLED.load(Ordering::Relaxed)
+}
+
+/// Sets the safe-save artifact filter preference. Call from app setup after loading settings.
+pub fn set_filter_safe_save_artifacts(enabled: bool) {
+    FILTER_SAFE_SAVE_ARTIFACTS.store(enabled, Ordering::Relaxed);
+}
+
+/// Returns whether safe-save artifact filtering is enabled.
+pub fn is_filter_safe_save_artifacts_enabled() -> bool {
+    FILTER_SAFE_SAVE_ARTIFACTS.load(Ordering::Relaxed)
 }
 
 /// Initializes the global volume manager with all discovered volumes.

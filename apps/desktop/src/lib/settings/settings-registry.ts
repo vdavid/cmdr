@@ -680,6 +680,18 @@ export const settingsRegistry: SettingDefinition[] = [
       maxMs: 86400000, // 24 hours
     },
   },
+  {
+    id: 'advanced.filterSafeSaveArtifacts',
+    section: ['Advanced'],
+    label: 'Filter safe-save artifacts on SMB',
+    description:
+      'Hide temporary files created by macOS safe-save (like ".sb-" files from TextEdit) in the SMB file watcher. These are transient and normally invisible.',
+    keywords: ['smb', 'safe-save', 'artifact', 'temp', 'sb', 'filter', 'watcher'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+    showInAdvanced: true,
+  },
 ]
 
 // ============================================================================

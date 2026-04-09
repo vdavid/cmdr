@@ -51,6 +51,8 @@ pub struct Settings {
     pub verbose_logging: Option<bool>,
     #[serde(alias = "network.directSmbConnection", default)]
     pub direct_smb_connection: Option<bool>,
+    #[serde(alias = "advanced.filterSafeSaveArtifacts", default)]
+    pub filter_safe_save_artifacts: Option<bool>,
     #[serde(alias = "fileOperations.mtpEnabled", default)]
     pub mtp_enabled: Option<bool>,
 }
@@ -71,6 +73,7 @@ impl Default for Settings {
             ai_provider: None,
             verbose_logging: None,
             direct_smb_connection: None,
+            filter_safe_save_artifacts: None,
             mtp_enabled: None,
         }
     }
@@ -119,6 +122,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let ai_provider = json.get("ai.provider").and_then(|v| v.as_str()).map(String::from);
     let verbose_logging = json.get("developer.verboseLogging").and_then(|v| v.as_bool());
     let direct_smb_connection = json.get("network.directSmbConnection").and_then(|v| v.as_bool());
+    let filter_safe_save_artifacts = json.get("advanced.filterSafeSaveArtifacts").and_then(|v| v.as_bool());
     let mtp_enabled = json.get("fileOperations.mtpEnabled").and_then(|v| v.as_bool());
 
     Ok(Settings {
@@ -131,6 +135,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         ai_provider,
         verbose_logging,
         direct_smb_connection,
+        filter_safe_save_artifacts,
         mtp_enabled,
     })
 }
