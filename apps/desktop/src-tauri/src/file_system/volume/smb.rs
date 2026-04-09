@@ -5,7 +5,7 @@
 //! but all Cmdr file operations go through smb2's pipelined I/O for better
 //! performance and fail-fast behavior.
 
-use super::{SpaceInfo, Volume, VolumeError};
+use super::{CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError};
 use crate::file_system::listing::FileEntry;
 use log::{debug, warn};
 use smb2::client::tree::Tree;
@@ -199,6 +199,139 @@ impl SmbVolume {
         }
     }
 
+    // ── Recursive helpers for export/import/scan ──────────────────────
+
+    /// Exports a single file from SMB to a local path. Returns bytes written.
+    fn export_single_file(&self, smb_path: &str, local_dest: &Path) -> Result<u64, VolumeError> {
+        let handle = self.runtime_handle.clone();
+        let sp = smb_path.to_string();
+
+        let data = self.with_smb("export_to_local(read)", |client, tree| {
+            handle.block_on(client.read_file_pipelined(tree, &sp))
+        })?;
+
+        let len = data.len() as u64;
+        std::fs::write(local_dest, &data).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        Ok(len)
+    }
+
+    /// Recursively exports a directory from SMB to a local path. Returns total bytes.
+    fn export_directory_recursive(&self, smb_path: &str, local_dest: &Path) -> Result<u64, VolumeError> {
+        std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError(e.to_string()))?;
+
+        let display_path = self.to_display_path(smb_path);
+        let entries = self.list_directory(Path::new(&display_path))?;
+        let mut total_bytes = 0u64;
+
+        for entry in &entries {
+            let child_smb = if smb_path.is_empty() {
+                entry.name.clone()
+            } else {
+                format!("{}/{}", smb_path, entry.name)
+            };
+            let child_local = local_dest.join(&entry.name);
+
+            if entry.is_directory {
+                total_bytes += self.export_directory_recursive(&child_smb, &child_local)?;
+            } else {
+                total_bytes += self.export_single_file(&child_smb, &child_local)?;
+            }
+        }
+
+        Ok(total_bytes)
+    }
+
+    /// Imports a single local file to SMB. Returns bytes written.
+    fn import_single_file(&self, local_source: &Path, smb_path: &str) -> Result<u64, VolumeError> {
+        let data = std::fs::read(local_source).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        let len = data.len() as u64;
+        let handle = self.runtime_handle.clone();
+        let sp = smb_path.to_string();
+
+        self.with_smb("import_from_local(write)", |client, tree| {
+            handle.block_on(client.write_file_pipelined(tree, &sp, &data))
+        })?;
+
+        Ok(len)
+    }
+
+    /// Recursively imports a local directory to SMB. Returns total bytes.
+    fn import_directory_recursive(&self, local_source: &Path, smb_path: &str) -> Result<u64, VolumeError> {
+        let handle = self.runtime_handle.clone();
+        let sp = smb_path.to_string();
+
+        self.with_smb("import_from_local(mkdir)", |client, tree| {
+            handle.block_on(client.create_directory(tree, &sp))
+        })?;
+
+        let read_dir = std::fs::read_dir(local_source).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        let mut total_bytes = 0u64;
+
+        for dir_entry in read_dir {
+            let dir_entry = dir_entry.map_err(|e| VolumeError::IoError(e.to_string()))?;
+            let child_local = dir_entry.path();
+            let child_name = dir_entry.file_name().to_string_lossy().to_string();
+            let child_smb = if smb_path.is_empty() {
+                child_name
+            } else {
+                format!("{}/{}", smb_path, child_name)
+            };
+
+            if child_local.is_dir() {
+                total_bytes += self.import_directory_recursive(&child_local, &child_smb)?;
+            } else {
+                total_bytes += self.import_single_file(&child_local, &child_smb)?;
+            }
+        }
+
+        Ok(total_bytes)
+    }
+
+    /// Recursively scans an SMB path, accumulating file/dir counts and total bytes.
+    fn scan_recursive(&self, smb_path: &str, result: &mut CopyScanResult) -> Result<(), VolumeError> {
+        let handle = self.runtime_handle.clone();
+        let sp = smb_path.to_string();
+
+        // Stat to determine if this is a file or directory
+        if smb_path.is_empty() {
+            // Root is always a directory, scan its contents
+        } else {
+            let info = self.with_smb("scan_for_copy(stat)", |client, tree| {
+                handle.block_on(client.stat(tree, &sp))
+            })?;
+
+            if !info.is_directory {
+                result.file_count += 1;
+                result.total_bytes += info.size;
+                return Ok(());
+            }
+        }
+
+        // It's a directory — list and recurse
+        result.dir_count += 1;
+        let display_path = self.to_display_path(smb_path);
+        let entries = self.list_directory(Path::new(&display_path))?;
+
+        for entry in &entries {
+            let child_smb = if smb_path.is_empty() {
+                entry.name.clone()
+            } else {
+                format!("{}/{}", smb_path, entry.name)
+            };
+
+            if entry.is_directory {
+                self.scan_recursive(&child_smb, result)?;
+            } else {
+                result.file_count += 1;
+                result.total_bytes += entry.size.unwrap_or(0);
+            }
+        }
+
+        Ok(())
+    }
+
+    // ── Connection helpers ──────────────────────────────────────────────
+
     /// Runs an smb2 operation, handling connection state transitions.
     ///
     /// On disconnection errors, transitions state to `Disconnected` (for now;
@@ -377,6 +510,205 @@ impl Volume for SmbVolume {
         let info = self.with_smb("get_space_info", |client, tree| handle.block_on(client.fs_info(tree)))?;
 
         Ok(fs_info_to_space_info(&info))
+    }
+
+    fn create_file(&self, path: &Path, content: &[u8]) -> Result<(), VolumeError> {
+        let smb_path = self.to_smb_path(path);
+        let handle = self.runtime_handle.clone();
+        let data = content.to_vec();
+
+        debug!("SmbVolume::create_file: share={}, path={:?}", self.share_name, smb_path);
+
+        self.with_smb("create_file", |client, tree| {
+            handle.block_on(client.write_file(tree, &smb_path, &data))
+        })?;
+        Ok(())
+    }
+
+    fn create_directory(&self, path: &Path) -> Result<(), VolumeError> {
+        let smb_path = self.to_smb_path(path);
+        let handle = self.runtime_handle.clone();
+
+        debug!(
+            "SmbVolume::create_directory: share={}, path={:?}",
+            self.share_name, smb_path
+        );
+
+        self.with_smb("create_directory", |client, tree| {
+            handle.block_on(client.create_directory(tree, &smb_path))
+        })
+    }
+
+    fn delete(&self, path: &Path) -> Result<(), VolumeError> {
+        let smb_path = self.to_smb_path(path);
+        let handle = self.runtime_handle.clone();
+
+        debug!("SmbVolume::delete: share={}, path={:?}", self.share_name, smb_path);
+
+        // Stat first to determine file vs directory
+        let is_dir = {
+            let h = handle.clone();
+            let sp = smb_path.clone();
+            self.with_smb("delete(stat)", |client, tree| h.block_on(client.stat(tree, &sp)))?
+                .is_directory
+        };
+
+        if is_dir {
+            self.with_smb("delete_directory", |client, tree| {
+                handle.block_on(client.delete_directory(tree, &smb_path))
+            })
+        } else {
+            self.with_smb("delete_file", |client, tree| {
+                handle.block_on(client.delete_file(tree, &smb_path))
+            })
+        }
+    }
+
+    fn rename(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
+        let smb_from = self.to_smb_path(from);
+        let smb_to = self.to_smb_path(to);
+        let handle = self.runtime_handle.clone();
+
+        debug!(
+            "SmbVolume::rename: share={}, from={:?}, to={:?}, force={}",
+            self.share_name, smb_from, smb_to, force
+        );
+
+        if force {
+            // Check if dest exists and delete it first
+            let h = handle.clone();
+            let dest = smb_to.clone();
+            let dest_exists = self
+                .with_smb("rename(stat_dest)", |client, tree| h.block_on(client.stat(tree, &dest)))
+                .is_ok();
+
+            if dest_exists {
+                let h = handle.clone();
+                let dest = smb_to.clone();
+                // Try file delete first; if that fails (it's a dir), try directory delete
+                let file_result = self.with_smb("rename(delete_dest_file)", |client, tree| {
+                    h.block_on(client.delete_file(tree, &dest))
+                });
+                if file_result.is_err() {
+                    let h = handle.clone();
+                    let dest = smb_to.clone();
+                    self.with_smb("rename(delete_dest_dir)", |client, tree| {
+                        h.block_on(client.delete_directory(tree, &dest))
+                    })?;
+                }
+            }
+        } else {
+            // Check if dest exists and return AlreadyExists if so
+            let h = handle.clone();
+            let dest = smb_to.clone();
+            if self
+                .with_smb("rename(check_dest)", |client, tree| {
+                    h.block_on(client.stat(tree, &dest))
+                })
+                .is_ok()
+            {
+                return Err(VolumeError::AlreadyExists(to.display().to_string()));
+            }
+        }
+
+        self.with_smb("rename", |client, tree| {
+            handle.block_on(client.rename(tree, &smb_from, &smb_to))
+        })
+    }
+
+    fn supports_export(&self) -> bool {
+        true
+    }
+
+    fn export_to_local(&self, source: &Path, local_dest: &Path) -> Result<u64, VolumeError> {
+        let smb_path = self.to_smb_path(source);
+        let handle = self.runtime_handle.clone();
+
+        debug!(
+            "SmbVolume::export_to_local: share={}, source={:?}, dest={}",
+            self.share_name,
+            smb_path,
+            local_dest.display()
+        );
+
+        // Check if source is a directory or file
+        let is_dir = if smb_path.is_empty() {
+            true
+        } else {
+            let h = handle.clone();
+            let sp = smb_path.clone();
+            self.with_smb("export_to_local(stat)", |client, tree| {
+                h.block_on(client.stat(tree, &sp))
+            })?
+            .is_directory
+        };
+
+        if is_dir {
+            self.export_directory_recursive(&smb_path, local_dest)
+        } else {
+            self.export_single_file(&smb_path, local_dest)
+        }
+    }
+
+    fn import_from_local(&self, local_source: &Path, dest: &Path) -> Result<u64, VolumeError> {
+        let smb_path = self.to_smb_path(dest);
+
+        debug!(
+            "SmbVolume::import_from_local: share={}, source={}, dest={:?}",
+            self.share_name,
+            local_source.display(),
+            smb_path
+        );
+
+        if local_source.is_dir() {
+            self.import_directory_recursive(local_source, &smb_path)
+        } else {
+            self.import_single_file(local_source, &smb_path)
+        }
+    }
+
+    fn scan_for_copy(&self, path: &Path) -> Result<CopyScanResult, VolumeError> {
+        let smb_path = self.to_smb_path(path);
+
+        debug!(
+            "SmbVolume::scan_for_copy: share={}, path={:?}",
+            self.share_name, smb_path
+        );
+
+        let mut result = CopyScanResult {
+            file_count: 0,
+            dir_count: 0,
+            total_bytes: 0,
+        };
+
+        self.scan_recursive(&smb_path, &mut result)?;
+        Ok(result)
+    }
+
+    fn scan_for_conflicts(
+        &self,
+        source_items: &[SourceItemInfo],
+        dest_path: &Path,
+    ) -> Result<Vec<ScanConflict>, VolumeError> {
+        // List destination directory to check for conflicts
+        let entries = self.list_directory(dest_path)?;
+        let mut conflicts = Vec::new();
+
+        for item in source_items {
+            if let Some(existing) = entries.iter().find(|e| e.name == item.name) {
+                let dest_modified = existing.modified_at.map(|ms| (ms / 1000) as i64);
+                conflicts.push(ScanConflict {
+                    source_path: item.name.clone(),
+                    dest_path: existing.path.clone(),
+                    source_size: item.size,
+                    dest_size: existing.size.unwrap_or(0),
+                    source_modified: item.modified,
+                    dest_modified,
+                });
+            }
+        }
+
+        Ok(conflicts)
     }
 
     fn smb_connection_state(&self) -> Option<crate::volumes::SmbConnectionState> {
@@ -677,6 +1009,12 @@ mod tests {
     fn local_path_returns_none() {
         let (vol, _rt) = make_test_volume();
         assert!(vol.local_path().is_none());
+    }
+
+    #[test]
+    fn supports_export_returns_true() {
+        let (vol, _rt) = make_test_volume();
+        assert!(vol.supports_export());
     }
 
     /// Creates a test SmbVolume in disconnected state (no real connection).

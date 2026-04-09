@@ -35,7 +35,7 @@ VolumeManager (registry)
 Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new volume types can be added incrementally. Key capability flags:
 
 - `supports_watching()` — enables the `notify`-based *listing* file watcher in `operations.rs` (separate from the `VolumeWatcher` trait used for drive indexing). `MtpVolume` returns `false` (it has its own USB event loop).
-- `supports_export()` — enables copy/move UI. Both local and MTP return `true`.
+- `supports_export()` — enables copy/move UI. Local, MTP, and SMB return `true`.
 - `supports_streaming()` — enables chunked MTP-to-MTP transfers. Only `MtpVolume` returns `true`.
 - `local_path()` — returns `Some` only for local volumes; allows `copyfile(2)` fast-path in copy operations. `SmbVolume` returns `None` so copies go through smb2 instead of the slow OS mount.
 - `supports_local_fs_access()` — whether `std::fs` operations (stat, read_dir) work on this volume's paths. Default `true`. `MtpVolume` returns `false`. Used to skip synthetic entry diffs for protocol-only volumes.
