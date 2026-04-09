@@ -106,7 +106,9 @@ pub async fn rename_file(from: String, to: String, force: bool, volume_id: Optio
     let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
 
     if volume_id_str != "root" {
-        // Volume-aware rename (MTP and other non-local volumes)
+        // Volume-aware rename (MTP, SMB, and other non-local volumes).
+        // The volume's `rename` method calls `notify_mutation` internally,
+        // so the listing cache is updated automatically.
         let volume = crate::file_system::get_volume_manager()
             .get(&volume_id_str)
             .ok_or_else(|| IpcError::from_err(format!("Volume '{}' not found", volume_id_str)))?;
@@ -131,6 +133,9 @@ pub async fn rename_file(from: String, to: String, force: bool, volume_id: Optio
         let from_path = PathBuf::from(&from_expanded);
         let to_path = PathBuf::from(&to_expanded);
 
+        let from_for_notify = from_path.clone();
+        let to_for_notify = to_path.clone();
+
         tokio::time::timeout(
             Duration::from_secs(5),
             tokio::task::spawn_blocking(move || {
@@ -143,7 +148,51 @@ pub async fn rename_file(from: String, to: String, force: bool, volume_id: Optio
         .await
         .map_err(|_| IpcError::timeout())?
         .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
-        .map_err(IpcError::from_err)
+        .map_err(IpcError::from_err)?;
+
+        // Notify listing cache about the rename (fixes pre-existing bug where
+        // rename had no listing notification on any volume type).
+        notify_rename_in_listing(&volume_id_str, &from_for_notify, &to_for_notify);
+
+        Ok(())
+    }
+}
+
+/// Notifies the listing cache about a rename via the volume's `notify_mutation`.
+fn notify_rename_in_listing(volume_id: &str, from: &Path, to: &Path) {
+    use crate::file_system::volume::MutationEvent;
+
+    let volume = match crate::file_system::get_volume_manager().get(volume_id) {
+        Some(v) => v,
+        None => return,
+    };
+
+    if let (Some(from_parent), Some(from_name), Some(to_name)) = (from.parent(), from.file_name(), to.file_name()) {
+        if from.parent() == to.parent() {
+            // Same-directory rename
+            volume.notify_mutation(
+                volume_id,
+                from_parent,
+                MutationEvent::Renamed {
+                    from: from_name.to_string_lossy().to_string(),
+                    to: to_name.to_string_lossy().to_string(),
+                },
+            );
+        } else {
+            // Cross-directory move
+            volume.notify_mutation(
+                volume_id,
+                from_parent,
+                MutationEvent::Deleted(from_name.to_string_lossy().to_string()),
+            );
+            if let Some(to_parent) = to.parent() {
+                volume.notify_mutation(
+                    volume_id,
+                    to_parent,
+                    MutationEvent::Created(to_name.to_string_lossy().to_string()),
+                );
+            }
+        }
     }
 }
 

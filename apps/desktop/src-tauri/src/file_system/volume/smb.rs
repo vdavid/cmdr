@@ -7,7 +7,7 @@
 
 use super::{CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError};
 use crate::file_system::listing::FileEntry;
-use log::{debug, warn};
+use log::{debug, info, warn};
 use smb2::client::tree::Tree;
 use smb2::{ClientConfig, SmbClient};
 use std::path::{Path, PathBuf};
@@ -118,10 +118,14 @@ pub struct SmbVolume {
     server: String,
     /// SMB share name.
     share_name: String,
+    /// Volume ID for listing cache lookups (from `path_to_id(mount_path)`).
+    volume_id: String,
     /// smb2 session + tree connection. `None` when disconnected.
     smb: Mutex<Option<(SmbClient, Tree)>>,
     /// Current connection health.
     state: AtomicU8,
+    /// Cancel sender for the background watcher task. Send to stop watching.
+    watcher_cancel: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
     /// Tokio runtime handle for async bridging.
     runtime_handle: tokio::runtime::Handle,
 }
@@ -134,14 +138,20 @@ impl SmbVolume {
     /// * `mount_path` - OS mount point path
     /// * `server` - Server hostname or IP
     /// * `share_name` - SMB share name
+    /// * `volume_id` - Volume ID for listing cache lookups
     /// * `client` - Connected `SmbClient`
     /// * `tree` - Connected `Tree` for the share
     /// * `runtime_handle` - Tokio runtime handle for async bridging
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Constructor needs all fields; a builder would be overengineering"
+    )]
     pub fn new(
         name: impl Into<String>,
         mount_path: impl Into<PathBuf>,
         server: impl Into<String>,
         share_name: impl Into<String>,
+        volume_id: impl Into<String>,
         client: SmbClient,
         tree: Tree,
         runtime_handle: tokio::runtime::Handle,
@@ -151,8 +161,10 @@ impl SmbVolume {
             mount_path: mount_path.into(),
             server: server.into(),
             share_name: share_name.into(),
+            volume_id: volume_id.into(),
             smb: Mutex::new(Some((client, tree))),
             state: AtomicU8::new(ConnectionState::Direct as u8),
+            watcher_cancel: Mutex::new(None),
             runtime_handle,
         }
     }
@@ -507,6 +519,64 @@ impl Volume for SmbVolume {
         false
     }
 
+    fn supports_local_fs_access(&self) -> bool {
+        // SmbVolume handles listing notifications via notify_mutation,
+        // so the old std::fs-based synthetic diff path is not needed.
+        false
+    }
+
+    fn notify_mutation(&self, _volume_id: &str, parent_path: &Path, mutation: super::MutationEvent) {
+        use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
+
+        match mutation {
+            super::MutationEvent::Created(ref name) | super::MutationEvent::Modified(ref name) => {
+                let entry_path = parent_path.join(name);
+                match self.get_metadata(&entry_path) {
+                    Ok(entry) => {
+                        let change = if matches!(mutation, super::MutationEvent::Created(_)) {
+                            DirectoryChange::Added(entry)
+                        } else {
+                            DirectoryChange::Modified(entry)
+                        };
+                        notify_directory_changed(&self.volume_id, parent_path, change);
+                    }
+                    Err(e) => {
+                        warn!(
+                            "SmbVolume::notify_mutation: couldn't stat {}: {}",
+                            entry_path.display(),
+                            e
+                        );
+                    }
+                }
+            }
+            super::MutationEvent::Deleted(name) => {
+                notify_directory_changed(&self.volume_id, parent_path, DirectoryChange::Removed(name));
+            }
+            super::MutationEvent::Renamed { from, to } => {
+                let new_path = parent_path.join(&to);
+                match self.get_metadata(&new_path) {
+                    Ok(entry) => {
+                        notify_directory_changed(
+                            &self.volume_id,
+                            parent_path,
+                            DirectoryChange::Renamed {
+                                old_name: from,
+                                new_entry: entry,
+                            },
+                        );
+                    }
+                    Err(e) => {
+                        warn!(
+                            "SmbVolume::notify_mutation: couldn't stat renamed entry {}: {}",
+                            new_path.display(),
+                            e
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     fn get_space_info(&self) -> Result<SpaceInfo, VolumeError> {
         let handle = self.runtime_handle.clone();
 
@@ -527,6 +597,15 @@ impl Volume for SmbVolume {
         self.with_smb("create_file", |client, tree| {
             handle.block_on(client.write_file(tree, &smb_path, &data))
         })?;
+
+        if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
+            let parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(parent)));
+            self.notify_mutation(
+                &self.volume_id,
+                &parent_display,
+                super::MutationEvent::Created(name.to_string_lossy().to_string()),
+            );
+        }
         Ok(())
     }
 
@@ -541,7 +620,17 @@ impl Volume for SmbVolume {
 
         self.with_smb("create_directory", |client, tree| {
             handle.block_on(client.create_directory(tree, &smb_path))
-        })
+        })?;
+
+        if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
+            let parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(parent)));
+            self.notify_mutation(
+                &self.volume_id,
+                &parent_display,
+                super::MutationEvent::Created(name.to_string_lossy().to_string()),
+            );
+        }
+        Ok(())
     }
 
     fn delete(&self, path: &Path) -> Result<(), VolumeError> {
@@ -561,12 +650,22 @@ impl Volume for SmbVolume {
         if is_dir {
             self.with_smb("delete_directory", |client, tree| {
                 handle.block_on(client.delete_directory(tree, &smb_path))
-            })
+            })?;
         } else {
             self.with_smb("delete_file", |client, tree| {
                 handle.block_on(client.delete_file(tree, &smb_path))
-            })
+            })?;
         }
+
+        if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
+            let parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(parent)));
+            self.notify_mutation(
+                &self.volume_id,
+                &parent_display,
+                super::MutationEvent::Deleted(name.to_string_lossy().to_string()),
+            );
+        }
+        Ok(())
     }
 
     fn rename(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
@@ -618,7 +717,44 @@ impl Volume for SmbVolume {
 
         self.with_smb("rename", |client, tree| {
             handle.block_on(client.rename(tree, &smb_from, &smb_to))
-        })
+        })?;
+
+        // Notify listing cache about the rename
+        if let (Some(from_parent), Some(from_name)) = (from.parent(), from.file_name()) {
+            let to_name = to
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default();
+            let from_parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(from_parent)));
+
+            if from.parent() == to.parent() {
+                // Same-directory rename
+                self.notify_mutation(
+                    &self.volume_id,
+                    &from_parent_display,
+                    super::MutationEvent::Renamed {
+                        from: from_name.to_string_lossy().to_string(),
+                        to: to_name,
+                    },
+                );
+            } else {
+                // Cross-directory move: remove from source, add in dest
+                self.notify_mutation(
+                    &self.volume_id,
+                    &from_parent_display,
+                    super::MutationEvent::Deleted(from_name.to_string_lossy().to_string()),
+                );
+                if let Some(to_parent) = to.parent() {
+                    let to_parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(to_parent)));
+                    self.notify_mutation(
+                        &self.volume_id,
+                        &to_parent_display,
+                        super::MutationEvent::Created(to_name),
+                    );
+                }
+            }
+        }
+        Ok(())
     }
 
     fn supports_export(&self) -> bool {
@@ -728,6 +864,15 @@ impl Volume for SmbVolume {
         // Transition to Disconnected
         self.state.store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
 
+        // Cancel the background watcher task. The task will call watcher.close()
+        // to release the SMB directory handle before exiting.
+        if let Ok(mut guard) = self.watcher_cancel.lock()
+            && let Some(cancel_tx) = guard.take()
+        {
+            let _ = cancel_tx.send(());
+            debug!("SmbVolume cleanup for {}: watcher cancel sent", self.share_name);
+        }
+
         // Drop the smb2 session. This is fully synchronous — dropping the TCP
         // stream calls close() on the socket fd. The server handles abrupt
         // disconnects fine, so no async graceful disconnect is needed.
@@ -740,9 +885,392 @@ impl Volume for SmbVolume {
     }
 }
 
+// ── Background watcher ─────────────────────────────────────────────
+
+/// Maximum events for a single directory before emitting `FullRefresh`.
+const WATCHER_BATCH_THRESHOLD: usize = 50;
+
+/// Debounce window: after receiving a batch of events, wait this long for more.
+const WATCHER_DEBOUNCE: Duration = Duration::from_millis(200);
+
+/// Delay between reconnection attempts when the watcher connection drops.
+const WATCHER_RECONNECT_DELAY: Duration = Duration::from_secs(5);
+
+/// Maximum reconnection attempts before giving up.
+const WATCHER_MAX_RECONNECT_ATTEMPTS: u32 = 3;
+
+/// Runs a background SMB change watcher on a dedicated smb2 connection.
+///
+/// Establishes its own connection to the same server/share and uses
+/// `CHANGE_NOTIFY` to detect external changes. Events are debounced,
+/// converted to `DirectoryChange`, and fed into `notify_directory_changed`.
+///
+/// The task exits when `cancel_rx` fires, the connection is permanently lost,
+/// or an unrecoverable error occurs.
+async fn run_smb_watcher(
+    addr: String,
+    share_name: String,
+    username: String,
+    password: String,
+    volume_id: String,
+    mount_path: PathBuf,
+    cancel_rx: tokio::sync::oneshot::Receiver<()>,
+) {
+    use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
+    use smb2::FileNotifyAction;
+    use std::collections::HashMap;
+    use unicode_normalization::UnicodeNormalization;
+
+    /// Establishes a watcher connection and returns (client, tree).
+    async fn connect_watcher(
+        addr: &str,
+        share_name: &str,
+        username: &str,
+        password: &str,
+    ) -> Result<(SmbClient, Tree), smb2::Error> {
+        let config = ClientConfig {
+            addr: addr.to_string(),
+            timeout: Duration::from_secs(10),
+            username: username.to_string(),
+            password: password.to_string(),
+            domain: String::new(),
+            auto_reconnect: false,
+            compression: true,
+        };
+        let mut client = SmbClient::connect(config).await?;
+        let tree = client.connect_share(share_name).await?;
+        Ok((client, tree))
+    }
+
+    /// Converts a watcher filename (NFC from server) to an NFD display path
+    /// suitable for macOS mount paths.
+    fn to_nfd_display_path(mount_path: &Path, relative: &str) -> PathBuf {
+        let nfd: String = relative.nfd().collect();
+        if nfd.is_empty() {
+            mount_path.to_path_buf()
+        } else {
+            mount_path.join(&nfd)
+        }
+    }
+
+    /// Processes a batch of collected events per directory into `DirectoryChange` notifications.
+    ///
+    /// Runs on a blocking thread (via `spawn_blocking`) because both `stat_via_volume`
+    /// and `notify_directory_changed(FullRefresh)` call `Volume::list_directory` which
+    /// uses `Handle::block_on` — that panics if called from an async task.
+    fn process_event_batch(
+        events_by_dir: HashMap<PathBuf, Vec<(FileNotifyAction, String)>>,
+        volume_id: &str,
+        mount_path: &Path,
+    ) {
+        for (parent_path, events) in &events_by_dir {
+            if events.len() > WATCHER_BATCH_THRESHOLD {
+                debug!(
+                    "smb_watcher: {} events for {} — emitting FullRefresh",
+                    events.len(),
+                    parent_path.display()
+                );
+                notify_directory_changed(volume_id, parent_path, DirectoryChange::FullRefresh);
+                continue;
+            }
+
+            let mut pending_old_name: Option<String> = None;
+
+            for (action, filename) in events {
+                let file_name_only: String = Path::new(filename)
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_else(|| filename.clone());
+
+                match action {
+                    FileNotifyAction::Added => {
+                        let entry_path = to_nfd_display_path(mount_path, filename);
+                        match stat_via_volume(volume_id, &entry_path) {
+                            Some(entry) => {
+                                notify_directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
+                            }
+                            None => {
+                                debug!(
+                                    "smb_watcher: couldn't stat added file {}, skipping",
+                                    entry_path.display()
+                                );
+                            }
+                        }
+                    }
+                    FileNotifyAction::Removed => {
+                        notify_directory_changed(volume_id, parent_path, DirectoryChange::Removed(file_name_only));
+                    }
+                    FileNotifyAction::Modified => {
+                        let entry_path = to_nfd_display_path(mount_path, filename);
+                        match stat_via_volume(volume_id, &entry_path) {
+                            Some(entry) => {
+                                notify_directory_changed(volume_id, parent_path, DirectoryChange::Modified(entry));
+                            }
+                            None => {
+                                debug!(
+                                    "smb_watcher: couldn't stat modified file {}, skipping",
+                                    entry_path.display()
+                                );
+                            }
+                        }
+                    }
+                    FileNotifyAction::RenamedOldName => {
+                        pending_old_name = Some(file_name_only);
+                    }
+                    FileNotifyAction::RenamedNewName => {
+                        let entry_path = to_nfd_display_path(mount_path, filename);
+                        if let Some(old_name) = pending_old_name.take() {
+                            match stat_via_volume(volume_id, &entry_path) {
+                                Some(new_entry) => {
+                                    notify_directory_changed(
+                                        volume_id,
+                                        parent_path,
+                                        DirectoryChange::Renamed { old_name, new_entry },
+                                    );
+                                }
+                                None => {
+                                    // Couldn't stat new name — emit remove + skip add
+                                    notify_directory_changed(
+                                        volume_id,
+                                        parent_path,
+                                        DirectoryChange::Removed(old_name),
+                                    );
+                                }
+                            }
+                        } else {
+                            // Got new name without old name — treat as add
+                            if let Some(entry) = stat_via_volume(volume_id, &entry_path) {
+                                notify_directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
+                            }
+                        }
+                    }
+                }
+            }
+
+            // If we have a dangling old name with no new name, treat as remove
+            if let Some(old_name) = pending_old_name {
+                notify_directory_changed(volume_id, parent_path, DirectoryChange::Removed(old_name));
+            }
+        }
+    }
+
+    /// Stats a file via the main SmbVolume connection (through VolumeManager).
+    ///
+    /// Must be called from a blocking thread (not an async task), because
+    /// `SmbVolume::get_metadata` uses `Handle::block_on` internally.
+    fn stat_via_volume(volume_id: &str, path: &Path) -> Option<FileEntry> {
+        let vm = crate::file_system::get_volume_manager();
+        let vol = vm.get(volume_id)?;
+        vol.get_metadata(path).ok()
+    }
+
+    // ── Main watcher loop ──────────────────────────────────────────
+
+    let mut cancel_rx = cancel_rx;
+    let mut reconnect_attempts = 0u32;
+
+    'outer: loop {
+        // Establish the dedicated watcher connection
+        let (mut client, tree) = match connect_watcher(&addr, &share_name, &username, &password).await {
+            Ok(pair) => {
+                if reconnect_attempts > 0 {
+                    info!(
+                        "smb_watcher({}): reconnected after {} attempt(s)",
+                        share_name, reconnect_attempts
+                    );
+                } else {
+                    info!("smb_watcher({}): connected, starting watch", share_name);
+                }
+                reconnect_attempts = 0;
+                pair
+            }
+            Err(e) => {
+                reconnect_attempts += 1;
+                if reconnect_attempts > WATCHER_MAX_RECONNECT_ATTEMPTS {
+                    warn!(
+                        "smb_watcher({}): failed to connect after {} attempts, giving up: {}",
+                        share_name, WATCHER_MAX_RECONNECT_ATTEMPTS, e
+                    );
+                    return;
+                }
+                warn!(
+                    "smb_watcher({}): connection failed (attempt {}/{}): {}, retrying in {:?}",
+                    share_name, reconnect_attempts, WATCHER_MAX_RECONNECT_ATTEMPTS, e, WATCHER_RECONNECT_DELAY
+                );
+                tokio::select! {
+                    _ = tokio::time::sleep(WATCHER_RECONNECT_DELAY) => continue 'outer,
+                    _ = &mut cancel_rx => {
+                        debug!("smb_watcher({}): cancelled during reconnect wait", share_name);
+                        return;
+                    }
+                }
+            }
+        };
+
+        // Start watching from the share root (recursive)
+        let mut watcher = match client.watch(&tree, "", true).await {
+            Ok(w) => w,
+            Err(e) => {
+                warn!("smb_watcher({}): failed to start watch: {}", share_name, e);
+                reconnect_attempts += 1;
+                if reconnect_attempts > WATCHER_MAX_RECONNECT_ATTEMPTS {
+                    warn!("smb_watcher({}): giving up after repeated watch failures", share_name);
+                    return;
+                }
+                tokio::select! {
+                    _ = tokio::time::sleep(WATCHER_RECONNECT_DELAY) => continue 'outer,
+                    _ = &mut cancel_rx => {
+                        debug!("smb_watcher({}): cancelled during watch retry wait", share_name);
+                        return;
+                    }
+                }
+            }
+        };
+
+        // Event loop
+        loop {
+            let events_result = tokio::select! {
+                result = watcher.next_events() => result,
+                _ = &mut cancel_rx => {
+                    debug!("smb_watcher({}): cancelled, closing watcher", share_name);
+                    if let Err(e) = watcher.close().await {
+                        debug!("smb_watcher({}): error closing watcher: {}", share_name, e);
+                    }
+                    return;
+                }
+            };
+
+            match events_result {
+                Ok(events) => {
+                    // Collect events by parent directory, debouncing with a short wait
+                    let mut events_by_dir: HashMap<PathBuf, Vec<(FileNotifyAction, String)>> = HashMap::new();
+
+                    for event in &events {
+                        // SMB watcher filenames use backslashes; normalize to forward slashes
+                        let normalized_filename = event.filename.replace('\\', "/");
+                        let parent = Path::new(&normalized_filename)
+                            .parent()
+                            .map(|p| p.to_string_lossy().to_string())
+                            .unwrap_or_default();
+                        let parent_display = to_nfd_display_path(&mount_path, &parent);
+
+                        events_by_dir
+                            .entry(parent_display)
+                            .or_default()
+                            .push((event.action, normalized_filename));
+                    }
+
+                    // Debounce: wait briefly for more events in the same batch
+                    loop {
+                        let more = tokio::select! {
+                            result = tokio::time::timeout(WATCHER_DEBOUNCE, watcher.next_events()) => {
+                                match result {
+                                    Ok(Ok(more_events)) => Some(more_events),
+                                    Ok(Err(_)) => None,
+                                    Err(_) => None, // timeout — done debouncing
+                                }
+                            },
+                            _ = &mut cancel_rx => {
+                                // Process what we have, then exit
+                                {
+                                    let vid = volume_id.clone();
+                                    let mp = mount_path.clone();
+                                    let _ = tokio::task::spawn_blocking(move || {
+                                        process_event_batch(events_by_dir, &vid, &mp);
+                                    }).await;
+                                }
+                                debug!("smb_watcher({}): cancelled during debounce, closing", share_name);
+                                if let Err(e) = watcher.close().await {
+                                    debug!("smb_watcher({}): error closing watcher: {}", share_name, e);
+                                }
+                                return;
+                            }
+                        };
+
+                        match more {
+                            Some(more_events) => {
+                                for event in &more_events {
+                                    let normalized_filename = event.filename.replace('\\', "/");
+                                    let parent = Path::new(&normalized_filename)
+                                        .parent()
+                                        .map(|p| p.to_string_lossy().to_string())
+                                        .unwrap_or_default();
+                                    let parent_display = to_nfd_display_path(&mount_path, &parent);
+
+                                    events_by_dir
+                                        .entry(parent_display)
+                                        .or_default()
+                                        .push((event.action, normalized_filename));
+                                }
+                            }
+                            None => break, // timeout or error — process batch
+                        }
+                    }
+
+                    let total_events: usize = events_by_dir.values().map(|v| v.len()).sum();
+                    debug!(
+                        "smb_watcher({}): processing {} event(s) across {} dir(s)",
+                        share_name,
+                        total_events,
+                        events_by_dir.len()
+                    );
+
+                    {
+                        let vid = volume_id.clone();
+                        let mp = mount_path.clone();
+                        let _ = tokio::task::spawn_blocking(move || {
+                            process_event_batch(events_by_dir, &vid, &mp);
+                        })
+                        .await;
+                    }
+                }
+                Err(e) => {
+                    // Check for STATUS_NOTIFY_ENUM_DIR (buffer overflow)
+                    let is_enum_dir = matches!(
+                        &e,
+                        smb2::Error::Protocol { status, .. }
+                            if *status == smb2::types::status::NtStatus::NOTIFY_ENUM_DIR
+                    );
+
+                    if is_enum_dir {
+                        debug!(
+                            "smb_watcher({}): STATUS_NOTIFY_ENUM_DIR — emitting FullRefresh for share root",
+                            share_name
+                        );
+                        notify_directory_changed(&volume_id, &mount_path, DirectoryChange::FullRefresh);
+                        // Continue watching — the server is still alive
+                        continue;
+                    }
+
+                    // Connection lost or other error — try to reconnect
+                    warn!("smb_watcher({}): error from next_events: {}", share_name, e);
+
+                    // Close the watcher handle (best-effort, connection may be dead)
+                    let _ = watcher.close().await;
+
+                    reconnect_attempts += 1;
+                    if reconnect_attempts > WATCHER_MAX_RECONNECT_ATTEMPTS {
+                        warn!("smb_watcher({}): too many errors, giving up", share_name);
+                        return;
+                    }
+
+                    tokio::select! {
+                        _ = tokio::time::sleep(WATCHER_RECONNECT_DELAY) => continue 'outer,
+                        _ = &mut cancel_rx => {
+                            debug!("smb_watcher({}): cancelled during error reconnect wait", share_name);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// Creates an `SmbVolume` by connecting to a server and share.
 ///
 /// Used by the mount flow to establish the smb2 session alongside the OS mount.
+/// Also spawns a background watcher task for detecting external changes.
 pub async fn connect_smb_volume(
     name: &str,
     mount_path: &str,
@@ -757,7 +1285,7 @@ pub async fn connect_smb_volume(
     let addr = build_smb_addr(server, port);
 
     let config = ClientConfig {
-        addr,
+        addr: addr.clone(),
         timeout: Duration::from_secs(10),
         username: username.unwrap_or("Guest").to_string(),
         password: password.unwrap_or("").to_string(),
@@ -769,16 +1297,41 @@ pub async fn connect_smb_volume(
     let mut client = SmbClient::connect(config).await?;
     let tree = client.connect_share(share_name).await?;
     let runtime_handle = tokio::runtime::Handle::current();
+    let volume_id = crate::volumes::path_to_id(mount_path);
 
-    Ok(SmbVolume::new(
+    let vol = SmbVolume::new(
         name,
         mount_path,
         server,
         share_name,
+        volume_id.clone(),
         client,
         tree,
         runtime_handle,
-    ))
+    );
+
+    // Spawn the background watcher task with its own dedicated connection
+    let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel();
+    let watcher_addr = addr;
+    let watcher_share = share_name.to_string();
+    let watcher_username = username.unwrap_or("Guest").to_string();
+    let watcher_password = password.unwrap_or("").to_string();
+    let watcher_volume_id = volume_id;
+    let watcher_mount_path = PathBuf::from(mount_path);
+
+    tokio::spawn(run_smb_watcher(
+        watcher_addr,
+        watcher_share,
+        watcher_username,
+        watcher_password,
+        watcher_volume_id,
+        watcher_mount_path,
+        cancel_rx,
+    ));
+
+    *vol.watcher_cancel.lock().unwrap() = Some(cancel_tx);
+
+    Ok(vol)
 }
 
 #[cfg(test)]
@@ -1039,8 +1592,10 @@ mod tests {
             mount_path: PathBuf::from("/Volumes/TestShare"),
             server: "192.168.1.100".to_string(),
             share_name: "TestShare".to_string(),
+            volume_id: "volumestestshare".to_string(),
             smb: Mutex::new(None),
             state: AtomicU8::new(ConnectionState::Disconnected as u8),
+            watcher_cancel: Mutex::new(None),
             runtime_handle: rt.handle().clone(),
         };
         (vol, rt)

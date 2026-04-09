@@ -16,7 +16,7 @@ immediately to business-logic modules. No significant logic lives here.
 | `network.rs` | SMB/network shares | Discovery, share listing, keychain, mounting. |
 | `font_metrics.rs` | Font metrics cache | `store_font_metrics`, `has_font_metrics` |
 | `icons.rs` | File icons | `get_icons`, `refresh_directory_icons`, cache clear |
-| `rename.rs` | Rename / trash | `move_to_trash` (delegates to `write_operations::trash::move_to_trash_sync`), `check_rename_permission`, `check_rename_validity`, `rename_file` |
+| `rename.rs` | Rename / trash | `move_to_trash` (delegates to `write_operations::trash::move_to_trash_sync`), `check_rename_permission`, `check_rename_validity`, `rename_file`. `rename_file` calls `notify_mutation` after success to update the listing cache (both local and volume-aware paths). |
 | `file_viewer.rs` | File viewer | Session lifecycle, line search, word wrap, menu state |
 | `ui.rs` | UI / menu | Context menu, Finder reveal, clipboard, Quick Look, Get Info, view mode, `set_menu_context` (enables/disables file-scoped menu items based on window focus) |
 | `settings.rs` | Settings | Port availability check, watcher debounce setting, menu accelerator updates |

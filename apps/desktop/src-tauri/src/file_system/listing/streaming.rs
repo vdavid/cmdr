@@ -393,6 +393,7 @@ fn read_directory_with_progress(
                 sort_by,
                 sort_order,
                 directory_sort_mode: dir_sort_mode,
+                sequence: std::sync::atomic::AtomicU64::new(0),
             },
         );
     }

@@ -112,6 +112,7 @@ pub fn list_directory_start_with_volume(
                 sort_by,
                 sort_order,
                 directory_sort_mode: dir_sort_mode,
+                sequence: std::sync::atomic::AtomicU64::new(0),
             },
         );
     }

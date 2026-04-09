@@ -873,7 +873,7 @@ fn should_emit_synthetic_diff(volume_id: Option<&str>) -> bool {
 fn emit_synthetic_entry_diff(app: &tauri::AppHandle, entry_path: &Path, parent_path: &Path) {
     use crate::file_system::listing::reading::get_single_entry;
     use crate::file_system::listing::{find_listings_for_path, insert_entry_sorted};
-    use crate::file_system::watcher::{DiffChange, DirectoryDiff, WATCHER_MANAGER};
+    use crate::file_system::watcher::{DiffChange, DirectoryDiff};
     use tauri::Emitter;
 
     // 1. Construct a FileEntry for the new entry
@@ -901,18 +901,9 @@ fn emit_synthetic_entry_diff(app: &tauri::AppHandle, entry_path: &Path, parent_p
             continue; // Already exists or listing gone
         };
 
-        // Increment sequence in WATCHER_MANAGER (after LISTING_CACHE lock is released)
-        let sequence = {
-            let mut manager = match WATCHER_MANAGER.write() {
-                Ok(m) => m,
-                Err(_) => continue,
-            };
-            let watch = match manager.watches.get_mut(&listing_id) {
-                Some(w) => w,
-                None => continue,
-            };
-            watch.sequence += 1;
-            watch.sequence
+        // Increment sequence on CachedListing (after LISTING_CACHE write lock is released)
+        let Some(sequence) = crate::file_system::listing::increment_sequence(&listing_id) else {
+            continue;
         };
 
         let diff = DirectoryDiff {

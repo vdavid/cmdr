@@ -44,7 +44,8 @@ pub use volume::SmbVolume;
 pub use volume::manager::VolumeManager;
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use volume::{
-    CopyScanResult, InMemoryVolume, LocalPosixVolume, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError,
+    CopyScanResult, InMemoryVolume, LocalPosixVolume, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
+    VolumeError,
 };
 // Watcher management - init_watcher_manager must be called from lib.rs
 pub use watcher::{init_watcher_manager, update_debounce_ms};

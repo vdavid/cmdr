@@ -10,7 +10,7 @@ Every file system operation (listing, copy, rename, delete, indexing, watching) 
 
 | File | Role |
 |---|---|
-| `mod.rs` | `Volume` trait, `VolumeScanner`, `VolumeWatcher`, `VolumeReadStream` traits, shared types (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `ScanConflict`, `SourceItemInfo`) |
+| `mod.rs` | `Volume` trait, `VolumeScanner`, `VolumeWatcher`, `VolumeReadStream` traits, `MutationEvent` enum, shared types (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `ScanConflict`, `SourceItemInfo`) |
 | `manager.rs` | `VolumeManager` — thread-safe `RwLock<HashMap>` registry; supports a default volume |
 | `local_posix.rs` | `LocalPosixVolume` — real filesystem; delegates listing to `file_system::listing`, indexing to `indexing::scanner`, watching to `indexing::watcher` (FSEvents), copy scanning via `walkdir`. Uses `libc::statvfs` FFI for space info. |
 | `mtp.rs` | `MtpVolume` — MTP device storage; synchronous `Volume` trait bridged to async MTP calls via `tokio::runtime::Handle::block_on`. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
@@ -38,7 +38,8 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `supports_export()` — enables copy/move UI. Local, MTP, and SMB return `true`.
 - `supports_streaming()` — enables chunked MTP-to-MTP transfers. Only `MtpVolume` returns `true`.
 - `local_path()` — returns `Some` only for local volumes; allows `copyfile(2)` fast-path in copy operations. `SmbVolume` returns `None` so copies go through smb2 instead of the slow OS mount.
-- `supports_local_fs_access()` — whether `std::fs` operations (stat, read_dir) work on this volume's paths. Default `true`. `MtpVolume` returns `false`. Used to skip synthetic entry diffs for protocol-only volumes.
+- `supports_local_fs_access()` — whether `std::fs` operations (stat, read_dir) work on this volume's paths. Default `true`. `MtpVolume` and `SmbVolume` return `false`. Used to skip the legacy synthetic entry diff path (now superseded by `notify_mutation`).
+- `notify_mutation(volume_id, parent_path, mutation)` — called after a successful mutation (create, delete, rename) to update the listing cache immediately. Default impl uses `std::fs` (works for `LocalPosixVolume`). `SmbVolume` and `MtpVolume` override to use their own protocol's `get_metadata`. Fire-and-forget, no error propagation.
 - `smb_connection_state()` — returns `Some(SmbConnectionState)` for SMB volumes (green/yellow indicator in volume picker). Default `None`. Only `SmbVolume` implements it.
 - `on_unmount()` — lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
 - `scanner()` / `watcher()` — drive indexing hooks; `None` by default.
@@ -104,8 +105,17 @@ provides a manual upgrade path.
 **Gotcha**: `LocalPosixVolume::resolve` has a three-way branch for absolute paths
 **Why**: The frontend sometimes sends full absolute paths (like `/Users/alice/Documents`), not paths relative to the volume root. If the volume root is `/Users/alice/Dropbox`, the resolve logic must detect whether the absolute path is already inside the root (pass through), whether the root is `/` (pass through), or neither (strip leading `/` and join). Getting this wrong silently serves the wrong directory.
 
-**Gotcha**: `MtpVolume::get_metadata` returns `NotSupported`
-**Why**: MTP has no single-file stat call — you must list the parent directory and search for the entry by name. The listing pipeline doesn't use `get_metadata` during normal browsing (it gets metadata from `list_directory` results), so implementing it would add an expensive round-trip for a code path that's currently unused.
+**Gotcha**: `MtpVolume::get_metadata` is expensive — it lists the entire parent directory
+**Why**: MTP has no single-file stat call — `get_metadata` lists the parent directory and searches for the entry by name. This is used by `notify_mutation` after each self-mutation (create, delete, rename) and is acceptable because those are infrequent, but avoid calling it in hot paths.
+
+**Decision**: `notify_mutation` lives on the Volume trait, not in Tauri commands
+**Why**: Every mutation method (`create_file`, `create_directory`, `delete`, `rename`) knows what changed. Adding the notification call at the end of each method keeps it colocated with the mutation. The alternative (notification calls in every Tauri command) is fragile — easy to miss a call site.
+
+**Decision**: `SmbVolume` and `MtpVolume` store `volume_id: String` for listing cache lookups
+**Why**: `notify_mutation` needs to call `notify_directory_changed(volume_id, ...)` to find the right cached listings. The volume_id is computed at creation time (`path_to_id(mount_path)` for SMB, `"{device_id}:{storage_id}"` for MTP) and stored on the struct rather than recomputed on every mutation.
+
+**Decision**: `SmbVolume::supports_local_fs_access()` returns `false`
+**Why**: `SmbVolume` now handles listing updates via `notify_mutation` using its own smb2 `get_metadata`. The old `std::fs`-based synthetic diff path (`emit_synthetic_entry_diff`) is redundant and goes through the slow OS mount. Returning `false` skips it.
 
 **Decision**: `SmbVolume` uses `Mutex<Option<(SmbClient, Tree)>>`, not `RwLock`
 **Why**: Every `SmbClient` method takes `&mut self` — there is no read-only access path. An `RwLock` where you only ever take write locks is strictly worse than a `Mutex` (higher overhead). The `Option` allows graceful cleanup on disconnect (set to `None`).
@@ -115,6 +125,21 @@ provides a manual upgrade path.
 
 **Decision**: `on_unmount()` trait method instead of `Any` downcasting
 **Why**: Avoids runtime type checking, extensible for future volume types (S3, FTP might also need cleanup), consistent with the trait's design of optional methods with default no-ops.
+
+**Decision**: SmbVolume background watcher uses a dedicated smb2 connection, not the main one
+**Why**: `smb2::Watcher<'a>` borrows `&'a mut Connection` for its lifetime (long-poll blocks until server reports changes). Using the main client would block all file operations. The watcher task owns its own `SmbClient` + `Tree`, and stats new/modified files through the main client via `VolumeManager::get(volume_id)`.
+
+**Decision**: Watcher task is not stored on `SmbVolume`, only the cancel sender is
+**Why**: `Watcher<'a>` borrows `&'a mut Connection`. Storing both the client and watcher on the struct would require self-referential types. Instead, the `tokio::spawn`ed task owns the client, creates the watcher, and runs the loop. The `watcher_cancel: Mutex<Option<oneshot::Sender<()>>>` on the struct provides clean shutdown.
+
+**Decision**: Watcher debounces 200ms per batch, `FullRefresh` above 50 events per directory
+**Why**: Prevents 1000 individual stat calls when 1000 files are copied. The 200ms window collects events that arrive in rapid succession. The 50-event threshold for `FullRefresh` avoids O(n) stat calls for bulk operations.
+
+**Gotcha**: Watcher filenames from SMB use backslashes; must normalize to forward slashes
+**Why**: SMB servers send paths like `papers\new-file.txt`. The watcher normalizes these to `papers/new-file.txt` before extracting parent directories and constructing display paths.
+
+**Gotcha**: Watcher filenames are NFC (from server) but macOS mount paths are NFD
+**Why**: SMB servers return NFC-normalized filenames. macOS filesystem paths use NFD. The watcher NFD-normalizes filenames before constructing display paths used for cache lookups.
 
 ## Testing
 

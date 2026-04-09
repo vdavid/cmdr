@@ -46,7 +46,7 @@ Frontend                          Backend
 
 **LISTING_CACHE**: Global `RwLock<HashMap<String, CachedListing>>`
 **Key**: `listing_id` (UUID per navigation)
-**Value**: `CachedListing { volume_id, path, entries, sort_by, sort_order, directory_sort_mode }`
+**Value**: `CachedListing { volume_id, path, entries, sort_by, sort_order, directory_sort_mode, sequence }`
 
 **Lifecycle**:
 1. `list_directory_start_streaming()` receives listing ID from frontend, spawns task
@@ -84,6 +84,9 @@ Frontend                          Backend
 **Decision**: Font metrics in Rust binary cache, not frontend canvas measurement
 **Why**: Measuring 50k filenames in JS is slow. Rust precomputes metrics for system fonts, stores in `.bin` cache. `calculate_max_width()` is a hash lookup.
 
+**Decision**: Sequence counter lives on `CachedListing`, not on `WatchedDirectory`
+**Why**: SMB and MTP volumes don't use FSEvents (`supports_watching() == false`), so they never get a `WatchedDirectory` entry. With the sequence on the watcher, `increment_sequence` returned `None` and `directory-diff` events were never emitted for those volumes. Moving the `AtomicU64` to `CachedListing` makes it work for all volume types. The FSEvents watcher path also uses this same counter now.
+
 **Decision**: File watcher starts AFTER listing complete
 **Why**: Watcher diffs rely on cached entries. Starting before cache is populated would miss initial state.
 
@@ -105,11 +108,25 @@ Frontend                          Backend
 
 Used by the watcher's incremental path and synthetic mkdir to patch listings without full re-reads:
 - `find_listings_for_path(path)` — returns all listing IDs whose directory matches the given path (multiple panes/tabs may show the same directory)
+- `find_listings_for_path_on_volume(volume_id, path)` — same, but also filters by volume ID. Prevents false matches when two volumes serve overlapping paths.
 - `insert_entry_sorted(listing_id, entry)` — inserts an entry in sorted position, returns the insertion index
 - `remove_entry_by_path(listing_id, path)` — removes an entry by its file path, returns the removed index and entry
 - `update_entry_sorted(listing_id, entry)` — updates an existing entry (remove + re-insert if sort position changed), returns `ModifyResult`
 - `has_entry(listing_id, path)` — checks if a path exists in the cached listing (used to classify watcher events as add vs modify)
 - `get_listing_path(listing_id)` — returns the directory path for a listing (used to filter watcher events to direct children)
+
+### Change notification API (caching.rs)
+
+`notify_directory_changed(volume_id, parent_path, change)` — unified entry point for notifying the listing system that a directory changed on a volume. Accepts a `DirectoryChange` enum:
+- `Added(FileEntry)` — single entry added, patches cache via `insert_entry_sorted`
+- `Removed(String)` — single entry removed by name, patches cache via `remove_entry_by_path`
+- `Modified(FileEntry)` — single entry modified, patches cache via `update_entry_sorted`
+- `Renamed { old_name, new_entry }` — same-dir rename, remove old + insert new
+- `FullRefresh` — re-reads directory via Volume trait, computes diff against cache
+
+All variants enrich entries with index data and emit `directory-diff` events. Natural deduplication: `insert_entry_sorted` returns `None` for duplicates, `remove_entry_by_path` returns `None` if already removed.
+
+**Callers**: `Volume::notify_mutation()` (called after each successful create/delete/rename on all volume types) and the `rename_file` command (for local filesystem renames). The old `emit_synthetic_entry_diff` remains as a legacy fallback for `create_file`/`create_directory` on volumes where `supports_local_fs_access()` returns `true`.
 
 **Gotcha**: Background task runs to completion even if cancelled on frontend
 **Why**: `loadGeneration` discards stale results, but Rust keeps iterating. Mitigation: `AtomicBool` checked per-entry stops early.

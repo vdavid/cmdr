@@ -18,8 +18,8 @@ use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
 use crate::file_system::listing::{
-    FileEntry, ModifyResult, get_listing_entries, get_listing_path, get_single_entry, has_entry, insert_entry_sorted,
-    list_directory_core, remove_entry_by_path, update_entry_sorted, update_listing_entries,
+    FileEntry, ModifyResult, get_listing_entries, get_listing_path, get_single_entry, has_entry, increment_sequence,
+    insert_entry_sorted, list_directory_core, remove_entry_by_path, update_entry_sorted, update_listing_entries,
 };
 
 /// Default debounce duration in milliseconds (used if not configured)
@@ -77,7 +77,6 @@ pub struct DirectoryDeletedEvent {
 /// State for a watched directory.
 /// NOTE: No `entries` field - we use the unified LISTING_CACHE instead.
 pub(crate) struct WatchedDirectory {
-    pub(crate) sequence: u64,
     #[allow(dead_code, reason = "Debouncer must be held to keep watching")]
     debouncer: Debouncer<RecommendedWatcher, RecommendedCache>,
 }
@@ -85,7 +84,7 @@ pub(crate) struct WatchedDirectory {
 /// Manages file watchers for directories
 pub(crate) struct WatcherManager {
     pub(crate) watches: HashMap<String, WatchedDirectory>,
-    app_handle: Option<AppHandle>,
+    pub(crate) app_handle: Option<AppHandle>,
 }
 
 impl WatcherManager {
@@ -145,9 +144,7 @@ pub fn start_watching(listing_id: &str, path: &Path) -> Result<(), String> {
     // Store in manager (no entries - we use LISTING_CACHE)
     let mut manager = WATCHER_MANAGER.write().map_err(|_| "Failed to acquire watcher lock")?;
 
-    manager
-        .watches
-        .insert(listing_id_owned, WatchedDirectory { sequence: 0, debouncer });
+    manager.watches.insert(listing_id_owned, WatchedDirectory { debouncer });
 
     Ok(())
 }
@@ -318,17 +315,8 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
         manager.app_handle.clone()
     };
 
-    let sequence = {
-        let mut manager = match WATCHER_MANAGER.write() {
-            Ok(m) => m,
-            Err(_) => return,
-        };
-        let watch = match manager.watches.get_mut(listing_id) {
-            Some(w) => w,
-            None => return,
-        };
-        watch.sequence += 1;
-        watch.sequence
+    let Some(sequence) = increment_sequence(listing_id) else {
+        return;
     };
 
     if let Some(app) = app_handle {
@@ -346,26 +334,25 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
 /// Force a re-read of a directory listing, computing and emitting any diff.
 /// Called by the file watcher on change events, and also available as a Tauri
 /// command for cases where the watcher doesn't fire (e.g. rename-move on Linux).
+///
+/// Works for all volume types: reads via the Volume trait's `list_directory`,
+/// not via `std::fs`.
 pub fn handle_directory_change(listing_id: &str) {
     log::debug!("handle_directory_change: listing_id={}", listing_id);
 
-    // This function uses std::fs which only works for local volumes.
-    // Non-local volumes (MTP, network, etc.) have their own change detection mechanisms.
-    // Check via supports_watching() — the same guard used when starting watchers.
-    {
+    // Look up volume for this listing so we can re-read through the Volume trait.
+    let volume = {
         use crate::file_system::listing::caching::LISTING_CACHE;
-        if let Ok(cache) = LISTING_CACHE.read()
-            && let Some(listing) = cache.get(listing_id)
-            && let Some(vol) = crate::file_system::get_volume_manager().get(&listing.volume_id)
-            && !vol.supports_watching()
-        {
-            log::debug!(
-                "handle_directory_change: skipping non-watchable volume (volume={})",
-                listing.volume_id
-            );
-            return;
-        }
-    }
+        let cache = match LISTING_CACHE.read() {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+        let listing = match cache.get(listing_id) {
+            Some(l) => l,
+            None => return,
+        };
+        crate::file_system::get_volume_manager().get(&listing.volume_id)
+    };
 
     // Get old entries and path from the unified LISTING_CACHE
     let Some((path, old_entries)) = get_listing_entries(listing_id) else {
@@ -381,35 +368,60 @@ pub fn handle_directory_change(listing_id: &str) {
         manager.app_handle.clone()
     };
 
-    // Re-read the directory using core metadata (extended metadata not needed for diffs)
-    let new_entries = match list_directory_core(&path) {
-        Ok(entries) => entries,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-            // Directory was deleted — notify frontend so it can navigate to a valid parent
-            log::info!("Watcher: Directory deleted, notifying frontend: {}", path.display());
-            if let Some(app) = app_handle {
-                let event = DirectoryDeletedEvent {
-                    listing_id: listing_id.to_string(),
-                    path: path.to_string_lossy().to_string(),
-                };
-                if let Err(emit_err) = app.emit("directory-deleted", &event) {
-                    log::warn!("Watcher: Failed to emit directory-deleted event: {}", emit_err);
+    // Re-read the directory via the Volume trait (works for all volume types).
+    // Falls back to list_directory_core for listings whose volume was unregistered.
+    let new_entries = if let Some(vol) = volume {
+        match vol.list_directory(&path) {
+            Ok(entries) => entries,
+            Err(crate::file_system::VolumeError::NotFound(_)) => {
+                log::info!("Watcher: Directory deleted, notifying frontend: {}", path.display());
+                if let Some(app) = &app_handle {
+                    let event = DirectoryDeletedEvent {
+                        listing_id: listing_id.to_string(),
+                        path: path.to_string_lossy().to_string(),
+                    };
+                    if let Err(emit_err) = app.emit("directory-deleted", &event) {
+                        log::warn!("Watcher: Failed to emit directory-deleted event: {}", emit_err);
+                    }
                 }
+                stop_watching(listing_id);
+                return;
             }
-            stop_watching(listing_id);
-            return;
-        }
-        Err(e) => {
-            // Silently ignore permission denied - user may have revoked access
-            if e.kind() != std::io::ErrorKind::PermissionDenied {
+            Err(crate::file_system::VolumeError::PermissionDenied(_)) => return,
+            Err(e) => {
                 log::warn!("Watcher: Failed to re-read directory: {}", e);
+                return;
             }
-            return;
+        }
+    } else {
+        // Volume unregistered — fall back to std::fs for local paths
+        match list_directory_core(&path) {
+            Ok(entries) => entries,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                log::info!("Watcher: Directory deleted, notifying frontend: {}", path.display());
+                if let Some(app) = &app_handle {
+                    let event = DirectoryDeletedEvent {
+                        listing_id: listing_id.to_string(),
+                        path: path.to_string_lossy().to_string(),
+                    };
+                    if let Err(emit_err) = app.emit("directory-deleted", &event) {
+                        log::warn!("Watcher: Failed to emit directory-deleted event: {}", emit_err);
+                    }
+                }
+                stop_watching(listing_id);
+                return;
+            }
+            Err(e) => {
+                if e.kind() != std::io::ErrorKind::PermissionDenied {
+                    log::warn!("Watcher: Failed to re-read directory: {}", e);
+                }
+                return;
+            }
         }
     };
 
     // Re-sort new_entries by the listing's sort params so compute_diff compares
-    // two lists in the same order (list_directory_core always sorts Name/Asc).
+    // two lists in the same order (list_directory returns entries in Name/Asc).
     // Also enrich with index data so diff entries have recursive_size etc.
     let mut new_entries = new_entries;
     {
@@ -440,19 +452,8 @@ pub fn handle_directory_change(listing_id: &str) {
     update_listing_entries(listing_id, new_entries);
 
     // Increment sequence and get current value
-    let sequence = {
-        let mut manager = match WATCHER_MANAGER.write() {
-            Ok(m) => m,
-            Err(_) => return,
-        };
-
-        let watch = match manager.watches.get_mut(listing_id) {
-            Some(w) => w,
-            None => return,
-        };
-
-        watch.sequence += 1;
-        watch.sequence
+    let Some(sequence) = increment_sequence(listing_id) else {
+        return;
     };
 
     // Emit event to frontend

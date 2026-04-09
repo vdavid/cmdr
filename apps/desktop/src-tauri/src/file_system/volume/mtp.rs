@@ -30,6 +30,8 @@ pub struct MtpVolume {
     storage_id: u32,
     /// Virtual root path for this volume (for example, "/mtp-20-5/65537")
     root: PathBuf,
+    /// Volume ID for listing cache lookups (format: "{device_id}:{storage_id}").
+    volume_id: String,
 }
 
 impl MtpVolume {
@@ -40,11 +42,13 @@ impl MtpVolume {
     /// * `storage_id` - The storage ID within the device
     /// * `name` - Display name for the storage (for example, "Internal shared storage")
     pub fn new(device_id: &str, storage_id: u32, name: &str) -> Self {
+        let volume_id = format!("{}:{}", device_id, storage_id);
         Self {
             name: name.to_string(),
             device_id: device_id.to_string(),
             storage_id,
             root: PathBuf::from(format!("mtp://{}/{}", device_id, storage_id)),
+            volume_id,
         }
     }
 
@@ -238,6 +242,61 @@ impl Volume for MtpVolume {
         false
     }
 
+    fn notify_mutation(&self, _volume_id: &str, parent_path: &Path, mutation: super::MutationEvent) {
+        use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
+
+        // MTP's get_metadata lists the parent dir to find the entry, which is expensive
+        // but correct. The MTP event loop (connection/event_loop.rs) also handles
+        // change notifications, so this is belt-and-suspenders for self-mutations.
+        match mutation {
+            super::MutationEvent::Created(ref name) | super::MutationEvent::Modified(ref name) => {
+                let entry_path = parent_path.join(name);
+                match self.get_metadata(&entry_path) {
+                    Ok(entry) => {
+                        let change = if matches!(mutation, super::MutationEvent::Created(_)) {
+                            DirectoryChange::Added(entry)
+                        } else {
+                            DirectoryChange::Modified(entry)
+                        };
+                        notify_directory_changed(&self.volume_id, parent_path, change);
+                    }
+                    Err(e) => {
+                        debug!(
+                            "MtpVolume::notify_mutation: couldn't stat {}: {}",
+                            entry_path.display(),
+                            e
+                        );
+                    }
+                }
+            }
+            super::MutationEvent::Deleted(name) => {
+                notify_directory_changed(&self.volume_id, parent_path, DirectoryChange::Removed(name));
+            }
+            super::MutationEvent::Renamed { from, to } => {
+                let new_path = parent_path.join(&to);
+                match self.get_metadata(&new_path) {
+                    Ok(entry) => {
+                        notify_directory_changed(
+                            &self.volume_id,
+                            parent_path,
+                            DirectoryChange::Renamed {
+                                old_name: from,
+                                new_entry: entry,
+                            },
+                        );
+                    }
+                    Err(e) => {
+                        debug!(
+                            "MtpVolume::notify_mutation: couldn't stat renamed entry {}: {}",
+                            new_path.display(),
+                            e
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     fn create_directory(&self, path: &Path) -> Result<(), VolumeError> {
         let Some(parent) = path.parent() else {
             return Err(VolumeError::IoError("Cannot create root directory".into()));
@@ -246,7 +305,7 @@ impl Volume for MtpVolume {
             return Err(VolumeError::IoError("Invalid directory name".into()));
         };
 
-        let parent_path = self.to_mtp_path(parent);
+        let parent_mtp_path = self.to_mtp_path(parent);
         let device_id = self.device_id.clone();
         let storage_id = self.storage_id;
         let folder_name = name.to_string();
@@ -256,11 +315,14 @@ impl Volume for MtpVolume {
         handle
             .block_on(async move {
                 connection_manager()
-                    .create_folder(&device_id, storage_id, &parent_path, &folder_name)
+                    .create_folder(&device_id, storage_id, &parent_mtp_path, &folder_name)
                     .await
             })
             .map(|_| ())
-            .map_err(map_mtp_error)
+            .map_err(map_mtp_error)?;
+
+        self.notify_mutation(&self.volume_id, parent, super::MutationEvent::Created(name.to_string()));
+        Ok(())
     }
 
     fn delete(&self, path: &Path) -> Result<(), VolumeError> {
@@ -276,7 +338,16 @@ impl Volume for MtpVolume {
                     .delete_object(&device_id, storage_id, &mtp_path)
                     .await
             })
-            .map_err(map_mtp_error)
+            .map_err(map_mtp_error)?;
+
+        if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
+            self.notify_mutation(
+                &self.volume_id,
+                parent,
+                super::MutationEvent::Deleted(name.to_string_lossy().to_string()),
+            );
+        }
+        Ok(())
     }
 
     fn rename(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
@@ -316,7 +387,19 @@ impl Volume for MtpVolume {
                         .await
                 })
                 .map(|_| ())
-                .map_err(map_mtp_error)
+                .map_err(map_mtp_error)?;
+
+            // Notify listing cache about same-directory rename
+            if let Some(from_parent_path) = from.parent() {
+                self.notify_mutation(
+                    &self.volume_id,
+                    from_parent_path,
+                    super::MutationEvent::Renamed {
+                        from: from_name.to_string(),
+                        to: to_name.to_string(),
+                    },
+                );
+            }
         } else {
             // Different directory — use MTP MoveObject
             let to_parent_str = to_parent.to_string_lossy().to_string();
@@ -352,8 +435,23 @@ impl Volume for MtpVolume {
                     .map_err(map_mtp_error)?;
             }
 
-            Ok(())
+            // Cross-directory move: remove from source dir, add in dest dir
+            if let Some(from_parent_path) = from.parent() {
+                self.notify_mutation(
+                    &self.volume_id,
+                    from_parent_path,
+                    super::MutationEvent::Deleted(from_name.to_string()),
+                );
+            }
+            if let Some(to_parent_path) = to.parent() {
+                self.notify_mutation(
+                    &self.volume_id,
+                    to_parent_path,
+                    super::MutationEvent::Created(to_name.to_string()),
+                );
+            }
         }
+        Ok(())
     }
 
     fn supports_export(&self) -> bool {

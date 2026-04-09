@@ -15,6 +15,18 @@ use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use tokio::sync::mpsc;
 
+/// Describes what mutation occurred, so `notify_mutation` can update the listing cache.
+pub enum MutationEvent {
+    /// A file or directory was created. Contains the entry name.
+    Created(String),
+    /// A file or directory was deleted. Contains the entry name.
+    Deleted(String),
+    /// A file or directory was modified. Contains the entry name.
+    Modified(String),
+    /// A file or directory was renamed within the same parent. Contains old and new names.
+    Renamed { from: String, to: String },
+}
+
 /// Result of scanning a path for copy operation.
 #[derive(Debug, Clone)]
 pub struct CopyScanResult {
@@ -248,6 +260,63 @@ pub trait Volume: Send + Sync {
     fn rename(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
         let _ = (from, to, force);
         Err(VolumeError::NotSupported)
+    }
+
+    // ========================================
+    // Mutation notification
+    // ========================================
+
+    /// Called after a successful mutation to update any active listings showing the parent directory.
+    ///
+    /// Default implementation uses `std::fs` to stat the entry and calls `notify_directory_changed`.
+    /// Non-local volumes (SMB, MTP) override to use their own protocol for metadata.
+    fn notify_mutation(&self, volume_id: &str, parent_path: &Path, mutation: MutationEvent) {
+        use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
+        use crate::file_system::listing::reading::get_single_entry;
+
+        match mutation {
+            MutationEvent::Created(ref name) | MutationEvent::Modified(ref name) => {
+                let entry_path = parent_path.join(name);
+                match get_single_entry(&entry_path) {
+                    Ok(entry) => {
+                        let change = if matches!(mutation, MutationEvent::Created(_)) {
+                            DirectoryChange::Added(entry)
+                        } else {
+                            DirectoryChange::Modified(entry)
+                        };
+                        notify_directory_changed(volume_id, parent_path, change);
+                    }
+                    Err(e) => {
+                        log::warn!("notify_mutation: couldn't stat {}: {}", entry_path.display(), e);
+                    }
+                }
+            }
+            MutationEvent::Deleted(name) => {
+                notify_directory_changed(volume_id, parent_path, DirectoryChange::Removed(name));
+            }
+            MutationEvent::Renamed { from, to } => {
+                let new_path = parent_path.join(&to);
+                match get_single_entry(&new_path) {
+                    Ok(entry) => {
+                        notify_directory_changed(
+                            volume_id,
+                            parent_path,
+                            DirectoryChange::Renamed {
+                                old_name: from,
+                                new_entry: entry,
+                            },
+                        );
+                    }
+                    Err(e) => {
+                        log::warn!(
+                            "notify_mutation: couldn't stat renamed entry {}: {}",
+                            new_path.display(),
+                            e
+                        );
+                    }
+                }
+            }
+        }
     }
 
     // ========================================

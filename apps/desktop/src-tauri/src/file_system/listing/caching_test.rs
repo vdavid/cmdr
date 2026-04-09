@@ -3,8 +3,8 @@
 use std::path::PathBuf;
 
 use super::caching::{
-    CachedListing, LISTING_CACHE, ModifyResult, find_listings_for_path, has_entry, insert_entry_sorted,
-    remove_entry_by_path, update_entry_sorted,
+    CachedListing, LISTING_CACHE, ModifyResult, find_listings_for_path, find_listings_for_path_on_volume, has_entry,
+    insert_entry_sorted, remove_entry_by_path, update_entry_sorted,
 };
 use super::metadata::FileEntry;
 use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
@@ -36,17 +36,30 @@ fn insert_test_listing(
     dir_sort_mode: DirectorySortMode,
     entries: Vec<FileEntry>,
 ) -> String {
+    insert_test_listing_on_volume(id, "root", path, sort_by, sort_order, dir_sort_mode, entries)
+}
+
+fn insert_test_listing_on_volume(
+    id: &str,
+    volume_id: &str,
+    path: &str,
+    sort_by: SortColumn,
+    sort_order: SortOrder,
+    dir_sort_mode: DirectorySortMode,
+    entries: Vec<FileEntry>,
+) -> String {
     let listing_id = id.to_string();
     let mut cache = LISTING_CACHE.write().unwrap();
     cache.insert(
         listing_id.clone(),
         CachedListing {
-            volume_id: "root".to_string(),
+            volume_id: volume_id.to_string(),
             path: PathBuf::from(path),
             entries,
             sort_by,
             sort_order,
             directory_sort_mode: dir_sort_mode,
+            sequence: std::sync::atomic::AtomicU64::new(0),
         },
     );
     listing_id
@@ -445,4 +458,65 @@ fn test_update_entry_sorted_returns_none_for_missing_entry() {
 fn test_update_entry_sorted_returns_none_for_missing_listing() {
     let result = update_entry_sorted("nonexistent_listing", make_entry("test.txt", false, Some(100)));
     assert!(result.is_none());
+}
+
+// ============================================================================
+// find_listings_for_path_on_volume tests
+// ============================================================================
+
+#[test]
+fn test_find_listings_for_path_on_volume_filters_by_volume() {
+    let id1 = insert_test_listing_on_volume(
+        "vol_filter_root",
+        "root",
+        "/shared/dir",
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+        vec![],
+    );
+    let id2 = insert_test_listing_on_volume(
+        "vol_filter_smb",
+        "smb-nas",
+        "/shared/dir",
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+        vec![],
+    );
+
+    // Filter by "root" — only id1
+    let results = find_listings_for_path_on_volume(Some("root"), &PathBuf::from("/shared/dir"));
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0].0, "vol_filter_root");
+
+    // Filter by "smb-nas" — only id2
+    let results = find_listings_for_path_on_volume(Some("smb-nas"), &PathBuf::from("/shared/dir"));
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0].0, "vol_filter_smb");
+
+    // No filter — both
+    let results = find_listings_for_path_on_volume(None, &PathBuf::from("/shared/dir"));
+    assert_eq!(results.len(), 2);
+
+    cleanup_listing(&id1);
+    cleanup_listing(&id2);
+}
+
+#[test]
+fn test_find_listings_for_path_on_volume_no_match() {
+    let id = insert_test_listing_on_volume(
+        "vol_nomatch",
+        "root",
+        "/some/dir",
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+        vec![],
+    );
+
+    let results = find_listings_for_path_on_volume(Some("smb-nas"), &PathBuf::from("/some/dir"));
+    assert!(results.is_empty());
+
+    cleanup_listing(&id);
 }
