@@ -15,11 +15,13 @@ use uuid::Uuid;
 use super::state::WriteOperationState;
 use crate::file_system::volume::{Volume, VolumeError};
 
-/// Checks if a volume is a real local filesystem (not MTP or other virtual volumes).
+/// Checks if a volume is a real local filesystem (not MTP, SMB, or other virtual volumes).
+///
+/// Uses `local_path()` which returns `Some` only for volumes where `std::fs` operations
+/// work directly on the volume's paths. `SmbVolume` returns `None` (ops go through smb2),
+/// `MtpVolume` returns `None` (ops go through USB), `LocalPosixVolume` returns `Some`.
 pub(super) fn is_local_volume(volume: &dyn Volume) -> bool {
-    let root = volume.root();
-    // Local volumes start with "/" but NOT "/mtp-volume/"
-    root.starts_with("/") && !root.starts_with("/mtp-volume/")
+    volume.local_path().is_some()
 }
 
 /// Copies a single path from source volume to destination volume.
