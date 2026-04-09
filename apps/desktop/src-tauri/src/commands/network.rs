@@ -493,16 +493,21 @@ pub(crate) async fn get_keychain_password(
 
 /// Unmounts all SMB shares mounted from a given server.
 /// Returns the list of mount paths that were unmounted.
+/// Uses a 15s timeout because `statfs` on hung mounts can block indefinitely
+/// and `diskutil unmount` may wait for the OS to release the mount.
 #[tauri::command]
 pub async fn disconnect_network_host(
     _host_id: String,
     host_name: String,
     ip_address: Option<String>,
 ) -> Result<Vec<String>, String> {
-    let result =
-        tokio::task::spawn_blocking(move || mount::unmount_smb_shares_from_host(&host_name, ip_address.as_deref()))
-            .await
-            .map_err(|e| format!("Disconnect task failed: {}", e))?;
+    use crate::commands::util::blocking_with_timeout;
+    use std::time::Duration;
+
+    let result = blocking_with_timeout(Duration::from_secs(15), vec![], move || {
+        mount::unmount_smb_shares_from_host(&host_name, ip_address.as_deref())
+    })
+    .await;
 
     Ok(result)
 }

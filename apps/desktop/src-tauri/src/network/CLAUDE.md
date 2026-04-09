@@ -17,7 +17,7 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
   - `smb_types.rs` — Shared types (`ShareInfo`, `AuthMode`, `ShareListError`, etc.)
   - `smb_util.rs` — Helpers: error classification (`classify_error`, `is_auth_error`) and `convert_shares` (maps `smb2::ShareInfo` to Cmdr's `ShareInfo`)
 - **Mounting** (platform-specific via `#[path]` in `mod.rs`):
-  - `mount.rs` — macOS `NetFSMountURLSync` for native `/Volumes/` mounts
+  - `mount.rs` — macOS `NetFSMountURLSync` for native `/Volumes/` mounts; also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
   - `mount_linux.rs` — Linux `gio mount` for GVFS-based user-space mounts
 - **Auth** (platform-specific via `#[path]` in `mod.rs`):
   - `keychain.rs` — macOS Keychain via `security-framework`

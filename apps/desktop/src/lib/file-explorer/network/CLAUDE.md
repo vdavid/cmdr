@@ -77,8 +77,10 @@ Exported for parent: `setCursorIndex(index)`, `findItemIndex(name)`, `handleKeyD
 **F8** on a host row triggers removal for manual hosts (with confirmation dialog) or shows "Can't remove discovered
 hosts" toast for discovered hosts. F8 is ignored on the connect row.
 
-**Right-click** on a manual host shows the "Remove server" confirmation. On a discovered host with stored credentials,
-shows the "Forget saved password" confirmation. Cursor auto-clamps when a host is removed via a `$effect` on
+**Right-click** shows a native OS context menu (via `show_network_host_context_menu` Tauri command). Items: "Disconnect"
+(always), "Forget server" (manual hosts), "Forget saved password" (hosts with stored credentials). The credential status
+is checked via Keychain lookup before showing the menu if it's unknown. Actions arrive asynchronously via
+`network-host-context-action` Tauri event. Cursor auto-clamps when a host is removed via a `$effect` on
 `totalNavigableItems`.
 
 ## `ShareBrowser.svelte`
