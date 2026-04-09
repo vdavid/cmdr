@@ -157,6 +157,10 @@ fn emit_volume_mounted(volume_path: &str) {
     // Register the new volume with VolumeManager so it can be used for file operations
     register_volume_with_manager(volume_path);
 
+    // If it's an SMB mount and direct connections are enabled, try to upgrade
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    try_upgrade_smb_mount(volume_path);
+
     if let Some(app) = APP_HANDLE.get() {
         let payload = VolumeEventPayload {
             volume_path: volume_path.to_string(),
@@ -273,6 +277,36 @@ fn spawn_mount_settle_watcher(volume_path: String) {
         // Give up after 10s — emit anyway as best effort
         debug!("Mount settle: {} timed out after 10s, emitting anyway", volume_path);
         crate::volume_broadcast::emit_volumes_changed();
+    });
+}
+
+/// Tries to upgrade an SMB mount to a direct smb2 connection in the background.
+///
+/// Best-effort: if the upgrade fails, the volume stays as a `LocalPosixVolume`.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+fn try_upgrade_smb_mount(volume_path: &str) {
+    use crate::file_system::is_direct_smb_enabled;
+    use crate::volumes::get_smb_mount_info;
+
+    if !is_direct_smb_enabled() {
+        return;
+    }
+
+    let Some(info) = get_smb_mount_info(volume_path) else {
+        return; // Not an SMB mount
+    };
+
+    let mount_path = volume_path.to_string();
+    tokio::spawn(async move {
+        let hostname = crate::commands::network::resolve_ip_to_hostname(&info.server);
+        let creds =
+            crate::commands::network::get_keychain_password(&info.server, hostname.as_deref(), &info.share).await;
+        let (username, password) = match &creds {
+            Some((u, p)) => (Some(u.as_str()), Some(p.as_str())),
+            None => (None, None),
+        };
+        crate::commands::network::register_smb_volume(&info.server, &info.share, &mount_path, username, password, 445)
+            .await;
     });
 }
 

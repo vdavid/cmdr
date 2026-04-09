@@ -1,6 +1,7 @@
 <script lang="ts">
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
+    import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingSelect from '../components/SettingSelect.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
     import SettingNumberInput from '../components/SettingNumberInput.svelte'
@@ -16,11 +17,23 @@
     const shouldShow = $derived(createShouldShow(searchQuery))
 
     const defaultDef = { label: '', description: '' }
+    const directSmbDef = getSettingDefinition('network.directSmbConnection') ?? defaultDef
     const cacheDurationDef = getSettingDefinition('network.shareCacheDuration') ?? defaultDef
     const timeoutModeDef = getSettingDefinition('network.timeoutMode') ?? defaultDef
 </script>
 
 <SettingsSection title="SMB/Network shares">
+    {#if shouldShow('network.directSmbConnection')}
+        <SettingRow
+            id="network.directSmbConnection"
+            label={directSmbDef.label}
+            description={directSmbDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="network.directSmbConnection" />
+        </SettingRow>
+    {/if}
+
     {#if shouldShow('network.shareCacheDuration')}
         <SettingRow
             id="network.shareCacheDuration"

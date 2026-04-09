@@ -353,6 +353,13 @@ pub fn run() {
             // Load persisted settings to initialize menu with correct state
             let saved_settings = settings::load_settings(app.handle());
 
+            // Apply direct SMB connection setting (default: true)
+            file_system::set_direct_smb_enabled(saved_settings.direct_smb_connection.unwrap_or(true));
+
+            // Upgrade existing SMB mounts to direct smb2 connections (background, non-blocking)
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            file_system::upgrade_existing_smb_mounts();
+
             // Check if there's an existing license (for menu text)
             let has_existing_license = licensing::get_license_info(app.handle()).is_some();
 

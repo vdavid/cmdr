@@ -323,7 +323,7 @@ pub async fn mount_network_share(
 ///
 /// Best-effort: logs a warning and returns quietly on failure. The FSEvents
 /// watcher will register a `LocalPosixVolume` as fallback.
-async fn register_smb_volume(
+pub(crate) async fn register_smb_volume(
     server: &str,
     share: &str,
     mount_path: &str,
@@ -419,9 +419,10 @@ pub async fn upgrade_to_smb_volume(volume_id: String) -> Result<String, String> 
 
     // Check if it worked
     if let Some(vol) = manager.get(&volume_id)
-        && vol.smb_connection_state().is_some() {
-            return Ok("direct".to_string());
-        }
+        && vol.smb_connection_state().is_some()
+    {
+        return Ok("direct".to_string());
+    }
 
     Err(format!(
         "Failed to establish direct smb2 connection to {}/{}",
@@ -432,7 +433,7 @@ pub async fn upgrade_to_smb_volume(volume_id: String) -> Result<String, String> 
 /// Looks up the mDNS hostname for an IP address from discovered hosts.
 ///
 /// Returns the hostname (like "naspolya") without `.local` suffix.
-fn resolve_ip_to_hostname(ip: &str) -> Option<String> {
+pub(crate) fn resolve_ip_to_hostname(ip: &str) -> Option<String> {
     let hosts = get_discovered_hosts();
     for host in &hosts {
         if host.ip_address.as_deref() == Some(ip) {
@@ -447,7 +448,7 @@ fn resolve_ip_to_hostname(ip: &str) -> Option<String> {
 ///
 /// Tries multiple keys: by IP (from statfs), by hostname (from mDNS discovery),
 /// at both share-level and server-level.
-async fn get_keychain_password(
+pub(crate) async fn get_keychain_password(
     server_ip: &str,
     hostname: Option<&str>,
     share: &str,
@@ -479,12 +480,7 @@ async fn get_keychain_password(
             }
         }
 
-        log::debug!(
-            "No Keychain credentials for {:?} / {} / {}",
-            hostname,
-            server_ip,
-            share
-        );
+        log::debug!("No Keychain credentials for {:?} / {} / {}", hostname, server_ip, share);
         None
     })
     .await

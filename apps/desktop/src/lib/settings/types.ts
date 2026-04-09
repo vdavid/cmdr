@@ -109,6 +109,7 @@ export interface SettingsValues {
   'updates.crashReports': boolean
 
   // Network
+  'network.directSmbConnection': boolean
   'network.shareCacheDuration': number
   'network.timeoutMode': NetworkTimeoutMode
   'network.customTimeout': number

@@ -49,6 +49,8 @@ pub struct Settings {
     #[serde(alias = "developer.verboseLogging", default)]
     #[allow(dead_code, reason = "Included in crash reports for feature correlation")]
     pub verbose_logging: Option<bool>,
+    #[serde(alias = "network.directSmbConnection", default)]
+    pub direct_smb_connection: Option<bool>,
 }
 
 fn default_show_hidden() -> bool {
@@ -66,6 +68,7 @@ impl Default for Settings {
             crash_reports_enabled: None,
             ai_provider: None,
             verbose_logging: None,
+            direct_smb_connection: None,
         }
     }
 }
@@ -112,6 +115,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let crash_reports_enabled = json.get("updates.crashReports").and_then(|v| v.as_bool());
     let ai_provider = json.get("ai.provider").and_then(|v| v.as_str()).map(String::from);
     let verbose_logging = json.get("developer.verboseLogging").and_then(|v| v.as_bool());
+    let direct_smb_connection = json.get("network.directSmbConnection").and_then(|v| v.as_bool());
 
     Ok(Settings {
         show_hidden_files,
@@ -122,5 +126,6 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         crash_reports_enabled,
         ai_provider,
         verbose_logging,
+        direct_smb_connection,
     })
 }

@@ -18,6 +18,7 @@ pub mod volume;
 pub(crate) mod watcher;
 pub(crate) mod write_operations;
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock};
 
 // Re-export public types from the listing module
@@ -65,6 +66,20 @@ pub use write_operations::{
 
 /// Global volume manager instance
 static VOLUME_MANAGER: LazyLock<VolumeManager> = LazyLock::new(VolumeManager::new);
+
+/// Whether to auto-upgrade SMB mounts to direct smb2 connections.
+/// Set from the `network.directSmbConnection` setting at startup.
+static DIRECT_SMB_ENABLED: AtomicBool = AtomicBool::new(true);
+
+/// Sets the direct SMB connection preference. Call from app setup after loading settings.
+pub fn set_direct_smb_enabled(enabled: bool) {
+    DIRECT_SMB_ENABLED.store(enabled, Ordering::Relaxed);
+}
+
+/// Returns whether direct SMB connection is enabled.
+pub fn is_direct_smb_enabled() -> bool {
+    DIRECT_SMB_ENABLED.load(Ordering::Relaxed)
+}
 
 /// Initializes the global volume manager with all discovered volumes.
 ///
@@ -124,6 +139,113 @@ pub fn init_volume_manager() {
 /// Returns a reference to the global volume manager.
 pub fn get_volume_manager() -> &'static VolumeManager {
     &VOLUME_MANAGER
+}
+
+/// Upgrades all existing SMB mounts to direct smb2 connections (background task).
+///
+/// Scans all registered volumes, finds those on `smbfs`, and tries to establish
+/// a parallel smb2 session for each. Non-blocking: failures are logged and skipped.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub fn upgrade_existing_smb_mounts() {
+    if !is_direct_smb_enabled() {
+        log::debug!("Direct SMB connections disabled, skipping startup upgrade");
+        return;
+    }
+
+    // Collect SMB volume paths to upgrade (don't hold the manager lock during async work)
+    let volumes_to_upgrade: Vec<(String, String)> = {
+        let all_volumes = VOLUME_MANAGER.list_volumes();
+        all_volumes
+            .into_iter()
+            .map(|(id, _name)| id)
+            .filter_map(|id| {
+                let vol = VOLUME_MANAGER.get(&id)?;
+                // Skip volumes that are already SmbVolume
+                if vol.smb_connection_state().is_some() {
+                    return None;
+                }
+                let path = vol.root().to_string_lossy().to_string();
+                // Check if it's an SMB mount
+                let info = crate::volumes::get_smb_mount_info(&path)?;
+                let _ = info; // We just need to know it's SMB
+                Some((id, path))
+            })
+            .collect()
+    };
+
+    if volumes_to_upgrade.is_empty() {
+        log::debug!("No SMB mounts to upgrade at startup");
+        return;
+    }
+
+    log::info!(
+        "Found {} SMB mount(s) to upgrade to direct connections",
+        volumes_to_upgrade.len()
+    );
+
+    // Use tauri's runtime spawn — this runs during setup() before Tokio is fully available.
+    // Wait for mDNS discovery to reach Active state (initial burst complete) so hostname
+    // resolution is available for Keychain lookup.
+    tauri::async_runtime::spawn(async move {
+        wait_for_mdns_ready().await;
+
+        let mut any_upgraded = false;
+        for (_volume_id, mount_path) in volumes_to_upgrade {
+            let info = match crate::volumes::get_smb_mount_info(&mount_path) {
+                Some(info) => info,
+                None => continue,
+            };
+
+            // Resolve hostname from mDNS for Keychain lookup
+            let hostname = crate::commands::network::resolve_ip_to_hostname(&info.server);
+
+            // Try Keychain creds
+            let creds =
+                crate::commands::network::get_keychain_password(&info.server, hostname.as_deref(), &info.share).await;
+
+            let (username, password) = match &creds {
+                Some((u, p)) => (Some(u.as_str()), Some(p.as_str())),
+                None => (None, None),
+            };
+
+            crate::commands::network::register_smb_volume(
+                &info.server,
+                &info.share,
+                &mount_path,
+                username,
+                password,
+                445,
+            )
+            .await;
+            any_upgraded = true;
+        }
+
+        // Notify frontend to refresh volume list so indicators update from yellow to green
+        if any_upgraded {
+            crate::volume_broadcast::emit_volumes_changed();
+        }
+    });
+}
+
+/// Waits until mDNS discovery reaches the `Active` state (initial burst complete).
+///
+/// Polls every 500ms for up to 15 seconds. If discovery never reaches Active,
+/// proceeds anyway — the upgrade will try without hostname resolution and may
+/// fall back to guest access.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+async fn wait_for_mdns_ready() {
+    use crate::network::{DiscoveryState, get_discovery_state_value};
+
+    for _ in 0..30 {
+        match get_discovery_state_value() {
+            DiscoveryState::Active => {
+                log::debug!("mDNS discovery is Active, proceeding with SMB upgrades");
+                return;
+            }
+            _ => tokio::time::sleep(std::time::Duration::from_millis(500)).await,
+        }
+    }
+    log::debug!("mDNS discovery didn't reach Active within 15s, proceeding anyway");
 }
 
 #[cfg(test)]

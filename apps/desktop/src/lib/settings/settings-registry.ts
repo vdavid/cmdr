@@ -250,6 +250,17 @@ export const settingsRegistry: SettingDefinition[] = [
   // Network › SMB/Network shares
   // ========================================================================
   {
+    id: 'network.directSmbConnection',
+    section: ['Network', 'SMB/Network shares'],
+    label: 'Connect directly to SMB shares',
+    description:
+      'When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for Finder and other apps.',
+    keywords: ['smb', 'direct', 'fast', 'connection', 'network', 'performance', 'smb2'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
     id: 'network.shareCacheDuration',
     section: ['Network', 'SMB/Network shares'],
     label: 'Share cache duration',
