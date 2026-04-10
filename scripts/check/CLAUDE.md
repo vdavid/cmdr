@@ -284,6 +284,11 @@ vCPUs exceeds this. The 8 GB RAM also causes swap pressure when Rust and Node ru
 V8 snapshot that crashes on freestyle's x86 Linux VMs. We install pnpm via `npm install -g pnpm@10` instead, configured
 via `[settings] disable_tools = ["pnpm"]` in `/root/.config/mise/config.toml`.
 
+## Gotchas
+
+**`--only-slow` needs ~20 min timeout.** Slow checks (E2E tests, eslint-typecheck) take significantly longer than the
+default checks. When running `--only-slow` via an agent or CI, set the timeout to at least 20 minutes (1,200,000 ms).
+
 ## Dependencies
 
 `golang.org/x/term`, `golang.org/x/sys` (transitive). Go 1.25.

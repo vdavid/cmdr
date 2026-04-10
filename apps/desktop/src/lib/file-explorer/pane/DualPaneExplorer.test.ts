@@ -103,6 +103,7 @@ vi.mock('$lib/tauri-commands', () => ({
   updatePaneTabs: vi.fn().mockResolvedValue(undefined),
   updatePinTabMenu: vi.fn().mockResolvedValue(undefined),
   showTabContextMenu: vi.fn().mockResolvedValue(null),
+  syncViewModeMenu: vi.fn().mockResolvedValue(undefined),
 }))
 
 // Mock settings-store to avoid Tauri event API dependency in tests

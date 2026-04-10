@@ -183,7 +183,7 @@
                 closeSubmenu()
                 return true
             case 'Enter':
-                handleSubmenuAction()
+                void handleSubmenuAction()
                 return true
             case 'Escape':
                 closeSubmenu()
@@ -373,7 +373,7 @@
             requestVolumeRefresh()
         } catch (e) {
             dismissToast(connectingToastId)
-            addToast(`Direct connection failed: ${e}`, { level: 'error' })
+            addToast(`Direct connection failed: ${String(e)}`, { level: 'error' })
         }
     }
 
@@ -461,7 +461,7 @@
                     class="breadcrumb-popup-item"
                     onclick={(e: MouseEvent) => {
                         e.stopPropagation()
-                        handleSubmenuAction(currentVolume?.id)
+                        void handleSubmenuAction(currentVolume.id)
                     }}
                 >
                     Connect directly for faster access
@@ -554,7 +554,7 @@
                                 }}
                                 onclick={(e: MouseEvent) => {
                                     e.stopPropagation()
-                                    handleSubmenuAction()
+                                    void handleSubmenuAction()
                                 }}
                             >
                                 Connect directly for faster access

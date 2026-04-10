@@ -194,6 +194,7 @@
             // Listen for MTP device connections and show info toast
             mtpConnectedUnlistenPromise = onMtpDeviceConnected((event) => {
                 if (!getSetting('fileOperations.mtpConnectionWarning')) return
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
                 setLastConnectedDeviceName(event.deviceName || 'MTP device')
                 addToast(MtpConnectedToastContent, {
                     id: 'mtp-connected',
