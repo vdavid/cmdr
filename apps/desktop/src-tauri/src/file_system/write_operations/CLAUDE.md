@@ -188,6 +188,11 @@ permissions. The only metadata it doesn't preserve is birthtime (creation date) 
 matter only on same-volume copies where we use `copyfile` anyway. Detection uses `st_dev` (device ID) for same-volume
 and `statfs.f_fstypename` for APFS. See `copy_strategy.rs` for the implementation.
 
+## Gotchas
+
+**Gotcha**: On macOS, never use `statvfs` alone for disk space checks — use `NSURLVolumeAvailableCapacityForImportantUsageKey`
+**Why**: `statvfs` reports only physically free blocks. On APFS, purgeable space (iCloud caches, APFS snapshots) can account for tens of GB that macOS will reclaim on demand. Using `statvfs` causes the "insufficient space" error to reject copies that would actually succeed, and shows a different available-space number than the status bar (which uses the NSURL API). `validate_disk_space` in `helpers.rs` calls `crate::volumes::get_volume_space()` on macOS and falls back to `statvfs` on Linux.
+
 ## Dependencies
 
 - `crate::file_system::volume` — `Volume` trait, `SpaceInfo`, `ScanConflict` (used by `volume_copy`)

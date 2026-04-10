@@ -113,37 +113,19 @@ pub(crate) fn validate_destination_writable(_destination: &Path) -> Result<(), W
 }
 
 /// Checks available disk space on the destination volume against required bytes.
-/// Uses statvfs on Unix to query free space.
+///
+/// On macOS, uses `NSURLVolumeAvailableCapacityForImportantUsageKey` which includes purgeable
+/// space (APFS snapshots, iCloud caches) — matching what Finder reports. Falls back to `statvfs`
+/// if the NSURL query fails. On Linux, uses `statvfs` directly (no purgeable space concept).
 #[cfg(unix)]
 pub(crate) fn validate_disk_space(destination: &Path, required_bytes: u64) -> Result<(), WriteOperationError> {
-    use std::ffi::CString;
-    use std::mem::MaybeUninit;
-    use std::os::unix::ffi::OsStrExt;
-
-    let c_path = CString::new(destination.as_os_str().as_bytes()).map_err(|_| WriteOperationError::IoError {
-        path: destination.display().to_string(),
-        message: "Invalid path".to_string(),
-    })?;
-
-    let mut stat = MaybeUninit::<libc::statvfs>::uninit();
-    // SAFETY: c_path is a valid null-terminated C string, stat is a valid pointer
-    let result = unsafe { libc::statvfs(c_path.as_ptr(), stat.as_mut_ptr()) };
-    if result != 0 {
-        // Cannot determine space — continue and let the OS report ENOSPC if it happens
-        return Ok(());
-    }
-
-    // SAFETY: statvfs succeeded, stat is initialized
-    let stat = unsafe { stat.assume_init() };
-    // These casts are needed on macOS where f_bavail/f_frsize may not be u64
-    #[allow(
-        clippy::unnecessary_cast,
-        reason = "Required for macOS where statvfs fields are not u64"
-    )]
-    let available = stat.f_bavail as u64 * stat.f_frsize as u64;
+    let available = get_available_space(destination).unwrap_or({
+        // Cannot determine space — return u64::MAX so the check passes and we let the OS
+        // report ENOSPC if it actually happens during the copy.
+        u64::MAX
+    });
 
     if required_bytes > available {
-        // Determine volume name from mount point for a friendlier message
         let volume_name = destination
             .ancestors()
             .find(|p| p.parent().is_some_and(|pp| pp == Path::new("/Volumes")))
@@ -158,6 +140,48 @@ pub(crate) fn validate_disk_space(destination: &Path, required_bytes: u64) -> Re
     }
 
     Ok(())
+}
+
+/// Returns available bytes for a path, using the best API for the platform.
+///
+/// macOS: `NSURLVolumeAvailableCapacityForImportantUsageKey` (includes purgeable space).
+/// Linux: `statvfs` `f_bavail * f_frsize`.
+#[cfg(unix)]
+fn get_available_space(path: &Path) -> Option<u64> {
+    // On macOS, prefer the NSURL API that accounts for purgeable space.
+    #[cfg(target_os = "macos")]
+    {
+        if let Some(space) = crate::volumes::get_volume_space(&path.to_string_lossy()) {
+            return Some(space.available_bytes);
+        }
+    }
+
+    // Fallback (and Linux primary path): statvfs
+    get_available_space_statvfs(path)
+}
+
+/// Returns available bytes using `statvfs`. Used as the primary method on Linux and as a
+/// fallback on macOS.
+#[cfg(unix)]
+fn get_available_space_statvfs(path: &Path) -> Option<u64> {
+    use std::ffi::CString;
+    use std::mem::MaybeUninit;
+    use std::os::unix::ffi::OsStrExt;
+
+    let c_path = CString::new(path.as_os_str().as_bytes()).ok()?;
+    let mut stat = MaybeUninit::<libc::statvfs>::uninit();
+    // SAFETY: c_path is a valid null-terminated C string, stat is a valid pointer
+    let result = unsafe { libc::statvfs(c_path.as_ptr(), stat.as_mut_ptr()) };
+    if result != 0 {
+        return None;
+    }
+    // SAFETY: statvfs succeeded, stat is initialized
+    let stat = unsafe { stat.assume_init() };
+    #[allow(
+        clippy::unnecessary_cast,
+        reason = "Required for macOS where statvfs fields are not u64"
+    )]
+    Some(stat.f_bavail as u64 * stat.f_frsize as u64)
 }
 
 #[cfg(not(unix))]

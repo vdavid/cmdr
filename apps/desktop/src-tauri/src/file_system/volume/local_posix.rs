@@ -319,8 +319,33 @@ fn copy_recursive(source: &Path, dest: &Path) -> Result<u64, VolumeError> {
     Ok(total_bytes)
 }
 
-/// Gets space information for a path using statvfs.
+/// Gets space information for a path.
+///
+/// On macOS, uses `NSURLVolumeAvailableCapacityForImportantUsageKey` which includes purgeable
+/// space (APFS snapshots, iCloud caches) — matching what Finder reports. Falls back to `statvfs`
+/// if the NSURL query fails. On Linux, uses `statvfs` directly (no purgeable space concept).
 fn get_space_info_for_path(path: &Path) -> Result<SpaceInfo, VolumeError> {
+    // On macOS, prefer the NSURL API that accounts for purgeable space.
+    #[cfg(target_os = "macos")]
+    {
+        if let Some(space) = crate::volumes::get_volume_space(&path.to_string_lossy()) {
+            // NSURL doesn't give us used_bytes directly, compute from total - available.
+            let used_bytes = space.total_bytes.saturating_sub(space.available_bytes);
+            return Ok(SpaceInfo {
+                total_bytes: space.total_bytes,
+                available_bytes: space.available_bytes,
+                used_bytes,
+            });
+        }
+    }
+
+    // Fallback (and Linux primary path): statvfs
+    get_space_info_statvfs(path)
+}
+
+/// Gets space information using `statvfs`. Used as the primary method on Linux and as a
+/// fallback on macOS.
+fn get_space_info_statvfs(path: &Path) -> Result<SpaceInfo, VolumeError> {
     use std::ffi::CString;
 
     let path_c = CString::new(path.to_string_lossy().as_bytes()).map_err(|e| VolumeError::IoError(e.to_string()))?;
