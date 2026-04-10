@@ -5,6 +5,32 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.1] - 2026-04-10
+
+### Added
+
+- Striped rows setting — alternating row shading in Full and Brief view modes, auto-adapts to light/dark mode
+  ([faa2534](https://github.com/vdavid/cmdr/commit/faa2534))
+- MTP per-file copy progress and mid-file cancellation — progress callback on every USB chunk, instant cancel via USB
+  SIC abort (~300ms instead of draining the full stream)
+  ([ac5ec4d](https://github.com/vdavid/cmdr/commit/ac5ec4d),
+  [a66adf6](https://github.com/vdavid/cmdr/commit/a66adf6))
+
+### Fixed
+
+- View menu Full/Brief checkmarks now sync when switching panes
+  ([6e36a49](https://github.com/vdavid/cmdr/commit/6e36a49))
+- MTP: export files directly instead of guess-and-fallback, eliminating `ObjectNotFound` error log spam on every copy
+  ([0cc675a](https://github.com/vdavid/cmdr/commit/0cc675a))
+- MTP: fix mid-stream cancel corrupting USB session and making device unresponsive — bump `mtp-rs` to 0.11.0
+  ([a66adf6](https://github.com/vdavid/cmdr/commit/a66adf6))
+- A11y: darken `--color-accent-text` for WCAG AA compliance, fix search input placeholder opacity
+  ([b7744dd](https://github.com/vdavid/cmdr/commit/b7744dd))
+- Fix lint errors in `VolumeBreadcrumb`, `TransferDialog`, `+layout.svelte`
+  ([90b5ea0](https://github.com/vdavid/cmdr/commit/90b5ea0))
+- Fix Linux compilation — move shared SMB types to cross-platform module, add `get_smb_mount_info` for Linux
+  ([00c5f18](https://github.com/vdavid/cmdr/commit/00c5f18))
+
 ## [0.11.0] - 2026-04-10
 
 ### Added
