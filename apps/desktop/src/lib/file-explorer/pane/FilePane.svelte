@@ -708,6 +708,24 @@
         pendingLoadReject = null
     }
 
+    /**
+     * Navigates to a fallback path after the current path became invalid.
+     * If the resolved path is outside the current volume (~ or /), switches
+     * to the root volume instead of trying to list it on a non-root volume.
+     */
+    function navigateToFallback(validPath: string | null) {
+        const target = validPath ?? '~'
+        const isOutsideVolume = volumeId !== 'root' && (target === '~' || target === '/')
+        if (isOutsideVolume && onVolumeChange) {
+            // The volume root was unreachable — switch to the root volume
+            log.info('Volume root unreachable, switching to root volume with path: {target}', { target })
+            onVolumeChange('root', '/', target)
+        } else {
+            currentPath = target
+            void loadDirectory(target)
+        }
+    }
+
     async function loadDirectory(path: string, selectName?: string) {
         // Cancel any active rename when navigating
         rename.cancel()
@@ -826,10 +844,8 @@
                                 log.info('Listing error for deleted path, navigating to valid parent: {path}', {
                                     path: loadPath,
                                 })
-                                void resolveValidPath(loadPath).then((validPath) => {
-                                    const target = validPath ?? volumePath
-                                    currentPath = target
-                                    void loadDirectory(target)
+                                void resolveValidPath(loadPath, { volumeRoot: volumePath }).then((validPath) => {
+                                    navigateToFallback(validPath)
                                 })
                             } else {
                                 // Path exists but has another error (permission denied, etc.)
@@ -1496,11 +1512,8 @@
                 path: event.payload.path,
             })
 
-            void resolveValidPath(currentPath).then((validPath) => {
-                const target = validPath ?? volumePath
-                currentPath = target
-                // loadDirectory handles onPathChange via handleListingComplete
-                void loadDirectory(target)
+            void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
+                navigateToFallback(validPath)
             })
         })
 
@@ -1635,20 +1648,16 @@
                             'Directory {dir} no longer exists, navigating to nearest valid parent under {volume}',
                             { dir: currentPath, volume: volumePath },
                         )
-                        void resolveValidPath(currentPath).then((validPath) => {
-                            const target = validPath ?? volumePath
-                            currentPath = target
-                            void loadDirectory(target)
+                        void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
+                            navigateToFallback(validPath)
                         })
                     })
                 } else {
                     log.info('Directory {dir} no longer exists, navigating to nearest valid parent', {
                         dir: currentPath,
                     })
-                    void resolveValidPath(currentPath).then((validPath) => {
-                        const target = validPath ?? volumePath
-                        currentPath = target
-                        void loadDirectory(target)
+                    void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
+                        navigateToFallback(validPath)
                     })
                 }
             })

@@ -619,8 +619,15 @@
 
             // Edge case: tab opened directly at this path, no history. Walk up to nearest valid parent.
             const parentPath = entry.path.substring(0, Math.max(1, entry.path.lastIndexOf('/')))
-            void resolveValidPath(parentPath).then((validPath) => {
+            const volumeRoot = volumes.find((v) => v.id === entry.volumeId)?.path
+            void resolveValidPath(parentPath, { volumeRoot }).then((validPath) => {
                 const target = validPath ?? '~'
+                const isOutsideVolume = entry.volumeId !== 'root' && (target === '~' || target === '/')
+                if (isOutsideVolume) {
+                    // Volume root unreachable — switch to root volume
+                    setPaneVolumeId(pane, 'root')
+                    saveAppStatus({ [paneKey(pane, 'volumeId')]: 'root' })
+                }
                 setPanePath(pane, target)
                 saveAppStatus({ [paneKey(pane, 'path')]: target })
                 saveTabsForPaneSide(pane)

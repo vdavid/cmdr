@@ -37,6 +37,7 @@
         SortOrder,
         ConflictResolution,
     } from '$lib/file-explorer/types'
+    import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { formatDate } from '$lib/file-explorer/selection/selection-info-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { getSetting } from '$lib/settings'
@@ -123,6 +124,10 @@
     const isDeleteOrTrash = $derived(operationType === 'delete' || operationType === 'trash')
     const isCopy = $derived(operationType === 'copy')
     const isMove = $derived(operationType === 'move')
+    const volumes = $derived(getVolumes())
+    const destUsesNativeSmb = $derived(
+        volumes.find((v) => v.id === destVolumeId)?.smbConnectionState === 'os_mount',
+    )
 
     /** Whether this move involves a non-local volume (MTP, etc.) — backend handles all strategy. */
     const isVolumeMove = $derived(
@@ -947,6 +952,12 @@
             </div>
         {/if}
 
+        {#if destUsesNativeSmb}
+            <p class="smb-native-note">
+                This share uses the system connection. Cancel and rollback may be delayed.
+            </p>
+        {/if}
+
         <!-- Action buttons -->
         <div class="button-row">
             <Button variant="secondary" onclick={() => handleCancel(false)} disabled={isCancelling}>Cancel</Button>
@@ -1123,6 +1134,16 @@
     }
 
     /* Buttons */
+    .smb-native-note {
+        margin: 0 var(--spacing-xl);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: var(--font-size-xs);
+        color: var(--color-warning);
+        background: var(--color-warning-bg);
+        border-radius: var(--radius-sm);
+        text-align: center;
+    }
+
     .button-row {
         display: flex;
         gap: var(--spacing-md);

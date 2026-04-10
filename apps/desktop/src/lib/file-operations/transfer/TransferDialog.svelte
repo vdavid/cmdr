@@ -419,6 +419,13 @@
         {/if}
     </div>
 
+    {#if selectedVolume?.smbConnectionState === 'os_mount'}
+        <p class="smb-native-note">
+            This share uses the system connection. Cancellation may be delayed.
+            Use "Connect directly" in the volume picker for faster transfers and reliable cancel.
+        </p>
+    {/if}
+
     <!-- Path input -->
     <div class="path-input-group">
         <input
@@ -565,6 +572,15 @@
         margin: var(--spacing-sm) 0 0;
         font-size: var(--font-size-sm);
         color: var(--color-error);
+    }
+
+    .smb-native-note {
+        margin: 0;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: var(--font-size-xs);
+        color: var(--color-warning);
+        background: var(--color-warning-bg);
+        border-radius: var(--radius-sm);
     }
 
     .button-row {
