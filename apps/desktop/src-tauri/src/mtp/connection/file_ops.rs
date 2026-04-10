@@ -137,10 +137,8 @@ impl MtpConnectionManager {
                 message: format!("Failed to create local file: {}", e),
             })?;
 
-        // Write chunks to file (must complete before releasing device lock).
-        // MTP USB transfers must be fully consumed — breaking mid-stream corrupts
-        // the session and makes the device unresponsive for subsequent operations.
-        // On cancel: stop writing to disk, but keep draining the USB stream.
+        // Write chunks to file, checking for cancellation between chunks.
+        // On cancel: use mtp-rs's USB SIC cancel to abort the transfer cleanly (~300ms).
         let mut bytes_written = 0u64;
         let mut cancelled = false;
         while let Some(chunk_result) = download.next_chunk().await {
@@ -149,26 +147,29 @@ impl MtpConnectionManager {
                 message: format!("Download error: {}", e),
             })?;
 
-            if !cancelled {
-                file.write_all(&chunk).await.map_err(|e| MtpConnectionError::Other {
-                    device_id: device_id.to_string(),
-                    message: format!("Failed to write local file: {}", e),
-                })?;
+            file.write_all(&chunk).await.map_err(|e| MtpConnectionError::Other {
+                device_id: device_id.to_string(),
+                message: format!("Failed to write local file: {}", e),
+            })?;
 
-                bytes_written += chunk.len() as u64;
+            bytes_written += chunk.len() as u64;
 
-                // Report progress and check for cancellation
-                if let Some(ref cb) = on_progress
-                    && cb(bytes_written, total_size).is_break()
-                {
-                    cancelled = true;
-                    // Don't break — keep draining the USB stream to keep the session healthy
-                }
+            // Report progress and check for cancellation
+            if let Some(ref cb) = on_progress
+                && cb(bytes_written, total_size).is_break()
+            {
+                cancelled = true;
+                break;
             }
-            // else: cancelled, just drain remaining chunks without writing
         }
 
-        // Release device lock after download completes
+        // On cancellation, abort the USB transfer cleanly before releasing the lock
+        if cancelled {
+            let _ = download.cancel(mtp_rs::DEFAULT_CANCEL_TIMEOUT).await;
+        }
+
+        // Release device lock after download completes (or is cancelled)
+        drop(download);
         drop(storage);
         drop(device);
 
