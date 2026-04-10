@@ -34,6 +34,25 @@ impl MtpConnectionManager {
         app: Option<&AppHandle>,
         operation_id: &str,
     ) -> Result<MtpOperationResult, MtpConnectionError> {
+        self.download_file_with_progress(device_id, storage_id, object_path, local_dest, app, operation_id, None)
+            .await
+    }
+
+    /// Downloads a file from the MTP device to a local path, with optional progress/cancellation callback.
+    ///
+    /// The `on_progress` callback receives `(bytes_done, bytes_total)` and returns `ControlFlow::Break(())`
+    /// to cancel the transfer. On cancellation, the partial file is removed.
+    #[allow(clippy::too_many_arguments, reason = "mirrors download_file with added on_progress callback")]
+    pub async fn download_file_with_progress(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        object_path: &str,
+        local_dest: &Path,
+        app: Option<&AppHandle>,
+        operation_id: &str,
+        on_progress: Option<&(dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Send + Sync)>,
+    ) -> Result<MtpOperationResult, MtpConnectionError> {
         debug!(
             "MTP download_file: device={}, storage={}, path={}, dest={}",
             device_id,
@@ -117,6 +136,7 @@ impl MtpConnectionManager {
 
         // Write chunks to file (must complete before releasing device lock)
         let mut bytes_written = 0u64;
+        let mut cancelled = false;
         while let Some(chunk_result) = download.next_chunk().await {
             let chunk = chunk_result.map_err(|e| MtpConnectionError::Other {
                 device_id: device_id.to_string(),
@@ -129,11 +149,28 @@ impl MtpConnectionManager {
             })?;
 
             bytes_written += chunk.len() as u64;
+
+            // Report progress and check for cancellation
+            if let Some(ref cb) = on_progress
+                && cb(bytes_written, total_size).is_break() {
+                    cancelled = true;
+                    break;
+                }
         }
 
         // Release device lock after download completes
         drop(storage);
         drop(device);
+
+        // On cancellation, clean up the partial file
+        if cancelled {
+            drop(file);
+            let _ = tokio::fs::remove_file(local_dest).await;
+            return Err(MtpConnectionError::Cancelled {
+                device_id: device_id.to_string(),
+                message: "Download cancelled".to_string(),
+            });
+        }
 
         file.flush().await.map_err(|e| MtpConnectionError::Other {
             device_id: device_id.to_string(),

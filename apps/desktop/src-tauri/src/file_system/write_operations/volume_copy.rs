@@ -1337,6 +1337,9 @@ pub(super) fn map_volume_error(context_path: &str, e: VolumeError) -> WriteOpera
         VolumeError::ConnectionTimeout(_) => WriteOperationError::ConnectionInterrupted {
             path: context_path.to_string(),
         },
+        VolumeError::Cancelled(_) => WriteOperationError::Cancelled {
+            message: "Operation cancelled by user".to_string(),
+        },
         VolumeError::IoError(msg) => WriteOperationError::IoError {
             path: context_path.to_string(),
             message: msg,

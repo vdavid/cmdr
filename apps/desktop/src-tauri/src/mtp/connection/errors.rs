@@ -40,6 +40,10 @@ pub enum MtpConnectionError {
     PermissionDenied {
         device_id: String,
     },
+    Cancelled {
+        device_id: String,
+        message: String,
+    },
     ObjectNotFound {
         device_id: String,
         path: String,
@@ -89,6 +93,9 @@ impl std::fmt::Display for MtpConnectionError {
             }
             Self::PermissionDenied { device_id } => {
                 write!(f, "Permission denied for device: {device_id}")
+            }
+            Self::Cancelled { device_id, message } => {
+                write!(f, "Cancelled on {device_id}: {message}")
             }
             Self::ObjectNotFound { device_id, path } => {
                 write!(f, "Object not found on {device_id}: {path}")
@@ -298,6 +305,10 @@ mod tests {
             },
             MtpConnectionError::PermissionDenied {
                 device_id: "test".to_string(),
+            },
+            MtpConnectionError::Cancelled {
+                device_id: "test".to_string(),
+                message: "cancelled".to_string(),
             },
             MtpConnectionError::ObjectNotFound {
                 device_id: "test".to_string(),

@@ -94,6 +94,8 @@ pub enum VolumeError {
     },
     /// Connection timed out.
     ConnectionTimeout(String),
+    /// Operation was cancelled by the user (progress callback returned Break).
+    Cancelled(String),
     IoError(String),
 }
 
@@ -108,6 +110,7 @@ impl std::fmt::Display for VolumeError {
             Self::ReadOnly(msg) => write!(f, "Read-only: {}", msg),
             Self::StorageFull { message } => write!(f, "Storage full: {}", message),
             Self::ConnectionTimeout(msg) => write!(f, "Connection timed out: {}", msg),
+            Self::Cancelled(msg) => write!(f, "Cancelled: {}", msg),
             Self::IoError(msg) => write!(f, "I/O error: {}", msg),
         }
     }

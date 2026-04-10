@@ -273,6 +273,144 @@ impl MtpConnectionManager {
         Ok(total_bytes)
     }
 
+    /// Downloads a file or directory recursively with a progress/cancellation callback.
+    ///
+    /// Same as `download_recursive` but calls `on_progress(bytes_done, bytes_total)` per chunk.
+    /// Returns `ControlFlow::Break(())` from the callback to cancel.
+    pub async fn download_recursive_with_progress(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        object_path: &str,
+        local_dest: &Path,
+        on_progress: &(dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Send + Sync),
+    ) -> Result<u64, MtpConnectionError> {
+        debug!(
+            "MTP download_recursive_with_progress: device={}, storage={}, path={}, dest={}",
+            device_id,
+            storage_id,
+            object_path,
+            local_dest.display()
+        );
+
+        match self.list_directory(device_id, storage_id, object_path).await {
+            Ok(entries) if !entries.is_empty() => {
+                self.download_entries_recursive_with_progress(device_id, storage_id, &entries, local_dest, on_progress)
+                    .await
+            }
+            Ok(_) => {
+                if self.is_file_by_parent(device_id, storage_id, object_path).await {
+                    let operation_id = format!("download-{}", uuid::Uuid::new_v4());
+                    let result = self
+                        .download_file_with_progress(
+                            device_id,
+                            storage_id,
+                            object_path,
+                            local_dest,
+                            None,
+                            &operation_id,
+                            Some(on_progress),
+                        )
+                        .await?;
+                    Ok(result.bytes_transferred)
+                } else {
+                    tokio::fs::create_dir_all(local_dest)
+                        .await
+                        .map_err(|e| MtpConnectionError::Other {
+                            device_id: device_id.to_string(),
+                            message: format!("Failed to create local directory: {}", e),
+                        })?;
+                    Ok(0)
+                }
+            }
+            Err(e) => {
+                if self.is_file_by_parent(device_id, storage_id, object_path).await {
+                    let operation_id = format!("download-{}", uuid::Uuid::new_v4());
+                    let result = self
+                        .download_file_with_progress(
+                            device_id,
+                            storage_id,
+                            object_path,
+                            local_dest,
+                            None,
+                            &operation_id,
+                            Some(on_progress),
+                        )
+                        .await?;
+                    Ok(result.bytes_transferred)
+                } else {
+                    Err(e)
+                }
+            }
+        }
+    }
+
+    /// Downloads directory entries recursively with a progress/cancellation callback.
+    async fn download_entries_recursive_with_progress(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        entries: &[FileEntry],
+        local_dest: &Path,
+        on_progress: &(dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Send + Sync),
+    ) -> Result<u64, MtpConnectionError> {
+        tokio::fs::create_dir_all(local_dest)
+            .await
+            .map_err(|e| MtpConnectionError::Other {
+                device_id: device_id.to_string(),
+                message: format!("Failed to create local directory: {}", e),
+            })?;
+
+        let mut total_bytes = 0u64;
+
+        for entry in entries {
+            let child_dest = local_dest.join(&entry.name);
+
+            if entry.is_directory {
+                let children = self.list_directory(device_id, storage_id, &entry.path).await?;
+                if children.is_empty() {
+                    tokio::fs::create_dir_all(&child_dest)
+                        .await
+                        .map_err(|e| MtpConnectionError::Other {
+                            device_id: device_id.to_string(),
+                            message: format!("Failed to create local directory: {}", e),
+                        })?;
+                } else {
+                    let bytes = Box::pin(self.download_entries_recursive_with_progress(
+                        device_id,
+                        storage_id,
+                        &children,
+                        &child_dest,
+                        on_progress,
+                    ))
+                    .await?;
+                    total_bytes += bytes;
+                }
+            } else {
+                let operation_id = format!("download-{}", uuid::Uuid::new_v4());
+                let result = self
+                    .download_file_with_progress(
+                        device_id,
+                        storage_id,
+                        &entry.path,
+                        &child_dest,
+                        None,
+                        &operation_id,
+                        Some(on_progress),
+                    )
+                    .await?;
+                total_bytes += result.bytes_transferred;
+            }
+        }
+
+        debug!(
+            "MTP download_entries_recursive_with_progress: directory {} complete, {} bytes",
+            local_dest.display(),
+            total_bytes
+        );
+        Ok(total_bytes)
+    }
+
     /// Checks if a path is a file by looking it up in its parent directory listing.
     async fn is_file_by_parent(&self, device_id: &str, storage_id: u32, path: &str) -> bool {
         let path_buf = normalize_mtp_path(path);

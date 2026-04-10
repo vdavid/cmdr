@@ -10,6 +10,24 @@ use log::debug;
 use mtp_rs::FileDownload;
 use std::path::{Path, PathBuf};
 
+/// Wrapper to assert Send + Sync on a progress callback reference.
+///
+/// SAFETY: MtpVolume methods are called from `spawn_blocking` contexts (single OS thread).
+/// The callback never crosses thread boundaries — `block_on` runs the async download on the
+/// same thread. The Volume trait's `Fn` callbacks use atomics for interior mutation, so they
+/// are effectively Send + Sync even though the trait doesn't declare it.
+struct SendSyncProgress<'a>(&'a dyn Fn(u64, u64) -> std::ops::ControlFlow<()>);
+
+// SAFETY: See above — callback is only accessed from the single spawn_blocking thread.
+unsafe impl Send for SendSyncProgress<'_> {}
+unsafe impl Sync for SendSyncProgress<'_> {}
+
+impl SendSyncProgress<'_> {
+    fn call(&self, bytes_done: u64, bytes_total: u64) -> std::ops::ControlFlow<()> {
+        (self.0)(bytes_done, bytes_total)
+    }
+}
+
 /// A volume backed by an MTP device storage.
 ///
 /// This implementation wraps the MTP connection manager to provide file system
@@ -479,6 +497,43 @@ impl Volume for MtpVolume {
             .map_err(map_mtp_error)
     }
 
+    fn export_to_local_with_progress(
+        &self,
+        source: &Path,
+        local_dest: &Path,
+        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
+    ) -> Result<u64, VolumeError> {
+        let mtp_path = self.to_mtp_path(source);
+        let device_id = self.device_id.clone();
+        let storage_id = self.storage_id;
+        let local_dest = local_dest.to_path_buf();
+
+        debug!(
+            "MtpVolume::export_to_local_with_progress: device={}, storage={}, source={}, dest={}",
+            device_id,
+            storage_id,
+            mtp_path,
+            local_dest.display()
+        );
+
+        let handle = tokio::runtime::Handle::current();
+        let progress = SendSyncProgress(on_progress);
+
+        handle
+            .block_on(async {
+                connection_manager()
+                    .download_recursive_with_progress(
+                        &device_id,
+                        storage_id,
+                        &mtp_path,
+                        &local_dest,
+                        &|bytes_done, bytes_total| progress.call(bytes_done, bytes_total),
+                    )
+                    .await
+            })
+            .map_err(map_mtp_error)
+    }
+
     fn export_to_local(&self, source: &Path, local_dest: &Path) -> Result<u64, VolumeError> {
         let mtp_path = self.to_mtp_path(source);
         let device_id = self.device_id.clone();
@@ -707,6 +762,7 @@ fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
         MtpConnectionError::ExclusiveAccess { .. } | MtpConnectionError::PermissionDenied { .. } => {
             VolumeError::PermissionDenied(e.to_string())
         }
+        MtpConnectionError::Cancelled { .. } => VolumeError::Cancelled(e.to_string()),
         MtpConnectionError::Disconnected { .. } => VolumeError::DeviceDisconnected(e.to_string()),
         MtpConnectionError::Timeout { .. } => VolumeError::ConnectionTimeout(e.to_string()),
         MtpConnectionError::StorageFull { .. } => VolumeError::StorageFull { message: e.to_string() },
