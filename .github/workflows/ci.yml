@@ -177,10 +177,10 @@ jobs:
         run: ./scripts/check/check --check desktop-svelte-tests --ci
 
   # ===========================================
-  # Desktop app - Tauri E2E (Linux)
+  # Desktop app - Playwright E2E on Linux
   # ===========================================
   desktop-e2e-linux:
-    name: Desktop E2E (Linux)
+    name: E2E tests (Playwright, Linux)
     runs-on: ubuntu-latest
     needs: [changes, desktop-rust, desktop-svelte]
     if: |
@@ -234,11 +234,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install tauri-driver
-        run: cargo install tauri-driver --locked
-
       - name: Build Tauri app
-        run: pnpm tauri build --no-bundle
+        run: pnpm tauri build --no-bundle -- --features playwright-e2e
         working-directory: ./apps/desktop
 
       - name: Run Tauri E2E tests
