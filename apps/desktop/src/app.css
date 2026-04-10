@@ -84,6 +84,9 @@
   --color-toast-success-stripe: #16a34a;
   --color-toast-success-bg: #f0fdf4;
 
+  /* === Striped rows (zebra striping for file lists) === */
+  --color-bg-stripe: color-mix(in oklch, var(--color-bg-primary), var(--color-text-primary) 4%);
+
   /* === Selection === */
   --color-selection-fg: #c9a227;
 

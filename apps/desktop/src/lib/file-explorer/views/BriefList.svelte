@@ -19,7 +19,7 @@
         updateIndexSizesInPlace,
     } from './file-list-utils'
     import { buildDirSizeTooltip, hasSizeMismatch } from './full-list-utils'
-    import { getRowHeight, formatFileSize, getSizeMismatchWarning } from '$lib/settings/reactive-settings.svelte'
+    import { getRowHeight, formatFileSize, getSizeMismatchWarning, getStripedRows } from '$lib/settings/reactive-settings.svelte'
     import { getSetting } from '$lib/settings/settings-store'
     import { formatNumber, pluralize } from '../selection/selection-info-utils'
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
@@ -435,6 +435,9 @@
     // Size mismatch warning setting
     const showSizeMismatchWarning = $derived(getSizeMismatchWarning())
 
+    // Striped rows setting
+    const stripedRows = $derived(getStripedRows())
+
     /** Build tooltip for a directory entry showing recursive size info. */
     function buildDirTooltip(file: FileEntry): string | { html: string } | undefined {
         if (!file.isDirectory) return undefined
@@ -536,6 +539,7 @@
                                 class="file-entry"
                                 class:is-under-cursor={globalIndex === cursorIndex}
                                 class:is-selected={selectedIndices.has(globalIndex)}
+                                class:is-striped={stripedRows && globalIndex % 2 === 1}
                                 data-drop-target-path={file.isDirectory && file.name !== '..' ? file.path : undefined}
                                 use:tooltip={buildDirTooltip(file)}
                                 style="height: {rowHeight}px;"
@@ -648,6 +652,10 @@
         align-items: center;
         white-space: nowrap;
         overflow: hidden;
+    }
+
+    .file-entry.is-striped {
+        background-color: var(--color-bg-stripe);
     }
 
     .file-entry.is-under-cursor {

@@ -17,6 +17,7 @@
     const dirSortDef = getSettingDefinition('listing.directorySortMode') ?? { label: '', description: '' }
     const sizeDisplayDef = getSettingDefinition('listing.sizeDisplay') ?? { label: '', description: '' }
     const sizeMismatchDef = getSettingDefinition('listing.sizeMismatchWarning') ?? { label: '', description: '' }
+    const stripedRowsDef = getSettingDefinition('listing.stripedRows') ?? { label: '', description: '' }
 </script>
 
 <SettingsSection title="Listing">
@@ -48,6 +49,16 @@
             {searchQuery}
         >
             <SettingSwitch id="listing.sizeMismatchWarning" />
+        </SettingRow>
+    {/if}
+    {#if shouldShow('listing.stripedRows')}
+        <SettingRow
+            id="listing.stripedRows"
+            label={stripedRowsDef.label}
+            description={stripedRowsDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="listing.stripedRows" />
         </SettingRow>
     {/if}
 </SettingsSection>

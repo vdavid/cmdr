@@ -99,6 +99,7 @@ export interface SettingsValues {
   'listing.directorySortMode': DirectorySortMode
   'listing.sizeDisplay': SizeDisplayMode
   'listing.sizeMismatchWarning': boolean
+  'listing.stripedRows': boolean
 
   // File operations
   'fileOperations.mtpEnabled': boolean

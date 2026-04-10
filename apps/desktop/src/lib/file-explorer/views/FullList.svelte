@@ -35,6 +35,7 @@
         formatFileSize,
         getSizeDisplayMode,
         getSizeMismatchWarning,
+        getStripedRows,
     } from '$lib/settings/reactive-settings.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -133,6 +134,9 @@
 
     // Size mismatch warning setting
     const showSizeMismatchWarning = $derived(getSizeMismatchWarning())
+
+    // Striped rows setting
+    const stripedRows = $derived(getStripedRows())
 
     // Drive index state — show spinner while scanning OR aggregating (sizes aren't ready until aggregation finishes)
     const indexing = $derived(isScanning() || isAggregating())
@@ -445,6 +449,7 @@
                         class="file-entry"
                         class:is-under-cursor={globalIndex === cursorIndex}
                         class:is-selected={selectedIndices.has(globalIndex)}
+                        class:is-striped={stripedRows && globalIndex % 2 === 1}
                         data-drop-target-path={file.isDirectory && file.name !== '..' ? file.path : undefined}
                         style="height: {rowHeight}px; grid-template-columns: 16px 1fr 60px 115px {dateColumnWidth}px;"
                         onmousedown={(e: MouseEvent) => {
@@ -607,6 +612,10 @@
     .full-list-container.is-compact .file-entry {
         padding-top: 0;
         padding-bottom: var(--spacing-xs);
+    }
+
+    .file-entry.is-striped {
+        background-color: var(--color-bg-stripe);
     }
 
     .file-entry.is-under-cursor {

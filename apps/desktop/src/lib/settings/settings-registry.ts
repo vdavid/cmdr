@@ -157,6 +157,17 @@ export const settingsRegistry: SettingDefinition[] = [
     component: 'switch',
   },
 
+  {
+    id: 'listing.stripedRows',
+    section: ['General', 'Listing'],
+    label: 'Striped rows',
+    description: 'Alternate row shading for easier line tracking. Applies to both Full and Brief view modes.',
+    keywords: ['stripe', 'zebra', 'alternate', 'row', 'shading', 'accessibility', 'a11y'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+
   // ========================================================================
   // General › File operations
   // ========================================================================
