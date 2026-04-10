@@ -5,6 +5,85 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-04-10
+
+### Added
+
+- SMB direct connections — file operations now go through the smb2 protocol directly, bypassing the OS mount (~4x
+  faster). The OS mount stays for Finder/Terminal compatibility
+  ([dea46ec](https://github.com/vdavid/cmdr/commit/dea46ec))
+- SMB auto-upgrade — pre-existing and newly detected SMB mounts are automatically upgraded to direct connections in the
+  background, controlled by `network.directSmbConnection` setting
+  ([a6ab2ca](https://github.com/vdavid/cmdr/commit/a6ab2ca))
+- SMB "Connect to server" — enter hostname, IP, or `smb://` URL to connect to hosts not found by Bonjour. Persisted
+  across restarts. Context menu to disconnect, forget server, or forget saved password
+  ([2df24ac](https://github.com/vdavid/cmdr/commit/2df24ac))
+- SMB connection status indicators — green/yellow circles in volume picker and breadcrumb show whether a share uses a
+  direct (fast) or OS mount (slower) connection, with one-click upgrade option
+  ([0473250](https://github.com/vdavid/cmdr/commit/0473250))
+- SMB real-time progress for file transfers — pipelined I/O with throttled progress events, cancellation flows through
+  to smb2 ([f530355](https://github.com/vdavid/cmdr/commit/f530355))
+- SMB write operations — create, delete, rename, copy, and move all work through smb2 direct connections with full
+  conflict handling ([e72c082](https://github.com/vdavid/cmdr/commit/e72c082),
+  [4f030d7](https://github.com/vdavid/cmdr/commit/4f030d7))
+- SMB/MTP unified change notifications — `notify_directory_changed` with incremental listing cache patches, smb2
+  background watcher via `CHANGE_NOTIFY` long-poll, fixes "listing doesn't update after create/delete/rename"
+  ([2d0bc98](https://github.com/vdavid/cmdr/commit/2d0bc98))
+- SMB native connection warning — transfer dialog warns when using OS mount (slower, cancel/rollback may be delayed)
+  ([d25de48](https://github.com/vdavid/cmdr/commit/d25de48))
+- MTP auto-suppress `ptpcamerad` on macOS — no more manual steps to stop the daemon from competing for USB access,
+  auto-restored on disconnect and app exit ([d161f9b](https://github.com/vdavid/cmdr/commit/d161f9b))
+- MTP settings — toggle to disable MTP entirely, device connection toast with "Don't show again" option, dedicated
+  settings section ([2467ece](https://github.com/vdavid/cmdr/commit/2467ece),
+  [70d8d40](https://github.com/vdavid/cmdr/commit/70d8d40))
+- Brief mode: show real recursive directory sizes in selection info
+  ([53ee5ef](https://github.com/vdavid/cmdr/commit/53ee5ef))
+- Cursor jumps to newly created directories ([eff84d1](https://github.com/vdavid/cmdr/commit/eff84d1))
+
+### Fixed
+
+- Copy progress: per-file counter now increments per individual file during directory copies, not per top-level item.
+  Stale scan events from previous operations are rejected
+  ([d10d9cc](https://github.com/vdavid/cmdr/commit/d10d9cc))
+- SMB faster deletes — skip stat round-trip, halves round-trips for bulk deletes. Rollback now includes the in-progress
+  item ([0e7f072](https://github.com/vdavid/cmdr/commit/0e7f072))
+- Copy cancellation — directory tree copies now check cancellation between each file instead of looping without checking
+  ([a7d401a](https://github.com/vdavid/cmdr/commit/a7d401a))
+- Cross-volume copy with SmbVolume — `is_local_volume()` no longer misclassifies SmbVolume as local
+  ([4a86a85](https://github.com/vdavid/cmdr/commit/4a86a85))
+- SMB paths with accented characters — NFC normalization fixes `STATUS_OBJECT_PATH_NOT_FOUND` on macOS
+  ([baaccc8](https://github.com/vdavid/cmdr/commit/baaccc8))
+- Keychain lookup for SMB — resolves IP → hostname via mDNS so credentials are found regardless of address format
+  ([b1addfd](https://github.com/vdavid/cmdr/commit/b1addfd))
+- Show login form on stale Keychain credentials instead of empty share list
+  ([46609f1](https://github.com/vdavid/cmdr/commit/46609f1))
+- Volume-boundary navigation — prevents navigating above SMB mount root into `/Volumes`, falls back to home when
+  unreachable ([d25de48](https://github.com/vdavid/cmdr/commit/d25de48))
+- Stale cursor index after file ops — cursor/selection adjustment now happens before `fetchEntryUnderCursor`
+  ([945093b](https://github.com/vdavid/cmdr/commit/945093b))
+- Drag & drop after wry upgrade — webview class discovery now uses live instance instead of hardcoded class name
+  ([a816c77](https://github.com/vdavid/cmdr/commit/a816c77))
+- Stale dir sizes after copy/create — `reconcile_subtree` auto-creates new root directories, pending rescans are no
+  longer abandoned ([1479108](https://github.com/vdavid/cmdr/commit/1479108))
+- Scan preview race in progress dialog — subscribe to events before checking completion status
+  ([5d9b91b](https://github.com/vdavid/cmdr/commit/5d9b91b))
+- `dir_stats` count drift on file↔dir type changes — writer now detects and corrects the old type's count
+  ([364ddf1](https://github.com/vdavid/cmdr/commit/364ddf1))
+- Index entry ID race — unified all ID allocation through a shared atomic counter
+  ([6e173e4](https://github.com/vdavid/cmdr/commit/6e173e4))
+- MTP move not refreshing UI on Linux — bump `mtp-rs` to v0.9.1 for `ObjectInfoChanged` events
+  ([5b27ead](https://github.com/vdavid/cmdr/commit/5b27ead))
+
+### Non-app
+
+- Replace `smb`/`smb-rpc` crates with custom `smb2` crate — cleaner API, proper error types, no NDR debug-format
+  parsing hacks ([2d7904f](https://github.com/vdavid/cmdr/commit/2d7904f))
+- CI: upgrade actions to Node.js 24 ([e5820bb](https://github.com/vdavid/cmdr/commit/e5820bb))
+- Testing: fix multiple E2E flakes — MTP cache staleness, theme race, hidden files toggle, Docker shell quoting
+  ([5009971](https://github.com/vdavid/cmdr/commit/5009971), [52faf43](https://github.com/vdavid/cmdr/commit/52faf43))
+- Suppress noisy `tao` and indexing dev logs
+  ([21b041b](https://github.com/vdavid/cmdr/commit/21b041b), [9bf0e00](https://github.com/vdavid/cmdr/commit/9bf0e00))
+
 ## [0.10.0] - 2026-04-08
 
 ### Added
