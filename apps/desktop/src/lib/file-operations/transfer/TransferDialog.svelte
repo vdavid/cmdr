@@ -5,6 +5,7 @@
         formatBytes,
         startScanPreview,
         cancelScanPreview,
+        checkScanPreviewStatus,
         onScanPreviewProgress,
         onScanPreviewComplete,
         onScanPreviewError,
@@ -254,9 +255,9 @@
 
     /** Accepts the event if it belongs to our scan, filtering stale events from previous scans. */
     function isOurScanEvent(eventPreviewId: string): boolean {
-        // previewId may still be null if the scan completes before startScanPreview returns.
-        // In that case, adopt the first event's previewId (it's from the scan we just started).
-        if (!previewId) previewId = eventPreviewId
+        // Don't accept events until we know our previewId from the IPC return.
+        // This prevents adopting stale events from previous orphaned scans.
+        if (!previewId) return false
         return eventPreviewId === previewId
     }
 
@@ -302,6 +303,22 @@
         const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
         const result = await startScanPreview(sourcePaths, sortColumn, sortOrder, progressIntervalMs, sourceVolumeId)
         previewId = result.previewId
+
+        // Check if the scan already completed while we were awaiting the IPC return.
+        // Events that arrived before previewId was set were dropped (isOurScanEvent returned false),
+        // so we need to check the backend's cached result.
+        if (isScanning) {
+            const alreadyComplete = await checkScanPreviewStatus(previewId)
+            if (alreadyComplete) {
+                // The scan finished before we could listen. Re-fetch the result by triggering
+                // a fresh scan status check — the backend will re-emit the complete event.
+                // For now, mark as complete with whatever stats we have (they'll be updated
+                // when the copy starts and reads the cached scan result).
+                isScanning = false
+                scanComplete = true
+                void checkConflicts()
+            }
+        }
     }
 
     onMount(async () => {

@@ -19,7 +19,7 @@ use std::cell::Cell;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU8, AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
@@ -379,6 +379,9 @@ fn copy_volumes_with_progress(
     }
 
     // Phase 3: Copy files with progress
+    // files_done tracks individual files (updated by on_file_complete callback from recursive copy).
+    // total_files is the recursive count from the scan.
+    let files_done_atomic = AtomicUsize::new(0);
     let mut files_done = 0;
     let mut bytes_done = 0u64;
     let mut last_progress_time = Instant::now();
@@ -510,6 +513,9 @@ fn copy_volumes_with_progress(
             let delta = file_bytes_done.saturating_sub(prev);
             let current_total = atomic_bytes_done.fetch_add(delta, Ordering::Relaxed) + delta;
 
+            // Read current files_done from the atomic (updated by on_file_complete)
+            let current_files_done = files_done_atomic.load(Ordering::Relaxed);
+
             // Throttled progress emission
             let last = last_progress_cell.get();
             if last.elapsed() >= progress_interval {
@@ -521,7 +527,7 @@ fn copy_volumes_with_progress(
                         operation_type: WriteOperationType::Copy,
                         phase: WriteOperationPhase::Copying,
                         current_file: file_name_for_cb.clone(),
-                        files_done,
+                        files_done: current_files_done,
                         files_total: total_files,
                         bytes_done: current_total,
                         bytes_total: total_bytes,
@@ -531,7 +537,7 @@ fn copy_volumes_with_progress(
                     operation_id,
                     WriteOperationPhase::Copying,
                     file_name_for_cb.clone(),
-                    files_done,
+                    current_files_done,
                     total_files,
                     current_total,
                     total_bytes,
@@ -539,6 +545,11 @@ fn copy_volumes_with_progress(
             }
 
             ControlFlow::Continue(())
+        };
+
+        // Build the on_file_complete callback that increments the atomic file counter
+        let on_file_complete = || {
+            files_done_atomic.fetch_add(1, Ordering::Relaxed);
         };
 
         // Remember the destination path before copying (for partial-file cleanup)
@@ -551,13 +562,15 @@ fn copy_volumes_with_progress(
             &dest_item_path,
             state,
             &on_file_progress,
+            &on_file_complete,
         ) {
             Ok(bytes_copied) => {
                 // Copy succeeded — record destination path for potential rollback
                 copied_paths.push(dest_item_path);
                 last_dest_path = None;
 
-                files_done += 1;
+                // Sync files_done from the atomic (updated by on_file_complete during recursive copy)
+                files_done = files_done_atomic.load(Ordering::Relaxed);
                 // Sync bytes_done from the atomic (the callback may have updated it mid-file)
                 bytes_done = atomic_bytes_done.load(Ordering::Relaxed);
                 // If the volume didn't call the progress callback (default impl), add bytes_copied
@@ -1004,6 +1017,7 @@ pub async fn move_between_volumes(
                     &dest_item,
                     &state,
                     &no_progress,
+                    &|| {},
                 )
                 .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
 

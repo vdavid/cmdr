@@ -40,6 +40,7 @@ pub(super) fn copy_single_path(
     dest_path: &Path,
     state: &Arc<WriteOperationState>,
     on_file_progress: &dyn Fn(u64, u64) -> ControlFlow<()>,
+    on_file_complete: &dyn Fn(),
 ) -> Result<u64, VolumeError> {
     // Check cancellation
     if super::state::is_cancelled(&state.intent) {
@@ -90,9 +91,18 @@ pub(super) fn copy_single_path(
         // For directories, walk the tree ourselves so we can check cancellation between files.
         // import_from_local(dir) would import everything in one shot with no cancellation.
         if local_source.is_dir() {
-            import_directory_cancellable(&local_source, dest_path, dest_volume, state, on_file_progress)
+            import_directory_cancellable(
+                &local_source,
+                dest_path,
+                dest_volume,
+                state,
+                on_file_progress,
+                on_file_complete,
+            )
         } else {
-            dest_volume.import_from_local_with_progress(&local_source, dest_path, on_file_progress)
+            let bytes = dest_volume.import_from_local_with_progress(&local_source, dest_path, on_file_progress)?;
+            on_file_complete();
+            Ok(bytes)
         }
     } else if !source_is_local && dest_is_local {
         // Source is not local, dest is local (like SMB/MTP → Local)
@@ -104,20 +114,29 @@ pub(super) fn copy_single_path(
         // For directories, walk the tree ourselves for cancellation support.
         let is_dir = source_volume.is_directory(source_path).unwrap_or(false);
         if is_dir {
-            export_directory_cancellable(source_path, &local_dest, source_volume, state, on_file_progress)
+            export_directory_cancellable(
+                source_path,
+                &local_dest,
+                source_volume,
+                state,
+                on_file_progress,
+                on_file_complete,
+            )
         } else {
-            source_volume.export_to_local_with_progress(source_path, &local_dest, on_file_progress)
+            let bytes = source_volume.export_to_local_with_progress(source_path, &local_dest, on_file_progress)?;
+            on_file_complete();
+            Ok(bytes)
         }
     } else {
         // Both are local, use export which resolves paths internally
-        // Note: export_to_local takes a path relative to the volume root for source,
-        // and an absolute local path for destination
         let local_dest = if dest_path.is_absolute() {
             dest_path.to_path_buf()
         } else {
             dest_volume.root().join(dest_path)
         };
-        source_volume.export_to_local(source_path, &local_dest)
+        let bytes = source_volume.export_to_local(source_path, &local_dest)?;
+        on_file_complete();
+        Ok(bytes)
     }
 }
 
@@ -130,6 +149,7 @@ fn import_directory_cancellable(
     dest_volume: &Arc<dyn Volume>,
     state: &Arc<WriteOperationState>,
     on_file_progress: &dyn Fn(u64, u64) -> ControlFlow<()>,
+    on_file_complete: &dyn Fn(),
 ) -> Result<u64, VolumeError> {
     // Create the directory on the destination
     dest_volume.create_directory(dest_path)?;
@@ -149,10 +169,17 @@ fn import_directory_cancellable(
         let child_dest = dest_path.join(&child_name);
 
         if child_local.is_dir() {
-            total_bytes +=
-                import_directory_cancellable(&child_local, &child_dest, dest_volume, state, on_file_progress)?;
+            total_bytes += import_directory_cancellable(
+                &child_local,
+                &child_dest,
+                dest_volume,
+                state,
+                on_file_progress,
+                on_file_complete,
+            )?;
         } else {
             total_bytes += dest_volume.import_from_local_with_progress(&child_local, &child_dest, on_file_progress)?;
+            on_file_complete();
         }
     }
 
@@ -167,6 +194,7 @@ fn export_directory_cancellable(
     source_volume: &Arc<dyn Volume>,
     state: &Arc<WriteOperationState>,
     on_file_progress: &dyn Fn(u64, u64) -> ControlFlow<()>,
+    on_file_complete: &dyn Fn(),
 ) -> Result<u64, VolumeError> {
     // Create the local directory
     std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError(e.to_string()))?;
@@ -185,10 +213,17 @@ fn export_directory_cancellable(
         let child_local = local_dest.join(&entry.name);
 
         if entry.is_directory {
-            total_bytes +=
-                export_directory_cancellable(child_source, &child_local, source_volume, state, on_file_progress)?;
+            total_bytes += export_directory_cancellable(
+                child_source,
+                &child_local,
+                source_volume,
+                state,
+                on_file_progress,
+                on_file_complete,
+            )?;
         } else {
             total_bytes += source_volume.export_to_local_with_progress(child_source, &child_local, on_file_progress)?;
+            on_file_complete();
         }
     }
 
@@ -291,6 +326,7 @@ mod tests {
             Path::new("dest.txt"),
             &state,
             &no_progress,
+            &|| {},
         )
         .unwrap();
 
@@ -332,6 +368,7 @@ mod tests {
             Path::new("dest.txt"),
             &state,
             &no_progress,
+            &|| {},
         );
 
         assert!(result.is_err());
