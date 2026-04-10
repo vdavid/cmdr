@@ -494,7 +494,7 @@ impl MtpConnectionManager {
 // - event_loop.rs: start_event_loop, stop_event_loop, event handling
 // - file_ops.rs: download_file, upload_file, open_download_stream, upload_from_chunks
 // - mutation_ops.rs: delete_object, create_folder, rename_object, move_object
-// - bulk_ops.rs: scan_for_copy, download_recursive, upload_recursive
+// - bulk_ops.rs: scan_for_copy, upload_recursive
 
 /// Global connection manager instance.
 static CONNECTION_MANAGER: LazyLock<MtpConnectionManager> = LazyLock::new(MtpConnectionManager::new);

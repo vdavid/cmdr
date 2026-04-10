@@ -518,19 +518,23 @@ impl Volume for MtpVolume {
 
         let handle = tokio::runtime::Handle::current();
         let progress = SendSyncProgress(on_progress);
+        let operation_id = format!("export-{}", uuid::Uuid::new_v4());
 
         handle
             .block_on(async {
                 connection_manager()
-                    .download_recursive_with_progress(
+                    .download_file_with_progress(
                         &device_id,
                         storage_id,
                         &mtp_path,
                         &local_dest,
-                        &|bytes_done, bytes_total| progress.call(bytes_done, bytes_total),
+                        None,
+                        &operation_id,
+                        Some(&|bytes_done, bytes_total| progress.call(bytes_done, bytes_total)),
                     )
                     .await
             })
+            .map(|result| result.bytes_transferred)
             .map_err(map_mtp_error)
     }
 
@@ -549,13 +553,15 @@ impl Volume for MtpVolume {
         );
 
         let handle = tokio::runtime::Handle::current();
+        let operation_id = format!("export-{}", uuid::Uuid::new_v4());
 
         handle
             .block_on(async move {
                 connection_manager()
-                    .download_recursive(&device_id, storage_id, &mtp_path, &local_dest)
+                    .download_file(&device_id, storage_id, &mtp_path, &local_dest, None, &operation_id)
                     .await
             })
+            .map(|result| result.bytes_transferred)
             .map_err(map_mtp_error)
     }
 

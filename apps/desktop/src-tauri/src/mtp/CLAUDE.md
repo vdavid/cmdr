@@ -20,7 +20,7 @@ On Linux, users may need udev rules for USB device permissions (see `resources/9
 | `connection/directory_ops.rs` | `list_directory()` (with lock-contention logging), `resolve_path_to_handle()` (cache-only) |
 | `connection/file_ops.rs` | `download_file()`, `upload_file()` — emit `mtp-transfer-progress` Tauri events |
 | `connection/mutation_ops.rs` | `delete()` (recursive, children-first), `create_folder()`, `rename()`, `move_object()` — no copy+delete fallback |
-| `connection/bulk_ops.rs` | `scan_for_copy()`, `download_recursive()`, `upload_recursive()` — use `Box::pin` for async recursion |
+| `connection/bulk_ops.rs` | `scan_for_copy()`, `upload_recursive()` — use `Box::pin` for async recursion |
 | `virtual_device.rs` | Virtual MTP device for E2E testing; creates backing dirs + registers device via `mtp-rs`. Gated behind `virtual-mtp` feature. Run with: `cd apps/desktop && pnpm tauri dev -c src-tauri/tauri.dev.json --features virtual-mtp` |
 
 ## Architecture / data flow
