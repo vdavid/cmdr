@@ -170,7 +170,7 @@ export async function clickTransferStart(tauriPage: PageLike): Promise<void> {
 }
 
 /** Waits for all modal dialogs to close after an operation completes. */
-export async function waitForDialogsToClose(tauriPage: PageLike): Promise<void> {
-  const closed = await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 15000)
+export async function waitForDialogsToClose(tauriPage: PageLike, timeout = 15000): Promise<void> {
+  const closed = await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), timeout)
   expect(closed).toBe(true)
 }

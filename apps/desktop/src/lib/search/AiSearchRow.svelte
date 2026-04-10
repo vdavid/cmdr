@@ -135,6 +135,7 @@
 
     .name-input::placeholder {
         color: var(--color-text-tertiary);
+        opacity: 1; /* Override browser default dimming for a11y contrast */
     }
 
     /* Shared button style for Ask AI */

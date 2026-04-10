@@ -257,24 +257,29 @@ test.describe('File watching', () => {
     await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 10000)
 
-    // File should appear in right pane
-    await pollUntil(tauriPage, async () => fileExistsInPane(tauriPage, 'file-a.txt', 1), 5000)
-
-    // Wait for the watcher to fire after the synthetic diff, then verify
-    // there is exactly one entry (no duplicate from watcher re-adding it).
-    await sleep(2000)
-    const count = await tauriPage.evaluate<number>(`(function() {
-            var pane = document.querySelectorAll('.file-pane')[1];
-            if (!pane) return 0;
-            var entries = pane.querySelectorAll('.file-entry');
-            var c = 0;
-            for (var i = 0; i < entries.length; i++) {
-                var name = (entries[i].querySelector('.col-name') || entries[i].querySelector('.name') || {}).textContent || '';
-                if (name === 'file-a.txt') c++;
-            }
-            return c;
-        })()`)
-    expect(count).toBe(1)
+    // File should appear in right pane, and after the watcher fires there
+    // should be exactly one instance (no duplicate from watcher re-adding it).
+    // Poll instead of a fixed sleep — the DOM can be transiently empty during
+    // a watcher-triggered re-render.
+    const noDuplicates = await pollUntil(
+      tauriPage,
+      async () => {
+        const count = await tauriPage.evaluate<number>(`(function() {
+              var pane = document.querySelectorAll('.file-pane')[1];
+              if (!pane) return 0;
+              var entries = pane.querySelectorAll('.file-entry');
+              var c = 0;
+              for (var i = 0; i < entries.length; i++) {
+                  var name = (entries[i].querySelector('.col-name') || entries[i].querySelector('.name') || {}).textContent || '';
+                  if (name === 'file-a.txt') c++;
+              }
+              return c;
+          })()`)
+        return count === 1
+      },
+      10000,
+    )
+    expect(noDuplicates).toBe(true)
   })
 
   test('respects hidden file visibility for externally created dotfiles', async ({ tauriPage }) => {

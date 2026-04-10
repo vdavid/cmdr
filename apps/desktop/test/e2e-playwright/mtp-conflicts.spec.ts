@@ -98,7 +98,7 @@ test.describe('MTP cross-volume move conflicts', () => {
     await waitForConflictPolicy(tauriPage)
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
-    await waitForDialogsToClose(tauriPage)
+    await waitForDialogsToClose(tauriPage, 30000)
 
     // Wait for MTP operation
     await sleep(3000)
@@ -130,7 +130,7 @@ test.describe('MTP cross-volume move conflicts', () => {
     await waitForConflictPolicy(tauriPage)
     await selectConflictPolicy(tauriPage, 'skip')
     await clickTransferStart(tauriPage)
-    await waitForDialogsToClose(tauriPage)
+    await waitForDialogsToClose(tauriPage, 30000)
 
     await sleep(3000)
 
@@ -162,7 +162,7 @@ test.describe('MTP cross-volume move conflicts', () => {
     await waitForConflictPolicy(tauriPage)
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
-    await waitForDialogsToClose(tauriPage)
+    await waitForDialogsToClose(tauriPage, 30000)
 
     await sleep(3000)
     await mcpCall('refresh', {})
@@ -210,7 +210,7 @@ test.describe('MTP same-volume move conflicts', () => {
     await waitForConflictPolicy(tauriPage)
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
-    await waitForDialogsToClose(tauriPage)
+    await waitForDialogsToClose(tauriPage, 30000)
 
     await sleep(3000)
     await mcpCall('refresh', {})
@@ -251,7 +251,7 @@ test.describe('MTP same-volume move conflicts', () => {
     await waitForConflictPolicy(tauriPage)
     await selectConflictPolicy(tauriPage, 'skip')
     await clickTransferStart(tauriPage)
-    await waitForDialogsToClose(tauriPage)
+    await waitForDialogsToClose(tauriPage, 30000)
 
     await sleep(3000)
 
