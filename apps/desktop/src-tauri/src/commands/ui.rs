@@ -66,6 +66,23 @@ pub fn toggle_hidden_files<R: Runtime>(app: AppHandle<R>) -> Result<bool, String
 /// This is used by the command palette to sync with menu state.
 #[tauri::command]
 pub fn set_view_mode<R: Runtime>(app: AppHandle<R>, mode: String) -> Result<(), String> {
+    sync_view_mode_menu_impl::<R>(&app, &mode)?;
+
+    // Emit event to frontend
+    app.emit("view-mode-changed", serde_json::json!({ "mode": mode }))
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+/// Sync the View menu checkmarks to match the given mode, without emitting any event.
+/// Called when the focused pane changes so the menu reflects the active pane's view mode.
+#[tauri::command]
+pub fn sync_view_mode_menu<R: Runtime>(app: AppHandle<R>, mode: String) -> Result<(), String> {
+    sync_view_mode_menu_impl::<R>(&app, &mode)
+}
+
+fn sync_view_mode_menu_impl<R: Runtime>(app: &AppHandle<R>, mode: &str) -> Result<(), String> {
     let menu_state = app.state::<MenuState<R>>();
     let full_guard = menu_state.view_mode_full.lock_ignore_poison();
     let brief_guard = menu_state.view_mode_brief.lock_ignore_poison();
@@ -74,14 +91,9 @@ pub fn set_view_mode<R: Runtime>(app: AppHandle<R>, mode: String) -> Result<(), 
         return Err("Menu not initialized".to_string());
     };
 
-    // Set the correct check state (radio behavior)
     let is_full = mode == "full";
     full_item.set_checked(is_full).map_err(|e| e.to_string())?;
     brief_item.set_checked(!is_full).map_err(|e| e.to_string())?;
-
-    // Emit event to frontend
-    app.emit("view-mode-changed", serde_json::json!({ "mode": mode }))
-        .map_err(|e| e.to_string())?;
 
     Ok(())
 }

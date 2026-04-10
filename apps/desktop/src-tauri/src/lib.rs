@@ -712,6 +712,7 @@ pub fn run() {
             commands::ui::set_menu_context,
             commands::ui::toggle_hidden_files,
             commands::ui::set_view_mode,
+            commands::ui::sync_view_mode_menu,
             commands::ui::show_in_finder,
             commands::ui::copy_to_clipboard,
             commands::ui::quick_look,

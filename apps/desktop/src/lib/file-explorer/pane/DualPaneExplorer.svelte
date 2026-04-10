@@ -31,6 +31,7 @@
         cutFilesToClipboard,
         readClipboardFiles,
         clearClipboardCutState,
+        syncViewModeMenu,
     } from '$lib/tauri-commands'
     import type {
         VolumeInfo,
@@ -588,6 +589,7 @@
             saveAppStatus({ focusedPane: pane })
             void updateFocusedPane(pane)
             syncPinTabMenu()
+            void syncViewModeMenu(getPaneViewMode(pane))
         }
         // Always restore DOM focus (needed after inline rename or dialog close within a pane)
         containerElement?.focus()
@@ -1080,6 +1082,7 @@
 
         initialized = true
         syncPinTabMenu()
+        void syncViewModeMenu(getPaneViewMode(focusedPane))
 
         // Sync initial tab state to MCP backend
         syncTabsToBackend()
@@ -1680,6 +1683,7 @@
         focusedPane = newFocus
         saveAppStatus({ focusedPane: newFocus })
         void updateFocusedPane(newFocus)
+        void syncViewModeMenu(getPaneViewMode(newFocus))
         containerElement?.focus()
     }
 

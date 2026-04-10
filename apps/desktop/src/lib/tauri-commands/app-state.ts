@@ -131,6 +131,14 @@ export async function setViewMode(mode: 'full' | 'brief'): Promise<void> {
   await invoke('set_view_mode', { mode })
 }
 
+/**
+ * Sync the View menu checkmarks to match the given mode, without emitting events.
+ * Used when the focused pane changes so the menu reflects the active pane's view mode.
+ */
+export async function syncViewModeMenu(mode: 'full' | 'brief'): Promise<void> {
+  await invoke('sync_view_mode_menu', { mode })
+}
+
 // ============================================================================
 // Window lifecycle
 // ============================================================================
