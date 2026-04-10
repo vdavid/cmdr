@@ -15,6 +15,33 @@ use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use tokio::sync::mpsc;
 
+/// SMB connection state for the frontend indicator.
+///
+/// `Direct` means Cmdr's smb2 session is active (fast path).
+/// `OsMount` means only the OS mount is alive (fallback path).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SmbConnectionState {
+    /// smb2 session active — fast path (green indicator).
+    Direct,
+    /// Using OS mount only — slower fallback (yellow indicator).
+    OsMount,
+}
+
+/// Default volume ID for the root filesystem.
+pub const DEFAULT_VOLUME_ID: &str = "root";
+
+/// Convert a mount path to a safe ID string.
+pub(crate) fn path_to_id(path: &str) -> String {
+    if path == "/" {
+        return DEFAULT_VOLUME_ID.to_string();
+    }
+    path.chars()
+        .filter(|c| c.is_alphanumeric() || *c == '-')
+        .collect::<String>()
+        .to_lowercase()
+}
+
 /// Describes what mutation occurred, so `notify_mutation` can update the listing cache.
 pub enum MutationEvent {
     /// A file or directory was created. Contains the entry name.
@@ -330,7 +357,7 @@ pub trait Volume: Send + Sync {
     ///
     /// Only `SmbVolume` returns `Some`. Used by the frontend to show a connection
     /// quality indicator (green = direct smb2, yellow = OS mount fallback).
-    fn smb_connection_state(&self) -> Option<crate::volumes::SmbConnectionState> {
+    fn smb_connection_state(&self) -> Option<SmbConnectionState> {
         None
     }
 

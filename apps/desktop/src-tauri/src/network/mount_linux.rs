@@ -248,6 +248,14 @@ pub async fn mount_share(
     }
 }
 
+/// Unmounts all SMB shares from a given host.
+///
+/// Linux GVFS unmount via `gio mount -u` is not wired up yet — returns empty.
+pub fn unmount_smb_shares_from_host(_server_name: &str, _server_ip: Option<&str>) -> Vec<String> {
+    log::debug!("unmount_smb_shares_from_host not yet implemented on Linux");
+    Vec::new()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

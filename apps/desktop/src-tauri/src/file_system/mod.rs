@@ -162,6 +162,11 @@ pub fn get_volume_manager() -> &'static VolumeManager {
 /// a parallel smb2 session for each. Non-blocking: failures are logged and skipped.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub fn upgrade_existing_smb_mounts() {
+    #[cfg(target_os = "macos")]
+    use crate::volumes::get_smb_mount_info;
+    #[cfg(target_os = "linux")]
+    use crate::volumes_linux::get_smb_mount_info;
+
     if !is_direct_smb_enabled() {
         log::debug!("Direct SMB connections disabled, skipping startup upgrade");
         return;
@@ -181,7 +186,7 @@ pub fn upgrade_existing_smb_mounts() {
                 }
                 let path = vol.root().to_string_lossy().to_string();
                 // Check if it's an SMB mount
-                let info = crate::volumes::get_smb_mount_info(&path)?;
+                let info = get_smb_mount_info(&path)?;
                 let _ = info; // We just need to know it's SMB
                 Some((id, path))
             })
@@ -206,7 +211,7 @@ pub fn upgrade_existing_smb_mounts() {
 
         let mut any_upgraded = false;
         for (_volume_id, mount_path) in volumes_to_upgrade {
-            let info = match crate::volumes::get_smb_mount_info(&mount_path) {
+            let info = match get_smb_mount_info(&mount_path) {
                 Some(info) => info,
                 None => continue,
             };

@@ -13,19 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::Path;
 
-/// SMB connection state for the frontend indicator.
-///
-/// Only set for volumes backed by an `SmbVolume` in the `VolumeManager`.
-/// `Direct` means Cmdr's smb2 session is active (fast path).
-/// `OsMount` means only the OS mount is alive (fallback path).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum SmbConnectionState {
-    /// smb2 session active — fast path (green indicator).
-    Direct,
-    /// Using OS mount only — slower fallback (yellow indicator).
-    OsMount,
-}
+pub use crate::file_system::volume::SmbConnectionState;
 
 /// Category of a location item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -655,16 +643,7 @@ fn get_volume_name(url: &objc2_foundation::NSURL, path: &str) -> String {
     }
 }
 
-/// Convert path to a safe ID.
-pub(crate) fn path_to_id(path: &str) -> String {
-    if path == "/" {
-        return DEFAULT_VOLUME_ID.to_string();
-    }
-    path.chars()
-        .filter(|c| c.is_alphanumeric() || *c == '-')
-        .collect::<String>()
-        .to_lowercase()
-}
+pub(crate) use crate::file_system::volume::path_to_id;
 
 /// Get icon for a path as base64-encoded WebP.
 fn get_icon_for_path(path: &str) -> Option<String> {

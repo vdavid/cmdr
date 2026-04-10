@@ -42,7 +42,10 @@ impl MtpConnectionManager {
     ///
     /// The `on_progress` callback receives `(bytes_done, bytes_total)` and returns `ControlFlow::Break(())`
     /// to cancel the transfer. On cancellation, the partial file is removed.
-    #[allow(clippy::too_many_arguments, reason = "mirrors download_file with added on_progress callback")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "mirrors download_file with added on_progress callback"
+    )]
     pub async fn download_file_with_progress(
         &self,
         device_id: &str,
@@ -134,7 +137,10 @@ impl MtpConnectionManager {
                 message: format!("Failed to create local file: {}", e),
             })?;
 
-        // Write chunks to file (must complete before releasing device lock)
+        // Write chunks to file (must complete before releasing device lock).
+        // MTP USB transfers must be fully consumed — breaking mid-stream corrupts
+        // the session and makes the device unresponsive for subsequent operations.
+        // On cancel: stop writing to disk, but keep draining the USB stream.
         let mut bytes_written = 0u64;
         let mut cancelled = false;
         while let Some(chunk_result) = download.next_chunk().await {
@@ -143,19 +149,23 @@ impl MtpConnectionManager {
                 message: format!("Download error: {}", e),
             })?;
 
-            file.write_all(&chunk).await.map_err(|e| MtpConnectionError::Other {
-                device_id: device_id.to_string(),
-                message: format!("Failed to write local file: {}", e),
-            })?;
+            if !cancelled {
+                file.write_all(&chunk).await.map_err(|e| MtpConnectionError::Other {
+                    device_id: device_id.to_string(),
+                    message: format!("Failed to write local file: {}", e),
+                })?;
 
-            bytes_written += chunk.len() as u64;
+                bytes_written += chunk.len() as u64;
 
-            // Report progress and check for cancellation
-            if let Some(ref cb) = on_progress
-                && cb(bytes_written, total_size).is_break() {
+                // Report progress and check for cancellation
+                if let Some(ref cb) = on_progress
+                    && cb(bytes_written, total_size).is_break()
+                {
                     cancelled = true;
-                    break;
+                    // Don't break — keep draining the USB stream to keep the session healthy
                 }
+            }
+            // else: cancelled, just drain remaining chunks without writing
         }
 
         // Release device lock after download completes

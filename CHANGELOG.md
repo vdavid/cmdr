@@ -43,8 +43,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 
 - Copy progress: per-file counter now increments per individual file during directory copies, not per top-level item.
-  Stale scan events from previous operations are rejected
-  ([d10d9cc](https://github.com/vdavid/cmdr/commit/d10d9cc))
+  Stale scan events from previous operations are rejected ([d10d9cc](https://github.com/vdavid/cmdr/commit/d10d9cc))
 - SMB faster deletes — skip stat round-trip, halves round-trips for bulk deletes. Rollback now includes the in-progress
   item ([0e7f072](https://github.com/vdavid/cmdr/commit/0e7f072))
 - Copy cancellation — directory tree copies now check cancellation between each file instead of looping without checking
@@ -76,13 +75,13 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Non-app
 
-- Replace `smb`/`smb-rpc` crates with custom `smb2` crate — cleaner API, proper error types, no NDR debug-format
-  parsing hacks ([2d7904f](https://github.com/vdavid/cmdr/commit/2d7904f))
+- Replace `smb`/`smb-rpc` crates with custom `smb2` crate — cleaner API, proper error types, no NDR debug-format parsing
+  hacks ([2d7904f](https://github.com/vdavid/cmdr/commit/2d7904f))
 - CI: upgrade actions to Node.js 24 ([e5820bb](https://github.com/vdavid/cmdr/commit/e5820bb))
 - Testing: fix multiple E2E flakes — MTP cache staleness, theme race, hidden files toggle, Docker shell quoting
   ([5009971](https://github.com/vdavid/cmdr/commit/5009971), [52faf43](https://github.com/vdavid/cmdr/commit/52faf43))
-- Suppress noisy `tao` and indexing dev logs
-  ([21b041b](https://github.com/vdavid/cmdr/commit/21b041b), [9bf0e00](https://github.com/vdavid/cmdr/commit/9bf0e00))
+- Suppress noisy `tao` and indexing dev logs ([21b041b](https://github.com/vdavid/cmdr/commit/21b041b),
+  [9bf0e00](https://github.com/vdavid/cmdr/commit/9bf0e00))
 
 ## [0.10.0] - 2026-04-08
 

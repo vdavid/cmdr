@@ -5,7 +5,9 @@
 //! but all Cmdr file operations go through smb2's pipelined I/O for better
 //! performance and fail-fast behavior.
 
-use super::{CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError};
+use super::{
+    CopyScanResult, ScanConflict, SmbConnectionState, SourceItemInfo, SpaceInfo, Volume, VolumeError, path_to_id,
+};
 use crate::file_system::listing::FileEntry;
 use log::{debug, info, warn};
 use smb2::client::tree::Tree;
@@ -1028,10 +1030,10 @@ impl Volume for SmbVolume {
         Ok(conflicts)
     }
 
-    fn smb_connection_state(&self) -> Option<crate::volumes::SmbConnectionState> {
+    fn smb_connection_state(&self) -> Option<SmbConnectionState> {
         match self.connection_state() {
-            ConnectionState::Direct => Some(crate::volumes::SmbConnectionState::Direct),
-            ConnectionState::OsMount => Some(crate::volumes::SmbConnectionState::OsMount),
+            ConnectionState::Direct => Some(SmbConnectionState::Direct),
+            ConnectionState::OsMount => Some(SmbConnectionState::OsMount),
             ConnectionState::Disconnected => None,
         }
     }
@@ -1481,7 +1483,7 @@ pub async fn connect_smb_volume(
     let mut client = SmbClient::connect(config).await?;
     let tree = client.connect_share(share_name).await?;
     let runtime_handle = tokio::runtime::Handle::current();
-    let volume_id = crate::volumes::path_to_id(mount_path);
+    let volume_id = path_to_id(mount_path);
 
     let vol = SmbVolume::new(
         name,

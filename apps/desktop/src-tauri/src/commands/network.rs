@@ -345,7 +345,7 @@ pub(crate) async fn register_smb_volume(
 
     match connect_smb_volume(share, mount_path, server, share, username, password, port).await {
         Ok(volume) => {
-            let volume_id = crate::volumes::path_to_id(mount_path);
+            let volume_id = crate::file_system::volume::path_to_id(mount_path);
             // Use register (overwrite) so SmbVolume always wins over any
             // LocalPosixVolume the watcher may have registered in the race window.
             get_volume_manager().register(&volume_id, Arc::new(volume));
@@ -372,7 +372,10 @@ pub(crate) async fn register_smb_volume(
 #[tauri::command]
 pub async fn upgrade_to_smb_volume(volume_id: String) -> Result<String, String> {
     use crate::file_system::get_volume_manager;
+    #[cfg(target_os = "macos")]
     use crate::volumes::get_smb_mount_info;
+    #[cfg(target_os = "linux")]
+    use crate::volumes_linux::get_smb_mount_info;
 
     let manager = get_volume_manager();
 

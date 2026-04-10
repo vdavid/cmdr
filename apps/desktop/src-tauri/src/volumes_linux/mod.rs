@@ -10,10 +10,63 @@
 
 pub mod watcher;
 
+pub use crate::file_system::volume::SmbConnectionState;
+
 use crate::file_system::linux_mounts::{self, MountEntry};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::Path;
+
+/// Information about an SMB mount extracted from `/proc/mounts`.
+#[derive(Debug, Clone)]
+pub struct SmbMountInfo {
+    /// Server hostname or IP (for example, "192.168.1.111").
+    pub server: String,
+    /// Share name (for example, "naspi").
+    pub share: String,
+    /// Username if present in the mount source (for example, "david").
+    pub username: Option<String>,
+}
+
+/// Extracts SMB server, share, and username from a mount path via `/proc/mounts`.
+///
+/// On Linux, CIFS mounts have a device field like:
+/// - `//192.168.1.111/share` (no credentials in device)
+/// - `//user@192.168.1.111/share` (some configurations)
+///
+/// Returns `None` if the path is not a CIFS mount or parsing fails.
+pub fn get_smb_mount_info(mount_path: &str) -> Option<SmbMountInfo> {
+    let mounts = linux_mounts::parse_proc_mounts();
+    let entry = mounts
+        .iter()
+        .filter(|e| e.fstype == "cifs")
+        .find(|e| e.mountpoint == mount_path)?;
+    parse_smb_mount_source(&entry.device)
+}
+
+/// Parses an SMB mount source string like `//user@host/share` or `//host/share`.
+fn parse_smb_mount_source(source: &str) -> Option<SmbMountInfo> {
+    let rest = source.strip_prefix("//")?;
+    let (server_part, share) = rest.split_once('/')?;
+    if share.is_empty() {
+        return None;
+    }
+
+    let (username, server) = if let Some((user, host)) = server_part.split_once('@') {
+        (Some(user.to_string()), host.to_string())
+    } else {
+        (None, server_part.to_string())
+    };
+
+    // Strip port if present (for example, "192.168.1.111:9445")
+    let server = server.split(':').next().unwrap_or(&server).to_string();
+
+    Some(SmbMountInfo {
+        server,
+        share: share.to_string(),
+        username,
+    })
+}
 
 /// Category of a location item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -454,16 +507,7 @@ pub fn find_volume_for_path(path: &str) -> Option<String> {
         .map(|loc| loc.id.clone())
 }
 
-/// Convert a mount path to a safe ID string.
-pub(crate) fn path_to_id(path: &str) -> String {
-    if path == "/" {
-        return DEFAULT_VOLUME_ID.to_string();
-    }
-    path.chars()
-        .filter(|c| c.is_alphanumeric() || *c == '-')
-        .collect::<String>()
-        .to_lowercase()
-}
+pub(crate) use crate::file_system::volume::path_to_id;
 
 /// Extract a display name from a mount path.
 fn mount_display_name(mountpoint: &str) -> String {
