@@ -10,6 +10,10 @@
 
 pub mod watcher;
 
+#[allow(
+    unused_imports,
+    reason = "API parity with macOS volumes module — used once SMB enrichment lands on Linux"
+)]
 pub use crate::file_system::volume::SmbConnectionState;
 
 use crate::file_system::linux_mounts::{self, MountEntry};
