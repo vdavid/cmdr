@@ -165,7 +165,7 @@ export const settingsRegistry: SettingDefinition[] = [
     section: ['General', 'MTP'],
     label: 'Android/Kindle/camera support (PTP and MTP)',
     description:
-      'Detect and connect to Android and other devices over a USB cable for file browsing and transfers. To use this feature on an Android phone, I\'ll want to use a USB cable, then on your phone, go to something like Settings > USB Preferences, and set the connection to "File transfer", "Android Auto", or similar. (Varies by device.)',
+      'Detect and connect to Android and other devices over a USB cable for file browsing and transfers. To use this feature on an Android phone, you\'ll want to use a USB cable, then on your phone, go to something like Settings > USB Preferences, and set the connection to "File transfer", "Android Auto", or similar. (Varies by device.)',
     keywords: ['mtp', 'android', 'usb', 'device', 'phone', 'ptpcamerad', 'mobile'],
     type: 'boolean',
     default: true,
