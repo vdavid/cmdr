@@ -349,7 +349,7 @@ else
             echo "Starting Tauri app..."
             "$TAURI_BINARY" &
             APP_PID=$!
-            trap "kill $APP_PID 2>/dev/null; wait $APP_PID 2>/dev/null" EXIT
+            trap "kill $APP_PID 2>/dev/null; wait $APP_PID 2>/dev/null || true" EXIT
 
             # Wait for the Unix socket to appear (timeout 30s)
             echo "Waiting for playwright socket at $SOCKET_PATH..."
