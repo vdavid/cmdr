@@ -54,6 +54,7 @@ export {
   openFile,
   openExternalUrl,
   showFileContextMenu,
+  showBreadcrumbContextMenu,
   showInFinder,
   copyToClipboard,
   quickLook,

@@ -308,6 +308,13 @@ export const commands: Command[] = [
     shortcuts: ['⌃⌘C'],
   },
   {
+    id: 'file.copyCurrentDirectoryPath',
+    name: 'Copy current directory path',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: [],
+  },
+  {
     id: 'file.copyFilename',
     name: 'Copy filename',
     scope: 'Main window/File list',

@@ -27,6 +27,7 @@ pub const FILE_DELETE_ID: &str = "file_delete";
 pub const FILE_DELETE_PERMANENTLY_ID: &str = "file_delete_permanently";
 pub const SHOW_IN_FINDER_ID: &str = "show_in_finder";
 pub const COPY_PATH_ID: &str = "copy_path";
+pub const COPY_CURRENT_DIR_PATH_ID: &str = "copy_current_dir_path";
 pub const COPY_FILENAME_ID: &str = "copy_filename";
 pub const GET_INFO_ID: &str = "get_info";
 pub const QUICK_LOOK_ID: &str = "quick_look";
@@ -124,6 +125,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         FILE_DELETE_PERMANENTLY_ID => Some(("file.deletePermanently", CommandScope::FileScoped)),
         SHOW_IN_FINDER_ID => Some(("file.showInFinder", CommandScope::FileScoped)),
         COPY_PATH_ID => Some(("file.copyPath", CommandScope::FileScoped)),
+        COPY_CURRENT_DIR_PATH_ID => Some(("file.copyCurrentDirectoryPath", CommandScope::FileScoped)),
         COPY_FILENAME_ID => Some(("file.copyFilename", CommandScope::FileScoped)),
         GET_INFO_ID => Some(("file.getInfo", CommandScope::FileScoped)),
         QUICK_LOOK_ID => Some(("file.quickLook", CommandScope::FileScoped)),
@@ -485,6 +487,20 @@ pub fn build_context_menu<R: Runtime>(
         menu.append(&quick_look_item)?;
     }
 
+    Ok(menu)
+}
+
+/// Builds a context menu for the breadcrumb path bar.
+/// The `accelerator` parameter is the user's configured shortcut for this command
+/// (in Tauri accelerator format, e.g. "Ctrl+Shift+C"), or empty if none is set.
+pub fn build_breadcrumb_context_menu<R: Runtime>(
+    app: &AppHandle<R>,
+    accelerator: &str,
+) -> tauri::Result<Menu<R>> {
+    let menu = Menu::new(app)?;
+    let accel: Option<&str> = if accelerator.is_empty() { None } else { Some(accelerator) };
+    let copy_path_item = MenuItem::with_id(app, COPY_CURRENT_DIR_PATH_ID, "Copy path", true, accel)?;
+    menu.append(&copy_path_item)?;
     Ok(menu)
 }
 

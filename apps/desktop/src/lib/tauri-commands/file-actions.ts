@@ -30,6 +30,14 @@ export async function showFileContextMenu(path: string, filename: string, isDire
 }
 
 /**
+ * Shows a native context menu for the breadcrumb path bar.
+ * @param shortcut - Frontend shortcut string (e.g. "⌃⌘C"), or empty string if no shortcut is configured.
+ */
+export async function showBreadcrumbContextMenu(shortcut: string): Promise<void> {
+  await invoke('show_breadcrumb_context_menu', { shortcut })
+}
+
+/**
  * Show a file in the system file manager (reveal in parent folder).
  * On macOS, reveals in Finder. On Linux, uses the default file manager.
  * @param path - Absolute path to the file.

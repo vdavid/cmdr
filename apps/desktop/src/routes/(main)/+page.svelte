@@ -978,6 +978,14 @@
                 return
             }
 
+            case 'file.copyCurrentDirectoryPath': {
+                const currentPath = explorerRef?.getFocusedPanePath()
+                if (currentPath) {
+                    await copyToClipboard(currentPath)
+                }
+                return
+            }
+
             case 'file.copyFilename': {
                 const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
                 if (entryUnderCursor) {

@@ -1,7 +1,7 @@
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
-    CLOSE_TAB_ID, CommandScope, MenuState, build_context_menu, build_network_host_context_menu, build_tab_context_menu,
-    menu_id_to_command,
+    CLOSE_TAB_ID, CommandScope, MenuState, build_breadcrumb_context_menu, build_context_menu,
+    build_network_host_context_menu, build_tab_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command,
 };
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use std::process::Command;
@@ -32,6 +32,21 @@ pub fn show_file_context_menu<R: Runtime>(
     let menu = build_context_menu(app, &filename, is_directory).map_err(|e| e.to_string())?;
     menu.popup(window).map_err(|e| e.to_string())?;
 
+    Ok(())
+}
+
+/// Shows a native context menu for the breadcrumb path bar.
+/// The `shortcut` is the user's configured shortcut in frontend format (e.g. "⌃⌘C"),
+/// or empty string if no shortcut is configured.
+#[tauri::command]
+pub fn show_breadcrumb_context_menu<R: Runtime>(
+    window: Window<R>,
+    shortcut: String,
+) -> Result<(), String> {
+    let app = window.app_handle();
+    let accelerator = frontend_shortcut_to_accelerator(&shortcut).unwrap_or_default();
+    let menu = build_breadcrumb_context_menu(app, &accelerator).map_err(|e| e.to_string())?;
+    menu.popup(window).map_err(|e| e.to_string())?;
     Ok(())
 }
 

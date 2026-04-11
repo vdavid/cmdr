@@ -82,7 +82,8 @@
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { resolveValidPath } from '../navigation/path-navigation'
     import { homeDir } from '@tauri-apps/api/path'
-    import { getVolumeSpace, type VolumeSpaceInfo } from '$lib/tauri-commands'
+    import { getVolumeSpace, showBreadcrumbContextMenu, type VolumeSpaceInfo } from '$lib/tauri-commands'
+    import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
     import type { UnreachableState } from '../tabs/tab-types'
     import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
@@ -1085,6 +1086,13 @@
         onRequestFocus?.()
     }
 
+    function handleBreadcrumbContextMenu(e: MouseEvent) {
+        e.preventDefault()
+        onRequestFocus?.()
+        const shortcuts = getEffectiveShortcuts('file.copyCurrentDirectoryPath')
+        void showBreadcrumbContextMenu(shortcuts[0] ?? '')
+    }
+
     function handleVolumeChangeFromBreadcrumb(newVolumeId: string, newVolumePath: string, targetPath: string) {
         // Navigate to the target path (may differ from volume root for favorites)
         // Note: We intentionally don't call onPathChange here - the volume change handler
@@ -1695,7 +1703,8 @@
     role="region"
     aria-label="{paneId === 'left' ? 'Left' : 'Right'} file pane"
 >
-    <div class="header">
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="header" oncontextmenu={handleBreadcrumbContextMenu}>
         <VolumeBreadcrumb
             bind:this={volumeBreadcrumbRef}
             {volumeId}

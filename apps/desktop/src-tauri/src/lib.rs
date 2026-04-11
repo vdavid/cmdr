@@ -704,6 +704,7 @@ pub fn run() {
             commands::icons::clear_extension_icon_cache,
             commands::icons::clear_directory_icon_cache,
             commands::ui::show_file_context_menu,
+            commands::ui::show_breadcrumb_context_menu,
             commands::ui::show_tab_context_menu,
             commands::ui::show_network_host_context_menu,
             commands::ui::update_pin_tab_menu,
