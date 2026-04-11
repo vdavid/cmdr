@@ -44,7 +44,10 @@ pub(super) fn copy_single_path(
 ) -> Result<u64, VolumeError> {
     // Check cancellation
     if super::state::is_cancelled(&state.intent) {
-        return Err(VolumeError::IoError("Operation cancelled".to_string()));
+        return Err(VolumeError::IoError {
+            message: "Operation cancelled".to_string(),
+            raw_os_error: None,
+        });
     }
 
     let source_is_local = is_local_volume(source_volume.as_ref());
@@ -154,16 +157,25 @@ fn import_directory_cancellable(
     // Create the directory on the destination
     dest_volume.create_directory(dest_path)?;
 
-    let read_dir = std::fs::read_dir(local_source).map_err(|e| VolumeError::IoError(e.to_string()))?;
+    let read_dir = std::fs::read_dir(local_source).map_err(|e| VolumeError::IoError {
+        message: e.to_string(),
+        raw_os_error: None,
+    })?;
     let mut total_bytes = 0u64;
 
     for dir_entry in read_dir {
         // Check cancellation between files
         if super::state::is_cancelled(&state.intent) {
-            return Err(VolumeError::IoError("Operation cancelled".to_string()));
+            return Err(VolumeError::IoError {
+                message: "Operation cancelled".to_string(),
+                raw_os_error: None,
+            });
         }
 
-        let dir_entry = dir_entry.map_err(|e| VolumeError::IoError(e.to_string()))?;
+        let dir_entry = dir_entry.map_err(|e| VolumeError::IoError {
+            message: e.to_string(),
+            raw_os_error: None,
+        })?;
         let child_local = dir_entry.path();
         let child_name = dir_entry.file_name();
         let child_dest = dest_path.join(&child_name);
@@ -197,7 +209,10 @@ fn export_directory_cancellable(
     on_file_complete: &dyn Fn(),
 ) -> Result<u64, VolumeError> {
     // Create the local directory
-    std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError(e.to_string()))?;
+    std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError {
+        message: e.to_string(),
+        raw_os_error: None,
+    })?;
 
     // List the source directory via the Volume trait
     let entries = source_volume.list_directory(source_path)?;
@@ -206,7 +221,10 @@ fn export_directory_cancellable(
     for entry in &entries {
         // Check cancellation between files
         if super::state::is_cancelled(&state.intent) {
-            return Err(VolumeError::IoError("Operation cancelled".to_string()));
+            return Err(VolumeError::IoError {
+                message: "Operation cancelled".to_string(),
+                raw_os_error: None,
+            });
         }
 
         let child_source = Path::new(&entry.path);
@@ -245,7 +263,10 @@ fn copy_via_temp_local(
 ) -> Result<u64, VolumeError> {
     // Create a temporary directory for the transfer
     let temp_dir = std::env::temp_dir().join(format!("cmdr_volume_copy_{}", Uuid::new_v4()));
-    std::fs::create_dir_all(&temp_dir).map_err(|e| VolumeError::IoError(e.to_string()))?;
+    std::fs::create_dir_all(&temp_dir).map_err(|e| VolumeError::IoError {
+        message: e.to_string(),
+        raw_os_error: None,
+    })?;
 
     // Determine the name of the item being copied
     let item_name = source_path
@@ -372,7 +393,7 @@ mod tests {
         );
 
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), VolumeError::IoError(msg) if msg.contains("cancelled")));
+        assert!(matches!(result.unwrap_err(), VolumeError::IoError { message, .. } if message.contains("cancelled")));
 
         let _ = fs::remove_dir_all(&src_dir);
         let _ = fs::remove_dir_all(&dst_dir);

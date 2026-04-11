@@ -922,6 +922,23 @@ fn emit_synthetic_entry_diff(app: &tauri::AppHandle, entry_path: &Path, parent_p
     }
 }
 
+// ============================================================================
+// E2E test support (feature-gated)
+// ============================================================================
+
+/// Injects a listing error into an in-memory volume so the next `list_directory` call
+/// returns a `VolumeError::IoError` with the given errno. The error is cleared after
+/// one use, enabling retry testing.
+#[cfg(feature = "playwright-e2e")]
+#[tauri::command]
+pub fn inject_listing_error(volume_id: String, error_code: i32) -> Result<(), String> {
+    let volume = get_volume_manager()
+        .get(&volume_id)
+        .ok_or_else(|| format!("Volume `{}` not found", volume_id))?;
+    volume.inject_error(error_code);
+    Ok(())
+}
+
 /// Expands tilde (~) to the user's home directory.
 pub(crate) fn expand_tilde(path: &str) -> String {
     if (path.starts_with("~/") || path == "~")

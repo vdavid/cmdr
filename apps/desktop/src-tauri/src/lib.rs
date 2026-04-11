@@ -999,6 +999,8 @@ pub fn run() {
             commands::search::get_system_dir_excludes,
             // E2E test support
             commands::e2e::get_e2e_start_path,
+            #[cfg(feature = "playwright-e2e")]
+            commands::file_system::inject_listing_error,
             // Clipboard file operations
             commands::clipboard::copy_files_to_clipboard,
             commands::clipboard::cut_files_to_clipboard,

@@ -14,6 +14,10 @@ use std::time::Duration;
 use crate::benchmark;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
+use crate::file_system::volume::VolumeError;
+use crate::file_system::volume::friendly_error::{
+    FriendlyError, enrich_with_provider, friendly_error_from_volume_error,
+};
 use crate::file_system::watcher::start_watching;
 
 // ============================================================================
@@ -68,6 +72,8 @@ pub struct ListingCompleteEvent {
 pub struct ListingErrorEvent {
     pub listing_id: String,
     pub message: String,
+    /// Structured error info when available. `None` for internal errors (task panics).
+    pub friendly: Option<FriendlyError>,
 }
 
 /// Cancelled event payload
@@ -141,6 +147,7 @@ pub async fn list_directory_start_streaming(
     // Clone values for the spawned task
     let listing_id_for_spawn = listing_id.clone();
     let path_owned = path.to_path_buf();
+    let path_for_error = path.to_path_buf();
     let volume_id_owned = volume_id.to_string();
     let app_for_spawn = app.clone();
 
@@ -180,17 +187,22 @@ pub async fn list_directory_start_streaming(
                     "listing-error",
                     ListingErrorEvent {
                         listing_id: listing_id_for_cleanup,
-                        message: format!("Task failed: {}", e),
+                        message: "Something went wrong while reading this folder".to_string(),
+                        friendly: None,
                     },
                 );
+                log::error!("Listing task panicked: {}", e);
             }
             Ok(Err(e)) => {
-                // Function returned an error (like volume not found, permission denied)
+                // Function returned an error (volume not found, permission denied, I/O, etc.)
+                let mut friendly = friendly_error_from_volume_error(&e, &path_for_error);
+                enrich_with_provider(&mut friendly, &path_for_error);
                 let _ = app_for_error.emit(
                     "listing-error",
                     ListingErrorEvent {
                         listing_id: listing_id_for_cleanup,
                         message: e.to_string(),
+                        friendly: Some(friendly),
                     },
                 );
             }
@@ -225,7 +237,7 @@ fn read_directory_with_progress(
     sort_by: SortColumn,
     sort_order: SortOrder,
     dir_sort_mode: DirectorySortMode,
-) -> Result<(), std::io::Error> {
+) -> Result<(), VolumeError> {
     use tauri::Emitter;
 
     benchmark::log_event("read_directory_with_progress START");
@@ -260,7 +272,7 @@ fn read_directory_with_progress(
     // Get the volume from VolumeManager
     let volume = crate::file_system::get_volume_manager()
         .get(volume_id)
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, format!("Volume not found: {}", volume_id)))?;
+        .ok_or_else(|| VolumeError::NotFound(format!("Volume not found: {}", volume_id)))?;
 
     // Read directory entries via Volume abstraction
     // Use polling-based cancellation to remain responsive even when filesystem I/O blocks
@@ -310,14 +322,15 @@ fn read_directory_with_progress(
             Ok(result) => break result,
             Err(mpsc::RecvTimeoutError::Timeout) => continue,
             Err(mpsc::RecvTimeoutError::Disconnected) => {
-                return Err(std::io::Error::other(
-                    "Directory listing thread terminated unexpectedly",
-                ));
+                return Err(VolumeError::IoError {
+                    message: "Directory listing thread terminated unexpectedly".into(),
+                    raw_os_error: None,
+                });
             }
         }
     };
 
-    let mut entries = entries_result.map_err(|e| std::io::Error::other(e.to_string()))?;
+    let mut entries = entries_result?;
     let read_dir_time = read_start.elapsed();
     benchmark::log_event_value("read_dir COMPLETE, entries", entries.len());
 

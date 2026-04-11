@@ -71,7 +71,7 @@ fn test_list_directory_nonexistent_returns_error() {
 
     assert!(result.is_err());
     match result.unwrap_err() {
-        VolumeError::NotFound(_) | VolumeError::IoError(_) => (),
+        VolumeError::NotFound(_) | VolumeError::IoError { .. } => (),
         other => panic!("Expected NotFound or IoError, got: {:?}", other),
     }
 }

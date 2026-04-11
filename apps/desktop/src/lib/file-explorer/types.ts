@@ -69,12 +69,23 @@ export interface ListingCompleteEvent {
   volumeRoot: string
 }
 
+/** Structured error info for user-facing display (mirrors Rust `FriendlyError`). */
+export interface FriendlyError {
+  category: 'transient' | 'needs_action' | 'serious'
+  title: string
+  explanation: string
+  suggestion: string
+  rawDetail: string
+  retryHint: boolean
+}
+
 /**
  * Error event payload emitted when streaming directory listing fails.
  */
 export interface ListingErrorEvent {
   listingId: string
   message: string
+  friendly?: FriendlyError
 }
 
 /**

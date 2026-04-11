@@ -52,6 +52,8 @@ KNOWN_VOLUMES: OnceLock<Mutex<HashSet<String>>>
 | `pCloud` | pCloud |
 | anything else | first `-`-delimited segment |
 
+**Note**: Error enrichment in `file_system/volume/friendly_error.rs` has its own provider detection (`enrich_with_provider`) using the same path-prefix matching strategy but for a different purpose (error suggestions vs display names). Keep the two lists in sync when adding new providers.
+
 ## Gotchas
 
 **Gotcha**: Use `is_smb_fs_type()` to detect SMB volumes, never raw `"smbfs"` / `"cifs"` string comparisons

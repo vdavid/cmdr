@@ -493,12 +493,13 @@ pub fn build_context_menu<R: Runtime>(
 /// Builds a context menu for the breadcrumb path bar.
 /// The `accelerator` parameter is the user's configured shortcut for this command
 /// (in Tauri accelerator format, e.g. "Ctrl+Shift+C"), or empty if none is set.
-pub fn build_breadcrumb_context_menu<R: Runtime>(
-    app: &AppHandle<R>,
-    accelerator: &str,
-) -> tauri::Result<Menu<R>> {
+pub fn build_breadcrumb_context_menu<R: Runtime>(app: &AppHandle<R>, accelerator: &str) -> tauri::Result<Menu<R>> {
     let menu = Menu::new(app)?;
-    let accel: Option<&str> = if accelerator.is_empty() { None } else { Some(accelerator) };
+    let accel: Option<&str> = if accelerator.is_empty() {
+        None
+    } else {
+        Some(accelerator)
+    };
     let copy_path_item = MenuItem::with_id(app, COPY_CURRENT_DIR_PATH_ID, "Copy path", true, accel)?;
     menu.append(&copy_path_item)?;
     Ok(menu)

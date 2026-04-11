@@ -23,6 +23,9 @@ use walkdir::WalkDir;
 pub struct LocalPosixVolume {
     name: String,
     root: PathBuf,
+    /// Raw errno to inject on the next `list_directory` call. Cleared after use.
+    #[cfg(feature = "playwright-e2e")]
+    injected_error: std::sync::Mutex<Option<i32>>,
 }
 
 impl LocalPosixVolume {
@@ -35,6 +38,8 @@ impl LocalPosixVolume {
         Self {
             name: name.into(),
             root: root.into(),
+            #[cfg(feature = "playwright-e2e")]
+            injected_error: std::sync::Mutex::new(None),
         }
     }
 
@@ -86,6 +91,16 @@ impl Volume for LocalPosixVolume {
     }
 
     fn list_directory(&self, path: &Path) -> Result<Vec<FileEntry>, VolumeError> {
+        #[cfg(feature = "playwright-e2e")]
+        {
+            let mut injected = self.injected_error.lock().unwrap();
+            if let Some(errno) = injected.take() {
+                return Err(VolumeError::IoError {
+                    message: format!("Injected error for testing (os error {})", errno),
+                    raw_os_error: Some(errno),
+                });
+            }
+        }
         let abs_path = self.resolve(path);
         list_directory_core(&abs_path).map_err(VolumeError::from)
     }
@@ -95,8 +110,23 @@ impl Volume for LocalPosixVolume {
         path: &Path,
         on_progress: &dyn Fn(usize),
     ) -> Result<Vec<FileEntry>, VolumeError> {
+        #[cfg(feature = "playwright-e2e")]
+        {
+            let mut injected = self.injected_error.lock().unwrap();
+            if let Some(errno) = injected.take() {
+                return Err(VolumeError::IoError {
+                    message: format!("Injected error for testing (os error {})", errno),
+                    raw_os_error: Some(errno),
+                });
+            }
+        }
         let abs_path = self.resolve(path);
         list_directory_core_with_progress(&abs_path, on_progress).map_err(VolumeError::from)
+    }
+
+    #[cfg(feature = "playwright-e2e")]
+    fn inject_error(&self, errno: i32) {
+        *self.injected_error.lock().unwrap() = Some(errno);
     }
 
     fn get_metadata(&self, path: &Path) -> Result<FileEntry, VolumeError> {
@@ -168,7 +198,10 @@ impl Volume for LocalPosixVolume {
         let mut total_bytes = 0u64;
 
         for entry in WalkDir::new(&abs_path).min_depth(0) {
-            let entry = entry.map_err(|e| VolumeError::IoError(e.to_string()))?;
+            let entry = entry.map_err(|e| VolumeError::IoError {
+                message: e.to_string(),
+                raw_os_error: None,
+            })?;
             let ft = entry.file_type();
             if ft.is_file() {
                 file_count += 1;
@@ -348,7 +381,10 @@ fn get_space_info_for_path(path: &Path) -> Result<SpaceInfo, VolumeError> {
 fn get_space_info_statvfs(path: &Path) -> Result<SpaceInfo, VolumeError> {
     use std::ffi::CString;
 
-    let path_c = CString::new(path.to_string_lossy().as_bytes()).map_err(|e| VolumeError::IoError(e.to_string()))?;
+    let path_c = CString::new(path.to_string_lossy().as_bytes()).map_err(|e| VolumeError::IoError {
+        message: e.to_string(),
+        raw_os_error: None,
+    })?;
 
     unsafe {
         let mut stat: libc::statvfs = std::mem::zeroed();
@@ -368,7 +404,10 @@ fn get_space_info_statvfs(path: &Path) -> Result<SpaceInfo, VolumeError> {
                 used_bytes,
             })
         } else {
-            Err(VolumeError::IoError("Failed to get space info".into()))
+            Err(VolumeError::IoError {
+                message: "Failed to get space info".into(),
+                raw_os_error: None,
+            })
         }
     }
 }

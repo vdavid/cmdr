@@ -257,10 +257,13 @@ pub fn scan_for_volume_copy(
 
     // Check if there's enough space
     if dest_space.available_bytes < total_bytes {
-        return Err(VolumeError::IoError(format!(
-            "Not enough space: need {} bytes, only {} available",
-            total_bytes, dest_space.available_bytes
-        )));
+        return Err(VolumeError::IoError {
+            message: format!(
+                "Not enough space: need {} bytes, only {} available",
+                total_bytes, dest_space.available_bytes
+            ),
+            raw_os_error: None,
+        });
     }
 
     // Scan for conflicts at destination
@@ -1340,9 +1343,9 @@ pub(super) fn map_volume_error(context_path: &str, e: VolumeError) -> WriteOpera
         VolumeError::Cancelled(_) => WriteOperationError::Cancelled {
             message: "Operation cancelled by user".to_string(),
         },
-        VolumeError::IoError(msg) => WriteOperationError::IoError {
+        VolumeError::IoError { message, .. } => WriteOperationError::IoError {
             path: context_path.to_string(),
-            message: msg,
+            message,
         },
     }
 }

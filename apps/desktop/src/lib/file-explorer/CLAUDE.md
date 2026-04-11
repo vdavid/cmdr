@@ -137,7 +137,7 @@ Core explorer UI components:
 - **FunctionKeyBar.svelte** — F1–F10 bar at the bottom of the window
 - **MtpConnectionView.svelte** / **NetworkMountView.svelte** — Placeholder panes for MTP/network mount states
 - **PaneResizer.svelte** — Drag handle between the two panes
-- **PermissionDeniedPane.svelte** — Shown when a directory can't be read
+- **ErrorPane.svelte** — Unified error display for listing failures. See [Error display](#error-display) below.
 - **VolumeUnreachableBanner.svelte** — Shown when a tab's volume resolution timed out at startup (retry + open home)
 - **selection-state.svelte.ts** — Reactive selection set (indices) with range/toggle helpers
 - **sorting-handlers.ts** / **transfer-operations.ts** / **tab-operations.ts** — Pure logic extracted from
@@ -145,6 +145,45 @@ Core explorer UI components:
 - **dialog-state.svelte.ts** — Dialog state and handlers (transfer, delete/trash, new folder, alert, error) extracted
   from DualPaneExplorer via factory pattern
 - **rename-flow.svelte.ts** — Rename flow logic (validation, conflict/extension dialogs) extracted from FilePane
+
+## Error display
+
+When a directory listing fails, the user sees a full-pane `ErrorPane` instead of the file list. This replaces the old
+raw "I/O error: Operation timed out (os error 60)" text and the separate `PermissionDeniedPane` with a unified,
+warm, and actionable error experience.
+
+### How it works
+
+1. `listing-error` Tauri event arrives with `{ message, friendly?: FriendlyError }`
+2. `FilePane` checks: is this an MTP volume? → short-circuit to `MtpConnectionView` (MTP has its own UX)
+3. Does the path still exist? → if gone, auto-navigate to nearest valid parent (not an error state)
+4. Path exists but listing failed → render `ErrorPane` (if `friendly` is present) or raw error div (if not)
+
+### `ErrorPane.svelte`
+
+Receives a `FriendlyError` struct from Rust (all content is pre-baked on the backend, the frontend doesn't do any
+error classification or OS-specific logic):
+
+- **Title**: large text, color varies by category (warning for transient, error for serious, default for needs-action)
+- **Folder path**: shown in secondary text so the user knows exactly which folder is affected
+- **Explanation**: rendered as markdown via `snarkdown` — plain-language description of what happened
+- **Suggestion**: rendered as markdown — actionable steps, often provider-specific (for example, "Open **MacDroid** and
+  check that your phone is connected")
+- **"Try again" button**: shown only for `transient` category. Calls `navigateTo(currentPath)` to retry the listing.
+  Tracks retry count and timestamps, displays them in the technical details ("Retry #2 · first try 45s ago · last try
+  12s ago")
+- **"Open System Settings" button**: shown for permission-denied errors on macOS (reuses `openPrivacySettings()`)
+- **Collapsible "Technical details"**: shows the raw errno name and code for power users / bug reports
+
+### For future agents
+
+The error messages and provider suggestions live in **Rust** (`file_system/volume/friendly_error.rs`), not in this
+Svelte component. The frontend is intentionally thin here — it renders what Rust sends. If you want to change the
+wording, add a new error state, or add a new provider: edit the Rust file. See `file_system/volume/CLAUDE.md` §
+"Friendly error system" for the writing rules and how-to guides.
+
+The `ErrorPane` component should rarely need changes unless you're adding new UI elements (like illustrations, new
+button types, or new sections). The content flexibility comes from markdown rendering, not component code.
 
 ## Key decisions
 

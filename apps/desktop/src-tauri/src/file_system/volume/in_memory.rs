@@ -32,6 +32,9 @@ pub struct InMemoryVolume {
     entries: RwLock<HashMap<PathBuf, InMemoryEntry>>,
     /// Configurable space info for testing. None means get_space_info returns NotSupported.
     space_info: Option<SpaceInfo>,
+    /// Raw errno to inject on the next `list_directory` call. Cleared after use.
+    #[cfg(feature = "playwright-e2e")]
+    injected_error: std::sync::Mutex<Option<i32>>,
 }
 
 impl InMemoryVolume {
@@ -42,6 +45,8 @@ impl InMemoryVolume {
             root: PathBuf::from("/"),
             entries: RwLock::new(HashMap::new()),
             space_info: None,
+            #[cfg(feature = "playwright-e2e")]
+            injected_error: std::sync::Mutex::new(None),
         }
     }
 
@@ -137,10 +142,22 @@ impl Volume for InMemoryVolume {
     }
 
     fn list_directory(&self, path: &Path) -> Result<Vec<FileEntry>, VolumeError> {
-        let entries = self
-            .entries
-            .read()
-            .map_err(|_| VolumeError::IoError("Lock poisoned".into()))?;
+        // Check for injected error (E2E testing). Cleared after one use to enable retry testing.
+        #[cfg(feature = "playwright-e2e")]
+        {
+            let mut injected = self.injected_error.lock().unwrap();
+            if let Some(errno) = injected.take() {
+                return Err(VolumeError::IoError {
+                    message: format!("Injected error for testing (os error {})", errno),
+                    raw_os_error: Some(errno),
+                });
+            }
+        }
+
+        let entries = self.entries.read().map_err(|_| VolumeError::IoError {
+            message: "Lock poisoned".into(),
+            raw_os_error: None,
+        })?;
 
         let target_dir = self.normalize(path);
 
@@ -165,10 +182,10 @@ impl Volume for InMemoryVolume {
     }
 
     fn get_metadata(&self, path: &Path) -> Result<FileEntry, VolumeError> {
-        let entries = self
-            .entries
-            .read()
-            .map_err(|_| VolumeError::IoError("Lock poisoned".into()))?;
+        let entries = self.entries.read().map_err(|_| VolumeError::IoError {
+            message: "Lock poisoned".into(),
+            raw_os_error: None,
+        })?;
 
         let normalized = self.normalize(path);
 
@@ -189,10 +206,10 @@ impl Volume for InMemoryVolume {
     }
 
     fn is_directory(&self, path: &Path) -> Result<bool, VolumeError> {
-        let entries = self
-            .entries
-            .read()
-            .map_err(|_| VolumeError::IoError("Lock poisoned".into()))?;
+        let entries = self.entries.read().map_err(|_| VolumeError::IoError {
+            message: "Lock poisoned".into(),
+            raw_os_error: None,
+        })?;
 
         let normalized = self.normalize(path);
 
@@ -203,10 +220,10 @@ impl Volume for InMemoryVolume {
     }
 
     fn create_file(&self, path: &Path, content: &[u8]) -> Result<(), VolumeError> {
-        let mut entries = self
-            .entries
-            .write()
-            .map_err(|_| VolumeError::IoError("Lock poisoned".into()))?;
+        let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
+            message: "Lock poisoned".into(),
+            raw_os_error: None,
+        })?;
 
         let normalized = self.normalize(path);
 
@@ -238,10 +255,10 @@ impl Volume for InMemoryVolume {
     }
 
     fn create_directory(&self, path: &Path) -> Result<(), VolumeError> {
-        let mut entries = self
-            .entries
-            .write()
-            .map_err(|_| VolumeError::IoError("Lock poisoned".into()))?;
+        let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
+            message: "Lock poisoned".into(),
+            raw_os_error: None,
+        })?;
 
         let normalized = self.normalize(path);
 
@@ -272,10 +289,10 @@ impl Volume for InMemoryVolume {
     }
 
     fn delete(&self, path: &Path) -> Result<(), VolumeError> {
-        let mut entries = self
-            .entries
-            .write()
-            .map_err(|_| VolumeError::IoError("Lock poisoned".into()))?;
+        let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
+            message: "Lock poisoned".into(),
+            raw_os_error: None,
+        })?;
 
         let normalized = self.normalize(path);
 
@@ -286,10 +303,10 @@ impl Volume for InMemoryVolume {
     }
 
     fn rename(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
-        let mut entries = self
-            .entries
-            .write()
-            .map_err(|_| VolumeError::IoError("Lock poisoned".into()))?;
+        let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
+            message: "Lock poisoned".into(),
+            raw_os_error: None,
+        })?;
 
         let from_normalized = self.normalize(from);
         let to_normalized = self.normalize(to);
@@ -320,10 +337,10 @@ impl Volume for InMemoryVolume {
 
     fn scan_for_copy(&self, path: &Path) -> Result<CopyScanResult, VolumeError> {
         let normalized = self.normalize(path);
-        let entries = self
-            .entries
-            .read()
-            .map_err(|_| VolumeError::IoError("Lock poisoned".into()))?;
+        let entries = self.entries.read().map_err(|_| VolumeError::IoError {
+            message: "Lock poisoned".into(),
+            raw_os_error: None,
+        })?;
 
         // Check if the path is a file
         if let Some(entry) = entries.get(&normalized)
@@ -362,6 +379,11 @@ impl Volume for InMemoryVolume {
             dir_count,
             total_bytes,
         })
+    }
+
+    #[cfg(feature = "playwright-e2e")]
+    fn inject_error(&self, errno: i32) {
+        *self.injected_error.lock().unwrap() = Some(errno);
     }
 
     fn get_space_info(&self) -> Result<SpaceInfo, VolumeError> {

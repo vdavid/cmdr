@@ -123,7 +123,10 @@ pub enum VolumeError {
     ConnectionTimeout(String),
     /// Operation was cancelled by the user (progress callback returned Break).
     Cancelled(String),
-    IoError(String),
+    IoError {
+        message: String,
+        raw_os_error: Option<i32>,
+    },
 }
 
 impl std::fmt::Display for VolumeError {
@@ -138,7 +141,7 @@ impl std::fmt::Display for VolumeError {
             Self::StorageFull { message } => write!(f, "Storage full: {}", message),
             Self::ConnectionTimeout(msg) => write!(f, "Connection timed out: {}", msg),
             Self::Cancelled(msg) => write!(f, "Cancelled: {}", msg),
-            Self::IoError(msg) => write!(f, "I/O error: {}", msg),
+            Self::IoError { message, .. } => write!(f, "I/O error: {}", message),
         }
     }
 }
@@ -208,7 +211,10 @@ impl From<std::io::Error> for VolumeError {
             std::io::ErrorKind::NotFound => Self::NotFound(err.to_string()),
             std::io::ErrorKind::PermissionDenied => Self::PermissionDenied(err.to_string()),
             std::io::ErrorKind::AlreadyExists => Self::AlreadyExists(err.to_string()),
-            _ => Self::IoError(err.to_string()),
+            _ => Self::IoError {
+                message: err.to_string(),
+                raw_os_error: err.raw_os_error(),
+            },
         }
     }
 }
@@ -258,6 +264,18 @@ pub trait Volume: Send + Sync {
     /// Checks if a path is a directory.
     /// Returns Ok(true) if directory, Ok(false) if file, Err if path doesn't exist.
     fn is_directory(&self, path: &Path) -> Result<bool, VolumeError>;
+
+    // ========================================
+    // E2E test support (feature-gated)
+    // ========================================
+
+    /// Injects an error that will be returned by the next `list_directory` call.
+    /// After the error is returned once, subsequent calls work normally (enables testing retry).
+    /// Only available in E2E builds. Default is no-op.
+    #[cfg(feature = "playwright-e2e")]
+    fn inject_error(&self, _errno: i32) {
+        // No-op for volumes that don't support error injection
+    }
 
     // ========================================
     // Optional: Default to NotSupported
@@ -519,6 +537,7 @@ pub trait Volume: Send + Sync {
 }
 
 // Implementations
+pub mod friendly_error;
 mod in_memory;
 mod local_posix;
 pub(crate) mod manager;

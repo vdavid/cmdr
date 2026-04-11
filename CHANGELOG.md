@@ -12,8 +12,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 - Striped rows setting — alternating row shading in Full and Brief view modes, auto-adapts to light/dark mode
   ([faa2534](https://github.com/vdavid/cmdr/commit/faa2534))
 - MTP per-file copy progress and mid-file cancellation — progress callback on every USB chunk, instant cancel via USB
-  SIC abort (~300ms instead of draining the full stream)
-  ([ac5ec4d](https://github.com/vdavid/cmdr/commit/ac5ec4d),
+  SIC abort (~300ms instead of draining the full stream) ([ac5ec4d](https://github.com/vdavid/cmdr/commit/ac5ec4d),
   [a66adf6](https://github.com/vdavid/cmdr/commit/a66adf6))
 
 ### Fixed

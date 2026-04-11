@@ -59,7 +59,7 @@
     "file-explorer/network/NetworkBrowser.svelte": { "reason": "Network component, needs Tauri integration" },
     "file-explorer/pane/PaneResizer.svelte": { "reason": "Mouse drag UI component, difficult to unit test" },
     "file-explorer/network/NetworkLoginForm.svelte": { "reason": "Network component, needs Tauri integration" },
-    "file-explorer/pane/PermissionDeniedPane.svelte": { "reason": "Simple UI component" },
+    "file-explorer/pane/ErrorPane.svelte": { "reason": "UI component, logic tested in error-pane-utils.test.ts" },
     "file-explorer/pane/VolumeUnreachableBanner.svelte": {
       "reason": "UI banner component, depends on Tauri commands"
     },

@@ -94,8 +94,14 @@ fn map_smb_error(err: smb2::Error) -> VolumeError {
         ErrorKind::DiskFull => VolumeError::StorageFull {
             message: err.to_string(),
         },
-        ErrorKind::Cancelled => VolumeError::IoError("Operation cancelled".to_string()),
-        _ => VolumeError::IoError(err.to_string()),
+        ErrorKind::Cancelled => VolumeError::IoError {
+            message: "Operation cancelled".to_string(),
+            raw_os_error: None,
+        },
+        _ => VolumeError::IoError {
+            message: err.to_string(),
+            raw_os_error: None,
+        },
     }
 }
 
@@ -226,11 +232,17 @@ impl SmbVolume {
 
         // Ensure parent directory exists
         if let Some(parent) = local_dest.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| VolumeError::IoError(e.to_string()))?;
+            std::fs::create_dir_all(parent).map_err(|e| VolumeError::IoError {
+                message: e.to_string(),
+                raw_os_error: None,
+            })?;
         }
 
         let len = data.len() as u64;
-        std::fs::write(local_dest, &data).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        std::fs::write(local_dest, &data).map_err(|e| VolumeError::IoError {
+            message: e.to_string(),
+            raw_os_error: None,
+        })?;
         Ok(len)
     }
 
@@ -252,17 +264,26 @@ impl SmbVolume {
 
         // Ensure parent directory exists
         if let Some(parent) = local_dest.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| VolumeError::IoError(e.to_string()))?;
+            std::fs::create_dir_all(parent).map_err(|e| VolumeError::IoError {
+                message: e.to_string(),
+                raw_os_error: None,
+            })?;
         }
 
         let len = data.len() as u64;
-        std::fs::write(local_dest, &data).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        std::fs::write(local_dest, &data).map_err(|e| VolumeError::IoError {
+            message: e.to_string(),
+            raw_os_error: None,
+        })?;
         Ok(len)
     }
 
     /// Recursively exports a directory from SMB to a local path. Returns total bytes.
     fn export_directory_recursive(&self, smb_path: &str, local_dest: &Path) -> Result<u64, VolumeError> {
-        std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError {
+            message: e.to_string(),
+            raw_os_error: None,
+        })?;
 
         let display_path = self.to_display_path(smb_path);
         let entries = self.list_directory(Path::new(&display_path))?;
@@ -293,7 +314,10 @@ impl SmbVolume {
         local_dest: &Path,
         on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
     ) -> Result<u64, VolumeError> {
-        std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError {
+            message: e.to_string(),
+            raw_os_error: None,
+        })?;
 
         let display_path = self.to_display_path(smb_path);
         let entries = self.list_directory(Path::new(&display_path))?;
@@ -319,7 +343,10 @@ impl SmbVolume {
 
     /// Imports a single local file to SMB. Returns bytes written.
     fn import_single_file(&self, local_source: &Path, smb_path: &str) -> Result<u64, VolumeError> {
-        let data = std::fs::read(local_source).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        let data = std::fs::read(local_source).map_err(|e| VolumeError::IoError {
+            message: e.to_string(),
+            raw_os_error: None,
+        })?;
         let len = data.len() as u64;
         let handle = self.runtime_handle.clone();
         let sp = smb_path.to_string();
@@ -340,11 +367,17 @@ impl SmbVolume {
             handle.block_on(client.create_directory(tree, &sp))
         })?;
 
-        let read_dir = std::fs::read_dir(local_source).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        let read_dir = std::fs::read_dir(local_source).map_err(|e| VolumeError::IoError {
+            message: e.to_string(),
+            raw_os_error: None,
+        })?;
         let mut total_bytes = 0u64;
 
         for dir_entry in read_dir {
-            let dir_entry = dir_entry.map_err(|e| VolumeError::IoError(e.to_string()))?;
+            let dir_entry = dir_entry.map_err(|e| VolumeError::IoError {
+                message: e.to_string(),
+                raw_os_error: None,
+            })?;
             let child_local = dir_entry.path();
             let child_name = dir_entry.file_name().to_string_lossy().to_string();
             let child_smb = if smb_path.is_empty() {
@@ -370,7 +403,10 @@ impl SmbVolume {
         smb_path: &str,
         on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
     ) -> Result<u64, VolumeError> {
-        let data = std::fs::read(local_source).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        let data = std::fs::read(local_source).map_err(|e| VolumeError::IoError {
+            message: e.to_string(),
+            raw_os_error: None,
+        })?;
         let len = data.len() as u64;
         let handle = self.runtime_handle.clone();
         let sp = smb_path.to_string();
@@ -398,11 +434,17 @@ impl SmbVolume {
             handle.block_on(client.create_directory(tree, &sp))
         })?;
 
-        let read_dir = std::fs::read_dir(local_source).map_err(|e| VolumeError::IoError(e.to_string()))?;
+        let read_dir = std::fs::read_dir(local_source).map_err(|e| VolumeError::IoError {
+            message: e.to_string(),
+            raw_os_error: None,
+        })?;
         let mut total_bytes = 0u64;
 
         for dir_entry in read_dir {
-            let dir_entry = dir_entry.map_err(|e| VolumeError::IoError(e.to_string()))?;
+            let dir_entry = dir_entry.map_err(|e| VolumeError::IoError {
+                message: e.to_string(),
+                raw_os_error: None,
+            })?;
             let child_local = dir_entry.path();
             let child_name = dir_entry.file_name().to_string_lossy().to_string();
             let child_smb = if smb_path.is_empty() {
@@ -485,10 +527,10 @@ impl SmbVolume {
             return Err(VolumeError::NotSupported);
         }
 
-        let mut guard = self
-            .smb
-            .lock()
-            .map_err(|e| VolumeError::IoError(format!("Failed to acquire SMB lock: {}", e)))?;
+        let mut guard = self.smb.lock().map_err(|e| VolumeError::IoError {
+            message: format!("Failed to acquire SMB lock: {}", e),
+            raw_os_error: None,
+        })?;
 
         let (client, tree) = guard
             .as_mut()
@@ -770,7 +812,7 @@ impl Volume for SmbVolume {
 
         match file_result {
             Ok(()) => {} // File deleted successfully
-            Err(VolumeError::IoError(ref msg)) if msg.contains("FILE_IS_A_DIRECTORY") => {
+            Err(VolumeError::IoError { ref message, .. }) if message.contains("FILE_IS_A_DIRECTORY") => {
                 // It's a directory — try delete_directory
                 self.with_smb("delete_directory", |client, tree| {
                     handle.block_on(client.delete_directory(tree, &smb_path))

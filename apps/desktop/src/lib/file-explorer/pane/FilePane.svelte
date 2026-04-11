@@ -4,6 +4,7 @@
         DirectoryDeletedEvent,
         DirectoryDiff,
         FileEntry,
+        FriendlyError,
         ListingCancelledEvent,
         ListingCompleteEvent,
         ListingErrorEvent,
@@ -61,7 +62,7 @@
     import SelectionInfo from '../selection/SelectionInfo.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import VolumeBreadcrumb from '../navigation/VolumeBreadcrumb.svelte'
-    import PermissionDeniedPane from './PermissionDeniedPane.svelte'
+    import ErrorPane from './ErrorPane.svelte'
     import VolumeUnreachableBanner from './VolumeUnreachableBanner.svelte'
     import NetworkMountView from './NetworkMountView.svelte'
     import MtpConnectionView from './MtpConnectionView.svelte'
@@ -150,6 +151,7 @@
     let maxFilenameWidth = $state<number | undefined>(undefined)
     let loading = $state(true)
     let error = $state<string | null>(null)
+    let friendlyError = $state<FriendlyError | null>(null)
     let cursorIndex = $state(0)
 
     // Selection state (extracted to selection-state.svelte.ts)
@@ -526,8 +528,9 @@
     // Finalizing state (read_dir done, now sorting/caching)
     let finalizingCount = $state<number | undefined>(undefined)
     let unlistenReadComplete: UnlistenFn | undefined
-    function resetLoadingState(errorMessage?: string, preserveTotalCount = false) {
+    function resetLoadingState(errorMessage?: string, preserveTotalCount = false, friendly?: FriendlyError | null) {
         if (errorMessage) error = errorMessage
+        friendlyError = friendly ?? null
         listingId = ''
         if (!preserveTotalCount) totalCount = 0
         loading = false
@@ -656,11 +659,6 @@
         visibleRangeEnd = end
         debouncedSyncMcp.call()
     }
-
-    // Check if error is a permission denied error
-    const isPermissionDenied = $derived(
-        error !== null && (error.includes('Permission denied') || error.includes('os error 13')),
-    )
 
     // Create ".." entry for parent navigation
     function createParentEntry(path: string): FileEntry | null {
@@ -850,7 +848,7 @@
                                 })
                             } else {
                                 // Path exists but has another error (permission denied, etc.)
-                                resetLoadingState(event.payload.message)
+                                resetLoadingState(event.payload.message, false, event.payload.friendly)
                             }
                         })
                     }
@@ -1734,8 +1732,8 @@
             <MtpConnectionView {volumeId} {onVolumeChange} />
         {:else if loading}
             <LoadingIcon {openingFolder} loadedCount={loadingCount} {finalizingCount} showCancelHint={true} />
-        {:else if isPermissionDenied}
-            <PermissionDeniedPane folderPath={currentPath} />
+        {:else if friendlyError}
+            <ErrorPane friendly={friendlyError} folderPath={currentPath} onRetry={() => navigateToPath(currentPath)} />
         {:else if error}
             <div class="error-message">{error}</div>
         {:else if viewMode === 'brief'}
@@ -1806,7 +1804,7 @@
         {/if}
     </div>
     <!-- SelectionInfo shown in both modes (not in network view, MTP connecting state, or error states) -->
-    {#if !isNetworkView && !isMtpDeviceOnly && !isPermissionDenied && !error && !unreachable}
+    {#if !isNetworkView && !isMtpDeviceOnly && !friendlyError && !error && !unreachable}
         <SelectionInfo
             {viewMode}
             entry={entryUnderCursor}

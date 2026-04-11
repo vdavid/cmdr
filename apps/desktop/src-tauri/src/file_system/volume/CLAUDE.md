@@ -11,6 +11,7 @@ Every file system operation (listing, copy, rename, delete, indexing, watching) 
 | File | Role |
 |---|---|
 | `mod.rs` | `Volume` trait, `VolumeScanner`, `VolumeWatcher`, `VolumeReadStream` traits, `MutationEvent` enum, shared types (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `ScanConflict`, `SourceItemInfo`) |
+| `friendly_error.rs` | User-facing error messages. See [Friendly error system](#friendly-error-system) below. |
 | `manager.rs` | `VolumeManager` — thread-safe `RwLock<HashMap>` registry; supports a default volume |
 | `local_posix.rs` | `LocalPosixVolume` — real filesystem; delegates listing to `file_system::listing`, indexing to `indexing::scanner`, watching to `indexing::watcher` (FSEvents), copy scanning via `walkdir`. Uses `libc::statvfs` FFI for space info. |
 | `mtp.rs` | `MtpVolume` — MTP device storage; synchronous `Volume` trait bridged to async MTP calls via `tokio::runtime::Handle::block_on`. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
@@ -71,6 +72,99 @@ Both paths check the `network.directSmbConnection` setting (global `AtomicBool`)
 warning and the volume stays as `LocalPosixVolume`. The "Connect directly" UI action (`upgrade_to_smb_volume` command)
 provides a manual upgrade path.
 
+## Friendly error system
+
+`friendly_error.rs` turns raw OS errors into warm, actionable messages so the user feels supported when something goes
+wrong. This is one of Cmdr's UX differentiators: where other file managers show "I/O error: Operation timed out (os
+error 60)", we show a friendly title, a plain-language explanation, and provider-specific advice ("This folder is managed
+by **MacDroid**. Here's what to try: ...").
+
+### Philosophy
+
+**The user should never feel alone with a broken state.** Every error message should feel like the app is putting its
+hand on the user's shoulder and saying "Here's what happened, and here's what you can do." We go above and beyond: we
+detect which cloud provider or mount tool manages the path, and tailor the suggestion to that specific app. A timeout on
+a Dropbox folder gets different advice than a timeout on an SSHFS mount.
+
+Power users also need the raw details (errno name, code) for debugging or bug reports. These are available in a
+collapsible "Technical details" section, never hidden but never in your face either.
+
+### Architecture
+
+Two-layer mapping, both in this file:
+
+1. **`friendly_error_from_volume_error(err, path)`** — maps `VolumeError` variants and macOS errno codes (37 codes) to a
+   `FriendlyError` with category (Transient/NeedsAction/Serious), title, explanation, suggestion, and raw detail.
+2. **`enrich_with_provider(error, path)`** — detects 19 cloud/mount providers from path patterns and `statfs` filesystem
+   type, then overwrites the suggestion with provider-specific advice.
+
+The frontend receives the fully-baked `FriendlyError` struct via the `listing-error` Tauri event and renders it with
+category-based visual styling. The frontend never sees errno codes or does OS-specific logic.
+
+### Adding a new error message
+
+When you need to handle a new errno or `VolumeError` variant:
+
+1. Add the match arm in `friendly_error_from_volume_error`
+2. Pick the right `ErrorCategory`: **Transient** (retry might work), **NeedsAction** (user must do something),
+   **Serious** (something is genuinely broken)
+3. Write the message following the rules below
+4. Add a unit test asserting the category and that the text follows the style rules
+5. Run the existing `error_messages_never_contain_error_or_failed` test to catch violations
+
+### Adding a new provider
+
+When a new cloud storage or mount tool becomes popular enough to detect:
+
+1. Add a variant to the `Provider` enum with `display_name()` and `app_name()`
+2. Add path detection in `detect_provider` (CloudStorage prefix, specific path, or `statfs` type)
+3. Write provider-specific suggestions in `provider_suggestion` for each `ErrorCategory`
+4. Add a unit test for path detection and suggestion content
+5. Update `volumes/CLAUDE.md` provider table to keep the two lists in sync
+
+### Writing rules for error messages
+
+These are non-negotiable. The existing test suite enforces some of them automatically.
+
+- **NEVER use "error" or "failed"** in titles, explanations, or suggestions. Say "Couldn't read" not "Read error". The
+  automated test `error_messages_never_contain_error_or_failed` catches this.
+- **Active voice, contractions**: "Cmdr couldn't..." not "The operation was unable to..."
+- **No trivializing**: no "just", "simply", "easy", "all you have to do"
+- **No permissive language**: "Check your connection" not "You might want to check..."
+- **Direct and warm**: "Here's what to try:" not "Please attempt the following remediation steps:"
+- **No em dashes**: use parentheses, commas, or new sentences
+- **Sentence case in titles**: "Connection timed out" not "Connection Timed Out"
+- **Bold key terms** with `**` only when it helps scanning (for example, provider names)
+- **Platform-native terms**: "System Settings" on macOS, "Finder", "Trash"
+- **Keep it short**: max two sentences for explanation, bullets for suggestions
+
+Good example:
+```
+title: "Connection timed out"
+explanation: "Cmdr tried to read this folder but the connection didn't respond in time."
+suggestion: "Here's what to try:\n- Check that the device or server is reachable\n- ..."
+```
+
+Bad example (every rule violated):
+```
+title: "I/O Error: Operation Timed Out"   // "Error", Title Case
+explanation: "An error occurred while the system attempted to access the directory."  // passive, "error"
+suggestion: "You may want to try simply reconnecting the device."  // permissive, trivializing
+```
+
+### Provider detection strategies
+
+| Strategy | Providers covered |
+|---|---|
+| `~/Library/CloudStorage/<Prefix>*` | Dropbox, GoogleDrive, OneDrive, Box, pCloud, Nextcloud, SynologyDrive, Tresorit, ProtonDrive, Sync, Egnyte, MacDroid, plus a generic fallback for unrecognized providers |
+| `~/Library/Mobile Documents/` | iCloud Drive |
+| `/Volumes/pCloudDrive` | pCloud (FUSE virtual drive) |
+| `/Volumes/veracrypt*` | VeraCrypt |
+| `~/.CMVolumes/` | CloudMounter |
+| `statfs` `f_fstypename` (macOS) | macFUSE/SSHFS/Cryptomator/rclone (`macfuse`, `osxfuse`), pCloud (`pcloudfs`) |
+
+The `statfs` check runs only at error time (not on every listing), so the syscall cost is negligible.
+
 ## Integration status
 
 `LocalPosixVolume` is wired into the indexing subsystem. `VolumeManager` is actively used.
@@ -93,7 +187,13 @@ provides a manual upgrade path.
 **Why**: The `Volume` trait is synchronous because local filesystem ops are blocking and shouldn't touch the async executor. MTP operations are inherently async (USB bulk transfers), so `block_on` bridges the gap. This is safe because MTP methods are always called from `spawn_blocking` contexts (separate OS thread pool), avoiding nested-runtime panics.
 
 **Decision**: `VolumeError` stores `String` messages, not the original `std::io::Error`
-**Why**: `std::io::Error` is not `Clone`, but `VolumeError` needs to be `Clone` for ergonomic error propagation across thread boundaries and for serialization to the frontend. Storing the formatted message loses the original error type but keeps the information that matters for user-facing error messages.
+**Why**: `std::io::Error` is not `Clone`, but `VolumeError` needs to be `Clone` for ergonomic error propagation across thread boundaries and for serialization to the frontend. Storing the formatted message loses the original error type but keeps the information that matters for user-facing error messages. The `IoError` variant also carries `raw_os_error: Option<i32>` so the friendly error mapper can match on platform-specific errno codes.
+
+**Decision**: Friendly error mapping is two layers: errno mapping, then provider enrichment
+**Why**: Not every provider+errno combination needs custom copy. The base errno message is always useful. Provider enrichment is additive, making the suggestion more specific when we recognize who manages the mount. Keeping them separate avoids a combinatorial explosion of messages.
+
+**Decision**: Friendly error mapping lives in Rust, not the frontend
+**Why**: The mapping needs access to the full path (for provider detection) and platform-specific errno codes. Doing it in Rust keeps the frontend thin (principle: smart backend, thin frontend) and avoids duplicating errno knowledge in TypeScript. The frontend receives a ready-to-render `FriendlyError` struct with markdown strings.
 
 **Decision**: `LocalPosixVolume` uses `symlink_metadata` for `exists()` instead of `Path::exists()`
 **Why**: `Path::exists()` follows symlinks — a dangling symlink returns `false`, which would make the volume claim a file doesn't exist when it visibly does in a directory listing. `symlink_metadata` detects the symlink itself, matching what the user sees.
@@ -150,6 +250,7 @@ provides a manual upgrade path.
 
 ## Testing
 
+- **E2E error injection**: The `Volume` trait has an `inject_error(&self, errno: i32)` method behind the `playwright-e2e` feature flag. `LocalPosixVolume` and `InMemoryVolume` implement it — the next `list_directory` call returns the injected errno, then clears it (single-shot, so retry tests work). Default is no-op.
 - `in_memory_test.rs` — unit tests for `InMemoryVolume` (CRUD, sorting, concurrency, stress 50k entries)
 - `inmemory_test.rs` — integration tests combining `InMemoryVolume` + `VolumeManager`, streaming state, sort helpers
 - `local_posix_test.rs` — real-FS tests (write ops, symlinks, copy, space info) using `std::env::temp_dir()`

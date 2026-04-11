@@ -317,10 +317,16 @@ impl Volume for MtpVolume {
 
     fn create_directory(&self, path: &Path) -> Result<(), VolumeError> {
         let Some(parent) = path.parent() else {
-            return Err(VolumeError::IoError("Cannot create root directory".into()));
+            return Err(VolumeError::IoError {
+                message: "Cannot create root directory".into(),
+                raw_os_error: None,
+            });
         };
         let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
-            return Err(VolumeError::IoError("Invalid directory name".into()));
+            return Err(VolumeError::IoError {
+                message: "Invalid directory name".into(),
+                raw_os_error: None,
+            });
         };
 
         let parent_mtp_path = self.to_mtp_path(parent);
@@ -384,11 +390,17 @@ impl Volume for MtpVolume {
         let from_name = Path::new(&from_mtp)
             .file_name()
             .and_then(|n| n.to_str())
-            .ok_or_else(|| VolumeError::IoError("Invalid source path".into()))?;
+            .ok_or_else(|| VolumeError::IoError {
+                message: "Invalid source path".into(),
+                raw_os_error: None,
+            })?;
         let to_name = Path::new(&to_mtp)
             .file_name()
             .and_then(|n| n.to_str())
-            .ok_or_else(|| VolumeError::IoError("Invalid destination path".into()))?;
+            .ok_or_else(|| VolumeError::IoError {
+                message: "Invalid destination path".into(),
+                raw_os_error: None,
+            })?;
         let same_name = from_name == to_name;
 
         let device_id = self.device_id.clone();
@@ -692,7 +704,10 @@ impl Volume for MtpVolume {
         let filename = dest
             .file_name()
             .and_then(|n| n.to_str())
-            .ok_or_else(|| VolumeError::IoError("Invalid filename".into()))?
+            .ok_or_else(|| VolumeError::IoError {
+                message: "Invalid filename".into(),
+                raw_os_error: None,
+            })?
             .to_string();
 
         let device_id = self.device_id.clone();
@@ -743,7 +758,10 @@ impl VolumeReadStream for MtpReadStream {
                     self.bytes_read += bytes.len() as u64;
                     Some(Ok(bytes.to_vec()))
                 }
-                Some(Err(e)) => Some(Err(VolumeError::IoError(e.to_string()))),
+                Some(Err(e)) => Some(Err(VolumeError::IoError {
+                    message: e.to_string(),
+                    raw_os_error: None,
+                })),
                 None => None,
             }
         })
@@ -773,7 +791,10 @@ fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
         MtpConnectionError::Timeout { .. } => VolumeError::ConnectionTimeout(e.to_string()),
         MtpConnectionError::StorageFull { .. } => VolumeError::StorageFull { message: e.to_string() },
         MtpConnectionError::StoreReadOnly { .. } => VolumeError::ReadOnly(e.to_string()),
-        _ => VolumeError::IoError(e.to_string()),
+        _ => VolumeError::IoError {
+            message: e.to_string(),
+            raw_os_error: None,
+        },
     }
 }
 
