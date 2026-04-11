@@ -149,8 +149,8 @@ Core explorer UI components:
 ## Error display
 
 When a directory listing fails, the user sees a full-pane `ErrorPane` instead of the file list. This replaces the old
-raw "I/O error: Operation timed out (os error 60)" text and the separate `PermissionDeniedPane` with a unified,
-warm, and actionable error experience.
+raw "I/O error: Operation timed out (os error 60)" text and the separate `PermissionDeniedPane` with a unified, warm,
+and actionable error experience.
 
 ### How it works
 
@@ -161,10 +161,11 @@ warm, and actionable error experience.
 
 ### `ErrorPane.svelte`
 
-Receives a `FriendlyError` struct from Rust (all content is pre-baked on the backend, the frontend doesn't do any
-error classification or OS-specific logic):
+Receives a `FriendlyError` struct from Rust (all content is pre-baked on the backend, the frontend doesn't do any error
+classification or OS-specific logic):
 
-- **Title**: large text, color varies by category (warning for transient, error for serious, default for needs-action)
+- **Title**: large text, always in accent color. Lucide icon signals severity: ⚠ `TriangleAlert` in warning color for
+  transient, ⊘ `CircleAlert` in error color for serious, no icon for needs-action
 - **Folder path**: shown in secondary text so the user knows exactly which folder is affected
 - **Explanation**: rendered as markdown via `snarkdown` — plain-language description of what happened
 - **Suggestion**: rendered as markdown — actionable steps, often provider-specific (for example, "Open **MacDroid** and
@@ -185,11 +186,20 @@ wording, add a new error state, or add a new provider: edit the Rust file. See `
 The `ErrorPane` component should rarely need changes unless you're adding new UI elements (like illustrations, new
 button types, or new sections). The content flexibility comes from markdown rendering, not component code.
 
+### Debug preview
+
+The debug window has an "Error pane preview" section that can trigger any error state on either pane. The flow is
+cross-window: debug page calls `preview_friendly_error` (Tauri command, `#[cfg(debug_assertions)]` only) to get a real
+`FriendlyError` from Rust, then emits `debug-inject-error` via `emitTo('main', ...)`. The main window's `+page.svelte`
+listens for this event and calls `explorerRef.injectError(pane, friendly)`, which delegates to
+`FilePane.injectError(friendly)` setting the `friendlyError` state directly. Reset works via `debug-reset-error` which
+re-navigates the pane (clearing `friendlyError` in `loadDirectory`).
+
 ## Key decisions
 
-**Decision**: Scoped CSS for file explorer list components, Tailwind elsewhere. **Why**: File lists render 50k+ items.
-Scoped CSS produces smaller DOM (no repetitive utility classes on each file entry), enabling faster rendering and lower
-memory. Guideline: if a component renders >100 repeated items, prefer scoped CSS.
+**Decision**: Scoped CSS for file explorer list components (and throughout the app — Tailwind was removed due to 15s dev
+startup from JIT scanning). **Why**: File lists render 50k+ items. Scoped CSS produces smaller DOM (no repetitive
+utility classes on each file entry), enabling faster rendering and lower memory.
 
 **Decision**: Icon registry pattern — `iconId` refs in file entries, separate `get_icons()` call, frontend caches.
 **Why**: 50k JPEG files would otherwise transmit 50k identical icon blobs (~100-200MB). Instead, file entries carry only

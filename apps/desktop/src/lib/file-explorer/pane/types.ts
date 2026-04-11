@@ -1,4 +1,4 @@
-import type { FileEntry, NetworkHost } from '../types'
+import type { FileEntry, FriendlyError, NetworkHost } from '../types'
 
 /** State snapshot for swapping panes without backend calls. */
 export interface SwapState {
@@ -60,6 +60,9 @@ export interface FilePaneAPI {
 
   handleKeyDown(e: KeyboardEvent): void
   handleKeyUp(e: KeyboardEvent): void
+
+  /** Debug only: inject a FriendlyError into this pane's error state. */
+  injectError(friendly: FriendlyError): void
 }
 
 /** Typed interface for BriefList/FullList exported methods used by FilePane. */

@@ -40,6 +40,7 @@
         NetworkHost,
         ConflictResolution,
         WriteOperationError,
+        FriendlyError,
     } from '../types'
     import { defaultSortOrders } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
@@ -2081,6 +2082,21 @@
     export function refreshPane() {
         const paneRef = getPaneRef(focusedPane)
         paneRef?.refreshView()
+    }
+
+    /** Debug only: inject a FriendlyError into the specified pane. */
+    export function injectError(pane: 'left' | 'right', friendly: FriendlyError) {
+        getPaneRef(pane)?.injectError(friendly)
+    }
+
+    /** Debug only: reset a pane's error state by re-navigating to its current path. */
+    export function resetError(pane: 'left' | 'right' | 'both') {
+        if (pane === 'both' || pane === 'left') {
+            getPaneRef('left')?.navigateToPath(getPanePath('left'))
+        }
+        if (pane === 'both' || pane === 'right') {
+            getPaneRef('right')?.navigateToPath(getPanePath('right'))
+        }
     }
 
     /** Refresh network hosts in the focused pane (used by ⌘R shortcut). */

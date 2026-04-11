@@ -26,10 +26,9 @@ var allowedUnusedClasses = map[string]bool{
 	// ProgressBar.svelte - applied dynamically via class="track {size}" template string
 	"sm": true,
 	"md": true,
-	// ErrorPane.svelte - title color class applied via dynamic $derived binding (titleColorClass)
-	"title-warning": true,
-	"title-error":   true,
-	"title-default": true,
+	// ErrorPane.svelte - icon color class applied via dynamic $derived binding (iconColorClass)
+	"icon-warning": true,
+	"icon-error":   true,
 	// Tooltip - singleton DOM node created/managed by tooltip.ts action, not in Svelte templates
 	"cmdr-tooltip":     true,
 	"cmdr-tooltip-kbd": true,

@@ -1001,6 +1001,9 @@ pub fn run() {
             commands::e2e::get_e2e_start_path,
             #[cfg(feature = "playwright-e2e")]
             commands::file_system::inject_listing_error,
+            // Debug-only: preview real FriendlyError for debug error pane
+            #[cfg(debug_assertions)]
+            commands::file_system::preview_friendly_error,
             // Clipboard file operations
             commands::clipboard::copy_files_to_clipboard,
             commands::clipboard::cut_files_to_clipboard,

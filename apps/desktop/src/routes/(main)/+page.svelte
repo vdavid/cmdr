@@ -45,6 +45,7 @@
     } from '$lib/licensing/licensing-store.svelte'
     import { updateLicenseCommandName } from '$lib/commands/command-registry'
     import type { ViewMode } from '$lib/app-status-store'
+    import type { FriendlyError } from '$lib/file-explorer/types'
 
     // Interface for DualPaneExplorer's exported methods
     interface ExplorerAPI {
@@ -92,6 +93,8 @@
         scrollTo: (pane: 'left' | 'right', index: number) => void
         refreshPane: () => void
         refreshNetworkHosts: () => void
+        injectError: (pane: 'left' | 'right', friendly: FriendlyError) => void
+        resetError: (pane: 'left' | 'right' | 'both') => void
         newTab: () => boolean
         closeActiveTab: () => 'closed' | 'last-tab'
         closeActiveTabWithConfirmation: () => Promise<'closed' | 'last-tab' | 'cancelled'>
@@ -336,6 +339,18 @@
                 void focusMainWindow()
             }
         })
+
+        // Debug error injection (dev mode only)
+        if (import.meta.env.DEV) {
+            await listenTauri('debug-inject-error', (event) => {
+                const { pane, friendly } = event.payload as { pane: 'left' | 'right'; friendly: FriendlyError }
+                explorerRef?.injectError(pane, friendly)
+            })
+            await listenTauri('debug-reset-error', (event) => {
+                const { pane } = event.payload as { pane: 'left' | 'right' | 'both' }
+                explorerRef?.resetError(pane)
+            })
+        }
     }
 
     /** Set up MCP-related event listeners */

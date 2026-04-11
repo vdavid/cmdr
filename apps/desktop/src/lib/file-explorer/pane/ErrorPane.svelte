@@ -5,6 +5,7 @@
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import Button from '$lib/ui/Button.svelte'
     import { renderErrorMarkdown } from './error-pane-utils'
+    import { TriangleAlert, CircleAlert } from '@lucide/svelte'
 
     interface Props {
         friendly: FriendlyError
@@ -43,14 +44,6 @@
         return `${String(hours)}h ago`
     }
 
-    const titleColorClass = $derived(
-        friendly.category === 'transient'
-            ? 'title-warning'
-            : friendly.category === 'serious'
-              ? 'title-error'
-              : 'title-default',
-    )
-
     const isPermissionDenied = $derived(
         friendly.category === 'needs_action' && friendly.title.toLowerCase().includes('no permission'),
     )
@@ -71,7 +64,18 @@
 
 <div class="error-pane" role="alert" aria-live="assertive">
     <div class="content">
-        <h2 class={titleColorClass}>{friendly.title}</h2>
+        <h2 class="title">
+            {#if friendly.category === 'serious'}
+                <span class="title-icon icon-error">
+                    <CircleAlert size={20} strokeWidth={2} />
+                </span>
+            {:else if friendly.category === 'transient'}
+                <span class="title-icon icon-warning">
+                    <TriangleAlert size={20} strokeWidth={2} />
+                </span>
+            {/if}
+            {friendly.title}
+        </h2>
         <p class="folder-path">{folderPath}</p>
 
         <div class="explanation">
@@ -118,6 +122,13 @@
         height: 100%;
         padding: var(--spacing-xl);
         line-height: 1.5;
+        user-select: text;
+        -webkit-user-select: text;
+    }
+
+    .error-pane ::selection {
+        background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+        color: inherit;
     }
 
     .content {
@@ -128,18 +139,23 @@
         font-size: var(--font-size-xl);
         font-weight: 600;
         margin: 0 0 var(--spacing-sm) 0;
+        color: var(--color-accent-text);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
     }
 
-    .title-warning {
+    .title-icon {
+        display: flex;
+        flex-shrink: 0;
+    }
+
+    .icon-warning {
         color: var(--color-warning);
     }
 
-    .title-error {
+    .icon-error {
         color: var(--color-error);
-    }
-
-    .title-default {
-        color: var(--color-text-primary);
     }
 
     .folder-path {

@@ -772,6 +772,7 @@
         loadingCount = undefined
         finalizingCount = undefined
         error = null
+        friendlyError = null
         syncStatusMap = {}
         clearTimeout(syncRetryTimer)
         syncRetryTimer = undefined
@@ -1261,6 +1262,13 @@
         if (e.key === 'Shift') {
             selection.clearRangeState()
         }
+    }
+
+    /** Debug only: inject a FriendlyError into this pane to preview the error state. */
+    export function injectError(friendly: FriendlyError) {
+        error = null
+        friendlyError = friendly
+        loading = false
     }
 
     // When includeHidden changes, cancel rename and refetch total count
