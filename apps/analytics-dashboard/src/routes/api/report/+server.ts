@@ -74,8 +74,8 @@ function formatReport(data: DashboardData): string {
     line(`Couldn't load: ${data.umami.error}`)
   } else {
     const u = data.umami.data
-    const totalPv = u.personalSite.pageviews.value + u.website.pageviews.value
-    const prevPv = u.personalSite.pageviews.prev + u.website.pageviews.prev
+    const totalPv = u.personalSite.pageviews.value + u.website.pageviews.value + u.prvw.pageviews.value
+    const prevPv = u.personalSite.pageviews.prev + u.website.pageviews.prev + u.prvw.pageviews.prev
     line(`- Total page views: ${num(totalPv)}${delta(totalPv, prevPv)}`)
     line(
       `- veszelovszki.com views: ${num(u.personalSite.pageviews.value)}${delta(u.personalSite.pageviews.value, u.personalSite.pageviews.prev)}`,
@@ -84,10 +84,16 @@ function formatReport(data: DashboardData): string {
       `- getcmdr.com views: ${num(u.website.pageviews.value)}${delta(u.website.pageviews.value, u.website.pageviews.prev)}`,
     )
     line(
+      `- getprvw.com views: ${num(u.prvw.pageviews.value)}${delta(u.prvw.pageviews.value, u.prvw.pageviews.prev)}`,
+    )
+    line(
       `- veszelovszki.com visitors: ${num(u.personalSite.visitors.value)}${delta(u.personalSite.visitors.value, u.personalSite.visitors.prev)}`,
     )
     line(
       `- getcmdr.com visitors: ${num(u.website.visitors.value)}${delta(u.website.visitors.value, u.website.visitors.prev)}`,
+    )
+    line(
+      `- getprvw.com visitors: ${num(u.prvw.visitors.value)}${delta(u.prvw.visitors.value, u.prvw.visitors.prev)}`,
     )
 
     if (data.githubStars.ok) {
@@ -107,9 +113,18 @@ function formatReport(data: DashboardData): string {
 
     if (u.websiteReferrers.length > 0) {
       blank()
-      line('Top referrers:')
+      line('Top referrers (getcmdr.com):')
       const totalRef = u.websiteReferrers.reduce((s, r) => s + r.y, 0)
       for (const ref of u.websiteReferrers.slice(0, 15)) {
+        line(`  ${ref.x || '(direct)'}: ${num(ref.y)} (${pct(ref.y, totalRef)})`)
+      }
+    }
+
+    if (u.prvwReferrers.length > 0) {
+      blank()
+      line('Top referrers (getprvw.com):')
+      const totalRef = u.prvwReferrers.reduce((s, r) => s + r.y, 0)
+      for (const ref of u.prvwReferrers.slice(0, 15)) {
         line(`  ${ref.x || '(direct)'}: ${num(ref.y)} (${pct(ref.y, totalRef)})`)
       }
     }

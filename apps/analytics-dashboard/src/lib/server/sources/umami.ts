@@ -18,6 +18,8 @@ export interface UmamiMetricItem {
 export interface UmamiData {
   personalSite: UmamiSiteStats
   website: UmamiSiteStats
+  /** getprvw.com stats */
+  prvw: UmamiSiteStats
   /** Top referrers for getcmdr.com */
   websiteReferrers: UmamiMetricItem[]
   /** Top pages for getcmdr.com */
@@ -26,6 +28,10 @@ export interface UmamiData {
   websiteCountries: UmamiMetricItem[]
   /** Download button click events */
   downloadEvents: UmamiMetricItem[]
+  /** Top referrers for getprvw.com */
+  prvwReferrers: UmamiMetricItem[]
+  /** Top pages for getprvw.com */
+  prvwPages: UmamiMetricItem[]
 }
 
 interface UmamiEnv {
@@ -34,6 +40,7 @@ interface UmamiEnv {
   UMAMI_PASSWORD: string
   UMAMI_WEBSITE_ID: string
   UMAMI_BLOG_WEBSITE_ID: string
+  UMAMI_PRVW_WEBSITE_ID: string
 }
 
 /** Authenticates with Umami and returns a JWT token. */
@@ -127,18 +134,21 @@ export async function fetchUmamiData(env: UmamiEnv, range: TimeRange): Promise<S
     const token = await authenticate(env.UMAMI_API_URL, env.UMAMI_USERNAME, env.UMAMI_PASSWORD)
     const { startAt, endAt } = toTimeWindow(range)
 
-    const [personalSite, website, websiteReferrers, websitePages, websiteCountries, downloadEvents] = await Promise.all(
+    const [personalSite, website, prvw, websiteReferrers, websitePages, websiteCountries, downloadEvents, prvwReferrers, prvwPages] = await Promise.all(
       [
         fetchStats(env.UMAMI_API_URL, token, env.UMAMI_BLOG_WEBSITE_ID, startAt, endAt),
         fetchStats(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt),
+        fetchStats(env.UMAMI_API_URL, token, env.UMAMI_PRVW_WEBSITE_ID, startAt, endAt),
         fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt, 'referrer'),
         fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt, 'path'),
         fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt, 'country'),
         fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt, 'event'),
+        fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_PRVW_WEBSITE_ID, startAt, endAt, 'referrer'),
+        fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_PRVW_WEBSITE_ID, startAt, endAt, 'path'),
       ],
     )
 
-    const data: UmamiData = { personalSite, website, websiteReferrers, websitePages, websiteCountries, downloadEvents }
+    const data: UmamiData = { personalSite, website, prvw, websiteReferrers, websitePages, websiteCountries, downloadEvents, prvwReferrers, prvwPages }
     await cacheSet('umami-v2', range, data)
     return { ok: true, data }
   } catch (e) {

@@ -8,6 +8,7 @@ const mockEnv = {
   UMAMI_PASSWORD: 'testpass',
   UMAMI_WEBSITE_ID: '5ea041ae-b99d-4c31-b031-89c4a0005456',
   UMAMI_BLOG_WEBSITE_ID: '3ee5c901-70bf-4dc4-bd79-bca403db6aca',
+  UMAMI_PRVW_WEBSITE_ID: 'a963eeab-7c38-49cb-a968-83a3c82b31d1',
 }
 
 const sampleStats = {
@@ -62,7 +63,7 @@ describe('fetchUmamiData', () => {
       json: async () => ({ token: 'test-jwt-token' }),
     })
 
-    // 6 parallel requests: personalSite stats, website stats, referrers, pages, countries, events
+    // 9 parallel requests: personalSite stats, website stats, prvw stats, referrers, pages, countries, events, prvwReferrers, prvwPages
     const rawStats = {
       pageviews: 1200,
       visitors: 450,
@@ -71,10 +72,10 @@ describe('fetchUmamiData', () => {
       totaltime: 86400,
       comparison: { pageviews: 1000, visitors: 400, visits: 550, bounces: 180, totaltime: 72000 },
     }
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 9; i++) {
       fetchMock.mockResolvedValueOnce({
         ok: true,
-        json: async () => (i < 2 ? rawStats : sampleMetrics),
+        json: async () => (i < 3 ? rawStats : sampleMetrics),
       })
     }
 
@@ -86,7 +87,9 @@ describe('fetchUmamiData', () => {
 
     expect(result.data.personalSite.pageviews.value).toBe(1200)
     expect(result.data.website.visitors.value).toBe(450)
+    expect(result.data.prvw.pageviews.value).toBe(1200)
     expect(result.data.websitePages).toHaveLength(3)
+    expect(result.data.prvwReferrers).toHaveLength(3)
 
     // Verify auth was called first
     expect(fetchMock.mock.calls[0][0]).toBe('https://umami.example.com/api/auth/login')
@@ -112,7 +115,7 @@ describe('fetchUmamiData', () => {
     fetchMock.mockResolvedValueOnce({ ok: false, status: 500 })
     // The other parallel requests also need to resolve for Promise.all to work,
     // but the first rejection will be caught
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 8; i++) {
       fetchMock.mockResolvedValueOnce({ ok: true, json: async () => sampleStats })
     }
 

@@ -85,6 +85,7 @@
     const COLOR_GOLD = '#ffc206'
     const COLOR_PURPLE = '#a78bfa'
     const COLOR_GREEN = '#8faa3b' // autumn-y green for veszelovszki.com
+    const COLOR_CYAN = '#22d3ee' // cyan for getprvw.com
 
     /** Time range in seconds for the selected range. Used as default zoom for star charts. */
     const rangeSeconds: Record<string, number> = { '24h': 86400, '7d': 7 * 86400, '30d': 30 * 86400 }
@@ -207,20 +208,28 @@
                 {@render errorState(data.umami.error)}
             {:else}
                 {@const umami = data.umami.data}
-                {@const totalPageviews = umami.personalSite.pageviews.value + umami.website.pageviews.value}
-                {@const prevPageviews = umami.personalSite.pageviews.prev + umami.website.pageviews.prev}
+                {@const totalPageviews = umami.personalSite.pageviews.value + umami.website.pageviews.value + umami.prvw.pageviews.value}
+                {@const prevPageviews = umami.personalSite.pageviews.prev + umami.website.pageviews.prev + umami.prvw.pageviews.prev}
                 {@const delta = formatDelta(totalPageviews, prevPageviews)}
 
                 {@render metricRow([
                     { label: 'Total page views', value: formatNumber(totalPageviews), delta },
                     { label: 'veszelovszki.com views', value: formatNumber(umami.personalSite.pageviews.value), color: COLOR_GREEN },
                     { label: 'getcmdr.com views', value: formatNumber(umami.website.pageviews.value), color: COLOR_GOLD },
+                    { label: 'getprvw.com views', value: formatNumber(umami.prvw.pageviews.value), color: COLOR_CYAN },
                 ])}
 
                 {#if umami.websiteReferrers.length > 0}
                     <div class="mt-4">
-                        <h3 class="mb-2 text-sm font-medium text-text-secondary">Top referrers</h3>
+                        <h3 class="mb-2 text-sm font-medium text-text-secondary">Top referrers (getcmdr.com)</h3>
                         {@render metricTable(umami.websiteReferrers.slice(0, 10), 'Source', 'Views')}
+                    </div>
+                {/if}
+
+                {#if umami.prvwReferrers.length > 0}
+                    <div class="mt-4">
+                        <h3 class="mb-2 text-sm font-medium text-text-secondary">Top referrers (getprvw.com)</h3>
+                        {@render metricTable(umami.prvwReferrers.slice(0, 10), 'Source', 'Views')}
                     </div>
                 {/if}
 
@@ -256,6 +265,7 @@
                 {@render externalLinks([
                     { label: 'View veszelovszki.com in Umami', href: 'https://anal.veszelovszki.com' },
                     { label: 'View getcmdr.com in Umami', href: 'https://anal.veszelovszki.com' },
+                    { label: 'View getprvw.com in Umami', href: 'https://anal.veszelovszki.com' },
                     { label: 'cmdr on GitHub', href: 'https://github.com/vdavid/cmdr' },
                     { label: 'mtp-rs on GitHub', href: 'https://github.com/vdavid/mtp-rs' },
                 ])}

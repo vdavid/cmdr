@@ -40,7 +40,7 @@ Each source gets its own module under `src/lib/server/sources/`:
 
 | Module          | Auth                                            | Data                                                                                                                              |
 | --------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `umami.ts`      | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com + getcmdr.com                                    |
+| `umami.ts`      | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com, getcmdr.com, and getprvw.com                    |
 | `cloudflare.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Download counts, active users by version/arch/country — fetched from worker endpoints (`/admin/downloads`, `/admin/active-users`) |
 | `paddle.ts`     | Bearer token, cursor pagination                 | Completed transactions, subscriptions by status                                                                                   |
 | `github.ts`     | Optional Bearer token                           | Release download counts per asset; star history (daily + cumulative) for cmdr and mtp-rs via stargazers API with pagination       |
@@ -59,7 +59,8 @@ Auto-deploys to Cloudflare Pages on push to `main` when files in `apps/analytics
 
 - Create CF Pages project `cmdr-analytics-dashboard` in the CF dashboard (or `wrangler pages project create`)
 - Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` to GitHub repo secrets (for wrangler deploy)
-- Set all env vars below as CF Pages secrets (via `wrangler pages secret put` or CF dashboard)
+- Set all env vars below as CF Pages secrets (via `wrangler pages secret put` or CF dashboard). Remember to add
+  `UMAMI_PRVW_WEBSITE_ID` when deploying.
 - Configure custom domain `analdash.getcmdr.com` in CF Pages settings
 - Set up Cloudflare Access policy for `analdash.getcmdr.com` in the CF dashboard
 
@@ -74,6 +75,7 @@ All set as CF Pages secrets, never in code.
 | `UMAMI_PASSWORD`             | Existing Umami credentials                                                   |
 | `UMAMI_WEBSITE_ID`           | getcmdr.com website ID                                                       |
 | `UMAMI_BLOG_WEBSITE_ID`      | veszelovszki.com website ID (env var name kept for CF secrets compatibility) |
+| `UMAMI_PRVW_WEBSITE_ID`      | getprvw.com website ID                                                       |
 | `PADDLE_API_KEY_LIVE`        | Live API key (not sandbox)                                                   |
 | `POSTHOG_API_KEY`            | Personal `phx_...` key (not the public `phc_...` project key)                |
 | `POSTHOG_PROJECT_ID`         | `136072`                                                                     |
@@ -93,7 +95,10 @@ aggregate numbers. A true funnel would require cross-site user identity tracking
 
 - **Gold (`#ffc206`)**: getcmdr.com / vdavid/cmdr — the primary product
 - **Purple (`#a78bfa`)**: vdavid/mtp-rs — the library repo
-- **Autumn green (`#8faa3b`)**: veszelovszki.com — David's personal site These colors are used in metric dots, chart
+- **Autumn green (`#8faa3b`)**: veszelovszki.com — David's personal site
+- **Cyan (`#22d3ee`)**: getprvw.com — Prvw product site
+
+These colors are used in metric dots, chart
   strokes, and chart fills. Keep them consistent when adding new UI.
 
 **Decision**: Single page, not multi-page. **Why**: Only six sections. Scroll is simpler than navigation.
