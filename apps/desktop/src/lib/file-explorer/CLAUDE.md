@@ -164,8 +164,8 @@ and actionable error experience.
 Receives a `FriendlyError` struct from Rust (all content is pre-baked on the backend, the frontend doesn't do any error
 classification or OS-specific logic):
 
-- **Title**: large text, always in accent color. Lucide icon signals severity: ⚠ `TriangleAlert` in warning color for
-  transient, ⊘ `CircleAlert` in error color for serious, no icon for needs-action
+- **Title**: large text, always in accent color. UnoCSS/Lucide icon signals severity: ⚠ `i-lucide:triangle-alert` in
+  warning color for transient, ⊘ `i-lucide:circle-alert` in error color for serious, no icon for needs-action
 - **Folder path**: shown in secondary text so the user knows exactly which folder is affected
 - **Explanation**: rendered as markdown via `snarkdown` — plain-language description of what happened
 - **Suggestion**: rendered as markdown — actionable steps, often provider-specific (for example, "Open **MacDroid** and

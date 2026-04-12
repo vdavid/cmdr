@@ -2,7 +2,7 @@
  * See /.interface-design/system.md for the design system specification.
  *
  * These variables serve as the single source of truth for all colors, spacing,
- * and typography. They can be used in both scoped CSS and Tailwind classes.
+ * and typography. They are used in scoped CSS throughout the app.
  *
  * Future: Can be modified at runtime for user theme customization. */
 

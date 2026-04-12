@@ -107,6 +107,84 @@ Only add JSDoc that actually adds info. No tautologies.
 - For the full design system (color tokens, typography scale, spacing, component patterns), see
   [design-system.md](design-system.md).
 
+### Icons
+
+We use [UnoCSS](https://unocss.dev/) with the [Icons preset](https://unocss.dev/presets/icons) for UI icons. This
+renders icons as **pure CSS** (no JS components, no runtime overhead). The icon data comes from the
+[Iconify](https://iconify.design/) ecosystem. We currently use the **Lucide** icon set (`@iconify-json/lucide`).
+
+#### How it works
+
+UnoCSS generates CSS at build time. For monochrome icons, the SVG becomes a CSS `mask-image` with
+`background-color: currentColor`, so the icon inherits the text color of its parent. Config: `apps/desktop/uno.config.ts`.
+
+#### Finding icons
+
+1. Go to [icones.js.org](https://icones.js.org/) and select the **Lucide** collection to stay visually consistent
+2. Search by keyword (for example, "warning", "folder", "check")
+3. When you find a candidate, its class name is `i-lucide:{icon-name}` (for example, `i-lucide:triangle-alert`)
+4. **Always pick icons from the same set** (Lucide) for visual cohesion (consistent stroke width and style)
+
+If you're an AI agent looking for icons: search at `https://icones.js.org/collection/lucide?s={search+terms}`, suggest
+candidates to the user with the search URL and terms so they can browse and pick, then use the chosen icon name.
+
+#### Using icons in templates
+
+Icons are plain `<span>` elements with a UnoCSS class. **No imports needed.**
+
+```svelte
+<!-- Basic usage — inherits parent text color -->
+<span class="i-lucide:triangle-alert"></span>
+
+<!-- With explicit size (use px via scoped CSS, not inline em) -->
+<span class="i-lucide:hourglass my-icon-class"></span>
+```
+
+#### Sizing
+
+UnoCSS icons default to `1em × 1em` (scales with font size). We override this with **explicit px sizes via scoped CSS
+classes**, not inline styles, to keep sizing predictable and consistent:
+
+```svelte
+<span class="i-lucide:circle-alert detail-icon"></span>
+
+<style>
+    .detail-icon {
+        width: 12px;
+        height: 12px;
+    }
+</style>
+```
+
+#### Coloring
+
+Icons use `currentColor` by default — they inherit the parent's text color. To color an icon:
+
+- **Preferred**: Set `color` on the parent element, or use a scoped CSS class on the icon
+- **For accent color**: Use a scoped class with a stylelint disable comment (because `color: var(--color-accent)` is
+  disallowed by default for a11y reasons — it has insufficient contrast as text):
+  ```css
+  .my-icon {
+      /* stylelint-disable-next-line declaration-property-value-disallowed-list -- icon indicator, not body text */
+      color: var(--color-accent);
+  }
+  ```
+- **For semantic colors**: Use `var(--color-warning)`, `var(--color-error)`, etc. directly — these aren't restricted
+
+#### Adding a new icon set
+
+If Lucide doesn't have what you need, install another Iconify set (for example, `pnpm add -D @iconify-json/mdi` for
+Material Design Icons). Then add it to the `ignoreDependencies` list in `knip.json` and to the `allowedUndefinedClasses`
+in `scripts/check-css-unused/allowlist.go`. Prefer sticking to one set per context for visual consistency.
+
+#### Checklist for adding a new icon
+
+1. Find the icon at [icones.js.org](https://icones.js.org/) in the Lucide collection
+2. Use it as `<span class="i-lucide:{name} my-class"></span>`
+3. Set size via a scoped CSS class (not inline style, not `em`)
+4. Set color via scoped CSS or parent inheritance
+5. Add the class name to `scripts/check-css-unused/allowlist.go` → `allowedUndefinedClasses`
+
 ## Design
 
 See [design-principles.md](design-principles.md) for product design values (UX, accessibility, cancellation, platform

@@ -66,7 +66,8 @@ Core structure:
   - `analytics-dashboard/` - Private metrics dashboard (SvelteKit + CF Pages)
   - `desktop/` - The Tauri desktop app
     - `test/e2e-linux/` - WebDriverIO + tauri-driver tests (Docker, tests real Tauri app)
-    - `src/` - Svelte frontend. Uses SvelteKit with static adapter. TypeScript strict mode. Tailwind v4.
+    - `src/` - Svelte frontend. Uses SvelteKit with static adapter. TypeScript strict mode. Custom CSS with design
+      tokens.
       - `lib/` - Components
       - `routes/` - Routes
     - `src-tauri/` - Latest Rust, Tauri 2, serde, notify, tokio
@@ -151,6 +152,9 @@ resilience, and common pitfalls.
   `withGlobalTauri: true` in dev mode is a security risk.
 - ❌ When testing the Tauri app, DO NOT USE THE BROWSER. Use the MCP servers.
 - ❌ Don't ignore linter warnings — fix them or justify with a comment.
+- **Icons**: We use UnoCSS with the Icons preset (`@iconify-json/lucide`). Icons are pure CSS classes like
+  `i-lucide:triangle-alert` — no JS imports. See `docs/style-guide.md` § Icons for usage, sizing, coloring, and how to
+  find new icons. When adding a new icon, also add it to `scripts/check-css-unused/allowlist.go`.
 - Always use CSS variables defined in `apps/desktop/src/app.css`. Stylelint catches undefined/hallucinated variables.
 - Never use raw `px` values for `font-size`, `border-radius`, `font-family`, or `z-index` >= 10. Use
   `var(--font-size-*)`, `var(--radius-*)`, `var(--font-*)`, and `var(--z-*)` tokens. Stylelint enforces this.

@@ -5,7 +5,6 @@
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import Button from '$lib/ui/Button.svelte'
     import { renderErrorMarkdown } from './error-pane-utils'
-    import { TriangleAlert, CircleAlert } from '@lucide/svelte'
 
     interface Props {
         friendly: FriendlyError
@@ -66,13 +65,9 @@
     <div class="content">
         <h2 class="title">
             {#if friendly.category === 'serious'}
-                <span class="title-icon icon-error">
-                    <CircleAlert size={20} strokeWidth={2} />
-                </span>
+                <span class="title-icon icon-error i-lucide:circle-alert" style="width: 20px; height: 20px;"></span>
             {:else if friendly.category === 'transient'}
-                <span class="title-icon icon-warning">
-                    <TriangleAlert size={20} strokeWidth={2} />
-                </span>
+                <span class="title-icon icon-warning i-lucide:triangle-alert" style="width: 20px; height: 20px;"></span>
             {/if}
             {friendly.title}
         </h2>

@@ -15,8 +15,8 @@ without DOM performance issues.
   dual-size display helpers: `getDisplaySize()` (picks logical/physical/smart), `hasSizeMismatch()`,
   `buildFileSizeTooltip()`, `buildDirSizeTooltip()`, `buildSelectionSizeTooltip()`
 - **FullList.svelte** – Reads `listing.sizeDisplay` (via `getSizeDisplayMode()`) and `listing.sizeMismatchWarning` (via
-  `getSizeMismatchWarning()`) settings. Uses Lucide `CircleAlert` for size mismatch warnings and `Hourglass` for stale
-  index indicators
+  `getSizeMismatchWarning()`) settings. Uses UnoCSS/Lucide `i-lucide:circle-alert` for size mismatch warnings and
+  `i-lucide:hourglass` for stale index indicators
 - **dir-size-display.test.ts** – Tests for `getDirSizeDisplayState` / `buildDirSizeTooltip` (functions in
   `full-list-utils.ts`)
 - **view-modes.test.ts** – Integration tests for hidden-file filtering and directory listing structure (uses

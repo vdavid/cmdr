@@ -20,7 +20,6 @@
     } from '../views/full-list-utils'
     import { isScanning } from '$lib/indexing/index-state.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import { Hourglass } from '@lucide/svelte'
     import type { VolumeSpaceInfo } from '$lib/tauri-commands'
     import { formatDiskSpaceStatus } from '../disk-space-utils'
 
@@ -311,7 +310,7 @@
                     selected{/if}.
                 {#if showSelectionStale}
                     <span class="stale-indicator" use:tooltip={'Updating index — size may change.'}
-                        ><Hourglass size={12} color="var(--color-accent)" /></span
+                        ><span class="i-lucide:hourglass stale-icon"></span></span
                     >
                 {/if}
             {:else if hasFiles}
@@ -325,7 +324,7 @@
                     {pluralize(totalDirs, 'dir', 'dirs')}{/if}.
                 {#if showSelectionStale}
                     <span class="stale-indicator" use:tooltip={'Updating index — size may change.'}
-                        ><Hourglass size={12} color="var(--color-accent)" /></span
+                        ><span class="i-lucide:hourglass stale-icon"></span></span
                     >
                 {/if}
             {/if}
@@ -389,5 +388,12 @@
         align-items: center;
         vertical-align: middle;
         cursor: help;
+    }
+
+    .stale-icon {
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- small icon indicator, not body text */
+        color: var(--color-accent);
+        width: 12px;
+        height: 12px;
     }
 </style>

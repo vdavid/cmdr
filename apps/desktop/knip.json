@@ -15,7 +15,8 @@
     "webdriverio",
     "@crabnebula/tauri-driver",
     "@crabnebula/test-runner-backend",
-    "axe-core"
+    "axe-core",
+    "@iconify-json/lucide"
   ],
   "ignoreExportsUsedInFile": true,
   "project": ["src/**/*.{ts,svelte}"],

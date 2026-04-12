@@ -5,6 +5,7 @@
      * Other windows (viewer, debug) get only this minimal layout.
      */
     import { onMount } from 'svelte'
+    import 'virtual:uno.css'
     import '../app.css'
     import { initLogger } from '$lib/logging/logger'
 

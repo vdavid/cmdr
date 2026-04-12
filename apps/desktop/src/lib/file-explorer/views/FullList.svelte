@@ -39,7 +39,6 @@
     } from '$lib/settings/reactive-settings.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import { Hourglass, CircleAlert } from '@lucide/svelte'
     import type { RenameState } from '../rename/rename-state.svelte'
 
     interface Props {
@@ -507,7 +506,7 @@
                                     {/each}
                                     {#if indexing}
                                         <span class="size-stale" use:tooltip={'Updating index — size may change.'}
-                                            ><Hourglass size={12} color="var(--color-accent)" /></span
+                                            ><span class="i-lucide:hourglass icon-indicator"></span></span
                                         >
                                     {/if}
                                     {#if showSizeMismatchWarning && hasSizeMismatch(file.recursiveSize, file.recursivePhysicalSize)}
@@ -531,7 +530,7 @@
                                                     dirTooltipHtml,
                                             }}
                                         >
-                                            <CircleAlert size={12} color="var(--color-accent)" />
+                                            <span class="i-lucide:circle-alert icon-indicator"></span>
                                         </span>
                                     {/if}
                                 {:else if indexing}
@@ -647,6 +646,13 @@
 
     .size-dir {
         color: var(--color-text-secondary);
+    }
+
+    .icon-indicator {
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- small icon indicator, not body text */
+        color: var(--color-accent);
+        width: 12px;
+        height: 12px;
     }
 
     .size-stale {

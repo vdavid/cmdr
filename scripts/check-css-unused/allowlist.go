@@ -62,4 +62,8 @@ var allowedUnusedVariables = map[string]bool{
 var allowedUndefinedClasses = map[string]bool{
 	// Ark UI component class passed for API purposes but not styled
 	"slider-root": true,
+	// UnoCSS icon classes - generated at build time by @unocss/preset-icons, not in static CSS
+	"i-lucide:circle-alert":   true,
+	"i-lucide:hourglass":      true,
+	"i-lucide:triangle-alert": true,
 }
