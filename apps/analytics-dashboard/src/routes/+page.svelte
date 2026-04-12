@@ -94,8 +94,13 @@
 
     const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
     function formatCountry(code: string): string {
-        const name = regionNames.of(code.toUpperCase())
-        return name && name !== code ? `${name} (${code.toUpperCase()})` : code
+        try {
+            const upper = code.toUpperCase()
+            const name = regionNames.of(upper)
+            return name && name !== upper ? `${name} (${upper})` : code
+        } catch {
+            return code
+        }
     }
 
     let zoomXMin: number | null = $state(null)
