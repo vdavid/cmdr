@@ -46,6 +46,11 @@ func RunDesktopE2EPlaywright(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, err
 	}
 
+	// ── Step 2.5: Code-sign for Keychain access ────────────────────────
+	if err := codesignDevBinary(binaryPath); err != nil {
+		return CheckResult{}, err
+	}
+
 	// ── Step 3: Create fixture directory ────────────────────────────────
 	fixtureDir, err := createE2EFixtures(desktopDir)
 	if err != nil {
@@ -266,4 +271,35 @@ func appendToLogFile(path, text string) {
 	}
 	defer f.Close()
 	f.WriteString(text)
+}
+
+// codesignDevBinary signs the binary with a local dev certificate so macOS Keychain
+// doesn't prompt on every rebuild. The identity is stable across builds, so Keychain
+// items created by a signed binary remain accessible to future signed builds.
+// Skipped on non-macOS and when no signing identity is available.
+func codesignDevBinary(binaryPath string) error {
+	if runtime.GOOS != "darwin" {
+		return nil
+	}
+
+	// Allow CI to override the identity name (for example, "Cmdr Dev CI").
+	identity := os.Getenv("CMDR_DEV_SIGNING_IDENTITY")
+	if identity == "" {
+		identity = "Cmdr Dev"
+	}
+
+	// Check if the identity exists in the keychain. If not, skip silently —
+	// signing is optional (the app works without it, just with Keychain prompts).
+	checkCmd := exec.Command("security", "find-identity", "-v", "-p", "codesigning")
+	checkOutput, err := RunCommand(checkCmd, true)
+	if err != nil || !strings.Contains(checkOutput, "\""+identity+"\"") {
+		return nil
+	}
+
+	cmd := exec.Command("codesign", "--force", "-s", identity, binaryPath)
+	output, err := RunCommand(cmd, true)
+	if err != nil {
+		return fmt.Errorf("codesign failed for %s: %w\n%s", binaryPath, err, indentOutput(output))
+	}
+	return nil
 }

@@ -16,6 +16,38 @@ is managed separately by `rustup`. This version is tested with Rust 1.92.0.
 3. Run `mise install` to set up Node, pnpm, and Go
 4. Run `cd apps/desktop && pnpm install` to install frontend dependencies
 
+## Dev signing certificate (macOS, optional)
+
+Cmdr stores SMB credentials in macOS Keychain. Keychain ties item access to the binary's code signature — production
+builds are signed, so users get a one-time prompt. But dev/E2E builds are ad-hoc signed (changes every rebuild), which
+triggers a Keychain password prompt on every restart.
+
+To avoid this, create a local "Cmdr Dev" code signing certificate:
+
+1. Open **Keychain Access.app**
+2. Menu: **Keychain Access → Certificate Assistant → Create a Certificate...**
+3. Name: `Cmdr Dev`, Identity Type: **Self Signed Root**, Certificate Type: **Code Signing**
+4. Click **Create**, then trust it for code signing:
+   ```bash
+   security find-certificate -c "Cmdr Dev" -p > /tmp/cmdr-dev.pem
+   security add-trusted-cert -p codeSign -r trustRoot -k ~/Library/Keychains/login.keychain-db /tmp/cmdr-dev.pem
+   rm /tmp/cmdr-dev.pem
+   ```
+5. Verify: `security find-identity -v -p codesigning` should list "Cmdr Dev".
+
+Once the certificate exists, the E2E check script (`./scripts/check.sh --check desktop-e2e-playwright`) auto-signs the
+binary before launching. For manual E2E runs, sign after building:
+
+```bash
+codesign --force -s "Cmdr Dev" ./target/$(rustc -vV | grep host | cut -d' ' -f2)/release/Cmdr
+```
+
+If you already have Cmdr Keychain items from unsigned builds, delete them so they get re-created with the correct ACL:
+
+```bash
+security delete-generic-password -s "Cmdr" -a "smb://yourserver/yourshare"
+```
+
 ## Running the app
 
 ```bash
