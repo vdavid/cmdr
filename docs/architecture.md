@@ -154,7 +154,6 @@ The check runner and E2E testing docs live colocated with their code:
 - Playwright E2E (tauri-playwright, cross-platform):
   [`apps/desktop/test/e2e-playwright/CLAUDE.md`](../apps/desktop/test/e2e-playwright/CLAUDE.md)
 - Linux E2E (Docker, VNC, legacy): [`apps/desktop/test/e2e-linux/CLAUDE.md`](../apps/desktop/test/e2e-linux/CLAUDE.md)
-- macOS E2E (CrabNebula, legacy): [`apps/desktop/test/e2e-macos/CLAUDE.md`](../apps/desktop/test/e2e-macos/CLAUDE.md)
 
 ### Dependency management
 

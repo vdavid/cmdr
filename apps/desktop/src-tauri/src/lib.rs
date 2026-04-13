@@ -175,10 +175,6 @@ pub fn run() {
     #[cfg(debug_assertions)]
     let builder = builder.plugin(tauri_plugin_mcp_bridge::init());
 
-    // CrabNebula automation plugin for macOS E2E testing (feature-gated, never in release builds)
-    #[cfg(feature = "automation")]
-    let builder = builder.plugin(tauri_plugin_automation::init());
-
     // Playwright E2E testing plugin — socket bridge for direct webview injection
     #[cfg(feature = "playwright-e2e")]
     let builder = builder.plugin(tauri_plugin_playwright::init());

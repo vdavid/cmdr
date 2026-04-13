@@ -116,7 +116,8 @@ renders icons as **pure CSS** (no JS components, no runtime overhead). The icon 
 #### How it works
 
 UnoCSS generates CSS at build time. For monochrome icons, the SVG becomes a CSS `mask-image` with
-`background-color: currentColor`, so the icon inherits the text color of its parent. Config: `apps/desktop/uno.config.ts`.
+`background-color: currentColor`, so the icon inherits the text color of its parent. Config:
+`apps/desktop/uno.config.ts`.
 
 #### Finding icons
 
@@ -165,8 +166,8 @@ Icons use `currentColor` by default — they inherit the parent's text color. To
   disallowed by default for a11y reasons — it has insufficient contrast as text):
   ```css
   .my-icon {
-      /* stylelint-disable-next-line declaration-property-value-disallowed-list -- icon indicator, not body text */
-      color: var(--color-accent);
+    /* stylelint-disable-next-line declaration-property-value-disallowed-list -- icon indicator, not body text */
+    color: var(--color-accent);
   }
   ```
 - **For semantic colors**: Use `var(--color-warning)`, `var(--color-error)`, etc. directly — these aren't restricted

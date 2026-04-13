@@ -83,18 +83,14 @@ function formatReport(data: DashboardData): string {
     line(
       `- getcmdr.com views: ${num(u.website.pageviews.value)}${delta(u.website.pageviews.value, u.website.pageviews.prev)}`,
     )
-    line(
-      `- getprvw.com views: ${num(u.prvw.pageviews.value)}${delta(u.prvw.pageviews.value, u.prvw.pageviews.prev)}`,
-    )
+    line(`- getprvw.com views: ${num(u.prvw.pageviews.value)}${delta(u.prvw.pageviews.value, u.prvw.pageviews.prev)}`)
     line(
       `- veszelovszki.com visitors: ${num(u.personalSite.visitors.value)}${delta(u.personalSite.visitors.value, u.personalSite.visitors.prev)}`,
     )
     line(
       `- getcmdr.com visitors: ${num(u.website.visitors.value)}${delta(u.website.visitors.value, u.website.visitors.prev)}`,
     )
-    line(
-      `- getprvw.com visitors: ${num(u.prvw.visitors.value)}${delta(u.prvw.visitors.value, u.prvw.visitors.prev)}`,
-    )
+    line(`- getprvw.com visitors: ${num(u.prvw.visitors.value)}${delta(u.prvw.visitors.value, u.prvw.visitors.prev)}`)
 
     if (data.githubStars.ok) {
       const s = data.githubStars.data

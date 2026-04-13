@@ -47,6 +47,8 @@ pub async fn try_list_shares_as_guest(
         domain: String::new(),
         auto_reconnect: false,
         compression: false,
+        dfs_enabled: false,
+        dfs_target_overrides: Default::default(),
     };
 
     let mut client = SmbClient::connect(config).await?;
@@ -73,6 +75,8 @@ pub async fn try_list_shares_authenticated(
         domain: String::new(),
         auto_reconnect: false,
         compression: false,
+        dfs_enabled: false,
+        dfs_target_overrides: Default::default(),
     };
 
     let mut client = SmbClient::connect(config).await?;

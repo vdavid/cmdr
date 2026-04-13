@@ -5,11 +5,10 @@
 | Suite                              | Tech                      | Runs on                           | What it tests                                                          |
 | ---------------------------------- | ------------------------- | --------------------------------- | ---------------------------------------------------------------------- |
 | **Playwright** (`e2e-playwright/`) | Playwright + tauri-plugin | macOS (native) and Linux (Docker) | Full app: dialogs, keyboard nav, file ops, settings, viewer, a11y, MTP |
-| **macOS E2E** (`e2e-macos/`)       | WebDriverIO + CrabNebula  | macOS only                        | Platform integration: APFS ops, volume detection                       |
 
 **Playwright suite** uses `tauri-plugin-playwright` (fork at `vdavid/tauri-playwright`) which injects JS directly into
-the Tauri webview via `webview.eval()` and receives results via Tauri IPC. No WebDriver, no CrabNebula dependency. Same
-tests work on both macOS and Linux. Gated behind the `playwright-e2e` Cargo feature.
+the Tauri webview via `webview.eval()` and receives results via Tauri IPC. Same tests work on both macOS and Linux.
+Gated behind the `playwright-e2e` Cargo feature.
 
 **Linux Docker infrastructure** lives in `e2e-linux/docker/` (Dockerfile + entrypoint). The `e2e-linux.sh` script builds
 the Tauri binary with `--features playwright-e2e,virtual-mtp` inside Docker, launches it, and runs the Playwright tests.
@@ -43,4 +42,3 @@ tests don't affect each other.
 
 - `e2e-playwright/CLAUDE.md` -- Playwright test suite (macOS + Linux)
 - `e2e-linux/CLAUDE.md` -- Docker infrastructure for Linux E2E
-- `e2e-macos/CLAUDE.md` -- macOS-specific E2E (legacy)

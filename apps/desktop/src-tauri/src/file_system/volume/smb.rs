@@ -514,7 +514,7 @@ impl SmbVolume {
     /// `OsMount` fallback will be added in a follow-up).
     fn with_smb<F, T>(&self, op_name: &str, f: F) -> Result<T, VolumeError>
     where
-        F: FnOnce(&mut SmbClient, &Tree) -> Result<T, smb2::Error>,
+        F: FnOnce(&mut SmbClient, &mut Tree) -> Result<T, smb2::Error>,
     {
         let state = self.connection_state();
         if state == ConnectionState::Disconnected {
@@ -1156,6 +1156,8 @@ async fn run_smb_watcher(
             domain: String::new(),
             auto_reconnect: false,
             compression: true,
+            dfs_enabled: false,
+            dfs_target_overrides: Default::default(),
         };
         let mut client = SmbClient::connect(config).await?;
         let tree = client.connect_share(share_name).await?;
@@ -1520,6 +1522,8 @@ pub async fn connect_smb_volume(
         domain: String::new(),
         auto_reconnect: false,
         compression: true,
+        dfs_enabled: false,
+        dfs_target_overrides: Default::default(),
     };
 
     let mut client = SmbClient::connect(config).await?;

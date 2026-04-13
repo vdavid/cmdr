@@ -98,8 +98,7 @@ aggregate numbers. A true funnel would require cross-site user identity tracking
 - **Autumn green (`#8faa3b`)**: veszelovszki.com — David's personal site
 - **Cyan (`#22d3ee`)**: getprvw.com — Prvw product site
 
-These colors are used in metric dots, chart
-  strokes, and chart fills. Keep them consistent when adding new UI.
+These colors are used in metric dots, chart strokes, and chart fills. Keep them consistent when adding new UI.
 
 **Decision**: Single page, not multi-page. **Why**: Only six sections. Scroll is simpler than navigation.
 

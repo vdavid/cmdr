@@ -25,6 +25,8 @@ mod inner {
             domain: String::new(),
             auto_reconnect: false,
             compression: false,
+            dfs_enabled: false,
+            dfs_target_overrides: Default::default(),
         };
 
         // Step 1: Connect

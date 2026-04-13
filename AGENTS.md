@@ -100,7 +100,6 @@ Always use the checker script for compilation, linting, formatting, and tests. I
   - Svelte: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
 - E2E (Playwright): See `apps/desktop/test/e2e-playwright/CLAUDE.md` — build with `playwright-e2e` feature, start app,
   run tests
-- E2E (legacy): See `apps/desktop/test/e2e-linux/CLAUDE.md` and `apps/desktop/test/e2e-macos/CLAUDE.md`
 - Ubuntu test VM: See `apps/desktop/test/e2e-linux/CLAUDE.md` § "Ubuntu test VM"
 - CI: Runs on PRs and pushes to main for changed files. Full run: Actions → CI → "Run workflow".
 
