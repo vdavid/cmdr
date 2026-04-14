@@ -284,19 +284,21 @@ impl FileViewerBackend for LineIndexBackend {
 
                     let mut search_start = 0;
                     while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
-                        let col = search_start + match_pos;
+                        let col_bytes = search_start + match_pos;
+                        let col_utf16: usize = line_lower[..col_bytes].chars().map(|c| c.len_utf16()).sum();
+                        let len_utf16: usize = query_lower.chars().map(|c| c.len_utf16()).sum();
                         let mut matches = results.lock_ignore_poison();
                         matches.push(SearchMatch {
                             line: line_number,
-                            column: col,
-                            length: query.len(),
+                            column: col_utf16,
+                            length: len_utf16,
                             byte_offset: line_byte_offset,
                         });
                         if matches.len() >= MAX_SEARCH_MATCHES {
                             limit_reached = true;
                             break;
                         }
-                        search_start = col + 1;
+                        search_start = col_bytes + query_lower.len();
                     }
 
                     scanned += (nl_pos + 1) as u64;
@@ -319,18 +321,20 @@ impl FileViewerBackend for LineIndexBackend {
             let line_lower = line.to_lowercase();
             let mut search_start = 0;
             while let Some(match_pos) = line_lower[search_start..].find(&query_lower) {
-                let col = search_start + match_pos;
+                let col_bytes = search_start + match_pos;
+                let col_utf16: usize = line_lower[..col_bytes].chars().map(|c| c.len_utf16()).sum();
+                let len_utf16: usize = query_lower.chars().map(|c| c.len_utf16()).sum();
                 let mut matches = results.lock_ignore_poison();
                 matches.push(SearchMatch {
                     line: line_number,
-                    column: col,
-                    length: query.len(),
+                    column: col_utf16,
+                    length: len_utf16,
                     byte_offset: line_byte_offset,
                 });
                 if matches.len() >= MAX_SEARCH_MATCHES {
                     break;
                 }
-                search_start = col + 1;
+                search_start = col_bytes + query_lower.len();
             }
             scanned += leftover.len() as u64;
         }

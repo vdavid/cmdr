@@ -9,11 +9,21 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::net::IpAddr;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
 use tauri::{AppHandle, Runtime};
 
 const DEFAULT_SMB_PORT: u16 = 445;
 const REACHABILITY_TIMEOUT_SECS: u64 = 5;
 const MANUAL_SERVERS_FILENAME: &str = "manual-servers.json";
+
+/// Protects the read-modify-write cycle on `manual-servers.json`.
+/// Without this, concurrent `add_manual_server` / `remove_manual_server` calls
+/// can read the same on-disk state and one write clobbers the other.
+static STORE_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
+fn get_store_lock() -> &'static Mutex<()> {
+    STORE_LOCK.get_or_init(|| Mutex::new(()))
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -377,39 +387,51 @@ fn get_store_path<R: Runtime>(app: &AppHandle<R>) -> Option<PathBuf> {
         .map(|dir| dir.join(MANUAL_SERVERS_FILENAME))
 }
 
-/// Loads the store from disk.
-fn read_store<R: Runtime>(app: &AppHandle<R>) -> ManualServersStore {
-    let Some(path) = get_store_path(app) else {
-        return ManualServersStore::default();
-    };
+/// Reads the store from a path on disk.
+fn read_store_from_path(path: &Path) -> ManualServersStore {
+    cleanup_tmp_file(path);
 
-    cleanup_tmp_file(&path);
-
-    match fs::read_to_string(&path) {
+    match fs::read_to_string(path) {
         Ok(contents) => serde_json::from_str(&contents).unwrap_or_default(),
         Err(_) => ManualServersStore::default(),
     }
 }
 
-/// Writes the store to disk.
-fn write_store<R: Runtime>(app: &AppHandle<R>, store: &ManualServersStore) {
-    let Some(path) = get_store_path(app) else {
-        warn!("Can't determine data dir for manual servers storage");
-        return;
-    };
-
+/// Writes the store to a path on disk.
+fn write_store_to_path(path: &Path, store: &ManualServersStore) {
     if let Some(parent) = path.parent() {
         let _ = fs::create_dir_all(parent);
     }
 
     match serde_json::to_string_pretty(store) {
         Ok(json) => {
-            if let Err(e) = atomic_write_json(&path, &json) {
+            if let Err(e) = atomic_write_json(path, &json) {
                 warn!("Couldn't write manual servers store: {}", e);
             }
         }
         Err(e) => warn!("Couldn't serialize manual servers store: {}", e),
     }
+}
+
+/// Loads the store from disk.
+fn read_store<R: Runtime>(app: &AppHandle<R>) -> ManualServersStore {
+    let Some(path) = get_store_path(app) else {
+        return ManualServersStore::default();
+    };
+    read_store_from_path(&path)
+}
+
+/// Adds a server entry to the store file at the given path, protected by `STORE_LOCK`.
+/// Extracted so it can be tested without an `AppHandle`.
+fn add_server_entry_to_path(path: &Path, entry: ManualServerEntry) {
+    let _guard = get_store_lock().lock().unwrap_or_else(|e| e.into_inner());
+    let mut store = read_store_from_path(path);
+    if let Some(existing) = store.servers.iter_mut().find(|s| s.id == entry.id) {
+        *existing = entry;
+    } else {
+        store.servers.push(entry);
+    }
+    write_store_to_path(path, &store);
 }
 
 // ---------------------------------------------------------------------------
@@ -430,22 +452,16 @@ pub async fn add_manual_server<R: Runtime>(
     let host = create_network_host(&parsed.host, parsed.port);
 
     // Persist to disk
-    let mut store = read_store(app_handle);
-    let entry = ManualServerEntry {
-        id: host.id.clone(),
-        display_name: host.name.clone(),
-        address: parsed.host.clone(),
-        port: parsed.port,
-        added_at: chrono::Utc::now().to_rfc3339(),
-    };
-
-    // Upsert: replace if ID already exists, otherwise append
-    if let Some(existing) = store.servers.iter_mut().find(|s| s.id == entry.id) {
-        *existing = entry;
-    } else {
-        store.servers.push(entry);
+    if let Some(path) = get_store_path(app_handle) {
+        let entry = ManualServerEntry {
+            id: host.id.clone(),
+            display_name: host.name.clone(),
+            address: parsed.host.clone(),
+            port: parsed.port,
+            added_at: chrono::Utc::now().to_rfc3339(),
+        };
+        add_server_entry_to_path(&path, entry);
     }
-    write_store(app_handle, &store);
 
     info!("Added manual server: {} (id={})", host.name, host.id);
 
@@ -458,17 +474,29 @@ pub async fn add_manual_server<R: Runtime>(
     })
 }
 
-/// Removes a manual server by ID from storage and discovery state.
-pub fn remove_manual_server<R: Runtime>(server_id: &str, app_handle: &AppHandle<R>) -> Result<(), String> {
-    let mut store = read_store(app_handle);
+/// Removes a server entry by ID from the store file at the given path, protected by `STORE_LOCK`.
+/// Returns `true` if the server was found and removed, `false` if not found.
+fn remove_server_entry_from_path(path: &Path, server_id: &str) -> bool {
+    let _guard = get_store_lock().lock().unwrap_or_else(|e| e.into_inner());
+    let mut store = read_store_from_path(path);
     let original_len = store.servers.len();
     store.servers.retain(|s| s.id != server_id);
-
     if store.servers.len() == original_len {
+        return false;
+    }
+    write_store_to_path(path, &store);
+    true
+}
+
+/// Removes a manual server by ID from storage and discovery state.
+pub fn remove_manual_server<R: Runtime>(server_id: &str, app_handle: &AppHandle<R>) -> Result<(), String> {
+    let Some(path) = get_store_path(app_handle) else {
+        return Err(format!("Server '{}' not found", server_id));
+    };
+
+    if !remove_server_entry_from_path(&path, server_id) {
         return Err(format!("Server '{}' not found", server_id));
     }
-
-    write_store(app_handle, &store);
 
     // Remove from discovery state and notify frontend
     on_host_lost(server_id, app_handle);
@@ -810,6 +838,169 @@ mod tests {
         let parsed: ManualConnectResult = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.share_path, Some("docs".to_string()));
         assert_eq!(parsed.host.id, "manual-192-168-1-100-9445");
+    }
+
+    // -- Concurrency tests for file-backed persistence --
+
+    /// Helper: creates a `ManualServerEntry` with a unique address.
+    fn test_entry(index: usize) -> ManualServerEntry {
+        let address = format!("10.0.0.{}", index);
+        ManualServerEntry {
+            id: generate_server_id(&address, 445),
+            display_name: address.clone(),
+            address,
+            port: 445,
+            added_at: "2026-01-01T00:00:00Z".to_string(),
+        }
+    }
+
+    /// Concurrent `add_server_entry_to_path` calls must not lose any writes.
+    /// Before the `STORE_LOCK` fix, this would fail because two threads could
+    /// read the same on-disk state and one write would clobber the other.
+    #[test]
+    fn concurrent_add_server_no_lost_writes() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let path = dir.path().join(MANUAL_SERVERS_FILENAME);
+
+        let thread_count = 20;
+        let barrier = std::sync::Arc::new(std::sync::Barrier::new(thread_count));
+        let mut handles = Vec::new();
+
+        for i in 0..thread_count {
+            let barrier = barrier.clone();
+            let path = path.clone();
+            handles.push(std::thread::spawn(move || {
+                barrier.wait();
+                add_server_entry_to_path(&path, test_entry(i));
+            }));
+        }
+
+        for h in handles {
+            h.join().expect("thread panicked");
+        }
+
+        let store = read_store_from_path(&path);
+        assert_eq!(
+            store.servers.len(),
+            thread_count,
+            "Expected {} servers but got {} — a concurrent write was lost",
+            thread_count,
+            store.servers.len()
+        );
+    }
+
+    /// Concurrent adds and removes must not corrupt the store.
+    #[test]
+    fn concurrent_add_and_remove() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let path = dir.path().join(MANUAL_SERVERS_FILENAME);
+
+        // Pre-populate with servers 0..10 that will be removed
+        for i in 0..10 {
+            add_server_entry_to_path(&path, test_entry(i));
+        }
+        assert_eq!(read_store_from_path(&path).servers.len(), 10);
+
+        let barrier = std::sync::Arc::new(std::sync::Barrier::new(20));
+        let mut handles = Vec::new();
+
+        // 10 threads remove servers 0..10
+        for i in 0..10 {
+            let barrier = barrier.clone();
+            let path = path.clone();
+            let id = test_entry(i).id;
+            handles.push(std::thread::spawn(move || {
+                barrier.wait();
+                remove_server_entry_from_path(&path, &id);
+            }));
+        }
+
+        // 10 threads add servers 100..110
+        for i in 100..110 {
+            let barrier = barrier.clone();
+            let path = path.clone();
+            handles.push(std::thread::spawn(move || {
+                barrier.wait();
+                add_server_entry_to_path(&path, test_entry(i));
+            }));
+        }
+
+        for h in handles {
+            h.join().expect("thread panicked");
+        }
+
+        let store = read_store_from_path(&path);
+        // All old servers removed, all new servers added
+        assert_eq!(
+            store.servers.len(),
+            10,
+            "Expected 10 servers (old removed, new added) but got {}",
+            store.servers.len()
+        );
+        // Verify none of the old servers remain
+        for i in 0..10 {
+            assert!(
+                !store.servers.iter().any(|s| s.id == test_entry(i).id),
+                "Server {} should have been removed",
+                i
+            );
+        }
+        // Verify all new servers are present
+        for i in 100..110 {
+            assert!(
+                store.servers.iter().any(|s| s.id == test_entry(i).id),
+                "Server {} should have been added",
+                i
+            );
+        }
+    }
+
+    /// Rapid sequential adds of distinct servers should all be persisted.
+    #[test]
+    fn rapid_sequential_adds() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let path = dir.path().join(MANUAL_SERVERS_FILENAME);
+
+        let count = 50;
+        for i in 0..count {
+            add_server_entry_to_path(&path, test_entry(i));
+        }
+
+        let store = read_store_from_path(&path);
+        assert_eq!(store.servers.len(), count);
+    }
+
+    /// Upserts to the same server entry should not create duplicates.
+    #[test]
+    fn concurrent_upserts_same_server() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let path = dir.path().join(MANUAL_SERVERS_FILENAME);
+
+        let thread_count = 20;
+        let barrier = std::sync::Arc::new(std::sync::Barrier::new(thread_count));
+        let mut handles = Vec::new();
+
+        for _ in 0..thread_count {
+            let barrier = barrier.clone();
+            let path = path.clone();
+            handles.push(std::thread::spawn(move || {
+                barrier.wait();
+                // All threads upsert the same server (same ID)
+                add_server_entry_to_path(&path, test_entry(42));
+            }));
+        }
+
+        for h in handles {
+            h.join().expect("thread panicked");
+        }
+
+        let store = read_store_from_path(&path);
+        assert_eq!(
+            store.servers.len(),
+            1,
+            "Concurrent upserts to the same server created {} duplicates",
+            store.servers.len() - 1
+        );
     }
 }
 

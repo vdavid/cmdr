@@ -393,4 +393,169 @@ mod tests {
             c.known_network_shares.clear();
         }
     }
+
+    /// Concurrent threads adding distinct shares must not lose any writes.
+    #[test]
+    fn concurrent_in_memory_updates_no_lost_writes() {
+        let cache = get_known_shares_mutex();
+
+        // Clear previous state
+        if let Ok(mut c) = cache.lock() {
+            c.known_network_shares.clear();
+        }
+
+        let thread_count = 20;
+        let barrier = std::sync::Arc::new(std::sync::Barrier::new(thread_count));
+        let mut handles = Vec::new();
+
+        for i in 0..thread_count {
+            let barrier = barrier.clone();
+            handles.push(std::thread::spawn(move || {
+                barrier.wait(); // All threads start at the same time
+                let key = format!("server-{}", i);
+                if let Ok(mut c) = get_known_shares_mutex().lock() {
+                    c.known_network_shares.push(KnownNetworkShare {
+                        server_name: key.clone(),
+                        share_name: "share".to_string(),
+                        protocol: "smb".to_string(),
+                        last_connected_at: "2026-01-01T00:00:00Z".to_string(),
+                        last_connection_mode: ConnectionMode::Guest,
+                        last_known_auth_options: AuthOptions::GuestOnly,
+                        username: None,
+                    });
+                }
+            }));
+        }
+
+        for h in handles {
+            h.join().expect("thread panicked");
+        }
+
+        let all = get_all_known_shares();
+        assert_eq!(
+            all.len(),
+            thread_count,
+            "Expected {} shares but got {} — a concurrent write was lost",
+            thread_count,
+            all.len()
+        );
+
+        // Clean up
+        if let Ok(mut c) = cache.lock() {
+            c.known_network_shares.clear();
+        }
+    }
+
+    /// Concurrent reads while another thread writes should not panic or return corrupt data.
+    #[test]
+    fn concurrent_read_during_write() {
+        let cache = get_known_shares_mutex();
+
+        // Seed with initial data
+        if let Ok(mut c) = cache.lock() {
+            c.known_network_shares.clear();
+            c.known_network_shares.push(KnownNetworkShare {
+                server_name: "seed".to_string(),
+                share_name: "share".to_string(),
+                protocol: "smb".to_string(),
+                last_connected_at: "2026-01-01T00:00:00Z".to_string(),
+                last_connection_mode: ConnectionMode::Guest,
+                last_known_auth_options: AuthOptions::GuestOnly,
+                username: None,
+            });
+        }
+
+        let barrier = std::sync::Arc::new(std::sync::Barrier::new(3));
+        let mut handles = Vec::new();
+
+        // Writer thread: adds shares
+        let b = barrier.clone();
+        handles.push(std::thread::spawn(move || {
+            b.wait();
+            for i in 0..50 {
+                if let Ok(mut c) = get_known_shares_mutex().lock() {
+                    c.known_network_shares.push(KnownNetworkShare {
+                        server_name: format!("writer-{}", i),
+                        share_name: "share".to_string(),
+                        protocol: "smb".to_string(),
+                        last_connected_at: "2026-01-01T00:00:00Z".to_string(),
+                        last_connection_mode: ConnectionMode::Guest,
+                        last_known_auth_options: AuthOptions::GuestOnly,
+                        username: None,
+                    });
+                }
+            }
+        }));
+
+        // Two reader threads: read all shares repeatedly
+        for _ in 0..2 {
+            let b = barrier.clone();
+            handles.push(std::thread::spawn(move || {
+                b.wait();
+                for _ in 0..100 {
+                    let shares = get_all_known_shares();
+                    // Must always have at least the seed share
+                    assert!(!shares.is_empty(), "Read returned empty during concurrent write");
+                }
+            }));
+        }
+
+        for h in handles {
+            h.join().expect("thread panicked");
+        }
+
+        // Clean up
+        if let Ok(mut c) = cache.lock() {
+            c.known_network_shares.clear();
+        }
+    }
+
+    /// Rapid sequential updates to the same share should keep the last value.
+    #[test]
+    fn rapid_sequential_updates_same_share() {
+        let cache = get_known_shares_mutex();
+
+        // Clear previous state
+        if let Ok(mut c) = cache.lock() {
+            c.known_network_shares.clear();
+        }
+
+        let iterations = 100;
+        for i in 0..iterations {
+            if let Ok(mut c) = cache.lock() {
+                let key = share_key("rapid-server", "rapid-share");
+                if let Some(existing) = c
+                    .known_network_shares
+                    .iter_mut()
+                    .find(|s| share_key(&s.server_name, &s.share_name) == key)
+                {
+                    existing.last_connected_at = format!("2026-01-01T00:00:{:02}Z", i);
+                    existing.username = Some(format!("user-{}", i));
+                } else {
+                    c.known_network_shares.push(KnownNetworkShare {
+                        server_name: "rapid-server".to_string(),
+                        share_name: "rapid-share".to_string(),
+                        protocol: "smb".to_string(),
+                        last_connected_at: format!("2026-01-01T00:00:{:02}Z", i),
+                        last_connection_mode: ConnectionMode::Credentials,
+                        last_known_auth_options: AuthOptions::GuestOrCredentials,
+                        username: Some(format!("user-{}", i)),
+                    });
+                }
+            }
+        }
+
+        let share = get_known_share("rapid-server", "rapid-share").expect("share should exist");
+        assert_eq!(share.username, Some(format!("user-{}", iterations - 1)));
+
+        // Only one entry should exist (upsert, not duplicate)
+        let all = get_all_known_shares();
+        let rapid_count = all.iter().filter(|s| s.server_name == "rapid-server").count();
+        assert_eq!(rapid_count, 1, "Rapid updates should not create duplicate entries");
+
+        // Clean up
+        if let Ok(mut c) = cache.lock() {
+            c.known_network_shares.clear();
+        }
+    }
 }

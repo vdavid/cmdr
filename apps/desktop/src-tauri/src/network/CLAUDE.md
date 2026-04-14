@@ -100,6 +100,15 @@ When the user mounts an SMB share, we establish a parallel smb2 connection along
 
 `NetworkHost.source` distinguishes mDNS-discovered hosts (`Discovered`, default) from user-added ones (`Manual`). Defaults to `Discovered` via `#[serde(default)]` for backward compatibility with existing serialized data. The frontend uses this to determine which hosts show a "Remove" option and to skip mDNS resolution for manual hosts.
 
+### Concurrency strategy for persistence stores
+
+`known_shares.rs` uses an in-memory `Mutex<KnownSharesStore>` as single source of truth. Disk is a snapshot of the
+in-memory state, so concurrent mutations are safe (the mutex serializes all in-memory updates).
+
+`manual_servers.rs` uses a file-based read-modify-write pattern (no in-memory cache). A global `STORE_LOCK` mutex
+protects the entire read-modify-write cycle to prevent TOCTOU races where two threads could read the same disk state
+and one write clobbers the other.
+
 ### Manual server ID convention
 
 Manual server IDs use the format `manual-{address}-{port}` with dots/colons replaced by dashes. This is deterministic (same address+port always produces the same ID), preventing duplicates. The `manual-` prefix avoids collision with mDNS-derived IDs.

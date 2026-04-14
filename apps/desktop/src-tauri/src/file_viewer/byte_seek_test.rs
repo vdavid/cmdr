@@ -368,3 +368,145 @@ fn search_caps_at_match_limit() {
 
     cleanup(&dir);
 }
+
+// ─── Multi-byte UTF-8 tests ────────────────────────────────────────────
+
+#[test]
+fn seek_mid_multibyte_char_snaps_to_line_start() {
+    let dir = create_test_dir("mid_utf8");
+    // "café\n" = 6 bytes (c=1, a=1, f=1, é=2, \n=1). Byte 4 lands inside 'é'.
+    let file = write_test_file(&dir, "test.txt", "café\nplain\n");
+
+    let backend = ByteSeekBackend::open(&file).unwrap();
+    let chunk = backend.get_lines(&SeekTarget::ByteOffset(4), 2).unwrap();
+
+    // Should backward-scan to byte 0 (start of "café") since byte 4 is mid-char inside first line
+    assert_eq!(chunk.byte_offset, 0);
+    assert_eq!(chunk.lines[0], "café");
+
+    cleanup(&dir);
+}
+
+#[test]
+fn seek_mid_emoji_snaps_to_line_start() {
+    let dir = create_test_dir("mid_emoji");
+    // "🦀go\n" = 7 bytes (🦀=4, g=1, o=1, \n=1). Byte 2 lands inside the emoji.
+    let file = write_test_file(&dir, "test.txt", "🦀go\nnext\n");
+
+    let backend = ByteSeekBackend::open(&file).unwrap();
+    let chunk = backend.get_lines(&SeekTarget::ByteOffset(2), 2).unwrap();
+
+    assert_eq!(chunk.byte_offset, 0);
+    assert_eq!(chunk.lines[0], "🦀go");
+
+    cleanup(&dir);
+}
+
+#[test]
+fn seek_mid_cjk_char_snaps_to_line_start() {
+    let dir = create_test_dir("mid_cjk");
+    // '漢' = 3 bytes in UTF-8. "漢字\n" = 7 bytes. Byte 1 lands mid-character.
+    let file = write_test_file(&dir, "test.txt", "漢字\nnext\n");
+
+    let backend = ByteSeekBackend::open(&file).unwrap();
+    let chunk = backend.get_lines(&SeekTarget::ByteOffset(1), 2).unwrap();
+
+    assert_eq!(chunk.byte_offset, 0);
+    assert_eq!(chunk.lines[0], "漢字");
+
+    cleanup(&dir);
+}
+
+#[test]
+fn read_lines_with_mixed_scripts() {
+    let dir = create_test_dir("mixed_scripts");
+    let content = "hello café\n漢字テスト\n🎉🦀🌍\nplain\n";
+    let file = write_test_file(&dir, "test.txt", content);
+
+    let backend = ByteSeekBackend::open(&file).unwrap();
+    let chunk = backend.get_lines(&SeekTarget::ByteOffset(0), 10).unwrap();
+
+    assert_eq!(chunk.lines.len(), 4);
+    assert_eq!(chunk.lines[0], "hello café");
+    assert_eq!(chunk.lines[1], "漢字テスト");
+    assert_eq!(chunk.lines[2], "🎉🦀🌍");
+    assert_eq!(chunk.lines[3], "plain");
+
+    cleanup(&dir);
+}
+
+#[test]
+fn search_emoji_utf16_column() {
+    let dir = create_test_dir("search_emoji");
+    // '🦀' = 4 bytes UTF-8, 2 UTF-16 code units
+    let file = write_test_file(&dir, "test.txt", "🦀rust is great\n");
+
+    let backend = ByteSeekBackend::open(&file).unwrap();
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    backend.search("rust", &cancel, &results, &progress).unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].column, 2); // 🦀 = 2 UTF-16 code units
+    assert_eq!(matches[0].length, 4); // "rust" = 4 ASCII chars = 4 UTF-16 units
+
+    cleanup(&dir);
+}
+
+#[test]
+fn search_cjk_utf16_column() {
+    let dir = create_test_dir("search_cjk");
+    // CJK chars are 3 bytes UTF-8 but 1 UTF-16 code unit each
+    let file = write_test_file(&dir, "test.txt", "漢字test\n");
+
+    let backend = ByteSeekBackend::open(&file).unwrap();
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    backend.search("test", &cancel, &results, &progress).unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].column, 2); // 2 CJK chars = 2 UTF-16 code units
+    assert_eq!(matches[0].length, 4);
+
+    cleanup(&dir);
+}
+
+#[test]
+fn read_emoji_only_lines() {
+    let dir = create_test_dir("emoji_only");
+    let file = write_test_file(&dir, "test.txt", "🎉🎊🎈\n🦀🦞🦐\n");
+
+    let backend = ByteSeekBackend::open(&file).unwrap();
+    let chunk = backend.get_lines(&SeekTarget::ByteOffset(0), 10).unwrap();
+
+    assert_eq!(chunk.lines[0], "🎉🎊🎈");
+    assert_eq!(chunk.lines[1], "🦀🦞🦐");
+
+    cleanup(&dir);
+}
+
+#[test]
+fn read_file_starting_with_bom() {
+    let dir = create_test_dir("bom");
+    // UTF-8 BOM is EF BB BF (3 bytes), rendered as U+FEFF
+    let mut content = vec![0xEF, 0xBB, 0xBF];
+    content.extend_from_slice("hello\nworld\n".as_bytes());
+    let file = dir.join("bom.txt");
+    fs::write(&file, &content).unwrap();
+
+    let backend = ByteSeekBackend::open(&file).unwrap();
+    let chunk = backend.get_lines(&SeekTarget::ByteOffset(0), 10).unwrap();
+
+    // BOM should appear as U+FEFF at start of first line
+    assert!(chunk.lines[0].starts_with('\u{FEFF}'));
+    assert!(chunk.lines[0].ends_with("hello"));
+    assert_eq!(chunk.lines[1], "world");
+
+    cleanup(&dir);
+}

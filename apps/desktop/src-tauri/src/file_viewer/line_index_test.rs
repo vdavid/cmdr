@@ -273,3 +273,132 @@ fn empty_file() {
 
     cleanup(&dir);
 }
+
+// ─── Multi-byte UTF-8 tests ────────────────────────────────────────────
+
+#[test]
+fn line_count_with_multibyte_chars() {
+    let dir = create_test_dir("utf8_lines");
+    // Each line has different multi-byte widths
+    let file = write_test_file(&dir, "test.txt", "café\n漢字\n🦀🎉\nplain\n");
+
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel).unwrap();
+
+    // 4 lines + trailing empty = 5
+    assert_eq!(backend.total_lines(), Some(5));
+
+    let chunk = backend.get_lines(&SeekTarget::Line(0), 4).unwrap();
+    assert_eq!(chunk.lines, vec!["café", "漢字", "🦀🎉", "plain"]);
+
+    cleanup(&dir);
+}
+
+#[test]
+fn seek_line_after_multibyte_content() {
+    let dir = create_test_dir("utf8_seek");
+    // "café\n" = 6 bytes, "漢字\n" = 7 bytes, "plain\n" = 6 bytes
+    let file = write_test_file(&dir, "test.txt", "café\n漢字\nplain\n");
+
+    let cancel = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel).unwrap();
+
+    // Seek to line 2 ("plain") — verifies byte offset tracking through multibyte lines
+    let chunk = backend.get_lines(&SeekTarget::Line(2), 1).unwrap();
+    assert_eq!(chunk.first_line_number, 2);
+    assert_eq!(chunk.lines[0], "plain");
+
+    cleanup(&dir);
+}
+
+#[test]
+fn search_emoji_utf16_column() {
+    let dir = create_test_dir("search_emoji");
+    // '🦀' = 4 bytes UTF-8, 2 UTF-16 code units
+    let file = write_test_file(&dir, "test.txt", "🦀rust is great\n");
+
+    let cancel_scan = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel_scan).unwrap();
+
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    backend.search("rust", &cancel, &results, &progress).unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].column, 2); // 🦀 = 2 UTF-16 code units
+    assert_eq!(matches[0].length, 4); // "rust" = 4 ASCII chars = 4 UTF-16 units
+
+    cleanup(&dir);
+}
+
+#[test]
+fn search_cjk_utf16_column() {
+    let dir = create_test_dir("search_cjk");
+    let file = write_test_file(&dir, "test.txt", "漢字test\n");
+
+    let cancel_scan = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel_scan).unwrap();
+
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    backend.search("test", &cancel, &results, &progress).unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].column, 2); // 2 CJK chars = 2 UTF-16 code units
+    assert_eq!(matches[0].length, 4);
+
+    cleanup(&dir);
+}
+
+#[test]
+fn search_accented_char_utf16_column() {
+    let dir = create_test_dir("search_accent");
+    // 'é' = 2 bytes UTF-8, 1 UTF-16 code unit
+    let file = write_test_file(&dir, "test.txt", "café latte\n");
+
+    let cancel_scan = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel_scan).unwrap();
+
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    backend.search("latte", &cancel, &results, &progress).unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].column, 5); // "café " = 5 chars = 5 UTF-16 code units
+    assert_eq!(matches[0].length, 5);
+
+    cleanup(&dir);
+}
+
+#[test]
+fn search_on_last_line_without_newline_utf16() {
+    let dir = create_test_dir("search_last_utf8");
+    // Last line has no trailing newline — exercises the leftover-handling code path
+    let file = write_test_file(&dir, "test.txt", "first\n🦀rust");
+
+    let cancel_scan = AtomicBool::new(false);
+    let backend = LineIndexBackend::open(&file, &cancel_scan).unwrap();
+
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    backend.search("rust", &cancel, &results, &progress).unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].line, 1);
+    assert_eq!(matches[0].column, 2); // 🦀 = 2 UTF-16 code units
+    assert_eq!(matches[0].length, 4);
+
+    cleanup(&dir);
+}

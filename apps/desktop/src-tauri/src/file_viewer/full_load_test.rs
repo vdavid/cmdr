@@ -322,3 +322,59 @@ fn search_caps_at_match_limit() {
     // Should stop scanning early (not process the whole file)
     assert!(*progress.lock().unwrap() < backend.total_bytes());
 }
+
+// ─── Multi-byte UTF-8 tests ────────────────────────────────────────────
+
+#[test]
+fn byte_offset_seek_with_multibyte_lines() {
+    // "café\n" = 6 bytes (c=1, a=1, f=1, é=2, \n=1), "plain\n" = 6 bytes
+    let backend = FullLoadBackend::from_content("café\nplain\n", "test.txt");
+
+    // Byte offset 6 is start of "plain"
+    let chunk = backend.get_lines(&SeekTarget::ByteOffset(6), 1).unwrap();
+    assert_eq!(chunk.first_line_number, 1);
+    assert_eq!(chunk.lines[0], "plain");
+}
+
+#[test]
+fn byte_offset_seek_mid_multibyte_char() {
+    // "café\nplain\n". Byte offset 4 is inside 'é' (which spans bytes 4-5).
+    // from_content uses String lengths (after lossy decode), not raw bytes,
+    // so line_offsets[0]=0, line_offsets[1]=5 ("café" is 4 chars + 1 for \n).
+    // ByteOffset(4) should resolve to line 0 since 4 < 5.
+    let backend = FullLoadBackend::from_content("café\nplain\n", "test.txt");
+
+    let chunk = backend.get_lines(&SeekTarget::ByteOffset(4), 1).unwrap();
+    assert_eq!(chunk.first_line_number, 0);
+    assert_eq!(chunk.lines[0], "café");
+}
+
+#[test]
+fn search_cjk_utf16_column() {
+    // CJK chars are 3 bytes UTF-8, 1 UTF-16 code unit each
+    let backend = FullLoadBackend::from_content("漢字test", "test.txt");
+
+    let cancel = AtomicBool::new(false);
+    let results: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress: Mutex<u64> = Mutex::new(0);
+
+    backend.search("test", &cancel, &results, &progress).unwrap();
+    let matches = results.lock().unwrap();
+
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].column, 2); // 2 CJK chars = 2 UTF-16 code units
+    assert_eq!(matches[0].length, 4);
+}
+
+#[test]
+fn line_seek_through_mixed_multibyte_content() {
+    let backend = FullLoadBackend::from_content("café\n漢字テスト\n🎉🦀🌍\nplain", "test.txt");
+
+    assert_eq!(backend.total_lines(), Some(4));
+
+    let chunk = backend.get_lines(&SeekTarget::Line(2), 1).unwrap();
+    assert_eq!(chunk.lines[0], "🎉🦀🌍");
+
+    let chunk = backend.get_lines(&SeekTarget::Line(1), 1).unwrap();
+    assert_eq!(chunk.lines[0], "漢字テスト");
+}

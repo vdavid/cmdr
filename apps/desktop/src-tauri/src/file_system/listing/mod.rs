@@ -41,3 +41,5 @@ mod hidden_files_test;
 mod operations_test;
 #[cfg(test)]
 mod sorting_test;
+#[cfg(test)]
+mod stats_test;
