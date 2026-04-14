@@ -161,14 +161,44 @@ pub fn mount_share_sync(
     let cf_user = username.map(CFString::new);
     let cf_pass = password.map(CFString::new);
 
+    // Check if the default mount path is already taken by a different server.
+    // If so, pick a disambiguated path (public-1, public-2, ...) like Finder does.
+    let explicit_mount_path = disambiguated_mount_path(server, share, port);
+
+    // When disambiguating, force a new SMB session so macOS doesn't reuse
+    // the existing session to the same hostname (different port = different server).
+    let open_options = if explicit_mount_path.is_some() {
+        unsafe {
+            let dict = core_foundation::dictionary::CFDictionaryCreateMutable(
+                ptr::null(),
+                1,
+                &core_foundation::dictionary::kCFTypeDictionaryKeyCallBacks,
+                &core_foundation::dictionary::kCFTypeDictionaryValueCallBacks,
+            );
+            let key = CFString::new("ForceNewSession");
+            let value = core_foundation::boolean::kCFBooleanTrue;
+            core_foundation::dictionary::CFDictionarySetValue(
+                dict,
+                key.as_concrete_TypeRef() as *const c_void,
+                value as *const c_void,
+            );
+            dict as *const c_void
+        }
+    } else {
+        ptr::null()
+    };
+
     // Prepare output array for mount points
     let mut mountpoints: *const c_void = ptr::null();
 
-    // Call NetFSMountURLSync
+    // Call NetFSMountURLSync. Mount path is NULL even when disambiguating —
+    // NetFS auto-creates the mount point in /Volumes/ (we can't mkdir there).
+    // With ForceNewSession, NetFS treats this as a separate server and picks
+    // a disambiguated name (public-1, public-2, etc.) automatically.
     let result = unsafe {
         NetFSMountURLSync(
             cf_url.as_concrete_TypeRef() as *const c_void,
-            ptr::null(), // NULL for auto mount path
+            ptr::null(), // Let NetFS choose/create the mount point
             cf_user
                 .as_ref()
                 .map(|s| s.as_concrete_TypeRef() as *const c_void)
@@ -177,11 +207,16 @@ pub fn mount_share_sync(
                 .as_ref()
                 .map(|s| s.as_concrete_TypeRef() as *const c_void)
                 .unwrap_or(ptr::null()),
-            ptr::null(), // No special open options
+            open_options,
             ptr::null(), // No special mount options
             &mut mountpoints,
         )
     };
+
+    // Release open options dictionary if we created one
+    if !open_options.is_null() {
+        unsafe { core_foundation::base::CFRelease(open_options) };
+    }
 
     // Check result
     if result != 0 && result != EEXIST {
@@ -194,7 +229,10 @@ pub fn mount_share_sync(
     // EEXIST (17), macOS may return the actual path (which can be disambiguated,
     // for example `/Volumes/public-1` when `/Volumes/public` is already taken by
     // a different server). Fall back to scanning /Volumes/ for the mount.
-    let mount_path = extract_mount_path(mountpoints)
+    // Prefer: explicit path we chose → NetFS output → /Volumes/ scan → hardcoded fallback.
+    // The explicit path is most reliable because we already validated it.
+    let mount_path = explicit_mount_path
+        .or_else(|| extract_mount_path(mountpoints))
         .or_else(|| find_mount_path_for_share(server, share))
         .unwrap_or_else(|| format!("/Volumes/{}", share));
 
@@ -258,6 +296,52 @@ fn extract_mount_path(mountpoints: *const c_void) -> Option<String> {
         core_foundation::base::CFRelease(mountpoints);
         result
     }
+}
+
+/// Returns a disambiguated mount path if `/Volumes/{share}` is already taken by a
+/// different server. Returns `None` if the default path is available or already
+/// belongs to this server (EEXIST case).
+///
+/// Follows Finder's convention: `public-1`, `public-2`, etc.
+fn disambiguated_mount_path(server: &str, share: &str, port: u16) -> Option<String> {
+    use crate::volumes::get_smb_mount_info;
+
+    let default_path = format!("/Volumes/{}", share);
+    if !std::path::Path::new(&default_path).exists() {
+        return None; // Default path is free
+    }
+
+    // Check if the existing mount is from the same server+port
+    if let Some(info) = get_smb_mount_info(&default_path)
+        && info.server.to_lowercase() == server.to_lowercase()
+        && info.share == share
+        && info.port == port
+    {
+        return None; // Same server — let NetFS handle EEXIST
+    }
+
+    // Collision: find the next available suffix
+    for n in 1..100 {
+        let candidate = format!("/Volumes/{}-{}", share, n);
+        if !std::path::Path::new(&candidate).exists() {
+            log::info!(
+                "Mount path /Volumes/{} taken by another server, using {}",
+                share,
+                candidate
+            );
+            return Some(candidate);
+        }
+        // If this suffixed path exists and belongs to this server, reuse it
+        if let Some(info) = get_smb_mount_info(&candidate)
+            && info.server.to_lowercase() == server.to_lowercase()
+            && info.share == share
+            && info.port == port
+        {
+            return Some(candidate); // Already mounted here
+        }
+    }
+
+    None // Give up after 100 attempts, let NetFS handle it
 }
 
 /// Finds the mount path for a server+share by scanning `/Volumes/` with `statfs`.

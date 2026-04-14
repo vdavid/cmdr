@@ -106,10 +106,11 @@ Manual server IDs use the format `manual-{address}-{port}` with dots/colons repl
 
 ### Mount path disambiguation for same-name shares
 
-When two servers have a share with the same name (for example, two NAS devices both sharing `public`), macOS creates
-disambiguated mount paths (`/Volumes/public`, `/Volumes/public-1`). The mount code reads the actual path from
-`NetFSMountURLSync`'s `mountpoints` array on both success and EEXIST. If the array is empty (some macOS versions don't
-populate it on EEXIST), `find_mount_path_for_share` scans `/Volumes/` and uses `statfs` to match the server+share.
+When two servers have a share with the same name (for example, two NAS devices both sharing `public`), the mount code
+detects the collision before calling `NetFSMountURLSync`. `disambiguated_mount_path` checks if `/Volumes/{share}` is
+already taken by a different server (via `statfs`), and if so picks `/Volumes/{share}-1`, `-2`, etc. (Finder's
+convention) and passes it as an explicit mount point to `NetFSMountURLSync`. The volume switcher shows
+`{share} on {server}` for SMB mounts so the user knows which server each volume belongs to.
 
 ## Gotchas
 

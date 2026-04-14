@@ -486,10 +486,19 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
                 continue;
             }
 
-            let name = get_volume_name(&url, &path);
+            let mut name = get_volume_name(&url, &path);
             let is_ejectable = get_bool_resource(&url, "NSURLVolumeIsEjectableKey").unwrap_or(false);
             let fs_type = get_fs_type(&path);
             let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
+
+            // For SMB mounts, show "share on server" so the user knows which
+            // server they're browsing (especially when multiple servers share
+            // the same share name).
+            if is_smb_fs_type(fs_type.as_deref())
+                && let Some(info) = get_smb_mount_info(&path)
+            {
+                name = format!("{} on {}", info.share, info.server);
+            }
 
             volumes.push(LocationInfo {
                 id: path_to_id(&path),
