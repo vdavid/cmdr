@@ -38,6 +38,9 @@
     "file-explorer/pane/FilePane.svelte": { "reason": "Tested in integration.test.ts, complex component" },
     "file-explorer/pane/MtpConnectionView.svelte": { "reason": "MTP connection UI, depends on Tauri APIs" },
     "file-explorer/pane/NetworkMountView.svelte": { "reason": "Network mount UI, depends on Tauri APIs" },
+    "file-explorer/pane/initialization.ts": {
+      "reason": "Happy path covered by DualPaneExplorer tests; timeout and E2E override branches tested via E2E in CI"
+    },
     "file-explorer/pane/rename-flow.svelte.ts": {
       "reason": "Extracted from FilePane, depends on Tauri commands and rename operations"
     },

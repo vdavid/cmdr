@@ -7,14 +7,8 @@
     import DialogManager from './DialogManager.svelte'
     import { toBackendCursorIndex, toBackendIndices } from '$lib/file-operations/transfer/transfer-dialog-utils'
     import { getFileAt, getFilesAtIndices, openInEditor } from '$lib/tauri-commands'
-    import {
-        loadAppStatus,
-        saveAppStatus,
-        loadPaneTabs,
-        saveLastUsedPathForVolume,
-        type ViewMode,
-    } from '$lib/app-status-store'
-    import { loadSettings, saveSettings, subscribeToSettingsChanges } from '$lib/settings-store'
+    import { saveAppStatus, saveLastUsedPathForVolume, type ViewMode } from '$lib/app-status-store'
+    import { saveSettings, subscribeToSettingsChanges } from '$lib/settings-store'
     import {
         pathExists,
         listen,
@@ -26,7 +20,6 @@
         updateFocusedPane,
         updatePaneTabs,
         findFileIndex,
-        getE2eStartPath,
         copyFilesToClipboard,
         cutFilesToClipboard,
         readClipboardFiles,
@@ -70,10 +63,9 @@
         unpinTab,
         type TabManager,
     } from '../tabs/tab-state-manager.svelte'
-    import type { TabState, TabId, PersistedTab, PersistedPaneTabs } from '../tabs/tab-types'
+    import type { TabState, TabId } from '../tabs/tab-types'
     import {
         createInitialTabState,
-        createTabManagerFromPersisted,
         saveTabsForPane,
         handleTabClose as tabOpsHandleTabClose,
         handleTabMiddleClick as tabOpsHandleTabMiddleClick,
@@ -114,7 +106,6 @@
     import { getInitialFileName } from '$lib/file-operations/mkfile/new-file-operations'
     import { createDialogState } from './dialog-state.svelte'
     import { getCurrentWebview } from '@tauri-apps/api/webview'
-    import { isMacOS } from '$lib/shortcuts/key-capture'
     import { recalculateWebviewOffset, toViewportPosition } from '../drag/drag-position'
     import {
         getIsDraggingFromSelf,
@@ -127,6 +118,8 @@
         endSelfDragSession,
     } from '../drag/drag-drop'
     import { initIndexEvents } from '$lib/indexing/index'
+    import { createIndexEventHandler } from './index-events'
+    import { loadPersistedState } from './initialization'
     import { getDirectorySortMode } from '$lib/settings/reactive-settings.svelte'
     import { resolveDropTarget } from '../drag/drop-target-hit-testing'
     import DragOverlay from '../drag/DragOverlay.svelte'
@@ -890,64 +883,11 @@
         dropTargetFolderEl = null
     }
 
-    /** Ensures a path ends with '/' for correct prefix matching. */
-    function ensureTrailingSlash(path: string): string {
-        return path.endsWith('/') ? path : path + '/'
-    }
-
-    /**
-     * Resolves well-known macOS symlinks to their canonical `/private/` targets.
-     * The drive index stores canonical paths (scanner follows symlinks), but the
-     * listing uses the raw navigation path. Without this, `index-dir-updated`
-     * events for paths under `/tmp/`, `/var/`, or `/etc/` would never match.
-     */
-    function resolvePrivateSymlinks(path: string): string {
-        if (!isMacOS()) return path
-        for (const prefix of ['/tmp', '/var', '/etc']) {
-            if (path === prefix || path.startsWith(prefix + '/')) {
-                return '/private' + path
-            }
-        }
-        return path
-    }
-
-    /** Returns true if any updated path is a descendant of `dir`. */
-    function hasDescendantUpdate(paths: string[], dir: string): boolean {
-        return paths.some((p) => {
-            const withSlash = ensureTrailingSlash(p)
-            return withSlash.startsWith(dir) && withSlash !== dir
-        })
-    }
-
-    // Throttle state for index size refreshes (one per pane).
-    // Throttle fires on the first event, then ignores subsequent events for the cooldown period.
-    // This ensures updates appear promptly even when events fire continuously.
-    let leftThrottleUntil = 0
-    let rightThrottleUntil = 0
-    const indexRefreshCooldownMs = 2000
-
-    /** Throttled refresh: fires immediately on first relevant event, then skips for the cooldown period. */
-    function throttledRefresh(
-        shouldRefresh: boolean,
-        throttleUntil: number,
-        setThrottle: (v: number) => void,
-        paneRef: FilePaneAPI | undefined,
-    ) {
-        if (!shouldRefresh) return
-        const now = Date.now()
-        if (now < throttleUntil) return
-        setThrottle(now + indexRefreshCooldownMs)
-        paneRef?.refreshIndexSizes()
-    }
-
-    /** Called when the drive index updates directory stats. Refreshes only index sizes (no full list rebuild). */
-    function handleIndexDirUpdated(paths: string[]) {
-        const refreshLeft = hasDescendantUpdate(paths, ensureTrailingSlash(resolvePrivateSymlinks(leftPath)))
-        const refreshRight = hasDescendantUpdate(paths, ensureTrailingSlash(resolvePrivateSymlinks(rightPath)))
-
-        throttledRefresh(refreshLeft, leftThrottleUntil, (v) => (leftThrottleUntil = v), getPaneRef('left'))
-        throttledRefresh(refreshRight, rightThrottleUntil, (v) => (rightThrottleUntil = v), getPaneRef('right'))
-    }
+    const handleIndexDirUpdated = createIndexEventHandler({
+        getLeftPath: () => leftPath,
+        getRightPath: () => rightPath,
+        getPaneRef,
+    })
 
     function handleResizeForDevTools() {
         void recalculateWebviewOffset()
@@ -964,123 +904,13 @@
         // and MTP store (subscribes to device connection events)
         await Promise.all([initVolumeStore(), initMtpStore()])
 
-        // Load persisted state (tabs + app status + settings) in parallel
-        const [leftPaneTabs, rightPaneTabs, status, settings] = await Promise.all([
-            loadPaneTabs('left', pathExists),
-            loadPaneTabs('right', pathExists),
-            loadAppStatus(pathExists),
-            loadSettings(),
-        ])
-
-        focusedPane = status.focusedPane
-        showHiddenFiles = settings.showHiddenFiles
-        leftPaneWidthPercent = status.leftPaneWidthPercent
-
-        // E2E test override: use CMDR_E2E_START_PATH subdirectories when set
-        const e2eStartPath = await getE2eStartPath()
-
-        // Determine the correct volume IDs by finding which volume contains each tab's path
-        // This is more reliable than trusting the stored volumeId, which may be stale
-        // Exception: 'network' is a virtual volume, trust the stored ID for that
-        const defaultId = await getDefaultVolumeId()
-
-        interface VolumeResolution {
-            volumeId: string
-            timedOut: boolean
-        }
-
-        async function resolveVolumeId(
-            volumeId: string,
-            path: string,
-            hasE2eOverride: boolean,
-        ): Promise<VolumeResolution> {
-            if (volumeId === 'network' && !hasE2eOverride) return { volumeId: 'network', timedOut: false }
-            const result = await resolvePathVolume(path)
-            if (result.volume) return { volumeId: result.volume.id, timedOut: false }
-            if (result.timedOut) {
-                log.warn('Volume resolution timed out for path: {path}', { path })
-                return { volumeId: defaultId, timedOut: true }
-            }
-            // Path doesn't exist, but volume is reachable
-            return { volumeId: defaultId, timedOut: false }
-        }
-
-        // Resolve volume IDs for all tabs in parallel, tracking timeouts
-        const resolvedLeftTabs = await Promise.all(
-            leftPaneTabs.tabs.map(async (tab) => {
-                const resolution = await resolveVolumeId(tab.volumeId, tab.path, !!e2eStartPath)
-                return {
-                    ...tab,
-                    volumeId: resolution.volumeId,
-                    unreachablePath: resolution.timedOut ? tab.path : null,
-                }
-            }),
-        )
-        const resolvedRightTabs = await Promise.all(
-            rightPaneTabs.tabs.map(async (tab) => {
-                const resolution = await resolveVolumeId(tab.volumeId, tab.path, !!e2eStartPath)
-                return {
-                    ...tab,
-                    volumeId: resolution.volumeId,
-                    unreachablePath: resolution.timedOut ? tab.path : null,
-                }
-            }),
-        )
-
-        // Collect unreachable paths by tab ID before stripping extra fields
-        const unreachableByTabId: Record<string, string> = {}
-        for (const tab of [...resolvedLeftTabs, ...resolvedRightTabs]) {
-            if (tab.unreachablePath) {
-                unreachableByTabId[tab.id] = tab.unreachablePath
-            }
-        }
-
-        const toPersistedTab = (tab: (typeof resolvedLeftTabs)[number]): PersistedTab => ({
-            id: tab.id,
-            path: tab.path,
-            volumeId: tab.volumeId,
-            sortBy: tab.sortBy,
-            sortOrder: tab.sortOrder,
-            viewMode: tab.viewMode,
-            pinned: tab.pinned,
-        })
-        const resolvedLeftPaneTabs: PersistedPaneTabs = {
-            tabs: resolvedLeftTabs.map(toPersistedTab),
-            activeTabId: leftPaneTabs.activeTabId,
-        }
-        const resolvedRightPaneTabs: PersistedPaneTabs = {
-            tabs: resolvedRightTabs.map(toPersistedTab),
-            activeTabId: rightPaneTabs.activeTabId,
-        }
-
-        // E2E override: apply fixture paths to the active tab data BEFORE creating tab managers,
-        // so the managers are initialized with the correct paths from the start.
-        // Must override both path AND volumeId — persisted state may have a non-root volume
-        // (e.g. VirtioFS mount) whose path resolver would mangle the absolute fixture path.
-        if (e2eStartPath) {
-            const leftActiveTab = resolvedLeftPaneTabs.tabs.find((t) => t.id === resolvedLeftPaneTabs.activeTabId)
-            const rightActiveTab = resolvedRightPaneTabs.tabs.find((t) => t.id === resolvedRightPaneTabs.activeTabId)
-            const leftTarget = leftActiveTab ?? resolvedLeftPaneTabs.tabs[0]
-            const rightTarget = rightActiveTab ?? resolvedRightPaneTabs.tabs[0]
-            if (!leftActiveTab) log.warn('E2E path override: left active tab ID mismatch, using first tab')
-            if (!rightActiveTab) log.warn('E2E path override: right active tab ID mismatch, using first tab')
-            leftTarget.path = `${e2eStartPath}/left`
-            leftTarget.volumeId = defaultId
-            rightTarget.path = `${e2eStartPath}/right`
-            rightTarget.volumeId = defaultId
-        }
-
-        // Create tab managers from persisted tab data
-        leftTabMgr = createTabManagerFromPersisted(resolvedLeftPaneTabs)
-        rightTabMgr = createTabManagerFromPersisted(resolvedRightPaneTabs)
-
-        // Apply unreachable state to tabs that timed out during volume resolution
-        for (const tab of [...getAllTabs(leftTabMgr), ...getAllTabs(rightTabMgr)]) {
-            const originalPath = unreachableByTabId[tab.id]
-            if (originalPath) {
-                tab.unreachable = { originalPath, retrying: false }
-            }
-        }
+        // Load persisted state, resolve volumes, and create tab managers
+        const persistedState = await loadPersistedState()
+        leftTabMgr = persistedState.leftTabMgr
+        rightTabMgr = persistedState.rightTabMgr
+        focusedPane = persistedState.focusedPane
+        showHiddenFiles = persistedState.showHiddenFiles
+        leftPaneWidthPercent = persistedState.leftPaneWidthPercent
 
         initialized = true
         syncPinTabMenu()
