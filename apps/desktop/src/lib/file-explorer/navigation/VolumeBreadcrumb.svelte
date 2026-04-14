@@ -109,9 +109,20 @@
     async function fitDropdownToViewport() {
         await tick()
         const dropdown = dropdownRef?.querySelector('.volume-dropdown') as HTMLElement | null
-        if (dropdown) {
-            const top = dropdown.getBoundingClientRect().top
+        const anchor = dropdownRef?.querySelector('.volume-name, .breadcrumb-options-trigger') as HTMLElement | null
+        if (dropdown && anchor) {
+            const rect = anchor.getBoundingClientRect()
+            const top = rect.bottom + 4 // spacing below the breadcrumb
+            dropdown.style.top = `${String(top)}px`
+            dropdown.style.left = `${String(rect.left)}px`
             dropdown.style.maxHeight = `${String(window.innerHeight - top - 8)}px`
+        }
+    }
+
+    // Re-fit dropdown on window resize so it adapts to the available space
+    function handleResize() {
+        if (isOpen) {
+            void fitDropdownToViewport()
         }
     }
 
@@ -326,6 +337,7 @@
         document.addEventListener('click', handleBreadcrumbPopupClickOutside)
         document.addEventListener('keydown', handleDocumentKeyDown)
         document.addEventListener('keydown', handleBreadcrumbPopupKeyDown)
+        window.addEventListener('resize', handleResize)
     })
 
     onDestroy(() => {
@@ -334,6 +346,7 @@
         document.removeEventListener('click', handleBreadcrumbPopupClickOutside)
         document.removeEventListener('keydown', handleDocumentKeyDown)
         document.removeEventListener('keydown', handleBreadcrumbPopupKeyDown)
+        window.removeEventListener('resize', handleResize)
     })
 
     function getConnectionTooltip(state: SmbConnectionState): string {
@@ -531,40 +544,17 @@
                             {/if}
                         {/if}
                     </div>
-                    {#if submenuVolumeId === volume.id && submenuPosition}
-                        <!-- svelte-ignore a11y_no_static_element_interactions -->
-                        <!-- svelte-ignore a11y_click_events_have_key_events -->
-                        <div
-                            class="connection-submenu"
-                            bind:this={submenuRef}
-                            style:position="fixed"
-                            style:top="{submenuPosition.top}px"
-                            style:left="{submenuPosition.left}px"
-                            onmouseleave={() => {
-                                submenuHighlighted = false
-                                closeSubmenu()
-                            }}
-                        >
-                            <!-- svelte-ignore a11y_mouse_events_have_key_events -->
-                            <div
-                                class="connection-submenu-item"
-                                class:is-highlighted={submenuHighlighted}
-                                onmouseover={() => {
-                                    submenuHighlighted = true
-                                }}
-                                onclick={(e: MouseEvent) => {
-                                    e.stopPropagation()
-                                    void handleSubmenuAction()
-                                }}
-                            >
-                                Connect directly for faster access
-                            </div>
-                        </div>
-                    {/if}
                     {#if volumeSpaceMap.has(volume.id)}
                         {@const space = volumeSpaceMap.get(volume.id)}
                         {#if space}
-                            <div class="volume-space-info">
+                            <!-- svelte-ignore a11y_click_events_have_key_events -->
+                            <!-- svelte-ignore a11y_no_static_element_interactions -->
+                            <!-- svelte-ignore a11y_mouse_events_have_key_events -->
+                            <div
+                                class="volume-space-info"
+                                onclick={() => { void handleVolumeSelect(volume) }}
+                                onmouseover={() => { handleVolumeHover(volume) }}
+                            >
                                 <div class="volume-space-bar">
                                     <div
                                         class="volume-space-fill"
@@ -630,6 +620,36 @@
                 </div>
             {/if}
         </div>
+        {#if submenuVolumeId && submenuPosition}
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <div
+                class="connection-submenu"
+                bind:this={submenuRef}
+                style:position="fixed"
+                style:top="{submenuPosition.top}px"
+                style:left="{submenuPosition.left}px"
+                onmouseleave={() => {
+                    submenuHighlighted = false
+                    closeSubmenu()
+                }}
+            >
+                <!-- svelte-ignore a11y_mouse_events_have_key_events -->
+                <div
+                    class="connection-submenu-item"
+                    class:is-highlighted={submenuHighlighted}
+                    onmouseover={() => {
+                        submenuHighlighted = true
+                    }}
+                    onclick={(e: MouseEvent) => {
+                        e.stopPropagation()
+                        void handleSubmenuAction()
+                    }}
+                >
+                    Connect directly for faster access
+                </div>
+            </div>
+        {/if}
     {/if}
 </div>
 
@@ -699,10 +719,7 @@
     }
 
     .volume-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        margin-top: var(--spacing-xs);
+        position: fixed;
         min-width: 220px;
         max-height: calc(100vh - 30px); /* Fallback — overridden dynamically by fitDropdownToViewport() */
         overflow-y: auto;
@@ -710,7 +727,7 @@
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-md);
-        z-index: var(--z-dropdown);
+        z-index: var(--z-overlay); /* Above function key bar and other pane elements */
         padding: var(--spacing-xs) 0;
     }
 
@@ -1004,8 +1021,8 @@
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-md);
-        /* Must be above the dropdown (--z-dropdown: 100) */
-        z-index: calc(var(--z-dropdown) + 1);
+        /* Must be above the dropdown (--z-overlay: 200) */
+        z-index: calc(var(--z-overlay) + 1);
         padding: var(--spacing-xs) 0;
     }
 

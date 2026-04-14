@@ -3,3 +3,7 @@
 // See: https://svelte.dev/docs/kit/single-page-apps
 // See: https://v2.tauri.app/start/frontend/sveltekit/ for more info
 export const ssr = false
+
+// Register HMR crash recovery (must be outside the Svelte component so the
+// listener survives layout re-evaluation during HMR)
+import '$lib/hmr-recovery'

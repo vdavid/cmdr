@@ -9,21 +9,6 @@
     import '../app.css'
     import { initLogger } from '$lib/logging/logger'
 
-    // SvelteKit's client router crashes with "Cannot access 'component' before
-    // initialization" when HMR updates hit the root layout (virtual:uno.css, app.css).
-    // Catch the crash and force a clean page reload.
-    if (import.meta.hot) {
-        window.addEventListener('unhandledrejection', (event) => {
-            if (
-                event.reason instanceof ReferenceError &&
-                event.reason.message.includes('component')
-            ) {
-                event.preventDefault()
-                location.reload()
-            }
-        })
-    }
-
     onMount(() => {
         void initLogger()
     })
