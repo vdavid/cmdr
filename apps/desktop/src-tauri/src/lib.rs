@@ -861,6 +861,8 @@ pub fn run() {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::upgrade_to_smb_volume,
             #[cfg(any(target_os = "macos", target_os = "linux"))]
+            commands::network::upgrade_to_smb_volume_with_credentials,
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::connect_to_server,
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::remove_manual_server,
@@ -902,6 +904,8 @@ pub fn run() {
             stubs::network::mount_network_share,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::upgrade_to_smb_volume,
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+            stubs::network::upgrade_to_smb_volume_with_credentials,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::connect_to_server,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]

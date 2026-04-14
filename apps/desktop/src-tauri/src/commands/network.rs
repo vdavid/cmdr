@@ -6,6 +6,30 @@ use crate::network::{
     update_host_resolution,
 };
 
+/// Result of an SMB volume upgrade attempt.
+#[derive(serde::Serialize)]
+#[serde(tag = "status", rename_all = "camelCase")]
+pub enum UpgradeResult {
+    /// Upgrade succeeded — volume now uses direct smb2.
+    Success,
+    /// Credentials needed — frontend should show login form.
+    CredentialsNeeded {
+        server: String,
+        share: String,
+        port: u16,
+        /// Friendly display name for the server (mDNS hostname or IP).
+        display_name: String,
+        /// Username hint from stored credentials or the OS mount.
+        username_hint: Option<String>,
+        /// Optional message explaining why credentials are needed.
+        message: Option<String>,
+    },
+    /// Non-auth error (DNS, network, unreachable).
+    NetworkError {
+        message: String,
+    },
+}
+
 /// Gets all currently discovered network hosts.
 #[tauri::command]
 pub fn list_network_hosts() -> Vec<NetworkHost> {
@@ -338,14 +362,17 @@ pub(crate) async fn register_smb_volume(
     use crate::file_system::volume::smb::connect_smb_volume;
     use std::sync::Arc;
 
+    // Resolve mDNS service names (like "Naspolya._smb._tcp.local") to an IP
+    let resolved_server = resolve_server_address(server);
+
     log::debug!(
         "Establishing smb2 connection for SmbVolume: {}:{}/{}",
-        server,
+        resolved_server,
         port,
         share
     );
 
-    match connect_smb_volume(share, mount_path, server, share, username, password, port).await {
+    match connect_smb_volume(share, mount_path, &resolved_server, share, username, password, port).await {
         Ok(volume) => {
             let volume_id = crate::file_system::volume::path_to_id(mount_path);
             // Use register (overwrite) so SmbVolume always wins over any
@@ -367,12 +394,13 @@ pub(crate) async fn register_smb_volume(
 
 /// Upgrades an existing OS-mounted SMB volume to use a direct smb2 connection.
 ///
-/// Extracts server/share/username from `statfs`, connects via smb2,
-/// and replaces the `LocalPosixVolume` with an `SmbVolume` in `VolumeManager`.
+/// Extracts server/share/username from `statfs`, tries stored credentials,
+/// and either upgrades to `SmbVolume` or returns `CredentialsNeeded` so
+/// the frontend can show a login form.
 ///
 /// Called from the "Connect directly for faster access" UI action.
 #[tauri::command]
-pub async fn upgrade_to_smb_volume(volume_id: String) -> Result<String, String> {
+pub async fn upgrade_to_smb_volume(volume_id: String) -> Result<UpgradeResult, String> {
     use crate::file_system::get_volume_manager;
     #[cfg(target_os = "macos")]
     use crate::volumes::get_smb_mount_info;
@@ -387,7 +415,7 @@ pub async fn upgrade_to_smb_volume(volume_id: String) -> Result<String, String> 
 
     // Check if already an SmbVolume
     if volume.smb_connection_state().is_some() {
-        return Ok("direct".to_string());
+        return Ok(UpgradeResult::Success);
     }
 
     // Extract SMB connection info from statfs
@@ -409,31 +437,181 @@ pub async fn upgrade_to_smb_volume(volume_id: String) -> Result<String, String> 
     // Try to get credentials from Keychain. The mount source has the IP, but Cmdr
     // stores Keychain credentials keyed by hostname (from mDNS). Try both.
     let hostname = resolve_ip_to_hostname(&info.server);
+    let display_name = friendly_server_name(&info.server);
     let creds = get_keychain_password(&info.server, hostname.as_deref(), &info.share).await;
 
     match &creds {
         Some((u, _)) => log::info!("Found Keychain credentials for user={}", u),
-        None => log::info!("No Keychain credentials found, trying guest access"),
+        None => {
+            log::info!("No stored credentials found, requesting credentials from user");
+            return Ok(UpgradeResult::CredentialsNeeded {
+                server: info.server,
+                share: info.share,
+                port: info.port,
+                display_name,
+                username_hint: info.username,
+                message: None,
+            });
+        }
     }
 
     let (username, password) = match &creds {
         Some((u, p)) => (Some(u.as_str()), Some(p.as_str())),
-        None => (None, None),
+        None => unreachable!(),
     };
 
-    register_smb_volume(&info.server, &info.share, &mount_path, username, password, info.port).await;
+    // Try connecting with stored credentials
+    let result = try_smb_upgrade(
+        &info.server,
+        &info.share,
+        &mount_path,
+        username,
+        password,
+        info.port,
+        &volume_id,
+    )
+    .await;
 
-    // Check if it worked
-    if let Some(vol) = manager.get(&volume_id)
-        && vol.smb_connection_state().is_some()
-    {
-        return Ok("direct".to_string());
+    match result {
+        Ok(()) => Ok(UpgradeResult::Success),
+        Err(UpgradeError::Auth) => {
+            log::info!("Stored credentials didn't work, requesting new credentials");
+            Ok(UpgradeResult::CredentialsNeeded {
+                server: info.server,
+                share: info.share,
+                port: info.port,
+                display_name,
+                username_hint: username.map(|s| s.to_string()),
+                message: Some("Stored credentials didn't work".to_string()),
+            })
+        }
+        Err(UpgradeError::Network(msg)) => Ok(UpgradeResult::NetworkError { message: msg }),
+    }
+}
+
+/// Upgrades an existing OS-mounted SMB volume using explicit credentials.
+///
+/// Called after the user fills in the login form shown by `upgrade_to_smb_volume`.
+#[tauri::command]
+pub async fn upgrade_to_smb_volume_with_credentials(
+    volume_id: String,
+    username: Option<String>,
+    password: Option<String>,
+    remember_in_keychain: bool,
+) -> Result<UpgradeResult, String> {
+    use crate::file_system::get_volume_manager;
+    #[cfg(target_os = "macos")]
+    use crate::volumes::get_smb_mount_info;
+    #[cfg(target_os = "linux")]
+    use crate::volumes_linux::get_smb_mount_info;
+
+    let manager = get_volume_manager();
+
+    let volume = manager.get(&volume_id).ok_or("Volume not found")?;
+    let mount_path = volume.root().to_string_lossy().to_string();
+
+    if volume.smb_connection_state().is_some() {
+        return Ok(UpgradeResult::Success);
     }
 
-    Err(format!(
-        "Failed to establish direct smb2 connection to {}/{}",
-        info.server, info.share
-    ))
+    let info = get_smb_mount_info(&mount_path).ok_or_else(|| {
+        format!(
+            "Can't determine SMB server info for {}. Is this an SMB mount?",
+            mount_path
+        )
+    })?;
+
+    let hostname = resolve_ip_to_hostname(&info.server);
+    let display_name = friendly_server_name(&info.server);
+
+    let result = try_smb_upgrade(
+        &info.server,
+        &info.share,
+        &mount_path,
+        username.as_deref(),
+        password.as_deref(),
+        info.port,
+        &volume_id,
+    )
+    .await;
+
+    match result {
+        Ok(()) => {
+            // Save credentials on success if requested
+            if remember_in_keychain
+                && let (Some(u), Some(p)) = (&username, &password) {
+                    let server_key = hostname.as_deref().unwrap_or(&info.server);
+                    if let Err(e) = keychain::save_credentials(
+                        server_key,
+                        Some(&info.share),
+                        u,
+                        p,
+                    ) {
+                        log::warn!("Couldn't save credentials to Keychain: {}", e);
+                    }
+                }
+            Ok(UpgradeResult::Success)
+        }
+        Err(UpgradeError::Auth) => Ok(UpgradeResult::CredentialsNeeded {
+            server: info.server,
+            share: info.share,
+            port: info.port,
+            display_name,
+            username_hint: username,
+            message: Some("Invalid username or password".to_string()),
+        }),
+        Err(UpgradeError::Network(msg)) => Ok(UpgradeResult::NetworkError { message: msg }),
+    }
+}
+
+/// Internal error type for upgrade attempts, distinguishing auth from network failures.
+enum UpgradeError {
+    Auth,
+    Network(String),
+}
+
+/// Attempts the smb2 connection and registers the volume. Returns `Ok(())` on success.
+async fn try_smb_upgrade(
+    server: &str,
+    share: &str,
+    mount_path: &str,
+    username: Option<&str>,
+    password: Option<&str>,
+    port: u16,
+    volume_id: &str,
+) -> Result<(), UpgradeError> {
+    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::smb::connect_smb_volume;
+    use crate::network::smb_util::is_auth_error;
+    use std::sync::Arc;
+
+    // Resolve mDNS service names to connectable addresses
+    let resolved_server = resolve_server_address(server);
+    let display = friendly_server_name(server);
+
+    match connect_smb_volume(share, mount_path, &resolved_server, share, username, password, port).await {
+        Ok(volume) => {
+            get_volume_manager().register(volume_id, Arc::new(volume));
+            log::info!("Registered SmbVolume for {} (id={})", mount_path, volume_id);
+            Ok(())
+        }
+        Err(e) => {
+            if is_auth_error(&e) {
+                Err(UpgradeError::Auth)
+            } else {
+                log::warn!(
+                    "Failed to establish smb2 connection for {}/{}: {}",
+                    resolved_server,
+                    share,
+                    e
+                );
+                Err(UpgradeError::Network(format!(
+                    "Can't connect to {} — check that it's reachable on your network",
+                    display
+                )))
+            }
+        }
+    }
 }
 
 /// Looks up the mDNS hostname for an IP address from discovered hosts.
@@ -448,6 +626,68 @@ pub(crate) fn resolve_ip_to_hostname(ip: &str) -> Option<String> {
         }
     }
     None
+}
+
+/// Resolves a server address from `statfs` to a connectable address.
+///
+/// `statfs` can return different formats depending on how the mount was created:
+/// - An IP address like `192.168.1.111` — usable as-is
+/// - A DNS hostname like `fileserver.corp.example.com` — usable as-is
+/// - An mDNS service name like `Naspolya._smb._tcp.local` — NOT resolvable by DNS,
+///   must be resolved to an IP via the mDNS discovery state
+///
+/// Returns the resolved IP if possible, otherwise the original string.
+pub(crate) fn resolve_server_address(server: &str) -> String {
+    // Detect mDNS service names (contain "._tcp" or "._udp")
+    if !server.contains("._tcp") && !server.contains("._udp") {
+        return server.to_string();
+    }
+
+    // Extract the service/display name (everything before the first "._")
+    let service_name = server.split("._").next().unwrap_or(server);
+
+    // Look up the discovered host by name (case-insensitive)
+    let hosts = get_discovered_hosts();
+    for host in &hosts {
+        if host.name.eq_ignore_ascii_case(service_name) {
+            if let Some(ref ip) = host.ip_address {
+                log::debug!(
+                    "Resolved mDNS service name {} to IP {}",
+                    server,
+                    ip
+                );
+                return ip.clone();
+            }
+            // Host found but no IP yet — try the hostname
+            if let Some(ref hostname) = host.hostname {
+                log::debug!(
+                    "Resolved mDNS service name {} to hostname {}",
+                    server,
+                    hostname
+                );
+                return hostname.clone();
+            }
+        }
+    }
+
+    log::warn!(
+        "Could not resolve mDNS service name {} — no matching discovered host",
+        server
+    );
+    server.to_string()
+}
+
+/// Extracts the friendly display name from a server address.
+///
+/// For mDNS service names like `Naspolya._smb._tcp.local`, returns `Naspolya`.
+/// For IPs or hostnames, tries `resolve_ip_to_hostname`, falls back to the raw string.
+pub(crate) fn friendly_server_name(server: &str) -> String {
+    // mDNS service name: extract the part before "._"
+    if server.contains("._tcp") || server.contains("._udp") {
+        return server.split("._").next().unwrap_or(server).to_string();
+    }
+    // IP address: try to resolve to mDNS hostname
+    resolve_ip_to_hostname(server).unwrap_or_else(|| server.to_string())
 }
 
 /// Tries to retrieve SMB credentials from the Keychain.

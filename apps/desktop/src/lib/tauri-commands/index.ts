@@ -124,6 +124,8 @@ export {
   listSharesWithCredentials,
   mountNetworkShare,
   upgradeToSmbVolume,
+  upgradeToSmbVolumeWithCredentials,
+  type UpgradeResult,
   connectToServer,
   removeManualServer,
   showNetworkHostContextMenu,

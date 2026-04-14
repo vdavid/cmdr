@@ -32,7 +32,7 @@ pub(crate) mod smb_connection;
 mod smb_smbclient;
 mod smb_smbutil;
 mod smb_types;
-mod smb_util;
+pub(crate) mod smb_util;
 
 #[cfg(feature = "smb-e2e")]
 pub mod virtual_smb_hosts;

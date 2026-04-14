@@ -13,7 +13,7 @@ immediately to business-logic modules. No significant logic lives here.
 | `volumes.rs` | Volume management (macOS) | `list_volumes`, `get_default_volume_id`, `get_volume_space`, `resolve_path_volume` (statfs-based, no volume enumeration) |
 | `volumes_linux.rs` | Volume management (Linux) | Same interface as `volumes.rs`, delegates to `volumes_linux` module |
 | `mtp.rs` | MTP devices | Full MTP command surface (connect, disconnect, list, download, upload, delete, rename, move, scan) |
-| `network.rs` | SMB/network shares | Discovery, share listing, keychain, mounting. |
+| `network.rs` | SMB/network shares | Discovery, share listing, keychain, mounting, direct-connection upgrade (with inline login form for credentials). |
 | `font_metrics.rs` | Font metrics cache | `store_font_metrics`, `has_font_metrics` |
 | `icons.rs` | File icons | `get_icons`, `refresh_directory_icons`, cache clear |
 | `rename.rs` | Rename / trash | `move_to_trash` (delegates to `write_operations::trash::move_to_trash_sync`), `check_rename_permission`, `check_rename_validity`, `rename_file`. `rename_file` calls `notify_mutation` after success to update the listing cache (both local and volume-aware paths). |

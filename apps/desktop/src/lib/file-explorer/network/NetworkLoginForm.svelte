@@ -15,6 +15,8 @@
         shareName?: string
         /** Current auth mode detected */
         authMode: AuthMode
+        /** Override the default connection mode (guest vs credentials) */
+        defaultConnectionMode?: ConnectionMode
         /** Error message to display, if any */
         errorMessage?: string
         /** Whether we're currently attempting to connect */
@@ -25,10 +27,14 @@
         onCancel: () => void
     }
 
-    const { host, shareName, authMode, errorMessage, isConnecting = false, onConnect, onCancel }: Props = $props()
+    const { host, shareName, authMode, defaultConnectionMode, errorMessage, isConnecting = false, onConnect, onCancel }: Props = $props()
 
     // Form state - writable derived that syncs with authMode prop
-    let connectionMode = $derived.by<ConnectionMode>(() => (authMode === 'guest_allowed' ? 'guest' : 'credentials'))
+    // defaultConnectionMode overrides the auto-detection when provided
+    let connectionMode = $derived.by<ConnectionMode>(() => {
+        if (defaultConnectionMode) return defaultConnectionMode
+        return authMode === 'guest_allowed' ? 'guest' : 'credentials'
+    })
     let username = $state('')
     let password = $state('')
     let rememberInKeychain = $state(true)
@@ -174,7 +180,7 @@
                         class="field-input"
                         bind:value={username}
                         disabled={connectionMode === 'guest' || isConnecting}
-                        placeholder={usernameHint ?? 'Example: david'}
+                        placeholder={usernameHint ?? 'Example: barry'}
                         autocomplete="username"
                         autocapitalize="off"
                         spellcheck="false"

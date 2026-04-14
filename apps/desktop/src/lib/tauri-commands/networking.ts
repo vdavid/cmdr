@@ -295,18 +295,45 @@ export async function mountNetworkShare(
   })
 }
 
+/** Result of an SMB volume upgrade attempt. */
+export type UpgradeResult =
+  | { status: 'success' }
+  | {
+      status: 'credentialsNeeded'
+      server: string
+      share: string
+      port: number
+      displayName: string
+      usernameHint: string | null
+      message: string | null
+    }
+  | { status: 'networkError'; message: string }
+
 /**
  * Upgrades an existing OS-mounted SMB volume to use a direct smb2 connection.
  *
- * Extracts server/share info from the mount, connects via smb2, and replaces
- * the LocalPosixVolume with an SmbVolume in the backend.
- *
- * @param volumeId The volume ID to upgrade
- * @returns "direct" on success
- * @throws Error string on failure
+ * Tries stored credentials first. Returns `credentialsNeeded` if the frontend
+ * should show a login form, or `networkError` for non-auth failures.
  */
-export async function upgradeToSmbVolume(volumeId: string): Promise<string> {
-  return invoke<string>('upgrade_to_smb_volume', { volumeId })
+export async function upgradeToSmbVolume(volumeId: string): Promise<UpgradeResult> {
+  return invoke<UpgradeResult>('upgrade_to_smb_volume', { volumeId })
+}
+
+/**
+ * Upgrades an SMB volume using explicit credentials from the login form.
+ */
+export async function upgradeToSmbVolumeWithCredentials(
+  volumeId: string,
+  username: string | null,
+  password: string | null,
+  rememberInKeychain: boolean,
+): Promise<UpgradeResult> {
+  return invoke<UpgradeResult>('upgrade_to_smb_volume_with_credentials', {
+    volumeId,
+    username,
+    password,
+    rememberInKeychain,
+  })
 }
 
 // ============================================================================

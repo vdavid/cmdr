@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
-    import { resolvePathVolume, upgradeToSmbVolume } from '$lib/tauri-commands'
+    import { resolvePathVolume, upgradeToSmbVolume, type UpgradeResult } from '$lib/tauri-commands'
     import { addToast, dismissToast } from '$lib/ui/toast'
     import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
@@ -20,9 +20,11 @@
         volumeId: string
         currentPath: string
         onVolumeChange?: (volumeId: string, volumePath: string, targetPath: string) => void
+        /** Called when the upgrade flow needs the user to enter SMB credentials. */
+        onSmbUpgradeLogin?: (info: UpgradeResult & { status: 'credentialsNeeded' }, volumeId: string) => void
     }
 
-    const { volumeId, currentPath, onVolumeChange }: Props = $props()
+    const { volumeId, currentPath, onVolumeChange, onSmbUpgradeLogin }: Props = $props()
 
     // Volumes come from the shared store (pushed by backend)
     const volumes = $derived(getVolumes())
@@ -371,19 +373,25 @@
     }
 
     async function handleSubmenuAction(overrideVolumeId?: string) {
-        const volumeId = overrideVolumeId ?? submenuVolumeId
+        const vid = overrideVolumeId ?? submenuVolumeId
         closeSubmenu()
         closeBreadcrumbPopup()
-        if (!volumeId) return
+        if (!vid) return
 
         const connectingToastId = addToast('Connecting directly...', { dismissal: 'persistent' })
 
         try {
-            await upgradeToSmbVolume(volumeId)
+            const result = await upgradeToSmbVolume(vid)
             dismissToast(connectingToastId)
-            addToast('Connected directly for faster access', { level: 'success' })
-            // Refresh volumes so the indicator updates from yellow to green
-            requestVolumeRefresh()
+
+            if (result.status === 'success') {
+                addToast('Connected directly for faster access', { level: 'success' })
+                requestVolumeRefresh()
+            } else if (result.status === 'credentialsNeeded') {
+                onSmbUpgradeLogin?.(result, vid)
+            } else {
+                addToast(`Direct connection failed: ${result.message}`, { level: 'error' })
+            }
         } catch (e) {
             dismissToast(connectingToastId)
             addToast(`Direct connection failed: ${String(e)}`, { level: 'error' })

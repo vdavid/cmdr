@@ -328,10 +328,32 @@ pub async fn mount_network_share(
     })
 }
 
+/// Result of an SMB volume upgrade attempt (stub version mirrors real type).
+#[derive(serde::Serialize)]
+#[serde(tag = "status", rename_all = "camelCase")]
+pub enum UpgradeResult {
+    NetworkError { message: String },
+}
+
 /// Upgrades an SMB volume to use direct smb2 (stub: returns error).
 #[tauri::command]
-pub async fn upgrade_to_smb_volume(_volume_id: String) -> Result<String, String> {
-    Err("Direct SMB connection not supported on this platform".to_string())
+pub async fn upgrade_to_smb_volume(_volume_id: String) -> Result<UpgradeResult, String> {
+    Ok(UpgradeResult::NetworkError {
+        message: "Direct SMB connection not supported on this platform".to_string(),
+    })
+}
+
+/// Upgrades an SMB volume with explicit credentials (stub: returns error).
+#[tauri::command]
+pub async fn upgrade_to_smb_volume_with_credentials(
+    _volume_id: String,
+    _username: Option<String>,
+    _password: Option<String>,
+    _remember_in_keychain: bool,
+) -> Result<UpgradeResult, String> {
+    Ok(UpgradeResult::NetworkError {
+        message: "Direct SMB connection not supported on this platform".to_string(),
+    })
 }
 
 /// Connects to a manual server (stub: returns error).

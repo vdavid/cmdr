@@ -497,7 +497,8 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
             if is_smb_fs_type(fs_type.as_deref())
                 && let Some(info) = get_smb_mount_info(&path)
             {
-                name = format!("{} on {}", info.share, info.server);
+                let display = crate::commands::network::friendly_server_name(&info.server);
+                name = format!("{} on {}", info.share, display);
             }
 
             volumes.push(LocationInfo {

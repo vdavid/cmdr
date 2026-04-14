@@ -66,11 +66,12 @@
     import VolumeUnreachableBanner from './VolumeUnreachableBanner.svelte'
     import NetworkMountView from './NetworkMountView.svelte'
     import MtpConnectionView from './MtpConnectionView.svelte'
+    import NetworkLoginForm from '../network/NetworkLoginForm.svelte'
     import { createSelectionState } from './selection-state.svelte'
     import { createRenameState } from '../rename/rename-state.svelte'
     import { cancelClickToRename } from '../rename/rename-activation'
     import { type DirectorySortMode } from '$lib/settings'
-    import { dismissTransientToasts } from '$lib/ui/toast'
+    import { addToast, dismissTransientToasts } from '$lib/ui/toast'
     import { createRenameFlow } from './rename-flow.svelte'
     import ExtensionChangeDialog from '../rename/ExtensionChangeDialog.svelte'
     import RenameConflictDialog from '../rename/RenameConflictDialog.svelte'
@@ -88,9 +89,12 @@
         watchVolumeSpace,
         unwatchVolumeSpace,
         showBreadcrumbContextMenu,
+        upgradeToSmbVolumeWithCredentials,
+        type UpgradeResult,
         type VolumeSpaceInfo,
     } from '$lib/tauri-commands'
     import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
+    import { requestVolumeRefresh } from '$lib/stores/volume-store.svelte'
     import type { UnreachableState } from '../tabs/tab-types'
     import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
@@ -158,6 +162,19 @@
     let loading = $state(true)
     let error = $state<string | null>(null)
     let friendlyError = $state<FriendlyError | null>(null)
+
+    // SMB upgrade login form state — shown when "Connect directly" needs credentials
+    let smbUpgradeLogin = $state<{
+        volumeId: string
+        server: string
+        share: string
+        port: number
+        displayName: string
+        usernameHint: string | null
+        errorMessage?: string
+        isConnecting: boolean
+    } | null>(null)
+
     let cursorIndex = $state(0)
 
     // Selection state (extracted to selection-state.svelte.ts)
@@ -1284,6 +1301,59 @@
         loading = false
     }
 
+    /** Show the SMB login form for a "Connect directly" upgrade that needs credentials. */
+    function handleSmbUpgradeLogin(info: UpgradeResult & { status: 'credentialsNeeded' }, vid: string) {
+        smbUpgradeLogin = {
+            volumeId: vid,
+            server: info.server,
+            share: info.share,
+            port: info.port,
+            displayName: info.displayName,
+            usernameHint: info.usernameHint,
+            errorMessage: info.message ?? undefined,
+            isConnecting: false,
+        }
+    }
+
+    async function handleSmbUpgradeConnect(
+        username: string | null,
+        password: string | null,
+        rememberInKeychain: boolean,
+    ) {
+        if (!smbUpgradeLogin) return
+        smbUpgradeLogin = { ...smbUpgradeLogin, isConnecting: true, errorMessage: undefined }
+
+        try {
+            const result = await upgradeToSmbVolumeWithCredentials(
+                smbUpgradeLogin.volumeId,
+                username,
+                password,
+                rememberInKeychain,
+            )
+            if (result.status === 'success') {
+                smbUpgradeLogin = null
+                requestVolumeRefresh()
+                addToast('Connected directly for faster access', { level: 'success' })
+            } else if (result.status === 'credentialsNeeded') {
+                smbUpgradeLogin = {
+                    ...smbUpgradeLogin,
+                    isConnecting: false,
+                    errorMessage: result.message ?? 'Authentication failed',
+                }
+            } else {
+                smbUpgradeLogin = null
+                addToast(`Direct connection failed: ${result.message}`, { level: 'error' })
+            }
+        } catch (e) {
+            smbUpgradeLogin = null
+            addToast(`Direct connection failed: ${String(e)}`, { level: 'error' })
+        }
+    }
+
+    function handleSmbUpgradeCancel() {
+        smbUpgradeLogin = null
+    }
+
     // When includeHidden changes, cancel rename and refetch total count
     $effect(() => {
         if (listingId && !loading) {
@@ -1748,6 +1818,7 @@
             {volumeId}
             {currentPath}
             onVolumeChange={handleVolumeChangeFromBreadcrumb}
+            onSmbUpgradeLogin={handleSmbUpgradeLogin}
         />
         <span class="path">{breadcrumbDisplayPath}</span>
     </div>
@@ -1770,6 +1841,17 @@
             />
         {:else if isMtpDeviceOnly}
             <MtpConnectionView {volumeId} {onVolumeChange} />
+        {:else if smbUpgradeLogin}
+            <NetworkLoginForm
+                host={{ id: smbUpgradeLogin.volumeId, name: smbUpgradeLogin.displayName, port: smbUpgradeLogin.port }}
+                shareName={smbUpgradeLogin.share}
+                authMode="guest_allowed"
+                defaultConnectionMode="credentials"
+                errorMessage={smbUpgradeLogin.errorMessage}
+                isConnecting={smbUpgradeLogin.isConnecting}
+                onConnect={handleSmbUpgradeConnect}
+                onCancel={handleSmbUpgradeCancel}
+            />
         {:else if loading}
             <LoadingIcon {openingFolder} loadedCount={loadingCount} {finalizingCount} showCancelHint={true} />
         {:else if friendlyError}
