@@ -10,11 +10,11 @@
         getCloudProvider,
         getProviderConfigs,
         setProviderConfig,
-        resolveCloudConfig,
         cloudProviderPresets,
     } from '$lib/settings'
-    import { checkAiConnection, configureAi } from '$lib/tauri-commands'
+    import { checkAiConnection } from '$lib/tauri-commands'
     import { getAppLogger } from '$lib/logging/logger'
+    import { pushConfigToBackend } from './ai-settings-utils'
 
     interface Props {
         searchQuery: string
@@ -87,21 +87,6 @@
             clearTimeout(connectionCheckTimer)
         }
     })
-
-    async function pushConfigToBackend(): Promise<void> {
-        try {
-            const resolved = resolveCloudConfig(getSetting('ai.cloudProvider'), getSetting('ai.cloudProviderConfigs'))
-            await configureAi(
-                getSetting('ai.provider'),
-                Number(getSetting('ai.localContextSize')),
-                resolved.apiKey,
-                resolved.baseUrl,
-                resolved.model,
-            )
-        } catch (e) {
-            logger.error("Couldn't push AI config to backend: {error}", { error: e })
-        }
-    }
 
     function scheduleConnectionCheck(delayMs: number = 1000): void {
         if (connectionCheckTimer) {

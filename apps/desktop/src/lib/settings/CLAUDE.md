@@ -33,7 +33,7 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
 
 ### Sections (`sections/`)
 
-14 section components rendered inside the settings window. `ListingSection` includes:
+15 section components rendered inside the settings window. `ListingSection` includes:
 
 - `listing.sizeDisplay` — enum (smart/logical/physical), default smart, toggle-group. Reactive getter:
   `getSizeDisplayMode()`.

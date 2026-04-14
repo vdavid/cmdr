@@ -11,13 +11,12 @@
     } from '$lib/settings'
     import {
         getAiRuntimeStatus,
-        configureAi,
         stopAiServer,
         type AiRuntimeStatus,
     } from '$lib/tauri-commands'
-    import { resolveCloudConfig } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
     import { getAppLogger } from '$lib/logging/logger'
+    import { pushConfigToBackend } from './ai-settings-utils'
     import AiCloudSection from './AiCloudSection.svelte'
     import AiLocalSection from './AiLocalSection.svelte'
 
@@ -63,21 +62,6 @@
             fn()
         }
     })
-
-    async function pushConfigToBackend(): Promise<void> {
-        try {
-            const resolved = resolveCloudConfig(getSetting('ai.cloudProvider'), getSetting('ai.cloudProviderConfigs'))
-            await configureAi(
-                getSetting('ai.provider'),
-                Number(getSetting('ai.localContextSize')),
-                resolved.apiKey,
-                resolved.baseUrl,
-                resolved.model,
-            )
-        } catch (e) {
-            logger.error("Couldn't push AI config to backend: {error}", { error: e })
-        }
-    }
 
     async function refreshStatus(): Promise<void> {
         try {

@@ -212,6 +212,9 @@
     "settings/sections/AiSection.svelte": {
       "reason": "UI section, thin wrapper for AI provider toggle"
     },
+    "settings/sections/ai-settings-utils.ts": {
+      "reason": "Thin wrapper over Tauri configureAi command with settings resolution"
+    },
     "settings/sections/AiCloudSection.svelte": {
       "reason": "UI section, depends on Tauri commands and event listeners"
     },
