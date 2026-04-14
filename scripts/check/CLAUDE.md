@@ -95,7 +95,8 @@ go run ./scripts/check --only-freestyle
 | `checks/desktop-rust-*.go`                                                | One file per Rust check                                                                                                                                       |
 | `checks/desktop-svelte-*.go`                                              | One file per Svelte/TS check                                                                                                                                  |
 | `checks/website-*.go`, `checks/api-server-*.go`, `checks/scripts-go-*.go` | One file per check                                                                                                                                            |
-| `checks/file-length.go`                                                   | Informational file-length scanner (warn-only, never fails)                                                                                                    |
+| `checks/file-length.go`                                                   | Informational file-length scanner (warn-only, never fails). Supports an allowlist.                                                                            |
+| `checks/file-length-allowlist.json`                                       | Allowlist for file-length check: `{ "files": { "path": lineCount } }`. Files at or below their allowlisted count are suppressed. |
 
 ## Key patterns
 
@@ -124,6 +125,13 @@ full binary path. Used for staticcheck, nilaway, etc.
 **CSV stats logging:** Each check run appends a row to `~/cmdr-check-log.csv` with timestamp, app, check name, duration,
 result (pass/fail/skip/blocked), and optional counts (total, issues, changes). `CheckResult` has `Total`, `Issues`,
 `Changes` fields (`-1` = N/A, rendered as `N/A` in CSV). Disabled by `--no-log` or `--ci`. Implementation in `stats.go`.
+
+**File-length allowlist:** `checks/file-length-allowlist.json` maps relative paths to accepted line counts. Files at or
+below their allowlisted count are silently suppressed. Files that grow beyond their allowlisted count are reported with
+both the current and allowed line counts. New files not in the allowlist are reported normally. When the allowlist
+suppresses all long files, the check shows "No new long files (N allowlisted)". If the allowlist file is missing, all
+long files are reported (backwards-compatible). To allowlist a file, add `"relative/path": lineCount` to the `files`
+object.
 
 ## Check definition shape
 

@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -227,7 +228,116 @@ func TestRunFileLength_MessageFormat(t *testing.T) {
 	if !strings.Contains(result.Message, "~1k tokens") {
 		t.Errorf("expected '~1k tokens' in message, got: %s", result.Message)
 	}
-	if !strings.Contains(result.Message, "1 file over 800 lines") {
-		t.Errorf("expected '1 file over 800 lines' in summary, got: %s", result.Message)
+	if !strings.Contains(result.Message, "1 new file over 800 lines") {
+		t.Errorf("expected '1 new file over 800 lines' in summary, got: %s", result.Message)
+	}
+}
+
+func writeAllowlist(t *testing.T, dir string, files map[string]int) {
+	t.Helper()
+	checksDir := filepath.Join(dir, "scripts", "check", "checks")
+	if err := os.MkdirAll(checksDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	// Build JSON manually to keep it simple
+	var sb strings.Builder
+	sb.WriteString(`{"files":{`)
+	first := true
+	for path, lines := range files {
+		if !first {
+			sb.WriteString(",")
+		}
+		sb.WriteString(fmt.Sprintf(`"%s":%d`, path, lines))
+		first = false
+	}
+	sb.WriteString("}}")
+	if err := os.WriteFile(filepath.Join(checksDir, "file-length-allowlist.json"), []byte(sb.String()), 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRunFileLength_AllowlistSuppresses(t *testing.T) {
+	tmp := t.TempDir()
+
+	// Create a long file
+	path := filepath.Join(tmp, "big.go")
+	if err := os.WriteFile(path, []byte(strings.Repeat("line\n", 900)), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Allowlist it at 900 lines
+	writeAllowlist(t, tmp, map[string]int{"big.go": 900})
+
+	ctx := &CheckContext{RootDir: tmp}
+	result, err := RunFileLength(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Code != ResultSuccess {
+		t.Errorf("expected success (file is allowlisted), got code %d: %s", result.Code, result.Message)
+	}
+	if !strings.Contains(result.Message, "1 allowlisted") {
+		t.Errorf("expected '1 allowlisted' in message, got: %s", result.Message)
+	}
+}
+
+func TestRunFileLength_AllowlistExceeded(t *testing.T) {
+	tmp := t.TempDir()
+
+	// Create a file that exceeds its allowlist
+	path := filepath.Join(tmp, "grew.go")
+	if err := os.WriteFile(path, []byte(strings.Repeat("line\n", 950)), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Allowlist it at 900 (but it's 950 now)
+	writeAllowlist(t, tmp, map[string]int{"grew.go": 900})
+
+	ctx := &CheckContext{RootDir: tmp}
+	result, err := RunFileLength(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Code != ResultWarning {
+		t.Errorf("expected warning (file exceeded allowlist), got code %d", result.Code)
+	}
+	if !strings.Contains(result.Message, "grew.go") {
+		t.Errorf("expected 'grew.go' in message, got: %s", result.Message)
+	}
+	if !strings.Contains(result.Message, "allowlist: 900") {
+		t.Errorf("expected 'allowlist: 900' in message, got: %s", result.Message)
+	}
+}
+
+func TestRunFileLength_NewFileNotInAllowlist(t *testing.T) {
+	tmp := t.TempDir()
+
+	// Create a long file NOT in the allowlist
+	path := filepath.Join(tmp, "new.go")
+	if err := os.WriteFile(path, []byte(strings.Repeat("line\n", 850)), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Empty allowlist
+	writeAllowlist(t, tmp, map[string]int{})
+
+	ctx := &CheckContext{RootDir: tmp}
+	result, err := RunFileLength(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Code != ResultWarning {
+		t.Errorf("expected warning (new file not allowlisted), got code %d", result.Code)
+	}
+	if !strings.Contains(result.Message, "new.go") {
+		t.Errorf("expected 'new.go' in message, got: %s", result.Message)
+	}
+}
+
+func TestLoadFileLengthAllowlist_Missing(t *testing.T) {
+	tmp := t.TempDir()
+	result := loadFileLengthAllowlist(tmp)
+	if result != nil {
+		t.Errorf("expected nil for missing allowlist, got %v", result)
 	}
 }

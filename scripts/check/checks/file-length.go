@@ -2,6 +2,7 @@ package checks
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -44,10 +45,31 @@ type longFile struct {
 	sizeBytes int64
 }
 
+// loadFileLengthAllowlist reads the allowlist JSON from the checks directory.
+// Returns a map of relative path → allowed line count.
+func loadFileLengthAllowlist(rootDir string) map[string]int {
+	// The allowlist lives next to the check source files
+	allowlistPath := filepath.Join(rootDir, "scripts", "check", "checks", "file-length-allowlist.json")
+	data, err := os.ReadFile(allowlistPath)
+	if err != nil {
+		return nil
+	}
+	var raw struct {
+		Files map[string]int `json:"files"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil
+	}
+	return raw.Files
+}
+
 // RunFileLength scans the repo for source files exceeding the line count threshold.
+// Files in the allowlist are suppressed if at or below their allowlisted line count.
 // Always succeeds — reports long files as a warning, never fails.
 func RunFileLength(ctx *CheckContext) (CheckResult, error) {
+	allowlist := loadFileLengthAllowlist(ctx.RootDir)
 	var longFiles []longFile
+	allowlistedCount := 0
 
 	err := filepath.WalkDir(ctx.RootDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -72,11 +94,18 @@ func RunFileLength(ctx *CheckContext) (CheckResult, error) {
 		}
 
 		if lineCount >= fileLengthWarnLines {
+			relPath, _ := filepath.Rel(ctx.RootDir, path)
+
+			// Check allowlist: suppress if at or below the allowlisted count
+			if allowedLines, ok := allowlist[relPath]; ok && lineCount <= allowedLines {
+				allowlistedCount++
+				return nil
+			}
+
 			info, err := d.Info()
 			if err != nil {
 				return nil
 			}
-			relPath, _ := filepath.Rel(ctx.RootDir, path)
 			longFiles = append(longFiles, longFile{
 				relPath:   relPath,
 				lines:     lineCount,
@@ -91,6 +120,9 @@ func RunFileLength(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	if len(longFiles) == 0 {
+		if allowlistedCount > 0 {
+			return Success(fmt.Sprintf("No new long files (%d allowlisted)", allowlistedCount)), nil
+		}
 		return Success("All files under threshold"), nil
 	}
 
@@ -109,13 +141,23 @@ func RunFileLength(ctx *CheckContext) (CheckResult, error) {
 			color = ansiRed
 		}
 
+		// Show if this file exceeded its allowlisted count
+		if allowedLines, ok := allowlist[f.relPath]; ok {
+			detail = fmt.Sprintf("(%d lines, allowlist: %d, %d kB, ~%s tokens)", f.lines, allowedLines, sizeKB, tokenStr)
+		}
+
 		sb.WriteString(fmt.Sprintf("  - %s %s%s%s\n", f.relPath, color, detail, ansiReset))
 	}
 
-	msg := fmt.Sprintf("%d %s over %d lines:\n%s",
+	suffix := ""
+	if allowlistedCount > 0 {
+		suffix = fmt.Sprintf(" (%d allowlisted)", allowlistedCount)
+	}
+	msg := fmt.Sprintf("%d new %s over %d lines%s:\n%s",
 		len(longFiles),
 		Pluralize(len(longFiles), "file", "files"),
 		fileLengthWarnLines,
+		suffix,
 		strings.TrimRight(sb.String(), "\n"),
 	)
 
