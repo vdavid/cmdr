@@ -38,13 +38,14 @@
         ConflictResolution,
     } from '$lib/file-explorer/types'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
-    import { formatDate } from '$lib/file-explorer/selection/selection-info-utils'
+    import { formatDate, formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
     import { getAppLogger } from '$lib/logging/logger'
 
@@ -736,7 +737,7 @@
     onkeydown={handleKeydown}
     dialogId="transfer-progress"
     onclose={() => void handleCancel(false)}
-    containerStyle="min-width: 420px; max-width: 500px"
+    containerStyle="width: 500px"
 >
     {#snippet title()}
         {#if waitingForScan}
@@ -763,12 +764,12 @@
                 </div>
                 <span class="scan-divider">/</span>
                 <div class="scan-stat">
-                    <span class="scan-value">{scanFilesFound}</span>
+                    <span class="scan-value">{formatNumber(scanFilesFound)}</span>
                     <span class="scan-label">{scanFilesFound === 1 ? 'file' : 'files'}</span>
                 </div>
                 <span class="scan-divider">/</span>
                 <div class="scan-stat">
-                    <span class="scan-value">{scanDirsFound}</span>
+                    <span class="scan-value">{formatNumber(scanDirsFound)}</span>
                     <span class="scan-label">{scanDirsFound === 1 ? 'dir' : 'dirs'}</span>
                 </div>
                 <span class="scan-spinner"></span>
@@ -933,7 +934,7 @@
 
                 <span class="progress-label">{operationType === 'trash' ? 'Items' : 'Files'}</span>
                 <ProgressBar value={filesTotal > 0 ? filesDone / filesTotal : 0} ariaLabel="File progress" />
-                <span class="progress-detail">{filesDone} / {filesTotal}</span>
+                <span class="progress-detail">{formatNumber(filesDone)} / {formatNumber(filesTotal)}</span>
                 <div class="progress-meta">
                     {#if stats.bytesPerSecond > 0}
                         <span class="progress-speed">{formatBytes(stats.bytesPerSecond)}/s</span>
@@ -947,8 +948,7 @@
 
         <!-- Current file -->
         {#if currentFile}
-            <div class="current-file" use:tooltip={{ text: currentFile, overflowOnly: true }}>
-                {currentFile}
+            <div class="current-file" use:useShortenMiddle={{ text: currentFile, preferBreakAt: '/' }}>
             </div>
         {/if}
 
@@ -1126,7 +1126,6 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
         overflow: hidden;
-        text-overflow: ellipsis;
         white-space: nowrap;
         background: var(--color-bg-tertiary);
         margin: 0 var(--spacing-lg);

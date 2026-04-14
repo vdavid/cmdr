@@ -20,6 +20,7 @@
     } from '../views/full-list-utils'
     import { isScanning } from '$lib/indexing/index-state.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import type { VolumeSpaceInfo } from '$lib/tauri-commands'
     import { formatDiskSpaceStatus } from '../disk-space-utils'
 
@@ -117,96 +118,6 @@
     // Calculate date column width using measured text width (same utility as FullList)
     const dateColumnWidth = $derived(measureDateColumnWidth(formatDateTime))
 
-    // Middle-truncate long filenames
-    let nameElement: HTMLSpanElement | undefined = $state()
-    let containerElement: HTMLDivElement | undefined = $state()
-
-    // Use a separate state for truncated name, initialized lazily
-    const getTruncatedName = $derived.by(() => {
-        // This runs on every displayName change
-        if (!nameElement || !containerElement || !entry) {
-            return displayName
-        }
-
-        const containerWidth = containerElement.clientWidth
-        // Account for size and date widths plus gaps
-        const sizeEl = containerElement.querySelector('.size')
-        const dateEl = containerElement.querySelector('.date')
-        const sizeWidth = sizeEl instanceof HTMLElement ? sizeEl.offsetWidth : 0
-        const dateWidth = dateEl instanceof HTMLElement ? dateEl.offsetWidth : 0
-        const diskSpaceEl = containerElement.querySelector('.disk-space-text')
-        const diskSpaceWidth = diskSpaceEl instanceof HTMLElement ? diskSpaceEl.offsetWidth : 0
-        const availableWidth = containerWidth - sizeWidth - dateWidth - diskSpaceWidth - 24 // gaps
-
-        // Create a temporary span to measure (avoids direct DOM manipulation)
-        const measureSpan = document.createElement('span')
-        measureSpan.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;'
-        measureSpan.style.font = getComputedStyle(nameElement).font
-        document.body.appendChild(measureSpan)
-
-        measureSpan.textContent = displayName
-        const fullWidth = measureSpan.offsetWidth
-
-        if (fullWidth <= availableWidth) {
-            document.body.removeChild(measureSpan)
-            return displayName
-        }
-
-        // Binary search for the right truncation point
-        const extension = displayName.includes('.') ? displayName.slice(displayName.lastIndexOf('.')) : ''
-        const baseName = displayName.includes('.') ? displayName.slice(0, displayName.lastIndexOf('.')) : displayName
-
-        // Keep at least 4 chars of the base name visible
-        const minPrefix = 4
-        const ellipsis = '…'
-
-        let low = minPrefix
-        let high = baseName.length
-        let bestFit = minPrefix
-
-        while (low <= high) {
-            const mid = Math.floor((low + high) / 2)
-            measureSpan.textContent = baseName.slice(0, mid) + ellipsis + extension
-
-            if (measureSpan.offsetWidth <= availableWidth) {
-                bestFit = mid
-                low = mid + 1
-            } else {
-                high = mid - 1
-            }
-        }
-
-        document.body.removeChild(measureSpan)
-        return baseName.slice(0, bestFit) + ellipsis + extension
-    })
-
-    // Track container width for reactivity
-    let containerWidth = $state(0)
-
-    // ResizeObserver for responsive truncation
-    $effect(() => {
-        if (!containerElement) return
-
-        const observer = new ResizeObserver((entries) => {
-            for (const e of entries) {
-                containerWidth = e.contentRect.width
-            }
-        })
-
-        observer.observe(containerElement)
-        containerWidth = containerElement.clientWidth
-
-        return () => {
-            observer.disconnect()
-        }
-    })
-
-    // Derive truncated name based on containerWidth (for reactivity)
-    const truncatedName = $derived.by(() => {
-        void containerWidth // Dependency trigger for resize
-        return getTruncatedName
-    })
-
     // ========================================================================
     // No-selection mode (Full mode without selection)
     // ========================================================================
@@ -266,7 +177,7 @@
     )
 </script>
 
-<div class="selection-info" bind:this={containerElement}>
+<div class="selection-info">
     {#if displayMode === 'empty'}
         <span class="summary-text">Nothing in here.</span>
         {#if volumeSpace}
@@ -274,7 +185,7 @@
         {/if}
     {:else if displayMode === 'file-info' && entry}
         <!-- Brief mode without selection: show file info -->
-        <span class="name" bind:this={nameElement} use:tooltip={displayName}>{truncatedName}</span>
+        <span class="name" use:tooltip={displayName} use:useShortenMiddle={{ text: displayName, preferBreakAt: '.', startRatio: 0.7 }}></span>
         <span class="size" use:tooltip={sizeTooltip}>
             {#if sizeDisplay === 'DIR'}
                 DIR
@@ -351,7 +262,6 @@
         min-width: 0;
         overflow: hidden;
         white-space: nowrap;
-        text-overflow: clip; /* We handle truncation manually */
     }
 
     .size {

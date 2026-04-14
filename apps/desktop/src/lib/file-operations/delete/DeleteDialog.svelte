@@ -22,6 +22,7 @@
         type DeleteSourceItem,
     } from './delete-dialog-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('deleteDialog')
@@ -184,7 +185,7 @@
             const parts: string[] = []
             if (size !== undefined) parts.push(formatFileSize(size))
             if (fileCount !== undefined) {
-                parts.push(`${String(fileCount)} ${fileCount === 1 ? 'file' : 'files'}`)
+                parts.push(`${formatNumber(fileCount)} ${fileCount === 1 ? 'file' : 'files'}`)
             }
             return parts.length > 0 ? parts.join('   ') : ''
         }
@@ -199,7 +200,7 @@
     role={dialogRole}
     onclose={handleCancel}
     ariaDescribedby={isPermanent ? 'delete-warning-text' : undefined}
-    containerStyle="min-width: 420px; max-width: 500px"
+    containerStyle="width: 500px"
 >
     {#snippet title()}{dialogTitle}{/snippet}
 
@@ -244,7 +245,7 @@
             {/each}
             {#if overflowCount > 0}
                 <div class="file-list-overflow" role="listitem">
-                    ... and {overflowCount} more {overflowCount === 1 ? 'item' : 'items'}
+                    ... and {formatNumber(overflowCount)} more {overflowCount === 1 ? 'item' : 'items'}
                 </div>
             {/if}
         </div>
@@ -279,12 +280,12 @@
         </div>
         <span class="scan-divider">/</span>
         <div class="scan-stat">
-            <span class="scan-value">{filesFound}</span>
+            <span class="scan-value">{formatNumber(filesFound)}</span>
             <span class="scan-label">{filesFound === 1 ? 'file' : 'files'}</span>
         </div>
         <span class="scan-divider">/</span>
         <div class="scan-stat">
-            <span class="scan-value">{dirsFound}</span>
+            <span class="scan-value">{formatNumber(dirsFound)}</span>
             <span class="scan-label">{dirsFound === 1 ? 'dir' : 'dirs'}</span>
         </div>
         {#if isScanning}

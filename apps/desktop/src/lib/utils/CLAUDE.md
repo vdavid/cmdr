@@ -4,13 +4,16 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
 
 ## Files
 
-| File                          | Purpose                                                                  |
-| ----------------------------- | ------------------------------------------------------------------------ |
-| `filename-validation.ts`      | Pure client-side filename validation for instant keystroke feedback      |
-| `filename-validation.test.ts` | Vitest tests covering all validators                                     |
-| `confirm-dialog.ts`           | Wrapper around Tauri's native dialog API                                 |
-| `timing.ts`                   | `withTimeout`, `createDebounce`, and `createThrottle` for timing control |
-| `timing.test.ts`              | Vitest tests for withTimeout, debounce, and throttle                     |
+| File                          | Purpose                                                                    |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| `filename-validation.ts`      | Pure client-side filename validation for instant keystroke feedback        |
+| `filename-validation.test.ts` | Vitest tests covering all validators                                       |
+| `confirm-dialog.ts`           | Wrapper around Tauri's native dialog API                                   |
+| `timing.ts`                   | `withTimeout`, `createDebounce`, and `createThrottle` for timing control   |
+| `timing.test.ts`              | Vitest tests for withTimeout, debounce, and throttle                       |
+| `shorten-middle.ts`           | `shortenMiddle` mid-truncation + `createPretextMeasure` factory            |
+| `shorten-middle.test.ts`      | Vitest tests for shortenMiddle (mock measureWidth, 14 tests)               |
+| `shorten-middle-action.ts`    | Svelte action wrapping `shortenMiddle` with ResizeObserver + async pretext |
 
 ## filename-validation.ts
 
@@ -94,7 +97,17 @@ When Linux support ships, this will need a per-filesystem case-sensitivity flag.
 throttle guarantees a trailing call (last value always fires), which lodash's default does not. The debounce exposes
 `flush()` for `beforeunload` cleanup (e.g. log bridge). No need for a 70KB dependency.
 
+## shorten-middle.ts
+
+`shortenMiddle()` truncates text in the middle with an ellipsis, using pixel-accurate width measurement via an injected
+`measureWidth` function. Supports `preferBreakAt` (snap cuts to a delimiter like `/`), `startRatio` (bias budget toward
+start or end), and custom ellipsis strings.
+
+`createPretextMeasure()` creates a `measureWidth` function backed by `@chenglou/pretext`'s `prepareWithSegments` +
+`measureNaturalWidth`. Caches prepared texts for repeated measurements of the same string.
+
 ## Dependencies
 
 - `filename-validation.ts` — zero external dependencies
 - `confirm-dialog.ts` — `@tauri-apps/plugin-dialog`
+- `shorten-middle.ts` — `@chenglou/pretext` (type import only; runtime import via `createPretextMeasure` caller)

@@ -545,6 +545,37 @@ Centered, single-line message in `--color-text-tertiary` at `--font-size-sm`: "E
 keep it as quiet as the rest of the chrome. Shown when a directory exists and has loaded successfully but contains no
 entries.
 
+### Text overflow and number display (app)
+
+The UI must never flicker or jump due to changing text content. Text should fill its available space, and when it doesn't
+fit, show the most important parts.
+
+**Mid-text truncation**: Use `useShortenMiddle` from `$lib/utils/shorten-middle-action` instead of CSS
+`text-overflow: ellipsis` (which only clips from the end). The action uses `@chenglou/pretext` for pixel-accurate
+canvas-based measurement, handles async loading with CSS fallback, and re-truncates on resize via `ResizeObserver`.
+
+```svelte
+<!-- File paths: snap to '/' so root context + filename stay visible -->
+<div use:useShortenMiddle={{ text: filePath, preferBreakAt: '/' }}></div>
+
+<!-- Filenames: snap to '.' to preserve the extension -->
+<span use:useShortenMiddle={{ text: fileName, preferBreakAt: '.', startRatio: 0.7 }}></span>
+
+<!-- General text: plain mid-split -->
+<span use:useShortenMiddle={{ text: longText }}></span>
+```
+
+The pure function `shortenMiddle()` from `$lib/utils/shorten-middle` is also available for non-DOM contexts (accepts an
+injectable `measureWidth` function).
+
+**Stable container widths**: Dialogs and panels that display changing text (progress paths, scan stats) must use fixed
+widths (`width: 500px`, not `min-width/max-width`) to prevent layout jitter.
+
+**Number formatting**: Use `formatNumber()` from `selection-info-utils` for all user-facing counts (file counts, dir
+counts, item counts). Raw numbers like `194667` are hard to read — always display as `194,667`. Byte values use
+`formatBytes()` / `formatFileSize()` which already handle this. Use `font-variant-numeric: tabular-nums` on numeric
+displays so digits don't shift as values update.
+
 ### Notifications/toasts (app)
 
 Slide in from top-right. Background: `--color-bg-secondary`. Border: `1px solid --color-border`. Shadow: `--shadow-md`.

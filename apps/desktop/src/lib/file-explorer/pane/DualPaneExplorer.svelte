@@ -138,6 +138,7 @@
         getIsAltHeld,
         setAltHeld,
     } from '../modifier-key-tracker.svelte'
+    import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import { addToast } from '$lib/ui/toast'
 
     const log = getAppLogger('fileExplorer')
@@ -1510,7 +1511,7 @@
                 state.hasParent,
                 showHiddenFiles,
             )
-            addToast(`Copied ${String(count)} ${count === 1 ? 'item' : 'items'}`)
+            addToast(`Copied ${formatNumber(count)} ${count === 1 ? 'item' : 'items'}`)
         } catch (error) {
             log.error('Clipboard copy failed: {error}', { error })
         }
@@ -1534,7 +1535,7 @@
                 state.hasParent,
                 showHiddenFiles,
             )
-            addToast(`${String(count)} ${count === 1 ? 'item' : 'items'} ready to move. Paste to complete.`)
+            addToast(`${formatNumber(count)} ${count === 1 ? 'item' : 'items'} ready to move. Paste to complete.`)
         } catch (error) {
             log.error('Clipboard cut failed: {error}', { error })
         }

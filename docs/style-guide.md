@@ -36,6 +36,8 @@ Writing, code, and design styles.
   - **Use colon for lists**: Use the format I used in this list you're reading right now.
   - **Spell out numbers one through nine.** Use numerals for 10+.
   - **Use ISO dates**: Use YYYY-MM-DD wherever it makes sense.
+  - **Format large numbers with thousands separators.** Use `formatNumber()` for all user-facing counts (file counts,
+    dir counts, item counts). Byte values use `formatBytes()` / `formatFileSize()` which already handle this.
 - UI
   - **Error messages**: Keep conversational, positive, actionable, and specific. Never use the words "error" or "failed"
     — we wouldn't say those in conversation. Suggest a next step.

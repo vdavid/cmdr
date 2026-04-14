@@ -33,7 +33,7 @@
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@ark-ui/svelte": "^5.19.1",
-    "@chenglou/pretext": "^0.0.3",
+    "@chenglou/pretext": "^0.0.5",
     "@crabnebula/tauri-plugin-drag": "^2.1.0",
     "@leeoniya/ufuzzy": "^1.0.19",
     "@logtape/logtape": "^2.0.4",

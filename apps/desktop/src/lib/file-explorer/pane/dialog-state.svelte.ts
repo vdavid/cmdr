@@ -1,5 +1,6 @@
 import { formatBytes, refreshListing } from '$lib/tauri-commands'
 import { listen, findFileIndex } from '$lib/tauri-commands'
+import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
 import { addToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
@@ -333,8 +334,8 @@ export function createDialogState(deps: DialogStateDeps) {
       const itemWord = filesProcessed === 1 ? 'file' : 'files'
       const toastMessage =
         op === 'trash'
-          ? `Moved ${String(filesProcessed)} ${itemWord} to trash`
-          : `${opLabel} complete: ${String(filesProcessed)} ${itemWord}`
+          ? `Moved ${formatNumber(filesProcessed)} ${itemWord} to trash`
+          : `${opLabel} complete: ${formatNumber(filesProcessed)} ${itemWord}`
       addToast(toastMessage)
 
       refreshPanesAfterTransfer()

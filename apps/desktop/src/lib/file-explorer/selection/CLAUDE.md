@@ -50,9 +50,8 @@ falls back to showing only dir count and percentage.
 Stale indicator (UnoCSS/Lucide `i-lucide:hourglass` icon in accent color) appears in `selection-summary` when
 `isScanning()` is true and directories are selected, because dir sizes may be incomplete during scanning.
 
-Filename truncation in `file-info` mode uses a ResizeObserver + throwaway `<span>` measurement for middle truncation
-(preserves file extension). The truncation runs binary search via `getTruncatedName`, triggered reactively by
-`containerWidth` state.
+Filename truncation in `file-info` mode uses the `useShortenMiddle` action with `preferBreakAt: '.'` to preserve
+file extensions. The action uses pretext for canvas-based measurement and a built-in ResizeObserver.
 
 Date column width is computed via `measureDateColumnWidth(formatDateTime)` to stay in sync with FullList —
 `formatDateTime` comes from `reactive-settings.svelte`.
@@ -81,10 +80,11 @@ Handles both `onclick` and `onkeydown` (Enter/Space).
 Human-readable values lose precision and make it impossible to compare similarly-sized files. Triads with tier-based CSS
 coloring (bytes/KB/MB/GB/TB) give both precision and quick visual scanning. Human-readable is available as a tooltip.
 
-**Decision**: Middle truncation in `file-info` mode uses a throwaway `<span>` + binary search, not CSS
-`text-overflow: ellipsis` **Why**: CSS ellipsis truncates from the right, losing the file extension. Middle truncation
-preserves both the start of the filename and the extension (e.g. `very-lon...me.txt`). Binary search against measured
-pixel width handles variable-width fonts correctly.
+**Decision**: Middle truncation in `file-info` mode uses the `useShortenMiddle` Svelte action (from `$lib/utils/`)
+with `preferBreakAt: '.'` and `startRatio: 0.7`, not CSS `text-overflow: ellipsis` **Why**: CSS ellipsis truncates from
+the right, losing the file extension. Middle truncation with dot-snapping preserves both the start of the filename and
+the extension (e.g. `very-lon….txt`). The action uses pretext for pixel-accurate canvas measurement (no DOM reflow)
+with a built-in ResizeObserver.
 
 **Decision**: `SelectionInfo` derives display mode from props rather than accepting an explicit `mode` prop **Why**: The
 display mode depends on `viewMode`, `selectedCount`, and `stats` together. Letting the component derive it internally
@@ -99,11 +99,6 @@ metadata and are always accurate. Directory sizes come from the drive index (rec
 sizes may be incomplete, so the warning targets that specific case.
 
 ## Gotchas
-
-**Gotcha**: `containerWidth` state exists only to trigger reactivity for `truncatedName` **Why**: `ResizeObserver`
-callbacks run outside Svelte's reactive graph. Writing to a `$state` variable inside the observer callback bridges the
-gap, causing `truncatedName` (which reads `containerWidth` via `void containerWidth`) to recompute when the container
-resizes.
 
 **Gotcha**: `sizeTierClasses` CSS rules must be defined in the consuming view, not in `selection-info-utils.ts` **Why**:
 The utility file is pure TypeScript with no DOM or style dependencies. The CSS classes it references (`size-bytes`,

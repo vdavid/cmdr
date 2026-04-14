@@ -29,6 +29,7 @@
     import Button from '$lib/ui/Button.svelte'
     import { generateTitle, toVolumeRelativePath } from './transfer-dialog-utils'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
+    import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('transferDialog')
@@ -385,7 +386,7 @@
     onkeydown={handleKeydown}
     dialogId="transfer-confirmation"
     onclose={handleCancel}
-    containerStyle="min-width: 420px; max-width: 500px"
+    containerStyle="width: 500px"
 >
     {#snippet title()}{dialogTitle}{/snippet}
 
@@ -454,12 +455,12 @@
         </div>
         <span class="scan-divider">/</span>
         <div class="scan-stat">
-            <span class="scan-value">{filesFound}</span>
+            <span class="scan-value">{formatNumber(filesFound)}</span>
             <span class="scan-label">{filesFound === 1 ? 'file' : 'files'}</span>
         </div>
         <span class="scan-divider">/</span>
         <div class="scan-stat">
-            <span class="scan-value">{dirsFound}</span>
+            <span class="scan-value">{formatNumber(dirsFound)}</span>
             <span class="scan-label">{dirsFound === 1 ? 'dir' : 'dirs'}</span>
         </div>
         {#if isScanning}

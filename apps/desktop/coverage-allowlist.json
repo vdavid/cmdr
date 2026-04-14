@@ -256,6 +256,9 @@
     },
     "hmr-recovery.ts": {
       "reason": "Dev-only HMR crash handler, runs inside import.meta.hot, depends on window/sessionStorage/location.reload"
+    },
+    "utils/shorten-middle-action.ts": {
+      "reason": "Svelte action, depends on DOM APIs (ResizeObserver, getComputedStyle, clientWidth) and dynamic import"
     }
   }
 }
