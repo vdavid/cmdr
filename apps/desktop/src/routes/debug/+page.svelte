@@ -1,83 +1,13 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
-    import { tooltip } from '$lib/tooltip/tooltip'
-    import { addToast, dismissTransientToasts, clearAllToasts, getToasts } from '$lib/ui/toast'
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
-    import type { FriendlyError } from '$lib/file-explorer/types'
-
-    interface HistoryEntry {
-        volumeId: string
-        path: string
-        networkHost?: { name: string; hostname: string }
-    }
-
-    interface NavigationHistory {
-        stack: HistoryEntry[]
-        currentIndex: number
-    }
-
-    interface HistoryPayload {
-        left: NavigationHistory
-        right: NavigationHistory
-        focusedPane: 'left' | 'right'
-    }
-
-    interface IndexStatusMeta {
-        schemaVersion: string | null
-        volumePath: string | null
-        scanCompletedAt: string | null
-        scanDurationMs: string | null
-        totalEntries: string | null
-        lastEventId: string | null
-    }
-
-    interface PhaseRecord {
-        phase: 'replaying' | 'scanning' | 'aggregating' | 'reconciling' | 'live' | 'idle'
-        startedAt: string
-        durationMs: number | null
-        trigger: string
-        stats: [string, string][]
-    }
-
-    interface IndexDebugStatus {
-        initialized: boolean
-        scanning: boolean
-        entriesScanned: number
-        dirsFound: number
-        indexStatus: IndexStatusMeta | null
-        dbFileSize: number | null
-        watcherActive: boolean
-        liveEventCount: number
-        mustScanCount: number
-        mustScanRescansCompleted: number
-        liveEntryCount: number | null
-        liveDirCount: number | null
-        dirsWithStats: number | null
-        recentMustScanPaths: [string, string][]
-        activityPhase: 'replaying' | 'scanning' | 'aggregating' | 'reconciling' | 'live' | 'idle'
-        phaseStartedAt: string
-        phaseDurationMs: number
-        phaseHistory: PhaseRecord[]
-        verifying: boolean
-        dbMainSize: number | null
-        dbWalSize: number | null
-        dbPageCount: number | null
-        dbFreelistCount: number | null
-    }
+    import DebugDriveIndexPanel from './DebugDriveIndexPanel.svelte'
+    import DebugToastPanel from './DebugToastPanel.svelte'
+    import DebugHistoryPanel from './DebugHistoryPanel.svelte'
+    import DebugErrorPreviewPanel from './DebugErrorPreviewPanel.svelte'
 
     let pageElement: HTMLDivElement | undefined = $state()
     let isDarkMode = $state(true)
-    let leftHistory = $state<NavigationHistory | null>(null)
-    let rightHistory = $state<NavigationHistory | null>(null)
-    let focusedPane = $state<'left' | 'right'>('left')
-    let unlisten: (() => void) | undefined
-
-    let toastCounter = $state(0)
-
-    // Drive index state
-    let debugStatus = $state<IndexDebugStatus | null>(null)
-    let indexMessage = $state('')
-    let indexPollInterval: ReturnType<typeof setInterval> | undefined
 
     onMount(async () => {
         // Hide the loading screen
@@ -106,30 +36,6 @@
         } catch {
             // Not in Tauri environment or theme not set
         }
-
-        // Listen for history updates from main window
-        try {
-            const { listen } = await import('@tauri-apps/api/event')
-            unlisten = await listen<HistoryPayload>('debug-history', (event) => {
-                leftHistory = event.payload.left
-                rightHistory = event.payload.right
-                focusedPane = event.payload.focusedPane
-            })
-        } catch {
-            // Not in Tauri environment
-        }
-
-        // Drive index: poll status
-        await pollDebugStatus()
-        indexPollInterval = setInterval(() => {
-            void pollDebugStatus()
-        }, 2000)
-    })
-
-    onDestroy(() => {
-        unlisten?.()
-        if (indexPollInterval) clearInterval(indexPollInterval)
-        if (phaseTickInterval) clearInterval(phaseTickInterval)
     })
 
     async function handleThemeToggle() {
@@ -153,316 +59,6 @@
         try {
             const { getCurrentWindow } = await import('@tauri-apps/api/window')
             await getCurrentWindow().close()
-        } catch {
-            // Not in Tauri environment
-        }
-    }
-
-    // ==== Drive index helpers ====
-
-    async function pollDebugStatus() {
-        try {
-            const { invoke } = await import('@tauri-apps/api/core')
-            debugStatus = await invoke<IndexDebugStatus>('get_index_debug_status')
-        } catch {
-            // Indexing not available
-        }
-    }
-
-    async function handleStartScan() {
-        try {
-            const { invoke } = await import('@tauri-apps/api/core')
-            await invoke('start_drive_index', { volumeId: 'root' })
-            indexMessage = 'Scan started'
-        } catch (error) {
-            indexMessage = `Couldn't start: ${String(error)}`
-        }
-    }
-
-    async function handleClearIndex() {
-        try {
-            const { invoke } = await import('@tauri-apps/api/core')
-            await invoke('clear_drive_index')
-            indexMessage = 'Index cleared'
-            await pollDebugStatus()
-        } catch (error) {
-            indexMessage = `Couldn't clear: ${String(error)}`
-        }
-    }
-
-    function formatDbSize(bytes: number | null): string {
-        if (bytes === null) return 'N/A'
-        if (bytes < 1024) return `${String(bytes)} B`
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-    }
-
-    function formatDuration(ms: string | null): string {
-        if (ms === null) return 'N/A'
-        const millis = parseInt(ms, 10)
-        if (isNaN(millis)) return ms
-        if (millis < 1000) return `${String(millis)} ms`
-        return `${(millis / 1000).toFixed(1)} s`
-    }
-
-    function formatCount(n: number | null | undefined): string {
-        if (n === null || n === undefined) return 'N/A'
-        return n.toLocaleString('en-US')
-    }
-
-    function formatTimestamp(unixStr: string | null): string {
-        if (unixStr === null) return 'N/A'
-        const unix = parseInt(unixStr, 10)
-        if (isNaN(unix)) return unixStr
-        const d = new Date(unix * 1000)
-        const now = new Date()
-        const diffMs = now.getTime() - d.getTime()
-        const diffMins = Math.floor(diffMs / 60_000)
-        const diffHours = Math.floor(diffMs / 3_600_000)
-        const diffDays = Math.floor(diffMs / 86_400_000)
-
-        const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
-        const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-
-        let ago: string
-        if (diffMins < 1) ago = 'just now'
-        else if (diffMins < 60) ago = `${String(diffMins)}m ago`
-        else if (diffHours < 24) ago = `${String(diffHours)}h ago`
-        else ago = `${String(diffDays)}d ago`
-
-        if (diffDays === 0) return `${time} (${ago})`
-        return `${date} ${time} (${ago})`
-    }
-
-    // Phase timeline ticking duration
-    let phaseDurationTick = $state(0)
-    let lastPhaseDurationMs = $state(-1)
-    let phaseTickInterval: ReturnType<typeof setInterval> | undefined
-
-    // Start the 1-second tick for current phase duration
-    onMount(() => {
-        phaseTickInterval = setInterval(() => {
-            phaseDurationTick++
-        }, 1000)
-    })
-
-    // When phaseDurationMs changes from a poll, reset the tick counter
-    $effect(() => {
-        if (debugStatus?.phaseDurationMs !== undefined && debugStatus.phaseDurationMs !== lastPhaseDurationMs) {
-            lastPhaseDurationMs = debugStatus.phaseDurationMs
-            phaseDurationTick = 0
-        }
-    })
-
-    const phaseTooltipMap: Record<string, string> = {
-        replaying: 'Processing FSEvents journal from cold start',
-        scanning: 'Full volume directory walk',
-        aggregating: 'Computing directory sizes',
-        reconciling: 'Replaying buffered events from during scan',
-        live: 'Processing real-time filesystem events',
-        idle: 'Waiting for filesystem changes',
-    }
-
-    type PhaseStyle = 'active' | 'ready' | 'neutral'
-
-    function phaseStyle(phase: string): PhaseStyle {
-        if (phase === 'live') return 'ready'
-        if (phase === 'idle') return 'neutral'
-        return 'active'
-    }
-
-    function isActivePhase(phase: string): boolean {
-        return phase === 'scanning' || phase === 'replaying' || phase === 'aggregating' || phase === 'reconciling'
-    }
-
-    function formatPhaseDurationMs(ms: number): string {
-        if (ms < 1000) return `${String(ms)}ms`
-        if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`
-        if (ms < 3_600_000) {
-            const mins = Math.floor(ms / 60_000)
-            const secs = Math.floor((ms % 60_000) / 1000)
-            return `${String(mins)}m ${String(secs).padStart(2, '0')}s`
-        }
-        const hrs = Math.floor(ms / 3_600_000)
-        const mins = Math.floor((ms % 3_600_000) / 60_000)
-        return `${String(hrs)}h ${String(mins).padStart(2, '0')}m`
-    }
-
-    function formatPhaseStats(stats: [string, string][]): string {
-        const map = new Map(stats)
-        const raw = map.get('raw_events')
-        const unique = map.get('unique_events')
-        const dedup = map.get('dedup_pct')
-        if (raw && unique && dedup) {
-            return `${Number(raw).toLocaleString('en-US')} raw → ${Number(unique).toLocaleString('en-US')} unique (${dedup}% dedup)`
-        }
-        const entries = map.get('total_entries')
-        const dirs = map.get('total_dirs')
-        if (entries && dirs) {
-            return `${Number(entries).toLocaleString('en-US')} entries, ${Number(dirs).toLocaleString('en-US')} dirs`
-        }
-        if (stats.length === 0) return ''
-        return stats.map(([k, v]) => `${k}: ${v}`).join(', ')
-    }
-
-    function currentPhaseLiveStat(status: IndexDebugStatus): string {
-        if (status.activityPhase === 'scanning') return `${formatCount(status.entriesScanned)} entries scanned`
-        if (status.activityPhase === 'live') return `${formatCount(status.liveEventCount)} live events`
-        return ''
-    }
-
-    const currentPhaseDurationMs = $derived(debugStatus ? debugStatus.phaseDurationMs + phaseDurationTick * 1000 : 0)
-
-    /** Format a history entry for display */
-    function formatEntry(entry: HistoryEntry): string {
-        if (entry.networkHost) {
-            return `${entry.networkHost.name} (${entry.networkHost.hostname})`
-        }
-        const parts = entry.path.split('/')
-        const lastPart = parts[parts.length - 1] || parts[parts.length - 2] || entry.path
-        if (entry.volumeId !== 'root' && entry.volumeId !== 'network') {
-            const volumeName = entry.volumeId.split('/').pop() ?? entry.volumeId
-            return `[${volumeName}] ${lastPart}`
-        }
-        return lastPart || entry.path
-    }
-
-    // ==== Error pane preview ====
-
-    type ErrorCategory = 'transient' | 'needs_action' | 'serious'
-
-    interface ErrorState {
-        code?: number
-        name: string
-        category: ErrorCategory
-        title: string
-    }
-
-    const providerNames = [
-        'None',
-        'Dropbox',
-        'Google Drive',
-        'OneDrive',
-        'Box',
-        'pCloud',
-        'Nextcloud',
-        'Synology Drive',
-        'Tresorit',
-        'Proton Drive',
-        'Sync.com',
-        'Egnyte',
-        'MacDroid',
-        'iCloud Drive',
-        'macFUSE',
-        'VeraCrypt',
-        'Cloud mount',
-        'your cloud provider',
-    ] as const
-
-    /** Per-row selected provider index, keyed by error name. */
-    const providerSelections = $state<Record<string, number>>({})
-
-    const errnoErrors: ErrorState[] = [
-        // Transient
-        { code: 4, name: 'EINTR', category: 'transient', title: 'Interrupted' },
-        { code: 12, name: 'ENOMEM', category: 'transient', title: 'Not enough memory' },
-        { code: 16, name: 'EBUSY', category: 'transient', title: 'Resource busy' },
-        { code: 35, name: 'EAGAIN', category: 'transient', title: 'Temporarily unavailable' },
-        { code: 50, name: 'ENETDOWN', category: 'transient', title: 'Network is down' },
-        { code: 52, name: 'ENETRESET', category: 'transient', title: 'Network connection dropped' },
-        { code: 53, name: 'ECONNABORTED', category: 'transient', title: 'Connection dropped' },
-        { code: 54, name: 'ECONNRESET', category: 'transient', title: 'Connection reset' },
-        { code: 60, name: 'ETIMEDOUT', category: 'transient', title: 'Connection timed out' },
-        { code: 64, name: 'EHOSTDOWN', category: 'transient', title: 'Host is down' },
-        { code: 70, name: 'ESTALE', category: 'transient', title: 'Stale connection' },
-        { code: 77, name: 'ENOLCK', category: 'transient', title: 'Lock unavailable' },
-        { code: 89, name: 'ECANCELED', category: 'transient', title: 'Cancelled' },
-        // NeedsAction
-        { code: 1, name: 'EPERM', category: 'needs_action', title: 'Not permitted' },
-        { code: 2, name: 'ENOENT', category: 'needs_action', title: 'Path not found' },
-        { code: 13, name: 'EACCES', category: 'needs_action', title: 'No permission' },
-        { code: 17, name: 'EEXIST', category: 'needs_action', title: 'Already exists' },
-        { code: 18, name: 'EXDEV', category: 'needs_action', title: 'Cross-device operation' },
-        { code: 20, name: 'ENOTDIR', category: 'needs_action', title: 'Not a folder' },
-        { code: 21, name: 'EISDIR', category: 'needs_action', title: 'Is a folder' },
-        { code: 28, name: 'ENOSPC', category: 'needs_action', title: 'Disk is full' },
-        { code: 30, name: 'EROFS', category: 'needs_action', title: 'Read-only volume' },
-        { code: 45, name: 'ENOTSUP', category: 'needs_action', title: 'Not supported' },
-        { code: 51, name: 'ENETUNREACH', category: 'needs_action', title: 'Network unreachable' },
-        { code: 61, name: 'ECONNREFUSED', category: 'needs_action', title: 'Connection refused' },
-        { code: 62, name: 'ELOOP', category: 'needs_action', title: 'Symlink loop' },
-        { code: 63, name: 'ENAMETOOLONG', category: 'needs_action', title: 'Name too long' },
-        { code: 65, name: 'EHOSTUNREACH', category: 'needs_action', title: 'Host unreachable' },
-        { code: 66, name: 'ENOTEMPTY', category: 'needs_action', title: 'Folder not empty' },
-        { code: 69, name: 'EDQUOT', category: 'needs_action', title: 'Quota exceeded' },
-        { code: 80, name: 'EAUTH', category: 'needs_action', title: 'Authentication required' },
-        { code: 81, name: 'ENEEDAUTH', category: 'needs_action', title: 'Authentication required' },
-        { code: 82, name: 'EPWROFF', category: 'needs_action', title: 'Device powered off' },
-        { code: 93, name: 'ENOATTR', category: 'needs_action', title: 'Attribute not found' },
-        // Serious
-        { code: 5, name: 'EIO', category: 'serious', title: 'Disk read problem' },
-        { code: 22, name: 'EINVAL', category: 'serious', title: 'Unexpected system response' },
-        { code: 83, name: 'EDEVERR', category: 'serious', title: 'Device problem' },
-    ]
-
-    const volumeErrors: ErrorState[] = [
-        { name: 'NotFound', category: 'needs_action', title: 'Path not found' },
-        { name: 'PermissionDenied', category: 'needs_action', title: 'No permission' },
-        { name: 'AlreadyExists', category: 'needs_action', title: 'Already exists' },
-        { name: 'NotSupported', category: 'needs_action', title: 'Not supported' },
-        { name: 'DeviceDisconnected', category: 'needs_action', title: 'Device disconnected' },
-        { name: 'ReadOnly', category: 'needs_action', title: 'Read-only' },
-        { name: 'StorageFull', category: 'needs_action', title: 'Disk is full' },
-        { name: 'ConnectionTimeout', category: 'transient', title: 'Connection timed out' },
-        { name: 'Cancelled', category: 'transient', title: 'Cancelled' },
-        { name: 'IoError (no errno)', category: 'serious', title: "Couldn't read this folder" },
-    ]
-
-    /** Maps provider display names to representative paths for provider detection. */
-    const providerPathMap: Record<string, string> = {
-        Dropbox: '~/Library/CloudStorage/Dropbox/test',
-        'Google Drive': '~/Library/CloudStorage/GoogleDrive-user@gmail.com/test',
-        OneDrive: '~/Library/CloudStorage/OneDrive-Personal/test',
-        Box: '~/Library/CloudStorage/Box-Box/test',
-        pCloud: '~/Library/CloudStorage/pCloud/test',
-        Nextcloud: '~/Library/CloudStorage/Nextcloud/test',
-        'Synology Drive': '~/Library/CloudStorage/SynologyDrive/test',
-        Tresorit: '~/Library/CloudStorage/Tresorit/test',
-        'Proton Drive': '~/Library/CloudStorage/ProtonDrive/test',
-        'Sync.com': '~/Library/CloudStorage/Sync/test',
-        Egnyte: '~/Library/CloudStorage/Egnyte/test',
-        MacDroid: '~/Library/CloudStorage/MacDroid-device/test',
-        'iCloud Drive': '~/Library/Mobile Documents/com~apple~CloudDocs/test',
-        macFUSE: '/Volumes/sshfs-mount/test',
-        VeraCrypt: '/Volumes/veracrypt1/test',
-        'Cloud mount': '~/.CMVolumes/mount/test',
-        'your cloud provider': '~/Library/CloudStorage/UnknownProvider/test',
-    }
-
-    async function triggerError(pane: 'left' | 'right', state: ErrorState) {
-        const providerIndex = providerSelections[state.name] ?? 0
-        const providerName = providerNames[providerIndex]
-        const providerPath = providerName !== 'None' ? (providerPathMap[providerName] ?? null) : null
-
-        try {
-            const { invoke } = await import('@tauri-apps/api/core')
-            const friendly = await invoke<FriendlyError>('preview_friendly_error', {
-                errorCode: state.code ?? null,
-                variant: state.code === undefined ? state.name : null,
-                providerPath,
-            })
-            const { emitTo } = await import('@tauri-apps/api/event')
-            await emitTo('main', 'debug-inject-error', { pane, friendly })
-        } catch (error) {
-            // eslint-disable-next-line no-console -- Debug window is dev-only
-            console.error('preview_friendly_error failed:', error)
-        }
-    }
-
-    async function resetErrors(pane: 'left' | 'right' | 'both') {
-        try {
-            const { emitTo } = await import('@tauri-apps/api/event')
-            await emitTo('main', 'debug-reset-error', { pane })
         } catch {
             // Not in Tauri environment
         }
@@ -492,540 +88,10 @@
             </label>
         </section>
 
-        <section class="debug-section">
-            <h2>Drive index</h2>
-            <div class="index-panel">
-                <!-- Current phase card + watcher + verifying -->
-                <div class="index-status-row">
-                    <div class="index-status">
-                        {#if debugStatus === null}
-                            <span class="status-badge neutral">Loading...</span>
-                        {:else}
-                            <span
-                                class="status-badge {phaseStyle(debugStatus.activityPhase)}"
-                                use:tooltip={{
-                                    text: debugStatus.phaseStartedAt
-                                        ? `Trigger: ${debugStatus.phaseHistory.length > 0 ? (debugStatus.phaseHistory[debugStatus.phaseHistory.length - 1]?.trigger ?? '') : ''}`
-                                        : '',
-                                }}
-                            >
-                                {#if isActivePhase(debugStatus.activityPhase)}
-                                    <span class="spinner spinner-sm"></span>
-                                {/if}
-                                {debugStatus.activityPhase.charAt(0).toUpperCase() + debugStatus.activityPhase.slice(1)}
-                                <span
-                                    class="phase-duration"
-                                    use:tooltip={{ text: `${String(currentPhaseDurationMs)}ms` }}
-                                >
-                                    {formatPhaseDurationMs(currentPhaseDurationMs)}
-                                </span>
-                            </span>
-                            {@const liveStat = currentPhaseLiveStat(debugStatus)}
-                            {#if liveStat}
-                                <span class="phase-live-stat">{liveStat}</span>
-                            {/if}
-                        {/if}
-                    </div>
-                    <div class="index-status">
-                        {#if debugStatus?.watcherActive}
-                            <span
-                                class="status-badge ready"
-                                use:tooltip={{
-                                    text: 'FSEvents watcher is active — receiving live filesystem change notifications',
-                                }}>Watcher on</span
-                            >
-                        {:else}
-                            <span class="status-badge neutral" use:tooltip={{ text: 'FSEvents watcher is not running' }}
-                                >Watcher off</span
-                            >
-                        {/if}
-                    </div>
-                    {#if debugStatus?.verifying}
-                        <div class="index-status">
-                            <span
-                                class="status-badge active"
-                                use:tooltip={{ text: 'Background post-replay directory verification' }}
-                            >
-                                <span class="spinner spinner-sm"></span>
-                                Verifying
-                            </span>
-                        </div>
-                    {/if}
-                </div>
-
-                <!-- Phase timeline -->
-                <div class="index-sub-header">Phase timeline</div>
-                <div class="phase-timeline">
-                    {#if debugStatus === null || debugStatus.phaseHistory.length === 0}
-                        <p class="no-history">No phase history</p>
-                    {:else}
-                        {#each debugStatus.phaseHistory as record, i (record.startedAt + record.phase)}
-                            {@const isCurrent = i === debugStatus.phaseHistory.length - 1 && record.durationMs === null}
-                            <div class="phase-timeline-row" class:phase-current={isCurrent}>
-                                <span class="phase-time">{record.startedAt.substring(0, 8)}</span>
-                                <span class="phase-name" use:tooltip={{ text: phaseTooltipMap[record.phase] ?? '' }}
-                                    >{record.phase.charAt(0).toUpperCase() + record.phase.slice(1)}</span
-                                >
-                                <span
-                                    class="phase-dur"
-                                    use:tooltip={{
-                                        text:
-                                            record.durationMs !== null
-                                                ? `${String(record.durationMs)}ms`
-                                                : `${String(currentPhaseDurationMs)}ms`,
-                                    }}
-                                >
-                                    {#if record.durationMs !== null}
-                                        {formatPhaseDurationMs(record.durationMs)}
-                                    {:else}
-                                        {formatPhaseDurationMs(currentPhaseDurationMs)}
-                                    {/if}
-                                </span>
-                                <span class="phase-stats">
-                                    {#if isCurrent}
-                                        <span class="phase-now-marker">now</span>
-                                    {:else}
-                                        {formatPhaseStats(record.stats)}
-                                    {/if}
-                                </span>
-                            </div>
-                        {/each}
-                    {/if}
-                </div>
-
-                <!-- Action buttons -->
-                <div class="index-actions">
-                    <button class="index-button" onclick={handleStartScan}>Start scan</button>
-                    <button class="index-button" onclick={handleClearIndex}>Clear index</button>
-                    {#if indexMessage}
-                        <span class="index-message">{indexMessage}</span>
-                    {/if}
-                </div>
-
-                <!-- DB statistics -->
-                {#if debugStatus?.initialized}
-                    <div class="index-sub-header">Database</div>
-                    <div class="index-meta">
-                        <div class="index-meta-row">
-                            <span class="index-meta-label"
-                                >Entries <span
-                                    class="info-icon"
-                                    use:tooltip={{ text: 'Total files and directories in the index DB' }}>i</span
-                                ></span
-                            >
-                            <span class="index-meta-value">{formatCount(debugStatus.liveEntryCount)}</span>
-                        </div>
-                        <div class="index-meta-row">
-                            <span class="index-meta-label"
-                                >Directories <span
-                                    class="info-icon"
-                                    use:tooltip={{ text: 'Total directories (subset of entries)' }}>i</span
-                                ></span
-                            >
-                            <span class="index-meta-value">{formatCount(debugStatus.liveDirCount)}</span>
-                        </div>
-                        <div class="index-meta-row">
-                            <span class="index-meta-label"
-                                >Dirs with stats <span
-                                    class="info-icon"
-                                    use:tooltip={{
-                                        text: 'Directories that have computed recursive size/count aggregates',
-                                    }}>i</span
-                                ></span
-                            >
-                            <span class="index-meta-value">{formatCount(debugStatus.dirsWithStats)}</span>
-                        </div>
-                        {#if debugStatus.liveDirCount !== null && debugStatus.dirsWithStats !== null}
-                            <div class="index-meta-row">
-                                <span class="index-meta-label"
-                                    >Dirs missing stats <span
-                                        class="info-icon"
-                                        use:tooltip={{
-                                            text: 'Directories without aggregates — will show no size in the UI until backfilled',
-                                        }}>i</span
-                                    ></span
-                                >
-                                <span class="index-meta-value"
-                                    >{formatCount(debugStatus.liveDirCount - debugStatus.dirsWithStats)}</span
-                                >
-                            </div>
-                        {/if}
-                        {#if debugStatus.indexStatus?.scanCompletedAt}
-                            <div class="index-meta-row">
-                                <span class="index-meta-label"
-                                    >Last scan <span
-                                        class="info-icon"
-                                        use:tooltip={{ text: 'When the last full volume scan completed' }}>i</span
-                                    ></span
-                                >
-                                <span class="index-meta-value"
-                                    >{formatTimestamp(debugStatus.indexStatus.scanCompletedAt)}</span
-                                >
-                            </div>
-                        {/if}
-                        {#if debugStatus.indexStatus?.scanDurationMs}
-                            <div class="index-meta-row">
-                                <span class="index-meta-label"
-                                    >Scan duration <span
-                                        class="info-icon"
-                                        use:tooltip={{ text: 'How long the last full scan took (wall clock)' }}>i</span
-                                    ></span
-                                >
-                                <span class="index-meta-value"
-                                    >{formatDuration(debugStatus.indexStatus.scanDurationMs)}</span
-                                >
-                            </div>
-                        {/if}
-                        {#if debugStatus.dbFileSize !== null}
-                            <div class="index-meta-row">
-                                <span class="index-meta-label"
-                                    >DB size <span
-                                        class="info-icon"
-                                        use:tooltip={{ text: 'Total on-disk size: main DB file + WAL + SHM' }}>i</span
-                                    ></span
-                                >
-                                <span class="index-meta-value">
-                                    {formatDbSize(debugStatus.dbFileSize)}
-                                    {#if debugStatus.dbMainSize !== null}
-                                        <span class="db-breakdown"
-                                            >(main: {formatDbSize(
-                                                debugStatus.dbMainSize,
-                                            )}{#if debugStatus.dbWalSize !== null && debugStatus.dbWalSize > 0}, WAL: {formatDbSize(
-                                                    debugStatus.dbWalSize,
-                                                )}{/if})</span
-                                        >
-                                    {/if}
-                                </span>
-                            </div>
-                        {/if}
-                        {#if debugStatus.dbPageCount !== null}
-                            <div class="index-meta-row">
-                                <span class="index-meta-label"
-                                    >DB pages <span
-                                        class="info-icon"
-                                        use:tooltip={{
-                                            text: 'SQLite pages: total allocated vs freelist (unused, reclaimable with VACUUM)',
-                                        }}>i</span
-                                    ></span
-                                >
-                                <span class="index-meta-value">
-                                    {formatCount(debugStatus.dbPageCount)}
-                                    {#if debugStatus.dbFreelistCount !== null && debugStatus.dbFreelistCount > 0}
-                                        <span class="db-breakdown"
-                                            >({formatCount(debugStatus.dbFreelistCount)} free, {(
-                                                (debugStatus.dbFreelistCount / debugStatus.dbPageCount) *
-                                                100
-                                            ).toFixed(1)}%)</span
-                                        >
-                                    {/if}
-                                </span>
-                            </div>
-                        {/if}
-                    </div>
-                {/if}
-
-                <!-- Event statistics -->
-                {#if debugStatus?.initialized}
-                    <div class="index-sub-header">Event statistics</div>
-                    <div class="index-meta">
-                        <div class="index-meta-row">
-                            <span class="index-meta-label"
-                                >Live FS events <span
-                                    class="info-icon"
-                                    use:tooltip={{
-                                        text: 'Total FSEvents received since indexing started this session',
-                                    }}>i</span
-                                ></span
-                            >
-                            <span class="index-meta-value">{formatCount(debugStatus.liveEventCount)}</span>
-                        </div>
-                        <div class="index-meta-row">
-                            <span class="index-meta-label"
-                                >MustScanSubDirs <span
-                                    class="info-icon"
-                                    use:tooltip={{
-                                        text: 'FSEvents with MustScanSubDirs flag — means the OS coalesced events and a full subtree rescan is needed',
-                                    }}>i</span
-                                ></span
-                            >
-                            <span class="index-meta-value">{formatCount(debugStatus.mustScanCount)}</span>
-                        </div>
-                        <div class="index-meta-row">
-                            <span class="index-meta-label"
-                                >Rescans completed <span
-                                    class="info-icon"
-                                    use:tooltip={{
-                                        text: 'Number of MustScanSubDirs subtree rescans that have finished processing',
-                                    }}>i</span
-                                ></span
-                            >
-                            <span class="index-meta-value">{formatCount(debugStatus.mustScanRescansCompleted)}</span>
-                        </div>
-                    </div>
-                {/if}
-            </div>
-        </section>
-
-        <section class="debug-section">
-            <h2>Toast notifications</h2>
-            <div class="toast-debug-panel">
-                <div class="toast-debug-row">
-                    <span class="toast-debug-label">Transient</span>
-                    <button
-                        class="index-button"
-                        onclick={() => {
-                            toastCounter++
-                            addToast(`Info toast #${String(toastCounter)}`)
-                        }}>Info</button
-                    >
-                    <button
-                        class="index-button"
-                        onclick={() => {
-                            toastCounter++
-                            addToast(`Success toast #${String(toastCounter)}`, { level: 'success' })
-                        }}>Success</button
-                    >
-                    <button
-                        class="index-button"
-                        onclick={() => {
-                            toastCounter++
-                            addToast(`Warning toast #${String(toastCounter)}`, { level: 'warn' })
-                        }}>Warn</button
-                    >
-                    <button
-                        class="index-button"
-                        onclick={() => {
-                            toastCounter++
-                            addToast(`Error toast #${String(toastCounter)}`, { level: 'error' })
-                        }}>Error</button
-                    >
-                </div>
-                <div class="toast-debug-row">
-                    <span class="toast-debug-label">Persistent</span>
-                    <button
-                        class="index-button"
-                        onclick={() => {
-                            toastCounter++
-                            addToast(`Persistent info #${String(toastCounter)}`, { dismissal: 'persistent' })
-                        }}>Info</button
-                    >
-                    <button
-                        class="index-button"
-                        onclick={() => {
-                            toastCounter++
-                            addToast(`Persistent success #${String(toastCounter)}`, {
-                                dismissal: 'persistent',
-                                level: 'success',
-                            })
-                        }}>Success</button
-                    >
-                    <button
-                        class="index-button"
-                        onclick={() => {
-                            toastCounter++
-                            addToast(`Persistent warning #${String(toastCounter)}`, {
-                                dismissal: 'persistent',
-                                level: 'warn',
-                            })
-                        }}>Warn</button
-                    >
-                    <button
-                        class="index-button"
-                        onclick={() => {
-                            toastCounter++
-                            addToast(`Persistent error #${String(toastCounter)}`, {
-                                dismissal: 'persistent',
-                                level: 'error',
-                            })
-                        }}>Error</button
-                    >
-                </div>
-                <div class="toast-debug-row">
-                    <span class="toast-debug-label">Dedup</span>
-                    <button
-                        class="index-button"
-                        onclick={() => {
-                            toastCounter++
-                            addToast(`Dedup toast (always replaces) #${String(toastCounter)}`, { id: 'dedup-test' })
-                        }}>Replace (same ID)</button
-                    >
-                </div>
-                <div class="toast-debug-row">
-                    <span class="toast-debug-label">Custom timeout</span>
-                    <button
-                        class="index-button"
-                        onclick={() => {
-                            toastCounter++
-                            addToast(`10s timeout #${String(toastCounter)}`, { timeoutMs: 10000 })
-                        }}>10 seconds</button
-                    >
-                </div>
-                <div class="toast-debug-row">
-                    <span class="toast-debug-label">Bulk actions</span>
-                    <button class="index-button" onclick={dismissTransientToasts}>Dismiss transient</button>
-                    <button class="index-button" onclick={clearAllToasts}>Clear all</button>
-                </div>
-                <div class="toast-debug-row">
-                    <span class="toast-debug-label">Active</span>
-                    <span class="toast-debug-count">{getToasts().length} toasts</span>
-                </div>
-            </div>
-        </section>
-
-        <section class="debug-section">
-            <h2>Navigation history</h2>
-            <div class="history-panes">
-                <div class="history-pane" class:focused={focusedPane === 'left'}>
-                    <h3>Left pane</h3>
-                    {#if leftHistory}
-                        <ul class="history-list">
-                            {#each leftHistory.stack as entry, i (i)}
-                                {@const isCurrent = i === leftHistory.currentIndex}
-                                {@const isFuture = i > leftHistory.currentIndex}
-                                {@const arrow = isCurrent ? '→' : i < leftHistory.currentIndex ? '←' : '↓'}
-                                <li class:current={isCurrent} class:future={isFuture}>
-                                    <span class="history-index">{arrow}</span>
-                                    <span class="history-path" use:tooltip={{ text: entry.path, overflowOnly: true }}
-                                        >{formatEntry(entry)}</span
-                                    >
-                                </li>
-                            {/each}
-                        </ul>
-                    {:else}
-                        <p class="no-history">No history yet</p>
-                    {/if}
-                </div>
-                <div class="history-pane" class:focused={focusedPane === 'right'}>
-                    <h3>Right pane</h3>
-                    {#if rightHistory}
-                        <ul class="history-list">
-                            {#each rightHistory.stack as entry, i (i)}
-                                {@const isCurrent = i === rightHistory.currentIndex}
-                                {@const isFuture = i > rightHistory.currentIndex}
-                                {@const arrow = isCurrent ? '→' : i < rightHistory.currentIndex ? '←' : '↓'}
-                                <li class:current={isCurrent} class:future={isFuture}>
-                                    <span class="history-index">{arrow}</span>
-                                    <span class="history-path" use:tooltip={{ text: entry.path, overflowOnly: true }}
-                                        >{formatEntry(entry)}</span
-                                    >
-                                </li>
-                            {/each}
-                        </ul>
-                    {:else}
-                        <p class="no-history">No history yet</p>
-                    {/if}
-                </div>
-            </div>
-        </section>
-
-        <section class="debug-section">
-            <h2>Error pane preview</h2>
-            <div class="error-preview-panel">
-                <div class="error-preview-actions">
-                    <button class="index-button" onclick={() => void resetErrors('both')}>Reset both panes</button>
-                </div>
-
-                <div class="error-group-header">Transient (errno)</div>
-                {#each errnoErrors.filter((e) => e.category === 'transient') as state (state.name)}
-                    <div class="error-row">
-                        <span class="error-label" use:tooltip={{ text: state.title }}>
-                            {state.name}{#if state.code !== undefined} ({state.code}){/if}
-                            <span class="error-title">{state.title}</span>
-                        </span>
-                        <select
-                            class="error-provider-select"
-                            value={providerNames[providerSelections[state.name] ?? 0]}
-                            onchange={(e) => {
-                                const target = e.currentTarget
-                                providerSelections[state.name] = providerNames.indexOf(target.value as (typeof providerNames)[number])
-                            }}
-                        >
-                            {#each providerNames as name (name)}
-                                <option value={name}>{name}</option>
-                            {/each}
-                        </select>
-                        <button class="error-trigger-btn" onclick={() => void triggerError('left', state)}>L</button>
-                        <button class="error-trigger-btn" onclick={() => void triggerError('right', state)}>R</button>
-                    </div>
-                {/each}
-
-                <div class="error-group-header">Needs action (errno)</div>
-                {#each errnoErrors.filter((e) => e.category === 'needs_action') as state (state.name)}
-                    <div class="error-row">
-                        <span class="error-label" use:tooltip={{ text: state.title }}>
-                            {state.name}{#if state.code !== undefined} ({state.code}){/if}
-                            <span class="error-title">{state.title}</span>
-                        </span>
-                        <select
-                            class="error-provider-select"
-                            value={providerNames[providerSelections[state.name] ?? 0]}
-                            onchange={(e) => {
-                                const target = e.currentTarget
-                                providerSelections[state.name] = providerNames.indexOf(target.value as (typeof providerNames)[number])
-                            }}
-                        >
-                            {#each providerNames as name (name)}
-                                <option value={name}>{name}</option>
-                            {/each}
-                        </select>
-                        <button class="error-trigger-btn" onclick={() => void triggerError('left', state)}>L</button>
-                        <button class="error-trigger-btn" onclick={() => void triggerError('right', state)}>R</button>
-                    </div>
-                {/each}
-
-                <div class="error-group-header">Serious (errno)</div>
-                {#each errnoErrors.filter((e) => e.category === 'serious') as state (state.name)}
-                    <div class="error-row">
-                        <span class="error-label" use:tooltip={{ text: state.title }}>
-                            {state.name}{#if state.code !== undefined} ({state.code}){/if}
-                            <span class="error-title">{state.title}</span>
-                        </span>
-                        <select
-                            class="error-provider-select"
-                            value={providerNames[providerSelections[state.name] ?? 0]}
-                            onchange={(e) => {
-                                const target = e.currentTarget
-                                providerSelections[state.name] = providerNames.indexOf(target.value as (typeof providerNames)[number])
-                            }}
-                        >
-                            {#each providerNames as name (name)}
-                                <option value={name}>{name}</option>
-                            {/each}
-                        </select>
-                        <button class="error-trigger-btn" onclick={() => void triggerError('left', state)}>L</button>
-                        <button class="error-trigger-btn" onclick={() => void triggerError('right', state)}>R</button>
-                    </div>
-                {/each}
-
-                <div class="error-group-header">VolumeError variants</div>
-                {#each volumeErrors as state (state.name)}
-                    <div class="error-row">
-                        <span class="error-label" use:tooltip={{ text: state.title }}>
-                            {state.name}
-                            <span class="error-title">{state.title}</span>
-                        </span>
-                        <select
-                            class="error-provider-select"
-                            value={providerNames[providerSelections[state.name] ?? 0]}
-                            onchange={(e) => {
-                                const target = e.currentTarget
-                                providerSelections[state.name] = providerNames.indexOf(target.value as (typeof providerNames)[number])
-                            }}
-                        >
-                            {#each providerNames as name (name)}
-                                <option value={name}>{name}</option>
-                            {/each}
-                        </select>
-                        <button class="error-trigger-btn" onclick={() => void triggerError('left', state)}>L</button>
-                        <button class="error-trigger-btn" onclick={() => void triggerError('right', state)}>R</button>
-                    </div>
-                {/each}
-
-                <div class="error-preview-actions">
-                    <button class="index-button" onclick={() => void resetErrors('both')}>Reset both panes</button>
-                </div>
-            </div>
-        </section>
+        <DebugDriveIndexPanel />
+        <DebugToastPanel />
+        <DebugHistoryPanel />
+        <DebugErrorPreviewPanel />
     </div>
 </div>
 
@@ -1119,12 +185,12 @@
     }
 
     /* History styles */
-    .history-panes {
+    :global(.history-panes) {
         display: flex;
         gap: 12px;
     }
 
-    .history-pane {
+    :global(.history-pane) {
         flex: 1;
         background: var(--color-bg-secondary);
         border-radius: var(--radius-md);
@@ -1132,11 +198,11 @@
         min-width: 0;
     }
 
-    .history-pane.focused {
+    :global(.history-pane.focused) {
         outline: 2px solid var(--color-accent);
     }
 
-    .history-pane h3 {
+    :global(.history-pane h3) {
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-sm);
         font-weight: 600;
@@ -1144,7 +210,7 @@
         text-transform: uppercase;
     }
 
-    .history-list {
+    :global(.history-list) {
         list-style: none;
         margin: 0;
         padding: 0;
@@ -1152,7 +218,7 @@
         font-family: var(--font-mono);
     }
 
-    .history-list li {
+    :global(.history-list li) {
         display: flex;
         align-items: center;
         gap: var(--spacing-xs);
@@ -1161,29 +227,29 @@
         color: var(--color-text-secondary);
     }
 
-    .history-list li.current {
+    :global(.history-list li.current) {
         background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
         font-weight: 600;
     }
 
-    .history-list li.future {
+    :global(.history-list li.future) {
         opacity: 0.5;
     }
 
-    .history-index {
+    :global(.history-index) {
         flex-shrink: 0;
         width: 12px;
         text-align: center;
     }
 
-    .history-path {
+    :global(.history-path) {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
-    .no-history {
+    :global(.no-history) {
         margin: 0;
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
@@ -1191,7 +257,7 @@
     }
 
     /* Drive index styles */
-    .index-panel {
+    :global(.index-panel) {
         background: var(--color-bg-secondary);
         border-radius: var(--radius-md);
         padding: 12px;
@@ -1200,17 +266,17 @@
         gap: 10px;
     }
 
-    .index-status-row {
+    :global(.index-status-row) {
         display: flex;
         gap: 8px;
         align-items: center;
     }
 
-    .index-status {
+    :global(.index-status) {
         font-size: var(--font-size-sm);
     }
 
-    .status-badge {
+    :global(.status-badge) {
         display: inline-flex;
         align-items: center;
         gap: 5px;
@@ -1220,35 +286,35 @@
         font-weight: 600;
     }
 
-    .status-badge.active {
+    :global(.status-badge.active) {
         background: color-mix(in srgb, var(--color-accent) 20%, transparent);
         color: var(--color-accent);
     }
 
-    .status-badge.ready {
+    :global(.status-badge.ready) {
         background: color-mix(in srgb, #4caf50 20%, transparent);
         color: #4caf50;
     }
 
-    .status-badge.neutral {
+    :global(.status-badge.neutral) {
         background: var(--color-bg-tertiary);
         color: var(--color-text-tertiary);
     }
 
-    .phase-duration {
+    :global(.phase-duration) {
         font-weight: 400;
         margin-left: 4px;
         font-family: var(--font-mono);
     }
 
-    .phase-live-stat {
+    :global(.phase-live-stat) {
         font-size: var(--font-size-xs);
         color: var(--color-text-secondary);
         margin-left: 8px;
     }
 
     /* Phase timeline */
-    .phase-timeline {
+    :global(.phase-timeline) {
         max-height: 160px;
         overflow-y: auto;
         background: var(--color-bg-primary);
@@ -1258,7 +324,7 @@
         font-family: var(--font-mono);
     }
 
-    .phase-timeline-row {
+    :global(.phase-timeline-row) {
         display: flex;
         gap: 10px;
         padding: 2px 0;
@@ -1266,54 +332,54 @@
         color: var(--color-text-tertiary);
     }
 
-    .phase-timeline-row.phase-current {
+    :global(.phase-timeline-row.phase-current) {
         color: var(--color-text-primary);
         font-weight: 600;
     }
 
-    .phase-time {
+    :global(.phase-time) {
         flex-shrink: 0;
         width: 60px;
     }
 
-    .phase-name {
+    :global(.phase-name) {
         flex-shrink: 0;
         width: 85px;
     }
 
-    .phase-dur {
+    :global(.phase-dur) {
         flex-shrink: 0;
         width: 70px;
         text-align: right;
     }
 
-    .phase-stats {
+    :global(.phase-stats) {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         color: var(--color-text-secondary);
     }
 
-    .phase-current .phase-stats {
+    :global(.phase-current .phase-stats) {
         color: var(--color-text-primary);
     }
 
-    .phase-now-marker {
+    :global(.phase-now-marker) {
         color: var(--color-accent);
         font-weight: 600;
     }
 
-    .phase-now-marker::before {
+    :global(.phase-now-marker::before) {
         content: '\2190 ';
     }
 
-    .index-actions {
+    :global(.index-actions) {
         display: flex;
         align-items: center;
         gap: 8px;
     }
 
-    .index-button {
+    :global(.index-button) {
         padding: 4px 12px;
         font-size: var(--font-size-sm);
         font-family: var(--font-system), sans-serif;
@@ -1323,16 +389,16 @@
         border-radius: var(--radius-sm);
     }
 
-    .index-button:hover {
+    :global(.index-button:hover) {
         background: var(--color-bg-primary);
     }
 
-    .index-message {
+    :global(.index-message) {
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
     }
 
-    .index-sub-header {
+    :global(.index-sub-header) {
         font-size: var(--font-size-xs);
         font-weight: 600;
         text-transform: uppercase;
@@ -1341,29 +407,29 @@
         margin-top: 4px;
     }
 
-    .index-meta {
+    :global(.index-meta) {
         display: flex;
         flex-direction: column;
         gap: 3px;
         font-size: var(--font-size-sm);
     }
 
-    .index-meta-row {
+    :global(.index-meta-row) {
         display: flex;
         gap: 8px;
     }
 
-    .index-meta-label {
+    :global(.index-meta-label) {
         color: var(--color-text-tertiary);
         min-width: 120px;
     }
 
-    .index-meta-value {
+    :global(.index-meta-value) {
         color: var(--color-text-primary);
         font-family: var(--font-mono);
     }
 
-    .info-icon {
+    :global(.info-icon) {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -1381,19 +447,19 @@
         margin-left: 2px;
     }
 
-    .info-icon:hover {
+    :global(.info-icon:hover) {
         background: var(--color-bg-primary);
         color: var(--color-text-secondary);
     }
 
-    .db-breakdown {
+    :global(.db-breakdown) {
         color: var(--color-text-tertiary);
         font-size: var(--font-size-xs);
         margin-left: 4px;
     }
 
     /* Toast debug styles */
-    .toast-debug-panel {
+    :global(.toast-debug-panel) {
         background: var(--color-bg-secondary);
         border-radius: var(--radius-md);
         padding: 12px;
@@ -1402,26 +468,26 @@
         gap: 8px;
     }
 
-    .toast-debug-row {
+    :global(.toast-debug-row) {
         display: flex;
         align-items: center;
         gap: 8px;
     }
 
-    .toast-debug-label {
+    :global(.toast-debug-label) {
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
         min-width: 110px;
     }
 
-    .toast-debug-count {
+    :global(.toast-debug-count) {
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         font-family: var(--font-mono);
     }
 
     /* Error pane preview styles */
-    .error-preview-panel {
+    :global(.error-preview-panel) {
         background: var(--color-bg-secondary);
         border-radius: var(--radius-md);
         padding: 12px;
@@ -1430,13 +496,13 @@
         gap: 4px;
     }
 
-    .error-preview-actions {
+    :global(.error-preview-actions) {
         display: flex;
         gap: 8px;
         margin-bottom: 4px;
     }
 
-    .error-group-header {
+    :global(.error-group-header) {
         font-size: var(--font-size-xs);
         font-weight: 600;
         text-transform: uppercase;
@@ -1445,11 +511,11 @@
         margin-top: 8px;
     }
 
-    .error-group-header:first-of-type {
+    :global(.error-group-header:first-of-type) {
         margin-top: 0;
     }
 
-    .error-row {
+    :global(.error-row) {
         display: flex;
         align-items: center;
         gap: 6px;
@@ -1457,7 +523,7 @@
         font-size: var(--font-size-xs);
     }
 
-    .error-label {
+    :global(.error-label) {
         flex: 1;
         min-width: 0;
         overflow: hidden;
@@ -1467,13 +533,13 @@
         color: var(--color-text-primary);
     }
 
-    .error-title {
+    :global(.error-title) {
         color: var(--color-text-tertiary);
         margin-left: 4px;
         font-family: var(--font-system), sans-serif;
     }
 
-    .error-provider-select {
+    :global(.error-provider-select) {
         flex-shrink: 0;
         width: 110px;
         padding: 1px 4px;
@@ -1485,7 +551,7 @@
         border-radius: var(--radius-sm);
     }
 
-    .error-trigger-btn {
+    :global(.error-trigger-btn) {
         flex-shrink: 0;
         width: 24px;
         height: 22px;
@@ -1502,7 +568,7 @@
         justify-content: center;
     }
 
-    .error-trigger-btn:hover {
+    :global(.error-trigger-btn:hover) {
         background: var(--color-bg-primary);
     }
 </style>

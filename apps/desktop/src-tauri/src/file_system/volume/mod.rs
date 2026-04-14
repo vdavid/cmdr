@@ -555,6 +555,8 @@ pub(crate) mod manager;
 mod mtp;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) mod smb;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod smb_watcher;
 
 pub use in_memory::InMemoryVolume;
 pub use local_posix::LocalPosixVolume;

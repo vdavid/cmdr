@@ -71,6 +71,17 @@ Constants and configuration for the MCP server (port, bind address, transport se
 
 Frontend syncs state to these stores via Tauri commands (`update_left_pane_state`, `update_pane_tabs`, etc.). Settings are fetched on-demand via round-trip to the frontend rather than stored in a state store.
 
+### Tests (`tests/`)
+
+Directory module split by test category:
+- `protocol_tests.rs` — tool name validation, schema checks, tool count
+- `resource_tests.rs` — resource URI validation, count, mime types
+- `tool_category_tests.rs` — tool existence by category, schema checks
+- `security_tests.rs` — shell injection, forbidden tool patterns, input injection
+- `request_response_tests.rs` — McpRequest parsing, McpResponse serialization
+- `pane_state_tests.rs` — PaneStateStore CRUD, edge cases, concurrency, FileEntry serialization
+- `spec_compliance_tests.rs` — MCP spec 2025-11-25 compliance, origin validation, SSE events
+
 ## Key decisions
 
 ### Why agent-centric API?

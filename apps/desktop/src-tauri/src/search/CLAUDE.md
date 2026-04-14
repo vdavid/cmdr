@@ -14,7 +14,12 @@ In-memory search index and AI-powered query translation for whole-drive file sea
 | `ai/mod.rs` | Re-exports from AI submodules |
 | `ai/prompt.rs` | `CLASSIFICATION_PROMPT` const and `build_classification_prompt()`. Instructs the LLM to extract structured key-value fields (keywords, type, time, size, scope, exclude, folders, note) |
 | `ai/parser.rs` | `ParsedLlmResponse` struct and `parse_llm_response()`. Key-value line parser with enum validation. `fallback_keywords()` for when LLM fails |
-| `ai/mappings.rs` | Pure LLM enum → value conversions: type-to-regex, time-to-timestamp, size-to-bytes, scope-to-paths, keyword-to-pattern, pattern merging, exclude parsing |
+| `ai/mappings/` | Directory module: pure LLM enum → value conversions, split by domain |
+| `ai/mappings/mod.rs` | Shared constants (`KB`, `MB`, `GB`, `KNOWN_EXTENSIONS`) + re-exports |
+| `ai/mappings/type_mapping.rs` | Type enum → filename regex pattern (with `include_system_dirs` flag) |
+| `ai/mappings/time_mapping.rs` | Time enum → (modified_after, modified_before) timestamps, date range parsing |
+| `ai/mappings/size_scope_mapping.rs` | Size enum → byte range, scope enum → search paths |
+| `ai/mappings/keyword_mapping.rs` | Keywords → glob/regex pattern, pattern merging with type filter, exclude parsing |
 | `ai/query_builder.rs` | Assembles `SearchQuery` from parsed LLM output by calling mapping functions. Also `iso_date_to_timestamp()` (used by MCP executor) and display/caveat generation |
 
 ## Data flow

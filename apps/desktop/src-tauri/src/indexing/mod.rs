@@ -21,7 +21,11 @@ mod verifier;
 pub(crate) mod watcher;
 
 #[cfg(test)]
-mod stress_tests;
+mod stress_test_helpers;
+#[cfg(test)]
+mod stress_tests_concurrency;
+#[cfg(test)]
+mod stress_tests_lifecycle;
 
 pub use enrichment::enrich_entries_with_index;
 pub(crate) use enrichment::{ReadPool, get_read_pool};

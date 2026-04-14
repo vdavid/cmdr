@@ -116,7 +116,9 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 - Firmlinks: path normalization, edge cases
 - Writer: message processing, priority handling
 - mod.rs: end-to-end integration (scan → aggregate → enrich → watcher update → re-enrich), enrichment fast path, fallback, root-level enrichment
-- stress_tests.rs: concurrency stress tests — concurrent scan + replay, concurrent batch inserts, concurrent scan + enrichment reads, live event storm + reads, lifecycle transitions under load
+- stress_tests_concurrency.rs: concurrency stress tests — concurrent scan + replay, concurrent batch inserts, concurrent scan + enrichment reads, live event storm + reads
+- stress_tests_lifecycle.rs: lifecycle stress tests — start/stop/restart under load, clean lifecycle, double-start guard, early shutdown, rapid cycles, mixed queued work shutdown
+- stress_test_helpers.rs: shared helpers for stress tests — `setup_writer`, `build_synthetic_tree`, `check_db_consistency`, `make_file_entry`
 
 ## Key decisions
 

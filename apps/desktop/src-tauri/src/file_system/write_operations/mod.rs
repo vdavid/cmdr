@@ -27,11 +27,13 @@ mod linux_copy;
 pub(crate) mod macos_copy;
 mod move_op;
 mod scan;
+mod scan_preview;
 mod state;
 pub(crate) mod trash;
 mod types;
 mod volume_conflict;
 mod volume_copy;
+mod volume_move;
 mod volume_strategy;
 
 use std::path::PathBuf;
@@ -54,7 +56,7 @@ use state::{WRITE_OPERATION_STATE, register_operation_status, unregister_operati
 use trash::trash_files_with_progress;
 
 // Re-export public types
-pub use scan::{cancel_scan_preview, is_scan_preview_complete, start_scan_preview};
+pub use scan_preview::{cancel_scan_preview, is_scan_preview_complete, start_scan_preview};
 pub use state::{
     cancel_all_write_operations, cancel_write_operation, get_operation_status, list_active_operations,
     resolve_write_conflict,
@@ -81,7 +83,8 @@ pub(crate) use state::{CopyTransaction, OperationIntent, WriteOperationState, is
 
 // Re-export volume copy types and functions
 pub use types::{VolumeCopyConfig, VolumeCopyScanResult};
-pub use volume_copy::{copy_between_volumes, move_between_volumes, scan_for_volume_copy};
+pub use volume_copy::{copy_between_volumes, scan_for_volume_copy};
+pub use volume_move::move_between_volumes;
 
 // ============================================================================
 // Public API functions

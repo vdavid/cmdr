@@ -15,7 +15,8 @@ Every file system operation (listing, copy, rename, delete, indexing, watching) 
 | `manager.rs` | `VolumeManager` — thread-safe `RwLock<HashMap>` registry; supports a default volume |
 | `local_posix.rs` | `LocalPosixVolume` — real filesystem; delegates listing to `file_system::listing`, indexing to `indexing::scanner`, watching to `indexing::watcher` (FSEvents), copy scanning via `walkdir`. Uses `libc::statvfs` FFI for space info. |
 | `mtp.rs` | `MtpVolume` — MTP device storage; synchronous `Volume` trait bridged to async MTP calls via `tokio::runtime::Handle::block_on`. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
-| `smb.rs` | `SmbVolume` — SMB share storage; synchronous `Volume` trait bridged to async smb2 calls via `Handle::block_on`. Uses `Mutex<Option<(SmbClient, Tree)>>` + `AtomicU8` connection state. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
+| `smb.rs` | `SmbVolume` — SMB share storage; synchronous `Volume` trait bridged to async smb2 calls via `Handle::block_on`. Uses `Mutex<Option<(SmbClient, Tree)>>` + `AtomicU8` connection state. Also contains `connect_smb_volume()`. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
+| `smb_watcher.rs` | Background SMB change watcher (`run_smb_watcher`). Owns a dedicated smb2 connection for `CHANGE_NOTIFY`, debounces events, feeds `notify_directory_changed`. Spawned by `connect_smb_volume()`. |
 | `in_memory.rs` | `InMemoryVolume` — `RwLock<HashMap>` store for tests; also used for stress tests (`with_file_count`) |
 
 ## Architecture
