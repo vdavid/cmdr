@@ -253,6 +253,9 @@
     },
     "stores/volume-store.svelte.ts": {
       "reason": "Depends on Tauri listen/invoke APIs, integration point between backend events and frontend state"
+    },
+    "hmr-recovery.ts": {
+      "reason": "Dev-only HMR crash handler, runs inside import.meta.hot, depends on window/sessionStorage/location.reload"
     }
   }
 }
