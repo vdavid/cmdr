@@ -81,14 +81,16 @@
         <div class="index-row">
             <span class="info-label">Index size</span>
             <div class="index-controls">
-                <Button
-                    variant="secondary"
-                    size="mini"
-                    onclick={handleClearIndex}
-                    disabled={clearing || dbFileSize == null}
-                >
-                    {clearing ? 'Clearing...' : 'Clear index'}
-                </Button>
+                {#if dbFileSize != null || clearing}
+                    <Button
+                        variant="secondary"
+                        size="mini"
+                        onclick={handleClearIndex}
+                        disabled={clearing}
+                    >
+                        {clearing ? 'Clearing...' : 'Clear index'}
+                    </Button>
+                {/if}
                 <span class="info-value">
                     {#if dbFileSize != null}
                         {formatFileSize(dbFileSize)}
