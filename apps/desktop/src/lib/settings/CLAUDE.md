@@ -45,16 +45,25 @@ Full list: `AppearanceSection`, `ListingSection`, `FileOperationsSection`, `MtpS
 
 `AiSection` is a hybrid special section (like `LicenseSection` above): it combines dynamic runtime state from the
 backend (via `getAiRuntimeStatus()` and Tauri events) with registry settings (`ai.provider`, `ai.cloudProvider`,
-`ai.cloudProviderConfigs`, etc.). It conditionally renders provider-specific content, handles auto-stop/start of the
-local server on provider switch. Context size changes are not auto-applied; the user must click an explicit "Apply"
-button, which triggers a server restart. A RAM gauge (stacked bar) shows memory usage relative to system total, with
-warning icons at >70% and >90% projected usage. System memory info is polled every 5 seconds via
-`get_system_memory_info`. The "Cloud / API" provider mode uses a preset dropdown (`cloud-providers.ts`) with
-per-provider API key storage in a JSON blob (`ai.cloudProviderConfigs`). Old flat settings (`ai.openaiApiKey`,
-`ai.openaiBaseUrl`, `ai.openaiModel`) are migrated on first load. The Cloud/API section includes a two-step connection
-check (`check_ai_connection` Tauri command) that auto-triggers on API key or base URL changes (1s debounce), fetches
-available models from the `/models` endpoint, and shows connection status (connected, auth error, unreachable). When
-models are available, the Model field becomes a combobox with filtered dropdown; otherwise it's a plain text input.
+`ai.cloudProviderConfigs`, etc.). It's split into three files:
+
+- **`AiSection.svelte`** — Thin wrapper. Loads initial AI status, renders the provider toggle (Off / Cloud / Local),
+  handles provider switching (auto-stops local server when switching away), and conditionally renders one of the two
+  sub-sections.
+- **`AiCloudSection.svelte`** — Cloud/API provider config. Provider preset dropdown (`cloud-providers.ts`), per-provider
+  API key storage in a JSON blob (`ai.cloudProviderConfigs`), endpoint URL, model combobox. Old flat settings
+  (`ai.openaiApiKey`, `ai.openaiBaseUrl`, `ai.openaiModel`) are migrated on first load. Includes a two-step connection
+  check (`check_ai_connection` Tauri command) that auto-triggers on API key or base URL changes (1s debounce), fetches
+  available models from the `/models` endpoint, and shows connection status (connected, auth error, unreachable). When
+  models are available, the Model field becomes a combobox with filtered dropdown; otherwise it's a plain text input.
+- **`AiLocalSection.svelte`** — Local LLM management. Server lifecycle (start/stop), model download with multi-step
+  install tracking, context window setting with explicit "Apply" button (triggers server restart), RAM gauge (stacked
+  bar) showing memory usage relative to system total with warning icons at >70% and >90% projected usage, system memory
+  polled every 5 seconds via `get_system_memory_info`, and delete model confirmation dialog.
+
+Cloud and local are independent features with separate state machines (`connectionStatus` for cloud, `installStep` for
+local). They share almost nothing except the `provider` toggle and `shouldShow` function, passed as props from the
+wrapper.
 
 ### Components (`components/`)
 

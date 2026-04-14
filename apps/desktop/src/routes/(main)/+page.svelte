@@ -20,88 +20,28 @@
         checkFullDiskAccess,
         listen,
         type UnlistenFn,
-        openExternalUrl,
-        showInFinder,
-        copyToClipboard,
-        quickLook,
-        getInfo,
         openInEditor,
-        toggleHiddenFiles,
-        setViewMode,
         setMenuContext,
         getWindowTitle,
         registerKnownDialogs,
-        readClipboardText,
     } from '$lib/tauri-commands'
     import { SOFT_DIALOG_REGISTRY } from '$lib/ui/dialog-registry'
-    import { addToast } from '$lib/ui/toast'
     import { loadSettings, saveSettings } from '$lib/settings-store'
     import { openSettingsWindow } from '$lib/settings/settings-window'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
+    import {
+        handleCommandExecute as dispatchCommand,
+        type CommandDispatchContext,
+    } from './command-dispatch'
+    import { setupMcpListeners } from './mcp-listeners'
     import {
         hideExpirationModal,
         loadLicenseStatus,
         triggerValidationIfNeeded,
     } from '$lib/licensing/licensing-store.svelte'
     import { updateLicenseCommandName } from '$lib/commands/command-registry'
-    import type { ViewMode } from '$lib/app-status-store'
     import type { FriendlyError } from '$lib/file-explorer/types'
-
-    // Interface for DualPaneExplorer's exported methods
-    interface ExplorerAPI {
-        refocus: () => void
-        switchPane: () => void
-        swapPanes: () => void
-        toggleVolumeChooser: (pane: 'left' | 'right') => void
-        openVolumeChooser: () => void
-        closeVolumeChooser: () => void
-        toggleHiddenFiles: () => void
-        setViewMode: (mode: ViewMode, pane?: 'left' | 'right') => void
-        navigate: (action: 'back' | 'forward' | 'parent') => void
-        getFileAndPathUnderCursor: () => { path: string; filename: string } | null
-        sendKeyToFocusedPane: (key: string) => void
-        setSortColumn: (column: 'name' | 'extension' | 'size' | 'modified' | 'created', pane?: 'left' | 'right') => void
-        setSortOrder: (order: 'asc' | 'desc' | 'toggle', pane?: 'left' | 'right') => void
-        setSort: (
-            column: 'name' | 'extension' | 'size' | 'modified' | 'created',
-            order: 'asc' | 'desc',
-            pane: 'left' | 'right',
-        ) => Promise<void>
-        getFocusedPane: () => 'left' | 'right'
-        getFocusedPanePath: () => string
-        getVolumes: () => { id: string; name: string; path: string }[]
-        selectVolumeByIndex: (pane: 'left' | 'right', index: number) => Promise<boolean>
-        selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
-        handleSelectionAction: (action: string, startIndex?: number, endIndex?: number) => void
-        handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: string) => void
-        startRename: () => void
-        openCopyDialog: (autoConfirm?: boolean, onConflict?: string) => Promise<void>
-        openMoveDialog: (autoConfirm?: boolean, onConflict?: string) => Promise<void>
-        copyToClipboard: () => Promise<void>
-        cutToClipboard: () => Promise<void>
-        pasteFromClipboard: (forceMove: boolean) => Promise<void>
-        openNewFolderDialog: () => Promise<void>
-        openNewFileDialog: () => Promise<void>
-        openDeleteDialog: (permanent: boolean, autoConfirm?: boolean) => Promise<void>
-        closeConfirmationDialog: () => void
-        confirmDialog: (dialogType: string, onConflict?: string) => void
-        isConfirmationDialogOpen: () => boolean
-        isRenaming: () => boolean
-        openViewerForCursor: () => Promise<void>
-        navigateToPath: (pane: 'left' | 'right', path: string) => string | Promise<void>
-        moveCursor: (pane: 'left' | 'right', to: number | string) => Promise<void>
-        scrollTo: (pane: 'left' | 'right', index: number) => void
-        refreshPane: () => void
-        refreshNetworkHosts: () => void
-        injectError: (pane: 'left' | 'right', friendly: FriendlyError) => void
-        resetError: (pane: 'left' | 'right' | 'both') => void
-        newTab: () => boolean
-        closeActiveTab: () => 'closed' | 'last-tab'
-        closeActiveTabWithConfirmation: () => Promise<'closed' | 'last-tab' | 'cancelled'>
-        cycleTab: (direction: 'next' | 'prev') => void
-        togglePinActiveTab: () => void
-        closeOtherTabs: () => void
-    }
+    import type { ExplorerAPI } from './explorer-api'
 
     let showFdaPrompt = $state(false)
     let fdaWasRevoked = $state(false)
@@ -353,145 +293,6 @@
         }
     }
 
-    /** Set up MCP-related event listeners */
-    async function setupMcpListeners() {
-        await listenTauri('mcp-key', (event) => {
-            const { key } = event.payload as { key: string }
-            if (key === 'GoBack') {
-                explorerRef?.navigate('back')
-            } else if (key === 'GoForward') {
-                explorerRef?.navigate('forward')
-            } else {
-                explorerRef?.sendKeyToFocusedPane(key)
-            }
-        })
-
-        await listenTauri('menu-sort', (event) => {
-            const { action, value } = event.payload as { action: string; value: string }
-            if (action === 'sortBy') {
-                const column = value as 'name' | 'extension' | 'size' | 'modified' | 'created'
-                explorerRef?.setSortColumn(column)
-            } else if (action === 'sortOrder') {
-                const order = value as 'asc' | 'desc' | 'toggle'
-                explorerRef?.setSortOrder(order)
-            }
-        })
-
-        await listenTauri('mcp-sort', (event) => {
-            const { pane, by, order } = event.payload as { pane: 'left' | 'right'; by: string; order: string }
-            const column = by === 'ext' ? 'extension' : (by as 'name' | 'extension' | 'size' | 'modified' | 'created')
-            void explorerRef?.setSort(column, order as 'asc' | 'desc', pane)
-        })
-
-        await listenTauri('mcp-volume-select', (event) => {
-            const { pane, name } = event.payload as { pane: 'left' | 'right'; name: string }
-            void explorerRef?.selectVolumeByName(pane, name)
-        })
-
-        await listenTauri('mcp-select', (event) => {
-            const { pane, start, count, mode } = event.payload as {
-                pane: 'left' | 'right'
-                start: number
-                count: number | 'all'
-                mode: string
-            }
-            explorerRef?.handleMcpSelect(pane, start, count, mode)
-        })
-
-        await listenTauri('mcp-nav-to-path', (event) => {
-            const { pane, path, requestId } = event.payload as {
-                pane: 'left' | 'right'
-                path: string
-                requestId?: string
-            }
-            // explorerRef may be null during HMR — skip silently, let the backend timeout handle it
-            if (!explorerRef) return
-            const result = explorerRef.navigateToPath(pane, path)
-            if (requestId) {
-                void (async () => {
-                    const { emit } = await import('@tauri-apps/api/event')
-                    if (typeof result === 'string') {
-                        // Synchronous error (pane not available, wrong volume, etc.)
-                        await emit('mcp-response', { requestId, ok: false, error: result })
-                    } else {
-                        // Promise — wait for directory listing to complete
-                        try {
-                            await result
-                            await emit('mcp-response', { requestId, ok: true })
-                        } catch (e) {
-                            const error = e instanceof Error ? e.message : String(e)
-                            await emit('mcp-response', { requestId, ok: false, error })
-                        }
-                    }
-                })()
-            }
-        })
-
-        await listenTauri('mcp-move-cursor', (event) => {
-            const { pane, to, requestId } = event.payload as { pane: 'left' | 'right'; to: number | string; requestId: string }
-            void (async () => {
-                const { emit } = await import('@tauri-apps/api/event')
-                try {
-                    await explorerRef?.moveCursor(pane, to)
-                    await emit('mcp-response', { requestId, ok: true })
-                } catch (e) {
-                    const error = e instanceof Error ? e.message : String(e)
-                    await emit('mcp-response', { requestId, ok: false, error })
-                }
-            })()
-        })
-
-        await listenTauri('mcp-scroll-to', (event) => {
-            const { pane, index } = event.payload as { pane: 'left' | 'right'; index: number }
-            explorerRef?.scrollTo(pane, index)
-        })
-
-        await listenTauri('mcp-set-view-mode', (event) => {
-            const { pane, mode } = event.payload as { pane: 'left' | 'right'; mode: string }
-            explorerRef?.setViewMode(mode as ViewMode, pane)
-        })
-
-        await listenTauri('mcp-refresh', () => {
-            explorerRef?.refreshPane()
-        })
-
-        await listenTauri('mcp-copy', (event) => {
-            const { autoConfirm, onConflict } = event.payload as {
-                autoConfirm?: boolean
-                onConflict?: string
-            }
-            void explorerRef?.openCopyDialog(autoConfirm, onConflict)
-        })
-
-        await listenTauri('mcp-move', (event) => {
-            const { autoConfirm, onConflict } = event.payload as {
-                autoConfirm?: boolean
-                onConflict?: string
-            }
-            void explorerRef?.openMoveDialog(autoConfirm, onConflict)
-        })
-
-        await listenTauri('mcp-mkdir', () => {
-            void explorerRef?.openNewFolderDialog()
-        })
-
-        await listenTauri('mcp-mkfile', () => {
-            void explorerRef?.openNewFileDialog()
-        })
-
-        await listenTauri('mcp-delete', (event) => {
-            const { autoConfirm } = event.payload as { autoConfirm?: boolean }
-            void explorerRef?.openDeleteDialog(false, autoConfirm)
-        })
-
-        await listenTauri('mcp-confirm-dialog', (event) => {
-            const { type, onConflict } = event.payload as {
-                type: string
-                onConflict?: string
-            }
-            explorerRef?.confirmDialog(type, onConflict)
-        })
-    }
 
     /** Check if any modal dialog is open that should suppress centralized dispatch. */
     function isModalDialogOpen(): boolean {
@@ -635,7 +436,7 @@
     async function setupTauriEventListeners() {
         await setupMenuListeners()
         await setupDialogListeners()
-        await setupMcpListeners()
+        await setupMcpListeners({ getExplorer: () => explorerRef, listenTauri })
         await initIndexState()
         await setupWindowFocusListener()
     }
@@ -766,352 +567,28 @@
         void explorerRef?.openDeleteDialog(true)
     }
 
-    // eslint-disable-next-line complexity -- Command dispatcher handles many cases; switch is the clearest pattern
+    /** Command dispatch context — wires reactive state to the extracted dispatch function */
+    const commandDispatchCtx: CommandDispatchContext = {
+        getExplorer: () => explorerRef,
+        dialogs: {
+            showCommandPalette: (show: boolean) => {
+                showCommandPalette = show
+            },
+            showSearchDialog: (show: boolean) => {
+                if (show && showSearchDialog) return // Already open
+                showSearchDialog = show
+            },
+            showAboutWindow: (show: boolean) => {
+                showAboutWindow = show
+            },
+            showLicenseKeyDialog: (show: boolean) => {
+                showLicenseKeyDialog = show
+            },
+        },
+    }
+
     async function handleCommandExecute(commandId: string) {
-        showCommandPalette = false
-
-        // Handle known commands by category
-        switch (commandId) {
-            // === App commands ===
-            // app.quit, app.hide, app.hideOthers, app.showAll are native-only —
-            // handled by PredefinedMenuItems (terminate:, hide:, etc.), not JS dispatch.
-
-            case 'app.commandPalette':
-                showCommandPalette = true
-                return
-
-            case 'search.open':
-                if (!showSearchDialog) {
-                    showSearchDialog = true
-                }
-                return
-
-            case 'app.settings':
-                void openSettingsWindow()
-                return
-
-            case 'app.about':
-                showAboutWindow = true
-                return
-
-            case 'app.licenseKey':
-                showLicenseKeyDialog = true
-                return
-
-            // === View commands ===
-            case 'view.showHidden':
-                // Use Tauri command to toggle and sync menu checkbox state
-                await toggleHiddenFiles()
-                return
-
-            case 'view.briefMode':
-                // Use Tauri command to set mode and sync menu radio state
-                await setViewMode('brief')
-                return
-
-            case 'view.fullMode':
-                // Use Tauri command to set mode and sync menu radio state
-                await setViewMode('full')
-                return
-
-            // === Pane commands ===
-            case 'pane.switch':
-                explorerRef?.switchPane()
-                return
-
-            case 'pane.swap':
-                explorerRef?.swapPanes()
-                return
-
-            case 'pane.leftVolumeChooser':
-                explorerRef?.toggleVolumeChooser('left')
-                return
-
-            case 'pane.rightVolumeChooser':
-                explorerRef?.toggleVolumeChooser('right')
-                return
-
-            // === Tab commands ===
-            case 'tab.new': {
-                const success = explorerRef?.newTab()
-                if (success === false) {
-                    addToast('Tab limit reached')
-                }
-                return
-            }
-
-            case 'tab.close': {
-                const result = await explorerRef?.closeActiveTabWithConfirmation()
-                if (result === 'last-tab') {
-                    const { getCurrentWindow } = await import('@tauri-apps/api/window')
-                    await getCurrentWindow().close()
-                }
-                return
-            }
-
-            case 'tab.next':
-                explorerRef?.cycleTab('next')
-                return
-
-            case 'tab.prev':
-                explorerRef?.cycleTab('prev')
-                return
-
-            case 'tab.togglePin':
-                explorerRef?.togglePinActiveTab()
-                return
-
-            case 'tab.closeOthers':
-                explorerRef?.closeOtherTabs()
-                return
-
-            // === Navigation commands ===
-            case 'nav.open':
-                explorerRef?.sendKeyToFocusedPane('Enter')
-                return
-
-            case 'nav.parent':
-                explorerRef?.navigate('parent')
-                return
-
-            case 'nav.back':
-                explorerRef?.navigate('back')
-                return
-
-            case 'nav.forward':
-                explorerRef?.navigate('forward')
-                return
-
-            case 'nav.home':
-                explorerRef?.sendKeyToFocusedPane('Home')
-                return
-
-            case 'nav.end':
-                explorerRef?.sendKeyToFocusedPane('End')
-                return
-
-            case 'nav.pageUp':
-                explorerRef?.sendKeyToFocusedPane('PageUp')
-                return
-
-            case 'nav.pageDown':
-                explorerRef?.sendKeyToFocusedPane('PageDown')
-                return
-
-            // === Network commands ===
-            case 'network.refresh':
-                explorerRef?.refreshNetworkHosts()
-                return
-
-            // === Sort commands ===
-            case 'sort.byName':
-                explorerRef?.setSortColumn('name')
-                return
-
-            case 'sort.byExtension':
-                explorerRef?.setSortColumn('extension')
-                return
-
-            case 'sort.bySize':
-                explorerRef?.setSortColumn('size')
-                return
-
-            case 'sort.byModified':
-                explorerRef?.setSortColumn('modified')
-                return
-
-            case 'sort.byCreated':
-                explorerRef?.setSortColumn('created')
-                return
-
-            case 'sort.ascending':
-                explorerRef?.setSortOrder('asc')
-                return
-
-            case 'sort.descending':
-                explorerRef?.setSortOrder('desc')
-                return
-
-            case 'sort.toggleOrder':
-                explorerRef?.setSortOrder('toggle')
-                return
-
-            // === File action commands ===
-            case 'file.view':
-                void explorerRef?.openViewerForCursor()
-                return
-
-            case 'file.rename':
-                explorerRef?.startRename()
-                return
-
-            case 'file.edit': {
-                const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
-                if (entryUnderCursor) {
-                    await openInEditor(entryUnderCursor.path)
-                }
-                return
-            }
-
-            case 'file.copy':
-                void explorerRef?.openCopyDialog()
-                return
-
-            case 'file.move':
-                void explorerRef?.openMoveDialog()
-                return
-
-            case 'file.newFolder':
-                void explorerRef?.openNewFolderDialog()
-                return
-
-            case 'file.newFile':
-                void explorerRef?.openNewFileDialog()
-                return
-
-            case 'file.delete':
-                void explorerRef?.openDeleteDialog(false)
-                return
-
-            case 'file.deletePermanently':
-                void explorerRef?.openDeleteDialog(true)
-                return
-
-            case 'file.showInFinder': {
-                const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
-                if (entryUnderCursor) {
-                    await showInFinder(entryUnderCursor.path)
-                }
-                return
-            }
-
-            case 'file.copyPath': {
-                const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
-                if (entryUnderCursor) {
-                    await copyToClipboard(entryUnderCursor.path)
-                }
-                return
-            }
-
-            case 'file.copyCurrentDirectoryPath': {
-                const currentPath = explorerRef?.getFocusedPanePath()
-                if (currentPath) {
-                    await copyToClipboard(currentPath)
-                }
-                return
-            }
-
-            case 'file.copyFilename': {
-                const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
-                if (entryUnderCursor) {
-                    await copyToClipboard(entryUnderCursor.filename)
-                }
-                return
-            }
-
-            case 'file.quickLook': {
-                const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
-                if (entryUnderCursor) {
-                    await quickLook(entryUnderCursor.path)
-                }
-                return
-            }
-
-            case 'file.getInfo': {
-                const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
-                if (entryUnderCursor) {
-                    await getInfo(entryUnderCursor.path)
-                }
-                return
-            }
-
-            // === Selection commands ===
-            case 'selection.selectAll': {
-                // ⌘A is a native menu accelerator (so it shows in the Edit menu), which means
-                // macOS intercepts it before the webview. When a text input is focused, route
-                // to the input's select-all instead of file selection.
-                const active = document.activeElement
-                if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
-                    active.select()
-                    return
-                }
-                explorerRef?.handleSelectionAction('selectAll')
-                return
-            }
-
-            case 'selection.deselectAll':
-                explorerRef?.handleSelectionAction('deselectAll')
-                return
-
-            // === Edit commands (clipboard) ===
-            case 'edit.copy': {
-                const active = document.activeElement
-                if (
-                    active instanceof HTMLInputElement ||
-                    active instanceof HTMLTextAreaElement ||
-                    active?.closest('[contenteditable]')
-                ) {
-                    // eslint-disable-next-line @typescript-eslint/no-deprecated -- No modern alternative for triggering native copy in text inputs
-                    document.execCommand('copy')
-                    return
-                }
-                void explorerRef?.copyToClipboard()
-                return
-            }
-
-            case 'edit.cut': {
-                const active = document.activeElement
-                if (
-                    active instanceof HTMLInputElement ||
-                    active instanceof HTMLTextAreaElement ||
-                    active?.closest('[contenteditable]')
-                ) {
-                    // eslint-disable-next-line @typescript-eslint/no-deprecated -- No modern alternative for triggering native cut in text inputs
-                    document.execCommand('cut')
-                    return
-                }
-                void explorerRef?.cutToClipboard()
-                return
-            }
-
-            case 'edit.paste': {
-                const active = document.activeElement
-                if (
-                    active instanceof HTMLInputElement ||
-                    active instanceof HTMLTextAreaElement ||
-                    active?.closest('[contenteditable]')
-                ) {
-                    // Read clipboard text via Rust (bypasses WebKit's navigator.clipboard
-                    // permission popup that shows a "Paste" button the user must click).
-                    const text = await readClipboardText()
-                    if (text) {
-                        // eslint-disable-next-line @typescript-eslint/no-deprecated -- insertText is the only way to insert at cursor position in inputs
-                        document.execCommand('insertText', false, text)
-                    }
-                    return
-                }
-                void explorerRef?.pasteFromClipboard(false)
-                return
-            }
-
-            case 'edit.pasteAsMove':
-                // Option+Cmd+V is not a text shortcut, so no activeElement check needed
-                void explorerRef?.pasteFromClipboard(true)
-                return
-
-            // === About window commands ===
-            case 'about.openWebsite':
-                await openExternalUrl('https://getcmdr.com')
-                return
-
-            case 'about.openUpgrade':
-                await openExternalUrl('https://getcmdr.com/upgrade')
-                return
-
-            case 'about.close':
-                showAboutWindow = false
-                return
-        }
+        await dispatchCommand(commandId, commandDispatchCtx)
     }
 </script>
 

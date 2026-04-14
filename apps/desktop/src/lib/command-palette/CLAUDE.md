@@ -17,7 +17,7 @@ User presses ⌘⇧P
   → CommandPalette mounts, loads persisted query from app-status-store, focuses input
   → searchCommands(query) returns CommandMatch[] (reactive via $derived)
   → User navigates with ↑/↓ (keyboard cursor) or mouse (hover cursor)
-  → Enter / click → onExecute(commandId) → handleCommandExecute() switch in +page.svelte
+  → Enter / click → onExecute(commandId) → handleCommandExecute() in command-dispatch.ts
   → Escape / overlay click → query saved, onClose() called
 ```
 
@@ -95,7 +95,7 @@ Checking `target === currentTarget` ensures the click originated on the overlay 
 ## Adding a new command
 
 Add the command to `$lib/commands/command-registry.ts` and handle the ID in the `handleCommandExecute` switch in
-`routes/(main)/+page.svelte`. The palette itself needs no changes.
+`routes/(main)/command-dispatch.ts`. The palette itself needs no changes.
 
 ## Dependencies
 

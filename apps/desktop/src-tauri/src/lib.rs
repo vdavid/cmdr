@@ -96,6 +96,7 @@ pub mod search;
 mod secrets;
 mod settings;
 mod space_poller;
+mod system_memory;
 #[cfg(target_os = "macos")]
 mod updater;
 mod volume_broadcast;
@@ -958,7 +959,7 @@ pub fn run() {
             ai::manager::start_ai_server,
             ai::manager::stop_ai_server,
             ai::manager::check_ai_connection,
-            ai::manager::get_system_memory_info,
+            system_memory::get_system_memory_info,
             ai::manager::start_ai_download,
             ai::manager::cancel_ai_download,
             ai::manager::dismiss_ai_offer,

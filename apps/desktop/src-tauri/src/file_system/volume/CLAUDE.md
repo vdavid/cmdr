@@ -11,7 +11,8 @@ Every file system operation (listing, copy, rename, delete, indexing, watching) 
 | File | Role |
 |---|---|
 | `mod.rs` | `Volume` trait, `VolumeScanner`, `VolumeWatcher`, `VolumeReadStream` traits, `MutationEvent` enum, shared types (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `ScanConflict`, `SourceItemInfo`) |
-| `friendly_error.rs` | User-facing error messages. See [Friendly error system](#friendly-error-system) below. |
+| `friendly_error.rs` | User-facing error messages: `FriendlyError`, `ErrorCategory`, errno mapping. See [Friendly error system](#friendly-error-system) below. |
+| `provider.rs` | Provider detection and enrichment: `Provider` enum (19 variants), `detect_provider()`, `provider_suggestion()`, `enrich_with_provider()`. Re-exported via `friendly_error.rs`. |
 | `manager.rs` | `VolumeManager` — thread-safe `RwLock<HashMap>` registry; supports a default volume |
 | `local_posix.rs` | `LocalPosixVolume` — real filesystem; delegates listing to `file_system::listing`, indexing to `indexing::scanner`, watching to `indexing::watcher` (FSEvents), copy scanning via `walkdir`. Uses `libc::statvfs` FFI for space info. |
 | `mtp.rs` | `MtpVolume` — MTP device storage; synchronous `Volume` trait bridged to async MTP calls via `tokio::runtime::Handle::block_on`. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
@@ -93,12 +94,14 @@ collapsible "Technical details" section, never hidden but never in your face eit
 
 ### Architecture
 
-Two-layer mapping, both in this file:
+Two-layer mapping across two files:
 
-1. **`friendly_error_from_volume_error(err, path)`** — maps `VolumeError` variants and macOS errno codes (37 codes) to a
-   `FriendlyError` with category (Transient/NeedsAction/Serious), title, explanation, suggestion, and raw detail.
-2. **`enrich_with_provider(error, path)`** — detects 19 cloud/mount providers from path patterns and `statfs` filesystem
-   type, then overwrites the suggestion with provider-specific advice.
+1. **`friendly_error_from_volume_error(err, path)`** (`friendly_error.rs`) — maps `VolumeError` variants and macOS errno
+   codes (37 codes) to a `FriendlyError` with category (Transient/NeedsAction/Serious), title, explanation, suggestion,
+   and raw detail.
+2. **`enrich_with_provider(error, path)`** (`provider.rs`, re-exported from `friendly_error.rs`) — detects 19
+   cloud/mount providers from path patterns and `statfs` filesystem type, then overwrites the suggestion with
+   provider-specific advice.
 
 The frontend receives the fully-baked `FriendlyError` struct via the `listing-error` Tauri event and renders it with
 category-based visual styling. The frontend never sees errno codes or does OS-specific logic.

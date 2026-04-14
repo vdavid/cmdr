@@ -553,6 +553,7 @@ mod local_posix;
 pub(crate) mod manager;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp;
+mod provider;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) mod smb;
 #[cfg(any(target_os = "macos", target_os = "linux"))]

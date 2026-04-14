@@ -68,9 +68,10 @@ The uFuzzy instance is a module-level singleton (created once at import time).
 
 ## Unified dispatch
 
-Native menu clicks and keyboard shortcuts both route through `handleCommandExecute(commandId)` in `+page.svelte`. The
-Rust `on_menu_event` handler maps menu item IDs to command registry IDs and emits a single `"execute-command"` Tauri
-event. The frontend listens for this event and calls `handleCommandExecute`. This eliminates the old per-command
+Native menu clicks and keyboard shortcuts both route through `handleCommandExecute(commandId)` in
+`routes/(main)/command-dispatch.ts`. The Rust `on_menu_event` handler maps menu item IDs to command registry IDs and
+emits a single `"execute-command"` Tauri event. The frontend listens for this event and calls `handleCommandExecute`.
+This eliminates the old per-command
 individual events (`show-command-palette`, `switch-pane`, etc.).
 
 Exception: `CheckMenuItem`s (show hidden files, view modes) keep separate handling to avoid double-toggle. Close tab
@@ -79,7 +80,7 @@ Exception: `CheckMenuItem`s (show hidden files, view modes) keep separate handli
 ## Adding a command
 
 1. Add an entry to the `commands` array in `command-registry.ts`.
-2. Add a `case` for its `id` in the `handleCommandExecute` switch in `routes/(main)/+page.svelte`.
+2. Add a `case` for its `id` in the `handleCommandExecute` switch in `routes/(main)/command-dispatch.ts`.
 3. No changes needed to the palette, fuzzy search, types, or keyboard dispatch. Commands with `showInPalette: true` are
    automatically dispatched from keyboard shortcuts via centralized dispatch (`../shortcuts/shortcut-dispatch.ts`).
 4. If the command has a native menu item, add a mapping in `menu.rs` (`menu_id_to_command` and `command_id_to_menu_id`)
@@ -136,7 +137,7 @@ uFuzzy uses this flat format for performance. The code unpacks ranges into indiv
 
 **Gotcha**: Adding a command with a menu item requires changes in four places. **Why**: The menu system (Rust) and
 command system (TypeScript) are separate codebases connected by string IDs. The four places are: (1)
-`command-registry.ts`, (2) `handleCommandExecute` switch, (3) `menu.rs` ID mappings, (4) `menuCommands` array in
+`command-registry.ts`, (2) `handleCommandExecute` switch in `command-dispatch.ts`, (3) `menu.rs` ID mappings, (4) `menuCommands` array in
 `shortcuts-store.ts`. Missing any one causes silent failures (shortcut works but menu doesn't, or vice versa).
 
 ## Dependencies

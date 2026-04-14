@@ -159,7 +159,7 @@ resilience, and common pitfalls.
   `var(--font-size-*)`, `var(--radius-*)`, `var(--font-*)`, and `var(--z-*)` tokens. Stylelint enforces this.
 - **Coverage allowlist is a last resort.** Extract pure functions and test them. Only allowlist what genuinely can't be
   tested. Name the specific untestable API in the reason.
-- When adding a new user-facing action, add it to `command-registry.ts` and `handleCommandExecute` in `+page.svelte`.
+- When adding a new user-facing action, add it to `command-registry.ts` and `handleCommandExecute` in `routes/(main)/command-dispatch.ts`.
 - If you added a new Tauri command touching the filesystem, check `docs/architecture.md` § Platform constraints.
 - We use [mise](https://mise.jdx.dev/) to manage tool versions (Go, Node, etc.), pinned in `.mise.toml`. Shims are on
   PATH via `~/.bashrc` and `~/.zshenv`, so `go` and `node` should just work. If `go` is "not found", check that
