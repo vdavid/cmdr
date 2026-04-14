@@ -4,15 +4,9 @@
 //! and enumerates shares using the smb-rs crate.
 //!
 //! Platform-specific modules:
-//! - `keychain.rs` / `keychain_linux.rs` — credential storage (macOS Keychain / Linux secret service)
+//! - `keychain.rs` — credential storage (delegates to `crate::secrets` for platform-agnostic backend)
 //! - `mount.rs` / `mount_linux.rs` — SMB mounting (macOS NetFS / Linux gio)
 
-#[cfg(target_os = "macos")]
-#[path = "keychain.rs"]
-pub mod keychain;
-
-#[cfg(target_os = "linux")]
-#[path = "keychain_linux.rs"]
 pub mod keychain;
 
 pub mod known_shares;

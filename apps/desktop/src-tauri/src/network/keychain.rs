@@ -1,22 +1,16 @@
 //! Keychain integration for SMB credentials.
 //!
-//! Uses macOS Security.framework via the security-framework crate
-//! to securely store and retrieve SMB credentials.
-//!
+//! Delegates to `crate::secrets::store()` for platform-agnostic secret storage.
 //! Credentials are cached in-memory after first access to avoid
-//! repeated Keychain dialogs during a session.
+//! repeated backend lookups during a session.
 
-use log::{debug, warn};
-use security_framework::passwords::{delete_generic_password, get_generic_password, set_generic_password};
+use crate::secrets::SecretStoreError;
+use log::debug;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::RwLock;
 
-/// Service name used for Keychain items.
-/// This appears in Keychain Access.app.
-const SERVICE_NAME: &str = "Cmdr";
-
-/// In-memory cache for credentials to avoid repeated Keychain dialogs.
+/// In-memory cache for credentials to avoid repeated backend lookups.
 /// Key is the account name (like "smb://server" or "smb://server/share").
 static CREDENTIAL_CACHE: std::sync::LazyLock<RwLock<HashMap<String, SmbCredentials>>> =
     std::sync::LazyLock::new(|| RwLock::new(HashMap::new()));
@@ -35,11 +29,11 @@ pub struct SmbCredentials {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "type", content = "message")]
 pub enum KeychainError {
-    /// Credentials not found in Keychain
+    /// Credentials not found
     NotFound(String),
     /// Access denied (user cancelled or insufficient permissions)
     AccessDenied(String),
-    /// Other Keychain error
+    /// Other error
     Other(String),
 }
 
@@ -47,15 +41,25 @@ impl std::fmt::Display for KeychainError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NotFound(msg) => write!(f, "Credentials not found: {}", msg),
-            Self::AccessDenied(msg) => write!(f, "Keychain access denied: {}", msg),
-            Self::Other(msg) => write!(f, "Keychain error: {}", msg),
+            Self::AccessDenied(msg) => write!(f, "Credential access denied: {}", msg),
+            Self::Other(msg) => write!(f, "Credential error: {}", msg),
         }
     }
 }
 
 impl std::error::Error for KeychainError {}
 
-/// Creates the account name used for Keychain storage.
+impl From<SecretStoreError> for KeychainError {
+    fn from(e: SecretStoreError) -> Self {
+        match e {
+            SecretStoreError::NotFound(msg) => KeychainError::NotFound(msg),
+            SecretStoreError::AccessDenied(msg) => KeychainError::AccessDenied(msg),
+            SecretStoreError::Other(msg) => KeychainError::Other(msg),
+        }
+    }
+}
+
+/// Creates the account name used for credential storage.
 /// Format: "smb://{server}/{share}" or "smb://{server}" for server-level credentials.
 fn make_account_name(server: &str, share: Option<&str>) -> String {
     match share {
@@ -85,13 +89,7 @@ fn make_password_entry(username: &str, password: &str) -> Vec<u8> {
     format!("{}\0{}", username, password).into_bytes()
 }
 
-/// Saves SMB credentials to the Keychain.
-///
-/// # Arguments
-/// * `server` - Server hostname or IP
-/// * `share` - Optional share name (None for server-level credentials)
-/// * `username` - Username for authentication
-/// * `password` - Password for authentication
+/// Saves SMB credentials to the secret store.
 pub fn save_credentials(
     server: &str,
     share: Option<&str>,
@@ -101,13 +99,9 @@ pub fn save_credentials(
     let account = make_account_name(server, share);
     let entry = make_password_entry(username, password);
 
-    debug!("Saving credentials to Keychain for account: {}", account);
+    debug!("Saving credentials for account: {}", account);
 
-    set_generic_password(SERVICE_NAME, &account, &entry).map_err(|e| {
-        let msg = format!("Failed to save credentials: {}", e);
-        warn!("{}", msg);
-        KeychainError::Other(msg)
-    })?;
+    crate::secrets::store().set(&account, &entry)?;
 
     // Update the in-memory cache
     if let Ok(mut cache) = CREDENTIAL_CACHE.write() {
@@ -123,19 +117,11 @@ pub fn save_credentials(
     Ok(())
 }
 
-/// Retrieves SMB credentials from the Keychain.
-///
-/// # Arguments
-/// * `server` - Server hostname or IP
-/// * `share` - Optional share name (None for server-level credentials)
-///
-/// # Returns
-/// * `Some(SmbCredentials)` if found
-/// * `None` if not found
+/// Retrieves SMB credentials from the secret store.
 pub fn get_credentials(server: &str, share: Option<&str>) -> Result<SmbCredentials, KeychainError> {
     let account = make_account_name(server, share);
 
-    // Check in-memory cache first to avoid Keychain dialog
+    // Check in-memory cache first
     if let Ok(cache) = CREDENTIAL_CACHE.read()
         && let Some(creds) = cache.get(&account)
     {
@@ -143,72 +129,39 @@ pub fn get_credentials(server: &str, share: Option<&str>) -> Result<SmbCredentia
         return Ok(creds.clone());
     }
 
-    debug!("Getting credentials from Keychain for account: {}", account);
+    debug!("Getting credentials for account: {}", account);
 
-    match get_generic_password(SERVICE_NAME, &account) {
-        Ok(data) => {
-            let creds = parse_password_entry(&data)
-                .ok_or_else(|| KeychainError::Other("Invalid credential format in Keychain".to_string()))?;
+    let data = crate::secrets::store().get(&account)?;
+    let creds = parse_password_entry(&data)
+        .ok_or_else(|| KeychainError::Other("Invalid credential format in store".to_string()))?;
 
-            // Cache the credentials for future use
-            if let Ok(mut cache) = CREDENTIAL_CACHE.write() {
-                cache.insert(account, creds.clone());
-            }
-
-            Ok(creds)
-        }
-        Err(e) => {
-            // Check if it's a "not found" error
-            let msg = format!("{}", e);
-            if msg.contains("not found") || msg.contains("No such") || msg.contains("errSecItemNotFound") {
-                Err(KeychainError::NotFound(format!("No credentials found for {}", account)))
-            } else if msg.contains("denied") || msg.contains("cancelled") {
-                Err(KeychainError::AccessDenied(msg))
-            } else {
-                Err(KeychainError::Other(msg))
-            }
-        }
+    // Cache the credentials for future use
+    if let Ok(mut cache) = CREDENTIAL_CACHE.write() {
+        cache.insert(account, creds.clone());
     }
+
+    Ok(creds)
 }
 
-/// Deletes SMB credentials from the Keychain.
-///
-/// # Arguments
-/// * `server` - Server hostname or IP
-/// * `share` - Optional share name (None for server-level credentials)
+/// Deletes SMB credentials from the secret store.
 pub fn delete_credentials(server: &str, share: Option<&str>) -> Result<(), KeychainError> {
     let account = make_account_name(server, share);
 
-    debug!("Deleting credentials from Keychain for account: {}", account);
+    debug!("Deleting credentials for account: {}", account);
 
     // Remove from cache first
     if let Ok(mut cache) = CREDENTIAL_CACHE.write() {
         cache.remove(&account);
     }
 
-    delete_generic_password(SERVICE_NAME, &account).map_err(|e| {
-        let msg = format!("{}", e);
-        if msg.contains("not found") || msg.contains("No such") {
-            KeychainError::NotFound(format!("No credentials found for {}", account))
-        } else {
-            KeychainError::Other(msg)
-        }
-    })
+    crate::secrets::store().delete(&account)?;
+
+    Ok(())
 }
 
-/// Checks if credentials exist in the Keychain without retrieving them.
-/// This is useful for checking if we should try stored credentials first.
-///
-/// # Arguments
-/// * `server` - Server hostname or IP
-/// * `share` - Optional share name
+/// Checks if credentials exist without retrieving them.
 pub fn has_credentials(server: &str, share: Option<&str>) -> bool {
     get_credentials(server, share).is_ok()
-}
-
-/// Always returns false on macOS (macOS Keychain is always available).
-pub fn is_using_file_fallback() -> bool {
-    false
 }
 
 #[cfg(test)]
@@ -264,7 +217,4 @@ mod tests {
         let invalid = b"no-separator-here".to_vec();
         assert!(parse_password_entry(&invalid).is_none());
     }
-
-    // Note: Actual Keychain operations can't be unit tested without mocking.
-    // Integration tests would need to run on macOS with proper entitlements.
 }

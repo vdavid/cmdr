@@ -23,6 +23,9 @@ if (isDev) {
     args.push('-c', 'src-tauri/tauri.dev.json')
   }
 
+  // Use plain file secret store in dev mode (no Keychain dialogs)
+  env.CMDR_SECRET_STORE = 'file'
+
   // Set dev data dir unless explicitly overridden (for example, by E2E tests).
   // Must mirror Tauri's app_data_dir() per platform, with `-dev` suffix.
   if (!env.CMDR_DATA_DIR) {

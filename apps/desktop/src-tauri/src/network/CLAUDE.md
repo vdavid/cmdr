@@ -19,9 +19,8 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 - **Mounting** (platform-specific via `#[path]` in `mod.rs`):
   - `mount.rs` — macOS `NetFSMountURLSync` for native `/Volumes/` mounts; also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
   - `mount_linux.rs` — Linux `gio mount` for GVFS-based user-space mounts
-- **Auth** (platform-specific via `#[path]` in `mod.rs`):
-  - `keychain.rs` — macOS Keychain via `security-framework`
-  - `keychain_linux.rs` — Two-tier: Secret Service via `keyring` crate → encrypted file via `cocoon` crate
+- **Auth** (platform-agnostic):
+  - `keychain.rs` — SMB credential management. Delegates storage to `crate::secrets::store()` (see `secrets/CLAUDE.md` for backend details)
 - **State**: `known_shares.rs` — Connection history in `known-shares.json` (usernames, last auth mode, timestamps).
 
 ## Platform strategy
@@ -31,7 +30,7 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 | mDNS discovery | `mdns-sd` (pure Rust) | `mdns-sd` (same) |
 | SMB share listing | `smb2` crate (pure Rust) | `smb2` (same) |
 | smbutil fallback | `smbutil view -G` | `smbclient -L` (from `samba-client` package) |
-| Credential storage | `security-framework` (macOS Keychain) | `keyring` (Secret Service) → `cocoon` encrypted file fallback |
+| Credential storage | `secrets` module (Keychain) | `secrets` module (Secret Service → encrypted file fallback) |
 | Mounting | `NetFSMountURLSync` → `/Volumes/` | `gio mount` → `/run/user/<uid>/gvfs/` |
 
 ## Key decisions
@@ -45,8 +44,9 @@ Linux uses `gio mount` (GVFS) instead.
 ### Custom auth UI with Keychain integration (not system dialog)
 
 Full UX control (login form appears in-pane), smart defaults (pre-fill username from connection history), and
-guest/credentials toggle. Uses `security-framework` crate for Keychain access. Passwords never stored in our settings
-file — only in Keychain. Linux uses `keyring` crate (Secret Service) with encrypted file fallback.
+guest/credentials toggle. `keychain.rs` delegates to `crate::secrets::store()` for platform-agnostic credential storage
+(macOS Keychain, Linux Secret Service, encrypted file fallback). Passwords never stored in our settings file.
+`CMDR_SECRET_STORE=file` forces the plain file backend in dev mode (set by `tauri-wrapper.js`).
 
 ### `smb2` for SMB share enumeration (not `pavao`/libsmbclient, `smb-rs`, or `smbutil`)
 
@@ -84,9 +84,9 @@ smb2 connections are lightweight (one `SmbClient` per connection) and created on
 
 After first credential fetch, credentials cached in `CREDENTIAL_CACHE` (LazyLock + RwLock). Prevents repeated Keychain/secret-service round-trips during session. Cache keyed by `"smb://{server}/{share}"`.
 
-### Linux credential storage fallback
+### Credential storage via `secrets` module
 
-On Linux, `keychain_linux.rs` tries Secret Service (GNOME Keyring / KDE Wallet) first. If unavailable (no D-Bus service, headless server, minimal DE), it falls back to an encrypted file at `~/.local/share/cmdr/credentials.enc`. The file is encrypted with `cocoon` (Chacha20-Poly1305) using `/etc/machine-id` as the password, with 0600 file permissions. A static `USING_FILE_FALLBACK` flag tracks whether the fallback is active for the frontend to show a one-time info toast. Corrupted credential files are handled gracefully (start fresh, log warning).
+All credential storage backends now live in `crate::secrets` (see `secrets/CLAUDE.md`). `keychain.rs` is platform-agnostic and delegates to `crate::secrets::store()`. The `is_file_backed()` check (used by the frontend to show a one-time info toast) delegates to `crate::secrets::is_file_backed()`.
 
 ### "Sneaky mount" for SmbVolume
 

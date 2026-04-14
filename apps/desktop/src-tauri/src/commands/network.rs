@@ -208,7 +208,7 @@ pub fn delete_smb_credentials(server: String, share: Option<String>) -> Result<(
 /// info toast when the user first saves credentials without a system keyring.
 #[tauri::command]
 pub fn is_using_credential_file_fallback() -> bool {
-    keychain::is_using_file_fallback()
+    crate::secrets::is_file_backed()
 }
 
 /// Lists shares on a host using stored or provided credentials.

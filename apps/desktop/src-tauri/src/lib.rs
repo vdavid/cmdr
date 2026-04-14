@@ -32,14 +32,9 @@ use smb2 as _;
 use trash as _;
 
 //noinspection ALL
-// keyring crate is used in network/keychain_linux.rs for credential storage (Linux only)
+// keyring crate is used in secrets/keyring_linux.rs for credential storage (Linux only)
 #[cfg(target_os = "linux")]
 use keyring as _;
-//noinspection ALL
-// cocoon is used in network/keychain_linux.rs for encrypted file-based credential fallback
-#[cfg(target_os = "linux")]
-use cocoon as _;
-
 //noinspection ALL
 // MCP Bridge is only used in debug builds, so silence the warning in release builds
 #[cfg(not(debug_assertions))]
@@ -48,10 +43,6 @@ use tauri_plugin_mcp_bridge as _;
 // tauri_plugin_updater is only registered on non-macOS (custom updater handles macOS)
 #[cfg(target_os = "macos")]
 use tauri_plugin_updater as _;
-//noinspection ALL
-// security_framework is used in network/keychain.rs for Keychain integration
-#[cfg(target_os = "macos")]
-use security_framework as _;
 //noinspection ALL
 // mtp-rs is used in mtp/ module for Android device support (macOS + Linux)
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -102,6 +93,7 @@ mod permissions;
 #[cfg(target_os = "linux")]
 mod permissions_linux;
 pub mod search;
+mod secrets;
 mod settings;
 #[cfg(target_os = "macos")]
 mod updater;
