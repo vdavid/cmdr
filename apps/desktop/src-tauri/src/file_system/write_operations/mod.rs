@@ -299,6 +299,14 @@ pub async fn trash_files_start(
 }
 
 #[cfg(test)]
-mod integration_test;
+mod copy_integration_test;
+#[cfg(test)]
+mod delete_integration_test;
+#[cfg(test)]
+mod move_integration_test;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod transaction_integration_test;
+#[cfg(test)]
+mod validation_integration_test;

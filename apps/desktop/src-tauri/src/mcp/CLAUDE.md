@@ -41,9 +41,18 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 - `cmdr://indexing`: Drive indexing status in plain text (current phase, timeline history, DB stats). Calls `indexing::get_debug_status()` and formats as human-readable text.
 - `cmdr://settings`: All settings with current values, defaults, types, and constraints. Fetched via round-trip to the frontend (`mcp-get-all-settings` event).
 
-### Executor (`executor.rs`)
+### Executor (`executor/`)
 
- Routes tool calls to implementations. Most tools are fire-and-forget: emit a Tauri event and return "OK" immediately.
+Directory module split by tool category. `mod.rs` contains the main `execute_tool()` dispatcher, shared types (`ToolResult`, `ToolError`), and the `mcp_round_trip` helpers. Category files:
+- `app.rs` — quit, switch_pane, swap_panes, tab
+- `view.rs` — toggle_hidden, set_view_mode, sort
+- `nav.rs` — navigation commands (with and without params)
+- `file_ops.rs` — copy, move, delete, mkdir, mkfile, refresh, select
+- `dialogs.rs` — unified dialog open/focus/close/confirm
+- `async_tools.rs` — await, connect_to_server, remove_manual_server, set_setting
+- `search.rs` — search index loading, search, ai_search
+
+Most tools are fire-and-forget: emit a Tauri event and return "OK" immediately.
 
 Tools where the backend can't fully validate preconditions use `mcp_round_trip`: emit an event with a `requestId`, wait for the frontend to respond via `mcp-response` with `{ requestId, ok, error? }`, and return the actual outcome. Used by `move_cursor` and `set_setting` (5s timeout). `nav_to_path` uses `mcp_round_trip_with_timeout` with a 30s timeout because it waits for the directory listing to complete (the frontend delays the response until `handleListingComplete` fires in FilePane). Resources that need frontend data use `resource_round_trip` (same pattern but returns `data` from the response). Used by `cmdr://settings`. Use these patterns for any new tool/resource where the backend would otherwise need to replicate frontend knowledge.
 

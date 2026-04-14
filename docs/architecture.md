@@ -105,7 +105,7 @@ Rules that cut across many modules. All existing commands follow these — apply
 1. **Tauri IPC threading.** Synchronous `#[tauri::command]` functions block the IPC handler thread. If one command hangs
    (e.g., a filesystem syscall on a dead network mount), ALL subsequent IPC calls from the frontend queue behind it and
    the app appears frozen. All filesystem-touching commands are `async` with `blocking_with_timeout` (2s default). When
-   adding new commands that touch the filesystem, follow this pattern — see `commands/file_system.rs` for examples.
+   adding new commands that touch the filesystem, follow this pattern — see `commands/file_system/` for examples.
 
 2. **Network mount blocking syscalls.** `statfs`, `readdir`, `metadata()`, NSURL resource queries, and `realpath` can
    all block indefinitely on slow/hung network mounts (kernel waits 30–120s). Every Tauri command that calls these is

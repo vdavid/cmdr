@@ -9,7 +9,7 @@ immediately to business-logic modules. No significant logic lives here.
 |------|--------|-------|
 | `mod.rs` | Re-exports | `mtp`, `network` gated behind `#[cfg(any(target_os = "macos", target_os = "linux"))]`; `volumes` behind `#[cfg(target_os = "macos")]`; `volumes_linux` behind `#[cfg(target_os = "linux")]` |
 | `util.rs` | Shared helpers | `TimedOut<T>`, `IpcError`, `blocking_with_timeout`, `blocking_with_timeout_flag`, `blocking_result_with_timeout`. See "Timeout-aware return types" below. |
-| `file_system.rs` | File listing & writes | Largest file. Streaming + virtual-scroll listing API, write ops (copy, move, delete, trash), scan preview, conflict resolution, volume copy, native drag, self-drag overlay. Contains `expand_tilde()`. |
+| `file_system/` | File listing & writes | Directory module split by operation type. `mod.rs` has `expand_tilde()`, re-exports, and tests. `listing.rs`: streaming + virtual-scroll listing API, path queries, benchmarking. `write_ops.rs`: create, copy, move, delete, trash, scan preview, conflict resolution, synthetic diff helpers. `volume_copy.rs`: cross-volume copy/move/scan, `SourceItemInput`. `drag.rs`: native drag, self-drag overlay. `e2e_support.rs`: feature-gated E2E/debug commands. |
 | `volumes.rs` | Volume management (macOS) | `list_volumes`, `get_default_volume_id`, `get_volume_space`, `resolve_path_volume` (statfs-based, no volume enumeration) |
 | `volumes_linux.rs` | Volume management (Linux) | Same interface as `volumes.rs`, delegates to `volumes_linux` module |
 | `mtp.rs` | MTP devices | Full MTP command surface (connect, disconnect, list, download, upload, delete, rename, move, scan) |

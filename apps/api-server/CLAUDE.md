@@ -9,7 +9,13 @@ app versions).
 
 | File                                        | Purpose                                                               |
 | ------------------------------------------- | --------------------------------------------------------------------- |
-| `src/index.ts`                              | Hono app: all routes, webhook processing, admin endpoint              |
+| `src/index.ts`                              | Hono app assembly: mounts route modules, wires scheduled handler      |
+| `src/types.ts`                              | Shared types (`Bindings`), constants, and helpers (auth, validation)  |
+| `src/licensing.ts`                          | Routes: `/activate`, `/validate`, `/webhook/paddle`, `/admin/generate`|
+| `src/admin.ts`                              | Routes: `/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/crashes` |
+| `src/telemetry.ts`                          | Routes: `/crash-report`, `/update-check/:version`, `/download/:version/:arch` |
+| `src/likes.ts`                              | Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)                   |
+| `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size)    |
 | `src/license.ts`                            | Short code + license key generation, `LicenseType` enum               |
 | `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`                 |
 | `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch           |
@@ -271,10 +277,6 @@ devices), not to restrict legitimate power users. Alert threshold is 6 because 3
 hard to explain as one person. The threshold is not published in the ToS to avoid gaming.
 
 ## Gotchas
-
-**Gotcha**: `index.ts` is a monolith (all routes, cron handlers, helpers in one file). **Why**: Hono's pattern
-encourages co-located routes, and the file was already monolithic before the telemetry migration. If it keeps growing,
-consider extracting admin endpoints and cron handlers into separate modules.
 
 **Gotcha**: `verifyAdminAuth` uses a manual type annotation for `c` instead of Hono's `Context` type. **Why**: Using
 `Context<{ Bindings: Bindings }>` would require importing Hono's internal generic types and threading them through. The

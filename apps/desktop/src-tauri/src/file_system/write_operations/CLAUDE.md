@@ -26,7 +26,12 @@ network mounts, cross-filesystem moves, and name/path length limits.
 | `linux_copy.rs` | Linux `copy_file_range(2)` with reflink support on btrfs/XFS. 4 MB chunks, cancellation between iterations. |
 | `chunked_copy.rs` | 1 MB chunked read/write — the default copy method for all non-APFS-clonefile copies on macOS and network copies on Linux. Checks cancellation between chunks. Copies xattrs, ACLs, timestamps. |
 | `volume_copy.rs`, `volume_conflict.rs`, `volume_strategy.rs` | Volume-to-volume copy/move (Local↔MTP abstraction). Handles conflict detection, resolution (Stop/Skip/Overwrite/Rename), progress, rollback (delete all copied files in reverse with progress), and partial-file cleanup on cancel. Wired into Tauri commands `copy_between_volumes` and `move_between_volumes`. |
-| `tests.rs`, `integration_test.rs` | Unit and integration tests. |
+| `tests.rs` | Unit tests. |
+| `copy_integration_test.rs` | Copy operation integration tests (permissions, symlinks, xattrs, edge cases). |
+| `delete_integration_test.rs` | Delete operation integration tests. |
+| `move_integration_test.rs` | Same-fs and cross-fs move integration tests. |
+| `transaction_integration_test.rs` | CopyTransaction record/rollback/commit tests. |
+| `validation_integration_test.rs` | Validation functions, safety checks, path length, disk space tests. |
 
 ## Architecture / data flow
 
