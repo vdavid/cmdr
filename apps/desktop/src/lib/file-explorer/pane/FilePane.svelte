@@ -83,7 +83,13 @@
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { resolveValidPath } from '../navigation/path-navigation'
     import { homeDir } from '@tauri-apps/api/path'
-    import { getVolumeSpace, showBreadcrumbContextMenu, type VolumeSpaceInfo } from '$lib/tauri-commands'
+    import {
+        getVolumeSpace,
+        watchVolumeSpace,
+        unwatchVolumeSpace,
+        showBreadcrumbContextMenu,
+        type VolumeSpaceInfo,
+    } from '$lib/tauri-commands'
     import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
     import type { UnreachableState } from '../tabs/tab-types'
     import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
@@ -121,7 +127,7 @@
 
     const {
         initialPath,
-        paneId,
+        paneId = 'left',
         volumeId = 'root',
         volumePath = '/',
         volumeName,
@@ -521,6 +527,7 @@
     let unlistenComplete: UnlistenFn | undefined
     let unlistenError: UnlistenFn | undefined
     let unlistenCancelled: UnlistenFn | undefined
+    let unlistenSpaceChanged: UnlistenFn | undefined
     // Opening folder state (before read_dir starts - slow for network folders)
     let openingFolder = $state(false)
     // Loading progress state for streaming
@@ -1107,6 +1114,12 @@
         if (newVolumeId !== 'network' && !isDeviceOnlyMtp) {
             void loadDirectory(targetPath)
             void refreshVolumeSpace()
+            // Update disk-space watch to the new volume
+            void unwatchVolumeSpace(paneId)
+            void watchVolumeSpace(paneId, newVolumeId, targetPath)
+        } else {
+            // Leaving a physical volume — stop watching
+            void unwatchVolumeSpace(paneId)
         }
     }
 
@@ -1612,6 +1625,21 @@
             userHomePath = h.endsWith('/') ? h.slice(0, -1) : h
         })
 
+        // Listen for live disk-space updates from the backend poller
+        void listen<{ volumeId: string; totalBytes: number; availableBytes: number }>(
+            'volume-space-changed',
+            (event) => {
+                if (event.payload.volumeId === volumeId) {
+                    volumeSpace = {
+                        totalBytes: event.payload.totalBytes,
+                        availableBytes: event.payload.availableBytes,
+                    }
+                }
+            },
+        ).then((fn) => {
+            unlistenSpaceChanged = fn
+        })
+
         // Skip directory loading for:
         // - Network views (they handle their own data via NetworkBrowser/ShareBrowser)
         // - Device-only MTP views (they need connection first, handled by auto-connect effect)
@@ -1627,6 +1655,8 @@
             log.debug('[FilePane] onMount: triggering loadDirectory for paneId={paneId}', { paneId })
             void loadDirectory(currentPath)
             void refreshVolumeSpace()
+            // Register for live disk-space polling
+            void watchVolumeSpace(paneId, volumeId, currentPath)
         } else {
             log.debug('[FilePane] onMount: SKIPPING loadDirectory for paneId={paneId}', { paneId })
         }
@@ -1697,6 +1727,8 @@
         unlistenComplete?.()
         unlistenError?.()
         unlistenCancelled?.()
+        unlistenSpaceChanged?.()
+        void unwatchVolumeSpace(paneId)
     })
 </script>
 

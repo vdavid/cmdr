@@ -95,6 +95,7 @@ mod permissions_linux;
 pub mod search;
 mod secrets;
 mod settings;
+mod space_poller;
 #[cfg(target_os = "macos")]
 mod updater;
 mod volume_broadcast;
@@ -358,6 +359,11 @@ pub fn run() {
             // Apply direct SMB connection setting (default: true)
             file_system::set_direct_smb_enabled(saved_settings.direct_smb_connection.unwrap_or(true));
             file_system::set_filter_safe_save_artifacts(saved_settings.filter_safe_save_artifacts.unwrap_or(true));
+
+            // Initialize disk space poller (live status bar updates)
+            space_poller::init(app.handle());
+            space_poller::set_threshold_mb(saved_settings.disk_space_change_threshold_mb.unwrap_or(1));
+            space_poller::start();
 
             // Upgrade existing SMB mounts to direct smb2 connections (background, non-blocking)
             #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -785,6 +791,10 @@ pub fn run() {
             stubs::mtp::scan_mtp_for_copy,
             // Volume broadcast (cross-platform)
             volume_broadcast::refresh_volumes,
+            // Disk space poller (cross-platform)
+            space_poller::watch_volume_space,
+            space_poller::unwatch_volume_space,
+            space_poller::set_disk_space_threshold,
             // Volume commands (platform-specific)
             #[cfg(target_os = "macos")]
             commands::volumes::list_volumes,

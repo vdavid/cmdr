@@ -390,6 +390,10 @@ impl Volume for InMemoryVolume {
         self.space_info.clone().ok_or(VolumeError::NotSupported)
     }
 
+    fn space_poll_interval(&self) -> Option<std::time::Duration> {
+        None
+    }
+
     fn scan_for_conflicts(
         &self,
         source_items: &[SourceItemInfo],

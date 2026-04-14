@@ -51,6 +51,9 @@ The frontend has matching TypeScript types in `$lib/tauri-commands/ipc-types.ts`
 **Decision**: No `commands/ai.rs` file -- AI commands register directly from `ai::manager` and `ai::suggestions`.
 **Why**: The AI subsystem has its own complex lifecycle (model loading, suggestion pipelines). Adding a thin wrapper in `commands/` would just be boilerplate forwarding. Registering directly keeps the AI command surface co-located with its implementation, which changes frequently.
 
+**Decision**: No `commands/space_poller.rs` -- space poller commands register directly from `space_poller.rs`.
+**Why**: Same reasoning as AI. The poller has its own lifecycle (init, start, watch/unwatch). Three commands: `watch_volume_space`, `unwatch_volume_space`, `set_disk_space_threshold`.
+
 ## Key patterns and gotchas
 
 - **No business logic here.** If you find yourself adding branching or data transformation, move it to the relevant subsystem module.

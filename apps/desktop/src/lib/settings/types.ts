@@ -151,6 +151,7 @@ export interface SettingsValues {
   'advanced.mountTimeout': number
   'advanced.updateCheckInterval': number
   'advanced.filterSafeSaveArtifacts': boolean
+  'advanced.diskSpaceChangeThreshold': number
 }
 
 export type SettingId = keyof SettingsValues

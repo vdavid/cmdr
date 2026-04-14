@@ -10,6 +10,7 @@ import {
   updateServiceResolveTimeout,
   setIndexingEnabled,
   setMtpEnabled,
+  setDiskSpaceThreshold,
 } from '$lib/tauri-commands'
 
 const log = getAppLogger('settings-applier')
@@ -89,6 +90,10 @@ function handleSettingChange(id: string, value: unknown): void {
     case 'fileOperations.mtpEnabled':
       // Enable or disable MTP (Android device) support
       void setMtpEnabled(value as boolean)
+      break
+    case 'advanced.diskSpaceChangeThreshold':
+      // Update disk space poller threshold
+      void setDiskSpaceThreshold(value as number)
       break
     // MCP server (developer.mcpEnabled, developer.mcpPort) is handled directly
     // by McpServerSection.svelte in the settings window, not here. This avoids

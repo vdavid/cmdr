@@ -499,6 +499,16 @@ pub trait Volume: Send + Sync {
         Err(VolumeError::NotSupported)
     }
 
+    /// Recommended poll interval for live disk-space monitoring.
+    ///
+    /// Local volumes use a short interval (2 s) because `statvfs`/NSURL is
+    /// microsecond-cheap. Network and MTP volumes use a longer interval (5 s)
+    /// to avoid unnecessary traffic. Returns `None` if space polling is not
+    /// meaningful for this volume type (for example, in-memory test volumes).
+    fn space_poll_interval(&self) -> Option<std::time::Duration> {
+        Some(std::time::Duration::from_secs(2))
+    }
+
     // ========================================
     // Capability hints for copy optimization
     // ========================================

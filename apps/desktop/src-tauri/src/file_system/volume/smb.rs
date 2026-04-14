@@ -749,6 +749,10 @@ impl Volume for SmbVolume {
         Ok(fs_info_to_space_info(&info))
     }
 
+    fn space_poll_interval(&self) -> Option<Duration> {
+        Some(Duration::from_secs(5))
+    }
+
     fn create_file(&self, path: &Path, content: &[u8]) -> Result<(), VolumeError> {
         let smb_path = self.to_smb_path(path);
         let handle = self.runtime_handle.clone();

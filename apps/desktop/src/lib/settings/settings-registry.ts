@@ -703,6 +703,23 @@ export const settingsRegistry: SettingDefinition[] = [
     component: 'switch',
     showInAdvanced: true,
   },
+  {
+    id: 'advanced.diskSpaceChangeThreshold',
+    section: ['Advanced'],
+    label: 'Disk space change threshold (MB)',
+    description:
+      'Minimum change in available disk space before updating the status bar. The status bar polls disk space every few seconds; small changes below this threshold are ignored to reduce visual noise.',
+    keywords: ['disk', 'space', 'threshold', 'poll', 'refresh', 'status', 'bar'],
+    type: 'number',
+    default: 1,
+    component: 'number-input',
+    showInAdvanced: true,
+    constraints: {
+      min: 0,
+      max: 1000,
+      step: 1,
+    },
+  },
 ]
 
 // ============================================================================

@@ -92,6 +92,37 @@ export async function getVolumeSpace(path: string): Promise<TimedOut<VolumeSpace
 }
 
 // ============================================================================
+// Disk space polling
+// ============================================================================
+
+/**
+ * Registers a watcher for live disk-space monitoring.
+ * The backend will poll this volume and emit `volume-space-changed` events
+ * when available space changes beyond the configured threshold.
+ *
+ * @param watcherId - Unique ID for this watcher (typically the pane ID).
+ *   Multiple watchers can watch the same volume independently.
+ */
+export async function watchVolumeSpace(watcherId: string, volumeId: string, path: string): Promise<void> {
+  await invoke('watch_volume_space', { watcherId, volumeId, path })
+}
+
+/**
+ * Stops live disk-space monitoring for this watcher. Other watchers on the
+ * same volume are unaffected.
+ */
+export async function unwatchVolumeSpace(watcherId: string): Promise<void> {
+  await invoke('unwatch_volume_space', { watcherId })
+}
+
+/**
+ * Updates the disk space change threshold at runtime (in MB).
+ */
+export async function setDiskSpaceThreshold(mb: number): Promise<void> {
+  await invoke('set_disk_space_threshold', { mb: Math.round(mb) })
+}
+
+// ============================================================================
 // Permission checking
 // ============================================================================
 

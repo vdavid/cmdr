@@ -146,6 +146,16 @@ Core explorer UI components:
   from DualPaneExplorer via factory pattern
 - **rename-flow.svelte.ts** — Rename flow logic (validation, conflict/extension dialogs) extracted from FilePane
 
+### Live disk space
+
+The status bar and usage bar below each pane show live disk space. `FilePane` registers with the backend space poller
+(`space_poller.rs`) via `watchVolumeSpace(paneId, volumeId, path)` on mount and volume change, and listens for
+`volume-space-changed` events. The watcher key is the pane ID, so two panes on the same volume have independent
+registrations (one pane navigating away doesn't affect the other). The backend deduplicates by volume_id, polls each
+volume at its own cadence (`Volume::space_poll_interval()`: 2 s local, 5 s network/MTP), and emits only when the change
+exceeds a configurable threshold (Settings > Advanced). The volume dropdown (`volume-space-manager.svelte.ts`) uses a
+separate on-demand fetch and is unaffected.
+
 ## Error display
 
 When a directory listing fails, the user sees a full-pane `ErrorPane` instead of the file list. This replaces the old

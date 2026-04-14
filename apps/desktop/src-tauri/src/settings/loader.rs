@@ -55,6 +55,8 @@ pub struct Settings {
     pub filter_safe_save_artifacts: Option<bool>,
     #[serde(alias = "fileOperations.mtpEnabled", default)]
     pub mtp_enabled: Option<bool>,
+    #[serde(alias = "advanced.diskSpaceChangeThreshold", default)]
+    pub disk_space_change_threshold_mb: Option<u64>,
 }
 
 fn default_show_hidden() -> bool {
@@ -75,6 +77,7 @@ impl Default for Settings {
             direct_smb_connection: None,
             filter_safe_save_artifacts: None,
             mtp_enabled: None,
+            disk_space_change_threshold_mb: None,
         }
     }
 }
@@ -124,6 +127,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let direct_smb_connection = json.get("network.directSmbConnection").and_then(|v| v.as_bool());
     let filter_safe_save_artifacts = json.get("advanced.filterSafeSaveArtifacts").and_then(|v| v.as_bool());
     let mtp_enabled = json.get("fileOperations.mtpEnabled").and_then(|v| v.as_bool());
+    let disk_space_change_threshold_mb = json.get("advanced.diskSpaceChangeThreshold").and_then(|v| v.as_u64());
 
     Ok(Settings {
         show_hidden_files,
@@ -137,5 +141,6 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         direct_smb_connection,
         filter_safe_save_artifacts,
         mtp_enabled,
+        disk_space_change_threshold_mb,
     })
 }

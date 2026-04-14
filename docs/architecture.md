@@ -53,6 +53,7 @@ All under `apps/desktop/src-tauri/src/`.
 | `search/`                       | In-memory search index (lazy load, rayon parallel scan, glob/regex) and AI query translation pipeline (`search/ai/`)                                   |
 | `font_metrics/`                 | Binary font metrics cache, per-directory width calculation                                                                                             |
 | `volumes/`                      | Volume abstraction (local, network, MTP), scanner/watcher traits                                                                                       |
+| `space_poller.rs`               | Live disk-space polling — per-volume-type intervals via `Volume::space_poll_interval()`, threshold-based change detection, emits `volume-space-changed` |
 | `stubs/`                        | Linux compilation stubs for macOS-only modules (used by Docker E2E pipeline)                                                                           |
 | `menu/`                         | Native menu bar: platform-specific construction, dispatch mapping, accelerator sync, context-aware enable/disable                                      |
 | `drag_image_detection.rs`       | macOS method swizzle for drag image size detection                                                                                                     |

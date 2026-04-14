@@ -23,6 +23,7 @@ Settings {
     verbose_logging: Option<bool>,         // from "developer.verboseLogging", for crash reports
     direct_smb_connection: Option<bool>,   // from "network.directSmbConnection"
     mtp_enabled: Option<bool>,             // from "fileOperations.mtpEnabled"
+    disk_space_change_threshold_mb: Option<u64>, // from "advanced.diskSpaceChangeThreshold"
 }
 ```
 

@@ -45,6 +45,7 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `on_unmount()` — lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
 - `scanner()` / `watcher()` — drive indexing hooks; `None` by default.
 - `export_to_local_with_progress()` / `import_from_local_with_progress()` — per-file progress callbacks during copy. Default delegates to the non-progress version. `SmbVolume` overrides both, using smb2's `read_file_with_progress`/`write_file_with_progress`. The callback takes `(bytes_done, bytes_total)` for the current file and returns `ControlFlow::Break(())` to cancel. `MtpVolume` and `LocalPosixVolume` use the default (no intra-file progress).
+- `space_poll_interval()` — recommended interval for the live disk-space poller (`space_poller.rs`). Default 2 s (local volumes). `SmbVolume` and `MtpVolume` override to 5 s. `InMemoryVolume` returns `None` (no polling). The poller uses this to tick each volume at its own cadence.
 
 ## Path handling gotchas
 

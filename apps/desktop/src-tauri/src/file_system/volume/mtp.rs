@@ -633,6 +633,10 @@ impl Volume for MtpVolume {
         Ok(conflicts)
     }
 
+    fn space_poll_interval(&self) -> Option<std::time::Duration> {
+        Some(std::time::Duration::from_secs(5))
+    }
+
     fn get_space_info(&self) -> Result<SpaceInfo, VolumeError> {
         let device_id = self.device_id.clone();
         let storage_id = self.storage_id;
