@@ -38,30 +38,30 @@ All under `apps/desktop/src/lib/`.
 
 All under `apps/desktop/src-tauri/src/`.
 
-| Directory/file                  | Purpose                                                                                                                                                |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `file_system/listing/`          | Directory reading, streaming, caching, sorting — serves virtual scroll                                                                                 |
-| `file_system/write_operations/` | Copy/move/delete with safety patterns (temp+rename, staging, rollback)                                                                                 |
-| `file_viewer/`                  | Three-backend file viewer (FullLoad, ByteSeek, LineIndex)                                                                                              |
-| `network/`                      | SMB: mDNS discovery, share listing (smb-rs + smbutil), mounting, Keychain                                                                              |
-| `mtp/`                          | MTP device management, file ops, event-based watching                                                                                                  |
-| `mcp/`                          | MCP server (19 tools, YAML resources, agent-centric API)                                                                                               |
-| `ai/`                           | llama-server lifecycle, model download, inference client                                                                                               |
-| `licensing/`                    | Ed25519 license verification, server validation                                                                                                        |
-| `settings/`                     | Settings persistence (tauri-plugin-store)                                                                                                              |
-| `indexing/`                     | Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes                                                                         |
-| `search/`                       | In-memory search index (lazy load, rayon parallel scan, glob/regex) and AI query translation pipeline (`search/ai/`)                                   |
-| `font_metrics/`                 | Binary font metrics cache, per-directory width calculation                                                                                             |
-| `volumes/`                      | Volume abstraction (local, network, MTP), scanner/watcher traits                                                                                       |
+| Directory/file                  | Purpose                                                                                                                                                 |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file_system/listing/`          | Directory reading, streaming, caching, sorting — serves virtual scroll                                                                                  |
+| `file_system/write_operations/` | Copy/move/delete with safety patterns (temp+rename, staging, rollback)                                                                                  |
+| `file_viewer/`                  | Three-backend file viewer (FullLoad, ByteSeek, LineIndex)                                                                                               |
+| `network/`                      | SMB: mDNS discovery, share listing (smb-rs + smbutil), mounting, Keychain                                                                               |
+| `mtp/`                          | MTP device management, file ops, event-based watching                                                                                                   |
+| `mcp/`                          | MCP server (19 tools, YAML resources, agent-centric API)                                                                                                |
+| `ai/`                           | llama-server lifecycle, model download, inference client                                                                                                |
+| `licensing/`                    | Ed25519 license verification, server validation                                                                                                         |
+| `settings/`                     | Settings persistence (tauri-plugin-store)                                                                                                               |
+| `indexing/`                     | Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes                                                                          |
+| `search/`                       | In-memory search index (lazy load, rayon parallel scan, glob/regex) and AI query translation pipeline (`search/ai/`)                                    |
+| `font_metrics/`                 | Binary font metrics cache, per-directory width calculation                                                                                              |
+| `volumes/`                      | Volume abstraction (local, network, MTP), scanner/watcher traits                                                                                        |
 | `space_poller.rs`               | Live disk-space polling — per-volume-type intervals via `Volume::space_poll_interval()`, threshold-based change detection, emits `volume-space-changed` |
-| `stubs/`                        | Linux compilation stubs for macOS-only modules (used by Docker E2E pipeline)                                                                           |
-| `menu/`                         | Native menu bar: platform-specific construction, dispatch mapping, accelerator sync, context-aware enable/disable                                      |
-| `drag_image_detection.rs`       | macOS method swizzle for drag image size detection                                                                                                     |
-| `drag_image_swap.rs`            | Rich/transparent drag image swap for self-drags                                                                                                        |
-| `crash_reporter/`               | Crash capture (panic hook + signal handler), next-launch detection, report sending                                                                     |
-| `commands/`                     | Tauri command definitions (IPC entry points)                                                                                                           |
-| `capabilities/`                 | Per-window Tauri API permissions — must be updated when using new Tauri APIs from a window                                                             |
-| `icons/`                        | App icons for all platforms + macOS Tahoe Liquid Glass (Assets.car). See [CLAUDE.md](../apps/desktop/src-tauri/icons/CLAUDE.md) for regeneration steps |
+| `stubs/`                        | Linux compilation stubs for macOS-only modules (used by Docker E2E pipeline)                                                                            |
+| `menu/`                         | Native menu bar: platform-specific construction, dispatch mapping, accelerator sync, context-aware enable/disable                                       |
+| `drag_image_detection.rs`       | macOS method swizzle for drag image size detection                                                                                                      |
+| `drag_image_swap.rs`            | Rich/transparent drag image swap for self-drags                                                                                                         |
+| `crash_reporter/`               | Crash capture (panic hook + signal handler), next-launch detection, report sending                                                                      |
+| `commands/`                     | Tauri command definitions (IPC entry points)                                                                                                            |
+| `capabilities/`                 | Per-window Tauri API permissions — must be updated when using new Tauri APIs from a window                                                              |
+| `icons/`                        | App icons for all platforms + macOS Tahoe Liquid Glass (Assets.car). See [CLAUDE.md](../apps/desktop/src-tauri/icons/CLAUDE.md) for regeneration steps  |
 
 ## Other apps
 

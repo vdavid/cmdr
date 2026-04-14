@@ -117,6 +117,7 @@
 
     // Whether the user confirmed (so we don't cancel the scan on destroy)
     let confirmed = false
+    let destroyed = false
 
     // Conflict detection state
     let conflicts = $state<VolumeConflictInfo[]>([])
@@ -170,6 +171,7 @@
     }
 
     const pathError = $derived.by(() => {
+        if (!sourcePaths) return null // props tearing down
         const structural = validateDirectoryPath(editedPath)
         if (structural.severity === 'error') return structural.message
         return getPathValidationError(sourcePaths, editedPath)
@@ -219,7 +221,7 @@
 
     /** Checks for conflicts at the destination. */
     async function checkConflicts() {
-        if (isCheckingConflicts || conflictCheckComplete) return
+        if (destroyed || isCheckingConflicts || conflictCheckComplete) return
 
         isCheckingConflicts = true
         try {
@@ -342,6 +344,7 @@
     })
 
     onDestroy(() => {
+        destroyed = true
         // Cancel scan preview if still running — but only if the user cancelled, not confirmed.
         // On confirm, the TransferProgressDialog takes over listening to the same scan.
         if (previewId && isScanning && !confirmed) {

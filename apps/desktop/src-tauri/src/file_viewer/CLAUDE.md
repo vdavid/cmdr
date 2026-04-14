@@ -9,6 +9,7 @@ Provides three backend strategies for serving file content line-by-line with ins
 - `full_load.rs` — loads entire file into `String` (<1MB files)
 - `byte_seek.rs` — seeks by byte offset, scans backward for newline (instant open)
 - `line_index.rs` — sparse newline index (1 checkpoint per 256 lines), SIMD-accelerated via `memchr`
+- `*_test.rs` — unit tests for each backend: UTF-8 edge cases, search highlighting, checkpoint math
 
 ## Backend selection logic
 

@@ -281,8 +281,11 @@ export function createDialogState(deps: DialogStateDeps) {
       snapshotSourcePaneSelection()
 
       showTransferDialog = false
-      transferDialogProps = null
       showTransferProgressDialog = true
+      // Defer nulling props so onDestroy fires first (avoids reactive reads of nulled props)
+      queueMicrotask(() => {
+        transferDialogProps = null
+      })
     },
 
     handleTransferCancel() {

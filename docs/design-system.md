@@ -547,8 +547,8 @@ entries.
 
 ### Text overflow and number display (app)
 
-The UI must never flicker or jump due to changing text content. Text should fill its available space, and when it doesn't
-fit, show the most important parts.
+The UI must never flicker or jump due to changing text content. Text should fill its available space, and when it
+doesn't fit, show the most important parts.
 
 **Mid-text truncation**: Use `useShortenMiddle` from `$lib/utils/shorten-middle-action` instead of CSS
 `text-overflow: ellipsis` (which only clips from the end). The action uses `@chenglou/pretext` for pixel-accurate
