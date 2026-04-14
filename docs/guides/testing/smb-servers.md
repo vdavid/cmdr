@@ -1,203 +1,111 @@
 # SMB test server farm
 
-This document describes the Docker-based SMB test server infrastructure for integration testing of network SMB features.
+Docker-based SMB test servers for integration testing of network SMB features. Containers are provided by smb2's
+consumer test harness — Cmdr doesn't maintain its own Dockerfiles.
 
 ## Overview
 
-We maintain a farm of Docker containers running various SMB server configurations. These provide deterministic,
-reproducible test environments covering authentication modes, edge cases, and server behaviors.
-
-**Two deployment modes are supported:**
-
-1. **Local (macOS)**: Port-mapped networking (`localhost:PORT`). Use `smbclient` CLI or mount manually to test. Limited
-   by macOS Docker networking issues with SMB (see [Known limitations](#known-limitations)).
-
-2. **Raspberry Pi**: Macvlan networking with real LAN IPs. Containers advertise via mDNS/Bonjour and appear
-   automatically in the app's network browser. **Recommended for realistic testing.**
+On first run, `start.sh` extracts Docker Compose files from smb2 (via
+`cargo run --example smb_compose --features smb-e2e`) into `test/smb-servers/.compose/`, then starts containers.
+Subsequent runs skip the extraction.
 
 **Location**: `test/smb-servers/`
 
-## Quick start (local)
+## Quick start
 
 ```bash
-# Start core containers (recommended for most development)
+# Start core containers (guest, auth, both, readonly, flaky, slow)
 ./test/smb-servers/start.sh
 
 # Start minimal set (just guest + auth)
 ./test/smb-servers/start.sh minimal
 
-# Start all containers (16 total)
+# Start all containers (14 total)
 ./test/smb-servers/start.sh all
 
 # Stop everything
 ./test/smb-servers/stop.sh
 ```
 
-## Quick start (Raspberry Pi) – recommended
-
-Run containers on a Pi for real network testing with Bonjour discovery:
-
-```bash
-# SSH into your Pi
-ssh pi@raspberrypi.local
-
-# Clone the repo (or sync it)
-git clone <repo-url>
-cd cmdr
-
-# Edit network settings to match your LAN
-vi test/smb-servers/docker-compose.pi.yml
-# Update: parent (eth0 or wlan0), subnet, gateway, ip_range
-
-# Reserve IPs 192.168.1.200-215 on your router's DHCP settings
-
-# Start containers
-./test/smb-servers/start-pi.sh
-
-# Test from your Mac
-smbutil view -G -N //smb-guest-test.local
-```
-
-The containers will appear in the app's Network browser via Bonjour as:
-
-- `smb-guest-test.local` (192.168.1.200)
-- `smb-auth-test.local` (192.168.1.201)
-- `smb-both-test.local` (192.168.1.202)
-- `smb-readonly-test.local` (192.168.1.203)
-
 ## Container list
 
 ### Core authentication scenarios
 
-| Container   | Port | Purpose                     | Credentials                     |
-| ----------- | ---- | --------------------------- | ------------------------------- |
-| `smb-guest` | 9445 | Guest access only           | None required                   |
-| `smb-auth`  | 9446 | Credentials required        | `testuser` / `testpass`         |
-| `smb-both`  | 9447 | Guest allowed, auth extends | None or `testuser` / `testpass` |
+| Container            | Port  | Purpose                     | Credentials                     |
+| -------------------- | ----- | --------------------------- | ------------------------------- |
+| `smb-consumer-guest` | 10480 | Guest access only           | None required                   |
+| `smb-consumer-auth`  | 10481 | Credentials required        | `testuser` / `testpass`         |
+| `smb-consumer-both`  | 10482 | Guest allowed, auth extends | None or `testuser` / `testpass` |
 
 ### Edge cases and stress tests
 
-| Container      | Port | Purpose               | Notes                            |
-| -------------- | ---- | --------------------- | -------------------------------- |
-| `smb-flaky`    | 9448 | 5s up / 5s down cycle | Tests connection health handling |
-| `smb-50shares` | 9449 | 50 shares on one host | Tests share list UI scrolling    |
-| `smb-slow`     | 9450 | 500ms+ latency        | Tests loading spinners, timeouts |
-| `smb-readonly` | 9451 | Read-only share       | Tests write failure handling     |
-
-### Protocol edge cases
-
-| Container     | Port | Purpose          | Notes                          |
-| ------------- | ---- | ---------------- | ------------------------------ |
-| `smb-ancient` | 9452 | SMB1/NT1 only    | Tests legacy protocol fallback |
-| `smb-signing` | 9453 | Requires signing | Tests security negotiation     |
+| Container               | Port  | Purpose               | Notes                            |
+| ----------------------- | ----- | --------------------- | -------------------------------- |
+| `smb-consumer-flaky`    | 10492 | 5s up / 5s down cycle | Tests connection health handling |
+| `smb-consumer-50shares` | 10483 | 50 shares on one host | Tests share list UI scrolling    |
+| `smb-consumer-slow`     | 10493 | 200ms+ latency        | Tests loading spinners, timeouts |
+| `smb-consumer-readonly` | 10488 | Read-only share       | Tests write failure handling     |
 
 ### Name/path stress tests
 
-| Container       | Port | Purpose             | Notes                        |
-| --------------- | ---- | ------------------- | ---------------------------- |
-| `smb-unicode`   | 9454 | Unicode share names | `日本語`, `émojis📁`         |
-| `smb-longnames` | 9455 | 200+ char names     | Tests path truncation        |
-| `smb-deepnest`  | 9456 | 50-level deep tree  | Tests navigation, breadcrumb |
-| `smb-manyfiles` | 9457 | 10k+ files          | Tests listing performance    |
+| Container                | Port  | Purpose             | Notes                        |
+| ------------------------ | ----- | ------------------- | ---------------------------- |
+| `smb-consumer-unicode`   | 10484 | Unicode share names | CJK, emoji, accented chars   |
+| `smb-consumer-longnames` | 10485 | 200+ char names     | Tests path truncation        |
+| `smb-consumer-deepnest`  | 10486 | 50-level deep tree  | Tests navigation, breadcrumb |
+| `smb-consumer-manyfiles` | 10487 | 10k+ files          | Tests listing performance    |
 
 ### Simulated server types
 
-| Container           | Port | Purpose                    | Notes               |
-| ------------------- | ---- | -------------------------- | ------------------- |
-| `smb-like-windows`  | 9458 | Windows Server string      | Tests OS detection  |
-| `smb-like-synology` | 9459 | Synology NAS (TimeMachine) | Tests NAS behaviors |
-| `smb-like-linux`    | 9460 | Default Linux Samba        | Baseline comparison |
+| Container               | Port  | Purpose               | Notes               |
+| ----------------------- | ----- | --------------------- | ------------------- |
+| `smb-consumer-windows`  | 10489 | Windows Server string | Tests OS detection  |
+| `smb-consumer-synology` | 10490 | Synology NAS mimicry  | Tests NAS behaviors |
+| `smb-consumer-linux`    | 10491 | Default Linux Samba   | Baseline comparison |
+
+Ports are configurable via `SMB_CONSUMER_*_PORT` environment variables (for example, `SMB_CONSUMER_GUEST_PORT=9445`).
 
 ## Connection URLs
 
 ```bash
 # Guest access (no auth)
-smbclient -L localhost -p 9445 -N
-smbclient //localhost/public -p 9445 -N
+smbclient -L localhost -p 10480 -N
+smbclient //localhost/public -p 10480 -N
 
 # Authenticated access
-smbclient -L localhost -p 9446 -U testuser%testpass
-smbclient //localhost/private -p 9446 -U testuser%testpass
-
-# macOS Finder (use smb:// URLs)
-open "smb://localhost:9445/public"
-open "smb://testuser:testpass@localhost:9446/private"
+smbclient -L localhost -p 10481 -U testuser%testpass
+smbclient //localhost/private -p 10481 -U testuser%testpass
 ```
 
-## Usage contexts
+## E2E testing
 
-### CI integration
+The `smb-e2e` Cargo feature injects all 14 containers as virtual hosts in the Network sidebar via
+`virtual_smb_hosts.rs`. Ports come from `smb2::testing::*_port()` functions.
 
-In CI, we start the full test farm before running integration tests:
+For Linux Docker E2E (`e2e-linux.sh`), containers are on the `smb-consumer_default` Docker network. The E2E container
+joins this network and accesses containers by name on port 445 (no host port mapping needed).
 
-```yaml
-# .github/workflows/ci.yml
-- name: Start SMB test servers
-  run: ./test/smb-servers/start.sh all
+See `test/e2e-playwright/smb.spec.ts` for the E2E test suite.
 
-- name: Run integration tests
-  run: cargo nextest run --features integration-tests
+## Manual QA testing
 
-- name: Stop SMB test servers
-  if: always()
-  run: ./test/smb-servers/stop.sh
-```
-
-### Integration tests
-
-Rust integration tests use the `integration-tests` feature flag:
-
-```rust
-#[cfg(feature = "integration-tests")]
-mod integration {
-    #[tokio::test]
-    async fn test_guest_share_listing() {
-        let shares = list_shares("localhost", 9445, None).await.unwrap();
-        assert!(shares.iter().any(|s| s.name == "public"));
-    }
-
-    #[tokio::test]
-    async fn test_auth_share_listing() {
-        let creds = Credentials::new("testuser", "testpass");
-        let shares = list_shares("localhost", 9446, Some(creds)).await.unwrap();
-        assert!(shares.iter().any(|s| s.name == "private"));
-    }
-}
-```
-
-Run integration tests locally:
+Start all containers and run the app with `smb-e2e` enabled:
 
 ```bash
-# Start servers first
-./test/smb-servers/start.sh
-
-# Run integration tests
-cd src-tauri && cargo nextest run --features integration-tests && cd ..
-
-# Stop servers when done
-./test/smb-servers/stop.sh
+./test/smb-servers/start.sh all
+cd apps/desktop && node scripts/tauri-wrapper.js dev -- --features smb-e2e
 ```
 
-### Manual testing
-
-For manual testing during development:
-
-```bash
-# Start minimal set for quick iteration
-./test/smb-servers/start.sh minimal
-
-# Then test via CLI:
-smbclient -L localhost -p 9445 -N
-smbclient //localhost/public -p 9445 -N -c 'ls'
-```
+All 14 virtual SMB hosts appear in the Network sidebar. Click them to test share listing, mounting, file browsing, and
+edge cases (unicode names, deep trees, 50 shares, etc.) against real Samba servers.
 
 ## Resource estimates
 
 | Profile | Containers | RAM (idle) | RAM (active) |
 | ------- | ---------- | ---------- | ------------ |
-| minimal | 2          | ~100 MB    | ~150 MB      |
-| core    | 6          | ~300 MB    | ~400 MB      |
-| all     | 16         | ~800 MB    | ~1.2 GB      |
+| minimal | 2          | ~60 MB     | ~100 MB      |
+| core    | 6          | ~200 MB    | ~300 MB      |
+| all     | 14         | ~400 MB    | ~600 MB      |
 
 ## Troubleshooting
 
@@ -205,92 +113,31 @@ smbclient //localhost/public -p 9445 -N -c 'ls'
 
 ```bash
 # Check logs for a specific container
-docker compose -f test/smb-servers/docker-compose.yml logs smb-guest
+docker compose -p smb-consumer logs smb-consumer-guest
 
-# Rebuild a specific container
-docker compose -f test/smb-servers/docker-compose.yml build smb-guest
+# Re-extract compose files (deletes .compose/ and re-runs extraction)
+rm -rf test/smb-servers/.compose && ./test/smb-servers/start.sh
 ```
 
 ### Port already in use
 
 ```bash
 # Check what's using the port
-lsof -i :9445
+lsof -i :10480
 
-# If it's an old container, clean up
-docker compose -f test/smb-servers/docker-compose.yml down
+# Clean up old containers
+./test/smb-servers/stop.sh
 docker container prune
 ```
 
-### Can't connect from macOS
+### Using `connect_to_server` MCP tool
 
-macOS Finder may have trouble with non-standard SMB ports. Use `smbclient` from the command line:
-
-```bash
-# List shares
-smbclient -L localhost -p 9445 -N
-
-# Mount manually (might need sudo)
-mkdir -p /tmp/smb-test
-mount_smbfs -o port=9445 //guest@localhost/public /tmp/smb-test
-```
-
-## Known limitations
-
-### smb-rs and Samba RPC compatibility
-
-The `smb-rs` crate has a known compatibility issue with Samba's DCE-RPC implementation for the `list_shares` operation.
-Specifically, smb-rs uses NDR64 transfer syntax which Samba may not support for SRVSVC (Server Service) RPC calls.
-
-**Symptoms:**
-
-- Docker SMB containers show as "Reachable" but fail to list shares
-- Error:
-  `BindAck result for syntax (71710533-beba-4937-8319-b5dbef9ccc36/1) was not acceptance: ProviderRejection, reason: ProposedTransferSyntaxesNotSupported`
-
-**Impact:**
-
-- Docker-based Samba containers cannot be used for share listing tests
-- Real NAS devices (QNAP, Synology, Windows) typically work fine as they use different RPC implementations
-
-**Workarounds:**
-
-1. Test against real SMB servers on your network (QNAP, Synology, Windows)
-2. Use the Docker containers for connection/authentication testing only
-3. Follow [smb-rs GitHub issues](https://github.com/afiffon/smb-rs/issues) for updates
-
-This doesn't affect production use with real network devices, only Docker-based testing.
-
-## Using `connect_to_server` MCP tool with Docker containers
-
-Docker SMB containers don't advertise via mDNS, so they won't appear in the network browser automatically. Use the
-`connect_to_server` MCP tool to add them:
+Docker SMB containers don't advertise via mDNS. With the `smb-e2e` feature, virtual hosts are injected automatically.
+Without it, use the `connect_to_server` MCP tool:
 
 ```bash
-# Start the test containers
-./test/smb-servers/start.sh minimal
-
-# Via MCP (port 9224), add the guest container
 curl -s http://localhost:9224/mcp -d '{
   "jsonrpc": "2.0", "id": 1, "method": "tools/call",
-  "params": { "name": "connect_to_server", "arguments": { "address": "localhost:9445" } }
-}'
-
-# The host appears in the network browser as "localhost:9445" with source=manual
-# Browse shares, mount, test file operations as usual
-
-# Clean up when done
-curl -s http://localhost:9224/mcp -d '{
-  "jsonrpc": "2.0", "id": 2, "method": "tools/call",
-  "params": { "name": "remove_manual_server", "arguments": { "hostId": "manual-localhost-9445" } }
+  "params": { "name": "connect_to_server", "arguments": { "address": "localhost:10480" } }
 }'
 ```
-
-This is the recommended way to test network features against Docker containers on macOS, where mDNS from containers
-can't reach the host.
-
-## Related
-
-- [SMB feature documentation](../../features/network-smb/index.md)
-- [Test docker server list](../../features/network-smb/test-docker-server-list.md) (original planning doc)
-- [Manual test checklist](manual-checklist.md)

@@ -1,5 +1,9 @@
 # Setting up SMB test containers on a Linux device
 
+> **Note**: This guide predates smb2's consumer test harness. The `docker-compose.pi.yml` and `start-pi.sh` files
+> referenced here have been removed. Pi deployment with macvlan/Avahi is deferred — when we need it, smb2's consumer
+> containers will support it via a `docker-compose.override.yml` pattern.
+
 This guide explains how to run the SMB test containers on a Linux device (like a Raspberry Pi) so they are discoverable
 via Bonjour/mDNS from your Mac.
 

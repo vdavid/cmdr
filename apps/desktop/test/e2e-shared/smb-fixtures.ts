@@ -19,11 +19,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const IS_LINUX = os.platform() === 'linux'
 
-/** Host/port for SMB containers. Env vars override defaults for Docker networking. */
+/** Host/port for SMB containers. Env vars override defaults for Docker networking.
+ * Port defaults match smb2's consumer test harness (10480+). */
 export const SMB_GUEST_HOST = process.env.SMB_E2E_GUEST_HOST ?? 'localhost'
-export const SMB_GUEST_PORT = Number(process.env.SMB_E2E_GUEST_PORT ?? '9445')
+export const SMB_GUEST_PORT = Number(process.env.SMB_E2E_GUEST_PORT ?? '10480')
 export const SMB_AUTH_HOST = process.env.SMB_E2E_AUTH_HOST ?? 'localhost'
-export const SMB_AUTH_PORT = Number(process.env.SMB_E2E_AUTH_PORT ?? '9446')
+export const SMB_AUTH_PORT = Number(process.env.SMB_E2E_AUTH_PORT ?? '10481')
+
+export const SMB_50SHARES_HOST = process.env.SMB_E2E_50SHARES_HOST ?? 'localhost'
+export const SMB_50SHARES_PORT = Number(process.env.SMB_E2E_50SHARES_PORT ?? '10483')
+export const SMB_UNICODE_HOST = process.env.SMB_E2E_UNICODE_HOST ?? 'localhost'
+export const SMB_UNICODE_PORT = Number(process.env.SMB_E2E_UNICODE_PORT ?? '10484')
+export const SMB_READONLY_HOST = process.env.SMB_E2E_READONLY_HOST ?? 'localhost'
+export const SMB_READONLY_PORT = Number(process.env.SMB_E2E_READONLY_PORT ?? '10488')
 
 export const SMB_AUTH_USERNAME = 'testuser'
 export const SMB_AUTH_PASSWORD = 'testpass'
@@ -44,14 +52,15 @@ export const SMB_AUTH_MOUNT = IS_LINUX
   ? `/run/user/${LINUX_UID}/gvfs/smb-share:server=${SMB_AUTH_HOST},share=${SMB_AUTH_SHARE}`
   : `/Volumes/${SMB_AUTH_SHARE}`
 
-const DOCKER_COMPOSE_DIR = path.resolve(__dirname, '../smb-servers')
+const SMB_SERVERS_DIR = path.resolve(__dirname, '../smb-servers')
+const DOCKER_COMPOSE_DIR = path.resolve(SMB_SERVERS_DIR, '.compose')
 
 // ── Docker container management ──────────────────────────────────────────────
 
 /** Checks whether the Docker SMB containers are running and healthy. */
 export function areSmbContainersRunning(): boolean {
   try {
-    const output = execSync('docker compose ps --format json 2>/dev/null', {
+    const output = execSync('docker compose -p smb-consumer ps --format json 2>/dev/null', {
       cwd: DOCKER_COMPOSE_DIR,
       encoding: 'utf-8',
       timeout: 10_000,
@@ -59,21 +68,22 @@ export function areSmbContainersRunning(): boolean {
     const lines = output.trim().split('\n').filter(Boolean)
     return lines.some((l) => {
       const c = JSON.parse(l) as { Service: string; State: string }
-      return c.Service === 'smb-guest' && c.State === 'running'
+      return c.Service === 'smb-consumer-guest' && c.State === 'running'
     })
   } catch {
     return false
   }
 }
 
-/** Starts SMB Docker containers (minimal profile: guest + auth). */
-export function startSmbContainers(): void {
+/** Starts SMB Docker containers.
+ * @param mode - 'minimal' (guest+auth, default), 'core', or 'all' (14 containers) */
+export function startSmbContainers(mode: 'minimal' | 'core' | 'all' = 'minimal'): void {
   // eslint-disable-next-line no-console
-  console.log('Starting SMB Docker containers (minimal)...')
-  execSync('./start.sh minimal', {
-    cwd: DOCKER_COMPOSE_DIR,
+  console.log(`Starting SMB Docker containers (${mode})...`)
+  execSync(`./start.sh ${mode}`, {
+    cwd: SMB_SERVERS_DIR,
     encoding: 'utf-8',
-    timeout: 60_000,
+    timeout: 120_000,
     stdio: 'inherit',
   })
 }

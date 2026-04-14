@@ -13,8 +13,10 @@ llama-server process, inference client with provider routing).
 `ai-state.svelte.ts` manages state and exports handlers. `ai-toast-sync.svelte.ts` uses a `$effect` to reactively watch
 `aiState.notificationState` and sync the toast — no manual notification needed after state mutations.
 `AiToastContent.svelte` imports `getAiState` and handlers directly from `ai-state.svelte.ts`. No circular dependency
-because `ai-state.svelte.ts` never imports from `ai-toast-sync.svelte.ts` or `AiToastContent.svelte`. `initAiState()`
-and `initAiToastSync()` are both called from `+layout.svelte`.
+because `ai-state.svelte.ts` never imports from `ai-toast-sync.svelte.ts` or `AiToastContent.svelte`. Both are called
+from `(main)/+layout.svelte`: `initAiToastSync()` synchronously in `onMount` (before the async IIFE), and
+`initAiState()` inside the async IIFE. The toast sync runs first with initial state (`hidden` → no-op), then re-fires
+reactively when `initAiState()` changes the notification state.
 
 ## Key decisions
 
@@ -51,6 +53,10 @@ provide checksums) — file size check only.
 
 ## Gotchas
 
+- **`initAiToastSync()` must be called synchronously in `onMount`**: It uses `$effect()`, which requires Svelte's
+  reactive context. Calling it after an `await` (inside an async callback) causes `effect_orphan` because the reactive
+  context is gone. It runs before `initAiState()` completes — the initial `$effect` fires with `hidden` state (no-op),
+  then re-fires reactively when `initAiState()` changes the notification state.
 - **Status transitions are frontend-driven**: Backend emits `ai-download-progress` and `ai-install-complete` events.
   Frontend interprets these to update `aiStatus`. Backend has no "status" concept — just `AiState` (installed/port/pid).
 - **llama-server is NOT auto-restarted**: Health monitoring (periodic restart on crash) is deferred. If server crashes,

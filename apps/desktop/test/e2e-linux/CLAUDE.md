@@ -8,8 +8,8 @@ Docker setup for running the Playwright E2E tests (`../e2e-playwright/`) on Linu
 ```
 e2e-linux.sh
 ├─ Build Tauri binary in Docker (--features playwright-e2e,virtual-mtp,smb-e2e)
-├─ Start SMB Docker containers (smb-guest, smb-auth)
-├─ Launch E2E container on smb-servers_default network
+├─ Start SMB Docker containers (smb-consumer-guest, smb-consumer-auth)
+├─ Launch E2E container on smb-consumer_default network
 │   ├─ entrypoint.sh: Xvfb + dbus + GVFS + optional VNC
 │   ├─ Create fixtures, start Tauri app (with SMB_E2E_*_HOST/PORT env vars)
 │   ├─ Wait for /tmp/tauri-playwright.sock
@@ -49,10 +49,11 @@ Most common operation: `docker volume rm cmdr-target-cache` after Rust/Svelte ch
 
 ## SMB E2E networking
 
-The E2E container joins the `smb-servers_default` Docker network so it can reach the SMB containers (`smb-guest:445`,
-`smb-auth:445`) by name. The `e2e-linux.sh` script starts the SMB containers automatically and passes env vars
-(`SMB_E2E_GUEST_HOST`, `SMB_E2E_GUEST_PORT`, etc.) to the Tauri app. The Rust `virtual_smb_hosts.rs` reads these to
-inject the correct addresses. On macOS (local dev), the defaults `localhost:9445/9446` are used instead.
+The E2E container joins the `smb-consumer_default` Docker network so it can reach the SMB containers
+(`smb-consumer-guest:445`, `smb-consumer-auth:445`) by name. Containers come from smb2's consumer test harness. The
+`e2e-linux.sh` script starts the SMB containers automatically and passes env vars (`SMB_E2E_GUEST_HOST`,
+`SMB_E2E_GUEST_PORT`, etc.) to the Tauri app. The Rust `virtual_smb_hosts.rs` reads these to inject the correct
+addresses. On macOS (local dev), smb2's default ports (10480/10481) are used instead.
 
 The Docker image includes `smbclient` (for the `smb_smbclient.rs` fallback), `cifs-utils`, and GVFS packages (`gvfs`,
 `gvfs-backends`, `gvfs-daemons`, `gvfs-fuse`). The entrypoint starts `gvfsd` so that `gio mount` works for user-space

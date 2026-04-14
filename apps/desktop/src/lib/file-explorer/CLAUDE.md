@@ -211,6 +211,23 @@ Loading 20k+ files into Svelte `$state` causes 9+ second freezes (Svelte tracks 
 virtual scrolling). Storing data outside reactivity and slicing only visible items reduces reactivity cost from O(total)
 to O(visible). See [benchmarks](../../../../../docs/notes/non-reactive-file-store.md).
 
+## Gotchas
+
+**UnoCSS content list is manually tracked.** `uno.config.ts` lists the specific files that use UnoCSS classes
+(`i-lucide:*` icons) so UnoCSS only watches those files during dev, not the entire `src/` tree. Without this, every file
+change triggers 6-7 redundant HMR updates. When adding UnoCSS classes to a new file, add that file to the
+`content.filesystem` array in `uno.config.ts`.
+
+**UnoCSS triggers SvelteKit root-layout HMR crash.** `virtual:uno.css` regenerates on every Svelte file save. Because
+it's imported in the root `+layout.svelte`, Vite treats it as a root-layout change, which forces SvelteKit to rebuild
+the entire route tree. SvelteKit's client router (`client.js:373`, `get_navigation_result_from_branch`) crashes with
+`ReferenceError: Cannot access 'component' before initialization` — a TDZ error where a route component module hasn't
+finished importing during the rebuild. This is a SvelteKit bug (sveltejs/kit#15287, observed with SvelteKit 2.55.0 /
+Svelte 5.54.1 / Vite 8.0.2). Workaround: `import.meta.hot.accept(() => { import.meta.hot!.invalidate() })` in the root
+layout catches the update and triggers a clean full page reload instead of the broken HMR path. Side effect: edits to
+the root layout or its deps (app.css, virtual:uno.css) cause a full reload instead of hot-swap. Leaf component edits are
+unaffected — SvelteKit handles those fine. If sveltejs/kit#15287 gets fixed, the workaround can be removed.
+
 ## Tabs (`tabs/`)
 
 Each pane has an independent tab bar. Tabs use `{#key}` for clean FilePane recreation on switch (cold load, no warm

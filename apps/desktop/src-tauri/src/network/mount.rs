@@ -135,9 +135,14 @@ pub fn mount_share_sync(
     share: &str,
     username: Option<&str>,
     password: Option<&str>,
+    port: u16,
 ) -> Result<MountResult, MountError> {
-    // Build SMB URL: smb://server/share
-    let url_string = format!("smb://{}/{}", server, share);
+    // Build SMB URL: smb://server/share (with port for non-standard)
+    let url_string = if port != 445 {
+        format!("smb://{}:{}/{}", server, port, share)
+    } else {
+        format!("smb://{}/{}", server, share)
+    };
 
     // Create URL from string using CFURLCreateWithString
     let cf_url_string = CFString::new(&url_string);
@@ -179,46 +184,23 @@ pub fn mount_share_sync(
     };
 
     // Check result
-    // EEXIST (17) means the share is already mounted - this is not an error
-    if result == EEXIST {
-        // Share is already mounted, return success with expected path
-        return Ok(MountResult {
-            mount_path: format!("/Volumes/{}", share),
-            already_mounted: true,
-        });
-    }
-
-    if result != 0 {
+    if result != 0 && result != EEXIST {
         return Err(error_from_code(result, share, server));
     }
 
-    // Extract mount path from result
-    let mount_path = if !mountpoints.is_null() {
-        unsafe {
-            // mountpoints is a CFArray of CFStrings
-            let array = mountpoints as core_foundation::array::CFArrayRef;
-            if core_foundation::array::CFArrayGetCount(array) > 0 {
-                let path_ref = core_foundation::array::CFArrayGetValueAtIndex(array, 0);
-                let cf_string = CFString::wrap_under_get_rule(path_ref as core_foundation::string::CFStringRef);
-                let path = cf_string.to_string();
-                // Release the array
-                core_foundation::base::CFRelease(mountpoints);
-                path
-            } else {
-                // Release the array even if empty
-                core_foundation::base::CFRelease(mountpoints);
-                // Fall back to expected path
-                format!("/Volumes/{}", share)
-            }
-        }
-    } else {
-        // No mount points returned, use expected path
-        format!("/Volumes/{}", share)
-    };
+    let already_mounted = result == EEXIST;
+
+    // Extract mount path from the mountpoints array. On both success (0) and
+    // EEXIST (17), macOS may return the actual path (which can be disambiguated,
+    // for example `/Volumes/public-1` when `/Volumes/public` is already taken by
+    // a different server). Fall back to scanning /Volumes/ for the mount.
+    let mount_path = extract_mount_path(mountpoints)
+        .or_else(|| find_mount_path_for_share(server, share))
+        .unwrap_or_else(|| format!("/Volumes/{}", share));
 
     Ok(MountResult {
         mount_path,
-        already_mounted: false,
+        already_mounted,
     })
 }
 
@@ -231,6 +213,7 @@ pub async fn mount_share(
     share: String,
     username: Option<String>,
     password: Option<String>,
+    port: u16,
     timeout_ms: Option<u64>,
 ) -> Result<MountResult, MountError> {
     let server_clone = server.clone();
@@ -238,7 +221,7 @@ pub async fn mount_share(
 
     // Use timeout to prevent hanging indefinitely
     let mount_future = tokio::task::spawn_blocking(move || {
-        mount_share_sync(&server, &share, username.as_deref(), password.as_deref())
+        mount_share_sync(&server, &share, username.as_deref(), password.as_deref(), port)
     });
 
     match tokio::time::timeout(timeout_duration, mount_future).await {
@@ -254,6 +237,55 @@ pub async fn mount_share(
             ),
         }),
     }
+}
+
+/// Extracts the mount path from a `NetFSMountURLSync` mountpoints CFArray.
+///
+/// Returns `None` if the pointer is null or the array is empty.
+fn extract_mount_path(mountpoints: *const c_void) -> Option<String> {
+    if mountpoints.is_null() {
+        return None;
+    }
+    unsafe {
+        let array = mountpoints as core_foundation::array::CFArrayRef;
+        let result = if core_foundation::array::CFArrayGetCount(array) > 0 {
+            let path_ref = core_foundation::array::CFArrayGetValueAtIndex(array, 0);
+            let cf_string = CFString::wrap_under_get_rule(path_ref as core_foundation::string::CFStringRef);
+            Some(cf_string.to_string())
+        } else {
+            None
+        };
+        core_foundation::base::CFRelease(mountpoints);
+        result
+    }
+}
+
+/// Finds the mount path for a server+share by scanning `/Volumes/` with `statfs`.
+///
+/// Handles disambiguated paths: if `server` has share `public` but `/Volumes/public`
+/// belongs to a different server, macOS may have mounted it at `/Volumes/public-1`.
+/// This function finds the right one by checking each mount's source via `statfs`.
+fn find_mount_path_for_share(server: &str, share: &str) -> Option<String> {
+    use crate::volumes::get_smb_mount_info;
+
+    let entries = std::fs::read_dir("/Volumes").ok()?;
+    let server_lower = server.to_lowercase();
+
+    for entry in entries.flatten() {
+        let path = entry.path().to_string_lossy().to_string();
+        // Check paths that start with the share name (for example, "public", "public-1")
+        let file_name = entry.file_name().to_string_lossy().to_string();
+        if !file_name.starts_with(share) {
+            continue;
+        }
+        if let Some(info) = get_smb_mount_info(&path)
+            && info.server.to_lowercase() == server_lower
+            && info.share == share
+        {
+            return Some(path);
+        }
+    }
+    None
 }
 
 /// Unmounts all SMB shares mounted from a given server.

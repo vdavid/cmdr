@@ -250,18 +250,19 @@ DOCKER_TAURI_BINARY="/target/$LINUX_TARGET/release/Cmdr"
 
 # ── SMB container management ────────────────────────────────────────────────
 # Start Docker SMB containers for network E2E tests. The E2E test container
-# joins the smb-servers_default network so it can reach smb-guest:445 and
-# smb-auth:445 by container name (no host port mapping needed).
+# joins the smb-consumer_default network so it can reach smb-consumer-guest:445
+# and smb-consumer-auth:445 by container name (no host port mapping needed).
+# Containers come from smb2's consumer test harness.
 
-SMB_COMPOSE_DIR="$DESKTOP_DIR/test/smb-servers"
-SMB_NETWORK="smb-servers_default"
+SMB_SERVERS_DIR="$DESKTOP_DIR/test/smb-servers"
+SMB_NETWORK="smb-consumer_default"
 
 start_smb_containers() {
-    if docker compose -f "$SMB_COMPOSE_DIR/docker-compose.yml" ps --format json 2>/dev/null | grep -q '"smb-guest"'; then
+    if docker compose -p smb-consumer ps --format json 2>/dev/null | grep -q '"smb-consumer-guest"'; then
         log_info "SMB containers already running"
     else
         log_info "Starting SMB containers (minimal)..."
-        "$SMB_COMPOSE_DIR/start.sh" minimal
+        "$SMB_SERVERS_DIR/start.sh" minimal
     fi
 
     # Wait for the network to exist (docker compose creates it)
@@ -281,7 +282,7 @@ start_smb_containers
 # CMDR_MCP_ENABLED: release builds disable MCP by default — tests need it
 # --privileged: needed for mount -t cifs inside the container (SYS_ADMIN alone is
 # blocked by Docker's default seccomp profile which denies the mount syscall)
-SMB_ENV_ARGS="-e SMB_E2E_GUEST_HOST=smb-guest -e SMB_E2E_GUEST_PORT=445 -e SMB_E2E_AUTH_HOST=smb-auth -e SMB_E2E_AUTH_PORT=445 -e CMDR_MCP_ENABLED=true"
+SMB_ENV_ARGS="-e SMB_E2E_GUEST_HOST=smb-consumer-guest -e SMB_E2E_GUEST_PORT=445 -e SMB_E2E_AUTH_HOST=smb-consumer-auth -e SMB_E2E_AUTH_PORT=445 -e CMDR_MCP_ENABLED=true"
 SMB_DOCKER_ARGS="--privileged"
 
 if $INTERACTIVE; then

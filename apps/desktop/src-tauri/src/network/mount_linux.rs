@@ -84,6 +84,7 @@ fn mount_share_sync(
     share: &str,
     username: Option<&str>,
     password: Option<&str>,
+    port: u16,
 ) -> Result<MountResult, MountError> {
     // Check if gio is available
     if !is_gio_available() {
@@ -101,11 +102,16 @@ fn mount_share_sync(
         });
     }
 
-    // Build the SMB URL
-    let smb_url = if let Some(user) = username {
-        format!("smb://{}@{}/{}", user, server, share)
+    // Build the SMB URL (with port for non-standard)
+    let server_part = if port != 445 {
+        format!("{}:{}", server, port)
     } else {
-        format!("smb://{}/{}", server, share)
+        server.to_string()
+    };
+    let smb_url = if let Some(user) = username {
+        format!("smb://{}@{}/{}", user, server_part, share)
+    } else {
+        format!("smb://{}/{}", server_part, share)
     };
 
     debug!("Mounting SMB share via gio: {}", smb_url);
@@ -224,13 +230,14 @@ pub async fn mount_share(
     share: String,
     username: Option<String>,
     password: Option<String>,
+    port: u16,
     timeout_ms: Option<u64>,
 ) -> Result<MountResult, MountError> {
     let server_clone = server.clone();
     let timeout_duration = std::time::Duration::from_millis(timeout_ms.unwrap_or(DEFAULT_MOUNT_TIMEOUT_MS));
 
     let mount_future = tokio::task::spawn_blocking(move || {
-        mount_share_sync(&server, &share, username.as_deref(), password.as_deref())
+        mount_share_sync(&server, &share, username.as_deref(), password.as_deref(), port)
     });
 
     match tokio::time::timeout(timeout_duration, mount_future).await {

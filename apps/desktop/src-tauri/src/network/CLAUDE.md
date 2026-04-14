@@ -6,7 +6,7 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 
 - **Discovery**: `mdns_discovery.rs` — Pure Rust mDNS using `mdns-sd` crate. Cross-platform.
 - **Manual servers**: `manual_servers.rs` — User-added servers via "Connect to server..." dialog. Parses addresses, checks TCP reachability, persists to `manual-servers.json`, and injects synthetic `NetworkHost` entries with `source: Manual` into `DISCOVERY_STATE`. Loaded at startup.
-- **E2E testing**: `virtual_smb_hosts.rs` — Injects synthetic `NetworkHost` entries for Docker SMB containers. Gated behind `smb-e2e` Cargo feature. Never enabled in production.
+- **E2E testing**: `virtual_smb_hosts.rs` — Injects 14 synthetic `NetworkHost` entries for smb2's consumer Docker containers. Ports come from `smb2::testing::*_port()` functions (configurable via `SMB_CONSUMER_*_PORT` env vars, default 10480+). Hosts configurable via `SMB_E2E_*_HOST` env vars (default `localhost`). Gated behind `smb-e2e` Cargo feature. Never enabled in production.
 - **Share listing**: Split across multiple files:
   - `smb_client.rs` — Top-level share-listing entry point; orchestrates guest -> keychain -> prompt auth flow; tries smb2 first, falls back to smbutil (macOS only)
   - `smb_connection.rs` — TCP connection establishment and share listing via `smb2::SmbClient`
@@ -104,6 +104,13 @@ When the user mounts an SMB share, we establish a parallel smb2 connection along
 
 Manual server IDs use the format `manual-{address}-{port}` with dots/colons replaced by dashes. This is deterministic (same address+port always produces the same ID), preventing duplicates. The `manual-` prefix avoids collision with mDNS-derived IDs.
 
+### Mount path disambiguation for same-name shares
+
+When two servers have a share with the same name (for example, two NAS devices both sharing `public`), macOS creates
+disambiguated mount paths (`/Volumes/public`, `/Volumes/public-1`). The mount code reads the actual path from
+`NetFSMountURLSync`'s `mountpoints` array on both success and EEXIST. If the array is empty (some macOS versions don't
+populate it on EEXIST), `find_mount_path_for_share` scans `/Volumes/` and uses `statfs` to match the server+share.
+
 ## Gotchas
 
 - **Don't hold mutex during DNS resolution**: `get_host_for_resolution` / `update_host_resolution` extract host info and release the mutex before blocking DNS, then re-acquire to update. Holding the mutex across network calls risks deadlock.
@@ -113,7 +120,7 @@ Manual server IDs use the format `manual-{address}-{port}` with dots/colons repl
 - **Account name is lowercase**: `make_account_name` lowercases server name for consistency. Prevents duplicate entries for "SERVER" vs "server".
 - **Linux `gio mount` requires GVFS**: The `gvfs-smb` package must be installed. Standard on Ubuntu/Fedora GNOME desktops. KDE desktops may need it explicitly.
 - **`ShareListError` uses internally tagged serde format** (`#[serde(tag = "type")]`) with struct variants. This keeps a flat JSON shape (`{ "type": "protocol_error", "message": "..." }`). The `MissingDependency` variant adds an optional `installCommand` field. When adding new variants, use struct syntax (not tuple).
-- **macOS smbutil and NetFSMountURLSync fail with loopback IP + non-standard port**: `//127.0.0.1:9445` gives "Broken pipe", but `//localhost:9445` works. `build_smbutil_url` and `NetworkMountView.svelte` both fall back to hostname when IP is `127.0.0.1` or `::1`. This matters for E2E testing against Docker containers on localhost.
-- **Mount URL must include port when non-standard**: `NetworkMountView.svelte` appends `:PORT` to the server string when `port !== 445`. Without this, `NetFSMountURLSync` defaults to port 445 and can't reach Docker containers on custom ports.
+- **macOS smbutil and NetFSMountURLSync fail with loopback IP + non-standard port**: `//127.0.0.1:10480` gives "Broken pipe", but `//localhost:10480` works. `build_smbutil_url` and `NetworkMountView.svelte` both fall back to hostname when IP is `127.0.0.1` or `::1`. This matters for E2E testing against Docker containers on localhost.
+- **Mount URL must include port when non-standard**: `mount_share_sync` builds `smb://server:port/share` for non-445 ports. The port is passed as a separate parameter through `mount_share` → `mount_share_sync`, not embedded in the server string (embedding it would cause `build_smb_addr` to double the port: `localhost:10480:10480`). `SmbMountInfo.port` extracts the port from `statfs` mount source for upgrade paths.
 - **Strip `.local` from addr for smb2**: `smb2::Connection::connect()` extracts `server_name` from the addr string and uses it in UNC paths. Passing `"foo.local:445"` creates `\\foo.local\IPC$` which some servers reject. The `build_addr` helper in `smb_connection.rs` handles this.
 - **Manual hosts always set `hostname`**: The share listing pipeline guards on `host.hostname` being truthy. `create_network_host` always sets `hostname` (to the address, even for IPs) so manual hosts flow through the pipeline correctly.

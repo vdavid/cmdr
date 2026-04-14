@@ -1,7 +1,7 @@
 //! Quick test for Docker SMB servers with custom ports.
 //!
 //! Run with:
-//!   cargo run --example docker_smb_test
+//!   cargo run --example docker_smb_test --features smb-e2e
 //!
 //! NOTE: This example only works on macOS/Linux (requires the `smb2` crate).
 
@@ -10,15 +10,14 @@ mod inner {
     use smb2::{ClientConfig, SmbClient};
     use std::time::Duration;
 
-    const TEST_PORT: u16 = 9445; // smb-guest Docker container
-    const TEST_IP: &str = "127.0.0.1";
-
     #[tokio::main]
     pub async fn main() {
-        println!("Testing Docker SMB container at {}:{}", TEST_IP, TEST_PORT);
+        let port = smb2::testing::guest_port();
+        let ip = "127.0.0.1";
+        println!("Testing Docker SMB container at {}:{}", ip, port);
 
         let config = ClientConfig {
-            addr: format!("{}:{}", TEST_IP, TEST_PORT),
+            addr: format!("{}:{}", ip, port),
             timeout: Duration::from_secs(5),
             username: "Guest".to_string(),
             password: String::new(),

@@ -821,15 +821,16 @@ mod tests {
 mod integration_tests {
     use super::*;
 
-    /// Verifies TCP reachability against a Docker SMB container on port 9445.
+    /// Verifies TCP reachability against a Docker SMB container.
     ///
     /// Requires: `./test/smb-servers/start.sh minimal`
     #[tokio::test]
     async fn reachability_docker_smb_guest() {
-        let result = check_reachability("localhost", 9445).await;
+        let port = smb2::testing::guest_port();
+        let result = check_reachability("localhost", port).await;
         assert!(
             result.is_ok(),
-            "Docker SMB container should be reachable on port 9445. Start it with: ./test/smb-servers/start.sh minimal"
+            "Docker SMB container should be reachable on port {port}. Start it with: ./test/smb-servers/start.sh minimal"
         );
     }
 

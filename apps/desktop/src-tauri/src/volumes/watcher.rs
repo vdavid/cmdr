@@ -305,8 +305,15 @@ fn try_upgrade_smb_mount(volume_path: &str) {
             Some((u, p)) => (Some(u.as_str()), Some(p.as_str())),
             None => (None, None),
         };
-        crate::commands::network::register_smb_volume(&info.server, &info.share, &mount_path, username, password, 445)
-            .await;
+        crate::commands::network::register_smb_volume(
+            &info.server,
+            &info.share,
+            &mount_path,
+            username,
+            password,
+            info.port,
+        )
+        .await;
     });
 }
 

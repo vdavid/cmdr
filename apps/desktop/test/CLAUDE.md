@@ -35,7 +35,7 @@ tests don't affect each other.
 
 ## Other test infrastructure
 
-- `smb-servers/` -- Docker Compose setup for local SMB share testing
+- `smb-servers/` -- SMB test server scripts (containers from smb2's consumer test harness)
 - Unit tests live in `apps/desktop/test/` (Vitest) -- separate from E2E
 
 ## Detailed docs

@@ -84,6 +84,8 @@ pub struct SmbMountInfo {
     pub share: String,
     /// Username if present in the mount source (for example, "david").
     pub username: Option<String>,
+    /// Port from the mount source (for example, 10480). Defaults to 445.
+    pub port: u16,
 }
 
 /// Extracts SMB server, share, and username from a mount path via `statfs`.
@@ -143,13 +145,18 @@ fn parse_smb_mount_source(source: &str) -> Option<SmbMountInfo> {
         (None, server_part.to_string())
     };
 
-    // Strip port if present (for example, "192.168.1.111:9445")
-    let server = server.split(':').next().unwrap_or(&server).to_string();
+    // Extract port if present (for example, "192.168.1.111:10480")
+    let (server, port) = if let Some((host, port_str)) = server.rsplit_once(':') {
+        (host.to_string(), port_str.parse().unwrap_or(445))
+    } else {
+        (server, 445)
+    };
 
     Some(SmbMountInfo {
         server,
         share: share.to_string(),
         username,
+        port,
     })
 }
 

@@ -7,7 +7,7 @@
  *
  * Requires:
  * - App built with `--features playwright-e2e,smb-e2e`
- * - Docker SMB containers running: `./apps/desktop/test/smb-servers/start.sh minimal`
+ * - Docker SMB containers running: `./apps/desktop/test/smb-servers/start.sh all`
  * - Guest share pre-mounted (handled by smb-fixtures.ts setup)
  */
 
@@ -27,6 +27,10 @@ import {
   SMB_AUTH_SHARE,
   SMB_AUTH_USERNAME,
   SMB_AUTH_PASSWORD,
+  SMB_50SHARES_HOST,
+  SMB_50SHARES_PORT,
+  SMB_UNICODE_HOST,
+  SMB_UNICODE_PORT,
   smbWriteFile,
 } from '../e2e-shared/smb-fixtures.js'
 import {
@@ -354,5 +358,116 @@ describeSmb('SMB authentication', () => {
 
     const shareNames = result.shares.map((s) => s.name)
     expect(shareNames).toContain(SMB_AUTH_SHARE)
+  })
+})
+
+// ── Diverse server tests ────────────────────────────────────────────────────
+//
+// These tests exercise Cmdr's UI against smb2's consumer containers with
+// non-trivial data: many shares, unicode names, etc. They test discovery
+// and share listing (no mounting needed).
+
+describeSmb('SMB 50-share server', () => {
+  test('50-share server lists all shares', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+
+    // List shares via IPC (bypasses UI, tests the backend share listing path)
+    const result = await tauriPage.evaluate<{ shares: { name: string }[] }>(`
+      window.__TAURI_INTERNALS__.invoke('list_shares_with_credentials', {
+        hostId: 'smb-e2e-50shares-' + Date.now(),
+        hostname: ${JSON.stringify(SMB_50SHARES_HOST)},
+        ipAddress: undefined,
+        port: ${String(SMB_50SHARES_PORT)},
+        username: '',
+        password: '',
+        timeoutMs: 30000,
+        cacheTtlMs: 5000,
+      })
+    `)
+
+    // smb2's consumer 50-shares container creates 50 shares
+    expect(result.shares.length).toBeGreaterThanOrEqual(50)
+  })
+
+  test('50-share host shows correct share count in Network view', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+
+    await mcpSelectVolume('left', 'Network')
+    await sleep(2000)
+
+    // Wait for the 50-shares host to appear and prefetch shares
+    await pollUntil(
+      tauriPage,
+      async () => {
+        const state = await mcpReadResource('cmdr://state')
+        return state.includes('SMB Test (50 Shares)') && state.includes('shares=50')
+      },
+      30000,
+    )
+  })
+})
+
+describeSmb('SMB unicode server', () => {
+  test('unicode server lists shares with non-ASCII names', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+
+    // List shares via IPC
+    const result = await tauriPage.evaluate<{ shares: { name: string }[] }>(`
+      window.__TAURI_INTERNALS__.invoke('list_shares_with_credentials', {
+        hostId: 'smb-e2e-unicode-' + Date.now(),
+        hostname: ${JSON.stringify(SMB_UNICODE_HOST)},
+        ipAddress: undefined,
+        port: ${String(SMB_UNICODE_PORT)},
+        username: '',
+        password: '',
+        timeoutMs: 30000,
+        cacheTtlMs: 5000,
+      })
+    `)
+
+    // smb2's unicode container has shares with CJK, emoji, and accented names
+    expect(result.shares.length).toBeGreaterThan(0)
+
+    // At least one share name should contain non-ASCII characters
+    const hasNonAscii = result.shares.some((s) => s.name.split('').some((c) => c.charCodeAt(0) > 127))
+    expect(hasNonAscii).toBe(true)
+  })
+
+  test('unicode shares render correctly in share browser', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+
+    // Switch to Network, open unicode host
+    await mcpSelectVolume('left', 'Network')
+    await sleep(2000)
+    await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Unicode)'), 15000)
+
+    await mcpCall('move_cursor', { pane: 'left', filename: 'SMB Test (Unicode)' })
+    await mcpCall('open_under_cursor', {})
+
+    // Wait for share browser to load — should show at least one share
+    await pollUntil(
+      tauriPage,
+      async () => {
+        return tauriPage.evaluate<boolean>(`(function() {
+          var rows = document.querySelectorAll('.share-row .share-name');
+          return rows.length > 0;
+        })()`)
+      },
+      30000,
+    )
+
+    // Verify share names rendered (not empty or garbled)
+    const shareNames = await tauriPage.evaluate<string[]>(`(function() {
+      var rows = document.querySelectorAll('.share-row .share-name');
+      var names = [];
+      for (var i = 0; i < rows.length; i++) {
+        names.push(rows[i].textContent);
+      }
+      return names;
+    })()`)
+
+    expect(shareNames.length).toBeGreaterThan(0)
+    // Names should not be empty strings (garbled rendering)
+    expect(shareNames.every((n) => n.length > 0)).toBe(true)
   })
 })

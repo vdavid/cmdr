@@ -150,6 +150,10 @@
     let aiCleanup: (() => void) | undefined
 
     onMount(() => {
+        // Sync AI state to toast. Must be called synchronously (not after an await)
+        // because it uses $effect, which requires Svelte's reactive context.
+        initAiToastSync()
+
         // Initialize all async setup
         void (async () => {
             // Initialize reactive settings for UI components
@@ -211,7 +215,6 @@
 
             // Initialize AI state and event listeners (shows offer toast if eligible)
             aiCleanup = await initAiState()
-            initAiToastSync()
 
             // Cancel all active write operations on page unload (hot-reload, close, navigation)
             window.addEventListener('beforeunload', () => {

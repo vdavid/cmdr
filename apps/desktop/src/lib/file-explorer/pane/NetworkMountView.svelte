@@ -91,13 +91,11 @@
     }
 
     /** Resolves the server address for mounting, preferring IP but falling back to hostname for loopback. */
+    /** Returns the hostname or IP to connect to (without port — port is passed separately). */
     function resolveServerAddress(networkHost: NetworkHost): string {
         const ip = networkHost.ipAddress
         const isLoopback = ip === '127.0.0.1' || ip === '::1'
-        const host = (isLoopback ? networkHost.hostname : ip) ?? networkHost.hostname ?? networkHost.name
-        return networkHost.port && networkHost.port !== 445
-            ? `${host}:${String(networkHost.port)}`
-            : host
+        return (isLoopback ? networkHost.hostname : ip) ?? networkHost.hostname ?? networkHost.name
     }
 
     async function handleShareSelect(share: ShareInfo, credentials: { username: string; password: string } | null) {

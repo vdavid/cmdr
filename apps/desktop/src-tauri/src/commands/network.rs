@@ -295,11 +295,13 @@ pub async fn mount_network_share(
     port: Option<u16>,
     timeout_ms: Option<u64>,
 ) -> Result<MountResult, MountError> {
+    let actual_port = port.unwrap_or(445);
     let result = mount::mount_share(
         server.clone(),
         share.clone(),
         username.clone(),
         password.clone(),
+        actual_port,
         timeout_ms,
     )
     .await?;
@@ -313,7 +315,7 @@ pub async fn mount_network_share(
         &result.mount_path,
         username.as_deref(),
         password.as_deref(),
-        port.unwrap_or(445),
+        actual_port,
     )
     .await;
 
@@ -419,7 +421,7 @@ pub async fn upgrade_to_smb_volume(volume_id: String) -> Result<String, String> 
         None => (None, None),
     };
 
-    register_smb_volume(&info.server, &info.share, &mount_path, username, password, 445).await;
+    register_smb_volume(&info.server, &info.share, &mount_path, username, password, info.port).await;
 
     // Check if it worked
     if let Some(vol) = manager.get(&volume_id)

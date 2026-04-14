@@ -159,8 +159,9 @@ rewrite it to use smb2, or delete it if the SMB test containers have better test
 
 #### 9. Manual testing against a real SMB server
 
-- Start SMB test containers: `apps/desktop/test/smb-servers/start.sh`
-- Run `pnpm dev`, browse to a network host, verify share listing works (guest and authenticated).
+- Start SMB test containers: `apps/desktop/test/smb-servers/start.sh` (containers from smb2's consumer test harness)
+- Run `pnpm dev` with `--features smb-e2e`, browse Network sidebar, verify share listing works (guest and
+  authenticated).
 - Verify smbutil fallback works (connect to a Samba server that triggers protocol errors — the Pi container if
   available).
 

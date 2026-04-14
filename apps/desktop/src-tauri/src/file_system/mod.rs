@@ -234,7 +234,7 @@ pub fn upgrade_existing_smb_mounts() {
                 &mount_path,
                 username,
                 password,
-                445,
+                info.port,
             )
             .await;
             any_upgraded = true;
