@@ -1,6 +1,6 @@
 //! Tauri commands for file system operations.
 
-#[cfg(target_os = "macos")]
+use crate::file_system::get_files_at_indices as ops_get_files_at_indices;
 use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
 use crate::file_system::write_operations::{
     ConflictResolution, ScanPreviewStartResult, cancel_scan_preview as ops_cancel_scan_preview,
@@ -374,6 +374,30 @@ pub fn find_file_indices(
 #[tauri::command]
 pub fn get_file_at(listing_id: String, index: usize, include_hidden: bool) -> Result<Option<FileEntry>, String> {
     ops_get_file_at(&listing_id, index, include_hidden)
+}
+
+/// Gets file paths at specific frontend indices from a cached listing (batch version of path extraction).
+/// Handles the parent ".." offset internally — callers pass frontend indices.
+#[tauri::command]
+pub fn get_paths_at_indices(
+    listing_id: String,
+    selected_indices: Vec<usize>,
+    include_hidden: bool,
+    has_parent: bool,
+) -> Result<Vec<String>, String> {
+    ops_get_paths_at_indices(&listing_id, &selected_indices, include_hidden, has_parent)
+        .map(|paths| paths.into_iter().map(|p| p.to_string_lossy().into_owned()).collect())
+}
+
+/// Gets full FileEntry objects at specific backend indices from a cached listing.
+/// Callers are responsible for any parent offset adjustment before passing indices.
+#[tauri::command]
+pub fn get_files_at_indices(
+    listing_id: String,
+    selected_indices: Vec<usize>,
+    include_hidden: bool,
+) -> Result<Vec<FileEntry>, String> {
+    ops_get_files_at_indices(&listing_id, &selected_indices, include_hidden)
 }
 
 #[tauri::command]

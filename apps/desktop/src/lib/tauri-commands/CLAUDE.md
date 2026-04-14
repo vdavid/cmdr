@@ -17,7 +17,7 @@ import { listDirectoryStart } from '$lib/tauri-commands/file-listing'
 | --------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `ipc-types.ts`        | `TimedOut<T>`, `IpcError`, `isIpcError()`, `getIpcErrorMessage()` — shared timeout-aware types                      |
 | `index.ts`            | Barrel re-export of everything below                                                                                |
-| `file-listing.ts`     | Virtual-scroll listing API, drag-and-drop, `pathExists`, `createDirectory`, `createFile`, sync status, font metrics |
+| `file-listing.ts`     | Virtual-scroll listing API, batch accessors (`getPathsAtIndices`, `getFilesAtIndices`), drag-and-drop, `pathExists`, `createDirectory`, `createFile`, sync status, font metrics |
 | `file-viewer.ts`      | Viewer session only: open, seek, search, close, word wrap menu                                                      |
 | `file-actions.ts`     | Open file/URL, Finder reveal, Quick Look, Get Info, context menu, clipboard, open in editor                         |
 | `icons.ts`            | Icon fetching (`getIcons`, `refreshDirectoryIcons`) and cache invalidation                                          |

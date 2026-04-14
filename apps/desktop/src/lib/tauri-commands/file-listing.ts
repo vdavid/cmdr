@@ -157,6 +157,38 @@ export async function getFileAt(listingId: string, index: number, includeHidden:
 }
 
 /**
+ * Gets file paths at specific frontend indices from a cached listing (batch).
+ * Handles the parent ".." offset internally — pass frontend indices directly.
+ * @param listingId - The listing ID from listDirectoryStart.
+ * @param selectedIndices - Frontend indices of selected files.
+ * @param includeHidden - Whether hidden files are shown (affects index mapping).
+ * @param hasParent - Whether the ".." entry is shown at index 0.
+ */
+export async function getPathsAtIndices(
+  listingId: string,
+  selectedIndices: number[],
+  includeHidden: boolean,
+  hasParent: boolean,
+): Promise<string[]> {
+  return invoke<string[]>('get_paths_at_indices', { listingId, selectedIndices, includeHidden, hasParent })
+}
+
+/**
+ * Gets full FileEntry objects at specific backend indices from a cached listing (batch).
+ * Callers are responsible for any parent offset adjustment before passing indices.
+ * @param listingId - The listing ID from listDirectoryStart.
+ * @param selectedIndices - Backend indices of selected files.
+ * @param includeHidden - Whether hidden files are shown (affects index mapping).
+ */
+export async function getFilesAtIndices(
+  listingId: string,
+  selectedIndices: number[],
+  includeHidden: boolean,
+): Promise<FileEntry[]> {
+  return invoke<FileEntry[]>('get_files_at_indices', { listingId, selectedIndices, includeHidden })
+}
+
+/**
  * Ends a directory listing and cleans up the cache.
  * @param listingId - The listing ID to clean up.
  */

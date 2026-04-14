@@ -109,6 +109,9 @@ When directory has parent entry shown at index 0, frontend indices are offset by
 
 ## Gotchas
 
+- **Always use batch IPC for selection lookups**: `get_paths_at_indices` (paths only) and `get_files_at_indices` (full
+  FileEntry objects) fetch all selected items in a single IPC call. Never loop over `getFileAt` per-index — with 50k
+  selected files, per-file IPC takes 5-10 seconds. The batch calls take ~1ms regardless of count.
 - **MTP move is interleaved copy + delete per file**: Moves involving MTP volumes copy and then delete each file
   individually (not copy-all-then-delete-all). This minimizes duplicates on partial failure — if it fails mid-way, only
   the current file exists in both places. The progress UI shows three stages (Scanning → Copying → Removing source). If

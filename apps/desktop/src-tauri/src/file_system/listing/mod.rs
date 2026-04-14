@@ -19,9 +19,8 @@ pub use reading::{get_single_entry, list_directory_core, list_directory_core_wit
 pub use sorting::{DirectorySortMode, SortColumn, SortOrder};
 pub use streaming::{StreamingListingStartResult, cancel_listing, list_directory_start_streaming};
 
-// macOS-only exports (used by drag operations)
-#[cfg(target_os = "macos")]
-pub use operations::get_paths_at_indices;
+// Batch accessors (used by drag, clipboard, and transfer dialogs)
+pub use operations::{get_files_at_indices, get_paths_at_indices};
 
 // Internal re-exports for file_system module internals (pub(crate) for crate-internal use)
 pub(crate) use caching::{

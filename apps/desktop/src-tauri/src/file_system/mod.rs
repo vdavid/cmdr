@@ -30,9 +30,8 @@ pub use listing::{
     get_listing_stats, get_max_filename_width, get_total_count, list_directory_end, list_directory_start_streaming,
     list_directory_start_with_volume, refresh_listing_index_sizes, resort_listing,
 };
-// macOS-only exports (used by drag operations)
-#[cfg(target_os = "macos")]
-pub use listing::get_paths_at_indices;
+// Batch accessors (used by drag, clipboard, and transfer dialogs)
+pub use listing::{get_files_at_indices, get_paths_at_indices};
 // Re-export volume types (some not used externally yet)
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 #[allow(unused_imports, reason = "Public API re-exports for future use")]

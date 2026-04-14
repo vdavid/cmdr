@@ -302,6 +302,34 @@ pub fn get_paths_at_indices(
     Ok(paths)
 }
 
+/// Gets full FileEntry objects at specific backend indices from a cached listing.
+///
+/// Unlike `get_paths_at_indices` (which takes frontend indices and handles the parent offset),
+/// this takes backend indices directly — the caller is responsible for any offset adjustment.
+/// Used by the delete dialog where full entry metadata (name, size, isDirectory, etc.) is needed.
+pub fn get_files_at_indices(
+    listing_id: &str,
+    selected_indices: &[usize],
+    include_hidden: bool,
+) -> Result<Vec<FileEntry>, String> {
+    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
+
+    let listing = cache
+        .get(listing_id)
+        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+
+    let visible: Vec<&FileEntry> = visible_entries(&listing.entries, include_hidden).collect();
+
+    let mut entries = Vec::with_capacity(selected_indices.len());
+    for &idx in selected_indices {
+        if let Some(entry) = visible.get(idx) {
+            entries.push((*entry).clone());
+        }
+    }
+
+    Ok(entries)
+}
+
 // ============================================================================
 // Re-sorting
 // ============================================================================

@@ -1,4 +1,4 @@
-import { getFileAt, getListingStats } from '$lib/tauri-commands'
+import { getFileAt, getListingStats, getPathsAtIndices } from '$lib/tauri-commands'
 import { toBackendIndices, toBackendCursorIndex } from '$lib/file-operations/transfer/transfer-dialog-utils'
 import type { SortColumn, SortOrder, TransferOperationType, VolumeInfo } from '../types'
 import type { FilePaneAPI } from './types'
@@ -36,17 +36,11 @@ export interface TransferDialogPropsData {
 
 export async function getSelectedFilePaths(
   listingId: string,
-  backendIndices: number[],
+  selectedIndices: number[],
   showHiddenFiles: boolean,
+  hasParent: boolean,
 ): Promise<string[]> {
-  const paths: string[] = []
-  for (const index of backendIndices) {
-    const file = await getFileAt(listingId, index, showHiddenFiles)
-    if (file && file.name !== '..') {
-      paths.push(file.path)
-    }
-  }
-  return paths
+  return getPathsAtIndices(listingId, selectedIndices, showHiddenFiles, hasParent)
 }
 
 export async function buildTransferPropsFromSelection(
@@ -61,7 +55,7 @@ export async function buildTransferPropsFromSelection(
   if (backendIndices.length === 0) return null
 
   const stats = await getListingStats(listingId, context.showHiddenFiles, backendIndices)
-  const sourcePaths = await getSelectedFilePaths(listingId, backendIndices, context.showHiddenFiles)
+  const sourcePaths = await getSelectedFilePaths(listingId, selectedIndices, context.showHiddenFiles, hasParent)
   if (sourcePaths.length === 0) return null
 
   return {

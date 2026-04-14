@@ -7,27 +7,14 @@ import {
   getCommonParentPath,
   type TransferContext,
 } from './transfer-operations'
-import type { FileEntry, VolumeInfo } from '../types'
+import type { VolumeInfo } from '../types'
 
 vi.mock('$lib/tauri-commands', () => ({
-  getFileAt: vi.fn(),
   getListingStats: vi.fn(),
+  getPathsAtIndices: vi.fn(),
 }))
 
-const { getFileAt, getListingStats } = await import('$lib/tauri-commands')
-
-const mockFileEntry = (
-  overrides: Partial<FileEntry> & { name: string; path: string; isDirectory: boolean },
-): FileEntry =>
-  ({
-    isSymlink: false,
-    permissions: 0o755,
-    owner: 'user',
-    group: 'staff',
-    iconId: '',
-    extendedMetadataLoaded: false,
-    ...overrides,
-  }) as FileEntry
+const { getListingStats, getPathsAtIndices } = await import('$lib/tauri-commands')
 
 describe('getDestinationVolumeInfo', () => {
   const volumes: VolumeInfo[] = [
@@ -99,23 +86,17 @@ describe('getSelectedFilePaths', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('returns paths for valid files', async () => {
-    vi.mocked(getFileAt).mockResolvedValueOnce(
-      mockFileEntry({ name: 'file1.txt', path: '/p/file1.txt', isDirectory: false }),
-    )
-    vi.mocked(getFileAt).mockResolvedValueOnce(
-      mockFileEntry({ name: 'file2.txt', path: '/p/file2.txt', isDirectory: false }),
-    )
+    vi.mocked(getPathsAtIndices).mockResolvedValueOnce(['/p/file1.txt', '/p/file2.txt'])
 
-    expect(await getSelectedFilePaths('listing-1', [0, 1], false)).toEqual(['/p/file1.txt', '/p/file2.txt'])
+    expect(await getSelectedFilePaths('listing-1', [0, 1], false, false)).toEqual(['/p/file1.txt', '/p/file2.txt'])
+    expect(getPathsAtIndices).toHaveBeenCalledWith('listing-1', [0, 1], false, false)
   })
 
-  it('skips ".." entries', async () => {
-    vi.mocked(getFileAt).mockResolvedValueOnce(mockFileEntry({ name: '..', path: '/parent', isDirectory: true }))
-    vi.mocked(getFileAt).mockResolvedValueOnce(
-      mockFileEntry({ name: 'file.txt', path: '/p/file.txt', isDirectory: false }),
-    )
+  it('passes hasParent to backend for ".." filtering', async () => {
+    vi.mocked(getPathsAtIndices).mockResolvedValueOnce(['/p/file.txt'])
 
-    expect(await getSelectedFilePaths('listing-1', [0, 1], false)).toEqual(['/p/file.txt'])
+    expect(await getSelectedFilePaths('listing-1', [0, 1], false, true)).toEqual(['/p/file.txt'])
+    expect(getPathsAtIndices).toHaveBeenCalledWith('listing-1', [0, 1], false, true)
   })
 })
 
@@ -145,12 +126,7 @@ describe('buildTransferPropsFromSelection', () => {
       selectedFiles: 2,
       selectedDirs: 1,
     })
-    vi.mocked(getFileAt).mockResolvedValueOnce(
-      mockFileEntry({ name: 'file1.txt', path: '/source/file1.txt', isDirectory: false }),
-    )
-    vi.mocked(getFileAt).mockResolvedValueOnce(
-      mockFileEntry({ name: 'folder', path: '/source/folder', isDirectory: true }),
-    )
+    vi.mocked(getPathsAtIndices).mockResolvedValueOnce(['/source/file1.txt', '/source/folder'])
 
     const result = await buildTransferPropsFromSelection('copy', 'listing-1', [0, 1], false, true, context)
     expect(result).toEqual({
@@ -178,9 +154,7 @@ describe('buildTransferPropsFromSelection', () => {
       selectedFiles: 1,
       selectedDirs: 0,
     })
-    vi.mocked(getFileAt).mockResolvedValueOnce(
-      mockFileEntry({ name: 'file.txt', path: '/source/file.txt', isDirectory: false }),
-    )
+    vi.mocked(getPathsAtIndices).mockResolvedValueOnce(['/source/file.txt'])
 
     const result = await buildTransferPropsFromSelection('move', 'listing-1', [0], false, true, context)
     expect(result?.operationType).toBe('move')

@@ -645,6 +645,8 @@ pub fn run() {
             commands::file_system::refresh_listing,
             commands::file_system::get_file_range,
             commands::file_system::get_file_at,
+            commands::file_system::get_paths_at_indices,
+            commands::file_system::get_files_at_indices,
             commands::file_system::get_total_count,
             commands::file_system::get_max_filename_width,
             commands::file_system::find_file_index,

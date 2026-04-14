@@ -12,6 +12,8 @@ export {
   findFileIndex,
   findFileIndices,
   getFileAt,
+  getPathsAtIndices,
+  getFilesAtIndices,
   listDirectoryEnd,
   refreshListing,
   getListingStats,

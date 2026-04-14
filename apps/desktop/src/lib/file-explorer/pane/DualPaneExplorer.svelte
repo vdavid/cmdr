@@ -6,7 +6,7 @@
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
     import { toBackendCursorIndex, toBackendIndices } from '$lib/file-operations/transfer/transfer-dialog-utils'
-    import { getFileAt, openInEditor } from '$lib/tauri-commands'
+    import { getFileAt, getFilesAtIndices, openInEditor } from '$lib/tauri-commands'
     import {
         loadAppStatus,
         saveAppStatus,
@@ -1608,9 +1608,9 @@
               })()
         if (backendIndices.length === 0) return
 
-        // Fetch full FileEntry data for each item
-        const entries = await Promise.all(backendIndices.map((idx) => getFileAt(listingId, idx, showHiddenFiles)))
-        const validEntries = entries.filter((e): e is NonNullable<typeof e> => e !== null && e.name !== '..')
+        // Fetch full FileEntry data in a single batch IPC call
+        const entries = await getFilesAtIndices(listingId, backendIndices, showHiddenFiles)
+        const validEntries = entries.filter((e) => e.name !== '..')
         if (validEntries.length === 0) return
 
         const sourceItems: DeleteSourceItem[] = validEntries.map((e) => ({
