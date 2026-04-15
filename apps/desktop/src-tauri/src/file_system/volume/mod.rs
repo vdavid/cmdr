@@ -558,12 +558,22 @@ pub trait Volume: Send + Sync {
 
     /// Writes data from a stream to the given path.
     ///
+    /// `on_progress(bytes_written, total_size)` is called after each chunk is
+    /// written. Return `ControlFlow::Break(())` to cancel the transfer.
+    ///
     /// # Arguments
     /// * `dest` - Destination path (file will be created/overwritten)
     /// * `size` - Total size in bytes (required for protocols like MTP)
     /// * `stream` - Source data stream
-    fn write_from_stream(&self, dest: &Path, size: u64, stream: Box<dyn VolumeReadStream>) -> Result<u64, VolumeError> {
-        let _ = (dest, size, stream);
+    /// * `on_progress` - Progress callback; return `ControlFlow::Break(())` to cancel
+    fn write_from_stream(
+        &self,
+        dest: &Path,
+        size: u64,
+        stream: Box<dyn VolumeReadStream>,
+        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
+    ) -> Result<u64, VolumeError> {
+        let _ = (dest, size, stream, on_progress);
         Err(VolumeError::NotSupported)
     }
 }

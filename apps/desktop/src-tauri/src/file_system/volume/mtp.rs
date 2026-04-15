@@ -759,6 +759,7 @@ impl Volume for MtpVolume {
         dest: &Path,
         size: u64,
         mut stream: Box<dyn VolumeReadStream>,
+        _on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
     ) -> Result<u64, VolumeError> {
         let dest_folder = dest.parent().map(|p| self.to_mtp_path(p)).unwrap_or_default();
         let filename = dest

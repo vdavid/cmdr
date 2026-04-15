@@ -1136,8 +1136,9 @@ impl Volume for SmbVolume {
     fn write_from_stream(
         &self,
         dest: &Path,
-        _size: u64,
+        size: u64,
         mut stream: Box<dyn VolumeReadStream>,
+        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
     ) -> Result<u64, VolumeError> {
         let smb_path = self.to_smb_path(dest);
         let handle = self.runtime_handle.clone();
@@ -1147,19 +1148,47 @@ impl Volume for SmbVolume {
             self.share_name, smb_path
         );
 
-        // Collect all chunks into a buffer, then write in one pipelined call
-        let mut data = Vec::new();
-        while let Some(result) = stream.next_chunk() {
-            data.extend_from_slice(&result?);
+        // Bridge VolumeReadStream → smb2's write_file_streamed callback.
+        // smb2 pulls chunks on demand, so memory is bounded to the sliding window.
+        let mut bytes_written = 0u64;
+        let mut cancelled = false;
+        let sp = smb_path;
+
+        let result = self.with_smb("write_from_stream", |client, tree| {
+            handle.block_on(client.write_file_streamed(tree, &sp, &mut || {
+                // Check cancellation via the progress callback
+                if cancelled {
+                    return Some(Err(std::io::Error::new(
+                        std::io::ErrorKind::Interrupted,
+                        "Operation cancelled",
+                    )));
+                }
+
+                match stream.next_chunk() {
+                    Some(Ok(chunk)) => {
+                        bytes_written += chunk.len() as u64;
+                        if on_progress(bytes_written, size) == std::ops::ControlFlow::Break(()) {
+                            cancelled = true;
+                            // Don't return error here — let smb2 finish writing this chunk
+                            // so we don't corrupt the connection state. Next call will error.
+                        }
+                        Some(Ok(chunk))
+                    }
+                    Some(Err(e)) => Some(Err(std::io::Error::other(e.to_string()))),
+                    None => None,
+                }
+            }))
+        });
+
+        if cancelled {
+            return Err(VolumeError::IoError {
+                message: "Operation cancelled".to_string(),
+                raw_os_error: None,
+            });
         }
 
-        let len = data.len() as u64;
-        let sp = smb_path;
-        self.with_smb("write_from_stream", |client, tree| {
-            handle.block_on(client.write_file_pipelined(tree, &sp, &data))
-        })?;
-
-        Ok(len)
+        result?;
+        Ok(bytes_written)
     }
 
     fn smb_connection_state(&self) -> Option<SmbConnectionState> {

@@ -77,7 +77,9 @@ pub(super) fn copy_single_path(
             );
             let stream = source_volume.open_read_stream(source_path)?;
             let size = stream.total_size();
-            return dest_volume.write_from_stream(dest_path, size, stream);
+            let bytes = dest_volume.write_from_stream(dest_path, size, stream, on_file_progress)?;
+            on_file_complete();
+            return Ok(bytes);
         }
 
         // Neither supports streaming — fall back to temp local (export then import)
