@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use super::state::WriteOperationState;
-use super::types::{ConflictResolution, VolumeCopyConfig, WriteConflictEvent, WriteOperationError};
+use super::types::{ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteConflictEvent, WriteOperationError};
 use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
 
@@ -26,13 +26,11 @@ pub(super) fn resolve_volume_conflict(
     dest_volume: &Arc<dyn Volume>,
     dest_path: &Path,
     config: &VolumeCopyConfig,
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     apply_to_all_resolution: &mut Option<ConflictResolution>,
 ) -> Result<Option<PathBuf>, WriteOperationError> {
-    use tauri::Emitter;
-
     // Determine effective conflict resolution
     let resolution = if let Some(saved_resolution) = apply_to_all_resolution {
         // Use saved "apply to all" resolution
@@ -60,20 +58,17 @@ pub(super) fn resolve_volume_conflict(
             let destination_is_newer = false;
             let size_difference = dest_size as i64 - source_size as i64;
 
-            let _ = app.emit(
-                "write-conflict",
-                WriteConflictEvent {
-                    operation_id: operation_id.to_string(),
-                    source_path: source_path.display().to_string(),
-                    destination_path: dest_path.display().to_string(),
-                    source_size,
-                    destination_size: dest_size,
-                    source_modified,
-                    destination_modified,
-                    destination_is_newer,
-                    size_difference,
-                },
-            );
+            events.emit_conflict(WriteConflictEvent {
+                operation_id: operation_id.to_string(),
+                source_path: source_path.display().to_string(),
+                destination_path: dest_path.display().to_string(),
+                source_size,
+                destination_size: dest_size,
+                source_modified,
+                destination_modified,
+                destination_is_newer,
+                size_difference,
+            });
 
             // Wait for user to call resolve_write_conflict
             let guard = state.conflict_mutex.lock_ignore_poison();

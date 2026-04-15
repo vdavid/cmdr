@@ -29,9 +29,9 @@ use super::state::{
     unregister_operation_status, update_operation_status,
 };
 use super::types::{
-    ConflictResolution, VolumeCopyConfig, VolumeCopyScanResult, WriteCancelledEvent, WriteCompleteEvent,
-    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult,
-    WriteOperationType, WriteProgressEvent,
+    ConflictResolution, OperationEventSink, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult,
+    WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError,
+    WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
 };
 use super::volume_conflict::resolve_volume_conflict;
 use super::volume_strategy::copy_single_path;
@@ -138,8 +138,9 @@ pub async fn copy_between_volumes(
         let app_for_error = app.clone();
 
         let result = tokio::task::spawn_blocking(move || {
+            let events = TauriEventSink::new(app);
             copy_volumes_with_progress(
-                &app,
+                &events,
                 &operation_id_for_spawn,
                 &state,
                 source_volume,
@@ -291,7 +292,7 @@ pub fn scan_for_volume_copy(
     reason = "Volume copy requires passing multiple context parameters"
 )]
 fn copy_volumes_with_progress(
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     source_volume: Arc<dyn Volume>,
@@ -300,8 +301,6 @@ fn copy_volumes_with_progress(
     dest_path: &Path,
     config: &VolumeCopyConfig,
 ) -> Result<(), WriteOperationError> {
-    use tauri::Emitter;
-
     log::debug!(
         "copy_volumes_with_progress: starting operation_id={}, {} sources",
         operation_id,
@@ -327,19 +326,16 @@ fn copy_volumes_with_progress(
             operation_id
         );
 
-        let _ = app.emit(
-            "write-progress",
-            WriteProgressEvent {
-                operation_id: operation_id.to_string(),
-                operation_type: WriteOperationType::Copy,
-                phase: WriteOperationPhase::Scanning,
-                current_file: None,
-                files_done: 0,
-                files_total: 0,
-                bytes_done: 0,
-                bytes_total: 0,
-            },
-        );
+        events.emit_progress(WriteProgressEvent {
+            operation_id: operation_id.to_string(),
+            operation_type: WriteOperationType::Copy,
+            phase: WriteOperationPhase::Scanning,
+            current_file: None,
+            files_done: 0,
+            files_total: 0,
+            bytes_done: 0,
+            bytes_total: 0,
+        });
 
         total_files = 0;
         total_bytes = 0u64;
@@ -391,19 +387,16 @@ fn copy_volumes_with_progress(
     let progress_interval = Duration::from_millis(config.progress_interval_ms);
 
     // Emit initial copying phase event
-    let _ = app.emit(
-        "write-progress",
-        WriteProgressEvent {
-            operation_id: operation_id.to_string(),
-            operation_type: WriteOperationType::Copy,
-            phase: WriteOperationPhase::Copying,
-            current_file: None,
-            files_done: 0,
-            files_total: total_files,
-            bytes_done: 0,
-            bytes_total: total_bytes,
-        },
-    );
+    events.emit_progress(WriteProgressEvent {
+        operation_id: operation_id.to_string(),
+        operation_type: WriteOperationType::Copy,
+        phase: WriteOperationPhase::Copying,
+        current_file: None,
+        files_done: 0,
+        files_total: total_files,
+        bytes_done: 0,
+        bytes_total: total_bytes,
+    });
     update_operation_status(
         operation_id,
         WriteOperationPhase::Copying,
@@ -469,7 +462,7 @@ fn copy_volumes_with_progress(
                     &dest_volume,
                     &dest_item_path,
                     config,
-                    app,
+                    events,
                     operation_id,
                     state,
                     &mut apply_to_all_resolution,
@@ -523,19 +516,16 @@ fn copy_volumes_with_progress(
             let last = last_progress_cell.get();
             if last.elapsed() >= progress_interval {
                 last_progress_cell.set(Instant::now());
-                let _ = app.emit(
-                    "write-progress",
-                    WriteProgressEvent {
-                        operation_id: operation_id.to_string(),
-                        operation_type: WriteOperationType::Copy,
-                        phase: WriteOperationPhase::Copying,
-                        current_file: file_name_for_cb.clone(),
-                        files_done: current_files_done,
-                        files_total: total_files,
-                        bytes_done: current_total,
-                        bytes_total: total_bytes,
-                    },
-                );
+                events.emit_progress(WriteProgressEvent {
+                    operation_id: operation_id.to_string(),
+                    operation_type: WriteOperationType::Copy,
+                    phase: WriteOperationPhase::Copying,
+                    current_file: file_name_for_cb.clone(),
+                    files_done: current_files_done,
+                    files_total: total_files,
+                    bytes_done: current_total,
+                    bytes_total: total_bytes,
+                });
                 update_operation_status(
                     operation_id,
                     WriteOperationPhase::Copying,
@@ -603,15 +593,12 @@ fn copy_volumes_with_progress(
             bytes_done
         );
 
-        let _ = app.emit(
-            "write-complete",
-            WriteCompleteEvent {
-                operation_id: operation_id.to_string(),
-                operation_type: WriteOperationType::Copy,
-                files_processed: files_done,
-                bytes_processed: bytes_done,
-            },
-        );
+        events.emit_complete(WriteCompleteEvent {
+            operation_id: operation_id.to_string(),
+            operation_type: WriteOperationType::Copy,
+            files_processed: files_done,
+            bytes_processed: bytes_done,
+        });
 
         return Ok(());
     }
@@ -633,7 +620,7 @@ fn copy_volumes_with_progress(
         let rollback_completed = volume_rollback_with_progress(
             &dest_volume,
             &copied_paths,
-            app,
+            events,
             operation_id,
             state,
             files_done,
@@ -642,15 +629,12 @@ fn copy_volumes_with_progress(
             total_bytes,
         );
 
-        let _ = app.emit(
-            "write-cancelled",
-            WriteCancelledEvent {
-                operation_id: operation_id.to_string(),
-                operation_type: WriteOperationType::Copy,
-                files_processed: files_done,
-                rolled_back: rollback_completed,
-            },
-        );
+        events.emit_cancelled(WriteCancelledEvent {
+            operation_id: operation_id.to_string(),
+            operation_type: WriteOperationType::Copy,
+            files_processed: files_done,
+            rolled_back: rollback_completed,
+        });
     } else {
         // Stopped or error — keep completed files, clean up only the last partial file
         if let Some(partial_path) = &last_dest_path {
@@ -675,15 +659,12 @@ fn copy_volumes_with_progress(
                 operation_id,
                 copied_paths.len()
             );
-            let _ = app.emit(
-                "write-cancelled",
-                WriteCancelledEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Copy,
-                    files_processed: files_done,
-                    rolled_back: false,
-                },
-            );
+            events.emit_cancelled(WriteCancelledEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Copy,
+                files_processed: files_done,
+                rolled_back: false,
+            });
         }
     }
 
@@ -712,7 +693,7 @@ fn copy_volumes_with_progress(
 fn volume_rollback_with_progress(
     volume: &Arc<dyn Volume>,
     copied_paths: &[PathBuf],
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     files_at_cancel: usize,
@@ -720,26 +701,21 @@ fn volume_rollback_with_progress(
     files_total: usize,
     bytes_total: u64,
 ) -> bool {
-    use tauri::Emitter;
-
     let paths_to_delete = copied_paths.len();
     let mut paths_deleted = 0usize;
     let mut last_progress_time = Instant::now();
 
     // Emit initial rollback phase event
-    let _ = app.emit(
-        "write-progress",
-        WriteProgressEvent {
-            operation_id: operation_id.to_string(),
-            operation_type: WriteOperationType::Copy,
-            phase: WriteOperationPhase::RollingBack,
-            current_file: None,
-            files_done: files_at_cancel,
-            files_total,
-            bytes_done: bytes_at_cancel,
-            bytes_total,
-        },
-    );
+    events.emit_progress(WriteProgressEvent {
+        operation_id: operation_id.to_string(),
+        operation_type: WriteOperationType::Copy,
+        phase: WriteOperationPhase::RollingBack,
+        current_file: None,
+        files_done: files_at_cancel,
+        files_total,
+        bytes_done: bytes_at_cancel,
+        bytes_total,
+    });
     update_operation_status(
         operation_id,
         WriteOperationPhase::RollingBack,
@@ -785,19 +761,16 @@ fn volume_rollback_with_progress(
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_default();
-            let _ = app.emit(
-                "write-progress",
-                WriteProgressEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Copy,
-                    phase: WriteOperationPhase::RollingBack,
-                    current_file: Some(current_file_name.clone()),
-                    files_done: remaining_files,
-                    files_total,
-                    bytes_done: remaining_bytes,
-                    bytes_total,
-                },
-            );
+            events.emit_progress(WriteProgressEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Copy,
+                phase: WriteOperationPhase::RollingBack,
+                current_file: Some(current_file_name.clone()),
+                files_done: remaining_files,
+                files_total,
+                bytes_done: remaining_bytes,
+                bytes_total,
+            });
             update_operation_status(
                 operation_id,
                 WriteOperationPhase::RollingBack,
@@ -902,6 +875,9 @@ pub(super) fn map_volume_error(context_path: &str, e: VolumeError) -> WriteOpera
 mod tests {
     use super::*;
     use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume};
+    use crate::file_system::write_operations::types::{
+        CollectorEventSink, WriteConflictEvent, WriteSourceItemDoneEvent,
+    };
 
     #[test]
     fn test_volume_copy_config_default() {
@@ -1118,5 +1094,299 @@ mod tests {
 
         let _ = fs::remove_dir_all(&src_dir);
         let _ = fs::remove_dir_all(&dst_dir);
+    }
+
+    // ========================================================================
+    // Multi-file copy execution tests (via copy_volumes_with_progress)
+    // ========================================================================
+
+    fn make_state() -> Arc<WriteOperationState> {
+        Arc::new(WriteOperationState {
+            intent: Arc::new(AtomicU8::new(0)),
+            progress_interval: Duration::from_millis(50),
+            pending_resolution: std::sync::RwLock::new(None),
+            conflict_condvar: std::sync::Condvar::new(),
+            conflict_mutex: std::sync::Mutex::new(false),
+        })
+    }
+
+    fn make_volumes() -> (Arc<dyn Volume>, Arc<dyn Volume>) {
+        (
+            Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000)),
+            Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000)),
+        )
+    }
+
+    #[test]
+    fn test_multi_file_copy_all_files_arrive() {
+        let (source, dest) = make_volumes();
+
+        source.create_file(Path::new("/a.txt"), b"alpha").unwrap();
+        source.create_file(Path::new("/b.txt"), b"bravo").unwrap();
+        source.create_file(Path::new("/c.txt"), b"charlie").unwrap();
+
+        let events = Arc::new(CollectorEventSink::new());
+        let state = make_state();
+        let config = VolumeCopyConfig::default();
+
+        let result = copy_volumes_with_progress(
+            events.as_ref(),
+            "test-op-1",
+            &state,
+            source,
+            &[
+                PathBuf::from("/a.txt"),
+                PathBuf::from("/b.txt"),
+                PathBuf::from("/c.txt"),
+            ],
+            dest.clone(),
+            Path::new("/"),
+            &config,
+        );
+
+        assert!(result.is_ok(), "copy should succeed: {:?}", result);
+
+        // All 3 files at destination with correct content
+        let mut stream_a = dest.open_read_stream(Path::new("/a.txt")).unwrap();
+        assert_eq!(stream_a.next_chunk().unwrap().unwrap(), b"alpha");
+        let mut stream_b = dest.open_read_stream(Path::new("/b.txt")).unwrap();
+        assert_eq!(stream_b.next_chunk().unwrap().unwrap(), b"bravo");
+        let mut stream_c = dest.open_read_stream(Path::new("/c.txt")).unwrap();
+        assert_eq!(stream_c.next_chunk().unwrap().unwrap(), b"charlie");
+
+        // Completion event emitted
+        let complete = events.complete.lock().unwrap();
+        assert_eq!(complete.len(), 1);
+        assert_eq!(complete[0].files_processed, 3);
+    }
+
+    #[test]
+    fn test_multi_file_copy_progress_tracking() {
+        let (source, dest) = make_volumes();
+
+        source.create_file(Path::new("/x.bin"), &[0; 100_000]).unwrap();
+        source.create_file(Path::new("/y.bin"), &[0; 50_000]).unwrap();
+
+        let events = Arc::new(CollectorEventSink::new());
+        let state = make_state();
+        let config = VolumeCopyConfig {
+            progress_interval_ms: 0, // Emit on every progress call
+            ..VolumeCopyConfig::default()
+        };
+
+        let result = copy_volumes_with_progress(
+            events.as_ref(),
+            "test-op-2",
+            &state,
+            source,
+            &[PathBuf::from("/x.bin"), PathBuf::from("/y.bin")],
+            dest,
+            Path::new("/"),
+            &config,
+        );
+
+        assert!(result.is_ok());
+
+        // Progress events should have been emitted
+        let progress = events.progress.lock().unwrap();
+        assert!(!progress.is_empty(), "expected progress events");
+
+        // Final completion should show correct totals
+        let complete = events.complete.lock().unwrap();
+        assert_eq!(complete.len(), 1);
+        assert_eq!(complete[0].bytes_processed, 150_000);
+    }
+
+    #[test]
+    fn test_multi_file_copy_cancel_before_start() {
+        let (source, dest) = make_volumes();
+
+        source.create_file(Path::new("/a.txt"), b"alpha").unwrap();
+        source.create_file(Path::new("/b.txt"), b"bravo").unwrap();
+
+        let events = Arc::new(CollectorEventSink::new());
+        let state = make_state();
+        // Set Stopped BEFORE starting
+        state.intent.store(2, Ordering::Relaxed);
+        let config = VolumeCopyConfig::default();
+
+        let result = copy_volumes_with_progress(
+            events.as_ref(),
+            "test-op-pre-cancel",
+            &state,
+            source,
+            &[PathBuf::from("/a.txt"), PathBuf::from("/b.txt")],
+            dest.clone(),
+            Path::new("/"),
+            &config,
+        );
+
+        assert!(matches!(result, Err(WriteOperationError::Cancelled { .. })));
+        // No files should have been copied
+        assert!(!dest.exists(Path::new("/a.txt")));
+        assert!(!dest.exists(Path::new("/b.txt")));
+    }
+
+    #[test]
+    fn test_multi_file_copy_cancel_mid_flight() {
+        // Use a custom event sink that triggers cancellation deterministically
+        // when progress reports files_done >= 2.
+        struct CancelAfterNSink {
+            inner: CollectorEventSink,
+            intent: Arc<AtomicU8>,
+            cancel_after_files: usize,
+        }
+
+        impl OperationEventSink for CancelAfterNSink {
+            fn emit_progress(&self, event: WriteProgressEvent) {
+                if event.phase == WriteOperationPhase::Copying && event.files_done >= self.cancel_after_files {
+                    self.intent.store(2, Ordering::Relaxed);
+                }
+                self.inner.emit_progress(event);
+            }
+            fn emit_complete(&self, e: WriteCompleteEvent) {
+                self.inner.emit_complete(e);
+            }
+            fn emit_cancelled(&self, e: WriteCancelledEvent) {
+                self.inner.emit_cancelled(e);
+            }
+            fn emit_error(&self, e: WriteErrorEvent) {
+                self.inner.emit_error(e);
+            }
+            fn emit_conflict(&self, e: WriteConflictEvent) {
+                self.inner.emit_conflict(e);
+            }
+            fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
+        }
+
+        let (source, dest) = make_volumes();
+        for i in 1..=5 {
+            source
+                .create_file(Path::new(&format!("/{}.bin", i)), &vec![0; 100_000])
+                .unwrap();
+        }
+
+        let state = make_state();
+        let events = CancelAfterNSink {
+            inner: CollectorEventSink::new(),
+            intent: Arc::clone(&state.intent),
+            cancel_after_files: 2,
+        };
+        let config = VolumeCopyConfig {
+            progress_interval_ms: 0,
+            ..VolumeCopyConfig::default()
+        };
+
+        let result = copy_volumes_with_progress(
+            &events,
+            "test-op-cancel-mid",
+            &state,
+            source,
+            &[
+                PathBuf::from("/1.bin"),
+                PathBuf::from("/2.bin"),
+                PathBuf::from("/3.bin"),
+                PathBuf::from("/4.bin"),
+                PathBuf::from("/5.bin"),
+            ],
+            dest.clone(),
+            Path::new("/"),
+            &config,
+        );
+
+        // Cancellation from write_from_stream's progress callback results in an IoError
+        // (the VolumeError::IoError "Operation cancelled" maps to WriteOperationError::IoError).
+        // The outer loop then detects the Stopped intent and returns Cancelled.
+        assert!(result.is_err(), "expected error, got {:?}", result);
+
+        // At least 2 files should exist but not all 5
+        assert!(dest.exists(Path::new("/1.bin")));
+        assert!(dest.exists(Path::new("/2.bin")));
+        let total = (1..=5)
+            .filter(|i| dest.exists(Path::new(&format!("/{}.bin", i))))
+            .count();
+        assert!(total < 5, "expected fewer than 5 files, got {}", total);
+
+        // The cancel either emits a write-cancelled event (if the intent check fires
+        // between files) or returns an error (if write_from_stream's progress callback
+        // returned Break). Both are valid cancellation paths.
+        let cancelled = events.inner.cancelled.lock().unwrap();
+        let had_error = result.is_err();
+        assert!(
+            cancelled.len() == 1 || had_error,
+            "expected either a cancelled event or an error"
+        );
+    }
+
+    #[test]
+    fn test_multi_file_copy_skip_conflict() {
+        let (source, dest) = make_volumes();
+
+        source.create_file(Path::new("/new.txt"), b"new content").unwrap();
+        source
+            .create_file(Path::new("/conflict.txt"), b"source version")
+            .unwrap();
+        // Pre-existing file at destination
+        dest.create_file(Path::new("/conflict.txt"), b"dest version").unwrap();
+
+        let events = Arc::new(CollectorEventSink::new());
+        let state = make_state();
+        let config = VolumeCopyConfig {
+            conflict_resolution: ConflictResolution::Skip,
+            ..VolumeCopyConfig::default()
+        };
+
+        let result = copy_volumes_with_progress(
+            events.as_ref(),
+            "test-op-skip",
+            &state,
+            source,
+            &[PathBuf::from("/new.txt"), PathBuf::from("/conflict.txt")],
+            dest.clone(),
+            Path::new("/"),
+            &config,
+        );
+
+        assert!(result.is_ok());
+
+        // New file should be copied
+        let mut stream = dest.open_read_stream(Path::new("/new.txt")).unwrap();
+        assert_eq!(stream.next_chunk().unwrap().unwrap(), b"new content");
+
+        // Conflicting file should keep destination version (skip)
+        let mut stream = dest.open_read_stream(Path::new("/conflict.txt")).unwrap();
+        assert_eq!(stream.next_chunk().unwrap().unwrap(), b"dest version");
+    }
+
+    #[test]
+    fn test_multi_file_copy_overwrite_conflict() {
+        let (source, dest) = make_volumes();
+
+        source.create_file(Path::new("/file.txt"), b"new version").unwrap();
+        dest.create_file(Path::new("/file.txt"), b"old version").unwrap();
+
+        let events = Arc::new(CollectorEventSink::new());
+        let state = make_state();
+        let config = VolumeCopyConfig {
+            conflict_resolution: ConflictResolution::Overwrite,
+            ..VolumeCopyConfig::default()
+        };
+
+        let result = copy_volumes_with_progress(
+            events.as_ref(),
+            "test-op-overwrite",
+            &state,
+            source,
+            &[PathBuf::from("/file.txt")],
+            dest.clone(),
+            Path::new("/"),
+            &config,
+        );
+
+        assert!(result.is_ok());
+
+        // File should have source content (overwritten)
+        let mut stream = dest.open_read_stream(Path::new("/file.txt")).unwrap();
+        assert_eq!(stream.next_chunk().unwrap().unwrap(), b"new version");
     }
 }

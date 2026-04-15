@@ -16,7 +16,7 @@ use super::state::{
     WRITE_OPERATION_STATE, WriteOperationState, is_cancelled, register_operation_status, unregister_operation_status,
 };
 use super::types::{
-    ConflictResolution, VolumeCopyConfig, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
+    ConflictResolution, TauriEventSink, VolumeCopyConfig, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
 };
 use super::volume_conflict::resolve_volume_conflict;
@@ -142,13 +142,14 @@ pub async fn move_between_volumes(
                             dest_is_dir
                         );
 
+                        let events = TauriEventSink::new(app.clone());
                         let resolved = resolve_volume_conflict(
                             &source_volume,
                             source_path,
                             &dest_volume,
                             &dest_item,
                             &config,
-                            &app,
+                            &events,
                             &operation_id_for_spawn,
                             &state,
                             &mut apply_to_all_resolution,
@@ -360,13 +361,14 @@ async fn move_within_same_volume(
                             dest_is_dir
                         );
 
+                        let events = TauriEventSink::new(app.clone());
                         let resolved = resolve_volume_conflict(
                             &volume,
                             source_path,
                             &volume,
                             &dest_item,
                             &config,
-                            &app,
+                            &events,
                             &operation_id_for_spawn,
                             &state,
                             &mut apply_to_all_resolution,
