@@ -100,7 +100,9 @@ pub fn find_listings_for_path_on_volume(
 /// Used by `FullRefresh` when the SMB watcher emits `STATUS_NOTIFY_ENUM_DIR` for
 /// the share root but no listing matches that exact path (the user may be browsing
 /// a subdirectory).
-fn find_listings_on_volume(volume_id: &str) -> Vec<(String, PathBuf, SortColumn, SortOrder, DirectorySortMode)> {
+pub(crate) fn find_listings_on_volume(
+    volume_id: &str,
+) -> Vec<(String, PathBuf, SortColumn, SortOrder, DirectorySortMode)> {
     let cache = match LISTING_CACHE.read() {
         Ok(c) => c,
         Err(_) => return Vec::new(),

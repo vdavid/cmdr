@@ -42,3 +42,5 @@ mod operations_test;
 mod sorting_test;
 #[cfg(test)]
 mod stats_test;
+#[cfg(test)]
+mod streaming_test;

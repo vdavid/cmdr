@@ -109,6 +109,175 @@ pub(crate) static STREAMING_STATE: LazyLock<RwLock<HashMap<String, Arc<Streaming
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
 // ============================================================================
+// Event sink trait (decouples streaming from Tauri)
+// ============================================================================
+
+/// Abstraction over listing event emission.
+/// Production: `TauriListingEventSink` wraps `AppHandle`.
+/// Tests: `CollectorListingEventSink` stores events for assertion.
+pub(crate) trait ListingEventSink: Send + Sync {
+    fn emit_opening(&self, listing_id: &str);
+    fn emit_progress(&self, listing_id: &str, loaded_count: usize);
+    fn emit_read_complete(&self, listing_id: &str, total_count: usize);
+    fn emit_complete(&self, listing_id: &str, total_count: usize, max_filename_width: Option<f32>, volume_root: String);
+    fn emit_error(&self, listing_id: &str, message: String, friendly: Option<FriendlyError>);
+    fn emit_cancelled(&self, listing_id: &str);
+}
+
+/// Tauri-backed listing event sink — calls `app.emit()` for each event.
+pub(crate) struct TauriListingEventSink {
+    app: tauri::AppHandle,
+}
+
+impl TauriListingEventSink {
+    pub(crate) fn new(app: tauri::AppHandle) -> Self {
+        Self { app }
+    }
+}
+
+impl ListingEventSink for TauriListingEventSink {
+    fn emit_opening(&self, listing_id: &str) {
+        use tauri::Emitter;
+        let _ = self.app.emit(
+            "listing-opening",
+            ListingOpeningEvent {
+                listing_id: listing_id.to_string(),
+            },
+        );
+    }
+
+    fn emit_progress(&self, listing_id: &str, loaded_count: usize) {
+        use tauri::Emitter;
+        let _ = self.app.emit(
+            "listing-progress",
+            ListingProgressEvent {
+                listing_id: listing_id.to_string(),
+                loaded_count,
+            },
+        );
+    }
+
+    fn emit_read_complete(&self, listing_id: &str, total_count: usize) {
+        use tauri::Emitter;
+        let _ = self.app.emit(
+            "listing-read-complete",
+            ListingReadCompleteEvent {
+                listing_id: listing_id.to_string(),
+                total_count,
+            },
+        );
+    }
+
+    fn emit_complete(
+        &self,
+        listing_id: &str,
+        total_count: usize,
+        max_filename_width: Option<f32>,
+        volume_root: String,
+    ) {
+        use tauri::Emitter;
+        let _ = self.app.emit(
+            "listing-complete",
+            ListingCompleteEvent {
+                listing_id: listing_id.to_string(),
+                total_count,
+                max_filename_width,
+                volume_root,
+            },
+        );
+    }
+
+    fn emit_error(&self, listing_id: &str, message: String, friendly: Option<FriendlyError>) {
+        use tauri::Emitter;
+        let _ = self.app.emit(
+            "listing-error",
+            ListingErrorEvent {
+                listing_id: listing_id.to_string(),
+                message,
+                friendly,
+            },
+        );
+    }
+
+    fn emit_cancelled(&self, listing_id: &str) {
+        use tauri::Emitter;
+        let _ = self.app.emit(
+            "listing-cancelled",
+            ListingCancelledEvent {
+                listing_id: listing_id.to_string(),
+            },
+        );
+    }
+}
+
+/// Test listing event sink — stores events for inspection.
+#[cfg(test)]
+pub(crate) struct CollectorListingEventSink {
+    pub opening: std::sync::Mutex<Vec<String>>,
+    pub progress: std::sync::Mutex<Vec<(String, usize)>>,
+    pub read_complete: std::sync::Mutex<Vec<(String, usize)>>,
+    pub complete: std::sync::Mutex<Vec<(String, usize)>>,
+    pub errors: std::sync::Mutex<Vec<(String, String)>>,
+    pub cancelled: std::sync::Mutex<Vec<String>>,
+}
+
+#[cfg(test)]
+impl CollectorListingEventSink {
+    pub fn new() -> Self {
+        Self {
+            opening: std::sync::Mutex::new(Vec::new()),
+            progress: std::sync::Mutex::new(Vec::new()),
+            read_complete: std::sync::Mutex::new(Vec::new()),
+            complete: std::sync::Mutex::new(Vec::new()),
+            errors: std::sync::Mutex::new(Vec::new()),
+            cancelled: std::sync::Mutex::new(Vec::new()),
+        }
+    }
+}
+
+#[cfg(test)]
+impl ListingEventSink for CollectorListingEventSink {
+    fn emit_opening(&self, listing_id: &str) {
+        self.opening.lock().unwrap().push(listing_id.to_string());
+    }
+
+    fn emit_progress(&self, listing_id: &str, loaded_count: usize) {
+        self.progress
+            .lock()
+            .unwrap()
+            .push((listing_id.to_string(), loaded_count));
+    }
+
+    fn emit_read_complete(&self, listing_id: &str, total_count: usize) {
+        self.read_complete
+            .lock()
+            .unwrap()
+            .push((listing_id.to_string(), total_count));
+    }
+
+    fn emit_complete(
+        &self,
+        listing_id: &str,
+        total_count: usize,
+        _max_filename_width: Option<f32>,
+        _volume_root: String,
+    ) {
+        self.complete
+            .lock()
+            .unwrap()
+            .push((listing_id.to_string(), total_count));
+    }
+
+    fn emit_error(&self, listing_id: &str, message: String, _friendly: Option<FriendlyError>) {
+        self.errors.lock().unwrap().push((listing_id.to_string(), message));
+    }
+
+    fn emit_cancelled(&self, listing_id: &str) {
+        self.cancelled.lock().unwrap().push(listing_id.to_string());
+    }
+}
+
+// ============================================================================
 // Streaming implementation
 // ============================================================================
 
@@ -149,18 +318,18 @@ pub async fn list_directory_start_streaming(
     let path_owned = path.to_path_buf();
     let path_for_error = path.to_path_buf();
     let volume_id_owned = volume_id.to_string();
-    let app_for_spawn = app.clone();
+    let events: Arc<dyn ListingEventSink> = Arc::new(TauriListingEventSink::new(app));
 
     // Spawn background task
     tokio::spawn(async move {
         // Clone again for use after spawn_blocking
         let listing_id_for_cleanup = listing_id_for_spawn.clone();
-        let app_for_error = app_for_spawn.clone();
+        let events_for_error = Arc::clone(&events);
 
         // Run blocking I/O on dedicated thread pool
         let result = tokio::task::spawn_blocking(move || {
             read_directory_with_progress(
-                &app_for_spawn,
+                &events,
                 &listing_id_for_spawn,
                 &state,
                 &volume_id_owned,
@@ -179,17 +348,13 @@ pub async fn list_directory_start_streaming(
         }
 
         // Handle task result
-        use tauri::Emitter;
         match result {
             Err(e) => {
                 // Task panicked or was cancelled
-                let _ = app_for_error.emit(
-                    "listing-error",
-                    ListingErrorEvent {
-                        listing_id: listing_id_for_cleanup,
-                        message: "Something went wrong while reading this folder".to_string(),
-                        friendly: None,
-                    },
+                events_for_error.emit_error(
+                    &listing_id_for_cleanup,
+                    "Something went wrong while reading this folder".to_string(),
+                    None,
                 );
                 log::error!("Listing task panicked: {}", e);
             }
@@ -197,14 +362,7 @@ pub async fn list_directory_start_streaming(
                 // Function returned an error (volume not found, permission denied, I/O, etc.)
                 let mut friendly = friendly_error_from_volume_error(&e, &path_for_error);
                 enrich_with_provider(&mut friendly, &path_for_error);
-                let _ = app_for_error.emit(
-                    "listing-error",
-                    ListingErrorEvent {
-                        listing_id: listing_id_for_cleanup,
-                        message: e.to_string(),
-                        friendly: Some(friendly),
-                    },
-                );
+                events_for_error.emit_error(&listing_id_for_cleanup, e.to_string(), Some(friendly));
             }
             Ok(Ok(())) => {
                 // Success - read_directory_with_progress already emitted listing-complete
@@ -227,8 +385,8 @@ pub async fn list_directory_start_streaming(
     clippy::too_many_arguments,
     reason = "Streaming operation requires many state parameters"
 )]
-fn read_directory_with_progress(
-    app: &tauri::AppHandle,
+pub(crate) fn read_directory_with_progress(
+    events: &Arc<dyn ListingEventSink>,
     listing_id: &str,
     state: &Arc<StreamingListingState>,
     volume_id: &str,
@@ -238,8 +396,6 @@ fn read_directory_with_progress(
     sort_order: SortOrder,
     dir_sort_mode: DirectorySortMode,
 ) -> Result<(), VolumeError> {
-    use tauri::Emitter;
-
     benchmark::log_event("read_directory_with_progress START");
     log::debug!(
         "read_directory_with_progress: listing_id={}, volume_id={}, path={}",
@@ -250,22 +406,12 @@ fn read_directory_with_progress(
 
     // Emit opening event - this is the slow part for network folders
     // (SMB connection establishment, directory handle creation, MTP queries)
-    let _ = app.emit(
-        "listing-opening",
-        ListingOpeningEvent {
-            listing_id: listing_id.to_string(),
-        },
-    );
+    events.emit_opening(listing_id);
 
     // Check cancellation before starting
     if state.cancelled.load(Ordering::Relaxed) {
         benchmark::log_event("read_directory_with_progress CANCELLED (before read)");
-        let _ = app.emit(
-            "listing-cancelled",
-            ListingCancelledEvent {
-                listing_id: listing_id.to_string(),
-            },
-        );
+        events.emit_cancelled(listing_id);
         return Ok(());
     }
 
@@ -280,7 +426,7 @@ fn read_directory_with_progress(
     let read_start = std::time::Instant::now();
     let path_for_thread = path.to_path_buf();
     let (tx, rx) = mpsc::channel();
-    let app_for_progress = app.clone();
+    let events_for_progress = Arc::clone(events);
     let listing_id_for_progress = listing_id.to_string();
 
     // Capture the Tokio runtime handle so the spawned thread can access it.
@@ -292,14 +438,7 @@ fn read_directory_with_progress(
         let _guard = runtime_handle.enter();
 
         let on_progress = |loaded_count: usize| {
-            use tauri::Emitter;
-            let _ = app_for_progress.emit(
-                "listing-progress",
-                ListingProgressEvent {
-                    listing_id: listing_id_for_progress.clone(),
-                    loaded_count,
-                },
-            );
+            events_for_progress.emit_progress(&listing_id_for_progress, loaded_count);
         };
         let result = runtime_handle.block_on(volume.list_directory_with_progress(&path_for_thread, &on_progress));
         let _ = tx.send(result);
@@ -309,12 +448,7 @@ fn read_directory_with_progress(
     let entries_result = loop {
         if state.cancelled.load(Ordering::Relaxed) {
             benchmark::log_event("read_directory_with_progress CANCELLED (during read_dir polling)");
-            let _ = app.emit(
-                "listing-cancelled",
-                ListingCancelledEvent {
-                    listing_id: listing_id.to_string(),
-                },
-            );
+            events.emit_cancelled(listing_id);
             return Ok(());
         }
 
@@ -335,23 +469,12 @@ fn read_directory_with_progress(
     benchmark::log_event_value("read_dir COMPLETE, entries", entries.len());
 
     // Emit read-complete event (before sorting/caching) so UI can show "All N files loaded"
-    let _ = app.emit(
-        "listing-read-complete",
-        ListingReadCompleteEvent {
-            listing_id: listing_id.to_string(),
-            total_count: entries.len(),
-        },
-    );
+    events.emit_read_complete(listing_id, entries.len());
 
     // Check cancellation one more time before finalizing
     if state.cancelled.load(Ordering::Relaxed) {
         benchmark::log_event("read_directory_with_progress CANCELLED (after read)");
-        let _ = app.emit(
-            "listing-cancelled",
-            ListingCancelledEvent {
-                listing_id: listing_id.to_string(),
-            },
-        );
+        events.emit_cancelled(listing_id);
         return Ok(());
     }
 
@@ -388,12 +511,7 @@ fn read_directory_with_progress(
         // Check cancellation while holding the lock - makes check+insert atomic
         if state.cancelled.load(Ordering::Relaxed) {
             benchmark::log_event("read_directory_with_progress CANCELLED (at cache insert)");
-            let _ = app.emit(
-                "listing-cancelled",
-                ListingCancelledEvent {
-                    listing_id: listing_id.to_string(),
-                },
-            );
+            events.emit_cancelled(listing_id);
             return Ok(());
         }
 
@@ -427,15 +545,7 @@ fn read_directory_with_progress(
         .unwrap_or_else(|| "/".to_string());
 
     // Emit completion event
-    let _ = app.emit(
-        "listing-complete",
-        ListingCompleteEvent {
-            listing_id: listing_id.to_string(),
-            total_count,
-            max_filename_width,
-            volume_root,
-        },
-    );
+    events.emit_complete(listing_id, total_count, max_filename_width, volume_root);
 
     benchmark::log_event_value(
         "read_directory_with_progress COMPLETE, read_dir_time_ms",

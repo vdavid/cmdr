@@ -520,3 +520,86 @@ fn test_find_listings_for_path_on_volume_no_match() {
 
     cleanup_listing(&id);
 }
+
+// ============================================================================
+// find_listings_on_volume tests (FullRefresh fallback path)
+// ============================================================================
+//
+// `notify_directory_changed(FullRefresh)` requires a `tauri::AppHandle` (obtained
+// from WATCHER_MANAGER) and returns early if it's None. Since AppHandle can't be
+// constructed in unit tests, we can't test the full FullRefresh notification path
+// directly.
+//
+// Instead, the FullRefresh re-read + cache update logic is tested via
+// `handle_directory_change` in watcher_test.rs (which shares the same mechanism
+// and handles missing AppHandle gracefully). Here we test the `find_listings_on_volume`
+// helper that the FullRefresh fallback path depends on.
+
+#[test]
+fn test_find_listings_on_volume_returns_all_volume_listings() {
+    use super::caching::find_listings_on_volume;
+
+    let id1 = insert_test_listing_on_volume(
+        "flov_listing1",
+        "smb-share-42",
+        "/mnt/share/docs",
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+        vec![make_entry("readme.txt", false, Some(100))],
+    );
+    let id2 = insert_test_listing_on_volume(
+        "flov_listing2",
+        "smb-share-42",
+        "/mnt/share/photos",
+        SortColumn::Size,
+        SortOrder::Descending,
+        DirectorySortMode::AlwaysByName,
+        vec![],
+    );
+    // Different volume — should not be returned
+    let id3 = insert_test_listing_on_volume(
+        "flov_other",
+        "different-vol",
+        "/mnt/other",
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+        vec![],
+    );
+
+    let results = find_listings_on_volume("smb-share-42");
+    assert_eq!(
+        results.len(),
+        2,
+        "Expected 2 listings for smb-share-42, got {}",
+        results.len()
+    );
+
+    let ids: Vec<&str> = results.iter().map(|(id, ..)| id.as_str()).collect();
+    assert!(ids.contains(&"flov_listing1"));
+    assert!(ids.contains(&"flov_listing2"));
+
+    // Verify paths and sort params are returned correctly
+    let listing1 = results.iter().find(|(id, ..)| id == "flov_listing1").unwrap();
+    assert_eq!(listing1.1, PathBuf::from("/mnt/share/docs"));
+    assert_eq!(listing1.2, SortColumn::Name);
+
+    let listing2 = results.iter().find(|(id, ..)| id == "flov_listing2").unwrap();
+    assert_eq!(listing2.1, PathBuf::from("/mnt/share/photos"));
+    assert_eq!(listing2.2, SortColumn::Size);
+    assert_eq!(listing2.3, SortOrder::Descending);
+    assert_eq!(listing2.4, DirectorySortMode::AlwaysByName);
+
+    cleanup_listing(&id1);
+    cleanup_listing(&id2);
+    cleanup_listing(&id3);
+}
+
+#[test]
+fn test_find_listings_on_volume_empty_for_unknown_volume() {
+    use super::caching::find_listings_on_volume;
+
+    let results = find_listings_on_volume("nonexistent-volume-id");
+    assert!(results.is_empty());
+}

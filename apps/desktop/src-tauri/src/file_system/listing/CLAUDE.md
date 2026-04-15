@@ -8,7 +8,7 @@ Backend directory reading, caching, sorting, and streaming for the file explorer
 
 - **mod.rs** – Public API exports, re-exports for crate-internal use
 - **reading.rs** – Low-level disk I/O (`list_directory_core()`, `get_single_entry()`, macOS metadata)
-- **streaming.rs** – Async streaming with progress events, cancellation
+- **streaming.rs** – Async streaming with progress events, cancellation. Uses `ListingEventSink` trait (same pattern as `OperationEventSink` in write_operations) to decouple from Tauri. `TauriListingEventSink` for production, `CollectorListingEventSink` for tests
 - **operations.rs** – Synchronous frontend-facing API (lifecycle, cache accessors). `ListingStats` includes `total_physical_size` and `selected_physical_size` for dual-size display
 - **caching.rs** – `LISTING_CACHE` global state, `CachedListing` struct, cache helpers for incremental updates
 - **sorting.rs** – `SortColumn`, `SortOrder`, `sort_entries()`
@@ -87,6 +87,9 @@ Frontend                          Backend
 
 **Decision**: Sequence counter lives on `CachedListing`, not on `WatchedDirectory`
 **Why**: SMB and MTP volumes don't use FSEvents (`supports_watching() == false`), so they never get a `WatchedDirectory` entry. With the sequence on the watcher, `increment_sequence` returned `None` and `directory-diff` events were never emitted for those volumes. Moving the `AtomicU64` to `CachedListing` makes it work for all volume types. The FSEvents watcher path also uses this same counter now.
+
+**Decision**: `ListingEventSink` trait decouples streaming from Tauri (same pattern as `OperationEventSink` in write_operations)
+**Why**: `read_directory_with_progress` needs to emit events, but `tauri::AppHandle` can't be created in tests. The trait allows `CollectorListingEventSink` to capture events for assertions. `Arc<dyn ListingEventSink>` is used (not `&dyn`) because the sink is cloned into `std::thread::spawn` for progress callbacks.
 
 **Decision**: File watcher starts AFTER listing complete
 **Why**: Watcher diffs rely on cached entries. Starting before cache is populated would miss initial state.

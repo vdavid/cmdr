@@ -275,3 +275,126 @@ fn test_process_dir_entry_handles_directory() {
     assert!(entry.is_directory);
     assert!(entry.size.is_none());
 }
+
+// ============================================================================
+// Tests for list_directory_start_with_volume
+// ============================================================================
+
+/// Tests that `list_directory_start_with_volume` reads entries from an InMemoryVolume,
+/// caches them in LISTING_CACHE, and returns the correct count.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_list_directory_start_with_volume_caches_entries() {
+    use crate::file_system::get_volume_manager;
+    use crate::file_system::listing::caching::LISTING_CACHE;
+    use crate::file_system::listing::metadata::FileEntry;
+    use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
+    use crate::file_system::volume::InMemoryVolume;
+    use crate::file_system::watcher::stop_watching;
+    use std::path::PathBuf;
+    use std::sync::Arc;
+
+    let volume_id = format!("test-vol-ldswv-{}", uuid::Uuid::new_v4());
+    let dir_path = PathBuf::from("/testdir");
+
+    // Create volume with three files
+    let volume = Arc::new(InMemoryVolume::with_entries(
+        "TestLDSWV",
+        vec![
+            FileEntry {
+                size: Some(100),
+                permissions: 0o644,
+                owner: "test".to_string(),
+                group: "staff".to_string(),
+                extended_metadata_loaded: true,
+                ..FileEntry::new("p.txt".to_string(), "/testdir/p.txt".to_string(), false, false)
+            },
+            FileEntry {
+                size: Some(200),
+                permissions: 0o644,
+                owner: "test".to_string(),
+                group: "staff".to_string(),
+                extended_metadata_loaded: true,
+                ..FileEntry::new("q.txt".to_string(), "/testdir/q.txt".to_string(), false, false)
+            },
+            FileEntry {
+                size: Some(300),
+                permissions: 0o644,
+                owner: "test".to_string(),
+                group: "staff".to_string(),
+                extended_metadata_loaded: true,
+                ..FileEntry::new("r.txt".to_string(), "/testdir/r.txt".to_string(), false, false)
+            },
+        ],
+    ));
+
+    get_volume_manager().register(&volume_id, volume);
+
+    // Run on a blocking thread because the function internally uses
+    // `Handle::current().block_on()` which panics if called from an async context.
+    let vid = volume_id.clone();
+    let dp = dir_path.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        super::list_directory_start_with_volume(
+            &vid,
+            &dp,
+            true,
+            SortColumn::Name,
+            SortOrder::Ascending,
+            DirectorySortMode::LikeFiles,
+        )
+    })
+    .await
+    .unwrap();
+
+    assert!(
+        result.is_ok(),
+        "list_directory_start_with_volume failed: {:?}",
+        result.err()
+    );
+    let result = result.unwrap();
+    assert_eq!(result.total_count, 3);
+
+    // Verify LISTING_CACHE has the entries
+    {
+        let cache = LISTING_CACHE.read().unwrap();
+        let listing = cache.get(&result.listing_id).unwrap();
+        assert_eq!(listing.entries.len(), 3);
+        let names: Vec<&str> = listing.entries.iter().map(|e| e.name.as_str()).collect();
+        assert!(names.contains(&"p.txt"));
+        assert!(names.contains(&"q.txt"));
+        assert!(names.contains(&"r.txt"));
+        assert_eq!(listing.volume_id, volume_id);
+        assert_eq!(listing.path, dir_path);
+    }
+
+    // Cleanup: stop watcher and remove from cache
+    stop_watching(&result.listing_id);
+    {
+        let mut cache = LISTING_CACHE.write().unwrap();
+        cache.remove(&result.listing_id);
+    }
+    get_volume_manager().unregister(&volume_id);
+}
+
+/// Tests that `list_directory_start_with_volume` returns an error for a nonexistent volume.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_list_directory_start_with_volume_unknown_volume() {
+    use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
+    use std::path::PathBuf;
+
+    let result = tokio::task::spawn_blocking(move || {
+        super::list_directory_start_with_volume(
+            "nonexistent-volume-id",
+            &PathBuf::from("/some/path"),
+            true,
+            SortColumn::Name,
+            SortOrder::Ascending,
+            DirectorySortMode::LikeFiles,
+        )
+    })
+    .await
+    .unwrap();
+
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("not found"));
+}
