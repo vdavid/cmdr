@@ -447,7 +447,10 @@ impl MtpConnectionManager {
                 Some(entry) => {
                     // Skip if we already know about this storage (duplicate event)
                     if entry.storages.iter().any(|s| s.id == storage_id) {
-                        debug!("handle_storage_added: storage {} already registered for {}", storage_id, device_id);
+                        debug!(
+                            "handle_storage_added: storage {} already registered for {}",
+                            storage_id, device_id
+                        );
                         return;
                     }
                     entry.device.clone()

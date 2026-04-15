@@ -220,7 +220,8 @@ pub fn upgrade_existing_smb_mounts() {
 
             // Try Keychain creds
             let creds =
-                crate::network::smb_upgrade::get_keychain_password(&info.server, hostname.as_deref(), &info.share).await;
+                crate::network::smb_upgrade::get_keychain_password(&info.server, hostname.as_deref(), &info.share)
+                    .await;
 
             let (username, password) = match &creds {
                 Some((u, p)) => (Some(u.as_str()), Some(p.as_str())),

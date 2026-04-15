@@ -229,12 +229,7 @@ pub(crate) async fn get_keychain_password(
             }
         }
 
-        log::debug!(
-            "No Keychain credentials for {:?} / {} / {}",
-            hostname,
-            server_ip,
-            share
-        );
+        log::debug!("No Keychain credentials for {:?} / {} / {}", hostname, server_ip, share);
         None
     })
     .await

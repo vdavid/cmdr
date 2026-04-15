@@ -473,18 +473,12 @@ pub async fn upgrade_to_smb_volume_with_credentials(
     match result {
         Ok(()) => {
             // Save credentials on success if requested
-            if remember_in_keychain
-                && let (Some(u), Some(p)) = (&username, &password) {
-                    let server_key = hostname.as_deref().unwrap_or(&info.server);
-                    if let Err(e) = keychain::save_credentials(
-                        server_key,
-                        Some(&info.share),
-                        u,
-                        p,
-                    ) {
-                        log::warn!("Couldn't save credentials to Keychain: {}", e);
-                    }
+            if remember_in_keychain && let (Some(u), Some(p)) = (&username, &password) {
+                let server_key = hostname.as_deref().unwrap_or(&info.server);
+                if let Err(e) = keychain::save_credentials(server_key, Some(&info.share), u, p) {
+                    log::warn!("Couldn't save credentials to Keychain: {}", e);
                 }
+            }
             Ok(UpgradeResult::Success)
         }
         Err(UpgradeError::Auth) => Ok(UpgradeResult::CredentialsNeeded {

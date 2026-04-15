@@ -80,8 +80,13 @@ pub(super) fn copy_single_path(
             return dest_volume.write_from_stream(dest_path, size, stream);
         }
 
-        // Neither supports streaming and it's not a directory - not supported
-        return Err(VolumeError::NotSupported);
+        // Neither supports streaming — fall back to temp local (export then import)
+        log::debug!(
+            "copy_single_path: no streaming support, using temp local for {} -> {}",
+            source_path.display(),
+            dest_path.display()
+        );
+        return copy_via_temp_local(source_volume, source_path, dest_volume, dest_path);
     }
 
     if source_is_local && !dest_is_local {

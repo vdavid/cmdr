@@ -39,7 +39,7 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 
 - `supports_watching()` — enables the `notify`-based *listing* file watcher in `operations.rs` (separate from the `VolumeWatcher` trait used for drive indexing). `MtpVolume` returns `false` (it has its own USB event loop).
 - `supports_export()` — enables copy/move UI. Local, MTP, and SMB return `true`.
-- `supports_streaming()` — enables chunked MTP-to-MTP transfers. Only `MtpVolume` returns `true`.
+- `supports_streaming()` — enables cross-volume transfers via `open_read_stream` / `write_from_stream`. `MtpVolume` and `SmbVolume` return `true`. The streaming path is the universal fallback for any non-local volume pair — future volume types (FTP, S3) just implement these two methods to get cross-volume copy for free.
 - `local_path()` — returns `Some` only for local volumes; allows `copyfile(2)` fast-path in copy operations. `SmbVolume` returns `None` so copies go through smb2 instead of the slow OS mount.
 - `supports_local_fs_access()` — whether `std::fs` operations (stat, read_dir) work on this volume's paths. Default `true`. `MtpVolume` and `SmbVolume` return `false`. Used to skip the legacy synthetic entry diff path (now superseded by `notify_mutation`).
 - `notify_mutation(volume_id, parent_path, mutation)` — called after a successful mutation (create, delete, rename) to update the listing cache immediately. Default impl uses `std::fs` (works for `LocalPosixVolume`). `SmbVolume` and `MtpVolume` override to use their own protocol's `get_metadata`. Fire-and-forget, no error propagation.

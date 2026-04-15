@@ -6,7 +6,8 @@
 //! performance and fail-fast behavior.
 
 use super::{
-    CopyScanResult, ScanConflict, SmbConnectionState, SourceItemInfo, SpaceInfo, Volume, VolumeError, path_to_id,
+    CopyScanResult, ScanConflict, SmbConnectionState, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream,
+    path_to_id,
 };
 use crate::file_system::listing::FileEntry;
 use log::{debug, warn};
@@ -561,6 +562,41 @@ impl SmbVolume {
     }
 }
 
+// ── Streaming support ────────────────────────��─────────────────────
+
+/// Chunk size for `SmbReadStream` iteration (1 MB).
+const SMB_STREAM_CHUNK_SIZE: usize = 1024 * 1024;
+
+/// Streaming reader for SMB files.
+///
+/// The file data is read into memory in one shot via smb2's pipelined read,
+/// then yielded in fixed-size chunks. This avoids temp files for cross-volume
+/// copies (MTP↔SMB) while keeping memory bounded to one file at a time.
+struct SmbReadStream {
+    data: Vec<u8>,
+    offset: usize,
+}
+
+impl VolumeReadStream for SmbReadStream {
+    fn next_chunk(&mut self) -> Option<Result<Vec<u8>, VolumeError>> {
+        if self.offset >= self.data.len() {
+            return None;
+        }
+        let end = (self.offset + SMB_STREAM_CHUNK_SIZE).min(self.data.len());
+        let chunk = self.data[self.offset..end].to_vec();
+        self.offset = end;
+        Some(Ok(chunk))
+    }
+
+    fn total_size(&self) -> u64 {
+        self.data.len() as u64
+    }
+
+    fn bytes_read(&self) -> u64 {
+        self.offset as u64
+    }
+}
+
 impl Volume for SmbVolume {
     fn name(&self) -> &str {
         &self.name
@@ -1074,6 +1110,56 @@ impl Volume for SmbVolume {
         }
 
         Ok(conflicts)
+    }
+
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+
+    fn open_read_stream(&self, path: &Path) -> Result<Box<dyn VolumeReadStream>, VolumeError> {
+        let smb_path = self.to_smb_path(path);
+        let handle = self.runtime_handle.clone();
+        let sp = smb_path.clone();
+
+        debug!(
+            "SmbVolume::open_read_stream: share={}, path={:?}",
+            self.share_name, smb_path
+        );
+
+        let data = self.with_smb("open_read_stream", |client, tree| {
+            handle.block_on(client.read_file_pipelined(tree, &sp))
+        })?;
+
+        Ok(Box::new(SmbReadStream { data, offset: 0 }))
+    }
+
+    fn write_from_stream(
+        &self,
+        dest: &Path,
+        _size: u64,
+        mut stream: Box<dyn VolumeReadStream>,
+    ) -> Result<u64, VolumeError> {
+        let smb_path = self.to_smb_path(dest);
+        let handle = self.runtime_handle.clone();
+
+        debug!(
+            "SmbVolume::write_from_stream: share={}, path={:?}",
+            self.share_name, smb_path
+        );
+
+        // Collect all chunks into a buffer, then write in one pipelined call
+        let mut data = Vec::new();
+        while let Some(result) = stream.next_chunk() {
+            data.extend_from_slice(&result?);
+        }
+
+        let len = data.len() as u64;
+        let sp = smb_path;
+        self.with_smb("write_from_stream", |client, tree| {
+            handle.block_on(client.write_file_pipelined(tree, &sp, &data))
+        })?;
+
+        Ok(len)
     }
 
     fn smb_connection_state(&self) -> Option<SmbConnectionState> {
@@ -1798,5 +1884,82 @@ mod tests {
         assert!(space.total_bytes > 0);
         assert!(space.available_bytes > 0);
         assert!(space.used_bytes <= space.total_bytes);
+    }
+
+    // ── SmbReadStream tests ────────────────────────────────────────
+
+    #[test]
+    fn smb_read_stream_empty_file() {
+        let mut stream = SmbReadStream {
+            data: vec![],
+            offset: 0,
+        };
+        assert_eq!(stream.total_size(), 0);
+        assert_eq!(stream.bytes_read(), 0);
+        assert!(stream.next_chunk().is_none());
+    }
+
+    #[test]
+    fn smb_read_stream_small_file_single_chunk() {
+        let data = vec![1u8; 100];
+        let mut stream = SmbReadStream { data, offset: 0 };
+        assert_eq!(stream.total_size(), 100);
+
+        let chunk = stream.next_chunk().unwrap().unwrap();
+        assert_eq!(chunk.len(), 100);
+        assert_eq!(stream.bytes_read(), 100);
+        assert!(stream.next_chunk().is_none());
+    }
+
+    #[test]
+    fn smb_read_stream_exact_chunk_boundary() {
+        let data = vec![0u8; SMB_STREAM_CHUNK_SIZE];
+        let mut stream = SmbReadStream { data, offset: 0 };
+
+        let chunk = stream.next_chunk().unwrap().unwrap();
+        assert_eq!(chunk.len(), SMB_STREAM_CHUNK_SIZE);
+        assert!(stream.next_chunk().is_none());
+    }
+
+    #[test]
+    fn smb_read_stream_multiple_chunks() {
+        let size = SMB_STREAM_CHUNK_SIZE * 2 + 500;
+        let data = vec![0xAB; size];
+        let mut stream = SmbReadStream { data, offset: 0 };
+        assert_eq!(stream.total_size(), size as u64);
+
+        let c1 = stream.next_chunk().unwrap().unwrap();
+        assert_eq!(c1.len(), SMB_STREAM_CHUNK_SIZE);
+        assert_eq!(stream.bytes_read(), SMB_STREAM_CHUNK_SIZE as u64);
+
+        let c2 = stream.next_chunk().unwrap().unwrap();
+        assert_eq!(c2.len(), SMB_STREAM_CHUNK_SIZE);
+
+        let c3 = stream.next_chunk().unwrap().unwrap();
+        assert_eq!(c3.len(), 500);
+        assert_eq!(stream.bytes_read(), size as u64);
+
+        assert!(stream.next_chunk().is_none());
+    }
+
+    #[test]
+    fn smb_read_stream_data_integrity() {
+        let data: Vec<u8> = (0..=255).cycle().take(SMB_STREAM_CHUNK_SIZE + 100).collect();
+        let expected = data.clone();
+        let mut stream = SmbReadStream { data, offset: 0 };
+
+        let mut reassembled = Vec::new();
+        while let Some(Ok(chunk)) = stream.next_chunk() {
+            reassembled.extend_from_slice(&chunk);
+        }
+        assert_eq!(reassembled, expected);
+    }
+
+    #[test]
+    fn smb_supports_streaming() {
+        // SmbVolume should report streaming support so cross-volume copies
+        // (MTP↔SMB) use the streaming path instead of NotSupported/temp files.
+        let (vol, _rt) = make_test_volume();
+        assert!(vol.supports_streaming());
     }
 }
