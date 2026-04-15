@@ -26,6 +26,9 @@
     "file-explorer/views/BriefList.svelte": {
       "reason": "Logic tested in brief-list-utils.ts, component mounting heavy"
     },
+    "file-explorer/pane/initialization.ts": {
+      "reason": "All code paths depend on Tauri commands (pathExists, getDefaultVolumeId, resolvePathVolume, getE2eStartPath)"
+    },
     "file-explorer/pane/DialogManager.svelte": {
       "reason": "Pure rendering component, dialog state tested via parent"
     },

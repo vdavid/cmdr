@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy, tick } from 'svelte'
+    import { onMount, tick } from 'svelte'
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
     import DebugDriveIndexPanel from './DebugDriveIndexPanel.svelte'
     import DebugToastPanel from './DebugToastPanel.svelte'
