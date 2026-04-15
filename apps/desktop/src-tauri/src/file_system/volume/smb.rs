@@ -1296,6 +1296,7 @@ pub async fn connect_smb_volume(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::file_system::volume::InMemoryVolume;
 
     // ── Type mapping tests ──────────────────────────────────────────
 
@@ -1991,5 +1992,177 @@ mod tests {
         // (MTP↔SMB) use the streaming path instead of NotSupported/temp files.
         let (vol, _rt) = make_test_volume();
         assert!(vol.supports_streaming());
+    }
+
+    // ── SMB streaming integration tests (Docker) ───────────────────
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_open_read_stream() {
+        let (vol, _rt) = make_docker_volume();
+        let dir = test_dir_name();
+        ensure_clean(&vol, &dir);
+        vol.create_directory(Path::new(&dir)).unwrap();
+
+        let data = b"streaming read test content";
+        vol.create_file(Path::new(&format!("{}/read.txt", dir)), data).unwrap();
+
+        let mut stream = vol.open_read_stream(Path::new(&format!("{}/read.txt", dir))).unwrap();
+        assert_eq!(stream.total_size(), data.len() as u64);
+
+        let mut reassembled = Vec::new();
+        while let Some(Ok(chunk)) = stream.next_chunk() {
+            reassembled.extend_from_slice(&chunk);
+        }
+        assert_eq!(reassembled, data);
+        assert_eq!(stream.bytes_read(), data.len() as u64);
+
+        ensure_clean(&vol, &dir);
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_write_from_stream() {
+        let (vol, _rt) = make_docker_volume();
+        let dir = test_dir_name();
+        ensure_clean(&vol, &dir);
+        vol.create_directory(Path::new(&dir)).unwrap();
+
+        // Create a source via InMemoryVolume
+        let source = InMemoryVolume::new("Source");
+        let data: Vec<u8> = (0..=255).cycle().take(50_000).collect();
+        source.create_file(Path::new("/payload.bin"), &data).unwrap();
+
+        let stream = source.open_read_stream(Path::new("/payload.bin")).unwrap();
+        let no_progress = &|_: u64, _: u64| std::ops::ControlFlow::Continue(());
+        let bytes = vol
+            .write_from_stream(Path::new(&format!("{}/payload.bin", dir)), 50_000, stream, no_progress)
+            .unwrap();
+        assert_eq!(bytes, 50_000);
+
+        // Read back and verify content integrity
+        let mut verify = vol
+            .open_read_stream(Path::new(&format!("{}/payload.bin", dir)))
+            .unwrap();
+        let mut readback = Vec::new();
+        while let Some(Ok(chunk)) = verify.next_chunk() {
+            readback.extend_from_slice(&chunk);
+        }
+        assert_eq!(readback, data);
+
+        ensure_clean(&vol, &dir);
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_write_from_stream_with_progress() {
+        let (vol, _rt) = make_docker_volume();
+        let dir = test_dir_name();
+        ensure_clean(&vol, &dir);
+        vol.create_directory(Path::new(&dir)).unwrap();
+
+        let source = InMemoryVolume::new("Source");
+        let data = vec![0xCD; 200_000]; // ~200 KB
+        source.create_file(Path::new("/big.bin"), &data).unwrap();
+
+        use std::sync::atomic::{AtomicU64, AtomicUsize};
+
+        let progress_calls = AtomicUsize::new(0);
+        let last_bytes = AtomicU64::new(0);
+
+        let stream = source.open_read_stream(Path::new("/big.bin")).unwrap();
+        let bytes = vol
+            .write_from_stream(
+                Path::new(&format!("{}/big.bin", dir)),
+                200_000,
+                stream,
+                &|bytes_done, total| {
+                    progress_calls.fetch_add(1, Ordering::Relaxed);
+                    last_bytes.store(bytes_done, Ordering::Relaxed);
+                    assert_eq!(total, 200_000);
+                    std::ops::ControlFlow::Continue(())
+                },
+            )
+            .unwrap();
+
+        assert_eq!(bytes, 200_000);
+        assert!(
+            progress_calls.load(Ordering::Relaxed) >= 1,
+            "expected at least 1 progress call"
+        );
+        assert_eq!(last_bytes.load(Ordering::Relaxed), 200_000);
+
+        ensure_clean(&vol, &dir);
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_write_from_stream_cancel() {
+        let (vol, _rt) = make_docker_volume();
+        let dir = test_dir_name();
+        ensure_clean(&vol, &dir);
+        vol.create_directory(Path::new(&dir)).unwrap();
+
+        let source = InMemoryVolume::new("Source");
+        let data = vec![0xEF; 500_000]; // ~500 KB, several chunks
+        source.create_file(Path::new("/big.bin"), &data).unwrap();
+
+        let call_count = std::sync::atomic::AtomicUsize::new(0);
+        let stream = source.open_read_stream(Path::new("/big.bin")).unwrap();
+        let result = vol.write_from_stream(Path::new(&format!("{}/big.bin", dir)), 500_000, stream, &|_, _| {
+            let n = call_count.fetch_add(1, Ordering::Relaxed);
+            if n >= 1 {
+                std::ops::ControlFlow::Break(())
+            } else {
+                std::ops::ControlFlow::Continue(())
+            }
+        });
+
+        assert!(result.is_err(), "expected cancellation error");
+
+        ensure_clean(&vol, &dir);
+    }
+
+    #[test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    fn smb_integration_cross_volume_streaming_copy() {
+        // Full end-to-end: InMemoryVolume → SmbVolume via open_read_stream + write_from_stream.
+        // Tests the same path that copy_single_path uses for non-local volumes.
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        let (smb_vol, _rt) = make_docker_volume();
+        let dir = test_dir_name();
+        ensure_clean(&smb_vol, &dir);
+        smb_vol.create_directory(Path::new(&dir)).unwrap();
+
+        let source = InMemoryVolume::new("Source");
+        let data: Vec<u8> = (0..=255).cycle().take(100_000).collect();
+        source.create_file(Path::new("/photo.bin"), &data).unwrap();
+
+        let progress_calls = AtomicUsize::new(0);
+
+        // Read from InMemory, write to SMB — the same path copy_single_path takes
+        let stream = source.open_read_stream(Path::new("/photo.bin")).unwrap();
+        let bytes = smb_vol
+            .write_from_stream(Path::new(&format!("{}/photo.bin", dir)), 100_000, stream, &|_, _| {
+                progress_calls.fetch_add(1, Ordering::Relaxed);
+                std::ops::ControlFlow::Continue(())
+            })
+            .unwrap();
+
+        assert_eq!(bytes, 100_000);
+        assert!(progress_calls.load(Ordering::Relaxed) >= 1);
+
+        // Verify content via read back
+        let mut verify = smb_vol
+            .open_read_stream(Path::new(&format!("{}/photo.bin", dir)))
+            .unwrap();
+        let mut readback = Vec::new();
+        while let Some(Ok(chunk)) = verify.next_chunk() {
+            readback.extend_from_slice(&chunk);
+        }
+        assert_eq!(readback, data);
+
+        ensure_clean(&smb_vol, &dir);
     }
 }

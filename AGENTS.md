@@ -101,6 +101,9 @@ Always use the checker script for compilation, linting, formatting, and tests. I
 - E2E (Playwright): See `apps/desktop/test/e2e-playwright/CLAUDE.md` — build with `playwright-e2e` feature, start app,
   run tests
 - Ubuntu test VM: See `apps/desktop/test/e2e-linux/CLAUDE.md` § "Ubuntu test VM"
+- Docker SMB containers: 14 Samba containers (guest, auth, readonly, slow, flaky, unicode, deep nesting, etc.) for
+  integration tests. Start with `apps/desktop/test/smb-servers/start.sh`. Connect from Rust via
+  `smb2::testing::guest_port()` and friends. See `apps/desktop/test/smb-servers/README.md` for details.
 - CI: Runs on PRs and pushes to main for changed files. Full run: Actions → CI → "Run workflow".
 
 ## Debugging

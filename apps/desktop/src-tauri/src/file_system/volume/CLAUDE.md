@@ -262,3 +262,8 @@ The `statfs` check runs only at error time (not on every listing), so the syscal
 - `manager.rs` inline tests — concurrent registration/read/write-mix scenarios
 - `mtp.rs` inline tests — path conversion and capability flags (no device needed)
 - `smb.rs` inline tests — type mapping (DirectoryEntry→FileEntry, FsInfo→SpaceInfo, Error→VolumeError), connection state transitions, path conversion, capability flags (no server needed)
+- **Docker SMB integration tests**: `smb.rs` contains `#[ignore]` tests that require Docker SMB containers (start with
+  `apps/desktop/test/smb-servers/start.sh`). Connect via `smb2::testing::guest_port()` (10480, guest/no-auth),
+  `auth_port()` (10481, `testuser`/`testpass`), `readonly_port()` (10488), `slow_port()` (10493, 200ms latency). Use
+  these for testing real SMB protocol behavior (streaming, error paths, network edge cases). See
+  `apps/desktop/test/smb-servers/README.md` for the full container list and env var overrides.

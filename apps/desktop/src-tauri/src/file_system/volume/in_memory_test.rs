@@ -615,3 +615,253 @@ fn test_supports_export() {
     let volume = InMemoryVolume::new("Test");
     assert!(volume.supports_export());
 }
+
+// ============================================================================
+// Layer 1: Streaming tests (open_read_stream + write_from_stream)
+// ============================================================================
+
+// ============================================================================
+// Layer 4: Delete, export/import, and edge case tests
+// ============================================================================
+
+#[test]
+fn test_delete_multiple_files() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/dir")).unwrap();
+    volume.create_file(Path::new("/dir/a.txt"), b"a").unwrap();
+    volume.create_file(Path::new("/dir/b.txt"), b"b").unwrap();
+    volume.create_file(Path::new("/dir/c.txt"), b"c").unwrap();
+
+    volume.delete(Path::new("/dir/b.txt")).unwrap();
+    assert!(volume.exists(Path::new("/dir/a.txt")));
+    assert!(!volume.exists(Path::new("/dir/b.txt")));
+    assert!(volume.exists(Path::new("/dir/c.txt")));
+}
+
+#[test]
+fn test_export_to_local_creates_file() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_file(Path::new("/data.txt"), b"export me").unwrap();
+
+    let temp = std::env::temp_dir().join("cmdr_inmem_export_test");
+    let _ = std::fs::remove_dir_all(&temp);
+    std::fs::create_dir_all(&temp).unwrap();
+
+    let bytes = volume
+        .export_to_local(Path::new("/data.txt"), &temp.join("data.txt"))
+        .unwrap();
+    assert_eq!(bytes, 9);
+    assert_eq!(std::fs::read_to_string(temp.join("data.txt")).unwrap(), "export me");
+
+    let _ = std::fs::remove_dir_all(&temp);
+}
+
+#[test]
+fn test_import_from_local_creates_entry() {
+    let volume = InMemoryVolume::new("Test");
+
+    let temp = std::env::temp_dir().join("cmdr_inmem_import_test");
+    let _ = std::fs::remove_dir_all(&temp);
+    std::fs::create_dir_all(&temp).unwrap();
+    std::fs::write(temp.join("src.txt"), "import me").unwrap();
+
+    let bytes = volume
+        .import_from_local(&temp.join("src.txt"), Path::new("/imported.txt"))
+        .unwrap();
+    assert_eq!(bytes, 9);
+    assert!(volume.exists(Path::new("/imported.txt")));
+
+    // Verify via streaming
+    let mut stream = volume.open_read_stream(Path::new("/imported.txt")).unwrap();
+    let chunk = stream.next_chunk().unwrap().unwrap();
+    assert_eq!(chunk, b"import me");
+
+    let _ = std::fs::remove_dir_all(&temp);
+}
+
+#[test]
+fn test_export_not_found() {
+    let volume = InMemoryVolume::new("Test");
+    let result = volume.export_to_local(Path::new("/nope.txt"), &std::env::temp_dir().join("cmdr_nope"));
+    assert!(matches!(result, Err(VolumeError::NotFound(_))));
+}
+
+#[test]
+fn test_round_trip_export_import() {
+    let source = InMemoryVolume::new("Source");
+    let dest = InMemoryVolume::new("Dest");
+
+    let data: Vec<u8> = (0..=255).cycle().take(50_000).collect();
+    source.create_file(Path::new("/payload.bin"), &data).unwrap();
+
+    let temp = std::env::temp_dir().join("cmdr_roundtrip_test");
+    let _ = std::fs::remove_dir_all(&temp);
+    std::fs::create_dir_all(&temp).unwrap();
+
+    // Export from source → local
+    source
+        .export_to_local(Path::new("/payload.bin"), &temp.join("payload.bin"))
+        .unwrap();
+    // Import from local → dest
+    dest.import_from_local(&temp.join("payload.bin"), Path::new("/payload.bin"))
+        .unwrap();
+
+    // Verify content integrity via streaming
+    let mut stream = dest.open_read_stream(Path::new("/payload.bin")).unwrap();
+    let mut reassembled = Vec::new();
+    while let Some(Ok(chunk)) = stream.next_chunk() {
+        reassembled.extend_from_slice(&chunk);
+    }
+    assert_eq!(reassembled, data);
+
+    let _ = std::fs::remove_dir_all(&temp);
+}
+
+// ============================================================================
+// Layer 1: Streaming tests (open_read_stream + write_from_stream)
+// ============================================================================
+
+#[test]
+fn test_supports_streaming() {
+    let volume = InMemoryVolume::new("Test");
+    assert!(volume.supports_streaming());
+}
+
+#[test]
+fn test_open_read_stream_small_file() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_file(Path::new("/hello.txt"), b"Hello, world!").unwrap();
+
+    let mut stream = volume.open_read_stream(Path::new("/hello.txt")).unwrap();
+    assert_eq!(stream.total_size(), 13);
+    assert_eq!(stream.bytes_read(), 0);
+
+    let chunk = stream.next_chunk().unwrap().unwrap();
+    assert_eq!(chunk, b"Hello, world!");
+    assert_eq!(stream.bytes_read(), 13);
+    assert!(stream.next_chunk().is_none());
+}
+
+#[test]
+fn test_open_read_stream_empty_file() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_file(Path::new("/empty.txt"), b"").unwrap();
+
+    let mut stream = volume.open_read_stream(Path::new("/empty.txt")).unwrap();
+    assert_eq!(stream.total_size(), 0);
+    assert!(stream.next_chunk().is_none());
+}
+
+#[test]
+fn test_open_read_stream_multi_chunk() {
+    let volume = InMemoryVolume::new("Test");
+    // Create a file larger than IN_MEMORY_STREAM_CHUNK_SIZE (64 KB)
+    let data: Vec<u8> = (0..=255).cycle().take(100_000).collect();
+    volume.create_file(Path::new("/big.bin"), &data).unwrap();
+
+    let mut stream = volume.open_read_stream(Path::new("/big.bin")).unwrap();
+    assert_eq!(stream.total_size(), 100_000);
+
+    let mut reassembled = Vec::new();
+    let mut chunk_count = 0;
+    while let Some(Ok(chunk)) = stream.next_chunk() {
+        reassembled.extend_from_slice(&chunk);
+        chunk_count += 1;
+    }
+    assert_eq!(reassembled, data);
+    assert!(chunk_count > 1, "expected multiple chunks, got {}", chunk_count);
+    assert_eq!(stream.bytes_read(), 100_000);
+}
+
+#[test]
+fn test_open_read_stream_not_found() {
+    let volume = InMemoryVolume::new("Test");
+    let result = volume.open_read_stream(Path::new("/nope.txt"));
+    assert!(matches!(result, Err(VolumeError::NotFound(_))));
+}
+
+#[test]
+fn test_open_read_stream_directory_fails() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/dir")).unwrap();
+    let result = volume.open_read_stream(Path::new("/dir"));
+    assert!(matches!(result, Err(VolumeError::IoError { .. })));
+}
+
+#[test]
+fn test_write_from_stream_creates_file() {
+    let source = InMemoryVolume::new("Source");
+    let dest = InMemoryVolume::new("Dest");
+    source.create_file(Path::new("/data.bin"), b"source content").unwrap();
+
+    let stream = source.open_read_stream(Path::new("/data.bin")).unwrap();
+    let no_progress = &|_: u64, _: u64| std::ops::ControlFlow::Continue(());
+    let bytes = dest
+        .write_from_stream(Path::new("/data.bin"), 14, stream, no_progress)
+        .unwrap();
+
+    assert_eq!(bytes, 14);
+    // Verify content arrived correctly
+    let mut verify = dest.open_read_stream(Path::new("/data.bin")).unwrap();
+    let chunk = verify.next_chunk().unwrap().unwrap();
+    assert_eq!(chunk, b"source content");
+}
+
+#[test]
+fn test_write_from_stream_progress_callback() {
+    let source = InMemoryVolume::new("Source");
+    let dest = InMemoryVolume::new("Dest");
+    // 100 KB = 2 chunks at 64 KB chunk size
+    let data = vec![0xAB; 100_000];
+    source.create_file(Path::new("/big.bin"), &data).unwrap();
+
+    let progress_calls = std::sync::atomic::AtomicUsize::new(0);
+    let last_bytes = std::sync::atomic::AtomicU64::new(0);
+
+    let stream = source.open_read_stream(Path::new("/big.bin")).unwrap();
+    let bytes = dest
+        .write_from_stream(Path::new("/big.bin"), 100_000, stream, &|bytes_done, total| {
+            progress_calls.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            last_bytes.store(bytes_done, std::sync::atomic::Ordering::Relaxed);
+            assert_eq!(total, 100_000);
+            std::ops::ControlFlow::Continue(())
+        })
+        .unwrap();
+
+    assert_eq!(bytes, 100_000);
+    assert!(
+        progress_calls.load(std::sync::atomic::Ordering::Relaxed) >= 2,
+        "expected at least 2 progress calls for 100 KB at 64 KB chunks"
+    );
+    assert_eq!(last_bytes.load(std::sync::atomic::Ordering::Relaxed), 100_000);
+}
+
+#[test]
+fn test_write_from_stream_cancel_via_progress() {
+    let source = InMemoryVolume::new("Source");
+    let dest = InMemoryVolume::new("Dest");
+    // 200 KB = 4 chunks, cancel after first
+    let data = vec![0xCD; 200_000];
+    source.create_file(Path::new("/big.bin"), &data).unwrap();
+
+    let call_count = std::sync::atomic::AtomicUsize::new(0);
+    let stream = source.open_read_stream(Path::new("/big.bin")).unwrap();
+    let result = dest.write_from_stream(Path::new("/big.bin"), 200_000, stream, &|_, _| {
+        let n = call_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        if n >= 1 {
+            std::ops::ControlFlow::Break(())
+        } else {
+            std::ops::ControlFlow::Continue(())
+        }
+    });
+
+    assert!(result.is_err());
+    let err = result.unwrap_err();
+    assert!(
+        matches!(err, VolumeError::IoError { ref message, .. } if message.contains("cancelled")),
+        "expected cancellation error, got: {:?}",
+        err
+    );
+    // File should NOT exist at destination (write was cancelled before create_file)
+    assert!(!dest.exists(Path::new("/big.bin")));
+}

@@ -4,7 +4,7 @@
 //! including create, delete, and list. Useful for unit and integration tests
 //! without touching the real file system.
 
-use super::{CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError};
+use super::{CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream};
 use crate::file_system::listing::FileEntry;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -129,6 +129,36 @@ impl InMemoryVolume {
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0)
+    }
+}
+
+/// Chunk size for InMemoryReadStream (64 KB — small enough to test multi-chunk behavior
+/// without needing large test data).
+const IN_MEMORY_STREAM_CHUNK_SIZE: usize = 64 * 1024;
+
+/// Streaming reader for in-memory files.
+struct InMemoryReadStream {
+    data: Vec<u8>,
+    offset: usize,
+}
+
+impl VolumeReadStream for InMemoryReadStream {
+    fn next_chunk(&mut self) -> Option<Result<Vec<u8>, VolumeError>> {
+        if self.offset >= self.data.len() {
+            return None;
+        }
+        let end = (self.offset + IN_MEMORY_STREAM_CHUNK_SIZE).min(self.data.len());
+        let chunk = self.data[self.offset..end].to_vec();
+        self.offset = end;
+        Some(Ok(chunk))
+    }
+
+    fn total_size(&self) -> u64 {
+        self.data.len() as u64
+    }
+
+    fn bytes_read(&self) -> u64 {
+        self.offset as u64
     }
 }
 
@@ -379,6 +409,95 @@ impl Volume for InMemoryVolume {
             dir_count,
             total_bytes,
         })
+    }
+
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+
+    fn open_read_stream(&self, path: &Path) -> Result<Box<dyn VolumeReadStream>, VolumeError> {
+        let normalized = self.normalize(path);
+        let entries = self.entries.read().map_err(|_| VolumeError::IoError {
+            message: "Lock poisoned".into(),
+            raw_os_error: None,
+        })?;
+
+        let entry = entries
+            .get(&normalized)
+            .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))?;
+
+        if entry.metadata.is_directory {
+            return Err(VolumeError::IoError {
+                message: "Cannot stream a directory".into(),
+                raw_os_error: None,
+            });
+        }
+
+        let data = entry.content.clone().unwrap_or_default();
+        Ok(Box::new(InMemoryReadStream { data, offset: 0 }))
+    }
+
+    fn write_from_stream(
+        &self,
+        dest: &Path,
+        _size: u64,
+        mut stream: Box<dyn VolumeReadStream>,
+        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
+    ) -> Result<u64, VolumeError> {
+        let total_size = stream.total_size();
+        let mut data = Vec::new();
+        let mut bytes_written = 0u64;
+
+        while let Some(result) = stream.next_chunk() {
+            let chunk = result?;
+            bytes_written += chunk.len() as u64;
+            data.extend_from_slice(&chunk);
+
+            if on_progress(bytes_written, total_size) == std::ops::ControlFlow::Break(()) {
+                return Err(VolumeError::IoError {
+                    message: "Operation cancelled".into(),
+                    raw_os_error: None,
+                });
+            }
+        }
+
+        self.create_file(dest, &data)?;
+        Ok(bytes_written)
+    }
+
+    fn export_to_local(&self, source: &Path, local_dest: &Path) -> Result<u64, VolumeError> {
+        let normalized = self.normalize(source);
+        let entries = self.entries.read().map_err(|_| VolumeError::IoError {
+            message: "Lock poisoned".into(),
+            raw_os_error: None,
+        })?;
+
+        let entry = entries
+            .get(&normalized)
+            .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))?;
+
+        let data = entry.content.as_deref().unwrap_or(&[]);
+        if let Some(parent) = local_dest.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| VolumeError::IoError {
+                message: e.to_string(),
+                raw_os_error: None,
+            })?;
+        }
+        std::fs::write(local_dest, data).map_err(|e| VolumeError::IoError {
+            message: e.to_string(),
+            raw_os_error: None,
+        })?;
+        Ok(data.len() as u64)
+    }
+
+    fn import_from_local(&self, local_source: &Path, dest: &Path) -> Result<u64, VolumeError> {
+        let data = std::fs::read(local_source).map_err(|e| VolumeError::IoError {
+            message: e.to_string(),
+            raw_os_error: None,
+        })?;
+        let len = data.len() as u64;
+        self.create_file(dest, &data)?;
+        Ok(len)
     }
 
     #[cfg(feature = "playwright-e2e")]
