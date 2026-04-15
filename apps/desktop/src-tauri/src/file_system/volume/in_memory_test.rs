@@ -1,7 +1,7 @@
 //! Tests for InMemoryVolume.
 
 use super::*;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[test]
 fn test_new_creates_empty_volume() {
@@ -476,6 +476,82 @@ fn test_scan_for_copy_nested_directory_tree() {
     assert_eq!(result.file_count, 3);
     assert_eq!(result.dir_count, 2); // sub + deep (root not counted)
     assert_eq!(result.total_bytes, 9); // 3 + 5 + 1
+}
+
+// ============================================================================
+// scan_for_copy_batch tests (default implementation via Volume trait)
+// ============================================================================
+
+#[test]
+fn test_scan_for_copy_batch_multiple_files_same_dir() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/photos")).unwrap();
+    volume.create_file(Path::new("/photos/a.jpg"), &[0; 100]).unwrap();
+    volume.create_file(Path::new("/photos/b.jpg"), &[0; 200]).unwrap();
+    volume.create_file(Path::new("/photos/c.jpg"), &[0; 300]).unwrap();
+
+    let paths = vec![
+        PathBuf::from("/photos/a.jpg"),
+        PathBuf::from("/photos/b.jpg"),
+        PathBuf::from("/photos/c.jpg"),
+    ];
+    let result = volume.scan_for_copy_batch(&paths).unwrap();
+    assert_eq!(result.file_count, 3);
+    assert_eq!(result.dir_count, 0);
+    assert_eq!(result.total_bytes, 600);
+}
+
+#[test]
+fn test_scan_for_copy_batch_mixed_files_and_dirs() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/stuff")).unwrap();
+    volume.create_file(Path::new("/stuff/readme.txt"), b"hello").unwrap();
+    volume.create_directory(Path::new("/stuff/subdir")).unwrap();
+    volume
+        .create_file(Path::new("/stuff/subdir/deep.txt"), &[0; 50])
+        .unwrap();
+
+    let paths = vec![PathBuf::from("/stuff/readme.txt"), PathBuf::from("/stuff/subdir")];
+    let result = volume.scan_for_copy_batch(&paths).unwrap();
+    assert_eq!(result.file_count, 2); // readme.txt + deep.txt
+    assert_eq!(result.dir_count, 0); // subdir's children don't include extra dirs
+    assert_eq!(result.total_bytes, 55); // 5 + 50
+}
+
+#[test]
+fn test_scan_for_copy_batch_empty_input() {
+    let volume = InMemoryVolume::new("Test");
+    let result = volume.scan_for_copy_batch(&[]).unwrap();
+    assert_eq!(result.file_count, 0);
+    assert_eq!(result.dir_count, 0);
+    assert_eq!(result.total_bytes, 0);
+}
+
+#[test]
+fn test_scan_for_copy_batch_single_item_matches_single_scan() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/docs")).unwrap();
+    volume.create_file(Path::new("/docs/a.txt"), b"data").unwrap();
+
+    let single = volume.scan_for_copy(Path::new("/docs/a.txt")).unwrap();
+    let batch = volume.scan_for_copy_batch(&[PathBuf::from("/docs/a.txt")]).unwrap();
+    assert_eq!(single.file_count, batch.file_count);
+    assert_eq!(single.dir_count, batch.dir_count);
+    assert_eq!(single.total_bytes, batch.total_bytes);
+}
+
+#[test]
+fn test_scan_for_copy_batch_files_from_different_dirs() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/a")).unwrap();
+    volume.create_directory(Path::new("/b")).unwrap();
+    volume.create_file(Path::new("/a/file1.txt"), &[0; 10]).unwrap();
+    volume.create_file(Path::new("/b/file2.txt"), &[0; 20]).unwrap();
+
+    let paths = vec![PathBuf::from("/a/file1.txt"), PathBuf::from("/b/file2.txt")];
+    let result = volume.scan_for_copy_batch(&paths).unwrap();
+    assert_eq!(result.file_count, 2);
+    assert_eq!(result.total_bytes, 30);
 }
 
 // ============================================================================

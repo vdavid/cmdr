@@ -509,6 +509,62 @@ impl Volume for MtpVolume {
             .map_err(map_mtp_error)
     }
 
+    fn scan_for_copy_batch(&self, paths: &[PathBuf]) -> Result<CopyScanResult, VolumeError> {
+        if paths.is_empty() {
+            return Ok(CopyScanResult {
+                file_count: 0,
+                dir_count: 0,
+                total_bytes: 0,
+            });
+        }
+
+        // Group paths by parent directory so we list each parent at most once
+        let mut by_parent: std::collections::HashMap<PathBuf, Vec<&PathBuf>> = std::collections::HashMap::new();
+        for path in paths {
+            let mtp_path = self.to_mtp_path(path);
+            let mtp_path_buf = PathBuf::from(&mtp_path);
+            let parent = mtp_path_buf.parent().unwrap_or(Path::new("")).to_path_buf();
+            by_parent.entry(parent).or_default().push(path);
+        }
+
+        debug!(
+            "MtpVolume::scan_for_copy_batch: {} paths across {} unique parent dirs",
+            paths.len(),
+            by_parent.len()
+        );
+
+        let mut result = CopyScanResult {
+            file_count: 0,
+            dir_count: 0,
+            total_bytes: 0,
+        };
+
+        for (parent, children) in &by_parent {
+            // List the parent directory once (goes through the listing cache)
+            let parent_str = parent.to_string_lossy();
+            let entries = self.list_directory(Path::new(parent_str.as_ref()))?;
+
+            for child_path in children {
+                let mtp_path = self.to_mtp_path(child_path);
+                let name = Path::new(&mtp_path).file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+                if let Some(entry) = entries.iter().find(|e| e.name == name) {
+                    if entry.is_directory {
+                        let scan = self.scan_for_copy(child_path)?;
+                        result.file_count += scan.file_count;
+                        result.dir_count += scan.dir_count;
+                        result.total_bytes += scan.total_bytes;
+                    } else {
+                        result.file_count += 1;
+                        result.total_bytes += entry.size.unwrap_or(0);
+                    }
+                }
+            }
+        }
+
+        Ok(result)
+    }
+
     fn export_to_local_with_progress(
         &self,
         source: &Path,

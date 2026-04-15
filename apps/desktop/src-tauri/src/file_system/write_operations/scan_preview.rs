@@ -18,6 +18,7 @@ use super::types::{
     ScanPreviewStartResult,
 };
 use crate::file_system::listing::{SortColumn, SortOrder};
+use crate::file_system::volume::CopyScanResult;
 use crate::file_system::volume::Volume;
 
 /// Starts a scan preview for the Copy dialog.
@@ -189,7 +190,8 @@ fn run_scan_preview(
 
 /// Runs a volume-based scan preview (for MTP and other non-local volumes).
 ///
-/// Uses `Volume::scan_for_copy()` per source path instead of `walk_dir_recursive`.
+/// Uses `Volume::scan_for_copy_batch()` to scan all sources in one call, allowing
+/// volume implementations to batch I/O (for example, MTP groups by parent directory).
 /// Emits the same events as `run_scan_preview` so the frontend can't tell the difference.
 fn run_volume_scan_preview(
     app: tauri::AppHandle,
@@ -200,42 +202,22 @@ fn run_volume_scan_preview(
 ) {
     use tauri::Emitter;
 
-    let mut total_files = 0usize;
-    let mut total_dirs = 0usize;
-    let mut total_bytes = 0u64;
-    let mut last_progress_time = Instant::now();
-
-    let result: Result<(), String> = (|| {
-        for source in &sources {
-            if state.cancelled.load(Ordering::Relaxed) {
-                return Err("Cancelled".to_string());
-            }
-
-            let scan = volume
-                .scan_for_copy(source)
-                .map_err(|e| format!("Scan failed for {}: {}", source.display(), e))?;
-
-            total_files += scan.file_count;
-            total_dirs += scan.dir_count;
-            total_bytes += scan.total_bytes;
-
-            // Emit progress between source items
-            if last_progress_time.elapsed() >= state.progress_interval {
-                let _ = app.emit(
-                    "scan-preview-progress",
-                    ScanPreviewProgressEvent {
-                        preview_id: preview_id.clone(),
-                        files_found: total_files,
-                        dirs_found: total_dirs,
-                        bytes_found: total_bytes,
-                        current_path: source.file_name().map(|n| n.to_string_lossy().to_string()),
-                    },
-                );
-                last_progress_time = Instant::now();
-            }
+    let result: Result<CopyScanResult, String> = (|| {
+        if state.cancelled.load(Ordering::Relaxed) {
+            return Err("Cancelled".to_string());
         }
-        Ok(())
+
+        volume
+            .scan_for_copy_batch(&sources)
+            .map_err(|e| format!("Scan failed: {}", e))
     })();
+
+    // Extract stats from the result for the completion event
+    let (total_files, total_dirs, total_bytes) = match &result {
+        Ok(scan) => (scan.file_count, scan.dir_count, scan.total_bytes),
+        Err(_) => (0, 0, 0),
+    };
+    let result = result.map(|_| ());
 
     // Clean up state
     if let Ok(mut cache) = SCAN_PREVIEW_STATE.write() {

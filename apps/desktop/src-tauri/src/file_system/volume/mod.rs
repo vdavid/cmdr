@@ -11,7 +11,7 @@ use crate::indexing::scanner::{ScanConfig, ScanError, ScanHandle, ScanSummary};
 use crate::indexing::watcher::{DriveWatcher, FsChangeEvent, WatcherError};
 use crate::indexing::writer::IndexWriter;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use tokio::sync::mpsc;
 
@@ -437,6 +437,28 @@ pub trait Volume: Send + Sync {
         Err(VolumeError::NotSupported)
     }
 
+    /// Scans multiple paths to get aggregate copy statistics.
+    ///
+    /// The default iterates over `scan_for_copy` per path, which is correct for
+    /// volumes where per-path I/O is cheap (local FS, in-memory). Volume types
+    /// with expensive per-path I/O (MTP, SMB, FTP, S3) should override this to
+    /// batch — typically by grouping paths by parent directory, listing each
+    /// parent once, and resolving files from the listing.
+    fn scan_for_copy_batch(&self, paths: &[PathBuf]) -> Result<CopyScanResult, VolumeError> {
+        let mut result = CopyScanResult {
+            file_count: 0,
+            dir_count: 0,
+            total_bytes: 0,
+        };
+        for path in paths {
+            let scan = self.scan_for_copy(path)?;
+            result.file_count += scan.file_count;
+            result.dir_count += scan.dir_count;
+            result.total_bytes += scan.total_bytes;
+        }
+        Ok(result)
+    }
+
     /// Downloads/exports a file or directory from this volume to a local path.
     /// For local volumes, this is a file copy. For MTP, this downloads.
     /// Returns bytes transferred.
@@ -516,7 +538,7 @@ pub trait Volume: Send + Sync {
     /// Returns the local filesystem path if this volume is backed by one.
     /// Used to optimize local-to-local copies using native OS APIs (such as copyfile on macOS).
     /// Returns None for non-local volumes (MTP, S3, FTP, etc.).
-    fn local_path(&self) -> Option<std::path::PathBuf> {
+    fn local_path(&self) -> Option<PathBuf> {
         None
     }
 
