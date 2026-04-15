@@ -71,8 +71,7 @@ The uFuzzy instance is a module-level singleton (created once at import time).
 Native menu clicks and keyboard shortcuts both route through `handleCommandExecute(commandId)` in
 `routes/(main)/command-dispatch.ts`. The Rust `on_menu_event` handler maps menu item IDs to command registry IDs and
 emits a single `"execute-command"` Tauri event. The frontend listens for this event and calls `handleCommandExecute`.
-This eliminates the old per-command
-individual events (`show-command-palette`, `switch-pane`, etc.).
+This eliminates the old per-command individual events (`show-command-palette`, `switch-pane`, etc.).
 
 Exception: `CheckMenuItem`s (show hidden files, view modes) keep separate handling to avoid double-toggle. Close tab
 (⌘W) has special logic to close focused non-main windows.
@@ -137,8 +136,9 @@ uFuzzy uses this flat format for performance. The code unpacks ranges into indiv
 
 **Gotcha**: Adding a command with a menu item requires changes in four places. **Why**: The menu system (Rust) and
 command system (TypeScript) are separate codebases connected by string IDs. The four places are: (1)
-`command-registry.ts`, (2) `handleCommandExecute` switch in `command-dispatch.ts`, (3) `menu.rs` ID mappings, (4) `menuCommands` array in
-`shortcuts-store.ts`. Missing any one causes silent failures (shortcut works but menu doesn't, or vice versa).
+`command-registry.ts`, (2) `handleCommandExecute` switch in `command-dispatch.ts`, (3) `menu.rs` ID mappings, (4)
+`menuCommands` array in `shortcuts-store.ts`. Missing any one causes silent failures (shortcut works but menu doesn't,
+or vice versa).
 
 ## Dependencies
 

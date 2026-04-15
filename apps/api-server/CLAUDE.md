@@ -7,29 +7,29 @@ app versions).
 
 ## Key files
 
-| File                                        | Purpose                                                               |
-| ------------------------------------------- | --------------------------------------------------------------------- |
-| `src/index.ts`                              | Hono app assembly: mounts route modules, wires scheduled handler      |
-| `src/types.ts`                              | Shared types (`Bindings`), constants, and helpers (auth, validation)  |
-| `src/licensing.ts`                          | Routes: `/activate`, `/validate`, `/webhook/paddle`, `/admin/generate`|
+| File                                        | Purpose                                                                             |
+| ------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `src/index.ts`                              | Hono app assembly: mounts route modules, wires scheduled handler                    |
+| `src/types.ts`                              | Shared types (`Bindings`), constants, and helpers (auth, validation)                |
+| `src/licensing.ts`                          | Routes: `/activate`, `/validate`, `/webhook/paddle`, `/admin/generate`              |
 | `src/admin.ts`                              | Routes: `/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/crashes` |
-| `src/telemetry.ts`                          | Routes: `/crash-report`, `/update-check/:version`, `/download/:version/:arch` |
-| `src/likes.ts`                              | Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)                   |
-| `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size)    |
-| `src/license.ts`                            | Short code + license key generation, `LicenseType` enum               |
-| `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`                 |
-| `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch           |
-| `src/email.ts`                              | Resend email delivery (HTML + plain text, multi-seat support)         |
-| `src/device-tracking.ts`                    | Device set helpers: prune stale devices, alert threshold              |
-| `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                          |
-| `src/device-tracking.test.ts`               | Tests for device tracking helpers                                     |
-| `src/admin-stats.test.ts`                   | Tests for `/admin/stats` endpoint and activation counter              |
-| `src/admin-endpoints.test.ts`               | Tests for `/admin/downloads`, `/admin/active-users`, `/admin/crashes` |
-| `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                               |
-| `src/download-and-update-check.test.ts`     | Tests for download redirect and update check routes                   |
-| `src/scheduled.test.ts`                     | Tests for cron handler (crash notifications, aggregation)             |
-| `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)                       |
-| `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                                  |
+| `src/telemetry.ts`                          | Routes: `/crash-report`, `/update-check/:version`, `/download/:version/:arch`       |
+| `src/likes.ts`                              | Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)                                 |
+| `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size)                  |
+| `src/license.ts`                            | Short code + license key generation, `LicenseType` enum                             |
+| `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`                               |
+| `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch                         |
+| `src/email.ts`                              | Resend email delivery (HTML + plain text, multi-seat support)                       |
+| `src/device-tracking.ts`                    | Device set helpers: prune stale devices, alert threshold                            |
+| `src/license.test.ts`, `src/paddle.test.ts` | Vitest tests                                                                        |
+| `src/device-tracking.test.ts`               | Tests for device tracking helpers                                                   |
+| `src/admin-stats.test.ts`                   | Tests for `/admin/stats` endpoint and activation counter                            |
+| `src/admin-endpoints.test.ts`               | Tests for `/admin/downloads`, `/admin/active-users`, `/admin/crashes`               |
+| `src/crash-report.test.ts`                  | Tests for `POST /crash-report` endpoint                                             |
+| `src/download-and-update-check.test.ts`     | Tests for download redirect and update check routes                                 |
+| `src/scheduled.test.ts`                     | Tests for cron handler (crash notifications, aggregation)                           |
+| `scripts/generate-keys.js`                  | Ed25519 key pair generation (run once at setup)                                     |
+| `scripts/setup-cf-infra.sh`                 | Cloudflare KV namespace provisioning                                                |
 
 ## Routes
 

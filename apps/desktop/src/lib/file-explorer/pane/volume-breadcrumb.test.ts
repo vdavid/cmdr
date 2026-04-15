@@ -19,9 +19,29 @@ vi.mock('$lib/tauri-commands', () => ({
   getFileRange: vi.fn().mockResolvedValue([]),
   getFileAt: vi.fn().mockImplementation((_listingId: string, index: number) => {
     if (index === 0) {
-      mockEntry = { name: 'test-folder', path: '/test/test-folder', isDirectory: true, isSymlink: false, permissions: 0o755, owner: 'user', group: 'staff', iconId: 'dir', extendedMetadataLoaded: true }
+      mockEntry = {
+        name: 'test-folder',
+        path: '/test/test-folder',
+        isDirectory: true,
+        isSymlink: false,
+        permissions: 0o755,
+        owner: 'user',
+        group: 'staff',
+        iconId: 'dir',
+        extendedMetadataLoaded: true,
+      }
     } else {
-      mockEntry = { name: 'test-file.txt', path: '/test/test-file.txt', isDirectory: false, isSymlink: false, permissions: 0o644, owner: 'user', group: 'staff', iconId: 'file', extendedMetadataLoaded: true }
+      mockEntry = {
+        name: 'test-file.txt',
+        path: '/test/test-file.txt',
+        isDirectory: false,
+        isSymlink: false,
+        permissions: 0o644,
+        owner: 'user',
+        group: 'staff',
+        iconId: 'file',
+        extendedMetadataLoaded: true,
+      }
     }
     return Promise.resolve(mockEntry)
   }),
@@ -35,7 +55,13 @@ vi.mock('$lib/tauri-commands', () => ({
   listVolumes: vi.fn().mockResolvedValue({
     data: [
       { id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false },
-      { id: 'external', name: 'External Drive', path: '/Volumes/External', category: 'attached_volume', isEjectable: true },
+      {
+        id: 'external',
+        name: 'External Drive',
+        path: '/Volumes/External',
+        category: 'attached_volume',
+        isEjectable: true,
+      },
       { id: 'dropbox', name: 'Dropbox', path: '/Users/test/Dropbox', category: 'cloud_drive', isEjectable: false },
     ],
     timedOut: false,
@@ -45,7 +71,9 @@ vi.mock('$lib/tauri-commands', () => ({
     timedOut: false,
   }),
   getDefaultVolumeId: vi.fn().mockResolvedValue('root'),
-  getVolumeSpace: vi.fn().mockResolvedValue({ data: { totalBytes: 500_000_000_000, availableBytes: 200_000_000_000 }, timedOut: false }),
+  getVolumeSpace: vi
+    .fn()
+    .mockResolvedValue({ data: { totalBytes: 500_000_000_000, availableBytes: 200_000_000_000 }, timedOut: false }),
   refreshListing: vi.fn().mockResolvedValue({ data: null, timedOut: false }),
   getIcons: vi.fn().mockResolvedValue({ data: {}, timedOut: false }),
   refreshDirectoryIcons: vi.fn().mockResolvedValue({ data: {}, timedOut: false }),
@@ -83,7 +111,9 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
 vi.mock('$lib/drag-drop', () => ({ startDragTracking: vi.fn() }))
 
 vi.mock('$lib/stores/volume-store.svelte', () => ({
-  getVolumes: vi.fn().mockReturnValue([{ id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false }]),
+  getVolumes: vi
+    .fn()
+    .mockReturnValue([{ id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false }]),
   getVolumesTimedOut: vi.fn().mockReturnValue(false),
   isVolumesRefreshing: vi.fn().mockReturnValue(false),
   isVolumeRetryFailed: vi.fn().mockReturnValue(false),

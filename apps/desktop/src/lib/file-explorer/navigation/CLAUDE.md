@@ -117,11 +117,10 @@ Exported methods for parent components: `toggle()`, `open()`, `close()`, `getIsO
 SMB volumes with an active `SmbVolume` in the backend carry `smbConnectionState: 'direct' | 'os_mount'`. The component
 renders a small colored circle (green = direct smb2 session, yellow = OS mount fallback) both in the dropdown and in the
 closed breadcrumb label. Yellow state has a submenu trigger in the dropdown and a clickable button (circle + down arrow)
-in the breadcrumb, both opening a "Connect directly for faster access" menu item. Clicking it calls
-`upgradeToSmbVolume` which tries stored credentials first; if none found or they fail, the backend returns
-`credentialsNeeded` and the `onSmbUpgradeLogin` callback triggers `FilePane` to show `NetworkLoginForm` inline (same
-pattern as `ShareBrowser`). Submenu supports full keyboard navigation (ArrowRight to open, ArrowLeft/Escape to close,
-Enter to activate).
+in the breadcrumb, both opening a "Connect directly for faster access" menu item. Clicking it calls `upgradeToSmbVolume`
+which tries stored credentials first; if none found or they fail, the backend returns `credentialsNeeded` and the
+`onSmbUpgradeLogin` callback triggers `FilePane` to show `NetworkLoginForm` inline (same pattern as `ShareBrowser`).
+Submenu supports full keyboard navigation (ArrowRight to open, ArrowLeft/Escape to close, Enter to activate).
 
 ### Dropdown and submenu UI patterns
 

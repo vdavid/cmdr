@@ -96,7 +96,7 @@ go run ./scripts/check --only-freestyle
 | `checks/desktop-svelte-*.go`                                              | One file per Svelte/TS check                                                                                                                                  |
 | `checks/website-*.go`, `checks/api-server-*.go`, `checks/scripts-go-*.go` | One file per check                                                                                                                                            |
 | `checks/file-length.go`                                                   | Informational file-length scanner (warn-only, never fails). Supports an allowlist.                                                                            |
-| `checks/file-length-allowlist.json`                                       | Allowlist for file-length check: `{ "files": { "path": lineCount } }`. Files at or below their allowlisted count are suppressed. |
+| `checks/file-length-allowlist.json`                                       | Allowlist for file-length check: `{ "files": { "path": lineCount } }`. Files at or below their allowlisted count are suppressed.                              |
 
 ## Key patterns
 

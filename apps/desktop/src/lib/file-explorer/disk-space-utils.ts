@@ -45,6 +45,7 @@ export function formatBarTooltip(space: VolumeSpaceInfo, formatSize: FormatSize)
   const level = getDiskUsageLevel(usedPercent)
   const base = `${freeText} of ${totalText} free (${String(freePercent)}%)`
   if (level.label === 'Critical') return `${base}. This bar is red to indicate that the volume is low on space.`
-  if (level.label === 'Warning') return `${base}. This bar is yellow to indicate that the volume is somewhat low on space.`
+  if (level.label === 'Warning')
+    return `${base}. This bar is yellow to indicate that the volume is somewhat low on space.`
   return base
 }

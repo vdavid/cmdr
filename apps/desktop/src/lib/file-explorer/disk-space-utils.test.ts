@@ -144,14 +144,14 @@ describe('formatBarTooltip', () => {
   it('includes yellow warning when space is somewhat low', () => {
     const space = createSpace(1000, 100) // 90% used, 10% free
     expect(formatBarTooltip(space, mockFormatSize)).toBe(
-      "100 B of 1000 B free (10%). This bar is yellow to indicate that the volume is somewhat low on space.",
+      '100 B of 1000 B free (10%). This bar is yellow to indicate that the volume is somewhat low on space.',
     )
   })
 
   it('includes red warning when space is low', () => {
     const space = createSpace(1000, 20) // 98% used, 2% free
     expect(formatBarTooltip(space, mockFormatSize)).toBe(
-      "20 B of 1000 B free (2%). This bar is red to indicate that the volume is low on space.",
+      '20 B of 1000 B free (2%). This bar is red to indicate that the volume is low on space.',
     )
   })
 
@@ -163,7 +163,7 @@ describe('formatBarTooltip', () => {
   it('shows 0% free for full disk with red warning', () => {
     const space = createSpace(1000, 0)
     expect(formatBarTooltip(space, mockFormatSize)).toBe(
-      "0 B of 1000 B free (0%). This bar is red to indicate that the volume is low on space.",
+      '0 B of 1000 B free (0%). This bar is red to indicate that the volume is low on space.',
     )
   })
 
