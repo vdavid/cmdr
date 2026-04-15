@@ -49,8 +49,9 @@ USB unplug
 
 Event loop (event_loop.rs)
   → device.next_event()
-  → compute_diff()
-  → emit directory-diff (same format as local file watching)
+  → ObjectAdded/Removed/Changed → compute_diff() → emit directory-diff
+  → StoreAdded → handle_storage_added() → register MtpVolume → emit volumes-changed
+  → StoreRemoved → handle_storage_removed() → unregister MtpVolume → emit volumes-changed
 ```
 
 ### MTP enabled/disabled toggle

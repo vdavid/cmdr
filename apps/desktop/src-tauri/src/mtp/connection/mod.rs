@@ -438,6 +438,135 @@ impl MtpConnectionManager {
             .collect()
     }
 
+    /// Handles a StoreAdded event: queries the new storage, registers its volume,
+    /// and broadcasts the change so the frontend picks it up.
+    pub async fn handle_storage_added(&self, device_id: &str, storage_id: u32, app: &AppHandle) {
+        let device_arc = {
+            let devices = self.devices.lock().await;
+            match devices.get(device_id) {
+                Some(entry) => {
+                    // Skip if we already know about this storage (duplicate event)
+                    if entry.storages.iter().any(|s| s.id == storage_id) {
+                        debug!("handle_storage_added: storage {} already registered for {}", storage_id, device_id);
+                        return;
+                    }
+                    entry.device.clone()
+                }
+                None => {
+                    warn!("handle_storage_added: device {} not in registry", device_id);
+                    return;
+                }
+            }
+        };
+
+        // Query the new storage from the device
+        let device = match acquire_device_lock(&device_arc, device_id, "handle_storage_added").await {
+            Ok(d) => d,
+            Err(e) => {
+                warn!("handle_storage_added: failed to acquire lock: {:?}", e);
+                return;
+            }
+        };
+
+        let mtp_storage_id = mtp_rs::ptp::StorageId(storage_id);
+        let storage = match device.storage(mtp_storage_id).await {
+            Ok(s) => s,
+            Err(e) => {
+                warn!("handle_storage_added: failed to query storage {}: {:?}", storage_id, e);
+                return;
+            }
+        };
+
+        let info = storage.info();
+        let device_supports_write = device.device_info().supports_operation(OperationCode::SendObjectInfo);
+        let storage_reports_read_only = !matches!(info.access_capability, mtp_rs::ptp::AccessCapability::ReadWrite);
+
+        let is_read_only = if !device_supports_write || storage_reports_read_only {
+            true
+        } else {
+            let probe_ok = probe_write_capability(&storage, &info.description).await;
+            if !probe_ok {
+                info!(
+                    "Storage '{}' claims write support but probe failed - marking read-only",
+                    info.description
+                );
+            }
+            !probe_ok
+        };
+
+        let storage_info = MtpStorageInfo {
+            id: storage_id,
+            name: info.description.clone(),
+            total_bytes: info.max_capacity,
+            available_bytes: info.free_space_bytes,
+            storage_type: Some(format!("{:?}", info.storage_type)),
+            is_read_only,
+        };
+
+        info!(
+            "Registering late-arriving storage '{}' (id={}) for device {}",
+            storage_info.name, storage_id, device_id
+        );
+
+        // Release device lock before updating registry
+        drop(device);
+
+        // Register the volume
+        let volume_id = format!("{}:{}", device_id, storage_id);
+        let volume = Arc::new(MtpVolume::new(device_id, storage_id, &storage_info.name));
+        get_volume_manager().register(&volume_id, volume);
+
+        // Update the DeviceEntry's storage list
+        {
+            let mut devices = self.devices.lock().await;
+            if let Some(entry) = devices.get_mut(device_id) {
+                entry.storages.push(storage_info.clone());
+            }
+        }
+
+        // Emit updated device info so the frontend knows about the new storage
+        let _ = app.emit(
+            "mtp-device-connected",
+            serde_json::json!({
+                "deviceId": device_id,
+                "deviceName": "",
+                "storages": [storage_info]
+            }),
+        );
+
+        // Broadcast volume list change
+        crate::volume_broadcast::emit_volumes_changed();
+    }
+
+    /// Handles a StoreRemoved event: unregisters the volume and broadcasts the change.
+    pub async fn handle_storage_removed(&self, device_id: &str, storage_id: u32, app: &AppHandle) {
+        let volume_id = format!("{}:{}", device_id, storage_id);
+
+        // Remove from DeviceEntry
+        {
+            let mut devices = self.devices.lock().await;
+            if let Some(entry) = devices.get_mut(device_id) {
+                entry.storages.retain(|s| s.id != storage_id);
+            }
+        }
+
+        // Unregister the volume
+        get_volume_manager().unregister(&volume_id);
+        info!("Unregistered MTP volume: {} (storage removed)", volume_id);
+
+        // Emit event so frontend updates
+        let _ = app.emit(
+            "mtp-storage-removed",
+            serde_json::json!({
+                "deviceId": device_id,
+                "storageId": storage_id
+            }),
+        );
+
+        // Broadcast volume list change
+        crate::volume_broadcast::emit_volumes_changed();
+    }
+
     /// Queries live storage space from the device and updates the cache.
     ///
     /// Returns `(total_bytes, available_bytes)` freshly read from the device,

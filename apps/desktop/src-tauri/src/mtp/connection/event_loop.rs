@@ -128,15 +128,26 @@ impl MtpConnectionManager {
             }
             DeviceEvent::StorageInfoChanged { storage_id } => {
                 debug!("MTP storage info changed: {:?} on {}", storage_id, device_id);
-                // Could emit a storage space update event in the future
             }
             DeviceEvent::StoreAdded { storage_id } => {
                 info!("MTP storage added: {:?} on {}", storage_id, device_id);
-                // Could emit a storage list update event in the future
+                let device_id = device_id.to_string();
+                let app = app.clone();
+                tokio::spawn(async move {
+                    connection_manager()
+                        .handle_storage_added(&device_id, storage_id.0, &app)
+                        .await;
+                });
             }
             DeviceEvent::StoreRemoved { storage_id } => {
                 info!("MTP storage removed: {:?} on {}", storage_id, device_id);
-                // Could emit a storage list update event in the future
+                let device_id = device_id.to_string();
+                let app = app.clone();
+                tokio::spawn(async move {
+                    connection_manager()
+                        .handle_storage_removed(&device_id, storage_id.0, &app)
+                        .await;
+                });
             }
             DeviceEvent::DeviceInfoChanged => {
                 debug!("MTP device info changed: {}", device_id);
