@@ -223,6 +223,10 @@ pub fn get_username_hints() -> HashMap<String, String> {
 mod tests {
     use super::*;
 
+    /// Tests that mutate the global `KNOWN_SHARES` static must hold this lock
+    /// to prevent cross-test interference (Rust runs tests in parallel).
+    static SERIAL: Mutex<()> = Mutex::new(());
+
     #[test]
     fn test_share_key() {
         assert_eq!(share_key("MyNAS", "Documents"), "mynas/documents");
@@ -313,6 +317,7 @@ mod tests {
 
     #[test]
     fn test_in_memory_operations() {
+        let _guard = SERIAL.lock().unwrap();
         // Test the in-memory cache operations directly
         let cache = get_known_shares_mutex();
 
@@ -359,6 +364,7 @@ mod tests {
 
     #[test]
     fn test_username_hints() {
+        let _guard = SERIAL.lock().unwrap();
         let cache = get_known_shares_mutex();
 
         // Clear and set up test data
@@ -397,6 +403,7 @@ mod tests {
     /// Concurrent threads adding distinct shares must not lose any writes.
     #[test]
     fn concurrent_in_memory_updates_no_lost_writes() {
+        let _guard = SERIAL.lock().unwrap();
         let cache = get_known_shares_mutex();
 
         // Clear previous state
@@ -449,6 +456,7 @@ mod tests {
     /// Concurrent reads while another thread writes should not panic or return corrupt data.
     #[test]
     fn concurrent_read_during_write() {
+        let _guard = SERIAL.lock().unwrap();
         let cache = get_known_shares_mutex();
 
         // Seed with initial data
@@ -513,6 +521,7 @@ mod tests {
     /// Rapid sequential updates to the same share should keep the last value.
     #[test]
     fn rapid_sequential_updates_same_share() {
+        let _guard = SERIAL.lock().unwrap();
         let cache = get_known_shares_mutex();
 
         // Clear previous state
