@@ -16,6 +16,7 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
   - `linux_distro.rs` — Thin wrapper calling `crate::linux_distro::LinuxDistro` for smbclient install hints; `cfg(target_os = "linux")` gated
   - `smb_types.rs` — Shared types (`ShareInfo`, `AuthMode`, `ShareListError`, etc.)
   - `smb_util.rs` — Helpers: error classification (`classify_error`, `is_auth_error`) and `convert_shares` (maps `smb2::ShareInfo` to Cmdr's `ShareInfo`)
+  - `smb_upgrade.rs` — Upgrade OS-mounted SMB volumes to direct smb2 connections. Shared by three upgrade paths (startup, mount-time watcher, manual "Connect directly"). Contains `register_smb_volume`, `try_smb_upgrade`, `UpgradeResult`/`UpgradeError` types, address resolution (`resolve_server_address`, `resolve_ip_to_hostname`, `friendly_server_name`), and `get_keychain_password`.
 - **Mounting** (platform-specific via `#[path]` in `mod.rs`):
   - `mount.rs` — macOS `NetFSMountURLSync` for native `/Volumes/` mounts; also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
   - `mount_linux.rs` — Linux `gio mount` for GVFS-based user-space mounts

@@ -298,14 +298,14 @@ fn try_upgrade_smb_mount(volume_path: &str) {
 
     let mount_path = volume_path.to_string();
     tauri::async_runtime::spawn(async move {
-        let hostname = crate::commands::network::resolve_ip_to_hostname(&info.server);
+        let hostname = crate::network::smb_upgrade::resolve_ip_to_hostname(&info.server);
         let creds =
-            crate::commands::network::get_keychain_password(&info.server, hostname.as_deref(), &info.share).await;
+            crate::network::smb_upgrade::get_keychain_password(&info.server, hostname.as_deref(), &info.share).await;
         let (username, password) = match &creds {
             Some((u, p)) => (Some(u.as_str()), Some(p.as_str())),
             None => (None, None),
         };
-        crate::commands::network::register_smb_volume(
+        crate::network::smb_upgrade::register_smb_volume(
             &info.server,
             &info.share,
             &mount_path,

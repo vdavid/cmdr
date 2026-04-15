@@ -32,6 +32,7 @@ pub(crate) mod smb_connection;
 mod smb_smbclient;
 mod smb_smbutil;
 mod smb_types;
+pub(crate) mod smb_upgrade;
 pub(crate) mod smb_util;
 
 #[cfg(feature = "smb-e2e")]

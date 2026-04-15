@@ -216,18 +216,18 @@ pub fn upgrade_existing_smb_mounts() {
             };
 
             // Resolve hostname from mDNS for Keychain lookup
-            let hostname = crate::commands::network::resolve_ip_to_hostname(&info.server);
+            let hostname = crate::network::smb_upgrade::resolve_ip_to_hostname(&info.server);
 
             // Try Keychain creds
             let creds =
-                crate::commands::network::get_keychain_password(&info.server, hostname.as_deref(), &info.share).await;
+                crate::network::smb_upgrade::get_keychain_password(&info.server, hostname.as_deref(), &info.share).await;
 
             let (username, password) = match &creds {
                 Some((u, p)) => (Some(u.as_str()), Some(p.as_str())),
                 None => (None, None),
             };
 
-            crate::commands::network::register_smb_volume(
+            crate::network::smb_upgrade::register_smb_volume(
                 &info.server,
                 &info.share,
                 &mount_path,
