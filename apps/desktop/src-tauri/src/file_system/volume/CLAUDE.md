@@ -205,8 +205,8 @@ The `statfs` check runs only at error time (not on every listing), so the syscal
 
 ## Gotchas
 
-**Gotcha**: `write_from_stream` in `MtpVolume` must collect all chunks *before* entering `block_on`
-**Why**: `MtpReadStream::next_chunk()` itself calls `block_on` internally to read from the async download stream. If `write_from_stream` entered `block_on` first and then called `next_chunk` inside it, you'd get a nested `block_on` panic. The workaround is to eagerly materialize all chunks into a `Vec<Bytes>`, then do one `block_on` for the upload.
+**Gotcha**: Nested `block_on` panics in cross-volume streaming (MTP↔SMB, and any async-source → async-dest)
+**Why**: `MtpReadStream::next_chunk()` calls `block_on` internally. If the destination volume's `write_from_stream` also wraps its async I/O in `block_on`, calling `next_chunk` from inside that `block_on` creates a nested runtime — tokio panics at runtime ("Cannot start a runtime from within a runtime"). This is NOT caught by the compiler (no type encodes "am I inside a runtime"). The fix is either: (a) collect all chunks before entering the destination's `block_on` (current workaround for MTP→MTP), (b) use a channel-based `MtpReadStream` that replaces `block_on` with a sync `recv()` (planned: Option E), or (c) make the entire Volume trait async (planned: Option D). The planned async refactor (D) eliminates this class of bugs by design.
 
 **Gotcha**: `LocalPosixVolume::resolve` has a three-way branch for absolute paths
 **Why**: The frontend sometimes sends full absolute paths (like `/Users/alice/Documents`), not paths relative to the volume root. If the volume root is `/Users/alice/Dropbox`, the resolve logic must detect whether the absolute path is already inside the root (pass through), whether the root is `/` (pass through), or neither (strip leading `/` and join). Getting this wrong silently serves the wrong directory.
