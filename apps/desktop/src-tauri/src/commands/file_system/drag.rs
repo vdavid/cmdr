@@ -1,6 +1,8 @@
 //! Tauri commands for native drag operations and self-drag overlay.
 
+#[cfg(target_os = "macos")]
 use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
+#[cfg(target_os = "macos")]
 use std::path::PathBuf;
 #[cfg(target_os = "macos")]
 use std::sync::mpsc::channel;

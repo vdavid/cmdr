@@ -635,8 +635,6 @@
      * Called when files load, cursor position changes, or view mode changes.
      */
     async function syncPaneStateToMcp() {
-        if (!paneId) return
-
         try {
             const files = await buildMcpFileList()
             const effectiveTotal = hasParent ? totalCount + 1 : totalCount

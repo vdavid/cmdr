@@ -1923,10 +1923,10 @@
     /** Debug only: reset a pane's error state by re-navigating to its current path. */
     export function resetError(pane: 'left' | 'right' | 'both') {
         if (pane === 'both' || pane === 'left') {
-            getPaneRef('left')?.navigateToPath(getPanePath('left'))
+            void getPaneRef('left')?.navigateToPath(getPanePath('left'))
         }
         if (pane === 'both' || pane === 'right') {
-            getPaneRef('right')?.navigateToPath(getPanePath('right'))
+            void getPaneRef('right')?.navigateToPath(getPanePath('right'))
         }
     }
 

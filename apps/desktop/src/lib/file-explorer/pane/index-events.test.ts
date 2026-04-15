@@ -70,6 +70,7 @@ describe('hasDescendantUpdate', () => {
   })
 })
 
+/* eslint-disable @typescript-eslint/unbound-method -- vi.fn() mocks have no this binding */
 describe('throttledRefresh', () => {
   it('fires immediately when not throttled', () => {
     const paneRef = { refreshIndexSizes: vi.fn() } as unknown as FilePaneAPI
@@ -93,7 +94,9 @@ describe('throttledRefresh', () => {
   })
 
   it('handles undefined paneRef gracefully', () => {
-    expect(() => throttledRefresh(true, 0, vi.fn(), undefined, 2000)).not.toThrow()
+    expect(() => {
+      throttledRefresh(true, 0, vi.fn(), undefined, 2000)
+    }).not.toThrow()
   })
 })
 

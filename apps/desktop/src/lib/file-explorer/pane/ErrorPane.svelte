@@ -24,7 +24,7 @@
         now = Date.now()
     }, 5000)
 
-    onDestroy(() => clearInterval(intervalId))
+    onDestroy(() => { clearInterval(intervalId); })
 
     function handleRetry() {
         retryCount += 1

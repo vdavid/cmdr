@@ -171,7 +171,6 @@
     }
 
     const pathError = $derived.by(() => {
-        if (!sourcePaths) return null // props tearing down
         const structural = validateDirectoryPath(editedPath)
         if (structural.severity === 'error') return structural.message
         return getPathValidationError(sourcePaths, editedPath)
