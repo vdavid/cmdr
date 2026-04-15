@@ -1434,8 +1434,9 @@ mod tests {
     fn map_smb_error_io() {
         let err = smb2::Error::Io(std::io::Error::new(std::io::ErrorKind::BrokenPipe, "pipe broke"));
         let ve = map_smb_error(err);
-        // IO errors with ConnectionLost kind map to DeviceDisconnected
-        assert!(matches!(ve, VolumeError::DeviceDisconnected(_)));
+        // IO errors (callback errors, etc.) are not connection losses — they map to IoError.
+        // Real connection losses come through Error::Disconnected → ConnectionLost.
+        assert!(matches!(ve, VolumeError::IoError { .. }));
     }
 
     // ── Connection state tests ──────────────────────────────────────

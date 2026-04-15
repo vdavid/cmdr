@@ -746,12 +746,10 @@ impl Volume for MtpVolume {
             })
             .map_err(map_mtp_error)?;
 
-        Ok(Box::new(MtpReadStream {
-            handle,
-            download: Some(download),
-            total_size,
-            bytes_read: 0,
-        }))
+        // Spawn a background task to read chunks from USB and feed them through
+        // a bounded channel. This makes next_chunk() a plain recv() — safe to
+        // call from inside block_on (no nested runtime panic).
+        Ok(Box::new(MtpChannelStream::spawn(&handle, download, total_size)))
     }
 
     fn write_from_stream(
@@ -797,35 +795,69 @@ impl Volume for MtpVolume {
 
 /// Streaming reader for MTP files.
 ///
-/// Wraps the mtp-rs FileDownload to provide sync iteration.
-pub struct MtpReadStream {
-    /// Tokio runtime handle for blocking on async operations.
-    handle: tokio::runtime::Handle,
-    /// The underlying async download (wrapped in Option for take semantics).
-    download: Option<FileDownload>,
-    /// Total file size.
+/// A background tokio task reads chunks from the MTP USB endpoint and sends
+/// them through a bounded channel. `next_chunk()` is a plain `recv()` — no
+/// `block_on`, so it's safe to call from any context, including inside another
+/// `block_on` (like `SmbVolume::write_from_stream`).
+///
+/// Cancellation: dropping the receiver causes the background task's next
+/// `send()` to fail. The task then calls `download.cancel().await` to cleanly
+/// release the USB endpoint, preventing the `ReceiveStream` drop panic.
+struct MtpChannelStream {
+    rx: std::sync::mpsc::Receiver<Result<Vec<u8>, VolumeError>>,
     total_size: u64,
-    /// Bytes read so far.
     bytes_read: u64,
 }
 
-impl VolumeReadStream for MtpReadStream {
-    fn next_chunk(&mut self) -> Option<Result<Vec<u8>, VolumeError>> {
-        let download = self.download.as_mut()?;
+/// Channel capacity: number of chunks buffered between the MTP reader task and
+/// the consumer. 4 × ~512 KB (typical MTP chunk) ≈ 2 MB of buffering.
+const MTP_STREAM_CHANNEL_CAPACITY: usize = 4;
 
-        self.handle.block_on(async {
-            match download.next_chunk().await {
-                Some(Ok(bytes)) => {
-                    self.bytes_read += bytes.len() as u64;
-                    Some(Ok(bytes.to_vec()))
+impl MtpChannelStream {
+    /// Spawns the background reader task and returns the channel-backed stream.
+    fn spawn(handle: &tokio::runtime::Handle, mut download: FileDownload, total_size: u64) -> Self {
+        let (tx, rx) = std::sync::mpsc::sync_channel(MTP_STREAM_CHANNEL_CAPACITY);
+
+        handle.spawn(async move {
+            loop {
+                match download.next_chunk().await {
+                    Some(Ok(bytes)) => {
+                        if tx.send(Ok(bytes.to_vec())).is_err() {
+                            // Receiver dropped — consumer cancelled. Clean up the USB stream.
+                            let _ = download.cancel(std::time::Duration::from_millis(300)).await;
+                            break;
+                        }
+                    }
+                    Some(Err(e)) => {
+                        let _ = tx.send(Err(VolumeError::IoError {
+                            message: e.to_string(),
+                            raw_os_error: None,
+                        }));
+                        break;
+                    }
+                    None => break, // EOF — fully consumed, safe to drop
                 }
-                Some(Err(e)) => Some(Err(VolumeError::IoError {
-                    message: e.to_string(),
-                    raw_os_error: None,
-                })),
-                None => None,
             }
-        })
+        });
+
+        Self {
+            rx,
+            total_size,
+            bytes_read: 0,
+        }
+    }
+}
+
+impl VolumeReadStream for MtpChannelStream {
+    fn next_chunk(&mut self) -> Option<Result<Vec<u8>, VolumeError>> {
+        match self.rx.recv() {
+            Ok(Ok(data)) => {
+                self.bytes_read += data.len() as u64;
+                Some(Ok(data))
+            }
+            Ok(Err(e)) => Some(Err(e)),
+            Err(_) => None, // Sender dropped — EOF or task exited
+        }
     }
 
     fn total_size(&self) -> u64 {
