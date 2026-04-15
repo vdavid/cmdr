@@ -87,13 +87,10 @@ pub async fn check_rename_validity(
 
     tokio::time::timeout(
         Duration::from_secs(2),
-        tokio::task::spawn_blocking(move || {
-            check_rename_validity_sync(&expanded_dir, &old_name, &new_name, &volume_id_str)
-        }),
+        check_rename_validity_impl(expanded_dir, old_name, new_name, volume_id_str),
     )
     .await
     .map_err(|_| IpcError::timeout())?
-    .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
     .map_err(IpcError::from_err)
 }
 
@@ -116,16 +113,10 @@ pub async fn rename_file(from: String, to: String, force: bool, volume_id: Optio
         let from_path = PathBuf::from(&from);
         let to_path = PathBuf::from(&to);
 
-        tokio::time::timeout(
-            Duration::from_secs(5),
-            tokio::task::spawn_blocking(move || {
-                volume.rename(&from_path, &to_path, force).map_err(|e| format!("{}", e))
-            }),
-        )
-        .await
-        .map_err(|_| IpcError::timeout())?
-        .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
-        .map_err(IpcError::from_err)
+        tokio::time::timeout(Duration::from_secs(5), volume.rename(&from_path, &to_path, force))
+            .await
+            .map_err(|_| IpcError::timeout())?
+            .map_err(|e| IpcError::from_err(format!("{}", e)))
     } else {
         // Local filesystem rename
         let from_expanded = expand_tilde(&from);
@@ -152,14 +143,14 @@ pub async fn rename_file(from: String, to: String, force: bool, volume_id: Optio
 
         // Notify listing cache about the rename (fixes pre-existing bug where
         // rename had no listing notification on any volume type).
-        notify_rename_in_listing(&volume_id_str, &from_for_notify, &to_for_notify);
+        notify_rename_in_listing(&volume_id_str, &from_for_notify, &to_for_notify).await;
 
         Ok(())
     }
 }
 
 /// Notifies the listing cache about a rename via the volume's `notify_mutation`.
-fn notify_rename_in_listing(volume_id: &str, from: &Path, to: &Path) {
+async fn notify_rename_in_listing(volume_id: &str, from: &Path, to: &Path) {
     use crate::file_system::volume::MutationEvent;
 
     let volume = match crate::file_system::get_volume_manager().get(volume_id) {
@@ -170,27 +161,33 @@ fn notify_rename_in_listing(volume_id: &str, from: &Path, to: &Path) {
     if let (Some(from_parent), Some(from_name), Some(to_name)) = (from.parent(), from.file_name(), to.file_name()) {
         if from.parent() == to.parent() {
             // Same-directory rename
-            volume.notify_mutation(
-                volume_id,
-                from_parent,
-                MutationEvent::Renamed {
-                    from: from_name.to_string_lossy().to_string(),
-                    to: to_name.to_string_lossy().to_string(),
-                },
-            );
+            volume
+                .notify_mutation(
+                    volume_id,
+                    from_parent,
+                    MutationEvent::Renamed {
+                        from: from_name.to_string_lossy().to_string(),
+                        to: to_name.to_string_lossy().to_string(),
+                    },
+                )
+                .await;
         } else {
             // Cross-directory move
-            volume.notify_mutation(
-                volume_id,
-                from_parent,
-                MutationEvent::Deleted(from_name.to_string_lossy().to_string()),
-            );
-            if let Some(to_parent) = to.parent() {
-                volume.notify_mutation(
+            volume
+                .notify_mutation(
                     volume_id,
-                    to_parent,
-                    MutationEvent::Created(to_name.to_string_lossy().to_string()),
-                );
+                    from_parent,
+                    MutationEvent::Deleted(from_name.to_string_lossy().to_string()),
+                )
+                .await;
+            if let Some(to_parent) = to.parent() {
+                volume
+                    .notify_mutation(
+                        volume_id,
+                        to_parent,
+                        MutationEvent::Created(to_name.to_string_lossy().to_string()),
+                    )
+                    .await;
             }
         }
     }
@@ -276,12 +273,12 @@ fn check_macos_flags(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// Synchronous validity check implementation.
-fn check_rename_validity_sync(
-    dir: &str,
-    old_name: &str,
-    new_name: &str,
-    volume_id: &str,
+/// Async validity check implementation.
+async fn check_rename_validity_impl(
+    dir: String,
+    old_name: String,
+    new_name: String,
+    volume_id: String,
 ) -> Result<RenameValidityResult, String> {
     use crate::file_system::validation::{validate_filename, validate_path_length};
 
@@ -299,7 +296,7 @@ fn check_rename_validity_sync(
     }
 
     // Validate resulting path length
-    let new_path = PathBuf::from(dir).join(trimmed);
+    let new_path = PathBuf::from(&dir).join(trimmed);
     if let Err(error) = validate_path_length(&new_path) {
         return Ok(RenameValidityResult {
             valid: false,
@@ -311,11 +308,11 @@ fn check_rename_validity_sync(
     }
 
     // Check for conflict: does a sibling with this name already exist?
-    let old_path = PathBuf::from(dir).join(old_name);
+    let old_path = PathBuf::from(&dir).join(&old_name);
 
     if volume_id != "root" {
         // Non-local volume: use Volume trait for conflict detection
-        let conflict_info = check_sibling_conflict_via_volume(volume_id, &new_path);
+        let conflict_info = check_sibling_conflict_via_volume(&volume_id, &new_path).await;
         Ok(RenameValidityResult {
             valid: true,
             error: None,
@@ -400,13 +397,13 @@ fn check_sibling_conflict(_old_path: &Path, new_path: &Path) -> (bool, bool, Opt
 }
 
 /// Checks if a file with `new_path` exists on a non-local volume using the Volume trait's `get_metadata`.
-fn check_sibling_conflict_via_volume(volume_id: &str, new_path: &Path) -> (bool, Option<ConflictFileInfo>) {
+async fn check_sibling_conflict_via_volume(volume_id: &str, new_path: &Path) -> (bool, Option<ConflictFileInfo>) {
     let volume = match crate::file_system::get_volume_manager().get(volume_id) {
         Some(v) => v,
         None => return (false, None),
     };
 
-    let entry = match volume.get_metadata(new_path) {
+    let entry = match volume.get_metadata(new_path).await {
         Ok(e) => e,
         Err(_) => return (false, None), // No conflict — file doesn't exist
     };

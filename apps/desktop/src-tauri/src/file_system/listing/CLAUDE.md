@@ -105,6 +105,13 @@ Frontend                          Backend
 
 ## Gotchas
 
+**Gotcha**: Listing code uses `Handle::current().block_on(volume.method())` for async Volume calls
+**Why**: The listing pipeline (`streaming.rs`, `caching.rs`, `operations.rs`) and the FSEvents watcher (`watcher.rs`)
+call Volume methods from sync contexts (`spawn_blocking` closures, watcher callbacks). These `block_on` bridges are
+intentional and correct — the threads are OS threads with no entered runtime. They're NOT the same anti-pattern as the
+old Volume-internal `block_on` bridges (which were eliminated by the async refactor). These could be migrated to fully
+async in a future listing pipeline refactor, but they work correctly as-is.
+
 ### Cache helpers (caching.rs)
 
 Used by the watcher's incremental path and synthetic mkdir to patch listings without full re-reads:

@@ -16,7 +16,6 @@ use super::state::WriteOperationState;
 #[cfg(not(target_os = "macos"))]
 use super::types::IoResultExt;
 use super::types::{ConflictInfo, ConflictResolution, WriteConflictEvent, WriteOperationConfig, WriteOperationError};
-use crate::ignore_poison::IgnorePoison;
 
 // ============================================================================
 // Validation helpers
@@ -401,52 +400,31 @@ pub(super) fn resolve_conflict(
                 },
             );
 
+            // Create a oneshot channel for this conflict resolution
+            let (tx, rx) = tokio::sync::oneshot::channel();
+            *state.conflict_resolution_tx.lock().unwrap() = Some(tx);
+
             // Wait for user to call resolve_write_conflict.
-            // The frontend cancels the operation if the dialog is destroyed, so this timeout
-            // is only a safety net for when the frontend is completely dead (crash/hang).
-            let guard = state.conflict_mutex.lock_ignore_poison();
-            let (_guard, wait_result) = state
-                .conflict_condvar
-                .wait_timeout_while(guard, Duration::from_secs(30), |_| {
-                    // Keep waiting while:
-                    // 1. No pending resolution
-                    // 2. Not cancelled
-                    let has_resolution = state.pending_resolution.read().map(|r| r.is_some()).unwrap_or(false);
-                    let cancelled = super::state::is_cancelled(&state.intent);
-                    !has_resolution && !cancelled
-                })
-                .unwrap();
-
-            // Safety net: if we timed out without a resolution, cancel
-            if wait_result.timed_out() {
-                return Err(WriteOperationError::Cancelled {
-                    message: "Conflict resolution timed out — frontend may have disconnected".to_string(),
-                });
-            }
-
-            // Check if cancelled
-            if super::state::is_cancelled(&state.intent) {
-                return Err(WriteOperationError::Cancelled {
-                    message: "Operation cancelled by user".to_string(),
-                });
-            }
-
-            // Get the resolution
-            let response = state.pending_resolution.write().ok().and_then(|mut r| r.take());
-
-            if let Some(response) = response {
-                // Save for future conflicts if apply_to_all
-                if response.apply_to_all {
-                    *apply_to_all_resolution = Some(response.resolution);
+            // The sender is dropped on cancel_write_operation, which unblocks the
+            // receiver immediately — no timeout needed (the old 30s timeout was a
+            // safety net; sender-drop is strictly better).
+            // TEMPORARY: blocking_recv because this runs inside spawn_blocking.
+            // Will become rx.await in milestone 2 full async migration.
+            match rx.blocking_recv() {
+                Ok(response) => {
+                    // Save for future conflicts if apply_to_all
+                    if response.apply_to_all {
+                        *apply_to_all_resolution = Some(response.resolution);
+                    }
+                    // Now apply the chosen resolution
+                    apply_resolution(response.resolution, dest_path)
                 }
-
-                // Now apply the chosen resolution
-                apply_resolution(response.resolution, dest_path)
-            } else {
-                // No resolution provided, treat as error
-                Err(WriteOperationError::DestinationExists {
-                    path: dest_path.display().to_string(),
-                })
+                Err(_) => {
+                    // Sender dropped = operation cancelled
+                    Err(WriteOperationError::Cancelled {
+                        message: "Operation cancelled by user".to_string(),
+                    })
+                }
             }
         }
         ConflictResolution::Skip => Ok(None),

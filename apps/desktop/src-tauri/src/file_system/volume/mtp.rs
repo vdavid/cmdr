@@ -3,42 +3,21 @@
 //! Wraps MTP device storage as a Volume, enabling MTP browsing through
 //! the standard file listing pipeline (same icons, sorting, view modes as local files).
 
-use super::{CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream};
+use super::{
+    CopyScanResult, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream,
+};
 use crate::file_system::listing::FileEntry;
 use crate::mtp::connection::{MtpConnectionError, connection_manager};
 use log::debug;
-use mtp_rs::FileDownload;
+use std::future::Future;
 use std::path::{Path, PathBuf};
-
-/// Wrapper to assert Send + Sync on a progress callback reference.
-///
-/// SAFETY: MtpVolume methods are called from `spawn_blocking` contexts (single OS thread).
-/// The callback never crosses thread boundaries — `block_on` runs the async download on the
-/// same thread. The Volume trait's `Fn` callbacks use atomics for interior mutation, so they
-/// are effectively Send + Sync even though the trait doesn't declare it.
-struct SendSyncProgress<'a>(&'a dyn Fn(u64, u64) -> std::ops::ControlFlow<()>);
-
-// SAFETY: See above — callback is only accessed from the single spawn_blocking thread.
-unsafe impl Send for SendSyncProgress<'_> {}
-unsafe impl Sync for SendSyncProgress<'_> {}
-
-impl SendSyncProgress<'_> {
-    fn call(&self, bytes_done: u64, bytes_total: u64) -> std::ops::ControlFlow<()> {
-        (self.0)(bytes_done, bytes_total)
-    }
-}
+use std::pin::Pin;
 
 /// A volume backed by an MTP device storage.
 ///
 /// This implementation wraps the MTP connection manager to provide file system
-/// abstraction. The Volume trait is synchronous, so async MTP calls are executed
-/// using tokio's `block_on` from within the blocking thread pool context.
-///
-/// # Thread safety
-///
-/// MtpVolume methods are called from within `tokio::task::spawn_blocking` contexts,
-/// which run on a separate OS thread pool. This makes it safe to use `block_on`
-/// to execute async MTP operations.
+/// abstraction. All methods are natively async — MTP operations go through the
+/// connection manager which uses async USB bulk transfers.
 pub struct MtpVolume {
     /// Display name (typically the storage description like "Internal storage")
     name: String,
@@ -121,125 +100,128 @@ impl Volume for MtpVolume {
         &self.root
     }
 
-    fn list_directory(&self, path: &Path) -> Result<Vec<FileEntry>, VolumeError> {
-        let mtp_path = self.to_mtp_path(path);
-        let device_id = self.device_id.clone();
-        let storage_id = self.storage_id;
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mtp_path = self.to_mtp_path(path);
 
-        debug!(
-            "MtpVolume::list_directory: device={}, storage={}, input_path={}, mtp_path={}",
-            device_id,
-            storage_id,
-            path.display(),
-            mtp_path
-        );
+            debug!(
+                "MtpVolume::list_directory: device={}, storage={}, input_path={}, mtp_path={}",
+                self.device_id,
+                self.storage_id,
+                path.display(),
+                mtp_path
+            );
 
-        let handle = tokio::runtime::Handle::current();
+            let start = std::time::Instant::now();
+            let result = connection_manager()
+                .list_directory(&self.device_id, self.storage_id, &mtp_path)
+                .await;
 
-        let start = std::time::Instant::now();
-        let result = handle.block_on(async move {
-            connection_manager()
-                .list_directory(&device_id, storage_id, &mtp_path)
-                .await
-        });
+            match &result {
+                Ok(entries) => debug!(
+                    "MtpVolume::list_directory: completed in {:?}, {} entries",
+                    start.elapsed(),
+                    entries.len()
+                ),
+                Err(e) => debug!(
+                    "MtpVolume::list_directory: failed in {:?}, error={:?}",
+                    start.elapsed(),
+                    e
+                ),
+            }
 
-        match &result {
-            Ok(entries) => debug!(
-                "MtpVolume::list_directory: completed in {:?}, {} entries",
-                start.elapsed(),
-                entries.len()
-            ),
-            Err(e) => debug!(
-                "MtpVolume::list_directory: failed in {:?}, error={:?}",
-                start.elapsed(),
-                e
-            ),
-        }
-
-        result.map_err(map_mtp_error)
+            result.map_err(map_mtp_error)
+        })
     }
 
-    fn list_directory_with_progress(
-        &self,
-        path: &Path,
-        on_progress: &dyn Fn(usize),
-    ) -> Result<Vec<FileEntry>, VolumeError> {
-        let mtp_path = self.to_mtp_path(path);
-        let device_id = self.device_id.clone();
-        let storage_id = self.storage_id;
+    fn list_directory_with_progress<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: &'a (dyn Fn(usize) + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mtp_path = self.to_mtp_path(path);
 
-        debug!(
-            "MtpVolume::list_directory_with_progress: device={}, storage={}, input_path={}, mtp_path={}",
-            device_id,
-            storage_id,
-            path.display(),
-            mtp_path
-        );
+            debug!(
+                "MtpVolume::list_directory_with_progress: device={}, storage={}, input_path={}, mtp_path={}",
+                self.device_id,
+                self.storage_id,
+                path.display(),
+                mtp_path
+            );
 
-        let handle = tokio::runtime::Handle::current();
+            let start = std::time::Instant::now();
+            let result = connection_manager()
+                .list_directory_with_progress(&self.device_id, self.storage_id, &mtp_path, on_progress)
+                .await;
 
-        let start = std::time::Instant::now();
-        let result = handle.block_on(async move {
-            connection_manager()
-                .list_directory_with_progress(&device_id, storage_id, &mtp_path, on_progress)
-                .await
-        });
+            match &result {
+                Ok(entries) => debug!(
+                    "MtpVolume::list_directory_with_progress: completed in {:?}, {} entries",
+                    start.elapsed(),
+                    entries.len()
+                ),
+                Err(e) => debug!(
+                    "MtpVolume::list_directory_with_progress: failed in {:?}, error={:?}",
+                    start.elapsed(),
+                    e
+                ),
+            }
 
-        match &result {
-            Ok(entries) => debug!(
-                "MtpVolume::list_directory_with_progress: completed in {:?}, {} entries",
-                start.elapsed(),
-                entries.len()
-            ),
-            Err(e) => debug!(
-                "MtpVolume::list_directory_with_progress: failed in {:?}, error={:?}",
-                start.elapsed(),
-                e
-            ),
-        }
-
-        result.map_err(map_mtp_error)
+            result.map_err(map_mtp_error)
+        })
     }
 
-    fn get_metadata(&self, path: &Path) -> Result<FileEntry, VolumeError> {
-        // MTP has no single-file stat — list the parent directory and find the entry.
-        let path_str = path.to_string_lossy();
-        if path_str.is_empty() || path_str == "/" || path_str == "." {
-            // Root: synthesize a directory entry
-            return Ok(FileEntry::new(
-                self.name.clone(),
-                self.root.display().to_string(),
-                true,
-                false,
-            ));
-        }
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // MTP has no single-file stat — list the parent directory and find the entry.
+            let path_str = path.to_string_lossy();
+            if path_str.is_empty() || path_str == "/" || path_str == "." {
+                // Root: synthesize a directory entry
+                return Ok(FileEntry::new(
+                    self.name.clone(),
+                    self.root.display().to_string(),
+                    true,
+                    false,
+                ));
+            }
 
-        let Some(parent) = path.parent() else {
-            return Ok(FileEntry::new(
-                self.name.clone(),
-                self.root.display().to_string(),
-                true,
-                false,
-            ));
-        };
+            let Some(parent) = path.parent() else {
+                return Ok(FileEntry::new(
+                    self.name.clone(),
+                    self.root.display().to_string(),
+                    true,
+                    false,
+                ));
+            };
 
-        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
-            return Err(VolumeError::NotFound(path.display().to_string()));
-        };
+            let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+                return Err(VolumeError::NotFound(path.display().to_string()));
+            };
 
-        let entries = self.list_directory(parent)?;
-        entries
-            .into_iter()
-            .find(|e| e.name == name)
-            .ok_or_else(|| VolumeError::NotFound(path.display().to_string()))
+            let entries = self.list_directory(parent).await?;
+            entries
+                .into_iter()
+                .find(|e| e.name == name)
+                .ok_or_else(|| VolumeError::NotFound(path.display().to_string()))
+        })
     }
 
-    fn exists(&self, path: &Path) -> bool {
-        self.get_metadata(path).is_ok()
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async move { self.get_metadata(path).await.is_ok() })
     }
 
-    fn is_directory(&self, path: &Path) -> Result<bool, VolumeError> {
-        self.get_metadata(path).map(|e| e.is_directory)
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        Box::pin(async move { self.get_metadata(path).await.map(|e| e.is_directory) })
     }
 
     fn supports_watching(&self) -> bool {
@@ -260,604 +242,540 @@ impl Volume for MtpVolume {
         false
     }
 
-    fn notify_mutation(&self, _volume_id: &str, parent_path: &Path, mutation: super::MutationEvent) {
-        use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
+    fn notify_mutation<'a>(
+        &'a self,
+        _volume_id: &'a str,
+        parent_path: &'a Path,
+        mutation: MutationEvent,
+    ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(async move {
+            use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
 
-        // MTP's get_metadata lists the parent dir to find the entry, which is expensive
-        // but correct. The MTP event loop (connection/event_loop.rs) also handles
-        // change notifications, so this is belt-and-suspenders for self-mutations.
-        match mutation {
-            super::MutationEvent::Created(ref name) | super::MutationEvent::Modified(ref name) => {
-                let entry_path = parent_path.join(name);
-                match self.get_metadata(&entry_path) {
-                    Ok(entry) => {
-                        let change = if matches!(mutation, super::MutationEvent::Created(_)) {
-                            DirectoryChange::Added(entry)
-                        } else {
-                            DirectoryChange::Modified(entry)
-                        };
-                        notify_directory_changed(&self.volume_id, parent_path, change);
+            // MTP's get_metadata lists the parent dir to find the entry, which is expensive
+            // but correct. The MTP event loop (connection/event_loop.rs) also handles
+            // change notifications, so this is belt-and-suspenders for self-mutations.
+            match mutation {
+                MutationEvent::Created(ref name) | MutationEvent::Modified(ref name) => {
+                    let entry_path = parent_path.join(name);
+                    match self.get_metadata(&entry_path).await {
+                        Ok(entry) => {
+                            let change = if matches!(mutation, MutationEvent::Created(_)) {
+                                DirectoryChange::Added(entry)
+                            } else {
+                                DirectoryChange::Modified(entry)
+                            };
+                            notify_directory_changed(&self.volume_id, parent_path, change);
+                        }
+                        Err(e) => {
+                            debug!(
+                                "MtpVolume::notify_mutation: couldn't stat {}: {}",
+                                entry_path.display(),
+                                e
+                            );
+                        }
                     }
-                    Err(e) => {
-                        debug!(
-                            "MtpVolume::notify_mutation: couldn't stat {}: {}",
-                            entry_path.display(),
-                            e
-                        );
+                }
+                MutationEvent::Deleted(name) => {
+                    notify_directory_changed(&self.volume_id, parent_path, DirectoryChange::Removed(name));
+                }
+                MutationEvent::Renamed { from, to } => {
+                    let new_path = parent_path.join(&to);
+                    match self.get_metadata(&new_path).await {
+                        Ok(entry) => {
+                            notify_directory_changed(
+                                &self.volume_id,
+                                parent_path,
+                                DirectoryChange::Renamed {
+                                    old_name: from,
+                                    new_entry: entry,
+                                },
+                            );
+                        }
+                        Err(e) => {
+                            debug!(
+                                "MtpVolume::notify_mutation: couldn't stat renamed entry {}: {}",
+                                new_path.display(),
+                                e
+                            );
+                        }
                     }
                 }
             }
-            super::MutationEvent::Deleted(name) => {
-                notify_directory_changed(&self.volume_id, parent_path, DirectoryChange::Removed(name));
-            }
-            super::MutationEvent::Renamed { from, to } => {
-                let new_path = parent_path.join(&to);
-                match self.get_metadata(&new_path) {
-                    Ok(entry) => {
-                        notify_directory_changed(
-                            &self.volume_id,
-                            parent_path,
-                            DirectoryChange::Renamed {
-                                old_name: from,
-                                new_entry: entry,
-                            },
-                        );
-                    }
-                    Err(e) => {
-                        debug!(
-                            "MtpVolume::notify_mutation: couldn't stat renamed entry {}: {}",
-                            new_path.display(),
-                            e
-                        );
-                    }
-                }
-            }
-        }
+        })
     }
 
-    fn create_directory(&self, path: &Path) -> Result<(), VolumeError> {
-        let Some(parent) = path.parent() else {
-            return Err(VolumeError::IoError {
-                message: "Cannot create root directory".into(),
-                raw_os_error: None,
-            });
-        };
-        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
-            return Err(VolumeError::IoError {
-                message: "Invalid directory name".into(),
-                raw_os_error: None,
-            });
-        };
+    fn create_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let Some(parent) = path.parent() else {
+                return Err(VolumeError::IoError {
+                    message: "Cannot create root directory".into(),
+                    raw_os_error: None,
+                });
+            };
+            let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+                return Err(VolumeError::IoError {
+                    message: "Invalid directory name".into(),
+                    raw_os_error: None,
+                });
+            };
 
-        let parent_mtp_path = self.to_mtp_path(parent);
-        let device_id = self.device_id.clone();
-        let storage_id = self.storage_id;
-        let folder_name = name.to_string();
+            let parent_mtp_path = self.to_mtp_path(parent);
+            let folder_name = name.to_string();
 
-        let handle = tokio::runtime::Handle::current();
-
-        handle
-            .block_on(async move {
-                connection_manager()
-                    .create_folder(&device_id, storage_id, &parent_mtp_path, &folder_name)
-                    .await
-            })
-            .map(|_| ())
-            .map_err(map_mtp_error)?;
-
-        self.notify_mutation(&self.volume_id, parent, super::MutationEvent::Created(name.to_string()));
-        Ok(())
-    }
-
-    fn delete(&self, path: &Path) -> Result<(), VolumeError> {
-        let mtp_path = self.to_mtp_path(path);
-        let device_id = self.device_id.clone();
-        let storage_id = self.storage_id;
-
-        let handle = tokio::runtime::Handle::current();
-
-        handle
-            .block_on(async move {
-                connection_manager()
-                    .delete_object(&device_id, storage_id, &mtp_path)
-                    .await
-            })
-            .map_err(map_mtp_error)?;
-
-        if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
-            self.notify_mutation(
-                &self.volume_id,
-                parent,
-                super::MutationEvent::Deleted(name.to_string_lossy().to_string()),
-            );
-        }
-        Ok(())
-    }
-
-    fn rename(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
-        // MTP doesn't support atomic overwrite, so check for conflicts when not forced.
-        if !force && self.exists(to) {
-            return Err(VolumeError::AlreadyExists(to.display().to_string()));
-        }
-
-        let from_mtp = self.to_mtp_path(from);
-        let to_mtp = self.to_mtp_path(to);
-
-        let from_parent = Path::new(&from_mtp).parent().unwrap_or(Path::new(""));
-        let to_parent = Path::new(&to_mtp).parent().unwrap_or(Path::new(""));
-        let same_parent = from_parent == to_parent;
-
-        let from_name = Path::new(&from_mtp)
-            .file_name()
-            .and_then(|n| n.to_str())
-            .ok_or_else(|| VolumeError::IoError {
-                message: "Invalid source path".into(),
-                raw_os_error: None,
-            })?;
-        let to_name = Path::new(&to_mtp)
-            .file_name()
-            .and_then(|n| n.to_str())
-            .ok_or_else(|| VolumeError::IoError {
-                message: "Invalid destination path".into(),
-                raw_os_error: None,
-            })?;
-        let same_name = from_name == to_name;
-
-        let device_id = self.device_id.clone();
-        let storage_id = self.storage_id;
-        let handle = tokio::runtime::Handle::current();
-
-        if same_parent {
-            // Same directory — just rename
-            let new_name = to_name.to_string();
-            handle
-                .block_on(async {
-                    connection_manager()
-                        .rename_object(&device_id, storage_id, &from_mtp, &new_name)
-                        .await
-                })
+            connection_manager()
+                .create_folder(&self.device_id, self.storage_id, &parent_mtp_path, &folder_name)
+                .await
                 .map(|_| ())
                 .map_err(map_mtp_error)?;
 
-            // Notify listing cache about same-directory rename
-            if let Some(from_parent_path) = from.parent() {
+            self.notify_mutation(&self.volume_id, parent, MutationEvent::Created(name.to_string()))
+                .await;
+            Ok(())
+        })
+    }
+
+    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mtp_path = self.to_mtp_path(path);
+
+            connection_manager()
+                .delete_object(&self.device_id, self.storage_id, &mtp_path)
+                .await
+                .map_err(map_mtp_error)?;
+
+            if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
                 self.notify_mutation(
                     &self.volume_id,
-                    from_parent_path,
-                    super::MutationEvent::Renamed {
-                        from: from_name.to_string(),
-                        to: to_name.to_string(),
-                    },
-                );
+                    parent,
+                    MutationEvent::Deleted(name.to_string_lossy().to_string()),
+                )
+                .await;
             }
-        } else {
-            // Different directory — use MTP MoveObject
-            let to_parent_str = to_parent.to_string_lossy().to_string();
-            handle
-                .block_on(async {
-                    connection_manager()
-                        .move_object(&device_id, storage_id, &from_mtp, &to_parent_str)
-                        .await
-                })
-                .map(|_| ())
-                .map_err(map_mtp_error)?;
+            Ok(())
+        })
+    }
 
-            // If the name also changed, rename after moving
-            if !same_name {
-                let moved_path = format!(
-                    "{}{}{}",
-                    to_parent_str,
-                    if to_parent_str.is_empty() || to_parent_str.ends_with('/') {
-                        ""
-                    } else {
-                        "/"
-                    },
-                    from_name
-                );
+    fn rename<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // MTP doesn't support atomic overwrite, so check for conflicts when not forced.
+            if !force && self.exists(to).await {
+                return Err(VolumeError::AlreadyExists(to.display().to_string()));
+            }
+
+            let from_mtp = self.to_mtp_path(from);
+            let to_mtp = self.to_mtp_path(to);
+
+            let from_parent = Path::new(&from_mtp).parent().unwrap_or(Path::new(""));
+            let to_parent = Path::new(&to_mtp).parent().unwrap_or(Path::new(""));
+            let same_parent = from_parent == to_parent;
+
+            let from_name = Path::new(&from_mtp)
+                .file_name()
+                .and_then(|n| n.to_str())
+                .ok_or_else(|| VolumeError::IoError {
+                    message: "Invalid source path".into(),
+                    raw_os_error: None,
+                })?;
+            let to_name =
+                Path::new(&to_mtp)
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .ok_or_else(|| VolumeError::IoError {
+                        message: "Invalid destination path".into(),
+                        raw_os_error: None,
+                    })?;
+            let same_name = from_name == to_name;
+
+            if same_parent {
+                // Same directory — just rename
                 let new_name = to_name.to_string();
-                handle
-                    .block_on(async {
-                        connection_manager()
-                            .rename_object(&device_id, storage_id, &moved_path, &new_name)
-                            .await
-                    })
+                connection_manager()
+                    .rename_object(&self.device_id, self.storage_id, &from_mtp, &new_name)
+                    .await
                     .map(|_| ())
                     .map_err(map_mtp_error)?;
-            }
 
-            // Cross-directory move: remove from source dir, add in dest dir
-            if let Some(from_parent_path) = from.parent() {
-                self.notify_mutation(
-                    &self.volume_id,
-                    from_parent_path,
-                    super::MutationEvent::Deleted(from_name.to_string()),
-                );
+                // Notify listing cache about same-directory rename
+                if let Some(from_parent_path) = from.parent() {
+                    self.notify_mutation(
+                        &self.volume_id,
+                        from_parent_path,
+                        MutationEvent::Renamed {
+                            from: from_name.to_string(),
+                            to: to_name.to_string(),
+                        },
+                    )
+                    .await;
+                }
+            } else {
+                // Different directory — use MTP MoveObject
+                let to_parent_str = to_parent.to_string_lossy().to_string();
+                connection_manager()
+                    .move_object(&self.device_id, self.storage_id, &from_mtp, &to_parent_str)
+                    .await
+                    .map(|_| ())
+                    .map_err(map_mtp_error)?;
+
+                // If the name also changed, rename after moving
+                if !same_name {
+                    let moved_path = format!(
+                        "{}{}{}",
+                        to_parent_str,
+                        if to_parent_str.is_empty() || to_parent_str.ends_with('/') {
+                            ""
+                        } else {
+                            "/"
+                        },
+                        from_name
+                    );
+                    let new_name = to_name.to_string();
+                    connection_manager()
+                        .rename_object(&self.device_id, self.storage_id, &moved_path, &new_name)
+                        .await
+                        .map(|_| ())
+                        .map_err(map_mtp_error)?;
+                }
+
+                // Cross-directory move: remove from source dir, add in dest dir
+                if let Some(from_parent_path) = from.parent() {
+                    self.notify_mutation(
+                        &self.volume_id,
+                        from_parent_path,
+                        MutationEvent::Deleted(from_name.to_string()),
+                    )
+                    .await;
+                }
+                if let Some(to_parent_path) = to.parent() {
+                    self.notify_mutation(
+                        &self.volume_id,
+                        to_parent_path,
+                        MutationEvent::Created(to_name.to_string()),
+                    )
+                    .await;
+                }
             }
-            if let Some(to_parent_path) = to.parent() {
-                self.notify_mutation(
-                    &self.volume_id,
-                    to_parent_path,
-                    super::MutationEvent::Created(to_name.to_string()),
-                );
-            }
-        }
-        Ok(())
+            Ok(())
+        })
     }
 
     fn supports_export(&self) -> bool {
         true
     }
 
-    fn scan_for_copy(&self, path: &Path) -> Result<CopyScanResult, VolumeError> {
-        let mtp_path = self.to_mtp_path(path);
-        let device_id = self.device_id.clone();
-        let storage_id = self.storage_id;
+    fn scan_for_copy<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mtp_path = self.to_mtp_path(path);
 
-        debug!(
-            "MtpVolume::scan_for_copy: device={}, storage={}, path={}",
-            device_id, storage_id, mtp_path
-        );
+            debug!(
+                "MtpVolume::scan_for_copy: device={}, storage={}, path={}",
+                self.device_id, self.storage_id, mtp_path
+            );
 
-        let handle = tokio::runtime::Handle::current();
-
-        handle
-            .block_on(async move {
-                connection_manager()
-                    .scan_for_copy(&device_id, storage_id, &mtp_path)
-                    .await
-            })
-            .map_err(map_mtp_error)
+            connection_manager()
+                .scan_for_copy(&self.device_id, self.storage_id, &mtp_path)
+                .await
+                .map_err(map_mtp_error)
+        })
     }
 
-    fn scan_for_copy_batch(&self, paths: &[PathBuf]) -> Result<CopyScanResult, VolumeError> {
-        if paths.is_empty() {
-            return Ok(CopyScanResult {
+    fn scan_for_copy_batch<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            if paths.is_empty() {
+                return Ok(CopyScanResult {
+                    file_count: 0,
+                    dir_count: 0,
+                    total_bytes: 0,
+                });
+            }
+
+            // Group paths by parent directory so we list each parent at most once
+            let mut by_parent: std::collections::HashMap<PathBuf, Vec<&PathBuf>> = std::collections::HashMap::new();
+            for path in paths {
+                let mtp_path = self.to_mtp_path(path);
+                let mtp_path_buf = PathBuf::from(&mtp_path);
+                let parent = mtp_path_buf.parent().unwrap_or(Path::new("")).to_path_buf();
+                by_parent.entry(parent).or_default().push(path);
+            }
+
+            debug!(
+                "MtpVolume::scan_for_copy_batch: {} paths across {} unique parent dirs",
+                paths.len(),
+                by_parent.len()
+            );
+
+            let mut result = CopyScanResult {
                 file_count: 0,
                 dir_count: 0,
                 total_bytes: 0,
-            });
-        }
+            };
 
-        // Group paths by parent directory so we list each parent at most once
-        let mut by_parent: std::collections::HashMap<PathBuf, Vec<&PathBuf>> = std::collections::HashMap::new();
-        for path in paths {
-            let mtp_path = self.to_mtp_path(path);
-            let mtp_path_buf = PathBuf::from(&mtp_path);
-            let parent = mtp_path_buf.parent().unwrap_or(Path::new("")).to_path_buf();
-            by_parent.entry(parent).or_default().push(path);
-        }
+            for (parent, children) in &by_parent {
+                // List the parent directory once (goes through the listing cache)
+                let parent_str = parent.to_string_lossy();
+                let entries = self.list_directory(Path::new(parent_str.as_ref())).await?;
 
-        debug!(
-            "MtpVolume::scan_for_copy_batch: {} paths across {} unique parent dirs",
-            paths.len(),
-            by_parent.len()
-        );
+                for child_path in children {
+                    let mtp_path = self.to_mtp_path(child_path);
+                    let name = Path::new(&mtp_path).file_name().and_then(|n| n.to_str()).unwrap_or("");
 
-        let mut result = CopyScanResult {
-            file_count: 0,
-            dir_count: 0,
-            total_bytes: 0,
-        };
-
-        for (parent, children) in &by_parent {
-            // List the parent directory once (goes through the listing cache)
-            let parent_str = parent.to_string_lossy();
-            let entries = self.list_directory(Path::new(parent_str.as_ref()))?;
-
-            for child_path in children {
-                let mtp_path = self.to_mtp_path(child_path);
-                let name = Path::new(&mtp_path).file_name().and_then(|n| n.to_str()).unwrap_or("");
-
-                if let Some(entry) = entries.iter().find(|e| e.name == name) {
-                    if entry.is_directory {
-                        let scan = self.scan_for_copy(child_path)?;
-                        result.file_count += scan.file_count;
-                        result.dir_count += scan.dir_count;
-                        result.total_bytes += scan.total_bytes;
-                    } else {
-                        result.file_count += 1;
-                        result.total_bytes += entry.size.unwrap_or(0);
+                    if let Some(entry) = entries.iter().find(|e| e.name == name) {
+                        if entry.is_directory {
+                            let scan = self.scan_for_copy(child_path).await?;
+                            result.file_count += scan.file_count;
+                            result.dir_count += scan.dir_count;
+                            result.total_bytes += scan.total_bytes;
+                        } else {
+                            result.file_count += 1;
+                            result.total_bytes += entry.size.unwrap_or(0);
+                        }
                     }
                 }
             }
-        }
 
-        Ok(result)
+            Ok(result)
+        })
     }
 
-    fn export_to_local_with_progress(
-        &self,
-        source: &Path,
-        local_dest: &Path,
-        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
-    ) -> Result<u64, VolumeError> {
-        let mtp_path = self.to_mtp_path(source);
-        let device_id = self.device_id.clone();
-        let storage_id = self.storage_id;
-        let local_dest = local_dest.to_path_buf();
+    fn export_to_local<'a>(
+        &'a self,
+        source: &'a Path,
+        local_dest: &'a Path,
+        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mtp_path = self.to_mtp_path(source);
+            let local_dest = local_dest.to_path_buf();
 
-        debug!(
-            "MtpVolume::export_to_local_with_progress: device={}, storage={}, source={}, dest={}",
-            device_id,
-            storage_id,
-            mtp_path,
-            local_dest.display()
-        );
+            debug!(
+                "MtpVolume::export_to_local: device={}, storage={}, source={}, dest={}",
+                self.device_id,
+                self.storage_id,
+                mtp_path,
+                local_dest.display()
+            );
 
-        let handle = tokio::runtime::Handle::current();
-        let progress = SendSyncProgress(on_progress);
-        let operation_id = format!("export-{}", uuid::Uuid::new_v4());
+            let operation_id = format!("export-{}", uuid::Uuid::new_v4());
 
-        handle
-            .block_on(async {
-                connection_manager()
-                    .download_file_with_progress(
-                        &device_id,
-                        storage_id,
-                        &mtp_path,
-                        &local_dest,
-                        None,
-                        &operation_id,
-                        Some(&|bytes_done, bytes_total| progress.call(bytes_done, bytes_total)),
-                    )
-                    .await
-            })
-            .map(|result| result.bytes_transferred)
-            .map_err(map_mtp_error)
+            connection_manager()
+                .download_file_with_progress(
+                    &self.device_id,
+                    self.storage_id,
+                    &mtp_path,
+                    &local_dest,
+                    None,
+                    &operation_id,
+                    Some(&|bytes_done, bytes_total| on_progress(bytes_done, bytes_total)),
+                )
+                .await
+                .map(|result| result.bytes_transferred)
+                .map_err(map_mtp_error)
+        })
     }
 
-    fn export_to_local(&self, source: &Path, local_dest: &Path) -> Result<u64, VolumeError> {
-        let mtp_path = self.to_mtp_path(source);
-        let device_id = self.device_id.clone();
-        let storage_id = self.storage_id;
-        let local_dest = local_dest.to_path_buf();
+    fn import_from_local<'a>(
+        &'a self,
+        local_source: &'a Path,
+        dest: &'a Path,
+        _on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // upload_recursive expects the destination FOLDER, not the full path.
+            // It derives the filename from the source. So we need to extract the parent.
+            let dest_folder = dest.parent().map(|p| self.to_mtp_path(p)).unwrap_or_default();
+            let local_source = local_source.to_path_buf();
 
-        debug!(
-            "MtpVolume::export_to_local: device={}, storage={}, source={}, dest={}",
-            device_id,
-            storage_id,
-            mtp_path,
-            local_dest.display()
-        );
+            debug!(
+                "MtpVolume::import_from_local: device={}, storage={}, source={}, dest_folder={}",
+                self.device_id,
+                self.storage_id,
+                local_source.display(),
+                dest_folder
+            );
 
-        let handle = tokio::runtime::Handle::current();
-        let operation_id = format!("export-{}", uuid::Uuid::new_v4());
-
-        handle
-            .block_on(async move {
-                connection_manager()
-                    .download_file(&device_id, storage_id, &mtp_path, &local_dest, None, &operation_id)
-                    .await
-            })
-            .map(|result| result.bytes_transferred)
-            .map_err(map_mtp_error)
+            connection_manager()
+                .upload_recursive(&self.device_id, self.storage_id, &local_source, &dest_folder)
+                .await
+                .map_err(map_mtp_error)
+        })
     }
 
-    fn import_from_local(&self, local_source: &Path, dest: &Path) -> Result<u64, VolumeError> {
-        // upload_recursive expects the destination FOLDER, not the full path.
-        // It derives the filename from the source. So we need to extract the parent.
-        let dest_folder = dest.parent().map(|p| self.to_mtp_path(p)).unwrap_or_default();
+    fn scan_for_conflicts<'a>(
+        &'a self,
+        source_items: &'a [SourceItemInfo],
+        dest_path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // List destination directory to check for conflicts
+            let entries = self.list_directory(dest_path).await?;
+            let mut conflicts = Vec::new();
 
-        let device_id = self.device_id.clone();
-        let storage_id = self.storage_id;
-        let local_source = local_source.to_path_buf();
-
-        debug!(
-            "MtpVolume::import_from_local: device={}, storage={}, source={}, dest_folder={}",
-            device_id,
-            storage_id,
-            local_source.display(),
-            dest_folder
-        );
-
-        let handle = tokio::runtime::Handle::current();
-
-        handle
-            .block_on(async move {
-                connection_manager()
-                    .upload_recursive(&device_id, storage_id, &local_source, &dest_folder)
-                    .await
-            })
-            .map_err(map_mtp_error)
-    }
-
-    fn scan_for_conflicts(
-        &self,
-        source_items: &[SourceItemInfo],
-        dest_path: &Path,
-    ) -> Result<Vec<ScanConflict>, VolumeError> {
-        // List destination directory to check for conflicts
-        let entries = self.list_directory(dest_path)?;
-        let mut conflicts = Vec::new();
-
-        for item in source_items {
-            // Check if a file with the same name exists at destination
-            if let Some(existing) = entries.iter().find(|e| e.name == item.name) {
-                // Convert modified_at (milliseconds u64) to i64 seconds
-                let dest_modified = existing.modified_at.map(|ms| (ms / 1000) as i64);
-                conflicts.push(ScanConflict {
-                    source_path: item.name.clone(),
-                    dest_path: existing.path.clone(),
-                    source_size: item.size,
-                    dest_size: existing.size.unwrap_or(0),
-                    source_modified: item.modified,
-                    dest_modified,
-                });
+            for item in source_items {
+                // Check if a file with the same name exists at destination
+                if let Some(existing) = entries.iter().find(|e| e.name == item.name) {
+                    // Convert modified_at (milliseconds u64) to i64 seconds
+                    let dest_modified = existing.modified_at.map(|ms| (ms / 1000) as i64);
+                    conflicts.push(ScanConflict {
+                        source_path: item.name.clone(),
+                        dest_path: existing.path.clone(),
+                        source_size: item.size,
+                        dest_size: existing.size.unwrap_or(0),
+                        source_modified: item.modified,
+                        dest_modified,
+                    });
+                }
             }
-        }
 
-        Ok(conflicts)
+            Ok(conflicts)
+        })
     }
 
     fn space_poll_interval(&self) -> Option<std::time::Duration> {
         Some(std::time::Duration::from_secs(5))
     }
 
-    fn get_space_info(&self) -> Result<SpaceInfo, VolumeError> {
-        let device_id = self.device_id.clone();
-        let storage_id = self.storage_id;
-
-        let handle = tokio::runtime::Handle::current();
-
-        handle
-            .block_on(async move {
-                let info = connection_manager().get_device_info(&device_id).await.ok_or_else(|| {
-                    MtpConnectionError::NotConnected {
-                        device_id: device_id.clone(),
-                    }
+    fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let info = connection_manager()
+                .get_device_info(&self.device_id)
+                .await
+                .ok_or_else(|| {
+                    map_mtp_error(MtpConnectionError::NotConnected {
+                        device_id: self.device_id.clone(),
+                    })
                 })?;
 
-                // Find this storage in the device info
-                let storage =
-                    info.storages
-                        .iter()
-                        .find(|s| s.id == storage_id)
-                        .ok_or_else(|| MtpConnectionError::Other {
-                            device_id: device_id.clone(),
-                            message: format!("Storage {} not found", storage_id),
-                        })?;
-
-                Ok(SpaceInfo {
-                    total_bytes: storage.total_bytes,
-                    available_bytes: storage.available_bytes,
-                    used_bytes: storage.total_bytes.saturating_sub(storage.available_bytes),
+            // Find this storage in the device info
+            let storage = info.storages.iter().find(|s| s.id == self.storage_id).ok_or_else(|| {
+                map_mtp_error(MtpConnectionError::Other {
+                    device_id: self.device_id.clone(),
+                    message: format!("Storage {} not found", self.storage_id),
                 })
+            })?;
+
+            Ok(SpaceInfo {
+                total_bytes: storage.total_bytes,
+                available_bytes: storage.available_bytes,
+                used_bytes: storage.total_bytes.saturating_sub(storage.available_bytes),
             })
-            .map_err(map_mtp_error)
+        })
     }
 
     fn supports_streaming(&self) -> bool {
         true
     }
 
-    fn open_read_stream(&self, path: &Path) -> Result<Box<dyn VolumeReadStream>, VolumeError> {
-        let mtp_path = self.to_mtp_path(path);
-        let device_id = self.device_id.clone();
-        let storage_id = self.storage_id;
+    fn open_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mtp_path = self.to_mtp_path(path);
 
-        let handle = tokio::runtime::Handle::current();
+            let (download, total_size) = connection_manager()
+                .open_download_stream(&self.device_id, self.storage_id, &mtp_path)
+                .await
+                .map_err(map_mtp_error)?;
 
-        // Get the file download stream from connection manager
-        let (download, total_size) = handle
-            .block_on(async {
-                connection_manager()
-                    .open_download_stream(&device_id, storage_id, &mtp_path)
-                    .await
-            })
-            .map_err(map_mtp_error)?;
-
-        // Spawn a background task to read chunks from USB and feed them through
-        // a bounded channel. This makes next_chunk() a plain recv() — safe to
-        // call from inside block_on (no nested runtime panic).
-        Ok(Box::new(MtpChannelStream::spawn(&handle, download, total_size)))
+            Ok(Box::new(MtpReadStream {
+                download: Some(download),
+                total_size,
+                bytes_read: 0,
+            }) as Box<dyn VolumeReadStream>)
+        })
     }
 
-    fn write_from_stream(
-        &self,
-        dest: &Path,
+    fn write_from_stream<'a>(
+        &'a self,
+        dest: &'a Path,
         size: u64,
         mut stream: Box<dyn VolumeReadStream>,
-        _on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
-    ) -> Result<u64, VolumeError> {
-        let dest_folder = dest.parent().map(|p| self.to_mtp_path(p)).unwrap_or_default();
-        let filename = dest
-            .file_name()
-            .and_then(|n| n.to_str())
-            .ok_or_else(|| VolumeError::IoError {
-                message: "Invalid filename".into(),
-                raw_os_error: None,
-            })?
-            .to_string();
+        _on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let dest_folder = dest.parent().map(|p| self.to_mtp_path(p)).unwrap_or_default();
+            let filename = dest
+                .file_name()
+                .and_then(|n| n.to_str())
+                .ok_or_else(|| VolumeError::IoError {
+                    message: "Invalid filename".into(),
+                    raw_os_error: None,
+                })?
+                .to_string();
 
-        let device_id = self.device_id.clone();
-        let storage_id = self.storage_id;
+            // Stream chunks directly with .await — no need to pre-collect since
+            // we're fully async now (no nested block_on risk).
+            let mut chunks: Vec<bytes::Bytes> = Vec::new();
+            while let Some(result) = stream.next_chunk().await {
+                let data = result?;
+                chunks.push(bytes::Bytes::from(data));
+            }
 
-        // IMPORTANT: Collect all chunks BEFORE entering block_on to avoid nested runtime error.
-        // MtpReadStream::next_chunk() uses block_on internally, so we can't call it from
-        // within another block_on (which upload_from_stream would do).
-        let mut chunks: Vec<bytes::Bytes> = Vec::new();
-        while let Some(result) = stream.next_chunk() {
-            let data = result?;
-            chunks.push(bytes::Bytes::from(data));
-        }
-
-        let handle = tokio::runtime::Handle::current();
-
-        handle
-            .block_on(async {
-                connection_manager()
-                    .upload_from_chunks(&device_id, storage_id, &dest_folder, &filename, size, chunks)
-                    .await
-            })
-            .map_err(map_mtp_error)
+            connection_manager()
+                .upload_from_chunks(&self.device_id, self.storage_id, &dest_folder, &filename, size, chunks)
+                .await
+                .map_err(map_mtp_error)
+        })
     }
 }
 
-/// Streaming reader for MTP files.
+/// Direct async streaming reader for MTP files.
 ///
-/// A background tokio task reads chunks from the MTP USB endpoint and sends
-/// them through a bounded channel. `next_chunk()` is a plain `recv()` — no
-/// `block_on`, so it's safe to call from any context, including inside another
-/// `block_on` (like `SmbVolume::write_from_stream`).
-///
-/// Cancellation: dropping the receiver causes the background task's next
-/// `send()` to fail. The task then calls `download.cancel().await` to cleanly
-/// release the USB endpoint, preventing the `ReceiveStream` drop panic.
-struct MtpChannelStream {
-    rx: std::sync::mpsc::Receiver<Result<Vec<u8>, VolumeError>>,
+/// Calls `FileDownload::next_chunk().await` directly — possible because
+/// `VolumeReadStream::next_chunk()` is async. No background task or channel
+/// needed.
+struct MtpReadStream {
+    download: Option<mtp_rs::FileDownload>,
     total_size: u64,
     bytes_read: u64,
 }
 
-/// Channel capacity: number of chunks buffered between the MTP reader task and
-/// the consumer. 4 × ~512 KB (typical MTP chunk) ≈ 2 MB of buffering.
-const MTP_STREAM_CHANNEL_CAPACITY: usize = 4;
-
-impl MtpChannelStream {
-    /// Spawns the background reader task and returns the channel-backed stream.
-    fn spawn(handle: &tokio::runtime::Handle, mut download: FileDownload, total_size: u64) -> Self {
-        let (tx, rx) = std::sync::mpsc::sync_channel(MTP_STREAM_CHANNEL_CAPACITY);
-
-        handle.spawn(async move {
-            loop {
-                match download.next_chunk().await {
-                    Some(Ok(bytes)) => {
-                        if tx.send(Ok(bytes.to_vec())).is_err() {
-                            // Receiver dropped — consumer cancelled. Clean up the USB stream.
-                            let _ = download.cancel(std::time::Duration::from_millis(300)).await;
-                            break;
-                        }
+impl Drop for MtpReadStream {
+    fn drop(&mut self) {
+        if let Some(mut download) = self.download.take() {
+            // Not fully consumed — cancel the USB transfer to prevent
+            // ReceiveStream's Drop from panicking (and corrupting the session).
+            if let Ok(handle) = tokio::runtime::Handle::try_current() {
+                handle.spawn(async move {
+                    let timeout = mtp_rs::DEFAULT_CANCEL_TIMEOUT;
+                    if let Err(e) = download.cancel(timeout).await {
+                        log::warn!("MTP download cancel on drop: {:?}", e);
                     }
-                    Some(Err(e)) => {
-                        let _ = tx.send(Err(VolumeError::IoError {
-                            message: e.to_string(),
-                            raw_os_error: None,
-                        }));
-                        break;
-                    }
-                    None => break, // EOF — fully consumed, safe to drop
-                }
+                });
             }
-        });
-
-        Self {
-            rx,
-            total_size,
-            bytes_read: 0,
         }
     }
 }
 
-impl VolumeReadStream for MtpChannelStream {
-    fn next_chunk(&mut self) -> Option<Result<Vec<u8>, VolumeError>> {
-        match self.rx.recv() {
-            Ok(Ok(data)) => {
-                self.bytes_read += data.len() as u64;
-                Some(Ok(data))
+impl VolumeReadStream for MtpReadStream {
+    fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
+        Box::pin(async move {
+            let download = self.download.as_mut()?;
+            match download.next_chunk().await {
+                Some(Ok(bytes)) => {
+                    self.bytes_read += bytes.len() as u64;
+                    Some(Ok(bytes.to_vec()))
+                }
+                Some(Err(e)) => Some(Err(VolumeError::IoError {
+                    message: e.to_string(),
+                    raw_os_error: None,
+                })),
+                None => None,
             }
-            Ok(Err(e)) => Some(Err(e)),
-            Err(_) => None, // Sender dropped — EOF or task exited
-        }
+        })
     }
 
     fn total_size(&self) -> u64 {

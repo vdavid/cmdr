@@ -1,7 +1,7 @@
 //! Conflict resolution for volume-to-volume copy operations.
 //!
 //! Handles what to do when a destination file already exists:
-//! - Stop: Emit conflict event, wait for user input via condvar
+//! - Stop: Emit conflict event, wait for user input via oneshot channel
 //! - Skip: Return None to skip this file
 //! - Overwrite: Delete existing, return same path
 //! - Rename: Find unique name like "file (1).txt"
@@ -12,7 +12,6 @@ use std::sync::Arc;
 use super::state::WriteOperationState;
 use super::types::{ConflictResolution, OperationEventSink, VolumeCopyConfig, WriteConflictEvent, WriteOperationError};
 use crate::file_system::volume::Volume;
-use crate::ignore_poison::IgnorePoison;
 
 /// Resolves a file conflict for volume-to-volume copy.
 /// Returns None if file should be skipped, or Some(path) with the resolved destination path.
@@ -20,7 +19,7 @@ use crate::ignore_poison::IgnorePoison;
     clippy::too_many_arguments,
     reason = "Conflict resolution requires many context parameters"
 )]
-pub(super) fn resolve_volume_conflict(
+pub(super) async fn resolve_volume_conflict(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
     dest_volume: &Arc<dyn Volume>,
@@ -42,12 +41,13 @@ pub(super) fn resolve_volume_conflict(
     match resolution {
         ConflictResolution::Stop => {
             // Need to prompt user - gather metadata for the conflict event
-            let source_scan = source_volume.scan_for_copy(source_path).ok();
+            let source_scan = source_volume.scan_for_copy(source_path).await.ok();
             let source_size = source_scan.as_ref().map(|s| s.total_bytes).unwrap_or(0);
 
             // Try to get destination size by scanning (best effort)
             let dest_size = dest_volume
                 .scan_for_copy(dest_path)
+                .await
                 .ok()
                 .map(|s| s.total_bytes)
                 .unwrap_or(0);
@@ -70,58 +70,41 @@ pub(super) fn resolve_volume_conflict(
                 size_difference,
             });
 
-            // Wait for user to call resolve_write_conflict
-            let guard = state.conflict_mutex.lock_ignore_poison();
-            let _guard = state
-                .conflict_condvar
-                .wait_while(guard, |_| {
-                    // Keep waiting while:
-                    // 1. No pending resolution
-                    // 2. Not cancelled
-                    let has_resolution = state.pending_resolution.read().map(|r| r.is_some()).unwrap_or(false);
-                    let is_cancelled = super::state::is_cancelled(&state.intent);
-                    !has_resolution && !is_cancelled
-                })
-                .unwrap();
+            // Create a oneshot channel for this conflict resolution
+            let (tx, rx) = tokio::sync::oneshot::channel();
+            *state.conflict_resolution_tx.lock().unwrap() = Some(tx);
 
-            // Check if cancelled
-            if super::state::is_cancelled(&state.intent) {
-                return Err(WriteOperationError::Cancelled {
-                    message: "Operation cancelled by user".to_string(),
-                });
-            }
-
-            // Get the resolution
-            let response = state.pending_resolution.write().ok().and_then(|mut r| r.take());
-
-            if let Some(response) = response {
-                // Save for future conflicts if apply_to_all
-                if response.apply_to_all {
-                    *apply_to_all_resolution = Some(response.resolution);
+            // Wait for user to call resolve_write_conflict.
+            match rx.await {
+                Ok(response) => {
+                    // Save for future conflicts if apply_to_all
+                    if response.apply_to_all {
+                        *apply_to_all_resolution = Some(response.resolution);
+                    }
+                    // Apply the chosen resolution
+                    apply_volume_conflict_resolution(response.resolution, dest_volume, dest_path).await
                 }
-
-                // Apply the chosen resolution
-                apply_volume_conflict_resolution(response.resolution, dest_volume, dest_path)
-            } else {
-                // No resolution provided, treat as error
-                Err(WriteOperationError::DestinationExists {
-                    path: dest_path.display().to_string(),
-                })
+                Err(_) => {
+                    // Sender dropped = operation cancelled
+                    Err(WriteOperationError::Cancelled {
+                        message: "Operation cancelled by user".to_string(),
+                    })
+                }
             }
         }
         ConflictResolution::Skip => Ok(None),
         ConflictResolution::Overwrite => {
-            apply_volume_conflict_resolution(ConflictResolution::Overwrite, dest_volume, dest_path)
+            apply_volume_conflict_resolution(ConflictResolution::Overwrite, dest_volume, dest_path).await
         }
         ConflictResolution::Rename => {
-            apply_volume_conflict_resolution(ConflictResolution::Rename, dest_volume, dest_path)
+            apply_volume_conflict_resolution(ConflictResolution::Rename, dest_volume, dest_path).await
         }
     }
 }
 
 /// Applies a specific conflict resolution for volume copy.
 /// Returns None for Skip, or Some(path) with the path to write to.
-fn apply_volume_conflict_resolution(
+async fn apply_volume_conflict_resolution(
     resolution: ConflictResolution,
     dest_volume: &Arc<dyn Volume>,
     dest_path: &Path,
@@ -137,7 +120,7 @@ fn apply_volume_conflict_resolution(
         ConflictResolution::Overwrite => {
             // Delete existing item first, then return the same path
             // Note: For directories, this will fail if not empty - that's expected behavior
-            if let Err(e) = dest_volume.delete(dest_path) {
+            if let Err(e) = dest_volume.delete(dest_path).await {
                 log::warn!(
                     "Failed to delete existing item for overwrite: {} - {}",
                     dest_path.display(),
@@ -149,14 +132,14 @@ fn apply_volume_conflict_resolution(
         }
         ConflictResolution::Rename => {
             // Find a unique name - we need to check what exists on the volume
-            let unique_path = find_unique_volume_name(dest_volume, dest_path);
+            let unique_path = find_unique_volume_name(dest_volume, dest_path).await;
             Ok(Some(unique_path))
         }
     }
 }
 
 /// Finds a unique filename on a volume by appending " (1)", " (2)", etc.
-fn find_unique_volume_name(dest_volume: &Arc<dyn Volume>, path: &Path) -> PathBuf {
+async fn find_unique_volume_name(dest_volume: &Arc<dyn Volume>, path: &Path) -> PathBuf {
     let parent = path.parent().unwrap_or(Path::new(""));
     let stem = path
         .file_stem()
@@ -171,7 +154,7 @@ fn find_unique_volume_name(dest_volume: &Arc<dyn Volume>, path: &Path) -> PathBu
             None => format!("{} ({})", stem, counter),
         };
         let new_path = parent.join(new_name);
-        if !dest_volume.exists(&new_path) {
+        if !dest_volume.exists(&new_path).await {
             return new_path;
         }
         counter += 1;

@@ -13,8 +13,9 @@ use crate::file_system::listing::FileEntry;
 use log::{debug, warn};
 use smb2::client::tree::Tree;
 use smb2::{ClientConfig, SmbClient};
+use std::future::Future;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::pin::Pin;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::time::Duration;
 
@@ -116,8 +117,10 @@ fn map_smb_error(err: smb2::Error) -> VolumeError {
 ///
 /// # Thread safety
 ///
-/// Methods are called from `tokio::task::spawn_blocking` contexts, making it
-/// safe to use `Handle::block_on` for async smb2 calls (same pattern as MtpVolume).
+/// The smb2 session is protected by a `tokio::sync::Mutex` so that async
+/// Volume methods can hold the lock across `.await` points without blocking
+/// the runtime. The `watcher_cancel` field uses `std::sync::Mutex` because
+/// it is only accessed briefly (no awaits while held).
 pub struct SmbVolume {
     /// Display name (share name).
     name: String,
@@ -130,13 +133,11 @@ pub struct SmbVolume {
     /// Volume ID for listing cache lookups (from `path_to_id(mount_path)`).
     volume_id: String,
     /// smb2 session + tree connection. `None` when disconnected.
-    smb: Mutex<Option<(SmbClient, Tree)>>,
+    smb: tokio::sync::Mutex<Option<(SmbClient, Tree)>>,
     /// Current connection health.
     state: AtomicU8,
     /// Cancel sender for the background watcher task. Send to stop watching.
-    watcher_cancel: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
-    /// Tokio runtime handle for async bridging.
-    runtime_handle: tokio::runtime::Handle,
+    watcher_cancel: std::sync::Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
 }
 
 impl SmbVolume {
@@ -150,7 +151,6 @@ impl SmbVolume {
     /// * `volume_id` - Volume ID for listing cache lookups
     /// * `client` - Connected `SmbClient`
     /// * `tree` - Connected `Tree` for the share
-    /// * `runtime_handle` - Tokio runtime handle for async bridging
     #[allow(
         clippy::too_many_arguments,
         reason = "Constructor needs all fields; a builder would be overengineering"
@@ -163,7 +163,6 @@ impl SmbVolume {
         volume_id: impl Into<String>,
         client: SmbClient,
         tree: Tree,
-        runtime_handle: tokio::runtime::Handle,
     ) -> Self {
         Self {
             name: name.into(),
@@ -171,10 +170,9 @@ impl SmbVolume {
             server: server.into(),
             share_name: share_name.into(),
             volume_id: volume_id.into(),
-            smb: Mutex::new(Some((client, tree))),
+            smb: tokio::sync::Mutex::new(Some((client, tree))),
             state: AtomicU8::new(ConnectionState::Direct as u8),
-            watcher_cancel: Mutex::new(None),
-            runtime_handle,
+            watcher_cancel: std::sync::Mutex::new(None),
         }
     }
 
@@ -222,46 +220,23 @@ impl SmbVolume {
 
     // ── Recursive helpers for export/import/scan ──────────────────────
 
-    /// Exports a single file from SMB to a local path. Returns bytes written.
-    fn export_single_file(&self, smb_path: &str, local_dest: &Path) -> Result<u64, VolumeError> {
-        let handle = self.runtime_handle.clone();
-        let sp = smb_path.to_string();
-
-        let data = self.with_smb("export_to_local(read)", |client, tree| {
-            handle.block_on(client.read_file_pipelined(tree, &sp))
-        })?;
-
-        // Ensure parent directory exists
-        if let Some(parent) = local_dest.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| VolumeError::IoError {
-                message: e.to_string(),
-                raw_os_error: None,
-            })?;
-        }
-
-        let len = data.len() as u64;
-        std::fs::write(local_dest, &data).map_err(|e| VolumeError::IoError {
-            message: e.to_string(),
-            raw_os_error: None,
-        })?;
-        Ok(len)
-    }
-
     /// Exports a single file from SMB to a local path with progress reporting.
-    fn export_single_file_with_progress(
+    async fn export_single_file_with_progress(
         &self,
         smb_path: &str,
         local_dest: &Path,
-        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
+        on_progress: &(dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
     ) -> Result<u64, VolumeError> {
-        let handle = self.runtime_handle.clone();
-        let sp = smb_path.to_string();
-
-        let data = self.with_smb("export_to_local_with_progress(read)", |client, tree| {
-            handle.block_on(client.read_file_with_progress(tree, &sp, |p| {
-                on_progress(p.bytes_transferred, p.total_bytes.unwrap_or(0))
-            }))
-        })?;
+        let data = {
+            let mut guard = self.acquire_smb().await?;
+            let (client, tree) = guard.as_mut().unwrap();
+            let result = client
+                .read_file_with_progress(tree, smb_path, |p| {
+                    on_progress(p.bytes_transferred, p.total_bytes.unwrap_or(0))
+                })
+                .await;
+            self.handle_smb_result("export_to_local(read)", result)?
+        };
 
         // Ensure parent directory exists
         if let Some(parent) = local_dest.parent() {
@@ -277,267 +252,244 @@ impl SmbVolume {
             raw_os_error: None,
         })?;
         Ok(len)
-    }
-
-    /// Recursively exports a directory from SMB to a local path. Returns total bytes.
-    fn export_directory_recursive(&self, smb_path: &str, local_dest: &Path) -> Result<u64, VolumeError> {
-        std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError {
-            message: e.to_string(),
-            raw_os_error: None,
-        })?;
-
-        let display_path = self.to_display_path(smb_path);
-        let entries = self.list_directory(Path::new(&display_path))?;
-        let mut total_bytes = 0u64;
-
-        for entry in &entries {
-            let child_smb = if smb_path.is_empty() {
-                entry.name.clone()
-            } else {
-                format!("{}/{}", smb_path, entry.name)
-            };
-            let child_local = local_dest.join(&entry.name);
-
-            if entry.is_directory {
-                total_bytes += self.export_directory_recursive(&child_smb, &child_local)?;
-            } else {
-                total_bytes += self.export_single_file(&child_smb, &child_local)?;
-            }
-        }
-
-        Ok(total_bytes)
     }
 
     /// Recursively exports an SMB directory to local with progress. Returns total bytes.
-    fn export_directory_recursive_with_progress(
-        &self,
-        smb_path: &str,
-        local_dest: &Path,
-        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
-    ) -> Result<u64, VolumeError> {
-        std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError {
-            message: e.to_string(),
-            raw_os_error: None,
-        })?;
-
-        let display_path = self.to_display_path(smb_path);
-        let entries = self.list_directory(Path::new(&display_path))?;
-        let mut total_bytes = 0u64;
-
-        for entry in &entries {
-            let child_smb = if smb_path.is_empty() {
-                entry.name.clone()
-            } else {
-                format!("{}/{}", smb_path, entry.name)
-            };
-            let child_local = local_dest.join(&entry.name);
-
-            if entry.is_directory {
-                total_bytes += self.export_directory_recursive_with_progress(&child_smb, &child_local, on_progress)?;
-            } else {
-                total_bytes += self.export_single_file_with_progress(&child_smb, &child_local, on_progress)?;
-            }
-        }
-
-        Ok(total_bytes)
-    }
-
-    /// Imports a single local file to SMB. Returns bytes written.
-    fn import_single_file(&self, local_source: &Path, smb_path: &str) -> Result<u64, VolumeError> {
-        let data = std::fs::read(local_source).map_err(|e| VolumeError::IoError {
-            message: e.to_string(),
-            raw_os_error: None,
-        })?;
-        let len = data.len() as u64;
-        let handle = self.runtime_handle.clone();
-        let sp = smb_path.to_string();
-
-        self.with_smb("import_from_local(write)", |client, tree| {
-            handle.block_on(client.write_file_pipelined(tree, &sp, &data))
-        })?;
-
-        Ok(len)
-    }
-
-    /// Recursively imports a local directory to SMB. Returns total bytes.
-    fn import_directory_recursive(&self, local_source: &Path, smb_path: &str) -> Result<u64, VolumeError> {
-        let handle = self.runtime_handle.clone();
-        let sp = smb_path.to_string();
-
-        self.with_smb("import_from_local(mkdir)", |client, tree| {
-            handle.block_on(client.create_directory(tree, &sp))
-        })?;
-
-        let read_dir = std::fs::read_dir(local_source).map_err(|e| VolumeError::IoError {
-            message: e.to_string(),
-            raw_os_error: None,
-        })?;
-        let mut total_bytes = 0u64;
-
-        for dir_entry in read_dir {
-            let dir_entry = dir_entry.map_err(|e| VolumeError::IoError {
+    fn export_directory_recursive_with_progress<'a>(
+        &'a self,
+        smb_path: &'a str,
+        local_dest: &'a Path,
+        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError {
                 message: e.to_string(),
                 raw_os_error: None,
             })?;
-            let child_local = dir_entry.path();
-            let child_name = dir_entry.file_name().to_string_lossy().to_string();
-            let child_smb = if smb_path.is_empty() {
-                child_name
-            } else {
-                format!("{}/{}", smb_path, child_name)
-            };
 
-            if child_local.is_dir() {
-                total_bytes += self.import_directory_recursive(&child_local, &child_smb)?;
-            } else {
-                total_bytes += self.import_single_file(&child_local, &child_smb)?;
+            let display_path = self.to_display_path(smb_path);
+            let entries = self.list_directory_impl(Path::new(&display_path)).await?;
+            let mut total_bytes = 0u64;
+
+            for entry in &entries {
+                let child_smb = if smb_path.is_empty() {
+                    entry.name.clone()
+                } else {
+                    format!("{}/{}", smb_path, entry.name)
+                };
+                let child_local = local_dest.join(&entry.name);
+
+                if entry.is_directory {
+                    total_bytes += self
+                        .export_directory_recursive_with_progress(&child_smb, &child_local, on_progress)
+                        .await?;
+                } else {
+                    total_bytes += self
+                        .export_single_file_with_progress(&child_smb, &child_local, on_progress)
+                        .await?;
+                }
             }
-        }
 
-        Ok(total_bytes)
+            Ok(total_bytes)
+        })
     }
 
     /// Imports a single local file to SMB with progress reporting. Returns bytes written.
-    fn import_single_file_with_progress(
+    async fn import_single_file_with_progress(
         &self,
         local_source: &Path,
         smb_path: &str,
-        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
+        on_progress: &(dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
     ) -> Result<u64, VolumeError> {
         let data = std::fs::read(local_source).map_err(|e| VolumeError::IoError {
             message: e.to_string(),
             raw_os_error: None,
         })?;
         let len = data.len() as u64;
-        let handle = self.runtime_handle.clone();
-        let sp = smb_path.to_string();
 
-        self.with_smb("import_from_local_with_progress(write)", |client, tree| {
-            handle.block_on(client.write_file_with_progress(tree, &sp, &data, |p| {
-                on_progress(p.bytes_transferred, p.total_bytes.unwrap_or(len))
-            }))
-        })?;
+        {
+            let mut guard = self.acquire_smb().await?;
+            let (client, tree) = guard.as_mut().unwrap();
+            let result = client
+                .write_file_with_progress(tree, smb_path, &data, |p| {
+                    on_progress(p.bytes_transferred, p.total_bytes.unwrap_or(len))
+                })
+                .await;
+            self.handle_smb_result("import_from_local(write)", result)?;
+        }
 
         Ok(len)
     }
 
     /// Recursively imports a local directory to SMB with progress. Returns total bytes.
-    fn import_directory_recursive_with_progress(
-        &self,
-        local_source: &Path,
-        smb_path: &str,
-        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
-    ) -> Result<u64, VolumeError> {
-        let handle = self.runtime_handle.clone();
-        let sp = smb_path.to_string();
+    fn import_directory_recursive_with_progress<'a>(
+        &'a self,
+        local_source: &'a Path,
+        smb_path: &'a str,
+        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            {
+                let mut guard = self.acquire_smb().await?;
+                let (client, tree) = guard.as_mut().unwrap();
+                let result = client.create_directory(tree, smb_path).await;
+                self.handle_smb_result("import_from_local(mkdir)", result)?;
+            }
 
-        self.with_smb("import_from_local_with_progress(mkdir)", |client, tree| {
-            handle.block_on(client.create_directory(tree, &sp))
-        })?;
-
-        let read_dir = std::fs::read_dir(local_source).map_err(|e| VolumeError::IoError {
-            message: e.to_string(),
-            raw_os_error: None,
-        })?;
-        let mut total_bytes = 0u64;
-
-        for dir_entry in read_dir {
-            let dir_entry = dir_entry.map_err(|e| VolumeError::IoError {
+            let read_dir = std::fs::read_dir(local_source).map_err(|e| VolumeError::IoError {
                 message: e.to_string(),
                 raw_os_error: None,
             })?;
-            let child_local = dir_entry.path();
-            let child_name = dir_entry.file_name().to_string_lossy().to_string();
-            let child_smb = if smb_path.is_empty() {
-                child_name
-            } else {
-                format!("{}/{}", smb_path, child_name)
-            };
+            let mut total_bytes = 0u64;
 
-            if child_local.is_dir() {
-                total_bytes += self.import_directory_recursive_with_progress(&child_local, &child_smb, on_progress)?;
-            } else {
-                total_bytes += self.import_single_file_with_progress(&child_local, &child_smb, on_progress)?;
+            for dir_entry in read_dir {
+                let dir_entry = dir_entry.map_err(|e| VolumeError::IoError {
+                    message: e.to_string(),
+                    raw_os_error: None,
+                })?;
+                let child_local = dir_entry.path();
+                let child_name = dir_entry.file_name().to_string_lossy().to_string();
+                let child_smb = if smb_path.is_empty() {
+                    child_name
+                } else {
+                    format!("{}/{}", smb_path, child_name)
+                };
+
+                if child_local.is_dir() {
+                    total_bytes += self
+                        .import_directory_recursive_with_progress(&child_local, &child_smb, on_progress)
+                        .await?;
+                } else {
+                    total_bytes += self
+                        .import_single_file_with_progress(&child_local, &child_smb, on_progress)
+                        .await?;
+                }
             }
-        }
 
-        Ok(total_bytes)
+            Ok(total_bytes)
+        })
     }
 
-    /// Recursively scans an SMB path, accumulating file/dir counts and total bytes.
-    fn scan_recursive(&self, smb_path: &str, result: &mut CopyScanResult) -> Result<(), VolumeError> {
-        let handle = self.runtime_handle.clone();
-        let sp = smb_path.to_string();
-
-        // Stat to determine if this is a file or directory
-        if smb_path.is_empty() {
-            // Root is always a directory, scan its contents
-        } else {
-            let info = self.with_smb("scan_for_copy(stat)", |client, tree| {
-                handle.block_on(client.stat(tree, &sp))
-            })?;
-
-            if !info.is_directory {
-                result.file_count += 1;
-                result.total_bytes += info.size;
-                return Ok(());
-            }
-        }
-
-        // It's a directory — list and recurse
-        result.dir_count += 1;
-        let display_path = self.to_display_path(smb_path);
-        let entries = self.list_directory(Path::new(&display_path))?;
-
-        for entry in &entries {
-            let child_smb = if smb_path.is_empty() {
-                entry.name.clone()
-            } else {
-                format!("{}/{}", smb_path, entry.name)
+    /// Recursively scans an SMB path, returning file/dir counts and total bytes.
+    fn scan_recursive<'a>(
+        &'a self,
+        smb_path: &'a str,
+    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mut result = CopyScanResult {
+                file_count: 0,
+                dir_count: 0,
+                total_bytes: 0,
             };
 
-            if entry.is_directory {
-                self.scan_recursive(&child_smb, result)?;
+            // Stat to determine if this is a file or directory
+            if smb_path.is_empty() {
+                // Root is always a directory, scan its contents
             } else {
-                result.file_count += 1;
-                result.total_bytes += entry.size.unwrap_or(0);
-            }
-        }
+                let info = {
+                    let mut guard = self.acquire_smb().await?;
+                    let (client, tree) = guard.as_mut().unwrap();
+                    let r = client.stat(tree, smb_path).await;
+                    self.handle_smb_result("scan_for_copy(stat)", r)?
+                };
 
-        Ok(())
+                if !info.is_directory {
+                    result.file_count = 1;
+                    result.total_bytes = info.size;
+                    return Ok(result);
+                }
+            }
+
+            // It's a directory — list and recurse
+            result.dir_count += 1;
+            let display_path = self.to_display_path(smb_path);
+            let entries = self.list_directory_impl(Path::new(&display_path)).await?;
+
+            for entry in &entries {
+                let child_smb = if smb_path.is_empty() {
+                    entry.name.clone()
+                } else {
+                    format!("{}/{}", smb_path, entry.name)
+                };
+
+                if entry.is_directory {
+                    let sub = self.scan_recursive(&child_smb).await?;
+                    result.file_count += sub.file_count;
+                    result.dir_count += sub.dir_count;
+                    result.total_bytes += sub.total_bytes;
+                } else {
+                    result.file_count += 1;
+                    result.total_bytes += entry.size.unwrap_or(0);
+                }
+            }
+
+            Ok(result)
+        })
+    }
+
+    /// Shared async implementation of list_directory used by both the trait method
+    /// and internal helpers (which need to call it without going through the trait).
+    async fn list_directory_impl(&self, path: &Path) -> Result<Vec<FileEntry>, VolumeError> {
+        let smb_path = self.to_smb_path(path);
+        let display_path = self.to_display_path(&smb_path);
+
+        debug!(
+            "SmbVolume::list_directory: share={}, input={:?}, smb_path={:?}",
+            self.share_name, path, smb_path
+        );
+
+        let start = std::time::Instant::now();
+
+        let result = {
+            let mut guard = self.acquire_smb().await?;
+            let (client, tree) = guard.as_mut().unwrap();
+            let r = client.list_directory(tree, &smb_path).await;
+            self.handle_smb_result("list_directory", r)?
+        };
+
+        let entries: Vec<FileEntry> = result
+            .iter()
+            .filter(|e| e.name != "." && e.name != "..")
+            .map(|e| directory_entry_to_file_entry(e, &display_path))
+            .collect();
+
+        debug!(
+            "SmbVolume::list_directory: completed in {:?}, {} entries",
+            start.elapsed(),
+            entries.len()
+        );
+
+        Ok(entries)
     }
 
     // ── Connection helpers ──────────────────────────────────────────────
 
-    /// Runs an smb2 operation, handling connection state transitions.
-    ///
-    /// On disconnection errors, transitions state to `Disconnected` (for now;
-    /// `OsMount` fallback will be added in a follow-up).
-    fn with_smb<F, T>(&self, op_name: &str, f: F) -> Result<T, VolumeError>
-    where
-        F: FnOnce(&mut SmbClient, &mut Tree) -> Result<T, smb2::Error>,
-    {
-        let state = self.connection_state();
-        if state == ConnectionState::Disconnected {
-            return Err(VolumeError::DeviceDisconnected(
+    /// Checks that the connection is in `Direct` state. Returns an error
+    /// for `Disconnected` or `OsMount`.
+    fn check_connection(&self) -> Result<(), VolumeError> {
+        match self.connection_state() {
+            ConnectionState::Direct => Ok(()),
+            ConnectionState::OsMount => Err(VolumeError::NotSupported),
+            ConnectionState::Disconnected => Err(VolumeError::DeviceDisconnected(
                 "SMB connection is disconnected".to_string(),
-            ));
+            )),
         }
+    }
 
-        if state == ConnectionState::OsMount {
-            return Err(VolumeError::NotSupported);
+    /// Acquires the smb2 mutex and returns a mutable reference to the session.
+    /// Checks connection state first, then verifies the session is present.
+    async fn acquire_smb(&self) -> Result<tokio::sync::MutexGuard<'_, Option<(SmbClient, Tree)>>, VolumeError> {
+        self.check_connection()?;
+        let guard = self.smb.lock().await;
+        if guard.is_none() {
+            return Err(VolumeError::DeviceDisconnected("SMB session not available".to_string()));
         }
+        Ok(guard)
+    }
 
-        let mut guard = self.smb.lock().map_err(|e| VolumeError::IoError {
-            message: format!("Failed to acquire SMB lock: {}", e),
-            raw_os_error: None,
-        })?;
-
-        let (client, tree) = guard
-            .as_mut()
-            .ok_or_else(|| VolumeError::DeviceDisconnected("SMB session not available".to_string()))?;
-
-        match f(client, tree) {
+    /// Maps an smb2 result, handling connection state transitions on error.
+    fn handle_smb_result<T>(&self, op_name: &str, result: Result<T, smb2::Error>) -> Result<T, VolumeError> {
+        match result {
             Ok(val) => Ok(val),
             Err(e) => {
                 let kind = e.kind();
@@ -560,9 +512,56 @@ impl SmbVolume {
             }
         }
     }
+
+    /// Runs an smb2 operation synchronously. For sync-only contexts (`on_unmount`, tests).
+    ///
+    /// This exists only for contexts where
+    /// no async runtime is available (for example, cleanup paths called from drop-like code).
+    fn with_smb_sync<F, T>(&self, op_name: &str, f: F) -> Result<T, VolumeError>
+    where
+        F: FnOnce(&mut SmbClient, &mut Tree) -> Result<T, smb2::Error>,
+    {
+        let state = self.connection_state();
+        if state == ConnectionState::Disconnected {
+            return Err(VolumeError::DeviceDisconnected(
+                "SMB connection is disconnected".to_string(),
+            ));
+        }
+
+        if state == ConnectionState::OsMount {
+            return Err(VolumeError::NotSupported);
+        }
+
+        let mut guard = self.smb.blocking_lock();
+
+        let (client, tree) = guard
+            .as_mut()
+            .ok_or_else(|| VolumeError::DeviceDisconnected("SMB session not available".to_string()))?;
+
+        match f(client, tree) {
+            Ok(val) => Ok(val),
+            Err(e) => {
+                let kind = e.kind();
+
+                if matches!(kind, smb2::ErrorKind::ConnectionLost | smb2::ErrorKind::SessionExpired) {
+                    warn!(
+                        "SmbVolume::{}(share={}): connection lost ({}), transitioning to Disconnected",
+                        op_name, self.share_name, e
+                    );
+                    self.state.store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
+                } else if matches!(kind, smb2::ErrorKind::NotFound) {
+                    debug!("SmbVolume::{}(share={}): {}", op_name, self.share_name, e);
+                } else {
+                    warn!("SmbVolume::{}(share={}): {}", op_name, self.share_name, e);
+                }
+
+                Err(map_smb_error(e))
+            }
+        }
+    }
 }
 
-// ── Streaming support ────────────────────────��─────────────────────
+// ── Streaming support ───────────────────────────────────────────────
 
 /// Chunk size for `SmbReadStream` iteration (1 MB).
 const SMB_STREAM_CHUNK_SIZE: usize = 1024 * 1024;
@@ -578,14 +577,16 @@ struct SmbReadStream {
 }
 
 impl VolumeReadStream for SmbReadStream {
-    fn next_chunk(&mut self) -> Option<Result<Vec<u8>, VolumeError>> {
-        if self.offset >= self.data.len() {
-            return None;
-        }
-        let end = (self.offset + SMB_STREAM_CHUNK_SIZE).min(self.data.len());
-        let chunk = self.data[self.offset..end].to_vec();
-        self.offset = end;
-        Some(Ok(chunk))
+    fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
+        Box::pin(async move {
+            if self.offset >= self.data.len() {
+                return None;
+            }
+            let end = (self.offset + SMB_STREAM_CHUNK_SIZE).min(self.data.len());
+            let chunk = self.data[self.offset..end].to_vec();
+            self.offset = end;
+            Some(Ok(chunk))
+        })
     }
 
     fn total_size(&self) -> u64 {
@@ -606,108 +607,108 @@ impl Volume for SmbVolume {
         &self.mount_path
     }
 
-    fn list_directory(&self, path: &Path) -> Result<Vec<FileEntry>, VolumeError> {
-        let smb_path = self.to_smb_path(path);
-        let display_path = self.to_display_path(&smb_path);
-        let handle = self.runtime_handle.clone();
-
-        debug!(
-            "SmbVolume::list_directory: share={}, input={:?}, smb_path={:?}",
-            self.share_name, path, smb_path
-        );
-
-        let start = std::time::Instant::now();
-
-        let result = self.with_smb("list_directory", |client, tree| {
-            handle.block_on(client.list_directory(tree, &smb_path))
-        })?;
-
-        let entries: Vec<FileEntry> = result
-            .iter()
-            .filter(|e| e.name != "." && e.name != "..")
-            .map(|e| directory_entry_to_file_entry(e, &display_path))
-            .collect();
-
-        debug!(
-            "SmbVolume::list_directory: completed in {:?}, {} entries",
-            start.elapsed(),
-            entries.len()
-        );
-
-        Ok(entries)
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move { self.list_directory_impl(path).await })
     }
 
-    fn list_directory_with_progress(
-        &self,
-        path: &Path,
-        on_progress: &dyn Fn(usize),
-    ) -> Result<Vec<FileEntry>, VolumeError> {
-        // smb2's list_directory returns all entries at once, so we report
-        // progress as a single batch after the call completes.
-        let entries = self.list_directory(path)?;
-        on_progress(entries.len());
-        Ok(entries)
+    fn list_directory_with_progress<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: &'a (dyn Fn(usize) + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // smb2's list_directory returns all entries at once, so we report
+            // progress as a single batch after the call completes.
+            let entries = self.list_directory_impl(path).await?;
+            on_progress(entries.len());
+            Ok(entries)
+        })
     }
 
-    fn get_metadata(&self, path: &Path) -> Result<FileEntry, VolumeError> {
-        let smb_path = self.to_smb_path(path);
-        let handle = self.runtime_handle.clone();
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let smb_path = self.to_smb_path(path);
 
-        debug!(
-            "SmbVolume::get_metadata: share={}, input={:?}, smb_path={:?}",
-            self.share_name, path, smb_path
-        );
+            debug!(
+                "SmbVolume::get_metadata: share={}, input={:?}, smb_path={:?}",
+                self.share_name, path, smb_path
+            );
 
-        // For root, synthesize a directory entry
-        if smb_path.is_empty() {
-            return Ok(FileEntry::new(
-                self.name.clone(),
-                self.mount_path.to_string_lossy().to_string(),
-                true,
-                false,
-            ));
-        }
+            // For root, synthesize a directory entry
+            if smb_path.is_empty() {
+                return Ok(FileEntry::new(
+                    self.name.clone(),
+                    self.mount_path.to_string_lossy().to_string(),
+                    true,
+                    false,
+                ));
+            }
 
-        let info = self.with_smb("get_metadata", |client, tree| {
-            handle.block_on(client.stat(tree, &smb_path))
-        })?;
+            let info = {
+                let mut guard = self.acquire_smb().await?;
+                let (client, tree) = guard.as_mut().unwrap();
+                let r = client.stat(tree, &smb_path).await;
+                self.handle_smb_result("get_metadata", r)?
+            };
 
-        let name = Path::new(&smb_path)
-            .file_name()
-            .map(|n| n.to_string_lossy().to_string())
-            .unwrap_or_else(|| smb_path.clone());
-        let display_path = self.to_display_path(&smb_path);
+            let name = Path::new(&smb_path)
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| smb_path.clone());
+            let display_path = self.to_display_path(&smb_path);
 
-        let mut fe = FileEntry::new(name, display_path, info.is_directory, false);
-        fe.size = if info.is_directory { None } else { Some(info.size) };
-        fe.modified_at = filetime_to_millis(info.modified);
-        fe.created_at = filetime_to_millis(info.created);
-        Ok(fe)
+            let mut fe = FileEntry::new(name, display_path, info.is_directory, false);
+            fe.size = if info.is_directory { None } else { Some(info.size) };
+            fe.modified_at = filetime_to_millis(info.modified);
+            fe.created_at = filetime_to_millis(info.created);
+            Ok(fe)
+        })
     }
 
-    fn exists(&self, path: &Path) -> bool {
-        let smb_path = self.to_smb_path(path);
-        if smb_path.is_empty() {
-            return true; // Root always exists if we're connected
-        }
-        let handle = self.runtime_handle.clone();
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async move {
+            let smb_path = self.to_smb_path(path);
+            if smb_path.is_empty() {
+                return true; // Root always exists if we're connected
+            }
 
-        self.with_smb("exists", |client, tree| handle.block_on(client.stat(tree, &smb_path)))
-            .is_ok()
+            {
+                let guard = self.acquire_smb().await;
+                if let Ok(mut guard) = guard {
+                    let (client, tree) = guard.as_mut().unwrap();
+                    client.stat(tree, &smb_path).await.is_ok()
+                } else {
+                    false
+                }
+            }
+        })
     }
 
-    fn is_directory(&self, path: &Path) -> Result<bool, VolumeError> {
-        let smb_path = self.to_smb_path(path);
-        if smb_path.is_empty() {
-            return Ok(true); // Root is always a directory
-        }
-        let handle = self.runtime_handle.clone();
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let smb_path = self.to_smb_path(path);
+            if smb_path.is_empty() {
+                return Ok(true); // Root is always a directory
+            }
 
-        let info = self.with_smb("is_directory", |client, tree| {
-            handle.block_on(client.stat(tree, &smb_path))
-        })?;
+            let info = {
+                let mut guard = self.acquire_smb().await?;
+                let (client, tree) = guard.as_mut().unwrap();
+                let r = client.stat(tree, &smb_path).await;
+                self.handle_smb_result("is_directory", r)?
+            };
 
-        Ok(info.is_directory)
+            Ok(info.is_directory)
+        })
     }
 
     fn supports_watching(&self) -> bool {
@@ -723,472 +724,475 @@ impl Volume for SmbVolume {
         false
     }
 
-    fn notify_mutation(&self, _volume_id: &str, parent_path: &Path, mutation: super::MutationEvent) {
-        use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
+    fn notify_mutation<'a>(
+        &'a self,
+        _volume_id: &'a str,
+        parent_path: &'a Path,
+        mutation: super::MutationEvent,
+    ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(async move {
+            use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
 
-        match mutation {
-            super::MutationEvent::Created(ref name) | super::MutationEvent::Modified(ref name) => {
-                let entry_path = parent_path.join(name);
-                match self.get_metadata(&entry_path) {
-                    Ok(entry) => {
-                        let change = if matches!(mutation, super::MutationEvent::Created(_)) {
-                            DirectoryChange::Added(entry)
-                        } else {
-                            DirectoryChange::Modified(entry)
-                        };
-                        notify_directory_changed(&self.volume_id, parent_path, change);
+            match mutation {
+                super::MutationEvent::Created(ref name) | super::MutationEvent::Modified(ref name) => {
+                    let entry_path = parent_path.join(name);
+                    match self.get_metadata(&entry_path).await {
+                        Ok(entry) => {
+                            let change = if matches!(mutation, super::MutationEvent::Created(_)) {
+                                DirectoryChange::Added(entry)
+                            } else {
+                                DirectoryChange::Modified(entry)
+                            };
+                            notify_directory_changed(&self.volume_id, parent_path, change);
+                        }
+                        Err(e) => {
+                            warn!(
+                                "SmbVolume::notify_mutation: couldn't stat {}: {}",
+                                entry_path.display(),
+                                e
+                            );
+                        }
                     }
-                    Err(e) => {
-                        warn!(
-                            "SmbVolume::notify_mutation: couldn't stat {}: {}",
-                            entry_path.display(),
-                            e
-                        );
+                }
+                super::MutationEvent::Deleted(name) => {
+                    notify_directory_changed(&self.volume_id, parent_path, DirectoryChange::Removed(name));
+                }
+                super::MutationEvent::Renamed { from, to } => {
+                    let new_path = parent_path.join(&to);
+                    match self.get_metadata(&new_path).await {
+                        Ok(entry) => {
+                            notify_directory_changed(
+                                &self.volume_id,
+                                parent_path,
+                                DirectoryChange::Renamed {
+                                    old_name: from,
+                                    new_entry: entry,
+                                },
+                            );
+                        }
+                        Err(e) => {
+                            warn!(
+                                "SmbVolume::notify_mutation: couldn't stat renamed entry {}: {}",
+                                new_path.display(),
+                                e
+                            );
+                        }
                     }
                 }
             }
-            super::MutationEvent::Deleted(name) => {
-                notify_directory_changed(&self.volume_id, parent_path, DirectoryChange::Removed(name));
-            }
-            super::MutationEvent::Renamed { from, to } => {
-                let new_path = parent_path.join(&to);
-                match self.get_metadata(&new_path) {
-                    Ok(entry) => {
-                        notify_directory_changed(
-                            &self.volume_id,
-                            parent_path,
-                            DirectoryChange::Renamed {
-                                old_name: from,
-                                new_entry: entry,
-                            },
-                        );
-                    }
-                    Err(e) => {
-                        warn!(
-                            "SmbVolume::notify_mutation: couldn't stat renamed entry {}: {}",
-                            new_path.display(),
-                            e
-                        );
-                    }
-                }
-            }
-        }
+        })
     }
 
-    fn get_space_info(&self) -> Result<SpaceInfo, VolumeError> {
-        let handle = self.runtime_handle.clone();
+    fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            debug!("SmbVolume::get_space_info: share={}", self.share_name);
 
-        debug!("SmbVolume::get_space_info: share={}", self.share_name);
+            let info = {
+                let mut guard = self.acquire_smb().await?;
+                let (client, tree) = guard.as_mut().unwrap();
+                let r = client.fs_info(tree).await;
+                self.handle_smb_result("get_space_info", r)?
+            };
 
-        let info = self.with_smb("get_space_info", |client, tree| handle.block_on(client.fs_info(tree)))?;
-
-        Ok(fs_info_to_space_info(&info))
+            Ok(fs_info_to_space_info(&info))
+        })
     }
 
     fn space_poll_interval(&self) -> Option<Duration> {
         Some(Duration::from_secs(5))
     }
 
-    fn create_file(&self, path: &Path, content: &[u8]) -> Result<(), VolumeError> {
-        let smb_path = self.to_smb_path(path);
-        let handle = self.runtime_handle.clone();
-        let data = content.to_vec();
+    fn create_file<'a>(
+        &'a self,
+        path: &'a Path,
+        content: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let smb_path = self.to_smb_path(path);
+            let data = content.to_vec();
 
-        debug!("SmbVolume::create_file: share={}, path={:?}", self.share_name, smb_path);
+            debug!("SmbVolume::create_file: share={}, path={:?}", self.share_name, smb_path);
 
-        self.with_smb("create_file", |client, tree| {
-            handle.block_on(client.write_file(tree, &smb_path, &data))
-        })?;
-
-        if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
-            let parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(parent)));
-            self.notify_mutation(
-                &self.volume_id,
-                &parent_display,
-                super::MutationEvent::Created(name.to_string_lossy().to_string()),
-            );
-        }
-        Ok(())
-    }
-
-    fn create_directory(&self, path: &Path) -> Result<(), VolumeError> {
-        let smb_path = self.to_smb_path(path);
-        let handle = self.runtime_handle.clone();
-
-        debug!(
-            "SmbVolume::create_directory: share={}, path={:?}",
-            self.share_name, smb_path
-        );
-
-        self.with_smb("create_directory", |client, tree| {
-            handle.block_on(client.create_directory(tree, &smb_path))
-        })?;
-
-        if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
-            let parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(parent)));
-            self.notify_mutation(
-                &self.volume_id,
-                &parent_display,
-                super::MutationEvent::Created(name.to_string_lossy().to_string()),
-            );
-        }
-        Ok(())
-    }
-
-    fn delete(&self, path: &Path) -> Result<(), VolumeError> {
-        let smb_path = self.to_smb_path(path);
-        let handle = self.runtime_handle.clone();
-
-        debug!("SmbVolume::delete: share={}, path={:?}", self.share_name, smb_path);
-
-        // Try delete_file first (one round-trip). If the path is a directory,
-        // the server returns STATUS_FILE_IS_A_DIRECTORY — then try delete_directory.
-        // This avoids a stat round-trip for every file in bulk deletes.
-        let file_result = {
-            let h = handle.clone();
-            let sp = smb_path.clone();
-            self.with_smb("delete_file", |client, tree| h.block_on(client.delete_file(tree, &sp)))
-        };
-
-        match file_result {
-            Ok(()) => {} // File deleted successfully
-            Err(VolumeError::IoError { ref message, .. }) if message.contains("FILE_IS_A_DIRECTORY") => {
-                // It's a directory — try delete_directory
-                self.with_smb("delete_directory", |client, tree| {
-                    handle.block_on(client.delete_directory(tree, &smb_path))
-                })?;
+            {
+                let mut guard = self.acquire_smb().await?;
+                let (client, tree) = guard.as_mut().unwrap();
+                let result = client.write_file(tree, &smb_path, &data).await;
+                self.handle_smb_result("create_file", result)?;
             }
-            Err(e) => return Err(e),
-        }
 
-        if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
-            let parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(parent)));
-            self.notify_mutation(
-                &self.volume_id,
-                &parent_display,
-                super::MutationEvent::Deleted(name.to_string_lossy().to_string()),
-            );
-        }
-        Ok(())
+            if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
+                let parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(parent)));
+                self.notify_mutation(
+                    &self.volume_id,
+                    &parent_display,
+                    super::MutationEvent::Created(name.to_string_lossy().to_string()),
+                )
+                .await;
+            }
+            Ok(())
+        })
     }
 
-    fn rename(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
-        let smb_from = self.to_smb_path(from);
-        let smb_to = self.to_smb_path(to);
-        let handle = self.runtime_handle.clone();
+    fn create_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let smb_path = self.to_smb_path(path);
 
-        debug!(
-            "SmbVolume::rename: share={}, from={:?}, to={:?}, force={}",
-            self.share_name, smb_from, smb_to, force
-        );
+            debug!(
+                "SmbVolume::create_directory: share={}, path={:?}",
+                self.share_name, smb_path
+            );
 
-        if force {
-            // Check if dest exists and delete it first
-            let h = handle.clone();
-            let dest = smb_to.clone();
-            let dest_exists = self
-                .with_smb("rename(stat_dest)", |client, tree| h.block_on(client.stat(tree, &dest)))
-                .is_ok();
+            {
+                let mut guard = self.acquire_smb().await?;
+                let (client, tree) = guard.as_mut().unwrap();
+                let result = client.create_directory(tree, &smb_path).await;
+                self.handle_smb_result("create_directory", result)?;
+            }
 
-            if dest_exists {
-                let h = handle.clone();
-                let dest = smb_to.clone();
-                // Try file delete first; if that fails (it's a dir), try directory delete
-                let file_result = self.with_smb("rename(delete_dest_file)", |client, tree| {
-                    h.block_on(client.delete_file(tree, &dest))
-                });
-                if file_result.is_err() {
-                    let h = handle.clone();
-                    let dest = smb_to.clone();
-                    self.with_smb("rename(delete_dest_dir)", |client, tree| {
-                        h.block_on(client.delete_directory(tree, &dest))
-                    })?;
+            if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
+                let parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(parent)));
+                self.notify_mutation(
+                    &self.volume_id,
+                    &parent_display,
+                    super::MutationEvent::Created(name.to_string_lossy().to_string()),
+                )
+                .await;
+            }
+            Ok(())
+        })
+    }
+
+    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let smb_path = self.to_smb_path(path);
+
+            debug!("SmbVolume::delete: share={}, path={:?}", self.share_name, smb_path);
+
+            // Try delete_file first (one round-trip). If the path is a directory,
+            // the server returns STATUS_FILE_IS_A_DIRECTORY — then try delete_directory.
+            // This avoids a stat round-trip for every file in bulk deletes.
+            let file_result = {
+                let mut guard = self.acquire_smb().await?;
+                let (client, tree) = guard.as_mut().unwrap();
+                let r = client.delete_file(tree, &smb_path).await;
+                self.handle_smb_result("delete_file", r)
+            };
+
+            match file_result {
+                Ok(()) => {} // File deleted successfully
+                Err(VolumeError::IoError { ref message, .. }) if message.contains("FILE_IS_A_DIRECTORY") => {
+                    // It's a directory — try delete_directory
+                    let mut guard = self.acquire_smb().await?;
+                    let (client, tree) = guard.as_mut().unwrap();
+                    let r = client.delete_directory(tree, &smb_path).await;
+                    self.handle_smb_result("delete_directory", r)?;
+                }
+                Err(e) => return Err(e),
+            }
+
+            if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
+                let parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(parent)));
+                self.notify_mutation(
+                    &self.volume_id,
+                    &parent_display,
+                    super::MutationEvent::Deleted(name.to_string_lossy().to_string()),
+                )
+                .await;
+            }
+            Ok(())
+        })
+    }
+
+    fn rename<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let smb_from = self.to_smb_path(from);
+            let smb_to = self.to_smb_path(to);
+
+            debug!(
+                "SmbVolume::rename: share={}, from={:?}, to={:?}, force={}",
+                self.share_name, smb_from, smb_to, force
+            );
+
+            if force {
+                // Check if dest exists and delete it first
+                let dest_exists = {
+                    let mut guard = self.acquire_smb().await?;
+                    let (client, tree) = guard.as_mut().unwrap();
+                    client.stat(tree, &smb_to).await.is_ok()
+                };
+
+                if dest_exists {
+                    // Try file delete first; if that fails (it's a dir), try directory delete
+                    let file_result = {
+                        let mut guard = self.acquire_smb().await?;
+                        let (client, tree) = guard.as_mut().unwrap();
+                        let r = client.delete_file(tree, &smb_to).await;
+                        self.handle_smb_result("rename(delete_dest_file)", r)
+                    };
+                    if file_result.is_err() {
+                        let mut guard = self.acquire_smb().await?;
+                        let (client, tree) = guard.as_mut().unwrap();
+                        let r = client.delete_directory(tree, &smb_to).await;
+                        self.handle_smb_result("rename(delete_dest_dir)", r)?;
+                    }
+                }
+            } else {
+                // Check if dest exists and return AlreadyExists if so
+                let dest_exists = {
+                    let mut guard = self.acquire_smb().await?;
+                    let (client, tree) = guard.as_mut().unwrap();
+                    client.stat(tree, &smb_to).await.is_ok()
+                };
+                if dest_exists {
+                    return Err(VolumeError::AlreadyExists(to.display().to_string()));
                 }
             }
-        } else {
-            // Check if dest exists and return AlreadyExists if so
-            let h = handle.clone();
-            let dest = smb_to.clone();
-            if self
-                .with_smb("rename(check_dest)", |client, tree| {
-                    h.block_on(client.stat(tree, &dest))
-                })
-                .is_ok()
+
             {
-                return Err(VolumeError::AlreadyExists(to.display().to_string()));
+                let mut guard = self.acquire_smb().await?;
+                let (client, tree) = guard.as_mut().unwrap();
+                let r = client.rename(tree, &smb_from, &smb_to).await;
+                self.handle_smb_result("rename", r)?;
             }
-        }
 
-        self.with_smb("rename", |client, tree| {
-            handle.block_on(client.rename(tree, &smb_from, &smb_to))
-        })?;
+            // Notify listing cache about the rename
+            if let (Some(from_parent), Some(from_name)) = (from.parent(), from.file_name()) {
+                let to_name = to
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_default();
+                let from_parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(from_parent)));
 
-        // Notify listing cache about the rename
-        if let (Some(from_parent), Some(from_name)) = (from.parent(), from.file_name()) {
-            let to_name = to
-                .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap_or_default();
-            let from_parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(from_parent)));
-
-            if from.parent() == to.parent() {
-                // Same-directory rename
-                self.notify_mutation(
-                    &self.volume_id,
-                    &from_parent_display,
-                    super::MutationEvent::Renamed {
-                        from: from_name.to_string_lossy().to_string(),
-                        to: to_name,
-                    },
-                );
-            } else {
-                // Cross-directory move: remove from source, add in dest
-                self.notify_mutation(
-                    &self.volume_id,
-                    &from_parent_display,
-                    super::MutationEvent::Deleted(from_name.to_string_lossy().to_string()),
-                );
-                if let Some(to_parent) = to.parent() {
-                    let to_parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(to_parent)));
+                if from.parent() == to.parent() {
+                    // Same-directory rename
                     self.notify_mutation(
                         &self.volume_id,
-                        &to_parent_display,
-                        super::MutationEvent::Created(to_name),
-                    );
+                        &from_parent_display,
+                        super::MutationEvent::Renamed {
+                            from: from_name.to_string_lossy().to_string(),
+                            to: to_name,
+                        },
+                    )
+                    .await;
+                } else {
+                    // Cross-directory move: remove from source, add in dest
+                    self.notify_mutation(
+                        &self.volume_id,
+                        &from_parent_display,
+                        super::MutationEvent::Deleted(from_name.to_string_lossy().to_string()),
+                    )
+                    .await;
+                    if let Some(to_parent) = to.parent() {
+                        let to_parent_display = PathBuf::from(self.to_display_path(&self.to_smb_path(to_parent)));
+                        self.notify_mutation(
+                            &self.volume_id,
+                            &to_parent_display,
+                            super::MutationEvent::Created(to_name),
+                        )
+                        .await;
+                    }
                 }
             }
-        }
-        Ok(())
+            Ok(())
+        })
     }
 
     fn supports_export(&self) -> bool {
         true
     }
 
-    fn export_to_local(&self, source: &Path, local_dest: &Path) -> Result<u64, VolumeError> {
-        let smb_path = self.to_smb_path(source);
-        let handle = self.runtime_handle.clone();
+    fn export_to_local<'a>(
+        &'a self,
+        source: &'a Path,
+        local_dest: &'a Path,
+        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let smb_path = self.to_smb_path(source);
 
-        debug!(
-            "SmbVolume::export_to_local: share={}, source={:?}, dest={}",
-            self.share_name,
-            smb_path,
-            local_dest.display()
-        );
+            debug!(
+                "SmbVolume::export_to_local: share={}, source={:?}, dest={}",
+                self.share_name,
+                smb_path,
+                local_dest.display()
+            );
 
-        // Check if source is a directory or file
-        let is_dir = if smb_path.is_empty() {
-            true
-        } else {
-            let h = handle.clone();
-            let sp = smb_path.clone();
-            self.with_smb("export_to_local(stat)", |client, tree| {
-                h.block_on(client.stat(tree, &sp))
-            })?
-            .is_directory
-        };
+            let is_dir = if smb_path.is_empty() {
+                true
+            } else {
+                let info = {
+                    let mut guard = self.acquire_smb().await?;
+                    let (client, tree) = guard.as_mut().unwrap();
+                    let r = client.stat(tree, &smb_path).await;
+                    self.handle_smb_result("export_to_local(stat)", r)?
+                };
+                info.is_directory
+            };
 
-        if is_dir {
-            self.export_directory_recursive(&smb_path, local_dest)
-        } else {
-            self.export_single_file(&smb_path, local_dest)
-        }
-    }
-
-    fn import_from_local(&self, local_source: &Path, dest: &Path) -> Result<u64, VolumeError> {
-        let smb_path = self.to_smb_path(dest);
-
-        debug!(
-            "SmbVolume::import_from_local: share={}, source={}, dest={:?}",
-            self.share_name,
-            local_source.display(),
-            smb_path
-        );
-
-        if local_source.is_dir() {
-            self.import_directory_recursive(local_source, &smb_path)
-        } else {
-            self.import_single_file(local_source, &smb_path)
-        }
-    }
-
-    fn export_to_local_with_progress(
-        &self,
-        source: &Path,
-        local_dest: &Path,
-        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
-    ) -> Result<u64, VolumeError> {
-        let smb_path = self.to_smb_path(source);
-        let handle = self.runtime_handle.clone();
-
-        debug!(
-            "SmbVolume::export_to_local_with_progress: share={}, source={:?}, dest={}",
-            self.share_name,
-            smb_path,
-            local_dest.display()
-        );
-
-        let is_dir = if smb_path.is_empty() {
-            true
-        } else {
-            let h = handle.clone();
-            let sp = smb_path.clone();
-            self.with_smb("export_to_local_with_progress(stat)", |client, tree| {
-                h.block_on(client.stat(tree, &sp))
-            })?
-            .is_directory
-        };
-
-        if is_dir {
-            self.export_directory_recursive_with_progress(&smb_path, local_dest, on_progress)
-        } else {
-            self.export_single_file_with_progress(&smb_path, local_dest, on_progress)
-        }
-    }
-
-    fn import_from_local_with_progress(
-        &self,
-        local_source: &Path,
-        dest: &Path,
-        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
-    ) -> Result<u64, VolumeError> {
-        let smb_path = self.to_smb_path(dest);
-
-        debug!(
-            "SmbVolume::import_from_local_with_progress: share={}, source={}, dest={:?}",
-            self.share_name,
-            local_source.display(),
-            smb_path
-        );
-
-        if local_source.is_dir() {
-            self.import_directory_recursive_with_progress(local_source, &smb_path, on_progress)
-        } else {
-            self.import_single_file_with_progress(local_source, &smb_path, on_progress)
-        }
-    }
-
-    fn scan_for_copy(&self, path: &Path) -> Result<CopyScanResult, VolumeError> {
-        let smb_path = self.to_smb_path(path);
-
-        debug!(
-            "SmbVolume::scan_for_copy: share={}, path={:?}",
-            self.share_name, smb_path
-        );
-
-        let mut result = CopyScanResult {
-            file_count: 0,
-            dir_count: 0,
-            total_bytes: 0,
-        };
-
-        self.scan_recursive(&smb_path, &mut result)?;
-        Ok(result)
-    }
-
-    fn scan_for_conflicts(
-        &self,
-        source_items: &[SourceItemInfo],
-        dest_path: &Path,
-    ) -> Result<Vec<ScanConflict>, VolumeError> {
-        // List destination directory to check for conflicts
-        let entries = self.list_directory(dest_path)?;
-        let mut conflicts = Vec::new();
-
-        for item in source_items {
-            if let Some(existing) = entries.iter().find(|e| e.name == item.name) {
-                let dest_modified = existing.modified_at.map(|ms| (ms / 1000) as i64);
-                conflicts.push(ScanConflict {
-                    source_path: item.name.clone(),
-                    dest_path: existing.path.clone(),
-                    source_size: item.size,
-                    dest_size: existing.size.unwrap_or(0),
-                    source_modified: item.modified,
-                    dest_modified,
-                });
+            if is_dir {
+                self.export_directory_recursive_with_progress(&smb_path, local_dest, on_progress)
+                    .await
+            } else {
+                self.export_single_file_with_progress(&smb_path, local_dest, on_progress)
+                    .await
             }
-        }
+        })
+    }
 
-        Ok(conflicts)
+    fn import_from_local<'a>(
+        &'a self,
+        local_source: &'a Path,
+        dest: &'a Path,
+        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let smb_path = self.to_smb_path(dest);
+
+            debug!(
+                "SmbVolume::import_from_local: share={}, source={}, dest={:?}",
+                self.share_name,
+                local_source.display(),
+                smb_path
+            );
+
+            if local_source.is_dir() {
+                self.import_directory_recursive_with_progress(local_source, &smb_path, on_progress)
+                    .await
+            } else {
+                self.import_single_file_with_progress(local_source, &smb_path, on_progress)
+                    .await
+            }
+        })
+    }
+
+    fn scan_for_copy<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let smb_path = self.to_smb_path(path);
+
+            debug!(
+                "SmbVolume::scan_for_copy: share={}, path={:?}",
+                self.share_name, smb_path
+            );
+
+            self.scan_recursive(&smb_path).await
+        })
+    }
+
+    fn scan_for_conflicts<'a>(
+        &'a self,
+        source_items: &'a [SourceItemInfo],
+        dest_path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // List destination directory to check for conflicts
+            let entries = self.list_directory_impl(dest_path).await?;
+            let mut conflicts = Vec::new();
+
+            for item in source_items {
+                if let Some(existing) = entries.iter().find(|e| e.name == item.name) {
+                    let dest_modified = existing.modified_at.map(|ms| (ms / 1000) as i64);
+                    conflicts.push(ScanConflict {
+                        source_path: item.name.clone(),
+                        dest_path: existing.path.clone(),
+                        source_size: item.size,
+                        dest_size: existing.size.unwrap_or(0),
+                        source_modified: item.modified,
+                        dest_modified,
+                    });
+                }
+            }
+
+            Ok(conflicts)
+        })
     }
 
     fn supports_streaming(&self) -> bool {
         true
     }
 
-    fn open_read_stream(&self, path: &Path) -> Result<Box<dyn VolumeReadStream>, VolumeError> {
-        let smb_path = self.to_smb_path(path);
-        let handle = self.runtime_handle.clone();
-        let sp = smb_path.clone();
+    fn open_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let smb_path = self.to_smb_path(path);
 
-        debug!(
-            "SmbVolume::open_read_stream: share={}, path={:?}",
-            self.share_name, smb_path
-        );
+            debug!(
+                "SmbVolume::open_read_stream: share={}, path={:?}",
+                self.share_name, smb_path
+            );
 
-        let data = self.with_smb("open_read_stream", |client, tree| {
-            handle.block_on(client.read_file_pipelined(tree, &sp))
-        })?;
+            let data = {
+                let mut guard = self.acquire_smb().await?;
+                let (client, tree) = guard.as_mut().unwrap();
+                let r = client.read_file_pipelined(tree, &smb_path).await;
+                self.handle_smb_result("open_read_stream", r)?
+            };
 
-        Ok(Box::new(SmbReadStream { data, offset: 0 }))
+            Ok(Box::new(SmbReadStream { data, offset: 0 }) as Box<dyn VolumeReadStream>)
+        })
     }
 
-    fn write_from_stream(
-        &self,
-        dest: &Path,
+    fn write_from_stream<'a>(
+        &'a self,
+        dest: &'a Path,
         size: u64,
         mut stream: Box<dyn VolumeReadStream>,
-        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
-    ) -> Result<u64, VolumeError> {
-        let smb_path = self.to_smb_path(dest);
-        let handle = self.runtime_handle.clone();
+        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let smb_path = self.to_smb_path(dest);
 
-        debug!(
-            "SmbVolume::write_from_stream: share={}, path={:?}",
-            self.share_name, smb_path
-        );
+            debug!(
+                "SmbVolume::write_from_stream: share={}, path={:?}",
+                self.share_name, smb_path
+            );
 
-        // Bridge VolumeReadStream → smb2's write_file_streamed callback.
-        // smb2 pulls chunks on demand, so memory is bounded to the sliding window.
-        let mut bytes_written = 0u64;
-        let mut cancelled = false;
-        let sp = smb_path;
+            // Collect all chunks first, then write in one shot.
+            // This avoids holding the smb mutex across stream chunk reads
+            // (which may themselves need async I/O on other volumes).
+            let mut all_data = Vec::new();
+            let mut bytes_read = 0u64;
+            let mut cancelled = false;
 
-        let result = self.with_smb("write_from_stream", |client, tree| {
-            handle.block_on(client.write_file_streamed(tree, &sp, &mut || {
-                // Check cancellation via the progress callback
-                if cancelled {
-                    return Some(Err(std::io::Error::new(
-                        std::io::ErrorKind::Interrupted,
-                        "Operation cancelled",
-                    )));
+            while let Some(result) = stream.next_chunk().await {
+                let chunk = result?;
+                bytes_read += chunk.len() as u64;
+                all_data.extend_from_slice(&chunk);
+
+                if on_progress(bytes_read, size) == std::ops::ControlFlow::Break(()) {
+                    cancelled = true;
+                    break;
                 }
+            }
 
-                match stream.next_chunk() {
-                    Some(Ok(chunk)) => {
-                        bytes_written += chunk.len() as u64;
-                        if on_progress(bytes_written, size) == std::ops::ControlFlow::Break(()) {
-                            cancelled = true;
-                            // Don't return error here — let smb2 finish writing this chunk
-                            // so we don't corrupt the connection state. Next call will error.
-                        }
-                        Some(Ok(chunk))
-                    }
-                    Some(Err(e)) => Some(Err(std::io::Error::other(e.to_string()))),
-                    None => None,
-                }
-            }))
-        });
+            if cancelled {
+                return Err(VolumeError::IoError {
+                    message: "Operation cancelled".to_string(),
+                    raw_os_error: None,
+                });
+            }
 
-        if cancelled {
-            return Err(VolumeError::IoError {
-                message: "Operation cancelled".to_string(),
-                raw_os_error: None,
-            });
-        }
+            {
+                let mut guard = self.acquire_smb().await?;
+                let (client, tree) = guard.as_mut().unwrap();
+                let r = client.write_file_pipelined(tree, &smb_path, &all_data).await;
+                self.handle_smb_result("write_from_stream", r)?;
+            }
 
-        result?;
-        Ok(bytes_written)
+            Ok(bytes_read)
+        })
     }
 
     fn smb_connection_state(&self) -> Option<SmbConnectionState> {
@@ -1212,13 +1216,11 @@ impl Volume for SmbVolume {
             debug!("SmbVolume cleanup for {}: watcher cancel sent", self.share_name);
         }
 
-        // Drop the smb2 session. This is fully synchronous — dropping the TCP
-        // stream calls close() on the socket fd. The server handles abrupt
-        // disconnects fine, so no async graceful disconnect is needed.
-        // Important: this runs on the notify-rs fsevents thread (no Tokio runtime).
-        if let Ok(mut guard) = self.smb.lock() {
-            *guard = None;
-        }
+        // Drop the smb2 session. Uses blocking_lock() since on_unmount is sync
+        // (called from FSEvents thread, no Tokio runtime). This is safe because
+        // we just set state to Disconnected, so no async task will acquire the lock.
+        let mut guard = self.smb.blocking_lock();
+        *guard = None;
 
         debug!("SmbVolume cleanup for {}: smb2 session dropped", self.share_name);
     }
@@ -1255,19 +1257,9 @@ pub async fn connect_smb_volume(
 
     let mut client = SmbClient::connect(config).await?;
     let tree = client.connect_share(share_name).await?;
-    let runtime_handle = tokio::runtime::Handle::current();
     let volume_id = path_to_id(mount_path);
 
-    let vol = SmbVolume::new(
-        name,
-        mount_path,
-        server,
-        share_name,
-        volume_id.clone(),
-        client,
-        tree,
-        runtime_handle,
-    );
+    let vol = SmbVolume::new(name, mount_path, server, share_name, volume_id.clone(), client, tree);
 
     // Spawn the background watcher task with its own dedicated connection
     let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel();
@@ -1462,7 +1454,7 @@ mod tests {
 
     #[test]
     fn to_smb_path_empty() {
-        let (vol, _rt) = make_test_volume();
+        let vol = make_test_volume();
         assert_eq!(vol.to_smb_path(Path::new("")), "");
         assert_eq!(vol.to_smb_path(Path::new("/")), "");
         assert_eq!(vol.to_smb_path(Path::new(".")), "");
@@ -1470,7 +1462,7 @@ mod tests {
 
     #[test]
     fn to_smb_path_relative() {
-        let (vol, _rt) = make_test_volume();
+        let vol = make_test_volume();
         assert_eq!(vol.to_smb_path(Path::new("Documents")), "Documents");
         assert_eq!(
             vol.to_smb_path(Path::new("Documents/report.pdf")),
@@ -1480,7 +1472,7 @@ mod tests {
 
     #[test]
     fn to_smb_path_absolute_under_mount() {
-        let (vol, _rt) = make_test_volume();
+        let vol = make_test_volume();
         assert_eq!(vol.to_smb_path(Path::new("/Volumes/TestShare/Documents")), "Documents");
         assert_eq!(
             vol.to_smb_path(Path::new("/Volumes/TestShare/Documents/report.pdf")),
@@ -1490,19 +1482,19 @@ mod tests {
 
     #[test]
     fn to_smb_path_mount_root() {
-        let (vol, _rt) = make_test_volume();
+        let vol = make_test_volume();
         assert_eq!(vol.to_smb_path(Path::new("/Volumes/TestShare")), "");
     }
 
     #[test]
     fn to_display_path_empty_is_mount_root() {
-        let (vol, _rt) = make_test_volume();
+        let vol = make_test_volume();
         assert_eq!(vol.to_display_path(""), "/Volumes/TestShare");
     }
 
     #[test]
     fn to_display_path_with_subpath() {
-        let (vol, _rt) = make_test_volume();
+        let vol = make_test_volume();
         assert_eq!(
             vol.to_display_path("Documents/report.pdf"),
             "/Volumes/TestShare/Documents/report.pdf"
@@ -1511,55 +1503,46 @@ mod tests {
 
     #[test]
     fn supports_watching_returns_false() {
-        let (vol, _rt) = make_test_volume();
+        let vol = make_test_volume();
         assert!(!vol.supports_watching());
     }
 
     #[test]
     fn name_returns_share_name() {
-        let (vol, _rt) = make_test_volume();
+        let vol = make_test_volume();
         assert_eq!(vol.name(), "TestShare");
     }
 
     #[test]
     fn root_returns_mount_path() {
-        let (vol, _rt) = make_test_volume();
+        let vol = make_test_volume();
         assert_eq!(vol.root(), Path::new("/Volumes/TestShare"));
     }
 
     #[test]
     fn local_path_returns_none() {
-        let (vol, _rt) = make_test_volume();
+        let vol = make_test_volume();
         assert!(vol.local_path().is_none());
     }
 
     #[test]
     fn supports_export_returns_true() {
-        let (vol, _rt) = make_test_volume();
+        let vol = make_test_volume();
         assert!(vol.supports_export());
     }
 
     /// Creates a test SmbVolume in disconnected state (no real connection).
-    ///
-    /// Uses a dedicated single-threaded runtime since tests don't run
-    /// inside a tokio context.
-    fn make_test_volume() -> (SmbVolume, tokio::runtime::Runtime) {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        let vol = SmbVolume {
+    fn make_test_volume() -> SmbVolume {
+        SmbVolume {
             name: "TestShare".to_string(),
             mount_path: PathBuf::from("/Volumes/TestShare"),
             server: "192.168.1.100".to_string(),
             share_name: "TestShare".to_string(),
             volume_id: "volumestestshare".to_string(),
-            smb: Mutex::new(None),
+            smb: tokio::sync::Mutex::new(None),
             state: AtomicU8::new(ConnectionState::Disconnected as u8),
-            watcher_cancel: Mutex::new(None),
-            runtime_handle: rt.handle().clone(),
-        };
-        (vol, rt)
+            watcher_cancel: std::sync::Mutex::new(None),
+        }
     }
 
     // ── Integration tests (require Docker SMB containers) ──────────
@@ -1568,22 +1551,10 @@ mod tests {
     // Prerequisites: ./apps/desktop/test/smb-servers/start.sh
 
     /// Connects to the Docker smb-guest container (127.0.0.1:9445, share "public").
-    ///
-    /// Uses a multi-threaded runtime because `SmbVolume` methods call `Handle::block_on`
-    /// internally (from `with_smb`). A single-threaded runtime would deadlock since
-    /// the test thread is already inside `rt.block_on`.
-    fn make_docker_volume() -> (SmbVolume, tokio::runtime::Runtime) {
-        let rt = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(2)
-            .enable_all()
-            .build()
-            .unwrap();
-        let vol = rt.block_on(async {
-            connect_smb_volume("public", "/tmp/smb-test-mount", "127.0.0.1", "public", None, None, 9445)
-                .await
-                .expect("Failed to connect to Docker SMB container at 127.0.0.1:9445. Is it running?")
-        });
-        (vol, rt)
+    async fn make_docker_volume() -> SmbVolume {
+        connect_smb_volume("public", "/tmp/smb-test-mount", "127.0.0.1", "public", None, None, 9445)
+            .await
+            .expect("Failed to connect to Docker SMB container at 127.0.0.1:9445. Is it running?")
     }
 
     /// Unique directory name for test isolation.
@@ -1594,148 +1565,153 @@ mod tests {
     }
 
     /// Ensures a test directory is clean before use (deletes recursively if it exists).
-    fn ensure_clean(vol: &SmbVolume, dir: &str) {
-        if vol.exists(Path::new(dir)) {
+    async fn ensure_clean(vol: &SmbVolume, dir: &str) {
+        if vol.exists(Path::new(dir)).await {
             // Delete contents recursively
-            if let Ok(entries) = vol.list_directory(Path::new(dir)) {
+            if let Ok(entries) = vol.list_directory_impl(Path::new(dir)).await {
                 for entry in entries {
                     let child = format!("{}/{}", dir, entry.name);
                     if entry.is_directory {
-                        ensure_clean(vol, &child);
+                        Box::pin(ensure_clean(vol, &child)).await;
                     } else {
-                        let _ = vol.delete(Path::new(&child));
+                        let _ = vol.delete(Path::new(&child)).await;
                     }
                 }
             }
-            let _ = vol.delete(Path::new(dir));
+            let _ = vol.delete(Path::new(dir)).await;
         }
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_list_directory() {
-        let (vol, _rt) = make_docker_volume();
-        let entries = vol.list_directory(Path::new("")).unwrap();
+    async fn smb_integration_list_directory() {
+        let vol = make_docker_volume().await;
+        let entries = vol.list_directory_impl(Path::new("")).await.unwrap();
         // The public share should be listable (may have files from other tests)
         assert!(entries.iter().all(|e| e.name != "." && e.name != ".."));
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_create_and_read_file() {
-        let (vol, _rt) = make_docker_volume();
+    async fn smb_integration_create_and_read_file() {
+        let vol = make_docker_volume().await;
         let dir = test_dir_name();
-        ensure_clean(&vol, &dir);
+        ensure_clean(&vol, &dir).await;
 
         // Create a directory
-        vol.create_directory(Path::new(&dir)).unwrap();
+        vol.create_directory(Path::new(&dir)).await.unwrap();
 
         // Create a file inside it
         let file_path = format!("{}/test.txt", dir);
         let content = b"hello from cmdr integration test";
-        vol.create_file(Path::new(&file_path), content).unwrap();
+        vol.create_file(Path::new(&file_path), content).await.unwrap();
 
         // Verify it exists
-        assert!(vol.exists(Path::new(&file_path)));
-        assert!(!vol.is_directory(Path::new(&file_path)).unwrap());
+        assert!(vol.exists(Path::new(&file_path)).await);
+        assert!(!vol.is_directory(Path::new(&file_path)).await.unwrap());
 
         // Verify metadata
-        let meta = vol.get_metadata(Path::new(&file_path)).unwrap();
+        let meta = vol.get_metadata(Path::new(&file_path)).await.unwrap();
         assert_eq!(meta.name, "test.txt");
         assert_eq!(meta.size, Some(content.len() as u64));
         assert!(!meta.is_directory);
 
         // List the directory and verify the file is there
-        let entries = vol.list_directory(Path::new(&dir)).unwrap();
+        let entries = vol.list_directory_impl(Path::new(&dir)).await.unwrap();
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].name, "test.txt");
 
         // Clean up
-        vol.delete(Path::new(&file_path)).unwrap();
-        vol.delete(Path::new(&dir)).unwrap();
+        vol.delete(Path::new(&file_path)).await.unwrap();
+        vol.delete(Path::new(&dir)).await.unwrap();
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_rename() {
-        let (vol, _rt) = make_docker_volume();
+    async fn smb_integration_rename() {
+        let vol = make_docker_volume().await;
         let dir = test_dir_name();
 
-        vol.create_directory(Path::new(&dir)).unwrap();
+        vol.create_directory(Path::new(&dir)).await.unwrap();
         let old_path = format!("{}/old.txt", dir);
         let new_path = format!("{}/new.txt", dir);
 
-        vol.create_file(Path::new(&old_path), b"rename me").unwrap();
+        vol.create_file(Path::new(&old_path), b"rename me").await.unwrap();
 
         // Rename
-        vol.rename(Path::new(&old_path), Path::new(&new_path), false).unwrap();
+        vol.rename(Path::new(&old_path), Path::new(&new_path), false)
+            .await
+            .unwrap();
 
         // Old is gone, new exists
-        assert!(!vol.exists(Path::new(&old_path)));
-        assert!(vol.exists(Path::new(&new_path)));
+        assert!(!vol.exists(Path::new(&old_path)).await);
+        assert!(vol.exists(Path::new(&new_path)).await);
 
         // Clean up
-        vol.delete(Path::new(&new_path)).unwrap();
-        vol.delete(Path::new(&dir)).unwrap();
+        vol.delete(Path::new(&new_path)).await.unwrap();
+        vol.delete(Path::new(&dir)).await.unwrap();
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_rename_force_overwrites() {
-        let (vol, _rt) = make_docker_volume();
+    async fn smb_integration_rename_force_overwrites() {
+        let vol = make_docker_volume().await;
         let dir = test_dir_name();
 
-        vol.create_directory(Path::new(&dir)).unwrap();
+        vol.create_directory(Path::new(&dir)).await.unwrap();
         let src = format!("{}/src.txt", dir);
         let dst = format!("{}/dst.txt", dir);
 
-        vol.create_file(Path::new(&src), b"source content").unwrap();
-        vol.create_file(Path::new(&dst), b"will be overwritten").unwrap();
+        vol.create_file(Path::new(&src), b"source content").await.unwrap();
+        vol.create_file(Path::new(&dst), b"will be overwritten").await.unwrap();
 
         // Non-force should fail
-        let err = vol.rename(Path::new(&src), Path::new(&dst), false);
+        let err = vol.rename(Path::new(&src), Path::new(&dst), false).await;
         assert!(matches!(err, Err(VolumeError::AlreadyExists(_))));
 
         // Force should succeed
-        vol.rename(Path::new(&src), Path::new(&dst), true).unwrap();
-        assert!(!vol.exists(Path::new(&src)));
-        assert!(vol.exists(Path::new(&dst)));
+        vol.rename(Path::new(&src), Path::new(&dst), true).await.unwrap();
+        assert!(!vol.exists(Path::new(&src)).await);
+        assert!(vol.exists(Path::new(&dst)).await);
 
         // Clean up
-        vol.delete(Path::new(&dst)).unwrap();
-        vol.delete(Path::new(&dir)).unwrap();
+        vol.delete(Path::new(&dst)).await.unwrap();
+        vol.delete(Path::new(&dir)).await.unwrap();
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_delete_directory() {
-        let (vol, _rt) = make_docker_volume();
+    async fn smb_integration_delete_directory() {
+        let vol = make_docker_volume().await;
         let dir = test_dir_name();
 
-        vol.create_directory(Path::new(&dir)).unwrap();
-        assert!(vol.exists(Path::new(&dir)));
-        assert!(vol.is_directory(Path::new(&dir)).unwrap());
+        vol.create_directory(Path::new(&dir)).await.unwrap();
+        assert!(vol.exists(Path::new(&dir)).await);
+        assert!(vol.is_directory(Path::new(&dir)).await.unwrap());
 
-        vol.delete(Path::new(&dir)).unwrap();
-        assert!(!vol.exists(Path::new(&dir)));
+        vol.delete(Path::new(&dir)).await.unwrap();
+        assert!(!vol.exists(Path::new(&dir)).await);
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_export_to_local() {
-        let (vol, _rt) = make_docker_volume();
+    async fn smb_integration_export_to_local() {
+        let vol = make_docker_volume().await;
         let dir = test_dir_name();
         let local_tmp = std::env::temp_dir().join(&dir);
 
         // Create a file on the SMB share
-        vol.create_directory(Path::new(&dir)).unwrap();
+        vol.create_directory(Path::new(&dir)).await.unwrap();
         let smb_file = format!("{}/export-test.txt", dir);
         let content = b"exported content";
-        vol.create_file(Path::new(&smb_file), content).unwrap();
+        vol.create_file(Path::new(&smb_file), content).await.unwrap();
 
         // Export to local
         let bytes = vol
-            .export_to_local(Path::new(&smb_file), &local_tmp.join("export-test.txt"))
+            .export_to_local(Path::new(&smb_file), &local_tmp.join("export-test.txt"), &|_, _| {
+                std::ops::ControlFlow::Continue(())
+            })
+            .await
             .unwrap();
         assert_eq!(bytes, content.len() as u64);
 
@@ -1745,14 +1721,14 @@ mod tests {
 
         // Clean up
         let _ = std::fs::remove_dir_all(&local_tmp);
-        vol.delete(Path::new(&smb_file)).unwrap();
-        vol.delete(Path::new(&dir)).unwrap();
+        vol.delete(Path::new(&smb_file)).await.unwrap();
+        vol.delete(Path::new(&dir)).await.unwrap();
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_import_from_local() {
-        let (vol, _rt) = make_docker_volume();
+    async fn smb_integration_import_from_local() {
+        let vol = make_docker_volume().await;
         let dir = test_dir_name();
         let local_tmp = std::env::temp_dir().join(format!("{}-import", dir));
 
@@ -1763,42 +1739,52 @@ mod tests {
         std::fs::write(&local_file, content).unwrap();
 
         // Create target dir on SMB
-        vol.create_directory(Path::new(&dir)).unwrap();
+        vol.create_directory(Path::new(&dir)).await.unwrap();
 
         // Import to SMB
         let smb_file = format!("{}/import-test.txt", dir);
-        let bytes = vol.import_from_local(&local_file, Path::new(&smb_file)).unwrap();
+        let bytes = vol
+            .import_from_local(&local_file, Path::new(&smb_file), &|_, _| {
+                std::ops::ControlFlow::Continue(())
+            })
+            .await
+            .unwrap();
         assert_eq!(bytes, content.len() as u64);
 
         // Verify on SMB
-        assert!(vol.exists(Path::new(&smb_file)));
-        let meta = vol.get_metadata(Path::new(&smb_file)).unwrap();
+        assert!(vol.exists(Path::new(&smb_file)).await);
+        let meta = vol.get_metadata(Path::new(&smb_file)).await.unwrap();
         assert_eq!(meta.size, Some(content.len() as u64));
 
         // Clean up
         let _ = std::fs::remove_dir_all(&local_tmp);
-        vol.delete(Path::new(&smb_file)).unwrap();
-        vol.delete(Path::new(&dir)).unwrap();
+        vol.delete(Path::new(&smb_file)).await.unwrap();
+        vol.delete(Path::new(&dir)).await.unwrap();
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_export_directory_recursive() {
-        let (vol, _rt) = make_docker_volume();
+    async fn smb_integration_export_directory_recursive() {
+        let vol = make_docker_volume().await;
         let dir = test_dir_name();
         let local_tmp = std::env::temp_dir().join(format!("{}-export-dir", dir));
 
         // Create a directory tree on SMB
-        vol.create_directory(Path::new(&dir)).unwrap();
+        vol.create_directory(Path::new(&dir)).await.unwrap();
         let sub = format!("{}/subdir", dir);
-        vol.create_directory(Path::new(&sub)).unwrap();
+        vol.create_directory(Path::new(&sub)).await.unwrap();
         vol.create_file(Path::new(&format!("{}/a.txt", dir)), b"file a")
+            .await
             .unwrap();
         vol.create_file(Path::new(&format!("{}/subdir/b.txt", dir)), b"file b")
+            .await
             .unwrap();
 
         // Export entire directory
-        let bytes = vol.export_to_local(Path::new(&dir), &local_tmp).unwrap();
+        let bytes = vol
+            .export_to_local(Path::new(&dir), &local_tmp, &|_, _| std::ops::ControlFlow::Continue(()))
+            .await
+            .unwrap();
         assert_eq!(bytes, 12); // "file a" (6) + "file b" (6)
 
         // Verify local structure
@@ -1813,16 +1799,16 @@ mod tests {
 
         // Clean up
         let _ = std::fs::remove_dir_all(&local_tmp);
-        vol.delete(Path::new(&format!("{}/subdir/b.txt", dir))).unwrap();
-        vol.delete(Path::new(&format!("{}/a.txt", dir))).unwrap();
-        vol.delete(Path::new(&sub)).unwrap();
-        vol.delete(Path::new(&dir)).unwrap();
+        vol.delete(Path::new(&format!("{}/subdir/b.txt", dir))).await.unwrap();
+        vol.delete(Path::new(&format!("{}/a.txt", dir))).await.unwrap();
+        vol.delete(Path::new(&sub)).await.unwrap();
+        vol.delete(Path::new(&dir)).await.unwrap();
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_import_directory_recursive() {
-        let (vol, _rt) = make_docker_volume();
+    async fn smb_integration_import_directory_recursive() {
+        let vol = make_docker_volume().await;
         let dir = test_dir_name();
         let local_tmp = std::env::temp_dir().join(format!("{}-import-dir", dir));
 
@@ -1832,57 +1818,64 @@ mod tests {
         std::fs::write(local_tmp.join("subdir/y.txt"), "file y").unwrap();
 
         // Import to SMB
-        let bytes = vol.import_from_local(&local_tmp, Path::new(&dir)).unwrap();
+        let bytes = vol
+            .import_from_local(&local_tmp, Path::new(&dir), &|_, _| std::ops::ControlFlow::Continue(()))
+            .await
+            .unwrap();
         assert_eq!(bytes, 12); // "file x" (6) + "file y" (6)
 
         // Verify on SMB
-        assert!(vol.is_directory(Path::new(&dir)).unwrap());
-        assert!(vol.exists(Path::new(&format!("{}/x.txt", dir))));
-        assert!(vol.is_directory(Path::new(&format!("{}/subdir", dir))).unwrap());
-        assert!(vol.exists(Path::new(&format!("{}/subdir/y.txt", dir))));
+        assert!(vol.is_directory(Path::new(&dir)).await.unwrap());
+        assert!(vol.exists(Path::new(&format!("{}/x.txt", dir))).await);
+        assert!(vol.is_directory(Path::new(&format!("{}/subdir", dir))).await.unwrap());
+        assert!(vol.exists(Path::new(&format!("{}/subdir/y.txt", dir))).await);
 
         // Clean up
         let _ = std::fs::remove_dir_all(&local_tmp);
-        vol.delete(Path::new(&format!("{}/subdir/y.txt", dir))).unwrap();
-        vol.delete(Path::new(&format!("{}/x.txt", dir))).unwrap();
-        vol.delete(Path::new(&format!("{}/subdir", dir))).unwrap();
-        vol.delete(Path::new(&dir)).unwrap();
+        vol.delete(Path::new(&format!("{}/subdir/y.txt", dir))).await.unwrap();
+        vol.delete(Path::new(&format!("{}/x.txt", dir))).await.unwrap();
+        vol.delete(Path::new(&format!("{}/subdir", dir))).await.unwrap();
+        vol.delete(Path::new(&dir)).await.unwrap();
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_scan_for_copy() {
-        let (vol, _rt) = make_docker_volume();
+    async fn smb_integration_scan_for_copy() {
+        let vol = make_docker_volume().await;
         let dir = test_dir_name();
 
         // Create a small tree
-        vol.create_directory(Path::new(&dir)).unwrap();
+        vol.create_directory(Path::new(&dir)).await.unwrap();
         let sub = format!("{}/inner", dir);
-        vol.create_directory(Path::new(&sub)).unwrap();
-        vol.create_file(Path::new(&format!("{}/f1.txt", dir)), b"aaa").unwrap();
+        vol.create_directory(Path::new(&sub)).await.unwrap();
+        vol.create_file(Path::new(&format!("{}/f1.txt", dir)), b"aaa")
+            .await
+            .unwrap();
         vol.create_file(Path::new(&format!("{}/inner/f2.txt", dir)), b"bbbbbb")
+            .await
             .unwrap();
 
-        let result = vol.scan_for_copy(Path::new(&dir)).unwrap();
+        let result = vol.scan_for_copy(Path::new(&dir)).await.unwrap();
         assert_eq!(result.file_count, 2);
         assert_eq!(result.dir_count, 2); // dir + inner
         assert_eq!(result.total_bytes, 9); // 3 + 6
 
         // Clean up
-        vol.delete(Path::new(&format!("{}/inner/f2.txt", dir))).unwrap();
-        vol.delete(Path::new(&format!("{}/f1.txt", dir))).unwrap();
-        vol.delete(Path::new(&sub)).unwrap();
-        vol.delete(Path::new(&dir)).unwrap();
+        vol.delete(Path::new(&format!("{}/inner/f2.txt", dir))).await.unwrap();
+        vol.delete(Path::new(&format!("{}/f1.txt", dir))).await.unwrap();
+        vol.delete(Path::new(&sub)).await.unwrap();
+        vol.delete(Path::new(&dir)).await.unwrap();
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_scan_for_conflicts() {
-        let (vol, _rt) = make_docker_volume();
+    async fn smb_integration_scan_for_conflicts() {
+        let vol = make_docker_volume().await;
         let dir = test_dir_name();
 
-        vol.create_directory(Path::new(&dir)).unwrap();
+        vol.create_directory(Path::new(&dir)).await.unwrap();
         vol.create_file(Path::new(&format!("{}/exists.txt", dir)), b"data")
+            .await
             .unwrap();
 
         let source_items = vec![
@@ -1898,20 +1891,20 @@ mod tests {
             },
         ];
 
-        let conflicts = vol.scan_for_conflicts(&source_items, Path::new(&dir)).unwrap();
+        let conflicts = vol.scan_for_conflicts(&source_items, Path::new(&dir)).await.unwrap();
         assert_eq!(conflicts.len(), 1);
         assert_eq!(conflicts[0].source_path, "exists.txt");
 
         // Clean up
-        vol.delete(Path::new(&format!("{}/exists.txt", dir))).unwrap();
-        vol.delete(Path::new(&dir)).unwrap();
+        vol.delete(Path::new(&format!("{}/exists.txt", dir))).await.unwrap();
+        vol.delete(Path::new(&dir)).await.unwrap();
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_space_info() {
-        let (vol, _rt) = make_docker_volume();
-        let space = vol.get_space_info().unwrap();
+    async fn smb_integration_space_info() {
+        let vol = make_docker_volume().await;
+        let space = vol.get_space_info().await.unwrap();
         assert!(space.total_bytes > 0);
         assert!(space.available_bytes > 0);
         assert!(space.used_bytes <= space.total_bytes);
@@ -1919,68 +1912,68 @@ mod tests {
 
     // ── SmbReadStream tests ────────────────────────────────────────
 
-    #[test]
-    fn smb_read_stream_empty_file() {
+    #[tokio::test]
+    async fn smb_read_stream_empty_file() {
         let mut stream = SmbReadStream {
             data: vec![],
             offset: 0,
         };
         assert_eq!(stream.total_size(), 0);
         assert_eq!(stream.bytes_read(), 0);
-        assert!(stream.next_chunk().is_none());
+        assert!(stream.next_chunk().await.is_none());
     }
 
-    #[test]
-    fn smb_read_stream_small_file_single_chunk() {
+    #[tokio::test]
+    async fn smb_read_stream_small_file_single_chunk() {
         let data = vec![1u8; 100];
         let mut stream = SmbReadStream { data, offset: 0 };
         assert_eq!(stream.total_size(), 100);
 
-        let chunk = stream.next_chunk().unwrap().unwrap();
+        let chunk = stream.next_chunk().await.unwrap().unwrap();
         assert_eq!(chunk.len(), 100);
         assert_eq!(stream.bytes_read(), 100);
-        assert!(stream.next_chunk().is_none());
+        assert!(stream.next_chunk().await.is_none());
     }
 
-    #[test]
-    fn smb_read_stream_exact_chunk_boundary() {
+    #[tokio::test]
+    async fn smb_read_stream_exact_chunk_boundary() {
         let data = vec![0u8; SMB_STREAM_CHUNK_SIZE];
         let mut stream = SmbReadStream { data, offset: 0 };
 
-        let chunk = stream.next_chunk().unwrap().unwrap();
+        let chunk = stream.next_chunk().await.unwrap().unwrap();
         assert_eq!(chunk.len(), SMB_STREAM_CHUNK_SIZE);
-        assert!(stream.next_chunk().is_none());
+        assert!(stream.next_chunk().await.is_none());
     }
 
-    #[test]
-    fn smb_read_stream_multiple_chunks() {
+    #[tokio::test]
+    async fn smb_read_stream_multiple_chunks() {
         let size = SMB_STREAM_CHUNK_SIZE * 2 + 500;
         let data = vec![0xAB; size];
         let mut stream = SmbReadStream { data, offset: 0 };
         assert_eq!(stream.total_size(), size as u64);
 
-        let c1 = stream.next_chunk().unwrap().unwrap();
+        let c1 = stream.next_chunk().await.unwrap().unwrap();
         assert_eq!(c1.len(), SMB_STREAM_CHUNK_SIZE);
         assert_eq!(stream.bytes_read(), SMB_STREAM_CHUNK_SIZE as u64);
 
-        let c2 = stream.next_chunk().unwrap().unwrap();
+        let c2 = stream.next_chunk().await.unwrap().unwrap();
         assert_eq!(c2.len(), SMB_STREAM_CHUNK_SIZE);
 
-        let c3 = stream.next_chunk().unwrap().unwrap();
+        let c3 = stream.next_chunk().await.unwrap().unwrap();
         assert_eq!(c3.len(), 500);
         assert_eq!(stream.bytes_read(), size as u64);
 
-        assert!(stream.next_chunk().is_none());
+        assert!(stream.next_chunk().await.is_none());
     }
 
-    #[test]
-    fn smb_read_stream_data_integrity() {
+    #[tokio::test]
+    async fn smb_read_stream_data_integrity() {
         let data: Vec<u8> = (0..=255).cycle().take(SMB_STREAM_CHUNK_SIZE + 100).collect();
         let expected = data.clone();
         let mut stream = SmbReadStream { data, offset: 0 };
 
         let mut reassembled = Vec::new();
-        while let Some(Ok(chunk)) = stream.next_chunk() {
+        while let Some(Ok(chunk)) = stream.next_chunk().await {
             reassembled.extend_from_slice(&chunk);
         }
         assert_eq!(reassembled, expected);
@@ -1990,87 +1983,94 @@ mod tests {
     fn smb_supports_streaming() {
         // SmbVolume should report streaming support so cross-volume copies
         // (MTP↔SMB) use the streaming path instead of NotSupported/temp files.
-        let (vol, _rt) = make_test_volume();
+        let vol = make_test_volume();
         assert!(vol.supports_streaming());
     }
 
     // ── SMB streaming integration tests (Docker) ───────────────────
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_open_read_stream() {
-        let (vol, _rt) = make_docker_volume();
+    async fn smb_integration_open_read_stream() {
+        let vol = make_docker_volume().await;
         let dir = test_dir_name();
-        ensure_clean(&vol, &dir);
-        vol.create_directory(Path::new(&dir)).unwrap();
+        ensure_clean(&vol, &dir).await;
+        vol.create_directory(Path::new(&dir)).await.unwrap();
 
         let data = b"streaming read test content";
-        vol.create_file(Path::new(&format!("{}/read.txt", dir)), data).unwrap();
+        vol.create_file(Path::new(&format!("{}/read.txt", dir)), data)
+            .await
+            .unwrap();
 
-        let mut stream = vol.open_read_stream(Path::new(&format!("{}/read.txt", dir))).unwrap();
+        let mut stream = vol
+            .open_read_stream(Path::new(&format!("{}/read.txt", dir)))
+            .await
+            .unwrap();
         assert_eq!(stream.total_size(), data.len() as u64);
 
         let mut reassembled = Vec::new();
-        while let Some(Ok(chunk)) = stream.next_chunk() {
+        while let Some(Ok(chunk)) = stream.next_chunk().await {
             reassembled.extend_from_slice(&chunk);
         }
         assert_eq!(reassembled, data);
         assert_eq!(stream.bytes_read(), data.len() as u64);
 
-        ensure_clean(&vol, &dir);
+        ensure_clean(&vol, &dir).await;
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_write_from_stream() {
-        let (vol, _rt) = make_docker_volume();
+    async fn smb_integration_write_from_stream() {
+        let vol = make_docker_volume().await;
         let dir = test_dir_name();
-        ensure_clean(&vol, &dir);
-        vol.create_directory(Path::new(&dir)).unwrap();
+        ensure_clean(&vol, &dir).await;
+        vol.create_directory(Path::new(&dir)).await.unwrap();
 
         // Create a source via InMemoryVolume
         let source = InMemoryVolume::new("Source");
         let data: Vec<u8> = (0..=255).cycle().take(50_000).collect();
-        source.create_file(Path::new("/payload.bin"), &data).unwrap();
+        source.create_file(Path::new("/payload.bin"), &data).await.unwrap();
 
-        let stream = source.open_read_stream(Path::new("/payload.bin")).unwrap();
+        let stream = source.open_read_stream(Path::new("/payload.bin")).await.unwrap();
         let no_progress = &|_: u64, _: u64| std::ops::ControlFlow::Continue(());
         let bytes = vol
             .write_from_stream(Path::new(&format!("{}/payload.bin", dir)), 50_000, stream, no_progress)
+            .await
             .unwrap();
         assert_eq!(bytes, 50_000);
 
         // Read back and verify content integrity
         let mut verify = vol
             .open_read_stream(Path::new(&format!("{}/payload.bin", dir)))
+            .await
             .unwrap();
         let mut readback = Vec::new();
-        while let Some(Ok(chunk)) = verify.next_chunk() {
+        while let Some(Ok(chunk)) = verify.next_chunk().await {
             readback.extend_from_slice(&chunk);
         }
         assert_eq!(readback, data);
 
-        ensure_clean(&vol, &dir);
+        ensure_clean(&vol, &dir).await;
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_write_from_stream_with_progress() {
-        let (vol, _rt) = make_docker_volume();
+    async fn smb_integration_write_from_stream_with_progress() {
+        let vol = make_docker_volume().await;
         let dir = test_dir_name();
-        ensure_clean(&vol, &dir);
-        vol.create_directory(Path::new(&dir)).unwrap();
+        ensure_clean(&vol, &dir).await;
+        vol.create_directory(Path::new(&dir)).await.unwrap();
 
         let source = InMemoryVolume::new("Source");
         let data = vec![0xCD; 200_000]; // ~200 KB
-        source.create_file(Path::new("/big.bin"), &data).unwrap();
+        source.create_file(Path::new("/big.bin"), &data).await.unwrap();
 
         use std::sync::atomic::{AtomicU64, AtomicUsize};
 
         let progress_calls = AtomicUsize::new(0);
         let last_bytes = AtomicU64::new(0);
 
-        let stream = source.open_read_stream(Path::new("/big.bin")).unwrap();
+        let stream = source.open_read_stream(Path::new("/big.bin")).await.unwrap();
         let bytes = vol
             .write_from_stream(
                 Path::new(&format!("{}/big.bin", dir)),
@@ -2083,6 +2083,7 @@ mod tests {
                     std::ops::ControlFlow::Continue(())
                 },
             )
+            .await
             .unwrap();
 
         assert_eq!(bytes, 200_000);
@@ -2092,62 +2093,65 @@ mod tests {
         );
         assert_eq!(last_bytes.load(Ordering::Relaxed), 200_000);
 
-        ensure_clean(&vol, &dir);
+        ensure_clean(&vol, &dir).await;
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_write_from_stream_cancel() {
-        let (vol, _rt) = make_docker_volume();
+    async fn smb_integration_write_from_stream_cancel() {
+        let vol = make_docker_volume().await;
         let dir = test_dir_name();
-        ensure_clean(&vol, &dir);
-        vol.create_directory(Path::new(&dir)).unwrap();
+        ensure_clean(&vol, &dir).await;
+        vol.create_directory(Path::new(&dir)).await.unwrap();
 
         let source = InMemoryVolume::new("Source");
         let data = vec![0xEF; 500_000]; // ~500 KB, several chunks
-        source.create_file(Path::new("/big.bin"), &data).unwrap();
+        source.create_file(Path::new("/big.bin"), &data).await.unwrap();
 
         let call_count = std::sync::atomic::AtomicUsize::new(0);
-        let stream = source.open_read_stream(Path::new("/big.bin")).unwrap();
-        let result = vol.write_from_stream(Path::new(&format!("{}/big.bin", dir)), 500_000, stream, &|_, _| {
-            let n = call_count.fetch_add(1, Ordering::Relaxed);
-            if n >= 1 {
-                std::ops::ControlFlow::Break(())
-            } else {
-                std::ops::ControlFlow::Continue(())
-            }
-        });
+        let stream = source.open_read_stream(Path::new("/big.bin")).await.unwrap();
+        let result = vol
+            .write_from_stream(Path::new(&format!("{}/big.bin", dir)), 500_000, stream, &|_, _| {
+                let n = call_count.fetch_add(1, Ordering::Relaxed);
+                if n >= 1 {
+                    std::ops::ControlFlow::Break(())
+                } else {
+                    std::ops::ControlFlow::Continue(())
+                }
+            })
+            .await;
 
         assert!(result.is_err(), "expected cancellation error");
 
-        ensure_clean(&vol, &dir);
+        ensure_clean(&vol, &dir).await;
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    fn smb_integration_cross_volume_streaming_copy() {
+    async fn smb_integration_cross_volume_streaming_copy() {
         // Full end-to-end: InMemoryVolume → SmbVolume via open_read_stream + write_from_stream.
         // Tests the same path that copy_single_path uses for non-local volumes.
         use std::sync::atomic::{AtomicUsize, Ordering};
 
-        let (smb_vol, _rt) = make_docker_volume();
+        let smb_vol = make_docker_volume().await;
         let dir = test_dir_name();
-        ensure_clean(&smb_vol, &dir);
-        smb_vol.create_directory(Path::new(&dir)).unwrap();
+        ensure_clean(&smb_vol, &dir).await;
+        smb_vol.create_directory(Path::new(&dir)).await.unwrap();
 
         let source = InMemoryVolume::new("Source");
         let data: Vec<u8> = (0..=255).cycle().take(100_000).collect();
-        source.create_file(Path::new("/photo.bin"), &data).unwrap();
+        source.create_file(Path::new("/photo.bin"), &data).await.unwrap();
 
         let progress_calls = AtomicUsize::new(0);
 
         // Read from InMemory, write to SMB — the same path copy_single_path takes
-        let stream = source.open_read_stream(Path::new("/photo.bin")).unwrap();
+        let stream = source.open_read_stream(Path::new("/photo.bin")).await.unwrap();
         let bytes = smb_vol
             .write_from_stream(Path::new(&format!("{}/photo.bin", dir)), 100_000, stream, &|_, _| {
                 progress_calls.fetch_add(1, Ordering::Relaxed);
                 std::ops::ControlFlow::Continue(())
             })
+            .await
             .unwrap();
 
         assert_eq!(bytes, 100_000);
@@ -2156,13 +2160,14 @@ mod tests {
         // Verify content via read back
         let mut verify = smb_vol
             .open_read_stream(Path::new(&format!("{}/photo.bin", dir)))
+            .await
             .unwrap();
         let mut readback = Vec::new();
-        while let Some(Ok(chunk)) = verify.next_chunk() {
+        while let Some(Ok(chunk)) = verify.next_chunk().await {
             readback.extend_from_slice(&chunk);
         }
         assert_eq!(readback, data);
 
-        ensure_clean(&smb_vol, &dir);
+        ensure_clean(&smb_vol, &dir).await;
     }
 }

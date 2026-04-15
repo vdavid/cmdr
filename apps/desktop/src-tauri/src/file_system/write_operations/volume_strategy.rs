@@ -33,14 +33,14 @@ pub(super) fn is_local_volume(volume: &dyn Volume) -> bool {
 /// - If source is local: dest.import_from_local()
 /// - If dest is local: source.export_to_local()
 /// - Otherwise: Not supported
-pub(super) fn copy_single_path(
+pub(super) async fn copy_single_path(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
     dest_volume: &Arc<dyn Volume>,
     dest_path: &Path,
     state: &Arc<WriteOperationState>,
-    on_file_progress: &dyn Fn(u64, u64) -> ControlFlow<()>,
-    on_file_complete: &dyn Fn(),
+    on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
+    on_file_complete: &(dyn Fn() + Sync),
 ) -> Result<u64, VolumeError> {
     // Check cancellation
     if super::state::is_cancelled(&state.intent) {
@@ -56,7 +56,7 @@ pub(super) fn copy_single_path(
     // Handle non-local to non-local (like MTP → MTP)
     if !source_is_local && !dest_is_local {
         // Check if source is a directory
-        let is_dir = source_volume.is_directory(source_path).unwrap_or(false);
+        let is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
 
         if is_dir {
             // For directories, use temp local approach: export to temp, import from temp
@@ -65,7 +65,7 @@ pub(super) fn copy_single_path(
                 source_path.display(),
                 dest_path.display()
             );
-            return copy_via_temp_local(source_volume, source_path, dest_volume, dest_path);
+            return copy_via_temp_local(source_volume, source_path, dest_volume, dest_path).await;
         }
 
         // For files, try streaming if both volumes support it
@@ -75,9 +75,11 @@ pub(super) fn copy_single_path(
                 source_path.display(),
                 dest_path.display()
             );
-            let stream = source_volume.open_read_stream(source_path)?;
+            let stream = source_volume.open_read_stream(source_path).await?;
             let size = stream.total_size();
-            let bytes = dest_volume.write_from_stream(dest_path, size, stream, on_file_progress)?;
+            let bytes = dest_volume
+                .write_from_stream(dest_path, size, stream, on_file_progress)
+                .await?;
             on_file_complete();
             return Ok(bytes);
         }
@@ -88,7 +90,7 @@ pub(super) fn copy_single_path(
             source_path.display(),
             dest_path.display()
         );
-        return copy_via_temp_local(source_volume, source_path, dest_volume, dest_path);
+        return copy_via_temp_local(source_volume, source_path, dest_volume, dest_path).await;
     }
 
     if source_is_local && !dest_is_local {
@@ -101,16 +103,19 @@ pub(super) fn copy_single_path(
         // For directories, walk the tree ourselves so we can check cancellation between files.
         // import_from_local(dir) would import everything in one shot with no cancellation.
         if local_source.is_dir() {
-            import_directory_cancellable(
+            Box::pin(import_directory_cancellable(
                 &local_source,
                 dest_path,
                 dest_volume,
                 state,
                 on_file_progress,
                 on_file_complete,
-            )
+            ))
+            .await
         } else {
-            let bytes = dest_volume.import_from_local_with_progress(&local_source, dest_path, on_file_progress)?;
+            let bytes = dest_volume
+                .import_from_local(&local_source, dest_path, on_file_progress)
+                .await?;
             on_file_complete();
             Ok(bytes)
         }
@@ -121,19 +126,21 @@ pub(super) fn copy_single_path(
         } else {
             dest_volume.root().join(dest_path)
         };
-        // For directories, walk the tree ourselves for cancellation support.
-        let is_dir = source_volume.is_directory(source_path).unwrap_or(false);
+        let is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
         if is_dir {
-            export_directory_cancellable(
+            Box::pin(export_directory_cancellable(
                 source_path,
                 &local_dest,
                 source_volume,
                 state,
                 on_file_progress,
                 on_file_complete,
-            )
+            ))
+            .await
         } else {
-            let bytes = source_volume.export_to_local_with_progress(source_path, &local_dest, on_file_progress)?;
+            let bytes = source_volume
+                .export_to_local(source_path, &local_dest, on_file_progress)
+                .await?;
             on_file_complete();
             Ok(bytes)
         }
@@ -144,7 +151,9 @@ pub(super) fn copy_single_path(
         } else {
             dest_volume.root().join(dest_path)
         };
-        let bytes = source_volume.export_to_local(source_path, &local_dest)?;
+        let bytes = source_volume
+            .export_to_local(source_path, &local_dest, on_file_progress)
+            .await?;
         on_file_complete();
         Ok(bytes)
     }
@@ -153,16 +162,16 @@ pub(super) fn copy_single_path(
 /// Recursively imports a local directory to a non-local volume, checking cancellation
 /// between each file. This replaces `Volume::import_from_local(dir)` in the copy path
 /// to ensure the user can cancel mid-directory.
-fn import_directory_cancellable(
+async fn import_directory_cancellable(
     local_source: &Path,
     dest_path: &Path,
     dest_volume: &Arc<dyn Volume>,
     state: &Arc<WriteOperationState>,
-    on_file_progress: &dyn Fn(u64, u64) -> ControlFlow<()>,
-    on_file_complete: &dyn Fn(),
+    on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
+    on_file_complete: &(dyn Fn() + Sync),
 ) -> Result<u64, VolumeError> {
     // Create the directory on the destination
-    dest_volume.create_directory(dest_path)?;
+    dest_volume.create_directory(dest_path).await?;
 
     let read_dir = std::fs::read_dir(local_source).map_err(|e| VolumeError::IoError {
         message: e.to_string(),
@@ -188,16 +197,19 @@ fn import_directory_cancellable(
         let child_dest = dest_path.join(&child_name);
 
         if child_local.is_dir() {
-            total_bytes += import_directory_cancellable(
+            total_bytes += Box::pin(import_directory_cancellable(
                 &child_local,
                 &child_dest,
                 dest_volume,
                 state,
                 on_file_progress,
                 on_file_complete,
-            )?;
+            ))
+            .await?;
         } else {
-            total_bytes += dest_volume.import_from_local_with_progress(&child_local, &child_dest, on_file_progress)?;
+            total_bytes += dest_volume
+                .import_from_local(&child_local, &child_dest, on_file_progress)
+                .await?;
             on_file_complete();
         }
     }
@@ -207,13 +219,13 @@ fn import_directory_cancellable(
 
 /// Recursively exports a non-local volume directory to local, checking cancellation
 /// between each file.
-fn export_directory_cancellable(
+async fn export_directory_cancellable(
     source_path: &Path,
     local_dest: &Path,
     source_volume: &Arc<dyn Volume>,
     state: &Arc<WriteOperationState>,
-    on_file_progress: &dyn Fn(u64, u64) -> ControlFlow<()>,
-    on_file_complete: &dyn Fn(),
+    on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
+    on_file_complete: &(dyn Fn() + Sync),
 ) -> Result<u64, VolumeError> {
     // Create the local directory
     std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError {
@@ -222,7 +234,7 @@ fn export_directory_cancellable(
     })?;
 
     // List the source directory via the Volume trait
-    let entries = source_volume.list_directory(source_path)?;
+    let entries = source_volume.list_directory(source_path).await?;
     let mut total_bytes = 0u64;
 
     for entry in &entries {
@@ -238,16 +250,19 @@ fn export_directory_cancellable(
         let child_local = local_dest.join(&entry.name);
 
         if entry.is_directory {
-            total_bytes += export_directory_cancellable(
+            total_bytes += Box::pin(export_directory_cancellable(
                 child_source,
                 &child_local,
                 source_volume,
                 state,
                 on_file_progress,
                 on_file_complete,
-            )?;
+            ))
+            .await?;
         } else {
-            total_bytes += source_volume.export_to_local_with_progress(child_source, &child_local, on_file_progress)?;
+            total_bytes += source_volume
+                .export_to_local(child_source, &child_local, on_file_progress)
+                .await?;
             on_file_complete();
         }
     }
@@ -262,7 +277,7 @@ fn export_directory_cancellable(
 /// 1. Export from source to a temp local directory
 /// 2. Import from temp local to destination
 /// 3. Clean up temp directory
-fn copy_via_temp_local(
+async fn copy_via_temp_local(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
     dest_volume: &Arc<dyn Volume>,
@@ -288,8 +303,12 @@ fn copy_via_temp_local(
         temp_item_path.display()
     );
 
+    let no_op_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync) = &|_, _| ControlFlow::Continue(());
+
     // Step 1: Export from source to temp local
-    let bytes = source_volume.export_to_local(source_path, &temp_item_path)?;
+    let bytes = source_volume
+        .export_to_local(source_path, &temp_item_path, no_op_progress)
+        .await?;
 
     log::debug!(
         "copy_via_temp_local: importing from temp {} to {}",
@@ -298,7 +317,9 @@ fn copy_via_temp_local(
     );
 
     // Step 2: Import from temp local to destination
-    let result = dest_volume.import_from_local(&temp_item_path, dest_path);
+    let result = dest_volume
+        .import_from_local(&temp_item_path, dest_path, no_op_progress)
+        .await;
 
     // Step 3: Clean up temp directory (best effort)
     if let Err(e) = std::fs::remove_dir_all(&temp_dir) {
@@ -319,12 +340,8 @@ mod tests {
 
     use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
 
-    fn no_progress(_bytes_done: u64, _bytes_total: u64) -> ControlFlow<()> {
-        ControlFlow::Continue(())
-    }
-
-    #[test]
-    fn test_copy_single_path_local_to_local() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_copy_single_path_local_to_local() {
         use std::fs;
 
         let src_dir = std::env::temp_dir().join("cmdr_copy_single_src");
@@ -342,9 +359,7 @@ mod tests {
         let state = Arc::new(WriteOperationState {
             intent: Arc::new(AtomicU8::new(0)),
             progress_interval: Duration::from_millis(200),
-            pending_resolution: std::sync::RwLock::new(None),
-            conflict_condvar: std::sync::Condvar::new(),
-            conflict_mutex: std::sync::Mutex::new(false),
+            conflict_resolution_tx: std::sync::Mutex::new(None),
         });
 
         let bytes = copy_single_path(
@@ -353,9 +368,10 @@ mod tests {
             &dest,
             Path::new("dest.txt"),
             &state,
-            &no_progress,
+            &|_, _| ControlFlow::Continue(()),
             &|| {},
         )
+        .await
         .unwrap();
 
         assert_eq!(bytes, 14); // "Source content"
@@ -365,8 +381,8 @@ mod tests {
         let _ = fs::remove_dir_all(&dst_dir);
     }
 
-    #[test]
-    fn test_copy_single_path_cancelled() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_copy_single_path_cancelled() {
         use std::fs;
 
         let src_dir = std::env::temp_dir().join("cmdr_copy_cancel_src");
@@ -384,9 +400,7 @@ mod tests {
         let state = Arc::new(WriteOperationState {
             intent: Arc::new(AtomicU8::new(2)), // Already cancelled (Stopped)
             progress_interval: Duration::from_millis(200),
-            pending_resolution: std::sync::RwLock::new(None),
-            conflict_condvar: std::sync::Condvar::new(),
-            conflict_mutex: std::sync::Mutex::new(false),
+            conflict_resolution_tx: std::sync::Mutex::new(None),
         });
 
         let result = copy_single_path(
@@ -395,9 +409,10 @@ mod tests {
             &dest,
             Path::new("dest.txt"),
             &state,
-            &no_progress,
+            &|_, _| ControlFlow::Continue(()),
             &|| {},
-        );
+        )
+        .await;
 
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), VolumeError::IoError { message, .. } if message.contains("cancelled")));
@@ -417,17 +432,18 @@ mod tests {
         Arc::new(WriteOperationState {
             intent: Arc::new(AtomicU8::new(0)),
             progress_interval: Duration::from_millis(200),
-            pending_resolution: std::sync::RwLock::new(None),
-            conflict_condvar: std::sync::Condvar::new(),
-            conflict_mutex: std::sync::Mutex::new(false),
+            conflict_resolution_tx: std::sync::Mutex::new(None),
         })
     }
 
-    #[test]
-    fn test_streaming_copy_single_file() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_streaming_copy_single_file() {
         let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source"));
         let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest"));
-        source.create_file(Path::new("/photo.jpg"), b"JPEG data here").unwrap();
+        source
+            .create_file(Path::new("/photo.jpg"), b"JPEG data here")
+            .await
+            .unwrap();
 
         let state = make_state();
         let bytes = copy_single_path(
@@ -436,29 +452,30 @@ mod tests {
             &dest,
             Path::new("/photo.jpg"),
             &state,
-            &no_progress,
+            &|_, _| ControlFlow::Continue(()),
             &|| {},
         )
+        .await
         .unwrap();
 
         assert_eq!(bytes, 14);
         // Verify content
-        let mut stream = dest.open_read_stream(Path::new("/photo.jpg")).unwrap();
-        let chunk = stream.next_chunk().unwrap().unwrap();
+        let mut stream = dest.open_read_stream(Path::new("/photo.jpg")).await.unwrap();
+        let chunk = stream.next_chunk().await.unwrap().unwrap();
         assert_eq!(chunk, b"JPEG data here");
     }
 
-    #[test]
-    fn test_streaming_copy_large_file_with_progress() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_streaming_copy_large_file_with_progress() {
         let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source"));
         let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest"));
         let data: Vec<u8> = (0..=255).cycle().take(200_000).collect();
-        source.create_file(Path::new("/big.bin"), &data).unwrap();
+        source.create_file(Path::new("/big.bin"), &data).await.unwrap();
 
         let state = make_state();
-        let progress_calls = AtomicUsize::new(0);
-        let total_bytes_reported = AtomicU64::new(0);
-        let file_complete_calls = AtomicUsize::new(0);
+        let progress_calls = Arc::new(AtomicUsize::new(0));
+        let total_bytes_reported = Arc::new(AtomicU64::new(0));
+        let file_complete_calls = Arc::new(AtomicUsize::new(0));
 
         let bytes = copy_single_path(
             &source,
@@ -476,6 +493,7 @@ mod tests {
                 file_complete_calls.fetch_add(1, Ordering::Relaxed);
             },
         )
+        .await
         .unwrap();
 
         assert_eq!(bytes, 200_000);
@@ -487,23 +505,23 @@ mod tests {
         assert_eq!(file_complete_calls.load(Ordering::Relaxed), 1);
 
         // Verify content integrity
-        let mut stream = dest.open_read_stream(Path::new("/big.bin")).unwrap();
+        let mut stream = dest.open_read_stream(Path::new("/big.bin")).await.unwrap();
         let mut reassembled = Vec::new();
-        while let Some(Ok(chunk)) = stream.next_chunk() {
+        while let Some(Ok(chunk)) = stream.next_chunk().await {
             reassembled.extend_from_slice(&chunk);
         }
         assert_eq!(reassembled, data);
     }
 
-    #[test]
-    fn test_streaming_copy_cancel_mid_file() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_streaming_copy_cancel_mid_file() {
         let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source"));
         let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest"));
         let data = vec![0xAB; 200_000]; // 4 chunks at 64 KB
-        source.create_file(Path::new("/big.bin"), &data).unwrap();
+        source.create_file(Path::new("/big.bin"), &data).await.unwrap();
 
         let state = make_state();
-        let call_count = AtomicUsize::new(0);
+        let call_count = Arc::new(AtomicUsize::new(0));
 
         let result = copy_single_path(
             &source,
@@ -520,18 +538,19 @@ mod tests {
                 }
             },
             &|| {},
-        );
+        )
+        .await;
 
         assert!(result.is_err());
         // File should not exist at dest (cancelled before completion)
-        assert!(!dest.exists(Path::new("/big.bin")));
+        assert!(!dest.exists(Path::new("/big.bin")).await);
     }
 
-    #[test]
-    fn test_streaming_copy_empty_file() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_streaming_copy_empty_file() {
         let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source"));
         let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest"));
-        source.create_file(Path::new("/empty.txt"), b"").unwrap();
+        source.create_file(Path::new("/empty.txt"), b"").await.unwrap();
 
         let state = make_state();
         let bytes = copy_single_path(
@@ -540,17 +559,18 @@ mod tests {
             &dest,
             Path::new("/empty.txt"),
             &state,
-            &no_progress,
+            &|_, _| ControlFlow::Continue(()),
             &|| {},
         )
+        .await
         .unwrap();
 
         assert_eq!(bytes, 0);
-        assert!(dest.exists(Path::new("/empty.txt")));
+        assert!(dest.exists(Path::new("/empty.txt")).await);
     }
 
-    #[test]
-    fn test_streaming_copy_nonexistent_source_fails() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_streaming_copy_nonexistent_source_fails() {
         let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source"));
         let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest"));
 
@@ -561,15 +581,16 @@ mod tests {
             &dest,
             Path::new("/nope.txt"),
             &state,
-            &no_progress,
+            &|_, _| ControlFlow::Continue(()),
             &|| {},
-        );
+        )
+        .await;
 
         assert!(result.is_err());
     }
 
-    #[test]
-    fn test_streaming_copy_uses_streaming_for_non_local_volumes() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_streaming_copy_uses_streaming_for_non_local_volumes() {
         // InMemoryVolume has local_path() = None and supports_streaming() = true.
         // Verify that copy_single_path routes through the streaming path (not temp local).
         let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source"));
@@ -580,28 +601,32 @@ mod tests {
         assert!(source.supports_streaming(), "InMemoryVolume should support streaming");
         assert!(dest.supports_streaming(), "InMemoryVolume should support streaming");
 
-        source.create_file(Path::new("/test.txt"), b"routed correctly").unwrap();
+        source
+            .create_file(Path::new("/test.txt"), b"routed correctly")
+            .await
+            .unwrap();
 
         let state = make_state();
-        let file_complete = AtomicUsize::new(0);
+        let file_complete = Arc::new(AtomicUsize::new(0));
         let bytes = copy_single_path(
             &source,
             Path::new("/test.txt"),
             &dest,
             Path::new("/test.txt"),
             &state,
-            &no_progress,
+            &|_, _| ControlFlow::Continue(()),
             &|| {
                 file_complete.fetch_add(1, Ordering::Relaxed);
             },
         )
+        .await
         .unwrap();
 
         assert_eq!(bytes, 16);
         assert_eq!(file_complete.load(Ordering::Relaxed), 1, "on_file_complete should fire");
 
-        let mut stream = dest.open_read_stream(Path::new("/test.txt")).unwrap();
-        let chunk = stream.next_chunk().unwrap().unwrap();
+        let mut stream = dest.open_read_stream(Path::new("/test.txt")).await.unwrap();
+        let chunk = stream.next_chunk().await.unwrap().unwrap();
         assert_eq!(chunk, b"routed correctly");
     }
 }

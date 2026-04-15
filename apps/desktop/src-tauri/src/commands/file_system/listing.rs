@@ -49,10 +49,9 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> bool {
     // Try to use Volume abstraction
     if let Some(volume) = get_volume_manager().get(&volume_id) {
         let path_for_check = expanded_path.clone();
-        return blocking_with_timeout(PATH_EXISTS_TIMEOUT, false, move || {
-            volume.exists(Path::new(&path_for_check))
-        })
-        .await;
+        return tokio::time::timeout(PATH_EXISTS_TIMEOUT, volume.exists(Path::new(&path_for_check)))
+            .await
+            .unwrap_or_default();
     }
 
     // Fallback for unknown volumes (shouldn't happen in practice)

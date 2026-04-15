@@ -41,33 +41,33 @@ fn test_resolve_absolute_path_treats_as_relative() {
     );
 }
 
-#[test]
-fn test_exists_returns_true_for_root() {
+#[tokio::test]
+async fn test_exists_returns_true_for_root() {
     let volume = LocalPosixVolume::new("Test", "/tmp");
-    assert!(volume.exists(Path::new("")));
-    assert!(volume.exists(Path::new(".")));
+    assert!(volume.exists(Path::new("")).await);
+    assert!(volume.exists(Path::new(".")).await);
 }
 
-#[test]
-fn test_exists_returns_false_for_nonexistent() {
+#[tokio::test]
+async fn test_exists_returns_false_for_nonexistent() {
     let volume = LocalPosixVolume::new("Test", "/tmp");
-    assert!(!volume.exists(Path::new("definitely_does_not_exist_12345")));
+    assert!(!volume.exists(Path::new("definitely_does_not_exist_12345")).await);
 }
 
-#[test]
-fn test_list_directory_returns_entries() {
+#[tokio::test]
+async fn test_list_directory_returns_entries() {
     // Use /tmp which should exist and have some contents on any POSIX system
     let volume = LocalPosixVolume::new("Temp", "/tmp");
-    let result = volume.list_directory(Path::new(""));
+    let result = volume.list_directory(Path::new("")).await;
 
     // Should succeed (even if empty)
     assert!(result.is_ok());
 }
 
-#[test]
-fn test_list_directory_nonexistent_returns_error() {
+#[tokio::test]
+async fn test_list_directory_nonexistent_returns_error() {
     let volume = LocalPosixVolume::new("Test", "/definitely_does_not_exist_12345");
-    let result = volume.list_directory(Path::new(""));
+    let result = volume.list_directory(Path::new("")).await;
 
     assert!(result.is_err());
     match result.unwrap_err() {
@@ -76,21 +76,21 @@ fn test_list_directory_nonexistent_returns_error() {
     }
 }
 
-#[test]
-fn test_get_metadata_returns_entry() {
+#[tokio::test]
+async fn test_get_metadata_returns_entry() {
     let volume = LocalPosixVolume::new("Temp", "/tmp");
     // /tmp itself exists on any POSIX system
-    let result = volume.get_metadata(Path::new(""));
+    let result = volume.get_metadata(Path::new("")).await;
 
     assert!(result.is_ok());
     let entry = result.unwrap();
     assert!(entry.is_directory);
 }
 
-#[test]
-fn test_get_metadata_nonexistent_returns_error() {
+#[tokio::test]
+async fn test_get_metadata_nonexistent_returns_error() {
     let volume = LocalPosixVolume::new("Test", "/tmp");
-    let result = volume.get_metadata(Path::new("definitely_does_not_exist_12345"));
+    let result = volume.get_metadata(Path::new("definitely_does_not_exist_12345")).await;
 
     assert!(result.is_err());
 }
@@ -109,8 +109,8 @@ fn test_supports_streaming_returns_false() {
     assert!(!volume.supports_streaming());
 }
 
-#[test]
-fn test_write_operations() {
+#[tokio::test]
+async fn test_write_operations() {
     use std::fs;
 
     // Create a temp directory for this test
@@ -121,29 +121,29 @@ fn test_write_operations() {
     let volume = LocalPosixVolume::new("Test", &test_dir);
 
     // Test create_file
-    let result = volume.create_file(Path::new("test.txt"), b"hello world");
+    let result = volume.create_file(Path::new("test.txt"), b"hello world").await;
     assert!(result.is_ok());
     assert!(test_dir.join("test.txt").exists());
     assert_eq!(fs::read_to_string(test_dir.join("test.txt")).unwrap(), "hello world");
 
     // Test create_directory
-    let result = volume.create_directory(Path::new("subdir"));
+    let result = volume.create_directory(Path::new("subdir")).await;
     assert!(result.is_ok());
     assert!(test_dir.join("subdir").is_dir());
 
     // Test delete file
-    let result = volume.delete(Path::new("test.txt"));
+    let result = volume.delete(Path::new("test.txt")).await;
     assert!(result.is_ok());
     assert!(!test_dir.join("test.txt").exists());
 
     // Test delete directory
-    let result = volume.delete(Path::new("subdir"));
+    let result = volume.delete(Path::new("subdir")).await;
     assert!(result.is_ok());
     assert!(!test_dir.join("subdir").exists());
 
     // Test rename (force=false, no conflict)
-    volume.create_file(Path::new("old.txt"), b"content").unwrap();
-    let result = volume.rename(Path::new("old.txt"), Path::new("new.txt"), false);
+    volume.create_file(Path::new("old.txt"), b"content").await.unwrap();
+    let result = volume.rename(Path::new("old.txt"), Path::new("new.txt"), false).await;
     assert!(result.is_ok());
     assert!(!test_dir.join("old.txt").exists());
     assert!(test_dir.join("new.txt").exists());
@@ -152,8 +152,8 @@ fn test_write_operations() {
     let _ = fs::remove_dir_all(&test_dir);
 }
 
-#[test]
-fn test_rename_conflict_no_force() {
+#[tokio::test]
+async fn test_rename_conflict_no_force() {
     use std::fs;
 
     let test_dir = std::env::temp_dir().join("cmdr_rename_conflict_test");
@@ -161,10 +161,12 @@ fn test_rename_conflict_no_force() {
     fs::create_dir_all(&test_dir).unwrap();
 
     let volume = LocalPosixVolume::new("Test", &test_dir);
-    volume.create_file(Path::new("source.txt"), b"source").unwrap();
-    volume.create_file(Path::new("target.txt"), b"target").unwrap();
+    volume.create_file(Path::new("source.txt"), b"source").await.unwrap();
+    volume.create_file(Path::new("target.txt"), b"target").await.unwrap();
 
-    let result = volume.rename(Path::new("source.txt"), Path::new("target.txt"), false);
+    let result = volume
+        .rename(Path::new("source.txt"), Path::new("target.txt"), false)
+        .await;
     assert!(matches!(result, Err(VolumeError::AlreadyExists(_))));
     // Both files still intact
     assert!(test_dir.join("source.txt").exists());
@@ -173,8 +175,8 @@ fn test_rename_conflict_no_force() {
     let _ = fs::remove_dir_all(&test_dir);
 }
 
-#[test]
-fn test_rename_force_overwrites() {
+#[tokio::test]
+async fn test_rename_force_overwrites() {
     use std::fs;
 
     let test_dir = std::env::temp_dir().join("cmdr_rename_force_test");
@@ -182,10 +184,18 @@ fn test_rename_force_overwrites() {
     fs::create_dir_all(&test_dir).unwrap();
 
     let volume = LocalPosixVolume::new("Test", &test_dir);
-    volume.create_file(Path::new("source.txt"), b"new content").unwrap();
-    volume.create_file(Path::new("target.txt"), b"old content").unwrap();
+    volume
+        .create_file(Path::new("source.txt"), b"new content")
+        .await
+        .unwrap();
+    volume
+        .create_file(Path::new("target.txt"), b"old content")
+        .await
+        .unwrap();
 
-    let result = volume.rename(Path::new("source.txt"), Path::new("target.txt"), true);
+    let result = volume
+        .rename(Path::new("source.txt"), Path::new("target.txt"), true)
+        .await;
     assert!(result.is_ok());
     assert!(!test_dir.join("source.txt").exists());
     assert_eq!(fs::read_to_string(test_dir.join("target.txt")).unwrap(), "new content");
@@ -197,8 +207,8 @@ fn test_rename_force_overwrites() {
 // Symlink edge case tests
 // ============================================================================
 
-#[test]
-fn test_symlink_to_file_detected() {
+#[tokio::test]
+async fn test_symlink_to_file_detected() {
     use std::fs;
     use std::os::unix::fs::symlink;
 
@@ -216,10 +226,10 @@ fn test_symlink_to_file_detected() {
     let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
 
     // The symlink should exist
-    assert!(volume.exists(Path::new("link_to_file.txt")));
+    assert!(volume.exists(Path::new("link_to_file.txt")).await);
 
     // Get metadata - should report is_symlink=true, is_directory=false
-    let metadata = volume.get_metadata(Path::new("link_to_file.txt")).unwrap();
+    let metadata = volume.get_metadata(Path::new("link_to_file.txt")).await.unwrap();
     assert!(metadata.is_symlink);
     assert!(!metadata.is_directory);
     assert_eq!(metadata.name, "link_to_file.txt");
@@ -228,8 +238,8 @@ fn test_symlink_to_file_detected() {
     let _ = fs::remove_dir_all(&test_dir);
 }
 
-#[test]
-fn test_symlink_to_directory_detected() {
+#[tokio::test]
+async fn test_symlink_to_directory_detected() {
     use std::fs;
     use std::os::unix::fs::symlink;
 
@@ -246,7 +256,7 @@ fn test_symlink_to_directory_detected() {
     let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
 
     // Get metadata - should report is_symlink=true AND is_directory=true
-    let metadata = volume.get_metadata(Path::new("link_to_dir")).unwrap();
+    let metadata = volume.get_metadata(Path::new("link_to_dir")).await.unwrap();
     assert!(metadata.is_symlink);
     assert!(metadata.is_directory); // Target is a directory
     assert_eq!(metadata.name, "link_to_dir");
@@ -255,8 +265,8 @@ fn test_symlink_to_directory_detected() {
     let _ = fs::remove_dir_all(&test_dir);
 }
 
-#[test]
-fn test_broken_symlink_still_exists() {
+#[tokio::test]
+async fn test_broken_symlink_still_exists() {
     use std::fs;
     use std::os::unix::fs::symlink;
 
@@ -270,10 +280,10 @@ fn test_broken_symlink_still_exists() {
     let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
 
     // The broken symlink itself exists
-    assert!(volume.exists(Path::new("broken_link.txt")));
+    assert!(volume.exists(Path::new("broken_link.txt")).await);
 
     // Can get metadata for the broken symlink
-    let metadata = volume.get_metadata(Path::new("broken_link.txt")).unwrap();
+    let metadata = volume.get_metadata(Path::new("broken_link.txt")).await.unwrap();
     assert!(metadata.is_symlink);
     assert!(!metadata.is_directory); // Target doesn't exist, so defaults to false
 
@@ -291,8 +301,8 @@ fn test_supports_export_returns_true() {
     assert!(volume.supports_export());
 }
 
-#[test]
-fn test_scan_for_copy_single_file() {
+#[tokio::test]
+async fn test_scan_for_copy_single_file() {
     use std::fs;
 
     let test_dir = std::env::temp_dir().join("cmdr_scan_copy_file_test");
@@ -303,7 +313,7 @@ fn test_scan_for_copy_single_file() {
     fs::write(test_dir.join("test.txt"), "Hello, World!").unwrap();
 
     let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
-    let result = volume.scan_for_copy(Path::new("test.txt")).unwrap();
+    let result = volume.scan_for_copy(Path::new("test.txt")).await.unwrap();
 
     assert_eq!(result.file_count, 1);
     assert_eq!(result.dir_count, 0);
@@ -312,8 +322,8 @@ fn test_scan_for_copy_single_file() {
     let _ = fs::remove_dir_all(&test_dir);
 }
 
-#[test]
-fn test_scan_for_copy_directory() {
+#[tokio::test]
+async fn test_scan_for_copy_directory() {
     use std::fs;
 
     let test_dir = std::env::temp_dir().join("cmdr_scan_copy_dir_test");
@@ -330,7 +340,7 @@ fn test_scan_for_copy_directory() {
     fs::write(nested.join("file3.txt"), "A").unwrap();
 
     let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
-    let result = volume.scan_for_copy(Path::new("mydir")).unwrap();
+    let result = volume.scan_for_copy(Path::new("mydir")).await.unwrap();
 
     assert_eq!(result.file_count, 3);
     assert_eq!(result.dir_count, 1); // Just the nested dir (root not counted)
@@ -339,8 +349,8 @@ fn test_scan_for_copy_directory() {
     let _ = fs::remove_dir_all(&test_dir);
 }
 
-#[test]
-fn test_export_to_local_single_file() {
+#[tokio::test]
+async fn test_export_to_local_single_file() {
     use std::fs;
 
     let src_dir = std::env::temp_dir().join("cmdr_export_src_test");
@@ -354,7 +364,10 @@ fn test_export_to_local_single_file() {
 
     let volume = LocalPosixVolume::new("Test", src_dir.to_str().unwrap());
     let bytes = volume
-        .export_to_local(Path::new("source.txt"), &dst_dir.join("dest.txt"))
+        .export_to_local(Path::new("source.txt"), &dst_dir.join("dest.txt"), &|_, _| {
+            std::ops::ControlFlow::Continue(())
+        })
+        .await
         .unwrap();
 
     assert_eq!(bytes, 12); // "Test content" is 12 bytes
@@ -364,8 +377,8 @@ fn test_export_to_local_single_file() {
     let _ = fs::remove_dir_all(&dst_dir);
 }
 
-#[test]
-fn test_export_to_local_directory() {
+#[tokio::test]
+async fn test_export_to_local_directory() {
     use std::fs;
 
     let src_dir = std::env::temp_dir().join("cmdr_export_dir_src_test");
@@ -383,7 +396,10 @@ fn test_export_to_local_directory() {
 
     let volume = LocalPosixVolume::new("Test", src_dir.to_str().unwrap());
     let bytes = volume
-        .export_to_local(Path::new("sourcedir"), &dst_dir.join("destdir"))
+        .export_to_local(Path::new("sourcedir"), &dst_dir.join("destdir"), &|_, _| {
+            std::ops::ControlFlow::Continue(())
+        })
+        .await
         .unwrap();
 
     assert_eq!(bytes, 8); // 3 + 5 bytes
@@ -395,8 +411,8 @@ fn test_export_to_local_directory() {
     let _ = fs::remove_dir_all(&dst_dir);
 }
 
-#[test]
-fn test_import_from_local_single_file() {
+#[tokio::test]
+async fn test_import_from_local_single_file() {
     use std::fs;
 
     let local_dir = std::env::temp_dir().join("cmdr_import_local_test");
@@ -410,7 +426,10 @@ fn test_import_from_local_single_file() {
 
     let volume = LocalPosixVolume::new("Test", vol_dir.to_str().unwrap());
     let bytes = volume
-        .import_from_local(&local_dir.join("local.txt"), Path::new("imported.txt"))
+        .import_from_local(&local_dir.join("local.txt"), Path::new("imported.txt"), &|_, _| {
+            std::ops::ControlFlow::Continue(())
+        })
+        .await
         .unwrap();
 
     assert_eq!(bytes, 16); // "Imported content" is 16 bytes
@@ -423,8 +442,8 @@ fn test_import_from_local_single_file() {
     let _ = fs::remove_dir_all(&vol_dir);
 }
 
-#[test]
-fn test_scan_for_conflicts_no_conflicts() {
+#[tokio::test]
+async fn test_scan_for_conflicts_no_conflicts() {
     use std::fs;
 
     let test_dir = std::env::temp_dir().join("cmdr_conflicts_none_test");
@@ -446,14 +465,14 @@ fn test_scan_for_conflicts_no_conflicts() {
         },
     ];
 
-    let conflicts = volume.scan_for_conflicts(&source_items, Path::new("")).unwrap();
+    let conflicts = volume.scan_for_conflicts(&source_items, Path::new("")).await.unwrap();
     assert!(conflicts.is_empty());
 
     let _ = fs::remove_dir_all(&test_dir);
 }
 
-#[test]
-fn test_scan_for_conflicts_with_conflicts() {
+#[tokio::test]
+async fn test_scan_for_conflicts_with_conflicts() {
     use std::fs;
 
     let test_dir = std::env::temp_dir().join("cmdr_conflicts_some_test");
@@ -484,7 +503,7 @@ fn test_scan_for_conflicts_with_conflicts() {
         },
     ];
 
-    let conflicts = volume.scan_for_conflicts(&source_items, Path::new("")).unwrap();
+    let conflicts = volume.scan_for_conflicts(&source_items, Path::new("")).await.unwrap();
     assert_eq!(conflicts.len(), 2);
 
     // Verify conflict info
@@ -496,11 +515,11 @@ fn test_scan_for_conflicts_with_conflicts() {
     let _ = fs::remove_dir_all(&test_dir);
 }
 
-#[test]
-fn test_get_space_info() {
+#[tokio::test]
+async fn test_get_space_info() {
     // Test against /tmp which should exist on any POSIX system
     let volume = LocalPosixVolume::new("Test", "/tmp");
-    let space = volume.get_space_info().unwrap();
+    let space = volume.get_space_info().await.unwrap();
 
     // Basic sanity checks
     assert!(space.total_bytes > 0);
@@ -508,8 +527,8 @@ fn test_get_space_info() {
     assert!(space.used_bytes <= space.total_bytes);
 }
 
-#[test]
-fn test_list_directory_includes_symlinks() {
+#[tokio::test]
+async fn test_list_directory_includes_symlinks() {
     use std::fs;
     use std::os::unix::fs::symlink;
 
@@ -529,7 +548,7 @@ fn test_list_directory_includes_symlinks() {
     symlink(&dir, &link_to_dir).unwrap();
 
     let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
-    let entries = volume.list_directory(Path::new("")).unwrap();
+    let entries = volume.list_directory(Path::new("")).await.unwrap();
 
     // Should have 4 entries
     assert_eq!(entries.len(), 4);

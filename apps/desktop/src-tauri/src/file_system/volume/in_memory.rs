@@ -7,7 +7,9 @@
 use super::{CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream};
 use crate::file_system::listing::FileEntry;
 use std::collections::HashMap;
+use std::future::Future;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::sync::RwLock;
 
 /// Entry in the in-memory file system.
@@ -143,14 +145,16 @@ struct InMemoryReadStream {
 }
 
 impl VolumeReadStream for InMemoryReadStream {
-    fn next_chunk(&mut self) -> Option<Result<Vec<u8>, VolumeError>> {
-        if self.offset >= self.data.len() {
-            return None;
-        }
-        let end = (self.offset + IN_MEMORY_STREAM_CHUNK_SIZE).min(self.data.len());
-        let chunk = self.data[self.offset..end].to_vec();
-        self.offset = end;
-        Some(Ok(chunk))
+    fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
+        Box::pin(async move {
+            if self.offset >= self.data.len() {
+                return None;
+            }
+            let end = (self.offset + IN_MEMORY_STREAM_CHUNK_SIZE).min(self.data.len());
+            let chunk = self.data[self.offset..end].to_vec();
+            self.offset = end;
+            Some(Ok(chunk))
+        })
     }
 
     fn total_size(&self) -> u64 {
@@ -171,243 +175,285 @@ impl Volume for InMemoryVolume {
         &self.root
     }
 
-    fn list_directory(&self, path: &Path) -> Result<Vec<FileEntry>, VolumeError> {
-        // Check for injected error (E2E testing). Cleared after one use to enable retry testing.
-        #[cfg(feature = "playwright-e2e")]
-        {
-            let mut injected = self.injected_error.lock().unwrap();
-            if let Some(errno) = injected.take() {
-                return Err(VolumeError::IoError {
-                    message: format!("Injected error for testing (os error {})", errno),
-                    raw_os_error: Some(errno),
-                });
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // Check for injected error (E2E testing). Cleared after one use to enable retry testing.
+            #[cfg(feature = "playwright-e2e")]
+            {
+                let mut injected = self.injected_error.lock().unwrap();
+                if let Some(errno) = injected.take() {
+                    return Err(VolumeError::IoError {
+                        message: format!("Injected error for testing (os error {})", errno),
+                        raw_os_error: Some(errno),
+                    });
+                }
             }
-        }
 
-        let entries = self.entries.read().map_err(|_| VolumeError::IoError {
-            message: "Lock poisoned".into(),
-            raw_os_error: None,
-        })?;
+            let entries = self.entries.read().map_err(|_| VolumeError::IoError {
+                message: "Lock poisoned".into(),
+                raw_os_error: None,
+            })?;
 
-        let target_dir = self.normalize(path);
+            let target_dir = self.normalize(path);
 
-        // Find all entries whose parent matches this directory
-        let mut result: Vec<FileEntry> = entries
-            .iter()
-            .filter(|(entry_path, _)| {
-                let parent = Self::parent_of(entry_path);
-                parent == target_dir
-            })
-            .map(|(_, entry)| entry.metadata.clone())
-            .collect();
+            // Find all entries whose parent matches this directory
+            let mut result: Vec<FileEntry> = entries
+                .iter()
+                .filter(|(entry_path, _)| {
+                    let parent = Self::parent_of(entry_path);
+                    parent == target_dir
+                })
+                .map(|(_, entry)| entry.metadata.clone())
+                .collect();
 
-        // Sort: directories first, then alphabetically
-        result.sort_by(|a, b| match (a.is_directory, b.is_directory) {
-            (true, false) => std::cmp::Ordering::Less,
-            (false, true) => std::cmp::Ordering::Greater,
-            _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
-        });
+            // Sort: directories first, then alphabetically
+            result.sort_by(|a, b| match (a.is_directory, b.is_directory) {
+                (true, false) => std::cmp::Ordering::Less,
+                (false, true) => std::cmp::Ordering::Greater,
+                _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+            });
 
-        Ok(result)
+            Ok(result)
+        })
     }
 
-    fn get_metadata(&self, path: &Path) -> Result<FileEntry, VolumeError> {
-        let entries = self.entries.read().map_err(|_| VolumeError::IoError {
-            message: "Lock poisoned".into(),
-            raw_os_error: None,
-        })?;
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let entries = self.entries.read().map_err(|_| VolumeError::IoError {
+                message: "Lock poisoned".into(),
+                raw_os_error: None,
+            })?;
 
-        let normalized = self.normalize(path);
+            let normalized = self.normalize(path);
 
-        entries
-            .get(&normalized)
-            .map(|e| e.metadata.clone())
-            .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
+            entries
+                .get(&normalized)
+                .map(|e| e.metadata.clone())
+                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
+        })
     }
 
-    fn exists(&self, path: &Path) -> bool {
-        let entries = match self.entries.read() {
-            Ok(e) => e,
-            Err(_) => return false,
-        };
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async move {
+            let entries = match self.entries.read() {
+                Ok(e) => e,
+                Err(_) => return false,
+            };
 
-        let normalized = self.normalize(path);
-        entries.contains_key(&normalized)
+            let normalized = self.normalize(path);
+            entries.contains_key(&normalized)
+        })
     }
 
-    fn is_directory(&self, path: &Path) -> Result<bool, VolumeError> {
-        let entries = self.entries.read().map_err(|_| VolumeError::IoError {
-            message: "Lock poisoned".into(),
-            raw_os_error: None,
-        })?;
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let entries = self.entries.read().map_err(|_| VolumeError::IoError {
+                message: "Lock poisoned".into(),
+                raw_os_error: None,
+            })?;
 
-        let normalized = self.normalize(path);
+            let normalized = self.normalize(path);
 
-        entries
-            .get(&normalized)
-            .map(|e| e.metadata.is_directory)
-            .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
+            entries
+                .get(&normalized)
+                .map(|e| e.metadata.is_directory)
+                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
+        })
     }
 
-    fn create_file(&self, path: &Path, content: &[u8]) -> Result<(), VolumeError> {
-        let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
-            message: "Lock poisoned".into(),
-            raw_os_error: None,
-        })?;
+    fn create_file<'a>(
+        &'a self,
+        path: &'a Path,
+        content: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
+                message: "Lock poisoned".into(),
+                raw_os_error: None,
+            })?;
 
-        let normalized = self.normalize(path);
+            let normalized = self.normalize(path);
 
-        let name = normalized
-            .file_name()
-            .map(|s| s.to_string_lossy().to_string())
-            .unwrap_or_default();
+            let name = normalized
+                .file_name()
+                .map(|s| s.to_string_lossy().to_string())
+                .unwrap_or_default();
 
-        let metadata = FileEntry {
-            size: Some(content.len() as u64),
-            modified_at: Some(Self::now_secs()),
-            created_at: Some(Self::now_secs()),
-            permissions: 0o644,
-            owner: "testuser".to_string(),
-            group: "staff".to_string(),
-            extended_metadata_loaded: true,
-            ..FileEntry::new(name, normalized.display().to_string(), false, false)
-        };
+            let metadata = FileEntry {
+                size: Some(content.len() as u64),
+                modified_at: Some(Self::now_secs()),
+                created_at: Some(Self::now_secs()),
+                permissions: 0o644,
+                owner: "testuser".to_string(),
+                group: "staff".to_string(),
+                extended_metadata_loaded: true,
+                ..FileEntry::new(name, normalized.display().to_string(), false, false)
+            };
 
-        entries.insert(
-            normalized,
-            InMemoryEntry {
-                metadata,
-                content: Some(content.to_vec()),
-            },
-        );
+            entries.insert(
+                normalized,
+                InMemoryEntry {
+                    metadata,
+                    content: Some(content.to_vec()),
+                },
+            );
 
-        Ok(())
+            Ok(())
+        })
     }
 
-    fn create_directory(&self, path: &Path) -> Result<(), VolumeError> {
-        let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
-            message: "Lock poisoned".into(),
-            raw_os_error: None,
-        })?;
+    fn create_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
+                message: "Lock poisoned".into(),
+                raw_os_error: None,
+            })?;
 
-        let normalized = self.normalize(path);
+            let normalized = self.normalize(path);
 
-        let name = normalized
-            .file_name()
-            .map(|s| s.to_string_lossy().to_string())
-            .unwrap_or_default();
+            let name = normalized
+                .file_name()
+                .map(|s| s.to_string_lossy().to_string())
+                .unwrap_or_default();
 
-        let metadata = FileEntry {
-            modified_at: Some(Self::now_secs()),
-            created_at: Some(Self::now_secs()),
-            permissions: 0o755,
-            owner: "testuser".to_string(),
-            group: "staff".to_string(),
-            extended_metadata_loaded: true,
-            ..FileEntry::new(name, normalized.display().to_string(), true, false)
-        };
+            let metadata = FileEntry {
+                modified_at: Some(Self::now_secs()),
+                created_at: Some(Self::now_secs()),
+                permissions: 0o755,
+                owner: "testuser".to_string(),
+                group: "staff".to_string(),
+                extended_metadata_loaded: true,
+                ..FileEntry::new(name, normalized.display().to_string(), true, false)
+            };
 
-        entries.insert(
-            normalized,
-            InMemoryEntry {
-                metadata,
-                content: None,
-            },
-        );
+            entries.insert(
+                normalized,
+                InMemoryEntry {
+                    metadata,
+                    content: None,
+                },
+            );
 
-        Ok(())
+            Ok(())
+        })
     }
 
-    fn delete(&self, path: &Path) -> Result<(), VolumeError> {
-        let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
-            message: "Lock poisoned".into(),
-            raw_os_error: None,
-        })?;
+    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
+                message: "Lock poisoned".into(),
+                raw_os_error: None,
+            })?;
 
-        let normalized = self.normalize(path);
+            let normalized = self.normalize(path);
 
-        entries
-            .remove(&normalized)
-            .map(|_| ())
-            .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
+            entries
+                .remove(&normalized)
+                .map(|_| ())
+                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
+        })
     }
 
-    fn rename(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
-        let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
-            message: "Lock poisoned".into(),
-            raw_os_error: None,
-        })?;
+    fn rename<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
+                message: "Lock poisoned".into(),
+                raw_os_error: None,
+            })?;
 
-        let from_normalized = self.normalize(from);
-        let to_normalized = self.normalize(to);
+            let from_normalized = self.normalize(from);
+            let to_normalized = self.normalize(to);
 
-        if !force && from_normalized != to_normalized && entries.contains_key(&to_normalized) {
-            return Err(VolumeError::AlreadyExists(to_normalized.display().to_string()));
-        }
+            if !force && from_normalized != to_normalized && entries.contains_key(&to_normalized) {
+                return Err(VolumeError::AlreadyExists(to_normalized.display().to_string()));
+            }
 
-        let mut entry = entries
-            .remove(&from_normalized)
-            .ok_or_else(|| VolumeError::NotFound(from_normalized.display().to_string()))?;
+            let mut entry = entries
+                .remove(&from_normalized)
+                .ok_or_else(|| VolumeError::NotFound(from_normalized.display().to_string()))?;
 
-        // Update the metadata to reflect the new name and path
-        let new_name = to_normalized
-            .file_name()
-            .map(|s| s.to_string_lossy().to_string())
-            .unwrap_or_default();
-        entry.metadata.name = new_name;
-        entry.metadata.path = to_normalized.display().to_string();
+            // Update the metadata to reflect the new name and path
+            let new_name = to_normalized
+                .file_name()
+                .map(|s| s.to_string_lossy().to_string())
+                .unwrap_or_default();
+            entry.metadata.name = new_name;
+            entry.metadata.path = to_normalized.display().to_string();
 
-        entries.insert(to_normalized, entry);
-        Ok(())
+            entries.insert(to_normalized, entry);
+            Ok(())
+        })
     }
 
     fn supports_export(&self) -> bool {
         true
     }
 
-    fn scan_for_copy(&self, path: &Path) -> Result<CopyScanResult, VolumeError> {
-        let normalized = self.normalize(path);
-        let entries = self.entries.read().map_err(|_| VolumeError::IoError {
-            message: "Lock poisoned".into(),
-            raw_os_error: None,
-        })?;
+    fn scan_for_copy<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let normalized = self.normalize(path);
+            let entries = self.entries.read().map_err(|_| VolumeError::IoError {
+                message: "Lock poisoned".into(),
+                raw_os_error: None,
+            })?;
 
-        // Check if the path is a file
-        if let Some(entry) = entries.get(&normalized)
-            && !entry.metadata.is_directory
-        {
-            return Ok(CopyScanResult {
-                file_count: 1,
-                dir_count: 0,
-                total_bytes: entry.metadata.size.unwrap_or(0),
-            });
-        }
-
-        // Recursively scan all descendants
-        let mut file_count = 0;
-        let mut dir_count = 0;
-        let mut total_bytes = 0u64;
-
-        for (entry_path, entry) in entries.iter() {
-            // Skip the root path itself, only count descendants
-            if entry_path == &normalized {
-                continue;
+            // Check if the path is a file
+            if let Some(entry) = entries.get(&normalized)
+                && !entry.metadata.is_directory
+            {
+                return Ok(CopyScanResult {
+                    file_count: 1,
+                    dir_count: 0,
+                    total_bytes: entry.metadata.size.unwrap_or(0),
+                });
             }
-            if !entry_path.starts_with(&normalized) {
-                continue;
-            }
-            if entry.metadata.is_directory {
-                dir_count += 1;
-            } else {
-                file_count += 1;
-                total_bytes += entry.metadata.size.unwrap_or(0);
-            }
-        }
 
-        Ok(CopyScanResult {
-            file_count,
-            dir_count,
-            total_bytes,
+            // Recursively scan all descendants
+            let mut file_count = 0;
+            let mut dir_count = 0;
+            let mut total_bytes = 0u64;
+
+            for (entry_path, entry) in entries.iter() {
+                // Skip the root path itself, only count descendants
+                if entry_path == &normalized {
+                    continue;
+                }
+                if !entry_path.starts_with(&normalized) {
+                    continue;
+                }
+                if entry.metadata.is_directory {
+                    dir_count += 1;
+                } else {
+                    file_count += 1;
+                    total_bytes += entry.metadata.size.unwrap_or(0);
+                }
+            }
+
+            Ok(CopyScanResult {
+                file_count,
+                dir_count,
+                total_bytes,
+            })
         })
     }
 
@@ -415,89 +461,110 @@ impl Volume for InMemoryVolume {
         true
     }
 
-    fn open_read_stream(&self, path: &Path) -> Result<Box<dyn VolumeReadStream>, VolumeError> {
-        let normalized = self.normalize(path);
-        let entries = self.entries.read().map_err(|_| VolumeError::IoError {
-            message: "Lock poisoned".into(),
-            raw_os_error: None,
-        })?;
-
-        let entry = entries
-            .get(&normalized)
-            .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))?;
-
-        if entry.metadata.is_directory {
-            return Err(VolumeError::IoError {
-                message: "Cannot stream a directory".into(),
+    fn open_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let normalized = self.normalize(path);
+            let entries = self.entries.read().map_err(|_| VolumeError::IoError {
+                message: "Lock poisoned".into(),
                 raw_os_error: None,
-            });
-        }
+            })?;
 
-        let data = entry.content.clone().unwrap_or_default();
-        Ok(Box::new(InMemoryReadStream { data, offset: 0 }))
-    }
+            let entry = entries
+                .get(&normalized)
+                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))?;
 
-    fn write_from_stream(
-        &self,
-        dest: &Path,
-        _size: u64,
-        mut stream: Box<dyn VolumeReadStream>,
-        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
-    ) -> Result<u64, VolumeError> {
-        let total_size = stream.total_size();
-        let mut data = Vec::new();
-        let mut bytes_written = 0u64;
-
-        while let Some(result) = stream.next_chunk() {
-            let chunk = result?;
-            bytes_written += chunk.len() as u64;
-            data.extend_from_slice(&chunk);
-
-            if on_progress(bytes_written, total_size) == std::ops::ControlFlow::Break(()) {
+            if entry.metadata.is_directory {
                 return Err(VolumeError::IoError {
-                    message: "Operation cancelled".into(),
+                    message: "Cannot stream a directory".into(),
                     raw_os_error: None,
                 });
             }
-        }
 
-        self.create_file(dest, &data)?;
-        Ok(bytes_written)
+            let data = entry.content.clone().unwrap_or_default();
+            Ok(Box::new(InMemoryReadStream { data, offset: 0 }) as Box<dyn VolumeReadStream>)
+        })
     }
 
-    fn export_to_local(&self, source: &Path, local_dest: &Path) -> Result<u64, VolumeError> {
-        let normalized = self.normalize(source);
-        let entries = self.entries.read().map_err(|_| VolumeError::IoError {
-            message: "Lock poisoned".into(),
-            raw_os_error: None,
-        })?;
+    fn write_from_stream<'a>(
+        &'a self,
+        dest: &'a Path,
+        _size: u64,
+        mut stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let total_size = stream.total_size();
+            let mut data = Vec::new();
+            let mut bytes_written = 0u64;
 
-        let entry = entries
-            .get(&normalized)
-            .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))?;
+            while let Some(result) = stream.next_chunk().await {
+                let chunk = result?;
+                bytes_written += chunk.len() as u64;
+                data.extend_from_slice(&chunk);
 
-        let data = entry.content.as_deref().unwrap_or(&[]);
-        if let Some(parent) = local_dest.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| VolumeError::IoError {
+                if on_progress(bytes_written, total_size) == std::ops::ControlFlow::Break(()) {
+                    return Err(VolumeError::IoError {
+                        message: "Operation cancelled".into(),
+                        raw_os_error: None,
+                    });
+                }
+            }
+
+            self.create_file(dest, &data).await?;
+            Ok(bytes_written)
+        })
+    }
+
+    fn export_to_local<'a>(
+        &'a self,
+        source: &'a Path,
+        local_dest: &'a Path,
+        _on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let normalized = self.normalize(source);
+            let entries = self.entries.read().map_err(|_| VolumeError::IoError {
+                message: "Lock poisoned".into(),
+                raw_os_error: None,
+            })?;
+
+            let entry = entries
+                .get(&normalized)
+                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))?;
+
+            let data = entry.content.as_deref().unwrap_or(&[]);
+            if let Some(parent) = local_dest.parent() {
+                std::fs::create_dir_all(parent).map_err(|e| VolumeError::IoError {
+                    message: e.to_string(),
+                    raw_os_error: None,
+                })?;
+            }
+            std::fs::write(local_dest, data).map_err(|e| VolumeError::IoError {
                 message: e.to_string(),
                 raw_os_error: None,
             })?;
-        }
-        std::fs::write(local_dest, data).map_err(|e| VolumeError::IoError {
-            message: e.to_string(),
-            raw_os_error: None,
-        })?;
-        Ok(data.len() as u64)
+            Ok(data.len() as u64)
+        })
     }
 
-    fn import_from_local(&self, local_source: &Path, dest: &Path) -> Result<u64, VolumeError> {
-        let data = std::fs::read(local_source).map_err(|e| VolumeError::IoError {
-            message: e.to_string(),
-            raw_os_error: None,
-        })?;
-        let len = data.len() as u64;
-        self.create_file(dest, &data)?;
-        Ok(len)
+    fn import_from_local<'a>(
+        &'a self,
+        local_source: &'a Path,
+        dest: &'a Path,
+        _on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let data = std::fs::read(local_source).map_err(|e| VolumeError::IoError {
+                message: e.to_string(),
+                raw_os_error: None,
+            })?;
+            let len = data.len() as u64;
+            self.create_file(dest, &data).await?;
+            Ok(len)
+        })
     }
 
     #[cfg(feature = "playwright-e2e")]
@@ -505,36 +572,38 @@ impl Volume for InMemoryVolume {
         *self.injected_error.lock().unwrap() = Some(errno);
     }
 
-    fn get_space_info(&self) -> Result<SpaceInfo, VolumeError> {
-        self.space_info.clone().ok_or(VolumeError::NotSupported)
+    fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
+        Box::pin(async move { self.space_info.clone().ok_or(VolumeError::NotSupported) })
     }
 
     fn space_poll_interval(&self) -> Option<std::time::Duration> {
         None
     }
 
-    fn scan_for_conflicts(
-        &self,
-        source_items: &[SourceItemInfo],
-        dest_path: &Path,
-    ) -> Result<Vec<ScanConflict>, VolumeError> {
-        let dest_entries = self.list_directory(dest_path)?;
-        let mut conflicts = Vec::new();
+    fn scan_for_conflicts<'a>(
+        &'a self,
+        source_items: &'a [SourceItemInfo],
+        dest_path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let dest_entries = self.list_directory(dest_path).await?;
+            let mut conflicts = Vec::new();
 
-        for item in source_items {
-            if let Some(existing) = dest_entries.iter().find(|e| e.name == item.name) {
-                let dest_modified = existing.modified_at.map(|ms| (ms / 1000) as i64);
-                conflicts.push(ScanConflict {
-                    source_path: item.name.clone(),
-                    dest_path: existing.path.clone(),
-                    source_size: item.size,
-                    dest_size: existing.size.unwrap_or(0),
-                    source_modified: item.modified,
-                    dest_modified,
-                });
+            for item in source_items {
+                if let Some(existing) = dest_entries.iter().find(|e| e.name == item.name) {
+                    let dest_modified = existing.modified_at.map(|ms| (ms / 1000) as i64);
+                    conflicts.push(ScanConflict {
+                        source_path: item.name.clone(),
+                        dest_path: existing.path.clone(),
+                        source_size: item.size,
+                        dest_size: existing.size.unwrap_or(0),
+                        source_modified: item.modified,
+                        dest_modified,
+                    });
+                }
             }
-        }
 
-        Ok(conflicts)
+            Ok(conflicts)
+        })
     }
 }

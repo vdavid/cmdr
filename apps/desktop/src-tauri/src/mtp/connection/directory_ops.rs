@@ -89,7 +89,7 @@ impl MtpConnectionManager {
         device_id: &str,
         storage_id: u32,
         path: &str,
-        on_progress: &dyn Fn(usize),
+        on_progress: &(dyn Fn(usize) + Sync),
     ) -> Result<Vec<FileEntry>, MtpConnectionError> {
         use std::sync::atomic::Ordering;
 
@@ -324,7 +324,7 @@ impl MtpConnectionManager {
         storage_id: u32,
         path: &str,
         call_start: Instant,
-        on_progress: &dyn Fn(usize),
+        on_progress: &(dyn Fn(usize) + Sync),
     ) -> Result<Vec<FileEntry>, MtpConnectionError> {
         let parent_path = normalize_mtp_path(path);
 

@@ -165,9 +165,9 @@ async fn poll_loop() {
             // doesn't stall the entire poll loop.
             let vol_clone = volume.clone();
             let path_clone = path.clone();
-            let fetch = tokio::task::spawn_blocking(move || {
+            let fetch = async move {
                 if let Some(vol) = vol_clone
-                    && let Ok(info) = vol.get_space_info()
+                    && let Ok(info) = vol.get_space_info().await
                 {
                     return Some(CachedSpace {
                         total_bytes: info.total_bytes,
@@ -175,10 +175,10 @@ async fn poll_loop() {
                     });
                 }
                 fetch_space_for_path(&path_clone)
-            });
+            };
             let space = match tokio::time::timeout(FETCH_TIMEOUT, fetch).await {
-                Ok(Ok(Some(s))) => s,
-                _ => continue, // timeout, panic, or no data — skip this tick
+                Ok(Some(s)) => s,
+                _ => continue, // timeout or no data — skip this tick
             };
 
             if exceeds_threshold(&volume_id, &space, threshold) {

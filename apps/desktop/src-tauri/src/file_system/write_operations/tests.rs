@@ -6,8 +6,8 @@
 use super::*;
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, Ordering};
-use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
 /// Creates a temporary test directory with a unique name.
@@ -32,9 +32,7 @@ fn test_cancel_sets_intent() {
     let state = Arc::new(WriteOperationState {
         intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(200),
-        pending_resolution: RwLock::new(None),
-        conflict_condvar: std::sync::Condvar::new(),
-        conflict_mutex: std::sync::Mutex::new(false),
+        conflict_resolution_tx: std::sync::Mutex::new(None),
     });
 
     assert!(!is_cancelled(&state.intent));
@@ -248,9 +246,7 @@ fn test_operation_intent_transitions() {
     let state = Arc::new(WriteOperationState {
         intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(200),
-        pending_resolution: RwLock::new(None),
-        conflict_condvar: std::sync::Condvar::new(),
-        conflict_mutex: std::sync::Mutex::new(false),
+        conflict_resolution_tx: std::sync::Mutex::new(None),
     });
 
     // Running → RollingBack
@@ -291,9 +287,7 @@ fn test_cancel_flag_stops_delete_loop() {
     let state = Arc::new(WriteOperationState {
         intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(200),
-        pending_resolution: RwLock::new(None),
-        conflict_condvar: std::sync::Condvar::new(),
-        conflict_mutex: std::sync::Mutex::new(false),
+        conflict_resolution_tx: std::sync::Mutex::new(None),
     });
 
     // Simulate the delete loop from delete.rs, setting cancelled after 2 files
@@ -328,9 +322,7 @@ fn test_cancel_during_directory_deletion_phase() {
     let state = Arc::new(WriteOperationState {
         intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(200),
-        pending_resolution: RwLock::new(None),
-        conflict_condvar: std::sync::Condvar::new(),
-        conflict_mutex: std::sync::Mutex::new(false),
+        conflict_resolution_tx: std::sync::Mutex::new(None),
     });
 
     // Set cancellation before directory phase

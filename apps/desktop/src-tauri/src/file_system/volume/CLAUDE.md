@@ -10,13 +10,13 @@ Every file system operation (listing, copy, rename, delete, indexing, watching) 
 
 | File | Role |
 |---|---|
-| `mod.rs` | `Volume` trait, `VolumeScanner`, `VolumeWatcher`, `VolumeReadStream` traits, `MutationEvent` enum, shared types (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `ScanConflict`, `SourceItemInfo`) |
+| `mod.rs` | `Volume` trait (async — most methods return `Pin<Box<dyn Future>>`; sync: `name`, `root`, `supports_*`, `local_path`, `space_poll_interval`), `VolumeScanner`, `VolumeWatcher`, `VolumeReadStream` traits, `MutationEvent` enum, shared types (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `ScanConflict`, `SourceItemInfo`) |
 | `friendly_error.rs` | User-facing error messages: `FriendlyError`, `ErrorCategory`, errno mapping. See [Friendly error system](#friendly-error-system) below. |
 | `provider.rs` | Provider detection and enrichment: `Provider` enum (19 variants), `detect_provider()`, `provider_suggestion()`, `enrich_with_provider()`. Re-exported via `friendly_error.rs`. |
 | `manager.rs` | `VolumeManager` — thread-safe `RwLock<HashMap>` registry; supports a default volume |
 | `local_posix.rs` | `LocalPosixVolume` — real filesystem; delegates listing to `file_system::listing`, indexing to `indexing::scanner`, watching to `indexing::watcher` (FSEvents), copy scanning via `walkdir`. Uses `libc::statvfs` FFI for space info. |
-| `mtp.rs` | `MtpVolume` — MTP device storage; synchronous `Volume` trait bridged to async MTP calls via `tokio::runtime::Handle::block_on`. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
-| `smb.rs` | `SmbVolume` — SMB share storage; synchronous `Volume` trait bridged to async smb2 calls via `Handle::block_on`. Uses `Mutex<Option<(SmbClient, Tree)>>` + `AtomicU8` connection state. Also contains `connect_smb_volume()`. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
+| `mtp.rs` | `MtpVolume` — MTP device storage; async `Volume` trait with direct async MTP calls. Uses `MtpReadStream` for streaming (calls `FileDownload::next_chunk().await` directly). Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
+| `smb.rs` | `SmbVolume` — SMB share storage; async `Volume` trait with direct async smb2 calls. Uses `tokio::sync::Mutex<Option<(SmbClient, Tree)>>` + `AtomicU8` connection state. Also contains `connect_smb_volume()`. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
 | `smb_watcher.rs` | Background SMB change watcher (`run_smb_watcher`). Owns a dedicated smb2 connection for `CHANGE_NOTIFY`, debounces events, feeds `notify_directory_changed`. Spawned by `connect_smb_volume()`. |
 | `in_memory.rs` | `InMemoryVolume` — `RwLock<HashMap>` store for tests; also used for stress tests (`with_file_count`) |
 
@@ -24,10 +24,10 @@ Every file system operation (listing, copy, rename, delete, indexing, watching) 
 
 ```
 VolumeManager (registry)
-  └─ Arc<dyn Volume>
-        ├─ LocalPosixVolume   → real FS, FSEvents watcher, jwalk scanner
-        ├─ MtpVolume          → async MTP ops via block_on (spawn_blocking context)
-        ├─ SmbVolume          → async smb2 ops via block_on (direct protocol, not OS mount)
+  └─ Arc<dyn Volume>  (async trait — most methods return Pin<Box<dyn Future>>)
+        ├─ LocalPosixVolume   → real FS (spawn_blocking for I/O), FSEvents watcher, jwalk scanner
+        ├─ MtpVolume          → direct async MTP ops
+        ├─ SmbVolume          → direct async smb2 ops (direct protocol, not OS mount)
         └─ InMemoryVolume     → HashMap, test/stress use only
 ```
 
@@ -46,7 +46,7 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `smb_connection_state()` — returns `Some(SmbConnectionState)` for SMB volumes (green/yellow indicator in volume picker). Default `None`. Only `SmbVolume` implements it.
 - `on_unmount()` — lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
 - `scanner()` / `watcher()` — drive indexing hooks; `None` by default.
-- `export_to_local_with_progress()` / `import_from_local_with_progress()` — per-file progress callbacks during copy. Default delegates to the non-progress version. `SmbVolume` overrides both, using smb2's `read_file_with_progress`/`write_file_with_progress`. The callback takes `(bytes_done, bytes_total)` for the current file and returns `ControlFlow::Break(())` to cancel. `MtpVolume` and `LocalPosixVolume` use the default (no intra-file progress).
+- `export_to_local(source, dest, on_progress)` / `import_from_local(source, dest, on_progress)` — always take an `on_progress` callback `&(dyn Fn(u64, u64) -> ControlFlow<()> + Sync)`. Callers that don't need progress pass a no-op (`&|_, _| ControlFlow::Continue(())`). `SmbVolume` reports per-chunk progress via smb2's `read_file_with_progress`/`write_file_with_progress`. `MtpVolume` reports export progress via `download_file_with_progress` (import doesn't report yet). `LocalPosixVolume` and `InMemoryVolume` ignore the callback (OS-native copy APIs).
 - `space_poll_interval()` — recommended interval for the live disk-space poller (`space_poller.rs`). Default 2 s (local volumes). `SmbVolume` and `MtpVolume` override to 5 s. `InMemoryVolume` returns `None` (no polling). The poller uses this to tick each volume at its own cadence.
 
 ## Path handling gotchas
@@ -54,10 +54,6 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - **`LocalPosixVolume::resolve`**: accepts empty, `.`, relative, or absolute paths. Three-way branch for absolute paths: (1) already starts with volume root — used as-is, (2) volume root is `/` — absolute path passed through unchanged, (3) otherwise — leading `/` stripped and joined to root. This handles frontend sending full absolute paths.
 - **`MtpVolume::to_mtp_path`**: strips the `mtp://{device}/{storage}/` URL prefix and leading slashes, returning the bare relative path the MTP library expects.
 - **`InMemoryVolume::normalize`**: always resolves to an absolute path anchored at `/`.
-
-## MTP threading
-
-`MtpVolume` is called from `tokio::task::spawn_blocking`, so `Handle::block_on` is safe inside its methods. However, `write_from_stream` must collect all chunks **before** entering `block_on` to avoid nested-runtime panics (stream chunks also use `block_on` internally).
 
 ## SMB auto-upgrade lifecycle
 
@@ -188,8 +184,8 @@ The `statfs` check runs only at error time (not on every listing), so the syscal
 **Decision**: `VolumeManager::register_if_absent` for watcher registrations
 **Why**: When the mount flow pre-registers an `SmbVolume`, the FSEvents watcher would overwrite it with a `LocalPosixVolume` via `register`. `register_if_absent` is a no-op if a volume is already registered, preserving the `SmbVolume`. The existing `register` (overwrite) is kept for explicit replacement (like SmbVolume replacing itself on reconnect).
 
-**Decision**: `MtpVolume` bridges sync `Volume` trait to async MTP calls via `Handle::block_on`
-**Why**: The `Volume` trait is synchronous because local filesystem ops are blocking and shouldn't touch the async executor. MTP operations are inherently async (USB bulk transfers), so `block_on` bridges the gap. This is safe because MTP methods are always called from `spawn_blocking` contexts (separate OS thread pool), avoiding nested-runtime panics.
+**Decision**: `Volume` trait is async (methods return `Pin<Box<dyn Future>>`)
+**Why**: MTP and SMB operations are inherently async (USB bulk transfers, network I/O). The previous sync trait required `block_on` bridges that risked nested-runtime panics in cross-volume streaming. The async trait lets MTP and SMB call their async backends directly. `LocalPosixVolume` wraps its blocking I/O in `spawn_blocking`. Sync-only methods (`name()`, `root()`, `supports_*()`, capability flags) remain non-async.
 
 **Decision**: `VolumeError` stores `String` messages, not the original `std::io::Error`
 **Why**: `std::io::Error` is not `Clone`, but `VolumeError` needs to be `Clone` for ergonomic error propagation across thread boundaries and for serialization to the frontend. Storing the formatted message loses the original error type but keeps the information that matters for user-facing error messages. The `IoError` variant also carries `raw_os_error: Option<i32>` so the friendly error mapper can match on platform-specific errno codes.
@@ -205,11 +201,15 @@ The `statfs` check runs only at error time (not on every listing), so the syscal
 
 ## Gotchas
 
-**Gotcha**: Nested `block_on` panics in cross-volume streaming (MTP↔SMB, and any async-source → async-dest)
-**Why**: `MtpReadStream::next_chunk()` calls `block_on` internally. If the destination volume's `write_from_stream` also wraps its async I/O in `block_on`, calling `next_chunk` from inside that `block_on` creates a nested runtime — tokio panics at runtime ("Cannot start a runtime from within a runtime"). This is NOT caught by the compiler (no type encodes "am I inside a runtime"). The fix is either: (a) collect all chunks before entering the destination's `block_on` (current workaround for MTP→MTP), (b) use a channel-based `MtpReadStream` that replaces `block_on` with a sync `recv()` (planned: Option E), or (c) make the entire Volume trait async (planned: Option D). The planned async refactor (D) eliminates this class of bugs by design.
-
 **Gotcha**: `LocalPosixVolume::resolve` has a three-way branch for absolute paths
 **Why**: The frontend sometimes sends full absolute paths (like `/Users/alice/Documents`), not paths relative to the volume root. If the volume root is `/Users/alice/Dropbox`, the resolve logic must detect whether the absolute path is already inside the root (pass through), whether the root is `/` (pass through), or neither (strip leading `/` and join). Getting this wrong silently serves the wrong directory.
+
+**Gotcha**: `MtpReadStream::Drop` spawns a detached cancel task
+**Why**: When a download is cancelled mid-stream (user presses Cancel during MTP copy), the `MtpReadStream` is dropped
+before the `FileDownload` is fully consumed. mtp-rs's `ReceiveStream` panics on drop if not consumed or cancelled
+(to prevent USB session corruption). The `Drop` impl calls `download.cancel(DEFAULT_CANCEL_TIMEOUT).await` on a
+spawned detached task. This is safe because the stream always lives in an async context (tokio worker thread), so
+`Handle::try_current()` succeeds. The detached task runs independently — the drop returns immediately.
 
 **Gotcha**: `MtpVolume::get_metadata` is expensive — it lists the entire parent directory
 **Why**: MTP has no single-file stat call — `get_metadata` lists the parent directory and searches for the entry by name. This is used by `notify_mutation` after each self-mutation (create, delete, rename) and is acceptable because those are infrequent, but avoid calling it in hot paths.
@@ -223,8 +223,8 @@ The `statfs` check runs only at error time (not on every listing), so the syscal
 **Decision**: `SmbVolume::supports_local_fs_access()` returns `false`
 **Why**: `SmbVolume` now handles listing updates via `notify_mutation` using its own smb2 `get_metadata`. The old `std::fs`-based synthetic diff path (`emit_synthetic_entry_diff`) is redundant and goes through the slow OS mount. Returning `false` skips it.
 
-**Decision**: `SmbVolume` uses `Mutex<Option<(SmbClient, Tree)>>`, not `RwLock`
-**Why**: Every `SmbClient` method takes `&mut self` — there is no read-only access path. An `RwLock` where you only ever take write locks is strictly worse than a `Mutex` (higher overhead). The `Option` allows graceful cleanup on disconnect (set to `None`).
+**Decision**: `SmbVolume` uses `tokio::sync::Mutex<Option<(SmbClient, Tree)>>`, not `RwLock` or `std::sync::Mutex`
+**Why**: Every `SmbClient` method takes `&mut self` — there is no read-only access path. An `RwLock` where you only ever take write locks is strictly worse than a `Mutex` (higher overhead). `tokio::sync::Mutex` is used instead of `std::sync::Mutex` because the lock is held across `.await` points in async Volume methods. The `Option` allows graceful cleanup on disconnect (set to `None`).
 
 **Decision**: `SmbVolume::local_path()` returns `None`
 **Why**: `local_path()` is checked in `volume_copy.rs` to decide whether to use native OS copy APIs. If SmbVolume returned `Some(mount_path)`, copies would go through the slow OS mount — exactly what we're trying to avoid. `root()` still returns the mount path for frontend path resolution.

@@ -3,15 +3,16 @@
 use super::{
     CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeScanner, VolumeWatcher,
 };
-use crate::file_system::listing::{
-    FileEntry, get_single_entry, list_directory_core, list_directory_core_with_progress,
-};
+use crate::file_system::listing::{FileEntry, get_single_entry, list_directory_core};
 use crate::indexing::scanner::{self, ScanConfig, ScanError, ScanHandle, ScanSummary};
 use crate::indexing::watcher::{DriveWatcher, FsChangeEvent, WatcherError};
 use crate::indexing::writer::IndexWriter;
+use std::future::Future;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::sync::atomic::AtomicBool;
 use tokio::sync::mpsc;
+use tokio::task::spawn_blocking;
 use walkdir::WalkDir;
 
 /// A volume backed by the local POSIX file system.
@@ -90,60 +91,74 @@ impl Volume for LocalPosixVolume {
         &self.root
     }
 
-    fn list_directory(&self, path: &Path) -> Result<Vec<FileEntry>, VolumeError> {
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         #[cfg(feature = "playwright-e2e")]
         {
             let mut injected = self.injected_error.lock().unwrap();
             if let Some(errno) = injected.take() {
-                return Err(VolumeError::IoError {
-                    message: format!("Injected error for testing (os error {})", errno),
-                    raw_os_error: Some(errno),
+                return Box::pin(async move {
+                    Err(VolumeError::IoError {
+                        message: format!("Injected error for testing (os error {})", errno),
+                        raw_os_error: Some(errno),
+                    })
                 });
             }
         }
         let abs_path = self.resolve(path);
-        list_directory_core(&abs_path).map_err(VolumeError::from)
+        Box::pin(async move {
+            spawn_blocking(move || list_directory_core(&abs_path).map_err(VolumeError::from))
+                .await
+                .unwrap()
+        })
     }
 
-    fn list_directory_with_progress(
-        &self,
-        path: &Path,
-        on_progress: &dyn Fn(usize),
-    ) -> Result<Vec<FileEntry>, VolumeError> {
-        #[cfg(feature = "playwright-e2e")]
-        {
-            let mut injected = self.injected_error.lock().unwrap();
-            if let Some(errno) = injected.take() {
-                return Err(VolumeError::IoError {
-                    message: format!("Injected error for testing (os error {})", errno),
-                    raw_os_error: Some(errno),
-                });
-            }
-        }
-        let abs_path = self.resolve(path);
-        list_directory_core_with_progress(&abs_path, on_progress).map_err(VolumeError::from)
-    }
+    // list_directory_with_progress: delegate to the trait default (which calls list_directory).
+    // The `on_progress` callback is not `Send`, so it can't go into `spawn_blocking`.
 
     #[cfg(feature = "playwright-e2e")]
     fn inject_error(&self, errno: i32) {
         *self.injected_error.lock().unwrap() = Some(errno);
     }
 
-    fn get_metadata(&self, path: &Path) -> Result<FileEntry, VolumeError> {
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
-        get_single_entry(&abs_path).map_err(VolumeError::from)
+        Box::pin(async move {
+            spawn_blocking(move || get_single_entry(&abs_path).map_err(VolumeError::from))
+                .await
+                .unwrap()
+        })
     }
 
-    fn exists(&self, path: &Path) -> bool {
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
         // Use symlink_metadata instead of exists() to detect broken symlinks
         // Path::exists() follows symlinks and returns false for broken ones
-        std::fs::symlink_metadata(self.resolve(path)).is_ok()
+        let abs_path = self.resolve(path);
+        Box::pin(async move {
+            spawn_blocking(move || std::fs::symlink_metadata(abs_path).is_ok())
+                .await
+                .unwrap()
+        })
     }
 
-    fn is_directory(&self, path: &Path) -> Result<bool, VolumeError> {
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
-        let metadata = std::fs::symlink_metadata(&abs_path)?;
-        Ok(metadata.is_dir())
+        Box::pin(async move {
+            spawn_blocking(move || {
+                let metadata = std::fs::symlink_metadata(&abs_path)?;
+                Ok(metadata.is_dir())
+            })
+            .await
+            .unwrap()
+        })
     }
 
     fn supports_watching(&self) -> bool {
@@ -154,129 +169,203 @@ impl Volume for LocalPosixVolume {
         Some(self.root.clone())
     }
 
-    fn create_file(&self, path: &Path, content: &[u8]) -> Result<(), VolumeError> {
+    fn create_file<'a>(
+        &'a self,
+        path: &'a Path,
+        content: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
-        std::fs::write(&abs_path, content)?;
-        Ok(())
+        let content = content.to_vec();
+        Box::pin(async move {
+            spawn_blocking(move || {
+                std::fs::write(&abs_path, content)?;
+                Ok(())
+            })
+            .await
+            .unwrap()
+        })
     }
 
-    fn create_directory(&self, path: &Path) -> Result<(), VolumeError> {
+    fn create_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
-        std::fs::create_dir(&abs_path)?;
-        Ok(())
+        Box::pin(async move {
+            spawn_blocking(move || {
+                std::fs::create_dir(&abs_path)?;
+                Ok(())
+            })
+            .await
+            .unwrap()
+        })
     }
 
-    fn delete(&self, path: &Path) -> Result<(), VolumeError> {
+    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
-        let metadata = std::fs::symlink_metadata(&abs_path)?;
-        if metadata.is_dir() {
-            std::fs::remove_dir(&abs_path)?;
-        } else {
-            std::fs::remove_file(&abs_path)?;
-        }
-        Ok(())
+        Box::pin(async move {
+            spawn_blocking(move || {
+                let metadata = std::fs::symlink_metadata(&abs_path)?;
+                if metadata.is_dir() {
+                    std::fs::remove_dir(&abs_path)?;
+                } else {
+                    std::fs::remove_file(&abs_path)?;
+                }
+                Ok(())
+            })
+            .await
+            .unwrap()
+        })
     }
 
-    fn rename(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
+    fn rename<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let from_abs = self.resolve(from);
         let to_abs = self.resolve(to);
-        if !force && from_abs != to_abs && std::fs::symlink_metadata(&to_abs).is_ok() {
-            return Err(VolumeError::AlreadyExists(to_abs.display().to_string()));
-        }
-        std::fs::rename(&from_abs, &to_abs)?;
-        Ok(())
+        Box::pin(async move {
+            spawn_blocking(move || {
+                if !force && from_abs != to_abs && std::fs::symlink_metadata(&to_abs).is_ok() {
+                    return Err(VolumeError::AlreadyExists(to_abs.display().to_string()));
+                }
+                std::fs::rename(&from_abs, &to_abs)?;
+                Ok(())
+            })
+            .await
+            .unwrap()
+        })
     }
 
     fn supports_export(&self) -> bool {
         true
     }
 
-    fn scan_for_copy(&self, path: &Path) -> Result<CopyScanResult, VolumeError> {
+    fn scan_for_copy<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
-        let mut file_count = 0;
-        let mut dir_count = 0;
-        let mut total_bytes = 0u64;
+        Box::pin(async move {
+            spawn_blocking(move || {
+                let mut file_count = 0;
+                let mut dir_count = 0;
+                let mut total_bytes = 0u64;
 
-        for entry in WalkDir::new(&abs_path).min_depth(0) {
-            let entry = entry.map_err(|e| VolumeError::IoError {
-                message: e.to_string(),
-                raw_os_error: None,
-            })?;
-            let ft = entry.file_type();
-            if ft.is_file() {
-                file_count += 1;
-                if let Ok(meta) = entry.metadata() {
-                    total_bytes += meta.len();
+                for entry in WalkDir::new(&abs_path).min_depth(0) {
+                    let entry = entry.map_err(|e| VolumeError::IoError {
+                        message: e.to_string(),
+                        raw_os_error: None,
+                    })?;
+                    let ft = entry.file_type();
+                    if ft.is_file() {
+                        file_count += 1;
+                        if let Ok(meta) = entry.metadata() {
+                            total_bytes += meta.len();
+                        }
+                    } else if ft.is_dir() {
+                        // Don't count the root itself if it's the starting point
+                        if entry.depth() > 0 {
+                            dir_count += 1;
+                        }
+                    }
                 }
-            } else if ft.is_dir() {
-                // Don't count the root itself if it's the starting point
-                if entry.depth() > 0 {
-                    dir_count += 1;
+
+                // If the path is a single file, count it
+                if let Ok(meta) = std::fs::metadata(&abs_path) {
+                    if meta.is_file() && file_count == 0 {
+                        file_count = 1;
+                        total_bytes = meta.len();
+                    } else if meta.is_dir() && dir_count == 0 && file_count == 0 {
+                        dir_count = 1;
+                    }
                 }
-            }
-        }
 
-        // If the path is a single file, count it
-        if let Ok(meta) = std::fs::metadata(&abs_path) {
-            if meta.is_file() && file_count == 0 {
-                file_count = 1;
-                total_bytes = meta.len();
-            } else if meta.is_dir() && dir_count == 0 && file_count == 0 {
-                dir_count = 1;
-            }
-        }
-
-        Ok(CopyScanResult {
-            file_count,
-            dir_count,
-            total_bytes,
+                Ok(CopyScanResult {
+                    file_count,
+                    dir_count,
+                    total_bytes,
+                })
+            })
+            .await
+            .unwrap()
         })
     }
 
-    fn export_to_local(&self, source: &Path, local_dest: &Path) -> Result<u64, VolumeError> {
+    fn export_to_local<'a>(
+        &'a self,
+        source: &'a Path,
+        local_dest: &'a Path,
+        _on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
         let src_abs = self.resolve(source);
-        copy_recursive(&src_abs, local_dest)
+        let local_dest = local_dest.to_path_buf();
+        Box::pin(async move {
+            spawn_blocking(move || copy_recursive(&src_abs, &local_dest))
+                .await
+                .unwrap()
+        })
     }
 
-    fn import_from_local(&self, local_source: &Path, dest: &Path) -> Result<u64, VolumeError> {
+    fn import_from_local<'a>(
+        &'a self,
+        local_source: &'a Path,
+        dest: &'a Path,
+        _on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        let local_source = local_source.to_path_buf();
         let dest_abs = self.resolve(dest);
-        copy_recursive(local_source, &dest_abs)
+        Box::pin(async move {
+            spawn_blocking(move || copy_recursive(&local_source, &dest_abs))
+                .await
+                .unwrap()
+        })
     }
 
-    fn scan_for_conflicts(
-        &self,
-        source_items: &[SourceItemInfo],
-        dest_path: &Path,
-    ) -> Result<Vec<ScanConflict>, VolumeError> {
+    fn scan_for_conflicts<'a>(
+        &'a self,
+        source_items: &'a [SourceItemInfo],
+        dest_path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
         let dest_abs = self.resolve(dest_path);
-        let mut conflicts = Vec::new();
+        let source_items: Vec<SourceItemInfo> = source_items.to_vec();
+        Box::pin(async move {
+            spawn_blocking(move || {
+                let mut conflicts = Vec::new();
 
-        for item in source_items {
-            let dest_file_path = dest_abs.join(&item.name);
-            if dest_file_path.exists()
-                && let Ok(meta) = std::fs::metadata(&dest_file_path)
-            {
-                let dest_modified = meta
-                    .modified()
-                    .ok()
-                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok().map(|d| d.as_secs() as i64));
+                for item in &source_items {
+                    let dest_file_path = dest_abs.join(&item.name);
+                    if dest_file_path.exists()
+                        && let Ok(meta) = std::fs::metadata(&dest_file_path)
+                    {
+                        let dest_modified = meta
+                            .modified()
+                            .ok()
+                            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok().map(|d| d.as_secs() as i64));
 
-                conflicts.push(ScanConflict {
-                    source_path: item.name.clone(),
-                    dest_path: dest_file_path.to_string_lossy().to_string(),
-                    source_size: item.size,
-                    dest_size: meta.len(),
-                    source_modified: item.modified,
-                    dest_modified,
-                });
-            }
-        }
+                        conflicts.push(ScanConflict {
+                            source_path: item.name.clone(),
+                            dest_path: dest_file_path.to_string_lossy().to_string(),
+                            source_size: item.size,
+                            dest_size: meta.len(),
+                            source_modified: item.modified,
+                            dest_modified,
+                        });
+                    }
+                }
 
-        Ok(conflicts)
+                Ok(conflicts)
+            })
+            .await
+            .unwrap()
+        })
     }
 
-    fn get_space_info(&self) -> Result<SpaceInfo, VolumeError> {
-        get_space_info_for_path(&self.root)
+    fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
+        let root = self.root.clone();
+        Box::pin(async move { spawn_blocking(move || get_space_info_for_path(&root)).await.unwrap() })
     }
 
     fn scanner(&self) -> Option<Box<dyn VolumeScanner>> {

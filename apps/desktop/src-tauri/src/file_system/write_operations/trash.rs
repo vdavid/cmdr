@@ -257,8 +257,8 @@ pub(super) fn trash_files_with_progress(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Arc;
     use std::sync::atomic::AtomicU8;
-    use std::sync::{Arc, RwLock};
     use std::time::Duration;
 
     #[cfg(target_os = "macos")]
@@ -361,9 +361,7 @@ mod tests {
         let state = Arc::new(WriteOperationState {
             intent: Arc::new(AtomicU8::new(0)),
             progress_interval: Duration::from_millis(200),
-            pending_resolution: RwLock::new(None),
-            conflict_condvar: std::sync::Condvar::new(),
-            conflict_mutex: std::sync::Mutex::new(false),
+            conflict_resolution_tx: std::sync::Mutex::new(None),
         });
 
         assert!(!crate::file_system::write_operations::is_cancelled(&state.intent));

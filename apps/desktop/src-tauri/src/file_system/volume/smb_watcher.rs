@@ -194,7 +194,7 @@ pub(super) async fn run_smb_watcher(
     fn stat_via_volume(volume_id: &str, path: &Path) -> Option<FileEntry> {
         let vm = crate::file_system::get_volume_manager();
         let vol = vm.get(volume_id)?;
-        vol.get_metadata(path).ok()
+        tokio::runtime::Handle::current().block_on(vol.get_metadata(path)).ok()
     }
 
     // ── Main watcher loop ──────────────────────────────────────────

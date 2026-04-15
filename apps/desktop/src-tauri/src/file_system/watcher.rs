@@ -371,7 +371,7 @@ pub fn handle_directory_change(listing_id: &str) {
     // Re-read the directory via the Volume trait (works for all volume types).
     // Falls back to list_directory_core for listings whose volume was unregistered.
     let new_entries = if let Some(vol) = volume {
-        match vol.list_directory(&path) {
+        match tokio::runtime::Handle::current().block_on(vol.list_directory(&path)) {
             Ok(entries) => entries,
             Err(crate::file_system::VolumeError::NotFound(_)) => {
                 log::info!("Watcher: Directory deleted, notifying frontend: {}", path.display());

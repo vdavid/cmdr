@@ -184,7 +184,7 @@ struct VolumeDeleteEntry {
     clippy::too_many_arguments,
     reason = "Matches the parameter pattern of other write operation functions"
 )]
-fn scan_volume_recursive(
+async fn scan_volume_recursive(
     volume: &dyn Volume,
     path: &Path,
     entries: &mut Vec<VolumeDeleteEntry>,
@@ -204,6 +204,7 @@ fn scan_volume_recursive(
 
     let is_dir = volume
         .is_directory(path)
+        .await
         .map_err(|e| map_volume_error(&path.display().to_string(), e))?;
 
     if is_dir {
@@ -212,12 +213,13 @@ fn scan_volume_recursive(
         // NotSupported on MTP).
         let children = volume
             .list_directory(path)
+            .await
             .map_err(|e| map_volume_error(&path.display().to_string(), e))?;
 
         for child in &children {
             let child_path = PathBuf::from(&child.path);
             if child.is_directory {
-                scan_volume_recursive(
+                Box::pin(scan_volume_recursive(
                     volume,
                     &child_path,
                     entries,
@@ -226,7 +228,8 @@ fn scan_volume_recursive(
                     app,
                     operation_id,
                     last_progress_time,
-                )?;
+                ))
+                .await?;
             } else {
                 let size = child.size.unwrap_or(0);
                 *total_bytes += size;
@@ -295,7 +298,7 @@ fn scan_volume_recursive(
     clippy::too_many_arguments,
     reason = "Matches the parameter pattern of other write operation functions"
 )]
-pub(super) fn delete_volume_files_with_progress(
+pub(super) async fn delete_volume_files_with_progress(
     volume: Arc<dyn Volume>,
     app: &tauri::AppHandle,
     operation_id: &str,
@@ -312,7 +315,7 @@ pub(super) fn delete_volume_files_with_progress(
 
     for source in sources {
         // Check if the source itself is a file or directory
-        let is_dir = volume.is_directory(source).unwrap_or(false);
+        let is_dir = volume.is_directory(source).await.unwrap_or(false);
 
         if is_dir {
             scan_volume_recursive(
@@ -324,7 +327,8 @@ pub(super) fn delete_volume_files_with_progress(
                 app,
                 operation_id,
                 &mut last_progress_time,
-            )?;
+            )
+            .await?;
         } else {
             // Top-level file — size unknown without listing the parent, use 0.
             // Progress still tracks file count accurately, and individual file
@@ -396,6 +400,7 @@ pub(super) fn delete_volume_files_with_progress(
 
         volume
             .delete(&entry.path)
+            .await
             .map_err(|e| map_volume_error(&entry.path.display().to_string(), e))?;
 
         files_done += 1;
@@ -447,7 +452,7 @@ pub(super) fn delete_volume_files_with_progress(
         }
 
         // Best-effort directory removal (may fail if not empty due to partial delete)
-        let _ = volume.delete(&entry.path);
+        let _ = volume.delete(&entry.path).await;
     }
 
     // Emit completion

@@ -33,7 +33,6 @@ pub fn start_scan_preview(
     sort_column: SortColumn,
     sort_order: SortOrder,
     progress_interval_ms: u64,
-    runtime_handle: Option<tokio::runtime::Handle>,
 ) -> ScanPreviewStartResult {
     let preview_id = Uuid::new_v4().to_string();
     let preview_id_clone = preview_id.clone();
@@ -53,10 +52,8 @@ pub fn start_scan_preview(
     // so we capture the runtime handle and enter it on the spawned thread.
     // Local scans use std::thread directly (no runtime needed).
     if let Some(volume) = source_volume {
-        let handle = runtime_handle.expect("runtime_handle required for volume scan preview");
-        std::thread::spawn(move || {
-            let _guard = handle.enter();
-            run_volume_scan_preview(app, preview_id_clone, sources, volume, state);
+        tokio::spawn(async move {
+            run_volume_scan_preview(app, preview_id_clone, sources, volume, state).await;
         });
     } else {
         std::thread::spawn(move || {
@@ -193,7 +190,7 @@ fn run_scan_preview(
 /// Uses `Volume::scan_for_copy_batch()` to scan all sources in one call, allowing
 /// volume implementations to batch I/O (for example, MTP groups by parent directory).
 /// Emits the same events as `run_scan_preview` so the frontend can't tell the difference.
-fn run_volume_scan_preview(
+async fn run_volume_scan_preview(
     app: tauri::AppHandle,
     preview_id: String,
     sources: Vec<PathBuf>,
@@ -202,15 +199,17 @@ fn run_volume_scan_preview(
 ) {
     use tauri::Emitter;
 
-    let result: Result<CopyScanResult, String> = (|| {
+    let result: Result<CopyScanResult, String> = async {
         if state.cancelled.load(Ordering::Relaxed) {
             return Err("Cancelled".to_string());
         }
 
         volume
             .scan_for_copy_batch(&sources)
+            .await
             .map_err(|e| format!("Scan failed: {}", e))
-    })();
+    }
+    .await;
 
     // Extract stats from the result for the completion event
     let (total_files, total_dirs, total_bytes) = match &result {

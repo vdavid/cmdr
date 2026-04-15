@@ -81,9 +81,7 @@ pub async fn move_between_volumes(
     let state = Arc::new(WriteOperationState {
         intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(config.progress_interval_ms),
-        pending_resolution: std::sync::RwLock::new(None),
-        conflict_condvar: std::sync::Condvar::new(),
-        conflict_mutex: std::sync::Mutex::new(false),
+        conflict_resolution_tx: std::sync::Mutex::new(None),
     });
 
     if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
@@ -95,7 +93,7 @@ pub async fn move_between_volumes(
         let operation_id_for_cleanup = operation_id_for_spawn.clone();
         let app_for_error = app.clone();
 
-        let result = tokio::task::spawn_blocking(move || {
+        let result: Result<(), WriteOperationError> = async {
             use tauri::Emitter;
 
             let total_files = source_paths.len();
@@ -123,8 +121,8 @@ pub async fn move_between_volumes(
                 let mut dest_item = dest_path.join(file_name);
 
                 // Check for conflict: does destination already exist?
-                if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item) {
-                    let source_is_dir = source_volume.is_directory(source_path).unwrap_or(false);
+                if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item).await {
+                    let source_is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
                     let dest_is_dir = dest_meta.is_directory;
 
                     if source_is_dir && dest_is_dir {
@@ -153,7 +151,8 @@ pub async fn move_between_volumes(
                             &operation_id_for_spawn,
                             &state,
                             &mut apply_to_all_resolution,
-                        )?;
+                        )
+                        .await?;
 
                         match resolved {
                             None => {
@@ -187,11 +186,13 @@ pub async fn move_between_volumes(
                     &no_progress,
                     &|| {},
                 )
+                .await
                 .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
 
                 // Delete source
                 source_volume
                     .delete(source_path)
+                    .await
                     .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
 
                 files_done += 1;
@@ -233,7 +234,7 @@ pub async fn move_between_volumes(
             );
 
             Ok(())
-        })
+        }
         .await;
 
         if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
@@ -243,27 +244,14 @@ pub async fn move_between_volumes(
 
         use tauri::Emitter;
         match result {
-            Ok(Ok(())) => {}
-            Ok(Err(e)) => {
-                let _ = app_for_error.emit(
-                    "write-error",
-                    WriteErrorEvent {
-                        operation_id: operation_id_for_cleanup,
-                        operation_type: WriteOperationType::Move,
-                        error: e,
-                    },
-                );
-            }
+            Ok(()) => {}
             Err(e) => {
                 let _ = app_for_error.emit(
                     "write-error",
                     WriteErrorEvent {
                         operation_id: operation_id_for_cleanup,
                         operation_type: WriteOperationType::Move,
-                        error: WriteOperationError::IoError {
-                            path: String::new(),
-                            message: format!("Task failed: {}", e),
-                        },
+                        error: e,
                     },
                 );
             }
@@ -303,9 +291,7 @@ async fn move_within_same_volume(
     let state = Arc::new(WriteOperationState {
         intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(progress_interval_ms),
-        pending_resolution: std::sync::RwLock::new(None),
-        conflict_condvar: std::sync::Condvar::new(),
-        conflict_mutex: std::sync::Mutex::new(false),
+        conflict_resolution_tx: std::sync::Mutex::new(None),
     });
 
     if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
@@ -317,7 +303,7 @@ async fn move_within_same_volume(
         let operation_id_for_cleanup = operation_id_for_spawn.clone();
         let app_for_error = app.clone();
 
-        let result = tokio::task::spawn_blocking(move || {
+        let result: Result<(), WriteOperationError> = async {
             use tauri::Emitter;
 
             let total_files = source_paths.len();
@@ -342,8 +328,8 @@ async fn move_within_same_volume(
                 let mut dest_item = dest_path.join(file_name);
 
                 // Check for conflict: does destination already exist?
-                if let Ok(dest_meta) = volume.get_metadata(&dest_item) {
-                    let source_is_dir = volume.is_directory(source_path).unwrap_or(false);
+                if let Ok(dest_meta) = volume.get_metadata(&dest_item).await {
+                    let source_is_dir = volume.is_directory(source_path).await.unwrap_or(false);
                     let dest_is_dir = dest_meta.is_directory;
 
                     if source_is_dir && dest_is_dir {
@@ -372,7 +358,8 @@ async fn move_within_same_volume(
                             &operation_id_for_spawn,
                             &state,
                             &mut apply_to_all_resolution,
-                        )?;
+                        )
+                        .await?;
 
                         match resolved {
                             None => {
@@ -390,10 +377,16 @@ async fn move_within_same_volume(
                     }
                 }
 
-                let size = volume.get_metadata(source_path).ok().and_then(|m| m.size).unwrap_or(0);
+                let size = volume
+                    .get_metadata(source_path)
+                    .await
+                    .ok()
+                    .and_then(|m| m.size)
+                    .unwrap_or(0);
 
                 volume
                     .rename(source_path, &dest_item, false)
+                    .await
                     .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
 
                 files_moved += 1;
@@ -435,7 +428,7 @@ async fn move_within_same_volume(
             );
 
             Ok(())
-        })
+        }
         .await;
 
         if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
@@ -445,27 +438,14 @@ async fn move_within_same_volume(
 
         use tauri::Emitter;
         match result {
-            Ok(Ok(())) => {}
-            Ok(Err(e)) => {
-                let _ = app_for_error.emit(
-                    "write-error",
-                    WriteErrorEvent {
-                        operation_id: operation_id_for_cleanup,
-                        operation_type: WriteOperationType::Move,
-                        error: e,
-                    },
-                );
-            }
+            Ok(()) => {}
             Err(e) => {
                 let _ = app_for_error.emit(
                     "write-error",
                     WriteErrorEvent {
                         operation_id: operation_id_for_cleanup,
                         operation_type: WriteOperationType::Move,
-                        error: WriteOperationError::IoError {
-                            path: String::new(),
-                            message: format!("Task failed: {}", e),
-                        },
+                        error: e,
                     },
                 );
             }

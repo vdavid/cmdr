@@ -61,10 +61,11 @@ pub struct WriteOperationState {
     /// Encodes `OperationIntent` as a `u8`. Use `is_cancelled()` / `load_intent()` to read.
     pub intent: Arc<AtomicU8>,
     pub progress_interval: Duration,
-    /// Set by `resolve_write_conflict`.
-    pub pending_resolution: RwLock<Option<ConflictResolutionResponse>>,
-    pub conflict_condvar: std::sync::Condvar,
-    pub conflict_mutex: std::sync::Mutex<bool>,
+    /// Sender for conflict resolution. Created on demand when a conflict occurs;
+    /// the receiver is held by the waiting operation. `resolve_write_conflict` takes
+    /// the sender and sends the resolution. Dropping the sender unblocks the receiver
+    /// with an error, which the waiting code interprets as cancellation.
+    pub conflict_resolution_tx: std::sync::Mutex<Option<tokio::sync::oneshot::Sender<ConflictResolutionResponse>>>,
 }
 
 /// Response to a conflict resolution request.
@@ -246,9 +247,8 @@ pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
         }
 
         state.intent.store(target as u8, Ordering::Relaxed);
-        // Wake up any waiting conflict resolution
-        let _guard = state.conflict_mutex.lock();
-        state.conflict_condvar.notify_all();
+        // Drop the conflict resolution sender to unblock any waiting receiver
+        let _ = state.conflict_resolution_tx.lock().unwrap().take();
     }
 }
 
@@ -264,8 +264,8 @@ pub fn cancel_all_write_operations() {
             if current != OperationIntent::Stopped {
                 log::info!("cancel_all_write_operations: stopping op={id}");
                 state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
-                let _guard = state.conflict_mutex.lock();
-                state.conflict_condvar.notify_all();
+                // Drop the conflict resolution sender to unblock any waiting receiver
+                let _ = state.conflict_resolution_tx.lock().unwrap().take();
             }
         }
     }
@@ -285,16 +285,14 @@ pub fn resolve_write_conflict(operation_id: &str, resolution: ConflictResolution
     if let Ok(cache) = WRITE_OPERATION_STATE.read()
         && let Some(state) = cache.get(operation_id)
     {
-        // Set the pending resolution
-        if let Ok(mut pending) = state.pending_resolution.write() {
-            *pending = Some(ConflictResolutionResponse {
+        // Take the sender and send the resolution through the oneshot channel
+        let tx = state.conflict_resolution_tx.lock().unwrap().take();
+        if let Some(tx) = tx {
+            let _ = tx.send(ConflictResolutionResponse {
                 resolution,
                 apply_to_all,
             });
         }
-        // Wake up the waiting operation
-        let _guard = state.conflict_mutex.lock();
-        state.conflict_condvar.notify_all();
     }
 }
 

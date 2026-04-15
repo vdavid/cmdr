@@ -11,7 +11,9 @@ use crate::indexing::scanner::{ScanConfig, ScanError, ScanHandle, ScanSummary};
 use crate::indexing::watcher::{DriveWatcher, FsChangeEvent, WatcherError};
 use crate::indexing::writer::IndexWriter;
 use serde::{Deserialize, Serialize};
+use std::future::Future;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::sync::atomic::AtomicBool;
 use tokio::sync::mpsc;
 
@@ -150,11 +152,18 @@ impl std::error::Error for VolumeError {}
 
 /// A stream of bytes read from a volume.
 ///
-/// This is a synchronous, blocking iterator-style interface for reading
-/// file data in chunks. Used for streaming transfers between volumes.
+/// This is an async interface for reading file data in chunks. Used for
+/// streaming transfers between volumes. `next_chunk` is async (returns a
+/// pinned boxed future) so that network-backed volumes (MTP, SMB) can
+/// yield to the runtime instead of blocking. `total_size` and `bytes_read`
+/// stay sync because they return cached values.
 pub trait VolumeReadStream: Send {
     /// Returns the next chunk of data, or None if complete.
-    fn next_chunk(&mut self) -> Option<Result<Vec<u8>, VolumeError>>;
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>>;
 
     /// Total size of the file in bytes.
     fn total_size(&self) -> u64;
@@ -219,14 +228,21 @@ impl From<std::io::Error> for VolumeError {
     }
 }
 
-/// Trait for volume file system operations.
+/// Async trait for volume file system operations.
 ///
 /// Implementations provide access to different storage backends:
-/// - `LocalPosixVolume`: Real local file system
+/// - `LocalPosixVolume`: Real local file system (async via `spawn_blocking`)
 /// - `InMemoryVolume`: In-memory file system for testing
+/// - `MtpVolume`: MTP device storage (natively async)
+/// - `SmbVolume`: SMB share storage (natively async via smb2)
 ///
 /// All path parameters are relative to the volume root. The volume handles
 /// translating these to actual storage locations.
+///
+/// Methods are split into two categories:
+/// - **Sync**: Identity accessors and capability flags that return struct fields. No I/O.
+/// - **Async**: Methods that perform I/O. Return `Pin<Box<dyn Future<Output = T> + Send + '_>>`
+///   for object safety (`dyn Volume`). Implementors wrap bodies in `Box::pin(async { ... })`.
 pub trait Volume: Send + Sync {
     /// Returns the display name for this volume (like "Macintosh HD", "Dropbox").
     fn name(&self) -> &str;
@@ -241,29 +257,38 @@ pub trait Volume: Send + Sync {
     /// Lists directory contents at the given path (relative to volume root).
     ///
     /// Returns entries sorted with directories first, then files, both alphabetically.
-    fn list_directory(&self, path: &Path) -> Result<Vec<FileEntry>, VolumeError>;
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>>;
 
     /// Like `list_directory`, but calls `on_progress(loaded_count)` periodically
     /// during the stat loop so callers can report incremental progress to the UI.
     ///
     /// Default implementation delegates to `list_directory` with no incremental updates.
-    fn list_directory_with_progress(
-        &self,
-        path: &Path,
-        _on_progress: &dyn Fn(usize),
-    ) -> Result<Vec<FileEntry>, VolumeError> {
-        self.list_directory(path)
+    fn list_directory_with_progress<'a>(
+        &'a self,
+        path: &'a Path,
+        _on_progress: &'a (dyn Fn(usize) + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move { self.list_directory(path).await })
     }
 
     /// Gets metadata for a single path (relative to volume root).
-    fn get_metadata(&self, path: &Path) -> Result<FileEntry, VolumeError>;
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>>;
 
     /// Checks if a path exists (relative to volume root).
-    fn exists(&self, path: &Path) -> bool;
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>>;
 
     /// Checks if a path is a directory.
     /// Returns Ok(true) if directory, Ok(false) if file, Err if path doesn't exist.
-    fn is_directory(&self, path: &Path) -> Result<bool, VolumeError>;
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>>;
 
     // ========================================
     // E2E test support (feature-gated)
@@ -282,21 +307,28 @@ pub trait Volume: Send + Sync {
     // ========================================
 
     /// Creates a file with the given content.
-    fn create_file(&self, path: &Path, content: &[u8]) -> Result<(), VolumeError> {
+    fn create_file<'a>(
+        &'a self,
+        path: &'a Path,
+        content: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let _ = (path, content);
-        Err(VolumeError::NotSupported)
+        Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
     /// Creates a directory.
-    fn create_directory(&self, path: &Path) -> Result<(), VolumeError> {
+    fn create_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let _ = path;
-        Err(VolumeError::NotSupported)
+        Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
     /// Deletes a file or empty directory.
-    fn delete(&self, path: &Path) -> Result<(), VolumeError> {
+    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let _ = path;
-        Err(VolumeError::NotSupported)
+        Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
     /// Renames/moves a file or directory within this volume.
@@ -305,9 +337,14 @@ pub trait Volume: Send + Sync {
     /// When `force` is false, returns `AlreadyExists` if the destination exists.
     /// When `force` is true, proceeds even if the destination exists (POSIX rename
     /// silently overwrites).
-    fn rename(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
+    fn rename<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let _ = (from, to, force);
-        Err(VolumeError::NotSupported)
+        Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
     // ========================================
@@ -318,53 +355,60 @@ pub trait Volume: Send + Sync {
     ///
     /// Default implementation uses `std::fs` to stat the entry and calls `notify_directory_changed`.
     /// Non-local volumes (SMB, MTP) override to use their own protocol for metadata.
-    fn notify_mutation(&self, volume_id: &str, parent_path: &Path, mutation: MutationEvent) {
-        use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
-        use crate::file_system::listing::reading::get_single_entry;
+    fn notify_mutation<'a>(
+        &'a self,
+        volume_id: &'a str,
+        parent_path: &'a Path,
+        mutation: MutationEvent,
+    ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(async move {
+            use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
+            use crate::file_system::listing::reading::get_single_entry;
 
-        match mutation {
-            MutationEvent::Created(ref name) | MutationEvent::Modified(ref name) => {
-                let entry_path = parent_path.join(name);
-                match get_single_entry(&entry_path) {
-                    Ok(entry) => {
-                        let change = if matches!(mutation, MutationEvent::Created(_)) {
-                            DirectoryChange::Added(entry)
-                        } else {
-                            DirectoryChange::Modified(entry)
-                        };
-                        notify_directory_changed(volume_id, parent_path, change);
+            match mutation {
+                MutationEvent::Created(ref name) | MutationEvent::Modified(ref name) => {
+                    let entry_path = parent_path.join(name);
+                    match get_single_entry(&entry_path) {
+                        Ok(entry) => {
+                            let change = if matches!(mutation, MutationEvent::Created(_)) {
+                                DirectoryChange::Added(entry)
+                            } else {
+                                DirectoryChange::Modified(entry)
+                            };
+                            notify_directory_changed(volume_id, parent_path, change);
+                        }
+                        Err(e) => {
+                            log::warn!("notify_mutation: couldn't stat {}: {}", entry_path.display(), e);
+                        }
                     }
-                    Err(e) => {
-                        log::warn!("notify_mutation: couldn't stat {}: {}", entry_path.display(), e);
+                }
+                MutationEvent::Deleted(name) => {
+                    notify_directory_changed(volume_id, parent_path, DirectoryChange::Removed(name));
+                }
+                MutationEvent::Renamed { from, to } => {
+                    let new_path = parent_path.join(&to);
+                    match get_single_entry(&new_path) {
+                        Ok(entry) => {
+                            notify_directory_changed(
+                                volume_id,
+                                parent_path,
+                                DirectoryChange::Renamed {
+                                    old_name: from,
+                                    new_entry: entry,
+                                },
+                            );
+                        }
+                        Err(e) => {
+                            log::warn!(
+                                "notify_mutation: couldn't stat renamed entry {}: {}",
+                                new_path.display(),
+                                e
+                            );
+                        }
                     }
                 }
             }
-            MutationEvent::Deleted(name) => {
-                notify_directory_changed(volume_id, parent_path, DirectoryChange::Removed(name));
-            }
-            MutationEvent::Renamed { from, to } => {
-                let new_path = parent_path.join(&to);
-                match get_single_entry(&new_path) {
-                    Ok(entry) => {
-                        notify_directory_changed(
-                            volume_id,
-                            parent_path,
-                            DirectoryChange::Renamed {
-                                old_name: from,
-                                new_entry: entry,
-                            },
-                        );
-                    }
-                    Err(e) => {
-                        log::warn!(
-                            "notify_mutation: couldn't stat renamed entry {}: {}",
-                            new_path.display(),
-                            e
-                        );
-                    }
-                }
-            }
-        }
+        })
     }
 
     // ========================================
@@ -432,9 +476,12 @@ pub trait Volume: Send + Sync {
 
     /// Scans a path recursively to get statistics for a copy operation.
     /// Returns file count, directory count, and total bytes.
-    fn scan_for_copy(&self, path: &Path) -> Result<CopyScanResult, VolumeError> {
+    fn scan_for_copy<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
         let _ = path;
-        Err(VolumeError::NotSupported)
+        Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
     /// Scans multiple paths to get aggregate copy statistics.
@@ -444,81 +491,72 @@ pub trait Volume: Send + Sync {
     /// with expensive per-path I/O (MTP, SMB, FTP, S3) should override this to
     /// batch — typically by grouping paths by parent directory, listing each
     /// parent once, and resolving files from the listing.
-    fn scan_for_copy_batch(&self, paths: &[PathBuf]) -> Result<CopyScanResult, VolumeError> {
-        let mut result = CopyScanResult {
-            file_count: 0,
-            dir_count: 0,
-            total_bytes: 0,
-        };
-        for path in paths {
-            let scan = self.scan_for_copy(path)?;
-            result.file_count += scan.file_count;
-            result.dir_count += scan.dir_count;
-            result.total_bytes += scan.total_bytes;
-        }
-        Ok(result)
+    fn scan_for_copy_batch<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mut result = CopyScanResult {
+                file_count: 0,
+                dir_count: 0,
+                total_bytes: 0,
+            };
+            for path in paths {
+                let scan = self.scan_for_copy(path).await?;
+                result.file_count += scan.file_count;
+                result.dir_count += scan.dir_count;
+                result.total_bytes += scan.total_bytes;
+            }
+            Ok(result)
+        })
     }
 
     /// Downloads/exports a file or directory from this volume to a local path.
     /// For local volumes, this is a file copy. For MTP, this downloads.
-    /// Returns bytes transferred.
-    fn export_to_local(&self, source: &Path, local_dest: &Path) -> Result<u64, VolumeError> {
-        let _ = (source, local_dest);
-        Err(VolumeError::NotSupported)
-    }
-
-    /// Exports a file from this volume to a local path, reporting progress.
     ///
     /// `on_progress(bytes_done, bytes_total)` is called periodically during the transfer.
     /// Return `ControlFlow::Break(())` from the callback to cancel the transfer.
-    /// Default implementation delegates to `export_to_local` (no per-file progress).
-    fn export_to_local_with_progress(
-        &self,
-        source: &Path,
-        local_dest: &Path,
-        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
-    ) -> Result<u64, VolumeError> {
-        let _ = on_progress;
-        self.export_to_local(source, local_dest)
+    /// Returns bytes transferred.
+    fn export_to_local<'a>(
+        &'a self,
+        source: &'a Path,
+        local_dest: &'a Path,
+        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        let _ = (source, local_dest, on_progress);
+        Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
     /// Imports/uploads a file or directory from a local path to this volume.
     /// For local volumes, this is a file copy. For MTP, this uploads.
-    /// Returns bytes transferred.
-    fn import_from_local(&self, local_source: &Path, dest: &Path) -> Result<u64, VolumeError> {
-        let _ = (local_source, dest);
-        Err(VolumeError::NotSupported)
-    }
-
-    /// Imports a file from a local path to this volume, reporting progress.
     ///
     /// `on_progress(bytes_done, bytes_total)` is called periodically during the transfer.
     /// Return `ControlFlow::Break(())` from the callback to cancel the transfer.
-    /// Default implementation delegates to `import_from_local` (no per-file progress).
-    fn import_from_local_with_progress(
-        &self,
-        local_source: &Path,
-        dest: &Path,
-        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
-    ) -> Result<u64, VolumeError> {
-        let _ = on_progress;
-        self.import_from_local(local_source, dest)
+    /// Returns bytes transferred.
+    fn import_from_local<'a>(
+        &'a self,
+        local_source: &'a Path,
+        dest: &'a Path,
+        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        let _ = (local_source, dest, on_progress);
+        Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
     /// Checks destination for conflicts with source items.
     /// Returns list of files that already exist at destination.
-    fn scan_for_conflicts(
-        &self,
-        source_items: &[SourceItemInfo],
-        dest_path: &Path,
-    ) -> Result<Vec<ScanConflict>, VolumeError> {
+    fn scan_for_conflicts<'a>(
+        &'a self,
+        source_items: &'a [SourceItemInfo],
+        dest_path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
         let _ = (source_items, dest_path);
-        Err(VolumeError::NotSupported)
+        Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
     /// Gets space information for this volume.
-    fn get_space_info(&self) -> Result<SpaceInfo, VolumeError> {
-        Err(VolumeError::NotSupported)
+    fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
     /// Recommended poll interval for live disk-space monitoring.
@@ -551,9 +589,16 @@ pub trait Volume: Send + Sync {
     ///
     /// Returns a VolumeReadStream that yields chunks of data.
     /// The stream must be fully consumed or dropped before other operations.
-    fn open_read_stream(&self, path: &Path) -> Result<Box<dyn VolumeReadStream>, VolumeError> {
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn open_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
         let _ = path;
-        Err(VolumeError::NotSupported)
+        Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
     /// Writes data from a stream to the given path.
@@ -566,15 +611,15 @@ pub trait Volume: Send + Sync {
     /// * `size` - Total size in bytes (required for protocols like MTP)
     /// * `stream` - Source data stream
     /// * `on_progress` - Progress callback; return `ControlFlow::Break(())` to cancel
-    fn write_from_stream(
-        &self,
-        dest: &Path,
+    fn write_from_stream<'a>(
+        &'a self,
+        dest: &'a Path,
         size: u64,
         stream: Box<dyn VolumeReadStream>,
-        on_progress: &dyn Fn(u64, u64) -> std::ops::ControlFlow<()>,
-    ) -> Result<u64, VolumeError> {
+        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
         let _ = (dest, size, stream, on_progress);
-        Err(VolumeError::NotSupported)
+        Box::pin(async { Err(VolumeError::NotSupported) })
     }
 }
 

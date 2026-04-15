@@ -82,8 +82,8 @@ pub fn list_directory_start_with_volume(
     })?;
 
     // Use the Volume trait to list the directory
-    let all_entries = volume
-        .list_directory(path)
+    let all_entries = tokio::runtime::Handle::current()
+        .block_on(volume.list_directory(path))
         .map_err(|e| std::io::Error::other(e.to_string()))?;
     benchmark::log_event_value("volume.list_directory COMPLETE, entries", all_entries.len());
 

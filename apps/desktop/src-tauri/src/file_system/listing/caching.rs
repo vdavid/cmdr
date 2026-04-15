@@ -406,7 +406,7 @@ fn notify_full_refresh(
         }
     };
 
-    let mut new_entries = match vol.list_directory(parent_path) {
+    let mut new_entries = match tokio::runtime::Handle::current().block_on(vol.list_directory(parent_path)) {
         Ok(entries) => entries,
         Err(e) => {
             log::warn!(

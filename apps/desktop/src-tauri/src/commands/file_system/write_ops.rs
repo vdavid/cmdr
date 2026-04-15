@@ -83,27 +83,19 @@ pub(super) async fn create_directory_core(
 
         // Use spawn_blocking to run the Volume operation in a context where
         // tokio::runtime::Handle::current() is available (needed for MtpVolume)
-        tokio::time::timeout(
-            Duration::from_secs(5),
-            tokio::task::spawn_blocking(move || {
-                volume.create_directory(&new_path_clone).map_err(|e| match e {
-                    crate::file_system::VolumeError::AlreadyExists(_) => {
-                        format!("'{}' already exists", name_owned)
-                    }
-                    crate::file_system::VolumeError::PermissionDenied(_) => {
-                        format!(
-                            "Permission denied: cannot create '{}' in '{}'",
-                            name_owned, parent_path_owned
-                        )
-                    }
-                    _ => format!("Couldn't create folder: {}", e),
-                })
-            }),
-        )
-        .await
-        .map_err(|_| IpcError::timeout())?
-        .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
-        .map_err(IpcError::from_err)?;
+        tokio::time::timeout(Duration::from_secs(5), volume.create_directory(&new_path_clone))
+            .await
+            .map_err(|_| IpcError::timeout())?
+            .map_err(|e| match e {
+                crate::file_system::VolumeError::AlreadyExists(_) => {
+                    IpcError::from_err(format!("'{}' already exists", name_owned))
+                }
+                crate::file_system::VolumeError::PermissionDenied(_) => IpcError::from_err(format!(
+                    "Permission denied: cannot create '{}' in '{}'",
+                    name_owned, parent_path_owned
+                )),
+                _ => IpcError::from_err(format!("Couldn't create folder: {}", e)),
+            })?;
 
         return Ok((new_path, expanded_path));
     }
@@ -153,27 +145,19 @@ pub(super) async fn create_file_core(
         let parent_path_owned = parent_path.to_string();
         let name_owned = name.to_string();
 
-        tokio::time::timeout(
-            Duration::from_secs(5),
-            tokio::task::spawn_blocking(move || {
-                volume.create_file(&new_path_clone, b"").map_err(|e| match e {
-                    crate::file_system::VolumeError::AlreadyExists(_) => {
-                        format!("'{}' already exists", name_owned)
-                    }
-                    crate::file_system::VolumeError::PermissionDenied(_) => {
-                        format!(
-                            "Permission denied: cannot create '{}' in '{}'",
-                            name_owned, parent_path_owned
-                        )
-                    }
-                    _ => format!("Couldn't create file: {}", e),
-                })
-            }),
-        )
-        .await
-        .map_err(|_| IpcError::timeout())?
-        .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
-        .map_err(IpcError::from_err)?;
+        tokio::time::timeout(Duration::from_secs(5), volume.create_file(&new_path_clone, b""))
+            .await
+            .map_err(|_| IpcError::timeout())?
+            .map_err(|e| match e {
+                crate::file_system::VolumeError::AlreadyExists(_) => {
+                    IpcError::from_err(format!("'{}' already exists", name_owned))
+                }
+                crate::file_system::VolumeError::PermissionDenied(_) => IpcError::from_err(format!(
+                    "Permission denied: cannot create '{}' in '{}'",
+                    name_owned, parent_path_owned
+                )),
+                _ => IpcError::from_err(format!("Couldn't create file: {}", e)),
+            })?;
 
         return Ok((new_path, expanded_path));
     }
@@ -307,24 +291,8 @@ pub async fn start_scan_preview(
         get_volume_manager().get(&volume_id)
     };
 
-    // Volume scans need a Tokio runtime handle (MtpVolume uses Handle::block_on).
-    // Async Tauri commands run on the Tokio runtime, so Handle::current() works here.
-    let runtime_handle = if source_volume.is_some() {
-        Some(tokio::runtime::Handle::current())
-    } else {
-        None
-    };
-
     let progress_interval = progress_interval_ms.unwrap_or(500);
-    ops_start_scan_preview(
-        app,
-        sources,
-        source_volume,
-        sort_column,
-        sort_order,
-        progress_interval,
-        runtime_handle,
-    )
+    ops_start_scan_preview(app, sources, source_volume, sort_column, sort_order, progress_interval)
 }
 
 #[tauri::command]

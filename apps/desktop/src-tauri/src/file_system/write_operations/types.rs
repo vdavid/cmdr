@@ -570,6 +570,10 @@ impl OperationEventSink for TauriEventSink {
 
 /// Test event sink — stores events for inspection.
 #[cfg(test)]
+#[allow(
+    dead_code,
+    reason = "Fields are populated by emit_* methods; read in test assertions as needed"
+)]
 pub(crate) struct CollectorEventSink {
     pub progress: std::sync::Mutex<Vec<WriteProgressEvent>>,
     pub complete: std::sync::Mutex<Vec<WriteCompleteEvent>>,

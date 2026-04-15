@@ -301,7 +301,7 @@ fn read_directory_with_progress(
                 },
             );
         };
-        let result = volume.list_directory_with_progress(&path_for_thread, &on_progress);
+        let result = runtime_handle.block_on(volume.list_directory_with_progress(&path_for_thread, &on_progress));
         let _ = tx.send(result);
     });
 

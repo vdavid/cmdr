@@ -94,18 +94,14 @@ pub async fn scan_volume_for_copy(
     let dest_path = PathBuf::from(dest_path);
     let max_conflicts = max_conflicts.unwrap_or(100);
 
-    // Run scan in blocking context for MTP volume support
+    // Run scan (now async)
     tokio::time::timeout(
         Duration::from_secs(30),
-        tokio::task::spawn_blocking(move || {
-            ops_scan_for_volume_copy(&*source_volume, &source_paths, &*dest_volume, &dest_path, max_conflicts)
-                .map_err(|e| e.to_string())
-        }),
+        ops_scan_for_volume_copy(&*source_volume, &source_paths, &*dest_volume, &dest_path, max_conflicts),
     )
     .await
     .map_err(|_| IpcError::timeout())?
-    .map_err(|e| IpcError::from_err(format!("Scan task failed: {}", e)))?
-    .map_err(IpcError::from_err)
+    .map_err(|e| IpcError::from_err(e.to_string()))
 }
 
 /// Checks which source items already exist at the destination. Returns conflict details for UI.
@@ -129,19 +125,14 @@ pub async fn scan_volume_for_conflicts(
         .collect();
     let dest_path = PathBuf::from(dest_path);
 
-    // Run in blocking context for MTP volume support
+    // Run conflict scan (now async)
     tokio::time::timeout(
         Duration::from_secs(30),
-        tokio::task::spawn_blocking(move || {
-            volume
-                .scan_for_conflicts(&source_items, &dest_path)
-                .map_err(|e| e.to_string())
-        }),
+        volume.scan_for_conflicts(&source_items, &dest_path),
     )
     .await
     .map_err(|_| IpcError::timeout())?
-    .map_err(|e| IpcError::from_err(format!("Conflict scan task failed: {}", e)))?
-    .map_err(IpcError::from_err)
+    .map_err(|e| IpcError::from_err(e.to_string()))
 }
 
 /// Input type for source item information (used by scan_volume_for_conflicts).

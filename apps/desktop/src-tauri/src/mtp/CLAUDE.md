@@ -18,7 +18,7 @@ On Linux, users may need udev rules for USB device permissions (see `resources/9
 | `connection/errors.rs` | `MtpConnectionError` enum with typed variants and `map_mtp_error()` from `mtp_rs::Error` |
 | `connection/event_loop.rs` | Background tokio task per device: polls `device.next_event()`, computes diffs, emits `directory-diff` events using the unified diff system |
 | `connection/directory_ops.rs` | `list_directory()` (with lock-contention logging), `resolve_path_to_handle()` (cache-only) |
-| `connection/file_ops.rs` | `download_file()`, `upload_file()` — emit `mtp-transfer-progress` Tauri events |
+| `connection/file_ops.rs` | `download_file()`, `upload_file()`, `open_download_stream()` — emit `mtp-transfer-progress` Tauri events. `open_download_stream()` returns a `FileDownload` for streaming reads (used by `MtpReadStream` in `volume/mtp.rs`). |
 | `connection/mutation_ops.rs` | `delete()` (recursive, children-first), `create_folder()`, `rename()`, `move_object()` — no copy+delete fallback |
 | `connection/bulk_ops.rs` | `scan_for_copy()`, `upload_recursive()` — use `Box::pin` for async recursion |
 | `virtual_device.rs` | Virtual MTP device for E2E testing; creates backing dirs + registers device via `mtp-rs`. Gated behind `virtual-mtp` feature. Run with: `cd apps/desktop && pnpm tauri dev -c src-tauri/tauri.dev.json --features virtual-mtp` |

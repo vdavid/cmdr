@@ -15,7 +15,6 @@
 //! - Local → MTP: Uses volume.import_from_local()
 //! - MTP → Local: Uses volume.export_to_local()
 
-use std::cell::Cell;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -117,9 +116,7 @@ pub async fn copy_between_volumes(
     let state = Arc::new(WriteOperationState {
         intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(config.progress_interval_ms),
-        pending_resolution: std::sync::RwLock::new(None),
-        conflict_condvar: std::sync::Condvar::new(),
-        conflict_mutex: std::sync::Mutex::new(false),
+        conflict_resolution_tx: std::sync::Mutex::new(None),
     });
 
     // Store state for cancellation
@@ -137,19 +134,17 @@ pub async fn copy_between_volumes(
         let operation_id_for_cleanup = operation_id_for_spawn.clone();
         let app_for_error = app.clone();
 
-        let result = tokio::task::spawn_blocking(move || {
-            let events = TauriEventSink::new(app);
-            copy_volumes_with_progress(
-                &events,
-                &operation_id_for_spawn,
-                &state,
-                source_volume,
-                &source_paths,
-                dest_volume,
-                &dest_path,
-                &config,
-            )
-        })
+        let events = TauriEventSink::new(app);
+        let result: Result<(), WriteOperationError> = copy_volumes_with_progress(
+            &events,
+            &operation_id_for_spawn,
+            &state,
+            source_volume,
+            &source_paths,
+            dest_volume,
+            &dest_path,
+            &config,
+        )
         .await;
 
         // Clean up state
@@ -158,44 +153,28 @@ pub async fn copy_between_volumes(
         }
         unregister_operation_status(&operation_id_for_cleanup);
 
-        // Handle task result - both panics and operation errors
+        // Handle result
         use tauri::Emitter;
         match result {
-            Ok(Ok(())) => {
+            Ok(()) => {
                 // Success - write-complete event already emitted by copy_volumes_with_progress
             }
-            Ok(Err(write_err)) => {
-                // Operation returned an error (not a panic)
-                log::error!(
-                    "copy_between_volumes: operation {} failed with error: {:?}",
-                    operation_id_for_cleanup,
-                    write_err
-                );
+            Err(write_err) => {
+                if matches!(write_err, WriteOperationError::Cancelled { .. }) {
+                    log::info!("copy_between_volumes: operation {} cancelled", operation_id_for_cleanup,);
+                } else {
+                    log::error!(
+                        "copy_between_volumes: operation {} failed: {:?}",
+                        operation_id_for_cleanup,
+                        write_err
+                    );
+                }
                 let _ = app_for_error.emit(
                     "write-error",
                     WriteErrorEvent {
                         operation_id: operation_id_for_cleanup,
                         operation_type: WriteOperationType::Copy,
                         error: write_err,
-                    },
-                );
-            }
-            Err(e) => {
-                // Task panicked
-                log::error!(
-                    "copy_between_volumes: operation {} panicked: {}",
-                    operation_id_for_cleanup,
-                    e
-                );
-                let _ = app_for_error.emit(
-                    "write-error",
-                    WriteErrorEvent {
-                        operation_id: operation_id_for_cleanup,
-                        operation_type: WriteOperationType::Copy,
-                        error: WriteOperationError::IoError {
-                            path: String::new(),
-                            message: format!("Task failed: {}", e),
-                        },
                     },
                 );
             }
@@ -220,7 +199,7 @@ pub async fn copy_between_volumes(
 /// * `dest_volume` - The destination volume
 /// * `dest_path` - Destination directory path
 /// * `max_conflicts` - Maximum number of conflicts to return
-pub fn scan_for_volume_copy(
+pub async fn scan_for_volume_copy(
     source_volume: &dyn Volume,
     source_paths: &[PathBuf],
     dest_volume: &dyn Volume,
@@ -234,7 +213,7 @@ pub fn scan_for_volume_copy(
     let mut source_items: Vec<SourceItemInfo> = Vec::new();
 
     for source_path in source_paths {
-        let scan = source_volume.scan_for_copy(source_path)?;
+        let scan = source_volume.scan_for_copy(source_path).await?;
         total_files += scan.file_count;
         total_dirs += scan.dir_count;
         total_bytes += scan.total_bytes;
@@ -242,7 +221,7 @@ pub fn scan_for_volume_copy(
         // Collect source item info for conflict detection
         // For now, we just use the top-level item name
         if let Some(name) = source_path.file_name() {
-            let metadata = source_volume.get_metadata(source_path).ok();
+            let metadata = source_volume.get_metadata(source_path).await.ok();
             source_items.push(SourceItemInfo {
                 name: name.to_string_lossy().to_string(),
                 size: metadata.as_ref().and_then(|m| m.size).unwrap_or(0),
@@ -254,7 +233,7 @@ pub fn scan_for_volume_copy(
     }
 
     // Get destination space info
-    let dest_space = dest_volume.get_space_info()?;
+    let dest_space = dest_volume.get_space_info().await?;
 
     // Check if there's enough space
     if dest_space.available_bytes < total_bytes {
@@ -268,7 +247,7 @@ pub fn scan_for_volume_copy(
     }
 
     // Scan for conflicts at destination
-    let all_conflicts = dest_volume.scan_for_conflicts(&source_items, dest_path)?;
+    let all_conflicts = dest_volume.scan_for_conflicts(&source_items, dest_path).await?;
 
     // Limit the number of conflicts returned
     let conflicts = if all_conflicts.len() > max_conflicts {
@@ -291,7 +270,7 @@ pub fn scan_for_volume_copy(
     clippy::too_many_arguments,
     reason = "Volume copy requires passing multiple context parameters"
 )]
-fn copy_volumes_with_progress(
+async fn copy_volumes_with_progress(
     events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
@@ -350,6 +329,7 @@ fn copy_volumes_with_progress(
 
             let scan = source_volume
                 .scan_for_copy(source_path)
+                .await
                 .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
             total_files += scan.file_count;
             total_dirs += scan.dir_count;
@@ -368,6 +348,7 @@ fn copy_volumes_with_progress(
     // Phase 2: Check destination space
     let dest_space = dest_volume
         .get_space_info()
+        .await
         .map_err(|e| map_volume_error(&dest_path.display().to_string(), e))?;
     if dest_space.available_bytes < total_bytes {
         return Err(WriteOperationError::InsufficientSpace {
@@ -434,8 +415,8 @@ fn copy_volumes_with_progress(
         // On MTP, exists() + is_directory() would each list the parent directory
         // separately; get_metadata() does it once (and the listing cache covers
         // the source side too).
-        if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path) {
-            let source_is_dir = source_volume.is_directory(source_path).unwrap_or(false);
+        if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path).await {
+            let source_is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
             let dest_is_dir = dest_meta.is_directory;
 
             if source_is_dir && dest_is_dir {
@@ -466,7 +447,8 @@ fn copy_volumes_with_progress(
                     operation_id,
                     state,
                     &mut apply_to_all_resolution,
-                )?;
+                )
+                .await?;
 
                 match resolved {
                     None => {
@@ -491,11 +473,11 @@ fn copy_volumes_with_progress(
         );
 
         // Build a per-file progress callback that updates overall bytes_done and
-        // emits throttled write-progress events. Uses AtomicU64 + Cell so the
-        // closure is Fn (required by the Volume trait's dyn Fn signature).
+        // emits throttled write-progress events. Uses AtomicU64 + Mutex so the
+        // closure is Fn + Sync (required by the Volume trait's dyn Fn signature).
         let atomic_bytes_done = AtomicU64::new(bytes_done);
         let last_file_bytes = AtomicU64::new(0);
-        let last_progress_cell = Cell::new(last_progress_time);
+        let last_progress_mutex = std::sync::Mutex::new(last_progress_time);
         let file_name_for_cb = file_name.clone();
 
         let on_file_progress = |file_bytes_done: u64, _file_bytes_total: u64| -> ControlFlow<()> {
@@ -513,9 +495,9 @@ fn copy_volumes_with_progress(
             let current_files_done = files_done_atomic.load(Ordering::Relaxed);
 
             // Throttled progress emission
-            let last = last_progress_cell.get();
+            let last = *last_progress_mutex.lock().unwrap();
             if last.elapsed() >= progress_interval {
-                last_progress_cell.set(Instant::now());
+                *last_progress_mutex.lock().unwrap() = Instant::now();
                 events.emit_progress(WriteProgressEvent {
                     operation_id: operation_id.to_string(),
                     operation_type: WriteOperationType::Copy,
@@ -556,7 +538,9 @@ fn copy_volumes_with_progress(
             state,
             &on_file_progress,
             &on_file_complete,
-        ) {
+        )
+        .await
+        {
             Ok(bytes_copied) => {
                 // Copy succeeded — record destination path for potential rollback
                 copied_paths.push(dest_item_path);
@@ -570,7 +554,7 @@ fn copy_volumes_with_progress(
                 if last_file_bytes.load(Ordering::Relaxed) == 0 && bytes_copied > 0 {
                     bytes_done += bytes_copied;
                 }
-                last_progress_time = last_progress_cell.get();
+                last_progress_time = *last_progress_mutex.lock().unwrap();
             }
             Err(e) => {
                 // Sync bytes_done before handling the error
@@ -627,7 +611,8 @@ fn copy_volumes_with_progress(
             bytes_done,
             total_files,
             total_bytes,
-        );
+        )
+        .await;
 
         events.emit_cancelled(WriteCancelledEvent {
             operation_id: operation_id.to_string(),
@@ -643,7 +628,7 @@ fn copy_volumes_with_progress(
                 partial_path.display(),
                 operation_id,
             );
-            if let Err(e) = delete_volume_path_recursive(&dest_volume, partial_path) {
+            if let Err(e) = delete_volume_path_recursive(&dest_volume, partial_path).await {
                 log::warn!(
                     "copy_volumes_with_progress: failed to clean up partial file {}: {:?}",
                     partial_path.display(),
@@ -690,7 +675,7 @@ fn copy_volumes_with_progress(
     clippy::too_many_arguments,
     reason = "Needs the full progress state at cancellation time to emit reverse progress"
 )]
-fn volume_rollback_with_progress(
+async fn volume_rollback_with_progress(
     volume: &Arc<dyn Volume>,
     copied_paths: &[PathBuf],
     events: &dyn OperationEventSink,
@@ -739,7 +724,7 @@ fn volume_rollback_with_progress(
         }
 
         // Each copied path may be a file or a directory tree — delete recursively
-        if let Err(e) = delete_volume_path_recursive(volume, path) {
+        if let Err(e) = delete_volume_path_recursive(volume, path).await {
             log::warn!(
                 "volume_rollback_with_progress: failed to delete {}: {:?}",
                 path.display(),
@@ -792,8 +777,8 @@ fn volume_rollback_with_progress(
 /// For files: calls `volume.delete()` directly.
 /// For directories: lists contents, deletes children (files first, then subdirs),
 /// then deletes the directory itself. Best-effort — logs errors but continues.
-fn delete_volume_path_recursive(volume: &Arc<dyn Volume>, path: &Path) -> Result<(), VolumeError> {
-    let is_dir = match volume.is_directory(path) {
+async fn delete_volume_path_recursive(volume: &Arc<dyn Volume>, path: &Path) -> Result<(), VolumeError> {
+    let is_dir = match volume.is_directory(path).await {
         Ok(true) => true,
         Ok(false) => false,
         Err(_) => {
@@ -803,24 +788,24 @@ fn delete_volume_path_recursive(volume: &Arc<dyn Volume>, path: &Path) -> Result
     };
 
     if !is_dir {
-        return volume.delete(path);
+        return volume.delete(path).await;
     }
 
     // List directory contents and delete children first
-    let children = volume.list_directory(path)?;
+    let children = volume.list_directory(path).await?;
 
     // Delete files first, then recurse into subdirectories
     for child in &children {
         let child_path = PathBuf::from(&child.path);
         if child.is_directory {
-            if let Err(e) = delete_volume_path_recursive(volume, &child_path) {
+            if let Err(e) = Box::pin(delete_volume_path_recursive(volume, &child_path)).await {
                 log::warn!(
                     "delete_volume_path_recursive: failed to delete subdirectory {}: {:?}",
                     child_path.display(),
                     e
                 );
             }
-        } else if let Err(e) = volume.delete(&child_path) {
+        } else if let Err(e) = volume.delete(&child_path).await {
             log::warn!(
                 "delete_volume_path_recursive: failed to delete file {}: {:?}",
                 child_path.display(),
@@ -830,7 +815,7 @@ fn delete_volume_path_recursive(volume: &Arc<dyn Volume>, path: &Path) -> Result
     }
 
     // Delete the now-empty directory
-    volume.delete(path)
+    volume.delete(path).await
 }
 
 /// Maps VolumeError to WriteOperationError, attaching path context where the original error lacks one.
@@ -886,32 +871,29 @@ mod tests {
         assert_eq!(config.max_conflicts_to_show, 100);
     }
 
-    #[test]
-    fn test_scan_for_volume_copy_empty_source_returns_error_without_space_info() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_scan_for_volume_copy_empty_source_returns_error_without_space_info() {
         // InMemoryVolume without configured space_info returns NotSupported for get_space_info
-        let source = InMemoryVolume::new("Source");
-        let dest = InMemoryVolume::new("Dest");
+        let source = Arc::new(InMemoryVolume::new("Source"));
+        let dest = Arc::new(InMemoryVolume::new("Dest"));
 
-        let result = scan_for_volume_copy(&source, &[], &dest, Path::new("/"), 10);
+        let result = scan_for_volume_copy(source.as_ref(), &[], dest.as_ref(), Path::new("/"), 10).await;
         assert!(result.is_err());
     }
 
-    #[test]
-    fn test_scan_for_volume_copy_with_in_memory_volumes() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_scan_for_volume_copy_with_in_memory_volumes() {
         let source = InMemoryVolume::new("Source").with_space_info(1_000_000, 500_000);
-        source.create_file(Path::new("/file1.txt"), b"Hello").unwrap();
-        source.create_file(Path::new("/file2.txt"), b"World").unwrap();
+        source.create_file(Path::new("/file1.txt"), b"Hello").await.unwrap();
+        source.create_file(Path::new("/file2.txt"), b"World").await.unwrap();
+        let source = Arc::new(source);
 
-        let dest = InMemoryVolume::new("Dest").with_space_info(1_000_000, 900_000);
+        let dest = Arc::new(InMemoryVolume::new("Dest").with_space_info(1_000_000, 900_000));
 
-        let result = scan_for_volume_copy(
-            &source,
-            &[PathBuf::from("/file1.txt"), PathBuf::from("/file2.txt")],
-            &dest,
-            Path::new("/"),
-            10,
-        )
-        .unwrap();
+        let paths = vec![PathBuf::from("/file1.txt"), PathBuf::from("/file2.txt")];
+        let result = scan_for_volume_copy(source.as_ref(), &paths, dest.as_ref(), Path::new("/"), 10)
+            .await
+            .unwrap();
 
         assert_eq!(result.file_count, 2);
         assert_eq!(result.total_bytes, 10); // "Hello" + "World"
@@ -919,44 +901,85 @@ mod tests {
         assert!(result.dest_space.available_bytes >= result.total_bytes);
     }
 
-    #[test]
-    fn test_scan_for_volume_copy_detects_conflicts_in_memory() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_scan_for_volume_copy_detects_conflicts_in_memory() {
         let source = InMemoryVolume::new("Source").with_space_info(1_000_000, 500_000);
-        source.create_file(Path::new("/report.txt"), b"new content").unwrap();
+        source
+            .create_file(Path::new("/report.txt"), b"new content")
+            .await
+            .unwrap();
+        let source = Arc::new(source);
 
         let dest = InMemoryVolume::new("Dest").with_space_info(1_000_000, 900_000);
-        dest.create_file(Path::new("/report.txt"), b"old content").unwrap();
+        dest.create_file(Path::new("/report.txt"), b"old content")
+            .await
+            .unwrap();
+        let dest = Arc::new(dest);
 
-        let result = scan_for_volume_copy(&source, &[PathBuf::from("/report.txt")], &dest, Path::new("/"), 10).unwrap();
+        let result = scan_for_volume_copy(
+            source.as_ref(),
+            &[PathBuf::from("/report.txt")],
+            dest.as_ref(),
+            Path::new("/"),
+            10,
+        )
+        .await
+        .unwrap();
 
         assert_eq!(result.file_count, 1);
         assert_eq!(result.conflicts.len(), 1);
         assert_eq!(result.conflicts[0].source_path, "report.txt");
     }
 
-    #[test]
-    fn test_scan_for_volume_copy_insufficient_space() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_scan_for_volume_copy_insufficient_space() {
         let source = InMemoryVolume::new("Source").with_space_info(1_000_000, 500_000);
-        source.create_file(Path::new("/big.bin"), &vec![0u8; 1000]).unwrap();
+        source
+            .create_file(Path::new("/big.bin"), &vec![0u8; 1000])
+            .await
+            .unwrap();
+        let source = Arc::new(source);
 
         // Dest has only 500 bytes available
-        let dest = InMemoryVolume::new("Dest").with_space_info(1000, 500);
+        let dest = Arc::new(InMemoryVolume::new("Dest").with_space_info(1000, 500));
 
-        let result = scan_for_volume_copy(&source, &[PathBuf::from("/big.bin")], &dest, Path::new("/"), 10);
+        let result = scan_for_volume_copy(
+            source.as_ref(),
+            &[PathBuf::from("/big.bin")],
+            dest.as_ref(),
+            Path::new("/"),
+            10,
+        )
+        .await;
 
         assert!(result.is_err());
     }
 
-    #[test]
-    fn test_scan_for_volume_copy_directory_tree() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_scan_for_volume_copy_directory_tree() {
         let source = InMemoryVolume::new("Source").with_space_info(1_000_000, 500_000);
-        source.create_directory(Path::new("/docs")).unwrap();
-        source.create_file(Path::new("/docs/readme.txt"), b"Read me").unwrap();
-        source.create_file(Path::new("/docs/notes.txt"), b"Notes here").unwrap();
+        source.create_directory(Path::new("/docs")).await.unwrap();
+        source
+            .create_file(Path::new("/docs/readme.txt"), b"Read me")
+            .await
+            .unwrap();
+        source
+            .create_file(Path::new("/docs/notes.txt"), b"Notes here")
+            .await
+            .unwrap();
+        let source = Arc::new(source);
 
-        let dest = InMemoryVolume::new("Dest").with_space_info(1_000_000, 900_000);
+        let dest = Arc::new(InMemoryVolume::new("Dest").with_space_info(1_000_000, 900_000));
 
-        let result = scan_for_volume_copy(&source, &[PathBuf::from("/docs")], &dest, Path::new("/"), 10).unwrap();
+        let result = scan_for_volume_copy(
+            source.as_ref(),
+            &[PathBuf::from("/docs")],
+            dest.as_ref(),
+            Path::new("/"),
+            10,
+        )
+        .await
+        .unwrap();
 
         assert_eq!(result.file_count, 2);
         assert_eq!(result.total_bytes, 17); // 7 + 10
@@ -994,8 +1017,8 @@ mod tests {
     // LocalPosixVolume integration tests
     // ========================================
 
-    #[test]
-    fn test_scan_for_volume_copy_with_local_volumes() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_scan_for_volume_copy_with_local_volumes() {
         use std::fs;
 
         let src_dir = std::env::temp_dir().join("cmdr_volume_scan_src");
@@ -1009,18 +1032,13 @@ mod tests {
         fs::write(src_dir.join("file1.txt"), "Hello").unwrap();
         fs::write(src_dir.join("file2.txt"), "World").unwrap();
 
-        let source = LocalPosixVolume::new("Source", src_dir.to_str().unwrap());
-        let dest = LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap());
+        let source = Arc::new(LocalPosixVolume::new("Source", src_dir.to_str().unwrap()));
+        let dest = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
-        let result = scan_for_volume_copy(
-            &source,
-            &[PathBuf::from("file1.txt"), PathBuf::from("file2.txt")],
-            &dest,
-            Path::new(""),
-            10,
-        );
-
-        let scan = result.unwrap();
+        let paths = vec![PathBuf::from("file1.txt"), PathBuf::from("file2.txt")];
+        let scan = scan_for_volume_copy(source.as_ref(), &paths, dest.as_ref(), Path::new(""), 10)
+            .await
+            .unwrap();
         assert_eq!(scan.file_count, 2);
         assert_eq!(scan.total_bytes, 10); // "Hello" + "World"
         assert!(scan.conflicts.is_empty());
@@ -1030,8 +1048,8 @@ mod tests {
         let _ = fs::remove_dir_all(&dst_dir);
     }
 
-    #[test]
-    fn test_scan_for_volume_copy_detects_conflicts() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_scan_for_volume_copy_detects_conflicts() {
         use std::fs;
 
         let src_dir = std::env::temp_dir().join("cmdr_volume_conflict_src");
@@ -1047,12 +1065,18 @@ mod tests {
         // Create existing file at destination
         fs::write(dst_dir.join("conflict.txt"), "Old content").unwrap();
 
-        let source = LocalPosixVolume::new("Source", src_dir.to_str().unwrap());
-        let dest = LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap());
+        let source = Arc::new(LocalPosixVolume::new("Source", src_dir.to_str().unwrap()));
+        let dest = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
-        let result = scan_for_volume_copy(&source, &[PathBuf::from("conflict.txt")], &dest, Path::new(""), 10);
-
-        let scan = result.unwrap();
+        let scan = scan_for_volume_copy(
+            source.as_ref(),
+            &[PathBuf::from("conflict.txt")],
+            dest.as_ref(),
+            Path::new(""),
+            10,
+        )
+        .await
+        .unwrap();
         assert_eq!(scan.file_count, 1);
         assert_eq!(scan.conflicts.len(), 1);
         assert_eq!(scan.conflicts[0].source_path, "conflict.txt");
@@ -1063,8 +1087,8 @@ mod tests {
         let _ = fs::remove_dir_all(&dst_dir);
     }
 
-    #[test]
-    fn test_scan_for_volume_copy_max_conflicts() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_scan_for_volume_copy_max_conflicts() {
         use std::fs;
 
         let src_dir = std::env::temp_dir().join("cmdr_volume_max_conflicts_src");
@@ -1083,13 +1107,13 @@ mod tests {
             source_paths.push(PathBuf::from(&name));
         }
 
-        let source = LocalPosixVolume::new("Source", src_dir.to_str().unwrap());
-        let dest = LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap());
+        let source = Arc::new(LocalPosixVolume::new("Source", src_dir.to_str().unwrap()));
+        let dest = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
         // Request max 3 conflicts
-        let result = scan_for_volume_copy(&source, &source_paths, &dest, Path::new(""), 3);
-
-        let scan = result.unwrap();
+        let scan = scan_for_volume_copy(source.as_ref(), &source_paths, dest.as_ref(), Path::new(""), 3)
+            .await
+            .unwrap();
         assert_eq!(scan.conflicts.len(), 3); // Limited to max
 
         let _ = fs::remove_dir_all(&src_dir);
@@ -1104,9 +1128,7 @@ mod tests {
         Arc::new(WriteOperationState {
             intent: Arc::new(AtomicU8::new(0)),
             progress_interval: Duration::from_millis(50),
-            pending_resolution: std::sync::RwLock::new(None),
-            conflict_condvar: std::sync::Condvar::new(),
-            conflict_mutex: std::sync::Mutex::new(false),
+            conflict_resolution_tx: std::sync::Mutex::new(None),
         })
     }
 
@@ -1117,13 +1139,13 @@ mod tests {
         )
     }
 
-    #[test]
-    fn test_multi_file_copy_all_files_arrive() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_multi_file_copy_all_files_arrive() {
         let (source, dest) = make_volumes();
 
-        source.create_file(Path::new("/a.txt"), b"alpha").unwrap();
-        source.create_file(Path::new("/b.txt"), b"bravo").unwrap();
-        source.create_file(Path::new("/c.txt"), b"charlie").unwrap();
+        source.create_file(Path::new("/a.txt"), b"alpha").await.unwrap();
+        source.create_file(Path::new("/b.txt"), b"bravo").await.unwrap();
+        source.create_file(Path::new("/c.txt"), b"charlie").await.unwrap();
 
         let events = Arc::new(CollectorEventSink::new());
         let state = make_state();
@@ -1133,26 +1155,27 @@ mod tests {
             events.as_ref(),
             "test-op-1",
             &state,
-            source,
+            Arc::clone(&source),
             &[
                 PathBuf::from("/a.txt"),
                 PathBuf::from("/b.txt"),
                 PathBuf::from("/c.txt"),
             ],
-            dest.clone(),
+            Arc::clone(&dest),
             Path::new("/"),
             &config,
-        );
+        )
+        .await;
 
         assert!(result.is_ok(), "copy should succeed: {:?}", result);
 
         // All 3 files at destination with correct content
-        let mut stream_a = dest.open_read_stream(Path::new("/a.txt")).unwrap();
-        assert_eq!(stream_a.next_chunk().unwrap().unwrap(), b"alpha");
-        let mut stream_b = dest.open_read_stream(Path::new("/b.txt")).unwrap();
-        assert_eq!(stream_b.next_chunk().unwrap().unwrap(), b"bravo");
-        let mut stream_c = dest.open_read_stream(Path::new("/c.txt")).unwrap();
-        assert_eq!(stream_c.next_chunk().unwrap().unwrap(), b"charlie");
+        let mut stream_a = dest.open_read_stream(Path::new("/a.txt")).await.unwrap();
+        assert_eq!(stream_a.next_chunk().await.unwrap().unwrap(), b"alpha");
+        let mut stream_b = dest.open_read_stream(Path::new("/b.txt")).await.unwrap();
+        assert_eq!(stream_b.next_chunk().await.unwrap().unwrap(), b"bravo");
+        let mut stream_c = dest.open_read_stream(Path::new("/c.txt")).await.unwrap();
+        assert_eq!(stream_c.next_chunk().await.unwrap().unwrap(), b"charlie");
 
         // Completion event emitted
         let complete = events.complete.lock().unwrap();
@@ -1160,12 +1183,12 @@ mod tests {
         assert_eq!(complete[0].files_processed, 3);
     }
 
-    #[test]
-    fn test_multi_file_copy_progress_tracking() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_multi_file_copy_progress_tracking() {
         let (source, dest) = make_volumes();
 
-        source.create_file(Path::new("/x.bin"), &[0; 100_000]).unwrap();
-        source.create_file(Path::new("/y.bin"), &[0; 50_000]).unwrap();
+        source.create_file(Path::new("/x.bin"), &[0; 100_000]).await.unwrap();
+        source.create_file(Path::new("/y.bin"), &[0; 50_000]).await.unwrap();
 
         let events = Arc::new(CollectorEventSink::new());
         let state = make_state();
@@ -1178,12 +1201,13 @@ mod tests {
             events.as_ref(),
             "test-op-2",
             &state,
-            source,
+            Arc::clone(&source),
             &[PathBuf::from("/x.bin"), PathBuf::from("/y.bin")],
-            dest,
+            Arc::clone(&dest),
             Path::new("/"),
             &config,
-        );
+        )
+        .await;
 
         assert!(result.is_ok());
 
@@ -1197,12 +1221,12 @@ mod tests {
         assert_eq!(complete[0].bytes_processed, 150_000);
     }
 
-    #[test]
-    fn test_multi_file_copy_cancel_before_start() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_multi_file_copy_cancel_before_start() {
         let (source, dest) = make_volumes();
 
-        source.create_file(Path::new("/a.txt"), b"alpha").unwrap();
-        source.create_file(Path::new("/b.txt"), b"bravo").unwrap();
+        source.create_file(Path::new("/a.txt"), b"alpha").await.unwrap();
+        source.create_file(Path::new("/b.txt"), b"bravo").await.unwrap();
 
         let events = Arc::new(CollectorEventSink::new());
         let state = make_state();
@@ -1214,21 +1238,22 @@ mod tests {
             events.as_ref(),
             "test-op-pre-cancel",
             &state,
-            source,
+            Arc::clone(&source),
             &[PathBuf::from("/a.txt"), PathBuf::from("/b.txt")],
-            dest.clone(),
+            Arc::clone(&dest),
             Path::new("/"),
             &config,
-        );
+        )
+        .await;
 
         assert!(matches!(result, Err(WriteOperationError::Cancelled { .. })));
         // No files should have been copied
-        assert!(!dest.exists(Path::new("/a.txt")));
-        assert!(!dest.exists(Path::new("/b.txt")));
+        assert!(!dest.exists(Path::new("/a.txt")).await);
+        assert!(!dest.exists(Path::new("/b.txt")).await);
     }
 
-    #[test]
-    fn test_multi_file_copy_cancel_mid_flight() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_multi_file_copy_cancel_mid_flight() {
         // Use a custom event sink that triggers cancellation deterministically
         // when progress reports files_done >= 2.
         struct CancelAfterNSink {
@@ -1263,25 +1288,26 @@ mod tests {
         for i in 1..=5 {
             source
                 .create_file(Path::new(&format!("/{}.bin", i)), &vec![0; 100_000])
+                .await
                 .unwrap();
         }
 
         let state = make_state();
-        let events = CancelAfterNSink {
+        let events = Arc::new(CancelAfterNSink {
             inner: CollectorEventSink::new(),
             intent: Arc::clone(&state.intent),
             cancel_after_files: 2,
-        };
+        });
         let config = VolumeCopyConfig {
             progress_interval_ms: 0,
             ..VolumeCopyConfig::default()
         };
 
         let result = copy_volumes_with_progress(
-            &events,
+            events.as_ref(),
             "test-op-cancel-mid",
             &state,
-            source,
+            Arc::clone(&source),
             &[
                 PathBuf::from("/1.bin"),
                 PathBuf::from("/2.bin"),
@@ -1289,10 +1315,11 @@ mod tests {
                 PathBuf::from("/4.bin"),
                 PathBuf::from("/5.bin"),
             ],
-            dest.clone(),
+            Arc::clone(&dest),
             Path::new("/"),
             &config,
-        );
+        )
+        .await;
 
         // Cancellation from write_from_stream's progress callback results in an IoError
         // (the VolumeError::IoError "Operation cancelled" maps to WriteOperationError::IoError).
@@ -1300,11 +1327,14 @@ mod tests {
         assert!(result.is_err(), "expected error, got {:?}", result);
 
         // At least 2 files should exist but not all 5
-        assert!(dest.exists(Path::new("/1.bin")));
-        assert!(dest.exists(Path::new("/2.bin")));
-        let total = (1..=5)
-            .filter(|i| dest.exists(Path::new(&format!("/{}.bin", i))))
-            .count();
+        assert!(dest.exists(Path::new("/1.bin")).await);
+        assert!(dest.exists(Path::new("/2.bin")).await);
+        let mut total = 0;
+        for i in 1..=5 {
+            if dest.exists(Path::new(&format!("/{}.bin", i))).await {
+                total += 1;
+            }
+        }
         assert!(total < 5, "expected fewer than 5 files, got {}", total);
 
         // The cancel either emits a write-cancelled event (if the intent check fires
@@ -1318,16 +1348,19 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_multi_file_copy_skip_conflict() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_multi_file_copy_skip_conflict() {
         let (source, dest) = make_volumes();
 
-        source.create_file(Path::new("/new.txt"), b"new content").unwrap();
+        source.create_file(Path::new("/new.txt"), b"new content").await.unwrap();
         source
             .create_file(Path::new("/conflict.txt"), b"source version")
+            .await
             .unwrap();
         // Pre-existing file at destination
-        dest.create_file(Path::new("/conflict.txt"), b"dest version").unwrap();
+        dest.create_file(Path::new("/conflict.txt"), b"dest version")
+            .await
+            .unwrap();
 
         let events = Arc::new(CollectorEventSink::new());
         let state = make_state();
@@ -1340,30 +1373,34 @@ mod tests {
             events.as_ref(),
             "test-op-skip",
             &state,
-            source,
+            Arc::clone(&source),
             &[PathBuf::from("/new.txt"), PathBuf::from("/conflict.txt")],
-            dest.clone(),
+            Arc::clone(&dest),
             Path::new("/"),
             &config,
-        );
+        )
+        .await;
 
         assert!(result.is_ok());
 
         // New file should be copied
-        let mut stream = dest.open_read_stream(Path::new("/new.txt")).unwrap();
-        assert_eq!(stream.next_chunk().unwrap().unwrap(), b"new content");
+        let mut stream = dest.open_read_stream(Path::new("/new.txt")).await.unwrap();
+        assert_eq!(stream.next_chunk().await.unwrap().unwrap(), b"new content");
 
         // Conflicting file should keep destination version (skip)
-        let mut stream = dest.open_read_stream(Path::new("/conflict.txt")).unwrap();
-        assert_eq!(stream.next_chunk().unwrap().unwrap(), b"dest version");
+        let mut stream = dest.open_read_stream(Path::new("/conflict.txt")).await.unwrap();
+        assert_eq!(stream.next_chunk().await.unwrap().unwrap(), b"dest version");
     }
 
-    #[test]
-    fn test_multi_file_copy_overwrite_conflict() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn test_multi_file_copy_overwrite_conflict() {
         let (source, dest) = make_volumes();
 
-        source.create_file(Path::new("/file.txt"), b"new version").unwrap();
-        dest.create_file(Path::new("/file.txt"), b"old version").unwrap();
+        source
+            .create_file(Path::new("/file.txt"), b"new version")
+            .await
+            .unwrap();
+        dest.create_file(Path::new("/file.txt"), b"old version").await.unwrap();
 
         let events = Arc::new(CollectorEventSink::new());
         let state = make_state();
@@ -1376,17 +1413,18 @@ mod tests {
             events.as_ref(),
             "test-op-overwrite",
             &state,
-            source,
+            Arc::clone(&source),
             &[PathBuf::from("/file.txt")],
-            dest.clone(),
+            Arc::clone(&dest),
             Path::new("/"),
             &config,
-        );
+        )
+        .await;
 
         assert!(result.is_ok());
 
         // File should have source content (overwritten)
-        let mut stream = dest.open_read_stream(Path::new("/file.txt")).unwrap();
-        assert_eq!(stream.next_chunk().unwrap().unwrap(), b"new version");
+        let mut stream = dest.open_read_stream(Path::new("/file.txt")).await.unwrap();
+        assert_eq!(stream.next_chunk().await.unwrap().unwrap(), b"new version");
     }
 }

@@ -108,9 +108,7 @@ where
     let state = Arc::new(WriteOperationState {
         intent: Arc::new(AtomicU8::new(0)),
         progress_interval: Duration::from_millis(progress_interval_ms),
-        pending_resolution: std::sync::RwLock::new(None),
-        conflict_condvar: std::sync::Condvar::new(),
-        conflict_mutex: std::sync::Mutex::new(false),
+        conflict_resolution_tx: std::sync::Mutex::new(None),
     });
 
     if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
@@ -254,26 +252,90 @@ pub async fn delete_files_start(
         config.dry_run
     );
 
-    start_write_operation(
-        app,
-        WriteOperationType::Delete,
-        config.progress_interval_ms,
-        move |app, op_id, state| {
-            if volume_id_str != "root" {
-                let volume = crate::file_system::get_volume_manager()
-                    .get(&volume_id_str)
-                    .ok_or_else(|| WriteOperationError::IoError {
-                        path: volume_id_str.clone(),
-                        message: format!("Volume '{}' not found", volume_id_str),
-                    })?;
-                delete_volume_files_with_progress(volume, &app, &op_id, &state, &sources, &config)
-            } else {
+    if volume_id_str != "root" {
+        // Volume-aware delete (async) — bypass start_write_operation since the handler is async
+        let operation_id = Uuid::new_v4().to_string();
+        let state = Arc::new(WriteOperationState {
+            intent: Arc::new(AtomicU8::new(0)),
+            progress_interval: Duration::from_millis(config.progress_interval_ms),
+            conflict_resolution_tx: std::sync::Mutex::new(None),
+        });
+
+        if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
+            cache.insert(operation_id.clone(), Arc::clone(&state));
+        }
+        register_operation_status(&operation_id, WriteOperationType::Delete);
+
+        let operation_id_for_spawn = operation_id.clone();
+        tokio::spawn(async move {
+            let operation_id_for_cleanup = operation_id_for_spawn.clone();
+            let app_for_error = app.clone();
+
+            let volume = match crate::file_system::get_volume_manager().get(&volume_id_str) {
+                Some(v) => v,
+                None => {
+                    use tauri::Emitter;
+                    let _ = app_for_error.emit(
+                        "write-error",
+                        WriteErrorEvent {
+                            operation_id: operation_id_for_cleanup.clone(),
+                            operation_type: WriteOperationType::Delete,
+                            error: WriteOperationError::IoError {
+                                path: volume_id_str.clone(),
+                                message: format!("Volume '{}' not found", volume_id_str),
+                            },
+                        },
+                    );
+                    if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
+                        cache.remove(&operation_id_for_cleanup);
+                    }
+                    unregister_operation_status(&operation_id_for_cleanup);
+                    return;
+                }
+            };
+
+            let result =
+                delete_volume_files_with_progress(volume, &app, &operation_id_for_spawn, &state, &sources, &config)
+                    .await;
+
+            if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
+                cache.remove(&operation_id_for_cleanup);
+            }
+            unregister_operation_status(&operation_id_for_cleanup);
+
+            use tauri::Emitter;
+            match result {
+                Ok(()) => {}
+                Err(ref e) if matches!(e, WriteOperationError::Cancelled { .. }) => {}
+                Err(e) => {
+                    let _ = app_for_error.emit(
+                        "write-error",
+                        WriteErrorEvent {
+                            operation_id: operation_id_for_cleanup,
+                            operation_type: WriteOperationType::Delete,
+                            error: e,
+                        },
+                    );
+                }
+            }
+        });
+
+        Ok(WriteOperationStartResult {
+            operation_id,
+            operation_type: WriteOperationType::Delete,
+        })
+    } else {
+        start_write_operation(
+            app,
+            WriteOperationType::Delete,
+            config.progress_interval_ms,
+            move |app, op_id, state| {
                 validate_sources(&sources)?;
                 delete_files_with_progress(&app, &op_id, &state, &sources, &config)
-            }
-        },
-    )
-    .await
+            },
+        )
+        .await
+    }
 }
 
 /// Starts a trash operation in the background.

@@ -15,7 +15,7 @@ network mounts, cross-filesystem moves, and name/path length limits.
 | `mod.rs` | Public API: `copy_files_start`, `move_files_start`, `delete_files_start`, `trash_files_start`. Each delegates to `start_write_operation` which handles state creation, spawn lifecycle, cleanup, and error/panic recovery. Validation runs inside the handler closure on the blocking thread pool — never on the async executor. |
 | `types.rs` | All serializable types: events, config, errors, results. `WriteOperationConfig`, `ConflictResolution`, `WriteOperationError`, `DryRunResult`, scan preview events. Also: `OperationEventSink` trait (decouples event emission from `tauri::AppHandle`), `TauriEventSink` (production), `CollectorEventSink` (test-only). |
 | `state.rs` | Two `LazyLock<RwLock<HashMap>>` caches (`WRITE_OPERATION_STATE`, `OPERATION_STATUS_CACHE`). `WriteOperationState`, `CopyTransaction`, `ScanResult`, `FileInfo`. |
-| `helpers.rs` | Validation (`validate_sources`, `validate_destination_writable` via `libc::access`, `validate_disk_space` via `statvfs`). Conflict resolution (condvar wait for Stop mode). `safe_overwrite_file`/`safe_overwrite_dir` (temp+rename). `find_unique_name`. `run_cancellable`. `is_same_filesystem` (device IDs). Background cleanup helpers: `remove_file_in_background`, `remove_dir_all_in_background`. |
+| `helpers.rs` | Validation (`validate_sources`, `validate_destination_writable` via `libc::access`, `validate_disk_space` via `statvfs`). Conflict resolution (`tokio::sync::oneshot` channel wait for Stop mode). `safe_overwrite_file`/`safe_overwrite_dir` (temp+rename). `find_unique_name`. `run_cancellable`. `is_same_filesystem` (device IDs). Background cleanup helpers: `remove_file_in_background`, `remove_dir_all_in_background`. |
 | `scan.rs` | `scan_sources` (recursive walk, emits progress), `dry_run_scan`, shared `walk_dir_recursive` walker. |
 | `scan_preview.rs` | Scan preview subsystem for Copy dialog live stats: `start_scan_preview`, `cancel_scan_preview`, `is_scan_preview_complete`. Background scans (local and volume-based) with result caching. |
 | `copy.rs` | `copy_files_with_progress`: scan → disk space check → per-file copy via `copy_single_item`. `CopyTransaction` for rollback. |
@@ -40,11 +40,11 @@ network mounts, cross-filesystem moves, and name/path length limits.
 
 ```
 Frontend
-  → WriteOperationState created (AtomicBool cancelled, Condvar for Stop conflicts)
+  → WriteOperationState created (AtomicU8 intent, oneshot channel for Stop conflicts)
   → stored in WRITE_OPERATION_STATE + OPERATION_STATUS_CACHE
   → operationId returned to frontend immediately (dialog opens, cancel is possible)
   → tokio::spawn (async wrapper)
-      → tokio::task::spawn_blocking (all blocking I/O here)
+      → tokio::task::spawn_blocking (local I/O) or direct async (volume ops)
           → validate (sources exist, dest writable, not same location, dest not inside source)
           → scan phase: walk_dir_recursive, emit scan-progress events
           → disk space check (statvfs)
@@ -75,8 +75,7 @@ returns true for both `RollingBack` and `Stopped`, so the 40+ cancellation check
   keeps whatever hasn't been deleted yet. `rolled_back: true`.
 - Both are triggered from the same `cancel_write_operation` IPC call, distinguished by the `rollback` parameter.
 
-**Two-layer cancellation.** `AtomicU8` for fast in-loop checks. `run_cancellable` wraps blocking operations (e.g.,
-network-mount copies that may block indefinitely) in a separate thread, polling the flag every 100ms via `mpsc::channel`.
+**Two-layer cancellation.** `AtomicU8` (`OperationIntent`) for fast in-loop checks in local file operations. Volume operations (MTP, SMB) use the same `AtomicU8` checks but run on the async executor (no `spawn_blocking`). `run_cancellable` wraps blocking local operations (e.g., network-mount copies that may block indefinitely) in a separate thread, polling the flag every 100ms via `mpsc::channel`.
 
 **`CopyTransaction` rollback: sync with progress.** `rollback()` (synchronous, for error paths) and tracked
 `rollback_with_progress()` in `copy.rs` (for user-initiated rollback — emits `write-progress` events with
@@ -89,9 +88,12 @@ of canonicalized paths.
 **Safe overwrite: temp + backup + rename.** Steps: copy source → `dest.cmdr-tmp-<uuid>`, rename dest → `dest.cmdr-backup-<uuid>`,
 rename temp → dest, delete backup. The original is intact until step 3 completes.
 
-**Stop-mode conflict resolution.** Emits `write-conflict` event, then blocks on a `Condvar` with a 300s safety timeout.
-Frontend calls `resolve_write_conflict(operation_id, resolution, apply_to_all)` which stores a `ConflictResolutionResponse`
-and notifies the condvar. `cancel_write_operation` also notifies the condvar to unblock.
+**Stop-mode conflict resolution.** Emits `write-conflict` event, then blocks on a `tokio::sync::oneshot` channel
+(`blocking_recv()` inside `spawn_blocking`). A new oneshot channel is created per conflict. Frontend calls
+`resolve_write_conflict(operation_id, resolution, apply_to_all)` which takes the stored `Sender` and sends the
+`ConflictResolutionResponse`. `cancel_write_operation` drops the sender, causing the receiver to return `Err` (interpreted
+as cancellation). This is strictly better than the old Condvar+timeout approach: no polling, no 30s safety timeout needed,
+immediate unblock on cancel.
 
 **`cancel_write_operation` does state transitions.** `rollback=true` → `Running → RollingBack`, `rollback=false` →
 `Running → Stopped` or `RollingBack → Stopped`. First caller's decision wins — subsequent calls with different intent
