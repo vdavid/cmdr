@@ -48,7 +48,7 @@
   --color-accent-text: color-mix(
     in srgb,
     var(--color-accent),
-    black 55%
+    black 65%
   ); /* Darkened accent for a11y when used as foreground text (≥4.5:1 on --color-bg-secondary) */
   --color-accent-hover: color-mix(in oklch, var(--color-accent), white 15%);
   --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
