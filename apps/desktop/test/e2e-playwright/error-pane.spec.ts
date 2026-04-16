@@ -9,10 +9,17 @@
  */
 
 import { test, expect } from './fixtures.js'
+import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { ensureAppReady, pollUntil, sleep, getFixtureRoot, moveCursorToFile } from './helpers.js'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 
 type PageLike = TauriPage | BrowserPageAdapter
+
+// Recreate fixtures before each test so previous test suites (e.g. conflict tests)
+// don't leave the fixture directory in a non-standard layout.
+test.beforeEach(() => {
+  recreateFixtures(getFixtureRoot())
+})
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 

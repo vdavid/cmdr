@@ -137,7 +137,7 @@ export async function ensureAppReady(
 
   // Wait for the left pane to show the expected fixture files
   const leftExpected = expectedFiles?.leftPane ?? ['file-a.txt', 'sub-dir']
-  await pollUntil(
+  const filesFound = await pollUntil(
     tauriPage,
     async () => {
       return tauriPage.evaluate<boolean>(`(function() {
@@ -153,6 +153,19 @@ export async function ensureAppReady(
     },
     10000,
   )
+  if (!filesFound) {
+    const actual = await tauriPage.evaluate<string[]>(`(function() {
+            var pane = document.querySelectorAll('.file-pane')[0];
+            if (!pane) return [];
+            return Array.from(pane.querySelectorAll('.file-entry')).map(function(e) {
+                return (e.querySelector('.col-name') || e.querySelector('.name') || {}).textContent || '';
+            });
+        })()`)
+    throw new Error(
+      `ensureAppReady: expected files ${JSON.stringify(leftExpected)} not found in left pane after 10s. ` +
+        `Actual entries: ${JSON.stringify(actual)}. Fixture directory may need recreateFixtures() in beforeEach.`,
+    )
+  }
 
   // Click on a file entry in the left pane to ensure focus, then focus the
   // explorer container so keyboard events reach the handler.
