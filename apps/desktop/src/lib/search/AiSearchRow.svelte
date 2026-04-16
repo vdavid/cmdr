@@ -115,7 +115,13 @@
     }
 
     .ai-label {
+        /* Badge chip: keeps the accent feel and creates a local background
+           context so WCAG AA contrast is guaranteed against the chip bg,
+           regardless of the surrounding dialog background. */
+        padding: var(--spacing-xxs) var(--spacing-xs);
         color: var(--color-accent-text);
+        background: var(--color-accent-subtle);
+        border-radius: var(--radius-sm);
     }
 
     .name-input {
