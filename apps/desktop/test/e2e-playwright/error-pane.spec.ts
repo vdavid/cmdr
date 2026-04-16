@@ -70,7 +70,7 @@ test.describe('Error pane: Transient errors (ETIMEDOUT)', () => {
     expect(errorPaneVisible).toBe(true)
 
     // Verify the title says "Connection timed out"
-    const title = await tauriPage.evaluate<string>(`document.querySelector('.error-pane h2')?.textContent || ''`)
+    const title = await tauriPage.evaluate<string>(`(document.querySelector('.error-pane h2')?.textContent || '').trim()`)
     expect(title).toBe('Connection timed out')
 
     // Verify explanation is rendered as HTML (contains a <p> or text node, not raw markdown)
@@ -154,7 +154,7 @@ test.describe('Error pane: NeedsAction errors (EACCES)', () => {
     await pollUntil(tauriPage, async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`), 5000)
 
     // Verify the title says "No permission"
-    const title = await tauriPage.evaluate<string>(`document.querySelector('.error-pane h2')?.textContent || ''`)
+    const title = await tauriPage.evaluate<string>(`(document.querySelector('.error-pane h2')?.textContent || '').trim()`)
     expect(title).toBe('No permission')
 
     // Verify NO "Try again" button for NeedsAction category

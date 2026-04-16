@@ -282,7 +282,7 @@ start_smb_containers
 # CMDR_MCP_ENABLED: release builds disable MCP by default — tests need it
 # --privileged: needed for mount -t cifs inside the container (SYS_ADMIN alone is
 # blocked by Docker's default seccomp profile which denies the mount syscall)
-SMB_ENV_ARGS="-e SMB_E2E_GUEST_HOST=smb-consumer-guest -e SMB_E2E_GUEST_PORT=445 -e SMB_E2E_AUTH_HOST=smb-consumer-auth -e SMB_E2E_AUTH_PORT=445 -e SMB_E2E_50SHARES_HOST=smb-consumer-50shares -e SMB_CONSUMER_50SHARES_PORT=445 -e SMB_E2E_UNICODE_HOST=smb-consumer-unicode -e SMB_CONSUMER_UNICODE_PORT=445 -e CMDR_MCP_ENABLED=true"
+SMB_ENV_ARGS="-e SMB_E2E_GUEST_HOST=smb-consumer-guest -e SMB_E2E_GUEST_PORT=445 -e SMB_E2E_AUTH_HOST=smb-consumer-auth -e SMB_E2E_AUTH_PORT=445 -e SMB_E2E_50SHARES_HOST=smb-consumer-50shares -e SMB_E2E_50SHARES_PORT=445 -e SMB_CONSUMER_50SHARES_PORT=445 -e SMB_E2E_UNICODE_HOST=smb-consumer-unicode -e SMB_E2E_UNICODE_PORT=445 -e SMB_CONSUMER_UNICODE_PORT=445 -e CMDR_MCP_ENABLED=true"
 SMB_DOCKER_ARGS="--privileged"
 
 if $INTERACTIVE; then
