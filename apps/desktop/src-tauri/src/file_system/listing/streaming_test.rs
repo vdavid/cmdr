@@ -65,27 +65,18 @@ async fn test_streaming_list_populates_cache() {
     let events: Arc<dyn ListingEventSink> = Arc::new(CollectorListingEventSink::new());
     let state = new_state();
 
-    let result = tokio::task::spawn_blocking({
-        let events = Arc::clone(&events);
-        let state = Arc::clone(&state);
-        let volume_id = volume_id.to_string();
-        let listing_id = listing_id.to_string();
-        move || {
-            read_directory_with_progress(
-                &events,
-                &listing_id,
-                &state,
-                &volume_id,
-                Path::new("/"),
-                true,
-                SortColumn::Name,
-                SortOrder::Ascending,
-                DirectorySortMode::LikeFiles,
-            )
-        }
-    })
-    .await
-    .unwrap();
+    let result = read_directory_with_progress(
+        &events,
+        listing_id,
+        &state,
+        volume_id,
+        Path::new("/"),
+        true,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    )
+    .await;
 
     assert!(result.is_ok(), "Expected Ok, got {:?}", result);
 
@@ -122,27 +113,18 @@ async fn test_streaming_list_emits_opening_and_complete() {
     let events: Arc<dyn ListingEventSink> = Arc::clone(&sink) as Arc<dyn ListingEventSink>;
     let state = new_state();
 
-    let result = tokio::task::spawn_blocking({
-        let events = Arc::clone(&events);
-        let state = Arc::clone(&state);
-        let volume_id = volume_id.to_string();
-        let listing_id = listing_id.to_string();
-        move || {
-            read_directory_with_progress(
-                &events,
-                &listing_id,
-                &state,
-                &volume_id,
-                Path::new("/"),
-                true,
-                SortColumn::Name,
-                SortOrder::Ascending,
-                DirectorySortMode::LikeFiles,
-            )
-        }
-    })
-    .await
-    .unwrap();
+    let result = read_directory_with_progress(
+        &events,
+        listing_id,
+        &state,
+        volume_id,
+        Path::new("/"),
+        true,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    )
+    .await;
 
     assert!(result.is_ok());
 
@@ -178,27 +160,18 @@ async fn test_streaming_list_cancellation() {
     // Set cancelled BEFORE calling
     state.cancelled.store(true, Ordering::Relaxed);
 
-    let result = tokio::task::spawn_blocking({
-        let events = Arc::clone(&events);
-        let state = Arc::clone(&state);
-        let volume_id = volume_id.to_string();
-        let listing_id = listing_id.to_string();
-        move || {
-            read_directory_with_progress(
-                &events,
-                &listing_id,
-                &state,
-                &volume_id,
-                Path::new("/"),
-                true,
-                SortColumn::Name,
-                SortOrder::Ascending,
-                DirectorySortMode::LikeFiles,
-            )
-        }
-    })
-    .await
-    .unwrap();
+    let result = read_directory_with_progress(
+        &events,
+        listing_id,
+        &state,
+        volume_id,
+        Path::new("/"),
+        true,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    )
+    .await;
 
     assert!(result.is_ok());
 
@@ -227,27 +200,18 @@ async fn test_streaming_list_volume_not_found() {
     let events: Arc<dyn ListingEventSink> = Arc::new(CollectorListingEventSink::new());
     let state = new_state();
 
-    let result = tokio::task::spawn_blocking({
-        let events = Arc::clone(&events);
-        let state = Arc::clone(&state);
-        let volume_id = volume_id.to_string();
-        let listing_id = listing_id.to_string();
-        move || {
-            read_directory_with_progress(
-                &events,
-                &listing_id,
-                &state,
-                &volume_id,
-                Path::new("/"),
-                true,
-                SortColumn::Name,
-                SortOrder::Ascending,
-                DirectorySortMode::LikeFiles,
-            )
-        }
-    })
-    .await
-    .unwrap();
+    let result = read_directory_with_progress(
+        &events,
+        listing_id,
+        &state,
+        volume_id,
+        Path::new("/"),
+        true,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    )
+    .await;
 
     assert!(result.is_err());
     match result {
@@ -269,27 +233,18 @@ async fn test_streaming_list_empty_directory() {
     let events: Arc<dyn ListingEventSink> = Arc::clone(&sink) as Arc<dyn ListingEventSink>;
     let state = new_state();
 
-    let result = tokio::task::spawn_blocking({
-        let events = Arc::clone(&events);
-        let state = Arc::clone(&state);
-        let volume_id = volume_id.to_string();
-        let listing_id = listing_id.to_string();
-        move || {
-            read_directory_with_progress(
-                &events,
-                &listing_id,
-                &state,
-                &volume_id,
-                Path::new("/"),
-                true,
-                SortColumn::Name,
-                SortOrder::Ascending,
-                DirectorySortMode::LikeFiles,
-            )
-        }
-    })
-    .await
-    .unwrap();
+    let result = read_directory_with_progress(
+        &events,
+        listing_id,
+        &state,
+        volume_id,
+        Path::new("/"),
+        true,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    )
+    .await;
 
     assert!(result.is_ok());
 

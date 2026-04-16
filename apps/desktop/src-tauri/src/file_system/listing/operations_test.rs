@@ -329,22 +329,15 @@ async fn test_list_directory_start_with_volume_caches_entries() {
 
     get_volume_manager().register(&volume_id, volume);
 
-    // Run on a blocking thread because the function internally uses
-    // `Handle::current().block_on()` which panics if called from an async context.
-    let vid = volume_id.clone();
-    let dp = dir_path.clone();
-    let result = tokio::task::spawn_blocking(move || {
-        super::list_directory_start_with_volume(
-            &vid,
-            &dp,
-            true,
-            SortColumn::Name,
-            SortOrder::Ascending,
-            DirectorySortMode::LikeFiles,
-        )
-    })
-    .await
-    .unwrap();
+    let result = super::list_directory_start_with_volume(
+        &volume_id,
+        &dir_path,
+        true,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    )
+    .await;
 
     assert!(
         result.is_ok(),
@@ -382,18 +375,15 @@ async fn test_list_directory_start_with_volume_unknown_volume() {
     use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
     use std::path::PathBuf;
 
-    let result = tokio::task::spawn_blocking(move || {
-        super::list_directory_start_with_volume(
-            "nonexistent-volume-id",
-            &PathBuf::from("/some/path"),
-            true,
-            SortColumn::Name,
-            SortOrder::Ascending,
-            DirectorySortMode::LikeFiles,
-        )
-    })
-    .await
-    .unwrap();
+    let result = super::list_directory_start_with_volume(
+        "nonexistent-volume-id",
+        &PathBuf::from("/some/path"),
+        true,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    )
+    .await;
 
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("not found"));

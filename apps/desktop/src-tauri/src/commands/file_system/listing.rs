@@ -15,9 +15,7 @@ use crate::file_system::{
 use std::path::{Path, PathBuf};
 use tokio::time::Duration;
 
-use crate::commands::util::{
-    IpcError, TimedOut, blocking_result_with_timeout, blocking_with_timeout, blocking_with_timeout_flag,
-};
+use crate::commands::util::{IpcError, TimedOut, blocking_with_timeout};
 use crate::file_system::validation::{MAX_NAME_BYTES, MAX_PATH_BYTES};
 
 use super::expand_tilde;
@@ -75,11 +73,19 @@ pub async fn list_directory_start(
     let expanded_path = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded_path);
     let dir_sort_mode = directory_sort_mode.unwrap_or_default();
-    blocking_result_with_timeout(Duration::from_secs(2), move || {
-        ops_list_directory_start_with_volume("root", &path_buf, include_hidden, sort_by, sort_order, dir_sort_mode)
-            .map_err(|e| format!("Failed to start directory listing '{}': {}", path, e))
-    })
+    match tokio::time::timeout(
+        Duration::from_secs(2),
+        ops_list_directory_start_with_volume("root", &path_buf, include_hidden, sort_by, sort_order, dir_sort_mode),
+    )
     .await
+    {
+        Ok(Ok(result)) => Ok(result),
+        Ok(Err(e)) => Err(IpcError::from_err(format!(
+            "Failed to start directory listing '{}': {}",
+            path, e
+        ))),
+        Err(_) => Err(IpcError::timeout()),
+    }
 }
 
 /// Returns immediately; reads in background.
@@ -220,10 +226,12 @@ pub fn list_directory_end(listing_id: String) {
 /// Used after write operations (move) when the file watcher may not fire promptly.
 #[tauri::command]
 pub async fn refresh_listing(listing_id: String) -> TimedOut<()> {
-    blocking_with_timeout_flag(Duration::from_secs(2), (), move || {
-        crate::file_system::watcher::handle_directory_change(&listing_id);
+    let timed_out = tokio::time::timeout(Duration::from_secs(2), async {
+        crate::file_system::watcher::handle_directory_change(&listing_id).await;
     })
     .await
+    .is_err();
+    TimedOut { data: (), timed_out }
 }
 
 /// Returns total file/dir counts and sizes, plus selection stats if `selected_indices` is given.

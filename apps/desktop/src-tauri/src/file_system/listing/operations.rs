@@ -47,7 +47,7 @@ pub struct ListingStartResult {
 ///
 /// Reads the directory once, caches it, and returns listing ID + total count.
 /// Frontend then fetches visible ranges on demand via `get_file_range`.
-pub fn list_directory_start(path: &Path, include_hidden: bool) -> Result<ListingStartResult, std::io::Error> {
+pub async fn list_directory_start(path: &Path, include_hidden: bool) -> Result<ListingStartResult, std::io::Error> {
     list_directory_start_with_volume(
         "root",
         path,
@@ -56,12 +56,13 @@ pub fn list_directory_start(path: &Path, include_hidden: bool) -> Result<Listing
         SortOrder::Ascending,
         DirectorySortMode::LikeFiles,
     )
+    .await
 }
 
 /// Starts a new directory listing using a specific volume.
 ///
 /// This is the internal implementation that supports multi-volume access.
-pub fn list_directory_start_with_volume(
+pub async fn list_directory_start_with_volume(
     volume_id: &str,
     path: &Path,
     include_hidden: bool,
@@ -82,8 +83,9 @@ pub fn list_directory_start_with_volume(
     })?;
 
     // Use the Volume trait to list the directory
-    let all_entries = tokio::runtime::Handle::current()
-        .block_on(volume.list_directory(path))
+    let all_entries = volume
+        .list_directory(path)
+        .await
         .map_err(|e| std::io::Error::other(e.to_string()))?;
     benchmark::log_event_value("volume.list_directory COMPLETE, entries", all_entries.len());
 

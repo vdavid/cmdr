@@ -79,11 +79,7 @@ pub(super) async fn run_smb_watcher(
     }
 
     /// Processes a batch of collected events per directory into `DirectoryChange` notifications.
-    ///
-    /// Runs on a blocking thread (via `spawn_blocking`) because both `stat_via_volume`
-    /// and `notify_directory_changed(FullRefresh)` call `Volume::list_directory` which
-    /// uses `Handle::block_on` — that panics if called from an async task.
-    fn process_event_batch(
+    async fn process_event_batch(
         events_by_dir: HashMap<PathBuf, Vec<(FileNotifyAction, String)>>,
         volume_id: &str,
         mount_path: &Path,
@@ -118,7 +114,7 @@ pub(super) async fn run_smb_watcher(
                 match action {
                     FileNotifyAction::Added => {
                         let entry_path = to_nfd_display_path(mount_path, filename);
-                        match stat_via_volume(volume_id, &entry_path) {
+                        match stat_via_volume(volume_id, &entry_path).await {
                             Some(entry) => {
                                 notify_directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
                             }
@@ -135,7 +131,7 @@ pub(super) async fn run_smb_watcher(
                     }
                     FileNotifyAction::Modified => {
                         let entry_path = to_nfd_display_path(mount_path, filename);
-                        match stat_via_volume(volume_id, &entry_path) {
+                        match stat_via_volume(volume_id, &entry_path).await {
                             Some(entry) => {
                                 notify_directory_changed(volume_id, parent_path, DirectoryChange::Modified(entry));
                             }
@@ -153,7 +149,7 @@ pub(super) async fn run_smb_watcher(
                     FileNotifyAction::RenamedNewName => {
                         let entry_path = to_nfd_display_path(mount_path, filename);
                         if let Some(old_name) = pending_old_name.take() {
-                            match stat_via_volume(volume_id, &entry_path) {
+                            match stat_via_volume(volume_id, &entry_path).await {
                                 Some(new_entry) => {
                                     notify_directory_changed(
                                         volume_id,
@@ -172,7 +168,7 @@ pub(super) async fn run_smb_watcher(
                             }
                         } else {
                             // Got new name without old name — treat as add
-                            if let Some(entry) = stat_via_volume(volume_id, &entry_path) {
+                            if let Some(entry) = stat_via_volume(volume_id, &entry_path).await {
                                 notify_directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
                             }
                         }
@@ -188,13 +184,10 @@ pub(super) async fn run_smb_watcher(
     }
 
     /// Stats a file via the main SmbVolume connection (through VolumeManager).
-    ///
-    /// Must be called from a blocking thread (not an async task), because
-    /// `SmbVolume::get_metadata` uses `Handle::block_on` internally.
-    fn stat_via_volume(volume_id: &str, path: &Path) -> Option<FileEntry> {
+    async fn stat_via_volume(volume_id: &str, path: &Path) -> Option<FileEntry> {
         let vm = crate::file_system::get_volume_manager();
         let vol = vm.get(volume_id)?;
-        tokio::runtime::Handle::current().block_on(vol.get_metadata(path)).ok()
+        vol.get_metadata(path).await.ok()
     }
 
     // ── Main watcher loop ──────────────────────────────────────────
@@ -305,13 +298,7 @@ pub(super) async fn run_smb_watcher(
                             },
                             _ = &mut cancel_rx => {
                                 // Process what we have, then exit
-                                {
-                                    let vid = volume_id.clone();
-                                    let mp = mount_path.clone();
-                                    let _ = tokio::task::spawn_blocking(move || {
-                                        process_event_batch(events_by_dir, &vid, &mp);
-                                    }).await;
-                                }
+                                process_event_batch(events_by_dir, &volume_id, &mount_path).await;
                                 debug!("smb_watcher({}): cancelled during debounce, closing", share_name);
                                 if let Err(e) = watcher.close().await {
                                     debug!("smb_watcher({}): error closing watcher: {}", share_name, e);
@@ -348,14 +335,7 @@ pub(super) async fn run_smb_watcher(
                         events_by_dir.len()
                     );
 
-                    {
-                        let vid = volume_id.clone();
-                        let mp = mount_path.clone();
-                        let _ = tokio::task::spawn_blocking(move || {
-                            process_event_batch(events_by_dir, &vid, &mp);
-                        })
-                        .await;
-                    }
+                    process_event_batch(events_by_dir, &volume_id, &mount_path).await;
                 }
                 Err(e) => {
                     // Check for STATUS_NOTIFY_ENUM_DIR (buffer overflow)

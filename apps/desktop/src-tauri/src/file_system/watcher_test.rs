@@ -127,12 +127,7 @@ async fn test_handle_directory_change_refreshes_from_volume() {
         );
     }
 
-    // Run handle_directory_change on a blocking thread because it internally uses
-    // `Handle::current().block_on()` which panics if called from an async context.
-    let lid = listing_id.clone();
-    tokio::task::spawn_blocking(move || handle_directory_change(&lid))
-        .await
-        .unwrap();
+    handle_directory_change(&listing_id).await;
 
     // Assert: cache now has both X and Y
     {
@@ -195,21 +190,13 @@ async fn test_handle_directory_change_detects_new_entries() {
     }
 
     // Add a new file to the volume (simulating external change).
-    // Run on a blocking thread because create_file is async and we need block_on.
-    let vol_clone = volume.clone();
-    tokio::task::spawn_blocking(move || {
-        tokio::runtime::Handle::current()
-            .block_on(vol_clone.create_file(std::path::Path::new("/testdir/b.txt"), b"new content"))
-            .unwrap();
-    })
-    .await
-    .unwrap();
-
-    // Trigger re-read (also on a blocking thread for the same reason)
-    let lid = listing_id.clone();
-    tokio::task::spawn_blocking(move || handle_directory_change(&lid))
+    volume
+        .create_file(std::path::Path::new("/testdir/b.txt"), b"new content")
         .await
         .unwrap();
+
+    // Trigger re-read
+    handle_directory_change(&listing_id).await;
 
     // Assert: cache now has A and B
     {

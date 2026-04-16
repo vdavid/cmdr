@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc;
 use std::sync::{Arc, LazyLock, RwLock};
 use std::time::Duration;
 
@@ -322,24 +321,21 @@ pub async fn list_directory_start_streaming(
 
     // Spawn background task
     tokio::spawn(async move {
-        // Clone again for use after spawn_blocking
+        // Clone again for use after the listing call
         let listing_id_for_cleanup = listing_id_for_spawn.clone();
         let events_for_error = Arc::clone(&events);
 
-        // Run blocking I/O on dedicated thread pool
-        let result = tokio::task::spawn_blocking(move || {
-            read_directory_with_progress(
-                &events,
-                &listing_id_for_spawn,
-                &state,
-                &volume_id_owned,
-                &path_owned,
-                include_hidden,
-                sort_by,
-                sort_order,
-                dir_sort_mode,
-            )
-        })
+        let result = read_directory_with_progress(
+            &events,
+            &listing_id_for_spawn,
+            &state,
+            &volume_id_owned,
+            &path_owned,
+            include_hidden,
+            sort_by,
+            sort_order,
+            dir_sort_mode,
+        )
         .await;
 
         // Clean up streaming state
@@ -350,21 +346,12 @@ pub async fn list_directory_start_streaming(
         // Handle task result
         match result {
             Err(e) => {
-                // Task panicked or was cancelled
-                events_for_error.emit_error(
-                    &listing_id_for_cleanup,
-                    "Something went wrong while reading this folder".to_string(),
-                    None,
-                );
-                log::error!("Listing task panicked: {}", e);
-            }
-            Ok(Err(e)) => {
                 // Function returned an error (volume not found, permission denied, I/O, etc.)
                 let mut friendly = friendly_error_from_volume_error(&e, &path_for_error);
                 enrich_with_provider(&mut friendly, &path_for_error);
                 events_for_error.emit_error(&listing_id_for_cleanup, e.to_string(), Some(friendly));
             }
-            Ok(Ok(())) => {
+            Ok(()) => {
                 // Success - read_directory_with_progress already emitted listing-complete
             }
         }
@@ -379,13 +366,14 @@ pub async fn list_directory_start_streaming(
 
 /// Reads a directory with progress reporting.
 ///
-/// Runs on a blocking thread pool and emits progress events.
+/// Async implementation that spawns the Volume I/O in a background task
+/// and uses `tokio::select!` with a cancellation polling loop for responsive ESC handling.
 /// Uses the Volume abstraction to support both local filesystem and MTP devices.
 #[allow(
     clippy::too_many_arguments,
     reason = "Streaming operation requires many state parameters"
 )]
-pub(crate) fn read_directory_with_progress(
+pub(crate) async fn read_directory_with_progress(
     events: &Arc<dyn ListingEventSink>,
     listing_id: &str,
     state: &Arc<StreamingListingState>,
@@ -420,47 +408,36 @@ pub(crate) fn read_directory_with_progress(
         .get(volume_id)
         .ok_or_else(|| VolumeError::NotFound(format!("Volume not found: {}", volume_id)))?;
 
-    // Read directory entries via Volume abstraction
-    // Use polling-based cancellation to remain responsive even when filesystem I/O blocks
-    // (for example, on slow/stuck network drives like SMB mounts)
+    // Read directory entries via Volume abstraction.
+    // Spawn the listing as a tokio task and use select! with a cancellation poll loop
+    // to remain responsive even when filesystem I/O blocks (slow/stuck network drives).
     let read_start = std::time::Instant::now();
-    let path_for_thread = path.to_path_buf();
-    let (tx, rx) = mpsc::channel();
+    let path_for_task = path.to_path_buf();
     let events_for_progress = Arc::clone(events);
     let listing_id_for_progress = listing_id.to_string();
 
-    // Capture the Tokio runtime handle so the spawned thread can access it.
-    // This is needed for MTP volumes, which use `Handle::block_on` internally.
-    let runtime_handle = tokio::runtime::Handle::current();
-
-    std::thread::spawn(move || {
-        // Enter the Tokio runtime context so `Handle::current()` works inside volumes
-        let _guard = runtime_handle.enter();
-
+    let listing_task = tokio::spawn(async move {
         let on_progress = |loaded_count: usize| {
             events_for_progress.emit_progress(&listing_id_for_progress, loaded_count);
         };
-        let result = runtime_handle.block_on(volume.list_directory_with_progress(&path_for_thread, &on_progress));
-        let _ = tx.send(result);
+        volume.list_directory_with_progress(&path_for_task, &on_progress).await
     });
 
-    // Poll for results, checking cancellation between polls
+    // Poll for cancellation while waiting for the listing task
     let entries_result = loop {
         if state.cancelled.load(Ordering::Relaxed) {
             benchmark::log_event("read_directory_with_progress CANCELLED (during read_dir polling)");
+            listing_task.abort();
             events.emit_cancelled(listing_id);
             return Ok(());
         }
 
-        match rx.recv_timeout(CANCELLATION_POLL_INTERVAL) {
-            Ok(result) => break result,
-            Err(mpsc::RecvTimeoutError::Timeout) => continue,
-            Err(mpsc::RecvTimeoutError::Disconnected) => {
-                return Err(VolumeError::IoError {
-                    message: "Directory listing thread terminated unexpectedly".into(),
-                    raw_os_error: None,
-                });
-            }
+        tokio::time::sleep(CANCELLATION_POLL_INTERVAL).await;
+        if listing_task.is_finished() {
+            break listing_task.await.map_err(|e| VolumeError::IoError {
+                message: format!("Directory listing task failed: {}", e),
+                raw_os_error: None,
+            })?;
         }
     };
 

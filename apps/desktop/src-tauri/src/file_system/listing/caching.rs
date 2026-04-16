@@ -272,16 +272,20 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
                 // path is the share root, but the user may be browsing a subdirectory.
                 // Refresh all listings on this volume instead.
                 let volume_listings = find_listings_on_volume(volume_id);
-                for (lid, path, sort_by, sort_order, dir_sort_mode) in &volume_listings {
-                    notify_full_refresh(
-                        &app,
+                for (lid, path, sort_by, sort_order, dir_sort_mode) in volume_listings {
+                    let app = app.clone();
+                    let volume_id = volume_id.to_string();
+                    tokio::spawn(notify_full_refresh(
+                        app,
                         volume_id,
                         path,
-                        &[(lid.clone(), *sort_by, *sort_order, *dir_sort_mode)],
-                    );
+                        vec![(lid, sort_by, sort_order, dir_sort_mode)],
+                    ));
                 }
             } else {
-                notify_full_refresh(&app, volume_id, parent_path, &listings);
+                let volume_id = volume_id.to_string();
+                let parent_path = parent_path.to_path_buf();
+                tokio::spawn(notify_full_refresh(app, volume_id, parent_path, listings));
             }
         }
     }
@@ -390,17 +394,17 @@ fn notify_modified(app: &tauri::AppHandle, listing_id: &str, entry: FileEntry) {
 }
 
 /// Re-reads a directory via the Volume trait, computes a diff, and emits it.
-fn notify_full_refresh(
-    app: &tauri::AppHandle,
-    volume_id: &str,
-    parent_path: &Path,
-    listings: &[(String, SortColumn, SortOrder, DirectorySortMode)],
+async fn notify_full_refresh(
+    app: tauri::AppHandle,
+    volume_id: String,
+    parent_path: PathBuf,
+    listings: Vec<(String, SortColumn, SortOrder, DirectorySortMode)>,
 ) {
     use crate::file_system::listing::sorting::sort_entries;
     use crate::file_system::watcher::{DirectoryDiff, compute_diff};
     use tauri::Emitter;
 
-    let vol = match crate::file_system::get_volume_manager().get(volume_id) {
+    let vol = match crate::file_system::get_volume_manager().get(&volume_id) {
         Some(v) => v,
         None => {
             log::warn!("notify_directory_changed: volume `{}` not found", volume_id);
@@ -408,7 +412,7 @@ fn notify_full_refresh(
         }
     };
 
-    let mut new_entries = match tokio::runtime::Handle::current().block_on(vol.list_directory(parent_path)) {
+    let mut new_entries = match vol.list_directory(&parent_path).await {
         Ok(entries) => entries,
         Err(e) => {
             log::warn!(
@@ -422,7 +426,7 @@ fn notify_full_refresh(
 
     crate::indexing::enrich_entries_with_index(&mut new_entries);
 
-    for (listing_id, sort_by, sort_order, dir_sort_mode) in listings {
+    for (listing_id, sort_by, sort_order, dir_sort_mode) in &listings {
         // Re-sort to match this listing's sort params
         let mut sorted = new_entries.clone();
         sort_entries(&mut sorted, *sort_by, *sort_order, *dir_sort_mode);

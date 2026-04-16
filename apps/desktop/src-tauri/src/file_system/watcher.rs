@@ -129,7 +129,8 @@ pub fn start_watching(listing_id: &str, path: &Path) -> Result<(), String> {
                 Err(_errors) => {
                     // Watcher errors often mean the watched directory was deleted.
                     // Try to re-read; if it fails with NotFound, we'll emit directory-deleted.
-                    handle_directory_change(&listing_for_closure);
+                    let lid = listing_for_closure.clone();
+                    tokio::spawn(async move { handle_directory_change(&lid).await });
                 }
             }
         },
@@ -167,7 +168,8 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
             .iter()
             .any(|e| matches!(e.kind, EventKind::Any | EventKind::Other))
     {
-        handle_directory_change(listing_id);
+        let lid = listing_id.to_string();
+        tokio::spawn(async move { handle_directory_change(&lid).await });
         return;
     }
 
@@ -337,7 +339,7 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
 ///
 /// Works for all volume types: reads via the Volume trait's `list_directory`,
 /// not via `std::fs`.
-pub fn handle_directory_change(listing_id: &str) {
+pub async fn handle_directory_change(listing_id: &str) {
     log::debug!("handle_directory_change: listing_id={}", listing_id);
 
     // Look up volume for this listing so we can re-read through the Volume trait.
@@ -371,7 +373,7 @@ pub fn handle_directory_change(listing_id: &str) {
     // Re-read the directory via the Volume trait (works for all volume types).
     // Falls back to list_directory_core for listings whose volume was unregistered.
     let new_entries = if let Some(vol) = volume {
-        match tokio::runtime::Handle::current().block_on(vol.list_directory(&path)) {
+        match vol.list_directory(&path).await {
             Ok(entries) => entries,
             Err(crate::file_system::VolumeError::NotFound(_)) => {
                 log::info!("Watcher: Directory deleted, notifying frontend: {}", path.display());

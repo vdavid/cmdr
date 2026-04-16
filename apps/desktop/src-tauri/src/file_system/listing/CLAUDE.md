@@ -61,7 +61,7 @@ Frontend                          Backend
 ## Key decisions
 
 **Decision**: Streaming with background task, not chunked IPC
-**Why**: Chunked approach required multiple IPC calls, complex state tracking. Streaming spawns `tokio::task::spawn_blocking()`, emits events. Frontend stays responsive—Tab works, ESC cancels.
+**Why**: Chunked approach required multiple IPC calls, complex state tracking. Streaming spawns a `tokio::spawn` async task, emits events. Frontend stays responsive—Tab works, ESC cancels via `tokio::select!`-style polling.
 
 **Decision**: Cancellation via `AtomicBool` checked per-entry
 **Why**: Network folders iterate slowly (seconds per entry). Checking on each iteration ensures responsive cancellation. ESC → cancel within ~100ms.
@@ -89,7 +89,7 @@ Frontend                          Backend
 **Why**: SMB and MTP volumes don't use FSEvents (`supports_watching() == false`), so they never get a `WatchedDirectory` entry. With the sequence on the watcher, `increment_sequence` returned `None` and `directory-diff` events were never emitted for those volumes. Moving the `AtomicU64` to `CachedListing` makes it work for all volume types. The FSEvents watcher path also uses this same counter now.
 
 **Decision**: `ListingEventSink` trait decouples streaming from Tauri (same pattern as `OperationEventSink` in write_operations)
-**Why**: `read_directory_with_progress` needs to emit events, but `tauri::AppHandle` can't be created in tests. The trait allows `CollectorListingEventSink` to capture events for assertions. `Arc<dyn ListingEventSink>` is used (not `&dyn`) because the sink is cloned into `std::thread::spawn` for progress callbacks.
+**Why**: `read_directory_with_progress` needs to emit events, but `tauri::AppHandle` can't be created in tests. The trait allows `CollectorListingEventSink` to capture events for assertions. `Arc<dyn ListingEventSink>` is used (not `&dyn`) because the sink is cloned into `tokio::spawn` for progress callbacks.
 
 **Decision**: File watcher starts AFTER listing complete
 **Why**: Watcher diffs rely on cached entries. Starting before cache is populated would miss initial state.
@@ -108,12 +108,11 @@ Frontend                          Backend
 
 ## Gotchas
 
-**Gotcha**: Listing code uses `Handle::current().block_on(volume.method())` for async Volume calls
-**Why**: The listing pipeline (`streaming.rs`, `caching.rs`, `operations.rs`) and the FSEvents watcher (`watcher.rs`)
-call Volume methods from sync contexts (`spawn_blocking` closures, watcher callbacks). These `block_on` bridges are
-intentional and correct — the threads are OS threads with no entered runtime. They're NOT the same anti-pattern as the
-old Volume-internal `block_on` bridges (which were eliminated by the async refactor). These could be migrated to fully
-async in a future listing pipeline refactor, but they work correctly as-is.
+**Gotcha**: Watcher callbacks (FSEvents) run on OS threads, not the tokio runtime
+**Why**: The FSEvents debouncer callback is called from an OS thread. Functions like `handle_directory_change` and
+`notify_directory_changed(FullRefresh)` are async, so callers in watcher callbacks use `tokio::spawn` to dispatch
+the async work onto the runtime. The incremental watcher path (`handle_directory_change_incremental`) remains sync
+since it only does cache lookups and `stat` calls via `get_single_entry`.
 
 ### Cache helpers (caching.rs)
 
