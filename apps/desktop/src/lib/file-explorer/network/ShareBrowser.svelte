@@ -170,11 +170,13 @@
                 }
                 // No stored credentials, show login form
                 showLoginForm = true
+                error = cachedState.error
+                loading = false
+                return
             }
-            // No stored credentials or they didn't work
-            error = cachedState.error
-            loading = false
-            return
+            // Non-auth error (host_unreachable, timeout, etc.): the user is
+            // explicitly opening the host, so retry. The initial background
+            // prefetch may have run before the host was ready.
         }
 
         // Fetch shares

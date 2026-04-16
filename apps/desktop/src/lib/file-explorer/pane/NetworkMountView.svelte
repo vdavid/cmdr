@@ -121,9 +121,13 @@
             )
 
             // Navigate to the mounted share
-            // Clear current network host first
+            // Clear current network host first (also propagate up so the parent
+            // pane's state doesn't hold onto a stale host; otherwise the next
+            // time the user switches back to Network, ShareBrowser for the old
+            // host would render instead of the NetworkBrowser list).
             currentNetworkHost = null
             lastMountAttempt = null
+            onNetworkHostChange?.(null)
 
             // The mount path is typically /Volumes/<ShareName>
             const mountPath = result.mountPath
