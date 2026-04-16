@@ -257,22 +257,13 @@ pub trait Volume: Send + Sync {
     /// Lists directory contents at the given path (relative to volume root).
     ///
     /// Returns entries sorted with directories first, then files, both alphabetically.
+    /// Pass `on_progress` to receive incremental `loaded_count` updates during the stat loop
+    /// (used by the streaming listing UI). Pass `None` when progress isn't needed.
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>>;
-
-    /// Like `list_directory`, but calls `on_progress(loaded_count)` periodically
-    /// during the stat loop so callers can report incremental progress to the UI.
-    ///
-    /// Default implementation delegates to `list_directory` with no incremental updates.
-    fn list_directory_with_progress<'a>(
-        &'a self,
-        path: &'a Path,
-        _on_progress: &'a (dyn Fn(usize) + Sync),
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
-        Box::pin(async move { self.list_directory(path).await })
-    }
 
     /// Gets metadata for a single path (relative to volume root).
     fn get_metadata<'a>(

@@ -610,20 +610,15 @@ impl Volume for SmbVolume {
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
-        Box::pin(async move { self.list_directory_impl(path).await })
-    }
-
-    fn list_directory_with_progress<'a>(
-        &'a self,
-        path: &'a Path,
-        on_progress: &'a (dyn Fn(usize) + Sync),
+        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            // smb2's list_directory returns all entries at once, so we report
-            // progress as a single batch after the call completes.
             let entries = self.list_directory_impl(path).await?;
-            on_progress(entries.len());
+            // smb2's list_directory returns all entries at once, so report
+            // progress as a single batch after the call completes.
+            if let Some(on_progress) = on_progress {
+                on_progress(entries.len());
+            }
             Ok(entries)
         })
     }

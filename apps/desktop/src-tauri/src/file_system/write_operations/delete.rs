@@ -212,7 +212,7 @@ async fn scan_volume_recursive(
         // so we use child.size directly instead of calling get_metadata (which returns
         // NotSupported on MTP).
         let children = volume
-            .list_directory(path)
+            .list_directory(path, None)
             .await
             .map_err(|e| map_volume_error(&path.display().to_string(), e))?;
 

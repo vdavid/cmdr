@@ -792,7 +792,7 @@ async fn delete_volume_path_recursive(volume: &Arc<dyn Volume>, path: &Path) -> 
     }
 
     // List directory contents and delete children first
-    let children = volume.list_directory(path).await?;
+    let children = volume.list_directory(path, None).await?;
 
     // Delete files first, then recurse into subdirectories
     for child in &children {

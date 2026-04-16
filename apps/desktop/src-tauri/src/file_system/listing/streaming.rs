@@ -22,7 +22,6 @@ use crate::file_system::watcher::start_watching;
 // Types and state
 // ============================================================================
 
-
 /// Status of a streaming directory listing
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "status")]
@@ -419,7 +418,7 @@ pub(crate) async fn read_directory_with_progress(
         let on_progress = |loaded_count: usize| {
             events_for_progress.emit_progress(&listing_id_for_progress, loaded_count);
         };
-        volume.list_directory_with_progress(&path_for_task, &on_progress).await
+        volume.list_directory(&path_for_task, Some(&on_progress)).await
     });
 
     // Wait for either listing completion or cancellation — no polling.

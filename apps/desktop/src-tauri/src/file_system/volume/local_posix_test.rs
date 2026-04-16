@@ -58,7 +58,7 @@ async fn test_exists_returns_false_for_nonexistent() {
 async fn test_list_directory_returns_entries() {
     // Use /tmp which should exist and have some contents on any POSIX system
     let volume = LocalPosixVolume::new("Temp", "/tmp");
-    let result = volume.list_directory(Path::new("")).await;
+    let result = volume.list_directory(Path::new(""), None).await;
 
     // Should succeed (even if empty)
     assert!(result.is_ok());
@@ -67,7 +67,7 @@ async fn test_list_directory_returns_entries() {
 #[tokio::test]
 async fn test_list_directory_nonexistent_returns_error() {
     let volume = LocalPosixVolume::new("Test", "/definitely_does_not_exist_12345");
-    let result = volume.list_directory(Path::new("")).await;
+    let result = volume.list_directory(Path::new(""), None).await;
 
     assert!(result.is_err());
     match result.unwrap_err() {
@@ -548,7 +548,7 @@ async fn test_list_directory_includes_symlinks() {
     symlink(&dir, &link_to_dir).unwrap();
 
     let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
-    let entries = volume.list_directory(Path::new("")).await.unwrap();
+    let entries = volume.list_directory(Path::new(""), None).await.unwrap();
 
     // Should have 4 entries
     assert_eq!(entries.len(), 4);

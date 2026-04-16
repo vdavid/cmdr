@@ -9,7 +9,7 @@ async fn test_new_creates_empty_volume() {
     assert_eq!(volume.name(), "Test");
     assert_eq!(volume.root(), Path::new("/"));
 
-    let entries = volume.list_directory(Path::new("")).await.unwrap();
+    let entries = volume.list_directory(Path::new(""), None).await.unwrap();
     assert!(entries.is_empty());
 }
 
@@ -38,7 +38,7 @@ async fn test_with_entries_populates_volume() {
     ];
 
     let volume = InMemoryVolume::with_entries("Test", entries);
-    let result = volume.list_directory(Path::new("")).await.unwrap();
+    let result = volume.list_directory(Path::new(""), None).await.unwrap();
 
     assert_eq!(result.len(), 2);
     // Directories should be first (sorted)
@@ -51,7 +51,7 @@ async fn test_with_entries_populates_volume() {
 #[tokio::test]
 async fn test_with_file_count_creates_correct_number() {
     let volume = InMemoryVolume::with_file_count("Test", 100);
-    let entries = volume.list_directory(Path::new("")).await.unwrap();
+    let entries = volume.list_directory(Path::new(""), None).await.unwrap();
 
     assert_eq!(entries.len(), 100);
     assert!(entries[0].name.starts_with("file_"));
@@ -61,7 +61,7 @@ async fn test_with_file_count_creates_correct_number() {
 async fn test_with_file_count_stress_test() {
     // Verify we can handle large file counts for stress testing
     let volume = InMemoryVolume::with_file_count("Test", 50_000);
-    let entries = volume.list_directory(Path::new("")).await.unwrap();
+    let entries = volume.list_directory(Path::new(""), None).await.unwrap();
 
     assert_eq!(entries.len(), 50_000);
 }
@@ -203,7 +203,7 @@ async fn test_list_directory_sorts_correctly() {
     ];
 
     let volume = InMemoryVolume::with_entries("Test", entries);
-    let result = volume.list_directory(Path::new("")).await.unwrap();
+    let result = volume.list_directory(Path::new(""), None).await.unwrap();
 
     // Expected order: directories first (alpha, beta), then files (apple.txt, zebra.txt)
     assert_eq!(result[0].name, "alpha");
@@ -252,11 +252,11 @@ async fn test_list_subdirectory() {
     let volume = InMemoryVolume::with_entries("Test", entries);
 
     // List root - should only show subdir and root_file.txt
-    let root_entries = volume.list_directory(Path::new("")).await.unwrap();
+    let root_entries = volume.list_directory(Path::new(""), None).await.unwrap();
     assert_eq!(root_entries.len(), 2);
 
     // List subdir - should only show file_in_subdir.txt
-    let subdir_entries = volume.list_directory(Path::new("/subdir")).await.unwrap();
+    let subdir_entries = volume.list_directory(Path::new("/subdir"), None).await.unwrap();
     assert_eq!(subdir_entries.len(), 1);
     assert_eq!(subdir_entries[0].name, "file_in_subdir.txt");
 }
@@ -343,7 +343,7 @@ async fn test_concurrent_reads() {
         let vol = Arc::clone(&volume);
         handles.push(tokio::spawn(async move {
             for _ in 0..100 {
-                let _ = vol.list_directory(Path::new("")).await;
+                let _ = vol.list_directory(Path::new(""), None).await;
                 let _ = vol.exists(Path::new("/file_000001.txt")).await;
                 let _ = vol.get_metadata(Path::new("/file_000010.txt")).await;
             }
@@ -355,7 +355,7 @@ async fn test_concurrent_reads() {
     }
 
     // Volume should still be intact
-    assert_eq!(volume.list_directory(Path::new("")).await.unwrap().len(), 1000);
+    assert_eq!(volume.list_directory(Path::new(""), None).await.unwrap().len(), 1000);
 }
 
 #[tokio::test]
@@ -381,7 +381,7 @@ async fn test_concurrent_writes() {
     }
 
     // Should have all 100 files
-    let entries = volume.list_directory(Path::new("")).await.unwrap();
+    let entries = volume.list_directory(Path::new(""), None).await.unwrap();
     assert_eq!(entries.len(), 100);
 }
 
@@ -400,7 +400,7 @@ async fn test_concurrent_create_delete() {
         let vol = Arc::clone(&volume);
         handles.push(tokio::spawn(async move {
             for _ in 0..50 {
-                let _ = vol.list_directory(Path::new("")).await;
+                let _ = vol.list_directory(Path::new(""), None).await;
                 let _ = vol.exists(Path::new("/permanent.txt")).await;
                 tokio::task::yield_now().await;
             }

@@ -94,6 +94,7 @@ impl Volume for LocalPosixVolume {
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,
+        _on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         #[cfg(feature = "playwright-e2e")]
         {

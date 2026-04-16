@@ -412,7 +412,7 @@ async fn notify_full_refresh(
         }
     };
 
-    let mut new_entries = match vol.list_directory(&parent_path).await {
+    let mut new_entries = match vol.list_directory(&parent_path, None).await {
         Ok(entries) => entries,
         Err(e) => {
             log::warn!(

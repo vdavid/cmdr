@@ -178,6 +178,7 @@ impl Volume for InMemoryVolume {
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,
+        _on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             // Check for injected error (E2E testing). Cleared after one use to enable retry testing.
@@ -586,7 +587,7 @@ impl Volume for InMemoryVolume {
         dest_path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            let dest_entries = self.list_directory(dest_path).await?;
+            let dest_entries = self.list_directory(dest_path, None).await?;
             let mut conflicts = Vec::new();
 
             for item in source_items {

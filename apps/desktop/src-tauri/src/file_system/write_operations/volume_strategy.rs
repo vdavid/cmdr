@@ -234,7 +234,7 @@ async fn export_directory_cancellable(
     })?;
 
     // List the source directory via the Volume trait
-    let entries = source_volume.list_directory(source_path).await?;
+    let entries = source_volume.list_directory(source_path, None).await?;
     let mut total_bytes = 0u64;
 
     for entry in &entries {

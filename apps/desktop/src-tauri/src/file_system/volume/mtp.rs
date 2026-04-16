@@ -103,6 +103,7 @@ impl Volume for MtpVolume {
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let mtp_path = self.to_mtp_path(path);
@@ -116,9 +117,15 @@ impl Volume for MtpVolume {
             );
 
             let start = std::time::Instant::now();
-            let result = connection_manager()
-                .list_directory(&self.device_id, self.storage_id, &mtp_path)
-                .await;
+            let result = if let Some(on_progress) = on_progress {
+                connection_manager()
+                    .list_directory_with_progress(&self.device_id, self.storage_id, &mtp_path, on_progress)
+                    .await
+            } else {
+                connection_manager()
+                    .list_directory(&self.device_id, self.storage_id, &mtp_path)
+                    .await
+            };
 
             match &result {
                 Ok(entries) => debug!(
@@ -128,44 +135,6 @@ impl Volume for MtpVolume {
                 ),
                 Err(e) => debug!(
                     "MtpVolume::list_directory: failed in {:?}, error={:?}",
-                    start.elapsed(),
-                    e
-                ),
-            }
-
-            result.map_err(map_mtp_error)
-        })
-    }
-
-    fn list_directory_with_progress<'a>(
-        &'a self,
-        path: &'a Path,
-        on_progress: &'a (dyn Fn(usize) + Sync),
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let mtp_path = self.to_mtp_path(path);
-
-            debug!(
-                "MtpVolume::list_directory_with_progress: device={}, storage={}, input_path={}, mtp_path={}",
-                self.device_id,
-                self.storage_id,
-                path.display(),
-                mtp_path
-            );
-
-            let start = std::time::Instant::now();
-            let result = connection_manager()
-                .list_directory_with_progress(&self.device_id, self.storage_id, &mtp_path, on_progress)
-                .await;
-
-            match &result {
-                Ok(entries) => debug!(
-                    "MtpVolume::list_directory_with_progress: completed in {:?}, {} entries",
-                    start.elapsed(),
-                    entries.len()
-                ),
-                Err(e) => debug!(
-                    "MtpVolume::list_directory_with_progress: failed in {:?}, error={:?}",
                     start.elapsed(),
                     e
                 ),
@@ -205,7 +174,7 @@ impl Volume for MtpVolume {
                 return Err(VolumeError::NotFound(path.display().to_string()));
             };
 
-            let entries = self.list_directory(parent).await?;
+            let entries = self.list_directory(parent, None).await?;
             entries
                 .into_iter()
                 .find(|e| e.name == name)
@@ -526,7 +495,7 @@ impl Volume for MtpVolume {
             for (parent, children) in &by_parent {
                 // List the parent directory once (goes through the listing cache)
                 let parent_str = parent.to_string_lossy();
-                let entries = self.list_directory(Path::new(parent_str.as_ref())).await?;
+                let entries = self.list_directory(Path::new(parent_str.as_ref()), None).await?;
 
                 for child_path in children {
                     let mtp_path = self.to_mtp_path(child_path);
@@ -620,7 +589,7 @@ impl Volume for MtpVolume {
     ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             // List destination directory to check for conflicts
-            let entries = self.list_directory(dest_path).await?;
+            let entries = self.list_directory(dest_path, None).await?;
             let mut conflicts = Vec::new();
 
             for item in source_items {

@@ -37,7 +37,7 @@ async fn test_inmemory_volume_full_workflow() {
     assert_eq!(volume.root(), Path::new("/"));
 
     // List directory
-    let listed = volume.list_directory(Path::new("")).await.unwrap();
+    let listed = volume.list_directory(Path::new(""), None).await.unwrap();
     assert_eq!(listed.len(), 3);
 
     // Verify sorting (directories first)
@@ -70,7 +70,7 @@ async fn test_inmemory_volume_stress_test_50k_entries() {
 
     // List directory
     let start = std::time::Instant::now();
-    let entries = volume.list_directory(Path::new("")).await.unwrap();
+    let entries = volume.list_directory(Path::new(""), None).await.unwrap();
     let duration = start.elapsed();
 
     // Verify count
@@ -100,17 +100,17 @@ async fn test_inmemory_volume_nested_directories() {
     let volume = InMemoryVolume::with_entries("Nested", entries);
 
     // List root - should only show level1
-    let root_entries = volume.list_directory(Path::new("")).await.unwrap();
+    let root_entries = volume.list_directory(Path::new(""), None).await.unwrap();
     assert_eq!(root_entries.len(), 1);
     assert_eq!(root_entries[0].name, "level1");
 
     // List level1 - should only show level2
-    let level1_entries = volume.list_directory(Path::new("/level1")).await.unwrap();
+    let level1_entries = volume.list_directory(Path::new("/level1"), None).await.unwrap();
     assert_eq!(level1_entries.len(), 1);
     assert_eq!(level1_entries[0].name, "level2");
 
     // List level2 - should only show file.txt
-    let level2_entries = volume.list_directory(Path::new("/level1/level2")).await.unwrap();
+    let level2_entries = volume.list_directory(Path::new("/level1/level2"), None).await.unwrap();
     assert_eq!(level2_entries.len(), 1);
     assert_eq!(level2_entries[0].name, "file.txt");
 }
@@ -120,7 +120,7 @@ async fn test_volume_create_and_list_sequence() {
     let volume = InMemoryVolume::new("Empty Volume");
 
     // Start empty
-    let entries = volume.list_directory(Path::new("")).await.unwrap();
+    let entries = volume.list_directory(Path::new(""), None).await.unwrap();
     assert_eq!(entries.len(), 0);
 
     // Create a directory
@@ -134,7 +134,7 @@ async fn test_volume_create_and_list_sequence() {
         .unwrap();
 
     // List root
-    let root_entries = volume.list_directory(Path::new("")).await.unwrap();
+    let root_entries = volume.list_directory(Path::new(""), None).await.unwrap();
     assert_eq!(root_entries.len(), 2); // docs/ and readme.md
 
     // Directories should be first
@@ -144,7 +144,7 @@ async fn test_volume_create_and_list_sequence() {
     assert!(!root_entries[1].is_directory);
 
     // List docs
-    let docs_entries = volume.list_directory(Path::new("/docs")).await.unwrap();
+    let docs_entries = volume.list_directory(Path::new("/docs"), None).await.unwrap();
     assert_eq!(docs_entries.len(), 1);
     assert_eq!(docs_entries[0].name, "guide.txt");
 
@@ -152,7 +152,7 @@ async fn test_volume_create_and_list_sequence() {
     volume.delete(Path::new("/readme.md")).await.unwrap();
 
     // List root again
-    let root_entries = volume.list_directory(Path::new("")).await.unwrap();
+    let root_entries = volume.list_directory(Path::new(""), None).await.unwrap();
     assert_eq!(root_entries.len(), 1);
     assert_eq!(root_entries[0].name, "docs");
 }
@@ -189,10 +189,10 @@ async fn test_volume_manager_with_inmemory() {
     assert_eq!(default.name(), "Home");
 
     // List from both volumes
-    let home_files = retrieved_home.list_directory(Path::new("")).await.unwrap();
+    let home_files = retrieved_home.list_directory(Path::new(""), None).await.unwrap();
     assert_eq!(home_files.len(), 2);
 
-    let dropbox_files = retrieved_dropbox.list_directory(Path::new("")).await.unwrap();
+    let dropbox_files = retrieved_dropbox.list_directory(Path::new(""), None).await.unwrap();
     assert_eq!(dropbox_files.len(), 2);
     assert_eq!(dropbox_files[0].name, "Personal"); // Alphabetical order
     assert_eq!(dropbox_files[1].name, "Work");
