@@ -144,8 +144,6 @@
     let scanDirsFound = $state(0)
     let scanBytesFound = $state(0)
     let scanUnlisteners: UnlistenFn[] = []
-    /** Mutable copy of previewId — may be adopted from the first scan event if the prop was null. */
-    let effectivePreviewId: string | null = previewId
 
     // Operation state
     let operationId = $state<string | null>(null)
@@ -406,12 +404,12 @@
         const maxConflictsToShow = getSetting('fileOperations.maxConflictsToShow')
 
         if (operationType === 'trash') {
-            return trashFiles(sourcePaths, itemSizes, { progressIntervalMs, previewId: effectivePreviewId })
+            return trashFiles(sourcePaths, itemSizes, { progressIntervalMs, previewId })
         }
         if (operationType === 'delete') {
             return deleteFiles(
                 sourcePaths,
-                { progressIntervalMs, sortColumn, sortOrder, previewId: effectivePreviewId },
+                { progressIntervalMs, sortColumn, sortOrder, previewId },
                 sourceVolumeId,
             )
         }
@@ -427,7 +425,7 @@
                         conflictResolution,
                         progressIntervalMs,
                         maxConflictsToShow,
-                        previewId: effectivePreviewId,
+                        previewId,
                     },
                 )
             }
@@ -438,7 +436,7 @@
                 maxConflictsToShow,
                 sortColumn,
                 sortOrder,
-                previewId: effectivePreviewId,
+                previewId,
             })
         }
         // Copy: always use copyBetweenVolumes — the backend handles local-to-local optimization
@@ -451,7 +449,7 @@
                 conflictResolution,
                 progressIntervalMs,
                 maxConflictsToShow,
-                previewId: effectivePreviewId,
+                previewId,
             },
         )
     }
@@ -517,9 +515,9 @@
 
     async function handleCancel(rollback: boolean) {
         // If still waiting for scan preview, cancel the scan and close
-        if (waitingForScan && effectivePreviewId) {
-            log.info('Cancelling scan preview during wait: previewId={previewId}', { previewId: effectivePreviewId })
-            void cancelScanPreview(effectivePreviewId)
+        if (waitingForScan && previewId) {
+            log.info('Cancelling scan preview during wait: previewId={previewId}', { previewId })
+            void cancelScanPreview(previewId)
             waitingForScan = false
             cleanupScanListeners()
             onCancelled(0)
@@ -622,10 +620,9 @@
         scanUnlisteners = []
     }
 
-    /** Returns true if the event belongs to our scan preview, adopting the ID if we don't have one yet. */
+    /** Returns true if the event belongs to our scan preview. */
     function isOurScanEvent(eventPreviewId: string): boolean {
-        if (!effectivePreviewId) effectivePreviewId = eventPreviewId
-        return eventPreviewId === effectivePreviewId
+        return eventPreviewId === previewId
     }
 
     /**
@@ -633,10 +630,16 @@
      *
      * Subscribes to scan events BEFORE checking status to avoid the race where
      * the scan completes between the status check and listener registration.
-     * If previewId is null (TransferDialog confirmed before startScanPreview IPC
-     * returned), adopts the first event's previewId.
+     *
+     * Precondition: previewId must be non-null (guaranteed by TransferDialog,
+     * which awaits startScanPreview IPC before calling onConfirm).
      */
     async function waitForScanThenStart() {
+        if (!previewId) {
+            log.error('waitForScanThenStart called with null previewId — TransferDialog invariant violated')
+            void startOperation()
+            return
+        }
         // Subscribe to events FIRST to avoid missing fast completions.
         // Same pattern as TransferDialog.startScan().
         scanUnlisteners.push(
@@ -690,21 +693,17 @@
         )
 
         // NOW check if already complete (covers race where scan finished during subscription setup)
-        if (effectivePreviewId) {
-            const alreadyComplete = await checkScanPreviewStatus(effectivePreviewId)
-            if (alreadyComplete) {
-                log.info('Scan preview already complete for previewId={previewId}, starting operation immediately', {
-                    previewId: effectivePreviewId,
-                })
-                cleanupScanListeners()
-                void startOperation()
-                return
-            }
+        const alreadyComplete = await checkScanPreviewStatus(previewId)
+        if (alreadyComplete) {
+            log.info('Scan preview already complete for previewId={previewId}, starting operation immediately', {
+                previewId,
+            })
+            cleanupScanListeners()
+            void startOperation()
+            return
         }
 
-        log.info('Scan preview still running for previewId={previewId}, subscribing to events', {
-            previewId: effectivePreviewId,
-        })
+        log.info('Scan preview still running for previewId={previewId}, subscribing to events', { previewId })
         waitingForScan = true
     }
 
@@ -719,8 +718,8 @@
     onDestroy(() => {
         destroyed = true
         // Cancel scan preview if still waiting for it
-        if (waitingForScan && effectivePreviewId) {
-            void cancelScanPreview(effectivePreviewId)
+        if (waitingForScan && previewId) {
+            void cancelScanPreview(previewId)
         }
         cleanupScanListeners()
         if (operationId && !operationSettled) {

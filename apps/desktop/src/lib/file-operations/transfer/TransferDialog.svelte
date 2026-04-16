@@ -114,6 +114,11 @@
     let isScanning = $state(false)
     let scanComplete = $state(false)
     let unlisteners: UnlistenFn[] = []
+    // Promise that resolves once startScanPreview IPC has returned and previewId is set.
+    // handleConfirm awaits this to guarantee previewId is non-null when passed to
+    // TransferProgressDialog — otherwise a fast confirm races with IPC and leaves the
+    // progress dialog stuck in "Scanning 0 files" forever.
+    let scanStarted: Promise<void> = Promise.resolve()
 
     // Whether the user confirmed (so we don't cancel the scan on destroy)
     let confirmed = false
@@ -332,13 +337,14 @@
 
         // Volume space is loaded by the $effect watching selectedVolumeId
 
-        // Start scanning files immediately
-        void startScan()
+        // Start scanning files immediately. Track the promise so handleConfirm can
+        // await it — this ensures previewId is set before onConfirm fires.
+        scanStarted = startScan()
 
         // Auto-confirm if MCP requested it (after a tick so the dialog is fully initialized)
         if (autoConfirm) {
             await tick()
-            handleConfirm()
+            await handleConfirm()
         }
     })
 
@@ -352,10 +358,14 @@
         cleanup()
     })
 
-    function handleConfirm() {
-        if (pathError) return
+    async function handleConfirm() {
+        if (pathError || confirmed) return
         confirmed = true
-        // Pass the previewId, conflict policy, (possibly toggled) operation type, and whether scan is still running
+        // Wait for startScanPreview IPC to return so previewId is set. Without this,
+        // a fast confirm (auto-confirm, Playwright test, rapid Enter keypress) races
+        // with the IPC and leaves the progress dialog with a null previewId that it
+        // cannot recover from once scan events have already been emitted.
+        await scanStarted
         onConfirm(editedPath, selectedVolumeId, previewId, conflictPolicy, activeOperationType, isScanning)
     }
 
@@ -370,7 +380,7 @@
 
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
-            handleConfirm()
+            void handleConfirm()
         }
     }
 
@@ -378,7 +388,7 @@
         if (event.key === 'Enter') {
             event.preventDefault()
             event.stopPropagation()
-            handleConfirm()
+            void handleConfirm()
         }
     }
 </script>
