@@ -93,7 +93,9 @@ Rendered after user selects a host. Auth flow on mount:
      redundant macOS Keychain dialog.
    - If stored creds work, `authenticatedCredentials` is set and auth is transparent to user.
    - If no stored creds, show `NetworkLoginForm`.
-3. Otherwise fetch via `fetchShares(host)`, same auth fallback.
+3. If cache shows any other error (`host_unreachable`, `timeout`, ...): fall through to a fresh fetch. User-initiated
+   host open is an implicit retry — the initial background prefetch may have run before the host was ready.
+4. Otherwise (no cache or 'loading'): fetch via `fetchShares(host)`, same auth fallback.
 
 `authenticatedCredentials` is passed to `onShareSelect` so the caller can mount the share without re-prompting.
 
@@ -163,6 +165,13 @@ derived value. When `authMode` prop changes (e.g. on retry), the derived re-eval
 the correct default. This avoids stale connection mode after auth mode changes.
 
 ## Gotchas
+
+**Gotcha**: `currentNetworkHost` lives in both `NetworkMountView` (local) and its parent `FilePane` (via the
+`initialNetworkHost` prop + `onNetworkHostChange` callback). When `NetworkMountView` mutates its local copy (mount
+success, back button), it must propagate the new value via `onNetworkHostChange`. Otherwise, when the user switches
+volumes away from Network and back, `FilePane` re-mounts `NetworkMountView` with the stale `initialNetworkHost` and
+`ShareBrowser` opens for the old host instead of the host list. Bit E2E test 436 ("unicode shares render") where a
+prior test that mounted a guest share left FilePane stuck on guest.
 
 **Gotcha**: `network` volume ID is virtual -- `smb://` path is a sentinel, not a real mount **Why**: The network browser
 is a discovery UI, not a filesystem view. There is no real mount point until the user selects a share and it gets
