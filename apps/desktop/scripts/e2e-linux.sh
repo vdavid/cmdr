@@ -258,7 +258,16 @@ SMB_SERVERS_DIR="$DESKTOP_DIR/test/smb-servers"
 SMB_NETWORK="smb-consumer_default"
 
 start_smb_containers() {
-    if docker compose -p smb-consumer ps --format json 2>/dev/null | grep -q '"smb-consumer-guest"'; then
+    # Check that ALL four required containers are running. A prior `minimal` or
+    # `core` invocation leaves guest+auth up but not 50shares/unicode, so a
+    # guest-only check falsely reports "already running" and tests that need
+    # the other two fail with "Cannot reach smb-consumer-50shares".
+    local running
+    running=$(docker compose -p smb-consumer ps --services --filter status=running 2>/dev/null || true)
+    if echo "$running" | grep -q '^smb-consumer-guest$' \
+        && echo "$running" | grep -q '^smb-consumer-auth$' \
+        && echo "$running" | grep -q '^smb-consumer-50shares$' \
+        && echo "$running" | grep -q '^smb-consumer-unicode$'; then
         log_info "SMB containers already running"
     else
         log_info "Starting SMB containers (e2e)..."

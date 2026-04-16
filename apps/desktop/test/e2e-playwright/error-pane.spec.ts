@@ -11,7 +11,7 @@
 import os from 'os'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureAppReady, pollUntil, sleep, getFixtureRoot, moveCursorToFile } from './helpers.js'
+import { ensureAppReady, pollUntil, sleep, getFixtureRoot } from './helpers.js'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 
 type PageLike = TauriPage | BrowserPageAdapter
@@ -136,7 +136,11 @@ test.describe('Error pane: Transient errors (ETIMEDOUT)', () => {
     await injectAndNavigateIntoSubDir(tauriPage, 60)
 
     // Wait for error pane
-    await pollUntil(tauriPage, async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`), 15000)
+    await pollUntil(
+      tauriPage,
+      async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`),
+      15000,
+    )
 
     // Click "Try again" — the injected error was cleared after first use,
     // so this retry should succeed and show the directory contents
@@ -178,7 +182,11 @@ test.describe('Error pane: NeedsAction errors (EACCES)', () => {
     await injectAndNavigateIntoSubDir(tauriPage, 13)
 
     // Wait for the error pane to appear
-    await pollUntil(tauriPage, async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`), 15000)
+    await pollUntil(
+      tauriPage,
+      async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`),
+      15000,
+    )
 
     // Verify the title says "No permission"
     const title = await tauriPage.evaluate<string>(
@@ -215,7 +223,11 @@ test.describe('Error pane: Accessibility', () => {
     // Inject an error to show the error pane
     await injectAndNavigateIntoSubDir(tauriPage, 60)
 
-    await pollUntil(tauriPage, async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`), 15000)
+    await pollUntil(
+      tauriPage,
+      async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`),
+      15000,
+    )
 
     // Verify role="alert" on the error pane
     const hasAlertRole = await tauriPage.evaluate<boolean>(
