@@ -130,7 +130,7 @@ pub fn start_watching(listing_id: &str, path: &Path) -> Result<(), String> {
                     // Watcher errors often mean the watched directory was deleted.
                     // Try to re-read; if it fails with NotFound, we'll emit directory-deleted.
                     let lid = listing_for_closure.clone();
-                    tokio::spawn(async move { handle_directory_change(&lid).await });
+                    tauri::async_runtime::spawn(async move { handle_directory_change(&lid).await });
                 }
             }
         },
@@ -169,7 +169,10 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
             .any(|e| matches!(e.kind, EventKind::Any | EventKind::Other))
     {
         let lid = listing_id.to_string();
-        tokio::spawn(async move { handle_directory_change(&lid).await });
+        // `tauri::async_runtime::spawn` instead of `tokio::spawn` because this
+        // closure runs on the notify-rs debouncer thread, which has no Tokio
+        // runtime context. Tauri's async runtime works from any thread.
+        tauri::async_runtime::spawn(async move { handle_directory_change(&lid).await });
         return;
     }
 
