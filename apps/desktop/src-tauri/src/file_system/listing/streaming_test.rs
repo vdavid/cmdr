@@ -47,6 +47,7 @@ fn cleanup(volume_id: &str, listing_id: &str) {
 fn new_state() -> Arc<StreamingListingState> {
     Arc::new(StreamingListingState {
         cancelled: AtomicBool::new(false),
+        cancel_notify: tokio::sync::Notify::new(),
     })
 }
 

@@ -8,7 +8,6 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock, RwLock};
-use std::time::Duration;
 
 use crate::benchmark;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
@@ -23,9 +22,6 @@ use crate::file_system::watcher::start_watching;
 // Types and state
 // ============================================================================
 
-/// Interval for checking cancellation while waiting for directory listing results.
-/// This ensures we can respond to ESC within ~100ms even if I/O is blocked.
-pub(crate) const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(100);
 
 /// Status of a streaming directory listing
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -99,8 +95,10 @@ pub struct ListingOpeningEvent {
 
 /// State for an in-progress streaming listing
 pub struct StreamingListingState {
-    /// Checked periodically during iteration.
+    /// Checked at sync cancellation points (before read, after read, at cache insert).
     pub cancelled: AtomicBool,
+    /// Async signal for `select!`-based cancellation during the listing I/O.
+    pub cancel_notify: tokio::sync::Notify,
 }
 
 /// Cache for streaming state (separate from completed listings cache)
@@ -305,6 +303,7 @@ pub async fn list_directory_start_streaming(
     // Create streaming state with cancellation flag
     let state = Arc::new(StreamingListingState {
         cancelled: AtomicBool::new(false),
+        cancel_notify: tokio::sync::Notify::new(),
     });
 
     // Store state for cancellation
@@ -416,28 +415,27 @@ pub(crate) async fn read_directory_with_progress(
     let events_for_progress = Arc::clone(events);
     let listing_id_for_progress = listing_id.to_string();
 
-    let listing_task = tokio::spawn(async move {
+    let mut listing_task = tokio::spawn(async move {
         let on_progress = |loaded_count: usize| {
             events_for_progress.emit_progress(&listing_id_for_progress, loaded_count);
         };
         volume.list_directory_with_progress(&path_for_task, &on_progress).await
     });
 
-    // Poll for cancellation while waiting for the listing task
-    let entries_result = loop {
-        if state.cancelled.load(Ordering::Relaxed) {
-            benchmark::log_event("read_directory_with_progress CANCELLED (during read_dir polling)");
+    // Wait for either listing completion or cancellation — no polling.
+    let entries_result = tokio::select! {
+        biased;  // check cancellation first if both are ready
+        _ = state.cancel_notify.notified() => {
+            benchmark::log_event("read_directory_with_progress CANCELLED (during read_dir)");
             listing_task.abort();
             events.emit_cancelled(listing_id);
             return Ok(());
         }
-
-        tokio::time::sleep(CANCELLATION_POLL_INTERVAL).await;
-        if listing_task.is_finished() {
-            break listing_task.await.map_err(|e| VolumeError::IoError {
+        result = &mut listing_task => {
+            result.map_err(|e| VolumeError::IoError {
                 message: format!("Directory listing task failed: {}", e),
                 raw_os_error: None,
-            })?;
+            })?
         }
     };
 
@@ -539,6 +537,7 @@ pub fn cancel_listing(listing_id: &str) {
         && let Some(state) = cache.get(listing_id)
     {
         state.cancelled.store(true, Ordering::Relaxed);
+        state.cancel_notify.notify_waiters();
         benchmark::log_event_value("cancel_listing", listing_id);
     }
 }

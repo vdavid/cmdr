@@ -213,6 +213,7 @@ fn test_streaming_state_lifecycle() {
     let listing_id = "integration-test-lifecycle";
     let state = Arc::new(StreamingListingState {
         cancelled: AtomicBool::new(false),
+        cancel_notify: tokio::sync::Notify::new(),
     });
 
     // Insert into cache
@@ -258,6 +259,7 @@ fn test_multiple_concurrent_streaming_states() {
         .map(|_| {
             Arc::new(StreamingListingState {
                 cancelled: AtomicBool::new(false),
+                cancel_notify: tokio::sync::Notify::new(),
             })
         })
         .collect();

@@ -189,6 +189,7 @@ fn test_cancel_listing_sets_flag() {
     let listing_id = "test-cancel-listing-12345";
     let state = Arc::new(StreamingListingState {
         cancelled: AtomicBool::new(false),
+        cancel_notify: tokio::sync::Notify::new(),
     });
 
     // Store it in the streaming state cache
