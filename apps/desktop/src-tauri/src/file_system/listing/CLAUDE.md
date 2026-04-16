@@ -153,8 +153,10 @@ All variants enrich entries with index data and emit `directory-diff` events. Na
 **Gotcha**: macOS extended metadata (addedAt, openedAt) requires extra syscalls
 **Why**: `list_directory_core()` uses fast `fs::read_dir()` + `metadata()`. Extended metadata needs `listxattr()`/`getxattr()`. Available via `get_extended_metadata_batch()` but not wired into streaming path yet.
 
-**Gotcha**: `CANCELLATION_POLL_INTERVAL` is 100ms, but check happens per-entry
-**Why**: Named confusingly. The interval is for waiting on channels, not polling the flag. Actual cancellation is checked on EVERY entry iteration.
+**Gotcha**: Listing cancellation uses both `AtomicBool` and `tokio::sync::Notify`
+**Why**: `read_directory_with_progress` uses `select!` between the listing task and `cancel_notify.notified()` for
+instant async cancellation. The `AtomicBool` remains for sync check points (before read, after read, at cache insert)
+where `.await` isn't available. `cancel_listing()` sets both: `cancelled.store(true)` + `cancel_notify.notify_waiters()`.
 
 **Gotcha**: Double-sort in the full re-read watcher path is intentional
 **Why**: `list_directory_core` returns entries in Name/Asc order. The watcher's `handle_directory_change` re-sorts them to match the listing's current sort params before calling `compute_diff`. This looks redundant but is required — without it, diff indices would be computed against a differently-ordered list, producing incorrect add/remove positions.
