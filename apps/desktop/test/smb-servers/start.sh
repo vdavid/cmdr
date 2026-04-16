@@ -9,6 +9,7 @@
 #   ./start.sh           # Start core containers (guest, auth, both, readonly, flaky, slow)
 #   ./start.sh all       # Start all 14 containers
 #   ./start.sh minimal   # Start just guest + auth
+#   ./start.sh e2e       # Start containers needed by E2E tests (guest, auth, 50shares, unicode)
 
 set -e
 
@@ -31,6 +32,11 @@ case "$mode" in
         docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" up -d \
             smb-consumer-guest smb-consumer-auth
         ;;
+    e2e)
+        echo "Starting E2E SMB servers (guest, auth, 50shares, unicode)..."
+        docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" up -d \
+            smb-consumer-guest smb-consumer-auth smb-consumer-50shares smb-consumer-unicode
+        ;;
     core)
         echo "Starting core SMB servers (auth scenarios + edge cases)..."
         docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" up -d \
@@ -43,7 +49,7 @@ case "$mode" in
         ;;
     *)
         echo "Unknown mode: $mode"
-        echo "Usage: $0 [minimal|core|all]"
+        echo "Usage: $0 [minimal|e2e|core|all]"
         exit 1
         ;;
 esac
