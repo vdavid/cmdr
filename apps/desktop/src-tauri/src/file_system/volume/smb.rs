@@ -374,11 +374,12 @@ impl SmbVolume {
             bytes_done += n as u64;
 
             if on_progress(bytes_done, total_size) == std::ops::ControlFlow::Break(()) {
-                // Finalize the writer to drain in-flight WRITE responses and
-                // close the handle — if we just drop it, stale responses
-                // poison the session for the next op. Best-effort delete of
-                // the partial file afterwards.
-                let _ = writer.finish().await;
+                // Abort drains in-flight WRITE responses and closes the handle
+                // without the server-side fsync that `finish()` would force
+                // (we're about to delete the partial file anyway). Dropping
+                // the writer directly would leave stale responses on the
+                // connection and poison the next op.
+                let _ = writer.abort().await;
                 let _ = client.delete_file(tree, smb_path).await;
                 return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
             }
@@ -1385,11 +1386,12 @@ impl Volume for SmbVolume {
                 bytes_read += chunk.len() as u64;
 
                 if on_progress(bytes_read, size) == std::ops::ControlFlow::Break(()) {
-                    // Finalize the writer to drain in-flight WRITE responses
-                    // and close the handle — dropping it directly would leave
-                    // stale responses on the connection, poisoning the next op.
-                    // Best-effort delete of the partial file afterwards.
-                    let _ = writer.finish().await;
+                    // Abort drains in-flight WRITE responses and closes the
+                    // handle without the server-side fsync that `finish()`
+                    // would force (we're about to delete the partial file
+                    // anyway). Dropping directly would leave stale responses
+                    // on the connection and poison the next op.
+                    let _ = writer.abort().await;
                     let _ = client.delete_file(tree, &smb_path).await;
                     return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
                 }
@@ -2626,7 +2628,7 @@ mod tests {
     async fn smb_integration_import_from_local_cancel_mid_write() {
         // Cancel partway through a multi-chunk import via progress-break.
         // Verifies Cancelled is returned and that the SMB session is still
-        // usable for subsequent ops (writer.finish() drains in-flight WRITE
+        // usable for subsequent ops (writer.abort() drains in-flight WRITE
         // responses cleanly on cancel, best-effort-deletes the partial file).
         let vol = make_docker_volume().await;
         let dir = test_dir_name();
