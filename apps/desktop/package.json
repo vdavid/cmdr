@@ -21,7 +21,6 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:e2e:linux": "./scripts/e2e-linux.sh",
-    "test:e2e:linux:native": "./scripts/e2e-playwright-native-linux.sh",
     "test:e2e:linux:build": "docker build -t cmdr-e2e -f test/e2e-linux/docker/Dockerfile test/e2e-linux/docker",
     "test:e2e:linux:shell": "./scripts/e2e-linux.sh --shell",
     "test:e2e:linux:vnc": "./scripts/e2e-linux.sh --vnc",

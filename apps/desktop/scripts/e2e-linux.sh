@@ -18,13 +18,15 @@ DESKTOP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$DESKTOP_DIR/../.." && pwd)"
 IMAGE_NAME="cmdr-e2e"
 
-# Docker volume names for persistent caches
-CARGO_VOLUME="cmdr-cargo-cache"
-TARGET_VOLUME="cmdr-target-cache"
+# Docker volume names for persistent caches.
+# Each can be overridden via env var to a host path (starting with /) for CI,
+# where `actions/cache` can only cache host paths, not Docker named volumes.
+CARGO_VOLUME="${CARGO_VOLUME:-cmdr-cargo-cache}"
+TARGET_VOLUME="${TARGET_VOLUME:-cmdr-target-cache}"
 # Two node_modules volumes: one for monorepo root, one for apps/desktop
 # This prevents Linux binaries from contaminating the host's node_modules
-ROOT_NODE_MODULES_VOLUME="cmdr-root-node-modules-cache"
-DESKTOP_NODE_MODULES_VOLUME="cmdr-desktop-node-modules-cache"
+ROOT_NODE_MODULES_VOLUME="${ROOT_NODE_MODULES_VOLUME:-cmdr-root-node-modules-cache}"
+DESKTOP_NODE_MODULES_VOLUME="${DESKTOP_NODE_MODULES_VOLUME:-cmdr-desktop-node-modules-cache}"
 
 # Colors for output
 RED='\033[0;31m'

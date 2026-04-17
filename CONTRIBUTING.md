@@ -146,10 +146,9 @@ From here, either **run the app** or **run E2E tests**:
 cd ~/cmdr
 WEBKIT_DISABLE_COMPOSITING_MODE=1 pnpm dev
 
-# b) Run E2E tests (build first, then test)
+# b) Run E2E tests (in Docker — same path CI runs)
 cd ~/cmdr/apps/desktop
-pnpm tauri build --no-bundle
-pnpm test:e2e:linux:native
+pnpm test:e2e:linux
 ```
 
 See `apps/desktop/test/e2e-linux/CLAUDE.md` for VNC debugging, VM setup details, and WebKitGTK quirks.

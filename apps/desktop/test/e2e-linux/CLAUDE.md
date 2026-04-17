@@ -40,6 +40,10 @@ pnpm test:e2e:linux:vnc                # VNC mode with hot reload (pnpm dev)
 
 Most common operation: `docker volume rm cmdr-target-cache` after Rust/Svelte changes or feature flag changes.
 
+All four volume names are overridable via `CARGO_VOLUME`, `TARGET_VOLUME`, `ROOT_NODE_MODULES_VOLUME`, and
+`DESKTOP_NODE_MODULES_VOLUME` env vars. CI sets them to host bind-mount paths (`/tmp/cmdr-docker-cache/...`) so
+`actions/cache` can persist them across runs (it can't cache Docker named volumes).
+
 ## Files
 
 | File                   | Purpose                                                 |
