@@ -124,7 +124,12 @@ When adding a new volume, add a column for it and fill in each row. The matrix d
 
 ## Streaming patterns
 
-Two ways to implement `open_read_stream` / `write_from_stream` exist in the codebase. Which to pick depends on whether your protocol SDK's download/upload handle is `'static` or borrowed.
+Reads and writes have different shapes because the consumer relationship is different:
+
+- **Reads** return a `VolumeReadStream` that an external caller polls. The download handle has to live past the function call and cross async contexts. That's where the lifetime/ownership gymnastics below come from.
+- **Writes** consume a stream (or a local file) inside the method itself. The chunk loop is the consumer, so there's nothing to hand off. Just hold the session lock for the duration, pull chunks from the source, push them into the backend's chunk-by-chunk writer. `SmbVolume::import_single_file_with_progress` and `SmbVolume::write_from_stream` are the reference implementations — open the smb2 `FileWriter`, loop `write_chunk`, call `finish()` on success or `abort()` on cancel. No task spawn, no channel, no self-referential struct.
+
+The rest of this section is about **read-side** lifetime handling. Which pattern to pick depends on whether your protocol SDK's download handle is `'static` or borrowed.
 
 ### Pattern A — own the download (use when the SDK's download type is `'static`)
 
