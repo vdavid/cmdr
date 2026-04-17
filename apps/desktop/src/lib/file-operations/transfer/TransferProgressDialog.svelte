@@ -628,8 +628,14 @@
     /**
      * Waits for the scan preview to complete, then starts the write operation.
      *
-     * Subscribes to scan events BEFORE checking status to avoid the race where
-     * the scan completes between the status check and listener registration.
+     * Two independent signals can say "scan done": the `scan-preview-complete`
+     * event firing, or the post-subscription `checkScanPreviewStatus` IPC
+     * returning true. Either can win the race. Both converge on `kickOff()`,
+     * which is idempotent via the `started` flag — so the operation dispatches
+     * exactly once, even if both signals arrive during the `await`.
+     *
+     * We subscribe to events BEFORE the status check so a fast completion
+     * between subscription and check isn't missed.
      *
      * Precondition: previewId must be non-null (guaranteed by TransferDialog,
      * which awaits startScanPreview IPC before calling onConfirm).
@@ -640,6 +646,15 @@
             void startOperation()
             return
         }
+
+        let started = false
+        const kickOff = () => {
+            if (started) return
+            started = true
+            cleanupScanListeners()
+            void startOperation()
+        }
+
         // Subscribe to events FIRST to avoid missing fast completions.
         // Same pattern as TransferDialog.startScan().
         scanUnlisteners.push(
@@ -662,15 +677,15 @@
                 scanDirsFound = event.dirsTotal
                 scanBytesFound = event.bytesTotal
                 waitingForScan = false
-                cleanupScanListeners()
-                // Scan results are now cached — start the operation (guaranteed cache hit)
-                void startOperation()
+                kickOff()
             }),
         )
 
         scanUnlisteners.push(
             await onScanPreviewError((event) => {
                 if (!isOurScanEvent(event.previewId)) return
+                if (started) return // already dispatched or terminated; ignore late errors
+                started = true // terminal — don't let a late scan-complete dispatch an operation
                 log.error('Scan preview error: {message}', { message: event.message })
                 waitingForScan = false
                 cleanupScanListeners()
@@ -685,6 +700,8 @@
         scanUnlisteners.push(
             await onScanPreviewCancelled((event) => {
                 if (!isOurScanEvent(event.previewId)) return
+                if (started) return // already dispatched or terminated; ignore late cancellations
+                started = true // terminal — don't let a late scan-complete dispatch an operation
                 log.info('Scan preview cancelled')
                 waitingForScan = false
                 cleanupScanListeners()
@@ -698,8 +715,7 @@
             log.info('Scan preview already complete for previewId={previewId}, starting operation immediately', {
                 previewId,
             })
-            cleanupScanListeners()
-            void startOperation()
+            kickOff()
             return
         }
 
