@@ -125,5 +125,10 @@ When directory has parent entry shown at index 0, frontend indices are offset by
   only refreshes destination.
 - **Scan preview reuse**: TransferDialog starts a scan preview on mount. If the user confirms before the scan finishes,
   the scan keeps running (TransferDialog sets `confirmed = true` and skips cancellation in `onDestroy`).
-  TransferProgressDialog picks up listening to the same scan events via `scanInProgress` prop. On mount, it first checks
-  `checkScanPreviewStatus()` to handle the race condition where the scan completed between dialogs.
+  TransferProgressDialog picks up listening to the same scan events via `scanInProgress` prop. `waitForScanThenStart`
+  subscribes to the scan events first, then awaits `checkScanPreviewStatus()`. Both the `scan-preview-complete`
+  listener AND the status check can signal "ready to start" — especially for fast scans that complete during the
+  status-check `await`. Both paths converge on a local `kickOff()` helper guarded by a `started` flag, so
+  `startOperation()` dispatches exactly once. The scan-error and scan-cancelled listeners also flip `started = true`
+  as a terminal signal, so a late `scan-preview-complete` event can't dispatch an operation after we've errored or
+  cancelled.
