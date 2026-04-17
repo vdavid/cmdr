@@ -86,8 +86,13 @@ async function runAxeAudit(
   const axeContext = scope
     ? JSON.stringify({ include: [[scope]], exclude: [['[disabled]'], ['.btn:disabled']] })
     : JSON.stringify({ exclude: [['[disabled]'], ['.btn:disabled']] })
+  // `color-contrast` is disabled: we check contrast at design time via
+  // `scripts/check-a11y-contrast` (deterministic, ~0.3s, no engine-dependent
+  // `color-mix()` resolution quirks). Axe stays on for structural rules
+  // (ARIA, focus order, labels, keyboard nav) where a running browser is
+  // genuinely needed. See `docs/design-system.md` § a11y testing strategy.
   const axeOptions = JSON.stringify({
-    rules: { 'color-contrast': { enabled: true } },
+    rules: { 'color-contrast': { enabled: false } },
   })
   const axeCall = `axe.run(${axeContext}, ${axeOptions})`
   const results = await tauriPage.evaluate<AxeResults>(axeCall)
