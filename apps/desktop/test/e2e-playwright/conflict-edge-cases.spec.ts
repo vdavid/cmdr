@@ -278,10 +278,7 @@ test.describe('Type mismatch conflicts', () => {
         return tauriPage.evaluate<boolean>(`(function() {
           var pane = document.querySelectorAll('.file-pane')[0];
           if (!pane) return false;
-          var entries = pane.querySelectorAll('.file-entry');
-          return Array.from(entries).some(function(e) {
-            return (e.querySelector('.col-name') || e.querySelector('.name') || {}).textContent === 'config';
-          });
+          return !!pane.querySelector('[data-filename="config"]');
         })()`)
       },
       10000,

@@ -267,13 +267,7 @@ test.describe('File watching', () => {
         const count = await tauriPage.evaluate<number>(`(function() {
               var pane = document.querySelectorAll('.file-pane')[1];
               if (!pane) return 0;
-              var entries = pane.querySelectorAll('.file-entry');
-              var c = 0;
-              for (var i = 0; i < entries.length; i++) {
-                  var name = (entries[i].querySelector('.col-name') || entries[i].querySelector('.name') || {}).textContent || '';
-                  if (name === 'file-a.txt') c++;
-              }
-              return c;
+              return pane.querySelectorAll('[data-filename="file-a.txt"]').length;
           })()`)
         return count === 1
       },

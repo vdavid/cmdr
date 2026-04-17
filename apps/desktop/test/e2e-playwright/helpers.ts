@@ -143,12 +143,10 @@ export async function ensureAppReady(
       return tauriPage.evaluate<boolean>(`(function() {
                 var pane = document.querySelectorAll('.file-pane')[0];
                 if (!pane) return false;
-                var entries = pane.querySelectorAll('.file-entry');
-                var names = Array.from(entries).map(function(e) {
-                    return (e.querySelector('.col-name') || e.querySelector('.name') || {}).textContent || '';
-                });
                 var expected = ${JSON.stringify(leftExpected)};
-                return expected.every(function(name) { return names.indexOf(name) >= 0; });
+                return expected.every(function(name) {
+                  return !!pane.querySelector('[data-filename="' + name + '"]');
+                });
             })()`)
     },
     10000,
@@ -158,7 +156,7 @@ export async function ensureAppReady(
             var pane = document.querySelectorAll('.file-pane')[0];
             if (!pane) return [];
             return Array.from(pane.querySelectorAll('.file-entry')).map(function(e) {
-                return (e.querySelector('.col-name') || e.querySelector('.name') || {}).textContent || '';
+                return e.getAttribute('data-filename') || '';
             });
         })()`)
     throw new Error(
@@ -200,10 +198,7 @@ export async function fileExistsInFocusedPane(tauriPage: PageLike, targetName: s
   return tauriPage.evaluate<boolean>(`(function() {
         var pane = document.querySelector('.file-pane.is-focused');
         if (!pane) return false;
-        var entries = pane.querySelectorAll('.file-entry');
-        return Array.from(entries).some(function(e) {
-            return (e.querySelector('.col-name') || e.querySelector('.name') || {}).textContent === ${JSON.stringify(targetName)};
-        });
+        return !!pane.querySelector('[data-filename="${targetName}"]');
     })()`)
 }
 
@@ -213,10 +208,7 @@ export async function fileExistsInPane(tauriPage: PageLike, targetName: string, 
         var panes = document.querySelectorAll('.file-pane');
         var pane = panes[${String(paneIndex)}];
         if (!pane) return false;
-        var entries = pane.querySelectorAll('.file-entry');
-        return Array.from(entries).some(function(e) {
-            return (e.querySelector('.col-name') || e.querySelector('.name') || {}).textContent === ${JSON.stringify(targetName)};
-        });
+        return !!pane.querySelector('[data-filename="${targetName}"]');
     })()`)
 }
 
@@ -234,8 +226,7 @@ export async function findFileIndex(
         var entries = pane.querySelectorAll('.file-entry');
         var targetIndex = -1;
         for (var i = 0; i < entries.length; i++) {
-            var text = (entries[i].querySelector('.col-name') || entries[i].querySelector('.name') || {}).textContent || '';
-            if (text === ${JSON.stringify(fileName)}) {
+            if (entries[i].getAttribute('data-filename') === ${JSON.stringify(fileName)}) {
                 targetIndex = i;
                 break;
             }
@@ -251,7 +242,7 @@ export async function skipParentEntry(tauriPage: PageLike): Promise<void> {
   const cursorText = await tauriPage.evaluate<string>(`(function() {
         var entry = document.querySelector('.file-entry.is-under-cursor');
         if (!entry) return '';
-        return (entry.querySelector('.col-name') || entry.querySelector('.name') || {}).textContent || '';
+        return entry.getAttribute('data-filename') || '';
     })()`)
   if (cursorText === '..') {
     await tauriPage.keyboard.press('ArrowDown')
@@ -261,7 +252,7 @@ export async function skipParentEntry(tauriPage: PageLike): Promise<void> {
         const name = await tauriPage.evaluate<string>(`(function() {
                     var entry = document.querySelector('.file-entry.is-under-cursor');
                     if (!entry) return '';
-                    return (entry.querySelector('.col-name') || entry.querySelector('.name') || {}).textContent || '';
+                    return entry.getAttribute('data-filename') || '';
                 })()`)
         return name !== '..'
       },
@@ -348,15 +339,10 @@ export async function getSizeText(tauriPage: PageLike, entryName: string, paneIn
   return tauriPage.evaluate<string>(`(function() {
         var pane = ${paneSelector};
         if (!pane) return '';
-        var entries = pane.querySelectorAll('.file-entry');
-        for (var i = 0; i < entries.length; i++) {
-            var name = (entries[i].querySelector('.col-name') || entries[i].querySelector('.name') || {}).textContent;
-            if (name === ${nameJson}) {
-                var sizeEl = entries[i].querySelector('.col-size');
-                return sizeEl ? sizeEl.textContent.trim() : '';
-            }
-        }
-        return '';
+        var entry = pane.querySelector('[data-filename=${nameJson}]');
+        if (!entry) return '';
+        var sizeEl = entry.querySelector('.col-size');
+        return sizeEl ? sizeEl.textContent.trim() : '';
     })()`)
 }
 
@@ -377,7 +363,7 @@ export async function countEntriesWithPrefix(tauriPage: PageLike, prefix: string
         var entries = pane.querySelectorAll('.file-entry');
         var c = 0;
         for (var i = 0; i < entries.length; i++) {
-            var name = (entries[i].querySelector('.col-name') || entries[i].querySelector('.name') || {}).textContent || '';
+            var name = entries[i].getAttribute('data-filename') || '';
             if (name.indexOf(${prefixJson}) === 0) c++;
         }
         return c;
