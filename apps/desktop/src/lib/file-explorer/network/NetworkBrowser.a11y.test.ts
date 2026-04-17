@@ -12,7 +12,14 @@ import { mount, tick } from 'svelte'
 import NetworkBrowser from './NetworkBrowser.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
-let mockHosts: Array<{ id: string; name: string; hostname?: string; ipAddress?: string; port: number; source?: string }> = []
+let mockHosts: Array<{
+  id: string
+  name: string
+  hostname?: string
+  ipAddress?: string
+  port: number
+  source?: string
+}> = []
 
 vi.mock('./network-store.svelte', () => ({
   getNetworkHosts: () => mockHosts,

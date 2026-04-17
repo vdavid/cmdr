@@ -15,7 +15,9 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
-  getVolumeSpace: vi.fn(() => Promise.resolve({ data: { totalBytes: 1024 * 1024 * 1024, availableBytes: 1024 * 1024 * 500 } })),
+  getVolumeSpace: vi.fn(() =>
+    Promise.resolve({ data: { totalBytes: 1024 * 1024 * 1024, availableBytes: 1024 * 1024 * 500 } }),
+  ),
   formatBytes: vi.fn((n: number) => `${String(n)} B`),
   startScanPreview: vi.fn(() => Promise.resolve({ previewId: 'preview-1' })),
   cancelScanPreview: vi.fn(() => Promise.resolve()),

@@ -47,9 +47,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
 }))
 
 vi.mock('$lib/stores/volume-store.svelte', () => ({
-  getVolumes: () => [
-    { id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false },
-  ],
+  getVolumes: () => [{ id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false }],
 }))
 
 describe('TransferProgressDialog a11y', () => {
