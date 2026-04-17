@@ -161,6 +161,44 @@ defaults with `={false}`, implement custom logic in callbacks), and scoped CSS s
 (`[data-scope="dialog"][data-part="content"]`) that work with vanilla CSS. Team-maintained by Chakra UI team. Simple
 elements like `<Button>` are our own thin wrappers (a button needs no headless library).
 
+## Adding a component-level a11y test (tier 3)
+
+Cmdr runs a three-tier a11y strategy — see `docs/design-system.md` § "Automated contrast checks" and
+`apps/desktop/test/e2e-playwright/accessibility.spec.ts` for tiers 1 and 2. Tier 3 runs axe-core against a component
+mounted in Vitest/jsdom, covering structural a11y (ARIA, labels, focusable-when-enabled) in milliseconds. Contrast is
+tier 1's job; focus traps and Escape-return-focus are tier 2's.
+
+Helper: `$lib/test-a11y` exports `expectNoA11yViolations(container)`. Same axe ruleset as E2E, minus `color-contrast`
+and `region` (both misfire in jsdom — see the helper's comments).
+
+Template — colocate `ComponentName.a11y.test.ts` next to the component:
+
+```ts
+import { describe, it } from 'vitest'
+import { mount, tick } from 'svelte'
+import MyComponent from './MyComponent.svelte'
+import { expectNoA11yViolations } from '$lib/test-a11y'
+
+describe('MyComponent a11y', () => {
+  it('default state has no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(MyComponent, {
+      target,
+      props: {
+        /* default props */
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+```
+
+Write one test per meaningful state (default, disabled, error, open/closed, etc.). For components that hit Tauri IPC,
+mock `$lib/tauri-commands` at the top of the file. Set `CMDR_A11Y_DEBUG=1` to log pass/violation counts per call when
+investigating why a test passes silently.
+
 ## Key decisions
 
 **Decision**: Custom `ModalDialog` with manual overlay + drag logic instead of the native `<dialog>` element. **Why**:

@@ -130,6 +130,18 @@ complaints.
 light OR dark mode. This is intentionally deterministic — no browser, no axe-core — so it doesn't flake on color-mix
 rendering quirks. See `scripts/check-a11y-contrast/README.md` for scope and limitations.
 
+**Three-tier a11y testing strategy:**
+
+| Tier | Where                                                            | What it catches                                                                             | How fast |
+| ---- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------- |
+| 1    | `scripts/check-a11y-contrast/` (Go)                              | Contrast failures on every token + component style combo                                    | ~300 ms  |
+| 2    | `apps/desktop/test/e2e-playwright/accessibility.spec.ts`         | Full-page structural audit (focus traps, Escape, keyboard nav) against a real Tauri webview | ~minutes |
+| 3    | `apps/desktop/src/**/*.a11y.test.ts` (Vitest + axe-core + jsdom) | Per-component structural audit (ARIA, labels, roles)                                        | ~ms      |
+
+Tiers 2 and 3 intentionally overlap for the structural rules. Tier 3 is the fast feedback loop during development; tier
+2 still catches things jsdom can't model (focus trap across siblings, Escape returning focus to the trigger). See
+`apps/desktop/src/lib/ui/CLAUDE.md` § "Adding a component-level a11y test" for the tier-3 quickstart.
+
 ### Search highlight colors
 
 | Token                      | Light                     | Dark                       | Role                                   |

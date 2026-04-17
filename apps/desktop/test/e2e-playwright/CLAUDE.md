@@ -91,6 +91,13 @@ different browser engines disagreed on how to resolve nested `color-mix(var(...)
 producing environment-dependent ratios. Axe stays on for structural rules — ARIA, focus order, labels, keyboard nav —
 where a running browser is genuinely needed. See `docs/design-system.md` § Automated contrast checks.
 
+**Note on tier 3 overlap:** Most of the structural audits here (ARIA, labels, roles, accessible names) now also run at
+the component level in tier 3 — see `apps/desktop/src/**/*.a11y.test.ts` and the helper at `src/lib/test-a11y.ts`. Tier
+3 is fast (milliseconds per component) and catches regressions during dev; this E2E tier still earns its keep for
+cross-component flows jsdom can't model (focus traps, Escape return-focus, keyboard nav integration). Once tier 3
+coverage is broad, we can consider slimming this suite to those flow-level scenarios. Until then, the overlap is
+intentional — tier 3 is proving itself.
+
 **Decision**: Use `tauriPage.evaluate()` with string expressions instead of function callbacks. **Why**: TauriPage's
 `evaluate()` sends a JS string over the socket to be executed in the webview via `webview.eval()`. Unlike Playwright's
 `page.evaluate()`, it doesn't support function serialization. All DOM queries must be written as string expressions.
