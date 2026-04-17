@@ -76,6 +76,15 @@ export function getExtension(filename: string): string {
   return filename.substring(lastDot)
 }
 
+/**
+ * True if the extensions differ in more than just letter case.
+ * Case-only extension changes (e.g. `photo.JPG` → `photo.jpg`) are treated as no change,
+ * so users aren't pestered to confirm something that's effectively a metadata tweak.
+ */
+export function extensionsDifferIgnoringCase(oldName: string, newName: string): boolean {
+  return getExtension(oldName).toLowerCase() !== getExtension(newName.trim()).toLowerCase()
+}
+
 /** Validates extension change against the user's preference. */
 export function validateExtensionChange(
   oldName: string,
@@ -84,12 +93,10 @@ export function validateExtensionChange(
 ): ValidationResult {
   if (allowExtensionChanges === 'yes') return OK_RESULT
 
-  const oldExt = getExtension(oldName)
-  const newExt = getExtension(newName.trim())
-
-  if (oldExt === newExt) return OK_RESULT
+  if (!extensionsDifferIgnoringCase(oldName, newName)) return OK_RESULT
 
   if (allowExtensionChanges === 'no') {
+    const oldExt = getExtension(oldName)
     return { severity: 'error', message: `Changing the file extension isn't allowed (was "${oldExt}")` }
   }
   // 'ask' — no error, the dialog will handle it on save

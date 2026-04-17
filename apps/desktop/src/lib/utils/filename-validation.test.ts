@@ -197,6 +197,14 @@ describe('validateExtensionChange', () => {
   it('allows when setting is ask (dialog handles it)', () => {
     expect(validateExtensionChange('file.txt', 'file.md', 'ask').severity).toBe('ok')
   })
+
+  it('allows case-only extension change when setting is no', () => {
+    expect(validateExtensionChange('photo.JPG', 'photo.jpg', 'no').severity).toBe('ok')
+  })
+
+  it('still errors on real extension change when setting is no', () => {
+    expect(validateExtensionChange('file.txt', 'file.md', 'no').severity).toBe('error')
+  })
 })
 
 describe('validateConflict', () => {

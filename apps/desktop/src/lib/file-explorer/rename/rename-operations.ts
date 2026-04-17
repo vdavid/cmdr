@@ -4,7 +4,7 @@
  * except for the actual backend calls which are awaited.
  */
 
-import { getExtension } from '$lib/utils/filename-validation'
+import { extensionsDifferIgnoringCase, getExtension } from '$lib/utils/filename-validation'
 
 export interface ConflictFileInfo {
   name: string
@@ -49,16 +49,16 @@ export async function executeRenameSave(
     return { type: 'noop' }
   }
 
-  // Check extension change
-  if (!skipExtensionCheck) {
-    const oldExt = getExtension(target.originalName)
-    const newExt = getExtension(trimmedName)
-    if (oldExt !== newExt && extensionPolicy === 'ask') {
-      return {
-        type: 'extension-ask',
-        oldExtension: oldExt.replace(/^\./, ''),
-        newExtension: newExt.replace(/^\./, ''),
-      }
+  // Check extension change (case-only changes are silently allowed)
+  if (
+    !skipExtensionCheck &&
+    extensionPolicy === 'ask' &&
+    extensionsDifferIgnoringCase(target.originalName, trimmedName)
+  ) {
+    return {
+      type: 'extension-ask',
+      oldExtension: getExtension(target.originalName).replace(/^\./, ''),
+      newExtension: getExtension(trimmedName).replace(/^\./, ''),
     }
   }
 
