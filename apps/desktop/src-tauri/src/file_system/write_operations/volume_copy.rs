@@ -161,6 +161,9 @@ pub async fn copy_between_volumes(
             }
             Err(write_err) => {
                 if matches!(write_err, WriteOperationError::Cancelled { .. }) {
+                    // write-cancelled was already emitted by copy_volumes_with_progress,
+                    // so don't also emit write-error — it would make the frontend log
+                    // a user-initiated cancel as an error.
                     log::info!("copy_between_volumes: operation {} cancelled", operation_id_for_cleanup,);
                 } else {
                     log::error!(
@@ -168,15 +171,15 @@ pub async fn copy_between_volumes(
                         operation_id_for_cleanup,
                         write_err
                     );
+                    let _ = app_for_error.emit(
+                        "write-error",
+                        WriteErrorEvent {
+                            operation_id: operation_id_for_cleanup,
+                            operation_type: WriteOperationType::Copy,
+                            error: write_err,
+                        },
+                    );
                 }
-                let _ = app_for_error.emit(
-                    "write-error",
-                    WriteErrorEvent {
-                        operation_id: operation_id_for_cleanup,
-                        operation_type: WriteOperationType::Copy,
-                        error: write_err,
-                    },
-                );
             }
         }
     });

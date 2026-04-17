@@ -97,10 +97,7 @@ fn map_smb_error(err: smb2::Error) -> VolumeError {
         ErrorKind::DiskFull => VolumeError::StorageFull {
             message: err.to_string(),
         },
-        ErrorKind::Cancelled => VolumeError::IoError {
-            message: "Operation cancelled".to_string(),
-            raw_os_error: None,
-        },
+        ErrorKind::Cancelled => VolumeError::Cancelled("Operation cancelled by user".to_string()),
         _ => VolumeError::IoError {
             message: err.to_string(),
             raw_os_error: None,
@@ -272,10 +269,7 @@ impl SmbVolume {
             if on_progress(written, total) == std::ops::ControlFlow::Break(()) {
                 // Dropping `stream` here sends the cancel signal to the producer.
                 drop(stream);
-                return Err(VolumeError::IoError {
-                    message: "Operation cancelled".to_string(),
-                    raw_os_error: None,
-                });
+                return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
             }
         }
 
@@ -1336,10 +1330,7 @@ impl Volume for SmbVolume {
             }
 
             if cancelled {
-                return Err(VolumeError::IoError {
-                    message: "Operation cancelled".to_string(),
-                    raw_os_error: None,
-                });
+                return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
             }
 
             {

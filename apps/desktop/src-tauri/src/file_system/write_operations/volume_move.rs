@@ -245,6 +245,12 @@ pub async fn move_between_volumes(
         use tauri::Emitter;
         match result {
             Ok(()) => {}
+            // Cancellations already emit write-cancelled from inside the handler;
+            // don't also emit write-error — the frontend would log a user-initiated
+            // cancel as an error.
+            Err(ref e) if matches!(e, WriteOperationError::Cancelled { .. }) => {
+                log::info!("move_between_volumes: operation {} cancelled", operation_id_for_cleanup);
+            }
             Err(e) => {
                 let _ = app_for_error.emit(
                     "write-error",
@@ -439,6 +445,12 @@ async fn move_within_same_volume(
         use tauri::Emitter;
         match result {
             Ok(()) => {}
+            // Cancellations already emit write-cancelled from inside the handler;
+            // don't also emit write-error — the frontend would log a user-initiated
+            // cancel as an error.
+            Err(ref e) if matches!(e, WriteOperationError::Cancelled { .. }) => {
+                log::info!("move_between_volumes: operation {} cancelled", operation_id_for_cleanup);
+            }
             Err(e) => {
                 let _ = app_for_error.emit(
                     "write-error",
