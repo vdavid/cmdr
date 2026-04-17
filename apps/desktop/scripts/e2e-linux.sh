@@ -133,7 +133,7 @@ if $VNC_MODE; then
 
     docker run -it --rm \
         -v "$REPO_ROOT:/app" \
-        -v "$CARGO_VOLUME:/root/.cargo" \
+        -v "$CARGO_VOLUME:/root/.cargo/registry" \
         -v "$TARGET_VOLUME:/target" \
         -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
         -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
@@ -183,7 +183,7 @@ log_info "Building Linux Tauri binary inside Docker..."
 
 docker run --rm \
     -v "$REPO_ROOT:/app" \
-    -v "$CARGO_VOLUME:/root/.cargo" \
+    -v "$CARGO_VOLUME:/root/.cargo/registry" \
     -v "$TARGET_VOLUME:/target" \
     -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
     -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
@@ -303,7 +303,7 @@ if $INTERACTIVE; then
         --network "$SMB_NETWORK" \
         $SMB_DOCKER_ARGS \
         -v "$REPO_ROOT:/app" \
-        -v "$CARGO_VOLUME:/root/.cargo" \
+        -v "$CARGO_VOLUME:/root/.cargo/registry" \
         -v "$TARGET_VOLUME:/target" \
         -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
         -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
