@@ -47,6 +47,11 @@ target/
 # Auto-generated capability file for playwright-e2e feature (created by build.rs)
 apps/desktop/src-tauri/capabilities/playwright.json
 
+# Go-built check-runner binaries (one per tool dir)
+scripts/check/check
+scripts/check-a11y-contrast/check-a11y-contrast
+scripts/check-css-unused/check-css-unused
+
 # Downloaded llama-server binaries (fetched at build time, not committed)
 apps/desktop/src-tauri/resources/ai/
 
