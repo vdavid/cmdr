@@ -13,23 +13,21 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   OneDrive, iCloud, MacDroid, macFUSE/SSHFS, VeraCrypt, and 12 more), collapsible technical details, and retry with
   attempt history for transient errors. Two-layer mapping: 37 macOS errno codes → `FriendlyError` (Transient /
   NeedsAction / Serious categories), then path- and `statfs`-based enrichment for 19 cloud/mount providers
-  ([eec50ff](https://github.com/vdavid/cmdr/commit/eec50ff),
-  [cc7bb3](https://github.com/vdavid/cmdr/commit/cc7bb3))
+  ([eec50ff](https://github.com/vdavid/cmdr/commit/eec50ff), [cc7bb3](https://github.com/vdavid/cmdr/commit/cc7bb3))
 - Live disk space updates in the status bar — backend polls `statvfs`/NSURL per watched volume, emits
   `volume-space-changed` when deltas exceed a configurable threshold (`advanced.diskSpaceChangeThreshold`). Deduplicates
   per volume across panes, 3s timeout per fetch so hung mounts don't stall
   ([d67dd3](https://github.com/vdavid/cmdr/commit/d67dd3))
 - Breadcrumb "Copy path" context menu — right-click the breadcrumb header to copy the current directory's full path,
-  `file.copyCurrentDirectoryPath` configurable in Settings
-  ([eb4d3c](https://github.com/vdavid/cmdr/commit/eb4d3c))
+  `file.copyCurrentDirectoryPath` configurable in Settings ([eb4d3c](https://github.com/vdavid/cmdr/commit/eb4d3c))
 - SMB streaming read + write — `SmbVolume` now implements `open_read_stream` and `write_from_stream`, so MTP↔SMB and
   SMB↔SMB copies flow through memory without temp files, and large local↔NAS copies stay bounded to ~1 MiB peak RAM
   instead of buffering the whole file ([ac71bd](https://github.com/vdavid/cmdr/commit/ac71bd),
   [a82709](https://github.com/vdavid/cmdr/commit/a82709), [35120d](https://github.com/vdavid/cmdr/commit/35120d),
   [04359](https://github.com/vdavid/cmdr/commit/04359))
-- SMB mount disambiguation — two shares with the same name from different servers now get unique mount points
-  (`public`, `public-1`, …) via `kNetFSForceNewSessionKey`. Volume switcher shows `{share} on {server}` so it's clear
-  which is which ([76671b](https://github.com/vdavid/cmdr/commit/76671b))
+- SMB mount disambiguation — two shares with the same name from different servers now get unique mount points (`public`,
+  `public-1`, …) via `kNetFSForceNewSessionKey`. Volume switcher shows `{share} on {server}` so it's clear which is
+  which ([76671b](https://github.com/vdavid/cmdr/commit/76671b))
 - SMB login form on direct-connection upgrade — instead of an opaque error toast, shows `NetworkLoginForm` inline when
   credentials are missing or wrong; structured `UpgradeResult` distinguishes auth needs from network errors
   ([b315b4](https://github.com/vdavid/cmdr/commit/b315b4))
@@ -39,15 +37,15 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 - MTP Samsung support — late-arriving storages announced via `StoreAdded`/`StoreRemoved` are registered/unregistered on
   the fly; phones that report 0 storages at connect time now appear in the volume selector
   ([14b3ac](https://github.com/vdavid/cmdr/commit/14b3ac))
-- MTP batch scan for copy — `scan_for_copy_batch` groups paths by parent directory and lists each parent once. A copy
-  of 14,825 files now uses one USB `GetObjectHandles` per parent instead of one per file
+- MTP batch scan for copy — `scan_for_copy_batch` groups paths by parent directory and lists each parent once. A copy of
+  14,825 files now uses one USB `GetObjectHandles` per parent instead of one per file
   ([70978c](https://github.com/vdavid/cmdr/commit/70978c))
 - Rename: skip extension confirm on case-only changes — `photo.JPG` → `photo.jpg` no longer triggers the extension
   dialog or the red-border guard ([1401017](https://github.com/vdavid/cmdr/commit/1401017))
 - Filename + extension split in Full view — `photo.jpg` renders as `photo` + `jpg` in separate columns, inline rename
   editor spans both cells for more room ([275d091](https://github.com/vdavid/cmdr/commit/275d091))
-- Volume selector polish — spacebar area is clickable, dropdown renders over the function key bar via `position:
-  fixed`, resizes on window resize, submenus render outside the scrollable dropdown to avoid clipping
+- Volume selector polish — spacebar area is clickable, dropdown renders over the function key bar via `position: fixed`,
+  resizes on window resize, submenus render outside the scrollable dropdown to avoid clipping
   ([700eac](https://github.com/vdavid/cmdr/commit/700eac))
 - File operation dialog polish — thousands-separator formatting for all file/dir counts, pixel-accurate mid-text
   truncation via `@chenglou/pretext` (preserves extensions and path separators), fixed 500 px width eliminates jitter
@@ -61,8 +59,8 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   of being erased into `IoError("Operation cancelled")`; `copy_between_volumes` / `move_between_volumes` skip the
   duplicate `write-error` emit on cancels ([6f79392](https://github.com/vdavid/cmdr/commit/6f79392))
 - Copy/move crash from reactivity race — `TransferDialog` now guards `$derived.by` against null `sourcePaths`, tracks a
-  `destroyed` flag for stale async IPC results, and defers prop teardown via `queueMicrotask` so `onDestroy` fires
-  first ([0cdd7d](https://github.com/vdavid/cmdr/commit/0cdd7d))
+  `destroyed` flag for stale async IPC results, and defers prop teardown via `queueMicrotask` so `onDestroy` fires first
+  ([0cdd7d](https://github.com/vdavid/cmdr/commit/0cdd7d))
 - Stuck "Scanning 0 files" transfer dialog — `TransferDialog` now awaits `startScanPreview` before calling `onConfirm`
   so `previewId` is always set; `TransferProgressDialog` no longer tries to adopt `previewId` from racing events
   ([dd06d68](https://github.com/vdavid/cmdr/commit/dd06d68))
@@ -73,8 +71,8 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   notify-rs debouncer thread (no Tokio runtime context). Switched to `tauri::async_runtime::spawn`
   ([4087e30](https://github.com/vdavid/cmdr/commit/4087e30))
 - APFS-aware copy space check — `validate_disk_space` and `get_space_info_for_path` used `statvfs` which ignores
-  purgeable space (APFS snapshots, iCloud caches); now use `get_volume_space()` on macOS to match Finder and the
-  status bar ([3454656](https://github.com/vdavid/cmdr/commit/3454656))
+  purgeable space (APFS snapshots, iCloud caches); now use `get_volume_space()` on macOS to match Finder and the status
+  bar ([3454656](https://github.com/vdavid/cmdr/commit/3454656))
 - SMB paths round-trip correctly — three fixes: `parse_smbutil_output` now keyword-detects columns instead of
   `split_whitespace` (share names like "Time Machine" work), `manual_servers.rs` serializes concurrent writes via
   `STORE_LOCK`, and file viewer search uses UTF-16 code units for match `column`/`length` so highlights land in the
@@ -88,12 +86,12 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   NASes are gone ([2666db8](https://github.com/vdavid/cmdr/commit/2666db8))
 - Clear-index button WCAG contrast — the disabled state with `opacity: 0.4` dropped contrast to 1.78:1 in light mode;
   now hidden entirely when there's no index ([b1915d9](https://github.com/vdavid/cmdr/commit/b1915d9))
-- Network pane stuck on old host after mount success — `NetworkMountView.handleShareSelect` didn't propagate the
-  cleared host up to `FilePane`, so re-entering Network re-mounted `ShareBrowser` for the stale host
+- Network pane stuck on old host after mount success — `NetworkMountView.handleShareSelect` didn't propagate the cleared
+  host up to `FilePane`, so re-entering Network re-mounted `ShareBrowser` for the stale host
   ([41c1860](https://github.com/vdavid/cmdr/commit/41c1860))
-- `llama-server` session startup on Linux — new `secrets/` module keeps credential storage working even when the
-  keyring is locked (real write/read/delete probe), respects `CMDR_DATA_DIR` for the encrypted-file fallback, and
-  bypasses Keychain entirely in dev mode so Cmdr doesn't prompt on every HMR
+- `llama-server` session startup on Linux — new `secrets/` module keeps credential storage working even when the keyring
+  is locked (real write/read/delete probe), respects `CMDR_DATA_DIR` for the encrypted-file fallback, and bypasses
+  Keychain entirely in dev mode so Cmdr doesn't prompt on every HMR
   ([55ccde3](https://github.com/vdavid/cmdr/commit/55ccde3))
 
 ### Improved
@@ -102,16 +100,13 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   volume layer. `LocalPosixVolume` uses `spawn_blocking`, `MtpVolume` talks to `MtpConnectionManager` via `.await`,
   `SmbVolume` swaps to `tokio::sync::Mutex`. Copy/move/delete pipelines are plain `async fn`; conflict resolution uses
   `tokio::sync::oneshot` instead of `Condvar`. Removes the nested-runtime panics that previously broke MTP↔SMB and
-  bounds per-file memory for cross-volume streaming
-  ([531bb9b](https://github.com/vdavid/cmdr/commit/531bb9b),
-  [9d4982a](https://github.com/vdavid/cmdr/commit/9d4982a),
-  [694ddc1](https://github.com/vdavid/cmdr/commit/694ddc1))
+  bounds per-file memory for cross-volume streaming ([531bb9b](https://github.com/vdavid/cmdr/commit/531bb9b),
+  [9d4982a](https://github.com/vdavid/cmdr/commit/9d4982a), [694ddc1](https://github.com/vdavid/cmdr/commit/694ddc1))
 - MTP channel-based read stream — `MtpReadStream` is now a consumer of a bounded `sync_channel(4)` filled by a
   background task, so it's safe to call `next_chunk()` inside any runtime context (previous `block_on`-based stream
-  panicked when nested inside SMB's `block_on`)
-  ([1598f8c](https://github.com/vdavid/cmdr/commit/1598f8c))
-- Cancelled SMB uploads use `FileWriter::abort()` — skips the server FLUSH/fsync on a file we're about to delete,
-  saving ~100 ms to ~1 s per cancel on slow NAS ([6fa0780](https://github.com/vdavid/cmdr/commit/6fa0780))
+  panicked when nested inside SMB's `block_on`) ([1598f8c](https://github.com/vdavid/cmdr/commit/1598f8c))
+- Cancelled SMB uploads use `FileWriter::abort()` — skips the server FLUSH/fsync on a file we're about to delete, saving
+  ~100 ms to ~1 s per cancel on slow NAS ([6fa0780](https://github.com/vdavid/cmdr/commit/6fa0780))
 
 ### Non-app
 
@@ -119,48 +114,41 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   resolves CSS variables (nested `color-mix(in srgb | oklch, ...)` with premultiplied alpha), computes contrast in
   light + dark modes separately, flags pairs below 4.5:1 / 3:1. Runs in ~300 ms on 85 files. Replaces the flaky
   `color-contrast` axe rule (WebKit builds disagreed on how to resolve nested `color-mix()` chains)
-  ([db25f0d](https://github.com/vdavid/cmdr/commit/db25f0d),
-  [55af258](https://github.com/vdavid/cmdr/commit/55af258))
+  ([db25f0d](https://github.com/vdavid/cmdr/commit/db25f0d), [55af258](https://github.com/vdavid/cmdr/commit/55af258))
 - Fix 18 real WCAG AA contrast failures surfaced by the new checker — add `--color-error-text` / `--color-warning-text`
   tokens for text on tinted bgs, swap warning-white to `--color-accent-fg`, keep base accent color on hover and use
   underline for affordance ([747507f](https://github.com/vdavid/cmdr/commit/747507f),
-  [67d42ba](https://github.com/vdavid/cmdr/commit/67d42ba),
-  [4a15a53](https://github.com/vdavid/cmdr/commit/4a15a53))
+  [67d42ba](https://github.com/vdavid/cmdr/commit/67d42ba), [4a15a53](https://github.com/vdavid/cmdr/commit/4a15a53))
 - Tier 3 component-level a11y tests — 61 `.a11y.test.ts` files (from 5), 146 passing, runs in ~6.3 s via Vitest/jsdom.
   New `a11y-coverage` check enforces that every tracked `.svelte` file under `apps/desktop/src/lib/` has a colocated
   test or an allowlist entry ([33300a4](https://github.com/vdavid/cmdr/commit/33300a4),
-  [d56c1df](https://github.com/vdavid/cmdr/commit/d56c1df),
-  [398bf7a](https://github.com/vdavid/cmdr/commit/398bf7a))
+  [d56c1df](https://github.com/vdavid/cmdr/commit/d56c1df), [398bf7a](https://github.com/vdavid/cmdr/commit/398bf7a))
 - Switch from Lucide components to UnoCSS pure-CSS icons — zero JS runtime, recolor via `currentColor` + CSS vars,
   `mask-image` rendering ([9354806](https://github.com/vdavid/cmdr/commit/9354806))
-- File-length check + allowlist — tool flags files growing past a tracked size, 31 baseline entries. Split 20+
-  long files into sub-800-line modules (`volume_copy.rs`, `scan.rs`, `smb.rs`, `integration_test.rs`,
-  `AiSection.svelte`, `+page.svelte`, `DualPaneExplorer.svelte`, and more) — pure mechanical splits, no logic changes
-  ([7514cb4](https://github.com/vdavid/cmdr/commit/7514cb4),
-  [2939bfe](https://github.com/vdavid/cmdr/commit/2939bfe),
-  [4514a83](https://github.com/vdavid/cmdr/commit/4514a83),
-  [3155609](https://github.com/vdavid/cmdr/commit/3155609))
+- File-length check + allowlist — tool flags files growing past a tracked size, 31 baseline entries. Split 20+ long
+  files into sub-800-line modules (`volume_copy.rs`, `scan.rs`, `smb.rs`, `integration_test.rs`, `AiSection.svelte`,
+  `+page.svelte`, `DualPaneExplorer.svelte`, and more) — pure mechanical splits, no logic changes
+  ([7514cb4](https://github.com/vdavid/cmdr/commit/7514cb4), [2939bfe](https://github.com/vdavid/cmdr/commit/2939bfe),
+  [4514a83](https://github.com/vdavid/cmdr/commit/4514a83), [3155609](https://github.com/vdavid/cmdr/commit/3155609))
 - `OperationEventSink` + `ListingEventSink` traits decouple copy/move/listing pipelines from `tauri::AppHandle` —
   enables unit tests without a Tauri runtime; `CollectorEventSink` stores events for assertions
-  ([35fea46](https://github.com/vdavid/cmdr/commit/35fea46),
-  [0a6ae61](https://github.com/vdavid/cmdr/commit/0a6ae61))
-- Vendor the smb2 consumer Docker containers under `.compose/` with `VENDORED.md` bump instructions — CI no longer
-  needs to extract them via `cargo run` (which required GTK deps that aren't in the test container)
+  ([35fea46](https://github.com/vdavid/cmdr/commit/35fea46), [0a6ae61](https://github.com/vdavid/cmdr/commit/0a6ae61))
+- Vendor the smb2 consumer Docker containers under `.compose/` with `VENDORED.md` bump instructions — CI no longer needs
+  to extract them via `cargo run` (which required GTK deps that aren't in the test container)
   ([d50b963](https://github.com/vdavid/cmdr/commit/d50b963))
-- Linux E2E runs in Docker to match local — same image, same `./scripts/e2e-linux.sh` flow developers use. Cache
-  volumes overridable via env so `actions/cache` can persist them between runs
-  ([8803c3c](https://github.com/vdavid/cmdr/commit/8803c3c),
-  [f39177c](https://github.com/vdavid/cmdr/commit/f39177c))
-- Remove legacy CrabNebula/WebDriverIO macOS E2E suite — Playwright now covers all 15 macOS tests. Drops 9 npm
-  devDeps, the `automation` Cargo feature, and `tauri-plugin-automation`
+- Linux E2E runs in Docker to match local — same image, same `./scripts/e2e-linux.sh` flow developers use. Cache volumes
+  overridable via env so `actions/cache` can persist them between runs
+  ([8803c3c](https://github.com/vdavid/cmdr/commit/8803c3c), [f39177c](https://github.com/vdavid/cmdr/commit/f39177c))
+- Remove legacy CrabNebula/WebDriverIO macOS E2E suite — Playwright now covers all 15 macOS tests. Drops 9 npm devDeps,
+  the `automation` Cargo feature, and `tauri-plugin-automation`
   ([4cecfb9](https://github.com/vdavid/cmdr/commit/4cecfb9))
 - E2E file entries matched by `data-filename` attribute, not `.col-name` text — decouples tests from display format
   ([5a8f6af](https://github.com/vdavid/cmdr/commit/5a8f6af))
 - Upgrade `rustls-webpki` 0.103.11 → 0.103.12 (RUSTSEC-2026-0098/0099), `bitstream-io` 4.9.0 → 4.10.0 (drops yanked
   `core2`); `cargo-audit` now parses `--json` for one-line-per-advisory output with 26 upstream ignores
   ([3734502](https://github.com/vdavid/cmdr/commit/3734502))
-- HMR crash recovery — catch SvelteKit TDZ crash on root layout HMR and auto-reload via `sessionStorage` debounce,
-  move `virtual:uno.css` HMR handler to a stable `hmr-recovery.ts` module
+- HMR crash recovery — catch SvelteKit TDZ crash on root layout HMR and auto-reload via `sessionStorage` debounce, move
+  `virtual:uno.css` HMR handler to a stable `hmr-recovery.ts` module
   ([700eac](https://github.com/vdavid/cmdr/commit/700eac))
 - Auto-sign E2E binaries with a "Cmdr Dev" self-signed cert — no more Keychain prompts during `scripts/check.sh`
   ([23b920d](https://github.com/vdavid/cmdr/commit/23b920d))

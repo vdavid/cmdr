@@ -1,12 +1,14 @@
 //! Tauri commands for file system operations.
 
 mod drag;
+#[cfg(any(feature = "playwright-e2e", debug_assertions))]
 mod e2e_support;
 mod listing;
 mod volume_copy;
 mod write_ops;
 
 pub use drag::*;
+#[cfg(any(feature = "playwright-e2e", debug_assertions))]
 pub use e2e_support::*;
 pub use listing::*;
 pub use volume_copy::*;
