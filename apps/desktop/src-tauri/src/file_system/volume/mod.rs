@@ -508,6 +508,18 @@ pub trait Volume: Send + Sync {
     /// `on_progress(bytes_done, bytes_total)` is called periodically during the transfer.
     /// Return `ControlFlow::Break(())` from the callback to cancel the transfer.
     /// Returns bytes transferred.
+    ///
+    /// # Streaming requirement
+    ///
+    /// **Must stream.** Don't accumulate the remote file into a `Vec<u8>`
+    /// before touching the local disk. A user copying an 8 GB file off a
+    /// NAS would allocate 8 GB of RAM. Drive the backend's streaming reader
+    /// (smb2: `FileDownload`, mtp-rs: `FileDownload`) chunk-by-chunk and
+    /// write each chunk to `local_dest` as it arrives. For local volumes,
+    /// reach for the OS's native copy APIs which stream by design.
+    ///
+    /// Peak memory per transfer should be bounded by a small chunk buffer
+    /// (~1 MiB) regardless of file size.
     fn export_to_local<'a>(
         &'a self,
         source: &'a Path,
@@ -524,6 +536,19 @@ pub trait Volume: Send + Sync {
     /// `on_progress(bytes_done, bytes_total)` is called periodically during the transfer.
     /// Return `ControlFlow::Break(())` from the callback to cancel the transfer.
     /// Returns bytes transferred.
+    ///
+    /// # Streaming requirement
+    ///
+    /// **Must stream.** Don't `std::fs::read(path)` / `tokio::fs::read(path)`
+    /// the local source into a `Vec<u8>` before sending it off. A user
+    /// copying an 8 GB file onto a NAS would allocate 8 GB of RAM. Open the
+    /// source with `tokio::fs::File::open` and drive the backend's streaming
+    /// writer (smb2: `FileWriter`, mtp-rs: `upload_stream`) chunk-by-chunk.
+    /// For local volumes, reach for the OS's native copy APIs which stream
+    /// by design.
+    ///
+    /// Peak memory per transfer should be bounded by a small chunk buffer
+    /// (~1 MiB) regardless of file size.
     fn import_from_local<'a>(
         &'a self,
         local_source: &'a Path,
@@ -580,6 +605,20 @@ pub trait Volume: Send + Sync {
     ///
     /// Returns a VolumeReadStream that yields chunks of data.
     /// The stream must be fully consumed or dropped before other operations.
+    ///
+    /// # Streaming requirement
+    ///
+    /// **Must stream.** Don't read the whole file into a `Vec<u8>` inside
+    /// this method and hand chunks of it back — that's just pre-buffering
+    /// with extra steps. A user streaming an 8 GB file would allocate 8 GB
+    /// of RAM before the consumer sees a single byte. Drive the backend's
+    /// streaming reader (smb2: `FileDownload`, mtp-rs: `FileDownload`) on
+    /// demand from `next_chunk`. If the backend gives you a borrowed
+    /// handle, use a bounded producer/consumer channel (see `SmbReadStream`
+    /// for the pattern).
+    ///
+    /// Peak memory per transfer should be bounded by a small chunk buffer
+    /// (~1 MiB) regardless of file size.
     #[allow(
         clippy::type_complexity,
         reason = "async trait method returns a pinned boxed future by design"
@@ -602,6 +641,20 @@ pub trait Volume: Send + Sync {
     /// * `size` - Total size in bytes (required for protocols like MTP)
     /// * `stream` - Source data stream
     /// * `on_progress` - Progress callback; return `ControlFlow::Break(())` to cancel
+    ///
+    /// # Streaming requirement
+    ///
+    /// **Must stream.** Don't drain `stream` into a `Vec<u8>` before writing
+    /// to the backend. A user copying an 8 GB file through this path would
+    /// allocate 8 GB of RAM. Pull each chunk from `stream.next_chunk().await`
+    /// and push it straight into the backend's streaming writer (smb2:
+    /// `FileWriter`, mtp-rs: `upload_stream`) in the same loop. Holding the
+    /// backend's session mutex across the source `next_chunk` awaits is
+    /// fine — different volumes use different mutexes, so there's no
+    /// deadlock risk.
+    ///
+    /// Peak memory per transfer should be bounded by a small chunk buffer
+    /// (~1 MiB) regardless of file size.
     fn write_from_stream<'a>(
         &'a self,
         dest: &'a Path,

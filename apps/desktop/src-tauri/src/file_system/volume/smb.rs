@@ -321,30 +321,73 @@ impl SmbVolume {
     }
 
     /// Imports a single local file to SMB with progress reporting. Returns bytes written.
+    ///
+    /// Streams the local file chunk-by-chunk into smb2's `FileWriter` so peak
+    /// memory is bounded by one chunk (~1 MiB), not the full file size. The
+    /// SMB session mutex is held for the whole transfer, matching the pattern
+    /// in `export_single_file_with_progress`.
     async fn import_single_file_with_progress(
         &self,
         local_source: &Path,
         smb_path: &str,
         on_progress: &(dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
     ) -> Result<u64, VolumeError> {
-        let data = std::fs::read(local_source).map_err(|e| VolumeError::IoError {
-            message: e.to_string(),
-            raw_os_error: None,
-        })?;
-        let len = data.len() as u64;
+        use tokio::io::AsyncReadExt;
 
-        {
-            let mut guard = self.acquire_smb().await?;
-            let (client, tree) = guard.as_mut().unwrap();
-            let result = client
-                .write_file_with_progress(tree, smb_path, &data, |p| {
-                    on_progress(p.bytes_transferred, p.total_bytes.unwrap_or(len))
-                })
-                .await;
-            self.handle_smb_result("import_from_local(write)", result)?;
+        // Discover the file size up front so progress callbacks report an accurate total.
+        let total_size = tokio::fs::metadata(local_source)
+            .await
+            .map_err(|e| VolumeError::IoError {
+                message: e.to_string(),
+                raw_os_error: None,
+            })?
+            .len();
+
+        let mut file = tokio::fs::File::open(local_source)
+            .await
+            .map_err(|e| VolumeError::IoError {
+                message: e.to_string(),
+                raw_os_error: None,
+            })?;
+
+        let mut guard = self.acquire_smb().await?;
+        let (client, tree) = guard.as_mut().unwrap();
+
+        let writer_result = client.create_file_writer(tree, smb_path).await;
+        let mut writer = self.handle_smb_result("import_from_local(open_write)", writer_result)?;
+
+        let mut buf = vec![0u8; SMB_IMPORT_CHUNK_SIZE];
+        let mut bytes_done: u64 = 0;
+
+        loop {
+            let n = file.read(&mut buf).await.map_err(|e| VolumeError::IoError {
+                message: e.to_string(),
+                raw_os_error: None,
+            })?;
+            if n == 0 {
+                break;
+            }
+
+            let write_result = writer.write_chunk(&buf[..n]).await;
+            self.handle_smb_result("import_from_local(write_chunk)", write_result)?;
+
+            bytes_done += n as u64;
+
+            if on_progress(bytes_done, total_size) == std::ops::ControlFlow::Break(()) {
+                // Finalize the writer to drain in-flight WRITE responses and
+                // close the handle — if we just drop it, stale responses
+                // poison the session for the next op. Best-effort delete of
+                // the partial file afterwards.
+                let _ = writer.finish().await;
+                let _ = client.delete_file(tree, smb_path).await;
+                return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+            }
         }
 
-        Ok(len)
+        let finish_result = writer.finish().await;
+        self.handle_smb_result("import_from_local(finish)", finish_result)?;
+
+        Ok(bytes_done)
     }
 
     /// Recursively imports a local directory to SMB with progress. Returns total bytes.
@@ -703,6 +746,13 @@ impl SmbVolume {
 /// Backpressure window for the chunk channel. With smb2's ~512 KB pipelined
 /// chunks, 4 slots keep peak memory at a few MB regardless of file size.
 const SMB_STREAM_CHANNEL_CAPACITY: usize = 4;
+
+/// Chunk size used when reading the local source file during
+/// `import_single_file_with_progress`. smb2's `FileWriter` re-splits pushed
+/// buffers into wire-sized WRITE requests, so this just bounds how much we
+/// pull from disk per iteration. ~1 MiB keeps peak RAM flat regardless of
+/// input file size.
+const SMB_IMPORT_CHUNK_SIZE: usize = 1024 * 1024;
 
 /// Streaming reader for SMB files, backed by a background producer task.
 ///
@@ -1311,34 +1361,42 @@ impl Volume for SmbVolume {
                 self.share_name, smb_path
             );
 
-            // Collect all chunks first, then write in one shot.
-            // This avoids holding the smb mutex across stream chunk reads
-            // (which may themselves need async I/O on other volumes).
-            let mut all_data = Vec::new();
-            let mut bytes_read = 0u64;
-            let mut cancelled = false;
+            // Holds the SMB session mutex for the duration of the transfer,
+            // matching `export_single_file_with_progress`. Different volumes
+            // have different mutexes, so awaiting `stream.next_chunk()` while
+            // holding this one is safe.
+            let mut guard = self.acquire_smb().await?;
+            let (client, tree) = guard.as_mut().unwrap();
 
-            while let Some(result) = stream.next_chunk().await {
-                let chunk = result?;
+            let writer_result = client.create_file_writer(tree, &smb_path).await;
+            let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
+
+            let mut bytes_read = 0u64;
+
+            while let Some(chunk_result) = stream.next_chunk().await {
+                let chunk = chunk_result?;
+                if chunk.is_empty() {
+                    continue;
+                }
+
+                let write_result = writer.write_chunk(&chunk).await;
+                self.handle_smb_result("write_from_stream(write_chunk)", write_result)?;
+
                 bytes_read += chunk.len() as u64;
-                all_data.extend_from_slice(&chunk);
 
                 if on_progress(bytes_read, size) == std::ops::ControlFlow::Break(()) {
-                    cancelled = true;
-                    break;
+                    // Finalize the writer to drain in-flight WRITE responses
+                    // and close the handle — dropping it directly would leave
+                    // stale responses on the connection, poisoning the next op.
+                    // Best-effort delete of the partial file afterwards.
+                    let _ = writer.finish().await;
+                    let _ = client.delete_file(tree, &smb_path).await;
+                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
                 }
             }
 
-            if cancelled {
-                return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
-            }
-
-            {
-                let mut guard = self.acquire_smb().await?;
-                let (client, tree) = guard.as_mut().unwrap();
-                let r = client.write_file_pipelined(tree, &smb_path, &all_data).await;
-                self.handle_smb_result("write_from_stream", r)?;
-            }
+            let finish_result = writer.finish().await;
+            self.handle_smb_result("write_from_stream(finish)", finish_result)?;
 
             Ok(bytes_read)
         })
@@ -2452,6 +2510,161 @@ mod tests {
         let entries = vol.list_directory(Path::new(&dir), None).await.unwrap();
         assert!(entries.iter().any(|e| e.name == "cancel-me.bin"));
 
+        ensure_clean(&vol, &dir).await;
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_import_from_local_streams_large_file() {
+        // Verifies the Local→SMB import path streams chunk-by-chunk rather
+        // than pre-buffering the local file into memory.
+        use std::sync::atomic::{AtomicU64, AtomicUsize};
+
+        let vol = make_docker_volume().await;
+        let dir = test_dir_name();
+        ensure_clean(&vol, &dir).await;
+        vol.create_directory(Path::new(&dir)).await.unwrap();
+
+        let size = 4 * 1024 * 1024; // 4 MB, spans multiple import chunks
+        let data: Vec<u8> = (0..size).map(|i| ((i * 13) % 251) as u8).collect();
+
+        let local_tmp = std::env::temp_dir().join(format!("cmdr-smb-import-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&local_tmp);
+        std::fs::create_dir_all(&local_tmp).unwrap();
+        let local_source = local_tmp.join("import-large.bin");
+        std::fs::write(&local_source, &data).unwrap();
+
+        let smb_path = format!("{}/import-large.bin", dir);
+        let progress_calls = AtomicUsize::new(0);
+        let last_bytes = AtomicU64::new(0);
+
+        let bytes = vol
+            .import_from_local(&local_source, Path::new(&smb_path), &|done, total| {
+                progress_calls.fetch_add(1, Ordering::Relaxed);
+                last_bytes.store(done, Ordering::Relaxed);
+                assert_eq!(total, size as u64);
+                std::ops::ControlFlow::Continue(())
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(bytes, size as u64);
+        assert!(
+            progress_calls.load(Ordering::Relaxed) >= 2,
+            "streaming import should call progress multiple times for a multi-chunk file"
+        );
+        assert_eq!(last_bytes.load(Ordering::Relaxed), size as u64);
+
+        // Verify content integrity by reading back through the streaming reader.
+        let mut stream = vol.open_read_stream(Path::new(&smb_path)).await.unwrap();
+        assert_eq!(stream.total_size(), size as u64);
+        let mut readback = Vec::with_capacity(size);
+        while let Some(Ok(chunk)) = stream.next_chunk().await {
+            readback.extend_from_slice(&chunk);
+        }
+        assert_eq!(readback, data);
+
+        let _ = std::fs::remove_dir_all(&local_tmp);
+        ensure_clean(&vol, &dir).await;
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_write_from_stream_streams_large_file() {
+        // InMemoryVolume → SmbVolume via write_from_stream with a multi-chunk
+        // source. Verifies the SMB write path now pulls chunks on demand
+        // rather than collecting the full source into a Vec<u8>.
+        use std::sync::atomic::{AtomicU64, AtomicUsize};
+
+        let vol = make_docker_volume().await;
+        let dir = test_dir_name();
+        ensure_clean(&vol, &dir).await;
+        vol.create_directory(Path::new(&dir)).await.unwrap();
+
+        let size: usize = 4 * 1024 * 1024; // 4 MB
+        let data: Vec<u8> = (0..size).map(|i| ((i * 11) % 251) as u8).collect();
+
+        let source = InMemoryVolume::new("Source");
+        source.create_file(Path::new("/big-stream.bin"), &data).await.unwrap();
+
+        let smb_path = format!("{}/big-stream.bin", dir);
+        let progress_calls = AtomicUsize::new(0);
+        let last_bytes = AtomicU64::new(0);
+
+        let stream = source.open_read_stream(Path::new("/big-stream.bin")).await.unwrap();
+        let bytes = vol
+            .write_from_stream(Path::new(&smb_path), size as u64, stream, &|done, total| {
+                progress_calls.fetch_add(1, Ordering::Relaxed);
+                last_bytes.store(done, Ordering::Relaxed);
+                assert_eq!(total, size as u64);
+                std::ops::ControlFlow::Continue(())
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(bytes, size as u64);
+        assert!(
+            progress_calls.load(Ordering::Relaxed) >= 2,
+            "streaming write should call progress multiple times for a multi-chunk source"
+        );
+        assert_eq!(last_bytes.load(Ordering::Relaxed), size as u64);
+
+        // Verify content integrity via the streaming reader.
+        let mut verify = vol.open_read_stream(Path::new(&smb_path)).await.unwrap();
+        assert_eq!(verify.total_size(), size as u64);
+        let mut readback = Vec::with_capacity(size);
+        while let Some(Ok(chunk)) = verify.next_chunk().await {
+            readback.extend_from_slice(&chunk);
+        }
+        assert_eq!(readback, data);
+
+        ensure_clean(&vol, &dir).await;
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_import_from_local_cancel_mid_write() {
+        // Cancel partway through a multi-chunk import via progress-break.
+        // Verifies Cancelled is returned and that the SMB session is still
+        // usable for subsequent ops (writer.finish() drains in-flight WRITE
+        // responses cleanly on cancel, best-effort-deletes the partial file).
+        let vol = make_docker_volume().await;
+        let dir = test_dir_name();
+        ensure_clean(&vol, &dir).await;
+        vol.create_directory(Path::new(&dir)).await.unwrap();
+
+        let size = 4 * 1024 * 1024; // 4 MB, several import chunks
+        let data = vec![0xC3u8; size];
+
+        let local_tmp = std::env::temp_dir().join(format!("cmdr-smb-import-cancel-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&local_tmp);
+        std::fs::create_dir_all(&local_tmp).unwrap();
+        let local_source = local_tmp.join("cancel-me.bin");
+        std::fs::write(&local_source, &data).unwrap();
+
+        let smb_path = format!("{}/cancel-me.bin", dir);
+        let call_count = std::sync::atomic::AtomicUsize::new(0);
+
+        let result = vol
+            .import_from_local(&local_source, Path::new(&smb_path), &|_, _| {
+                let n = call_count.fetch_add(1, Ordering::Relaxed);
+                if n >= 1 {
+                    std::ops::ControlFlow::Break(())
+                } else {
+                    std::ops::ControlFlow::Continue(())
+                }
+            })
+            .await;
+
+        assert!(
+            matches!(result, Err(VolumeError::Cancelled(_))),
+            "expected Cancelled, got {result:?}"
+        );
+
+        // The session must still work after cancel.
+        let _ = vol.list_directory(Path::new(&dir), None).await.unwrap();
+
+        let _ = std::fs::remove_dir_all(&local_tmp);
         ensure_clean(&vol, &dir).await;
     }
 }

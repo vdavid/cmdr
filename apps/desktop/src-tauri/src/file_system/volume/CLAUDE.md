@@ -76,6 +76,7 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 - [ ] Return `supports_export() = true` and implement `export_to_local` + `import_from_local`. These are what the Copy dialog uses for "this volume ↔ local" transfers.
 - [ ] Implement `scan_for_copy` (count + bytes) and `scan_for_conflicts` (destination collision detection). These feed the Copy dialog's pre-flight.
 - [ ] Map your backend's errors through a `map_*_error` function that returns `VolumeError`. Connection-loss errors should trigger a state transition (see `SmbVolume::handle_smb_result` as a reference) so subsequent calls fail fast.
+- [ ] **No full-file buffering in per-file transfer paths.** Don't `std::fs::read` the local source, don't drain the incoming `VolumeReadStream` into a `Vec<u8>`, and don't collect the remote file into a `Vec<u8>` before writing to local. An 8 GB copy would allocate 8 GB of RAM. See the "Streaming requirement" section on each of these trait methods' doc comments: `export_to_local`, `import_from_local`, `open_read_stream`, `write_from_stream`.
 
 ### Tier 3 — integrate with the wider app (optional, but mostly expected)
 
@@ -104,10 +105,10 @@ At-a-glance view of which capabilities each current volume opts into. Use this w
 | `list_directory` / metadata | ✅                   | ✅                      | ✅                        | ✅                 |
 | Mutations (create/delete/rename) | ✅              | ✅                      | ✅                        | ✅                 |
 | `supports_export`           | ✅                   | ✅                      | ✅                        | ✅                 |
-| `export_to_local` / `import_from_local` | ✅       | ✅                      | ✅ streaming              | ❌                 |
+| `export_to_local` / `import_from_local` | ✅       | ✅                      | ✅ streaming (both directions) | ❌            |
 | `supports_streaming`        | ❌ (no need)         | ✅                      | ✅                        | ✅                 |
 | `open_read_stream`          | ❌                   | ✅ owned download       | ✅ channel-backed         | ✅ in-memory       |
-| `write_from_stream`         | ❌                   | ✅ streaming            | ⚠️ pre-buffers (TODO)     | ✅ in-memory       |
+| `write_from_stream`         | ❌                   | ✅ streaming            | ✅ streaming              | ✅ in-memory       |
 | `supports_watching`         | ✅ FSEvents/inotify  | ❌ (own USB watcher)    | ❌ (OS-mount FSEvents)    | ❌                 |
 | `supports_local_fs_access`  | ✅ (default)         | ❌                      | ❌                        | ❌                 |
 | `local_path`                | ✅ `Some(root)`      | `None`                  | `None`                    | `None`             |
@@ -154,7 +155,7 @@ Key building blocks:
 
 The pre-refactor `SmbReadStream` read the entire file into a `Vec<u8>` via `read_file_pipelined` and yielded slices. For an 8 GB file that meant an 8 GB allocation. Don't do this. If the consumer API is stream-shaped, the producer should stream too.
 
-`SmbVolume::write_from_stream` still pre-buffers the source into `all_data` before writing to SMB (comment at the top of the function explains the reasoning at the time). That's the `⚠️` in the capability matrix above — a follow-up to stream the write side in chunks while holding the SMB session mutex for the duration.
+The same rule applies to write paths: `import_from_local` and `write_from_stream` must drive the backend's chunk-by-chunk writer (for example, smb2's `FileWriter`) rather than slurping the source into a `Vec<u8>` first. The SMB write paths used to pre-buffer; they now stream. See the "Streaming requirement" section on each Volume trait method's doc comment.
 
 ## Path handling gotchas
 
