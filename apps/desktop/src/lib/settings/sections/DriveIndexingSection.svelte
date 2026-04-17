@@ -152,7 +152,7 @@
         padding: var(--spacing-xs) var(--spacing-sm);
         border-radius: var(--radius-sm);
         background: color-mix(in srgb, var(--color-error) 10%, transparent);
-        color: var(--color-error);
+        color: var(--color-error-text);
         font-size: var(--font-size-sm);
     }
 </style>

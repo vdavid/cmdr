@@ -1152,7 +1152,7 @@
         margin: 0 var(--spacing-xl);
         padding: var(--spacing-xs) var(--spacing-sm);
         font-size: var(--font-size-xs);
-        color: var(--color-warning);
+        color: var(--color-warning-text);
         background: var(--color-warning-bg);
         border-radius: var(--radius-sm);
         text-align: center;

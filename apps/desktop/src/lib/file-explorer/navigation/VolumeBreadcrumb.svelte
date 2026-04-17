@@ -905,7 +905,7 @@
         border: none;
         padding: 0 var(--spacing-xs);
         cursor: default;
-        color: var(--color-warning);
+        color: var(--color-warning-text);
         font-size: var(--font-size-md);
         line-height: 1;
         border-radius: var(--radius-sm);

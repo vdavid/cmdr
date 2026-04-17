@@ -939,7 +939,7 @@
         line-height: 1;
         border-radius: var(--radius-sm);
         background: var(--color-warning);
-        color: white;
+        color: var(--color-accent-fg);
         border: none;
         transition: all var(--transition-base);
     }

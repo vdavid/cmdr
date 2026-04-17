@@ -263,7 +263,10 @@
     }
 
     .appearance-link:hover {
-        color: var(--color-accent-hover);
+        /* Keep the a11y-safe accent-text color on hover; add underline for visual
+           affordance instead of switching to the lighter `--color-accent-hover`
+           which doesn't meet 4.5:1 on white. */
+        text-decoration: underline;
     }
 
     .date-time-setting {

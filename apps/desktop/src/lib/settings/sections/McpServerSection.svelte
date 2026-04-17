@@ -243,12 +243,12 @@
 
     .port-status.warning {
         background: color-mix(in srgb, var(--color-warning) 7%, transparent);
-        color: var(--color-warning);
+        color: var(--color-warning-text);
     }
 
     .port-status.unavailable {
         background: color-mix(in srgb, var(--color-error) 7%, transparent);
-        color: var(--color-error);
+        color: var(--color-error-text);
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);

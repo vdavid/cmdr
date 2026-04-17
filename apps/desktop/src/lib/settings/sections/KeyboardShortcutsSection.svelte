@@ -630,7 +630,7 @@
 
     .conflict-badge {
         background: var(--color-warning);
-        color: white;
+        color: var(--color-accent-fg);
         font-size: var(--font-size-xs);
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         padding: 1px 5px;

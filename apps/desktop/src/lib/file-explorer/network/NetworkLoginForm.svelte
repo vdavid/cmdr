@@ -288,7 +288,7 @@
         border: 1px solid var(--color-error);
         border-radius: var(--radius-lg);
         font-size: var(--font-size-sm);
-        color: var(--color-error);
+        color: var(--color-error-text);
     }
 
     .error-icon {

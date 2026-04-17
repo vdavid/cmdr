@@ -66,8 +66,14 @@
   --color-error: #d32f2f;
   --color-error-bg: #fef2f2;
   --color-error-border: #fecaca;
+  /* Darker variant for text in error contexts — guarantees ≥4.5:1 on `--color-error-bg`
+     and similar tinted bgs (the non-text `--color-error` at `#d32f2f` only reaches ~4:1). */
+  --color-error-text: #b91c1c;
   --color-warning: #e65100;
   --color-warning-bg: rgba(230, 81, 0, 0.1);
+  /* Same reasoning as `--color-error-text` — the brand `--color-warning` at `#e65100`
+     clocks ~3.3:1 on the warning tint; this darker variant meets AA. */
+  --color-warning-text: #9a3412;
 
   /* Disk usage bar — solid colors mixed against the track for clean layering.
      * Uses color-mix against the border color (not transparent) to avoid
@@ -206,8 +212,11 @@
     --color-error: #f44336;
     --color-error-bg: #450a0a;
     --color-error-border: #7f1d1d;
+    /* Light-on-dark text variant — see light-mode comment. ≥4.5:1 on `--color-error-bg`. */
+    --color-error-text: #fca5a5;
     --color-warning: #f5a623;
     --color-warning-bg: rgba(245, 166, 35, 0.15);
+    --color-warning-text: #fdba74;
 
     /* Disk usage bar — solid colors, same mixing strategy as light mode */
     --color-disk-ok: color-mix(in srgb, var(--color-allow) 60%, var(--color-border));

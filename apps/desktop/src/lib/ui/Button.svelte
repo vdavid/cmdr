@@ -90,7 +90,7 @@
     /* === Variant: danger === */
     .btn-danger {
         background: transparent;
-        color: var(--color-error);
+        color: var(--color-error-text);
         border: 1px solid var(--color-error);
     }
 
