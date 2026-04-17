@@ -113,7 +113,9 @@ nusb = "0.2.3"
 bytes = "1"
 # mDNS discovery for network host browsing (pure Rust, cross-platform)
 mdns-sd = { version = "0.18", features = ["logging"] }
-# SMB2/3 protocol client for share enumeration (pure Rust, pipelined I/O)
+# SMB2/3 protocol client for share enumeration (pure Rust, pipelined I/O).
+# When bumping: also re-vendor the test containers per
+# apps/desktop/test/smb-servers/.compose/VENDORED.md
 smb2 = { git = "https://github.com/vdavid/smb2", branch = "main" }
 # NFD normalization for APFS collation and SMB path normalization
 unicode-normalization = "0.1"

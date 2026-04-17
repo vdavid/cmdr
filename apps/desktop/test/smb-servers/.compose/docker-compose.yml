@@ -1,0 +1,86 @@
+services:
+  smb-consumer-guest:
+    build:
+      context: smb-consumer-guest
+    ports:
+      - '${SMB_CONSUMER_GUEST_PORT:-10480}:445'
+
+  smb-consumer-auth:
+    build:
+      context: smb-consumer-auth
+    ports:
+      - '${SMB_CONSUMER_AUTH_PORT:-10481}:445'
+
+  smb-consumer-both:
+    build:
+      context: smb-consumer-both
+    ports:
+      - '${SMB_CONSUMER_BOTH_PORT:-10482}:445'
+
+  smb-consumer-50shares:
+    build:
+      context: smb-consumer-50shares
+    ports:
+      - '${SMB_CONSUMER_50SHARES_PORT:-10483}:445'
+
+  smb-consumer-unicode:
+    build:
+      context: smb-consumer-unicode
+    ports:
+      - '${SMB_CONSUMER_UNICODE_PORT:-10484}:445'
+
+  smb-consumer-longnames:
+    build:
+      context: smb-consumer-longnames
+    ports:
+      - '${SMB_CONSUMER_LONGNAMES_PORT:-10485}:445'
+
+  smb-consumer-deepnest:
+    build:
+      context: smb-consumer-deepnest
+    ports:
+      - '${SMB_CONSUMER_DEEPNEST_PORT:-10486}:445'
+
+  smb-consumer-manyfiles:
+    build:
+      context: smb-consumer-manyfiles
+    ports:
+      - '${SMB_CONSUMER_MANYFILES_PORT:-10487}:445'
+
+  smb-consumer-readonly:
+    build:
+      context: smb-consumer-readonly
+    ports:
+      - '${SMB_CONSUMER_READONLY_PORT:-10488}:445'
+
+  smb-consumer-windows:
+    build:
+      context: smb-consumer-windows
+    ports:
+      - '${SMB_CONSUMER_WINDOWS_PORT:-10489}:445'
+
+  smb-consumer-synology:
+    build:
+      context: smb-consumer-synology
+    ports:
+      - '${SMB_CONSUMER_SYNOLOGY_PORT:-10490}:445'
+
+  smb-consumer-linux:
+    build:
+      context: smb-consumer-linux
+    ports:
+      - '${SMB_CONSUMER_LINUX_PORT:-10491}:445'
+
+  smb-consumer-flaky:
+    build:
+      context: smb-consumer-flaky
+    ports:
+      - '${SMB_CONSUMER_FLAKY_PORT:-10492}:445'
+
+  smb-consumer-slow:
+    build:
+      context: smb-consumer-slow
+    ports:
+      - '${SMB_CONSUMER_SLOW_PORT:-10493}:445'
+    cap_add:
+      - NET_ADMIN

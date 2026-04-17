@@ -16,12 +16,13 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_DIR="$SCRIPT_DIR/.compose"
 PROJECT_NAME="smb-consumer"
-CARGO_DIR="$SCRIPT_DIR/../../src-tauri"
 
-# Extract compose files from smb2 if not already done
+# Compose files are vendored from smb2's `tests/docker/consumer/`. See
+# `.compose/VENDORED.md` for how to update when the smb2 dep bumps.
 if [ ! -f "$COMPOSE_DIR/docker-compose.yml" ]; then
-    echo "Extracting smb2 consumer compose files..."
-    cargo run --manifest-path "$CARGO_DIR/Cargo.toml" --example smb_compose --features smb-e2e -- "$COMPOSE_DIR"
+    echo "ERROR: $COMPOSE_DIR/docker-compose.yml is missing." >&2
+    echo "See .compose/VENDORED.md for how to re-vendor the smb2 consumer containers." >&2
+    exit 1
 fi
 
 mode="${1:-core}"

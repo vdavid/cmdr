@@ -11,6 +11,7 @@ Docker SMB containers for local development and E2E testing, provided by smb2's 
 ./stop.sh          # Stop everything
 ```
 
-On first run, `start.sh` extracts the Docker Compose files from smb2 into `.compose/` (requires cargo).
+The Docker Compose files live in `.compose/`. They're **vendored** from smb2's consumer test harness (see
+`.compose/VENDORED.md`) — if they're missing or stale after an smb2 bump, follow the re-vendor steps there.
 
 See [docs/guides/testing/smb-servers.md](../../../../docs/guides/testing/smb-servers.md) for the full documentation.

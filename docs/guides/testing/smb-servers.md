@@ -5,9 +5,10 @@ consumer test harness — Cmdr doesn't maintain its own Dockerfiles.
 
 ## Overview
 
-On first run, `start.sh` extracts Docker Compose files from smb2 (via
-`cargo run --example smb_compose --features smb-e2e`) into `test/smb-servers/.compose/`, then starts containers.
-Subsequent runs skip the extraction.
+The Docker Compose files live in `test/smb-servers/.compose/` and are **vendored** from smb2's `tests/docker/consumer/`
+(see `.compose/VENDORED.md`). When you bump the smb2 git dep, re-vendor them with
+`cp -r ~/projects-git/vdavid/smb2/tests/docker/consumer apps/desktop/test/smb-servers/.compose` and commit the result
+alongside the `Cargo.lock` change.
 
 **Location**: `test/smb-servers/`
 
@@ -115,8 +116,9 @@ edge cases (unicode names, deep trees, 50 shares, etc.) against real Samba serve
 # Check logs for a specific container
 docker compose -p smb-consumer logs smb-consumer-guest
 
-# Re-extract compose files (deletes .compose/ and re-runs extraction)
-rm -rf test/smb-servers/.compose && ./test/smb-servers/start.sh
+# Re-vendor compose files from smb2 (run from the apps/desktop directory)
+rm -rf test/smb-servers/.compose
+cp -r ~/projects-git/vdavid/smb2/tests/docker/consumer test/smb-servers/.compose
 ```
 
 ### Port already in use
