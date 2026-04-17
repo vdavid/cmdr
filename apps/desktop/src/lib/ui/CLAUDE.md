@@ -199,6 +199,11 @@ Write one test per meaningful state (default, disabled, error, open/closed, etc.
 mock `$lib/tauri-commands` at the top of the file. Set `CMDR_A11Y_DEBUG=1` to log pass/violation counts per call when
 investigating why a test passes silently.
 
+Current coverage: ~60 component-level `.a11y.test.ts` files covering dialogs, file explorer panes, settings components
+and sections, search, command palette, toasts, crash/licensing/onboarding, and MTP dialogs. Skipped tests (marked
+`it.skip` with a `TODO:` + axe rule ID) flag real a11y findings the team hasn't fixed yet — do NOT remove those skips
+without fixing the underlying component. Each skip has a concrete fix noted in the test file.
+
 ## Key decisions
 
 **Decision**: Custom `ModalDialog` with manual overlay + drag logic instead of the native `<dialog>` element. **Why**:
