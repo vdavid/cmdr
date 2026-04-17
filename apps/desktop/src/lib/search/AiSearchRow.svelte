@@ -115,11 +115,13 @@
     }
 
     .ai-label {
-        /* Badge chip: keeps the accent feel and creates a local background
-           context so WCAG AA contrast is guaranteed against the chip bg,
-           regardless of the surrounding dialog background. */
+        /* Badge chip with accent-tinted background. Text stays at
+           `--color-text-primary` (not `--color-accent-text`): both bg and
+           fg in the accent palette are too close in luminance to meet
+           WCAG AA 4.5:1 for 12px text. Primary text on the pale accent
+           chip is ~10:1. */
         padding: var(--spacing-xxs) var(--spacing-xs);
-        color: var(--color-accent-text);
+        color: var(--color-text-primary);
         background: var(--color-accent-subtle);
         border-radius: var(--radius-sm);
     }
