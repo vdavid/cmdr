@@ -9,7 +9,12 @@
 
 import { describe, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
-import MtpConnectedToastContent, { setLastConnectedDeviceName } from './MtpConnectedToastContent.svelte'
+import MtpConnectedToastContent, {
+  setLastConnectedDeviceName as _setLastConnectedDeviceName,
+} from './MtpConnectedToastContent.svelte'
+// Svelte 5 types component-module exports opaquely, so the TS-aware eslint rule
+// flags the direct call as unsafe. Re-narrow the signature here.
+const setLastConnectedDeviceName = _setLastConnectedDeviceName as (name: string) => void
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 vi.mock('$lib/ui/toast', () => ({
