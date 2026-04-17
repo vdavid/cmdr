@@ -85,6 +85,12 @@ details.
 
 ## Key decisions
 
+**Decision**: `accessibility.spec.ts` disables axe's `color-contrast` rule. **Why**: Contrast is checked at design time
+by `scripts/check-a11y-contrast` (deterministic, ~300 ms). Axe's `color-contrast` read `getComputedStyle().color` and
+different browser engines disagreed on how to resolve nested `color-mix(var(...))` chains on translucent overlays,
+producing environment-dependent ratios. Axe stays on for structural rules — ARIA, focus order, labels, keyboard nav —
+where a running browser is genuinely needed. See `docs/design-system.md` § Automated contrast checks.
+
 **Decision**: Use `tauriPage.evaluate()` with string expressions instead of function callbacks. **Why**: TauriPage's
 `evaluate()` sends a JS string over the socket to be executed in the webview via `webview.eval()`. Unlike Playwright's
 `page.evaluate()`, it doesn't support function serialization. All DOM queries must be written as string expressions.
