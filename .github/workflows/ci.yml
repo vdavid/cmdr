@@ -234,6 +234,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+        working-directory: ./apps/desktop
+
       - name: Build Tauri app
         run: pnpm tauri build --no-bundle -- --features playwright-e2e
         working-directory: ./apps/desktop
