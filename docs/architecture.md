@@ -42,6 +42,7 @@ All under `apps/desktop/src-tauri/src/`.
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `file_system/listing/`          | Directory reading, streaming, caching, sorting — serves virtual scroll                                                                                  |
 | `file_system/write_operations/` | Copy/move/delete with safety patterns (temp+rename, staging, rollback)                                                                                  |
+| `file_system/volume/`           | `Volume` trait + implementations (Local, MTP, SMB, InMemory). Has a checklist and capability matrix for adding new backends — start there               |
 | `file_viewer/`                  | Three-backend file viewer (FullLoad, ByteSeek, LineIndex)                                                                                               |
 | `network/`                      | SMB: mDNS discovery, share listing (smb-rs + smbutil), mounting, Keychain                                                                               |
 | `mtp/`                          | MTP device management, file ops, event-based watching                                                                                                   |

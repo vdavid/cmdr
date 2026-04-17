@@ -4,7 +4,7 @@
     "apps/desktop/src-tauri/src/ai/manager.rs": 988,
     "apps/desktop/src-tauri/src/file_system/volume/friendly_error.rs": 1136,
     "apps/desktop/src-tauri/src/file_system/volume/mtp.rs": 879,
-    "apps/desktop/src-tauri/src/file_system/volume/smb.rs": 1802,
+    "apps/desktop/src-tauri/src/file_system/volume/smb.rs": 2466,
     "apps/desktop/src-tauri/src/file_system/write_operations/copy.rs": 825,
     "apps/desktop/src-tauri/src/file_system/write_operations/volume_copy.rs": 1122,
     "apps/desktop/src-tauri/src/indexing/aggregator.rs": 873,

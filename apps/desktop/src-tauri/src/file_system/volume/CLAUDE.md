@@ -49,6 +49,113 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `export_to_local(source, dest, on_progress)` / `import_from_local(source, dest, on_progress)` — always take an `on_progress` callback `&(dyn Fn(u64, u64) -> ControlFlow<()> + Sync)`. Callers that don't need progress pass a no-op (`&|_, _| ControlFlow::Continue(())`). `SmbVolume` reports per-chunk progress via smb2's `read_file_with_progress`/`write_file_with_progress`. `MtpVolume` reports export progress via `download_file_with_progress` (import doesn't report yet). `LocalPosixVolume` and `InMemoryVolume` ignore the callback (OS-native copy APIs).
 - `space_poll_interval()` — recommended interval for the live disk-space poller (`space_poller.rs`). Default 2 s (local volumes). `SmbVolume` and `MtpVolume` override to 5 s. `InMemoryVolume` returns `None` (no polling). The poller uses this to tick each volume at its own cadence.
 
+## Building a new volume
+
+Adding a new backend (say, FTP, WebDAV, S3, or a new device protocol) is a matter of implementing the `Volume` trait and opting into the capability flags that make sense for your backend. The checklist below walks the path in the order you'd hit each concern.
+
+Work through it top-to-bottom — each tier depends on the previous being solid. Ship to users only after tier 3.
+
+### Tier 1 — make it listable (mandatory)
+
+Without these, the volume can't even appear in the UI:
+
+- [ ] Implement `name()` and `root()` (return the display name and the path everything is relative to).
+- [ ] Implement `list_directory(path, on_progress)` — the core read. Call `on_progress(count)` at least once.
+- [ ] Implement `get_metadata(path)` — per-entry stat.
+- [ ] Implement `exists(path)` and `is_directory(path)`. On backends where these would issue two round-trips, implement them in terms of `get_metadata` to share the cost.
+- [ ] Implement `get_space_info()` — for the volume usage bar and pre-copy space checks. Return zeros if the backend doesn't report it.
+- [ ] Register the volume via `VolumeManager::register_if_absent` (not `register` — see "Key decisions" above).
+- [ ] Add unit tests using a fake/in-memory harness or real fixtures.
+
+### Tier 2 — make it writable (recommended for real-world use)
+
+Everything below is optional per the trait (methods default to `Err(NotSupported)` or `false`), but a read-only volume is rarely useful:
+
+- [ ] Implement `create_directory`, `create_file`, `delete`, `rename`.
+- [ ] After each successful mutation, call `self.notify_mutation(&volume_id, parent_path, MutationEvent::...)` so the listing cache updates immediately. Override `notify_mutation` on the trait if your backend can answer `get_metadata` faster than `std::fs::metadata` would (MTP and SMB do this).
+- [ ] Return `supports_export() = true` and implement `export_to_local` + `import_from_local`. These are what the Copy dialog uses for "this volume ↔ local" transfers.
+- [ ] Implement `scan_for_copy` (count + bytes) and `scan_for_conflicts` (destination collision detection). These feed the Copy dialog's pre-flight.
+- [ ] Map your backend's errors through a `map_*_error` function that returns `VolumeError`. Connection-loss errors should trigger a state transition (see `SmbVolume::handle_smb_result` as a reference) so subsequent calls fail fast.
+
+### Tier 3 — integrate with the wider app (optional, but mostly expected)
+
+- [ ] `supports_streaming() = true` + implement `open_read_stream` / `write_from_stream`. Required for cross-volume copies (for example, this-backend → MTP). Streaming pattern guidance below.
+- [ ] If the backend has its own change-notification channel, set `supports_watching() = true` and implement a watcher task that calls `notify_directory_changed` when things move. If you rely on the OS mount's FSEvents (like SmbVolume currently does), leave it `false`.
+- [ ] If `std::fs` operations work on the volume's paths (you're a local FS with extra flavor), leave `supports_local_fs_access()` at the default `true`. Otherwise override to `false` so the legacy synthetic-diff path is skipped.
+- [ ] If `std::fs::copy` can target this volume's paths directly, return `Some(root)` from `local_path()` — the copy path will prefer `copyfile(3)` / `copy_file_range(2)` for same-device copies. Otherwise return `None` (the default).
+- [ ] Override `space_poll_interval()` to whatever polling cadence your backend can afford (local 2 s, network 5 s, none = don't poll).
+- [ ] If the volume needs async teardown (session close, handle drop), implement `on_unmount`. The default is a no-op.
+- [ ] If the backend participates in drive indexing, implement `scanner()` and `watcher()`. Today only `LocalPosixVolume` does.
+- [ ] Add a branch to `detect_provider` / `provider_suggestion` in `provider.rs` if there's a recognizable path shape or fs type worth calling out in friendly errors.
+- [ ] Add a capability-matrix row below and update the `docs/architecture.md` volume line if the shape changes meaningfully.
+
+### Tier 4 — E2E and friendly-error polish
+
+- [ ] Add integration tests (real fixtures if possible — see the Docker SMB containers for inspiration).
+- [ ] Verify that `FriendlyError` messages come out well for your backend's common failure modes. Test the `error_messages_never_contain_error_or_failed` rule — it's enforced by existing unit tests.
+- [ ] Stress-test concurrent reads and writes (the `stress_tests_*` modules in indexing are the reference pattern).
+
+## Capability matrix
+
+At-a-glance view of which capabilities each current volume opts into. Use this when picking a reference implementation for your new volume.
+
+| Capability                  | Local                | MTP                     | SMB                       | InMemory           |
+| --------------------------- | -------------------- | ----------------------- | ------------------------- | ------------------ |
+| `list_directory` / metadata | ✅                   | ✅                      | ✅                        | ✅                 |
+| Mutations (create/delete/rename) | ✅              | ✅                      | ✅                        | ✅                 |
+| `supports_export`           | ✅                   | ✅                      | ✅                        | ✅                 |
+| `export_to_local` / `import_from_local` | ✅       | ✅                      | ✅ streaming              | ❌                 |
+| `supports_streaming`        | ❌ (no need)         | ✅                      | ✅                        | ✅                 |
+| `open_read_stream`          | ❌                   | ✅ owned download       | ✅ channel-backed         | ✅ in-memory       |
+| `write_from_stream`         | ❌                   | ✅ streaming            | ⚠️ pre-buffers (TODO)     | ✅ in-memory       |
+| `supports_watching`         | ✅ FSEvents/inotify  | ❌ (own USB watcher)    | ❌ (OS-mount FSEvents)    | ❌                 |
+| `supports_local_fs_access`  | ✅ (default)         | ❌                      | ❌                        | ❌                 |
+| `local_path`                | ✅ `Some(root)`      | `None`                  | `None`                    | `None`             |
+| `notify_mutation`           | default (std::fs)    | ✅ MTP `get_metadata`   | ✅ smb2 `get_metadata`    | ✅ in-memory       |
+| `scanner` / `watcher` (indexing) | ✅ / ✅          | ❌                      | ❌                        | ❌                 |
+| `on_unmount`                | default              | default                 | ✅ drops smb2 session     | default            |
+| `smb_connection_state`      | `None`               | `None`                  | ✅                        | `None`             |
+| `space_poll_interval`       | 2 s (default)        | 5 s                     | 5 s                       | `None`             |
+
+Legend: ✅ = implemented, ❌ = opted out (default or explicitly), ⚠️ = implemented but suboptimal (memory-heavy or otherwise worth revisiting).
+
+When adding a new volume, add a column for it and fill in each row. The matrix doubles as a self-review — gaps will stare back at you.
+
+## Streaming patterns
+
+Two ways to implement `open_read_stream` / `write_from_stream` exist in the codebase. Which to pick depends on whether your protocol SDK's download/upload handle is `'static` or borrowed.
+
+### Pattern A — own the download (use when the SDK's download type is `'static`)
+
+If the SDK gives you a download handle that owns its session internally and doesn't borrow from anything, store it directly in your stream struct. **Example: `MtpReadStream`** (`mtp.rs:704-729`).
+
+```rust
+struct MtpReadStream {
+    download: Option<mtp_rs::FileDownload>,  // 'static — no lifetime parameter
+    total_size: u64,
+    bytes_read: u64,
+}
+```
+
+`next_chunk()` calls `download.as_mut()?.next_chunk().await` directly — no task spawn, no channel. `Drop` cancels the transfer (see the MTP gotcha in this file for the detached-task cancel pattern).
+
+### Pattern B — channel-backed stream (use when the SDK's download type borrows `&mut Connection`)
+
+If the SDK's download handle holds a borrow against the session (like `smb2::FileDownload<'a>` borrowing `&'a mut Connection`), you can't stuff it into a `'static` struct. Use a background producer task that holds an `OwnedMutexGuard` over the session, drives the download, and feeds chunks through a bounded mpsc channel. **Example: `SmbReadStream`** (`smb.rs` → `open_smb_download_stream`).
+
+Key building blocks:
+- `Arc<tokio::sync::Mutex<Session>>` so the task can call `lock_owned()` and own the guard until done.
+- Bounded mpsc channel (capacity ~4) for backpressure — peak memory is `capacity × chunk_size`, a few MB regardless of file size.
+- Oneshot channel for the total size (reported before the first chunk so the consumer sees the correct `total_size()` synchronously).
+- Oneshot channel for cancellation — `Drop` on the stream sends the signal, producer breaks its loop and releases the guard.
+- If the session state (connection health) can transition on protocol errors, wrap the state atomic in `Arc<AtomicU8>` so the task can update it from outside `&self` context.
+
+### Anti-pattern — pre-buffering the whole file
+
+The pre-refactor `SmbReadStream` read the entire file into a `Vec<u8>` via `read_file_pipelined` and yielded slices. For an 8 GB file that meant an 8 GB allocation. Don't do this. If the consumer API is stream-shaped, the producer should stream too.
+
+`SmbVolume::write_from_stream` still pre-buffers the source into `all_data` before writing to SMB (comment at the top of the function explains the reasoning at the time). That's the `⚠️` in the capability matrix above — a follow-up to stream the write side in chunks while holding the SMB session mutex for the duration.
+
 ## Path handling gotchas
 
 - **`LocalPosixVolume::resolve`**: accepts empty, `.`, relative, or absolute paths. Three-way branch for absolute paths: (1) already starts with volume root — used as-is, (2) volume root is `/` — absolute path passed through unchanged, (3) otherwise — leading `/` stripped and joined to root. This handles frontend sending full absolute paths.

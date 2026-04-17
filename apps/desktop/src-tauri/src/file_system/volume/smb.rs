@@ -16,6 +16,7 @@ use smb2::{ClientConfig, SmbClient};
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::time::Duration;
 
@@ -133,9 +134,15 @@ pub struct SmbVolume {
     /// Volume ID for listing cache lookups (from `path_to_id(mount_path)`).
     volume_id: String,
     /// smb2 session + tree connection. `None` when disconnected.
-    smb: tokio::sync::Mutex<Option<(SmbClient, Tree)>>,
+    /// Wrapped in `Arc` so we can use `lock_owned()` for long-lived streaming reads
+    /// — the producer task that feeds `SmbReadStream` owns an `OwnedMutexGuard`
+    /// for the download's duration, then releases it when the stream is done or
+    /// dropped.
+    smb: Arc<tokio::sync::Mutex<Option<(SmbClient, Tree)>>>,
     /// Current connection health.
-    state: AtomicU8,
+    /// Wrapped in `Arc` so background tasks (streaming read producer) can update
+    /// the state on mid-stream connection loss.
+    state: Arc<AtomicU8>,
     /// Cancel sender for the background watcher task. Send to stop watching.
     watcher_cancel: std::sync::Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
 }
@@ -170,8 +177,8 @@ impl SmbVolume {
             server: server.into(),
             share_name: share_name.into(),
             volume_id: volume_id.into(),
-            smb: tokio::sync::Mutex::new(Some((client, tree))),
-            state: AtomicU8::new(ConnectionState::Direct as u8),
+            smb: Arc::new(tokio::sync::Mutex::new(Some((client, tree)))),
+            state: Arc::new(AtomicU8::new(ConnectionState::Direct as u8)),
             watcher_cancel: std::sync::Mutex::new(None),
         }
     }
@@ -221,37 +228,62 @@ impl SmbVolume {
     // ── Recursive helpers for export/import/scan ──────────────────────
 
     /// Exports a single file from SMB to a local path with progress reporting.
+    ///
+    /// Streams the file chunk-by-chunk through `SmbReadStream` and writes each
+    /// chunk to `local_dest` as it arrives. Peak memory is bounded by the
+    /// channel capacity (a few MB), regardless of file size.
     async fn export_single_file_with_progress(
         &self,
         smb_path: &str,
         local_dest: &Path,
         on_progress: &(dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
     ) -> Result<u64, VolumeError> {
-        let data = {
-            let mut guard = self.acquire_smb().await?;
-            let (client, tree) = guard.as_mut().unwrap();
-            let result = client
-                .read_file_with_progress(tree, smb_path, |p| {
-                    on_progress(p.bytes_transferred, p.total_bytes.unwrap_or(0))
-                })
-                .await;
-            self.handle_smb_result("export_to_local(read)", result)?
-        };
+        use tokio::io::AsyncWriteExt;
+
+        let mut stream = self.open_smb_download_stream(smb_path).await?;
+        let total = stream.total_size();
 
         // Ensure parent directory exists
         if let Some(parent) = local_dest.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| VolumeError::IoError {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|e| VolumeError::IoError {
+                    message: e.to_string(),
+                    raw_os_error: None,
+                })?;
+        }
+
+        let mut file = tokio::fs::File::create(local_dest)
+            .await
+            .map_err(|e| VolumeError::IoError {
                 message: e.to_string(),
                 raw_os_error: None,
             })?;
+
+        let mut written = 0u64;
+        while let Some(chunk_result) = stream.next_chunk().await {
+            let chunk = chunk_result?;
+            file.write_all(&chunk).await.map_err(|e| VolumeError::IoError {
+                message: e.to_string(),
+                raw_os_error: None,
+            })?;
+            written += chunk.len() as u64;
+
+            if on_progress(written, total) == std::ops::ControlFlow::Break(()) {
+                // Dropping `stream` here sends the cancel signal to the producer.
+                drop(stream);
+                return Err(VolumeError::IoError {
+                    message: "Operation cancelled".to_string(),
+                    raw_os_error: None,
+                });
+            }
         }
 
-        let len = data.len() as u64;
-        std::fs::write(local_dest, &data).map_err(|e| VolumeError::IoError {
+        file.flush().await.map_err(|e| VolumeError::IoError {
             message: e.to_string(),
             raw_os_error: None,
         })?;
-        Ok(len)
+        Ok(written)
     }
 
     /// Recursively exports an SMB directory to local with progress. Returns total bytes.
@@ -487,6 +519,117 @@ impl SmbVolume {
         Ok(guard)
     }
 
+    /// Opens a streaming download on the given SMB-relative path.
+    ///
+    /// Acquires the SMB session lock in a background task (via `lock_owned`),
+    /// opens an `smb2::FileDownload`, and returns an `SmbReadStream` that
+    /// pipes chunks through a bounded mpsc channel. The lock stays held by
+    /// the task until the download completes or the stream is dropped.
+    ///
+    /// This is the single streaming-read primitive for `SmbVolume`. Both the
+    /// cross-volume streaming path (`open_read_stream`) and the
+    /// SMB→local export path (`export_single_file_with_progress`) go through
+    /// here, so neither has to buffer whole files in memory.
+    async fn open_smb_download_stream(&self, smb_path: &str) -> Result<SmbReadStream, VolumeError> {
+        self.check_connection()?;
+
+        let (size_tx, size_rx) = tokio::sync::oneshot::channel::<Result<u64, VolumeError>>();
+        let (chunk_tx, chunk_rx) =
+            tokio::sync::mpsc::channel::<Result<Vec<u8>, VolumeError>>(SMB_STREAM_CHANNEL_CAPACITY);
+        let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
+
+        let smb_arc = Arc::clone(&self.smb);
+        let state_arc = Arc::clone(&self.state);
+        let share_name = self.share_name.clone();
+        let smb_path_owned = smb_path.to_string();
+
+        tokio::spawn(async move {
+            let mut owned_guard = smb_arc.lock_owned().await;
+
+            let (client, tree) = match owned_guard.as_mut() {
+                Some(session) => session,
+                None => {
+                    let _ = size_tx.send(Err(VolumeError::DeviceDisconnected(
+                        "SMB session not available".to_string(),
+                    )));
+                    return;
+                }
+            };
+
+            let mut download = match client.download(tree, &smb_path_owned).await {
+                Ok(d) => d,
+                Err(e) => {
+                    update_state_on_smb_error(&state_arc, &e);
+                    warn!(
+                        "SmbVolume::download(share={}, path={}): {}",
+                        share_name, smb_path_owned, e
+                    );
+                    let _ = size_tx.send(Err(map_smb_error(e)));
+                    return;
+                }
+            };
+
+            let total_size = download.size();
+            if size_tx.send(Ok(total_size)).is_err() {
+                // Caller dropped the stream before receiving size. Drop download
+                // cleanly (Drop logs a may-leak debug line; the handle is released
+                // when the SMB session closes).
+                return;
+            }
+
+            loop {
+                tokio::select! {
+                    biased;
+                    _ = &mut cancel_rx => {
+                        debug!(
+                            "SmbVolume::download(share={}, path={}): cancelled after {} bytes",
+                            share_name, smb_path_owned, download.bytes_received()
+                        );
+                        break;
+                    }
+                    chunk = download.next_chunk() => match chunk {
+                        Some(Ok(bytes)) => {
+                            if chunk_tx.send(Ok(bytes)).await.is_err() {
+                                // Consumer dropped — stop pumping.
+                                break;
+                            }
+                        }
+                        Some(Err(e)) => {
+                            update_state_on_smb_error(&state_arc, &e);
+                            warn!(
+                                "SmbVolume::download(share={}, path={}): chunk error: {}",
+                                share_name, smb_path_owned, e
+                            );
+                            let _ = chunk_tx.send(Err(map_smb_error(e))).await;
+                            break;
+                        }
+                        None => break, // download complete
+                    }
+                }
+            }
+            // `download` drops here (releases SMB file handle at connection close).
+            // `owned_guard` drops here (releases the SMB session mutex).
+        });
+
+        let total_size = match size_rx.await {
+            Ok(Ok(size)) => size,
+            Ok(Err(e)) => return Err(e),
+            Err(_) => {
+                return Err(VolumeError::IoError {
+                    message: "SMB download task terminated before reporting size".to_string(),
+                    raw_os_error: None,
+                });
+            }
+        };
+
+        Ok(SmbReadStream {
+            rx: chunk_rx,
+            cancel: Some(cancel_tx),
+            total_size,
+            bytes_read: 0,
+        })
+    }
+
     /// Maps an smb2 result, handling connection state transitions on error.
     fn handle_smb_result<T>(&self, op_name: &str, result: Result<T, smb2::Error>) -> Result<T, VolumeError> {
         match result {
@@ -563,38 +706,64 @@ impl SmbVolume {
 
 // ── Streaming support ───────────────────────────────────────────────
 
-/// Chunk size for `SmbReadStream` iteration (1 MB).
-const SMB_STREAM_CHUNK_SIZE: usize = 1024 * 1024;
+/// Backpressure window for the chunk channel. With smb2's ~512 KB pipelined
+/// chunks, 4 slots keep peak memory at a few MB regardless of file size.
+const SMB_STREAM_CHANNEL_CAPACITY: usize = 4;
 
-/// Streaming reader for SMB files.
+/// Streaming reader for SMB files, backed by a background producer task.
 ///
-/// The file data is read into memory in one shot via smb2's pipelined read,
-/// then yielded in fixed-size chunks. This avoids temp files for cross-volume
-/// copies (MTP↔SMB) while keeping memory bounded to one file at a time.
+/// The producer task owns an `OwnedMutexGuard` over the smb2 session and drives
+/// an `smb2::FileDownload`, sending each chunk down an mpsc channel. The
+/// consumer (this struct) just reads from the channel. This avoids buffering
+/// the whole file in memory — peak is bounded by the channel capacity.
+///
+/// Dropping the stream before it's fully consumed sends a cancel signal so
+/// the producer can stop early and release the SMB session lock.
 struct SmbReadStream {
-    data: Vec<u8>,
-    offset: usize,
+    rx: tokio::sync::mpsc::Receiver<Result<Vec<u8>, VolumeError>>,
+    cancel: Option<tokio::sync::oneshot::Sender<()>>,
+    total_size: u64,
+    bytes_read: u64,
+}
+
+impl Drop for SmbReadStream {
+    fn drop(&mut self) {
+        if let Some(tx) = self.cancel.take() {
+            // Best-effort — if the producer already finished, recv side is dropped
+            // and the send is a no-op.
+            let _ = tx.send(());
+        }
+    }
 }
 
 impl VolumeReadStream for SmbReadStream {
     fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
         Box::pin(async move {
-            if self.offset >= self.data.len() {
-                return None;
+            let chunk = self.rx.recv().await?;
+            if let Ok(ref bytes) = chunk {
+                self.bytes_read += bytes.len() as u64;
             }
-            let end = (self.offset + SMB_STREAM_CHUNK_SIZE).min(self.data.len());
-            let chunk = self.data[self.offset..end].to_vec();
-            self.offset = end;
-            Some(Ok(chunk))
+            Some(chunk)
         })
     }
 
     fn total_size(&self) -> u64 {
-        self.data.len() as u64
+        self.total_size
     }
 
     fn bytes_read(&self) -> u64 {
-        self.offset as u64
+        self.bytes_read
+    }
+}
+
+/// If an smb2 error indicates the session is dead, transition state to
+/// `Disconnected`. Mirrors `handle_smb_result` for contexts without `&self`.
+fn update_state_on_smb_error(state: &AtomicU8, err: &smb2::Error) {
+    if matches!(
+        err.kind(),
+        smb2::ErrorKind::ConnectionLost | smb2::ErrorKind::SessionExpired
+    ) {
+        state.store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
     }
 }
 
@@ -1128,14 +1297,8 @@ impl Volume for SmbVolume {
                 self.share_name, smb_path
             );
 
-            let data = {
-                let mut guard = self.acquire_smb().await?;
-                let (client, tree) = guard.as_mut().unwrap();
-                let r = client.read_file_pipelined(tree, &smb_path).await;
-                self.handle_smb_result("open_read_stream", r)?
-            };
-
-            Ok(Box::new(SmbReadStream { data, offset: 0 }) as Box<dyn VolumeReadStream>)
+            let stream = self.open_smb_download_stream(&smb_path).await?;
+            Ok(Box::new(stream) as Box<dyn VolumeReadStream>)
         })
     }
 
@@ -1534,8 +1697,8 @@ mod tests {
             server: "192.168.1.100".to_string(),
             share_name: "TestShare".to_string(),
             volume_id: "volumestestshare".to_string(),
-            smb: tokio::sync::Mutex::new(None),
-            state: AtomicU8::new(ConnectionState::Disconnected as u8),
+            smb: Arc::new(tokio::sync::Mutex::new(None)),
+            state: Arc::new(AtomicU8::new(ConnectionState::Disconnected as u8)),
             watcher_cancel: std::sync::Mutex::new(None),
         }
     }
@@ -1905,73 +2068,99 @@ mod tests {
         assert!(space.used_bytes <= space.total_bytes);
     }
 
-    // ── SmbReadStream tests ────────────────────────────────────────
+    // ── SmbReadStream consumer tests ────────────────────────────────
+    //
+    // These test the consumer side of the channel-backed SmbReadStream in
+    // isolation. End-to-end SMB streaming is covered by the Docker
+    // integration tests below (smb_integration_open_read_stream,
+    // smb_integration_export_streams).
+
+    /// Builds an SmbReadStream backed by a pre-seeded channel, bypassing the
+    /// real SMB producer task. Returns the stream plus the cancel receiver
+    /// side so tests can assert that drop sends a cancel signal.
+    fn make_stream_from_chunks(
+        chunks: Vec<Result<Vec<u8>, VolumeError>>,
+        total_size: u64,
+    ) -> (SmbReadStream, tokio::sync::oneshot::Receiver<()>) {
+        let (chunk_tx, chunk_rx) =
+            tokio::sync::mpsc::channel::<Result<Vec<u8>, VolumeError>>(SMB_STREAM_CHANNEL_CAPACITY.max(chunks.len()));
+        let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::<()>();
+
+        for chunk in chunks {
+            // blocking_send is fine in tests — we sized the channel to fit.
+            chunk_tx.try_send(chunk).expect("channel has capacity in test setup");
+        }
+        // Drop chunk_tx so recv returns None after draining.
+        drop(chunk_tx);
+
+        let stream = SmbReadStream {
+            rx: chunk_rx,
+            cancel: Some(cancel_tx),
+            total_size,
+            bytes_read: 0,
+        };
+        (stream, cancel_rx)
+    }
 
     #[tokio::test]
     async fn smb_read_stream_empty_file() {
-        let mut stream = SmbReadStream {
-            data: vec![],
-            offset: 0,
-        };
+        let (mut stream, _cancel_rx) = make_stream_from_chunks(vec![], 0);
         assert_eq!(stream.total_size(), 0);
         assert_eq!(stream.bytes_read(), 0);
         assert!(stream.next_chunk().await.is_none());
     }
 
     #[tokio::test]
-    async fn smb_read_stream_small_file_single_chunk() {
-        let data = vec![1u8; 100];
-        let mut stream = SmbReadStream { data, offset: 0 };
-        assert_eq!(stream.total_size(), 100);
-
-        let chunk = stream.next_chunk().await.unwrap().unwrap();
-        assert_eq!(chunk.len(), 100);
-        assert_eq!(stream.bytes_read(), 100);
-        assert!(stream.next_chunk().await.is_none());
-    }
-
-    #[tokio::test]
-    async fn smb_read_stream_exact_chunk_boundary() {
-        let data = vec![0u8; SMB_STREAM_CHUNK_SIZE];
-        let mut stream = SmbReadStream { data, offset: 0 };
-
-        let chunk = stream.next_chunk().await.unwrap().unwrap();
-        assert_eq!(chunk.len(), SMB_STREAM_CHUNK_SIZE);
-        assert!(stream.next_chunk().await.is_none());
-    }
-
-    #[tokio::test]
-    async fn smb_read_stream_multiple_chunks() {
-        let size = SMB_STREAM_CHUNK_SIZE * 2 + 500;
-        let data = vec![0xAB; size];
-        let mut stream = SmbReadStream { data, offset: 0 };
-        assert_eq!(stream.total_size(), size as u64);
+    async fn smb_read_stream_yields_chunks_in_order() {
+        let (mut stream, _cancel_rx) =
+            make_stream_from_chunks(vec![Ok(vec![1u8; 100]), Ok(vec![2u8; 50]), Ok(vec![3u8; 30])], 180);
+        assert_eq!(stream.total_size(), 180);
 
         let c1 = stream.next_chunk().await.unwrap().unwrap();
-        assert_eq!(c1.len(), SMB_STREAM_CHUNK_SIZE);
-        assert_eq!(stream.bytes_read(), SMB_STREAM_CHUNK_SIZE as u64);
+        assert_eq!(c1, vec![1u8; 100]);
+        assert_eq!(stream.bytes_read(), 100);
 
         let c2 = stream.next_chunk().await.unwrap().unwrap();
-        assert_eq!(c2.len(), SMB_STREAM_CHUNK_SIZE);
+        assert_eq!(c2, vec![2u8; 50]);
+        assert_eq!(stream.bytes_read(), 150);
 
         let c3 = stream.next_chunk().await.unwrap().unwrap();
-        assert_eq!(c3.len(), 500);
-        assert_eq!(stream.bytes_read(), size as u64);
+        assert_eq!(c3, vec![3u8; 30]);
+        assert_eq!(stream.bytes_read(), 180);
 
         assert!(stream.next_chunk().await.is_none());
     }
 
     #[tokio::test]
-    async fn smb_read_stream_data_integrity() {
-        let data: Vec<u8> = (0..=255).cycle().take(SMB_STREAM_CHUNK_SIZE + 100).collect();
-        let expected = data.clone();
-        let mut stream = SmbReadStream { data, offset: 0 };
+    async fn smb_read_stream_propagates_mid_stream_error() {
+        let (mut stream, _cancel_rx) = make_stream_from_chunks(
+            vec![
+                Ok(vec![1u8; 10]),
+                Err(VolumeError::DeviceDisconnected("simulated".to_string())),
+            ],
+            0,
+        );
 
-        let mut reassembled = Vec::new();
-        while let Some(Ok(chunk)) = stream.next_chunk().await {
-            reassembled.extend_from_slice(&chunk);
+        let first = stream.next_chunk().await.unwrap().unwrap();
+        assert_eq!(first, vec![1u8; 10]);
+        assert_eq!(stream.bytes_read(), 10);
+
+        let second = stream.next_chunk().await.unwrap();
+        assert!(matches!(second, Err(VolumeError::DeviceDisconnected(_))));
+        // bytes_read should not have advanced on the error
+        assert_eq!(stream.bytes_read(), 10);
+    }
+
+    #[tokio::test]
+    async fn smb_read_stream_drop_sends_cancel() {
+        let (stream, mut cancel_rx) = make_stream_from_chunks(vec![Ok(vec![1u8; 10])], 10);
+        drop(stream);
+
+        // The cancel oneshot should have been fired by Drop.
+        match cancel_rx.try_recv() {
+            Ok(()) => {}
+            other => panic!("expected cancel signal, got {other:?}"),
         }
-        assert_eq!(reassembled, expected);
     }
 
     #[test]
@@ -2164,5 +2353,114 @@ mod tests {
         assert_eq!(readback, data);
 
         ensure_clean(&smb_vol, &dir).await;
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_open_read_stream_large_file_spans_many_chunks() {
+        // Verifies the streaming reader delivers a multi-MB file correctly
+        // across many chunk boundaries. Before the channel-backed rewrite, the
+        // whole file was buffered in memory up front.
+        let vol = make_docker_volume().await;
+        let dir = test_dir_name();
+        ensure_clean(&vol, &dir).await;
+        vol.create_directory(Path::new(&dir)).await.unwrap();
+
+        // ~8 MB of content with a deterministic pattern for integrity check
+        let size = 8 * 1024 * 1024;
+        let data: Vec<u8> = (0..size).map(|i| (i % 251) as u8).collect();
+        let smb_path = format!("{}/big-stream.bin", dir);
+        vol.create_file(Path::new(&smb_path), &data).await.unwrap();
+
+        let mut stream = vol.open_read_stream(Path::new(&smb_path)).await.unwrap();
+        assert_eq!(stream.total_size(), size as u64);
+
+        let mut reassembled = Vec::with_capacity(size);
+        let mut chunks_seen = 0usize;
+        while let Some(result) = stream.next_chunk().await {
+            let chunk = result.unwrap();
+            assert!(!chunk.is_empty(), "should not yield empty chunks");
+            reassembled.extend_from_slice(&chunk);
+            chunks_seen += 1;
+        }
+        assert_eq!(reassembled, data);
+        assert_eq!(stream.bytes_read(), size as u64);
+        assert!(chunks_seen >= 2, "multi-MB file should span multiple chunks");
+
+        ensure_clean(&vol, &dir).await;
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_export_to_local_streams_large_file() {
+        // Verifies the SMB→Local export path (the one the user's NAS→/tmp
+        // copy takes) streams correctly without pre-buffering.
+        let vol = make_docker_volume().await;
+        let dir = test_dir_name();
+        ensure_clean(&vol, &dir).await;
+        vol.create_directory(Path::new(&dir)).await.unwrap();
+
+        let size = 4 * 1024 * 1024; // 4 MB, enough to span many chunks
+        let data: Vec<u8> = (0..size).map(|i| ((i * 7) % 251) as u8).collect();
+        let smb_path = format!("{}/export-large.bin", dir);
+        vol.create_file(Path::new(&smb_path), &data).await.unwrap();
+
+        let local_tmp = std::env::temp_dir().join(format!("cmdr-smb-export-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&local_tmp);
+        let local_dest = local_tmp.join("export-large.bin");
+
+        use std::sync::atomic::{AtomicU64, AtomicUsize};
+        let progress_calls = AtomicUsize::new(0);
+        let last_bytes = AtomicU64::new(0);
+
+        let bytes = vol
+            .export_to_local(Path::new(&smb_path), &local_dest, &|done, total| {
+                progress_calls.fetch_add(1, Ordering::Relaxed);
+                last_bytes.store(done, Ordering::Relaxed);
+                assert_eq!(total, size as u64);
+                std::ops::ControlFlow::Continue(())
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(bytes, size as u64);
+        assert!(
+            progress_calls.load(Ordering::Relaxed) >= 2,
+            "streaming should call progress multiple times for a multi-chunk file"
+        );
+        assert_eq!(last_bytes.load(Ordering::Relaxed), size as u64);
+
+        let written = std::fs::read(&local_dest).unwrap();
+        assert_eq!(written, data);
+
+        let _ = std::fs::remove_dir_all(&local_tmp);
+        ensure_clean(&vol, &dir).await;
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_open_read_stream_cancel_by_drop() {
+        // Drop the stream mid-way and verify that subsequent SMB operations
+        // on the same volume still work (producer task released the mutex).
+        let vol = make_docker_volume().await;
+        let dir = test_dir_name();
+        ensure_clean(&vol, &dir).await;
+        vol.create_directory(Path::new(&dir)).await.unwrap();
+
+        let data = vec![0xAA; 2 * 1024 * 1024]; // 2 MB
+        let smb_path = format!("{}/cancel-me.bin", dir);
+        vol.create_file(Path::new(&smb_path), &data).await.unwrap();
+
+        let mut stream = vol.open_read_stream(Path::new(&smb_path)).await.unwrap();
+        // Read exactly one chunk then drop
+        let _first = stream.next_chunk().await.unwrap().unwrap();
+        drop(stream);
+
+        // Subsequent op on the volume should succeed — the producer task
+        // must have released the session mutex on cancel.
+        let entries = vol.list_directory(Path::new(&dir), None).await.unwrap();
+        assert!(entries.iter().any(|e| e.name == "cancel-me.bin"));
+
+        ensure_clean(&vol, &dir).await;
     }
 }

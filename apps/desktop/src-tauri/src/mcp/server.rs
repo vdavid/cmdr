@@ -415,8 +415,8 @@ async fn handle_mcp_post<R: Runtime>(
             && &client_version != negotiated
             && client_version != DEFAULT_PROTOCOL_VERSION
         {
-            log::warn!(
-                "MCP: Protocol version mismatch: got {}, expected {}",
+            log::debug!(
+                "MCP: Protocol version mismatch: got {}, expected {} — accepting per-request (version was negotiated at initialize)",
                 client_version,
                 negotiated
             );
