@@ -27,6 +27,8 @@
         buildFileSizeTooltip,
         getDisplaySize,
         hasSizeMismatch,
+        getDisplayExtension,
+        getDisplayName,
     } from './full-list-utils'
     import {
         getRowHeight,
@@ -117,16 +119,6 @@
     // Dynamic date column width based on measured text width using the actual font.
     // Measures multiple sample dates to find the maximum width needed.
     const dateColumnWidth = $derived(measureDateColumnWidth(formatDateTime))
-
-    /** Extracts display extension from a filename (no dot). Matches Rust sorting logic:
-     * dotfiles without secondary dot → empty, no extension → empty, otherwise last segment. */
-    function getDisplayExtension(name: string, isDirectory: boolean): string {
-        if (isDirectory) return ''
-        if (name.startsWith('.') && !name.slice(1).includes('.')) return ''
-        const dotPos = name.lastIndexOf('.')
-        if (dotPos <= 0 || dotPos === name.length - 1) return ''
-        return name.slice(dotPos + 1)
-    }
 
     // Size display mode (smart/logical/physical)
     const sizeDisplayMode = $derived(getSizeDisplayMode())
@@ -467,23 +459,25 @@
                     >
                         <FileIcon {file} {syncIcon} />
                         {#if renameState?.active && renameState.target?.index === globalIndex}
-                            <InlineRenameEditor
-                                value={renameState.currentName}
-                                severity={renameState.validation.severity}
-                                shaking={renameState.shaking}
-                                ariaLabel={`Rename ${renameState.target.originalName}`}
-                                ariaInvalid={renameState.validation.severity === 'error'}
-                                validationMessage={renameState.validation.message}
-                                focusTrigger={renameState.focusTrigger}
-                                onInput={(v: string) => onRenameInput?.(v)}
-                                onSubmit={() => onRenameSubmit?.()}
-                                onCancel={() => onRenameCancel?.()}
-                                onShakeEnd={() => onRenameShakeEnd?.()}
-                            />
+                            <div class="col-rename">
+                                <InlineRenameEditor
+                                    value={renameState.currentName}
+                                    severity={renameState.validation.severity}
+                                    shaking={renameState.shaking}
+                                    ariaLabel={`Rename ${renameState.target.originalName}`}
+                                    ariaInvalid={renameState.validation.severity === 'error'}
+                                    validationMessage={renameState.validation.message}
+                                    focusTrigger={renameState.focusTrigger}
+                                    onInput={(v: string) => onRenameInput?.(v)}
+                                    onSubmit={() => onRenameSubmit?.()}
+                                    onCancel={() => onRenameCancel?.()}
+                                    onShakeEnd={() => onRenameShakeEnd?.()}
+                                />
+                            </div>
                         {:else}
-                            <span class="col-name">{file.name}</span>
+                            <span class="col-name">{getDisplayName(file.name, file.isDirectory)}</span>
+                            <span class="col-ext">{getDisplayExtension(file.name, file.isDirectory)}</span>
                         {/if}
-                        <span class="col-ext">{getDisplayExtension(file.name, file.isDirectory)}</span>
                         <span
                             class="col-size"
                             use:tooltip={file.isDirectory
@@ -629,6 +623,13 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    /* During rename, span the name + ext columns for more editing room */
+    .col-rename {
+        grid-column: 2 / span 2;
+        min-width: 0;
+        height: 100%;
     }
 
     .col-ext {

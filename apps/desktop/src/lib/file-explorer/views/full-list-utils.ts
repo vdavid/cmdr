@@ -20,6 +20,31 @@ export function getVisibleItemsCount(containerHeight: number, rowHeight: number 
 }
 
 // ============================================================================
+// Name/Extension Split
+// ============================================================================
+
+/**
+ * Extracts the display extension from a filename (no dot). Matches Rust sorting logic:
+ * dotfiles without a secondary dot → empty, no extension → empty, otherwise last segment.
+ */
+export function getDisplayExtension(name: string, isDirectory: boolean): string {
+  if (isDirectory) return ''
+  if (name.startsWith('.') && !name.slice(1).includes('.')) return ''
+  const dotPos = name.lastIndexOf('.')
+  if (dotPos <= 0 || dotPos === name.length - 1) return ''
+  return name.slice(dotPos + 1)
+}
+
+/**
+ * Returns the filename with the display extension (and its separating dot) stripped,
+ * so the name and extension columns don't duplicate the extension.
+ */
+export function getDisplayName(name: string, isDirectory: boolean): string {
+  const ext = getDisplayExtension(name, isDirectory)
+  return ext ? name.slice(0, -(ext.length + 1)) : name
+}
+
+// ============================================================================
 // Date Column Width Measurement
 // ============================================================================
 
