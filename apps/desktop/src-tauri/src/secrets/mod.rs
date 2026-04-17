@@ -96,7 +96,7 @@ fn init_store() -> Box<dyn SecretStore> {
         let dir = secret_store_dir();
         info!("Secret store: EncryptedFileStore (Linux fallback, no secret service)");
         FILE_BACKED.store(true, std::sync::atomic::Ordering::Relaxed);
-        return Box::new(encrypted_file::EncryptedFileStore::new(dir));
+        Box::new(encrypted_file::EncryptedFileStore::new(dir))
     }
 
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]

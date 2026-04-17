@@ -170,8 +170,8 @@ the correct default. This avoids stale connection mode after auth mode changes.
 `initialNetworkHost` prop + `onNetworkHostChange` callback). When `NetworkMountView` mutates its local copy (mount
 success, back button), it must propagate the new value via `onNetworkHostChange`. Otherwise, when the user switches
 volumes away from Network and back, `FilePane` re-mounts `NetworkMountView` with the stale `initialNetworkHost` and
-`ShareBrowser` opens for the old host instead of the host list. Bit E2E test 436 ("unicode shares render") where a
-prior test that mounted a guest share left FilePane stuck on guest.
+`ShareBrowser` opens for the old host instead of the host list. Bit E2E test 436 ("unicode shares render") where a prior
+test that mounted a guest share left FilePane stuck on guest.
 
 **Gotcha**: `network` volume ID is virtual -- `smb://` path is a sentinel, not a real mount **Why**: The network browser
 is a discovery UI, not a filesystem view. There is no real mount point until the user selects a share and it gets
