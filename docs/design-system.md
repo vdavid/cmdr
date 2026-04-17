@@ -117,6 +117,12 @@ Gold was chosen because it reads as "marked" rather than "active," and contrasts
 (the gold is applied only to names, never to standalone labels), but worth revisiting if we get accessibility
 complaints.
 
+**Automated contrast checks:** `scripts/check-a11y-contrast/` runs at build time via
+`./scripts/check.sh --check a11y-contrast`. It parses `app.css` design tokens and every scoped `<style>` block, resolves
+`var()` chains + `color-mix(in srgb, ...)` + `color-mix(in oklch, ...)`, and flags fg/bg pairs that fail WCAG 2.2 in
+light OR dark mode. This is intentionally deterministic — no browser, no axe-core — so it doesn't flake on color-mix
+rendering quirks. See `scripts/check-a11y-contrast/README.md` for scope and limitations.
+
 ### Search highlight colors
 
 | Token                      | Light                     | Dark                       | Role                                   |

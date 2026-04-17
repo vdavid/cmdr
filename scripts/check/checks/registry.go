@@ -147,6 +147,15 @@ var AllChecks = []CheckDefinition{
 		Run:         RunCSSUnused,
 	},
 	{
+		ID:          "desktop-svelte-a11y-contrast",
+		Nickname:    "a11y-contrast",
+		DisplayName: "a11y-contrast",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		DependsOn:   []string{"desktop-svelte-stylelint"},
+		Run:         RunA11yContrast,
+	},
+	{
 		ID:          "desktop-svelte-check",
 		Nickname:    "svelte-check",
 		DisplayName: "svelte-check",

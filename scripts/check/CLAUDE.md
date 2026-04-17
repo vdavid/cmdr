@@ -185,15 +185,15 @@ before tests.
 
 ## Apps and check counts
 
-| App        | Tech    | Checks                                                                                                                                                                               |
-| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Desktop    | Rust    | rustfmt, clippy, cargo-audit, cargo-deny, cargo-udeps, jscpd, tests, tests-linux (slow)                                                                                              |
-| Desktop    | Svelte  | prettier, eslint, eslint-typecheck (slow), stylelint, css-unused, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow) |
-| Website    | Astro   | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                                               |
-| Website    | Docker  | docker-build                                                                                                                                                                         |
-| API server | TS      | oxfmt, eslint, typecheck, tests                                                                                                                                                      |
-| Scripts    | Go      | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests                                                                                              |
-| Other      | Metrics | file-length (warn-only)                                                                                                                                                              |
+| App        | Tech    | Checks                                                                                                                                                                                              |
+| ---------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop    | Rust    | rustfmt, clippy, cargo-audit, cargo-deny, cargo-udeps, jscpd, tests, tests-linux (slow)                                                                                                             |
+| Desktop    | Svelte  | prettier, eslint, eslint-typecheck (slow), stylelint, css-unused, a11y-contrast, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow) |
+| Website    | Astro   | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                                                              |
+| Website    | Docker  | docker-build                                                                                                                                                                                        |
+| API server | TS      | oxfmt, eslint, typecheck, tests                                                                                                                                                                     |
+| Scripts    | Go      | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests                                                                                                             |
+| Other      | Metrics | file-length (warn-only)                                                                                                                                                                             |
 
 ## Output format
 
