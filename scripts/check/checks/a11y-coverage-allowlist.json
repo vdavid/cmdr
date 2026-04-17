@@ -1,0 +1,19 @@
+{
+  "_comment": "Components that can't or shouldn't have a tier-3 a11y test. Each entry MUST have a reason explaining why. See scripts/check/checks/desktop-svelte-a11y-coverage.go for the check. Remove entries as they become testable.",
+  "exempt": {
+    "apps/desktop/src/lib/file-explorer/drag/DragOverlay.svelte": "purely visual with aria-hidden=\"true\"; no meaningful a11y surface for axe",
+    "apps/desktop/src/lib/file-explorer/pane/DualPaneExplorer.svelte": "too composed for jsdom — pulls the full app surface; tier 2 E2E covers",
+    "apps/desktop/src/lib/file-explorer/pane/FilePane.svelte": "1000+ lines with a huge dep graph; tier 2 E2E covers",
+    "apps/desktop/src/lib/file-explorer/pane/DialogManager.svelte": "pure dispatcher — no DOM of its own",
+    "apps/desktop/src/lib/settings/sections/AiSection.svelte": "hybrid section pulling runtime status from the backend via many event listeners; tier-3-unfriendly",
+    "apps/desktop/src/lib/settings/sections/AiCloudSection.svelte": "hybrid section (see AiSection)",
+    "apps/desktop/src/lib/settings/sections/AiLocalSection.svelte": "hybrid section (see AiSection)",
+    "apps/desktop/src/lib/settings/sections/LicenseSection.svelte": "composition of already-audited setting components",
+    "apps/desktop/src/lib/settings/sections/ThemesSection.svelte": "composition of already-audited setting components",
+    "apps/desktop/src/lib/settings/sections/DriveIndexingSection.svelte": "composition of already-audited setting components",
+    "apps/desktop/src/lib/settings/sections/UpdatesSection.svelte": "composition of already-audited setting components",
+    "apps/desktop/src/lib/settings/sections/MtpSection.svelte": "composition of already-audited setting components",
+    "apps/desktop/src/lib/settings/sections/LoggingSection.svelte": "composition of already-audited setting components",
+    "apps/desktop/src/lib/settings/sections/ViewerSection.svelte": "composition of already-audited setting components"
+  }
+}

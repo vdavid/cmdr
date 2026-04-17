@@ -156,6 +156,14 @@ var AllChecks = []CheckDefinition{
 		Run:         RunA11yContrast,
 	},
 	{
+		ID:          "desktop-svelte-a11y-coverage",
+		Nickname:    "a11y-coverage",
+		DisplayName: "a11y-coverage",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		Run:         RunA11yCoverage,
+	},
+	{
 		ID:          "desktop-svelte-check",
 		Nickname:    "svelte-check",
 		DisplayName: "svelte-check",
