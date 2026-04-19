@@ -6717,7 +6717,7 @@ checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 [[package]]
 name = "smb2"
 version = "0.7.0"
-source = "git+https://github.com/vdavid/smb2?branch=main#750e07aedcc18d26a69ef1af950f11b811ea5a1f"
+source = "git+https://github.com/vdavid/smb2?branch=main#9b1d366cfa36df901dbacd7db86d935ad252d394"
 dependencies = [
  "aes 0.9.0-rc.4",
  "aes-gcm 0.11.0-rc.3",
