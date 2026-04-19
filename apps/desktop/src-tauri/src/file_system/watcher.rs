@@ -258,7 +258,7 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
     }
 
     // Sort removes by index descending so we remove from the end first (preserves indices)
-    remove_items.sort_by(|a, b| b.0.cmp(&a.0));
+    remove_items.sort_by_key(|item| std::cmp::Reverse(item.0));
 
     for (original_index, path) in &remove_items {
         if let Some((_mutated_index, removed_entry)) = remove_entry_by_path(listing_id, path) {

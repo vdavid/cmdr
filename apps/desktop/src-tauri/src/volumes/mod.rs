@@ -516,7 +516,7 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
         }
 
         // Sort alphabetically
-        volumes.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        volumes.sort_by_key(|a| a.name.to_lowercase());
         volumes
     })
 }
@@ -578,7 +578,7 @@ pub fn get_cloud_drives() -> Vec<LocationInfo> {
     }
 
     // Sort alphabetically
-    drives.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    drives.sort_by_key(|a| a.name.to_lowercase());
     drives
 }
 

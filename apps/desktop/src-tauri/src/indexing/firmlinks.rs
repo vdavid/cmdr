@@ -53,7 +53,7 @@ fn load_firmlinks() -> Vec<(String, String)> {
         .collect();
 
     // Sort by longest data_prefix first for correct longest-prefix matching
-    pairs.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
+    pairs.sort_by_key(|p| std::cmp::Reverse(p.0.len()));
 
     log::debug!("Loaded {} firmlink prefix pairs from {FIRMLINKS_PATH}", pairs.len());
     pairs
@@ -143,7 +143,7 @@ mod tests {
                 Some((data_prefix, root_path.to_string()))
             })
             .collect();
-        pairs.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
+        pairs.sort_by_key(|p| std::cmp::Reverse(p.0.len()));
         pairs
     }
 

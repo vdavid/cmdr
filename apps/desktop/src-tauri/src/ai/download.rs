@@ -72,11 +72,7 @@ where
             } else {
                 0
             };
-            let eta_seconds = if speed > 0 {
-                (total_bytes.saturating_sub(downloaded)) / speed
-            } else {
-                0
-            };
+            let eta_seconds = total_bytes.saturating_sub(downloaded).checked_div(speed).unwrap_or(0);
 
             let progress = DownloadProgress {
                 bytes_downloaded: downloaded,

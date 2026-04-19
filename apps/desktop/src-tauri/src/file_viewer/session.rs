@@ -232,11 +232,9 @@ pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
         // Estimate from initial sample: total_bytes / avg_bytes_per_line
         let total_bytes_in_sample: usize = initial_lines.lines.iter().map(|l| l.len() + 1).sum(); // +1 for newline
         let avg_bytes_per_line = total_bytes_in_sample / initial_lines.lines.len();
-        if avg_bytes_per_line > 0 {
-            (total_bytes as usize) / avg_bytes_per_line
-        } else {
-            (total_bytes as usize) / 80 // fallback
-        }
+        (total_bytes as usize)
+            .checked_div(avg_bytes_per_line)
+            .unwrap_or((total_bytes as usize) / 80) // fallback when avg is 0
     } else {
         (total_bytes as usize) / 80 // fallback for empty files
     };
