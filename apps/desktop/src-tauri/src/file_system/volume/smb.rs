@@ -49,12 +49,12 @@ impl ConnectionState {
 
 // ── Type mapping helpers ────────────────────────────────────────────
 
-/// Converts an `smb2::FileTime` to milliseconds since the Unix epoch,
-/// matching `FileEntry.modified_at` / `created_at` format.
-fn filetime_to_millis(ft: smb2::pack::FileTime) -> Option<u64> {
+/// Converts an `smb2::FileTime` to seconds since the Unix epoch, matching
+/// `FileEntry.modified_at` / `created_at` (seconds, like `LocalPosixVolume`).
+fn filetime_to_unix_secs(ft: smb2::pack::FileTime) -> Option<u64> {
     let st = ft.to_system_time()?;
     let dur = st.duration_since(std::time::UNIX_EPOCH).ok()?;
-    Some(dur.as_millis() as u64)
+    Some(dur.as_secs())
 }
 
 /// Converts an `smb2::DirectoryEntry` to a `FileEntry`.
@@ -69,8 +69,8 @@ fn directory_entry_to_file_entry(entry: &smb2::client::tree::DirectoryEntry, par
 
     let mut fe = FileEntry::new(entry.name.clone(), path, entry.is_directory, false);
     fe.size = if entry.is_directory { None } else { Some(entry.size) };
-    fe.modified_at = filetime_to_millis(entry.modified);
-    fe.created_at = filetime_to_millis(entry.created);
+    fe.modified_at = filetime_to_unix_secs(entry.modified);
+    fe.created_at = filetime_to_unix_secs(entry.created);
     fe
 }
 
@@ -874,8 +874,8 @@ impl Volume for SmbVolume {
 
             let mut fe = FileEntry::new(name, display_path, info.is_directory, false);
             fe.size = if info.is_directory { None } else { Some(info.size) };
-            fe.modified_at = filetime_to_millis(info.modified);
-            fe.created_at = filetime_to_millis(info.created);
+            fe.modified_at = filetime_to_unix_secs(info.modified);
+            fe.created_at = filetime_to_unix_secs(info.created);
             Ok(fe)
         })
     }
@@ -1310,7 +1310,7 @@ impl Volume for SmbVolume {
 
             for item in source_items {
                 if let Some(existing) = entries.iter().find(|e| e.name == item.name) {
-                    let dest_modified = existing.modified_at.map(|ms| (ms / 1000) as i64);
+                    let dest_modified = existing.modified_at.map(|s| s as i64);
                     conflicts.push(ScanConflict {
                         source_path: item.name.clone(),
                         dest_path: existing.path.clone(),
@@ -1502,18 +1502,17 @@ mod tests {
     // ── Type mapping tests ──────────────────────────────────────────
 
     #[test]
-    fn filetime_to_millis_known_date() {
+    fn filetime_to_unix_secs_known_date() {
         // 2024-01-01 00:00:00 UTC = FileTime(133_485_408_000_000_000)
         let ft = smb2::pack::FileTime(133_485_408_000_000_000);
-        let millis = filetime_to_millis(ft).unwrap();
-        // Unix timestamp 1_704_067_200 seconds = 1_704_067_200_000 ms
-        assert_eq!(millis, 1_704_067_200_000);
+        let secs = filetime_to_unix_secs(ft).unwrap();
+        assert_eq!(secs, 1_704_067_200);
     }
 
     #[test]
-    fn filetime_to_millis_zero_returns_none() {
+    fn filetime_to_unix_secs_zero_returns_none() {
         let ft = smb2::pack::FileTime::ZERO;
-        assert!(filetime_to_millis(ft).is_none());
+        assert!(filetime_to_unix_secs(ft).is_none());
     }
 
     #[test]
@@ -1532,8 +1531,8 @@ mod tests {
         assert!(!fe.is_directory);
         assert!(!fe.is_symlink);
         assert_eq!(fe.size, Some(1024));
-        assert_eq!(fe.modified_at, Some(1_704_067_200_000));
-        assert_eq!(fe.created_at, Some(1_704_067_200_000));
+        assert_eq!(fe.modified_at, Some(1_704_067_200));
+        assert_eq!(fe.created_at, Some(1_704_067_200));
         assert_eq!(fe.icon_id, "ext:pdf");
     }
 
@@ -1759,11 +1758,19 @@ mod tests {
     // Run with: cargo nextest run smb_integration --run-ignored all
     // Prerequisites: ./apps/desktop/test/smb-servers/start.sh
 
-    /// Connects to the Docker smb-guest container (127.0.0.1:9445, share "public").
+    /// Connects to the Docker smb-guest container (share "public"). Default port
+    /// 10480 matches smb2's guest test container; override with
+    /// `SMB_CONSUMER_GUEST_PORT` to match `smb2::testing::guest_port()`.
     async fn make_docker_volume() -> SmbVolume {
-        connect_smb_volume("public", "/tmp/smb-test-mount", "127.0.0.1", "public", None, None, 9445)
+        let port: u16 = std::env::var("SMB_CONSUMER_GUEST_PORT")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(10480);
+        connect_smb_volume("public", "/tmp/smb-test-mount", "127.0.0.1", "public", None, None, port)
             .await
-            .expect("Failed to connect to Docker SMB container at 127.0.0.1:9445. Is it running?")
+            .unwrap_or_else(|e| {
+                panic!("Failed to connect to Docker SMB container at 127.0.0.1:{port}. Is it running? ({e:?})")
+            })
     }
 
     /// Unique directory name for test isolation.
@@ -1831,6 +1838,39 @@ mod tests {
         assert_eq!(entries[0].name, "test.txt");
 
         // Clean up
+        vol.delete(Path::new(&file_path)).await.unwrap();
+        vol.delete(Path::new(&dir)).await.unwrap();
+    }
+
+    /// Regression test for a unit-mismatch bug where SMB returned `modified_at` in
+    /// milliseconds while the rest of cmdr (and the frontend formatter) expects seconds.
+    /// That caused displayed years like 58247 on real shares. Asserts the mtime of a
+    /// just-created file lands near wall-clock `now`, in Unix seconds.
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_modified_at_is_unix_seconds() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let vol = make_docker_volume().await;
+        let dir = test_dir_name();
+        ensure_clean(&vol, &dir).await;
+        vol.create_directory(Path::new(&dir)).await.unwrap();
+        let file_path = format!("{}/mtime.txt", dir);
+        vol.create_file(Path::new(&file_path), b"mtime").await.unwrap();
+
+        let now_secs = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let meta = vol.get_metadata(Path::new(&file_path)).await.unwrap();
+        let mtime = meta.modified_at.expect("mtime should be populated");
+
+        // Must be Unix seconds — not millis (*1000) or micros (*1_000_000).
+        // Allow a 1 hour window for clock skew between host and container.
+        let lower = now_secs.saturating_sub(3600);
+        let upper = now_secs + 3600;
+        assert!(
+            mtime >= lower && mtime <= upper,
+            "modified_at {mtime} out of range [{lower}, {upper}] — likely wrong unit (seconds expected)",
+        );
+
         vol.delete(Path::new(&file_path)).await.unwrap();
         vol.delete(Path::new(&dir)).await.unwrap();
     }

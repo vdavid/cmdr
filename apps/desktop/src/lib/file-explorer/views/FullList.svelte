@@ -600,6 +600,8 @@
         padding: var(--spacing-xxs) var(--spacing-sm);
         gap: var(--spacing-sm);
         align-items: center;
+        /* Guarantee one visual line per row regardless of cell content length */
+        white-space: nowrap;
     }
 
     /* In compact mode, use symmetric padding to match BriefList alignment */
@@ -680,6 +682,8 @@
     }
 
     .col-date {
+        overflow: hidden;
+        text-overflow: ellipsis;
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
     }

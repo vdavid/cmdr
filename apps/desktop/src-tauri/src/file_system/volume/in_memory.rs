@@ -592,7 +592,7 @@ impl Volume for InMemoryVolume {
 
             for item in source_items {
                 if let Some(existing) = dest_entries.iter().find(|e| e.name == item.name) {
-                    let dest_modified = existing.modified_at.map(|ms| (ms / 1000) as i64);
+                    let dest_modified = existing.modified_at.map(|s| s as i64);
                     conflicts.push(ScanConflict {
                         source_path: item.name.clone(),
                         dest_path: existing.path.clone(),
