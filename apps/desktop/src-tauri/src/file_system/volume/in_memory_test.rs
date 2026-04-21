@@ -517,9 +517,10 @@ async fn test_scan_for_copy_batch_multiple_files_same_dir() {
         PathBuf::from("/photos/c.jpg"),
     ];
     let result = volume.scan_for_copy_batch(&paths).await.unwrap();
-    assert_eq!(result.file_count, 3);
-    assert_eq!(result.dir_count, 0);
-    assert_eq!(result.total_bytes, 600);
+    assert_eq!(result.aggregate.file_count, 3);
+    assert_eq!(result.aggregate.dir_count, 0);
+    assert_eq!(result.aggregate.total_bytes, 600);
+    assert_eq!(result.per_path.len(), 3);
 }
 
 #[tokio::test]
@@ -538,18 +539,34 @@ async fn test_scan_for_copy_batch_mixed_files_and_dirs() {
 
     let paths = vec![PathBuf::from("/stuff/readme.txt"), PathBuf::from("/stuff/subdir")];
     let result = volume.scan_for_copy_batch(&paths).await.unwrap();
-    assert_eq!(result.file_count, 2); // readme.txt + deep.txt
-    assert_eq!(result.dir_count, 0); // subdir's children don't include extra dirs
-    assert_eq!(result.total_bytes, 55); // 5 + 50
+    assert_eq!(result.aggregate.file_count, 2); // readme.txt + deep.txt
+    assert_eq!(result.aggregate.dir_count, 0); // subdir's children don't include extra dirs
+    assert_eq!(result.aggregate.total_bytes, 55); // 5 + 50
+    assert_eq!(result.per_path.len(), 2);
+    // The file entry should report top_level_is_directory=false; the dir one true.
+    let readme = result
+        .per_path
+        .iter()
+        .find(|(p, _)| p == Path::new("/stuff/readme.txt"))
+        .unwrap();
+    assert!(!readme.1.top_level_is_directory);
+    assert_eq!(readme.1.total_bytes, 5);
+    let subdir = result
+        .per_path
+        .iter()
+        .find(|(p, _)| p == Path::new("/stuff/subdir"))
+        .unwrap();
+    assert!(subdir.1.top_level_is_directory);
 }
 
 #[tokio::test]
 async fn test_scan_for_copy_batch_empty_input() {
     let volume = InMemoryVolume::new("Test");
     let result = volume.scan_for_copy_batch(&[]).await.unwrap();
-    assert_eq!(result.file_count, 0);
-    assert_eq!(result.dir_count, 0);
-    assert_eq!(result.total_bytes, 0);
+    assert_eq!(result.aggregate.file_count, 0);
+    assert_eq!(result.aggregate.dir_count, 0);
+    assert_eq!(result.aggregate.total_bytes, 0);
+    assert!(result.per_path.is_empty());
 }
 
 #[tokio::test]
@@ -563,9 +580,10 @@ async fn test_scan_for_copy_batch_single_item_matches_single_scan() {
         .scan_for_copy_batch(&[PathBuf::from("/docs/a.txt")])
         .await
         .unwrap();
-    assert_eq!(single.file_count, batch.file_count);
-    assert_eq!(single.dir_count, batch.dir_count);
-    assert_eq!(single.total_bytes, batch.total_bytes);
+    assert_eq!(single.file_count, batch.aggregate.file_count);
+    assert_eq!(single.dir_count, batch.aggregate.dir_count);
+    assert_eq!(single.total_bytes, batch.aggregate.total_bytes);
+    assert_eq!(batch.per_path.len(), 1);
 }
 
 #[tokio::test]
@@ -578,8 +596,9 @@ async fn test_scan_for_copy_batch_files_from_different_dirs() {
 
     let paths = vec![PathBuf::from("/a/file1.txt"), PathBuf::from("/b/file2.txt")];
     let result = volume.scan_for_copy_batch(&paths).await.unwrap();
-    assert_eq!(result.file_count, 2);
-    assert_eq!(result.total_bytes, 30);
+    assert_eq!(result.aggregate.file_count, 2);
+    assert_eq!(result.aggregate.total_bytes, 30);
+    assert_eq!(result.per_path.len(), 2);
 }
 
 // ============================================================================

@@ -72,6 +72,24 @@ pub struct CopyScanResult {
     pub top_level_is_directory: bool,
 }
 
+/// Result of a batch scan over multiple source paths.
+///
+/// Returned by `Volume::scan_for_copy_batch`. Bundles the aggregate stats that
+/// the pre-flight / scan-preview callers want with a per-path breakdown that
+/// the copy engine uses to seed its `source_hints` map (without re-issuing N
+/// stat probes). `per_path[i].0` is the caller's input path verbatim; `.1`
+/// carries `top_level_is_directory` and `total_bytes` (for top-level files,
+/// that's the file size — used by the SMB compound fast-path).
+#[derive(Debug, Clone)]
+pub struct BatchScanResult {
+    /// Aggregate stats across all input paths.
+    pub aggregate: CopyScanResult,
+    /// Per-input-path result, in the same order as the `paths` slice the
+    /// caller passed in. Paths that failed to scan won't appear — on a
+    /// per-path failure the method returns `Err` without partial data.
+    pub per_path: Vec<(PathBuf, CopyScanResult)>,
+}
+
 /// A conflict detected during pre-copy scanning: a source item that already exists at the destination.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -497,33 +515,41 @@ pub trait Volume: Send + Sync {
         Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
-    /// Scans multiple paths to get aggregate copy statistics.
+    /// Scans multiple paths to get aggregate + per-path copy statistics.
     ///
     /// The default iterates over `scan_for_copy` per path, which is correct for
     /// volumes where per-path I/O is cheap (local FS, in-memory). Volume types
     /// with expensive per-path I/O (MTP, SMB, FTP, S3) should override this to
-    /// batch — typically by grouping paths by parent directory, listing each
-    /// parent once, and resolving files from the listing.
+    /// batch — typically by pipelining per-path stats over a shared session
+    /// (SMB) or grouping paths by parent directory and listing each parent
+    /// once (MTP).
+    ///
+    /// The returned `BatchScanResult` carries both the rolled-up `aggregate`
+    /// (what the scan-preview / pre-flight checks want) and a `per_path` vec
+    /// (what the copy engine uses to seed its per-source hints, so it doesn't
+    /// have to re-probe each source's type and size with a separate stat).
     fn scan_for_copy_batch<'a>(
         &'a self,
         paths: &'a [PathBuf],
-    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            let mut result = CopyScanResult {
+            let mut aggregate = CopyScanResult {
                 file_count: 0,
                 dir_count: 0,
                 total_bytes: 0,
                 // Aggregate over multiple paths — meaningless for a batch.
-                // Callers that need per-path type should use `scan_for_copy`.
+                // Callers that need per-path type should read `per_path`.
                 top_level_is_directory: false,
             };
+            let mut per_path = Vec::with_capacity(paths.len());
             for path in paths {
                 let scan = self.scan_for_copy(path).await?;
-                result.file_count += scan.file_count;
-                result.dir_count += scan.dir_count;
-                result.total_bytes += scan.total_bytes;
+                aggregate.file_count += scan.file_count;
+                aggregate.dir_count += scan.dir_count;
+                aggregate.total_bytes += scan.total_bytes;
+                per_path.push((path.clone(), scan));
             }
-            Ok(result)
+            Ok(BatchScanResult { aggregate, per_path })
         })
     }
 

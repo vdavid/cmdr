@@ -173,6 +173,9 @@ exits, partial files or staging directories may remain on disk. These use the `.
 
 ## Key decisions
 
+**Decision**: `copy_volumes_with_progress` scan phase calls `scan_for_copy_batch` once instead of `scan_for_copy` per source (Phase 4 Fix 4)
+**Why**: Network-backed volumes (SMB) pay 1 RTT per top-level source in the scan phase. Looping over sources made that serial — for 100 tiny files at ~60 ms RTT, ~5 s of pure stat latency before the copy phase started. `scan_for_copy_batch` surfaces both the aggregate (file/dir counts, total bytes) and a per-path vec (is_directory, size) in a single trait call; the copy engine folds the per-path vec into its `source_hints` map and skips the old per-source re-stat. `SmbVolume` overrides `scan_for_copy_batch` to pipeline N stats over one SMB session — measured 6.5× wall-clock win at 100 files (6.11 s → 947 ms) on a Tailscale link. `LocalPosixVolume` / `InMemoryVolume` inherit the default serial per-path loop; it's cheap for them. See `docs/notes/phase4-rtt-investigation.md`.
+
 **Decision**: Volume copy pipeline uses `OperationEventSink` trait instead of `tauri::AppHandle`
 **Why**: Decouples the copy/move orchestration from the Tauri framework. `TauriEventSink` wraps AppHandle for production; `CollectorEventSink` stores events for test assertions. Enables testing `copy_volumes_with_progress` end-to-end (multi-file copy, cancellation, conflict resolution, progress tracking) without a Tauri runtime. Currently only the volume copy/move path is migrated; local copy/delete/trash still use AppHandle directly (to be migrated during the async Volume refactor).
 

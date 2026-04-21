@@ -207,6 +207,7 @@ async fn run_volume_scan_preview(
         volume
             .scan_for_copy_batch(&sources)
             .await
+            .map(|b| b.aggregate)
             .map_err(|e| format!("Scan failed: {}", e))
     }
     .await;

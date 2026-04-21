@@ -305,8 +305,8 @@ async fn copy_volumes_with_progress(
     );
 
     // Phase 1: Scan sources (or reuse cached scan from preview)
-    let mut total_files;
-    let mut total_bytes;
+    let total_files;
+    let total_bytes;
 
     // Per-source hint collected during the scan: whether the top-level path
     // is a directory and, for top-level files, the file size. The copy loop
@@ -354,24 +354,26 @@ async fn copy_volumes_with_progress(
             bytes_total: 0,
         });
 
-        total_files = 0;
-        total_bytes = 0u64;
-        let mut total_dirs = 0;
+        if is_cancelled(&state.intent) {
+            return Err(WriteOperationError::Cancelled {
+                message: "Operation cancelled by user".to_string(),
+            });
+        }
 
-        for source_path in source_paths {
-            if is_cancelled(&state.intent) {
-                return Err(WriteOperationError::Cancelled {
-                    message: "Operation cancelled by user".to_string(),
-                });
-            }
+        // Single pipelined batch scan. For SMB this fires N stat requests
+        // over one session in parallel instead of N sequential RTTs (Fix 4).
+        // Default impl loops per-path for backends where per-path I/O is
+        // cheap (local FS, in-memory). MTP overrides to group by parent dir.
+        let batch = source_volume
+            .scan_for_copy_batch(source_paths)
+            .await
+            .map_err(|e| map_volume_error("scan_for_copy_batch", e))?;
 
-            let scan = source_volume
-                .scan_for_copy(source_path)
-                .await
-                .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
-            total_files += scan.file_count;
-            total_dirs += scan.dir_count;
-            total_bytes += scan.total_bytes;
+        total_files = batch.aggregate.file_count;
+        let total_dirs = batch.aggregate.dir_count;
+        total_bytes = batch.aggregate.total_bytes;
+
+        for (source_path, scan) in &batch.per_path {
             // For top-level files, `scan.total_bytes` == the file size.
             // For directories, we leave `size = 0` (unused downstream).
             let size = if scan.top_level_is_directory {

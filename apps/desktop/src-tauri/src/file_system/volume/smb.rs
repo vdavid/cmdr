@@ -6,8 +6,8 @@
 //! performance and fail-fast behavior.
 
 use super::{
-    CopyScanResult, ScanConflict, SmbConnectionState, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream,
-    path_to_id,
+    BatchScanResult, CopyScanResult, ScanConflict, SmbConnectionState, SourceItemInfo, SpaceInfo, Volume, VolumeError,
+    VolumeReadStream, path_to_id,
 };
 use crate::file_system::listing::FileEntry;
 use log::{debug, warn};
@@ -1094,6 +1094,161 @@ impl Volume for SmbVolume {
         })
     }
 
+    fn scan_for_copy_batch<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+    ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // Fast paths: empty / single. Empty returns zeroes; single falls
+            // through to the recursive scanner so we don't pay the cost of the
+            // batch machinery for one path.
+            if paths.is_empty() {
+                return Ok(BatchScanResult {
+                    aggregate: CopyScanResult {
+                        file_count: 0,
+                        dir_count: 0,
+                        total_bytes: 0,
+                        top_level_is_directory: false,
+                    },
+                    per_path: Vec::new(),
+                });
+            }
+            if paths.len() == 1 {
+                let smb_path = self.to_smb_path(&paths[0]);
+                let scan = self.scan_recursive(&smb_path).await?;
+                return Ok(BatchScanResult {
+                    aggregate: scan.clone(),
+                    per_path: vec![(paths[0].clone(), scan)],
+                });
+            }
+
+            // Pre-compute SMB paths so the pipelined stats can borrow strings
+            // that outlive the futures' lifetimes.
+            let smb_paths: Vec<String> = paths.iter().map(|p| self.to_smb_path(p)).collect();
+
+            debug!(
+                "SmbVolume::scan_for_copy_batch: share={}, {} paths — pipelining stats",
+                self.share_name,
+                paths.len()
+            );
+
+            // Build N pipelined stats: one cloned `Connection` per path, no
+            // lock held across any stat. `Arc<Tree>` is shared cheaply. Empty
+            // paths (volume root) skip the stat — the root is always a
+            // directory — and route straight into the recursion list.
+            use futures_util::StreamExt;
+            use futures_util::stream::FuturesUnordered;
+
+            let tree_arc = self.tree_arc().await?;
+
+            // Index tracks original position so results can be reassembled in input order.
+            enum StatOutcome {
+                Root,
+                // smb2 FileInfo: carries `is_directory` and `size`.
+                Entry(smb2::client::tree::FileInfo),
+            }
+
+            type StatFuture = Pin<Box<dyn Future<Output = (usize, Result<StatOutcome, smb2::Error>)> + Send>>;
+            let mut stat_futs: FuturesUnordered<StatFuture> = FuturesUnordered::new();
+
+            for (idx, smb_path) in smb_paths.iter().enumerate() {
+                if smb_path.is_empty() {
+                    // Root — no stat needed. Inline a ready future so the
+                    // ordering logic below still sees a slot for this index.
+                    stat_futs.push(Box::pin(std::future::ready((idx, Ok(StatOutcome::Root)))));
+                    continue;
+                }
+                // Briefly lock client to clone a Connection per path, then
+                // release. All clones multiplex over the single SMB session.
+                let conn = {
+                    let mut guard = self.client.lock().await;
+                    let client = guard
+                        .as_mut()
+                        .ok_or_else(|| VolumeError::DeviceDisconnected("SMB session not available".to_string()))?;
+                    client.connection_mut().clone()
+                };
+                let tree = Arc::clone(&tree_arc);
+                let path_owned = smb_path.clone();
+                stat_futs.push(Box::pin(async move {
+                    let mut conn = conn;
+                    let r = tree.stat(&mut conn, &path_owned).await;
+                    (idx, r.map(StatOutcome::Entry))
+                }));
+            }
+
+            // Stage per-path scan results + "recurse later" list while
+            // draining the pipelined stats as they complete.
+            let mut per_path_results: Vec<Option<CopyScanResult>> = (0..paths.len()).map(|_| None).collect();
+            // Indices to recurse into after the stat batch finishes.
+            let mut dirs_to_recurse: Vec<usize> = Vec::new();
+
+            while let Some((idx, result)) = stat_futs.next().await {
+                match result {
+                    Ok(StatOutcome::Root) => {
+                        // Root path → always a directory, recurse later.
+                        dirs_to_recurse.push(idx);
+                    }
+                    Ok(StatOutcome::Entry(info)) => {
+                        if info.is_directory {
+                            dirs_to_recurse.push(idx);
+                        } else {
+                            per_path_results[idx] = Some(CopyScanResult {
+                                file_count: 1,
+                                dir_count: 0,
+                                total_bytes: info.size,
+                                top_level_is_directory: false,
+                            });
+                        }
+                    }
+                    Err(e) => {
+                        // Mirror handle_smb_result for the state transition on
+                        // connection loss, then map and propagate.
+                        let kind = e.kind();
+                        if matches!(kind, smb2::ErrorKind::ConnectionLost | smb2::ErrorKind::SessionExpired) {
+                            warn!(
+                                "SmbVolume::scan_for_copy_batch(share={}): connection lost ({}), transitioning to Disconnected",
+                                self.share_name, e
+                            );
+                            self.state.store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
+                        } else {
+                            warn!("SmbVolume::scan_for_copy_batch(share={}): {}", self.share_name, e);
+                        }
+                        return Err(map_smb_error(e));
+                    }
+                }
+            }
+
+            // Recurse sequentially into each discovered directory. Per-dir
+            // recursion still serializes on listing + child stats — that's a
+            // future "Fix 5" (pipelined directory recursion). For the 100 ×
+            // tiny-file scenario all sources are files, so this loop is never
+            // entered.
+            for idx in dirs_to_recurse {
+                let smb_path = &smb_paths[idx];
+                let scan = self.scan_recursive(smb_path).await?;
+                per_path_results[idx] = Some(scan);
+            }
+
+            // Fold per-path into aggregate + per_path vec (in input order).
+            let mut aggregate = CopyScanResult {
+                file_count: 0,
+                dir_count: 0,
+                total_bytes: 0,
+                top_level_is_directory: false,
+            };
+            let mut per_path = Vec::with_capacity(paths.len());
+            for (i, slot) in per_path_results.into_iter().enumerate() {
+                let scan = slot.expect("every input path must have a result by this point");
+                aggregate.file_count += scan.file_count;
+                aggregate.dir_count += scan.dir_count;
+                aggregate.total_bytes += scan.total_bytes;
+                per_path.push((paths[i].clone(), scan));
+            }
+
+            Ok(BatchScanResult { aggregate, per_path })
+        })
+    }
+
     fn scan_for_conflicts<'a>(
         &'a self,
         source_items: &'a [SourceItemInfo],
@@ -1959,6 +2114,137 @@ mod tests {
         vol.delete(Path::new(&format!("{}/inner/f2.txt", dir))).await.unwrap();
         vol.delete(Path::new(&format!("{}/f1.txt", dir))).await.unwrap();
         vol.delete(Path::new(&sub)).await.unwrap();
+        vol.delete(Path::new(&dir)).await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_scan_for_copy_batch_mixed() {
+        // Phase 4 Fix 4 — pipelined batch scan on the SMB hot copy path.
+        // Mixed batch of files + a directory: aggregate counts should match
+        // what the per-path scan_for_copy loop would produce, and the
+        // per_path vec should carry correct top_level_is_directory / size.
+        let vol = make_docker_volume().await;
+        let dir = test_dir_name();
+
+        vol.create_directory(Path::new(&dir)).await.unwrap();
+        vol.create_file(Path::new(&format!("{}/a.txt", dir)), b"aaa")
+            .await
+            .unwrap();
+        vol.create_file(Path::new(&format!("{}/b.txt", dir)), b"bbbb")
+            .await
+            .unwrap();
+        vol.create_file(Path::new(&format!("{}/c.txt", dir)), b"ccccc")
+            .await
+            .unwrap();
+        let subdir = format!("{}/nested", dir);
+        vol.create_directory(Path::new(&subdir)).await.unwrap();
+        vol.create_file(Path::new(&format!("{}/nested/d.txt", dir)), b"dddddd")
+            .await
+            .unwrap();
+
+        let paths: Vec<PathBuf> = vec![
+            PathBuf::from(format!("{}/a.txt", dir)),
+            PathBuf::from(format!("{}/b.txt", dir)),
+            PathBuf::from(format!("{}/c.txt", dir)),
+            PathBuf::from(format!("{}/nested", dir)),
+            PathBuf::from(format!("{}/nested/d.txt", dir)),
+        ];
+
+        let batch = vol.scan_for_copy_batch(&paths).await.unwrap();
+
+        // Compare against per-path scan_for_copy to ensure parity.
+        let mut expected_files = 0usize;
+        let mut expected_dirs = 0usize;
+        let mut expected_bytes = 0u64;
+        for p in &paths {
+            let r = vol.scan_for_copy(p).await.unwrap();
+            expected_files += r.file_count;
+            expected_dirs += r.dir_count;
+            expected_bytes += r.total_bytes;
+        }
+        assert_eq!(batch.aggregate.file_count, expected_files);
+        assert_eq!(batch.aggregate.dir_count, expected_dirs);
+        assert_eq!(batch.aggregate.total_bytes, expected_bytes);
+
+        // per_path preserves input order and type info.
+        assert_eq!(batch.per_path.len(), paths.len());
+        for (i, (path, scan)) in batch.per_path.iter().enumerate() {
+            assert_eq!(path, &paths[i]);
+            let is_dir_name = path.to_string_lossy().ends_with("/nested");
+            assert_eq!(scan.top_level_is_directory, is_dir_name, "path #{} type mismatch", i);
+        }
+
+        // The top-level files' per_path entries carry the file size.
+        let a = batch
+            .per_path
+            .iter()
+            .find(|(p, _)| p.to_string_lossy().ends_with("/a.txt"))
+            .unwrap();
+        assert_eq!(a.1.total_bytes, 3);
+
+        // Cleanup.
+        for entry in &["nested/d.txt", "a.txt", "b.txt", "c.txt"] {
+            vol.delete(Path::new(&format!("{}/{}", dir, entry))).await.unwrap();
+        }
+        vol.delete(Path::new(&subdir)).await.unwrap();
+        vol.delete(Path::new(&dir)).await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_scan_for_copy_batch_single_path() {
+        // Regression guard for the N=1 fast-path: should behave exactly like
+        // scan_for_copy and handle the empty-root case naturally.
+        let vol = make_docker_volume().await;
+        let dir = test_dir_name();
+
+        vol.create_directory(Path::new(&dir)).await.unwrap();
+        vol.create_file(Path::new(&format!("{}/only.txt", dir)), b"single")
+            .await
+            .unwrap();
+
+        let path = PathBuf::from(format!("{}/only.txt", dir));
+        let batch = vol.scan_for_copy_batch(std::slice::from_ref(&path)).await.unwrap();
+        let single = vol.scan_for_copy(&path).await.unwrap();
+
+        assert_eq!(batch.aggregate.file_count, single.file_count);
+        assert_eq!(batch.aggregate.dir_count, single.dir_count);
+        assert_eq!(batch.aggregate.total_bytes, single.total_bytes);
+        assert_eq!(batch.per_path.len(), 1);
+        assert_eq!(batch.per_path[0].0, path);
+        assert!(!batch.per_path[0].1.top_level_is_directory);
+        assert_eq!(batch.per_path[0].1.total_bytes, 6);
+
+        vol.delete(&path).await.unwrap();
+        vol.delete(Path::new(&dir)).await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_scan_for_copy_batch_propagates_missing_path_error() {
+        // If one path in the batch doesn't exist, the whole batch must
+        // surface an error (callers treat scan as a pre-flight gate — a
+        // missing source is a user-visible problem, not a silent drop).
+        let vol = make_docker_volume().await;
+        let dir = test_dir_name();
+
+        vol.create_directory(Path::new(&dir)).await.unwrap();
+        vol.create_file(Path::new(&format!("{}/real.txt", dir)), b"data")
+            .await
+            .unwrap();
+
+        let paths: Vec<PathBuf> = vec![
+            PathBuf::from(format!("{}/real.txt", dir)),
+            PathBuf::from(format!("{}/does-not-exist.txt", dir)),
+            PathBuf::from(format!("{}/also-real-but-missing.txt", dir)),
+        ];
+
+        let result = vol.scan_for_copy_batch(&paths).await;
+        assert!(matches!(result, Err(VolumeError::NotFound(_))));
+
+        // Cleanup.
+        vol.delete(Path::new(&format!("{}/real.txt", dir))).await.unwrap();
         vol.delete(Path::new(&dir)).await.unwrap();
     }
 

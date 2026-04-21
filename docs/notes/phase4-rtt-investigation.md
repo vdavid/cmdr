@@ -442,3 +442,82 @@ FILE_COUNT=100 SMB2_TEST_NAS_HOST=100.127.48.122 \
 The `phase4_bench_baseline_smb_to_local_100_tiny_files` test accepts a temporary `FILE_COUNT` env var when the source is
 edited to read it, and `env_logger::try_init()` at the test's top (also a temporary edit) wires `RUST_LOG` through to
 the smb2 crate's `log` macros.
+
+## Phase 4 Fix 4 results (2026-04-21)
+
+Landed on top of Fix 1 + 2 + 3. The remaining bottleneck was the serial stat loop in `copy_volumes_with_progress`:
+`source_volume.scan_for_copy(source_path).await?` ran once per top-level source, each costing 1 RTT on SMB. For 100 tiny
+files over a ~60 ms Tailscale link that's ~5 s of purely serial stats before the copy phase even starts.
+
+Fix 4 overrides `Volume::scan_for_copy_batch` on `SmbVolume` to pipeline all N stats over one SMB session: briefly lock
+the client mutex to clone an `smb2::Connection` per path (cheap `Arc::clone`, all clones multiplex over the same
+TCP/session), release the lock, drive `tree.stat(&mut conn, path)` on each clone inside a `FuturesUnordered`. Empty root
+paths skip the stat and route straight into the recursion list; single-path batches fall through to the existing serial
+`scan_recursive` (regression guard for the common drag-drop-one-file case).
+
+The trait signature changed from `Result<CopyScanResult, _>` to `Result<BatchScanResult, _>` where `BatchScanResult`
+carries both the rolled-up aggregate and a per-path vec. The copy engine populates its `source_hints` map from
+`per_path` so it still gets the same per-source `is_directory` / `size` information it used to pay N stats to collect.
+Only one trait method touched; all implementors updated (`local_posix`/`in_memory` inherit the default, `mtp` and `smb`
+have overrides). MTP's override already grouped by parent directory and preserved its behavior.
+
+### Wall-clock per configuration (Tailscale, ~50–60 ms RTT, same QNAP share)
+
+| Files | Before Fix 4 (current main) |     After Fix 4 | Speedup |
+| ----: | --------------------------: | --------------: | ------: |
+|     1 |             156 ms / 156 ms | 156 ms / 156 ms |     ~1× |
+|     3 |             311 ms / 104 ms |  207 ms / 69 ms |    1.5× |
+|   100 |              6.11 s / 61 ms | 947 ms / 9.5 ms |    6.5× |
+
+(1-file run is within jitter; batch is empty of overlap at N=1 and falls through to the serial fast-path.)
+
+Effective concurrency at 100 files = 156 / 9.5 ≈ **16×**. That's the full
+`min(src.max_concurrent_ops(), dst.max_concurrent_ops()) = min(10, 16) = 10` budget the copy engine picks, plus
+additional overlap between the scan phase and the download phase (scan stats and the first read_file_compounds overlap
+on the wire — the receiver side multiplexes them on the same SMB session).
+
+### Pipelined scan — 10-file wire trace
+
+```
+tree: stat (compound) path=_test\bench_100tiny\f_000.bin
+execute_compound: 4 operations, msg_ids=[4, 5, 6, 7]     ; scan stat file 0
+tree: stat (compound) path=_test\bench_100tiny\f_001.bin
+execute_compound: 4 operations, msg_ids=[8, 9, 10, 11]   ; scan stat file 1
+tree: stat (compound) path=_test\bench_100tiny\f_002.bin
+execute_compound: 4 operations, msg_ids=[12, 13, 14, 15] ; scan stat file 2
+...                                                       ; files 3–9 dispatched back-to-back
+tree: stat (compound) path=_test\bench_100tiny\f_009.bin
+execute_compound: 4 operations, msg_ids=[40, 41, 42, 43] ; scan stat file 9
+tree: stat done, size=10240, is_dir=false                 ; first response arrives
+... 10 stat-done responses ...
+tree: read_file_compound path=_test\bench_100tiny\f_000.bin
+execute_compound: 3 operations, msg_ids=[44, 45, 173]    ; CREATE+READ+CLOSE file 0
+tree: read_file_compound path=_test\bench_100tiny\f_001.bin
+execute_compound: 3 operations, msg_ids=[174, 175, 303]  ; dispatched before file 0 responds
+...                                                       ; 10 read compounds dispatched back-to-back
+```
+
+All 10 scan stats land on the wire before any response arrives — then the same pattern repeats for the 10 compound
+reads. That's exactly the pipelining Fix 4 was built to deliver.
+
+### Gap remaining
+
+The 9.5 ms/file figure is close to the ceiling on this link: ~60 ms RTT / 10-way concurrency ≈ 6 ms/file just for the
+RTT cost of a single compound round-trip, plus the TCP/TLS framing overhead. The 100-file run takes ~950 ms, split
+roughly between scan + copy. Future "Fix 5" (parallel directory-recursion inside the batch scan) would help when sources
+are top-level directories rather than leaf files — out of scope for this round since the 100-tiny-files scenario is
+already files-only.
+
+### Reproducing
+
+Same pattern as the prior rounds. The bench reads a `PHASE4_FILE_COUNT` env var when edited to do so, and
+`env_logger::try_init()` at the top of the test routes `RUST_LOG` through. Both are temporary edits, discarded before
+the commit:
+
+```sh
+export SMB2_TEST_NAS_PASSWORD=$(grep '^SMB2_TEST_NAS_PASSWORD=' ~/projects-git/vdavid/smb2/.env | cut -d= -f2- | tr -d '"')
+cd apps/desktop/src-tauri
+PHASE4_FILE_COUNT=100 SMB2_TEST_NAS_HOST=100.127.48.122 \
+  RUST_LOG='smb2::client::connection=debug,smb2::client::tree=debug' \
+  cargo test --release --lib phase4_bench -- --ignored --nocapture --test-threads=1
+```

@@ -4,7 +4,8 @@
 //! the standard file listing pipeline (same icons, sorting, view modes as local files).
 
 use super::{
-    CopyScanResult, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream,
+    BatchScanResult, CopyScanResult, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError,
+    VolumeReadStream,
 };
 use crate::file_system::listing::FileEntry;
 use crate::mtp::connection::{MtpConnectionError, connection_manager};
@@ -461,14 +462,17 @@ impl Volume for MtpVolume {
     fn scan_for_copy_batch<'a>(
         &'a self,
         paths: &'a [PathBuf],
-    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             if paths.is_empty() {
-                return Ok(CopyScanResult {
-                    file_count: 0,
-                    dir_count: 0,
-                    total_bytes: 0,
-                    top_level_is_directory: false,
+                return Ok(BatchScanResult {
+                    aggregate: CopyScanResult {
+                        file_count: 0,
+                        dir_count: 0,
+                        total_bytes: 0,
+                        top_level_is_directory: false,
+                    },
+                    per_path: Vec::new(),
                 });
             }
 
@@ -487,7 +491,12 @@ impl Volume for MtpVolume {
                 by_parent.len()
             );
 
-            let mut result = CopyScanResult {
+            // Stage per-path results in a map so the final per_path vec
+            // preserves the caller's input order.
+            let mut per_path_results: std::collections::HashMap<PathBuf, CopyScanResult> =
+                std::collections::HashMap::with_capacity(paths.len());
+
+            let mut aggregate = CopyScanResult {
                 file_count: 0,
                 dir_count: 0,
                 total_bytes: 0,
@@ -507,18 +516,34 @@ impl Volume for MtpVolume {
                     if let Some(entry) = entries.iter().find(|e| e.name == name) {
                         if entry.is_directory {
                             let scan = self.scan_for_copy(child_path).await?;
-                            result.file_count += scan.file_count;
-                            result.dir_count += scan.dir_count;
-                            result.total_bytes += scan.total_bytes;
+                            aggregate.file_count += scan.file_count;
+                            aggregate.dir_count += scan.dir_count;
+                            aggregate.total_bytes += scan.total_bytes;
+                            per_path_results.insert((*child_path).clone(), scan);
                         } else {
-                            result.file_count += 1;
-                            result.total_bytes += entry.size.unwrap_or(0);
+                            let size = entry.size.unwrap_or(0);
+                            aggregate.file_count += 1;
+                            aggregate.total_bytes += size;
+                            per_path_results.insert(
+                                (*child_path).clone(),
+                                CopyScanResult {
+                                    file_count: 1,
+                                    dir_count: 0,
+                                    total_bytes: size,
+                                    top_level_is_directory: false,
+                                },
+                            );
                         }
                     }
                 }
             }
 
-            Ok(result)
+            let per_path = paths
+                .iter()
+                .filter_map(|p| per_path_results.remove(p).map(|r| (p.clone(), r)))
+                .collect();
+
+            Ok(BatchScanResult { aggregate, per_path })
         })
     }
 

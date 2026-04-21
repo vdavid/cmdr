@@ -15,6 +15,12 @@
 #[cfg(test)]
 use criterion as _;
 //noinspection RsUnusedImport
+// Dev-only log-routing shim. Used by the phase4 bench's optional
+// `env_logger::try_init()` (commented-in when collecting wire traces) and by
+// ad-hoc debug-logging in tests. Harmless otherwise.
+#[cfg(test)]
+use env_logger as _;
+//noinspection RsUnusedImport
 use mimalloc as _;
 //noinspection RsUnusedImport
 use notify as _;
