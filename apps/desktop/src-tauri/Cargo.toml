@@ -116,7 +116,7 @@ mdns-sd = { version = "0.18", features = ["logging"] }
 # SMB2/3 protocol client for share enumeration (pure Rust, pipelined I/O).
 # When bumping: also re-vendor the test containers per
 # apps/desktop/test/smb-servers/.compose/VENDORED.md
-smb2 = "0.7"
+smb2 = "0.7.1"
 # NFD normalization for APFS collation and SMB path normalization
 unicode-normalization = "0.1"
 
