@@ -1,5 +1,7 @@
 # Phase 4 — Unified volume copy abstraction + concurrency
 
+**Status**: P4.1 complete, P4.2 complete, P4.3 pending.
+
 Design for removing `Volume::export_to_local` / `import_from_local` from the `Volume` trait and unifying all cross-volume copies on `open_read_stream` + `write_from_stream`, with a single streaming copy engine that dispatches on one fast-path (same-APFS clonefile) and otherwise pipes bytes generically. Concurrency then lives in the copy engine, not per-volume-trait-method, parameterized by a `Volume::max_concurrent_ops()` hint each backend provides.
 
 Purpose: collapse the current three copy paths (local↔local, local↔volume, volume↔volume) into two (APFS clone, streaming), making the Volume trait smaller, new backends easier to add, and concurrency uniformly available to every copy direction.
@@ -85,7 +87,15 @@ Every `Volume` implements `open_read_stream(path)` and `write_from_stream(path, 
 6. **Update `src/file_system/volume/CLAUDE.md`** — trait table, capability table, "how to add a new volume" checklist collapses from "3 copy methods" to "2 stream methods."
 7. **Run P4.0 bench** post-P4.1 to confirm no performance regression. Expected: same as pre-P4.1 (same per-file work, just via streaming path; if anything slightly slower due to extra chunk hop, but should be within noise).
 
-### P4.2 — Add concurrency
+### P4.2 — Add concurrency — DONE
+
+Deviations from the pre-pinned F-decisions:
+
+- **F5 — `LocalPosixVolume` concurrency**: Used `std::thread::available_parallelism()` (stdlib) with a rough "halve for physical cores" heuristic instead of adding a `num_cpus` crate dependency. Still clamped to `4..=16`. Same effective concurrency on typical dev/user hardware.
+- **F5 — `InMemoryVolume` concurrency**: Returns `32` (matches the caller's upper bound) instead of `usize::MAX`. No behavioral difference — both hit the clamp — but the smaller number is less surprising in logs.
+- **Partial cleanup under concurrency**: Added a shared `Arc<Mutex<Vec<PathBuf>>>` tracking in-flight destination paths. On abort/cancel (F10) the partial-cleanup loop now walks both `last_dest_path` (sequential) and `in_flight_partials` (concurrent), which extends F11's "drop-based cleanup = concurrency-safe" with an explicit delete-of-renamed-dest pass. The `.cmdr-tmp-<uuid>` cleanup inside each backend's `write_from_stream.abort()` is unchanged.
+
+Implementation notes:
 
 1. **Add trait method** `fn max_concurrent_ops(&self) -> usize { 1 }` to `Volume`.
 2. **Implement overrides** on each backend: `SmbVolume` reads setting (via a global or `AppHandle`), returns `10` default; `LocalPosixVolume` returns `num_cpus::get().clamp(4, 16)`; others stay default.
