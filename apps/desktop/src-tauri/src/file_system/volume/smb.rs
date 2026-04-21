@@ -2290,13 +2290,17 @@ mod tests {
         // Verifies the streaming reader delivers a multi-MB file correctly
         // across many chunk boundaries. Before the channel-backed rewrite, the
         // whole file was buffered in memory up front.
+        //
+        // The file has to exceed `max_read_size` (up to 8 MB on Samba) for
+        // smb2 to split the read into more than one READ. 20 MB is a safe
+        // multiple that stays under the single-chunk ceiling.
         let vol = make_docker_volume().await;
         let dir = test_dir_name();
         ensure_clean(&vol, &dir).await;
         vol.create_directory(Path::new(&dir)).await.unwrap();
 
-        // ~8 MB of content with a deterministic pattern for integrity check
-        let size = 8 * 1024 * 1024;
+        // 20 MB — guarantees multiple READs even at 8 MB max_read_size.
+        let size = 20 * 1024 * 1024;
         let data: Vec<u8> = (0..size).map(|i| (i % 251) as u8).collect();
         let smb_path = format!("{}/big-stream.bin", dir);
         vol.create_file(Path::new(&smb_path), &data).await.unwrap();
@@ -2325,12 +2329,15 @@ mod tests {
         // SMB → local byte path now goes through `open_read_stream`, then the
         // caller writes into whatever destination. Verify that the streaming
         // reader yields multiple chunks for a multi-MB file.
+        //
+        // `max_read_size` negotiation can go up to 8 MB on modern Samba, so
+        // the file has to be >8 MB to guarantee multiple READs.
         let vol = make_docker_volume().await;
         let dir = test_dir_name();
         ensure_clean(&vol, &dir).await;
         vol.create_directory(Path::new(&dir)).await.unwrap();
 
-        let size = 4 * 1024 * 1024; // 4 MB, enough to span many chunks
+        let size = 20 * 1024 * 1024; // 20 MB, exceeds 8 MB max_read_size
         let data: Vec<u8> = (0..size).map(|i| ((i * 7) % 251) as u8).collect();
         let smb_path = format!("{}/export-large.bin", dir);
         vol.create_file(Path::new(&smb_path), &data).await.unwrap();
