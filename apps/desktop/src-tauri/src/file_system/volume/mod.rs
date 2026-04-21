@@ -467,6 +467,19 @@ pub trait Volume: Send + Sync {
         false
     }
 
+    /// How many streaming copy operations can be driven concurrently on this
+    /// volume.
+    ///
+    /// Volumes serialized by a single underlying transport (MTP over USB,
+    /// single SMB session without pipelining) return `1`; volumes that support
+    /// parallel I/O (local disk, SMB with Phase 3 concurrent `execute`, S3)
+    /// return higher. The copy engine takes `min(src, dst, 32)` to decide how
+    /// many `FuturesUnordered` tasks to keep in flight. Default `1` preserves
+    /// current sequential behavior for any new backend that doesn't override.
+    fn max_concurrent_ops(&self) -> usize {
+        1
+    }
+
     /// Scans a path recursively to get statistics for a copy operation.
     /// Returns file count, directory count, and total bytes.
     fn scan_for_copy<'a>(
