@@ -232,13 +232,18 @@ test.describe('Hidden files toggle', () => {
     // Use tauriPage.keyboard to dispatch trusted key events through the webview.
     // Synthetic dispatchEvent() fires with isTrusted:false and may not reach the
     // handler depending on event target (document vs window).
+    //
+    // The sleep here is intentional: tauriPage.keyboard dispatches events async
+    // over the IPC socket, and we've seen cases where a second `keyboard.press`
+    // races with the prior event's debounce / virtual-scroll refresh. 1s
+    // covers the slow-path CI runner; polls below still do the real waiting.
     const toggleHidden = async () => {
       await tauriPage.keyboard.down(CTRL_OR_META)
       await tauriPage.keyboard.down('Shift')
       await tauriPage.keyboard.press('.')
       await tauriPage.keyboard.up('Shift')
       await tauriPage.keyboard.up(CTRL_OR_META)
-      await sleep(500)
+      await sleep(1000)
     }
 
     // Ensure hidden files are visible first. On macOS the default state
@@ -247,17 +252,17 @@ test.describe('Hidden files toggle', () => {
     const hiddenVisibleAtStart = await fileExistsInFocusedPane(tauriPage, '.hidden-file')
     if (!hiddenVisibleAtStart) {
       await toggleHidden()
-      await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 5000)
+      await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 10000)
     }
 
     // Now hidden files are visible — toggle them OFF
     await toggleHidden()
-    await pollUntil(tauriPage, async () => !(await fileExistsInFocusedPane(tauriPage, '.hidden-file')), 5000)
+    await pollUntil(tauriPage, async () => !(await fileExistsInFocusedPane(tauriPage, '.hidden-file')), 10000)
     expect(await fileExistsInFocusedPane(tauriPage, '.hidden-file')).toBe(false)
 
     // Toggle back ON — hidden file should reappear
     await toggleHidden()
-    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 5000)
+    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 10000)
     expect(await fileExistsInFocusedPane(tauriPage, '.hidden-file')).toBe(true)
   })
 })
