@@ -28,6 +28,16 @@ use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
 
 use super::scan::take_cached_scan_result;
+
+/// Per-source hints collected during the scan phase, so the copy loop can
+/// skip re-probing the source type/size per file. `size` is only meaningful
+/// when `is_directory == false`; it's the top-level file's size and feeds
+/// the SMB compound fast-path.
+#[derive(Clone, Copy, Default)]
+struct SourceHint {
+    is_directory: bool,
+    size: u64,
+}
 use super::state::{
     OperationIntent, WRITE_OPERATION_STATE, WriteOperationState, is_cancelled, load_intent, register_operation_status,
     unregister_operation_status, update_operation_status,
@@ -298,10 +308,11 @@ async fn copy_volumes_with_progress(
     let mut total_files;
     let mut total_bytes;
 
-    // Per-source `is_directory` hint collected during the scan, so the copy
-    // loop doesn't need to re-stat each source path via `is_directory`.
-    // Saves one round-trip per file on network-backed volumes (SMB, MTP).
-    let mut source_is_directory: HashMap<PathBuf, bool> = HashMap::with_capacity(source_paths.len());
+    // Per-source hint collected during the scan: whether the top-level path
+    // is a directory and, for top-level files, the file size. The copy loop
+    // reuses these to skip an `is_directory` probe per file and, for SMB, to
+    // pick the 1-RTT compound fast-path when the file fits in one READ.
+    let mut source_hints: HashMap<PathBuf, SourceHint> = HashMap::with_capacity(source_paths.len());
 
     if let Some(cached) = config.preview_id.as_deref().and_then(take_cached_scan_result) {
         total_files = cached.file_count;
@@ -312,12 +323,19 @@ async fn copy_volumes_with_progress(
             total_files,
             total_bytes
         );
-        // TODO: extend the preview cache to carry per-source type so this branch
-        // doesn't need to re-stat. For now, the preview path already saved one
-        // scan per source — this extra stat is bounded by source count.
+        // TODO: extend the preview cache to carry per-source type + size so this
+        // branch doesn't need to re-stat. For now, the preview path already saved
+        // one full scan per source — this extra stat is bounded by source count
+        // and the compound fast-path falls back cleanly when size is unknown.
         for source_path in source_paths {
             let is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
-            source_is_directory.insert(source_path.clone(), is_dir);
+            source_hints.insert(
+                source_path.clone(),
+                SourceHint {
+                    is_directory: is_dir,
+                    size: 0,
+                },
+            );
         }
     } else {
         log::debug!(
@@ -354,7 +372,20 @@ async fn copy_volumes_with_progress(
             total_files += scan.file_count;
             total_dirs += scan.dir_count;
             total_bytes += scan.total_bytes;
-            source_is_directory.insert(source_path.clone(), scan.top_level_is_directory);
+            // For top-level files, `scan.total_bytes` == the file size.
+            // For directories, we leave `size = 0` (unused downstream).
+            let size = if scan.top_level_is_directory {
+                0
+            } else {
+                scan.total_bytes
+            };
+            source_hints.insert(
+                source_path.clone(),
+                SourceHint {
+                    is_directory: scan.top_level_is_directory,
+                    size,
+                },
+            );
         }
 
         log::debug!(
@@ -485,7 +516,7 @@ async fn copy_volumes_with_progress(
                     // branch that didn't populate it), default to false —
                     // behaves as if the source is a file (worst case: one extra
                     // conflict prompt vs. silent merge for dir-over-dir).
-                    let source_is_dir = source_is_directory.get(source_path).copied().unwrap_or(false);
+                    let source_is_dir = source_hints.get(source_path).map(|h| h.is_directory).unwrap_or(false);
                     let dest_is_dir = dest_meta.is_directory;
                     if source_is_dir && dest_is_dir {
                         log::debug!(
@@ -546,7 +577,9 @@ async fn copy_volumes_with_progress(
                 let source_owned = source_path.clone();
                 let dest_owned = dest_item_path.clone();
                 let file_name_owned = file_name.clone();
-                let source_is_dir_hint = source_is_directory.get(source_path).copied().unwrap_or(false);
+                let hint = source_hints.get(source_path).copied().unwrap_or_default();
+                let source_is_dir_hint = hint.is_directory;
+                let source_size_hint = if hint.is_directory { None } else { Some(hint.size) };
 
                 in_flight.push(Box::pin(async move {
                     // Per-task `last_file_bytes` tracks bytes reported for the
@@ -593,6 +626,7 @@ async fn copy_volumes_with_progress(
                         &src_vol,
                         &source_owned,
                         source_is_dir_hint,
+                        source_size_hint,
                         &dst_vol,
                         &dest_owned,
                         &state_clone,
@@ -672,7 +706,7 @@ async fn copy_volumes_with_progress(
             if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path).await {
                 // Reuse the per-source hint from the scan; see note in the
                 // concurrent path for the fallback.
-                let source_is_dir = source_is_directory.get(source_path).copied().unwrap_or(false);
+                let source_is_dir = source_hints.get(source_path).map(|h| h.is_directory).unwrap_or(false);
                 let dest_is_dir = dest_meta.is_directory;
                 if source_is_dir && dest_is_dir {
                     log::debug!(
@@ -766,11 +800,14 @@ async fn copy_volumes_with_progress(
 
             last_dest_path = Some(dest_item_path.clone());
 
-            let source_is_dir_hint = source_is_directory.get(source_path).copied().unwrap_or(false);
+            let hint = source_hints.get(source_path).copied().unwrap_or_default();
+            let source_is_dir_hint = hint.is_directory;
+            let source_size_hint = if hint.is_directory { None } else { Some(hint.size) };
             match copy_single_path(
                 &source_volume,
                 source_path,
                 source_is_dir_hint,
+                source_size_hint,
                 &dest_volume,
                 &dest_item_path,
                 state,

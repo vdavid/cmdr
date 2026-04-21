@@ -27,12 +27,13 @@ use crate::file_system::volume::{Volume, VolumeError};
 ///   cancel between files.
 #[allow(
     clippy::too_many_arguments,
-    reason = "Cross-volume copy needs source/dest volumes, paths, the source type hint, shared state, and two progress callbacks. Bundling into a struct adds ceremony without cleaning anything up."
+    reason = "Cross-volume copy needs source/dest volumes, paths, the source type hint, the size hint, shared state, and two progress callbacks. Bundling into a struct adds ceremony without cleaning anything up."
 )]
 pub(super) async fn copy_single_path(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
     source_is_directory: bool,
+    source_size_hint: Option<u64>,
     dest_volume: &Arc<dyn Volume>,
     dest_path: &Path,
     state: &Arc<WriteOperationState>,
@@ -56,7 +57,15 @@ pub(super) async fn copy_single_path(
         ))
         .await
     } else {
-        let bytes = stream_pipe_file(source_volume, source_path, dest_volume, dest_path, on_file_progress).await?;
+        let bytes = stream_pipe_file(
+            source_volume,
+            source_path,
+            source_size_hint,
+            dest_volume,
+            dest_path,
+            on_file_progress,
+        )
+        .await?;
         on_file_complete();
         Ok(bytes)
     }
@@ -70,13 +79,16 @@ pub(super) async fn copy_single_path(
 async fn stream_pipe_file(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
+    source_size_hint: Option<u64>,
     dest_volume: &Arc<dyn Volume>,
     dest_path: &Path,
     on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
 ) -> Result<u64, VolumeError> {
     log::debug!("stream_pipe_file: {} -> {}", source_path.display(), dest_path.display());
 
-    let stream = source_volume.open_read_stream(source_path).await?;
+    let stream = source_volume
+        .open_read_stream_with_hint(source_path, source_size_hint)
+        .await?;
     let size = stream.total_size();
     dest_volume
         .write_from_stream(dest_path, size, stream, on_file_progress)
@@ -135,8 +147,15 @@ async fn copy_directory_streaming(
             ))
             .await?;
         } else {
-            let bytes =
-                stream_pipe_file(source_volume, &child_source, dest_volume, &child_dest, on_file_progress).await?;
+            let bytes = stream_pipe_file(
+                source_volume,
+                &child_source,
+                entry.size,
+                dest_volume,
+                &child_dest,
+                on_file_progress,
+            )
+            .await?;
             total_bytes += bytes;
             on_file_complete();
         }
@@ -181,6 +200,7 @@ mod tests {
             &source,
             Path::new("source.txt"),
             false,
+            None,
             &dest,
             Path::new("dest.txt"),
             &state,
@@ -223,6 +243,7 @@ mod tests {
             &source,
             Path::new("source.txt"),
             false,
+            None,
             &dest,
             Path::new("dest.txt"),
             &state,
@@ -267,6 +288,7 @@ mod tests {
             &source,
             Path::new("/photo.jpg"),
             false,
+            None,
             &dest,
             Path::new("/photo.jpg"),
             &state,
@@ -299,6 +321,7 @@ mod tests {
             &source,
             Path::new("/big.bin"),
             false,
+            None,
             &dest,
             Path::new("/big.bin"),
             &state,
@@ -346,6 +369,7 @@ mod tests {
             &source,
             Path::new("/big.bin"),
             false,
+            None,
             &dest,
             Path::new("/big.bin"),
             &state,
@@ -377,6 +401,7 @@ mod tests {
             &source,
             Path::new("/empty.txt"),
             false,
+            None,
             &dest,
             Path::new("/empty.txt"),
             &state,
@@ -400,6 +425,7 @@ mod tests {
             &source,
             Path::new("/nope.txt"),
             false,
+            None,
             &dest,
             Path::new("/nope.txt"),
             &state,
@@ -434,6 +460,7 @@ mod tests {
             &source,
             Path::new("/test.txt"),
             false,
+            None,
             &dest,
             Path::new("/test.txt"),
             &state,
@@ -474,6 +501,7 @@ mod tests {
             &source,
             Path::new("/docs"),
             true,
+            None,
             &dest,
             Path::new("/docs"),
             &state,

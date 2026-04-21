@@ -599,6 +599,29 @@ pub trait Volume: Send + Sync {
         Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
+    /// Opens a streaming reader with an optional size hint from the caller.
+    ///
+    /// Network-backed volumes can use the hint to pick a faster compound
+    /// request path for small files (e.g., SMB's CREATE+READ+CLOSE compound)
+    /// instead of the 3-RTT streaming open. Backends that can't use the hint
+    /// fall through to `open_read_stream`.
+    ///
+    /// The hint is best-effort — callers pass `None` when they don't know
+    /// the size ahead of time, and the backend must work correctly either
+    /// way.
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn open_read_stream_with_hint<'a>(
+        &'a self,
+        path: &'a Path,
+        size_hint: Option<u64>,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        let _ = size_hint;
+        self.open_read_stream(path)
+    }
+
     /// Writes data from a stream to the given path.
     ///
     /// `on_progress(bytes_written, total_size)` is called after each chunk is

@@ -582,6 +582,46 @@ impl VolumeReadStream for SmbReadStream {
     }
 }
 
+/// Wraps a pre-read `Vec<u8>` as a `VolumeReadStream` that yields the whole
+/// buffer as a single chunk. Used by the compound fast-path in
+/// `open_read_stream_with_hint`, where the full file body came back inside one
+/// SMB compound response — there's no more I/O to drive, just hand the bytes
+/// to the consumer.
+struct InlineReadStream {
+    data: Option<Vec<u8>>,
+    total_size: u64,
+    bytes_read: u64,
+}
+
+impl InlineReadStream {
+    fn new(data: Vec<u8>) -> Self {
+        let total_size = data.len() as u64;
+        Self {
+            data: Some(data),
+            total_size,
+            bytes_read: 0,
+        }
+    }
+}
+
+impl VolumeReadStream for InlineReadStream {
+    fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
+        Box::pin(async move {
+            let data = self.data.take()?;
+            self.bytes_read = data.len() as u64;
+            Some(Ok(data))
+        })
+    }
+
+    fn total_size(&self) -> u64 {
+        self.total_size
+    }
+
+    fn bytes_read(&self) -> u64 {
+        self.bytes_read
+    }
+}
+
 /// If an smb2 error indicates the session is dead, transition state to
 /// `Disconnected`. Mirrors `handle_smb_result` for contexts without `&self`.
 fn update_state_on_smb_error(state: &AtomicU8, err: &smb2::Error) {
@@ -1074,6 +1114,54 @@ impl Volume for SmbVolume {
         })
     }
 
+    fn open_read_stream_with_hint<'a>(
+        &'a self,
+        path: &'a Path,
+        size_hint: Option<u64>,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let smb_path = self.to_smb_path(path);
+
+            // Compound fast-path: if the caller-provided hint fits in one READ,
+            // send CREATE+READ+CLOSE as a single compound frame (1 RTT) instead
+            // of the 3-RTT streaming open. Falls through to the streaming path
+            // when the hint is missing, too large, or the compound read returns
+            // short (truncated file — rare but possible if size changed since
+            // the scan).
+            if let Some(size) = size_hint {
+                let mut guard = self.acquire_smb().await?;
+                let (client, tree) = guard.as_mut().unwrap();
+                let max_read = client.params().map(|p| p.max_read_size).unwrap_or(65536) as u64;
+                if size > 0 && size <= max_read {
+                    debug!(
+                        "SmbVolume::open_read_stream_with_hint: share={}, path={:?}, size={} — using compound fast-path",
+                        self.share_name, smb_path, size
+                    );
+                    let read_result = tree.read_file_compound(client.connection_mut(), &smb_path).await;
+                    let data = self.handle_smb_result("open_read_stream_with_hint(compound)", read_result)?;
+                    if data.len() as u64 == size {
+                        drop(guard);
+                        return Ok(Box::new(InlineReadStream::new(data)) as Box<dyn VolumeReadStream>);
+                    }
+                    debug!(
+                        "SmbVolume::open_read_stream_with_hint: compound read returned {} bytes, expected {} — falling back to streaming",
+                        data.len(),
+                        size
+                    );
+                    // Fall through — release the guard first.
+                }
+                drop(guard);
+            }
+
+            debug!(
+                "SmbVolume::open_read_stream_with_hint: share={}, path={:?} — using streaming path",
+                self.share_name, smb_path
+            );
+            let stream = self.open_smb_download_stream(&smb_path).await?;
+            Ok(Box::new(stream) as Box<dyn VolumeReadStream>)
+        })
+    }
+
     fn write_from_stream<'a>(
         &'a self,
         dest: &'a Path,
@@ -1085,8 +1173,8 @@ impl Volume for SmbVolume {
             let smb_path = self.to_smb_path(dest);
 
             debug!(
-                "SmbVolume::write_from_stream: share={}, path={:?}",
-                self.share_name, smb_path
+                "SmbVolume::write_from_stream: share={}, path={:?}, size={}",
+                self.share_name, smb_path, size
             );
 
             // Holds the SMB session mutex for the duration of the transfer.
@@ -1094,6 +1182,51 @@ impl Volume for SmbVolume {
             // `stream.next_chunk()` while holding this one is safe.
             let mut guard = self.acquire_smb().await?;
             let (client, tree) = guard.as_mut().unwrap();
+
+            // Compound fast-path: when the caller promised a size that fits in
+            // one WRITE, drain the source stream into a buffer and send
+            // CREATE+WRITE+FLUSH+CLOSE as a single compound frame (1 RTT
+            // instead of 4). Small files are the hot case — for anything
+            // larger we use the streaming writer below.
+            let max_write = client.params().map(|p| p.max_write_size).unwrap_or(65536) as u64;
+            if size > 0 && size <= max_write {
+                let mut buffer = Vec::with_capacity(size as usize);
+                while let Some(chunk_result) = stream.next_chunk().await {
+                    let chunk = chunk_result?;
+                    buffer.extend_from_slice(&chunk);
+                }
+                if buffer.len() as u64 == size {
+                    debug!(
+                        "SmbVolume::write_from_stream: using compound fast-path ({} bytes)",
+                        buffer.len()
+                    );
+                    let write_result = tree
+                        .write_file_compound(client.connection_mut(), &smb_path, &buffer)
+                        .await;
+                    let bytes_written = self.handle_smb_result("write_from_stream(compound)", write_result)?;
+                    // Emit a single progress tick so counters match the
+                    // streaming path's post-loop state.
+                    let _ = on_progress(bytes_written, size);
+                    return Ok(bytes_written);
+                }
+                // Size mismatch — fall back to the streaming path so a
+                // subsequent open writes whatever came through.
+                debug!(
+                    "SmbVolume::write_from_stream: compound fast-path source yielded {} bytes, expected {} — falling back",
+                    buffer.len(),
+                    size
+                );
+                // Re-feed the already-drained buffer via the streaming writer.
+                let writer_result = client.create_file_writer(tree, &smb_path).await;
+                let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
+                if !buffer.is_empty() {
+                    let write_result = writer.write_chunk(&buffer).await;
+                    self.handle_smb_result("write_from_stream(write_chunk)", write_result)?;
+                }
+                let finish_result = writer.finish().await;
+                self.handle_smb_result("write_from_stream(finish)", finish_result)?;
+                return Ok(buffer.len() as u64);
+            }
 
             let writer_result = client.create_file_writer(tree, &smb_path).await;
             let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;

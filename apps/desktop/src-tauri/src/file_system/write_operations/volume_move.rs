@@ -186,6 +186,10 @@ pub async fn move_between_volumes(
                     &source_volume,
                     source_path,
                     source_is_dir,
+                    // Move has no scan phase to cache a size hint. The SMB
+                    // compound fast-path falls through to streaming cleanly
+                    // when the hint is missing.
+                    None,
                     &dest_volume,
                     &dest_item,
                     &state,
