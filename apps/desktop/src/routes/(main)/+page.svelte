@@ -294,6 +294,12 @@
     }
 
 
+    /** True if the user has selected text in the document (non-collapsed range). */
+    function hasTextSelection(): boolean {
+        const selection = window.getSelection()
+        return !!selection && !selection.isCollapsed && selection.toString().length > 0
+    }
+
     /** Check if any modal dialog is open that should suppress centralized dispatch. */
     function isModalDialogOpen(): boolean {
         return (
@@ -313,6 +319,11 @@
         // Centralized dispatch: look up the command for this key combo
         if (!isModalDialogOpen()) {
             const shortcutString = formatKeyCombo(e)
+            // Let the browser copy selected text natively (for example, from the error pane)
+            // instead of triggering our file-copy command.
+            if (shortcutString === '⌘C' && hasTextSelection()) {
+                return
+            }
             const commandId = lookupCommand(shortcutString)
             if (commandId) {
                 e.preventDefault()
