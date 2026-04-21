@@ -354,3 +354,91 @@ connection's pipeline window, not by the cmdr-side mutex).
 
 That final number hits the same order of magnitude as a local-to-local copy and matches what `smb2`'s pipelined bench
 sees for the same workload.
+
+## Phase 4 Fix 2 results (2026-04-22)
+
+Landed once smb2 0.7.1 shipped `Tree::download(&self, conn: &mut Connection, path)` — this lets cmdr clone a single
+`SmbClient`'s `Connection` (cheap `Arc::clone`, all clones multiplex frames over one SMB session) and drive N concurrent
+downloads on one SMB volume without holding the session mutex.
+
+Concrete cmdr-side change (`apps/desktop/src-tauri/src/file_system/volume/smb.rs`): `SmbVolume` previously held
+`Arc<Mutex<Option<(SmbClient, Tree)>>>`. Split into `Arc<Mutex<Option<SmbClient>>>` and
+`Arc<RwLock<Option<Arc<Tree>>>>`. The hot-path helpers (`open_smb_download_stream`, `open_read_stream_with_hint`
+compound branch, `write_from_stream` compound branch) now briefly lock the client to clone its `Connection`, release the
+lock, grab an `Arc<Tree>` from the RwLock, and drive `Tree::download` / `Tree::read_file_compound` /
+`Tree::write_file_compound` on the clone with no lock held. Non-hot-path ops (stat, list_directory, rename) switched
+from `SmbClient::*` to `Tree::*` under the same cloned- connection pattern. The streaming large-file writer fallback
+still takes the client mutex for its duration because `FileWriter<'a>` borrows `&'a mut Connection` from the `SmbClient`
+— documented as a Gotcha; the compound fast-path covers every file ≤ `max_write_size` (~1 MB on QNAP) without touching
+the client mutex for the write itself.
+
+### Wall-clock per configuration (Tailscale, ~50–60 ms RTT, same QNAP share)
+
+| Files | Before Fix 2 (wall-clock / per file) | After Fix 2 (wall-clock / per file) | Speedup |
+| ----- | ------------------------------------ | ----------------------------------- | ------- |
+| 1     | 144 ms / 144 ms                      | 156 ms / 156 ms                     | ~1×     |
+| 3     | 374 ms / 125 ms                      | 311 ms / 104 ms                     | 1.2×    |
+| 100   | 10.71 s / 107 ms                     | 6.11 s / 61 ms                      | 1.75×   |
+
+(1-file run is within jitter; concurrency can't help a single file.)
+
+Effective concurrency (ratio = 1-file serial / 100-file amortized) = 156 / 61 ≈ **2.6×**. Not the full 8× the copy
+engine's `min(src.max_concurrent_ops(), dst.max_concurrent_ops()) = min(10, 8) = 8` would allow — see the trace-based
+analysis below for where the rest of the budget goes.
+
+### Interleaving proof — 3-file wire trace
+
+```
+execute_compound: 4 operations, msg_ids=[4, 5, 6, 7]    ; scan stat file 0
+execute_compound: 4 operations, msg_ids=[8, 9, 10, 11]  ; scan stat file 1 (overlaps)
+execute_compound: 4 operations, msg_ids=[12, 13, 14, 15] ; scan stat file 2 (overlaps)
+tree: read_file_compound path=_test\bench_100tiny\f_000.bin
+execute_compound: 3 operations, msg_ids=[16, 17, 145]    ; CREATE+READ+CLOSE file 0
+tree: read_file_compound path=_test\bench_100tiny\f_001.bin
+execute_compound: 3 operations, msg_ids=[146, 147, 275]  ; CREATE+READ+CLOSE file 1 — dispatched BEFORE file 0 responds
+tree: read_file_compound path=_test\bench_100tiny\f_002.bin
+execute_compound: 3 operations, msg_ids=[276, 277, 405]  ; CREATE+READ+CLOSE file 2 — dispatched BEFORE file 0 responds
+tree: read_file_compound done, read 10240 bytes          ; file 0
+tree: read_file_compound done, read 10240 bytes          ; file 1
+tree: read_file_compound done, read 10240 bytes          ; file 2
+```
+
+All three compound reads dispatch back-to-back before any response arrives — exactly the interleaving Fix 1+3 couldn't
+deliver while stuck on the session mutex. Fix 2 confirms via trace that concurrent downloads pipeline over one SMB
+session.
+
+### Where the remaining budget goes
+
+The projection was ~15 ms/file. We measured ~61. Candidates for the missing ~45 ms/file:
+
+- **Serial stat scan phase.** `scan_for_volume_copy` walks each top-level source path and calls `scan_for_copy`
+  serially. For the 100-file bench, that's 100 × ~50 ms RTT = ~5 s of serial stats (compound stats = 1 RTT each). In the
+  100-file wire trace, all stat compounds dispatch in a tight batch at the start — but they still complete before the
+  first read. Loose math: if scan took ~1 s (pipelined by smb2's receiver side) out of 6.1 s, the copy phase is ~5.1 s =
+  51 ms/file, closer to the projection but still 3× over the theoretical minimum.
+- **Local-side write latency.** A 10 KB `std::fs::write` via `LocalPosixVolume::write_from_stream` on macOS takes a few
+  hundred µs, not 30 ms — shouldn't matter.
+- **Credit window.** SMB2 credit charges may rate-limit how many reads pipeline simultaneously. Not investigated; the
+  3-file trace shows all three dispatch fine, so 10-way-effective is plausible but not confirmed.
+- **`FuturesUnordered` fairness / task spawn overhead.** The copy engine spawns `max_concurrent_ops` tasks via
+  `FuturesUnordered`. Tokio scheduling between them may add a few ms of jitter per file, but not 30+.
+
+The 1.75× total wall-clock win is still a solid delivery: Fix 1+3 shipped 2.6× over the Phase 3 baseline, and Fix 2
+stacks another 1.75× on top (~4.6× cumulative over the pre-Phase-4 baseline). The remaining serial-scan overhead is a
+candidate for a future "Fix 4 — batch stats in `scan_for_volume_copy`" but is out of scope for this round.
+
+### Reproducing
+
+Same pattern as the prior rounds (temporary test edits; discard before commit):
+
+```sh
+export SMB2_TEST_NAS_PASSWORD=$(grep '^SMB2_TEST_NAS_PASSWORD=' ~/projects-git/vdavid/smb2/.env | cut -d= -f2- | tr -d '"')
+cd apps/desktop/src-tauri
+FILE_COUNT=100 SMB2_TEST_NAS_HOST=100.127.48.122 \
+  RUST_LOG='smb2::client::connection=debug,smb2::client::tree=debug' \
+  cargo test --release --lib phase4_bench -- --ignored --nocapture --test-threads=1
+```
+
+The `phase4_bench_baseline_smb_to_local_100_tiny_files` test accepts a temporary `FILE_COUNT` env var when the source is
+edited to read it, and `env_logger::try_init()` at the test's top (also a temporary edit) wires `RUST_LOG` through to
+the smb2 crate's `log` macros.
