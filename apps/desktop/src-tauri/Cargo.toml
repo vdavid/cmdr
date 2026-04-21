@@ -149,6 +149,10 @@ semver = "1"
 
 [dev-dependencies]
 criterion = { version = "0.8.1", features = ["html_reports"] }
+# Dev-only env-driven logger. Tests don't use `tauri-plugin-log` (it requires
+# a Tauri runtime), so this gives us `RUST_LOG`-controlled logs for wire
+# traces in integration benches.
+env_logger = "0.11.10"
 # For test-only cryptographic key generation (compatible with ed25519-dalek's rand_core 0.6)
 rand_core = { version = "0.6", features = ["getrandom"] }
 tempfile = "3"
