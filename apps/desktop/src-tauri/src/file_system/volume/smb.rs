@@ -222,223 +222,7 @@ impl SmbVolume {
         }
     }
 
-    // ── Recursive helpers for export/import/scan ──────────────────────
-
-    /// Exports a single file from SMB to a local path with progress reporting.
-    ///
-    /// Streams the file chunk-by-chunk through `SmbReadStream` and writes each
-    /// chunk to `local_dest` as it arrives. Peak memory is bounded by the
-    /// channel capacity (a few MB), regardless of file size.
-    async fn export_single_file_with_progress(
-        &self,
-        smb_path: &str,
-        local_dest: &Path,
-        on_progress: &(dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
-    ) -> Result<u64, VolumeError> {
-        use tokio::io::AsyncWriteExt;
-
-        let mut stream = self.open_smb_download_stream(smb_path).await?;
-        let total = stream.total_size();
-
-        // Ensure parent directory exists
-        if let Some(parent) = local_dest.parent() {
-            tokio::fs::create_dir_all(parent)
-                .await
-                .map_err(|e| VolumeError::IoError {
-                    message: e.to_string(),
-                    raw_os_error: None,
-                })?;
-        }
-
-        let mut file = tokio::fs::File::create(local_dest)
-            .await
-            .map_err(|e| VolumeError::IoError {
-                message: e.to_string(),
-                raw_os_error: None,
-            })?;
-
-        let mut written = 0u64;
-        while let Some(chunk_result) = stream.next_chunk().await {
-            let chunk = chunk_result?;
-            file.write_all(&chunk).await.map_err(|e| VolumeError::IoError {
-                message: e.to_string(),
-                raw_os_error: None,
-            })?;
-            written += chunk.len() as u64;
-
-            if on_progress(written, total) == std::ops::ControlFlow::Break(()) {
-                // Dropping `stream` here sends the cancel signal to the producer.
-                drop(stream);
-                return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
-            }
-        }
-
-        file.flush().await.map_err(|e| VolumeError::IoError {
-            message: e.to_string(),
-            raw_os_error: None,
-        })?;
-        Ok(written)
-    }
-
-    /// Recursively exports an SMB directory to local with progress. Returns total bytes.
-    fn export_directory_recursive_with_progress<'a>(
-        &'a self,
-        smb_path: &'a str,
-        local_dest: &'a Path,
-        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
-    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            std::fs::create_dir_all(local_dest).map_err(|e| VolumeError::IoError {
-                message: e.to_string(),
-                raw_os_error: None,
-            })?;
-
-            let display_path = self.to_display_path(smb_path);
-            let entries = self.list_directory_impl(Path::new(&display_path)).await?;
-            let mut total_bytes = 0u64;
-
-            for entry in &entries {
-                let child_smb = if smb_path.is_empty() {
-                    entry.name.clone()
-                } else {
-                    format!("{}/{}", smb_path, entry.name)
-                };
-                let child_local = local_dest.join(&entry.name);
-
-                if entry.is_directory {
-                    total_bytes += self
-                        .export_directory_recursive_with_progress(&child_smb, &child_local, on_progress)
-                        .await?;
-                } else {
-                    total_bytes += self
-                        .export_single_file_with_progress(&child_smb, &child_local, on_progress)
-                        .await?;
-                }
-            }
-
-            Ok(total_bytes)
-        })
-    }
-
-    /// Imports a single local file to SMB with progress reporting. Returns bytes written.
-    ///
-    /// Streams the local file chunk-by-chunk into smb2's `FileWriter` so peak
-    /// memory is bounded by one chunk (~1 MiB), not the full file size. The
-    /// SMB session mutex is held for the whole transfer, matching the pattern
-    /// in `export_single_file_with_progress`.
-    async fn import_single_file_with_progress(
-        &self,
-        local_source: &Path,
-        smb_path: &str,
-        on_progress: &(dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
-    ) -> Result<u64, VolumeError> {
-        use tokio::io::AsyncReadExt;
-
-        // Discover the file size up front so progress callbacks report an accurate total.
-        let total_size = tokio::fs::metadata(local_source)
-            .await
-            .map_err(|e| VolumeError::IoError {
-                message: e.to_string(),
-                raw_os_error: None,
-            })?
-            .len();
-
-        let mut file = tokio::fs::File::open(local_source)
-            .await
-            .map_err(|e| VolumeError::IoError {
-                message: e.to_string(),
-                raw_os_error: None,
-            })?;
-
-        let mut guard = self.acquire_smb().await?;
-        let (client, tree) = guard.as_mut().unwrap();
-
-        let writer_result = client.create_file_writer(tree, smb_path).await;
-        let mut writer = self.handle_smb_result("import_from_local(open_write)", writer_result)?;
-
-        let mut buf = vec![0u8; SMB_IMPORT_CHUNK_SIZE];
-        let mut bytes_done: u64 = 0;
-
-        loop {
-            let n = file.read(&mut buf).await.map_err(|e| VolumeError::IoError {
-                message: e.to_string(),
-                raw_os_error: None,
-            })?;
-            if n == 0 {
-                break;
-            }
-
-            let write_result = writer.write_chunk(&buf[..n]).await;
-            self.handle_smb_result("import_from_local(write_chunk)", write_result)?;
-
-            bytes_done += n as u64;
-
-            if on_progress(bytes_done, total_size) == std::ops::ControlFlow::Break(()) {
-                // Abort drains in-flight WRITE responses and closes the handle
-                // without the server-side fsync that `finish()` would force
-                // (we're about to delete the partial file anyway). Dropping
-                // the writer directly would leave stale responses on the
-                // connection and poison the next op.
-                let _ = writer.abort().await;
-                let _ = client.delete_file(tree, smb_path).await;
-                return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
-            }
-        }
-
-        let finish_result = writer.finish().await;
-        self.handle_smb_result("import_from_local(finish)", finish_result)?;
-
-        Ok(bytes_done)
-    }
-
-    /// Recursively imports a local directory to SMB with progress. Returns total bytes.
-    fn import_directory_recursive_with_progress<'a>(
-        &'a self,
-        local_source: &'a Path,
-        smb_path: &'a str,
-        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
-    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            {
-                let mut guard = self.acquire_smb().await?;
-                let (client, tree) = guard.as_mut().unwrap();
-                let result = client.create_directory(tree, smb_path).await;
-                self.handle_smb_result("import_from_local(mkdir)", result)?;
-            }
-
-            let read_dir = std::fs::read_dir(local_source).map_err(|e| VolumeError::IoError {
-                message: e.to_string(),
-                raw_os_error: None,
-            })?;
-            let mut total_bytes = 0u64;
-
-            for dir_entry in read_dir {
-                let dir_entry = dir_entry.map_err(|e| VolumeError::IoError {
-                    message: e.to_string(),
-                    raw_os_error: None,
-                })?;
-                let child_local = dir_entry.path();
-                let child_name = dir_entry.file_name().to_string_lossy().to_string();
-                let child_smb = if smb_path.is_empty() {
-                    child_name
-                } else {
-                    format!("{}/{}", smb_path, child_name)
-                };
-
-                if child_local.is_dir() {
-                    total_bytes += self
-                        .import_directory_recursive_with_progress(&child_local, &child_smb, on_progress)
-                        .await?;
-                } else {
-                    total_bytes += self
-                        .import_single_file_with_progress(&child_local, &child_smb, on_progress)
-                        .await?;
-                }
-            }
-
-            Ok(total_bytes)
-        })
-    }
+    // ── Recursive helper for scan ──────────────────────────────────────
 
     /// Recursively scans an SMB path, returning file/dir counts and total bytes.
     fn scan_recursive<'a>(
@@ -564,10 +348,9 @@ impl SmbVolume {
     /// pipes chunks through a bounded mpsc channel. The lock stays held by
     /// the task until the download completes or the stream is dropped.
     ///
-    /// This is the single streaming-read primitive for `SmbVolume`. Both the
-    /// cross-volume streaming path (`open_read_stream`) and the
-    /// SMB→local export path (`export_single_file_with_progress`) go through
-    /// here, so neither has to buffer whole files in memory.
+    /// This is the single streaming-read primitive for `SmbVolume`. The
+    /// cross-volume streaming path (`open_read_stream`) goes through here, so
+    /// no path has to buffer whole files in memory.
     async fn open_smb_download_stream(&self, smb_path: &str) -> Result<SmbReadStream, VolumeError> {
         self.check_connection()?;
 
@@ -747,13 +530,6 @@ impl SmbVolume {
 /// Backpressure window for the chunk channel. With smb2's ~512 KB pipelined
 /// chunks, 4 slots keep peak memory at a few MB regardless of file size.
 const SMB_STREAM_CHANNEL_CAPACITY: usize = 4;
-
-/// Chunk size used when reading the local source file during
-/// `import_single_file_with_progress`. smb2's `FileWriter` re-splits pushed
-/// buffers into wire-sized WRITE requests, so this just bounds how much we
-/// pull from disk per iteration. ~1 MiB keeps peak RAM flat regardless of
-/// input file size.
-const SMB_IMPORT_CHUNK_SIZE: usize = 1024 * 1024;
 
 /// Streaming reader for SMB files, backed by a background producer task.
 ///
@@ -1218,70 +994,6 @@ impl Volume for SmbVolume {
         true
     }
 
-    fn export_to_local<'a>(
-        &'a self,
-        source: &'a Path,
-        local_dest: &'a Path,
-        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
-    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let smb_path = self.to_smb_path(source);
-
-            debug!(
-                "SmbVolume::export_to_local: share={}, source={:?}, dest={}",
-                self.share_name,
-                smb_path,
-                local_dest.display()
-            );
-
-            let is_dir = if smb_path.is_empty() {
-                true
-            } else {
-                let info = {
-                    let mut guard = self.acquire_smb().await?;
-                    let (client, tree) = guard.as_mut().unwrap();
-                    let r = client.stat(tree, &smb_path).await;
-                    self.handle_smb_result("export_to_local(stat)", r)?
-                };
-                info.is_directory
-            };
-
-            if is_dir {
-                self.export_directory_recursive_with_progress(&smb_path, local_dest, on_progress)
-                    .await
-            } else {
-                self.export_single_file_with_progress(&smb_path, local_dest, on_progress)
-                    .await
-            }
-        })
-    }
-
-    fn import_from_local<'a>(
-        &'a self,
-        local_source: &'a Path,
-        dest: &'a Path,
-        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
-    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let smb_path = self.to_smb_path(dest);
-
-            debug!(
-                "SmbVolume::import_from_local: share={}, source={}, dest={:?}",
-                self.share_name,
-                local_source.display(),
-                smb_path
-            );
-
-            if local_source.is_dir() {
-                self.import_directory_recursive_with_progress(local_source, &smb_path, on_progress)
-                    .await
-            } else {
-                self.import_single_file_with_progress(local_source, &smb_path, on_progress)
-                    .await
-            }
-        })
-    }
-
     fn scan_for_copy<'a>(
         &'a self,
         path: &'a Path,
@@ -1362,10 +1074,9 @@ impl Volume for SmbVolume {
                 self.share_name, smb_path
             );
 
-            // Holds the SMB session mutex for the duration of the transfer,
-            // matching `export_single_file_with_progress`. Different volumes
-            // have different mutexes, so awaiting `stream.next_chunk()` while
-            // holding this one is safe.
+            // Holds the SMB session mutex for the duration of the transfer.
+            // Different volumes have different mutexes, so awaiting
+            // `stream.next_chunk()` while holding this one is safe.
             let mut guard = self.acquire_smb().await?;
             let (client, tree) = guard.as_mut().unwrap();
 
@@ -1944,146 +1655,61 @@ mod tests {
 
     #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    async fn smb_integration_export_to_local() {
+    async fn smb_integration_read_stream_single_file() {
+        // Exercises the SMB → local byte path (now via open_read_stream) at
+        // the simplest shape.
         let vol = make_docker_volume().await;
         let dir = test_dir_name();
-        let local_tmp = std::env::temp_dir().join(&dir);
 
-        // Create a file on the SMB share
         vol.create_directory(Path::new(&dir)).await.unwrap();
         let smb_file = format!("{}/export-test.txt", dir);
         let content = b"exported content";
         vol.create_file(Path::new(&smb_file), content).await.unwrap();
 
-        // Export to local
-        let bytes = vol
-            .export_to_local(Path::new(&smb_file), &local_tmp.join("export-test.txt"), &|_, _| {
-                std::ops::ControlFlow::Continue(())
-            })
-            .await
-            .unwrap();
-        assert_eq!(bytes, content.len() as u64);
+        let mut stream = vol.open_read_stream(Path::new(&smb_file)).await.unwrap();
+        assert_eq!(stream.total_size(), content.len() as u64);
+        let mut readback = Vec::new();
+        while let Some(Ok(chunk)) = stream.next_chunk().await {
+            readback.extend_from_slice(&chunk);
+        }
+        assert_eq!(readback, content);
 
-        // Verify local file
-        let local_content = std::fs::read(local_tmp.join("export-test.txt")).unwrap();
-        assert_eq!(local_content, content);
-
-        // Clean up
-        let _ = std::fs::remove_dir_all(&local_tmp);
         vol.delete(Path::new(&smb_file)).await.unwrap();
         vol.delete(Path::new(&dir)).await.unwrap();
     }
 
     #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    async fn smb_integration_import_from_local() {
+    async fn smb_integration_write_from_stream_single_file() {
+        // Exercises the local → SMB byte path (now via write_from_stream) at
+        // the simplest shape. Uses InMemoryVolume as the source stream.
         let vol = make_docker_volume().await;
         let dir = test_dir_name();
-        let local_tmp = std::env::temp_dir().join(format!("{}-import", dir));
 
-        // Create a local file
-        std::fs::create_dir_all(&local_tmp).unwrap();
-        let local_file = local_tmp.join("import-test.txt");
-        let content = b"imported content";
-        std::fs::write(&local_file, content).unwrap();
-
-        // Create target dir on SMB
         vol.create_directory(Path::new(&dir)).await.unwrap();
+        let content = b"imported content";
+        let source = InMemoryVolume::new("Source");
+        source
+            .create_file(Path::new("/import-test.txt"), content)
+            .await
+            .unwrap();
 
-        // Import to SMB
         let smb_file = format!("{}/import-test.txt", dir);
+        let stream = source.open_read_stream(Path::new("/import-test.txt")).await.unwrap();
+        let size = stream.total_size();
         let bytes = vol
-            .import_from_local(&local_file, Path::new(&smb_file), &|_, _| {
+            .write_from_stream(Path::new(&smb_file), size, stream, &|_, _| {
                 std::ops::ControlFlow::Continue(())
             })
             .await
             .unwrap();
         assert_eq!(bytes, content.len() as u64);
 
-        // Verify on SMB
         assert!(vol.exists(Path::new(&smb_file)).await);
         let meta = vol.get_metadata(Path::new(&smb_file)).await.unwrap();
         assert_eq!(meta.size, Some(content.len() as u64));
 
-        // Clean up
-        let _ = std::fs::remove_dir_all(&local_tmp);
         vol.delete(Path::new(&smb_file)).await.unwrap();
-        vol.delete(Path::new(&dir)).await.unwrap();
-    }
-
-    #[tokio::test]
-    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    async fn smb_integration_export_directory_recursive() {
-        let vol = make_docker_volume().await;
-        let dir = test_dir_name();
-        let local_tmp = std::env::temp_dir().join(format!("{}-export-dir", dir));
-
-        // Create a directory tree on SMB
-        vol.create_directory(Path::new(&dir)).await.unwrap();
-        let sub = format!("{}/subdir", dir);
-        vol.create_directory(Path::new(&sub)).await.unwrap();
-        vol.create_file(Path::new(&format!("{}/a.txt", dir)), b"file a")
-            .await
-            .unwrap();
-        vol.create_file(Path::new(&format!("{}/subdir/b.txt", dir)), b"file b")
-            .await
-            .unwrap();
-
-        // Export entire directory
-        let bytes = vol
-            .export_to_local(Path::new(&dir), &local_tmp, &|_, _| std::ops::ControlFlow::Continue(()))
-            .await
-            .unwrap();
-        assert_eq!(bytes, 12); // "file a" (6) + "file b" (6)
-
-        // Verify local structure
-        assert!(local_tmp.join("a.txt").exists());
-        assert!(local_tmp.join("subdir").is_dir());
-        assert!(local_tmp.join("subdir/b.txt").exists());
-        assert_eq!(std::fs::read_to_string(local_tmp.join("a.txt")).unwrap(), "file a");
-        assert_eq!(
-            std::fs::read_to_string(local_tmp.join("subdir/b.txt")).unwrap(),
-            "file b"
-        );
-
-        // Clean up
-        let _ = std::fs::remove_dir_all(&local_tmp);
-        vol.delete(Path::new(&format!("{}/subdir/b.txt", dir))).await.unwrap();
-        vol.delete(Path::new(&format!("{}/a.txt", dir))).await.unwrap();
-        vol.delete(Path::new(&sub)).await.unwrap();
-        vol.delete(Path::new(&dir)).await.unwrap();
-    }
-
-    #[tokio::test]
-    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    async fn smb_integration_import_directory_recursive() {
-        let vol = make_docker_volume().await;
-        let dir = test_dir_name();
-        let local_tmp = std::env::temp_dir().join(format!("{}-import-dir", dir));
-
-        // Create a local directory tree
-        std::fs::create_dir_all(local_tmp.join("subdir")).unwrap();
-        std::fs::write(local_tmp.join("x.txt"), "file x").unwrap();
-        std::fs::write(local_tmp.join("subdir/y.txt"), "file y").unwrap();
-
-        // Import to SMB
-        let bytes = vol
-            .import_from_local(&local_tmp, Path::new(&dir), &|_, _| std::ops::ControlFlow::Continue(()))
-            .await
-            .unwrap();
-        assert_eq!(bytes, 12); // "file x" (6) + "file y" (6)
-
-        // Verify on SMB
-        assert!(vol.is_directory(Path::new(&dir)).await.unwrap());
-        assert!(vol.exists(Path::new(&format!("{}/x.txt", dir))).await);
-        assert!(vol.is_directory(Path::new(&format!("{}/subdir", dir))).await.unwrap());
-        assert!(vol.exists(Path::new(&format!("{}/subdir/y.txt", dir))).await);
-
-        // Clean up
-        let _ = std::fs::remove_dir_all(&local_tmp);
-        vol.delete(Path::new(&format!("{}/subdir/y.txt", dir))).await.unwrap();
-        vol.delete(Path::new(&format!("{}/x.txt", dir))).await.unwrap();
-        vol.delete(Path::new(&format!("{}/subdir", dir))).await.unwrap();
         vol.delete(Path::new(&dir)).await.unwrap();
     }
 
@@ -2483,9 +2109,10 @@ mod tests {
 
     #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    async fn smb_integration_export_to_local_streams_large_file() {
-        // Verifies the SMB→Local export path (the one the user's NAS→/tmp
-        // copy takes) streams correctly without pre-buffering.
+    async fn smb_integration_read_stream_large_file_multi_chunk() {
+        // SMB → local byte path now goes through `open_read_stream`, then the
+        // caller writes into whatever destination. Verify that the streaming
+        // reader yields multiple chunks for a multi-MB file.
         let vol = make_docker_volume().await;
         let dir = test_dir_name();
         ensure_clean(&vol, &dir).await;
@@ -2496,35 +2123,21 @@ mod tests {
         let smb_path = format!("{}/export-large.bin", dir);
         vol.create_file(Path::new(&smb_path), &data).await.unwrap();
 
-        let local_tmp = std::env::temp_dir().join(format!("cmdr-smb-export-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&local_tmp);
-        let local_dest = local_tmp.join("export-large.bin");
+        let mut stream = vol.open_read_stream(Path::new(&smb_path)).await.unwrap();
+        assert_eq!(stream.total_size(), size as u64);
 
-        use std::sync::atomic::{AtomicU64, AtomicUsize};
-        let progress_calls = AtomicUsize::new(0);
-        let last_bytes = AtomicU64::new(0);
-
-        let bytes = vol
-            .export_to_local(Path::new(&smb_path), &local_dest, &|done, total| {
-                progress_calls.fetch_add(1, Ordering::Relaxed);
-                last_bytes.store(done, Ordering::Relaxed);
-                assert_eq!(total, size as u64);
-                std::ops::ControlFlow::Continue(())
-            })
-            .await
-            .unwrap();
-
-        assert_eq!(bytes, size as u64);
+        let mut chunks_seen = 0usize;
+        let mut readback: Vec<u8> = Vec::with_capacity(size);
+        while let Some(Ok(chunk)) = stream.next_chunk().await {
+            chunks_seen += 1;
+            readback.extend_from_slice(&chunk);
+        }
         assert!(
-            progress_calls.load(Ordering::Relaxed) >= 2,
-            "streaming should call progress multiple times for a multi-chunk file"
+            chunks_seen >= 2,
+            "streaming should yield multiple chunks for a multi-MB file"
         );
-        assert_eq!(last_bytes.load(Ordering::Relaxed), size as u64);
+        assert_eq!(readback, data);
 
-        let written = std::fs::read(&local_dest).unwrap();
-        assert_eq!(written, data);
-
-        let _ = std::fs::remove_dir_all(&local_tmp);
         ensure_clean(&vol, &dir).await;
     }
 
@@ -2557,9 +2170,10 @@ mod tests {
 
     #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    async fn smb_integration_import_from_local_streams_large_file() {
-        // Verifies the Local→SMB import path streams chunk-by-chunk rather
-        // than pre-buffering the local file into memory.
+    async fn smb_integration_write_from_stream_local_source_large_file() {
+        // Local → SMB byte path now goes through LocalPosixVolume's
+        // `open_read_stream` + SmbVolume's `write_from_stream`. Verify that
+        // multi-MB input triggers multiple progress callbacks and round-trips.
         use std::sync::atomic::{AtomicU64, AtomicUsize};
 
         let vol = make_docker_volume().await;
@@ -2573,15 +2187,19 @@ mod tests {
         let local_tmp = std::env::temp_dir().join(format!("cmdr-smb-import-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&local_tmp);
         std::fs::create_dir_all(&local_tmp).unwrap();
-        let local_source = local_tmp.join("import-large.bin");
-        std::fs::write(&local_source, &data).unwrap();
+        std::fs::write(local_tmp.join("import-large.bin"), &data).unwrap();
+
+        let local_vol = crate::file_system::volume::LocalPosixVolume::new("local-src", local_tmp.clone());
 
         let smb_path = format!("{}/import-large.bin", dir);
         let progress_calls = AtomicUsize::new(0);
         let last_bytes = AtomicU64::new(0);
 
+        let stream = local_vol.open_read_stream(Path::new("import-large.bin")).await.unwrap();
+        assert_eq!(stream.total_size(), size as u64);
+
         let bytes = vol
-            .import_from_local(&local_source, Path::new(&smb_path), &|done, total| {
+            .write_from_stream(Path::new(&smb_path), size as u64, stream, &|done, total| {
                 progress_calls.fetch_add(1, Ordering::Relaxed);
                 last_bytes.store(done, Ordering::Relaxed);
                 assert_eq!(total, size as u64);
@@ -2593,11 +2211,11 @@ mod tests {
         assert_eq!(bytes, size as u64);
         assert!(
             progress_calls.load(Ordering::Relaxed) >= 2,
-            "streaming import should call progress multiple times for a multi-chunk file"
+            "streaming write should call progress multiple times for a multi-chunk source"
         );
         assert_eq!(last_bytes.load(Ordering::Relaxed), size as u64);
 
-        // Verify content integrity by reading back through the streaming reader.
+        // Verify content integrity via the streaming reader.
         let mut stream = vol.open_read_stream(Path::new(&smb_path)).await.unwrap();
         assert_eq!(stream.total_size(), size as u64);
         let mut readback = Vec::with_capacity(size);
@@ -2665,8 +2283,8 @@ mod tests {
 
     #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
-    async fn smb_integration_import_from_local_cancel_mid_write() {
-        // Cancel partway through a multi-chunk import via progress-break.
+    async fn smb_integration_write_from_stream_cancel_mid_write() {
+        // Cancel partway through a multi-chunk write via progress-break.
         // Verifies Cancelled is returned and that the SMB session is still
         // usable for subsequent ops (writer.abort() drains in-flight WRITE
         // responses cleanly on cancel, best-effort-deletes the partial file).
@@ -2675,20 +2293,18 @@ mod tests {
         ensure_clean(&vol, &dir).await;
         vol.create_directory(Path::new(&dir)).await.unwrap();
 
-        let size = 4 * 1024 * 1024; // 4 MB, several import chunks
+        let size = 4 * 1024 * 1024; // 4 MB, several write chunks
         let data = vec![0xC3u8; size];
 
-        let local_tmp = std::env::temp_dir().join(format!("cmdr-smb-import-cancel-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&local_tmp);
-        std::fs::create_dir_all(&local_tmp).unwrap();
-        let local_source = local_tmp.join("cancel-me.bin");
-        std::fs::write(&local_source, &data).unwrap();
+        let source = InMemoryVolume::new("Source");
+        source.create_file(Path::new("/cancel-me.bin"), &data).await.unwrap();
 
         let smb_path = format!("{}/cancel-me.bin", dir);
         let call_count = std::sync::atomic::AtomicUsize::new(0);
 
+        let stream = source.open_read_stream(Path::new("/cancel-me.bin")).await.unwrap();
         let result = vol
-            .import_from_local(&local_source, Path::new(&smb_path), &|_, _| {
+            .write_from_stream(Path::new(&smb_path), size as u64, stream, &|_, _| {
                 let n = call_count.fetch_add(1, Ordering::Relaxed);
                 if n >= 1 {
                     std::ops::ControlFlow::Break(())
@@ -2706,7 +2322,6 @@ mod tests {
         // The session must still work after cancel.
         let _ = vol.list_directory(Path::new(&dir), None).await.unwrap();
 
-        let _ = std::fs::remove_dir_all(&local_tmp);
         ensure_clean(&vol, &dir).await;
     }
 }

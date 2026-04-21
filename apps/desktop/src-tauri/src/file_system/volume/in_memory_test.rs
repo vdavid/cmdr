@@ -670,90 +670,31 @@ async fn test_delete_multiple_files() {
 }
 
 #[tokio::test]
-async fn test_export_to_local_creates_file() {
+async fn test_open_read_stream_missing_file() {
     let volume = InMemoryVolume::new("Test");
-    volume.create_file(Path::new("/data.txt"), b"export me").await.unwrap();
-
-    let temp = std::env::temp_dir().join("cmdr_inmem_export_test");
-    let _ = std::fs::remove_dir_all(&temp);
-    std::fs::create_dir_all(&temp).unwrap();
-
-    let bytes = volume
-        .export_to_local(Path::new("/data.txt"), &temp.join("data.txt"), &|_, _| {
-            std::ops::ControlFlow::Continue(())
-        })
-        .await
-        .unwrap();
-    assert_eq!(bytes, 9);
-    assert_eq!(std::fs::read_to_string(temp.join("data.txt")).unwrap(), "export me");
-
-    let _ = std::fs::remove_dir_all(&temp);
-}
-
-#[tokio::test]
-async fn test_import_from_local_creates_entry() {
-    let volume = InMemoryVolume::new("Test");
-
-    let temp = std::env::temp_dir().join("cmdr_inmem_import_test");
-    let _ = std::fs::remove_dir_all(&temp);
-    std::fs::create_dir_all(&temp).unwrap();
-    std::fs::write(temp.join("src.txt"), "import me").unwrap();
-
-    let bytes = volume
-        .import_from_local(&temp.join("src.txt"), Path::new("/imported.txt"), &|_, _| {
-            std::ops::ControlFlow::Continue(())
-        })
-        .await
-        .unwrap();
-    assert_eq!(bytes, 9);
-    assert!(volume.exists(Path::new("/imported.txt")).await);
-
-    // Verify via streaming
-    let mut stream = volume.open_read_stream(Path::new("/imported.txt")).await.unwrap();
-    let chunk = stream.next_chunk().await.unwrap().unwrap();
-    assert_eq!(chunk, b"import me");
-
-    let _ = std::fs::remove_dir_all(&temp);
-}
-
-#[tokio::test]
-async fn test_export_not_found() {
-    let volume = InMemoryVolume::new("Test");
-    let result = volume
-        .export_to_local(
-            Path::new("/nope.txt"),
-            &std::env::temp_dir().join("cmdr_nope"),
-            &|_, _| std::ops::ControlFlow::Continue(()),
-        )
-        .await;
+    let result = volume.open_read_stream(Path::new("/nope.txt")).await;
     assert!(matches!(result, Err(VolumeError::NotFound(_))));
 }
 
 #[tokio::test]
-async fn test_round_trip_export_import() {
+async fn test_round_trip_stream_copy() {
+    // Cross-volume round-trip via the unified streaming path: drive the
+    // source's read stream into the destination's `write_from_stream`.
     let source = InMemoryVolume::new("Source");
     let dest = InMemoryVolume::new("Dest");
 
     let data: Vec<u8> = (0..=255).cycle().take(50_000).collect();
     source.create_file(Path::new("/payload.bin"), &data).await.unwrap();
 
-    let temp = std::env::temp_dir().join("cmdr_roundtrip_test");
-    let _ = std::fs::remove_dir_all(&temp);
-    std::fs::create_dir_all(&temp).unwrap();
-
-    // Export from source → local
-    source
-        .export_to_local(Path::new("/payload.bin"), &temp.join("payload.bin"), &|_, _| {
+    let stream = source.open_read_stream(Path::new("/payload.bin")).await.unwrap();
+    let size = stream.total_size();
+    let bytes = dest
+        .write_from_stream(Path::new("/payload.bin"), size, stream, &|_, _| {
             std::ops::ControlFlow::Continue(())
         })
         .await
         .unwrap();
-    // Import from local → dest
-    dest.import_from_local(&temp.join("payload.bin"), Path::new("/payload.bin"), &|_, _| {
-        std::ops::ControlFlow::Continue(())
-    })
-    .await
-    .unwrap();
+    assert_eq!(bytes, data.len() as u64);
 
     // Verify content integrity via streaming
     let mut stream = dest.open_read_stream(Path::new("/payload.bin")).await.unwrap();
@@ -762,8 +703,6 @@ async fn test_round_trip_export_import() {
         reassembled.extend_from_slice(&chunk);
     }
     assert_eq!(reassembled, data);
-
-    let _ = std::fs::remove_dir_all(&temp);
 }
 
 // ============================================================================

@@ -519,69 +519,6 @@ impl Volume for MtpVolume {
         })
     }
 
-    fn export_to_local<'a>(
-        &'a self,
-        source: &'a Path,
-        local_dest: &'a Path,
-        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
-    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let mtp_path = self.to_mtp_path(source);
-            let local_dest = local_dest.to_path_buf();
-
-            debug!(
-                "MtpVolume::export_to_local: device={}, storage={}, source={}, dest={}",
-                self.device_id,
-                self.storage_id,
-                mtp_path,
-                local_dest.display()
-            );
-
-            let operation_id = format!("export-{}", uuid::Uuid::new_v4());
-
-            connection_manager()
-                .download_file_with_progress(
-                    &self.device_id,
-                    self.storage_id,
-                    &mtp_path,
-                    &local_dest,
-                    None,
-                    &operation_id,
-                    Some(&|bytes_done, bytes_total| on_progress(bytes_done, bytes_total)),
-                )
-                .await
-                .map(|result| result.bytes_transferred)
-                .map_err(map_mtp_error)
-        })
-    }
-
-    fn import_from_local<'a>(
-        &'a self,
-        local_source: &'a Path,
-        dest: &'a Path,
-        _on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
-    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            // upload_recursive expects the destination FOLDER, not the full path.
-            // It derives the filename from the source. So we need to extract the parent.
-            let dest_folder = dest.parent().map(|p| self.to_mtp_path(p)).unwrap_or_default();
-            let local_source = local_source.to_path_buf();
-
-            debug!(
-                "MtpVolume::import_from_local: device={}, storage={}, source={}, dest_folder={}",
-                self.device_id,
-                self.storage_id,
-                local_source.display(),
-                dest_folder
-            );
-
-            connection_manager()
-                .upload_recursive(&self.device_id, self.storage_id, &local_source, &dest_folder)
-                .await
-                .map_err(map_mtp_error)
-        })
-    }
-
     fn scan_for_conflicts<'a>(
         &'a self,
         source_items: &'a [SourceItemInfo],

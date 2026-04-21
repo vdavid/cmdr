@@ -519,55 +519,6 @@ impl Volume for InMemoryVolume {
         })
     }
 
-    fn export_to_local<'a>(
-        &'a self,
-        source: &'a Path,
-        local_dest: &'a Path,
-        _on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
-    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let normalized = self.normalize(source);
-            let entries = self.entries.read().map_err(|_| VolumeError::IoError {
-                message: "Lock poisoned".into(),
-                raw_os_error: None,
-            })?;
-
-            let entry = entries
-                .get(&normalized)
-                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))?;
-
-            let data = entry.content.as_deref().unwrap_or(&[]);
-            if let Some(parent) = local_dest.parent() {
-                std::fs::create_dir_all(parent).map_err(|e| VolumeError::IoError {
-                    message: e.to_string(),
-                    raw_os_error: None,
-                })?;
-            }
-            std::fs::write(local_dest, data).map_err(|e| VolumeError::IoError {
-                message: e.to_string(),
-                raw_os_error: None,
-            })?;
-            Ok(data.len() as u64)
-        })
-    }
-
-    fn import_from_local<'a>(
-        &'a self,
-        local_source: &'a Path,
-        dest: &'a Path,
-        _on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
-    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let data = std::fs::read(local_source).map_err(|e| VolumeError::IoError {
-                message: e.to_string(),
-                raw_os_error: None,
-            })?;
-            let len = data.len() as u64;
-            self.create_file(dest, &data).await?;
-            Ok(len)
-        })
-    }
-
     #[cfg(feature = "playwright-e2e")]
     fn inject_error(&self, errno: i32) {
         *self.injected_error.lock().unwrap() = Some(errno);

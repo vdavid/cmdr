@@ -159,6 +159,11 @@ impl MtpConnectionManager {
     /// # Returns
     ///
     /// Total bytes transferred.
+    ///
+    /// Currently unused since `MtpVolume::import_from_local` was removed
+    /// in Phase 4; cross-volume copies now stream via `write_from_stream`.
+    /// Kept as a reference for future batch-upload work.
+    #[allow(dead_code, reason = "Retained for future batch-upload API — see Phase 4 notes")]
     pub async fn upload_recursive(
         &self,
         device_id: &str,
