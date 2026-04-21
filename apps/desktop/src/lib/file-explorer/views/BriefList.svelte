@@ -541,7 +541,7 @@
                                 class:is-selected={selectedIndices.has(globalIndex)}
                                 class:is-striped={stripedRows && globalIndex % 2 === 1}
                                 data-filename={file.name}
-                                data-drop-target-path={file.isDirectory && file.name !== '..' ? file.path : undefined}
+                                data-drop-target-path={file.isDirectory ? file.path : undefined}
                                 use:tooltip={buildDirTooltip(file)}
                                 style="height: {rowHeight}px;"
                                 onmousedown={(e: MouseEvent) => {

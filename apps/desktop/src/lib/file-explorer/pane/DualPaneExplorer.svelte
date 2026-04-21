@@ -122,6 +122,7 @@
     import { loadPersistedState } from './initialization'
     import { getDirectorySortMode } from '$lib/settings/reactive-settings.svelte'
     import { resolveDropTarget } from '../drag/drop-target-hit-testing'
+    import { isInvalidSelfDescendantDrop } from '../drag/drop-target-validation'
     import DragOverlay from '../drag/DragOverlay.svelte'
     import { showOverlay, updateOverlay, hideOverlay, type OverlayFileInfo } from '../drag/drag-overlay.svelte.js'
     import { getCachedIcon } from '$lib/icon-cache'
@@ -227,6 +228,11 @@
     // Folder-level drop target state: when hovering over a directory row
     let dropTargetFolderPath = $state<string | null>(null)
     let dropTargetFolderEl = $state<HTMLElement | null>(null)
+
+    // Paths being dragged for the current drag session. Captured on drag-enter,
+    // cleared on drag-leave/drop. Used to block dropping onto the source itself
+    // or into one of its descendants.
+    let currentDragSourcePaths: string[] = []
 
     // Refs for pane wrapper elements (used for hit-testing drop targets)
     const paneWrapperEls = $state<Record<'left' | 'right', HTMLDivElement | undefined>>({
@@ -829,11 +835,25 @@
         handleDragOver(position)
     }
 
+    /** Resolves the effective target path for a drop target (folder path or pane's current path). */
+    function targetPathOf(resolved: ReturnType<typeof resolveDropTarget>): string | null {
+        if (!resolved) return null
+        if (resolved.type === 'folder') return resolved.path
+        return getPanePath(resolved.paneId)
+    }
+
     /** Updates drop-target highlights and overlay as the cursor moves during a drag. */
     function handleDragOver(position: { x: number; y: number }) {
         const resolved = resolveDropTarget(position.x, position.y, paneWrapperEls.left, paneWrapperEls.right)
 
-        if (resolved?.type === 'folder') {
+        // Block drops onto the source itself or into one of its descendants.
+        const effectiveTarget = targetPathOf(resolved)
+        const isInvalidSelfDrop =
+            effectiveTarget !== null && isInvalidSelfDescendantDrop(effectiveTarget, currentDragSourcePaths)
+
+        if (isInvalidSelfDrop) {
+            clearDropTargets()
+        } else if (resolved?.type === 'folder') {
             dropTargetPane = null
             dropTargetFolderPath = resolved.path
             dropTargetFolderEl = resolved.element
@@ -848,8 +868,9 @@
         }
 
         // Determine if dropping is allowed
-        const isSelfNoOp = resolved?.type === 'pane' && getIsDraggingFromSelf() && resolved.paneId === focusedPane
-        const canDrop = resolved !== null && !isSelfNoOp
+        const isSelfPaneNoOp =
+            resolved?.type === 'pane' && getIsDraggingFromSelf() && resolved.paneId === focusedPane
+        const canDrop = resolved !== null && !isSelfPaneNoOp && !isInvalidSelfDrop
         const targetName = resolveTargetDisplayName(resolved, dropTargetFolderPath)
         const operation = getIsAltHeld() ? 'move' : 'copy'
 
@@ -872,6 +893,10 @@
         const targetPane = resolved.paneId
         // For same-pane pane-level drops (not folder), suppress (no-op)
         if (resolved.type === 'pane' && getIsDraggingFromSelf() && targetPane === focusedPane) return
+
+        // Guard against drops onto the source itself or into its descendants
+        const effectiveTarget = targetPathOf(resolved)
+        if (effectiveTarget !== null && isInvalidSelfDescendantDrop(effectiveTarget, paths)) return
 
         handleFileDrop(paths, targetPane, resolved.type === 'folder' ? (folderPath ?? undefined) : undefined, operation)
     }
@@ -998,6 +1023,7 @@
                 if (getIsDraggingFromSelf() && !matchesSelfDragFingerprint(paths)) {
                     storeSelfDragFingerprint(paths)
                 }
+                currentDragSourcePaths = paths
                 handleDragEnter(paths, toViewportPosition(event.payload.position))
             } else if (type === 'over') {
                 handleDragOver(toViewportPosition(event.payload.position))
@@ -1007,6 +1033,7 @@
                 clearSelfDragFingerprint()
                 void endSelfDragSession()
                 externalDragHasLargeImage = false
+                currentDragSourcePaths = []
             } else {
                 // 'leave' — cursor left the window or drag was cancelled
                 clearDropTargets()
@@ -1017,6 +1044,7 @@
                 // SELF_DRAG_ACTIVE + rich image path to swap images on window exit.
                 // State is cleaned up when startDrag resolves (finally block) or on drop.
                 externalDragHasLargeImage = false
+                currentDragSourcePaths = []
                 // Do NOT clear the fingerprint here — that's the key to re-entry detection
             }
         })

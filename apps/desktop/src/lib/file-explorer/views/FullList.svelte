@@ -442,7 +442,7 @@
                         class:is-selected={selectedIndices.has(globalIndex)}
                         class:is-striped={stripedRows && globalIndex % 2 === 1}
                         data-filename={file.name}
-                        data-drop-target-path={file.isDirectory && file.name !== '..' ? file.path : undefined}
+                        data-drop-target-path={file.isDirectory ? file.path : undefined}
                         style="height: {rowHeight}px; grid-template-columns: 16px 1fr 60px 115px {dateColumnWidth}px;"
                         onmousedown={(e: MouseEvent) => {
                             handleMouseDown(e, globalIndex)

@@ -43,7 +43,8 @@ describe('resolveDropTarget', () => {
 
     const parentEntry = document.createElement('div')
     parentEntry.className = 'file-entry'
-    // ".." entry has no data-drop-target-path
+    // ".." entry resolves to the parent folder (a normal folder drop target)
+    parentEntry.setAttribute('data-drop-target-path', '/Users/test')
     parentEntry.id = 'left-parent'
     leftPane.appendChild(parentEntry)
 
@@ -104,12 +105,18 @@ describe('resolveDropTarget', () => {
     expect(result).toEqual({ type: 'pane', paneId: 'left' })
   })
 
-  it('returns pane target when cursor is over ".." entry', () => {
-    mockElementFromPoint(getElement('left-parent'))
+  it('returns a folder target pointing to the parent path when cursor is over ".." entry', () => {
+    const el = getElement('left-parent')
+    mockElementFromPoint(el)
 
     const result = resolveDropTarget(100, 50, leftPane, rightPane)
 
-    expect(result).toEqual({ type: 'pane', paneId: 'left' })
+    expect(result).toEqual({
+      type: 'folder',
+      path: '/Users/test',
+      element: el,
+      paneId: 'left',
+    })
   })
 
   it('returns pane target when cursor is over pane background', () => {

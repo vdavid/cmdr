@@ -25,6 +25,7 @@ Uses Tauri 2's `onDragDropEvent` (window-level) with DOM hit-testing to resolve 
 Key files:
 
 - `drop-target-hit-testing.ts` — Pure logic: `document.elementFromPoint()` + `data-drop-target-path` walk
+- `drop-target-validation.ts` — Pure logic: blocks drops onto the source itself or into a descendant
 - `DragOverlay.svelte` + `drag-overlay.svelte.ts` — Floating label near cursor
 - `../modifier-key-tracker.svelte.ts` — Alt/Option state (DragDropEvent doesn't include modifiers; lives in parent
   `file-explorer/` directory)
@@ -51,6 +52,13 @@ Key files:
   - **Why**: Drag-and-drop is imprecise. Default operation is copy (safer than move).
 - **Decision**: Same-pane pane-level drops are no-ops
   - **Why**: Dropping onto a subfolder within the same pane is valid.
+- **Decision**: Block drops onto the source itself or into a descendant
+  - **Why**: Dragging `/a/b` onto `/a/b` or into `/a/b/c` can't produce a sensible result. Invalid targets don't
+    highlight and show "Can't drop here" in the overlay, matching the pre-existing same-pane no-op behavior. The check
+    applies to both folder-row and pane-level targets, and covers external drags too.
+- **Decision**: The ".." row is a regular folder drop target pointing to the parent path
+  - **Why**: Gives users a quick "drop into parent" gesture. The source-descendant check exempts it naturally (the
+    ancestor isn't a descendant of its children).
 - **Decision**: Rich PNG drag image for external visibility, transparent 1x1 inside window
   - **Why**: Self-drags swap images mid-drag via `setDraggingFrame:contents:` (entered → transparent, exited → rich).
     DOM overlay provides feedback inside.
