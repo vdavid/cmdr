@@ -63,6 +63,13 @@ pub struct CopyScanResult {
     pub dir_count: usize,
     /// Total size in bytes.
     pub total_bytes: u64,
+    /// Whether the scanned top-level path is a directory (vs a single file).
+    ///
+    /// Populated by each volume's `scan_for_copy` using the stat it already does
+    /// for the top-level path. Callers (the copy pipeline) reuse this instead of
+    /// issuing a separate `is_directory` probe per source, saving one round-trip
+    /// per file on network-backed volumes (SMB, MTP).
+    pub top_level_is_directory: bool,
 }
 
 /// A conflict detected during pre-copy scanning: a source item that already exists at the destination.
@@ -506,6 +513,9 @@ pub trait Volume: Send + Sync {
                 file_count: 0,
                 dir_count: 0,
                 total_bytes: 0,
+                // Aggregate over multiple paths — meaningless for a batch.
+                // Callers that need per-path type should use `scan_for_copy`.
+                top_level_is_directory: false,
             };
             for path in paths {
                 let scan = self.scan_for_copy(path).await?;

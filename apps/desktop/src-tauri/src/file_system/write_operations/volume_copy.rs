@@ -15,6 +15,7 @@
 //! - Local → MTP: Uses volume.import_from_local()
 //! - MTP → Local: Uses volume.export_to_local()
 
+use std::collections::HashMap;
 use std::future::Future;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
@@ -297,6 +298,11 @@ async fn copy_volumes_with_progress(
     let mut total_files;
     let mut total_bytes;
 
+    // Per-source `is_directory` hint collected during the scan, so the copy
+    // loop doesn't need to re-stat each source path via `is_directory`.
+    // Saves one round-trip per file on network-backed volumes (SMB, MTP).
+    let mut source_is_directory: HashMap<PathBuf, bool> = HashMap::with_capacity(source_paths.len());
+
     if let Some(cached) = config.preview_id.as_deref().and_then(take_cached_scan_result) {
         total_files = cached.file_count;
         total_bytes = cached.total_bytes;
@@ -306,6 +312,13 @@ async fn copy_volumes_with_progress(
             total_files,
             total_bytes
         );
+        // TODO: extend the preview cache to carry per-source type so this branch
+        // doesn't need to re-stat. For now, the preview path already saved one
+        // scan per source — this extra stat is bounded by source count.
+        for source_path in source_paths {
+            let is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
+            source_is_directory.insert(source_path.clone(), is_dir);
+        }
     } else {
         log::debug!(
             "copy_volumes_with_progress: scanning sources for operation_id={}",
@@ -341,6 +354,7 @@ async fn copy_volumes_with_progress(
             total_files += scan.file_count;
             total_dirs += scan.dir_count;
             total_bytes += scan.total_bytes;
+            source_is_directory.insert(source_path.clone(), scan.top_level_is_directory);
         }
 
         log::debug!(
@@ -466,7 +480,12 @@ async fn copy_volumes_with_progress(
                     dest_path.to_path_buf()
                 };
                 if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path).await {
-                    let source_is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
+                    // Reuse the per-source hint from the scan instead of
+                    // re-statting. If the hint is missing (e.g., cached preview
+                    // branch that didn't populate it), default to false —
+                    // behaves as if the source is a file (worst case: one extra
+                    // conflict prompt vs. silent merge for dir-over-dir).
+                    let source_is_dir = source_is_directory.get(source_path).copied().unwrap_or(false);
                     let dest_is_dir = dest_meta.is_directory;
                     if source_is_dir && dest_is_dir {
                         log::debug!(
@@ -527,6 +546,7 @@ async fn copy_volumes_with_progress(
                 let source_owned = source_path.clone();
                 let dest_owned = dest_item_path.clone();
                 let file_name_owned = file_name.clone();
+                let source_is_dir_hint = source_is_directory.get(source_path).copied().unwrap_or(false);
 
                 in_flight.push(Box::pin(async move {
                     // Per-task `last_file_bytes` tracks bytes reported for the
@@ -572,6 +592,7 @@ async fn copy_volumes_with_progress(
                     let result = copy_single_path(
                         &src_vol,
                         &source_owned,
+                        source_is_dir_hint,
                         &dst_vol,
                         &dest_owned,
                         &state_clone,
@@ -649,7 +670,9 @@ async fn copy_volumes_with_progress(
             };
 
             if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path).await {
-                let source_is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
+                // Reuse the per-source hint from the scan; see note in the
+                // concurrent path for the fallback.
+                let source_is_dir = source_is_directory.get(source_path).copied().unwrap_or(false);
                 let dest_is_dir = dest_meta.is_directory;
                 if source_is_dir && dest_is_dir {
                     log::debug!(
@@ -743,9 +766,11 @@ async fn copy_volumes_with_progress(
 
             last_dest_path = Some(dest_item_path.clone());
 
+            let source_is_dir_hint = source_is_directory.get(source_path).copied().unwrap_or(false);
             match copy_single_path(
                 &source_volume,
                 source_path,
+                source_is_dir_hint,
                 &dest_volume,
                 &dest_item_path,
                 state,

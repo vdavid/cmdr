@@ -120,9 +120,14 @@ pub async fn move_between_volumes(
 
                 let mut dest_item = dest_path.join(file_name);
 
+                // Probe once and reuse for both conflict detection and copy_single_path.
+                // Volume-move doesn't have a scan phase to cache this, so one stat per
+                // source is unavoidable here. Still cheaper than the old code path that
+                // re-statted inside `copy_single_path`.
+                let source_is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
+
                 // Check for conflict: does destination already exist?
                 if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item).await {
-                    let source_is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
                     let dest_is_dir = dest_meta.is_directory;
 
                     if source_is_dir && dest_is_dir {
@@ -180,6 +185,7 @@ pub async fn move_between_volumes(
                 let bytes = copy_single_path(
                     &source_volume,
                     source_path,
+                    source_is_dir,
                     &dest_volume,
                     &dest_item,
                     &state,

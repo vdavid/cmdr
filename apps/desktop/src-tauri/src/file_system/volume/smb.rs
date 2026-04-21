@@ -234,6 +234,10 @@ impl SmbVolume {
                 file_count: 0,
                 dir_count: 0,
                 total_bytes: 0,
+                // Root path is always a directory; the file branch below
+                // overwrites this to `false`. Subdirectory recursions also
+                // return `true` — only the leaf file branch sets `false`.
+                top_level_is_directory: true,
             };
 
             // Stat to determine if this is a file or directory
@@ -250,6 +254,7 @@ impl SmbVolume {
                 if !info.is_directory {
                     result.file_count = 1;
                     result.total_bytes = info.size;
+                    result.top_level_is_directory = false;
                     return Ok(result);
                 }
             }

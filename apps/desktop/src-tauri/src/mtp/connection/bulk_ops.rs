@@ -35,7 +35,9 @@ impl MtpConnectionManager {
         match self.list_directory(device_id, storage_id, path).await {
             Ok(entries) if !entries.is_empty() => {
                 // Directory with contents — recurse using entries directly
-                self.scan_entries_recursive(device_id, storage_id, entries).await
+                let mut result = self.scan_entries_recursive(device_id, storage_id, entries).await?;
+                result.top_level_is_directory = true;
+                Ok(result)
             }
             Ok(_) => {
                 // Empty result: either an empty directory or a file (some MTP devices
@@ -48,6 +50,7 @@ impl MtpConnectionManager {
                     file_count: 0,
                     dir_count: 1,
                     total_bytes: 0,
+                    top_level_is_directory: true,
                 })
             }
             Err(e) => {
@@ -109,6 +112,10 @@ impl MtpConnectionManager {
             file_count,
             dir_count,
             total_bytes,
+            // `scan_entries_recursive` is only called on known-directory input
+            // (caller already listed the path). Setting `true` keeps downstream
+            // callers from re-issuing a type probe.
+            top_level_is_directory: true,
         })
     }
 
@@ -141,6 +148,7 @@ impl MtpConnectionManager {
             file_count: 1,
             dir_count: 0,
             total_bytes: entry.size.unwrap_or(0),
+            top_level_is_directory: false,
         })
     }
 

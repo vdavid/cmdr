@@ -275,8 +275,14 @@ impl Volume for LocalPosixVolume {
                     }
                 }
 
+                // Top-level stat (also fills in single-file / empty-dir edge cases).
+                // This runs regardless so we can populate `top_level_is_directory`
+                // without re-statting downstream.
+                let top_meta = std::fs::metadata(&abs_path).ok();
+                let top_level_is_directory = top_meta.as_ref().map(|m| m.is_dir()).unwrap_or(false);
+
                 // If the path is a single file, count it
-                if let Ok(meta) = std::fs::metadata(&abs_path) {
+                if let Some(ref meta) = top_meta {
                     if meta.is_file() && file_count == 0 {
                         file_count = 1;
                         total_bytes = meta.len();
@@ -289,6 +295,7 @@ impl Volume for LocalPosixVolume {
                     file_count,
                     dir_count,
                     total_bytes,
+                    top_level_is_directory,
                 })
             })
             .await

@@ -468,6 +468,7 @@ impl Volume for MtpVolume {
                     file_count: 0,
                     dir_count: 0,
                     total_bytes: 0,
+                    top_level_is_directory: false,
                 });
             }
 
@@ -490,6 +491,8 @@ impl Volume for MtpVolume {
                 file_count: 0,
                 dir_count: 0,
                 total_bytes: 0,
+                // Aggregate over multiple paths — not meaningful for a batch.
+                top_level_is_directory: false,
             };
 
             for (parent, children) in &by_parent {
