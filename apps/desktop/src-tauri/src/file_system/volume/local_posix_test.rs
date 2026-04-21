@@ -102,11 +102,11 @@ fn test_supports_watching_returns_true() {
 }
 
 #[test]
-fn test_supports_streaming_returns_false() {
-    // LocalPosixVolume uses the default implementation which returns false.
-    // Streaming is primarily for MTP-to-MTP transfers.
+fn test_supports_streaming_returns_true() {
+    // Since Phase 4, LocalPosixVolume exposes open_read_stream and
+    // write_from_stream so cross-volume copies can pipe through it.
     let volume = LocalPosixVolume::new("Test", "/tmp");
-    assert!(!volume.supports_streaming());
+    assert!(volume.supports_streaming());
 }
 
 #[tokio::test]
@@ -350,83 +350,67 @@ async fn test_scan_for_copy_directory() {
 }
 
 #[tokio::test]
-async fn test_export_to_local_single_file() {
+async fn test_open_read_stream_single_file() {
     use std::fs;
 
-    let src_dir = std::env::temp_dir().join("cmdr_export_src_test");
-    let dst_dir = std::env::temp_dir().join("cmdr_export_dst_test");
+    let src_dir = std::env::temp_dir().join("cmdr_read_stream_src_test");
     let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
     fs::create_dir_all(&src_dir).unwrap();
-    fs::create_dir_all(&dst_dir).unwrap();
 
     fs::write(src_dir.join("source.txt"), "Test content").unwrap();
 
     let volume = LocalPosixVolume::new("Test", src_dir.to_str().unwrap());
-    let bytes = volume
-        .export_to_local(Path::new("source.txt"), &dst_dir.join("dest.txt"), &|_, _| {
-            std::ops::ControlFlow::Continue(())
-        })
-        .await
-        .unwrap();
+    let mut stream = volume.open_read_stream(Path::new("source.txt")).await.unwrap();
+    assert_eq!(stream.total_size(), 12);
 
-    assert_eq!(bytes, 12); // "Test content" is 12 bytes
-    assert_eq!(fs::read_to_string(dst_dir.join("dest.txt")).unwrap(), "Test content");
+    let mut content = Vec::new();
+    while let Some(chunk) = stream.next_chunk().await {
+        content.extend_from_slice(&chunk.unwrap());
+    }
+    assert_eq!(content, b"Test content");
 
     let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 #[tokio::test]
-async fn test_export_to_local_directory() {
+async fn test_open_read_stream_rejects_directory() {
     use std::fs;
 
-    let src_dir = std::env::temp_dir().join("cmdr_export_dir_src_test");
-    let dst_dir = std::env::temp_dir().join("cmdr_export_dir_dst_test");
+    let src_dir = std::env::temp_dir().join("cmdr_read_stream_dir_test");
     let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
     fs::create_dir_all(&src_dir).unwrap();
-    fs::create_dir_all(&dst_dir).unwrap();
 
-    // Create source directory with files
-    let source_subdir = src_dir.join("sourcedir");
-    fs::create_dir(&source_subdir).unwrap();
-    fs::write(source_subdir.join("file1.txt"), "AAA").unwrap();
-    fs::write(source_subdir.join("file2.txt"), "BBBBB").unwrap();
+    // Create a nested dir so we can attempt to stream it.
+    fs::create_dir(src_dir.join("sourcedir")).unwrap();
 
     let volume = LocalPosixVolume::new("Test", src_dir.to_str().unwrap());
-    let bytes = volume
-        .export_to_local(Path::new("sourcedir"), &dst_dir.join("destdir"), &|_, _| {
-            std::ops::ControlFlow::Continue(())
-        })
-        .await
-        .unwrap();
-
-    assert_eq!(bytes, 8); // 3 + 5 bytes
-    assert!(dst_dir.join("destdir").is_dir());
-    assert_eq!(fs::read_to_string(dst_dir.join("destdir/file1.txt")).unwrap(), "AAA");
-    assert_eq!(fs::read_to_string(dst_dir.join("destdir/file2.txt")).unwrap(), "BBBBB");
+    let result = volume.open_read_stream(Path::new("sourcedir")).await;
+    assert!(result.is_err(), "streaming a directory should fail");
 
     let _ = fs::remove_dir_all(&src_dir);
-    let _ = fs::remove_dir_all(&dst_dir);
 }
 
 #[tokio::test]
-async fn test_import_from_local_single_file() {
+async fn test_write_from_stream_creates_file() {
+    use super::InMemoryVolume;
     use std::fs;
 
-    let local_dir = std::env::temp_dir().join("cmdr_import_local_test");
-    let vol_dir = std::env::temp_dir().join("cmdr_import_vol_test");
-    let _ = fs::remove_dir_all(&local_dir);
+    let vol_dir = std::env::temp_dir().join("cmdr_write_from_stream_test");
     let _ = fs::remove_dir_all(&vol_dir);
-    fs::create_dir_all(&local_dir).unwrap();
     fs::create_dir_all(&vol_dir).unwrap();
 
-    fs::write(local_dir.join("local.txt"), "Imported content").unwrap();
+    // Source: an in-memory file that we stream into LocalPosix.
+    let source = InMemoryVolume::new("Source");
+    source
+        .create_file(Path::new("/local.txt"), b"Imported content")
+        .await
+        .unwrap();
 
+    let stream = source.open_read_stream(Path::new("/local.txt")).await.unwrap();
+    let size = stream.total_size();
     let volume = LocalPosixVolume::new("Test", vol_dir.to_str().unwrap());
     let bytes = volume
-        .import_from_local(&local_dir.join("local.txt"), Path::new("imported.txt"), &|_, _| {
+        .write_from_stream(Path::new("imported.txt"), size, stream, &|_, _| {
             std::ops::ControlFlow::Continue(())
         })
         .await
@@ -438,7 +422,6 @@ async fn test_import_from_local_single_file() {
         "Imported content"
     );
 
-    let _ = fs::remove_dir_all(&local_dir);
     let _ = fs::remove_dir_all(&vol_dir);
 }
 

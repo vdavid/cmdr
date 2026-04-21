@@ -1,7 +1,8 @@
 //! Local POSIX file system volume implementation.
 
 use super::{
-    CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeScanner, VolumeWatcher,
+    CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, VolumeScanner,
+    VolumeWatcher,
 };
 use crate::file_system::listing::{FileEntry, get_single_entry, list_directory_core};
 use crate::indexing::scanner::{self, ScanConfig, ScanError, ScanHandle, ScanSummary};
@@ -295,33 +296,102 @@ impl Volume for LocalPosixVolume {
         })
     }
 
-    fn export_to_local<'a>(
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+
+    fn open_read_stream<'a>(
         &'a self,
-        source: &'a Path,
-        local_dest: &'a Path,
-        _on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
-    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
-        let src_abs = self.resolve(source);
-        let local_dest = local_dest.to_path_buf();
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        let abs_path = self.resolve(path);
         Box::pin(async move {
-            spawn_blocking(move || copy_recursive(&src_abs, &local_dest))
-                .await
-                .unwrap()
+            spawn_blocking(move || {
+                let metadata = std::fs::metadata(&abs_path)?;
+                if metadata.is_dir() {
+                    return Err(VolumeError::IoError {
+                        message: "Cannot stream a directory".into(),
+                        raw_os_error: None,
+                    });
+                }
+                let total_size = metadata.len();
+                let file = std::fs::File::open(&abs_path)?;
+                Ok(Box::new(LocalPosixReadStream {
+                    file: Some(file),
+                    total_size,
+                    bytes_read: 0,
+                }) as Box<dyn VolumeReadStream>)
+            })
+            .await
+            .unwrap()
         })
     }
 
-    fn import_from_local<'a>(
+    fn write_from_stream<'a>(
         &'a self,
-        local_source: &'a Path,
         dest: &'a Path,
-        _on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+        size: u64,
+        mut stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
     ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
-        let local_source = local_source.to_path_buf();
         let dest_abs = self.resolve(dest);
         Box::pin(async move {
-            spawn_blocking(move || copy_recursive(&local_source, &dest_abs))
+            // Ensure parent directory exists
+            if let Some(parent) = dest_abs.parent() {
+                let parent = parent.to_path_buf();
+                spawn_blocking(move || std::fs::create_dir_all(&parent))
+                    .await
+                    .unwrap()
+                    .map_err(VolumeError::from)?;
+            }
+
+            // Open destination file on the blocking pool.
+            let dest_for_open = dest_abs.clone();
+            let mut file = spawn_blocking(move || std::fs::File::create(&dest_for_open))
                 .await
                 .unwrap()
+                .map_err(VolumeError::from)?;
+
+            let mut bytes_written = 0u64;
+            while let Some(chunk_result) = stream.next_chunk().await {
+                let chunk = chunk_result?;
+                if chunk.is_empty() {
+                    continue;
+                }
+                let chunk_len = chunk.len() as u64;
+
+                // Write the chunk on the blocking pool.
+                let (file_ret, write_res) = spawn_blocking(move || {
+                    use std::io::Write;
+                    let res = file.write_all(&chunk);
+                    (file, res)
+                })
+                .await
+                .unwrap();
+                file = file_ret;
+                write_res.map_err(VolumeError::from)?;
+
+                bytes_written += chunk_len;
+
+                if on_progress(bytes_written, size) == std::ops::ControlFlow::Break(()) {
+                    // Drop the file handle and try to clean up the partial file.
+                    drop(file);
+                    let partial = dest_abs.clone();
+                    let _ = spawn_blocking(move || std::fs::remove_file(&partial)).await;
+                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                }
+            }
+
+            // Flush and close on the blocking pool.
+            let flush_res = spawn_blocking(move || {
+                use std::io::Write;
+                file.flush()
+            })
+            .await
+            .unwrap();
+            flush_res.map_err(VolumeError::from)?;
+
+            Ok(bytes_written)
         })
     }
 
@@ -416,30 +486,65 @@ impl VolumeWatcher for LocalPosixWatcher {
     }
 }
 
-/// Recursively copies a file or directory from source to destination.
-/// Returns total bytes copied.
-fn copy_recursive(source: &Path, dest: &Path) -> Result<u64, VolumeError> {
-    let meta = std::fs::metadata(source)?;
-    let mut total_bytes = 0;
+/// Streaming reader for `LocalPosixVolume` files.
+///
+/// Reads the file in 1 MiB chunks on the blocking thread pool via
+/// `tokio::task::spawn_blocking`. Each `next_chunk` call hands the file handle
+/// to the blocking pool, reads one chunk, and returns ownership along with the
+/// data.
+struct LocalPosixReadStream {
+    file: Option<std::fs::File>,
+    total_size: u64,
+    bytes_read: u64,
+}
 
-    if meta.is_file() {
-        // Copy single file
-        std::fs::copy(source, dest)?;
-        total_bytes = meta.len();
-    } else if meta.is_dir() {
-        // Create destination directory
-        std::fs::create_dir_all(dest)?;
+/// 1 MiB chunks — matches `chunked_copy.rs`'s constant.
+const LOCAL_STREAM_CHUNK_SIZE: usize = 1024 * 1024;
 
-        // Copy all contents
-        for entry in std::fs::read_dir(source)? {
-            let entry = entry?;
-            let src_path = entry.path();
-            let dest_path = dest.join(entry.file_name());
-            total_bytes += copy_recursive(&src_path, &dest_path)?;
-        }
+impl VolumeReadStream for LocalPosixReadStream {
+    fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
+        Box::pin(async move {
+            let mut file = self.file.take()?;
+
+            let (file_ret, result) = spawn_blocking(move || {
+                use std::io::Read;
+                let mut buf = vec![0u8; LOCAL_STREAM_CHUNK_SIZE];
+                let n = match file.read(&mut buf) {
+                    Ok(n) => n,
+                    Err(e) => return (file, Err(VolumeError::from(e))),
+                };
+                buf.truncate(n);
+                (file, Ok(buf))
+            })
+            .await
+            .unwrap();
+
+            match result {
+                Ok(buf) if buf.is_empty() => {
+                    // EOF — drop the file handle.
+                    drop(file_ret);
+                    None
+                }
+                Ok(buf) => {
+                    self.bytes_read += buf.len() as u64;
+                    self.file = Some(file_ret);
+                    Some(Ok(buf))
+                }
+                Err(e) => {
+                    drop(file_ret);
+                    Some(Err(e))
+                }
+            }
+        })
     }
 
-    Ok(total_bytes)
+    fn total_size(&self) -> u64 {
+        self.total_size
+    }
+
+    fn bytes_read(&self) -> u64 {
+        self.bytes_read
+    }
 }
 
 /// Gets space information for a path.
