@@ -95,6 +95,11 @@ Always use the checker script for compilation, linting, formatting, and tests. I
   full list, or multiple `--check` flags.
 - All Rust/Svelte checks: `./scripts/check.sh --rust` or `--svelte`
 - All checks: `./scripts/check.sh`
+- **`oxfmt` must always run before you call a task done.** It's monorepo-wide (markdown, YAML, JSON, JS/TS across every
+  app) and takes ~1 second — there's no reason to skip it. It's registered under `AppOther`, which means `--rust` and
+  `--svelte` do NOT include it. If you only ran those, CI will catch unformatted markdown / JSON / etc. that you missed.
+  Always finish with either `./scripts/check.sh` (the full suite) or at minimum `./scripts/check.sh --check oxfmt` after
+  your other checks. No exceptions.
 - Specific tests by name (the one exception where direct commands are fine):
   - Rust: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`
   - Svelte: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
