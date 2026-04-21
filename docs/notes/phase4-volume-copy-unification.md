@@ -1,6 +1,6 @@
 # Phase 4 — Unified volume copy abstraction + concurrency
 
-**Status**: P4.1 complete, P4.2 complete, P4.3 pending.
+**Status**: P4.1 complete, P4.2 complete, P4.3 complete. P4.4 (re-measure on QNAP) pending a network where the NAS is reachable.
 
 Design for removing `Volume::export_to_local` / `import_from_local` from the `Volume` trait and unifying all cross-volume copies on `open_read_stream` + `write_from_stream`, with a single streaming copy engine that dispatches on one fast-path (same-APFS clonefile) and otherwise pipes bytes generically. Concurrency then lives in the copy engine, not per-volume-trait-method, parameterized by a `Volume::max_concurrent_ops()` hint each backend provides.
 
