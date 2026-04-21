@@ -1449,6 +1449,11 @@ mod tests {
 
     #[tokio::test]
     #[ignore = "Phase 4 baseline — requires QNAP at 192.168.1.111 and SMB2_TEST_NAS_PASSWORD env var"]
+    #[allow(
+        clippy::print_stdout,
+        clippy::needless_update,
+        reason = "Bench test prints a timing report by design (run with --nocapture); the struct-update is intentional for future-proofing."
+    )]
     async fn phase4_bench_baseline_smb_to_local_100_tiny_files() {
         use crate::file_system::volume::LocalPosixVolume;
         use crate::file_system::volume::smb::connect_smb_volume;
@@ -1461,7 +1466,7 @@ mod tests {
             .expect("SMB2_TEST_NAS_PASSWORD not set. Copy smb2/.env.example to smb2/.env, or set in your shell.");
 
         // ── Set up source (SMB) ───────────────────────────────────────
-        let smb_setup_start = std::time::Instant::now();
+        let smb_setup_start = Instant::now();
         let smb_volume = connect_smb_volume(
             "naspi",
             "/Volumes/naspi-bench-p4",
@@ -1499,7 +1504,7 @@ mod tests {
             ..Default::default()
         };
 
-        let copy_start = std::time::Instant::now();
+        let copy_start = Instant::now();
         let result = copy_volumes_with_progress(
             &events,
             "phase4-bench",
@@ -1541,7 +1546,7 @@ mod tests {
             return Some(p);
         }
         // Fall back: read from the smb2 crate's .env if present.
-        let smb2_env_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        let smb2_env_path = Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent() // src-tauri -> desktop
             .and_then(|p| p.parent()) // desktop -> apps
             .and_then(|p| p.parent()) // apps -> cmdr
