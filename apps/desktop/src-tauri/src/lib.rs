@@ -984,6 +984,9 @@ pub fn run() {
             commands::settings::update_file_watcher_debounce,
             commands::settings::update_service_resolve_timeout,
             commands::settings::update_menu_accelerator,
+            commands::settings::set_direct_smb_connection,
+            commands::settings::set_filter_safe_save_artifacts_cmd,
+            commands::settings::set_smb_concurrency_cmd,
             // Logging commands (frontend log bridge + runtime level control)
             commands::logging::batch_fe_logs,
             commands::logging::set_log_level,

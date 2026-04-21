@@ -2,7 +2,9 @@
 
 use tauri::{AppHandle, Manager};
 
-use crate::file_system::update_debounce_ms;
+use crate::file_system::{
+    set_direct_smb_enabled, set_filter_safe_save_artifacts, set_smb_concurrency, update_debounce_ms,
+};
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
     MenuState, command_id_to_menu_id, frontend_shortcut_to_accelerator, update_menu_item_accelerator,
@@ -44,6 +46,28 @@ pub fn update_service_resolve_timeout(timeout_ms: u64) {
 #[tauri::command]
 pub fn update_service_resolve_timeout(_timeout_ms: u64) {
     // No-op on non-macOS platforms
+}
+
+/// Enable or disable automatic upgrade of SMB mounts to direct smb2 connections.
+/// Pushed live from the frontend whenever `network.directSmbConnection` changes.
+#[tauri::command]
+pub fn set_direct_smb_connection(enabled: bool) {
+    set_direct_smb_enabled(enabled);
+}
+
+/// Toggle filtering of macOS safe-save artifacts (`.sb-*` files) in the SMB watcher.
+/// Pushed live from the frontend whenever `advanced.filterSafeSaveArtifacts` changes.
+#[tauri::command]
+pub fn set_filter_safe_save_artifacts_cmd(enabled: bool) {
+    set_filter_safe_save_artifacts(enabled);
+}
+
+/// Update the SMB concurrency limit used by `SmbVolume::max_concurrent_ops()`.
+/// Clamped to `1..=32` by `set_smb_concurrency`. Pushed live from the frontend
+/// whenever `network.smbConcurrency` changes.
+#[tauri::command]
+pub fn set_smb_concurrency_cmd(value: u16) {
+    set_smb_concurrency(value as usize);
 }
 
 /// Update menu accelerator for a command.
@@ -109,6 +133,44 @@ mod tests {
         // The function should return a valid boolean (either true or false)
         // This test verifies the function executes without panic
         let _ = result;
+    }
+
+    /// Covers the three live-apply commands in one test because they share
+    /// process-global atomics — running them as separate `#[test]` fns would
+    /// race under the default parallel test runner.
+    #[test]
+    fn test_live_apply_commands() {
+        use std::sync::Mutex;
+        // Serialize across any other test that might touch the same globals.
+        static LOCK: Mutex<()> = Mutex::new(());
+        let _guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
+
+        // smb_concurrency clamps 0 → 1 (min)
+        set_smb_concurrency_cmd(0);
+        assert_eq!(crate::file_system::smb_concurrency(), 1);
+
+        // smb_concurrency clamps 100 → 32 (max)
+        set_smb_concurrency_cmd(100);
+        assert_eq!(crate::file_system::smb_concurrency(), 32);
+
+        // smb_concurrency accepts values within 1..=32 unchanged
+        set_smb_concurrency_cmd(7);
+        assert_eq!(crate::file_system::smb_concurrency(), 7);
+
+        // direct_smb_connection round-trips
+        set_direct_smb_connection(false);
+        assert!(!crate::file_system::is_direct_smb_enabled());
+        set_direct_smb_connection(true);
+        assert!(crate::file_system::is_direct_smb_enabled());
+
+        // filter_safe_save_artifacts round-trips
+        set_filter_safe_save_artifacts_cmd(false);
+        assert!(!crate::file_system::is_filter_safe_save_artifacts_enabled());
+        set_filter_safe_save_artifacts_cmd(true);
+        assert!(crate::file_system::is_filter_safe_save_artifacts_enabled());
+
+        // Restore defaults so later tests see a predictable state.
+        set_smb_concurrency_cmd(10);
     }
 
     #[test]
