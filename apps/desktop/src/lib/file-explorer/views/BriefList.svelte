@@ -258,14 +258,14 @@
 
         // Click-to-rename: if clicking the entry already under the cursor
         // (without Shift), start a timer that activates rename after 800ms.
-        // Skip when rename is already active.
+        // Drag tracking still runs below so the cursor item remains draggable —
+        // crossing the drag threshold cancels the rename timer.
         if (index === cursorIndex && !event.shiftKey && !renameState?.active && onStartRename) {
             startClickToRename(event, onStartRename)
-            return
+        } else {
+            // Clicking a different entry cancels any pending click-to-rename timer
+            cancelClickToRename()
         }
-
-        // Clicking a different entry cancels any pending click-to-rename timer
-        cancelClickToRename()
 
         const hasSelection = selectedIndices.size > 0
 

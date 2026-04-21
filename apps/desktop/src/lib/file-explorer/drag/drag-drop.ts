@@ -14,6 +14,7 @@ import { tempDir, join } from '@tauri-apps/api/path'
 import { getCachedIcon } from '$lib/icon-cache'
 import { startSelectionDrag, prepareSelfDragOverlay, clearSelfDragOverlay } from '$lib/tauri-commands'
 import { getSetting } from '$lib/settings/settings-store'
+import { cancelClickToRename } from '../rename/rename-activation'
 import { renderDragImage } from './drag-image-renderer'
 
 /** Gets the drag threshold from settings (minimum distance in pixels to trigger drag) */
@@ -275,6 +276,9 @@ export function startSelectionDragTracking(
       // Threshold crossed - trigger the drag
       const ctx = activeDrag.context
       const cbs = activeDrag.callbacks
+
+      // Stop any pending click-to-rename timer so it doesn't fire mid-drag.
+      cancelClickToRename()
 
       // For single-file drag, call onDragStart to select the file first
       if (ctx.type === 'single') {
