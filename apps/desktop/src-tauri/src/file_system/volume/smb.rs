@@ -113,12 +113,19 @@ fn map_smb_error(err: smb2::Error) -> VolumeError {
 /// compatibility, but Cmdr's own file operations go through the smb2 session
 /// for better performance and fail-fast behavior.
 ///
-/// # Thread safety
+/// # Thread safety & concurrency
 ///
-/// The smb2 session is protected by a `tokio::sync::Mutex` so that async
-/// Volume methods can hold the lock across `.await` points without blocking
-/// the runtime. The `watcher_cancel` field uses `std::sync::Mutex` because
-/// it is only accessed briefly (no awaits while held).
+/// The smb2 `SmbClient` is protected by a `tokio::sync::Mutex` because every
+/// `SmbClient` method takes `&mut self`. The `Tree` lives in a separate
+/// `tokio::sync::RwLock<Option<Arc<Tree>>>` so the hot read/write paths can
+/// hold an `Arc<Tree>` without touching the client mutex. Concurrent copies
+/// on a single volume briefly lock the client to clone its `Connection` (a
+/// cheap `Arc::clone`), release the lock, and drive `Tree::download` /
+/// `Tree::read_file_compound` / `Tree::write_file_compound` on the cloned
+/// `Connection` — so N downloads run pipelined on one SMB session instead of
+/// serializing through the mutex. The `watcher_cancel` field uses
+/// `std::sync::Mutex` because it is only accessed briefly (no awaits while
+/// held).
 pub struct SmbVolume {
     /// Display name (share name).
     name: String,
@@ -130,12 +137,22 @@ pub struct SmbVolume {
     share_name: String,
     /// Volume ID for listing cache lookups (from `path_to_id(mount_path)`).
     volume_id: String,
-    /// smb2 session + tree connection. `None` when disconnected.
-    /// Wrapped in `Arc` so we can use `lock_owned()` for long-lived streaming reads
-    /// — the producer task that feeds `SmbReadStream` owns an `OwnedMutexGuard`
-    /// for the download's duration, then releases it when the stream is done or
-    /// dropped.
-    smb: Arc<tokio::sync::Mutex<Option<(SmbClient, Tree)>>>,
+    /// smb2 client (owns the Connection). `None` when disconnected.
+    ///
+    /// Most methods still lock this mutex and call `client.stat(tree, ...)`
+    /// etc. — SmbClient's async methods need `&mut self`, and these aren't
+    /// hot-path parallel. The hot copy path (compound read/write, download
+    /// stream) briefly locks just to clone the `Connection` (via
+    /// `client.connection_mut().clone()`), releases the lock, and drives the
+    /// op on the clone. This is what gives concurrency across files while the
+    /// underlying SMB session multiplexes the frames.
+    client: Arc<tokio::sync::Mutex<Option<SmbClient>>>,
+    /// Tree (share connection), wrapped as `Arc<Tree>` so concurrent hot-path
+    /// ops can hold a reference without serializing on the client mutex.
+    /// `None` when disconnected. The `RwLock` is essentially uncontended — we
+    /// only write on disconnect — so readers just clone the `Arc` out under a
+    /// read guard and drop the guard immediately.
+    tree: Arc<tokio::sync::RwLock<Option<Arc<Tree>>>>,
     /// Current connection health.
     /// Wrapped in `Arc` so background tasks (streaming read producer) can update
     /// the state on mid-stream connection loss.
@@ -174,7 +191,8 @@ impl SmbVolume {
             server: server.into(),
             share_name: share_name.into(),
             volume_id: volume_id.into(),
-            smb: Arc::new(tokio::sync::Mutex::new(Some((client, tree)))),
+            client: Arc::new(tokio::sync::Mutex::new(Some(client))),
+            tree: Arc::new(tokio::sync::RwLock::new(Some(Arc::new(tree)))),
             state: Arc::new(AtomicU8::new(ConnectionState::Direct as u8)),
             watcher_cancel: std::sync::Mutex::new(None),
         }
@@ -245,9 +263,8 @@ impl SmbVolume {
                 // Root is always a directory, scan its contents
             } else {
                 let info = {
-                    let mut guard = self.acquire_smb().await?;
-                    let (client, tree) = guard.as_mut().unwrap();
-                    let r = client.stat(tree, smb_path).await;
+                    let (tree, mut conn) = self.clone_session().await?;
+                    let r = tree.stat(&mut conn, smb_path).await;
                     self.handle_smb_result("scan_for_copy(stat)", r)?
                 };
 
@@ -300,9 +317,8 @@ impl SmbVolume {
         let start = std::time::Instant::now();
 
         let result = {
-            let mut guard = self.acquire_smb().await?;
-            let (client, tree) = guard.as_mut().unwrap();
-            let r = client.list_directory(tree, &smb_path).await;
+            let (tree, mut conn) = self.clone_session().await?;
+            let r = tree.list_directory(&mut conn, &smb_path).await;
             self.handle_smb_result("list_directory", r)?
         };
 
@@ -335,54 +351,83 @@ impl SmbVolume {
         }
     }
 
-    /// Acquires the smb2 mutex and returns a mutable reference to the session.
-    /// Checks connection state first, then verifies the session is present.
-    async fn acquire_smb(&self) -> Result<tokio::sync::MutexGuard<'_, Option<(SmbClient, Tree)>>, VolumeError> {
+    /// Acquires the client mutex and returns a guard over the `Option<SmbClient>`.
+    /// Checks connection state first, then verifies the client is present.
+    ///
+    /// Most methods still go through this (stat, list_directory, rename, etc.)
+    /// — only the hot streaming-read / compound-write paths use the cheaper
+    /// `clone_connection` helper that releases the lock before driving the op.
+    async fn acquire_client(&self) -> Result<tokio::sync::MutexGuard<'_, Option<SmbClient>>, VolumeError> {
         self.check_connection()?;
-        let guard = self.smb.lock().await;
+        let guard = self.client.lock().await;
         if guard.is_none() {
             return Err(VolumeError::DeviceDisconnected("SMB session not available".to_string()));
         }
         Ok(guard)
     }
 
+    /// Reads out a clone of `Arc<Tree>`. Cheap (`Arc::clone`).
+    async fn tree_arc(&self) -> Result<Arc<Tree>, VolumeError> {
+        self.check_connection()?;
+        let guard = self.tree.read().await;
+        guard
+            .as_ref()
+            .cloned()
+            .ok_or_else(|| VolumeError::DeviceDisconnected("SMB session not available".to_string()))
+    }
+
+    /// Briefly locks the client mutex, clones its `Connection` (cheap
+    /// `Arc::clone` — all clones multiplex frames over the same SMB session),
+    /// and releases the lock. Also reads out an `Arc<Tree>`. Returns both.
+    ///
+    /// Callers can then drive `Tree::download` / `Tree::read_file_compound` /
+    /// `Tree::write_file_compound` on the owned `Connection` without holding
+    /// any lock, enabling multiple concurrent copies on a single `SmbVolume`.
+    async fn clone_session(&self) -> Result<(Arc<Tree>, smb2::client::Connection), VolumeError> {
+        self.check_connection()?;
+        let tree = self.tree_arc().await?;
+        let conn = {
+            let mut guard = self.client.lock().await;
+            let client = guard
+                .as_mut()
+                .ok_or_else(|| VolumeError::DeviceDisconnected("SMB session not available".to_string()))?;
+            client.connection_mut().clone()
+        };
+        Ok((tree, conn))
+    }
+
     /// Opens a streaming download on the given SMB-relative path.
     ///
-    /// Acquires the SMB session lock in a background task (via `lock_owned`),
-    /// opens an `smb2::FileDownload`, and returns an `SmbReadStream` that
-    /// pipes chunks through a bounded mpsc channel. The lock stays held by
-    /// the task until the download completes or the stream is dropped.
+    /// Briefly locks the client mutex to clone the underlying `Connection`,
+    /// releases the lock, then spawns a background task that owns the clone
+    /// and drives `Tree::download` on it. Each concurrent call gets its own
+    /// cloned `Connection` (all multiplexing frames over the same SMB
+    /// session), so N downloads run pipelined instead of serializing on the
+    /// session mutex. Chunks flow through a bounded mpsc channel to the
+    /// caller-facing `SmbReadStream`.
     ///
     /// This is the single streaming-read primitive for `SmbVolume`. The
     /// cross-volume streaming path (`open_read_stream`) goes through here, so
     /// no path has to buffer whole files in memory.
     async fn open_smb_download_stream(&self, smb_path: &str) -> Result<SmbReadStream, VolumeError> {
-        self.check_connection()?;
+        let (tree, conn) = self.clone_session().await?;
 
         let (size_tx, size_rx) = tokio::sync::oneshot::channel::<Result<u64, VolumeError>>();
         let (chunk_tx, chunk_rx) =
             tokio::sync::mpsc::channel::<Result<Vec<u8>, VolumeError>>(SMB_STREAM_CHANNEL_CAPACITY);
         let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
 
-        let smb_arc = Arc::clone(&self.smb);
         let state_arc = Arc::clone(&self.state);
         let share_name = self.share_name.clone();
         let smb_path_owned = smb_path.to_string();
 
         tokio::spawn(async move {
-            let mut owned_guard = smb_arc.lock_owned().await;
-
-            let (client, tree) = match owned_guard.as_mut() {
-                Some(session) => session,
-                None => {
-                    let _ = size_tx.send(Err(VolumeError::DeviceDisconnected(
-                        "SMB session not available".to_string(),
-                    )));
-                    return;
-                }
-            };
-
-            let mut download = match client.download(tree, &smb_path_owned).await {
+            // The task owns its `Connection` clone and an `Arc<Tree>` reference.
+            // No lock is held, so other tasks can spawn in parallel and each
+            // drive their own download on a fresh `Connection` clone — all
+            // multiplexed over the same SMB session by smb2's receiver task.
+            let mut conn = conn;
+            let mut download = match tree.download(&mut conn, &smb_path_owned).await {
                 Ok(d) => d,
                 Err(e) => {
                     update_state_on_smb_error(&state_arc, &e);
@@ -434,7 +479,8 @@ impl SmbVolume {
                 }
             }
             // `download` drops here (releases SMB file handle at connection close).
-            // `owned_guard` drops here (releases the SMB session mutex).
+            // `conn` and `tree` drop here — the `Arc<Connection>` inner and the
+            // `Arc<Tree>` unwind when every concurrent task finishes.
         });
 
         let total_size = match size_rx.await {
@@ -488,7 +534,7 @@ impl SmbVolume {
     /// no async runtime is available (for example, cleanup paths called from drop-like code).
     fn with_smb_sync<F, T>(&self, op_name: &str, f: F) -> Result<T, VolumeError>
     where
-        F: FnOnce(&mut SmbClient, &mut Tree) -> Result<T, smb2::Error>,
+        F: FnOnce(&mut SmbClient, &Tree) -> Result<T, smb2::Error>,
     {
         let state = self.connection_state();
         if state == ConnectionState::Disconnected {
@@ -501,13 +547,21 @@ impl SmbVolume {
             return Err(VolumeError::NotSupported);
         }
 
-        let mut guard = self.smb.blocking_lock();
+        let tree_arc = {
+            let guard = self.tree.blocking_read();
+            guard
+                .as_ref()
+                .cloned()
+                .ok_or_else(|| VolumeError::DeviceDisconnected("SMB session not available".to_string()))?
+        };
 
-        let (client, tree) = guard
+        let mut guard = self.client.blocking_lock();
+
+        let client = guard
             .as_mut()
             .ok_or_else(|| VolumeError::DeviceDisconnected("SMB session not available".to_string()))?;
 
-        match f(client, tree) {
+        match f(client, &tree_arc) {
             Ok(val) => Ok(val),
             Err(e) => {
                 let kind = e.kind();
@@ -681,9 +735,8 @@ impl Volume for SmbVolume {
             }
 
             let info = {
-                let mut guard = self.acquire_smb().await?;
-                let (client, tree) = guard.as_mut().unwrap();
-                let r = client.stat(tree, &smb_path).await;
+                let (tree, mut conn) = self.clone_session().await?;
+                let r = tree.stat(&mut conn, &smb_path).await;
                 self.handle_smb_result("get_metadata", r)?
             };
 
@@ -709,12 +762,9 @@ impl Volume for SmbVolume {
             }
 
             {
-                let guard = self.acquire_smb().await;
-                if let Ok(mut guard) = guard {
-                    let (client, tree) = guard.as_mut().unwrap();
-                    client.stat(tree, &smb_path).await.is_ok()
-                } else {
-                    false
+                match self.clone_session().await {
+                    Ok((tree, mut conn)) => tree.stat(&mut conn, &smb_path).await.is_ok(),
+                    Err(_) => false,
                 }
             }
         })
@@ -731,9 +781,8 @@ impl Volume for SmbVolume {
             }
 
             let info = {
-                let mut guard = self.acquire_smb().await?;
-                let (client, tree) = guard.as_mut().unwrap();
-                let r = client.stat(tree, &smb_path).await;
+                let (tree, mut conn) = self.clone_session().await?;
+                let r = tree.stat(&mut conn, &smb_path).await;
                 self.handle_smb_result("is_directory", r)?
             };
 
@@ -818,9 +867,8 @@ impl Volume for SmbVolume {
             debug!("SmbVolume::get_space_info: share={}", self.share_name);
 
             let info = {
-                let mut guard = self.acquire_smb().await?;
-                let (client, tree) = guard.as_mut().unwrap();
-                let r = client.fs_info(tree).await;
+                let (tree, mut conn) = self.clone_session().await?;
+                let r = tree.fs_info(&mut conn).await;
                 self.handle_smb_result("get_space_info", r)?
             };
 
@@ -844,9 +892,8 @@ impl Volume for SmbVolume {
             debug!("SmbVolume::create_file: share={}, path={:?}", self.share_name, smb_path);
 
             {
-                let mut guard = self.acquire_smb().await?;
-                let (client, tree) = guard.as_mut().unwrap();
-                let result = client.write_file(tree, &smb_path, &data).await;
+                let (tree, mut conn) = self.clone_session().await?;
+                let result = tree.write_file(&mut conn, &smb_path, &data).await;
                 self.handle_smb_result("create_file", result)?;
             }
 
@@ -876,9 +923,8 @@ impl Volume for SmbVolume {
             );
 
             {
-                let mut guard = self.acquire_smb().await?;
-                let (client, tree) = guard.as_mut().unwrap();
-                let result = client.create_directory(tree, &smb_path).await;
+                let (tree, mut conn) = self.clone_session().await?;
+                let result = tree.create_directory(&mut conn, &smb_path).await;
                 self.handle_smb_result("create_directory", result)?;
             }
 
@@ -905,9 +951,8 @@ impl Volume for SmbVolume {
             // the server returns STATUS_FILE_IS_A_DIRECTORY — then try delete_directory.
             // This avoids a stat round-trip for every file in bulk deletes.
             let file_result = {
-                let mut guard = self.acquire_smb().await?;
-                let (client, tree) = guard.as_mut().unwrap();
-                let r = client.delete_file(tree, &smb_path).await;
+                let (tree, mut conn) = self.clone_session().await?;
+                let r = tree.delete_file(&mut conn, &smb_path).await;
                 self.handle_smb_result("delete_file", r)
             };
 
@@ -915,9 +960,8 @@ impl Volume for SmbVolume {
                 Ok(()) => {} // File deleted successfully
                 Err(VolumeError::IoError { ref message, .. }) if message.contains("FILE_IS_A_DIRECTORY") => {
                     // It's a directory — try delete_directory
-                    let mut guard = self.acquire_smb().await?;
-                    let (client, tree) = guard.as_mut().unwrap();
-                    let r = client.delete_directory(tree, &smb_path).await;
+                    let (tree, mut conn) = self.clone_session().await?;
+                    let r = tree.delete_directory(&mut conn, &smb_path).await;
                     self.handle_smb_result("delete_directory", r)?;
                 }
                 Err(e) => return Err(e),
@@ -954,32 +998,28 @@ impl Volume for SmbVolume {
             if force {
                 // Check if dest exists and delete it first
                 let dest_exists = {
-                    let mut guard = self.acquire_smb().await?;
-                    let (client, tree) = guard.as_mut().unwrap();
-                    client.stat(tree, &smb_to).await.is_ok()
+                    let (tree, mut conn) = self.clone_session().await?;
+                    tree.stat(&mut conn, &smb_to).await.is_ok()
                 };
 
                 if dest_exists {
                     // Try file delete first; if that fails (it's a dir), try directory delete
                     let file_result = {
-                        let mut guard = self.acquire_smb().await?;
-                        let (client, tree) = guard.as_mut().unwrap();
-                        let r = client.delete_file(tree, &smb_to).await;
+                        let (tree, mut conn) = self.clone_session().await?;
+                        let r = tree.delete_file(&mut conn, &smb_to).await;
                         self.handle_smb_result("rename(delete_dest_file)", r)
                     };
                     if file_result.is_err() {
-                        let mut guard = self.acquire_smb().await?;
-                        let (client, tree) = guard.as_mut().unwrap();
-                        let r = client.delete_directory(tree, &smb_to).await;
+                        let (tree, mut conn) = self.clone_session().await?;
+                        let r = tree.delete_directory(&mut conn, &smb_to).await;
                         self.handle_smb_result("rename(delete_dest_dir)", r)?;
                     }
                 }
             } else {
                 // Check if dest exists and return AlreadyExists if so
                 let dest_exists = {
-                    let mut guard = self.acquire_smb().await?;
-                    let (client, tree) = guard.as_mut().unwrap();
-                    client.stat(tree, &smb_to).await.is_ok()
+                    let (tree, mut conn) = self.clone_session().await?;
+                    tree.stat(&mut conn, &smb_to).await.is_ok()
                 };
                 if dest_exists {
                     return Err(VolumeError::AlreadyExists(to.display().to_string()));
@@ -987,9 +1027,8 @@ impl Volume for SmbVolume {
             }
 
             {
-                let mut guard = self.acquire_smb().await?;
-                let (client, tree) = guard.as_mut().unwrap();
-                let r = client.rename(tree, &smb_from, &smb_to).await;
+                let (tree, mut conn) = self.clone_session().await?;
+                let r = tree.rename(&mut conn, &smb_from, &smb_to).await;
                 self.handle_smb_result("rename", r)?;
             }
 
@@ -1124,23 +1163,23 @@ impl Volume for SmbVolume {
 
             // Compound fast-path: if the caller-provided hint fits in one READ,
             // send CREATE+READ+CLOSE as a single compound frame (1 RTT) instead
-            // of the 3-RTT streaming open. Falls through to the streaming path
-            // when the hint is missing, too large, or the compound read returns
-            // short (truncated file — rare but possible if size changed since
-            // the scan).
+            // of the 3-RTT streaming open. Drives the compound on a cloned
+            // `Connection` with no lock held, so N concurrent small reads
+            // pipeline over one SMB session. Falls through to the streaming
+            // path when the hint is missing, too large, or the compound read
+            // returns short (truncated file — rare but possible if size
+            // changed since the scan).
             if let Some(size) = size_hint {
-                let mut guard = self.acquire_smb().await?;
-                let (client, tree) = guard.as_mut().unwrap();
-                let max_read = client.params().map(|p| p.max_read_size).unwrap_or(65536) as u64;
+                let (tree, mut conn) = self.clone_session().await?;
+                let max_read = conn.params().map(|p| p.max_read_size).unwrap_or(65536) as u64;
                 if size > 0 && size <= max_read {
                     debug!(
                         "SmbVolume::open_read_stream_with_hint: share={}, path={:?}, size={} — using compound fast-path",
                         self.share_name, smb_path, size
                     );
-                    let read_result = tree.read_file_compound(client.connection_mut(), &smb_path).await;
+                    let read_result = tree.read_file_compound(&mut conn, &smb_path).await;
                     let data = self.handle_smb_result("open_read_stream_with_hint(compound)", read_result)?;
                     if data.len() as u64 == size {
-                        drop(guard);
                         return Ok(Box::new(InlineReadStream::new(data)) as Box<dyn VolumeReadStream>);
                     }
                     debug!(
@@ -1148,9 +1187,7 @@ impl Volume for SmbVolume {
                         data.len(),
                         size
                     );
-                    // Fall through — release the guard first.
                 }
-                drop(guard);
             }
 
             debug!(
@@ -1177,58 +1214,72 @@ impl Volume for SmbVolume {
                 self.share_name, smb_path, size
             );
 
-            // Holds the SMB session mutex for the duration of the transfer.
-            // Different volumes have different mutexes, so awaiting
-            // `stream.next_chunk()` while holding this one is safe.
-            let mut guard = self.acquire_smb().await?;
-            let (client, tree) = guard.as_mut().unwrap();
-
             // Compound fast-path: when the caller promised a size that fits in
             // one WRITE, drain the source stream into a buffer and send
             // CREATE+WRITE+FLUSH+CLOSE as a single compound frame (1 RTT
-            // instead of 4). Small files are the hot case — for anything
-            // larger we use the streaming writer below.
-            let max_write = client.params().map(|p| p.max_write_size).unwrap_or(65536) as u64;
-            if size > 0 && size <= max_write {
-                let mut buffer = Vec::with_capacity(size as usize);
-                while let Some(chunk_result) = stream.next_chunk().await {
-                    let chunk = chunk_result?;
-                    buffer.extend_from_slice(&chunk);
-                }
-                if buffer.len() as u64 == size {
+            // instead of 4). Runs on a cloned `Connection` with no lock held,
+            // so N concurrent small writes pipeline over one SMB session.
+            // Small files are the hot case — for anything larger we fall
+            // through to the streaming writer below.
+            if size > 0 {
+                let (tree, mut conn) = self.clone_session().await?;
+                let max_write = conn.params().map(|p| p.max_write_size).unwrap_or(65536) as u64;
+                if size <= max_write {
+                    let mut buffer = Vec::with_capacity(size as usize);
+                    while let Some(chunk_result) = stream.next_chunk().await {
+                        let chunk = chunk_result?;
+                        buffer.extend_from_slice(&chunk);
+                    }
+                    if buffer.len() as u64 == size {
+                        debug!(
+                            "SmbVolume::write_from_stream: using compound fast-path ({} bytes)",
+                            buffer.len()
+                        );
+                        let write_result = tree.write_file_compound(&mut conn, &smb_path, &buffer).await;
+                        let bytes_written = self.handle_smb_result("write_from_stream(compound)", write_result)?;
+                        // Emit a single progress tick so counters match the
+                        // streaming path's post-loop state.
+                        let _ = on_progress(bytes_written, size);
+                        return Ok(bytes_written);
+                    }
+                    // Size mismatch — drop the cloned conn and re-feed the
+                    // already-drained buffer through the streaming writer
+                    // below (which needs the client mutex because
+                    // `FileWriter` borrows `&'a mut Connection` from the
+                    // `SmbClient`).
                     debug!(
-                        "SmbVolume::write_from_stream: using compound fast-path ({} bytes)",
-                        buffer.len()
+                        "SmbVolume::write_from_stream: compound fast-path source yielded {} bytes, expected {} — falling back",
+                        buffer.len(),
+                        size
                     );
-                    let write_result = tree
-                        .write_file_compound(client.connection_mut(), &smb_path, &buffer)
-                        .await;
-                    let bytes_written = self.handle_smb_result("write_from_stream(compound)", write_result)?;
-                    // Emit a single progress tick so counters match the
-                    // streaming path's post-loop state.
-                    let _ = on_progress(bytes_written, size);
-                    return Ok(bytes_written);
+                    drop(conn);
+                    let tree_arc = tree;
+                    let mut guard = self.acquire_client().await?;
+                    let client = guard.as_mut().unwrap();
+                    let writer_result = client.create_file_writer(&tree_arc, &smb_path).await;
+                    let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
+                    if !buffer.is_empty() {
+                        let write_result = writer.write_chunk(&buffer).await;
+                        self.handle_smb_result("write_from_stream(write_chunk)", write_result)?;
+                    }
+                    let finish_result = writer.finish().await;
+                    self.handle_smb_result("write_from_stream(finish)", finish_result)?;
+                    return Ok(buffer.len() as u64);
                 }
-                // Size mismatch — fall back to the streaming path so a
-                // subsequent open writes whatever came through.
-                debug!(
-                    "SmbVolume::write_from_stream: compound fast-path source yielded {} bytes, expected {} — falling back",
-                    buffer.len(),
-                    size
-                );
-                // Re-feed the already-drained buffer via the streaming writer.
-                let writer_result = client.create_file_writer(tree, &smb_path).await;
-                let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
-                if !buffer.is_empty() {
-                    let write_result = writer.write_chunk(&buffer).await;
-                    self.handle_smb_result("write_from_stream(write_chunk)", write_result)?;
-                }
-                let finish_result = writer.finish().await;
-                self.handle_smb_result("write_from_stream(finish)", finish_result)?;
-                return Ok(buffer.len() as u64);
             }
 
-            let writer_result = client.create_file_writer(tree, &smb_path).await;
+            // Streaming fallback for large / unknown-size writes. Holds the
+            // client mutex for the duration of the transfer because
+            // `FileWriter<'a>` borrows `&'a mut Connection` from the
+            // `SmbClient` we create it from. Large files are rare in the hot
+            // copy path, so this doesn't hurt concurrency in practice — the
+            // compound fast-path above handles every small file without
+            // touching the client mutex for the write itself.
+            let tree_arc = self.tree_arc().await?;
+            let mut guard = self.acquire_client().await?;
+            let client = guard.as_mut().unwrap();
+
+            let writer_result = client.create_file_writer(&tree_arc, &smb_path).await;
             let mut writer = self.handle_smb_result("write_from_stream(open)", writer_result)?;
 
             let mut bytes_read = 0u64;
@@ -1251,7 +1302,7 @@ impl Volume for SmbVolume {
                     // anyway). Dropping directly would leave stale responses
                     // on the connection and poison the next op.
                     let _ = writer.abort().await;
-                    let _ = client.delete_file(tree, &smb_path).await;
+                    let _ = tree_arc.delete_file(client.connection_mut(), &smb_path).await;
                     return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
                 }
             }
@@ -1284,11 +1335,23 @@ impl Volume for SmbVolume {
             debug!("SmbVolume cleanup for {}: watcher cancel sent", self.share_name);
         }
 
-        // Drop the smb2 session. Uses blocking_lock() since on_unmount is sync
-        // (called from FSEvents thread, no Tokio runtime). This is safe because
-        // we just set state to Disconnected, so no async task will acquire the lock.
-        let mut guard = self.smb.blocking_lock();
-        *guard = None;
+        // Drop the smb2 session. Uses blocking_lock() / blocking_write() since
+        // on_unmount is sync (called from FSEvents thread, no Tokio runtime).
+        // Safe because we just set state to Disconnected, so no async task
+        // will acquire either lock. Drop Tree first, then SmbClient — Tree
+        // holds a tree_id referenced by session-scoped server state, and we
+        // want it to go first so any lingering `FileDownload` clones finish
+        // before the client (which owns the Connection) vanishes. In
+        // practice all three just drop their Arc refcounts; the order is
+        // defensive.
+        {
+            let mut tree_guard = self.tree.blocking_write();
+            *tree_guard = None;
+        }
+        {
+            let mut client_guard = self.client.blocking_lock();
+            *client_guard = None;
+        }
 
         debug!("SmbVolume cleanup for {}: smb2 session dropped", self.share_name);
     }
@@ -1606,7 +1669,8 @@ mod tests {
             server: "192.168.1.100".to_string(),
             share_name: "TestShare".to_string(),
             volume_id: "volumestestshare".to_string(),
-            smb: Arc::new(tokio::sync::Mutex::new(None)),
+            client: Arc::new(tokio::sync::Mutex::new(None)),
+            tree: Arc::new(tokio::sync::RwLock::new(None)),
             state: Arc::new(AtomicU8::new(ConnectionState::Disconnected as u8)),
             watcher_cancel: std::sync::Mutex::new(None),
         }
