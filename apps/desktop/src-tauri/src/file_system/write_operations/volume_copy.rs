@@ -15,12 +15,16 @@
 //! - Local → MTP: Uses volume.import_from_local()
 //! - MTP → Local: Uses volume.export_to_local()
 
+use std::future::Future;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 use uuid::Uuid;
+
+use futures_util::StreamExt;
+use futures_util::stream::FuturesUnordered;
 
 use super::scan::take_cached_scan_result;
 use super::state::{
@@ -362,13 +366,33 @@ async fn copy_volumes_with_progress(
     }
 
     // Phase 3: Copy files with progress
-    // files_done tracks individual files (updated by on_file_complete callback from recursive copy).
-    // total_files is the recursive count from the scan.
-    let files_done_atomic = AtomicUsize::new(0);
+    // Shared atomics — updated by in-flight tasks (under concurrency) or
+    // the sequential closure below. The driver reads them after each file to
+    // keep `files_done` / `bytes_done` in sync for post-loop bookkeeping.
+    let files_done_atomic = Arc::new(AtomicUsize::new(0));
+    let atomic_bytes_done = Arc::new(AtomicU64::new(0));
+    let last_progress_mutex = Arc::new(std::sync::Mutex::new(Instant::now()));
     let mut files_done = 0;
     let mut bytes_done = 0u64;
-    let mut last_progress_time = Instant::now();
     let progress_interval = Duration::from_millis(config.progress_interval_ms);
+
+    // Determine concurrency for this batch.
+    // Clamped to 32 per F6 (matches smb2's MAX_PIPELINE_WINDOW). The sequential
+    // fallback (F7) handles 1-2 file batches where spawning tasks isn't worth
+    // it, and backends that return 1 from max_concurrent_ops.
+    let concurrency = source_volume
+        .max_concurrent_ops()
+        .min(dest_volume.max_concurrent_ops())
+        .min(32);
+    let use_concurrent_path = source_paths.len() >= 3 && concurrency > 1;
+    log::debug!(
+        "copy_volumes_with_progress: {} sources, concurrency={} (src={}, dst={}), path={}",
+        source_paths.len(),
+        concurrency,
+        source_volume.max_concurrent_ops(),
+        dest_volume.max_concurrent_ops(),
+        if use_concurrent_path { "concurrent" } else { "sequential" },
+    );
 
     // Emit initial copying phase event
     events.emit_progress(WriteProgressEvent {
@@ -394,179 +418,364 @@ async fn copy_volumes_with_progress(
     // Track "apply to all" resolution for conflicts
     let mut apply_to_all_resolution: Option<ConflictResolution> = None;
 
-    // Track successfully copied destination paths for rollback/cleanup
-    let mut copied_paths: Vec<PathBuf> = Vec::new();
-    // Track the last destination path being copied (for partial-file cleanup on cancel)
+    // Track successfully copied destination paths for rollback/cleanup.
+    // Wrapped in Arc<Mutex> so concurrent tasks can push independently. The
+    // sequential path uses the same container for a uniform post-loop flow.
+    let copied_paths: Arc<std::sync::Mutex<Vec<PathBuf>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
+    // In concurrent mode, in-flight tasks each pin down their own partial
+    // destination path so a cancel/error can delete all of them. Sequential
+    // mode keeps the legacy single-slot behavior via a 1-element vec.
+    let in_flight_partials: Arc<std::sync::Mutex<Vec<PathBuf>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
     let mut last_dest_path: Option<PathBuf> = None;
     let mut copy_error: Option<WriteOperationError> = None;
 
-    for source_path in source_paths {
-        // Check cancellation
-        if is_cancelled(&state.intent) {
-            break;
-        }
+    if use_concurrent_path {
+        // Concurrent path: FuturesUnordered-driven sliding window sized by
+        // `concurrency`. Each task streams one top-level source item end-to-end.
+        // Conflict resolution runs synchronously on this driver before the task
+        // is spawned (F14) so the whole batch blocks on a single Stop prompt
+        // instead of racing per-task prompts.
+        type CopyTaskFuture<'a> =
+            std::pin::Pin<Box<dyn Future<Output = Result<(PathBuf, u64), (PathBuf, VolumeError)>> + Send + 'a>>;
+        let mut in_flight: FuturesUnordered<CopyTaskFuture<'_>> = FuturesUnordered::new();
 
-        let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
-        let mut dest_item_path = if let Some(name) = source_path.file_name() {
-            dest_path.join(name)
-        } else {
-            dest_path.to_path_buf()
-        };
+        // Inline helper: drains ONE future from `in_flight`, updates tracking.
+        // Returns Err on the first task failure (caller breaks + stores copy_error).
+        // `in_flight` is threaded through as a mutable borrow so the helper is
+        // just a local lambda in shape, but we inline below for borrow clarity.
 
-        // Check for conflict: does destination already exist?
-        // Use get_metadata() once to avoid redundant list_directory calls.
-        // On MTP, exists() + is_directory() would each list the parent directory
-        // separately; get_metadata() does it once (and the listing cache covers
-        // the source side too).
-        if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path).await {
-            let source_is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
-            let dest_is_dir = dest_meta.is_directory;
+        let mut iter = source_paths.iter();
+        loop {
+            // Keep pushing new tasks until either sources run out or the window is full.
+            while in_flight.len() < concurrency {
+                if is_cancelled(&state.intent) {
+                    break;
+                }
+                let Some(source_path) = iter.next() else {
+                    break;
+                };
 
-            if source_is_dir && dest_is_dir {
-                // Both are directories - this is a merge, not a conflict
-                // Continue with the copy (contents will be merged)
+                // Resolve destination path + conflict synchronously.
+                let mut dest_item_path = if let Some(name) = source_path.file_name() {
+                    dest_path.join(name)
+                } else {
+                    dest_path.to_path_buf()
+                };
+                if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path).await {
+                    let source_is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
+                    let dest_is_dir = dest_meta.is_directory;
+                    if source_is_dir && dest_is_dir {
+                        log::debug!(
+                            "copy_volumes_with_progress: merging directories {} -> {}",
+                            source_path.display(),
+                            dest_item_path.display()
+                        );
+                    } else {
+                        log::debug!(
+                            "copy_volumes_with_progress: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
+                            dest_item_path.display(),
+                            source_is_dir,
+                            dest_is_dir
+                        );
+                        let resolved = resolve_volume_conflict(
+                            &source_volume,
+                            source_path,
+                            &dest_volume,
+                            &dest_item_path,
+                            config,
+                            events,
+                            operation_id,
+                            state,
+                            &mut apply_to_all_resolution,
+                        )
+                        .await?;
+                        match resolved {
+                            None => {
+                                log::debug!(
+                                    "copy_volumes_with_progress: skipping {} due to conflict resolution",
+                                    source_path.display()
+                                );
+                                continue;
+                            }
+                            Some(p) => dest_item_path = p,
+                        }
+                    }
+                }
+
+                let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
                 log::debug!(
-                    "copy_volumes_with_progress: merging directories {} -> {}",
+                    "copy_volumes_with_progress: spawning copy {} -> {}",
                     source_path.display(),
                     dest_item_path.display()
                 );
-            } else {
-                // Either both are files, or there's a type mismatch - this is a conflict
-                log::debug!(
-                    "copy_volumes_with_progress: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
-                    dest_item_path.display(),
-                    source_is_dir,
-                    dest_is_dir
-                );
 
-                // Resolve the conflict
-                let resolved = resolve_volume_conflict(
-                    &source_volume,
-                    source_path,
-                    &dest_volume,
-                    &dest_item_path,
-                    config,
-                    events,
-                    operation_id,
-                    state,
-                    &mut apply_to_all_resolution,
-                )
-                .await?;
+                // Mark this destination as in-flight so cancel/error can clean it up.
+                in_flight_partials.lock().unwrap().push(dest_item_path.clone());
 
-                match resolved {
-                    None => {
-                        // Skip this file
-                        log::debug!(
-                            "copy_volumes_with_progress: skipping {} due to conflict resolution",
-                            source_path.display()
-                        );
-                        continue;
+                let src_vol = Arc::clone(&source_volume);
+                let dst_vol = Arc::clone(&dest_volume);
+                let state_clone = Arc::clone(state);
+                let events_ref: &dyn OperationEventSink = events;
+                let op_id = operation_id;
+                let files_done_a = Arc::clone(&files_done_atomic);
+                let bytes_done_a = Arc::clone(&atomic_bytes_done);
+                let last_prog_a = Arc::clone(&last_progress_mutex);
+                let source_owned = source_path.clone();
+                let dest_owned = dest_item_path.clone();
+                let file_name_owned = file_name.clone();
+
+                in_flight.push(Box::pin(async move {
+                    // Per-task `last_file_bytes` tracks bytes reported for the
+                    // file this task is copying; deltas roll up into the
+                    // shared `bytes_done_a` so the throttle emits an aggregate.
+                    let last_file_bytes = AtomicU64::new(0);
+                    let on_file_progress = |file_bytes_done: u64, _total: u64| -> ControlFlow<()> {
+                        if is_cancelled(&state_clone.intent) {
+                            return ControlFlow::Break(());
+                        }
+                        let prev = last_file_bytes.swap(file_bytes_done, Ordering::Relaxed);
+                        let delta = file_bytes_done.saturating_sub(prev);
+                        let current_total = bytes_done_a.fetch_add(delta, Ordering::Relaxed) + delta;
+                        let current_files_done = files_done_a.load(Ordering::Relaxed);
+                        let last = *last_prog_a.lock().unwrap();
+                        if last.elapsed() >= progress_interval {
+                            *last_prog_a.lock().unwrap() = Instant::now();
+                            events_ref.emit_progress(WriteProgressEvent {
+                                operation_id: op_id.to_string(),
+                                operation_type: WriteOperationType::Copy,
+                                phase: WriteOperationPhase::Copying,
+                                current_file: file_name_owned.clone(),
+                                files_done: current_files_done,
+                                files_total: total_files,
+                                bytes_done: current_total,
+                                bytes_total: total_bytes,
+                            });
+                            update_operation_status(
+                                op_id,
+                                WriteOperationPhase::Copying,
+                                file_name_owned.clone(),
+                                current_files_done,
+                                total_files,
+                                current_total,
+                                total_bytes,
+                            );
+                        }
+                        ControlFlow::Continue(())
+                    };
+                    let on_file_complete = || {
+                        files_done_a.fetch_add(1, Ordering::Relaxed);
+                    };
+                    let result = copy_single_path(
+                        &src_vol,
+                        &source_owned,
+                        &dst_vol,
+                        &dest_owned,
+                        &state_clone,
+                        &on_file_progress,
+                        &on_file_complete,
+                    )
+                    .await;
+                    match result {
+                        Ok(bytes) => {
+                            // If the volume didn't call the progress callback,
+                            // add bytes_copied to the aggregate so the total is
+                            // right. Same compensation the sequential path does.
+                            if last_file_bytes.load(Ordering::Relaxed) == 0 && bytes > 0 {
+                                bytes_done_a.fetch_add(bytes, Ordering::Relaxed);
+                            }
+                            Ok((dest_owned, bytes))
+                        }
+                        Err(e) => Err((dest_owned, e)),
                     }
-                    Some(resolved_path) => {
-                        dest_item_path = resolved_path;
+                }));
+            }
+
+            if in_flight.is_empty() {
+                break;
+            }
+
+            match in_flight.next().await {
+                Some(Ok((completed_dest, _bytes))) => {
+                    // Remove from in-flight partials and record as completed.
+                    let mut partials = in_flight_partials.lock().unwrap();
+                    if let Some(pos) = partials.iter().position(|p| p == &completed_dest) {
+                        partials.swap_remove(pos);
                     }
+                    drop(partials);
+                    copied_paths.lock().unwrap().push(completed_dest);
                 }
+                Some(Err((failed_dest, e))) => {
+                    // Remove from in-flight partials — this one's its own
+                    // partial cleanup the post-loop logic will do.
+                    let mut partials = in_flight_partials.lock().unwrap();
+                    if let Some(pos) = partials.iter().position(|p| p == &failed_dest) {
+                        partials.swap_remove(pos);
+                    }
+                    drop(partials);
+                    last_dest_path = Some(failed_dest.clone());
+                    copy_error = Some(map_volume_error(&failed_dest.display().to_string(), e));
+                    // Drop remaining in-flight tasks — their streams close,
+                    // temp files get cleaned up by the per-backend write
+                    // abort + delete path. Partial cleanup is done below.
+                    break;
+                }
+                None => break,
             }
         }
 
-        log::debug!(
-            "copy_volumes_with_progress: copying {} -> {}",
-            source_path.display(),
-            dest_item_path.display()
-        );
-
-        // Build a per-file progress callback that updates overall bytes_done and
-        // emits throttled write-progress events. Uses AtomicU64 + Mutex so the
-        // closure is Fn + Sync (required by the Volume trait's dyn Fn signature).
-        let atomic_bytes_done = AtomicU64::new(bytes_done);
-        let last_file_bytes = AtomicU64::new(0);
-        let last_progress_mutex = std::sync::Mutex::new(last_progress_time);
-        let file_name_for_cb = file_name.clone();
-
-        let on_file_progress = |file_bytes_done: u64, _file_bytes_total: u64| -> ControlFlow<()> {
-            // Check cancellation
+        // Drain whatever's left on cancel/error. On success, `in_flight` is
+        // already empty. On abort, drop cancels the remaining futures (F10).
+        drop(in_flight);
+        // Sync counters for post-loop reporting.
+        files_done = files_done_atomic.load(Ordering::Relaxed);
+        bytes_done = atomic_bytes_done.load(Ordering::Relaxed);
+    } else {
+        // Sequential path (unchanged semantics). Kept behavior-equivalent to
+        // pre-P4.2 for small batches and for backends that don't parallelize.
+        for source_path in source_paths {
             if is_cancelled(&state.intent) {
-                return ControlFlow::Break(());
-            }
-
-            // Update overall bytes_done: add the delta since last callback
-            let prev = last_file_bytes.swap(file_bytes_done, Ordering::Relaxed);
-            let delta = file_bytes_done.saturating_sub(prev);
-            let current_total = atomic_bytes_done.fetch_add(delta, Ordering::Relaxed) + delta;
-
-            // Read current files_done from the atomic (updated by on_file_complete)
-            let current_files_done = files_done_atomic.load(Ordering::Relaxed);
-
-            // Throttled progress emission
-            let last = *last_progress_mutex.lock().unwrap();
-            if last.elapsed() >= progress_interval {
-                *last_progress_mutex.lock().unwrap() = Instant::now();
-                events.emit_progress(WriteProgressEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Copy,
-                    phase: WriteOperationPhase::Copying,
-                    current_file: file_name_for_cb.clone(),
-                    files_done: current_files_done,
-                    files_total: total_files,
-                    bytes_done: current_total,
-                    bytes_total: total_bytes,
-                });
-                update_operation_status(
-                    operation_id,
-                    WriteOperationPhase::Copying,
-                    file_name_for_cb.clone(),
-                    current_files_done,
-                    total_files,
-                    current_total,
-                    total_bytes,
-                );
-            }
-
-            ControlFlow::Continue(())
-        };
-
-        // Build the on_file_complete callback that increments the atomic file counter
-        let on_file_complete = || {
-            files_done_atomic.fetch_add(1, Ordering::Relaxed);
-        };
-
-        // Remember the destination path before copying (for partial-file cleanup)
-        last_dest_path = Some(dest_item_path.clone());
-
-        match copy_single_path(
-            &source_volume,
-            source_path,
-            &dest_volume,
-            &dest_item_path,
-            state,
-            &on_file_progress,
-            &on_file_complete,
-        )
-        .await
-        {
-            Ok(bytes_copied) => {
-                // Copy succeeded — record destination path for potential rollback
-                copied_paths.push(dest_item_path);
-                last_dest_path = None;
-
-                // Sync files_done from the atomic (updated by on_file_complete during recursive copy)
-                files_done = files_done_atomic.load(Ordering::Relaxed);
-                // Sync bytes_done from the atomic (the callback may have updated it mid-file)
-                bytes_done = atomic_bytes_done.load(Ordering::Relaxed);
-                // If the volume didn't call the progress callback (default impl), add bytes_copied
-                if last_file_bytes.load(Ordering::Relaxed) == 0 && bytes_copied > 0 {
-                    bytes_done += bytes_copied;
-                }
-                last_progress_time = *last_progress_mutex.lock().unwrap();
-            }
-            Err(e) => {
-                // Sync bytes_done before handling the error
-                bytes_done = atomic_bytes_done.load(Ordering::Relaxed);
-                copy_error = Some(map_volume_error(&source_path.display().to_string(), e));
                 break;
+            }
+
+            let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
+            let mut dest_item_path = if let Some(name) = source_path.file_name() {
+                dest_path.join(name)
+            } else {
+                dest_path.to_path_buf()
+            };
+
+            if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path).await {
+                let source_is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
+                let dest_is_dir = dest_meta.is_directory;
+                if source_is_dir && dest_is_dir {
+                    log::debug!(
+                        "copy_volumes_with_progress: merging directories {} -> {}",
+                        source_path.display(),
+                        dest_item_path.display()
+                    );
+                } else {
+                    log::debug!(
+                        "copy_volumes_with_progress: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
+                        dest_item_path.display(),
+                        source_is_dir,
+                        dest_is_dir
+                    );
+                    let resolved = resolve_volume_conflict(
+                        &source_volume,
+                        source_path,
+                        &dest_volume,
+                        &dest_item_path,
+                        config,
+                        events,
+                        operation_id,
+                        state,
+                        &mut apply_to_all_resolution,
+                    )
+                    .await?;
+                    match resolved {
+                        None => {
+                            log::debug!(
+                                "copy_volumes_with_progress: skipping {} due to conflict resolution",
+                                source_path.display()
+                            );
+                            continue;
+                        }
+                        Some(resolved_path) => {
+                            dest_item_path = resolved_path;
+                        }
+                    }
+                }
+            }
+
+            log::debug!(
+                "copy_volumes_with_progress: copying {} -> {}",
+                source_path.display(),
+                dest_item_path.display()
+            );
+
+            let last_file_bytes = AtomicU64::new(0);
+            let file_name_for_cb = file_name.clone();
+            let bytes_done_a = Arc::clone(&atomic_bytes_done);
+            let files_done_a = Arc::clone(&files_done_atomic);
+            let last_prog_a = Arc::clone(&last_progress_mutex);
+
+            let on_file_progress = |file_bytes_done: u64, _file_bytes_total: u64| -> ControlFlow<()> {
+                if is_cancelled(&state.intent) {
+                    return ControlFlow::Break(());
+                }
+                let prev = last_file_bytes.swap(file_bytes_done, Ordering::Relaxed);
+                let delta = file_bytes_done.saturating_sub(prev);
+                let current_total = bytes_done_a.fetch_add(delta, Ordering::Relaxed) + delta;
+                let current_files_done = files_done_a.load(Ordering::Relaxed);
+                let last = *last_prog_a.lock().unwrap();
+                if last.elapsed() >= progress_interval {
+                    *last_prog_a.lock().unwrap() = Instant::now();
+                    events.emit_progress(WriteProgressEvent {
+                        operation_id: operation_id.to_string(),
+                        operation_type: WriteOperationType::Copy,
+                        phase: WriteOperationPhase::Copying,
+                        current_file: file_name_for_cb.clone(),
+                        files_done: current_files_done,
+                        files_total: total_files,
+                        bytes_done: current_total,
+                        bytes_total: total_bytes,
+                    });
+                    update_operation_status(
+                        operation_id,
+                        WriteOperationPhase::Copying,
+                        file_name_for_cb.clone(),
+                        current_files_done,
+                        total_files,
+                        current_total,
+                        total_bytes,
+                    );
+                }
+                ControlFlow::Continue(())
+            };
+
+            let on_file_complete = || {
+                files_done_atomic.fetch_add(1, Ordering::Relaxed);
+            };
+
+            last_dest_path = Some(dest_item_path.clone());
+
+            match copy_single_path(
+                &source_volume,
+                source_path,
+                &dest_volume,
+                &dest_item_path,
+                state,
+                &on_file_progress,
+                &on_file_complete,
+            )
+            .await
+            {
+                Ok(bytes_copied) => {
+                    copied_paths.lock().unwrap().push(dest_item_path);
+                    last_dest_path = None;
+                    files_done = files_done_atomic.load(Ordering::Relaxed);
+                    bytes_done = atomic_bytes_done.load(Ordering::Relaxed);
+                    if last_file_bytes.load(Ordering::Relaxed) == 0 && bytes_copied > 0 {
+                        bytes_done += bytes_copied;
+                        atomic_bytes_done.store(bytes_done, Ordering::Relaxed);
+                    }
+                }
+                Err(e) => {
+                    bytes_done = atomic_bytes_done.load(Ordering::Relaxed);
+                    copy_error = Some(map_volume_error(&source_path.display().to_string(), e));
+                    break;
+                }
             }
         }
     }
+
+    // Unwrap shared containers for post-loop logic.
+    let mut copied_paths: Vec<PathBuf> = Arc::try_unwrap(copied_paths)
+        .map(|m| m.into_inner().unwrap_or_default())
+        .unwrap_or_else(|arc| arc.lock().unwrap().clone());
+    let in_flight_partials: Vec<PathBuf> = Arc::try_unwrap(in_flight_partials)
+        .map(|m| m.into_inner().unwrap_or_default())
+        .unwrap_or_else(|arc| arc.lock().unwrap().clone());
 
     // Post-loop: handle success, cancellation, or error
     let intent = load_intent(&state.intent);
@@ -596,6 +805,15 @@ async fn copy_volumes_with_progress(
         if let Some(partial_path) = last_dest_path.take() {
             copied_paths.push(partial_path);
         }
+        // Under concurrency there can be multiple partials — the tasks we
+        // dropped on abort each left a .cmdr-tmp-<uuid> that the backend's
+        // writer.abort() cleaned up, but the destination path itself may have
+        // an already-renamed file. Roll those back too.
+        for partial in in_flight_partials.iter() {
+            if !copied_paths.contains(partial) {
+                copied_paths.push(partial.clone());
+            }
+        }
 
         // User requested rollback — delete all copied files in reverse order with progress
         log::info!(
@@ -624,8 +842,20 @@ async fn copy_volumes_with_progress(
             rolled_back: rollback_completed,
         });
     } else {
-        // Stopped or error — keep completed files, clean up only the last partial file
-        if let Some(partial_path) = &last_dest_path {
+        // Stopped or error — keep completed files, clean up partial files.
+        // Sequential path leaves at most one partial in `last_dest_path`.
+        // Concurrent path leaves one-per-in-flight-task in `in_flight_partials`
+        // (already net of anything that finished before the abort).
+        let mut partials_to_clean: Vec<PathBuf> = Vec::new();
+        if let Some(partial_path) = last_dest_path.take() {
+            partials_to_clean.push(partial_path);
+        }
+        for partial in &in_flight_partials {
+            if !partials_to_clean.contains(partial) {
+                partials_to_clean.push(partial.clone());
+            }
+        }
+        for partial_path in &partials_to_clean {
             log::debug!(
                 "copy_volumes_with_progress: cleaning up partial file {} for op={}",
                 partial_path.display(),
