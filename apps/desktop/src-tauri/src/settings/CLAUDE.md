@@ -1,5 +1,9 @@
 # Settings (Rust)
 
+## Live-apply rule
+
+**Every setting MUST apply immediately without restart.** When adding a new setting that the backend reads, also add: (a) a Tauri command that updates the relevant atomic/global (live in `commands/settings.rs`, delegate to the owning subsystem's setter), and (b) a call from `settings-applier.ts` triggered by `onSettingChange`. Startup-time seeding from `load_settings` stays (it gives the backend a sane initial value before any window opens), but every subsequent change is pushed via IPC. Restart-required is a bug, not a design choice. If you're tempted to leave a setting as startup-only because it touches a TCP connection, a thread pool, a watcher, or a server — find a way. Reconnect, rebind, restart the thread, swap the worker pool, whatever it takes. **MUST.** No exceptions.
+
 Thin read-only settings loader used during Rust startup. The frontend owns all settings via `tauri-plugin-store`; this module just reads what was persisted so the backend can configure itself at launch.
 
 ## Key files

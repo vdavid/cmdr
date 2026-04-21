@@ -1,5 +1,16 @@
 # Settings system
 
+## Live-apply rule
+
+**Every setting MUST apply immediately without restart.** The frontend side of this contract lives in
+`settings-applier.ts`: every setting that the backend (or a global JS module) reads must have a matching `case` in the
+`handleSettingChange` switch that calls the right Tauri command or module helper. When adding a new setting that changes
+backend behavior, you MUST add: (a) a Tauri command on the Rust side (see the mirrored rule in
+`src-tauri/src/settings/CLAUDE.md`), (b) a typed wrapper in `$lib/tauri-commands/settings.ts`, and (c) an
+`onSettingChange` case in `settings-applier.ts` that invokes it. Restart-required is a bug, not a design choice. If the
+setting looks "structural" (like re-opening a TCP connection, rebinding a port, swapping a thread pool) — still
+live-apply. Reconnect, rebind, restart the worker, whatever it takes. **MUST.** No exceptions.
+
 ## Purpose
 
 The settings system provides user-configurable options for Cmdr through a registry-based architecture. All settings are
