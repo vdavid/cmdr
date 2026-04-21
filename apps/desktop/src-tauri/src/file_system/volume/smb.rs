@@ -1042,6 +1042,14 @@ impl Volume for SmbVolume {
         true
     }
 
+    fn max_concurrent_ops(&self) -> usize {
+        // Phase 4.2: hardcoded at 10 — within Phase 3's smb2 `MAX_PIPELINE_WINDOW`
+        // of 32 and a safe default for QNAP-class servers. Phase 4.3 wires this
+        // to the `network.smbConcurrency` setting (range 1..=32).
+        // TODO(P4.3): replace with settings accessor.
+        10
+    }
+
     fn open_read_stream<'a>(
         &'a self,
         path: &'a Path,

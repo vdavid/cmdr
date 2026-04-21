@@ -583,6 +583,12 @@ impl Volume for MtpVolume {
         true
     }
 
+    fn max_concurrent_ops(&self) -> usize {
+        // MTP is a single USB bulk transport — parallel ops would just
+        // serialize on the wire with extra overhead.
+        1
+    }
+
     fn open_read_stream<'a>(
         &'a self,
         path: &'a Path,

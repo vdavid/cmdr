@@ -462,6 +462,12 @@ impl Volume for InMemoryVolume {
         true
     }
 
+    fn max_concurrent_ops(&self) -> usize {
+        // No backend bottleneck; return high and let the copy engine's
+        // upper bound (32) clamp to sanity.
+        32
+    }
+
     fn open_read_stream<'a>(
         &'a self,
         path: &'a Path,

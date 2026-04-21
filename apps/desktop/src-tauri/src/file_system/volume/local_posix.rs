@@ -300,6 +300,17 @@ impl Volume for LocalPosixVolume {
         true
     }
 
+    fn max_concurrent_ops(&self) -> usize {
+        // Local disk can handle several concurrent I/O streams; clamp to
+        // physical-ish core count so we never spawn hundreds of tasks for
+        // huge batches. `available_parallelism` returns logical CPUs, so we
+        // halve it as a cheap stand-in for "physical cores" (no num_cpus dep).
+        // Minimum of 4 keeps the behavior reasonable on single-core boxes.
+        let logical = std::thread::available_parallelism().map_or(4, |n| n.get());
+        let approx_physical = (logical / 2).max(1);
+        approx_physical.clamp(4, 16)
+    }
+
     fn open_read_stream<'a>(
         &'a self,
         path: &'a Path,
