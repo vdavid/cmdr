@@ -2,6 +2,7 @@
     import type { TabState, TabId } from './tab-types'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getFolderName } from '$lib/file-operations/transfer/transfer-dialog-utils'
+    import { getVolumes } from '$lib/stores/volume-store.svelte'
 
     interface Props {
         tabs: TabState[]
@@ -31,6 +32,13 @@
 
     const isSingleTab = $derived(tabs.length === 1)
     const isAtMax = $derived(tabs.length >= maxTabs)
+
+    const volumeNameById = $derived(new Map(getVolumes().map((v) => [v.id, v.name])))
+
+    function tabTooltipText(tab: TabState): string {
+        const volumeName = volumeNameById.get(tab.volumeId)
+        return volumeName ? `${volumeName} — ${tab.path}` : tab.path
+    }
 
     function handleTabMouseDown(event: MouseEvent, tabId: TabId) {
         // Middle click
@@ -75,7 +83,7 @@
                 class:after-active={isAfterActive}
                 role="tab"
                 aria-selected={isActive}
-                use:tooltip={{ text: tab.path, overflowOnly: true }}
+                use:tooltip={tabTooltipText(tab)}
                 onmousedown={(e: MouseEvent) => {
                     handleTabMouseDown(e, tab.id)
                 }}
