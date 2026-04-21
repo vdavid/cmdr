@@ -360,6 +360,7 @@ pub fn run() {
             // Apply direct SMB connection setting (default: true)
             file_system::set_direct_smb_enabled(saved_settings.direct_smb_connection.unwrap_or(true));
             file_system::set_filter_safe_save_artifacts(saved_settings.filter_safe_save_artifacts.unwrap_or(true));
+            file_system::set_smb_concurrency(saved_settings.smb_concurrency.unwrap_or(10) as usize);
 
             // Initialize disk space poller (live status bar updates)
             space_poller::init(app.handle());

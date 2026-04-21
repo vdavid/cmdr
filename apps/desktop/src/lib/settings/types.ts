@@ -117,6 +117,7 @@ export interface SettingsValues {
   'network.shareCacheDuration': number
   'network.timeoutMode': NetworkTimeoutMode
   'network.customTimeout': number
+  'network.smbConcurrency': number
 
   // Theme
   'theme.mode': ThemeMode

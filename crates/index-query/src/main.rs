@@ -17,14 +17,18 @@ fn main() {
     let db_path = &args[1];
     let sql = &args[2];
 
-    let conn = Connection::open_with_flags(db_path, OpenFlags::SQLITE_OPEN_READ_ONLY).expect("Couldn't open database");
-    cmdr_lib::indexing::store::register_platform_case_collation(&conn).expect("Couldn't register collation");
+    let conn = Connection::open_with_flags(db_path, OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .expect("Couldn't open database");
+    cmdr_lib::indexing::store::register_platform_case_collation(&conn)
+        .expect("Couldn't register collation");
 
     let mut stmt = conn.prepare(sql).expect("Couldn't prepare statement");
     let column_count = stmt.column_count();
 
     // Print header row
-    let headers: Vec<&str> = (0..column_count).map(|i| stmt.column_name(i).unwrap_or("?")).collect();
+    let headers: Vec<&str> = (0..column_count)
+        .map(|i| stmt.column_name(i).unwrap_or("?"))
+        .collect();
     println!("{}", headers.join("\t"));
 
     // Print data rows

@@ -57,6 +57,8 @@ pub struct Settings {
     pub mtp_enabled: Option<bool>,
     #[serde(alias = "advanced.diskSpaceChangeThreshold", default)]
     pub disk_space_change_threshold_mb: Option<u64>,
+    #[serde(alias = "network.smbConcurrency", default)]
+    pub smb_concurrency: Option<u16>,
 }
 
 fn default_show_hidden() -> bool {
@@ -78,6 +80,7 @@ impl Default for Settings {
             filter_safe_save_artifacts: None,
             mtp_enabled: None,
             disk_space_change_threshold_mb: None,
+            smb_concurrency: None,
         }
     }
 }
@@ -128,6 +131,10 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let filter_safe_save_artifacts = json.get("advanced.filterSafeSaveArtifacts").and_then(|v| v.as_bool());
     let mtp_enabled = json.get("fileOperations.mtpEnabled").and_then(|v| v.as_bool());
     let disk_space_change_threshold_mb = json.get("advanced.diskSpaceChangeThreshold").and_then(|v| v.as_u64());
+    let smb_concurrency = json
+        .get("network.smbConcurrency")
+        .and_then(|v| v.as_u64())
+        .and_then(|v| u16::try_from(v).ok());
 
     Ok(Settings {
         show_hidden_files,
@@ -142,5 +149,6 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         filter_safe_save_artifacts,
         mtp_enabled,
         disk_space_change_threshold_mb,
+        smb_concurrency,
     })
 }

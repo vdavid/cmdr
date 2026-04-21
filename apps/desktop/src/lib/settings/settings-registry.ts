@@ -352,6 +352,23 @@ export const settingsRegistry: SettingDefinition[] = [
       step: 1,
     },
   },
+  {
+    id: 'network.smbConcurrency',
+    section: ['Network', 'SMB/Network shares'],
+    label: 'Concurrent operations per SMB connection',
+    description:
+      'How many file transfers Cmdr runs in parallel on a single SMB connection. Higher values speed up batch copies of many files (especially many small files) but use more server resources. Default 10 is safe for most home NAS hardware. Changes apply on the next batch copy.',
+    keywords: ['smb', 'concurrency', 'parallel', 'copy', 'batch', 'performance', 'transfer', 'speed'],
+    type: 'number',
+    default: 10,
+    component: 'number-input',
+    showInAdvanced: true,
+    constraints: {
+      min: 1,
+      max: 32,
+      step: 1,
+    },
+  },
 
   // ========================================================================
   // Themes

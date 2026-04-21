@@ -75,6 +75,14 @@ static DIRECT_SMB_ENABLED: AtomicBool = AtomicBool::new(true);
 /// Set from the `advanced.filterSafeSaveArtifacts` setting at startup.
 static FILTER_SAFE_SAVE_ARTIFACTS: AtomicBool = AtomicBool::new(true);
 
+/// Concurrent SMB ops per session — the `SmbVolume::max_concurrent_ops()` value.
+/// Set from the `network.smbConcurrency` setting at startup. Default 10, clamped
+/// to `1..=32` (above 32 exceeds smb2's `MAX_PIPELINE_WINDOW`; below 1 is nonsense).
+///
+/// `AtomicUsize` because `SmbVolume::max_concurrent_ops()` reads this on every
+/// batch-copy dispatch — lock-free matters.
+static SMB_CONCURRENCY: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(10);
+
 /// Sets the direct SMB connection preference. Call from app setup after loading settings.
 pub fn set_direct_smb_enabled(enabled: bool) {
     DIRECT_SMB_ENABLED.store(enabled, Ordering::Relaxed);
@@ -93,6 +101,20 @@ pub fn set_filter_safe_save_artifacts(enabled: bool) {
 /// Returns whether safe-save artifact filtering is enabled.
 pub fn is_filter_safe_save_artifacts_enabled() -> bool {
     FILTER_SAFE_SAVE_ARTIFACTS.load(Ordering::Relaxed)
+}
+
+/// Sets the SMB concurrency value. Call from app setup after loading settings.
+/// Clamps the input to `1..=32` defensively — a misconfigured settings file
+/// shouldn't be able to starve or overwhelm the copy engine.
+pub fn set_smb_concurrency(value: usize) {
+    let clamped = value.clamp(1, 32);
+    SMB_CONCURRENCY.store(clamped, Ordering::Relaxed);
+}
+
+/// Returns the SMB concurrency limit (1..=32). Read on every batch-copy
+/// dispatch by `SmbVolume::max_concurrent_ops()`.
+pub fn smb_concurrency() -> usize {
+    SMB_CONCURRENCY.load(Ordering::Relaxed)
 }
 
 /// Initializes the global volume manager with all discovered volumes.

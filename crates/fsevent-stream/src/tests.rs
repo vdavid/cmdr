@@ -204,14 +204,19 @@ async fn must_receive_fs_events_impl(
     if verify_file_events {
         // We expect at least a create and a delete event. Additional directory-level events
         // may be present (macOS Sequoia delivers these alongside file events).
-        assert!(events.len() >= 2, "expected at least 2 events, got {}", events.len());
+        assert!(
+            events.len() >= 2,
+            "expected at least 2 events, got {}",
+            events.len()
+        );
 
         // Find the file creation event (by path and flags, not position).
         let create_event = events
             .iter()
             .find(|e| {
                 e.path.as_path() == test_file.as_path()
-                    && e.flags.contains(StreamFlags::ITEM_CREATED | StreamFlags::IS_FILE)
+                    && e.flags
+                        .contains(StreamFlags::ITEM_CREATED | StreamFlags::IS_FILE)
             })
             .expect("to find file creation event");
         if verify_inode {
@@ -223,7 +228,8 @@ async fn must_receive_fs_events_impl(
             .iter()
             .find(|e| {
                 e.path.as_path() == test_file.as_path()
-                    && e.flags.contains(StreamFlags::ITEM_REMOVED | StreamFlags::IS_FILE)
+                    && e.flags
+                        .contains(StreamFlags::ITEM_REMOVED | StreamFlags::IS_FILE)
             })
             .expect("to find file removal event");
         if verify_inode {
