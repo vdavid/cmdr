@@ -38,15 +38,14 @@ VolumeManager (registry)
 Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new volume types can be added incrementally. Key capability flags:
 
 - `supports_watching()` — enables the `notify`-based *listing* file watcher in `operations.rs` (separate from the `VolumeWatcher` trait used for drive indexing). `MtpVolume` returns `false` (it has its own USB event loop).
-- `supports_export()` — enables copy/move UI. Local, MTP, and SMB return `true`.
-- `supports_streaming()` — enables cross-volume transfers via `open_read_stream` / `write_from_stream`. `MtpVolume` and `SmbVolume` return `true`. The streaming path is the universal fallback for any non-local volume pair — future volume types (FTP, S3) just implement these two methods to get cross-volume copy for free.
+- `supports_export()` — "this volume can stream its bytes via `open_read_stream`" (so it can act as a source in a cross-volume copy). Gates the copy dialog's "copy from this volume" UI. Local, MTP, SMB, and InMemory return `true`.
+- `supports_streaming()` — enables cross-volume transfers via `open_read_stream` / `write_from_stream`. `LocalPosixVolume`, `MtpVolume`, `SmbVolume`, and `InMemoryVolume` all return `true`. Since Phase 4 this is the universal byte path for every non-APFS-clone copy — new backends just implement the two streaming methods to get cross-volume copy for free.
 - `local_path()` — returns `Some` only for local volumes; allows `copyfile(2)` fast-path in copy operations. `SmbVolume` returns `None` so copies go through smb2 instead of the slow OS mount.
 - `supports_local_fs_access()` — whether `std::fs` operations (stat, read_dir) work on this volume's paths. Default `true`. `MtpVolume` and `SmbVolume` return `false`. Used to skip the legacy synthetic entry diff path (now superseded by `notify_mutation`).
 - `notify_mutation(volume_id, parent_path, mutation)` — called after a successful mutation (create, delete, rename) to update the listing cache immediately. Default impl uses `std::fs` (works for `LocalPosixVolume`). `SmbVolume` and `MtpVolume` override to use their own protocol's `get_metadata`. Fire-and-forget, no error propagation.
 - `smb_connection_state()` — returns `Some(SmbConnectionState)` for SMB volumes (green/yellow indicator in volume picker). Default `None`. Only `SmbVolume` implements it.
 - `on_unmount()` — lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
 - `scanner()` / `watcher()` — drive indexing hooks; `None` by default.
-- `export_to_local(source, dest, on_progress)` / `import_from_local(source, dest, on_progress)` — always take an `on_progress` callback `&(dyn Fn(u64, u64) -> ControlFlow<()> + Sync)`. Callers that don't need progress pass a no-op (`&|_, _| ControlFlow::Continue(())`). `SmbVolume` reports per-chunk progress via smb2's `read_file_with_progress`/`write_file_with_progress`. `MtpVolume` reports export progress via `download_file_with_progress` (import doesn't report yet). `LocalPosixVolume` and `InMemoryVolume` ignore the callback (OS-native copy APIs).
 - `space_poll_interval()` — recommended interval for the live disk-space poller (`space_poller.rs`). Default 2 s (local volumes). `SmbVolume` and `MtpVolume` override to 5 s. `InMemoryVolume` returns `None` (no polling). The poller uses this to tick each volume at its own cadence.
 
 ## Building a new volume
@@ -73,14 +72,14 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 
 - [ ] Implement `create_directory`, `create_file`, `delete`, `rename`.
 - [ ] After each successful mutation, call `self.notify_mutation(&volume_id, parent_path, MutationEvent::...)` so the listing cache updates immediately. Override `notify_mutation` on the trait if your backend can answer `get_metadata` faster than `std::fs::metadata` would (MTP and SMB do this).
-- [ ] Return `supports_export() = true` and implement `export_to_local` + `import_from_local`. These are what the Copy dialog uses for "this volume ↔ local" transfers.
+- [ ] Return `supports_streaming() = true` and implement `open_read_stream` + `write_from_stream`. These are the byte path for every cross-volume copy (Phase 4 collapsed the old `export_to_local` / `import_from_local` onto this pair). The Copy dialog uses them for "this volume ↔ anywhere" transfers.
+- [ ] Return `supports_export() = true` if the volume should appear as a copy source in the UI.
 - [ ] Implement `scan_for_copy` (count + bytes) and `scan_for_conflicts` (destination collision detection). These feed the Copy dialog's pre-flight.
 - [ ] Map your backend's errors through a `map_*_error` function that returns `VolumeError`. Connection-loss errors should trigger a state transition (see `SmbVolume::handle_smb_result` as a reference) so subsequent calls fail fast.
-- [ ] **No full-file buffering in per-file transfer paths.** Don't `std::fs::read` the local source, don't drain the incoming `VolumeReadStream` into a `Vec<u8>`, and don't collect the remote file into a `Vec<u8>` before writing to local. An 8 GB copy would allocate 8 GB of RAM. See the "Streaming requirement" section on each of these trait methods' doc comments: `export_to_local`, `import_from_local`, `open_read_stream`, `write_from_stream`.
+- [ ] **No full-file buffering in per-file transfer paths.** Don't drain the incoming `VolumeReadStream` into a `Vec<u8>` before writing, and don't collect the remote file into a `Vec<u8>` before yielding. An 8 GB copy would allocate 8 GB of RAM. See the "Streaming requirement" section on each trait method's doc comment: `open_read_stream`, `write_from_stream`.
 
 ### Tier 3 — integrate with the wider app (optional, but mostly expected)
 
-- [ ] `supports_streaming() = true` + implement `open_read_stream` / `write_from_stream`. Required for cross-volume copies (for example, this-backend → MTP). Streaming pattern guidance below.
 - [ ] If the backend has its own change-notification channel, set `supports_watching() = true` and implement a watcher task that calls `notify_directory_changed` when things move. If you rely on the OS mount's FSEvents (like SmbVolume currently does), leave it `false`.
 - [ ] If `std::fs` operations work on the volume's paths (you're a local FS with extra flavor), leave `supports_local_fs_access()` at the default `true`. Otherwise override to `false` so the legacy synthetic-diff path is skipped.
 - [ ] If `std::fs::copy` can target this volume's paths directly, return `Some(root)` from `local_path()` — the copy path will prefer `copyfile(3)` / `copy_file_range(2)` for same-device copies. Otherwise return `None` (the default).
@@ -105,10 +104,9 @@ At-a-glance view of which capabilities each current volume opts into. Use this w
 | `list_directory` / metadata | ✅                   | ✅                      | ✅                        | ✅                 |
 | Mutations (create/delete/rename) | ✅              | ✅                      | ✅                        | ✅                 |
 | `supports_export`           | ✅                   | ✅                      | ✅                        | ✅                 |
-| `export_to_local` / `import_from_local` | ✅       | ✅                      | ✅ streaming (both directions) | ❌            |
-| `supports_streaming`        | ❌ (no need)         | ✅                      | ✅                        | ✅                 |
-| `open_read_stream`          | ❌                   | ✅ owned download       | ✅ channel-backed         | ✅ in-memory       |
-| `write_from_stream`         | ❌                   | ✅ streaming            | ✅ streaming              | ✅ in-memory       |
+| `supports_streaming`        | ✅                   | ✅                      | ✅                        | ✅                 |
+| `open_read_stream`          | ✅ spawn_blocking    | ✅ owned download       | ✅ channel-backed         | ✅ in-memory       |
+| `write_from_stream`         | ✅ spawn_blocking    | ✅ streaming            | ✅ streaming              | ✅ in-memory       |
 | `supports_watching`         | ✅ FSEvents/inotify  | ❌ (own USB watcher)    | ❌ (OS-mount FSEvents)    | ❌                 |
 | `supports_local_fs_access`  | ✅ (default)         | ❌                      | ❌                        | ❌                 |
 | `local_path`                | ✅ `Some(root)`      | `None`                  | `None`                    | `None`             |
@@ -160,7 +158,7 @@ Key building blocks:
 
 The pre-refactor `SmbReadStream` read the entire file into a `Vec<u8>` via `read_file_pipelined` and yielded slices. For an 8 GB file that meant an 8 GB allocation. Don't do this. If the consumer API is stream-shaped, the producer should stream too.
 
-The same rule applies to write paths: `import_from_local` and `write_from_stream` must drive the backend's chunk-by-chunk writer (for example, smb2's `FileWriter`) rather than slurping the source into a `Vec<u8>` first. The SMB write paths used to pre-buffer; they now stream. See the "Streaming requirement" section on each Volume trait method's doc comment.
+The same rule applies to write paths: `write_from_stream` must drive the backend's chunk-by-chunk writer (for example, smb2's `FileWriter`) rather than slurping the source into a `Vec<u8>` first. See the "Streaming requirement" section on each Volume trait method's doc comment.
 
 ## Path handling gotchas
 
@@ -359,6 +357,9 @@ spawned detached task. This is safe because the stream always lives in an async 
 
 **Gotcha**: Watcher filenames are NFC (from server) but macOS mount paths are NFD
 **Why**: SMB servers return NFC-normalized filenames. macOS filesystem paths use NFD. The watcher NFD-normalizes filenames before constructing display paths used for cache lookups.
+
+**Decision**: Phase 4 collapsed `export_to_local` / `import_from_local` onto `open_read_stream` / `write_from_stream`
+**Why**: The three pre-Phase-4 copy paths (local↔local, local↔volume, volume↔volume) duplicated the same "open a reader, pipe to a writer" logic in three different shapes. The APFS clonefile fast path is the only one with a real capability difference. Collapsing the other two to a single streaming path means new backends (S3, WebDAV, FTP) implement two methods instead of four, concurrency lives in one place (`volume_copy.rs` — Phase 4.2), and features like resume / checksum / progress benefit every direction at once. See `docs/notes/phase4-volume-copy-unification.md`.
 
 **Decision**: Progress callbacks use `&dyn Fn(u64, u64) -> ControlFlow<()>`, not `FnMut`
 **Why**: The Volume trait is object-safe (`dyn Volume`), so callbacks must be `Fn` (not `FnMut`). Callers use `AtomicU64` for byte counters and `Cell<Instant>` for timestamps to mutate state inside a `Fn` closure. This avoids needing `RefCell` or `Mutex` in the hot path.

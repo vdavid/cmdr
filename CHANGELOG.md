@@ -5,6 +5,17 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Breaking (internal API):** The `Volume` trait no longer exposes `export_to_local` and `import_from_local`. Every
+  cross-volume copy now flows through `open_read_stream` + `write_from_stream` (or the APFS clonefile fast path when
+  both sides are `LocalPosixVolume` on the same volume). Adding a new volume backend takes two streaming methods
+  instead of four, and concurrency (coming in Phase 4.2) plugs into one dispatch point. Only in-tree consumer was
+  `volume_copy.rs`; no external crates depended on the removed methods. See
+  `docs/notes/phase4-volume-copy-unification.md`.
+
 ## [0.12.0] - 2026-04-18
 
 ### Added
