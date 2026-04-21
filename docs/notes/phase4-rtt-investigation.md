@@ -93,33 +93,20 @@ The original investigation's "2.7× gap that RTTs alone don't explain" dissolves
 missed, and (b) recognize that concurrency is effectively 1, not 10. 5 RTTs × 59 ms = 295 ms/file, matching the observed
 ~260–328 ms range directly.
 
-### What this means for the fix
+### What the measurement asked for
 
-Before building the compound read/write fast-path from the previous doc's Option 1, the highest-leverage wins are
-elsewhere:
+Before building the compound read/write fast-path, the highest-leverage wins were elsewhere:
 
-1. **Remove the two redundant stat probes in the copy pipeline.** Both are free data:
-   - `copy_single_path`'s `is_directory` call is redundant because the scan phase already enumerated every source path
-     and knows its type. Pass that through the strategy instead of re-statting.
-   - `scan_for_copy` on a file-leaf path does a `stat` just to fill `CopyScanResult{file_count:1, total_bytes}`. For
-     small-file batches this is pure overhead — the copy engine could scan lazily or batch stats on the server side
-     (smb2 already exposes `stat_files` for pipelined stats).
-   - Wins: 5 RTTs → 3 RTTs per file. At 59 ms RTT that's ~120 ms saved per file in the serial case, ~40 % faster.
+1. **Remove the two redundant stat probes in the copy pipeline.** Landed in commit `4683a8d8`: `scan_for_copy` now
+   returns `top_level_is_directory`, the copy engine caches it per source in a `HashMap<PathBuf, SourceHint>`, and
+   `copy_single_path` takes it as a parameter instead of re-statting. Net: one fewer compound `stat` per file.
 
-2. **Unblock concurrency on the SMB read path.** The session mutex is held end-to-end per download. Options:
-   - Use a pool of SMB connections (smb2 already supports multi-connection scaling; cmdr doesn't wire it up on the read
-     path yet) so 10 downloads can run on 10 sessions. This is the 10× improvement the batch picker already advertises
-     but can't deliver today.
-   - Alternatively, drop the mutex around the per-op `send`/`recv` and keep it only around session-state mutations;
-     smb2's `Connection::execute` already takes `&self`, so many outstanding requests on a single connection is
-     supported at the protocol layer. The cmdr-side `tokio::sync::Mutex<Option<(SmbClient, Tree)>>` is the bottleneck.
+2. **Unblock concurrency on the SMB read path.** The session mutex is still held end-to-end per download — this fix is
+   blocked pending an smb2 API addition (see "Phase 4 speedup results" below).
 
-3. **Only then** consider the compound fast-path (Option 1 from the previous section). With fixes 1 and 2 landed, a
-   CREATE+READ+CLOSE compound cuts the remaining 3 RTTs to 1 — a further 3× on the read side. But it's a smaller
-   absolute win than (1) and (2).
-
-Expected stacking: today's ~280 ms/file → ~170 ms/file after fix (1) → ~20 ms/file after fix (2) at 10-way concurrency →
-~10 ms/file after fix (3). Fix (1) is the cheapest and most surgical; fix (2) unlocks the headline number.
+3. **Compound fast-path** — `Tree::read_file_compound` / `Tree::write_file_compound`. Landed in commit `7097966f` for
+   reads on files ≤ `max_read_size` and writes on files ≤ `max_write_size`. Cuts the 3-RTT CREATE+READ+CLOSE down to 1
+   RTT (compound read) and 4-RTT CREATE+WRITE+FLUSH+CLOSE down to 1 RTT (compound write).
 
 ### Reproducing
 
@@ -285,3 +272,85 @@ path.
   copy workloads.
 - Before implementing: measure actual per-file RTT count (expected ~7, may be higher if `is_directory` / stat probes
   also hit the wire) to confirm the RTT diagnosis.
+
+## Phase 4 speedup results (2026-04-21)
+
+Measured after landing commits `4683a8d8` (drop redundant `is_directory` probe) and `7097966f` (compound read/write
+fast-path). Tailscale RTT at measurement time: ~50–60 ms average.
+
+### Wall-clock per configuration
+
+| Files | Before (wall-clock / per file) | After (wall-clock / per file) | Speedup |
+| ----- | ------------------------------ | ----------------------------- | ------- |
+| 1     | 328 ms / 328 ms                | 144 ms / 144 ms               | 2.3×    |
+| 3     | 838 ms / 279 ms                | 374 ms / 125 ms               | 2.2×    |
+| 100   | ~28 s / ~280 ms                | 10.71 s / 107 ms              | 2.6×    |
+
+(Sub-linear scaling past 3 files is expected — each file still serializes on the SMB session mutex. See concurrency note
+below.)
+
+### Per-file wire ops after the fix
+
+Wire trace for the 1-file run (`RUST_LOG='smb2::client::connection=debug,smb2::client::tree=debug'`, `FILE_COUNT=1`):
+
+```
+TreeConnect msg_id=3                                          ; one-time per session
+execute_compound 4 ops, msg_ids=[4,5,6,7]                      ; scan_for_copy stat — 1 RTT
+tree: read_file_compound path=_test\bench_100tiny\f_000.bin
+execute_compound 3 ops, msg_ids=[8,9,137]                      ; CREATE+READ+CLOSE — 1 RTT
+```
+
+Down from **5 RTTs before** (2× stat + CREATE + READ + CLOSE) to **2 RTTs after** (1× stat + compound
+CREATE+READ+CLOSE). Predicted from wire count: 2 × 59 ms = 118 ms. Measured: 144 ms. The ~26 ms over-spend is plausibly
+TLS/TCP buffering and the first-file session warm-up.
+
+### Interleaving — concurrency still bottlenecked
+
+Wire trace for the 3-file run shows the three compound reads land strictly sequentially (no interleaving between files
+0, 1, and 2):
+
+```
+tree: read_file_compound path=_test\bench_100tiny\f_000.bin
+execute_compound 3 ops, msg_ids=[16, 17, 145]
+tree: read_file_compound done, read 10240 bytes
+tree: read_file_compound path=_test\bench_100tiny\f_001.bin
+execute_compound 3 ops, msg_ids=[146, 147, 275]
+tree: read_file_compound done, read 10240 bytes
+tree: read_file_compound path=_test\bench_100tiny\f_002.bin
+execute_compound 3 ops, msg_ids=[276, 277, 405]
+tree: read_file_compound done, read 10240 bytes
+```
+
+Ratio 3-files / 1-file = 374 / 144 = 2.6×. If concurrency were working we'd see ~1×. The session-mutex bottleneck
+identified in the original analysis is still in play — the compound fast-path reduces per-file RTTs but can't
+parallelize across files while the mutex serializes them. See "Fix 2 blocker" below.
+
+### Fix 2 blocker (unblocking SMB read-path concurrency)
+
+Exposed during implementation: there's no public way to construct an `smb2::FileDownload` without holding
+`&mut SmbClient`. `Tree::open_file` and `FileDownload::new` are both `pub(crate)`. Public `Tree::read_file_compound` and
+`Tree::read_file_pipelined_with_progress` both buffer the whole file as `Vec<u8>`, which regresses peak memory for large
+files from a bounded window (chunk size × channel capacity ≈ a few MB) to the full file size.
+
+To keep the streaming shape and run multiple downloads in parallel on a single `smb2::Connection` (which is `Clone` and
+multiplexes concurrent `execute` calls over the same session), we'd need either:
+
+1. A public `Tree::download(&self, conn: &mut Connection, path: &str) -> Result<FileDownload<'_>>`, mirroring the
+   existing `pub async fn SmbClient::download` but without requiring the full client. About 5 lines additive in smb2.
+2. Or promote `Tree::open_file` + `FileDownload::new` from `pub(crate)` to `pub` so callers can assemble a download from
+   the primitives. Larger surface change, same effect.
+
+Either change is small but smb2 releases are batched, so the task directs to stop and report rather than forge ahead.
+Once one of those APIs ships, the cmdr side is straightforward: clone the `Tree` + `Connection` under the session lock,
+release the lock, drive the download on the clone. With 10-way concurrency unlocked, the 100-file wall-clock should drop
+from 10.71 s to roughly 1–2 s (per-file 107 ms → ~15 ms, limited by the scan stat + compound read serialized on the
+connection's pipeline window, not by the cmdr-side mutex).
+
+### Stacking plan
+
+- Fix 1 + Fix 3 (landed): **107 ms/file** at 100 files, 2.6× baseline.
+- Fix 2 (blocked on smb2 API, see above): projected **~15 ms/file** at 100 files (10-way concurrency, ~2 RTTs / 10 ≈ 12
+  ms effective, plus a few ms of tokio/mpsc overhead).
+
+That final number hits the same order of magnitude as a local-to-local copy and matches what `smb2`'s pipelined bench
+sees for the same workload.
