@@ -43,6 +43,34 @@ export async function updateServiceResolveTimeout(timeoutMs: number): Promise<vo
   await invoke('update_service_resolve_timeout', { timeoutMs })
 }
 
+/**
+ * Enables or disables automatic upgrade of SMB mounts to direct smb2 connections.
+ * Pushed live from the settings UI whenever `network.directSmbConnection` changes.
+ * @param enabled - True to enable direct SMB connections
+ */
+export async function setDirectSmbConnection(enabled: boolean): Promise<void> {
+  await invoke('set_direct_smb_connection', { enabled })
+}
+
+/**
+ * Toggles filtering of macOS safe-save artifacts (`.sb-*` files) in the SMB watcher.
+ * Pushed live from the settings UI whenever `advanced.filterSafeSaveArtifacts` changes.
+ * @param enabled - True to filter artifacts
+ */
+export async function setFilterSafeSaveArtifacts(enabled: boolean): Promise<void> {
+  await invoke('set_filter_safe_save_artifacts_cmd', { enabled })
+}
+
+/**
+ * Updates the SMB concurrency limit used by the batch copy engine.
+ * Clamped to `1..=32` in the Rust side. Pushed live from the settings UI
+ * whenever `network.smbConcurrency` changes.
+ * @param value - Desired concurrency (will be clamped)
+ */
+export async function setSmbConcurrency(value: number): Promise<void> {
+  await invoke('set_smb_concurrency_cmd', { value })
+}
+
 // ============================================================================
 // MCP server commands
 // ============================================================================

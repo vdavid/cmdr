@@ -11,6 +11,9 @@ import {
   setIndexingEnabled,
   setMtpEnabled,
   setDiskSpaceThreshold,
+  setDirectSmbConnection,
+  setFilterSafeSaveArtifacts,
+  setSmbConcurrency,
 } from '$lib/tauri-commands'
 
 const log = getAppLogger('settings-applier')
@@ -94,6 +97,18 @@ function handleSettingChange(id: string, value: unknown): void {
     case 'advanced.diskSpaceChangeThreshold':
       // Update disk space poller threshold
       void setDiskSpaceThreshold(value as number)
+      break
+    case 'network.directSmbConnection':
+      // Flip the backend flag that controls auto-upgrading SMB mounts to smb2
+      void setDirectSmbConnection(value as boolean)
+      break
+    case 'advanced.filterSafeSaveArtifacts':
+      // Toggle .sb-* noise filtering in the SMB watcher
+      void setFilterSafeSaveArtifacts(value as boolean)
+      break
+    case 'network.smbConcurrency':
+      // Update SMB batch-copy concurrency (backend clamps 1..=32)
+      void setSmbConcurrency(value as number)
       break
     // MCP server (developer.mcpEnabled, developer.mcpPort) is handled directly
     // by McpServerSection.svelte in the settings window, not here. This avoids
