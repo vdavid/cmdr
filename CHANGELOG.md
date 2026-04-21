@@ -11,19 +11,18 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Breaking (internal API):** The `Volume` trait no longer exposes `export_to_local` and `import_from_local`. Every
   cross-volume copy now flows through `open_read_stream` + `write_from_stream` (or the APFS clonefile fast path when
-  both sides are `LocalPosixVolume` on the same volume). Adding a new volume backend takes two streaming methods
-  instead of four, and concurrency (coming in Phase 4.2) plugs into one dispatch point. Only in-tree consumer was
+  both sides are `LocalPosixVolume` on the same volume). Adding a new volume backend takes two streaming methods instead
+  of four, and concurrency (coming in Phase 4.2) plugs into one dispatch point. Only in-tree consumer was
   `volume_copy.rs`; no external crates depended on the removed methods. See
   `docs/notes/phase4-volume-copy-unification.md`.
 - Cross-volume batch copies now run up to N streams in parallel instead of one-at-a-time. N is
-  `min(source.max_concurrent_ops(), dest.max_concurrent_ops(), 32)` — `SmbVolume` returns 10 (hardcoded for now;
-  Phase 4.3 will wire it to the `network.smbConcurrency` setting), `LocalPosixVolume` returns physical-core-ish
-  clamped to 4..=16, `MtpVolume` returns 1, `InMemoryVolume` returns 32. Batches of 1–2 items stay sequential.
-  This is the consumer-side payoff for smb2 Phase 3's pipelined execute — a 100-tiny-files SMB→local copy that
-  previously serialized behind one round trip per file now keeps the pipeline full. Abort-on-first-error and
-  cancel-under-concurrency preserve existing semantics; partial-file cleanup now walks every in-flight task's
-  destination. New trait method `Volume::max_concurrent_ops() -> usize` (default 1) lets each backend advertise
-  its parallelism.
+  `min(source.max_concurrent_ops(), dest.max_concurrent_ops(), 32)` — `SmbVolume` returns 10 (hardcoded for now; Phase
+  4.3 will wire it to the `network.smbConcurrency` setting), `LocalPosixVolume` returns physical-core-ish clamped to
+  4..=16, `MtpVolume` returns 1, `InMemoryVolume` returns 32. Batches of 1–2 items stay sequential. This is the
+  consumer-side payoff for smb2 Phase 3's pipelined execute — a 100-tiny-files SMB→local copy that previously serialized
+  behind one round trip per file now keeps the pipeline full. Abort-on-first-error and cancel-under-concurrency preserve
+  existing semantics; partial-file cleanup now walks every in-flight task's destination. New trait method
+  `Volume::max_concurrent_ops() -> usize` (default 1) lets each backend advertise its parallelism.
 
 ## [0.12.0] - 2026-04-18
 

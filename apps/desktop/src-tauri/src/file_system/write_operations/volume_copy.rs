@@ -1992,12 +1992,16 @@ mod tests {
         let password = nas_password_from_env()
             .expect("SMB2_TEST_NAS_PASSWORD not set. Copy smb2/.env.example to smb2/.env, or set in your shell.");
 
+        // Host is configurable so the bench can run via Tailscale
+        // (`SMB2_TEST_NAS_HOST=100.127.48.122`) from a different subnet.
+        let host = std::env::var("SMB2_TEST_NAS_HOST").unwrap_or_else(|_| "192.168.1.111".to_string());
+
         // ── Set up source (SMB) ───────────────────────────────────────
         let smb_setup_start = Instant::now();
         let smb_volume = connect_smb_volume(
             "naspi",
             "/Volumes/naspi-bench-p4",
-            "192.168.1.111",
+            &host,
             "naspi",
             Some("david"),
             Some(password.as_str()),
