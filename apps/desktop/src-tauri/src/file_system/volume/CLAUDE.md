@@ -395,3 +395,8 @@ spawned detached task. This is safe because the stream always lives in an async 
   `auth_port()` (10481, `testuser`/`testpass`), `readonly_port()` (10488), `slow_port()` (10493, 200ms latency). Use
   these for testing real SMB protocol behavior (streaming, error paths, network edge cases). See
   `apps/desktop/test/smb-servers/README.md` for the full container list and env var overrides.
+- **SMB soak test** (`smb_soak_copy_loop` in `smb.rs`): Repeats the SMB→Local copy pipeline for hundreds to thousands
+  of iterations and watches RSS, open FDs, SMB credits, and per-iteration wall-clock drift. Catches accumulating bugs
+  the single-shot integration tests can't see (credit leak, FD leak, memory growth, slowdown). Default mode:
+  `CMDR_SOAK_ITERATIONS=100` (≈5 s against Docker). Long mode: `CMDR_SOAK_DURATION_SECS=1800` (30 min, via
+  `./scripts/soak-smb.sh`). CI has a `workflow_dispatch`-only job in `slow-checks.yml`.
