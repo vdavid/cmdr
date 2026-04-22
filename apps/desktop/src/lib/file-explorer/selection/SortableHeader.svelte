@@ -83,6 +83,6 @@
     }
 
     .sort-indicator.invisible {
-        opacity: 0;
+        display: none;
     }
 </style>

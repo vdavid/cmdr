@@ -24,7 +24,6 @@
     import {
         getVisibleItemsCount as getVisibleItemsCountUtil,
         getVirtualizationBufferRows,
-        measureDateColumnWidth,
         buildDirSizeTooltip,
         buildFileSizeTooltip,
         getDisplaySize,
@@ -32,6 +31,7 @@
         getDisplayExtension,
         getDisplayName,
     } from './full-list-utils'
+    import { computeFullListColumnWidths } from './measure-column-widths'
     import {
         getRowHeight,
         getIsCompactDensity,
@@ -123,10 +123,6 @@
     // UI density for compact mode detection (uses reactive state from reactive-settings)
     const isCompact = $derived(getIsCompactDensity())
 
-    // Dynamic date column width based on measured text width using the actual font.
-    // Measures multiple sample dates to find the maximum width needed.
-    const dateColumnWidth = $derived(measureDateColumnWidth(formatDateTime))
-
     // Size display mode (smart/logical/physical)
     const sizeDisplayMode = $derived(getSizeDisplayMode())
 
@@ -138,6 +134,14 @@
 
     // Drive index state — show spinner while scanning OR aggregating (sizes aren't ready until aggregation finishes)
     const indexing = $derived(isScanning() || isAggregating())
+
+    // Column widths are declared after the virtual window, which gates parent-row inclusion.
+    let columnWidths = $state({ ext: 60, size: 115, date: 80 })
+    let skipTransition = $state(false)
+
+    const gridTemplate = $derived(
+        `16px 1fr ${String(columnWidths.ext)}px ${String(columnWidths.size)}px ${String(columnWidths.date)}px`,
+    )
 
     // ==== Virtual scrolling state ====
     let scrollContainer: HTMLDivElement | undefined = $state()
@@ -155,6 +159,52 @@
             totalItems: totalCount,
         }),
     )
+
+    // Shrink-wrapped column widths, measured strictly from the rows currently on
+    // screen so the name column keeps every spare pixel. Widths refresh smoothly
+    // (300ms CSS transition) as the user scrolls, resizes the window, or when new
+    // entries stream into the prefetch buffer.
+    //
+    // Held across the "empty cache" window right after a dir switch so we don't
+    // collapse to header-only widths and then snap outward again — `skipTransition`
+    // handles the actual nav by suppressing the CSS transition for one paint.
+    //
+    // The ".." row's (often huge) recursive size only factors in when that row is
+    // actually on screen — otherwise the size column stays oversized after scrolling.
+    const firstVisibleGlobalIndex = $derived(rowHeight > 0 ? Math.floor(scrollTop / rowHeight) : 0)
+    const lastVisibleGlobalIndex = $derived(
+        rowHeight > 0 && containerHeight > 0
+            ? Math.min(totalCount - 1, Math.floor((scrollTop + containerHeight - 1) / rowHeight))
+            : -1,
+    )
+    const isParentRowVisible = $derived(hasParent && firstVisibleGlobalIndex === 0)
+
+    $effect(() => {
+        const first = firstVisibleGlobalIndex
+        const last = lastVisibleGlobalIndex
+        const parentOffset = hasParent ? 1 : 0
+        const firstBackend = Math.max(0, first - parentOffset)
+        const lastBackend = last - parentOffset
+
+        const visible: FileEntry[] = []
+        for (let i = firstBackend; i <= lastBackend; i++) {
+            if (i >= cachedRange.start && i < cachedRange.end) {
+                visible.push(cachedEntries[i - cachedRange.start])
+            }
+        }
+
+        const parentStats = isParentRowVisible ? parentDirStats : null
+        if (visible.length === 0 && !parentStats) return
+        columnWidths = computeFullListColumnWidths({
+            entries: visible,
+            parentDirStats: parentStats,
+            formatDateTime,
+            sizeDisplayMode,
+            indexing,
+            showSizeMismatchWarning,
+            sortBy,
+        })
+    })
 
     // Get entry at global index (handling ".." entry)
     export function getEntryAt(globalIndex: number): FileEntry | undefined {
@@ -361,6 +411,15 @@
             cachedEntries = []
             cachedRange = { start: 0, end: 0 }
             prevCacheProps = currentProps
+            // Suppress the grid-template-columns transition for the first paint after
+            // a dir switch — otherwise the header (which persists across navs) slides
+            // from the previous dir's widths to the new ones.
+            skipTransition = true
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    skipTransition = false
+                })
+            })
         }
 
         void fetchVisibleRange()
@@ -410,9 +469,10 @@
     <!-- Header row with sortable columns (outside scroll container for correct height calculation) -->
     <div
         class="header-row"
+        class:no-transition={skipTransition}
         role="toolbar"
         aria-label="Sort columns"
-        style="grid-template-columns: 16px 1fr 60px 115px {dateColumnWidth}px;"
+        style="grid-template-columns: {gridTemplate};"
     >
         <span class="header-icon"></span>
         <SortableHeader
@@ -475,9 +535,10 @@
                         class:is-under-cursor={globalIndex === cursorIndex}
                         class:is-selected={selectedIndices.has(globalIndex)}
                         class:is-striped={stripedRows && globalIndex % 2 === 1}
+                        class:no-transition={skipTransition}
                         data-filename={file.name}
                         data-drop-target-path={file.isDirectory ? file.path : undefined}
-                        style="height: {rowHeight}px; grid-template-columns: 16px 1fr 60px 115px {dateColumnWidth}px;"
+                        style="height: {rowHeight}px; grid-template-columns: {gridTemplate};"
                         onmousedown={(e: MouseEvent) => {
                             handleMouseDown(e, globalIndex)
                         }}
@@ -607,13 +668,14 @@
 
     .header-row {
         display: grid;
-        /* grid-template-columns set via inline style for dynamic date column width */
+        /* grid-template-columns set via inline style for shrink-wrapped column widths */
         gap: var(--spacing-sm);
         padding: var(--spacing-xxs) var(--spacing-sm);
         background: var(--color-bg-header);
         border-bottom: 1px solid var(--color-border);
         height: 22px;
         flex-shrink: 0;
+        transition: grid-template-columns 300ms ease;
     }
 
     .header-icon {
@@ -636,6 +698,19 @@
         align-items: center;
         /* Guarantee one visual line per row regardless of cell content length */
         white-space: nowrap;
+        transition: grid-template-columns 300ms ease;
+    }
+
+    .header-row.no-transition,
+    .file-entry.no-transition {
+        transition: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .header-row,
+        .file-entry {
+            transition: none;
+        }
     }
 
     /* In compact mode, use symmetric padding to match BriefList alignment */

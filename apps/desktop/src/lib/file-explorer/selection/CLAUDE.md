@@ -71,8 +71,9 @@ Props: `file: FileEntry`, `syncIcon?: string` (URL for sync overlay badge).
 Props: `column`, `label`, `currentSortColumn`, `currentSortOrder`, `onClick`, `align?` (`'left'` default, `'right'` for
 numeric columns).
 
-Renders a `<button>` with a sort-direction triangle (▲/▼). Triangle is hidden (opacity 0) when column is not active.
-Handles both `onclick` and `onkeydown` (Enter/Space).
+Renders a `<button>` with a sort-direction triangle (▲/▼). The triangle is `display: none` on inactive columns so it
+doesn't reserve width — `FullList` shrink-wraps column widths and `opacity: 0` would have baked ~12px of dead space into
+every unsorted header. Handles both `onclick` and `onkeydown` (Enter/Space).
 
 ## Key decisions
 
