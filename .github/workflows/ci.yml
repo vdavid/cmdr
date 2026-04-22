@@ -111,6 +111,9 @@ jobs:
       - name: Run Rust tests
         run: ./scripts/check/check --check desktop-rust-tests --ci
 
+      - name: Run SMB integration tests
+        run: ./scripts/check/check --check desktop-rust-integration-tests --ci
+
   # ===========================================
   # Desktop app - Svelte frontend
   # ===========================================

@@ -187,7 +187,7 @@ before tests.
 
 | App        | Tech    | Checks                                                                                                                                                                                              |
 | ---------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop    | Rust    | rustfmt, clippy, cargo-audit, cargo-deny, cargo-udeps, jscpd, tests, tests-linux (slow)                                                                                                             |
+| Desktop    | Rust    | rustfmt, clippy, cargo-audit, cargo-deny, cargo-udeps, jscpd, tests, integration-tests (Docker SMB), tests-linux (slow)                                                                             |
 | Desktop    | Svelte  | prettier, eslint, eslint-typecheck (slow), stylelint, css-unused, a11y-contrast, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow) |
 | Website    | Astro   | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                                                              |
 | Website    | Docker  | docker-build                                                                                                                                                                                        |

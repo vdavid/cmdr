@@ -98,6 +98,16 @@ var AllChecks = []CheckDefinition{
 		Run:               RunRustTests,
 	},
 	{
+		ID:                "desktop-rust-integration-tests",
+		Nickname:          "rust-integration-tests",
+		DisplayName:       "integration tests (SMB)",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: true, // Needs Docker, which isn't available on freestyle.sh VMs
+		DependsOn:         []string{"desktop-rust-clippy"},
+		Run:               RunRustIntegrationTests,
+	},
+	{
 		ID:                "desktop-rust-tests-linux",
 		Nickname:          "rust-tests-linux",
 		DisplayName:       "tests (Linux)",
