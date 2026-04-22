@@ -1384,6 +1384,14 @@ impl Volume for SmbVolume {
                     while let Some(chunk_result) = stream.next_chunk().await {
                         let chunk = chunk_result?;
                         buffer.extend_from_slice(&chunk);
+                        // Fire progress per chunk AND honor cancellation, so
+                        // the fast-path has the same cancel/progress contract
+                        // as the streaming fallback below. Cancel here aborts
+                        // before the compound WRITE touches the wire — the
+                        // destination never sees a partial file.
+                        if on_progress(buffer.len() as u64, size).is_break() {
+                            return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                        }
                     }
                     if buffer.len() as u64 == size {
                         debug!(
@@ -1392,9 +1400,6 @@ impl Volume for SmbVolume {
                         );
                         let write_result = tree.write_file_compound(&mut conn, &smb_path, &buffer).await;
                         let bytes_written = self.handle_smb_result("write_from_stream(compound)", write_result)?;
-                        // Emit a single progress tick so counters match the
-                        // streaming path's post-loop state.
-                        let _ = on_progress(bytes_written, size);
                         return Ok(bytes_written);
                     }
                     // Size mismatch — drop the cloned conn and re-feed the
