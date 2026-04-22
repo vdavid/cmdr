@@ -114,14 +114,11 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   [f7823a0b](https://github.com/vdavid/cmdr/commit/f7823a0b),
   [009b851e](https://github.com/vdavid/cmdr/commit/009b851e),
   [75f856e8](https://github.com/vdavid/cmdr/commit/75f856e8)).
-
-### Non-app
-
 - `changelog-commit-links` check validates every `https://github.com/vdavid/cmdr/commit/<sha>` URL in CHANGELOG.md
   resolves to a real commit, via a single `git cat-file --batch-check` process — catches typos, truncated SHAs, and
   prefixes ambiguous with trees before they land. Runs in the desktop-svelte, website, and api-server CI jobs (each does
   a full-depth checkout so historical SHAs resolve). Surfaced and fixed 8 bad links in the 0.12.0 and earlier sections
-  along the way
+  along the way ([d488dfa](https://github.com/vdavid/cmdr/commit/d488dfa)).
 
 ## [0.12.0] - 2026-04-18
 
