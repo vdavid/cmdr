@@ -20,8 +20,8 @@ without DOM performance issues.
 - **measure-brief-column-widths.ts** – `measureWidestFilename()`: widest filename's pixel width in a Brief column,
   measured via pretext. Caller adds icon/gap/padding chrome and clamps to the min/max column-width range.
 - **FullList.svelte** – Reads `listing.sizeDisplay` (via `getSizeDisplayMode()`) and `listing.sizeMismatchWarning` (via
-  `getSizeMismatchWarning()`) settings. Uses UnoCSS/Lucide `i-lucide:circle-alert` for size mismatch warnings and
-  `i-lucide:hourglass` for stale index indicators
+  `getSizeMismatchWarning()`) settings. Uses Lucide icons (via `unplugin-icons`): `~icons/lucide/circle-alert` for size
+  mismatch warnings and `~icons/lucide/hourglass` for stale index indicators
 - **dir-size-display.test.ts** – Tests for `getDirSizeDisplayState` / `buildDirSizeTooltip` (functions in
   `full-list-utils.ts`)
 - **view-modes.test.ts** – Integration tests for hidden-file filtering and directory listing structure (uses

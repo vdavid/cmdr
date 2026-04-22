@@ -1,5 +1,7 @@
 <script lang="ts">
     import { onDestroy } from 'svelte'
+    import IconCircleAlert from '~icons/lucide/circle-alert'
+    import IconTriangleAlert from '~icons/lucide/triangle-alert'
     import type { FriendlyError } from '../types'
     import { openPrivacySettings } from '$lib/tauri-commands'
     import { isMacOS } from '$lib/shortcuts/key-capture'
@@ -65,9 +67,9 @@
     <div class="content">
         <h2 class="title">
             {#if friendly.category === 'serious'}
-                <span class="title-icon icon-error i-lucide:circle-alert" style="width: 20px; height: 20px;"></span>
+                <span class="title-icon icon-error"><IconCircleAlert width="20" height="20" /></span>
             {:else if friendly.category === 'transient'}
-                <span class="title-icon icon-warning i-lucide:triangle-alert" style="width: 20px; height: 20px;"></span>
+                <span class="title-icon icon-warning"><IconTriangleAlert width="20" height="20" /></span>
             {/if}
             {friendly.title}
         </h2>

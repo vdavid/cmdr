@@ -177,8 +177,9 @@ and actionable error experience.
 Receives a `FriendlyError` struct from Rust (all content is pre-baked on the backend, the frontend doesn't do any error
 classification or OS-specific logic):
 
-- **Title**: large text, always in accent color. UnoCSS/Lucide icon signals severity: ⚠ `i-lucide:triangle-alert` in
-  warning color for transient, ⊘ `i-lucide:circle-alert` in error color for serious, no icon for needs-action
+- **Title**: large text, always in accent color. Lucide icon (via `unplugin-icons`) signals severity: ⚠
+  `~icons/lucide/triangle-alert` in warning color for transient, ⊘ `~icons/lucide/circle-alert` in error color for
+  serious, no icon for needs-action
 - **Folder path**: shown in secondary text so the user knows exactly which folder is affected
 - **Explanation**: rendered as markdown via `snarkdown` — plain-language description of what happened
 - **Suggestion**: rendered as markdown — actionable steps, often provider-specific (for example, "Open **MacDroid** and
@@ -226,20 +227,12 @@ to O(visible). See [benchmarks](../../../../../docs/notes/non-reactive-file-stor
 
 ## Gotchas
 
-**UnoCSS content list is manually tracked.** `uno.config.ts` lists the specific files that use UnoCSS classes
-(`i-lucide:*` icons) so UnoCSS only watches those files during dev, not the entire `src/` tree. Without this, every file
-change triggers 6-7 redundant HMR updates. When adding UnoCSS classes to a new file, add that file to the
-`content.filesystem` array in `uno.config.ts`.
-
-**UnoCSS triggers SvelteKit root-layout HMR crash.** `virtual:uno.css` regenerates on every Svelte file save. Because
-it's imported in the root `+layout.svelte`, Vite treats it as a root-layout change, which forces SvelteKit to rebuild
-the entire route tree. SvelteKit's client router (`client.js:373`, `get_navigation_result_from_branch`) crashes with
+**Root-layout HMR can trigger a SvelteKit TDZ crash.** When an HMR update propagates through the root `+layout.svelte`
+(for example, `app.css` changes), SvelteKit's client router can crash with
 `ReferenceError: Cannot access 'component' before initialization` — a TDZ error where a route component module hasn't
-finished importing during the rebuild. This is a SvelteKit bug (sveltejs/kit#15287, observed with SvelteKit 2.55.0 /
-Svelte 5.54.1 / Vite 8.0.2). Workaround: `import.meta.hot.accept(() => { import.meta.hot!.invalidate() })` in the root
-layout catches the update and triggers a clean full page reload instead of the broken HMR path. Side effect: edits to
-the root layout or its deps (app.css, virtual:uno.css) cause a full reload instead of hot-swap. Leaf component edits are
-unaffected — SvelteKit handles those fine. If sveltejs/kit#15287 gets fixed, the workaround can be removed.
+finished importing during the rebuild. This is a SvelteKit bug (sveltejs/kit#15287). `$lib/hmr-recovery.ts` catches the
+crash and forces a clean page reload. The recovery listener is imported from `+layout.ts` (a stable module that survives
+layout component re-evaluation). If sveltejs/kit#15287 gets fixed, the workaround can be removed.
 
 ## Tabs (`tabs/`)
 

@@ -47,8 +47,9 @@ In `selection-summary` mode, directory recursive sizes are included in the size 
 index). The `hasOnlyDirs` branch shows size triads when `totalSize > 0`; when sizes are unavailable (indexing off), it
 falls back to showing only dir count and percentage.
 
-Stale indicator (UnoCSS/Lucide `i-lucide:hourglass` icon in accent color) appears in `selection-summary` when
-`isScanning()` is true and directories are selected, because dir sizes may be incomplete during scanning.
+Stale indicator (Lucide hourglass icon via `~icons/lucide/hourglass`, rendered in accent color) appears in
+`selection-summary` when `isScanning()` is true and directories are selected, because dir sizes may be incomplete during
+scanning.
 
 Filename truncation in `file-info` mode uses the `useShortenMiddle` action with `preferBreakAt: '.'` to preserve file
 extensions. The action uses pretext for canvas-based measurement and a built-in ResizeObserver.

@@ -159,9 +159,9 @@ resilience, and common pitfalls.
   `withGlobalTauri: true` in dev mode is a security risk.
 - ❌ When testing the Tauri app, DO NOT USE THE BROWSER. Use the MCP servers.
 - ❌ Don't ignore linter warnings — fix them or justify with a comment.
-- **Icons**: We use UnoCSS with the Icons preset (`@iconify-json/lucide`). Icons are pure CSS classes like
-  `i-lucide:triangle-alert` — no JS imports. See `docs/style-guide.md` § Icons for usage, sizing, coloring, and how to
-  find new icons. When adding a new icon, also add it to `scripts/check-css-unused/allowlist.go`.
+- **Icons**: We use `unplugin-icons` with `@iconify-json/lucide`. Import as Svelte components from
+  `~icons/lucide/{icon-name}` (inline SVGs, no runtime cost). See `docs/style-guide.md` § Icons for usage, sizing,
+  coloring, and how to find new icons.
 - Always use CSS variables defined in `apps/desktop/src/app.css`. Stylelint catches undefined/hallucinated variables.
 - Never use raw `px` values for `font-size`, `border-radius`, `font-family`, or `z-index` >= 10. Use
   `var(--font-size-*)`, `var(--radius-*)`, `var(--font-*)`, and `var(--z-*)` tokens. Stylelint enforces this.

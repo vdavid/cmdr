@@ -1,4 +1,6 @@
 <script lang="ts">
+    import IconCircleAlert from '~icons/lucide/circle-alert'
+    import IconHourglass from '~icons/lucide/hourglass'
     import type { FileEntry, SortColumn, SortOrder, SyncStatus } from '../types'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
     import { startSelectionDragTracking, type DragFileInfo } from '../drag/drag-drop'
@@ -595,8 +597,8 @@
                                         <span class={triad.tierClass}>{triad.value}</span>
                                     {/each}
                                     {#if indexing}
-                                        <span class="size-stale" use:tooltip={'Updating index — size may change.'}
-                                            ><span class="i-lucide:hourglass icon-indicator"></span></span
+                                        <span class="size-stale icon-indicator" use:tooltip={'Updating index — size may change.'}
+                                            ><IconHourglass width="12" height="12" /></span
                                         >
                                     {/if}
                                     {#if showSizeMismatchWarning && hasSizeMismatch(file.recursiveSize, file.recursivePhysicalSize)}
@@ -613,14 +615,14 @@
                                         {@const dirTooltipHtml =
                                             typeof dirTooltip === 'object' ? dirTooltip.html : dirTooltip}
                                         <span
-                                            class="size-mismatch"
+                                            class="size-mismatch icon-indicator"
                                             use:tooltip={{
                                                 html:
                                                     'Content and on-disk sizes differ significantly.<br><br>' +
                                                     dirTooltipHtml,
                                             }}
                                         >
-                                            <span class="i-lucide:circle-alert icon-indicator"></span>
+                                            <IconCircleAlert width="12" height="12" />
                                         </span>
                                     {/if}
                                 {:else if indexing}
@@ -764,8 +766,6 @@
     .icon-indicator {
         /* stylelint-disable-next-line declaration-property-value-disallowed-list -- small icon indicator, not body text */
         color: var(--color-accent);
-        width: 12px;
-        height: 12px;
     }
 
     .size-stale {

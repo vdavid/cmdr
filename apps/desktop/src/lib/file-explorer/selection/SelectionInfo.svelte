@@ -1,4 +1,5 @@
 <script lang="ts">
+    import IconHourglass from '~icons/lucide/hourglass'
     import type { FileEntry, ListingStats } from '../types'
     import {
         buildDateTooltip,
@@ -220,8 +221,8 @@
                 {pluralize(totalDirs, 'dir', 'dirs')}{#if totalSize === 0}
                     selected{/if}.
                 {#if showSelectionStale}
-                    <span class="stale-indicator" use:tooltip={'Updating index — size may change.'}
-                        ><span class="i-lucide:hourglass stale-icon"></span></span
+                    <span class="stale-indicator stale-icon" use:tooltip={'Updating index — size may change.'}
+                        ><IconHourglass width="12" height="12" /></span
                     >
                 {/if}
             {:else if hasFiles}
@@ -234,8 +235,8 @@
                     &nbsp;and {formatNumber(selectedDirs)} of {formatNumber(totalDirs)}
                     {pluralize(totalDirs, 'dir', 'dirs')}{/if}.
                 {#if showSelectionStale}
-                    <span class="stale-indicator" use:tooltip={'Updating index — size may change.'}
-                        ><span class="i-lucide:hourglass stale-icon"></span></span
+                    <span class="stale-indicator stale-icon" use:tooltip={'Updating index — size may change.'}
+                        ><IconHourglass width="12" height="12" /></span
                     >
                 {/if}
             {/if}
@@ -303,7 +304,5 @@
     .stale-icon {
         /* stylelint-disable-next-line declaration-property-value-disallowed-list -- small icon indicator, not body text */
         color: var(--color-accent);
-        width: 12px;
-        height: 12px;
     }
 </style>

@@ -2,6 +2,7 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "ignoreBinaries": ["only-allow", "rustc"],
   "ignore": ["src/lib/tauri-commands/**"],
+  "ignoreUnresolved": ["~icons/.+"],
   "ignoreDependencies": [
     "oxlint",
     "@tauri-apps/cli",
