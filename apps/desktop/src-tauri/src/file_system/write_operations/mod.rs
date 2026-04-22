@@ -80,6 +80,16 @@ pub(crate) use helpers::{
 };
 #[cfg(test)]
 pub(crate) use state::{CopyTransaction, OperationIntent, WriteOperationState, is_cancelled, load_intent};
+// Exposed for cross-module integration tests (for example the SMB
+// concurrent-copy cross-contamination test in
+// `file_system::volume::smb`) that drive `copy_volumes_with_progress`
+// directly against a real SMB backend instead of the full Tauri path.
+#[cfg(test)]
+#[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::smb")]
+pub(crate) use types::CollectorEventSink;
+#[cfg(test)]
+#[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::smb")]
+pub(crate) use volume_copy::copy_volumes_with_progress;
 
 // Re-export volume copy types and functions
 pub use types::{VolumeCopyConfig, VolumeCopyScanResult};

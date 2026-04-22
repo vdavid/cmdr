@@ -284,11 +284,17 @@ pub async fn scan_for_volume_copy(
 }
 
 /// Internal function that performs the actual copy with progress reporting.
+///
+/// Exposed as `pub(crate)` under `cfg(test)` so integration tests in sibling
+/// modules (for example the SMB concurrent-copy cross-contamination test in
+/// `volume/smb.rs`) can drive the real copy pipeline with a
+/// `CollectorEventSink` instead of spinning up a full Tauri app. In
+/// production, the only caller is `copy_between_volumes` in this file.
 #[allow(
     clippy::too_many_arguments,
     reason = "Volume copy requires passing multiple context parameters"
 )]
-async fn copy_volumes_with_progress(
+pub(crate) async fn copy_volumes_with_progress(
     events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,

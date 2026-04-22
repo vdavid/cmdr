@@ -2939,4 +2939,200 @@ mod tests {
 
         ensure_clean(&vol, &dir).await;
     }
+
+    /// Cross-task content integrity: 100 concurrent SMB → local copies, each file
+    /// with unique deterministic content. After the batch completes, every
+    /// destination's blake3 hash must match the hash of the source it claims to
+    /// come from — catches buffer reuse across tasks, wrong-buffer-to-wrong-path
+    /// routing, races in the `Arc<Mutex<Option<SmbClient>>>` +
+    /// `Arc<RwLock<Option<Arc<Tree>>>>` split-session (Fix 2), and
+    /// cross-MessageId wire demux mistakes on cloned `Connection`s.
+    ///
+    /// Identical-content tests can't see any of these — every file would hash
+    /// the same, so a "swapped slice mid-file" or "task B's buffer landed under
+    /// task A's path" bug would pass trivially. Unique per-file content makes
+    /// any cross-contamination flip at least one destination's hash.
+    ///
+    /// Runs the real copy pipeline (`copy_volumes_with_progress` — the same
+    /// function `copy_between_volumes` calls) so `FuturesUnordered` + Fix 2's
+    /// split session + Fix 3's compound fast-path + Fix 4's pipelined scan all
+    /// execute together, the way a user's "copy 100 files" action does.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_copy_100_unique_files_no_cross_contamination() {
+        use crate::file_system::write_operations::{
+            CollectorEventSink, VolumeCopyConfig, WriteOperationState, copy_volumes_with_progress,
+        };
+        use std::sync::atomic::AtomicU8;
+        use std::time::{Duration, Instant};
+
+        // Content scheme: `blake3(b"cmdr-fix8-" || index_le) .as_bytes() repeated 320 times`
+        // = 10_240 bytes per file, truly unique per index, every byte position varies
+        // between files. Any cross-task slice swap — even a 32-byte block in the
+        // middle of one file coming from a neighbor's buffer — flips blake3.
+        // 10 KB keeps fixture setup cheap and stays inside the SMB compound
+        // fast-path (Fix 3) so we're exercising it, not the streaming fallback.
+        fn expected_content(index: usize) -> Vec<u8> {
+            let mut seed = Vec::with_capacity(10 + 8);
+            seed.extend_from_slice(b"cmdr-fix8-");
+            seed.extend_from_slice(&(index as u64).to_le_bytes());
+            let block = *blake3::hash(&seed).as_bytes(); // 32 bytes
+            let mut out = Vec::with_capacity(32 * 320);
+            for _ in 0..320 {
+                out.extend_from_slice(&block);
+            }
+            out
+        }
+
+        const FILE_COUNT: usize = 100;
+
+        // Hold the concrete `SmbVolume` for `ensure_clean` (which takes
+        // `&SmbVolume`) and clone an `Arc<dyn Volume>` view of the same
+        // session for the copy pipeline.
+        let smb_vol = Arc::new(make_docker_volume().await);
+        let src_dir = test_dir_name();
+        ensure_clean(&smb_vol, &src_dir).await;
+        smb_vol.create_directory(Path::new(&src_dir)).await.unwrap();
+        let vol: Arc<dyn Volume> = smb_vol.clone();
+
+        // Fixture: create 100 files on the SMB source, serially. Parallel
+        // `create_file` on a single SMB session wouldn't speed this up —
+        // creates are 1 RTT each — and keeping setup simple keeps any bug
+        // the test catches unambiguously a read/copy-path bug, not a
+        // write-path races-with-itself bug.
+        let fixture_start = Instant::now();
+        let mut source_paths: Vec<PathBuf> = Vec::with_capacity(FILE_COUNT);
+        for i in 0..FILE_COUNT {
+            let name = format!("f_{:03}.bin", i);
+            let smb_path = format!("{}/{}", src_dir, name);
+            vol.create_file(Path::new(&smb_path), &expected_content(i))
+                .await
+                .unwrap();
+            source_paths.push(PathBuf::from(smb_path));
+        }
+        log::info!(
+            "smb_integration_copy_100_unique_files: fixture setup took {:?}",
+            fixture_start.elapsed()
+        );
+
+        // Destination: local TempDir wrapped in a LocalPosixVolume. We feed the
+        // copy pipeline the same way production does (SMB volume → Local
+        // volume → `copy_volumes_with_progress`). `dest_path` is "/" relative to
+        // the local volume root — i.e. the TempDir itself.
+        let local_dir = tempfile::TempDir::new().expect("create TempDir");
+        let dest_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
+            "dest",
+            local_dir.path().to_path_buf(),
+        ));
+
+        let state = Arc::new(WriteOperationState {
+            intent: Arc::new(AtomicU8::new(0)),
+            progress_interval: Duration::from_millis(200),
+            conflict_resolution_tx: std::sync::Mutex::new(None),
+        });
+        let events = CollectorEventSink::new();
+        let config = VolumeCopyConfig::default();
+
+        let copy_start = Instant::now();
+        let result = copy_volumes_with_progress(
+            &events,
+            "test-op-100-unique",
+            &state,
+            Arc::clone(&vol),
+            &source_paths,
+            Arc::clone(&dest_vol),
+            Path::new("/"),
+            &config,
+        )
+        .await;
+        log::info!(
+            "smb_integration_copy_100_unique_files: copy pipeline took {:?}",
+            copy_start.elapsed()
+        );
+        assert!(result.is_ok(), "copy should succeed: {:?}", result);
+
+        // Count landed files — cheap aggregate sanity check before per-index
+        // verification. A cross-contamination bug that swapped two destinations
+        // would still show 100 files here, so this is not the real check.
+        let entries = std::fs::read_dir(local_dir.path())
+            .expect("read dest dir")
+            .filter_map(|e| e.ok())
+            .count();
+        assert_eq!(entries, FILE_COUNT, "expected {} files at destination", FILE_COUNT);
+
+        // Per-index integrity: for each source index, read its destination file
+        // and compare blake3 against the expected hash derived from the same
+        // index. Assert each one individually so a swap of two destinations
+        // fails loudly with both offending indices, not a vague aggregate.
+        let mut mismatches: Vec<String> = Vec::new();
+        for i in 0..FILE_COUNT {
+            let name = format!("f_{:03}.bin", i);
+            let dest_path = local_dir.path().join(&name);
+            let actual_bytes = match std::fs::read(&dest_path) {
+                Ok(b) => b,
+                Err(e) => {
+                    mismatches.push(format!("{}: couldn't read destination: {}", name, e));
+                    continue;
+                }
+            };
+            let expected_bytes = expected_content(i);
+            let expected_hash = hash_bytes(&expected_bytes);
+            let actual_hash = hash_bytes(&actual_bytes);
+            if actual_hash != expected_hash {
+                // Find the first diff position and a small slice of context —
+                // a 10 KB diff dump would drown the terminal on any failure.
+                let first_diff = expected_bytes.iter().zip(actual_bytes.iter()).position(|(a, b)| a != b);
+                let diff_detail = match first_diff {
+                    Some(pos) => {
+                        let end_exp = pos.saturating_add(16).min(expected_bytes.len());
+                        let end_act = pos.saturating_add(16).min(actual_bytes.len());
+                        format!(
+                            "first diff at byte {}: expected {:02x?}, got {:02x?}",
+                            pos,
+                            &expected_bytes[pos..end_exp],
+                            &actual_bytes[pos..end_act]
+                        )
+                    }
+                    None => {
+                        // Same bytes but different length (hashes differ so
+                        // there must be a difference somewhere).
+                        format!(
+                            "byte-for-byte equal in overlap but lengths differ: expected {}, got {}",
+                            expected_bytes.len(),
+                            actual_bytes.len()
+                        )
+                    }
+                };
+                mismatches.push(format!(
+                    "{}: expected blake3 {} ({} bytes), got blake3 {} ({} bytes); {}",
+                    name,
+                    hex_of(&expected_hash),
+                    expected_bytes.len(),
+                    hex_of(&actual_hash),
+                    actual_bytes.len(),
+                    diff_detail,
+                ));
+            }
+        }
+        assert!(
+            mismatches.is_empty(),
+            "{} of {} destinations failed content check:\n  - {}",
+            mismatches.len(),
+            FILE_COUNT,
+            mismatches.join("\n  - "),
+        );
+
+        // Cleanup the SMB source. The TempDir cleans itself on drop.
+        ensure_clean(&smb_vol, &src_dir).await;
+    }
+
+    /// Hex formatter for blake3 hashes in failure messages. Avoids a hex-crate
+    /// dep just for test diagnostics.
+    fn hex_of(bytes: &[u8; 32]) -> String {
+        let mut s = String::with_capacity(64);
+        for b in bytes {
+            s.push_str(&format!("{:02x}", b));
+        }
+        s
+    }
 }
