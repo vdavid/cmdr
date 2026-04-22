@@ -7,22 +7,113 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **SMB copies are ~30× faster on high-latency links.** A 100 × 10 KB copy from a NAS over Tailscale (~60 ms RTT)
+  dropped from ~28 s (~280 ms/file) to 947 ms (9.5 ms/file) over four layered speedups: drop redundant `is_directory`
+  stat probes in the copy pipeline (Fix 1, [94090555](https://github.com/vdavid/cmdr/commit/94090555)), send
+  CREATE+READ+CLOSE / CREATE+WRITE+FLUSH+CLOSE as a single compound frame for small reads/writes (Fix 3,
+  [9d6df0e9](https://github.com/vdavid/cmdr/commit/9d6df0e9)), unblock session-level concurrency by cloning
+  `smb2::Connection` per download (Fix 2, [4009b9ba](https://github.com/vdavid/cmdr/commit/4009b9ba)), and pipeline the
+  pre-copy scan-phase stats over one SMB session (Fix 4, [77ea6e81](https://github.com/vdavid/cmdr/commit/77ea6e81)).
+  Effective concurrency 16× on the 100-file workload. Full analysis in `docs/notes/phase4-rtt-investigation.md`.
+- `network.smbConcurrency` setting (Phase 4.3) — controls how many concurrent SMB operations run per session for batch
+  copies. Default 10, range 1–32. Applies immediately without restart
+  ([7fdd85e3](https://github.com/vdavid/cmdr/commit/7fdd85e3),
+  [aa331c4e](https://github.com/vdavid/cmdr/commit/aa331c4e),
+  [f46d45e4](https://github.com/vdavid/cmdr/commit/f46d45e4)).
+- Current folder's total on the `..` row — shows recursive size, file count, and dir count for the folder you're in (not
+  the parent), with the same tooltip and size-mismatch indicators as any directory row
+  ([36212ede](https://github.com/vdavid/cmdr/commit/36212ede)).
+- Full mode shrink-wraps Ext / Size / Modified columns to give the name column every spare pixel. Width changes animate
+  over 300 ms, dir switches snap. The `..` row's huge recursive size only counts toward column width while actually
+  on-screen ([7325c8f8](https://github.com/vdavid/cmdr/commit/7325c8f8)).
+- Brief mode shrink-wraps each column to its widest visible filename, capped at `maxFilenameWidth` and floored at
+  `MIN_COLUMN_WIDTH`. 300 ms width transitions, nav snaps ([c336dbba](https://github.com/vdavid/cmdr/commit/c336dbba)).
+- Filename tooltip on truncation — hover a clipped filename in Brief or Full mode to see the full name. In Brief mode,
+  directories combine the full name with the existing dir-size tooltip
+  ([f37d7e51](https://github.com/vdavid/cmdr/commit/f37d7e51)).
+- Volume tooltip on tabs — every tab now shows `{volume name} — {full path}` on hover, so you can tell at a glance
+  whether a tab is local, external, or on a cloud volume ([b6663988](https://github.com/vdavid/cmdr/commit/b6663988)).
+
+### Fixed
+
+- **Security:** smb2 bumped to 0.7.2, which fixes an off-by-2 in the DFS referral V2 response parser that let any
+  DFS-enabled server (malicious or buggy) crash cmdr with a crafted referral. Caught by cargo-fuzz
+  ([7e7eaf76](https://github.com/vdavid/cmdr/commit/7e7eaf76)).
+- Canceling a small SMB upload now actually cancels — the compound write fast-path used to silently drain the source,
+  send the WRITE, and only then honor the cancel flag (which it ignored entirely). Now checks cancellation per chunk
+  during drain and aborts before any bytes touch the wire; progress callbacks fire during the drain instead of only once
+  post-write ([f948731c](https://github.com/vdavid/cmdr/commit/f948731c)).
+- Clicking a file already under the cursor no longer eats the drag — the click started the click-to-rename timer and
+  returned early before drag tracking could arm. Grabbing the cursor item (alone or as part of a selection) now drags
+  correctly; rename timer cancels once the drag threshold is crossed
+  ([cccf0095](https://github.com/vdavid/cmdr/commit/cccf0095)).
+- ⌘C now copies selected text instead of files when there's a non-collapsed text selection. The global shortcut dispatch
+  was intercepting ⌘C unconditionally, blocking native text copy in panes like the error pane where `user-select: text`
+  is set ([47f03b20](https://github.com/vdavid/cmdr/commit/47f03b20)).
+- Drag & drop blocks dropping a folder onto itself or into its own descendants, with "Can't drop here" feedback instead
+  of letting the drag through and producing a backend error. The `..` row accepts drops as a normal parent-folder target
+  ([b7c3d960](https://github.com/vdavid/cmdr/commit/b7c3d960)).
+- Frontend hot reload is reliable again after swapping UnoCSS for unplugin-icons — UnoCSS's dev plugin was regenerating
+  `virtual:uno.css` on every Svelte save, triggering SvelteKit's root-layout TDZ crash (sveltejs/kit#15287). Icons now
+  import as tree-shaken inline SVG components via `~icons/lucide/{name}`
+  ([00906566](https://github.com/vdavid/cmdr/commit/00906566)).
+
 ### Changed
 
 - **Breaking (internal API):** The `Volume` trait no longer exposes `export_to_local` and `import_from_local`. Every
   cross-volume copy now flows through `open_read_stream` + `write_from_stream` (or the APFS clonefile fast path when
   both sides are `LocalPosixVolume` on the same volume). Adding a new volume backend takes two streaming methods instead
-  of four, and concurrency (coming in Phase 4.2) plugs into one dispatch point. Only in-tree consumer was
-  `volume_copy.rs`; no external crates depended on the removed methods. See
-  `docs/notes/phase4-volume-copy-unification.md`.
+  of four, and concurrency (Phase 4.2) plugs into one dispatch point. Only in-tree consumer was `volume_copy.rs`; no
+  external crates depended on the removed methods. See `docs/notes/phase4-volume-copy-unification.md`.
 - Cross-volume batch copies now run up to N streams in parallel instead of one-at-a-time. N is
-  `min(source.max_concurrent_ops(), dest.max_concurrent_ops(), 32)` — `SmbVolume` returns 10 (hardcoded for now; Phase
-  4.3 will wire it to the `network.smbConcurrency` setting), `LocalPosixVolume` returns physical-core-ish clamped to
-  4..=16, `MtpVolume` returns 1, `InMemoryVolume` returns 32. Batches of 1–2 items stay sequential. This is the
-  consumer-side payoff for smb2 Phase 3's pipelined execute — a 100-tiny-files SMB→local copy that previously serialized
-  behind one round trip per file now keeps the pipeline full. Abort-on-first-error and cancel-under-concurrency preserve
-  existing semantics; partial-file cleanup now walks every in-flight task's destination. New trait method
-  `Volume::max_concurrent_ops() -> usize` (default 1) lets each backend advertise its parallelism.
+  `min(source.max_concurrent_ops(), dest.max_concurrent_ops(), 32)` — `SmbVolume` returns 10 (tunable via
+  `network.smbConcurrency`), `LocalPosixVolume` returns physical-core-ish clamped to 4..=16, `MtpVolume` returns 1,
+  `InMemoryVolume` returns 32. Batches of 1–2 items stay sequential. New trait method
+  `Volume::max_concurrent_ops() -> usize` (default 1) lets each backend advertise its parallelism. Abort-on-first-error
+  and cancel-under-concurrency preserve existing semantics; partial-file cleanup walks every in-flight task's
+  destination.
+- `Volume::scan_for_copy_batch` now returns `BatchScanResult { aggregate, per_path }`, so the copy engine populates its
+  `source_hints` map from one trait call instead of re-probing each source. `SmbVolume` overrides to pipeline all
+  per-path stats over one SMB session via `FuturesUnordered` on cloned `Connection`s
+  ([77ea6e81](https://github.com/vdavid/cmdr/commit/77ea6e81)).
+- `Volume::open_read_stream_with_hint(path, size_hint)` added to the trait (default falls through to
+  `open_read_stream`). `SmbVolume` uses it to pick the compound read fast-path when the caller knows the file fits in
+  one READ ([9d6df0e9](https://github.com/vdavid/cmdr/commit/9d6df0e9)).
+- smb2 dependency moved from `git` source to crates.io ([96f4bbd3](https://github.com/vdavid/cmdr/commit/96f4bbd3)),
+  then bumped through 0.7.1 (adds `Tree::download` for concurrent streaming reads on a cloned `Connection`,
+  [0ec95a79](https://github.com/vdavid/cmdr/commit/0ec95a79)) and 0.7.2 (DFS referral parse fix,
+  [7e7eaf76](https://github.com/vdavid/cmdr/commit/7e7eaf76)).
+
+### Non-app
+
+- **Docker SMB integration tests now run on every push.** New `desktop-rust-integration-tests` check starts the core SMB
+  containers, runs the 26 `smb_integration_*` tests, and stops the containers on exit. Closes the gap that let the
+  compound-write cancel/progress bug sit undetected on `main` for four days
+  ([257269bb](https://github.com/vdavid/cmdr/commit/257269bb)).
+- Byte-level blake3 hash verification on every existing SMB copy test — destination bytes now compared to source, not
+  just size or return value. Three tests previously only verified metadata; four large-file tests upgraded from
+  multi-megabyte `Vec<u8>` equality to streaming hash with hex-pair mismatch output
+  ([fd5a2d84](https://github.com/vdavid/cmdr/commit/fd5a2d84)).
+- 100-way concurrent copy cross-contamination guard — 100 files with unique `blake3(b"cmdr-fix8-" || i)` content copied
+  through the real `copy_volumes_with_progress` pipeline (same path production uses), per-index verified. Catches buffer
+  reuse across tasks, wrong-buffer-to-wrong-path routing, and MessageId demux swaps on cloned `Connection`s that
+  identical-content tests can't see ([97062e64](https://github.com/vdavid/cmdr/commit/97062e64)).
+- SMB copy soak harness — `smb_soak_copy_loop` test plus `scripts/soak-smb.sh` wrapper and `workflow_dispatch`-only CI
+  job. 30-min Docker-based run completed 41,984 iterations with zero drift in wall-clock, memory, file descriptors, or
+  SMB credits ([3a9b58f2](https://github.com/vdavid/cmdr/commit/3a9b58f2),
+  [6a9e046d](https://github.com/vdavid/cmdr/commit/6a9e046d)).
+- Settings live-apply is now a documented MUST rule — every setting applies immediately without restart. Rule lives in
+  both Rust and TS settings `CLAUDE.md` files with explicit recipes for adding new settings. Restart-required is now
+  formally a bug ([cd1958ba](https://github.com/vdavid/cmdr/commit/cd1958ba)).
+- Deflaked two intermittently-failing tests (`test_dir_name` collision under parallel nextest execution,
+  hidden-file-toggle Playwright E2E race), bumped multi-chunk SMB stream test sizes past the 8 MB `max_read_size` Samba
+  negotiates, and added `env_logger` as a dev-dep so SMB wire-trace logging works in integration and bench tests
+  ([a48a323e](https://github.com/vdavid/cmdr/commit/a48a323e),
+  [f7823a0b](https://github.com/vdavid/cmdr/commit/f7823a0b),
+  [009b851e](https://github.com/vdavid/cmdr/commit/009b851e),
+  [75f856e8](https://github.com/vdavid/cmdr/commit/75f856e8)).
 
 ## [0.12.0] - 2026-04-18
 
