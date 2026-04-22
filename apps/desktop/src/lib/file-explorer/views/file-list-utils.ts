@@ -3,10 +3,12 @@
  */
 
 import type { FileEntry, SyncStatus } from '../types'
-import { getFileRange, getDirStatsBatch } from '$lib/tauri-commands'
+import { getFileRange, getDirStatsBatch, type DirStats } from '$lib/tauri-commands'
 import { prefetchIcons } from '$lib/icon-cache'
 import { getUseAppIconsForDocuments } from '$lib/settings/reactive-settings.svelte'
 import { getSetting } from '$lib/settings/settings-store'
+
+export type { DirStats } from '$lib/tauri-commands'
 
 /** Gets the prefetch buffer size from settings (items to load around visible range) */
 export function getPrefetchBufferSize(): number {
@@ -26,8 +28,12 @@ export function getSyncIconPath(status: SyncStatus | undefined): string | undefi
   return iconMap[status]
 }
 
-/** Creates a parent directory entry ("..") */
-export function createParentEntry(parentPath: string): FileEntry {
+/**
+ * Creates a parent directory entry (".."). When `stats` is provided, the entry
+ * carries the CURRENT directory's recursive size fields — so the ".." row shows
+ * the total for the folder we're looking at, not the folder we'd navigate into.
+ */
+export function createParentEntry(parentPath: string, stats?: DirStats): FileEntry {
   return {
     name: '..',
     path: parentPath,
@@ -38,6 +44,10 @@ export function createParentEntry(parentPath: string): FileEntry {
     group: '',
     iconId: 'dir',
     extendedMetadataLoaded: true,
+    recursiveSize: stats?.recursiveSize,
+    recursivePhysicalSize: stats?.recursivePhysicalSize,
+    recursiveFileCount: stats?.recursiveFileCount,
+    recursiveDirCount: stats?.recursiveDirCount,
   }
 }
 
@@ -48,9 +58,10 @@ export function getEntryAt(
   parentPath: string,
   cachedEntries: FileEntry[],
   cachedRange: { start: number; end: number },
+  parentStats?: DirStats,
 ): FileEntry | undefined {
   if (hasParent && globalIndex === 0) {
-    return createParentEntry(parentPath)
+    return createParentEntry(parentPath, parentStats)
   }
 
   // Backend index (without ".." entry)
@@ -180,8 +191,15 @@ export function refetchIconsForEntries(entries: FileEntry[]): void {
  * Updates index size fields (recursiveSize, recursiveFileCount, recursiveDirCount)
  * in-place on cached entries. Only directory entries are queried.
  * Mutates entries directly so Svelte 5 fine-grained reactivity updates only affected DOM nodes.
+ *
+ * When `currentPath` is provided, it's included in the same batch IPC call and
+ * its stats are returned so the caller can show the current folder's total on
+ * the ".." row. Returns `null` if the current folder isn't indexed yet.
  */
-export async function updateIndexSizesInPlace(cachedEntries: FileEntry[]): Promise<void> {
+export async function updateIndexSizesInPlace(
+  cachedEntries: FileEntry[],
+  currentPath?: string,
+): Promise<DirStats | null> {
   // Collect directory paths and their indices in the array
   const dirIndices: number[] = []
   const dirPaths: string[] = []
@@ -191,19 +209,19 @@ export async function updateIndexSizesInPlace(cachedEntries: FileEntry[]): Promi
       dirPaths.push(cachedEntries[i].path)
     }
   }
-  if (dirPaths.length === 0) return
 
-  let stats: ({
-    recursiveSize: number
-    recursivePhysicalSize: number
-    recursiveFileCount: number
-    recursiveDirCount: number
-  } | null)[]
+  // Append currentPath as the last query so we can pick its stats off the end.
+  const hasCurrent = currentPath !== undefined && currentPath !== ''
+  if (hasCurrent) dirPaths.push(currentPath)
+
+  if (dirPaths.length === 0) return null
+
+  let stats: (DirStats | null)[]
   try {
     stats = await getDirStatsBatch(dirPaths)
   } catch {
     // Silently ignore -- indexing may not be initialized
-    return
+    return null
   }
 
   for (let j = 0; j < dirIndices.length; j++) {
@@ -216,4 +234,6 @@ export async function updateIndexSizesInPlace(cachedEntries: FileEntry[]): Promi
       entry.recursiveDirCount = stat.recursiveDirCount
     }
   }
+
+  return hasCurrent ? (stats[stats.length - 1] ?? null) : null
 }

@@ -17,7 +17,9 @@
         shouldResetCache,
         refetchIconsForEntries,
         updateIndexSizesInPlace,
+        type DirStats,
     } from './file-list-utils'
+    import { getDirStatsBatch } from '$lib/tauri-commands'
     import { buildDirSizeTooltip, hasSizeMismatch } from './full-list-utils'
     import { getRowHeight, formatFileSize, getSizeMismatchWarning, getStripedRows } from '$lib/settings/reactive-settings.svelte'
     import { getSetting } from '$lib/settings/settings-store'
@@ -38,6 +40,8 @@
         selectedIndices?: Set<number>
         hasParent: boolean
         parentPath: string
+        /** Path of the directory currently being listed — used to show its total on the ".." row. */
+        currentPath: string
         maxFilenameWidth?: number // From backend font metrics, if available
         sortBy: SortColumn
         sortOrder: SortOrder
@@ -72,6 +76,7 @@
         selectedIndices = new Set<number>(),
         hasParent,
         parentPath,
+        currentPath,
         maxFilenameWidth: backendMaxWidth,
         sortBy,
         sortOrder,
@@ -93,6 +98,8 @@
     let cachedEntries = $state<FileEntry[]>([])
     let cachedRange = $state({ start: 0, end: 0 })
     let isFetching = $state(false)
+    // Recursive stats for the CURRENT directory (shown on the ".." row so that space isn't wasted).
+    let parentDirStats = $state<DirStats | null>(null)
 
     // Drive index state — show spinner while scanning OR aggregating (sizes aren't ready until aggregation finishes)
     const indexing = $derived(isScanning() || isAggregating())
@@ -145,13 +152,22 @@
 
     // Get entry at global index (handling ".." entry)
     export function getEntryAt(globalIndex: number): FileEntry | undefined {
-        return getEntryAtUtil(globalIndex, hasParent, parentPath, cachedEntries, cachedRange)
+        return getEntryAtUtil(
+            globalIndex,
+            hasParent,
+            parentPath,
+            cachedEntries,
+            cachedRange,
+            parentDirStats ?? undefined,
+        )
     }
 
-    /** Updates only index size fields on cached directory entries, in-place. */
+    /** Updates index size fields on cached directory entries AND on the ".." row. */
     export function refreshIndexSizes(): void {
-        if (cachedEntries.length === 0) return
-        void updateIndexSizesInPlace(cachedEntries)
+        if (cachedEntries.length === 0 && !hasParent) return
+        void updateIndexSizesInPlace(cachedEntries, hasParent ? currentPath : undefined).then((stats) => {
+            parentDirStats = stats
+        })
     }
 
     // Fetch entries for the visible range
@@ -212,7 +228,7 @@
                 // Inline getEntryAt logic to use local variables
                 let entry: FileEntry | undefined
                 if (hasParent && i === 0) {
-                    entry = createParentEntry(parentPath)
+                    entry = createParentEntry(parentPath, parentDirStats ?? undefined)
                 } else {
                     const backendIndex = hasParent ? i - 1 : i
                     if (backendIndex >= rangeStart && backendIndex < rangeEnd) {
@@ -430,6 +446,23 @@
         if (cachedEntries.length > 0) {
             refetchIconsForEntries(cachedEntries)
         }
+    })
+
+    // Fetch the current folder's recursive stats so the ".." row can show the total.
+    // Re-runs when the directory changes; cleared when we're at a volume root.
+    $effect(() => {
+        if (!hasParent || !currentPath) {
+            parentDirStats = null
+            return
+        }
+        void cacheGeneration
+        void getDirStatsBatch([currentPath])
+            .then((results) => {
+                parentDirStats = results[0] ?? null
+            })
+            .catch(() => {
+                // Silently ignore -- indexing may not be initialized yet.
+            })
     })
 
     // Size mismatch warning setting

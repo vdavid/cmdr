@@ -86,6 +86,28 @@ describe('createParentEntry', () => {
     const entry = createParentEntry('/home/user')
     expect(entry.extendedMetadataLoaded).toBe(true)
   })
+
+  it('leaves recursive size fields undefined when no stats are passed', () => {
+    const entry = createParentEntry('/home/user')
+    expect(entry.recursiveSize).toBeUndefined()
+    expect(entry.recursivePhysicalSize).toBeUndefined()
+    expect(entry.recursiveFileCount).toBeUndefined()
+    expect(entry.recursiveDirCount).toBeUndefined()
+  })
+
+  it('populates recursive size fields when stats are passed', () => {
+    const entry = createParentEntry('/home/user', {
+      path: '/home/user/current',
+      recursiveSize: 1024,
+      recursivePhysicalSize: 2048,
+      recursiveFileCount: 3,
+      recursiveDirCount: 1,
+    })
+    expect(entry.recursiveSize).toBe(1024)
+    expect(entry.recursivePhysicalSize).toBe(2048)
+    expect(entry.recursiveFileCount).toBe(3)
+    expect(entry.recursiveDirCount).toBe(1)
+  })
 })
 
 describe('getEntryAt', () => {
@@ -532,9 +554,62 @@ describe('updateIndexSizesInPlace', () => {
     ]
     vi.mocked(getDirStatsBatch).mockRejectedValue(new Error('indexing not ready'))
 
-    await updateIndexSizesInPlace(entries)
+    const stats = await updateIndexSizesInPlace(entries)
 
     // Should not throw, entries unchanged
     expect(entries[0].recursiveSize).toBeUndefined()
+    expect(stats).toBeNull()
+  })
+
+  it('returns current-dir stats when currentPath is passed', async () => {
+    const entries: FileEntry[] = [
+      {
+        name: 'subdir',
+        path: '/dir/subdir',
+        isDirectory: true,
+        isSymlink: false,
+        permissions: 0o755,
+        owner: 'user',
+        group: 'group',
+        iconId: 'dir',
+        extendedMetadataLoaded: true,
+      },
+    ]
+    vi.mocked(getDirStatsBatch).mockResolvedValue([
+      {
+        path: '/dir/subdir',
+        recursiveSize: 100,
+        recursivePhysicalSize: 200,
+        recursiveFileCount: 1,
+        recursiveDirCount: 0,
+      },
+      { path: '/dir', recursiveSize: 5000, recursivePhysicalSize: 6000, recursiveFileCount: 42, recursiveDirCount: 3 },
+    ])
+
+    const stats = await updateIndexSizesInPlace(entries, '/dir')
+
+    expect(getDirStatsBatch).toHaveBeenCalledWith(['/dir/subdir', '/dir'])
+    expect(entries[0].recursiveSize).toBe(100)
+    expect(stats?.recursiveSize).toBe(5000)
+    expect(stats?.recursiveFileCount).toBe(42)
+  })
+
+  it('returns current-dir stats even when there are no cached directories', async () => {
+    vi.mocked(getDirStatsBatch).mockResolvedValue([
+      { path: '/dir', recursiveSize: 999, recursivePhysicalSize: 1000, recursiveFileCount: 7, recursiveDirCount: 1 },
+    ])
+
+    const stats = await updateIndexSizesInPlace([], '/dir')
+
+    expect(getDirStatsBatch).toHaveBeenCalledWith(['/dir'])
+    expect(stats?.recursiveSize).toBe(999)
+  })
+
+  it('returns null for current-dir stats when index has no data for it', async () => {
+    vi.mocked(getDirStatsBatch).mockResolvedValue([null])
+
+    const stats = await updateIndexSizesInPlace([], '/dir')
+
+    expect(stats).toBeNull()
   })
 })

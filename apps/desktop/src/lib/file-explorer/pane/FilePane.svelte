@@ -1873,6 +1873,7 @@
                 {sortOrder}
                 renameState={rename.active ? rename : null}
                 parentPath={hasParent ? currentPath.substring(0, currentPath.lastIndexOf('/')) || '/' : ''}
+                {currentPath}
                 onSelect={handleSelect}
                 onNavigate={handleNavigate}
                 onContextMenu={handleContextMenu}
@@ -1905,6 +1906,7 @@
                 {sortOrder}
                 renameState={rename.active ? rename : null}
                 parentPath={hasParent ? currentPath.substring(0, currentPath.lastIndexOf('/')) || '/' : ''}
+                {currentPath}
                 onSelect={handleSelect}
                 onNavigate={handleNavigate}
                 onContextMenu={handleContextMenu}

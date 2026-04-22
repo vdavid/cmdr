@@ -79,6 +79,13 @@ shifts by 20. Must recalculate virtual window when `totalCount` changes.
 **Gotcha**: When `hasParent = true`, UI indices are 1-based **Why**: Index 0 is ".." parent entry (not in backend
 cache). Real files start at index 1. Adjust: `cache_index = ui_index - 1`.
 
+**Gotcha**: The ".." row shows the CURRENT folder's recursive size, not the parent folder's **Why**: The `..` row's size
+column is otherwise wasted space. Showing the total for the folder the user is browsing (sum of everything visible plus
+unloaded entries) answers "how much is in here?" — more useful than "how big is the place I'd go if I pressed
+Backspace." Implementation: `createParentEntry(parentPath, stats?)` in `file-list-utils.ts` takes optional stats;
+`BriefList`/`FullList` fetch them via `getDirStatsBatch([currentPath])` on dir change and via
+`updateIndexSizesInPlace(cachedEntries, currentPath)` on index refresh (single batch IPC call).
+
 **Gotcha**: Scroll position must use `transform`, not absolute positioning **Why**: Absolute positioning causes full
 layout recalc. `transform` uses GPU compositor for 60fps.
 
