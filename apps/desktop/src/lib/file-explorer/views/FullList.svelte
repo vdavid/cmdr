@@ -571,7 +571,7 @@
                                 />
                             </div>
                         {:else}
-                            <span class="col-name">{getDisplayName(file.name, file.isDirectory)}</span>
+                            <span class="col-name" use:tooltip={{ text: file.name, overflowOnly: true }}>{getDisplayName(file.name, file.isDirectory)}</span>
                             <span class="col-ext">{getDisplayExtension(file.name, file.isDirectory)}</span>
                         {/if}
                         <span

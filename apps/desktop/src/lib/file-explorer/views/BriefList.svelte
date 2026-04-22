@@ -28,7 +28,7 @@
     import { formatNumber, pluralize } from '../selection/selection-info-utils'
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
-    import { tooltip } from '$lib/tooltip/tooltip'
+    import { escapeHtml, tooltip } from '$lib/tooltip/tooltip'
     import type { RenameState } from '../rename/rename-state.svelte'
 
     interface Props {
@@ -545,6 +545,19 @@
         return base
     }
 
+    /** Build tooltip for the filename span: shows name when overflowing; for dirs, combines name with dir-size info. */
+    function buildNameTooltip(file: FileEntry): { text?: string; html?: string; overflowOnly: true } {
+        if (!file.isDirectory) {
+            return { text: file.name, overflowOnly: true }
+        }
+        const dirTip = buildDirTooltip(file)
+        if (!dirTip) {
+            return { text: file.name, overflowOnly: true }
+        }
+        const dirHtml = typeof dirTip === 'object' ? dirTip.html : escapeHtml(dirTip)
+        return { html: `${escapeHtml(file.name)}<br><br>${dirHtml}`, overflowOnly: true }
+    }
+
     // Report visible range to parent for MCP state sync
     $effect(() => {
         // Calculate visible item range from column range
@@ -664,7 +677,7 @@
                                         onShakeEnd={() => onRenameShakeEnd?.()}
                                     />
                                 {:else}
-                                    <span class="name">{file.name}</span>
+                                    <span class="name" use:tooltip={buildNameTooltip(file)}>{file.name}</span>
                                 {/if}
                             </div>
                         {/each}

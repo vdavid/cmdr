@@ -76,7 +76,7 @@ function setTooltipContent(el: HTMLDivElement, param: TooltipParam): void {
   el.textContent = ''
 }
 
-function escapeHtml(text: string): string {
+export function escapeHtml(text: string): string {
   const div = document.createElement('div')
   div.textContent = text
   return div.innerHTML

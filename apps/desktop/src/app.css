@@ -598,6 +598,7 @@ body {
   pointer-events: none;
   max-width: 320px;
   white-space: pre-line;
+  overflow-wrap: anywhere;
 
   /* Apple-style frosted glass */
   background: rgba(245, 245, 245, 0.72);
