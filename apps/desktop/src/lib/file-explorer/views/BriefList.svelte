@@ -23,6 +23,8 @@
     import { buildDirSizeTooltip, hasSizeMismatch } from './full-list-utils'
     import { getRowHeight, formatFileSize, getSizeMismatchWarning, getStripedRows } from '$lib/settings/reactive-settings.svelte'
     import { getSetting } from '$lib/settings/settings-store'
+    import { measureWidestFilename } from './measure-brief-column-widths'
+    import { SvelteMap } from 'svelte/reactivity'
     import { formatNumber, pluralize } from '../selection/selection-info-utils'
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
@@ -246,6 +248,45 @@
         return columns
     })
 
+    // ==== Per-column shrink-wrap widths ====
+    // Each Brief column sizes to its widest visible filename, capped at `maxFilenameWidth`
+    // and floored at `MIN_COLUMN_WIDTH`. Virtual-scroll math stays on the cap (so the
+    // scrollbar math doesn't need to know variable widths), while each rendered column
+    // gets its own measured width — `transition: width 300ms ease` smooths the change.
+    //
+    // Reset on nav/listing change (via the cache-reset effect) and when `itemsPerColumn`
+    // changes (height resize reshuffles which files are in which column).
+    const columnWidthsMap = new SvelteMap<number, number>()
+    let skipTransition = $state(false)
+    let prevItemsPerColumn = 0
+
+    $effect(() => {
+        // Reset when column index semantics change.
+        if (itemsPerColumn !== prevItemsPerColumn) {
+            columnWidthsMap.clear()
+            prevItemsPerColumn = itemsPerColumn
+        }
+    })
+
+    $effect(() => {
+        // Re-measure whenever visible columns (or their cached contents) change.
+        const cols = visibleColumns
+        const cap = maxFilenameWidth
+        for (const col of cols) {
+            const files = col.files.map((f) => f.file)
+            const widest = measureWidestFilename(files)
+            if (widest === 0) continue // measurer unavailable (SSR/jsdom)
+            const width = Math.min(cap, Math.max(MIN_COLUMN_WIDTH, widest + COLUMN_PADDING))
+            if (columnWidthsMap.get(col.columnIndex) !== width) {
+                columnWidthsMap.set(col.columnIndex, width)
+            }
+        }
+    })
+
+    function getColumnWidth(colIndex: number): number {
+        return columnWidthsMap.get(colIndex) ?? maxFilenameWidth
+    }
+
     // Fetch on scroll
     function handleScroll() {
         cancelClickToRename()
@@ -420,6 +461,15 @@
             cachedEntries = []
             cachedRange = { start: 0, end: 0 }
             prevCacheProps = currentProps
+            // Drop measured widths so the new listing starts fresh, and snap the
+            // animation for one paint so the persistent header/columns don't slide.
+            columnWidthsMap.clear()
+            skipTransition = true
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    skipTransition = false
+                })
+            })
         }
 
         void fetchVisibleRange()
@@ -563,7 +613,11 @@
             <!-- Visible window positioned with translateX -->
             <div class="virtual-window" style="transform: translateX({virtualWindow.offset}px);">
                 {#each visibleColumns as column (column.columnIndex)}
-                    <div class="column" style="width: {maxFilenameWidth}px;">
+                    <div
+                        class="column"
+                        class:no-transition={skipTransition}
+                        style="width: {getColumnWidth(column.columnIndex)}px;"
+                    >
                         {#each column.files as { file, globalIndex } (file.path)}
                             {@const syncIcon = getSyncIconPath(syncStatusMap[file.path])}
                             <!-- svelte-ignore a11y_click_events_have_key_events,a11y_interactive_supports_focus -->
@@ -676,6 +730,17 @@
         flex-shrink: 0;
         display: flex;
         flex-direction: column;
+        transition: width 300ms ease;
+    }
+
+    .column.no-transition {
+        transition: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .column {
+            transition: none;
+        }
     }
 
     .file-entry {

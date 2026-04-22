@@ -7,7 +7,7 @@ without DOM performance issues.
 
 ### Components
 
-- **BriefList.svelte** – Horizontal columns, fixed-width items, horizontal scrolling
+- **BriefList.svelte** – Horizontal columns, per-column shrink-wrapped widths (capped), horizontal scrolling
 - **FullList.svelte** – Vertical rows, full metadata display, vertical scrolling
 - **virtual-scroll.ts** – Pure math functions for calculating visible windows
 - **file-list-utils.ts** – Shared helpers: entry caching, icon prefetching, sync status
@@ -17,6 +17,8 @@ without DOM performance issues.
 - **measure-column-widths.ts** – `computeFullListColumnWidths()`: pixel-accurate widths for the Ext / Size / Modified
   columns based on the currently loaded entries. Uses `@chenglou/pretext` for canvas-based measurement (no DOM reflow).
   FullList transitions `grid-template-columns` over 300ms so widths refine smoothly as more entries stream in.
+- **measure-brief-column-widths.ts** – `measureWidestFilename()`: widest filename's pixel width in a Brief column,
+  measured via pretext. Caller adds icon/gap/padding chrome and clamps to the min/max column-width range.
 - **FullList.svelte** – Reads `listing.sizeDisplay` (via `getSizeDisplayMode()`) and `listing.sizeMismatchWarning` (via
   `getSizeMismatchWarning()`) settings. Uses UnoCSS/Lucide `i-lucide:circle-alert` for size mismatch warnings and
   `i-lucide:hourglass` for stale index indicators
@@ -71,6 +73,14 @@ window requires fresh data. Parent bumps `cacheGeneration`, triggering re-fetch.
 **Decision**: Icon prefetching only for visible entries **Why**: With 50k files, prefetching all icons = 50k IPC calls.
 Virtual scrolling renders only ~50 items, so prefetch only visible. Re-fetch on scroll.
 
+**Decision**: Brief columns shrink-wrap to the widest filename in each column (capped at the existing
+`maxFilenameWidth`, floored at `MIN_COLUMN_WIDTH`) **Why**: Long filenames deserve their full width while short ones let
+the user scan more columns at once. Widths are measured per visible column via pretext and cached in a
+`SvelteMap<columnIndex, width>`; uncached columns fall back to the cap. `transition: width 300ms ease` animates width
+changes. **Tradeoff**: the virtual-scroll math stays on the cap width (so the scrollbar still computes
+`totalColumns × cap`). When real columns are narrower than the cap, the scrollbar slightly overestimates the total —
+users can scroll a few pixels past the last visible column. Considered acceptable for the visual payoff.
+
 **Decision**: Shrink-wrap Ext / Size / Modified columns from the rows **currently on screen**, not the prefetch buffer
 or the full directory **Why**: The name column should keep every spare pixel, so columns track live content. Pretext's
 canvas measurement is fast enough to recompute on every scroll row-crossing and window resize. The 300ms
@@ -111,9 +121,12 @@ those CSS values or the caret size/markup, update the two constants or column wi
 from the live DOM because pretext measurement runs without a reference element — everything is computed from the
 pre-known chrome formula.
 
-**Gotcha**: FullList's `grid-template-columns` transition would "slide" the header on dir switches, because the header
-lives outside the virtual scroll and persists across navs **Why**: When `shouldResetCache` fires, a `skipTransition`
-flag is set and cleared after two `requestAnimationFrame` ticks (one to paint with `transition: none`, one more before
-re-enabling). Widths also don't update while `cachedEntries` is empty AND `parentDirStats` is null, so the brief
-post-nav gap doesn't collapse them to header-only floors. Combined, nav = snap; within-dir scroll/resize/stream-in =
-animated.
+**Gotcha**: Width transitions would "slide" on dir switches, because the header (FullList) and columns (BriefList)
+persist across navs **Why**: When `shouldResetCache` fires, both lists set a `skipTransition` flag and clear it after
+two `requestAnimationFrame` ticks (one to paint with `transition: none`, one more before re-enabling). FullList also
+holds widths while `cachedEntries` is empty so the brief post-nav gap doesn't collapse to header-only floors. Combined,
+nav = snap; within-dir scroll/resize/stream-in = animated.
+
+**Gotcha**: BriefList's `columnWidthsMap` is keyed by `columnIndex`, which depends on `itemsPerColumn` **Why**: A height
+resize changes how many files fit in a column, which reshuffles which file lands in which column index. Stale widths
+would stick to the wrong columns. A dedicated `$effect` clears the map when `itemsPerColumn` changes — don't remove it.
