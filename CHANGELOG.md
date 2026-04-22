@@ -115,6 +115,14 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   [009b851e](https://github.com/vdavid/cmdr/commit/009b851e),
   [75f856e8](https://github.com/vdavid/cmdr/commit/75f856e8)).
 
+### Non-app
+
+- `changelog-commit-links` check validates every `https://github.com/vdavid/cmdr/commit/<sha>` URL in CHANGELOG.md
+  resolves to a real commit, via a single `git cat-file --batch-check` process — catches typos, truncated SHAs, and
+  prefixes ambiguous with trees before they land. Runs in the desktop-svelte, website, and api-server CI jobs (each does
+  a full-depth checkout so historical SHAs resolve). Surfaced and fixed 8 bad links in the 0.12.0 and earlier sections
+  along the way
+
 ## [0.12.0] - 2026-04-18
 
 ### Added
@@ -134,7 +142,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   SMB↔SMB copies flow through memory without temp files, and large local↔NAS copies stay bounded to ~1 MiB peak RAM
   instead of buffering the whole file ([ac71bd](https://github.com/vdavid/cmdr/commit/ac71bd),
   [a82709](https://github.com/vdavid/cmdr/commit/a82709), [35120d](https://github.com/vdavid/cmdr/commit/35120d),
-  [04359](https://github.com/vdavid/cmdr/commit/04359))
+  [043597f](https://github.com/vdavid/cmdr/commit/043597f))
 - SMB mount disambiguation — two shares with the same name from different servers now get unique mount points (`public`,
   `public-1`, …) via `kNetFSForceNewSessionKey`. Volume switcher shows `{share} on {server}` so it's clear which is
   which ([76671b](https://github.com/vdavid/cmdr/commit/76671b))
@@ -234,12 +242,12 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   test or an allowlist entry ([33300a4](https://github.com/vdavid/cmdr/commit/33300a4),
   [d56c1df](https://github.com/vdavid/cmdr/commit/d56c1df), [398bf7a](https://github.com/vdavid/cmdr/commit/398bf7a))
 - Switch from Lucide components to UnoCSS pure-CSS icons — zero JS runtime, recolor via `currentColor` + CSS vars,
-  `mask-image` rendering ([9354806](https://github.com/vdavid/cmdr/commit/9354806))
+  `mask-image` rendering ([93548fa](https://github.com/vdavid/cmdr/commit/93548fa))
 - File-length check + allowlist — tool flags files growing past a tracked size, 31 baseline entries. Split 20+ long
   files into sub-800-line modules (`volume_copy.rs`, `scan.rs`, `smb.rs`, `integration_test.rs`, `AiSection.svelte`,
   `+page.svelte`, `DualPaneExplorer.svelte`, and more) — pure mechanical splits, no logic changes
   ([7514cb4](https://github.com/vdavid/cmdr/commit/7514cb4), [2939bfe](https://github.com/vdavid/cmdr/commit/2939bfe),
-  [4514a83](https://github.com/vdavid/cmdr/commit/4514a83), [3155609](https://github.com/vdavid/cmdr/commit/3155609))
+  [4514a83](https://github.com/vdavid/cmdr/commit/4514a83), [315609a](https://github.com/vdavid/cmdr/commit/315609a))
 - `OperationEventSink` + `ListingEventSink` traits decouple copy/move/listing pipelines from `tauri::AppHandle` —
   enables unit tests without a Tauri runtime; `CollectorEventSink` stores events for assertions
   ([35fea46](https://github.com/vdavid/cmdr/commit/35fea46), [0a6ae61](https://github.com/vdavid/cmdr/commit/0a6ae61))
@@ -379,7 +387,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 - MCP: `cmdr://settings` resource and `set_setting` tool — inspect and change all settings without opening the Settings
   window ([c71115](https://github.com/vdavid/cmdr/commit/c71115))
 - MCP: `move_cursor` now awaits frontend confirmation, fixing race where `copy` fires before cursor has moved
-  ([634125](https://github.com/vdavid/cmdr/commit/634125))
+  ([6341c25](https://github.com/vdavid/cmdr/commit/6341c25))
 
 ### Fixed
 
@@ -395,7 +403,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 - MTP: fix volumes missing from copy/move dialog, fix destination volume dropdown not updating on change
   ([cd6603](https://github.com/vdavid/cmdr/commit/cd6603))
 - MTP: fix event loop lock contention — clone `MtpDevice` for event polling instead of holding mutex during
-  `next_event()`, unblocking copy/move/scan operations ([0461e3](https://github.com/vdavid/cmdr/commit/0461e3),
+  `next_event()`, unblocking copy/move/scan operations ([0461e33](https://github.com/vdavid/cmdr/commit/0461e33),
   [547a41](https://github.com/vdavid/cmdr/commit/547a41))
 - MTP: fix scan preview showing 0/0/0 in confirmation dialog, reduce USB round-trips for conflict checks
   ([4e1efa](https://github.com/vdavid/cmdr/commit/4e1efa))
@@ -499,7 +507,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 - MTP: show loading progress when opening large folders ([77ebaa](https://github.com/vdavid/cmdr/commit/77ebaa))
 - Add missing focus indicators on search and command palette inputs
   ([179221](https://github.com/vdavid/cmdr/commit/179221))
-- Selection summary now includes directory sizes ([392819](https://github.com/vdavid/cmdr/commit/392819))
+- Selection summary now includes directory sizes ([3928c1c](https://github.com/vdavid/cmdr/commit/3928c1c))
 - MCP: show directory sizes in state resource ([9cb775](https://github.com/vdavid/cmdr/commit/9cb775))
 
 ### Fixed
@@ -520,7 +528,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 - Fix stale dir sizes on rename — writer now emits notifications after both delete+insert commit
   ([10213d](https://github.com/vdavid/cmdr/commit/10213d))
 - Fix indexing won't start on fresh DB — `scanning` flag moved to correct path
-  ([a61376](https://github.com/vdavid/cmdr/commit/a61376))
+  ([a61376d](https://github.com/vdavid/cmdr/commit/a61376d))
 - Fix "Scanning..." stuck after replay — clear scanning in replay-complete handler
   ([4a44d7](https://github.com/vdavid/cmdr/commit/4a44d7), [fb796e](https://github.com/vdavid/cmdr/commit/fb796e))
 - Fix verifier + replay transaction conflict — use named savepoints instead of nested transactions
@@ -1017,7 +1025,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 - Add type drift detection between Rust and Svelte types ([b3ae1c3](https://github.com/vdavid/cmdr/commit/b3ae1c3))
 - Add jscpd for Rust code duplication detection, CSS health checks, Go checks
   ([67e6c15](https://github.com/vdavid/cmdr/commit/67e6c15), [d177eb3](https://github.com/vdavid/cmdr/commit/d177eb3),
-  [254075a](https://github.com/vdavid/cmdr/commit/254075a))
+  [2540752](https://github.com/vdavid/cmdr/commit/2540752))
 - Add Claude hooks for pre-session context and post-edit autoformat
   ([3d59dde](https://github.com/vdavid/cmdr/commit/3d59dde), [122182d](https://github.com/vdavid/cmdr/commit/122182d))
 - Add LogTape logging for Svelte and debug pane for dev mode ([affa548](https://github.com/vdavid/cmdr/commit/affa548),

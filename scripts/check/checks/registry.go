@@ -429,6 +429,15 @@ var AllChecks = []CheckDefinition{
 		DependsOn:   nil,
 		Run:         RunClaudeMdStaleness,
 	},
+	{
+		ID:          "changelog-commit-links",
+		Nickname:    "changelog-links",
+		DisplayName: "CHANGELOG commit links",
+		App:         AppOther,
+		Tech:        "🔗 Links",
+		DependsOn:   nil,
+		Run:         RunChangelogCommitLinks,
+	},
 }
 
 // GetCheckByID returns a check definition by its ID or nickname.

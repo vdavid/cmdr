@@ -97,6 +97,7 @@ go run ./scripts/check --only-freestyle
 | `checks/website-*.go`, `checks/api-server-*.go`, `checks/scripts-go-*.go` | One file per check                                                                                                                                            |
 | `checks/file-length.go`                                                   | Informational file-length scanner (warn-only, never fails). Supports an allowlist.                                                                            |
 | `checks/file-length-allowlist.json`                                       | Allowlist for file-length check: `{ "files": { "path": lineCount } }`. Files at or below their allowlisted count are suppressed.                              |
+| `checks/changelog-commit-links.go`                                        | Validates every `https://github.com/vdavid/cmdr/commit/<sha>` URL in `CHANGELOG.md` resolves, via a single `git cat-file --batch-check` process.              |
 
 ## Key patterns
 
@@ -193,7 +194,7 @@ before tests.
 | Website    | Docker  | docker-build                                                                                                                                                                                        |
 | API server | TS      | oxfmt, eslint, typecheck, tests                                                                                                                                                                     |
 | Scripts    | Go      | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests                                                                                                             |
-| Other      | Metrics | file-length (warn-only)                                                                                                                                                                             |
+| Other      | Metrics | file-length (warn-only), CLAUDE.md-staleness (warn-only), changelog-commit-links                                                                                                                    |
 
 ## Output format
 

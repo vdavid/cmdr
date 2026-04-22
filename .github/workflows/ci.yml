@@ -126,6 +126,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0 # full history so changelog-commit-links can resolve historical SHAs
 
       - name: Install mise
         uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
@@ -154,6 +156,9 @@ jobs:
 
       - name: Check oxfmt
         run: ./scripts/check/check --check oxfmt --ci
+
+      - name: Check CHANGELOG commit links
+        run: ./scripts/check/check --check changelog-commit-links --ci
 
       - name: Run ESLint
         run: ./scripts/check/check --check desktop-svelte-eslint --ci
@@ -237,6 +242,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0 # full history so changelog-commit-links can resolve historical SHAs
 
       - name: Install mise
         uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
@@ -261,6 +268,9 @@ jobs:
 
       - name: Check oxfmt
         run: ./scripts/check/check --check oxfmt --ci
+
+      - name: Check CHANGELOG commit links
+        run: ./scripts/check/check --check changelog-commit-links --ci
 
       - name: Run ESLint
         run: ./scripts/check/check --check website-eslint --ci
@@ -307,6 +317,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0 # full history so changelog-commit-links can resolve historical SHAs
 
       - name: Install mise
         uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
@@ -331,6 +343,9 @@ jobs:
 
       - name: Check oxfmt
         run: ./scripts/check/check --check oxfmt --ci
+
+      - name: Check CHANGELOG commit links
+        run: ./scripts/check/check --check changelog-commit-links --ci
 
       - name: Run ESLint
         run: ./scripts/check/check --check api-server-eslint --ci
