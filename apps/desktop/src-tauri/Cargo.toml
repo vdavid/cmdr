@@ -148,6 +148,12 @@ semver = "1"
 
 
 [dev-dependencies]
+# SMB integration tests hash source and destination bytes to catch pipeline
+# corruption (dropped/duplicated chunks, concurrency bleed) that a simple
+# size-check or `Vec<u8>` equality would either miss or report uselessly
+# (a 20 MB diff isn't actionable). Pinned about a month old (published
+# 2026-01-08) to avoid 0-day vulns in the freshest release.
+blake3 = "1.8.3"
 criterion = { version = "0.8.1", features = ["html_reports"] }
 # Dev-only env-driven logger. Tests don't use `tauri-plugin-log` (it requires
 # a Tauri runtime), so this gives us `RUST_LOG`-controlled logs for wire

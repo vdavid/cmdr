@@ -1884,6 +1884,39 @@ mod tests {
         }
     }
 
+    // ── Byte-level integrity helpers ────────────────────────────────
+    //
+    // Every SMB copy test that lands a file on a destination hashes the
+    // source bytes and the destination bytes and compares the two. A
+    // pipeline bug that drops, duplicates, reorders, or reuses a chunk's
+    // buffer will change the hash — the old `bytes_written == expected`
+    // and `metadata.size == N` assertions would silently pass. blake3 is
+    // fast (well over a GB/s single-threaded), so the 20 MB streaming
+    // tests pay negligible hashing cost on top of the SMB RTTs.
+    //
+    // `hash_volume_file` streams the destination through `open_read_stream`
+    // so we also avoid buffering e.g. 20 MB into a `Vec<u8>` just to
+    // compare with `assert_eq!` (which on mismatch used to print an
+    // unreadable megabyte-sized diff). The hex-formatted hash in the
+    // assertion message is actionable on failure.
+
+    fn hash_bytes(data: &[u8]) -> [u8; 32] {
+        *blake3::hash(data).as_bytes()
+    }
+
+    async fn hash_volume_file(volume: &dyn Volume, path: &Path) -> [u8; 32] {
+        let mut stream = volume
+            .open_read_stream(path)
+            .await
+            .expect("open read stream for hashing");
+        let mut hasher = blake3::Hasher::new();
+        while let Some(chunk) = stream.next_chunk().await {
+            let chunk = chunk.expect("read chunk for hashing");
+            hasher.update(&chunk);
+        }
+        *hasher.finalize().as_bytes()
+    }
+
     #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
     async fn smb_integration_list_directory() {
@@ -1917,6 +1950,16 @@ mod tests {
         assert_eq!(meta.name, "test.txt");
         assert_eq!(meta.size, Some(content.len() as u64));
         assert!(!meta.is_directory);
+
+        // Byte-level integrity: read the destination back and compare bytes.
+        // Catches any pipeline bug that lets metadata say "N bytes" while the
+        // wire payload is something other than the source.
+        let mut readback_stream = vol.open_read_stream(Path::new(&file_path)).await.unwrap();
+        let mut readback = Vec::new();
+        while let Some(Ok(chunk)) = readback_stream.next_chunk().await {
+            readback.extend_from_slice(&chunk);
+        }
+        assert_eq!(readback, content, "destination bytes must match source bytes");
 
         // List the directory and verify the file is there
         let entries = vol.list_directory_impl(Path::new(&dir)).await.unwrap();
@@ -2083,6 +2126,17 @@ mod tests {
         assert!(vol.exists(Path::new(&smb_file)).await);
         let meta = vol.get_metadata(Path::new(&smb_file)).await.unwrap();
         assert_eq!(meta.size, Some(content.len() as u64));
+
+        // Byte-level integrity: the bytes that landed on the SMB share must
+        // be the same bytes the source stream produced. A bug in the write
+        // pipeline (wrong chunk reused, compound-write fast-path mis-splitting
+        // the buffer) would leave size correct but content wrong.
+        let mut verify = vol.open_read_stream(Path::new(&smb_file)).await.unwrap();
+        let mut readback = Vec::new();
+        while let Some(Ok(chunk)) = verify.next_chunk().await {
+            readback.extend_from_slice(&chunk);
+        }
+        assert_eq!(readback, content, "SMB destination bytes must match source bytes");
 
         vol.delete(Path::new(&smb_file)).await.unwrap();
         vol.delete(Path::new(&dir)).await.unwrap();
@@ -2500,6 +2554,20 @@ mod tests {
         );
         assert_eq!(last_bytes.load(Ordering::Relaxed), 200_000);
 
+        // Byte-level integrity: a progress-reporting write that loses or
+        // duplicates chunks would still satisfy the "progress_calls >= 1
+        // and final bytes_done == 200_000" assertions — hash the destination
+        // against the source to catch that.
+        let mut verify = vol
+            .open_read_stream(Path::new(&format!("{}/big.bin", dir)))
+            .await
+            .unwrap();
+        let mut readback = Vec::with_capacity(200_000);
+        while let Some(Ok(chunk)) = verify.next_chunk().await {
+            readback.extend_from_slice(&chunk);
+        }
+        assert_eq!(readback, data, "destination bytes must match source bytes");
+
         ensure_clean(&vol, &dir).await;
     }
 
@@ -2599,18 +2667,30 @@ mod tests {
         let smb_path = format!("{}/big-stream.bin", dir);
         vol.create_file(Path::new(&smb_path), &data).await.unwrap();
 
+        // Hash chunks as they arrive so a 20 MB mismatch produces a single
+        // 32-byte hex pair instead of a 20 MB `Vec<u8>` diff. Also avoids
+        // the 20 MB reassembly allocation.
         let mut stream = vol.open_read_stream(Path::new(&smb_path)).await.unwrap();
         assert_eq!(stream.total_size(), size as u64);
 
-        let mut reassembled = Vec::with_capacity(size);
+        let mut hasher = blake3::Hasher::new();
         let mut chunks_seen = 0usize;
+        let mut total_read = 0usize;
         while let Some(result) = stream.next_chunk().await {
             let chunk = result.unwrap();
             assert!(!chunk.is_empty(), "should not yield empty chunks");
-            reassembled.extend_from_slice(&chunk);
+            hasher.update(&chunk);
+            total_read += chunk.len();
             chunks_seen += 1;
         }
-        assert_eq!(reassembled, data);
+        assert_eq!(total_read, size, "total bytes streamed must equal source size");
+        let readback_hash = *hasher.finalize().as_bytes();
+        let expected_hash = hash_bytes(&data);
+        assert_eq!(
+            readback_hash, expected_hash,
+            "streamed bytes must match source (expected blake3 {:x?}, got {:x?})",
+            expected_hash, readback_hash
+        );
         assert_eq!(stream.bytes_read(), size as u64);
         assert!(chunks_seen >= 2, "multi-MB file should span multiple chunks");
 
@@ -2636,20 +2716,31 @@ mod tests {
         let smb_path = format!("{}/export-large.bin", dir);
         vol.create_file(Path::new(&smb_path), &data).await.unwrap();
 
+        // Hash chunks as they arrive — see the sibling large-file test for
+        // why we avoid `assert_eq!` on 20 MB `Vec<u8>`s.
         let mut stream = vol.open_read_stream(Path::new(&smb_path)).await.unwrap();
         assert_eq!(stream.total_size(), size as u64);
 
         let mut chunks_seen = 0usize;
-        let mut readback: Vec<u8> = Vec::with_capacity(size);
+        let mut hasher = blake3::Hasher::new();
+        let mut total_read = 0usize;
         while let Some(Ok(chunk)) = stream.next_chunk().await {
             chunks_seen += 1;
-            readback.extend_from_slice(&chunk);
+            hasher.update(&chunk);
+            total_read += chunk.len();
         }
         assert!(
             chunks_seen >= 2,
             "streaming should yield multiple chunks for a multi-MB file"
         );
-        assert_eq!(readback, data);
+        assert_eq!(total_read, size, "total bytes streamed must equal source size");
+        let readback_hash = *hasher.finalize().as_bytes();
+        let expected_hash = hash_bytes(&data);
+        assert_eq!(
+            readback_hash, expected_hash,
+            "streamed bytes must match source (expected blake3 {:x?}, got {:x?})",
+            expected_hash, readback_hash
+        );
 
         ensure_clean(&vol, &dir).await;
     }
@@ -2728,14 +2819,17 @@ mod tests {
         );
         assert_eq!(last_bytes.load(Ordering::Relaxed), size as u64);
 
-        // Verify content integrity via the streaming reader.
-        let mut stream = vol.open_read_stream(Path::new(&smb_path)).await.unwrap();
-        assert_eq!(stream.total_size(), size as u64);
-        let mut readback = Vec::with_capacity(size);
-        while let Some(Ok(chunk)) = stream.next_chunk().await {
-            readback.extend_from_slice(&chunk);
-        }
-        assert_eq!(readback, data);
+        // Byte-level integrity: hash the source and the destination and
+        // compare. Streaming hash avoids materializing a 4 MB `Vec<u8>`
+        // just to `assert_eq!` it, and on mismatch we get a legible hex
+        // dump instead of a multi-megabyte diff.
+        let expected_hash = hash_bytes(&data);
+        let actual_hash = hash_volume_file(&vol as &dyn Volume, Path::new(&smb_path)).await;
+        assert_eq!(
+            actual_hash, expected_hash,
+            "SMB destination bytes must match source (expected blake3 {:x?}, got {:x?})",
+            expected_hash, actual_hash
+        );
 
         let _ = std::fs::remove_dir_all(&local_tmp);
         ensure_clean(&vol, &dir).await;
@@ -2782,14 +2876,17 @@ mod tests {
         );
         assert_eq!(last_bytes.load(Ordering::Relaxed), size as u64);
 
-        // Verify content integrity via the streaming reader.
-        let mut verify = vol.open_read_stream(Path::new(&smb_path)).await.unwrap();
-        assert_eq!(verify.total_size(), size as u64);
-        let mut readback = Vec::with_capacity(size);
-        while let Some(Ok(chunk)) = verify.next_chunk().await {
-            readback.extend_from_slice(&chunk);
-        }
-        assert_eq!(readback, data);
+        // Byte-level integrity: streaming hash over the destination catches
+        // any chunk drop/duplicate/reuse that "bytes_written == expected"
+        // on its own can't see. See the sibling local-source test for the
+        // rationale on hashing vs. `assert_eq!` on a 4 MB buffer.
+        let expected_hash = hash_bytes(&data);
+        let actual_hash = hash_volume_file(&vol as &dyn Volume, Path::new(&smb_path)).await;
+        assert_eq!(
+            actual_hash, expected_hash,
+            "SMB destination bytes must match source (expected blake3 {:x?}, got {:x?})",
+            expected_hash, actual_hash
+        );
 
         ensure_clean(&vol, &dir).await;
     }
