@@ -593,9 +593,11 @@
                         >
                             {#if file.isDirectory}
                                 {#if dirDisplaySize !== undefined}
-                                    {#each formatSizeTriads(dirDisplaySize) as triad, i (i)}
-                                        <span class={triad.tierClass}>{triad.value}</span>
-                                    {/each}
+                                    <span class="size-text"
+                                        >{#each formatSizeTriads(dirDisplaySize) as triad, i (i)}<span
+                                                class={triad.tierClass}>{triad.value}</span
+                                            >{/each}</span
+                                    >
                                     {#if indexing}
                                         <span class="size-stale icon-indicator" use:tooltip={'Updating index — size may change.'}
                                             ><IconHourglass width="12" height="12" /></span
@@ -631,9 +633,11 @@
                                     <span class="size-dir">&lt;dir&gt;</span>
                                 {/if}
                             {:else if fileDisplaySize !== undefined}
-                                {#each formatSizeTriads(fileDisplaySize) as triad, i (i)}
-                                    <span class={triad.tierClass}>{triad.value}</span>
-                                {/each}
+                                <span class="size-text"
+                                    >{#each formatSizeTriads(fileDisplaySize) as triad, i (i)}<span
+                                            class={triad.tierClass}>{triad.value}</span
+                                        >{/each}</span
+                                >
                             {/if}
                         </span>
                         <span class="col-date">{formatDateTime(file.modifiedAt)}</span>
@@ -755,8 +759,17 @@
     }
 
     .col-size {
-        text-align: right;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: var(--spacing-xxs);
         font-size: var(--font-size-sm);
+    }
+
+    /* Groups the number triads into one flex item so the right-edge alignment is
+       predictable when the row also has an icon next to the number. */
+    .size-text {
+        display: inline;
     }
 
     .size-dir {
@@ -771,16 +784,12 @@
     .size-stale {
         display: inline-flex;
         align-items: center;
-        vertical-align: middle;
-        margin-left: var(--spacing-xxs);
         cursor: help;
     }
 
     .size-mismatch {
         display: inline-flex;
         align-items: center;
-        vertical-align: middle;
-        margin-left: var(--spacing-xxs);
         cursor: help;
     }
 
