@@ -118,7 +118,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   resolves to a real commit, via a single `git cat-file --batch-check` process — catches typos, truncated SHAs, and
   prefixes ambiguous with trees before they land. Runs in the desktop-svelte, website, and api-server CI jobs (each does
   a full-depth checkout so historical SHAs resolve). Surfaced and fixed 8 bad links in the 0.12.0 and earlier sections
-  along the way ([d488dfa](https://github.com/vdavid/cmdr/commit/d488dfa)).
+  along the way ([4e28130](https://github.com/vdavid/cmdr/commit/4e28130)).
 
 ## [0.12.0] - 2026-04-18
 
@@ -563,26 +563,26 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Fix crash on launch after auto-update — `fs::copy` overwrote files in-place keeping the same inode, causing macOS
   kernel code signing cache to SIGKILL the app. Now writes to a temp file then `rename()` for a fresh inode
-  ([dec8457](https://github.com/vdavid/cmdr/commit/dec8457))
+  ([d2923af](https://github.com/vdavid/cmdr/commit/d2923af))
 - Fix indexing: per-navigation verifier catches index drift via background readdir diffs with 30s debounce, excluded
   system paths (`/System`, `/dev`) no longer inserted as empty stubs, unified exclusion checks across
-  scanner/reconciler/verifier ([7afe71b](https://github.com/vdavid/cmdr/commit/7afe71b),
-  [9434ee6](https://github.com/vdavid/cmdr/commit/9434ee6))
+  scanner/reconciler/verifier ([0f28b51](https://github.com/vdavid/cmdr/commit/0f28b51),
+  [b0b1730](https://github.com/vdavid/cmdr/commit/b0b1730))
 - Fix dir size display during indexing — show "Scanning..." during aggregation phase, refresh panes on
-  aggregation-complete instead of scan-complete ([a6a123d](https://github.com/vdavid/cmdr/commit/a6a123d))
+  aggregation-complete instead of scan-complete ([d0746fb](https://github.com/vdavid/cmdr/commit/d0746fb))
 - Fix navigation latency — fire-and-forget verification (no mutex block), parallelize 6 sequential `listen()` calls,
-  remove redundant index enrichment from `get_file_range` ([8f3ce55](https://github.com/vdavid/cmdr/commit/8f3ce55))
+  remove redundant index enrichment from `get_file_range` ([a4e87f1](https://github.com/vdavid/cmdr/commit/a4e87f1))
 - Fix indexing performance: replace composite index with integer-only (25 min → seconds for 5.1M entries), add
   `name_folded` column for O(log n) path resolution, deduplicate replay events (99% reduction in high-churn scenarios)
-  ([b94b611](https://github.com/vdavid/cmdr/commit/b94b611), [7ac477b](https://github.com/vdavid/cmdr/commit/7ac477b),
-  [4fe5bb4](https://github.com/vdavid/cmdr/commit/4fe5bb4))
+  ([a5b5beb](https://github.com/vdavid/cmdr/commit/a5b5beb), [44fecd6](https://github.com/vdavid/cmdr/commit/44fecd6),
+  [d9877c1](https://github.com/vdavid/cmdr/commit/d9877c1))
 
 ### Non-app
 
 - Tooling: separate dev and prod log dirs, fix Linux Rust test output capture, fix smoke test timeout
-  ([8429123](https://github.com/vdavid/cmdr/commit/8429123), [2181ad5](https://github.com/vdavid/cmdr/commit/2181ad5),
-  [de5236b](https://github.com/vdavid/cmdr/commit/de5236b))
-- Docs: improve agent instructions ([71f365b](https://github.com/vdavid/cmdr/commit/71f365b))
+  ([e8762be](https://github.com/vdavid/cmdr/commit/e8762be), [83d2365](https://github.com/vdavid/cmdr/commit/83d2365),
+  [88901f9](https://github.com/vdavid/cmdr/commit/88901f9))
+- Docs: improve agent instructions ([dec19cf](https://github.com/vdavid/cmdr/commit/dec19cf))
 
 ## [0.8.1] - 2026-03-14
 
@@ -660,7 +660,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 
 - Fix scan overlay stuck at 100% after directory size aggregation
-  ([2842e92](https://github.com/vdavid/cmdr/commit/2842e92))
+  ([424eedb](https://github.com/vdavid/cmdr/commit/424eedb))
 
 ## [0.7.0] - 2026-03-12
 
