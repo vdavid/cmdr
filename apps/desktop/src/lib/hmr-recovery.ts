@@ -1,8 +1,8 @@
 /**
  * SvelteKit's client router crashes with "Cannot access 'component' before
- * initialization" when HMR updates propagate through the root layout
- * (virtual:uno.css, app.css changes). This handler catches the crash and
- * forces a clean page reload. Dev-mode only.
+ * initialization" when HMR updates propagate through the root layout (for
+ * example, `app.css` changes). This handler catches the crash and forces a
+ * clean page reload. Dev-mode only. See sveltejs/kit#15287.
  *
  * Must be imported from a stable module (not the root layout itself) so the
  * listener survives layout component re-evaluation during HMR.
