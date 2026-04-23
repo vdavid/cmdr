@@ -14,12 +14,21 @@ import {
   setDirectSmbConnection,
   setFilterSafeSaveArtifacts,
   setSmbConcurrency,
+  setMaxLogStorageMb,
 } from '$lib/tauri-commands'
+import { addToast } from '$lib/ui/toast/toast-store.svelte'
 
 const log = getAppLogger('settings-applier')
 
 let initialized = false
 let unsubscribe: (() => void) | undefined
+
+/**
+ * Last observed value of `advanced.maxLogStorageMb`. Used to detect `0 ↔ non-zero`
+ * transitions that require an app restart (the `tauri-plugin-log` plugin has no runtime
+ * reconfigure API — dropping / adding the `Folder` target only happens at build time).
+ */
+let lastMaxLogStorageMb: number | undefined
 
 /**
  * Applies UI density settings to CSS custom properties.
@@ -110,6 +119,24 @@ function handleSettingChange(id: string, value: unknown): void {
       // Update SMB batch-copy concurrency (backend clamps 1..=32)
       void setSmbConcurrency(value as number)
       break
+    case 'advanced.maxLogStorageMb': {
+      const newValue = value as number
+      const oldValue = lastMaxLogStorageMb
+      lastMaxLogStorageMb = newValue
+      // Push the new keep-count to the backend and run an eager prune.
+      void setMaxLogStorageMb(newValue)
+      // Restart-required toast for `0 ↔ non-zero` transitions. Rotation strategy and target
+      // list are baked into `tauri-plugin-log` at app start, so flipping disabled/enabled
+      // only takes full effect after relaunch.
+      if (oldValue !== undefined && (oldValue === 0) !== (newValue === 0)) {
+        addToast('Restart Cmdr to apply the log storage change.', {
+          level: 'info',
+          dismissal: 'transient',
+          id: 'max-log-storage-restart',
+        })
+      }
+      break
+    }
     // MCP server (developer.mcpEnabled, developer.mcpPort) is handled directly
     // by McpServerSection.svelte in the settings window, not here. This avoids
     // double-firing since both windows receive setting change events.
@@ -134,6 +161,10 @@ export async function initSettingsApplier(): Promise<void> {
   try {
     // Ensure settings store is initialized
     await initializeSettings()
+
+    // Seed the last-observed log-storage cap so the first change event can distinguish
+    // `0 ↔ non-zero` transitions from routine cap changes.
+    lastMaxLogStorageMb = getSetting('advanced.maxLogStorageMb')
 
     // Apply current settings
     applyAllSettings()

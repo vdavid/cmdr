@@ -2,4 +2,4 @@
 
 mod loader;
 
-pub use loader::load_settings;
+pub use loader::{early_load_max_log_storage_mb, load_settings};

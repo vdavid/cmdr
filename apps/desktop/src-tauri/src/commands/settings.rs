@@ -70,6 +70,37 @@ pub fn set_smb_concurrency_cmd(value: u16) {
     set_smb_concurrency(value as usize);
 }
 
+/// Updates the in-RAM log-storage cap and runs an eager prune so the user sees excess files
+/// disappear immediately when they lower the cap.
+///
+/// Note: the actual rotation strategy `tauri-plugin-log` uses is fixed at app start (the
+/// plugin has no runtime reconfigure API). Restart-to-apply is therefore unavoidable for
+/// `0 ↔ non-zero` transitions and for raising the cap above the previously baked-in value.
+/// The frontend toasts a "restart required" notice for those cases.
+///
+/// `value` is in MB. `0` means "log storage disabled".
+#[tauri::command]
+pub fn set_max_log_storage_mb(value: u64) -> Result<(), String> {
+    use crate::logging;
+
+    let new_keep = if value == 0 { 0 } else { value.div_ceil(50) as usize };
+    logging::set_keep_count(new_keep);
+
+    // Eager-prune is purely cosmetic — files would also vanish on the next rotation, but
+    // the user just changed a setting, so we should show the effect now.
+    if let Some(dir) = logging::log_dir() {
+        match logging::eager_prune(dir, new_keep) {
+            Ok(0) => {}
+            Ok(n) => log::info!(
+                target: "cmdr_lib::logging",
+                "Eager-pruned {n} log files after cap change ({value} MB → keep {new_keep}).",
+            ),
+            Err(err) => return Err(format!("Failed to eager-prune log files: {err}")),
+        }
+    }
+    Ok(())
+}
+
 /// Update menu accelerator for a command.
 /// Called from frontend when keyboard shortcuts are changed.
 #[tauri::command]

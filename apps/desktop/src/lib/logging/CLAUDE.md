@@ -25,7 +25,7 @@ getAppLogger('feature')
           -> Rust: log::info!(target: "FE:feature", msg)
             -> tauri-plugin-log (fern + RUST_LOG parsing)
               -> terminal (colored, custom short format)
-              -> log file (~/Library/Logs/com.veszelovszki.cmdr/, 50 MB rotation)
+              -> log file (50 MB per file, KeepSome(N) rotation — N from the cap setting)
 ```
 
 ## Key decisions
@@ -37,8 +37,18 @@ getAppLogger('feature')
 - **RUST_LOG parsed into `level_for()` calls**: `tauri-plugin-log` doesn't support `RUST_LOG` natively. We parse the env
   var at startup and convert each `module=level` directive into a `.level_for()` call on the builder. This covers all
   practical use cases (`cmdr_lib::network=debug,smb=warn,info`). No `env_filter` crate needed.
-- **Same level for terminal and file**: `tauri-plugin-log` doesn't support per-target level filtering. Both get the same
-  level (Info by default, Debug when verbose toggle is on). Fine because the terminal isn't visible in production.
+- **File target captures DEBUG; terminal rides along**: `tauri-plugin-log` doesn't support per-target level filtering,
+  so raising the file target to Debug also raises the terminal target. We accept that — error reports need debug context
+  regardless of the verbose toggle. The verbose toggle still controls LogTape's in-RAM level for the frontend sinks; on
+  the Rust side it flips `log::set_max_level`, which is a no-op when file logging is on (the global floor is already
+  Debug) and a real toggle (Info ↔ Debug) when file logging is disabled via `advanced.maxLogStorageMb = 0`.
+- **`KeepSome(N)` rotation instead of a custom pruner**: `tauri-plugin-log` 2.8.0 exposes `KeepSome(N)` natively. The
+  only gap we fill is an eager-prune on cap-lowered events so the user sees excess files vanish immediately —
+  correctness is already guaranteed by the plugin. See `src-tauri/src/logging/CLAUDE.md`.
+- **One-shot plugin + restart-required for 0 ↔ non-zero transitions**: `tauri_plugin_log::Builder` has no runtime
+  reconfigure API. Changing the log-storage cap between `0` and any non-zero value requires an app restart (the `Folder`
+  target is either present or absent from the plugin). The settings UI shows a "Restart Cmdr to apply" toast for these
+  transitions.
 
 ## Gotchas
 

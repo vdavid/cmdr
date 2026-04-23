@@ -35,8 +35,10 @@ From lowest to highest: `debug` < `info` < `warning` < `error` < `fatal`
 
 ### Default behavior
 
-- **Dev mode**: Shows `info` and above
-- **Prod mode**: Shows `error` and above
+- **Dev mode (terminal)**: Shows `info` and above when log storage is disabled, or `debug` and above when log storage is
+  enabled (the default). `RUST_LOG` overrides.
+- **Prod mode (terminal)**: Terminal isn't visible in shipped builds.
+- **File target**: Always `debug` when log storage is enabled (cap > 0). Absent when the cap is `0`.
 
 ## Log levels
 
@@ -102,7 +104,13 @@ RUST_LOG=trace pnpm dev
 - **Location**: Prod: `~/Library/Logs/com.veszelovszki.cmdr/`, Dev:
   `~/Library/Application Support/com.veszelovszki.cmdr-dev/logs/`
 - Contains both Rust and frontend logs
-- **Rotation**: 50 MB max, old files kept
+- **Level**: Debug by default for the file target, so error reports capture the full context. The plugin doesn't support
+  per-target levels — terminal rides along at Debug when file logging is on. Use `RUST_LOG` to tune noisy modules (see
+  the recipes below).
+- **Rotation**: 50 MB per file, `KeepSome(N)` where `N = ceil(cap_mb / 50)`.
+- **Cap**: `Advanced > Maximum disk space for log files (MB)`, default 200 MB, range 0–5000. Set to `0` to disable log
+  storage entirely — error reports cannot be sent without logs. Lowering the cap at runtime eagerly prunes excess files.
+  `0 ↔ non-zero` transitions (and raising the cap beyond its baked-in value) require an app restart.
 - Accessible from **Settings > Logging > "Open log file"**
 
 ## Log format
@@ -143,5 +151,8 @@ Frontend log targets use `FE:{category}` where category matches the `getAppLogge
 
 Toggle in **Settings > Logging > "Verbose logging"**:
 
-- Switches both frontend (LogTape) and backend (`log::set_max_level`) to debug level at runtime
-- `RUST_LOG` env var overrides at startup for dev
+- Flips frontend (LogTape) debug gating.
+- Flips backend (`log::set_max_level`) between Info and Debug — but only takes visible effect when log storage is
+  disabled (`advanced.maxLogStorageMb = 0`). With log storage on, the backend floor is already Debug so the file target
+  can capture it, and the toggle is a no-op on the Rust side.
+- `RUST_LOG` env var overrides at startup for dev.

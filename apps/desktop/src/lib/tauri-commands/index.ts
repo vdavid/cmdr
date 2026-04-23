@@ -286,6 +286,7 @@ export {
   setDirectSmbConnection,
   setFilterSafeSaveArtifacts,
   setSmbConcurrency,
+  setMaxLogStorageMb,
   setIndexingEnabled,
   getDirStatsBatch,
   getE2eStartPath,

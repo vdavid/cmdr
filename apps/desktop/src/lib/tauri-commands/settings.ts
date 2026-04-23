@@ -71,6 +71,20 @@ export async function setSmbConcurrency(value: number): Promise<void> {
   await invoke('set_smb_concurrency_cmd', { value })
 }
 
+/**
+ * Updates the in-RAM log-storage cap and eagerly prunes excess archived log files.
+ *
+ * `tauri-plugin-log` has no runtime reconfigure API, so the rotation strategy the plugin
+ * was built with survives until app restart. Lowering the cap still takes immediate visual
+ * effect through the eager prune; `0 ↔ non-zero` transitions and raising the cap beyond
+ * the previously baked-in value require a restart (the settings UI toasts a notice).
+ *
+ * @param value - Cap in MB. `0` disables log storage entirely.
+ */
+export async function setMaxLogStorageMb(value: number): Promise<void> {
+  await invoke('set_max_log_storage_mb', { value })
+}
+
 // ============================================================================
 // MCP server commands
 // ============================================================================

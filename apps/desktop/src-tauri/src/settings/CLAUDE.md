@@ -28,8 +28,18 @@ Settings {
     direct_smb_connection: Option<bool>,   // from "network.directSmbConnection"
     mtp_enabled: Option<bool>,             // from "fileOperations.mtpEnabled"
     disk_space_change_threshold_mb: Option<u64>, // from "advanced.diskSpaceChangeThreshold"
+    max_log_storage_mb: Option<u64>,               // from "advanced.maxLogStorageMb"
 }
 ```
+
+## Early-load helper
+
+`early_load_max_log_storage_mb()` in `loader.rs` reads `advanced.maxLogStorageMb` from
+`settings.json` *before* the Tauri `AppHandle` exists, so the `tauri-plugin-log` builder
+(which runs in the `.plugin(...)` closure before `.setup()`) can pick a rotation strategy
+from the user's cap. It mirrors the env-var precedence used by `resolved_app_data_dir` but
+resolves the production default via `dirs::data_dir()` + a hard-coded bundle id constant
+(kept in sync with `tauri.conf.json` → `identifier`).
 
 ## File format
 

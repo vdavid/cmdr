@@ -59,6 +59,12 @@ pub struct Settings {
     pub disk_space_change_threshold_mb: Option<u64>,
     #[serde(alias = "network.smbConcurrency", default)]
     pub smb_concurrency: Option<u16>,
+    #[serde(alias = "advanced.maxLogStorageMb", default)]
+    #[allow(
+        dead_code,
+        reason = "Read via early-load helper before plugin init; kept here for completeness"
+    )]
+    pub max_log_storage_mb: Option<u64>,
 }
 
 fn default_show_hidden() -> bool {
@@ -81,6 +87,7 @@ impl Default for Settings {
             mtp_enabled: None,
             disk_space_change_threshold_mb: None,
             smb_concurrency: None,
+            max_log_storage_mb: None,
         }
     }
 }
@@ -135,6 +142,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         .get("network.smbConcurrency")
         .and_then(|v| v.as_u64())
         .and_then(|v| u16::try_from(v).ok());
+    let max_log_storage_mb = json.get("advanced.maxLogStorageMb").and_then(|v| v.as_u64());
 
     Ok(Settings {
         show_hidden_files,
@@ -150,5 +158,33 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         mtp_enabled,
         disk_space_change_threshold_mb,
         smb_concurrency,
+        max_log_storage_mb,
     })
+}
+
+/// Reads `advanced.maxLogStorageMb` from disk *before* the Tauri app handle exists.
+///
+/// The `tauri-plugin-log` builder runs before `setup()`, so we can't go through the normal
+/// [`load_settings`] path (which needs `AppHandle::path()`). We resolve the data dir from
+/// `CMDR_DATA_DIR` (set by `tauri-wrapper.js` in dev / by E2E harnesses) and otherwise
+/// fall back to the OS-default app-support dir for the `com.veszelovszki.cmdr` bundle.
+///
+/// Returns `None` when the file is missing or the key is unset; the caller substitutes the
+/// 200 MB default. Returns `Some(0)` for explicit "log storage disabled".
+pub fn early_load_max_log_storage_mb() -> Option<u64> {
+    /// Bundle id from `tauri.conf.json`. Mirrored here so this function works without the
+    /// app handle. Keep in sync if the bundle id ever changes.
+    const BUNDLE_ID: &str = "com.veszelovszki.cmdr";
+
+    let data_dir: PathBuf = if let Ok(custom) = std::env::var("CMDR_DATA_DIR") {
+        PathBuf::from(custom)
+    } else {
+        let base = dirs::data_dir()?;
+        base.join(BUNDLE_ID)
+    };
+
+    let settings_path = data_dir.join("settings.json");
+    let contents = fs::read_to_string(&settings_path).ok()?;
+    let json: serde_json::Value = serde_json::from_str(&contents).ok()?;
+    json.get("advanced.maxLogStorageMb").and_then(|v| v.as_u64())
 }

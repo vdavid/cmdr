@@ -61,6 +61,8 @@ use nusb as _;
 mod ignore_poison;
 pub use ignore_poison::IgnorePoison;
 
+mod logging;
+
 #[cfg(target_os = "macos")]
 mod accent_color;
 #[cfg(target_os = "linux")]
@@ -216,25 +218,68 @@ pub fn run() {
             // 1. CMDR_LOG_DIR env var (explicit override)
             // 2. CMDR_DATA_DIR env var → <CMDR_DATA_DIR>/logs/ (dev and E2E test isolation)
             // 3. Default Tauri log dir (production)
-            let log_target = if let Ok(log_dir) = std::env::var("CMDR_LOG_DIR") {
-                Target::new(TargetKind::Folder {
-                    path: std::path::PathBuf::from(log_dir),
-                    file_name: None,
-                })
+            let resolved_log_dir: std::path::PathBuf = if let Ok(log_dir) = std::env::var("CMDR_LOG_DIR") {
+                std::path::PathBuf::from(log_dir)
             } else if let Ok(data_dir) = std::env::var("CMDR_DATA_DIR") {
-                let log_dir = std::path::PathBuf::from(data_dir).join("logs");
-                Target::new(TargetKind::Folder {
-                    path: log_dir,
-                    file_name: None,
-                })
+                std::path::PathBuf::from(data_dir).join("logs")
             } else {
-                Target::new(TargetKind::LogDir { file_name: None })
+                // Mirror tauri-plugin-log's `LogDir`: `<app_log_dir>/`. On macOS/iOS this is
+                // `~/Library/Logs/<bundle_id>/`; on Linux it's `$XDG_DATA_HOME/<bundle_id>/logs`;
+                // on Windows it's `<FOLDERID_LocalAppData>/<bundle_id>/logs`. We mirror the
+                // macOS shape (the only platform we currently ship to) — `dirs::home_dir() +
+                // Library/Logs/<bundle_id>`. Other platforms only matter for dev, where
+                // CMDR_DATA_DIR is always set by `tauri-wrapper.js`.
+                #[cfg(target_os = "macos")]
+                {
+                    dirs::home_dir()
+                        .map(|h| h.join("Library/Logs/com.veszelovszki.cmdr"))
+                        .unwrap_or_else(|| std::path::PathBuf::from("./logs"))
+                }
+                #[cfg(not(target_os = "macos"))]
+                {
+                    dirs::data_local_dir()
+                        .map(|d| d.join("com.veszelovszki.cmdr/logs"))
+                        .unwrap_or_else(|| std::path::PathBuf::from("./logs"))
+                }
+            };
+
+            // Read the log-storage cap from settings.json *before* the app handle exists.
+            // 0 = disabled (drop the file target entirely).
+            // None = no setting yet → 200 MB default.
+            // Any other value = N MB cap, mapped to KeepSome(ceil(N / 50)).
+            let cap_mb = settings::early_load_max_log_storage_mb().unwrap_or(200);
+            let file_logging_enabled = cap_mb > 0;
+            let keep_count: usize = if file_logging_enabled {
+                cap_mb.div_ceil(50) as usize
+            } else {
+                0
+            };
+
+            // Cache for the rest of the app (Phase 4 bundle builder, eager-prune callers).
+            logging::set_log_dir(resolved_log_dir.clone());
+            logging::set_keep_count(keep_count);
+
+            let stdout_target = Target::new(TargetKind::Stdout);
+            let targets: Vec<Target> = if file_logging_enabled {
+                let folder_target = Target::new(TargetKind::Folder {
+                    path: resolved_log_dir,
+                    file_name: None,
+                });
+                vec![stdout_target, folder_target]
+            } else {
+                vec![stdout_target]
             };
 
             let mut builder = tauri_plugin_log::Builder::new()
-                .targets([Target::new(TargetKind::Stdout), log_target])
-                .rotation_strategy(RotationStrategy::KeepAll)
-                .max_file_size(50_000_000) // 50 MB
+                .targets(targets)
+                .rotation_strategy(if file_logging_enabled {
+                    RotationStrategy::KeepSome(keep_count)
+                } else {
+                    // Irrelevant when there's no Folder target, but the builder needs *some*
+                    // value. KeepOne is the plugin's default and the cheapest.
+                    RotationStrategy::KeepOne
+                })
+                .max_file_size(50_000_000) // 50 MB per rotated file
                 .format(|out, message, record| {
                     let now = chrono::Local::now();
                     let ts = now.format("%H:%M:%S%.3f"); // HH:MM:SS.mmm
@@ -280,9 +325,32 @@ pub fn run() {
             builder.build()
         })
         .setup(|app| {
-            // When RUST_LOG is not set, restrict to Info by default (verbose toggle can raise to Debug)
+            // When RUST_LOG is not set, choose a runtime floor:
+            // - If file logging is enabled (`logging::keep_count() > 0`): Debug, so the file
+            //   target captures the full debug context error reports rely on. The plugin can't
+            //   filter per-target, so the terminal also sees Debug — documented tradeoff.
+            // - If file logging is disabled (cap = 0): Info, preserving the old behavior. The
+            //   verbose toggle can raise to Debug at runtime.
             if std::env::var("RUST_LOG").is_err() {
-                log::set_max_level(log::LevelFilter::Info);
+                let floor = if logging::keep_count() > 0 {
+                    log::LevelFilter::Debug
+                } else {
+                    log::LevelFilter::Info
+                };
+                log::set_max_level(floor);
+            }
+
+            // One-line marker so the resolved log-storage state is visible at startup.
+            match logging::keep_count() {
+                0 => log::info!(
+                    target: "cmdr_lib::logging",
+                    "Log storage disabled (advanced.maxLogStorageMb = 0). Error reports cannot be sent.",
+                ),
+                n => log::info!(
+                    target: "cmdr_lib::logging",
+                    "Log storage enabled: keep up to {n} files × 50 MB ({} MB cap)",
+                    n * 50,
+                ),
             }
 
             // Initialize crash reporter early, before anything that might crash
@@ -994,6 +1062,7 @@ pub fn run() {
             commands::settings::set_direct_smb_connection,
             commands::settings::set_filter_safe_save_artifacts_cmd,
             commands::settings::set_smb_concurrency_cmd,
+            commands::settings::set_max_log_storage_mb,
             // Logging commands (frontend log bridge + runtime level control)
             commands::logging::batch_fe_logs,
             commands::logging::set_log_level,

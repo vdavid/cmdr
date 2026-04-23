@@ -721,6 +721,23 @@ export const settingsRegistry: SettingDefinition[] = [
     showInAdvanced: true,
   },
   {
+    id: 'advanced.maxLogStorageMb',
+    section: ['Advanced'],
+    label: 'Maximum disk space for log files (MB)',
+    description:
+      'Maximum disk space for log files. Set to 0 to disable log storage; error reports cannot be sent without logs. Changes to a non-zero value take effect on next app launch.',
+    keywords: ['log', 'storage', 'disk', 'mb', 'cap', 'rotation', 'error', 'report', 'privacy'],
+    type: 'number',
+    default: 200,
+    component: 'number-input',
+    showInAdvanced: true,
+    constraints: {
+      min: 0,
+      max: 5000,
+      step: 50,
+    },
+  },
+  {
     id: 'advanced.diskSpaceChangeThreshold',
     section: ['Advanced'],
     label: 'Disk space change threshold (MB)',

@@ -161,7 +161,13 @@
                             <span class="unit">{setting.constraints.unit}</span>
                         {:else if setting.type === 'number'}
                             <span class="unit">
-                                {setting.id.includes('Threshold') ? 'px' : setting.id.includes('Buffer') ? 'items' : ''}
+                                {setting.id === 'advanced.dragThreshold'
+                                    ? 'px'
+                                    : setting.id.includes('Buffer')
+                                      ? 'items'
+                                      : setting.id.endsWith('Mb') || setting.id.includes('DiskSpace')
+                                        ? 'MB'
+                                        : ''}
                             </span>
                         {/if}
                     {/if}
