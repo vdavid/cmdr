@@ -10,8 +10,8 @@ mod symbolicate;
 mod tests;
 
 use crate::config;
+use crate::redact;
 use crate::settings;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
@@ -154,23 +154,11 @@ fn extract_panic_message(info: &std::panic::PanicHookInfo<'_>) -> Option<String>
     Some(info.to_string())
 }
 
-/// Strip file paths from panic messages to prevent PII leaks.
-/// Matches Unix paths (/Users/..., /home/..., /tmp/...) and Windows paths (C:\...).
+/// Strip PII from panic messages. Thin wrapper around the shared redactor; kept here so
+/// callers don't need to know about `crate::redact` and so existing tests have a stable
+/// entry point during the migration.
 fn sanitize_panic_message(message: &str) -> String {
-    static RE: OnceLock<Regex> = OnceLock::new();
-    let re = RE.get_or_init(|| {
-        // Match Unix absolute paths and Windows drive paths.
-        // Captures paths like /Users/foo/bar.rs:42:5 or C:\Users\foo\bar.rs
-        Regex::new(
-            r#"(?x)
-            (?:
-                /(?:Users|home|tmp|var|private|opt|usr|nix)[/][^\s"':;,)}\]]+
-              | [A-Z]:\\[^\s"':;,)}\]]+
-            )"#,
-        )
-        .expect("valid regex")
-    });
-    re.replace_all(message, "<path>").into_owned()
+    redact::redact_panic_message(message)
 }
 
 fn parse_backtrace_frames(backtrace_str: &str) -> Vec<String> {

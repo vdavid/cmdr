@@ -1,0 +1,144 @@
+10:22:38.061 INFO  indexing::verifier  Verifier: 1 diffs in `/Users/veszelovszki/.dropbox` (0 stale, 0 new files, 0 new dir, 1 modified)
+10:22:39.562 INFO  indexing::verifier  Verifier: 6 diffs in `/Users/veszelovszki/Google Drive` (0 stale, 1 new files, 5 new dir, 0 modified)
+10:36:16.815 INFO  config  Using CMDR_DATA_DIR: /Users/veszelovszki/Library/Application Support/com.veszelovszki.cmdr-dev
+10:51:24.236 INFO  config  Using CMDR_DATA_DIR: /Users/alice/Library/Application Support/com.veszelovszki.cmdr-dev
+12:14:26.047 INFO  file_system  Reading /Users/john/Documents/budget.pdf
+12:17:42.577 INFO  file_system  Wrote /Users/jane/Downloads/installer.dmg successfully
+12:19:37.842 INFO  file_system  Failed to read /Users/bob/Desktop/screenshot.png
+12:21:59.797 INFO  file_system  Path /Users/carol/SecretProject/notes.md modified
+12:23:53.563 INFO  file_system  Symlink target: /Users/dave/.config/app/state.json
+12:26:25.511 INFO  file_system  Indexed /Users/eve/Pictures/2026/january/photo.jpg
+12:28:11.850 INFO  file_system  Stored at /home/alice/Documents/report.docx
+14:30:10.697 INFO  file_system  Linux home: /home/bob/Music/song.mp3
+14:38:58.423 INFO  file_system  Wrote /home/carol/.ssh/id_rsa
+14:41:38.187 INFO  file_system  Path /home/dave/Public/share.txt
+15:08:09.006 INFO  file_system  Volume mounted at /Volumes/MyDrive
+15:08:09.096 INFO  file_system  Reading /Volumes/MyDrive/Documents/file.txt
+15:08:11.995 INFO  file_system  Reading /Volumes/My Backup Drive/2026/photo.jpg
+15:08:12.120 INFO  file_system  Reading /Volumes/External SSD/work/project.tar
+15:08:12.298 INFO  file_system  Reading /Volumes/Backup/2026/january/data.csv
+15:08:12.303 INFO  file_system  Volume label "Time Machine Backups" at /Volumes/Time Machine Backups/foo.bak
+15:10:32.237 INFO  file_system  Linux mount /media/usb0/file.txt
+15:10:43.543 INFO  file_system  Linux mount /media/alice/External/Documents/x.pdf
+15:11:20.805 INFO  file_system  Linux mount /media/cdrom
+15:29:46.002 INFO  file_system  Linux mount /media/My Stick/data.bin
+15:29:46.003 INFO  file_system  Linux mount /media/sdcard/dcim/photo.jpg
+15:29:46.024 INFO  file_system  Linux mount /media/usb1/Music/track.mp3
+15:29:46.055 INFO  network::smb_client  Connecting to smb://homer.local/share/file.txt
+15:29:46.099 INFO  network::smb_client  Connecting to smb://192.168.1.10/Public/doc.pdf
+15:29:46.118 INFO  network::smb_client  Connecting to smb://nas.local/backups/2026/jan.zip
+15:29:46.120 INFO  network::smb_client  Connecting to smb://homer/movies/film.mkv
+15:29:47.041 INFO  network::smb_client  Connected to smb://server.example.com/share
+15:29:47.714 INFO  network::smb_client  UNC path: \\server\share\file.txt
+15:29:47.717 INFO  network::smb_client  UNC path: \\nas.local\public\Documents\plan.docx
+15:29:48.306 INFO  network::smb_client  UNC path: \\fileserver\team\report.pdf
+15:29:48.306 INFO  network::smb_client  UNC path: \\10.0.0.5\backup\daily\snapshot.tar
+16:29:47.055 INFO  network::mdns  Discovered host: homer.local
+16:29:48.123 INFO  network::mdns  Discovered host: nas.local
+16:29:49.456 INFO  network::mdns  Discovered host: macbook-pro.local
+16:29:50.789 INFO  network::mdns  Two: alpha.local and beta.local
+16:29:51.012 INFO  network::mdns  Server: server-1.local resolved
+16:29:52.345 INFO  network  Reachable at foo.local:445
+17:00:00.000 INFO  network  Connect to 192.168.1.1 timeout
+17:00:00.001 INFO  network  Reach 10.0.0.5
+17:00:00.002 INFO  network  Two: 8.8.8.8 and 8.8.4.4
+17:00:00.003 INFO  network  Endpoint 172.16.254.1:8080
+17:00:00.004 INFO  network  Bind 0.0.0.0:0
+17:00:00.005 INFO  network  Loopback 127.0.0.1
+17:00:01.000 INFO  network  IPv6 endpoint 2001:db8:85a3::8a2e:370:7334
+17:00:01.001 INFO  network  IPv6 loopback ::1
+17:00:01.002 INFO  network  Link local fe80::1
+17:00:01.003 INFO  network  From 2001:db8::1 to ::1
+17:00:01.004 INFO  network  Full address 2001:0db8:0000:0000:0000:ff00:0042:8329
+17:00:02.000 INFO  licensing  Contact alice@example.com please
+17:00:02.001 INFO  licensing  Tagged john.doe+tag@example.co.uk
+17:00:02.002 INFO  licensing  Two: a@b.com and c@d.org
+17:00:02.003 INFO  licensing  Sender noreply@subdomain.example.com
+17:00:02.004 INFO  licensing  Login name_with_underscores@x-y.io ok
+17:00:02.005 INFO  licensing  user@domain.dev failed login
+17:00:03.000 INFO  net  fetched https://alice:s3cret@example.com/path
+17:00:03.001 INFO  net  fetched ftp://anon@files.example.com/pub
+17:00:03.002 INFO  net  fetched https://user@host.example.com/
+17:00:03.003 INFO  net  fetched https://bob:hunter2@api.example.com/v1
+17:00:03.004 INFO  net  pushed ssh://git@github.com/foo/bar
+17:00:04.000 INFO  net  Two: https://u:p@a.com and https://x:y@b.com
+18:00:00.000 INFO  build  error at /tmp/build-abc123/src/main.rs:42:5
+18:00:00.001 INFO  build  cache at /tmp/foo.txt
+18:00:00.002 INFO  build  ipc at /private/tmp/zeb_def_ipc_93056
+18:00:00.003 INFO  build  cache at /var/folders/xy/abcdef/T/cache.bin
+18:00:00.004 INFO  build  homebrew at /opt/homebrew/bin/something
+19:00:00.000 INFO  win  Wrote C:\Users\Bob\Desktop\passwords.txt
+19:00:00.001 INFO  win  Wrote D:\Users\alice\Documents\report.docx
+19:00:00.002 INFO  win  Wrote C:\Users\bob\AppData\Roaming\config.json
+19:00:00.003 INFO  win  Wrote C:\Users\carol\Music\song.mp3 found
+19:00:00.004 INFO  win  Wrote C:\Users\dave\SecretFolder\thing.exe
+19:00:00.005 INFO  win  Profile path C:\Users\eve
+20:00:00.000 INFO  indexing  Replay: deduplicated 7779 raw events to 6333 unique (19% reduction)
+20:00:00.001 INFO  indexing  Replay: complete (7779 events, 2094 affected dirs, 3.2s)
+20:00:00.002 INFO  indexing  Replay: switching to live mode
+20:00:00.003 INFO  indexing::reconciler  Reconciler: switched to live mode
+20:00:00.004 INFO  indexing::reconciler  MustScanSubDirs: reconcile starting for /
+20:00:00.005 INFO  indexing::reconciler  MustScanSubDirs: reconcile slow for / (+38 -0 ~515676, 1691s)
+20:00:00.006 INFO  indexing::manager  Replay: watcher started (since_event_id=888910657, current=890423195)
+20:00:00.007 INFO  indexing::watcher  Watcher: started on / (since_when=927249459)
+20:00:00.008 INFO  indexing::events  Index rescan triggered (StaleIndex)
+20:00:00.009 INFO  indexing::writer  Writer: truncated entries + dir_stats (8830ms)
+20:00:00.010 INFO  indexing::writer  ComputeAllAggregates: done — 599656 directories in 16.3s
+20:00:00.011 INFO  indexing::manager  Scan: complete (6347974 entries, 599655 dirs, 217.9s)
+20:00:00.012 INFO  indexing::manager  Reconciler: 2503 events buffered during scan
+20:00:00.013 INFO  updater  Checking for updates (current version: 0.13.0)
+20:00:00.014 INFO  config  CMDR_DATA_DIR resolved
+21:00:00.000 INFO  redact_test  cmdr_lib::network::smb_client logged something
+21:00:00.001 INFO  redact_test  Cargo.toml not found
+21:00:00.002 INFO  redact_test  released version 0.1.2-alpha
+21:00:00.003 INFO  redact_test  release v0.13.0
+21:00:00.004 INFO  redact_test  ip placeholder 192.168.x.y
+21:00:00.005 INFO  redact_test  127 errors observed
+21:00:00.006 INFO  redact_test  called `Option::unwrap()` on a `None` value
+21:00:00.007 INFO  redact_test  module path cmdr_lib::redact::tests
+21:00:00.008 INFO  redact_test  version 1.2.3
+22:00:00.000 INFO  combo  Two paths: /Users/a/Documents/x.txt and /Users/b/Downloads/y.zip done
+22:00:00.001 INFO  combo  Mixed: /Volumes/MyDrive/file.txt and smb://homer.local/share/x.txt
+22:00:00.002 INFO  combo  Email contact alice@example.com and ip 192.168.1.1
+22:00:00.003 INFO  combo  Mount mounted at /Volumes/External SSD/work/project.tar.gz now
+22:00:00.004 INFO  combo  homer.local has ip 10.0.0.5
+22:00:00.005 INFO  combo  Two: alpha.local and beta.local
+22:00:00.006 INFO  combo  user info https://u:p@a.com and email a@b.com
+22:00:00.007 INFO  combo  Reading /Users/john/Documents/budget.pdf for alice@example.com
+23:00:00.000 INFO  panic  panicked at 'index out of bounds: the len is 5 but the index is 7', /Users/foo/Documents/bar.rs:10:5
+23:00:00.001 INFO  panic  thread 'main' panicked at /home/alice/.config/app/main.rs:1:1
+23:00:00.002 INFO  panic  panicked at C:\Users\Bob\Desktop\bin.exe
+23:00:00.003 INFO  panic  no path here, just text
+23:00:00.004 INFO  panic  panicked at /tmp/build-xyz/src/lib.rs:99:9
+23:00:00.005 INFO  smb  smb://user@host/share connection
+23:00:00.006 INFO  smb  smb://homer just host
+23:00:00.007 INFO  smb  smb://homer/share just share
+23:00:00.008 INFO  paths  Username only path /Users/john ok
+23:00:00.009 INFO  paths  Linux user only /home/bob done
+23:00:00.010 INFO  paths  Volume only /Volumes/Untitled mounted
+23:00:00.011 INFO  paths  Win user only C:\Users\eve hello
+23:00:00.012 INFO  paths  Path with spaces /Users/foo/My Documents/file.txt
+23:00:00.013 INFO  paths  Path with spaces /Volumes/My Backup Drive/Documents/photo.jpg
+23:00:00.014 INFO  paths  Path /home/dave/Movies/video.mp4
+23:00:00.015 INFO  paths  Path /Users/eve/Public/share.zip
+23:00:00.016 INFO  paths  Trailing slash /Users/john/Documents/
+23:00:00.017 INFO  e2e  Listing dir /Users/qa/src/project finished
+23:00:00.018 INFO  e2e  Listing dir /Users/qa/Library/Caches/test
+23:00:00.019 INFO  e2e  Listing dir /Users/qa/AppData/test
+00:00:00.000 INFO  empty
+00:00:00.001 INFO  punct  Path: /Users/foo/Documents/x.pdf, then more text
+00:00:00.002 INFO  punct  Path: /Users/foo/Documents/x.pdf; then more text
+00:00:00.003 INFO  punct  (path /Users/foo/Documents/x.pdf)
+00:00:00.004 INFO  punct  "/Users/foo/Documents/x.pdf"
+00:00:00.005 INFO  punct  '/Users/foo/Documents/x.pdf'
+00:00:00.006 INFO  punct  Email: alice@example.com, found
+00:00:00.007 INFO  punct  IP: 192.168.1.1, found
+00:00:00.008 INFO  long  Long line with /Users/foo/Documents/budget.pdf and /Volumes/MyDrive/file.txt and homer.local and 192.168.1.1 and alice@example.com all together
+00:00:00.009 INFO  long  Multiple emails: a@b.com, c@d.org, e@f.net found
+00:00:00.010 INFO  long  Multiple ips: 1.1.1.1, 2.2.2.2, 3.3.3.3 found
+00:00:00.011 INFO  long  Multiple hosts: alpha.local, beta.local, gamma.local found
+00:00:00.012 INFO  long  Multiple unc: \\a\b\c.txt and \\d\e\f.txt found
+00:00:00.013 INFO  long  Mixed PII: /Users/foo/Documents/x.pdf for alice@example.com via 192.168.1.1 to homer.local
+00:00:00.014 INFO  long  Quoted path "/Users/foo/Documents/budget.pdf" with surrounding quotes
+00:00:00.015 INFO  long  Backtick path `/Users/foo/Documents/budget.pdf` with surrounding ticks
+00:00:00.016 INFO  done  finished

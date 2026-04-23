@@ -27,8 +27,11 @@ Both paths write to `crash-report.json` in the app data dir (same dir as `settin
 ## Key design decisions
 
 - **Opt-in only** (`updates.crashReports` defaults to `false`). Consistent with the "no telemetry" stance.
-- **No PII, ever.** Panic messages are sanitized to strip file paths before writing. No file names, usernames, device
-  IDs, or license keys are included.
+- **No PII, ever.** Panic messages are sanitized via the shared
+  [`crate::redact`](../redact/CLAUDE.md) module to strip file paths, hostnames, IPs, emails,
+  and URL userinfo before writing. The `sanitize_panic_message` function in `mod.rs` is a
+  thin wrapper around `redact::redact_panic_message`. No file names, usernames, device IDs,
+  or license keys are included.
 - **Dev mode: capture only, never send.** Crash files are written (useful for testing), but the send path is skipped to
   avoid polluting production data.
 - **Crash loop protection**: If the crash file's timestamp is less than five seconds before the current launch, skip

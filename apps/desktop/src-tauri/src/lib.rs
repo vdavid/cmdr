@@ -98,6 +98,7 @@ mod network;
 mod permissions;
 #[cfg(target_os = "linux")]
 mod permissions_linux;
+mod redact;
 pub mod search;
 mod secrets;
 mod settings;

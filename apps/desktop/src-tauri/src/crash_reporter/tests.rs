@@ -111,13 +111,17 @@ fn nonexistent_crash_file_returns_none() {
     assert!(result.is_none());
 }
 
+// Sanitization is delegated to `crate::redact` (see `redact/tests.rs` for full pattern
+// coverage). These tests verify the wrapper still strips the same PII the old sanitizer
+// did, just with the new path-shape-preserving output.
+
 #[test]
 fn sanitize_unix_home_path() {
     let msg = r#"No such file or directory (os error 2): /Users/john/Documents/secret-project/file.txt"#;
     let sanitized = sanitize_panic_message(msg);
     assert!(!sanitized.contains("/Users/john"));
     assert!(!sanitized.contains("secret-project"));
-    assert!(sanitized.contains("<path>"));
+    assert!(sanitized.contains("$HOME"));
 }
 
 #[test]
@@ -126,7 +130,7 @@ fn sanitize_linux_home_path() {
     let sanitized = sanitize_panic_message(msg);
     assert!(!sanitized.contains("/home/alice"));
     assert!(!sanitized.contains("id_rsa"));
-    assert!(sanitized.contains("<path>"));
+    assert!(sanitized.contains("$HOME"));
 }
 
 #[test]
@@ -134,15 +138,17 @@ fn sanitize_windows_path() {
     let msg = r"couldn't read C:\Users\Bob\Desktop\passwords.txt";
     let sanitized = sanitize_panic_message(msg);
     assert!(!sanitized.contains(r"C:\Users\Bob"));
-    assert!(sanitized.contains("<path>"));
+    assert!(sanitized.contains("$HOME"));
 }
 
 #[test]
 fn sanitize_tmp_path() {
     let msg = "error at /tmp/build-abc123/src/main.rs:42:5";
     let sanitized = sanitize_panic_message(msg);
-    assert!(!sanitized.contains("/tmp/build"));
-    assert!(sanitized.contains("<path>"));
+    assert!(!sanitized.contains("/tmp/build-abc123"));
+    // Path-shape preservation keeps the `/tmp/` prefix and the file extension.
+    assert!(sanitized.contains("/tmp/"));
+    assert!(sanitized.contains("<file>.rs"));
 }
 
 #[test]
@@ -158,8 +164,8 @@ fn sanitize_multiple_paths() {
     let sanitized = sanitize_panic_message(msg);
     assert!(!sanitized.contains("/Users/a"));
     assert!(!sanitized.contains("/Users/b"));
-    // Should have two <path> replacements
-    assert_eq!(sanitized.matches("<path>").count(), 2);
+    // Two paths → two $HOME replacements.
+    assert_eq!(sanitized.matches("$HOME").count(), 2);
 }
 
 #[test]
