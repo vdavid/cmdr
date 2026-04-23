@@ -1,5 +1,11 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { handleCrashNotifications, handleDailyAggregation, handleDbSizeCheck } from './index'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import {
+  handleCrashNotifications,
+  handleDailyAggregation,
+  handleDbSizeCheck,
+  handleDailyEvictionSweep,
+} from './index'
+import { ERROR_REPORT_PREFIX, TOTAL_BYTES_KEY } from './error-report-eviction'
 
 // Mock Resend — intercept email sends
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -272,5 +278,115 @@ describe('handleDbSizeCheck', () => {
     await handleDbSizeCheck(env as never)
 
     expect(mockSend).not.toHaveBeenCalled()
+  })
+})
+
+// -----------------------------------------------------------------------------
+// Daily eviction sweep
+// -----------------------------------------------------------------------------
+
+interface StubR2Obj {
+  key: string
+  size: number
+  uploaded: Date
+}
+
+function createR2Stub(objs: StubR2Obj[]): R2Bucket {
+  const store = new Map<string, StubR2Obj>(objs.map((o) => [o.key, o]))
+  return {
+    list: ({ prefix, cursor }: { prefix?: string; cursor?: string } = {}) => {
+      const all = [...store.values()]
+        .filter((o) => !prefix || o.key.startsWith(prefix))
+        .sort((a, b) => (a.key < b.key ? -1 : 1))
+      const pageSize = 1000
+      const startIdx = cursor ? parseInt(cursor, 10) : 0
+      const slice = all.slice(startIdx, startIdx + pageSize)
+      return Promise.resolve({
+        objects: slice.map((o) => ({ key: o.key, size: o.size, uploaded: o.uploaded })),
+        truncated: startIdx + pageSize < all.length,
+        cursor: startIdx + pageSize < all.length ? String(startIdx + pageSize) : undefined,
+      })
+    },
+    delete: (key: string) => {
+      store.delete(key)
+      return Promise.resolve()
+    },
+  } as unknown as R2Bucket
+}
+
+function createKvStub(initial: Record<string, string> = {}): KVNamespace {
+  const store = new Map<string, string>(Object.entries(initial))
+  return {
+    get: (key: string) => Promise.resolve(store.get(key) ?? null),
+    put: (key: string, value: string) => {
+      store.set(key, value)
+      return Promise.resolve()
+    },
+    delete: (key: string) => {
+      store.delete(key)
+      return Promise.resolve()
+    },
+  } as unknown as KVNamespace
+}
+
+describe('handleDailyEvictionSweep', () => {
+  let originalFetch: typeof fetch
+  beforeEach(() => {
+    originalFetch = globalThis.fetch
+    globalThis.fetch = (() => Promise.resolve(new Response(null, { status: 204 }))) as unknown as typeof fetch
+  })
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+  })
+
+  it('recomputes total and does not evict when under high watermark', async () => {
+    const GB = 1024 ** 3
+    const bucket = createR2Stub([
+      { key: `${ERROR_REPORT_PREFIX}2026-04-01/a.zip`, size: 2 * GB, uploaded: new Date('2026-04-01') },
+    ])
+    const kv = createKvStub({ [TOTAL_BYTES_KEY]: '999999999' }) // stale (too high)
+    const env = { ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv } as never
+
+    await handleDailyEvictionSweep(env)
+
+    // Corrected total
+    expect(await kv.get(TOTAL_BYTES_KEY)).toBe(String(2 * GB))
+  })
+
+  it('evicts when recomputed total exceeds high watermark', async () => {
+    const GB = 1024 ** 3
+    // 10 × 1 GB = 10 GB > 8 GB threshold
+    const objs: StubR2Obj[] = Array.from({ length: 10 }, (_, i) => ({
+      key: `${ERROR_REPORT_PREFIX}2026-04-${String(i + 1).padStart(2, '0')}/ERR-${String(i).padStart(5, '0')}-u.zip`,
+      size: 1 * GB,
+      uploaded: new Date(`2026-04-${String(i + 1).padStart(2, '0')}`),
+    }))
+    const bucket = createR2Stub(objs)
+    const kv = createKvStub()
+    const env = { ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv } as never
+
+    await handleDailyEvictionSweep(env)
+
+    // Final recomputed total should be ≤ 6 GB
+    const finalTotal = parseInt((await kv.get(TOTAL_BYTES_KEY)) ?? '0', 10)
+    expect(finalTotal).toBeLessThanOrEqual(6 * GB)
+  })
+})
+
+describe('scheduled handler: eviction job isolation', () => {
+  it('does not throw when individual jobs fail (each has its own try/catch)', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    // Importing the default export to exercise the dispatch
+    const mod = (await import('./index')).default
+    const env = {
+      // All bindings missing — each handler should bail internally or throw,
+      // and the scheduled wrapper's per-job try/catch absorbs each failure.
+      TELEMETRY_DB: createMockD1().db,
+    } as never
+    const event = { scheduledTime: Date.UTC(2026, 3, 23, 0, 0, 0) } as ScheduledEvent
+    await expect(mod.scheduled(event, env)).resolves.toBeUndefined()
+    // At least one job logged its caught error
+    expect(errSpy).toHaveBeenCalled()
+    errSpy.mockRestore()
   })
 })

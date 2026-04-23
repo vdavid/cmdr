@@ -15,7 +15,10 @@ app versions).
 | `src/admin.ts`                              | Routes: `/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/crashes` |
 | `src/telemetry.ts`                          | Routes: `/crash-report`, `/update-check/:version`, `/download/:version/:arch`       |
 | `src/likes.ts`                              | Routes: `/likes/:slug` (GET, POST, DELETE, OPTIONS)                                 |
-| `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size)                  |
+| `src/error-report.ts`                       | Route: `POST /error-report` (multipart upload to R2, Discord notify)                |
+| `src/error-report-eviction.ts`              | Eviction logic: 8/6 GB watermarks, KV lock, recompute helper                        |
+| `src/discord.ts`                            | Discord webhook client (single-retry on 429, drop-on-failure)                       |
+| `src/scheduled.ts`                          | Cron handler functions (crash notifications, aggregation, DB size, eviction)        |
 | `src/license.ts`                            | Short code + license key generation, `LicenseType` enum                             |
 | `src/paddle.ts`                             | HMAC-SHA256 webhook verification, `constantTimeEqual`                               |
 | `src/paddle-api.ts`                         | Paddle REST client: transaction/subscription/customer fetch                         |
@@ -46,6 +49,7 @@ app versions).
 | GET    | `/admin/crashes`           | Bearer token | Aggregated crash data by day/crash site/signal            |
 | GET    | `/download/:version/:arch` | —            | Log download to D1, 302 → GitHub                          |
 | POST   | `/crash-report`            | —            | Ingest crash report to D1                                 |
+| POST   | `/error-report`            | —            | Multipart upload (zip + meta) → R2, Discord notify        |
 | GET    | `/update-check/:version`   | —            | Log update check to D1 (deduped), 302 → latest.json       |
 
 ## Environments
@@ -71,8 +75,42 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 | `ED25519_PRIVATE_KEY`              | Private key hex                  | Same private key hex              |
 | `RESEND_API_KEY`                   | Resend key                       | Same Resend key                   |
 | `CRASH_NOTIFICATION_EMAIL`         | `veszelovszki@gmail.com`         | Recipient email for crash alerts  |
+| `DISCORD_WEBHOOK_URL`              | Same webhook URL                 | Discord webhook for error reports |
+| `R2_ACCOUNT_ID`                    | Same account ID                  | For minting presigned R2 URLs     |
+| `R2_ACCESS_KEY_ID`                 | Same access key                  | R2 S3-compat access key (read OK) |
+| `R2_SECRET_ACCESS_KEY`             | Same secret                      | Paired secret for R2 access key   |
+
+**R2/KV bindings** (declared in `wrangler.toml`, provisioned via `./scripts/setup-cf-infra.sh`):
+
+| Binding                | Type         | Purpose                                                                    |
+| ---------------------- | ------------ | -------------------------------------------------------------------------- |
+| `ERROR_REPORTS_BUCKET` | R2 bucket    | Stores error report zip bundles (`cmdr-error-reports`, 90-day TTL)         |
+| `ERROR_REPORT_META`    | KV namespace | `total_bytes` counter + `eviction_in_progress` lock for the eviction logic |
 
 **Paddle dashboards**: [sandbox](https://sandbox-vendors.paddle.com) | [live](https://vendors.paddle.com)
+
+### Discord webhooks
+
+`DISCORD_WEBHOOK_URL` posts notifications to the `#error-reports` channel of the **Cmdr** Discord server. The URL is the
+secret — anyone holding it can post to that channel — so it lives only as a wrangler secret, never in the repo.
+
+**To create or rotate the webhook:**
+
+1. Open the Cmdr Discord server → right-click `#error-reports` → **Edit Channel** → **Integrations** → **Webhooks**.
+2. To rotate: click the existing webhook → **Delete Webhook**, then **New Webhook**. To create fresh: just **New
+   Webhook**. Name it "Cmdr error reports".
+3. Click **Copy Webhook URL**. URL shape: `https://discord.com/api/webhooks/<id>/<token>`.
+4. Store it as a wrangler secret (run from anywhere in the repo):
+   ```sh
+   pnpm --filter @cmdr/api-server exec wrangler secret put DISCORD_WEBHOOK_URL
+   ```
+5. Smoke-test it landed correctly:
+   ```sh
+   curl -H "Content-Type: application/json" -d '{"content":"webhook test"}' "<webhook-url>"
+   ```
+
+Rate limit: 30 messages/min per webhook. The Worker should retry once on `Retry-After`, then drop with a `console.error`
+— we don't run our own queue infra for an internal channel.
 
 ### Webhook verification
 
@@ -123,6 +161,10 @@ try-catch so one failure doesn't block the others:
    `INSERT OR IGNORE ... GROUP BY`, then prunes raw update checks older than 7 days. Idempotent via existence check.
 
 3. **DB size check** (00:00 UTC only): queries D1 pragma for total database size. Sends an alert email if over 100 MB.
+
+4. **Daily eviction sweep** (00:00 UTC only): `handleDailyEvictionSweep` recomputes `total_bytes` from R2 ground truth
+   (the per-upload KV counter is racy and drifts), then triggers `tryEvict` if still over 8 GB. Idempotent. Catches
+   drift from concurrent uploads or a Worker dying mid-eviction.
 
 The default export uses the object form (`{ fetch, scheduled }`) required for cron support. The Hono `app` is also
 exported as a named export so tests can use `app.request()`.
@@ -190,6 +232,18 @@ and its own 6-device allowance.
 licensed). Without this, there's no signal for how many people actually run the app — Umami only tracks website visitors
 and download tracking only captures installs.
 
+**Error report eviction (8/6 GB watermarks + lifecycle):** Three layers keep the bucket bounded.
+
+1. **On-upload eviction**: every `POST /error-report` schedules `tryEvict` in `waitUntil(...)`. If `total_bytes` (KV) > 8 GB and `eviction_in_progress` (KV, 60-s TTL lock) isn't set, lists R2 objects under `error-reports/`, sorts oldest-first by date prefix in the key (`yyyy-mm-dd`) then by `uploaded`, deletes until ≤ 6 GB, then resets the counter to the recomputed ground truth.
+2. **Daily cron sweep**: corrects KV drift by recomputing from R2 and re-running `tryEvict`.
+3. **R2 lifecycle rule**: 90-day expiration applied at provisioning time via `scripts/setup-cf-infra.sh`.
+
+The KV counter is approximate (read-then-write, no atomic increment — same as `_meta:activation_count`). Both the daily sweep and post-eviction recompute correct it. R2 deletes are idempotent; concurrent evictors deleting the same oldest object cause no harm.
+
+**Error report Discord notifications:** Every upload triggers a Discord embed with a 7-day presigned R2 GET URL. Uses the R2 S3-compatible API via `aws4fetch` (`AwsClient.sign` with `signQuery: true` + `X-Amz-Expires`). 7 days is R2's max for presigned URLs. Convenience of click-to-download outweighs leak risk because only the maintainer accesses the `#error-reports` channel.
+
+**Short ID generation:** `generateShortId(prefix, len)` in `license.ts` produces IDs like `ERR-A2345` from the same unambiguous alphabet (`23456789ABCDEFGHJKMNPQRSTUVWXYZ`) as license short codes. Rejection sampling avoids modulo bias. The error report route retries up to 3 times on R2 HEAD collision.
+
 ## Local development
 
 ### Run locally
@@ -198,6 +252,18 @@ and download tracking only captures installs.
 pnpm dev          # starts wrangler dev server on :8787
 pnpm test         # vitest unit tests
 ```
+
+### Run wrangler from anywhere in the repo
+
+`wrangler` is a local devDependency, not global. From inside `apps/api-server/` use `npx wrangler …`. From the repo root
+(no `cd` needed), use the pnpm filter form:
+
+```sh
+pnpm --filter @cmdr/api-server exec wrangler secret put DISCORD_WEBHOOK_URL
+pnpm --filter @cmdr/api-server exec wrangler deploy
+```
+
+Both forms resolve the same local `wrangler` binary.
 
 ### Expose locally via ngrok (for Paddle sandbox webhooks)
 

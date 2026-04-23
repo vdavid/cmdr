@@ -29,6 +29,19 @@ export type Bindings = {
   ADMIN_API_TOKEN?: string
   // Crash notification email recipient (for cron-based crash alerts)
   CRASH_NOTIFICATION_EMAIL?: string
+  // R2 bucket for error report bundles (zips of redacted logs + manifest)
+  ERROR_REPORTS_BUCKET: R2Bucket
+  // KV namespace for error report bookkeeping (total bytes counter, eviction lock flag)
+  ERROR_REPORT_META: KVNamespace
+  // Discord webhook URL for #error-reports channel notifications
+  DISCORD_WEBHOOK_URL?: string
+  // R2 S3-compatible credentials, used to mint long-TTL presigned download URLs
+  // for the Discord embed. Bindings can't presign on their own — the S3 API can.
+  R2_ACCOUNT_ID?: string
+  R2_ACCESS_KEY_ID?: string
+  R2_SECRET_ACCESS_KEY?: string
+  // R2 bucket name (used in presigned URL host/path). Defaults to "cmdr-error-reports".
+  R2_ERROR_REPORTS_BUCKET_NAME?: string
 }
 
 export interface PaddleWebhookPayload {

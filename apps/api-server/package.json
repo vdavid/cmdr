@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@noble/ed25519": "^3.0.0",
+    "aws4fetch": "^1.0.20",
     "hono": "^4.12.5",
     "resend": "^6.9.3"
   },

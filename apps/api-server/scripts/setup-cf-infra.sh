@@ -106,14 +106,105 @@ else
     echo "  id = \"$NAMESPACE_ID\""
 fi
 
+# -----------------------------------------------------------------------------
+# Error report infra: R2 bucket + KV namespace for ERROR_REPORT_META + lifecycle
+# -----------------------------------------------------------------------------
+
+ERROR_REPORTS_BUCKET_NAME="cmdr-error-reports"
+ERROR_REPORT_META_KV_NAME="ERROR_REPORT_META"
+
+echo ""
+echo "Checking R2 bucket for error reports: $ERROR_REPORTS_BUCKET_NAME"
+
+# `wrangler r2 bucket list` prints a table/JSON; we grep by name.
+if npx wrangler r2 bucket list 2>/dev/null | grep -q "$ERROR_REPORTS_BUCKET_NAME"; then
+    echo "R2 bucket already exists: $ERROR_REPORTS_BUCKET_NAME"
+else
+    echo "Creating R2 bucket: $ERROR_REPORTS_BUCKET_NAME"
+    npx wrangler r2 bucket create "$ERROR_REPORTS_BUCKET_NAME"
+fi
+
+echo ""
+echo "Applying 90-day lifecycle rule to $ERROR_REPORTS_BUCKET_NAME..."
+# Lifecycle subcommand names vary across wrangler versions. We probe the help
+# output and pick the first matching form. If none work, print guidance instead
+# of failing the whole script.
+LIFECYCLE_HELP=$(npx wrangler r2 bucket lifecycle --help 2>&1 || true)
+if echo "$LIFECYCLE_HELP" | grep -q " add "; then
+    # wrangler 3.x / 4.x form — takes --name, --prefix (optional), --expire-days.
+    # Idempotency: lifecycle add is tolerant of re-running with the same rule name.
+    npx wrangler r2 bucket lifecycle add "$ERROR_REPORTS_BUCKET_NAME" \
+        --name "expire-90-days" \
+        --expire-days 90 2>/dev/null \
+        || echo "Note: lifecycle rule may already exist (this is fine) or the wrangler CLI subcommand differs. Verify with: npx wrangler r2 bucket lifecycle list $ERROR_REPORTS_BUCKET_NAME"
+elif echo "$LIFECYCLE_HELP" | grep -q " set "; then
+    echo "Your wrangler uses 'lifecycle set' — please run it manually:"
+    echo "   npx wrangler r2 bucket lifecycle set $ERROR_REPORTS_BUCKET_NAME <rules.json>"
+    echo "   where rules.json expires objects older than 90 days."
+else
+    echo "Note: 'wrangler r2 bucket lifecycle' subcommand not recognized."
+    echo "  Run 'npx wrangler r2 bucket lifecycle --help' and apply a 90-day"
+    echo "  expiration rule manually, or via the Cloudflare dashboard."
+fi
+
+echo ""
+echo "Checking KV namespace for error report bookkeeping: $ERROR_REPORT_META_KV_NAME"
+
+ERROR_META_ID=$(echo "$EXISTING_NAMESPACES" | node -e "
+const data = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+const ns = data.find(n => n.title === '$ERROR_REPORT_META_KV_NAME');
+if (ns) console.log(ns.id);
+" 2>/dev/null || echo "")
+
+# Re-list in case this script was re-run after creating the previous namespace
+if [ -z "$ERROR_META_ID" ]; then
+    FRESH_NAMESPACES=$(npx wrangler kv namespace list 2>/dev/null || echo "[]")
+    ERROR_META_ID=$(echo "$FRESH_NAMESPACES" | node -e "
+const data = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+const ns = data.find(n => n.title === '$ERROR_REPORT_META_KV_NAME');
+if (ns) console.log(ns.id);
+" 2>/dev/null || echo "")
+fi
+
+if [ -z "$ERROR_META_ID" ]; then
+    echo "Creating KV namespace: $ERROR_REPORT_META_KV_NAME"
+    CREATE_OUTPUT=$(npx wrangler kv namespace create "$ERROR_REPORT_META_KV_NAME" 2>&1)
+    ERROR_META_ID=$(echo "$CREATE_OUTPUT" | grep -o 'id = "[^"]*"' | sed 's/id = "//;s/"$//')
+
+    if [ -z "$ERROR_META_ID" ]; then
+        echo "Error: Failed to create KV namespace. Output:"
+        echo "$CREATE_OUTPUT"
+        exit 1
+    fi
+
+    echo "Created KV namespace with ID: $ERROR_META_ID"
+else
+    echo "KV namespace already exists with ID: $ERROR_META_ID"
+fi
+
+# Replace the REPLACE_WITH_KV_ID placeholder if it's still there.
+if grep -q 'id = "REPLACE_WITH_KV_ID"' "$WRANGLER_TOML"; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/id = \"REPLACE_WITH_KV_ID\"/id = \"$ERROR_META_ID\"/" "$WRANGLER_TOML"
+    else
+        sed -i "s/id = \"REPLACE_WITH_KV_ID\"/id = \"$ERROR_META_ID\"/" "$WRANGLER_TOML"
+    fi
+    echo "Updated wrangler.toml with ERROR_REPORT_META namespace ID."
+fi
+
 echo ""
 echo "Next steps:"
 echo "1. Commit the updated wrangler.toml"
-echo "2. Set secrets if not already done:"
+echo "2. Confirm the ERROR_REPORT_META binding in wrangler.toml points to: $ERROR_META_ID"
+echo "3. Set secrets if not already done:"
 echo "   npx wrangler secret put ED25519_PRIVATE_KEY"
 echo "   npx wrangler secret put PADDLE_WEBHOOK_SECRET_LIVE"
 echo "   npx wrangler secret put PADDLE_API_KEY_LIVE"
 echo "   npx wrangler secret put RESEND_API_KEY"
 echo "   npx wrangler secret put PRICE_ID_COMMERCIAL_SUBSCRIPTION"
 echo "   npx wrangler secret put PRICE_ID_COMMERCIAL_PERPETUAL"
-echo "3. Deploy: pnpm cf:deploy"
+echo "   npx wrangler secret put DISCORD_WEBHOOK_URL           # #error-reports channel"
+echo "   npx wrangler secret put R2_ACCOUNT_ID                 # for presigned URLs"
+echo "   npx wrangler secret put R2_ACCESS_KEY_ID              # R2 S3-compat access key"
+echo "   npx wrangler secret put R2_SECRET_ACCESS_KEY          # paired secret"
+echo "4. Deploy: pnpm cf:deploy"

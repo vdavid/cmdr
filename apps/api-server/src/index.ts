@@ -4,7 +4,13 @@ import { licensing } from './licensing'
 import { admin } from './admin'
 import { telemetry } from './telemetry'
 import { likes } from './likes'
-import { handleCrashNotifications, handleDailyAggregation, handleDbSizeCheck } from './scheduled'
+import { errorReport } from './error-report'
+import {
+  handleCrashNotifications,
+  handleDailyAggregation,
+  handleDbSizeCheck,
+  handleDailyEvictionSweep,
+} from './scheduled'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -18,6 +24,7 @@ app.route('/', licensing)
 app.route('/', admin)
 app.route('/', telemetry)
 app.route('/', likes)
+app.route('/', errorReport)
 
 export { app }
 
@@ -44,9 +51,15 @@ export default {
       } catch (e) {
         console.error('DB size check failed:', e)
       }
+
+      try {
+        await handleDailyEvictionSweep(env)
+      } catch (e) {
+        console.error('Daily eviction sweep failed:', e)
+      }
     }
   },
 }
 
 // Export handler functions for testing
-export { handleCrashNotifications, handleDailyAggregation, handleDbSizeCheck }
+export { handleCrashNotifications, handleDailyAggregation, handleDbSizeCheck, handleDailyEvictionSweep }

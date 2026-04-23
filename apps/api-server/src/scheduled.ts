@@ -1,5 +1,7 @@
 import { sendCrashNotificationEmail, sendDbSizeAlert, type CrashSummaryEntry } from './email'
 import type { Bindings } from './types'
+import { recomputeTotal, tryEvict, EVICTION_HIGH_WATERMARK } from './error-report-eviction'
+import { postEvictionNotification } from './discord'
 
 const dbSizeThresholdBytes = 100 * 1024 * 1024 // 100 MB
 
@@ -115,4 +117,23 @@ async function handleDbSizeCheck(env: Bindings): Promise<void> {
   })
 }
 
-export { handleCrashNotifications, handleDailyAggregation, handleDbSizeCheck }
+/**
+ * Daily sweep that corrects `total_bytes` KV drift (KV increments are racy — see
+ * `incrementTotalBytes`) and evicts oldest bundles if still above the high watermark.
+ * Idempotent: safe to run multiple times.
+ */
+async function handleDailyEvictionSweep(env: Bindings): Promise<void> {
+  const recomputed = await recomputeTotal(env)
+  if (recomputed <= EVICTION_HIGH_WATERMARK) return
+
+  const result = await tryEvict(env)
+  if ('evictedCount' in result && result.evictedCount > 0 && env.DISCORD_WEBHOOK_URL) {
+    await postEvictionNotification(env.DISCORD_WEBHOOK_URL, {
+      evictedCount: result.evictedCount,
+      freedBytes: result.freedBytes,
+      newTotalBytes: result.newTotal,
+    })
+  }
+}
+
+export { handleCrashNotifications, handleDailyAggregation, handleDbSizeCheck, handleDailyEvictionSweep }

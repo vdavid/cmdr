@@ -12,29 +12,44 @@ export interface LicenseData {
   shortCode?: string // Embedded so the app can display it even when activated via full key
 }
 
+/** Unambiguous alphabet (no 0/O, 1/I/L). Shared by short license codes and error report IDs. */
+export const unambiguousAlphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
+
+/**
+ * Generate `len` random chars from `unambiguousAlphabet` using rejection sampling
+ * to avoid modulo bias.
+ */
+export function generateRandomChars(len: number): string {
+  const chars = unambiguousAlphabet
+  // 256 - (256 % 31) = 232 — bytes >= this would skew the distribution
+  const maxUnbiased = 256 - (256 % chars.length)
+  let out = ''
+  while (out.length < len) {
+    const batch = crypto.getRandomValues(new Uint8Array(len - out.length))
+    for (const byte of batch) {
+      if (byte < maxUnbiased && out.length < len) {
+        out += chars[byte % chars.length]
+      }
+    }
+  }
+  return out
+}
+
 /**
  * Generate a short, readable license code.
  * Format: CMDR-XXXX-XXXX-XXXX (16 chars + prefix, using unambiguous characters)
  */
 export function generateShortCode(): string {
-  // Use unambiguous characters (no 0/O, 1/I/L confusion)
-  const chars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
-  const segments: string[] = []
+  const raw = generateRandomChars(12)
+  return `CMDR-${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}`
+}
 
-  // Rejection sampling: discard bytes that would cause modulo bias (256 % 29 != 0)
-  const maxUnbiased = 256 - (256 % chars.length) // 232
-  let filled = 0
-  while (filled < 12) {
-    const batch = crypto.getRandomValues(new Uint8Array(12 - filled))
-    for (const byte of batch) {
-      if (byte < maxUnbiased && filled < 12) {
-        segments[Math.floor(filled / 4)] = (segments[Math.floor(filled / 4)] ?? '') + chars[byte % chars.length]
-        filled++
-      }
-    }
-  }
-
-  return `CMDR-${segments.join('-')}`
+/**
+ * Generate a short ID with a prefix (e.g. `ERR-XXXXX`).
+ * Uses the same unambiguous alphabet as license short codes.
+ */
+export function generateShortId(prefix: string, len: number): string {
+  return `${prefix}-${generateRandomChars(len)}`
 }
 
 /**

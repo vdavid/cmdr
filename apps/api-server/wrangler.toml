@@ -38,6 +38,19 @@ binding = "TELEMETRY_DB"
 database_name = "cmdr-telemetry"
 database_id = "537fdb4a-cd66-4faf-a2fe-3e51b5f6f915"
 
+# R2 bucket for error report bundles (zips of redacted logs + manifest)
+# Provision with ./scripts/setup-cf-infra.sh — that also applies the 90-day lifecycle rule.
+[[r2_buckets]]
+binding = "ERROR_REPORTS_BUCKET"
+bucket_name = "cmdr-error-reports"
+
+# KV namespace for error report bookkeeping (total_bytes counter, eviction lock)
+# Run ./scripts/setup-cf-infra.sh to create this namespace, then paste the printed
+# ID here in place of REPLACE_WITH_KV_ID.
+[[kv_namespaces]]
+binding = "ERROR_REPORT_META"
+id = "REPLACE_WITH_KV_ID"
+
 [triggers]
 crons = ["0 */12 * * *"]
 
@@ -60,3 +73,7 @@ PADDLE_ENVIRONMENT = "sandbox"
 # - PRICE_ID_COMMERCIAL_PERPETUAL  (Price ID for $199 perpetual)
 # - ADMIN_API_TOKEN                (dedicated token for /admin/stats)
 # - CRASH_NOTIFICATION_EMAIL      (recipient for crash alert emails)
+# - DISCORD_WEBHOOK_URL            (Discord webhook for #error-reports)
+# - R2_ACCOUNT_ID                  (for minting presigned R2 GET URLs)
+# - R2_ACCESS_KEY_ID               (R2 S3-compatible access key; read-only suffices)
+# - R2_SECRET_ACCESS_KEY           (paired secret for R2_ACCESS_KEY_ID)
