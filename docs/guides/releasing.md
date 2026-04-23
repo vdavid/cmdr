@@ -7,6 +7,27 @@ How to release a new version of Cmdr. Use the `/release` command to start.
 - `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` in GitHub secrets
 - Self-hosted runner: `create-dmg` must be installed (`brew install create-dmg`)
 
+## Keep the Mac awake during the build
+
+The self-hosted runner lives on this Mac. If the machine sleeps — even briefly, or just the display — GitHub Actions
+drops the runner connection and every in-flight matrix job fails with
+`The self-hosted runner lost communication with the server.` This bit us on the 0.13.0 release: all three jobs failed at
+exactly 11m1s each.
+
+Before pushing the tag, start `caffeinate` in the background. The release script does NOT do this automatically — the
+agent (or the human running the release) is responsible for arming and disarming it.
+
+```bash
+caffeinate -dimsu &              # -d display, -i idle, -m disk, -s on AC, -u user active
+CAFFEINATE_PID=$!
+# ... push the tag, monitor the build ...
+kill $CAFFEINATE_PID             # once all matrix jobs are done (success or fail)
+```
+
+Agents: do this as a Bash `run_in_background` call right after the push, and `kill` it once the release monitor reports
+the run has finished (not just the build matrix — wait for the overall run to be `completed`). If the release fails and
+the user wants to re-run failed jobs, re-arm caffeinate first.
+
 ## How updates work
 
 - App checks `https://getcmdr.com/latest.json` on start and every 60 min

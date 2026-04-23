@@ -17,7 +17,14 @@ Prepare a release based on docs/guides/releasing.md.
    launches), and give the user the `./scripts/release.sh x.x.x` command to run.
 5. **Offer to run the release script** for the user. Wait for confirmation before running.
 6. **Offer to push** with `git push origin main --tags`. Wait for confirmation before pushing.
-7. **After pushing**, start monitoring the CI build:
+7. **After pushing**, immediately arm `caffeinate` to prevent the Mac from sleeping during the build. The self-hosted
+   runner lives on this Mac; any sleep — display or system — drops the runner connection and fails every in-flight
+   matrix job with `The self-hosted runner lost communication with the server`. See `docs/guides/releasing.md` § "Keep
+   the Mac awake during the build".
+   - Run `caffeinate -dimsu` as a Bash `run_in_background` call. Capture the background task id so you can stop it.
+   - Disarm it once the release workflow reports `completed` (success or failure — not just when the matrix is done).
+   - If the user requests a re-run of failed jobs, re-arm caffeinate first.
+8. **After arming caffeinate**, start monitoring the CI build:
    - Remind the user not to close their laptop for ~15 minutes while the self-hosted runner builds.
    - Poll `gh run view` every few minutes in the background and report progress (which jobs are done, which are still
      running). aarch64 and x86_64 builds took about 5min 10sec each, universal takes about 7 min.
