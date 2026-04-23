@@ -66,7 +66,7 @@ func RunChangelogCommitLinks(ctx *CheckContext) (CheckResult, error) {
 	}
 	sort.Strings(shas)
 
-	badSHAs, err := resolveShasWithBatch(ctx.RootDir, shas)
+	resolved, badSHAs, err := resolveShasWithBatch(ctx.RootDir, shas)
 	if err != nil {
 		return CheckResult{}, err
 	}
@@ -75,6 +75,25 @@ func RunChangelogCommitLinks(ctx *CheckContext) (CheckResult, error) {
 			line:    scan.uniqueSHAs[sha],
 			message: fmt.Sprintf("SHA does not resolve in this repo: %s", sha),
 		})
+	}
+
+	// Reachability: existence in the object DB isn't enough. An abbreviated
+	// SHA of a rebased-away commit still resolves locally via reflog, but CI
+	// does a clean clone with no reflog and fails. Require every SHA to be
+	// reachable from HEAD so both environments agree.
+	if len(resolved) > 0 {
+		reachable, err := collectReachableFromHEAD(ctx.RootDir)
+		if err != nil {
+			return CheckResult{}, err
+		}
+		for inputSHA, fullSHA := range resolved {
+			if _, ok := reachable[fullSHA]; !ok {
+				scan.findings = append(scan.findings, changelogCommitLinkFinding{
+					line:    scan.uniqueSHAs[inputSHA],
+					message: fmt.Sprintf("SHA resolves but is not reachable from HEAD (likely rebased away): %s", inputSHA),
+				})
+			}
+		}
 	}
 
 	if len(scan.findings) > 0 {
@@ -174,14 +193,14 @@ func formatFindingsError(findings []changelogCommitLinkFinding) error {
 }
 
 // resolveShasWithBatch pipes all SHAs through a single `git cat-file --batch-check`
-// process and returns the subset that didn't resolve. A SHA is considered bad if
-// git reports "missing", "ambiguous", or any non-"commit" type — we want the URL
-// to point at a real commit, not a tree/blob/tag (none of which should appear in
-// CHANGELOG.md anyway). Returns an error only on I/O failure; unresolved SHAs are
-// data, not errors.
-func resolveShasWithBatch(rootDir string, shas []string) ([]string, error) {
+// process. Returns (resolved, bad, err) — `resolved` maps each input SHA (abbreviated
+// or full) to its full 40-char SHA when the object is a commit; `bad` lists the
+// inputs that didn't resolve as a commit (missing, ambiguous, or wrong type — tree,
+// blob, tag). Returns an error only on I/O failure; unresolved SHAs are data, not
+// errors.
+func resolveShasWithBatch(rootDir string, shas []string) (map[string]string, []string, error) {
 	if len(shas) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	cmd := exec.Command("git", "cat-file", "--batch-check=%(objectname) %(objecttype)")
@@ -191,22 +210,22 @@ func resolveShasWithBatch(rootDir string, shas []string) ([]string, error) {
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return nil, fmt.Errorf("failed to open stdin for git cat-file: %w", err)
+		return nil, nil, fmt.Errorf("failed to open stdin for git cat-file: %w", err)
 	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, fmt.Errorf("failed to open stdout for git cat-file: %w", err)
+		return nil, nil, fmt.Errorf("failed to open stdout for git cat-file: %w", err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("failed to start git cat-file: %w", err)
+		return nil, nil, fmt.Errorf("failed to start git cat-file: %w", err)
 	}
 
 	writeErr := feedShasAsync(stdin, shas)
-	bad, readErr := collectBatchResults(stdout, shas)
+	resolved, bad, readErr := collectBatchResults(stdout, shas)
 	if readErr != nil {
 		_ = cmd.Process.Kill()
-		return nil, readErr
+		return nil, nil, readErr
 	}
 
 	if err := cmd.Wait(); err != nil {
@@ -214,13 +233,35 @@ func resolveShasWithBatch(rootDir string, shas []string) ([]string, error) {
 		// and already captured above. Only fail if the stdin writer itself broke,
 		// or if we got no resolutions at all and git wrote to stderr.
 		if w := *writeErr; w != nil {
-			return nil, fmt.Errorf("failed to write SHAs to git cat-file: %w", w)
+			return nil, nil, fmt.Errorf("failed to write SHAs to git cat-file: %w", w)
 		}
 		if len(bad) == len(shas) && stderr.Len() > 0 {
-			return nil, fmt.Errorf("git cat-file failed: %s", strings.TrimSpace(stderr.String()))
+			return nil, nil, fmt.Errorf("git cat-file failed: %s", strings.TrimSpace(stderr.String()))
 		}
 	}
-	return bad, nil
+	return resolved, bad, nil
+}
+
+// collectReachableFromHEAD runs `git rev-list HEAD` and returns the set of all
+// full-40-char commit SHAs reachable from HEAD. Used to catch SHAs that resolve
+// in the local object DB (via reflog or dangling objects) but aren't merged
+// into HEAD — which would fail in CI's fresh clone.
+func collectReachableFromHEAD(rootDir string) (map[string]struct{}, error) {
+	cmd := exec.Command("git", "rev-list", "HEAD")
+	cmd.Dir = rootDir
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("git rev-list HEAD failed: %s: %w", strings.TrimSpace(stderr.String()), err)
+	}
+	set := make(map[string]struct{}, 8192)
+	for _, line := range strings.Split(strings.TrimRight(string(out), "\n"), "\n") {
+		if line != "" {
+			set[line] = struct{}{}
+		}
+	}
+	return set, nil
 }
 
 // feedShasAsync writes all SHAs to stdin in a goroutine and returns a pointer to
@@ -244,25 +285,30 @@ func feedShasAsync(stdin io.WriteCloser, shas []string) *error {
 }
 
 // collectBatchResults reads exactly len(shas) lines from stdout (git emits one
-// line per input SHA) and returns the SHAs whose second field isn't "commit".
+// line per input SHA) and returns (resolved, bad, err). `resolved` maps each
+// input SHA to its full 40-char SHA when the object is a commit; `bad` lists
+// inputs whose second field isn't "commit" (missing, ambiguous, or wrong type).
 // git output format per the --batch-check format string:
 //
 //	"<fullsha> <type>"       (resolved)
 //	"<sha> missing"          (not found)
 //	"<sha> ambiguous"        (multiple object matches)
-func collectBatchResults(stdout io.Reader, shas []string) ([]string, error) {
+func collectBatchResults(stdout io.Reader, shas []string) (map[string]string, []string, error) {
+	resolved := make(map[string]string, len(shas))
 	var bad []string
 	reader := bufio.NewReader(stdout)
 	for i, sha := range shas {
 		line, err := reader.ReadString('\n')
 		if err != nil && err != io.EOF {
-			return nil, fmt.Errorf("failed to read git cat-file output at SHA %d (%s): %w", i, sha, err)
+			return nil, nil, fmt.Errorf("failed to read git cat-file output at SHA %d (%s): %w", i, sha, err)
 		}
 		line = strings.TrimRight(line, "\n")
 		fields := strings.Fields(line)
 		if len(fields) < 2 || fields[1] != "commit" {
 			bad = append(bad, sha)
+			continue
 		}
+		resolved[sha] = fields[0]
 	}
-	return bad, nil
+	return resolved, bad, nil
 }

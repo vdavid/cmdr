@@ -159,6 +159,64 @@ func TestRunChangelogCommitLinks_ShortSHAFlagged(t *testing.T) {
 	}
 }
 
+func TestRunChangelogCommitLinks_UnreachableFromHEAD(t *testing.T) {
+	// Regression for the v0.13.0 CI-red incident: a SHA that resolves locally
+	// (in the object DB via reflog) but is NOT reachable from HEAD must be
+	// flagged. Otherwise CI's fresh clone (no reflog) fails on the same link
+	// while local runs pass.
+	tmp := t.TempDir()
+	seedSHA := initTempGitRepo(t, tmp)
+
+	runGit := func(args ...string) string {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = tmp
+		cmd.Env = append(os.Environ(),
+			"GIT_AUTHOR_NAME=Test", "GIT_AUTHOR_EMAIL=test@example.com",
+			"GIT_COMMITTER_NAME=Test", "GIT_COMMITTER_EMAIL=test@example.com",
+		)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v failed: %v\n%s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+
+	// Add a second commit, then hard-reset back to the seed. The second
+	// commit's object stays in the DB (reflog + 30-day GC), but HEAD no
+	// longer reaches it.
+	if err := os.WriteFile(filepath.Join(tmp, "doomed.txt"), []byte("x\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	runGit("add", "doomed.txt")
+	runGit("commit", "-q", "-m", "doomed")
+	doomedSHA := runGit("rev-parse", "HEAD")
+	runGit("reset", "--hard", seedSHA)
+
+	// Sanity-check the setup: doomed exists in the object DB but isn't an
+	// ancestor. If either assumption changes, this test's premise breaks.
+	if err := exec.Command("git", "-C", tmp, "cat-file", "-e", doomedSHA).Run(); err != nil {
+		t.Fatalf("doomed commit should still exist in object DB: %v", err)
+	}
+	if err := exec.Command("git", "-C", tmp, "merge-base", "--is-ancestor", doomedSHA, "HEAD").Run(); err == nil {
+		t.Fatal("doomed commit should NOT be ancestor of HEAD")
+	}
+
+	content := "# Changelog\n\n- Dangling ref ([" + doomedSHA[:7] + "](https://github.com/vdavid/cmdr/commit/" + doomedSHA[:7] + "))\n"
+	writeChangelog(t, tmp, content)
+
+	ctx := &CheckContext{RootDir: tmp}
+	_, err := RunChangelogCommitLinks(ctx)
+	if err == nil {
+		t.Fatal("expected failure for unreachable-from-HEAD SHA, got success")
+	}
+	if !strings.Contains(err.Error(), "not reachable from HEAD") {
+		t.Errorf("expected 'not reachable from HEAD' in error, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), doomedSHA[:7]) {
+		t.Errorf("expected error to mention dangling SHA %q, got: %v", doomedSHA[:7], err)
+	}
+}
+
 func TestRunChangelogCommitLinks_NoLinks(t *testing.T) {
 	tmp := t.TempDir()
 	initTempGitRepo(t, tmp)
