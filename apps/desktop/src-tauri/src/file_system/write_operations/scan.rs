@@ -78,7 +78,7 @@ pub(super) fn walk_dir_recursive<E>(
             )?;
         }
     } else {
-        log::warn!("scan: skipping special file: {}", path.display());
+        log::debug!("scan: skipping special file: {}", path.display());
     }
 
     if last_progress_time.elapsed() >= ctx.progress_interval {
@@ -541,7 +541,7 @@ fn dry_run_scan_recursive(
         }
     } else {
         // Skip special files (sockets, FIFOs, char/block devices)
-        log::warn!("dry_run_scan: skipping special file: {}", path.display());
+        log::debug!("dry_run_scan: skipping special file: {}", path.display());
     }
 
     // Emit progress periodically
