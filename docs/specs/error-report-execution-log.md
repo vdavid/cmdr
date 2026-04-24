@@ -15,7 +15,7 @@ needs to do before the feature is live in production.
 | 2     | `f3dbf514`  | `tauri-plugin-log` file target raised to DEBUG, `KeepSome(N)` rotation driven by new `advanced.maxLogStorageMb` setting (default 200 MB, `0` = disabled).          |
 | 2.1   | `8e24ee13`  | Tightened noise: special-file skip logs dropped from WARN to DEBUG so the bumped file target doesn't add user-visible noise.                                       |
 | 3     | `1a2ea1c0`  | `POST /error-report` endpoint on `api-server`: multipart upload to R2, `tryEvict` in `waitUntil`, Discord notification with 7-day presigned URL, daily cron sweep. |
-| 4     | `6d904aa6`  | Flow A: `error_reporter/` module + `prepare_error_report_preview` / `send_prepared_error_report` commands, `ErrorReportDialog.svelte` preview, Help menu item.     |
+| 4     | `6d904aa6`  | Flow A: `error_reporter/` module + `prepare_error_report_preview` / `send_error_report` commands, `ErrorReportDialog.svelte` preview, Help menu item.              |
 | 5     | `51b6102a`  | Flow B: debounced `auto_dispatcher` (60 s + ±10 s jitter), `log_error!` macro at user-visible call sites, `updates.errorReports` opt-in setting, auto-send toast.  |
 | 6a    | `dd53b4fd`  | Housekeeping: oxfmt sweep on two files left unstaged by Phase 4.                                                                                                   |
 | 6b    | `837abe49`  | Documentation pass: CLAUDE.mds, `architecture.md`, `security.md`, `CHANGELOG.md`.                                                                                  |

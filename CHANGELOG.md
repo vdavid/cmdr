@@ -19,9 +19,6 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 - **Log storage cap setting.** New `advanced.maxLogStorageMb` (default 200 MB, range 0–5000) controls how much disk
   space the rotated log files use. The file target now defaults to **debug** level so error reports carry useful
   context. Set to `0` to disable log storage entirely (and with it, the ability to send error reports).
-
-### Added
-
 - **SMB copies are ~30× faster on high-latency links.** A 100 × 10 KB copy from a NAS over Tailscale (~60 ms RTT)
   dropped from ~28 s (~280 ms/file) to 947 ms (9.5 ms/file) over four layered speedups: drop redundant `is_directory`
   stat probes in the copy pipeline (Fix 1, [94090555](https://github.com/vdavid/cmdr/commit/94090555)), send
