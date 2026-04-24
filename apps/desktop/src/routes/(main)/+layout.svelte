@@ -35,6 +35,8 @@
     } from '$lib/mtp/MtpConnectedToastContent.svelte'
     import CrashReportDialog from '$lib/crash-reporter/CrashReportDialog.svelte'
     import CrashReportToastContent from '$lib/crash-reporter/CrashReportToastContent.svelte'
+    import ErrorReportDialog from '$lib/error-reporter/ErrorReportDialog.svelte'
+    import { errorReportFlow } from '$lib/error-reporter/error-report-flow.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import type { Snippet } from 'svelte'
 
@@ -250,6 +252,9 @@
 <ToastContainer />
 {#if showCrashReportDialog && pendingCrashReport}
     <CrashReportDialog report={pendingCrashReport} onClose={closeCrashReportDialog} />
+{/if}
+{#if errorReportFlow.open}
+    <ErrorReportDialog />
 {/if}
 {#if showPtpcameradDialog}
     <PtpcameradDialog

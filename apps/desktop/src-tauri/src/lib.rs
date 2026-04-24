@@ -77,6 +77,7 @@ mod crash_reporter;
 mod drag_image_detection;
 #[cfg(target_os = "macos")]
 mod drag_image_swap;
+mod error_reporter;
 mod file_system;
 pub(crate) mod file_viewer;
 mod font_metrics;
@@ -1018,6 +1019,11 @@ pub fn run() {
             commands::crash_reporter::check_pending_crash_report,
             commands::crash_reporter::dismiss_crash_report,
             commands::crash_reporter::send_crash_report,
+            // Error reporter commands (Flow A: user-initiated)
+            commands::error_reporter::prepare_error_report_preview,
+            commands::error_reporter::send_error_report,
+            #[cfg(debug_assertions)]
+            commands::error_reporter::save_error_report_to_disk,
             // Licensing commands
             commands::licensing::get_license_status,
             commands::licensing::get_window_title,

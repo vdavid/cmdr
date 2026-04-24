@@ -16,6 +16,7 @@ import {
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
 import { openSettingsWindow } from '$lib/settings/settings-window'
+import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
 import type { ExplorerAPI } from './explorer-api'
 
 /** Callbacks for toggling dialog visibility from command dispatch */
@@ -61,6 +62,10 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
 
     case 'app.licenseKey':
       ctx.dialogs.showLicenseKeyDialog(true)
+      return
+
+    case 'help.sendErrorReport':
+      openErrorReportDialog()
       return
 
     // === View commands ===

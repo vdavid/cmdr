@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
     import type { ToastContent, ToastLevel, ToastDismissal } from './toast-store.svelte'
+    import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
 
     interface Props {
         id: string
@@ -14,6 +15,19 @@
     const { id, content, level, dismissal, timeoutMs, ondismiss }: Props = $props()
 
     let timer: ReturnType<typeof setTimeout> | undefined
+
+    // Error-level toasts that carry a plain-text message get an inline "Send error
+    // report…" action. Component-content toasts manage their own actions, so we don't
+    // add a second button on top of them.
+    const showSendErrorReport = $derived(level === 'error' && typeof content === 'string')
+
+    function handleSendErrorReport() {
+        // Pre-fill the user note with the toast text so the user has something to
+        // start from. They can edit before sending.
+        const initialNote = typeof content === 'string' ? content : ''
+        openErrorReportDialog(initialNote)
+        ondismiss(id)
+    }
 
     onMount(() => {
         if (dismissal === 'transient') {
@@ -40,6 +54,11 @@
     <div class="toast-content">
         {#if typeof content === 'string'}
             <span class="toast-message">{content}</span>
+            {#if showSendErrorReport}
+                <button class="toast-action" onclick={handleSendErrorReport}>
+                    Send error report&hellip;
+                </button>
+            {/if}
         {:else}
             {@const ContentComponent = content}
             <ContentComponent />
@@ -99,6 +118,21 @@
     .toast-message {
         color: var(--color-text-primary);
         line-height: 1.4;
+    }
+
+    .toast-action {
+        background: none;
+        border: none;
+        padding: 0;
+        margin-top: var(--spacing-xs);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        cursor: default;
+        display: block;
+    }
+
+    .toast-action:hover {
+        color: var(--color-text-secondary);
     }
 
     .toast-content {

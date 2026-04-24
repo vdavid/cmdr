@@ -9,10 +9,11 @@ use super::{
     ABOUT_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID, COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID,
     EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FILE_COPY_ID,
     FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID,
-    GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID,
-    QUICK_LOOK_ID, RENAME_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID,
-    SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, ViewMode, build_sort_submenu,
-    copy_path_accelerator, register_item, show_in_file_manager_accelerator, show_in_file_manager_label,
+    GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, HELP_SEND_ERROR_REPORT_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID,
+    PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SETTINGS_ID,
+    SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID,
+    ViewMode, build_sort_submenu, copy_path_accelerator, register_item, show_in_file_manager_accelerator,
+    show_in_file_manager_label,
 };
 
 /// Linux menu: builds all menus from scratch, matching the macOS menu structure.
@@ -227,7 +228,23 @@ pub(crate) fn build_menu_linux<R: Runtime>(
 
     // --- Help menu ---
     let about_item = MenuItem::with_id(app, ABOUT_ID, "&About cmdr", true, None::<&str>)?;
-    let help_menu = Submenu::with_items(app, "&Help", true, &[&about_item])?;
+    let send_error_report_item = MenuItem::with_id(
+        app,
+        HELP_SEND_ERROR_REPORT_ID,
+        "&Send error report\u{2026}",
+        true,
+        None::<&str>,
+    )?;
+    let help_menu = Submenu::with_items(
+        app,
+        "&Help",
+        true,
+        &[
+            &about_item,
+            &PredefinedMenuItem::separator(app)?,
+            &send_error_report_item,
+        ],
+    )?;
     menu.append(&help_menu)?;
 
     // --- Populate items HashMap for accelerator updates ---
@@ -287,8 +304,15 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     register_item(&mut items, PREV_TAB_ID, &prev_tab_item, &tab_menu, 4);
     register_item(&mut items, CLOSE_OTHER_TABS_ID, &close_other_tabs_item, &tab_menu, 7);
 
-    // Help menu: about(0)
+    // Help menu: about(0), separator(1), send_error_report(2)
     register_item(&mut items, ABOUT_ID, &about_item, &help_menu, 0);
+    register_item(
+        &mut items,
+        HELP_SEND_ERROR_REPORT_ID,
+        &send_error_report_item,
+        &help_menu,
+        2,
+    );
 
     Ok(MenuItems {
         menu,

@@ -87,6 +87,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         SETTINGS_ID => Some(("app.settings", CommandScope::App)),
         COMMAND_PALETTE_ID => Some(("app.commandPalette", CommandScope::FileScoped)),
         SEARCH_FILES_ID => Some(("search.open", CommandScope::FileScoped)),
+        HELP_SEND_ERROR_REPORT_ID => Some(("help.sendErrorReport", CommandScope::App)),
 
         // Pane commands (file-scoped)
         SWITCH_PANE_ID => Some(("pane.switch", CommandScope::FileScoped)),
@@ -148,6 +149,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "app.settings" => Some(SETTINGS_ID),
         "app.commandPalette" => Some(COMMAND_PALETTE_ID),
         "search.open" => Some(SEARCH_FILES_ID),
+        "help.sendErrorReport" => Some(HELP_SEND_ERROR_REPORT_ID),
         "pane.switch" => Some(SWITCH_PANE_ID),
         "pane.swap" => Some(SWAP_PANES_ID),
         "nav.back" => Some(GO_BACK_ID),
@@ -299,6 +301,9 @@ pub const ENTER_LICENSE_KEY_ID: &str = "enter_license_key";
 
 /// Menu item ID for Settings.
 pub const SETTINGS_ID: &str = "settings";
+
+/// Menu item ID for "Send error report…" (under the Help menu).
+pub const HELP_SEND_ERROR_REPORT_ID: &str = "help_send_error_report";
 
 /// Platform-aware accelerator for "Copy path to clipboard".
 /// On macOS: Ctrl+Cmd+C. On Linux: Ctrl+Shift+C (Ctrl+Cmd+C becomes Ctrl+Ctrl+C which is broken).
@@ -978,6 +983,7 @@ mod tests {
             "file.quickLook",
             "selection.selectAll",
             "selection.deselectAll",
+            "help.sendErrorReport",
         ];
 
         for command_id in &command_ids {

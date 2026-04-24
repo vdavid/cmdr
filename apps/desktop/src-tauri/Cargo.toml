@@ -64,7 +64,7 @@ log = "0.4"
 # Memory allocator: returns memory to OS faster than system malloc, reduces fragmentation
 mimalloc = "0.1"
 # HTTP client for API server validation and AI downloads
-reqwest = { version = "0.13", features = ["json", "rustls", "stream"], default-features = false }
+reqwest = { version = "0.13", features = ["json", "rustls", "stream", "multipart"], default-features = false }
 # MCP server
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "sync", "macros"] }
@@ -85,6 +85,11 @@ sysinfo = { version = "0.38.4", default-features = false, features = ["system"] 
 time = { version = "0.3", features = ["parsing", "macros", "formatting"] }
 # Playwright E2E testing plugin — socket bridge for direct webview injection (optional, feature-gated)
 tauri-plugin-playwright = { version = "0.2.2", optional = true }
+# Error reporter: zip the bundle (manifest + redacted log files). `deflate` is the default
+# compression algorithm; we don't need bzip2/zstd/etc. for log text.
+zip = { version = "4.6", default-features = false, features = ["deflate"] }
+# Error reporter: short-ID generation (`ERR-XXXXX`) using rejection sampling.
+rand = "0.9"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

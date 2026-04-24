@@ -32,6 +32,14 @@ export const commands: Command[] = [
     shortcuts: ['⌘⇧P'],
   },
   { id: 'app.settings', name: 'Open settings', scope: 'App', showInPalette: true, shortcuts: ['⌘,'] },
+  {
+    id: 'help.sendErrorReport',
+    name: 'Send error report…',
+    scope: 'App',
+    showInPalette: true,
+    shortcuts: [],
+    description: 'Send Cmdr logs to the team to help fix something that went wrong',
+  },
 
   // ============================================================================
   // Main window - Search

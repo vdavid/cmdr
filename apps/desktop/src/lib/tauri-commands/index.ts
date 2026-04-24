@@ -195,6 +195,10 @@ export type {
 export { checkPendingCrashReport, dismissCrashReport, sendCrashReport } from './crash-reporter'
 export type { CrashReport } from './crash-reporter'
 
+// Error reporter (Flow A: user-initiated)
+export { prepareErrorReportPreview, sendErrorReport, saveErrorReportToDisk } from './error-reporter'
+export type { PreviewPayload, BundleManifest, ActiveSettingsSnapshot } from './error-reporter'
+
 // Licensing
 export {
   getLicenseStatus,
