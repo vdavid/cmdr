@@ -45,11 +45,9 @@ binding = "ERROR_REPORTS_BUCKET"
 bucket_name = "cmdr-error-reports"
 
 # KV namespace for error report bookkeeping (total_bytes counter, eviction lock)
-# Run ./scripts/setup-cf-infra.sh to create this namespace, then paste the printed
-# ID here in place of REPLACE_WITH_KV_ID.
 [[kv_namespaces]]
 binding = "ERROR_REPORT_META"
-id = "REPLACE_WITH_KV_ID"
+id = "e8b67ae9fbd640adaf78aa42d59b80e9"
 
 [triggers]
 crons = ["0 */12 * * *"]
