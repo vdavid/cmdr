@@ -73,37 +73,34 @@ else
     echo "KV namespace already exists with ID: $NAMESPACE_ID"
 fi
 
-# Update wrangler.toml with the namespace ID
+# Update wrangler.toml with the namespace ID — only if the placeholder is still
+# present. Once `LICENSE_CODES` has its real ID, this is a no-op (idempotent).
+# We do NOT do a broad `[a-f0-9]{32}` substitution here because the file now
+# holds multiple distinct KV IDs (BLOG_LIKES, ERROR_REPORT_META, etc.) and a
+# blanket replace would clobber sibling bindings.
 echo ""
-echo "Updating wrangler.toml with namespace ID..."
+echo "Updating wrangler.toml with namespace ID (placeholder-based)..."
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS sed requires empty string for -i
     sed -i '' "s/id = \"TO_BE_SET_BY_SETUP_SCRIPT\"/id = \"$NAMESPACE_ID\"/" "$WRANGLER_TOML"
-    sed -i '' "s/id = \"[a-f0-9]\{32\}\"/id = \"$NAMESPACE_ID\"/" "$WRANGLER_TOML"
 else
-    # Linux sed
     sed -i "s/id = \"TO_BE_SET_BY_SETUP_SCRIPT\"/id = \"$NAMESPACE_ID\"/" "$WRANGLER_TOML"
-    sed -i "s/id = \"[a-f0-9]\{32\}\"/id = \"$NAMESPACE_ID\"/" "$WRANGLER_TOML"
 fi
 
-echo "Updated wrangler.toml"
-
-# Verify the update
-CURRENT_ID=$(grep 'id = ' "$WRANGLER_TOML" | head -1 | sed 's/.*id = "//;s/".*//')
-if [ "$CURRENT_ID" = "$NAMESPACE_ID" ]; then
+# Verify by checking the LICENSE_CODES block specifically (awk: id = "..." in the block following `binding = "LICENSE_CODES"`).
+LICENSE_CODES_ID=$(awk '/binding = "LICENSE_CODES"/{found=1; next} found && /id = /{gsub(/.*id = "/, ""); gsub(/".*/, ""); print; exit}' "$WRANGLER_TOML")
+if [ "$LICENSE_CODES_ID" = "$NAMESPACE_ID" ]; then
     echo ""
     echo "Success! KV namespace configured:"
     echo "  Namespace: $NAMESPACE_TITLE"
     echo "  ID: $NAMESPACE_ID"
 else
     echo ""
-    echo "Warning: wrangler.toml may not have been updated correctly."
-    echo "Expected ID: $NAMESPACE_ID"
-    echo "Found ID: $CURRENT_ID"
-    echo ""
-    echo "Please manually update wrangler.toml with:"
-    echo "  id = \"$NAMESPACE_ID\""
+    echo "Note: LICENSE_CODES already has an ID set in wrangler.toml ($LICENSE_CODES_ID)."
+    echo "Expected: $NAMESPACE_ID"
+    if [ "$LICENSE_CODES_ID" != "$NAMESPACE_ID" ]; then
+        echo "If this is wrong, edit wrangler.toml manually."
+    fi
 fi
 
 # -----------------------------------------------------------------------------
