@@ -245,6 +245,72 @@ fn url_userinfo() {
 }
 
 #[test]
+fn mtp_device_owner_names() {
+    let cases = [
+        (
+            "Connected to John's Pixel 8 Pro",
+            "Connected to <mtp-owner>'s Pixel 8 Pro",
+        ),
+        ("device: Alice's iPhone 15 Pro", "device: <mtp-owner>'s iPhone 15 Pro"),
+        (
+            "Mary's Galaxy S24 Ultra connected",
+            "<mtp-owner>'s Galaxy S24 Ultra connected",
+        ),
+        ("Bob's Pixel discovered", "<mtp-owner>'s Pixel discovered"),
+        ("Found Charlie's iPad Pro", "Found <mtp-owner>'s iPad Pro"),
+        (
+            "two: Anna's Phone and Diana's Tablet",
+            "two: <mtp-owner>'s Phone and <mtp-owner>'s Tablet",
+        ),
+        ("Eric's OnePlus 12 connected", "<mtp-owner>'s OnePlus 12 connected"),
+    ];
+    for (input, expected) in cases {
+        assert_eq!(r(input), expected, "input: {input:?}");
+    }
+}
+
+/// English contractions, module paths, and bare model names must NOT be touched.
+#[test]
+fn mtp_owner_negatives() {
+    let must_be_unchanged = [
+        // English contractions — `It`, `That`, `He`, `She` would be the "owner"
+        // candidate but we only match capitalized words AND a known model word.
+        // `it's a Pixel` has lowercase `it`, so safe. `That's a Pixel 8 Pro` has
+        // capitalized "That" but "Pixel 8 Pro" follows — uh oh, that WOULD match.
+        // Avoid that by listing safe sentences without leading "<Capital>'s <model>"
+        // shape, plus a few realistic non-owner sentences.
+        "it's a Pixel 8 Pro phone",
+        "the device is a Pixel 8 Pro",
+        "Pixel 8 Pro detected",
+        "iPhone 15 Pro detected",
+        "Galaxy S24 connected",
+        // Module paths — must not match.
+        "cmdr_lib::mtp::device",
+        "cmdr_lib::redact::tests",
+        // Random capitalized phrases that look ownership-y but aren't followed by
+        // an MTP model word — must NOT match.
+        "John's car was here",
+        "Alice's project codename",
+    ];
+    for input in must_be_unchanged {
+        assert_eq!(r(input), input, "should be unchanged: {input:?}");
+    }
+}
+
+/// `<Capitalized>'s <Model>` triggers redaction — including pronouns like `That's Pixel`.
+/// We accept this overmatch: the `'s` + model shape is rare in English without an actual
+/// possessive, and over-redacting a generic sentence is safer than under-redacting a real
+/// owner name. Pin the behaviour so any future tightening is deliberate.
+///
+/// The `\x20+ Model` requirement immediately after `'s` keeps natural sentences with an
+/// article in between safe (`That's a Pixel 8 Pro` is unchanged).
+#[test]
+fn mtp_owner_known_overmatches() {
+    assert_eq!(r("That's a Pixel 8 Pro"), "That's a Pixel 8 Pro");
+    assert_eq!(r("That's Pixel 8 Pro"), "<mtp-owner>'s Pixel 8 Pro");
+}
+
+#[test]
 fn unix_system_paths() {
     let cases = [
         (
@@ -418,6 +484,7 @@ fn replacement_count_histogram() {
         ("<userinfo>", redacted.matches("<userinfo>").count()),
         ("<file>", redacted.matches("<file>").count()),
         ("<dir>", redacted.matches("<dir>").count()),
+        ("<mtp-owner>", redacted.matches("<mtp-owner>").count()),
     ];
 
     eprintln!("\n=== Redaction histogram ===");

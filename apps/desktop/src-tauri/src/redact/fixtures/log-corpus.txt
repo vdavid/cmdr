@@ -125,6 +125,12 @@
 23:00:00.017 INFO  e2e  Listing dir /Users/qa/src/project finished
 23:00:00.018 INFO  e2e  Listing dir /Users/qa/Library/Caches/test
 23:00:00.019 INFO  e2e  Listing dir /Users/qa/AppData/test
+23:00:00.020 INFO  mtp::device  Connected to John's Pixel 8 Pro
+23:00:00.021 INFO  mtp::device  device: Alice's iPhone 15 Pro detected
+23:00:00.022 INFO  mtp::device  Bob's Galaxy S24 Ultra connected
+23:00:00.023 INFO  mtp::device  Found Charlie's iPad Pro
+23:00:00.024 INFO  mtp::device  Eric's OnePlus 12 ready
+23:00:00.025 INFO  mtp::device  bare model name Pixel 8 Pro is generic, keep as-is
 00:00:00.000 INFO  empty
 00:00:00.001 INFO  punct  Path: /Users/foo/Documents/x.pdf, then more text
 00:00:00.002 INFO  punct  Path: /Users/foo/Documents/x.pdf; then more text

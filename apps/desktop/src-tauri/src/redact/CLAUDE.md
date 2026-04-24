@@ -23,6 +23,7 @@ costs zero allocations.
 | `mdns`          | `<label>.local` bare hostnames                       | `<host>.local`                                          |
 | `ipv4`          | dotted-quad with valid octet ranges                  | `<ipv4>`                                                |
 | `ipv6`          | full + common compact forms (`::1`, `fe80::1`, ...)  | `<ipv6>`                                                |
+| `mtp_owner`     | `<Owner>'s <Model>` MTP device names                 | `<mtp-owner>'s <Model>` (model phrase preserved)        |
 
 ### Path-shape preservation
 
@@ -46,13 +47,19 @@ Tradeoff between debuggability ("I can see this is a Documents path") and PII sa
 near-universal across users — anything custom collapses. Net result: triagers can usually
 guess the failure context without seeing the user's secrets.
 
-### Decision: MTP device names not handled in Phase 1
+### Decision: MTP owner names redacted, model names kept
 
-The plan listed "MTP device names (from log target prefix)" but the cross-cutting reminder
-clarifies: redactor operates on the message body, not the target. Bare device names like
-`Pixel 9 Pro` in the message body are too generic to detect without context. If we end up
-needing this, we'll add a per-call `RedactionContext` rather than baking it into the global
-regex.
+Phase 1 punted on MTP names; a post-implementation fix added an `mtp_owner` pattern that
+catches the common shape `<Owner>'s <Model>` (e.g., `John's Pixel 8 Pro`). The owner part
+becomes `<mtp-owner>` and the model phrase (`Pixel 8 Pro`, `iPhone 15 Pro`, ...) is kept
+because model strings alone aren't identifying and are useful diagnostic context.
+
+The pattern requires both a capitalized possessive AND a model word from a known set
+(`iPhone | iPad | Pixel | Galaxy | OnePlus | Note | Tablet | Phone | Camera | ...`)
+immediately after the `'s `. This keeps English contractions (`it's a Pixel`) and module
+paths (`cmdr_lib::mtp::device`) untouched. `That's Pixel 8 Pro` does match — accepted as
+an over-redaction (rare phrasing without an article between `'s` and the model word).
+Bare model names like `Pixel 8 Pro` are deliberately NOT redacted.
 
 ## How to add a new pattern
 

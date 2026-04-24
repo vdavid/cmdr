@@ -140,6 +140,27 @@ fn redactor_regex() -> &'static Regex {
                                       (?: 25[0-5] | 2[0-4][0-9] | 1[0-9]{2} | [1-9]?[0-9] )
                                 \b
             )
+            # MTP device name with a possessive owner prefix.
+            #   "<Owner>'s Pixel 8 Pro"  → "<mtp-owner>'s Pixel 8 Pro"
+            #   "<Owner>'s iPhone"        → "<mtp-owner>'s iPhone"
+            # We ONLY match when the owner name is capitalized (so English contractions
+            # like "It's a Pixel" don't match — `It` would be the owner candidate, but
+            # the model word must follow the apostrophe-`s`-space pattern, and we
+            # require the model to be one of a known set).
+            # Bare model names without an owner ("Pixel 8 Pro") are intentionally NOT
+            # matched — model strings alone aren't identifying and they're useful diag.
+            | (?P<mtp_owner>
+                \b [A-Z][a-zA-Z]+ ' s
+                \x20+
+                (?:
+                    iPhone | iPad | iPod | Pixel | Galaxy | Samsung | OnePlus
+                  | Note | Tablet | Phone | Camera
+                )
+                (?: \x20+ (?: Pro | Plus | Ultra | Max | Mini | SE | XL ) )?
+                (?: \x20+ \d{1,3} )?
+                (?: \x20+ (?: Pro | Plus | Ultra | Max | Mini | SE | XL ) )?
+                \b
+            )
             "#,
         )
         .expect("valid redactor regex")
@@ -193,8 +214,27 @@ fn dispatch(caps: &Captures<'_>) -> String {
     if caps.name("ipv4").is_some() {
         return "<ipv4>".to_string();
     }
+    if let Some(m) = caps.name("mtp_owner") {
+        return redact_mtp_owner(m.as_str());
+    }
     // Shouldn't happen — regex matched but no named group. Return verbatim to be safe.
     caps.get(0).map(|m| m.as_str().to_string()).unwrap_or_default()
+}
+
+/// Replace the possessive owner prefix with `<mtp-owner>`, keep the model words intact.
+/// Input is guaranteed to start with `<Owner>'s ` (capital letter, then letters, then
+/// `'s`, then one or more spaces) by the regex.
+fn redact_mtp_owner(s: &str) -> String {
+    // Find the `'s` boundary; everything from there onward is the model phrase.
+    // Splitting on `'s` is safe because the regex anchors the apostrophe-s.
+    match s.find("'s") {
+        Some(i) => {
+            // s[i..] starts with "'s", which we want to keep so the redacted output
+            // reads naturally ("<mtp-owner>'s Pixel 8 Pro").
+            format!("<mtp-owner>{}", &s[i..])
+        }
+        None => s.to_string(),
+    }
 }
 
 /// Split a greedy path capture into (path, trailing_noise). The regex allows single spaces
