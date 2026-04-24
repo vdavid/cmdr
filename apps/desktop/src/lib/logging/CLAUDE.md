@@ -39,9 +39,12 @@ getAppLogger('feature')
   practical use cases (`cmdr_lib::network=debug,smb=warn,info`). No `env_filter` crate needed.
 - **File target captures DEBUG; terminal rides along**: `tauri-plugin-log` doesn't support per-target level filtering,
   so raising the file target to Debug also raises the terminal target. We accept that — error reports need debug context
-  regardless of the verbose toggle. The verbose toggle still controls LogTape's in-RAM level for the frontend sinks; on
-  the Rust side it flips `log::set_max_level`, which is a no-op when file logging is on (the global floor is already
-  Debug) and a real toggle (Info ↔ Debug) when file logging is disabled via `advanced.maxLogStorageMb = 0`.
+  regardless of the verbose toggle. The `developer.verboseLogging` toggle still controls LogTape's in-RAM level for the
+  frontend sinks (browser devtools console + the FE-side category gating). On the Rust side it flips
+  `log::set_max_level`, which is a no-op when file logging is on (the global floor is already Debug) and a real toggle
+  (Info ↔ Debug) when file logging is disabled via `advanced.maxLogStorageMb = 0`. In short: post-Phase-2 the toggle is
+  primarily a **frontend / dev console** verbosity knob — labelled accordingly in the settings UI ("Verbose console
+  output (developer)") so users don't expect it to gate Rust-side file logging.
 - **`KeepSome(N)` rotation instead of a custom pruner**: `tauri-plugin-log` 2.8.0 exposes `KeepSome(N)` natively. The
   only gap we fill is an eager-prune on cap-lowered events so the user sees excess files vanish immediately —
   correctness is already guaranteed by the plugin. See `src-tauri/src/logging/CLAUDE.md`.

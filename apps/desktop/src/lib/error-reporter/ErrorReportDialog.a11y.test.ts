@@ -128,6 +128,65 @@ describe('ErrorReportDialog', () => {
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('ERR-AB23X')
   })
 
+  it('counts emoji-heavy notes by code point so the cap matches the backend', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ErrorReportDialog, { target, props: {} })
+    await tick()
+    await new Promise((r) => setTimeout(r, 300))
+    await tick()
+
+    // Each rocket emoji is two UTF-16 code units but one Unicode code point. With ~50k
+    // emoji we sit in the soft-warning band by code-point count; the displayed counter
+    // must show the code-point count, not the doubled UTF-16 length.
+    const textarea = target.querySelector('textarea') as HTMLTextAreaElement | null
+    expect(textarea).not.toBeNull()
+    if (!textarea) throw new Error('textarea missing')
+    const oneEmoji = '\u{1F680}' // rocket — 1 code point, 2 UTF-16 units
+    // Use 50 001 emoji so we exceed the soft-warn threshold (50 000) by code points.
+    const note = oneEmoji.repeat(50_001)
+    textarea.value = note
+    textarea.dispatchEvent(new Event('input', { bubbles: true }))
+    await tick()
+
+    // The counter only renders past the soft-warn threshold, so its appearance plus the
+    // formatted code-point count proves both the count is correct and the threshold
+    // gating uses the same scheme.
+    const counter = target.querySelector('.note-counter')
+    expect(counter).not.toBeNull()
+    expect(counter?.textContent).toContain((50_001).toLocaleString('en-US'))
+
+    // Send button must still be enabled — 50 001 < 100 000 (the hard cap).
+    const sendButton = Array.from(target.querySelectorAll('button')).find((b) =>
+      b.textContent?.trim().startsWith('Send report'),
+    ) as HTMLButtonElement | undefined
+    expect(sendButton).toBeDefined()
+    expect(sendButton?.disabled).toBe(false)
+  })
+
+  it('disables Send when a code-point count exceeds the hard cap', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ErrorReportDialog, { target, props: {} })
+    await tick()
+    await new Promise((r) => setTimeout(r, 300))
+    await tick()
+
+    const textarea = target.querySelector('textarea') as HTMLTextAreaElement | null
+    if (!textarea) throw new Error('textarea missing')
+    // 100 001 code-points of emoji — 200 002 UTF-16 units. Naive `.length` would have
+    // already reported "over" at 50 001 emoji; what we're checking here is that the
+    // boundary at 100 000 also fires, regardless of representation.
+    textarea.value = '\u{1F680}'.repeat(100_001)
+    textarea.dispatchEvent(new Event('input', { bubbles: true }))
+    await tick()
+
+    const sendButton = Array.from(target.querySelectorAll('button')).find((b) =>
+      b.textContent?.trim().startsWith('Send report'),
+    ) as HTMLButtonElement | undefined
+    expect(sendButton?.disabled).toBe(true)
+  })
+
   it('Cancel button closes the dialog via the flow store', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)

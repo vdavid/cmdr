@@ -78,8 +78,13 @@ production it isn't registered, so calling the wrapper would return an error.
 
 ## Gotchas
 
-- The dialog re-runs `prepareErrorReportPreview` on each note keystroke (debounced 250 ms). This is wasteful but cheap —
-  the heavy work is reading + redacting log lines, which the OS is happy to keep in page cache.
+- The dialog calls `prepareErrorReportPreview` exactly once when it mounts. The user note doesn't influence log content;
+  it only lands in the manifest. The displayed manifest is rebuilt locally with the live note value, and
+  `sendErrorReport` (and `saveErrorReportToDisk`) ship the current note when invoked. Rebuilding the multi-MB zip per
+  keystroke would have been wasteful for no behavioural gain.
+- The note counter and Send-disabling use `Array.from(userNote).length` so they match the Rust validator's
+  `.chars().count()` (Unicode code points). `userNote.length` (UTF-16 code units) would let emoji-heavy notes bypass the
+  cap on the frontend and then fail server-side.
 - `errorReportFlow.initialNote` is captured when the dialog mounts via
   `let userNote = $state(errorReportFlow.initialNote)`. Subsequent edits to the textarea are local to the component —
   closing and reopening the dialog reads from the store again.

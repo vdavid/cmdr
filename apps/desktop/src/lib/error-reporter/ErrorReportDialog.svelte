@@ -35,33 +35,27 @@
     let sending = $state(false)
     let copiedId = $state(false)
 
-    const noteLength = $derived(userNote.length)
+    // Count by Unicode code points so the frontend cap matches the Rust-side
+    // `.chars().count()` validator. `userNote.length` is UTF-16 code units, which
+    // diverges for surrogate-pair characters (most emoji). See `validate_user_note`
+    // in `commands/error_reporter.rs`.
+    const noteLength = $derived(countCodePoints(userNote))
     const noteOverLimit = $derived(noteLength > MAX_NOTE_CHARS)
     const showCounter = $derived(noteLength > SOFT_WARN_AT)
     const isDev = import.meta.env.DEV
 
-    // Re-prepare whenever the user note changes. Debounced to avoid hammering the
-    // backend on each keystroke. The manifest size depends on the note, so the
-    // preview byte count shifts as the user types.
-    let previewTimer: ReturnType<typeof setTimeout> | undefined
+    // Build the preview ONCE when the dialog mounts. The user note doesn't change the
+    // log content — only the manifest's `userNote` field — so there's no reason to
+    // re-run the megabyte-scale bundle build on every keystroke. The displayed manifest
+    // is overlaid with the live `userNote` value below; the actual bundle that gets
+    // shipped is rebuilt server-side-of-IPC on Send with the final note.
     $effect(() => {
-        const note = userNote
-        clearTimeout(previewTimer)
-        previewTimer = setTimeout(() => {
-            void refreshPreview(note)
-        }, 250)
-        return () => {
-            clearTimeout(previewTimer)
-        }
+        void buildInitialPreview()
     })
 
-    async function refreshPreview(note: string) {
-        if (note.length > MAX_NOTE_CHARS) {
-            // Skip preview while invalid — the manifest would be rejected anyway.
-            return
-        }
+    async function buildInitialPreview() {
         try {
-            const result = await prepareErrorReportPreview(note || undefined)
+            const result = await prepareErrorReportPreview(undefined)
             preview = result
             preparingError = null
         } catch (e) {
@@ -70,6 +64,24 @@
         } finally {
             preparing = false
         }
+    }
+
+    // Manifest shown in the preview — the cached one from `buildInitialPreview`, with
+    // the live note value patched in so the user sees what they're about to send. The
+    // backend trims and drops empty notes before writing them to `manifest.json`, so
+    // mirror that here.
+    const displayedManifest = $derived.by(() => {
+        if (!preview) return null
+        const trimmed = userNote.trim()
+        return {
+            ...preview.manifest,
+            userNote: trimmed.length > 0 ? trimmed : undefined,
+        }
+    })
+
+    function countCodePoints(s: string): number {
+        // Array.from iterates by code point (handles surrogate pairs as one char).
+        return Array.from(s).length
     }
 
     async function handleSend() {
@@ -194,7 +206,7 @@
         {#if detailsExpanded && preview}
             <div class="details-container">
                 <h3 class="details-heading">Manifest</h3>
-                <pre class="details-block">{JSON.stringify(preview.manifest, null, 2)}</pre>
+                <pre class="details-block">{JSON.stringify(displayedManifest, null, 2)}</pre>
 
                 <h3 class="details-heading">Sample of first {preview.sampleFirst.length} lines</h3>
                 <pre class="details-block sample-block">{preview.sampleFirst.join('\n') ||

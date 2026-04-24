@@ -580,9 +580,10 @@ export const settingsRegistry: SettingDefinition[] = [
   {
     id: 'developer.verboseLogging',
     section: ['Developer', 'Logging'],
-    label: 'Verbose logging',
-    description: 'Log detailed debug information. Useful for troubleshooting. May impact performance.',
-    keywords: ['log', 'debug', 'verbose', 'troubleshoot', 'performance'],
+    label: 'Verbose console output (developer)',
+    description:
+      "Increases the level of detail printed to the developer console (frontend logs and the dev terminal). The on-disk log file always captures debug-level detail regardless, so error reports aren't affected by this toggle.",
+    keywords: ['log', 'debug', 'verbose', 'troubleshoot', 'performance', 'console'],
     type: 'boolean',
     default: false,
     component: 'switch',
