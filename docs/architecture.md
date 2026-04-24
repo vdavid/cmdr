@@ -24,6 +24,7 @@ All under `apps/desktop/src/lib/`.
 | `commands/`                 | Command registry (~50 commands), fuzzy search engine for command palette                                    |
 | `licensing/`                | License validation, commercial reminders, expiration modals                                                 |
 | `logging/`                  | Unified logging: LogTape config, batching bridge to Rust, verbose toggle                                    |
+| `error-reporter/`           | Error report dialog (Flow A preview), auto-send toast (Flow B), shared `error-report-flow` entry point      |
 | `ai/`                       | Local LLM features (folder suggestions), download flow                                                      |
 | `indexing/`                 | Drive index state, events, priority triggers, scan status overlay                                           |
 | `search/`                   | Whole-drive file search dialog: orchestrator + `AiSearchRow`, `SearchInputArea`, `SearchResults` components |
@@ -60,6 +61,9 @@ All under `apps/desktop/src-tauri/src/`.
 | `drag_image_detection.rs`       | macOS method swizzle for drag image size detection                                                                                                      |
 | `drag_image_swap.rs`            | Rich/transparent drag image swap for self-drags                                                                                                         |
 | `crash_reporter/`               | Crash capture (panic hook + signal handler), next-launch detection, report sending                                                                      |
+| `error_reporter/`               | Error reports: bundle build (manifest + redacted log tail), short-ID + R2 upload, debounced auto-dispatcher for Flow B                                  |
+| `redact/`                       | Shared PII redactor (path-shape preserving). Used by both crash and error reporters                                                                     |
+| `logging/`                      | Log directory resolver, `KeepSome(N)` post-rotation pruner, `list_recent_log_files` helper used by the error reporter bundle builder                    |
 | `commands/`                     | Tauri command definitions (IPC entry points)                                                                                                            |
 | `capabilities/`                 | Per-window Tauri API permissions — must be updated when using new Tauri APIs from a window                                                              |
 | `icons/`                        | App icons for all platforms + macOS Tahoe Liquid Glass (Assets.car). See [CLAUDE.md](../apps/desktop/src-tauri/icons/CLAUDE.md) for regeneration steps  |
@@ -136,6 +140,20 @@ Rules that cut across many modules. All existing commands follow these — apply
 
 Go-based unified runner (`scripts/check/`). Parallel execution with dependency graph. Coverage: 70% threshold enforced,
 `coverage-allowlist.json` exempts Tauri/DOM-dependent files.
+
+## Diagnostics
+
+Two parallel pipelines feed the maintainer with what went wrong on a user's machine. Both pass payloads through the
+shared `redact/` module before sending — see [docs/security.md](security.md) for the privacy posture.
+
+- **Crash reporter** (`crash_reporter/`) — captures panics + signals, persists a report to disk, and offers to send it
+  on the next launch. Targets `POST /crash-report` on `api.getcmdr.com`. For unexpected aborts only.
+- **Error reporter** (`error_reporter/` + `error-reporter/`) — captures everything else (MTP weirdness, network
+  glitches, generic "this didn't work"). Two flows: user-initiated (**Help > Send error report…**, or the button on
+  error toasts — see Flow A) and auto-send opt-in (`updates.errorReports`, see Flow B). Bundles the manifest + recent
+  debug-level log tail (governed by `advanced.maxLogStorageMb`), redacts line-by-line, uploads to R2 via
+  `POST /error-report`, returns a short `ERR-XXXXX` ID. Server posts a Discord notification with a 7-day presigned
+  download link to a private `#error-reports` channel.
 
 ## Tooling and infrastructure
 

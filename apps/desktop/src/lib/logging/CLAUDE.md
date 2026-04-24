@@ -66,3 +66,6 @@ getAppLogger('feature')
 
 See [docs/tooling/logging.md](../../../docs/tooling/logging.md) for how to add logging to your feature, `RUST_LOG`
 recipes, and the verbose toggle.
+
+When debugging issues, the error report bundle from the Help menu (**Help > Send error report…**) includes recent
+debug-level logs from the file target — the same logs the cap setting governs.

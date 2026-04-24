@@ -5,7 +5,20 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [0.13.0] - 2026-04-22
+## [Unreleased]
+
+### Added
+
+- **Error reports.** When something goes wrong, you can now ship a redacted diagnostic bundle (manifest + recent
+  debug-level log tail) to the maintainer with one click. Two flows: **Help > Send error report…** (or the new button on
+  error toasts) opens a preview dialog so you see exactly what's about to be sent, and clicking **Send** is the consent;
+  no setting required. Optionally, opt in to auto-send via the new `updates.errorReports` setting (default off) — when
+  enabled, user-visible errors fire a debounced auto-send and a toast lets you view the bundle or change settings. Every
+  bundle goes through the shared path-shape-preserving redactor (`Documents/<file>.pdf` style). Reports are anonymous —
+  the short `ERR-XXXXX` ID is the only correlation handle.
+- **Log storage cap setting.** New `advanced.maxLogStorageMb` (default 200 MB, range 0–5000) controls how much disk
+  space the rotated log files use. The file target now defaults to **debug** level so error reports carry useful
+  context. Set to `0` to disable log storage entirely (and with it, the ability to send error reports).
 
 ### Added
 

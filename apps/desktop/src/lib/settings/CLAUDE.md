@@ -50,6 +50,15 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
   `getSizeDisplayMode()`.
 - `listing.sizeMismatchWarning` — boolean, default true, switch. Reactive getter: `getSizeMismatchWarning()`.
 
+`AdvancedSection` includes `advanced.maxLogStorageMb` — number, default 200, range 0–5000, MB suffix. `0` disables log
+storage entirely (the `Folder` target is dropped from the plugin builder, no error reports possible). Toggling between
+`0` and any non-zero value, or raising the cap beyond its baked-in value, requires an app restart — the in-RAM cap
+updates live but the rotation strategy doesn't.
+
+`UpdatesSection` includes `updates.errorReports` — boolean, default false, switch. Opt-in for Flow B (auto-send error
+reports when a user-visible error fires). Flow A (the **Help > Send error report…** menu item and the toast button) is
+always available regardless of this setting — clicking is the consent.
+
 Full list: `AppearanceSection`, `ListingSection`, `FileOperationsSection`, `MtpSection`, `KeyboardShortcutsSection`,
 `NetworkSection`, `LoggingSection`, `McpServerSection`, `UpdatesSection`, `ThemesSection`, `AdvancedSection`,
 `DriveIndexingSection`, `AiSection`, `LicenseSection`, `ViewerSection`.

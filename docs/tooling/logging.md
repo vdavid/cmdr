@@ -111,7 +111,8 @@ RUST_LOG=trace pnpm dev
 - **Cap**: `Advanced > Maximum disk space for log files (MB)`, default 200 MB, range 0–5000. Set to `0` to disable log
   storage entirely — error reports cannot be sent without logs. Lowering the cap at runtime eagerly prunes excess files.
   `0 ↔ non-zero` transitions (and raising the cap beyond its baked-in value) require an app restart.
-- Accessible from **Settings > Logging > "Open log file"**
+- Accessible from **Settings > Logging > "Open log file"**, and bundled into error reports sent via **Help > Send error
+  report…** (passes through the shared redactor first)
 
 ## Log format
 
