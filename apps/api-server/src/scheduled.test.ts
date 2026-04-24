@@ -1,10 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import {
-  handleCrashNotifications,
-  handleDailyAggregation,
-  handleDbSizeCheck,
-  handleDailyEvictionSweep,
-} from './index'
+import { handleCrashNotifications, handleDailyAggregation, handleDbSizeCheck, handleDailyEvictionSweep } from './index'
 import { ERROR_REPORT_PREFIX, TOTAL_BYTES_KEY } from './error-report-eviction'
 
 // Mock Resend — intercept email sends

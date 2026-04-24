@@ -234,15 +234,25 @@ and download tracking only captures installs.
 
 **Error report eviction (8/6 GB watermarks + lifecycle):** Three layers keep the bucket bounded.
 
-1. **On-upload eviction**: every `POST /error-report` schedules `tryEvict` in `waitUntil(...)`. If `total_bytes` (KV) > 8 GB and `eviction_in_progress` (KV, 60-s TTL lock) isn't set, lists R2 objects under `error-reports/`, sorts oldest-first by date prefix in the key (`yyyy-mm-dd`) then by `uploaded`, deletes until ≤ 6 GB, then resets the counter to the recomputed ground truth.
+1. **On-upload eviction**: every `POST /error-report` schedules `tryEvict` in `waitUntil(...)`. If `total_bytes` (KV) >
+   8 GB and `eviction_in_progress` (KV, 60-s TTL lock) isn't set, lists R2 objects under `error-reports/`, sorts
+   oldest-first by date prefix in the key (`yyyy-mm-dd`) then by `uploaded`, deletes until ≤ 6 GB, then resets the
+   counter to the recomputed ground truth.
 2. **Daily cron sweep**: corrects KV drift by recomputing from R2 and re-running `tryEvict`.
 3. **R2 lifecycle rule**: 90-day expiration applied at provisioning time via `scripts/setup-cf-infra.sh`.
 
-The KV counter is approximate (read-then-write, no atomic increment — same as `_meta:activation_count`). Both the daily sweep and post-eviction recompute correct it. R2 deletes are idempotent; concurrent evictors deleting the same oldest object cause no harm.
+The KV counter is approximate (read-then-write, no atomic increment — same as `_meta:activation_count`). Both the daily
+sweep and post-eviction recompute correct it. R2 deletes are idempotent; concurrent evictors deleting the same oldest
+object cause no harm.
 
-**Error report Discord notifications:** Every upload triggers a Discord embed with a 7-day presigned R2 GET URL. Uses the R2 S3-compatible API via `aws4fetch` (`AwsClient.sign` with `signQuery: true` + `X-Amz-Expires`). 7 days is R2's max for presigned URLs. Convenience of click-to-download outweighs leak risk because only the maintainer accesses the `#error-reports` channel.
+**Error report Discord notifications:** Every upload triggers a Discord embed with a 7-day presigned R2 GET URL. Uses
+the R2 S3-compatible API via `aws4fetch` (`AwsClient.sign` with `signQuery: true` + `X-Amz-Expires`). 7 days is R2's max
+for presigned URLs. Convenience of click-to-download outweighs leak risk because only the maintainer accesses the
+`#error-reports` channel.
 
-**Short ID generation:** `generateShortId(prefix, len)` in `license.ts` produces IDs like `ERR-A2345` from the same unambiguous alphabet (`23456789ABCDEFGHJKMNPQRSTUVWXYZ`) as license short codes. Rejection sampling avoids modulo bias. The error report route retries up to 3 times on R2 HEAD collision.
+**Short ID generation:** `generateShortId(prefix, len)` in `license.ts` produces IDs like `ERR-A2345` from the same
+unambiguous alphabet (`23456789ABCDEFGHJKMNPQRSTUVWXYZ`) as license short codes. Rejection sampling avoids modulo bias.
+The error report route retries up to 3 times on R2 HEAD collision.
 
 ## Local development
 
