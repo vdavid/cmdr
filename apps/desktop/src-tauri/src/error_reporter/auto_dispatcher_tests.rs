@@ -11,7 +11,8 @@
 //! parallel would race.
 
 use super::auto_dispatcher::{
-    jitter_window, pick_jitter_offset_for_test, record_error_for_test, reset_for_test, set_enabled, snapshot_for_test,
+    flush_spawned_for_test, jitter_window, pick_jitter_offset_for_test, record_error_for_test, reset_for_test,
+    set_enabled, simulate_late_app_handle_for_test, snapshot_for_test,
 };
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -132,6 +133,93 @@ fn jitter_offset_is_within_double_jitter_band() {
         let offset = pick_jitter_offset_for_test();
         assert!(offset <= max, "jitter offset {offset:?} exceeded 2 * JITTER ({max:?})");
     }
+}
+
+/// Late AppHandle wiring: an error logged before `set_app_handle` runs should leave the
+/// debounce state with `flush_spawned = false`. When the handle later arrives, simulating
+/// the production path, we should see the flag flip to true and a deadline returned so
+/// the caller can spawn the flush task.
+#[test]
+fn late_app_handle_picks_up_active_window() {
+    let _guard = lock_and_reset();
+    set_enabled(true);
+
+    // Simulate "error logged before AppHandle ready": record but don't spawn.
+    let scheduled =
+        record_error_for_test("cmdr_lib::network", "logged before setup").expect("first call should open a window");
+    assert_eq!(
+        flush_spawned_for_test(),
+        Some(false),
+        "test seam doesn't spawn — flag must remain false"
+    );
+
+    // Subsequent error in the same window must keep flush_spawned = false too,
+    // otherwise the late-arriving AppHandle would think the spawn is already covered.
+    let _ = record_error_for_test("cmdr_lib::other", "still no handle");
+    assert_eq!(
+        flush_spawned_for_test(),
+        Some(false),
+        "additional errors in the window must not flip the spawn flag"
+    );
+
+    // Now simulate the AppHandle arriving. The helper returns the deadline iff there was
+    // work to schedule, and flips the flag so a subsequent on_error_logged in the same
+    // window won't spawn a duplicate.
+    let deadline = simulate_late_app_handle_for_test().expect("expected a deadline for the active window");
+    assert_eq!(deadline, scheduled, "deadline should match the original schedule");
+    assert_eq!(
+        flush_spawned_for_test(),
+        Some(true),
+        "after the simulated AppHandle wiring, the flag must be set"
+    );
+
+    // A second call to the late-arrival helper is a no-op (idempotent / re-entrant safe).
+    assert!(
+        simulate_late_app_handle_for_test().is_none(),
+        "calling the late-arrival helper again must not double-spawn"
+    );
+
+    reset_for_test();
+}
+
+/// If the AppHandle arrives after the debounce deadline has already passed, the late
+/// path still returns a deadline (in the past) so the spawned task fires immediately
+/// via `sleep_until` (which is a no-op when `deadline <= now`).
+#[test]
+fn late_app_handle_with_past_deadline_returns_deadline() {
+    let _guard = lock_and_reset();
+    set_enabled(true);
+
+    let scheduled =
+        record_error_for_test("cmdr_lib::network", "logged way before setup").expect("first call should open a window");
+    let now = Instant::now();
+    assert!(scheduled > now, "scheduled should be in the future at this point");
+
+    // We can't time-travel `Instant` cheaply, but we can validate the contract: the
+    // helper returns whatever scheduled_send_at was, and the production caller's
+    // sleep_until handles the past-deadline case by returning immediately.
+    let deadline = simulate_late_app_handle_for_test().expect("expected a deadline");
+    assert_eq!(deadline, scheduled);
+
+    reset_for_test();
+}
+
+/// If no window is active when the AppHandle arrives, the late-arrival helper is a no-op.
+#[test]
+fn late_app_handle_with_no_active_window_is_noop() {
+    let _guard = lock_and_reset();
+    set_enabled(true);
+
+    assert!(
+        simulate_late_app_handle_for_test().is_none(),
+        "no active window — nothing to spawn"
+    );
+    assert!(
+        snapshot_for_test().is_none(),
+        "the helper must not create state when there's nothing to do"
+    );
+
+    reset_for_test();
 }
 
 /// Documents the crash-loop interaction. If the process exits during the 60 s window,

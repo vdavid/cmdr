@@ -141,9 +141,14 @@ new user-visible errors. Do not bulk-migrate.
 
 The macro can't thread an `AppHandle` through every call site, so
 `auto_dispatcher::set_app_handle(handle)` stashes one in a `OnceLock` at app startup
-(called from `lib.rs::setup` right after `crash_reporter::init`). If the handle isn't set
-yet (init order, unit tests), the dispatcher still updates the debounce counter but
-silently skips the spawn — acceptable, and matches the "soft errors only" contract.
+(called from `lib.rs::setup` right after `crash_reporter::init`). If an error fires
+before the handle is wired, the debounce window opens normally but the flush task isn't
+spawned (no handle to hand to `tauri::async_runtime::spawn`). The state carries a
+`flush_spawned` flag for exactly this reason: when `set_app_handle` runs later, it picks
+up the orphaned window and spawns the flush task with the remaining time. If the
+deadline has already passed, the spawned task fires immediately. The `mark_flush_spawned`
+helper plus the late-arrival path in `set_app_handle` race against each other safely —
+the loser just bails.
 
 ## Gotchas
 

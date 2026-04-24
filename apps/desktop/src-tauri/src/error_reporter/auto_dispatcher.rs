@@ -27,8 +27,11 @@
 //! The macro can't pass an `AppHandle` (it'd require every `log_error!` site to thread
 //! one in). We stash a `tauri::AppHandle<tauri::Wry>` in [`APP_HANDLE`] at startup via
 //! [`set_app_handle`], called from `lib.rs::setup`. If the handle isn't set yet (before
-//! setup runs, or in unit tests), [`on_error_logged`] still bumps the counter so the
-//! debounce window is correct, but the spawn/upload is skipped.
+//! setup runs, or in unit tests), [`on_error_logged`] still bumps the counter and stores
+//! the debounce state, but skips the spawn (no handle to clone). The state's
+//! `flush_spawned` flag tracks this; when [`set_app_handle`] later runs, it picks up the
+//! orphaned window and spawns the flush task with the remaining time. If the deadline
+//! has already elapsed, [`sleep_until`] is a no-op and `flush` runs immediately.
 
 use crate::error_reporter::{self, BundleKind};
 use rand::Rng;
@@ -74,11 +77,14 @@ struct DebounceState {
     first_category: String,
     first_message: String,
     error_count: usize,
-    /// Wall-clock target for the flush. Used by tests to assert jitter bounds and by
-    /// the spawned task to know when to wake up. The spawned task captures this value
-    /// before storing the state, so the field itself is only read in the test seam.
-    #[allow(dead_code, reason = "Read via snapshot_for_test in cfg(test) builds")]
+    /// Wall-clock target for the flush. Read by the late-spawn path in
+    /// [`set_app_handle`] to compute the remaining delay when a window opened before
+    /// the AppHandle was ready, and by tests to assert jitter bounds.
     scheduled_send_at: Instant,
+    /// True once a flush task has been spawned for this window. If `set_app_handle`
+    /// runs after a window opened without the handle, this lets us spawn exactly once
+    /// without racing with [`on_error_logged`].
+    flush_spawned: bool,
 }
 
 static STATE: Mutex<Option<DebounceState>> = Mutex::new(None);
@@ -99,8 +105,37 @@ pub fn is_enabled() -> bool {
 
 /// Stash the app handle so the macro-driven entry point can spawn flush tasks without
 /// receiving an `AppHandle` argument. Called once from `lib.rs::setup`.
+///
+/// If a debounce window is already active and never got its flush task (because an error
+/// fired before the handle was wired up), spawn one now. Compute the remaining time
+/// from `scheduled_send_at`; if it's already past, fire immediately.
 pub fn set_app_handle(handle: AppHandle<Wry>) {
-    let _ = APP_HANDLE.set(handle);
+    if APP_HANDLE.set(handle.clone()).is_err() {
+        // Already set — nothing more to do. Tests reset the handle differently; in prod
+        // setup runs once.
+        return;
+    }
+    // Atomically peek at the state under the lock. If a window is open without a
+    // spawned flush, mark it as spawned and kick the task off.
+    let scheduled_at = {
+        let mut guard = match STATE.lock() {
+            Ok(g) => g,
+            Err(p) => p.into_inner(),
+        };
+        match guard.as_mut() {
+            Some(state) if !state.flush_spawned => {
+                state.flush_spawned = true;
+                Some(state.scheduled_send_at)
+            }
+            _ => None,
+        }
+    };
+    if let Some(deadline) = scheduled_at {
+        tauri::async_runtime::spawn(async move {
+            sleep_until(deadline).await;
+            flush(handle).await;
+        });
+    }
 }
 
 /// Records an error against the auto-dispatcher. If the opt-in flag is off, returns
@@ -120,17 +155,39 @@ pub fn on_error_logged(category: &str, message: &str) {
         None => return, // Already had an active debounce; only the counter changed.
     };
 
-    // Spawn the flush task only if the AppHandle has been wired up. In unit tests and
-    // during the brief window before `set_app_handle` runs in `setup()`, we'll capture
-    // the error in the debounce state but never fire the send. Acceptable — the next
-    // error after init will trigger one normally.
+    // Spawn the flush task only if the AppHandle has been wired up. If it's not, the
+    // debounce state is preserved with `flush_spawned = false` — when `set_app_handle`
+    // eventually runs, it'll spawn the task with the remaining time (or fire immediately
+    // if the deadline has already passed).
     let Some(app) = APP_HANDLE.get().cloned() else {
         return;
     };
+    if !mark_flush_spawned() {
+        // Lost the race: someone else (e.g. set_app_handle catching up) already spawned
+        // the flush task for this window. Don't double-spawn.
+        return;
+    }
     tauri::async_runtime::spawn(async move {
         sleep_until(scheduled_send_at).await;
         flush(app).await;
     });
+}
+
+/// Atomically mark the active window as having a spawned flush task. Returns `true` if
+/// this caller is the one that flipped the flag (and so should spawn), `false` if it was
+/// already set (someone else won the race).
+fn mark_flush_spawned() -> bool {
+    let mut guard = match STATE.lock() {
+        Ok(g) => g,
+        Err(p) => p.into_inner(),
+    };
+    match guard.as_mut() {
+        Some(state) if !state.flush_spawned => {
+            state.flush_spawned = true;
+            true
+        }
+        _ => false,
+    }
 }
 
 /// Lock the state, register the error, and return the scheduled flush time iff this
@@ -154,6 +211,7 @@ fn record_error(category: &str, message: &str) -> Option<Instant> {
         first_message: message.to_string(),
         error_count: 1,
         scheduled_send_at,
+        flush_spawned: false,
     });
     Some(scheduled_send_at)
 }
@@ -257,6 +315,36 @@ pub fn snapshot_for_test() -> Option<(String, String, usize, Instant)> {
             s.scheduled_send_at,
         )
     })
+}
+
+/// Test seam: returns `Some(true)` if a window is active and its flush task has been
+/// spawned, `Some(false)` if a window is active but no spawn happened yet, `None` if
+/// no window is active.
+#[cfg(test)]
+pub fn flush_spawned_for_test() -> Option<bool> {
+    let guard = match STATE.lock() {
+        Ok(g) => g,
+        Err(p) => p.into_inner(),
+    };
+    guard.as_ref().map(|s| s.flush_spawned)
+}
+
+/// Test seam: simulates the late-arriving AppHandle path without needing a Tauri runtime.
+/// Returns `Some(deadline)` if a window was active and not yet spawned (so the production
+/// `set_app_handle` would spawn a task for it), `None` otherwise.
+#[cfg(test)]
+pub fn simulate_late_app_handle_for_test() -> Option<Instant> {
+    let mut guard = match STATE.lock() {
+        Ok(g) => g,
+        Err(p) => p.into_inner(),
+    };
+    match guard.as_mut() {
+        Some(state) if !state.flush_spawned => {
+            state.flush_spawned = true;
+            Some(state.scheduled_send_at)
+        }
+        _ => None,
+    }
 }
 
 #[cfg(test)]
