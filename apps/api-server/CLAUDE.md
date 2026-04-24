@@ -112,6 +112,43 @@ secret — anyone holding it can post to that channel — so it lives only as a 
 Rate limit: 30 messages/min per webhook. The Worker should retry once on `Retry-After`, then drop with a `console.error`
 — we don't run our own queue infra for an internal channel.
 
+### R2 presigned URLs (for error-report download links)
+
+The error-report Worker mints 7-day presigned GET URLs for the zip bundles in R2 and embeds them in Discord
+notifications. R2 bindings can't presign on their own, so the Worker uses the S3-compatible API via `aws4fetch` and
+three secrets: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`.
+
+Current values: stored in David's password store (Bitwarden). The secrets also live as Cloudflare Worker secrets
+(`wrangler secret list` to confirm).
+
+**To create (or rotate) the R2 access key:**
+
+1. https://dash.cloudflare.com → **R2 Object Storage** → **Manage R2 API Tokens** (top right).
+2. **Create API Token**. Name: `cmdr-error-reports-presign`.
+3. Permission: **Object Read** (read-only is enough — writes go through the R2 binding, not the S3 key).
+4. Scope: **Apply to specific buckets only** → `cmdr-error-reports`.
+5. TTL: forever (or match your rotation policy).
+6. Click **Create API Token**. The token page shows THREE values that are displayed ONCE:
+   - **Access Key ID** → `R2_ACCESS_KEY_ID`
+   - **Secret Access Key** → `R2_SECRET_ACCESS_KEY`
+   - **Account ID** (also shown in the dashboard top-right / R2 URL) → `R2_ACCOUNT_ID`
+7. Save all three into Bitwarden before leaving the page.
+8. Set the three as wrangler secrets:
+   ```sh
+   pnpm --filter @cmdr/api-server exec wrangler secret put R2_ACCOUNT_ID
+   pnpm --filter @cmdr/api-server exec wrangler secret put R2_ACCESS_KEY_ID
+   pnpm --filter @cmdr/api-server exec wrangler secret put R2_SECRET_ACCESS_KEY
+   ```
+9. To rotate: create a fresh token first, set the new secrets, deploy, then delete the old token from the R2 API
+   Tokens page.
+
+**Gotcha when deploying**: if your shell has `CLOUDFLARE_API_TOKEN` set, `wrangler deploy` uses that instead of the
+interactive OAuth login. The token must have the `Workers R2 Storage: Edit` permission or the deploy fails with
+`Authentication error [code: 10000]` on the R2 bucket precheck. Fix at
+https://dash.cloudflare.com/profile/api-tokens. One-shot workaround without editing the token:
+`CLOUDFLARE_API_TOKEN= pnpm --filter @cmdr/api-server exec wrangler deploy` (empties the env var for that command,
+falls back to the OAuth login).
+
 ### Webhook verification
 
 `verifyPaddleWebhookMulti` tries both `PADDLE_WEBHOOK_SECRET_LIVE` and `PADDLE_WEBHOOK_SECRET_SANDBOX` when verifying
