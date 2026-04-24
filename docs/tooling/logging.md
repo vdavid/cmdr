@@ -1,6 +1,7 @@
 # Logging
 
-Both frontend and backend logs appear in a single unified stream (terminal + log file) via `tauri-plugin-log`.
+Both frontend and backend logs appear in a single unified stream (terminal + log file). The Rust side runs a hand-rolled
+`fern` dispatch tree with **per-output level filtering** — file always at Debug, terminal defaults to Info.
 
 ## Frontend (Svelte/TypeScript)
 
@@ -35,10 +36,12 @@ From lowest to highest: `debug` < `info` < `warning` < `error` < `fatal`
 
 ### Default behavior
 
-- **Dev mode (terminal)**: Shows `info` and above when log storage is disabled, or `debug` and above when log storage is
-  enabled (the default). `RUST_LOG` overrides.
+- **Dev mode (terminal)**: Shows `info` and above by default. `RUST_LOG` overrides per-module. The verbose toggle bumps
+  the whole terminal to `debug` at runtime.
 - **Prod mode (terminal)**: Terminal isn't visible in shipped builds.
-- **File target**: Always `debug` when log storage is enabled (cap > 0). Absent when the cap is `0`.
+- **File target**: Always `debug` when log storage is enabled (cap > 0). Absent when the cap is `0`. The file target is
+  independent — it ignores `RUST_LOG` and the verbose toggle, so error report bundles always carry the full debug
+  context.
 
 ## Log levels
 
@@ -69,8 +72,8 @@ const debugCategories: string[] = [
 
 ## Backend (Rust)
 
-Uses `tauri-plugin-log` (replaces `env_logger`) with `RUST_LOG` support via parsed `level_for()` directives. Same `log`
-facade API.
+Hand-rolled `fern` dispatch tree (see `apps/desktop/src-tauri/src/logging/CLAUDE.md`) with `RUST_LOG` parsed into
+per-module overrides on the stdout chain only. Same `log` facade API.
 
 ### Usage in Rust
 
@@ -104,10 +107,10 @@ RUST_LOG=trace pnpm dev
 - **Location**: Prod: `~/Library/Logs/com.veszelovszki.cmdr/`, Dev:
   `~/Library/Application Support/com.veszelovszki.cmdr-dev/logs/`
 - Contains both Rust and frontend logs
-- **Level**: Debug by default for the file target, so error reports capture the full context. The plugin doesn't support
-  per-target levels — terminal rides along at Debug when file logging is on. Use `RUST_LOG` to tune noisy modules (see
-  the recipes below).
-- **Rotation**: 50 MB per file, `KeepSome(N)` where `N = ceil(cap_mb / 50)`.
+- **Level**: Always Debug for the file target. The dispatch tree filters per output, so the file's Debug level is
+  independent of `RUST_LOG` and the verbose toggle (those only affect the terminal). Error reports always get full debug
+  context.
+- **Rotation**: 50 MB per file, keep-N where `N = ceil(cap_mb / 50)`. Backed by the `file-rotate` crate.
 - **Cap**: `Advanced > Maximum disk space for log files (MB)`, default 200 MB, range 0–5000. Set to `0` to disable log
   storage entirely — error reports cannot be sent without logs. Lowering the cap at runtime eagerly prunes excess files.
   `0 ↔ non-zero` transitions (and raising the cap beyond its baked-in value) require an app restart.
@@ -150,10 +153,12 @@ Frontend log targets use `FE:{category}` where category matches the `getAppLogge
 
 ## Verbose logging
 
-Toggle in **Settings > Logging > "Verbose logging"**:
+Toggle in **Settings > Developer > Logging > "Verbose console output (developer)"**:
 
-- Flips frontend (LogTape) debug gating.
-- Flips backend (`log::set_max_level`) between Info and Debug — but only takes visible effect when log storage is
-  disabled (`advanced.maxLogStorageMb = 0`). With log storage on, the backend floor is already Debug so the file target
-  can capture it, and the toggle is a no-op on the Rust side.
-- `RUST_LOG` env var overrides at startup for dev.
+- Flips frontend (LogTape) debug gating for the browser devtools console.
+- Bumps the Rust **stdout chain** from Info to Debug (and back). The file chain stays at Debug regardless, so error
+  reports are unaffected by the toggle.
+- Implemented via an `AtomicU8` consulted on every record — the toggle takes effect mid-stream without rebuilding the
+  logger, so no records are lost during the swap.
+- `RUST_LOG` always wins at startup. The toggle takes over at runtime if the user clicks it (it overwrites the atomic
+  directly).

@@ -582,7 +582,7 @@ export const settingsRegistry: SettingDefinition[] = [
     section: ['Developer', 'Logging'],
     label: 'Verbose console output (developer)',
     description:
-      "Increases the level of detail printed to the developer console (frontend logs and the dev terminal). The on-disk log file always captures debug-level detail regardless, so error reports aren't affected by this toggle.",
+      'Bumps the dev terminal and browser devtools console to debug level. The on-disk log file always captures debug detail regardless, so error reports are unaffected by this toggle. RUST_LOG always wins for the terminal.',
     keywords: ['log', 'debug', 'verbose', 'troubleshoot', 'performance', 'console'],
     type: 'boolean',
     default: false,

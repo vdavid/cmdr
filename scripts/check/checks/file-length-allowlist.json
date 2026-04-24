@@ -14,7 +14,7 @@
     "apps/desktop/src-tauri/src/indexing/scanner.rs": 1026,
     "apps/desktop/src-tauri/src/indexing/store.rs": 2142,
     "apps/desktop/src-tauri/src/indexing/writer.rs": 2295,
-    "apps/desktop/src-tauri/src/lib.rs": 1069,
+    "apps/desktop/src-tauri/src/lib.rs": 1103,
     "apps/desktop/src-tauri/src/mcp/resources.rs": 834,
     "apps/desktop/src-tauri/src/mcp/tools.rs": 846,
     "apps/desktop/src-tauri/src/menu/mod.rs": 1000,

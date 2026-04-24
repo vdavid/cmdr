@@ -1,7 +1,8 @@
 # Logging
 
 Unified logging system. Both frontend (Svelte/TS) and backend (Rust) logs appear in the same terminal stream and log
-file, with unified timestamps.
+file, with unified timestamps. The Rust side runs a hand-rolled `fern` dispatch tree with **per-output level filtering**
+— file target stays at Debug regardless of `RUST_LOG` or the verbose toggle, terminal defaults to Info.
 
 ## File map
 
@@ -23,35 +24,35 @@ getAppLogger('feature')
         -> batch for 100ms, dedup consecutive identical entries, throttle 200/s
         -> invoke('batch_fe_logs', entries[])
           -> Rust: log::info!(target: "FE:feature", msg)
-            -> tauri-plugin-log (fern + RUST_LOG parsing)
-              -> terminal (colored, custom short format)
-              -> log file (50 MB per file, KeepSome(N) rotation — N from the cap setting)
+            -> fern Dispatch tree (logging::dispatch)
+              ├── stdout chain (Info default; RUST_LOG / verbose toggle bump it)
+              │     -> stderr (colored, HH:MM:SS.mmm LEVEL target  message)
+              └── file chain (Debug always; absent when cap = 0)
+                    -> file-rotate (50 MB per file, keep-N rotation, plain text)
 ```
 
 ## Key decisions
 
 - **LogTape kept on frontend**: Preserves the `getAppLogger()` API, hierarchical categories, and per-feature debug
   toggles (`debugCategories` array). Only the sink changed.
-- **Custom batch IPC instead of plugin JS API**: `tauri-plugin-log`'s JS API sends one IPC per log. The bridge batches
-  into one call per 100ms, with dedup and throttle -- critical for infinite-loop protection.
-- **RUST_LOG parsed into `level_for()` calls**: `tauri-plugin-log` doesn't support `RUST_LOG` natively. We parse the env
-  var at startup and convert each `module=level` directive into a `.level_for()` call on the builder. This covers all
-  practical use cases (`cmdr_lib::network=debug,smb=warn,info`). No `env_filter` crate needed.
-- **File target captures DEBUG; terminal rides along**: `tauri-plugin-log` doesn't support per-target level filtering,
-  so raising the file target to Debug also raises the terminal target. We accept that — error reports need debug context
-  regardless of the verbose toggle. The `developer.verboseLogging` toggle still controls LogTape's in-RAM level for the
-  frontend sinks (browser devtools console + the FE-side category gating). On the Rust side it flips
-  `log::set_max_level`, which is a no-op when file logging is on (the global floor is already Debug) and a real toggle
-  (Info ↔ Debug) when file logging is disabled via `advanced.maxLogStorageMb = 0`. In short: post-Phase-2 the toggle is
-  primarily a **frontend / dev console** verbosity knob — labelled accordingly in the settings UI ("Verbose console
-  output (developer)") so users don't expect it to gate Rust-side file logging.
-- **`KeepSome(N)` rotation instead of a custom pruner**: `tauri-plugin-log` 2.8.0 exposes `KeepSome(N)` natively. The
-  only gap we fill is an eager-prune on cap-lowered events so the user sees excess files vanish immediately —
-  correctness is already guaranteed by the plugin. See `src-tauri/src/logging/CLAUDE.md`.
-- **One-shot plugin + restart-required for 0 ↔ non-zero transitions**: `tauri_plugin_log::Builder` has no runtime
-  reconfigure API. Changing the log-storage cap between `0` and any non-zero value requires an app restart (the `Folder`
-  target is either present or absent from the plugin). The settings UI shows a "Restart Cmdr to apply" toast for these
-  transitions.
+- **Custom batch IPC instead of plugin JS API**: The bridge batches into one IPC call per 100ms, with dedup and throttle
+  — critical for infinite-loop protection.
+- **Hand-rolled fern dispatch instead of `tauri-plugin-log`**: The plugin routes everything through one shared level. We
+  needed per-output filtering — file at Debug for error reports, terminal at Info for clean dev output. fern's tree of
+  `Dispatch` chains makes this trivial; the plugin made it impossible. See
+  `apps/desktop/src-tauri/src/logging/CLAUDE.md`.
+- **RUST_LOG parsed into `level_for()` calls on the stdout chain only**: same parsing as before, but applied only to
+  stdout. The file chain stays Debug regardless of RUST_LOG. This means `RUST_LOG=cmdr_lib::network=debug,smb=warn,info`
+  controls what the dev sees in the terminal without affecting what error report bundles capture.
+- **`developer.verboseLogging` is meaningful again**: With per-output filtering in place, the toggle now bumps the
+  stdout chain from Info to Debug at runtime via an `AtomicU8` (no dispatch rebuild, no records lost). The file target
+  stays Debug regardless, so error report content is unchanged. Frontend LogTape gating works as before.
+- **file-rotate for size+count rotation**: small, focused crate exposing rotation behind a `Write` impl. Replaced the
+  plugin's built-in rotation. Keep-N is `ceil(cap_mb / 50)` — same math as before. The eager-prune on cap-lowered events
+  still runs so the user sees excess files vanish immediately.
+- **Restart-required for 0 ↔ non-zero transitions**: `file-rotate` is constructed once at startup with its keep-N value.
+  Changing the cap between `0` and any non-zero value requires an app restart (the file chain is either present or
+  absent from the dispatch tree). The settings UI shows a "Restart Cmdr to apply" toast for these transitions.
 
 ## Gotchas
 

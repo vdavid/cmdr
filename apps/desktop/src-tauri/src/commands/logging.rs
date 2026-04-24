@@ -32,7 +32,11 @@ pub fn batch_fe_logs(entries: Vec<FrontendLogEntry>) {
     }
 }
 
-/// Changes the global log level at runtime (called when verbose logging setting is toggled).
+/// Changes the **stdout** log threshold at runtime (called when the
+/// `developer.verboseLogging` setting is toggled).
+///
+/// Per-output filtering: this only affects the terminal/stderr chain. The file chain
+/// stays at Debug regardless, so error report bundles always carry useful context.
 #[tauri::command]
 pub fn set_log_level(level: String) {
     let filter = match level.as_str() {
@@ -43,6 +47,6 @@ pub fn set_log_level(level: String) {
         "trace" => log::LevelFilter::Trace,
         _ => log::LevelFilter::Info,
     };
-    log::set_max_level(filter);
-    log::info!("Log level changed to {filter}");
+    crate::logging::dispatch::set_stdout_threshold(filter);
+    log::info!("Stdout log threshold set to {filter} (file target stays at Debug)");
 }

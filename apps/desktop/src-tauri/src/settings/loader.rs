@@ -167,12 +167,14 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     })
 }
 
-/// Reads `advanced.maxLogStorageMb` from disk *before* the Tauri app handle exists.
+/// Reads `advanced.maxLogStorageMb` from disk *before* the Tauri app handle is wired
+/// into the rest of `setup()`.
 ///
-/// The `tauri-plugin-log` builder runs before `setup()`, so we can't go through the normal
-/// [`load_settings`] path (which needs `AppHandle::path()`). We resolve the data dir from
-/// `CMDR_DATA_DIR` (set by `tauri-wrapper.js` in dev / by E2E harnesses) and otherwise
-/// fall back to the OS-default app-support dir for the `com.veszelovszki.cmdr` bundle.
+/// The fern dispatch tree initializes inside `setup()` but before [`load_settings`] runs
+/// (which itself depends on the resolved app data dir helper). We resolve the data dir
+/// from `CMDR_DATA_DIR` (set by `tauri-wrapper.js` in dev / by E2E harnesses) and
+/// otherwise fall back to the OS-default app-support dir for the `com.veszelovszki.cmdr`
+/// bundle.
 ///
 /// Returns `None` when the file is missing or the key is unset; the caller substitutes the
 /// 200 MB default. Returns `Some(0)` for explicit "log storage disabled".
@@ -192,4 +194,27 @@ pub fn early_load_max_log_storage_mb() -> Option<u64> {
     let contents = fs::read_to_string(&settings_path).ok()?;
     let json: serde_json::Value = serde_json::from_str(&contents).ok()?;
     json.get("advanced.maxLogStorageMb").and_then(|v| v.as_u64())
+}
+
+/// Reads `developer.verboseLogging` from disk *before* the Tauri app handle exists.
+///
+/// Mirrors [`early_load_max_log_storage_mb`]. Used by the logging dispatch builder so
+/// the stdout threshold can start at Debug if the user persisted the verbose toggle.
+/// Returns `None` when the file or key is missing.
+pub fn early_load_verbose_logging() -> Option<bool> {
+    /// Bundle id from `tauri.conf.json`. Mirrored here so this function works without
+    /// the app handle. Keep in sync if the bundle id ever changes.
+    const BUNDLE_ID: &str = "com.veszelovszki.cmdr";
+
+    let data_dir: PathBuf = if let Ok(custom) = std::env::var("CMDR_DATA_DIR") {
+        PathBuf::from(custom)
+    } else {
+        let base = dirs::data_dir()?;
+        base.join(BUNDLE_ID)
+    };
+
+    let settings_path = data_dir.join("settings.json");
+    let contents = fs::read_to_string(&settings_path).ok()?;
+    let json: serde_json::Value = serde_json::from_str(&contents).ok()?;
+    json.get("developer.verboseLogging").and_then(|v| v.as_bool())
 }

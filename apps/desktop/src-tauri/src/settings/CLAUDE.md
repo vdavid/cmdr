@@ -33,14 +33,19 @@ Settings {
 }
 ```
 
-## Early-load helper
+## Early-load helpers
 
-`early_load_max_log_storage_mb()` in `loader.rs` reads `advanced.maxLogStorageMb` from
-`settings.json` *before* the Tauri `AppHandle` exists, so the `tauri-plugin-log` builder
-(which runs in the `.plugin(...)` closure before `.setup()`) can pick a rotation strategy
-from the user's cap. It mirrors the env-var precedence used by `resolved_app_data_dir` but
-resolves the production default via `dirs::data_dir()` + a hard-coded bundle id constant
-(kept in sync with `tauri.conf.json` → `identifier`).
+Two helpers in `loader.rs` read `settings.json` *before* the Tauri `AppHandle` is fully
+wired into `setup()`'s downstream calls — used by the `logging::dispatch` initializer so
+the fern tree's keep-N value and stdout-threshold default both reflect persisted settings:
+
+- `early_load_max_log_storage_mb()` → `Option<u64>` (cap in MB; 0 = disabled).
+- `early_load_verbose_logging()` → `Option<bool>` (sets the initial stdout threshold to
+  Debug if true and `RUST_LOG` is unset).
+
+Both mirror the env-var precedence used by `resolved_app_data_dir` but resolve the
+production default via `dirs::data_dir()` + a hard-coded bundle id constant (kept in
+sync with `tauri.conf.json` → `identifier`).
 
 ## File format
 

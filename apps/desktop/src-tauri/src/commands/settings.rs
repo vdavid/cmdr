@@ -73,8 +73,8 @@ pub fn set_smb_concurrency_cmd(value: u16) {
 /// Updates the in-RAM log-storage cap and runs an eager prune so the user sees excess files
 /// disappear immediately when they lower the cap.
 ///
-/// Note: the actual rotation strategy `tauri-plugin-log` uses is fixed at app start (the
-/// plugin has no runtime reconfigure API). Restart-to-apply is therefore unavoidable for
+/// Note: the actual rotation strategy is fixed at app start (`file-rotate` is constructed
+/// once with its keep-N value). Restart-to-apply is therefore unavoidable for
 /// `0 ↔ non-zero` transitions and for raising the cap above the previously baked-in value.
 /// The frontend toasts a "restart required" notice for those cases.
 ///

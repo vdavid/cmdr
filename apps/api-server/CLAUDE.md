@@ -139,15 +139,15 @@ Current values: stored in David's password store (Bitwarden). The secrets also l
    pnpm --filter @cmdr/api-server exec wrangler secret put R2_ACCESS_KEY_ID
    pnpm --filter @cmdr/api-server exec wrangler secret put R2_SECRET_ACCESS_KEY
    ```
-9. To rotate: create a fresh token first, set the new secrets, deploy, then delete the old token from the R2 API
-   Tokens page.
+9. To rotate: create a fresh token first, set the new secrets, deploy, then delete the old token from the R2 API Tokens
+   page.
 
 **Gotcha when deploying**: if your shell has `CLOUDFLARE_API_TOKEN` set, `wrangler deploy` uses that instead of the
 interactive OAuth login. The token must have the `Workers R2 Storage: Edit` permission or the deploy fails with
-`Authentication error [code: 10000]` on the R2 bucket precheck. Fix at
-https://dash.cloudflare.com/profile/api-tokens. One-shot workaround without editing the token:
-`CLOUDFLARE_API_TOKEN= pnpm --filter @cmdr/api-server exec wrangler deploy` (empties the env var for that command,
-falls back to the OAuth login).
+`Authentication error [code: 10000]` on the R2 bucket precheck. Fix at https://dash.cloudflare.com/profile/api-tokens.
+One-shot workaround without editing the token:
+`CLOUDFLARE_API_TOKEN= pnpm --filter @cmdr/api-server exec wrangler deploy` (empties the env var for that command, falls
+back to the OAuth login).
 
 ### Webhook verification
 

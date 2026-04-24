@@ -1,19 +1,26 @@
 //! Logging support module.
 //!
-//! `tauri-plugin-log` owns the actual log routing (terminal + rotating file). This module
-//! adds the bits the plugin doesn't expose:
+//! Owns the log pipeline end to end via a hand-rolled `fern` Dispatch tree
+//! ([`dispatch::init`]). Replaced `tauri-plugin-log` so we get **per-output level
+//! filtering**: file target stays at Debug (so error report bundles carry useful
+//! context), terminal defaults to Info (less noise for `pnpm dev`).
 //!
-//! - **Resolved log dir cache** ([`set_log_dir`] / [`log_dir`]): the path is derived in `lib.rs`
-//!   from `CMDR_LOG_DIR` / `CMDR_DATA_DIR` / the Tauri default. Phase 4's bundle builder needs
-//!   the same path without re-deriving the env-var logic.
-//! - **Live keep-count** ([`set_keep_count`] / [`keep_count`]): the rotation `KeepSome(N)` value
-//!   the plugin was built with. The plugin is one-shot — changing this at runtime does NOT
-//!   reconfigure the plugin, but [`eager_prune`] uses it to delete excess archived files
-//!   immediately when the user lowers the cap.
-//! - **One-shot pruner** ([`eager_prune`]): for the user-lowered-the-cap case. Files would
-//!   also vanish on the next rotation; this gives the user immediate feedback.
-//! - **Listing helpers** ([`list_recent_log_files`], [`current_total_log_bytes`]): for Phase 4
+//! Public surface:
+//!
+//! - [`dispatch::init`] / [`dispatch::set_stdout_threshold`]: builds the tree + the
+//!   verbose-toggle knob.
+//! - **Resolved log dir cache** ([`set_log_dir`] / [`log_dir`]): the path is derived in
+//!   `lib.rs` from `CMDR_LOG_DIR` / `CMDR_DATA_DIR` / the Tauri default. The error
+//!   reporter bundle builder needs the same path without re-deriving the env-var logic.
+//! - **Live keep-count** ([`set_keep_count`] / [`keep_count`]): the rotation keep-N value
+//!   the file chain was built with. `file-rotate` is one-shot — changing this at runtime
+//!   does NOT reconfigure the chain, but [`eager_prune`] uses it to delete excess
+//!   archived files immediately when the user lowers the cap.
+//! - **One-shot pruner** ([`eager_prune`]): for the user-lowered-the-cap case.
+//! - **Listing helpers** ([`list_recent_log_files`], [`current_total_log_bytes`]): for
 //!   bundle building and diagnostics.
+
+pub mod dispatch;
 
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
