@@ -127,7 +127,7 @@ pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: M
 
     let handle = tauri::async_runtime::spawn(async move {
         if let Err(e) = axum::serve(listener, router).await {
-            log::error!("MCP server crashed: {}", e);
+            crate::log_error!("MCP server crashed: {}", e);
         }
         // Server exited (crash or graceful shutdown) — reset port so
         // is_mcp_running() and get_mcp_actual_port() reflect reality.
@@ -146,7 +146,7 @@ pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: M
 pub fn start_mcp_server_background<R: Runtime + 'static>(app: AppHandle<R>, config: McpConfig) {
     tauri::async_runtime::spawn(async move {
         if let Err(e) = start_mcp_server(app, config).await {
-            log::error!("MCP server failed to start: {}", e);
+            crate::log_error!("MCP server failed to start: {}", e);
         }
     });
 }

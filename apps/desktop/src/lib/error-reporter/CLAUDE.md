@@ -1,15 +1,18 @@
 # Error reporter (frontend)
 
 Flow A — user-initiated "Send error report" UI. Lets the user preview the redacted log bundle, optionally add a note,
-and ship it to the api server. Phase 5 will add the auto-send flow on top of the same Tauri commands.
+and ship it to the api server. Flow B — opt-in auto-send on user-visible errors — is wired here too: a tiny listener
+turns the backend's `error-report-auto-sent` event into a confirmation toast.
 
 ## Files
 
-| File                             | Purpose                                                                |
-| -------------------------------- | ---------------------------------------------------------------------- |
-| `error-report-flow.svelte.ts`    | Reactive store + `openErrorReportDialog(initialNote?)` entry point     |
-| `ErrorReportDialog.svelte`       | Preview-and-send dialog: preview, note textarea, manifest, send/cancel |
-| `ErrorReportToastContent.svelte` | Post-send confirmation toast — shows the server-issued ID + Copy       |
+| File                             | Purpose                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------- |
+| `error-report-flow.svelte.ts`    | Reactive store + `openErrorReportDialog(initialNote?)` entry point (Flow A)           |
+| `ErrorReportDialog.svelte`       | Preview-and-send dialog: preview, note textarea, manifest, send/cancel (Flow A)       |
+| `ErrorReportToastContent.svelte` | Flow A post-send confirmation toast — shows the server-issued ID + Copy               |
+| `auto-send-toast.svelte.ts`      | Flow B listener: subscribes to `error-report-auto-sent`, renders the auto-send toast  |
+| `AutoSendToastContent.svelte`    | Flow B toast UI — title, reference ID, "View" + "Change settings" links, 10 s timeout |
 
 ## Entry points
 
@@ -49,6 +52,23 @@ forward props. Same pattern as `MtpConnectedToastContent`.
 - Hard limit at 100 000 chars (red border, "Send" disabled).
 - Backend command also enforces 100 000 chars — both layers in case the textarea control is bypassed (paste, etc.).
 - Server enforces a separate 10 MB total payload cap, which is mostly hit by logs, not the note.
+
+## Flow B — auto-send toast
+
+When the `updates.errorReports` setting is on, the Rust auto-dispatcher fires `error-report-auto-sent` (payload:
+server-issued report ID) after a successful upload. `auto-send-toast.svelte.ts` listens for that event from the main
+window layout's `onMount` and shows a toast via `addToast(AutoSendToastContent, ...)`:
+
+- **Title**: "Error report sent"
+- **Body**: Reference ID badge.
+- **Actions**: "View" reuses the Flow A preview dialog so the user can inspect what was shipped (the dialog re-builds
+  the bundle locally — deterministic modulo the timestamp). "Change settings" opens the Settings window so they can flip
+  the opt-in flag.
+- **Auto-dismiss after 10 s**, longer than the default 4 s — auto-sent reports are surprising, so the user needs more
+  time to notice and act.
+
+The listener is initialized in `(main)/+layout.svelte` next to the Flow A dialog mount, and torn down in the matching
+`onDestroy`. Idempotent — repeated `init` calls are no-ops.
 
 ## Dev affordance
 

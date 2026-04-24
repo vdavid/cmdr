@@ -415,7 +415,7 @@ pub fn configure_ai<R: Runtime>(
                         Some((pid, port))
                     }
                     Err(e) => {
-                        log::error!("AI configure: couldn't spawn server: {e}");
+                        crate::log_error!("AI configure: couldn't spawn server: {e}");
                         None
                     }
                 }
@@ -434,7 +434,7 @@ pub fn configure_ai<R: Runtime>(
                     log::info!("AI: server ready");
                     let _ = app.emit("ai-server-ready", ());
                 }
-                Err(e) => log::error!("AI manager: server didn't start: {e}"),
+                Err(e) => crate::log_error!("AI manager: server didn't start: {e}"),
             }
             let mut manager = MANAGER.lock_ignore_poison();
             if let Some(ref mut m) = *manager {
@@ -504,7 +504,7 @@ pub fn start_ai_server<R: Runtime>(app: AppHandle<R>, ctx_size: u32) -> Result<(
                     log::info!("AI: server ready");
                     let _ = app.emit("ai-server-ready", ());
                 }
-                Err(e) => log::error!("AI manager: server didn't start: {e}"),
+                Err(e) => crate::log_error!("AI manager: server didn't start: {e}"),
             }
             let mut manager = MANAGER.lock_ignore_poison();
             if let Some(ref mut m) = *manager {

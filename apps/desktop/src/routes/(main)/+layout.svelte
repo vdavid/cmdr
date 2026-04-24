@@ -37,6 +37,10 @@
     import CrashReportToastContent from '$lib/crash-reporter/CrashReportToastContent.svelte'
     import ErrorReportDialog from '$lib/error-reporter/ErrorReportDialog.svelte'
     import { errorReportFlow } from '$lib/error-reporter/error-report-flow.svelte'
+    import {
+        initAutoSendToastListener,
+        cleanupAutoSendToastListener,
+    } from '$lib/error-reporter/auto-send-toast.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import type { Snippet } from 'svelte'
 
@@ -212,6 +216,10 @@
             // Check for pending crash reports from a previous session
             void checkForPendingCrashReport()
 
+            // Listen for Flow B auto-send events so we can show the confirmation toast.
+            // Mounted alongside the Flow A `ErrorReportDialog` for symmetry.
+            void initAutoSendToastListener()
+
             // Start checking for updates (skips in dev mode)
             updateCleanup = startUpdateChecker()
 
@@ -246,6 +254,7 @@
         cleanupSettingsApplier()
         cleanupMcpShortcutsListener()
         cleanupMcpMainBridge()
+        cleanupAutoSendToastListener()
     })
 </script>
 

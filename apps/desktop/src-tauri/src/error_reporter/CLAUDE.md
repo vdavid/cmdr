@@ -39,10 +39,12 @@ SMB URIs, and UNC paths. See the redact module for the full pattern table.
 
 ## Files
 
-| File         | Purpose                                                          |
-| ------------ | ---------------------------------------------------------------- |
-| `mod.rs`     | `build_bundle`, `build_zip`, `generate_short_id`, `upload`, `cap_bundle_to_mb`, `save_bundle_to_disk` (debug) |
-| `tests.rs`   | Unit tests: zip structure, redaction, ID format/uniqueness, capping |
+| File                       | Purpose                                                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `mod.rs`                   | `build_bundle`, `build_zip`, `generate_short_id`, `upload`, `cap_bundle_to_mb`, `save_bundle_to_disk` (debug); also exports the `log_error!` macro |
+| `tests.rs`                 | Unit tests: zip structure, redaction, ID format/uniqueness, capping                                           |
+| `auto_dispatcher.rs`       | Flow B: opt-in auto-send on user-visible errors (60 s ± 10 s debounce, 1 MB tail, no retry on failure)        |
+| `auto_dispatcher_tests.rs` | Unit tests: debounce, opt-in flag, first-call wins, jitter band, crash-loop interaction                       |
 
 ## Two-command frontend split (rationale)
 
@@ -74,6 +76,74 @@ The dialog has an extra "Save bundle to disk (debug)" button in dev that calls
 preview dialog doesn't apply a cap — log lines are already bounded by the rotation cap
 (`advanced.maxLogStorageMb`, default 200 MB → keep up to four 50 MB files). The server
 enforces a 10 MB hard cap anyway.
+
+## Flow B (auto-send on error)
+
+Opt-in via the `updates.errorReports` setting (default off — Flow B sends data without
+per-event consent, so the consent has to be up front). When enabled:
+
+1. The `log_error!` macro routes select call sites through
+   `auto_dispatcher::on_error_logged(category, message)` in addition to the normal
+   `log::error!` emit.
+2. The first error in a 60 s window captures `(category, first_message, error_count = 1)`
+   and schedules a flush at `now + 60 s ± 10 s of jitter`. Subsequent errors in the same
+   window only bump the counter — the first-call metadata is kept verbatim.
+3. When the timer fires: build a bundle (`BundleKind::Auto`, user note carries the count
+   + first-error preview), trim to a 1 MB tail via `cap_bundle_to_mb`, upload, emit
+   `error-report-auto-sent` with the server-issued ID. The frontend listens for that
+   event and shows a confirmation toast (see `apps/desktop/src/lib/error-reporter/`).
+
+### Why jitter?
+
+Without jitter, a global outage (DNS, an upstream API) triggers thousands of users to
+auto-send at the same `now + 60 s` instant. The ±10 s uniform spread costs nothing on
+the client and smears the load over a 20 s window server-side.
+
+### Why no retry on upload failure?
+
+We're already debounced at 60 s. If the network's flaky, the user will hit other errors
+soon and the next debounce window will fire normally. Retrying inside a single dispatch
+risks flooding the server during real outages, and the user still has Flow A as a manual
+safety net.
+
+### Crash-loop interaction (read this!)
+
+If the app exits inside the 60 s debounce window — for example, during a panic — the
+spawned flush task is dropped before it fires. **The auto-dispatcher does not flush on
+shutdown**, by design.
+
+This is fine because:
+
+- **Panics** route through `crash_reporter`, which writes a JSON file synchronously and
+  uploads it on the next launch. That covers the "app died" case end-to-end.
+- **Soft errors** that don't kill the app are exactly what the auto-dispatcher exists
+  for, and the next `log_error!` call after the next launch will start a fresh window.
+
+If a future scenario shows we're losing important reports here, the simplest fix is to
+add a debug-only "flush now" command and let panic hooks call it. Don't add a queue or
+on-disk persistence layer — the manual flow is the safety net (matches the FE log
+bridge's `beforeunload` semantics: best-effort, no durability guarantees).
+
+### `log_error!` convention
+
+Use `log_error!` instead of `log::error!` at user-visible failure sites — anything that
+already produces a user toast or that an end user would describe as "this didn't work."
+Skip noisy library-level errors (`smb2`, `nusb`, etc.); the goal is signal, not coverage.
+
+The macro forwards to `log::error!` unconditionally, then calls
+`auto_dispatcher::on_error_logged(target, message)` which bails out on a single atomic
+load when the opt-in flag is off.
+
+The current set of migrated call sites is small and deliberate; expand it as we discover
+new user-visible errors. Do not bulk-migrate.
+
+### AppHandle wiring
+
+The macro can't thread an `AppHandle` through every call site, so
+`auto_dispatcher::set_app_handle(handle)` stashes one in a `OnceLock` at app startup
+(called from `lib.rs::setup` right after `crash_reporter::init`). If the handle isn't set
+yet (init order, unit tests), the dispatcher still updates the debounce counter but
+silently skips the spawn — acceptable, and matches the "soft errors only" contract.
 
 ## Gotchas
 

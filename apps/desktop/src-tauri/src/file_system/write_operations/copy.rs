@@ -314,11 +314,13 @@ pub(super) fn copy_files_with_progress(
                     }
                 }
             } else {
-                // Non-cancellation error - always rollback
-                log::error!(
+                // Non-cancellation error - always rollback. Routed through `log_error!`
+                // so opt-in users get an auto error report — copy failures are exactly
+                // the kind of "this didn't work" we want signal on.
+                crate::log_error!(
                     "copy_files_with_progress: failed op={} error={:?}, rolling back",
                     operation_id,
-                    e
+                    e,
                 );
                 transaction.rollback();
 

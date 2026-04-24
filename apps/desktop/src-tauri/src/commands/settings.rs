@@ -101,6 +101,13 @@ pub fn set_max_log_storage_mb(value: u64) -> Result<(), String> {
     Ok(())
 }
 
+/// Enable or disable the Flow B error-report auto-dispatcher.
+/// Pushed live from the frontend whenever `updates.errorReports` changes.
+#[tauri::command]
+pub fn set_error_reports_enabled(value: bool) {
+    crate::error_reporter::auto_dispatcher::set_enabled(value);
+}
+
 /// Update menu accelerator for a command.
 /// Called from frontend when keyboard shortcuts are changed.
 #[tauri::command]

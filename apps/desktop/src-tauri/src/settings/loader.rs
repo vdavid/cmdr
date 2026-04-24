@@ -65,6 +65,8 @@ pub struct Settings {
         reason = "Read via early-load helper before plugin init; kept here for completeness"
     )]
     pub max_log_storage_mb: Option<u64>,
+    #[serde(alias = "updates.errorReports", default)]
+    pub error_reports_enabled: Option<bool>,
 }
 
 fn default_show_hidden() -> bool {
@@ -88,6 +90,7 @@ impl Default for Settings {
             disk_space_change_threshold_mb: None,
             smb_concurrency: None,
             max_log_storage_mb: None,
+            error_reports_enabled: None,
         }
     }
 }
@@ -143,6 +146,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         .and_then(|v| v.as_u64())
         .and_then(|v| u16::try_from(v).ok());
     let max_log_storage_mb = json.get("advanced.maxLogStorageMb").and_then(|v| v.as_u64());
+    let error_reports_enabled = json.get("updates.errorReports").and_then(|v| v.as_bool());
 
     Ok(Settings {
         show_hidden_files,
@@ -159,6 +163,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         disk_space_change_threshold_mb,
         smb_concurrency,
         max_log_storage_mb,
+        error_reports_enabled,
     })
 }
 

@@ -357,6 +357,12 @@ pub fn run() {
             // Initialize crash reporter early, before anything that might crash
             crash_reporter::init(app.handle());
 
+            // Stash the AppHandle for the error-report auto-dispatcher (Flow B). The
+            // `log_error!` macro doesn't thread an AppHandle through, so we leave one
+            // here for it to find. Setting the opt-in flag happens further down, once
+            // we've loaded settings.
+            error_reporter::auto_dispatcher::set_app_handle(app.handle().clone());
+
             // Log the resolved app data directory (shows -dev suffix in debug builds)
             config::log_app_data_dir(app.handle());
 
@@ -398,6 +404,10 @@ pub fn run() {
 
             // Load persisted settings early so MTP enabled flag is set before the watcher starts
             let saved_settings = settings::load_settings(app.handle());
+
+            // Apply the Flow B opt-in flag *before* any user-visible error path can fire.
+            // Default off (opt-in by design — Flow B sends data without per-event consent).
+            error_reporter::auto_dispatcher::set_enabled(saved_settings.error_reports_enabled.unwrap_or(false));
 
             // Apply MTP enabled setting (default: true) before starting the watcher
             #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -1069,6 +1079,7 @@ pub fn run() {
             commands::settings::set_filter_safe_save_artifacts_cmd,
             commands::settings::set_smb_concurrency_cmd,
             commands::settings::set_max_log_storage_mb,
+            commands::settings::set_error_reports_enabled,
             // Logging commands (frontend log bridge + runtime level control)
             commands::logging::batch_fe_logs,
             commands::logging::set_log_level,

@@ -277,6 +277,17 @@ export const settingsRegistry: SettingDefinition[] = [
     default: false,
     component: 'switch',
   },
+  {
+    id: 'updates.errorReports',
+    section: ['General', 'Updates'],
+    label: 'Send error reports automatically',
+    description:
+      'Send a small log snippet to the developer when an error occurs. Helps fix bugs faster. Off by default. You can always send a manual report from the Help menu.',
+    keywords: ['error', 'report', 'auto', 'send', 'privacy', 'telemetry', 'bug', 'log', 'snippet', 'diagnostics'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
 
   // ========================================================================
   // Network › SMB/Network shares

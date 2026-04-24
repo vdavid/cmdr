@@ -85,6 +85,20 @@ export async function setMaxLogStorageMb(value: number): Promise<void> {
   await invoke('set_max_log_storage_mb', { value })
 }
 
+/**
+ * Enables or disables the Flow B error-report auto-dispatcher.
+ *
+ * Pushed live from the settings UI whenever `updates.errorReports` changes. Default off
+ * (opt-in by design — Flow B sends a small log snippet on user-visible errors without
+ * per-event consent). Flipping this off doesn't tear down an in-flight debounce window;
+ * the next user-visible error after disable simply doesn't enqueue.
+ *
+ * @param value - True to enable auto-send.
+ */
+export async function setErrorReportsEnabled(value: boolean): Promise<void> {
+  await invoke('set_error_reports_enabled', { value })
+}
+
 // ============================================================================
 // MCP server commands
 // ============================================================================

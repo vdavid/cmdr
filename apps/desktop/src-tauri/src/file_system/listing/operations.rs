@@ -260,7 +260,9 @@ pub fn get_file_at(listing_id: &str, index: usize, include_hidden: bool) -> Resu
     let result = visible_entries(&listing.entries, include_hidden).nth(index).cloned();
     if result.is_none() {
         let total = visible_entries(&listing.entries, include_hidden).count();
-        log::error!(
+        // FE/BE index desync surfaces as broken cursor/selection. Use `log_error!` so
+        // opt-in users help us catch the trigger conditions.
+        crate::log_error!(
             "get_file_at: index {} out of bounds (listing has {} entries) - frontend/backend index mismatch!",
             index,
             total

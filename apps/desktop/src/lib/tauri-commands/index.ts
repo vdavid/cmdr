@@ -291,6 +291,7 @@ export {
   setFilterSafeSaveArtifacts,
   setSmbConcurrency,
   setMaxLogStorageMb,
+  setErrorReportsEnabled,
   setIndexingEnabled,
   getDirStatsBatch,
   getE2eStartPath,

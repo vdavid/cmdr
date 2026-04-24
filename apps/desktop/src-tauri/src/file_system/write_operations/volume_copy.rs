@@ -181,10 +181,12 @@ pub async fn copy_between_volumes(
                     // a user-initiated cancel as an error.
                     log::info!("copy_between_volumes: operation {} cancelled", operation_id_for_cleanup,);
                 } else {
-                    log::error!(
+                    // Toast-visible failure for cross-volume copy (Local↔SMB↔MTP).
+                    // Routed through `log_error!` so opt-in users get an auto report.
+                    crate::log_error!(
                         "copy_between_volumes: operation {} failed: {:?}",
                         operation_id_for_cleanup,
-                        write_err
+                        write_err,
                     );
                     let _ = app_for_error.emit(
                         "write-error",

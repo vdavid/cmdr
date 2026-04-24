@@ -33,6 +33,41 @@ use zip::write::{SimpleFileOptions, ZipWriter};
 #[cfg(test)]
 mod tests;
 
+pub mod auto_dispatcher;
+
+#[cfg(test)]
+mod auto_dispatcher_tests;
+
+/// Log an error and (if Flow B is opted in) feed it to the auto-dispatcher.
+///
+/// Drop-in replacement for [`log::error!`] at user-visible failure sites — anything that
+/// already produces a user-facing toast or that an end user would consider "this didn't
+/// work." Don't migrate noisy library-level errors (`smb2`, `nusb`, etc.); the goal is
+/// signal, not coverage.
+///
+/// The macro evaluates its arguments exactly once. The `format!()` happens whether or not
+/// the auto-dispatcher is enabled — same cost as the underlying `log::error!`. The
+/// dispatcher's hot path bails out on a single atomic load when the opt-in flag is off.
+///
+/// ```ignore
+/// use cmdr_lib::log_error;
+/// log_error!("couldn't mount SMB share at {}: {}", host, err);
+/// log_error!(target: "cmdr_lib::network", "DNS lookup failed: {err}");
+/// ```
+#[macro_export]
+macro_rules! log_error {
+    (target: $target:expr, $($arg:tt)+) => {{
+        let __msg = format!($($arg)+);
+        log::error!(target: $target, "{}", __msg);
+        $crate::error_reporter::auto_dispatcher::on_error_logged($target, &__msg);
+    }};
+    ($($arg:tt)+) => {{
+        let __msg = format!($($arg)+);
+        log::error!("{}", __msg);
+        $crate::error_reporter::auto_dispatcher::on_error_logged(module_path!(), &__msg);
+    }};
+}
+
 /// Same unambiguous alphabet the server uses for license short codes and error report IDs.
 /// Kept in sync with `apps/api-server/src/license.ts` — avoids `0`/`O`, `1`/`I`/`L`.
 const SHORT_ID_ALPHABET: &[u8] = b"23456789ABCDEFGHJKMNPQRSTUVWXYZ";
@@ -49,7 +84,6 @@ const SAMPLE_LAST_LINES: usize = 20;
 #[serde(rename_all = "lowercase")]
 pub enum BundleKind {
     User,
-    #[allow(dead_code, reason = "Used by Phase 5 auto-dispatcher")]
     Auto,
 }
 
@@ -281,7 +315,6 @@ pub async fn upload(zip_bytes: Vec<u8>, manifest: &BundleManifest, server_url: &
 /// (`cmdr.log`) comes before rotated siblings (`cmdr.log.2025-...`) because `.` sorts
 /// before any digit. That means iterating entry-index ascending gives us newest-first
 /// for the log files themselves, which is what we want.
-#[allow(dead_code, reason = "Used by Phase 5 auto-dispatcher")]
 pub fn cap_bundle_to_mb(zip_bytes: Vec<u8>, cap_mb: usize) -> Vec<u8> {
     let cap_bytes = cap_mb * 1024 * 1024;
     if zip_bytes.len() <= cap_bytes {

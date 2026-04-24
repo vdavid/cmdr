@@ -52,7 +52,9 @@ async fn run_watchdog(app: tauri::AppHandle) {
         };
 
         if resident_bytes >= STOP_THRESHOLD {
-            log::error!(
+            // Drives a user-visible toast; exactly the kind of error we want to ship
+            // diagnostic context for when the user has opted in.
+            crate::log_error!(
                 "Memory watchdog: resident memory is {} GB, exceeding {} GB safety limit. \
                  Stopping all indexing to prevent a system crash.",
                 resident_bytes / (1024 * 1024 * 1024),

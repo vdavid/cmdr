@@ -111,6 +111,7 @@ export interface SettingsValues {
   // Updates
   'updates.autoCheck': boolean
   'updates.crashReports': boolean
+  'updates.errorReports': boolean
 
   // Network
   'network.directSmbConnection': boolean

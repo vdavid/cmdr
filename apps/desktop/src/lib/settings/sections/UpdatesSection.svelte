@@ -15,6 +15,7 @@
 
     const autoCheckDef = getSettingDefinition('updates.autoCheck') ?? { label: '', description: '' }
     const crashReportsDef = getSettingDefinition('updates.crashReports') ?? { label: '', description: '' }
+    const errorReportsDef = getSettingDefinition('updates.errorReports') ?? { label: '', description: '' }
 </script>
 
 <SettingsSection title="Updates">
@@ -36,6 +37,16 @@
             {searchQuery}
         >
             <SettingSwitch id="updates.crashReports" />
+        </SettingRow>
+    {/if}
+    {#if shouldShow('updates.errorReports')}
+        <SettingRow
+            id="updates.errorReports"
+            label={errorReportsDef.label}
+            description={errorReportsDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="updates.errorReports" />
         </SettingRow>
     {/if}
 </SettingsSection>

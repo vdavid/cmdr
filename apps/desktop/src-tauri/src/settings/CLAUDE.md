@@ -29,6 +29,7 @@ Settings {
     mtp_enabled: Option<bool>,             // from "fileOperations.mtpEnabled"
     disk_space_change_threshold_mb: Option<u64>, // from "advanced.diskSpaceChangeThreshold"
     max_log_storage_mb: Option<u64>,               // from "advanced.maxLogStorageMb"
+    error_reports_enabled: Option<bool>,           // from "updates.errorReports" (Flow B opt-in, default off)
 }
 ```
 

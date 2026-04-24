@@ -15,6 +15,7 @@ import {
   setFilterSafeSaveArtifacts,
   setSmbConcurrency,
   setMaxLogStorageMb,
+  setErrorReportsEnabled,
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 
@@ -52,6 +53,11 @@ async function applyBackendSettings(): Promise<void> {
   // Service resolve timeout
   const resolveTimeoutMs = getSetting('advanced.serviceResolveTimeout')
   await updateServiceResolveTimeout(resolveTimeoutMs)
+
+  // Error-report auto-dispatcher (Flow B). The backend reads the same value at startup
+  // from settings.json, but pushing it here makes the dev/hot-reload path consistent
+  // and survives the (rare) case where the file's been edited out-of-band.
+  await setErrorReportsEnabled(getSetting('updates.errorReports'))
 
   log.debug('Applied backend settings: debounce={debounce}ms, resolveTimeout={timeout}ms', {
     debounce: debounceMs,
@@ -118,6 +124,10 @@ function handleSettingChange(id: string, value: unknown): void {
     case 'network.smbConcurrency':
       // Update SMB batch-copy concurrency (backend clamps 1..=32)
       void setSmbConcurrency(value as number)
+      break
+    case 'updates.errorReports':
+      // Flip the Flow B opt-in flag in the Rust auto-dispatcher. Default is off.
+      void setErrorReportsEnabled(value as boolean)
       break
     case 'advanced.maxLogStorageMb': {
       const newValue = value as number
