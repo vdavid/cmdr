@@ -274,6 +274,12 @@ pub fn run() {
                 let _ = writeln!(std::io::stderr(), "Failed to install fern logger: {err}");
             }
 
+            // One-shot startup sweep: pre-`319d5d37` `tauri-plugin-log` left rotated files
+            // named `Cmdr_<timestamp>.log` behind. Idempotent. Logs INFO per file removed.
+            if let Some(dir) = logging::log_dir() {
+                logging::cleanup_legacy_log_files(dir);
+            }
+
             // One-line marker so the resolved log-storage state is visible at startup.
             match logging::keep_count() {
                 0 => log::info!(

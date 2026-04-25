@@ -1,5 +1,6 @@
 use super::*;
 use std::collections::{BTreeMap, HashSet};
+use std::time::{Duration, SystemTime};
 use zip::ZipArchive;
 
 fn sample_manifest() -> BundleManifest {
@@ -12,6 +13,14 @@ fn sample_manifest() -> BundleManifest {
         active_settings: ActiveSettings::default(),
         user_note: Some("This thing failed".to_string()),
         generated_at: "2026-04-23T10:00:00+00:00".to_string(),
+    }
+}
+
+/// Build a `PreparedFile` straight from an iterator of lines (strings) plus an mtime.
+fn prepared(lines: Vec<&str>, mtime: SystemTime) -> PreparedFile {
+    PreparedFile {
+        lines: lines.into_iter().map(String::from).collect(),
+        mtime,
     }
 }
 
@@ -28,20 +37,36 @@ fn read_zip_entries(zip_bytes: &[u8]) -> BTreeMap<String, String> {
     out
 }
 
+/// Reads each entry's stored mtime alongside its raw bytes.
+fn read_zip_entries_with_mtime(zip_bytes: &[u8]) -> Vec<(String, ZipDateTime, Vec<u8>)> {
+    let mut archive = ZipArchive::new(std::io::Cursor::new(zip_bytes)).unwrap();
+    let mut out = Vec::new();
+    for i in 0..archive.len() {
+        let mut entry = archive.by_index(i).unwrap();
+        let name = entry.name().to_string();
+        let mtime = entry.last_modified().unwrap_or_default();
+        let mut bytes = Vec::new();
+        entry.read_to_end(&mut bytes).unwrap();
+        out.push((name, mtime, bytes));
+    }
+    out
+}
+
 #[test]
 fn build_zip_contains_manifest_and_log_entries() {
-    let mut files: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    let now = SystemTime::now();
+    let mut files: BTreeMap<String, PreparedFile> = BTreeMap::new();
     files.insert(
         "cmdr.log".to_string(),
-        vec!["redacted line 1".to_string(), "redacted line 2".to_string()],
+        prepared(vec!["redacted line 1", "redacted line 2"], now),
     );
     files.insert(
         "cmdr.log.2025-01-01-00-00-00".to_string(),
-        vec!["older line".to_string()],
+        prepared(vec!["older line"], now - Duration::from_secs(3600)),
     );
 
     let manifest = sample_manifest();
-    let bytes = build_zip(&manifest, &files).unwrap();
+    let bytes = build_zip(&manifest, &files, now).unwrap();
     let entries = read_zip_entries(&bytes);
 
     assert!(entries.contains_key("manifest.json"));
@@ -62,21 +87,22 @@ fn build_zip_contains_manifest_and_log_entries() {
 
 #[test]
 fn redaction_is_applied_to_log_lines() {
+    let now = SystemTime::now();
     // Simulate the bundle-builder pipeline: redact each input line and then zip.
     let raw_lines = [
         "INFO  cmdr_lib::network  Mounted /Users/john/Documents/budget.pdf",
         "WARN  cmdr_lib::mtp  Failed to connect to john@host.local",
         "DEBUG smb2 SMB share at smb://john@nas.local/share/file.txt",
     ];
-    let redacted: Vec<String> = raw_lines
+    let redacted: Vec<&str> = raw_lines
         .iter()
-        .map(|line| redact::redact_line(line).into_owned())
+        .map(|line| Box::leak(redact::redact_line(line).into_owned().into_boxed_str()) as &str)
         .collect();
 
     let mut files = BTreeMap::new();
-    files.insert("cmdr.log".to_string(), redacted);
+    files.insert("cmdr.log".to_string(), prepared(redacted, now));
 
-    let bytes = build_zip(&sample_manifest(), &files).unwrap();
+    let bytes = build_zip(&sample_manifest(), &files, now).unwrap();
     let entries = read_zip_entries(&bytes);
     let log_body = entries.get("logs/cmdr.log").unwrap();
 
@@ -113,18 +139,20 @@ fn short_id_is_statistically_unique() {
 
 #[test]
 fn zip_is_a_valid_zip_archive() {
+    let now = SystemTime::now();
     let mut files = BTreeMap::new();
-    files.insert("cmdr.log".to_string(), vec!["line one".to_string()]);
-    let bytes = build_zip(&sample_manifest(), &files).unwrap();
+    files.insert("cmdr.log".to_string(), prepared(vec!["line one"], now));
+    let bytes = build_zip(&sample_manifest(), &files, now).unwrap();
     let archive = ZipArchive::new(std::io::Cursor::new(&bytes)).unwrap();
     assert!(archive.len() >= 2, "expected at least manifest + one log entry");
 }
 
 #[test]
 fn cap_bundle_is_no_op_when_under_cap() {
+    let now = SystemTime::now();
     let mut files = BTreeMap::new();
-    files.insert("cmdr.log".to_string(), vec!["short".to_string()]);
-    let bytes = build_zip(&sample_manifest(), &files).unwrap();
+    files.insert("cmdr.log".to_string(), prepared(vec!["short"], now));
+    let bytes = build_zip(&sample_manifest(), &files, now).unwrap();
     let original_len = bytes.len();
     let original = bytes.clone();
 
@@ -133,49 +161,68 @@ fn cap_bundle_is_no_op_when_under_cap() {
     assert_eq!(capped, original);
 }
 
-#[test]
-fn cap_bundle_clips_correctly_when_over_cap() {
-    // Build a bundle with several megabytes of log content so capping has work to do.
-    // We need lines that don't compress well, so we use varied pseudo-random tokens
-    // per line — `x`-runs deflate to nothing.
-    let mut files = BTreeMap::new();
-    // Use a strongly-mixed pseudo-random token per line so deflate can't squash everything.
-    // The mixer is splitmix64 — good avalanche, no shared structure between adjacent lines.
-    fn splitmix64(mut x: u64) -> u64 {
-        x = x.wrapping_add(0x9E37_79B9_7F4A_7C15);
-        let mut z = x;
-        z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
-        z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
-        z ^ (z >> 31)
-    }
-    for f in 0u32..10 {
-        let mut lines = Vec::new();
-        for i in 0u32..15_000 {
+/// Generates pseudo-random text that doesn't deflate well, so a 30 MB input stays
+/// 30 MB-ish in the zip too.
+fn splitmix64(mut x: u64) -> u64 {
+    x = x.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    let mut z = x;
+    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    z ^ (z >> 31)
+}
+
+fn synthetic_lines(file_idx: u32, count: u32) -> Vec<String> {
+    (0u32..count)
+        .map(|i| {
             let token: String = (0u32..30)
                 .map(|k| {
-                    let n = splitmix64(((f as u64) << 40) ^ ((i as u64) << 16) ^ k as u64);
+                    let n = splitmix64(((file_idx as u64) << 40) ^ ((i as u64) << 16) ^ k as u64);
                     char::from(33u8 + ((n & 0xFF) as u8 % 90))
                 })
                 .collect();
-            lines.push(format!("INFO file={f} idx={i} body={token}"));
-        }
-        files.insert(format!("cmdr.log.{f:02}"), lines);
-    }
-    let bytes = build_zip(&sample_manifest(), &files).unwrap();
+            format!("INFO file={file_idx} idx={i} body={token}")
+        })
+        .collect()
+}
+
+/// Headline test for fix #6: pre-fix, capping a 30 MB bundle to 1 MB produced a
+/// 542-byte zip with only the manifest. Post-fix: capping trims old content from the
+/// head of the newest file, ships the tail under (or just over) the cap, and proves
+/// the LAST input line survives.
+#[test]
+fn cap_bundle_keeps_newest_lines_and_manifest() {
+    let now = SystemTime::now();
+    let mut files: BTreeMap<String, PreparedFile> = BTreeMap::new();
+    let lines = synthetic_lines(0, 200_000);
+    let last_line = lines.last().cloned().expect("synthetic lines must exist");
+    let lines_owned: Vec<String> = lines;
+    files.insert(
+        "cmdr.log".to_string(),
+        PreparedFile {
+            lines: lines_owned,
+            mtime: now,
+        },
+    );
+
+    let bytes = build_zip(&sample_manifest(), &files, now).unwrap();
     assert!(
-        bytes.len() > 1_500_000,
-        "test setup needs a bigger original bundle (got {} bytes)",
+        bytes.len() > 5_000_000,
+        "test setup needs a bigger input zip (got {} bytes)",
         bytes.len()
     );
 
-    let cap_mb = 1; // tight cap so we definitely trim
+    let cap_mb = 1;
     let capped = cap_bundle_to_mb(bytes.clone(), cap_mb);
 
+    // Tolerance: cap may exceed by ~10% to honor the minimum-tail floor on the newest
+    // file. 1.1 MB is the documented contract.
+    let upper = (cap_mb * 1024 * 1024) * 11 / 10;
     assert!(
-        capped.len() <= cap_mb * 1024 * 1024,
-        "capped bundle is {} bytes, expected <= {} bytes",
+        capped.len() <= upper,
+        "capped bundle is {} bytes, expected <= {} bytes (cap {} MB + 10% headroom)",
         capped.len(),
-        cap_mb * 1024 * 1024
+        upper,
+        cap_mb,
     );
     assert!(
         capped.len() < bytes.len(),
@@ -184,9 +231,193 @@ fn cap_bundle_clips_correctly_when_over_cap() {
         capped.len()
     );
 
-    // Manifest is preserved.
+    // Manifest is preserved verbatim.
     let entries = read_zip_entries(&capped);
+    let manifest_json = entries.get("manifest.json").expect("manifest must survive capping");
+    let parsed: BundleManifest = serde_json::from_str(manifest_json).unwrap();
+    assert_eq!(parsed.id, "ERR-AB23X");
+
+    // `logs/cmdr.log` is present and contains the LAST line of the input — proves we
+    // trimmed from the head, not the tail.
+    let cmdr_log = entries
+        .get("logs/cmdr.log")
+        .expect("the newest log entry must survive capping");
+    assert!(
+        cmdr_log.lines().any(|l| l == last_line),
+        "the LAST input line must survive (got first/last few: {:?} ... {:?})",
+        cmdr_log.lines().take(3).collect::<Vec<_>>(),
+        cmdr_log.lines().rev().take(3).collect::<Vec<_>>(),
+    );
+    // ...and we dropped the FIRST line (otherwise we kept everything, which would
+    // mean the cap didn't actually do anything).
+    assert!(
+        !cmdr_log.contains("idx=0 "),
+        "expected the head to be trimmed; idx=0 still present"
+    );
+}
+
+/// Newer files win the budget race over older files. Even with a tight cap, the
+/// newest file gets its tail in; older files may be dropped entirely.
+#[test]
+fn cap_bundle_prefers_newer_files() {
+    let now = SystemTime::now();
+    let older = now - Duration::from_secs(86_400);
+    let mut files: BTreeMap<String, PreparedFile> = BTreeMap::new();
+    files.insert(
+        "cmdr.log".to_string(),
+        PreparedFile {
+            lines: synthetic_lines(0, 50_000),
+            mtime: now,
+        },
+    );
+    files.insert(
+        "cmdr.log.1".to_string(),
+        PreparedFile {
+            lines: synthetic_lines(1, 50_000),
+            mtime: older,
+        },
+    );
+    let bytes = build_zip(&sample_manifest(), &files, now).unwrap();
+    let capped = cap_bundle_to_mb(bytes, 1);
+    let entries = read_zip_entries(&capped);
+
+    assert!(
+        entries.contains_key("logs/cmdr.log"),
+        "newest file must survive (got entries: {:?})",
+        entries.keys().collect::<Vec<_>>()
+    );
+    // Manifest always present.
     assert!(entries.contains_key("manifest.json"));
-    // At least some `logs/*` entry survived (we want diagnostic content, not just metadata).
-    assert!(entries.keys().any(|k| k.starts_with("logs/")));
+}
+
+/// Fix #1: each entry must carry a real mtime, not the DOS epoch (1980-01-01).
+#[test]
+fn zip_entries_carry_real_mtimes() {
+    let now = SystemTime::now();
+    let log_mtime = now - Duration::from_secs(7200);
+    let mut files: BTreeMap<String, PreparedFile> = BTreeMap::new();
+    files.insert("cmdr.log".to_string(), prepared(vec!["line one"], log_mtime));
+
+    let bytes = build_zip(&sample_manifest(), &files, now).unwrap();
+    let entries = read_zip_entries_with_mtime(&bytes);
+
+    let manifest_mtime = entries
+        .iter()
+        .find(|(name, _, _)| name == "manifest.json")
+        .map(|(_, m, _)| *m)
+        .expect("manifest entry");
+    assert!(
+        manifest_mtime.year() >= 2026,
+        "manifest mtime fell back to the DOS epoch (year={})",
+        manifest_mtime.year()
+    );
+
+    let log_entry_mtime = entries
+        .iter()
+        .find(|(name, _, _)| name == "logs/cmdr.log")
+        .map(|(_, m, _)| *m)
+        .expect("log entry");
+    let expected = zip_dt(log_mtime);
+    assert_eq!(
+        log_entry_mtime.cmp(&expected),
+        std::cmp::Ordering::Equal,
+        "log entry mtime should match the prepared file's mtime (got {log_entry_mtime:?}, expected {expected:?})"
+    );
+}
+
+/// Fix #4: log files older than 24h are filtered out of Flow A bundles.
+#[test]
+fn build_bundle_24h_filter_drops_old_files() {
+    use std::fs;
+
+    let dir = std::env::temp_dir().join(format!(
+        "cmdr-error-reporter-24h-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0),
+    ));
+    fs::create_dir_all(&dir).expect("temp dir");
+
+    // Two files: one that looks fresh, one whose mtime we set to 48h ago via filetime.
+    let fresh = dir.join("cmdr.log");
+    fs::write(&fresh, "fresh line\n").expect("write fresh");
+    let stale = dir.join("cmdr.log.1");
+    fs::write(&stale, "stale line\n").expect("write stale");
+    set_mtime_to_age(&stale, Duration::from_secs(48 * 3600));
+
+    // Drive the file selection logic directly. `build_bundle` requires a Tauri app
+    // handle; the per-file scope filter is exercised via `load_and_filter_log_file`.
+    let now_utc = Utc::now();
+    let now_system = SystemTime::now();
+    let fresh_picked = load_and_filter_log_file(&fresh, BundleScope::Last24Hours, now_utc, now_system);
+    let stale_picked = load_and_filter_log_file(&stale, BundleScope::Last24Hours, now_utc, now_system);
+
+    let (fresh_lines, _) = fresh_picked.expect("fresh file always included");
+    assert!(!fresh_lines.is_empty(), "fresh file lines should be kept");
+
+    let (stale_lines, _) = stale_picked.expect("stale file should be reported, just empty");
+    assert!(
+        stale_lines.is_empty(),
+        "stale (>24h) file lines should be filtered out, got {stale_lines:?}",
+    );
+
+    fs::remove_dir_all(&dir).ok();
+}
+
+/// Fix #5: Flow B's window-anchored scope keeps lines inside `[first - 30 min, now]`
+/// and drops earlier ones when their leading ISO timestamp is parseable.
+#[test]
+fn build_bundle_window_scope_trims_old_lines() {
+    use std::fs;
+
+    let dir = std::env::temp_dir().join(format!(
+        "cmdr-error-reporter-window-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0),
+    ));
+    fs::create_dir_all(&dir).expect("temp dir");
+
+    let now_utc = Utc::now();
+    let first_error_at = now_utc - chrono::Duration::minutes(5);
+    let lower_bound = first_error_at - chrono::Duration::minutes(30);
+    let too_old = lower_bound - chrono::Duration::hours(1);
+    let inside = first_error_at - chrono::Duration::minutes(10);
+
+    let fmt = "%Y-%m-%dT%H:%M:%S%.3f%:z";
+    let log_path = dir.join("cmdr.log");
+    fs::write(
+        &log_path,
+        format!(
+            "{old} OLD line that should be dropped\n{ok} NEW line that should be kept\n",
+            old = too_old.with_timezone(&chrono::Local).format(fmt),
+            ok = inside.with_timezone(&chrono::Local).format(fmt),
+        ),
+    )
+    .expect("write log");
+
+    let now_system = SystemTime::now();
+    let (lines, _) = load_and_filter_log_file(&log_path, BundleScope::Window { first_error_at }, now_utc, now_system)
+        .expect("file should be loaded");
+
+    assert_eq!(lines.len(), 1, "expected exactly one line to survive: {lines:?}");
+    assert!(
+        lines[0].contains("NEW line that should be kept"),
+        "kept the wrong line: {lines:?}"
+    );
+
+    fs::remove_dir_all(&dir).ok();
+}
+
+/// Sets the file's mtime to `now - age` via the `filetime` crate (already in our dep
+/// tree via `file-rotate`). Cross-platform; tests stay dependency-free relative to
+/// what the production crate already pulls in.
+fn set_mtime_to_age(path: &Path, age: Duration) {
+    let target = SystemTime::now()
+        .checked_sub(age)
+        .expect("system clock can produce a target mtime");
+    let ft = filetime::FileTime::from_system_time(target);
+    filetime::set_file_mtime(path, ft).expect("set_file_mtime");
 }

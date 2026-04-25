@@ -56,6 +56,18 @@ pub fn stdout_threshold() -> log::LevelFilter {
     level_filter_from_u8(STDOUT_THRESHOLD.load(Ordering::Relaxed))
 }
 
+/// Renders the current local time as an ISO 8601 stamp with millisecond precision plus
+/// a `±HH:MM` offset (e.g., `2026-04-25T01:18:28.218+02:00`).
+///
+/// File chain only — the stdout chain stays terse with `HH:MM:SS.mmm` because devs
+/// reading the live terminal already know the date and time. The file lives forever and
+/// gets shipped to triage; ISO + offset means a reader anywhere on the planet can pin
+/// down exactly when a line was written. Cheap parsing target for the Flow B
+/// window-anchored bundle, too.
+pub(crate) fn file_timestamp() -> String {
+    chrono::Local::now().format("%Y-%m-%dT%H:%M:%S%.3f%:z").to_string()
+}
+
 fn level_filter_from_u8(v: u8) -> log::LevelFilter {
     match v {
         0 => log::LevelFilter::Off,
@@ -163,11 +175,12 @@ pub fn init(opts: InitOptions) -> Result<(), fern::InitError> {
 
         let file_chain = fern::Dispatch::new()
             .format(|out, message, record| {
-                let now = chrono::Local::now();
-                let ts = now.format("%H:%M:%S%.3f");
                 let target = record.target().strip_prefix("cmdr_lib::").unwrap_or(record.target());
                 let level = record.level();
-                out.finish(format_args!("{ts} {level:<5} {target}  {message}"));
+                out.finish(format_args!(
+                    "{ts} {level:<5} {target}  {message}",
+                    ts = file_timestamp(),
+                ));
             })
             .level(log::LevelFilter::Debug)
             .chain(writer);
@@ -431,6 +444,20 @@ mod tests {
 
         // Restore for sibling tests.
         set_stdout_threshold(log::LevelFilter::Info);
+    }
+
+    /// File-chain timestamps must be ISO 8601 with millisecond precision and a `±HH:MM`
+    /// offset. Triage reads logs from arbitrary timezones — a bare `HH:MM:SS.mmm` with
+    /// no date or offset is impossible to correlate with anything else.
+    #[test]
+    fn file_timestamp_is_iso8601_with_offset() {
+        let ts = file_timestamp();
+        let re =
+            regex::Regex::new(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}$").expect("static regex");
+        assert!(
+            re.is_match(&ts),
+            "file_timestamp `{ts}` doesn't match the ISO-8601-with-offset shape"
+        );
     }
 
     #[test]

@@ -48,10 +48,11 @@ fn touch_log(dir: &Path, name: &str, age_secs: u64) {
 #[test]
 fn list_recent_log_files_sorted() {
     let dir = make_temp_dir("list");
-    // Create in oldest-first order so mtime grows with index.
-    touch_log(&dir, "cmdr.log.2025-01-01-00-00-00", 0);
-    touch_log(&dir, "cmdr.log.2025-01-02-00-00-00", 0);
-    touch_log(&dir, "cmdr.log.2025-01-03-00-00-00", 0);
+    // Create in oldest-first order so mtime grows with index. file-rotate uses
+    // numeric suffixes (`cmdr.log.1`, `.2`, ...), with the live file having no suffix.
+    touch_log(&dir, "cmdr.log.3", 0);
+    touch_log(&dir, "cmdr.log.2", 0);
+    touch_log(&dir, "cmdr.log.1", 0);
     touch_log(&dir, "cmdr.log", 0);
     // Non-log siblings should be ignored.
     fs::write(dir.join("settings.json"), "{}").unwrap();
@@ -62,9 +63,9 @@ fn list_recent_log_files_sorted() {
     // Newest first: cmdr.log was written last.
     let names: Vec<_> = files.iter().map(|p| p.file_name().unwrap().to_str().unwrap()).collect();
     assert_eq!(names[0], "cmdr.log");
-    assert_eq!(names[1], "cmdr.log.2025-01-03-00-00-00");
-    assert_eq!(names[2], "cmdr.log.2025-01-02-00-00-00");
-    assert_eq!(names[3], "cmdr.log.2025-01-01-00-00-00");
+    assert_eq!(names[1], "cmdr.log.1");
+    assert_eq!(names[2], "cmdr.log.2");
+    assert_eq!(names[3], "cmdr.log.3");
 
     fs::remove_dir_all(&dir).ok();
 }
@@ -72,8 +73,9 @@ fn list_recent_log_files_sorted() {
 #[test]
 fn eager_prune_keeps_n_newest() {
     let dir = make_temp_dir("keep-n");
-    for i in 0..5 {
-        touch_log(&dir, &format!("cmdr.log.2025-01-{:02}", i + 1), 0);
+    // Older suffixes touched first so their mtimes are oldest.
+    for i in (1..=5).rev() {
+        touch_log(&dir, &format!("cmdr.log.{i}"), 0);
     }
     touch_log(&dir, "cmdr.log", 0);
     assert_eq!(list_recent_log_files(&dir).len(), 6);
@@ -88,8 +90,8 @@ fn eager_prune_keeps_n_newest() {
         .map(|p| p.file_name().unwrap().to_str().unwrap())
         .collect();
     assert_eq!(names[0], "cmdr.log", "live file must survive");
-    assert!(names[1].contains("2025-01-05"));
-    assert!(names[2].contains("2025-01-04"));
+    assert_eq!(names[1], "cmdr.log.1");
+    assert_eq!(names[2], "cmdr.log.2");
 
     fs::remove_dir_all(&dir).ok();
 }
@@ -97,8 +99,8 @@ fn eager_prune_keeps_n_newest() {
 #[test]
 fn eager_prune_handles_zero() {
     let dir = make_temp_dir("zero");
-    for i in 0..3 {
-        touch_log(&dir, &format!("cmdr.log.2025-01-{:02}", i + 1), 0);
+    for i in 1..=3 {
+        touch_log(&dir, &format!("cmdr.log.{i}"), 0);
     }
     touch_log(&dir, "cmdr.log", 0);
 
@@ -123,9 +125,89 @@ fn eager_prune_handles_missing_dir() {
 fn current_total_log_bytes_sums_only_log_files() {
     let dir = make_temp_dir("bytes");
     fs::write(dir.join("cmdr.log"), b"hello").unwrap();
-    fs::write(dir.join("cmdr.log.old"), b"world!").unwrap();
+    fs::write(dir.join("cmdr.log.1"), b"world!").unwrap();
     fs::write(dir.join("settings.json"), b"ignored").unwrap();
     let total = current_total_log_bytes(&dir);
-    assert_eq!(total, 5 + 6, "only .log* files contribute");
+    assert_eq!(total, 5 + 6, "only active log files contribute");
     fs::remove_dir_all(&dir).ok();
+}
+
+/// Fix #2 (pattern half): the pre-`319d5d37` `tauri-plugin-log` rotation files
+/// (`Cmdr_<timestamp>.log`) must NOT appear in `list_recent_log_files`. They're
+/// cleaned up at startup by `cleanup_legacy_log_files`, but until that sweep runs
+/// we still don't want them polluting bundles.
+#[test]
+fn list_recent_log_files_rejects_legacy_naming() {
+    let dir = make_temp_dir("legacy-pattern");
+    fs::write(dir.join("cmdr.log"), b"live").unwrap();
+    fs::write(dir.join("cmdr.log.1"), b"rotated-1").unwrap();
+    fs::write(dir.join("Cmdr_2026-03-14_20-54-41.log"), b"legacy").unwrap();
+    fs::write(dir.join("Cmdr_old.log"), b"legacy-2").unwrap();
+    fs::write(dir.join("cmdr.logsy"), b"weird suffix").unwrap();
+    fs::write(dir.join("notes.log"), b"unrelated").unwrap();
+
+    let files = list_recent_log_files(&dir);
+    let names: Vec<_> = files.iter().map(|p| p.file_name().unwrap().to_str().unwrap()).collect();
+
+    assert!(names.iter().any(|n| n.eq_ignore_ascii_case("cmdr.log")));
+    assert!(names.iter().any(|n| n.eq_ignore_ascii_case("cmdr.log.1")));
+    assert!(
+        !names.iter().any(|n| n.starts_with("Cmdr_")),
+        "legacy `Cmdr_*.log` must not appear in active list (got {names:?})"
+    );
+    assert!(!names.contains(&"cmdr.logsy"));
+    assert!(!names.contains(&"notes.log"));
+
+    fs::remove_dir_all(&dir).ok();
+}
+
+/// Fix #2 (cleanup half): `cleanup_legacy_log_files` removes legacy rotation files
+/// and leaves the active `cmdr.log` family alone. Idempotent.
+#[test]
+fn cleanup_legacy_log_files_removes_only_legacy() {
+    let dir = make_temp_dir("legacy-cleanup");
+    let live = dir.join("cmdr.log");
+    let rotated = dir.join("cmdr.log.1");
+    let legacy = dir.join("Cmdr_2026-03-14_20-54-41.log");
+    let unrelated = dir.join("notes.log");
+    fs::write(&live, b"live").unwrap();
+    fs::write(&rotated, b"rotated").unwrap();
+    fs::write(&legacy, b"legacy").unwrap();
+    fs::write(&unrelated, b"unrelated").unwrap();
+
+    let removed = cleanup_legacy_log_files(&dir);
+    assert_eq!(removed, 1, "exactly one legacy file should be removed");
+    assert!(live.exists(), "live cmdr.log must survive");
+    assert!(rotated.exists(), "rotated cmdr.log.1 must survive");
+    assert!(!legacy.exists(), "legacy file must be gone");
+    assert!(unrelated.exists(), "unrelated files are not touched");
+
+    // Idempotent: a second sweep removes nothing.
+    let again = cleanup_legacy_log_files(&dir);
+    assert_eq!(again, 0, "second sweep must find nothing");
+
+    fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn is_active_log_file_predicate() {
+    assert!(is_active_log_file("cmdr.log"));
+    assert!(is_active_log_file("Cmdr.log"));
+    assert!(is_active_log_file("cmdr.log.1"));
+    assert!(is_active_log_file("cmdr.log.42"));
+    assert!(!is_active_log_file("cmdr.log."));
+    assert!(!is_active_log_file("cmdr.log.abc"));
+    assert!(!is_active_log_file("Cmdr_2026.log"));
+    assert!(!is_active_log_file("notes.log"));
+    assert!(!is_active_log_file("cmdr.logsy"));
+}
+
+#[test]
+fn is_legacy_log_file_predicate() {
+    assert!(is_legacy_log_file("Cmdr_2026-03-14_20-54-41.log"));
+    assert!(is_legacy_log_file("cmdr_old.log"));
+    assert!(!is_legacy_log_file("cmdr.log"));
+    assert!(!is_legacy_log_file("cmdr.log.1"));
+    assert!(!is_legacy_log_file("Cmdr_.log"));
+    assert!(!is_legacy_log_file("notes.log"));
 }

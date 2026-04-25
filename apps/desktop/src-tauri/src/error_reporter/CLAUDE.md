@@ -70,12 +70,23 @@ reporter's bypass — same reasoning (no production data pollution from dev runs
 The dialog has an extra "Save bundle to disk (debug)" button in dev that calls
 `save_error_report_to_disk` instead, writing the zip to the app data dir for inspection.
 
-## Bundle cap
+## Bundle scope and cap
 
-`cap_bundle_to_mb` is a defensive trimmer used by the Phase 5 auto-dispatcher. Phase 4's
-preview dialog doesn't apply a cap — log lines are already bounded by the rotation cap
-(`advanced.maxLogStorageMb`, default 200 MB → keep up to four 50 MB files). The server
-enforces a 10 MB hard cap anyway.
+`build_bundle` takes a `BundleScope`:
+
+- `BundleScope::Last24Hours` — Flow A. Files whose mtime falls outside the last 24 h are
+  skipped entirely. Capped at 10 MB compressed via `cap_bundle_to_mb` (the same cap the
+  server enforces; we apply it client-side so we don't waste IPC + upload on a payload
+  that'll be rejected).
+- `BundleScope::Window { first_error_at }` — Flow B. The window is
+  `[first_error_at - 30 min, now]`. Files whose mtime is older than the lower bound are
+  skipped; surviving files are line-filtered by parsing the leading ISO-8601 timestamp
+  the file chain writes (see `logging::dispatch::file_timestamp`). Capped at 1 MB.
+
+`cap_bundle_to_mb` trims log content from the **head** of the newest file (line by line)
+rather than dropping whole files. Always preserves `manifest.json` verbatim and the last
+50 lines of the newest file (even if it pushes the cap by ~10%) — better to ship 1.1 MB
+of useful tail than 0 useful lines, which is what the pre-fix-6 implementation did.
 
 ## Flow B (auto-send on error)
 
@@ -157,7 +168,15 @@ the loser just bails.
   subsequent reports until restart. This matches the crash reporter's behavior — the
   whole point is to capture the state the user was in when the failure happened.
 - `build_zip` uses a `BTreeMap` keyed by filename for deterministic ordering. The live
-  `cmdr.log` sorts before rotated `cmdr.log.<timestamp>` siblings because `.` < any
-  digit, so the cap iterator hits newest content first.
+  `cmdr.log` sorts before rotated `cmdr.log.1`/`.2`/... siblings because `.` < any
+  digit, so iterating ascending gives newest-first for the log files themselves.
+- Per-entry mtimes are set explicitly (manifest = `now`, logs = source-file mtime).
+  Without this, the `zip` crate's `SimpleFileOptions::default()` writes 1980-01-01 for
+  every entry — extracted bundles look like ancient archives.
 - Server-side ID generation may differ from the client's local ID. Always trust the
   `id` field in the upload response — that's the one the user reports back to us.
+- `BundleScope::Window` line-trimming relies on the file chain's ISO-8601 timestamp
+  format. Lines without a parseable leading timestamp pass through (the alternative —
+  drop them — risks losing useful context). Pre-fix-3 logs that started with
+  `HH:MM:SS.mmm` will NOT trim by line, only by file mtime. New logs (post fix #3)
+  trim cleanly.

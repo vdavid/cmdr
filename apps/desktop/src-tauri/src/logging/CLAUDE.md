@@ -38,9 +38,10 @@ chains are independent.
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
 | `set_log_dir(path)` / `log_dir()`    | Cache the resolved dir once at logger-init time; the error-report bundle builder reads it back                        |
 | `set_keep_count(n)` / `keep_count()` | Live view of the keep-N value the file chain was built with                                                           |
-| `list_recent_log_files(dir)`         | `*.log*` files newest-first by mtime                                                                                  |
-| `current_total_log_bytes(dir)`       | Sum sizes of `*.log*` files (diagnostic)                                                                              |
-| `eager_prune(dir, keep_n)`           | One-shot: delete everything beyond `keep_n` newest. Used after the user lowers the cap so they see files vanish now. |
+| `list_recent_log_files(dir)`         | Active log files (`cmdr.log` plus `cmdr.log.<digits>`) newest-first by mtime. Rejects legacy `Cmdr_*.log` files       |
+| `current_total_log_bytes(dir)`       | Sum sizes of active log files (diagnostic)                                                                            |
+| `eager_prune(dir, keep_n)`           | One-shot: delete everything beyond `keep_n` newest. Used after the user lowers the cap so they see files vanish now.  |
+| `cleanup_legacy_log_files(dir)`      | One-shot startup sweep: remove `Cmdr_<timestamp>.log` files left over from the pre-`319d5d37` `tauri-plugin-log` setup |
 
 ## Why fern + file-rotate (and not tauri-plugin-log)
 
@@ -97,10 +98,22 @@ the rotator at startup stays. Restart-to-apply is documented in the settings UI 
 - **Stdout chain chains stderr, not stdout**: matches the previous plugin behavior. Devs
   who pipe stdout for parsing don't get logs in their pipe.
 
+## Timestamp formats
+
+- **Stdout chain**: `HH:MM:SS.mmm` — terse, devs reading the live terminal know the date.
+- **File chain**: `YYYY-MM-DDTHH:MM:SS.mmm±HH:MM` (ISO 8601 with millisecond precision
+  and timezone offset). The file lives forever and gets shipped to triage; bare
+  `HH:MM:SS.mmm` is impossible to correlate without context. The error reporter's
+  Flow B bundle parses this stamp to line-trim by timestamp.
+
 ## Gotcha/Why
 
 - `list_recent_log_files` returns `Vec<PathBuf>` in "newest-first by mtime" order. Trust
   mtime, not the filename — `file-rotate` uses `.1`, `.2`, ... suffixes, not timestamps.
+- The active-file pattern is `^cmdr\.log(\.\d+)?$` (case-insensitive). Anything else
+  (the legacy `Cmdr_<timestamp>.log` from the pre-`319d5d37` plugin setup, weird
+  `cmdr.logsy` typos, unrelated `notes.log`s) is rejected. Legacy files are removed
+  on startup by `cleanup_legacy_log_files`.
 - `eager_prune(dir, 0)` wipes everything including the live file; `file-rotate` re-creates
   it on the next write. This is the correct behavior for the "user just disabled logging
   at runtime" path — we stop capturing immediately rather than waiting for the next

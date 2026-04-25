@@ -33,7 +33,8 @@
 //! orphaned window and spawns the flush task with the remaining time. If the deadline
 //! has already elapsed, [`sleep_until`] is a no-op and `flush` runs immediately.
 
-use crate::error_reporter::{self, BundleKind};
+use crate::error_reporter::{self, BundleKind, BundleScope, FLOW_B_BUNDLE_CAP_MB};
+use chrono::{DateTime, Utc};
 use rand::Rng;
 use std::sync::Mutex;
 use std::sync::OnceLock;
@@ -48,10 +49,10 @@ const DEBOUNCE_BASE: Duration = Duration::from_secs(60);
 /// at the same time.
 const JITTER: Duration = Duration::from_secs(10);
 
-/// Tail size for the auto-send bundle. The full preview from Flow A can be up to the
-/// rotation cap (default 200 MB), but Flow B fires without per-event consent, so we ship
-/// the smallest useful slice: just the recent context around the failure.
-const AUTO_BUNDLE_CAP_MB: usize = 1;
+/// Tail size for the auto-send bundle, re-exported from the error_reporter module so
+/// the cap stays in lockstep with the bundle scope (Flow B fires without per-event
+/// consent — small bundle, anchored on the actual error).
+const AUTO_BUNDLE_CAP_MB: usize = FLOW_B_BUNDLE_CAP_MB;
 
 /// Server URL for error report ingestion. Mirrors the commands layer constant.
 #[cfg(debug_assertions)]
@@ -81,6 +82,10 @@ struct DebounceState {
     /// [`set_app_handle`] to compute the remaining delay when a window opened before
     /// the AppHandle was ready, and by tests to assert jitter bounds.
     scheduled_send_at: Instant,
+    /// UTC wall-clock of the first error in the window. Anchors the Flow B bundle
+    /// scope (`first_error_at - 30 min` lower bound). Captured at first-error time so
+    /// the window is stable if the system clock drifts between record and flush.
+    first_error_at: DateTime<Utc>,
     /// True once a flush task has been spawned for this window. If `set_app_handle`
     /// runs after a window opened without the handle, this lets us spawn exactly once
     /// without racing with [`on_error_logged`].
@@ -211,6 +216,7 @@ fn record_error(category: &str, message: &str) -> Option<Instant> {
         first_message: message.to_string(),
         error_count: 1,
         scheduled_send_at,
+        first_error_at: Utc::now(),
         flush_spawned: false,
     });
     Some(scheduled_send_at)
@@ -237,7 +243,10 @@ async fn flush(app: AppHandle<Wry>) {
         msg = state.first_message,
     );
 
-    let bundle = match error_reporter::build_bundle(&app, BundleKind::Auto, Some(note)) {
+    let scope = BundleScope::Window {
+        first_error_at: state.first_error_at,
+    };
+    let bundle = match error_reporter::build_bundle(&app, BundleKind::Auto, Some(note), scope) {
         Ok(b) => b,
         Err(e) => {
             log::warn!(

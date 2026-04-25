@@ -59,11 +59,59 @@ pub fn keep_count() -> usize {
     KEEP_COUNT.load(Ordering::Relaxed)
 }
 
-/// Lists `*.log*` files in the log dir, newest first by mtime.
+/// Returns `true` for filenames `file-rotate` actively manages: `cmdr.log` plus its
+/// numeric-suffixed siblings `cmdr.log.1`, `cmdr.log.2`, ...
+///
+/// Match is case-insensitive so the same predicate works on macOS (where the on-disk
+/// inode often shows up as `Cmdr.log` due to historical casing) and on Linux.
+///
+/// Specifically rejects the pre-`319d5d37` `tauri-plugin-log` rotation pattern
+/// (`Cmdr_<timestamp>.log`) so legacy files left over after the fern refactor don't
+/// pollute error report bundles. Those files are removed by [`cleanup_legacy_log_files`].
+pub(crate) fn is_active_log_file(name: &str) -> bool {
+    let Some(rest) = strip_prefix_ascii_case_insensitive(name, "cmdr.log") else {
+        return false;
+    };
+    if rest.is_empty() {
+        return true;
+    }
+    let Some(suffix) = rest.strip_prefix('.') else {
+        return false;
+    };
+    !suffix.is_empty() && suffix.bytes().all(|b| b.is_ascii_digit())
+}
+
+/// Returns `true` for the legacy `tauri-plugin-log` rotation pattern: `Cmdr_*.log`
+/// (with an underscore separator after the stem and any non-empty middle segment).
+/// Used by [`cleanup_legacy_log_files`] for the one-shot startup sweep.
+pub(crate) fn is_legacy_log_file(name: &str) -> bool {
+    let Some(rest) = strip_prefix_ascii_case_insensitive(name, "cmdr_") else {
+        return false;
+    };
+    let Some(middle) = rest.strip_suffix(".log") else {
+        return false;
+    };
+    !middle.is_empty()
+}
+
+fn strip_prefix_ascii_case_insensitive<'a>(haystack: &'a str, prefix: &str) -> Option<&'a str> {
+    if haystack.len() < prefix.len() {
+        return None;
+    }
+    let (head, tail) = haystack.split_at(prefix.len());
+    if head.eq_ignore_ascii_case(prefix) {
+        Some(tail)
+    } else {
+        None
+    }
+}
+
+/// Lists active log files (`cmdr.log` plus `cmdr.log.<digits>` siblings) in the log dir,
+/// newest first by mtime.
 ///
 /// Returns an empty `Vec` if the directory doesn't exist or can't be read. The "live" file
-/// (no rotation suffix) sorts ahead of archived `cmdr.log.YYYY-MM-DD-HH-MM-SS` siblings as
-/// long as its mtime is fresher, which is the case during normal operation.
+/// (no numeric suffix) sorts ahead of rotated siblings as long as its mtime is fresher,
+/// which is the case during normal operation.
 pub fn list_recent_log_files(log_dir: &Path) -> Vec<PathBuf> {
     let Ok(entries) = std::fs::read_dir(log_dir) else {
         return Vec::new();
@@ -73,10 +121,8 @@ pub fn list_recent_log_files(log_dir: &Path) -> Vec<PathBuf> {
         .filter_map(Result::ok)
         .filter_map(|entry| {
             let path = entry.path();
-            // Match anything containing ".log" — covers `cmdr.log` and rotated
-            // `cmdr.log.2025-01-15-...` siblings without hard-coding a stem.
             let name = path.file_name()?.to_str()?;
-            if !name.contains(".log") {
+            if !is_active_log_file(name) {
                 return None;
             }
             let mtime = entry.metadata().ok()?.modified().ok()?;
@@ -89,7 +135,45 @@ pub fn list_recent_log_files(log_dir: &Path) -> Vec<PathBuf> {
     files.into_iter().map(|(p, _)| p).collect()
 }
 
-/// Sums sizes of all `*.log*` files in the log dir. Returns `0` if the dir is missing.
+/// One-shot sweep: deletes `Cmdr_<timestamp>.log` rotation leftovers from the legacy
+/// `tauri-plugin-log` setup. Idempotent — subsequent runs find nothing.
+///
+/// Logs one INFO line per deleted file so operators can see the cleanup happen on
+/// upgrade. Per-file errors are logged at WARN and don't abort the sweep. Returns the
+/// number of files removed.
+pub fn cleanup_legacy_log_files(log_dir: &Path) -> usize {
+    let Ok(entries) = std::fs::read_dir(log_dir) else {
+        return 0;
+    };
+    let mut deleted = 0usize;
+    for entry in entries.filter_map(Result::ok) {
+        let path = entry.path();
+        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+        if !is_legacy_log_file(name) {
+            continue;
+        }
+        match std::fs::remove_file(&path) {
+            Ok(()) => {
+                deleted += 1;
+                log::info!(
+                    target: "cmdr_lib::logging",
+                    "Removed legacy log file {}",
+                    path.display(),
+                );
+            }
+            Err(err) => log::warn!(
+                target: "cmdr_lib::logging",
+                "Failed to remove legacy log file {}: {err}",
+                path.display(),
+            ),
+        }
+    }
+    deleted
+}
+
+/// Sums sizes of all active log files in the log dir. Returns `0` if the dir is missing.
 #[allow(dead_code, reason = "Diagnostic helper; wired up by Phase 4 bundle manifest")]
 pub fn current_total_log_bytes(log_dir: &Path) -> u64 {
     list_recent_log_files(log_dir)
