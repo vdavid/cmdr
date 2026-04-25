@@ -797,7 +797,7 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
         .map_err(|e| format!("Failed to read downloaded model file: {e}"))?;
 
     if actual_size < model.size_bytes {
-        log::error!(
+        crate::log_error!(
             "AI download: model file size mismatch. Expected {} bytes, got {} bytes",
             model.size_bytes,
             actual_size
@@ -880,7 +880,7 @@ async fn wait_for_server_health(ai_dir: &Path, pid: u32, port: u16) -> Result<()
     if !is_process_alive(pid) {
         cleanup_failed_server(pid);
         let last_lines = read_log_tail(ai_dir, 20);
-        log::error!("AI server: process died immediately. Last log lines:\n{last_lines}");
+        crate::log_error!("AI server: process died immediately. Last log lines:\n{last_lines}");
         let log_path = ai_dir.join(SERVER_LOG_FILENAME);
         return Err(format!("llama-server crashed on startup. Check log at: {log_path:?}"));
     }
@@ -892,7 +892,7 @@ async fn wait_for_server_health(ai_dir: &Path, pid: u32, port: u16) -> Result<()
         if !is_process_alive(pid) {
             cleanup_failed_server(pid);
             let last_lines = read_log_tail(ai_dir, 20);
-            log::error!("AI server: process died during startup. Last log lines:\n{last_lines}");
+            crate::log_error!("AI server: process died during startup. Last log lines:\n{last_lines}");
             return Err(format!("llama-server process (PID {pid}) died during startup"));
         }
 
@@ -912,7 +912,7 @@ async fn wait_for_server_health(ai_dir: &Path, pid: u32, port: u16) -> Result<()
     // Timed out — kill the process instead of leaving it orphaned
     cleanup_failed_server(pid);
     let last_lines = read_log_tail(ai_dir, 20);
-    log::error!("AI server: health check timed out. Last log lines:\n{last_lines}");
+    crate::log_error!("AI server: health check timed out. Last log lines:\n{last_lines}");
     Err(String::from("llama-server failed to become healthy within 60s"))
 }
 

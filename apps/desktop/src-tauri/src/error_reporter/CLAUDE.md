@@ -4,6 +4,14 @@ Builds a privacy-redacted zip bundle of recent log files plus a JSON manifest, t
 prod) ships it to `POST /error-report` on the api server. Used by the user-initiated
 "Send error report" flow in Phase 4 and the auto-send flow in Phase 5.
 
+## Convention
+
+**Use `log_error!` at all error-level sites in the desktop crate.** If a failure is
+recoverable, expected, or not user-impacting, downgrade to `log::warn!` — don't reach
+for `log::error!` to dodge the dispatcher. The error-level threshold IS the auto-report
+threshold. The `scripts/check.sh` `log-error-macro` check enforces this and will fail
+on any new raw `log::error!` site outside the macro definition itself.
+
 ## What we send
 
 Bundle layout:
@@ -75,9 +83,10 @@ The dialog has an extra "Save bundle to disk (debug)" button in dev that calls
 `build_bundle` takes a `BundleScope`:
 
 - `BundleScope::Last24Hours` — Flow A. Files whose mtime falls outside the last 24 h are
-  skipped entirely. Capped at 10 MB compressed via `cap_bundle_to_mb` (the same cap the
-  server enforces; we apply it client-side so we don't waste IPC + upload on a payload
-  that'll be rejected).
+  skipped entirely. Capped at 1 MB compressed via `cap_bundle_to_mb`. (Lowered from 10 MB
+  after QA: 10 MB compressed = ~190 MB uncompressed, way more than triage needs. The
+  server still enforces its own 10 MB ceiling — we apply the smaller client-side cap so
+  the user's upload is fast and the bundle's tail stays useful.)
 - `BundleScope::Window { first_error_at }` — Flow B. The window is
   `[first_error_at - 30 min, now]`. Files whose mtime is older than the lower bound are
   skipped; surviving files are line-filtered by parsing the leading ISO-8601 timestamp

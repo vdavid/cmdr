@@ -88,6 +88,16 @@ var AllChecks = []CheckDefinition{
 		Run:               RunCfgGate,
 	},
 	{
+		ID:                "desktop-rust-log-error-macro",
+		Nickname:          "log-error-macro",
+		DisplayName:       "log-error-macro",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		Run:               RunLogErrorMacro,
+	},
+	{
 		ID:                "desktop-rust-tests",
 		Nickname:          "rust-tests",
 		DisplayName:       "tests",

@@ -36,7 +36,7 @@ async fn ensure_search_index() -> Result<Arc<search::SearchIndex>, ToolError> {
 
     // Not loaded — load synchronously via spawn_blocking
     let pool = crate::indexing::get_read_pool().ok_or_else(|| {
-        log::error!("MCP ai_search: drive index not available (no read pool)");
+        crate::log_error!("MCP ai_search: drive index not available (no read pool)");
         ToolError::internal(
             "Drive index not available. Make sure indexing is enabled and the initial scan has completed.",
         )
@@ -51,11 +51,11 @@ async fn ensure_search_index() -> Result<Arc<search::SearchIndex>, ToolError> {
     let index = tokio::task::spawn_blocking(move || search::load_search_index(&pool, &cancel_clone))
         .await
         .map_err(|e| {
-            log::error!("MCP ai_search: search index load spawn_blocking failed: {e}");
+            crate::log_error!("MCP ai_search: search index load spawn_blocking failed: {e}");
             ToolError::internal(format!("Search index load failed: {e}"))
         })?
         .map_err(|e| {
-            log::error!("MCP ai_search: search index load failed: {e}");
+            crate::log_error!("MCP ai_search: search index load failed: {e}");
             ToolError::internal(format!("Search index load failed: {e}"))
         })?;
 
@@ -384,7 +384,7 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
             idx
         }
         Err(e) => {
-            log::error!("MCP ai_search: search index load failed: {}", e.message);
+            crate::log_error!("MCP ai_search: search index load failed: {}", e.message);
             return Err(e);
         }
     };
@@ -432,11 +432,11 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
             result
         }
         Ok(Err(e)) => {
-            log::error!("MCP ai_search: search failed (postprocess): {}", e.message);
+            crate::log_error!("MCP ai_search: search failed (postprocess): {}", e.message);
             return Err(e);
         }
         Err(e) => {
-            log::error!("MCP ai_search: spawn_blocking failed (task join): {e}");
+            crate::log_error!("MCP ai_search: spawn_blocking failed (task join): {e}");
             return Err(ToolError::internal(format!("Search failed: {e}")));
         }
     };
@@ -470,11 +470,11 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
                 (result, fallback_query)
             }
             Ok(Err(e)) => {
-                log::error!("MCP ai_search: fallback search failed: {}", e.message);
+                crate::log_error!("MCP ai_search: fallback search failed: {}", e.message);
                 return Err(e);
             }
             Err(e) => {
-                log::error!("MCP ai_search: fallback spawn_blocking failed: {e}");
+                crate::log_error!("MCP ai_search: fallback spawn_blocking failed: {e}");
                 return Err(ToolError::internal(format!("Search failed: {e}")));
             }
         }

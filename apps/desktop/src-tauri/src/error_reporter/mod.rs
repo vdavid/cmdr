@@ -114,9 +114,13 @@ const FLOW_B_PRE_ERROR_WINDOW: chrono::Duration = chrono::Duration::minutes(30);
 /// Last-24-hour cutoff for Flow A.
 const FLOW_A_MAX_AGE: chrono::Duration = chrono::Duration::hours(24);
 
-/// Hard cap for Flow A bundles.
-pub const FLOW_A_BUNDLE_CAP_MB: usize = 10;
-/// Hard cap for Flow B bundles. Smaller because Flow B fires without per-event consent.
+/// Hard cap for Flow A bundles. 1 MB compressed lands at roughly 19 MB uncompressed,
+/// which still gives plenty of recent log context. Lowered from the original 10 MB
+/// after live QA showed user-initiated bundles routinely topped 100 MB uncompressed —
+/// excessive for triage when the tail of the most recent file is what we actually need.
+pub const FLOW_A_BUNDLE_CAP_MB: usize = 1;
+/// Hard cap for Flow B bundles. Same 1 MB ceiling as Flow A; both flows ship the same
+/// shape of payload, so there's no good reason to diverge.
 pub const FLOW_B_BUNDLE_CAP_MB: usize = 1;
 
 /// Always preserve at least this many lines of the most recent file, even if the cap

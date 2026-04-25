@@ -37,8 +37,8 @@ pub struct SendResult {
 /// Build the bundle in-memory and return preview metadata. No network. No disk writes.
 /// The zip bytes are dropped after measuring so we don't ferry MB across IPC.
 ///
-/// Scope: last 24 hours of log content, capped at 10 MB compressed (see
-/// [`error_reporter::cap_bundle_to_mb`]).
+/// Scope: last 24 hours of log content, capped at 1 MB compressed (see
+/// [`error_reporter::cap_bundle_to_mb`] and [`FLOW_A_BUNDLE_CAP_MB`]).
 #[tauri::command]
 pub async fn prepare_error_report_preview(
     app: tauri::AppHandle,

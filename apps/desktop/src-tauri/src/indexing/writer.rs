@@ -605,7 +605,7 @@ fn handle_insert_entries_v2(
     accumulator.accumulate(&entries);
     let t = Instant::now();
     if let Err(e) = IndexStore::insert_entries_v2_batch(conn, &entries) {
-        log::error!("Index writer: insert_entries_v2_batch failed: {e}");
+        crate::log_error!("Index writer: insert_entries_v2_batch failed: {e}");
     }
     let elapsed = t.elapsed().as_millis();
     if elapsed > 100 {
