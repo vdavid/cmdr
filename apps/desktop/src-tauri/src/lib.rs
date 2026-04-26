@@ -38,9 +38,12 @@ use smb2 as _;
 use trash as _;
 
 //noinspection ALL
-// keyring crate is used in secrets/keyring_linux.rs for credential storage (Linux only)
+// keyring-core + the zbus secret-service backend are used in secrets/keyring_linux.rs
+// for credential storage (Linux only).
 #[cfg(target_os = "linux")]
-use keyring as _;
+use keyring_core as _;
+#[cfg(target_os = "linux")]
+use zbus_secret_service_keyring_store as _;
 //noinspection ALL
 // MCP Bridge is only used in debug builds, so silence the warning in release builds
 #[cfg(not(debug_assertions))]

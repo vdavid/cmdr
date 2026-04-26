@@ -106,8 +106,13 @@ tauri-plugin-window-state = "2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 trash = "5.2"
-# Credential storage via Linux secret service (GNOME Keyring / KDE Wallet)
-keyring = "3"
+# Credential storage via Linux secret service (GNOME Keyring / KDE Wallet).
+# `keyring` 4.0 was a full architectural rewrite — the cross-platform API moved to
+# `keyring-core` and each backend (Secret Service, etc.) is a separate crate. Picking
+# the zbus-based backend keeps everything pure-Rust and matches our existing tokio +
+# zbus + RustCrypto stack — no system libdbus needed at build time.
+keyring-core = "1"
+zbus-secret-service-keyring-store = { version = "1", features = ["rt-tokio-crypto-rust"] }
 # Encrypted file-based credential storage fallback when no secret service is available
 cocoon = "0.4"
 # D-Bus client for XDG Desktop Portal (accent color, appearance settings)
