@@ -65,6 +65,7 @@ async fn test_get_total_count_with_hidden_includes_all() {
                 sort_order: SortOrder::Ascending,
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: std::sync::atomic::AtomicU64::new(0),
+                created_at: std::time::Instant::now(),
             },
         );
     }
@@ -97,6 +98,7 @@ async fn test_get_total_count_without_hidden_excludes_dot_files() {
                 sort_order: SortOrder::Ascending,
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: std::sync::atomic::AtomicU64::new(0),
+                created_at: std::time::Instant::now(),
             },
         );
     }
@@ -133,6 +135,7 @@ async fn test_get_file_range_with_hidden_returns_all() {
                 sort_order: SortOrder::Ascending,
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: std::sync::atomic::AtomicU64::new(0),
+                created_at: std::time::Instant::now(),
             },
         );
     }
@@ -170,6 +173,7 @@ async fn test_get_file_range_without_hidden_excludes_dot_files() {
                 sort_order: SortOrder::Ascending,
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: std::sync::atomic::AtomicU64::new(0),
+                created_at: std::time::Instant::now(),
             },
         );
     }
@@ -211,6 +215,7 @@ async fn test_get_file_range_pagination_respects_hidden_filter() {
                 sort_order: SortOrder::Ascending,
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: std::sync::atomic::AtomicU64::new(0),
+                created_at: std::time::Instant::now(),
             },
         );
     }
@@ -259,6 +264,7 @@ async fn test_find_file_index_hidden_file_with_hidden_enabled() {
                 sort_order: SortOrder::Ascending,
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: std::sync::atomic::AtomicU64::new(0),
+                created_at: std::time::Instant::now(),
             },
         );
     }
@@ -290,6 +296,7 @@ async fn test_find_file_index_hidden_file_with_hidden_disabled() {
                 sort_order: SortOrder::Ascending,
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: std::sync::atomic::AtomicU64::new(0),
+                created_at: std::time::Instant::now(),
             },
         );
     }
@@ -321,6 +328,7 @@ async fn test_find_file_index_visible_file_index_changes_with_hidden_setting() {
                 sort_order: SortOrder::Ascending,
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: std::sync::atomic::AtomicU64::new(0),
+                created_at: std::time::Instant::now(),
             },
         );
     }
@@ -369,6 +377,7 @@ async fn test_get_file_at_index_0_with_hidden_enabled() {
                 sort_order: SortOrder::Ascending,
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: std::sync::atomic::AtomicU64::new(0),
+                created_at: std::time::Instant::now(),
             },
         );
     }
@@ -406,6 +415,7 @@ async fn test_get_file_at_index_0_with_hidden_disabled() {
                 sort_order: SortOrder::Ascending,
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: std::sync::atomic::AtomicU64::new(0),
+                created_at: std::time::Instant::now(),
             },
         );
     }
@@ -452,6 +462,7 @@ async fn test_directory_with_only_hidden_files() {
                 sort_order: SortOrder::Ascending,
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: std::sync::atomic::AtomicU64::new(0),
+                created_at: std::time::Instant::now(),
             },
         );
     }
@@ -488,6 +499,7 @@ async fn test_directory_with_no_hidden_files() {
                 sort_order: SortOrder::Ascending,
                 directory_sort_mode: DirectorySortMode::LikeFiles,
                 sequence: std::sync::atomic::AtomicU64::new(0),
+                created_at: std::time::Instant::now(),
             },
         );
     }
@@ -520,6 +532,7 @@ fn insert_test_listing(id: &str, entries: Vec<FileEntry>) -> String {
             sort_order: SortOrder::Ascending,
             directory_sort_mode: DirectorySortMode::LikeFiles,
             sequence: std::sync::atomic::AtomicU64::new(0),
+            created_at: std::time::Instant::now(),
         },
     );
     listing_id

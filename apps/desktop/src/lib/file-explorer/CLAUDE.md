@@ -189,6 +189,13 @@ classification or OS-specific logic):
   12s ago")
 - **"Open System Settings" button**: shown for permission-denied errors on macOS (reuses `openPrivacySettings()`)
 - **Collapsible "Technical details"**: shows the raw errno name and code for power users / bug reports
+- **Markdown links**: anchors in the explanation/suggestion are routed through a click delegate.
+  `x-apple.systempreferences:` URLs go through `openSystemSettingsUrl()` (a dedicated Rust IPC, since Tauri's opener
+  plugin only allows http/https/mailto/tel by default). Other URLs go through `openExternalUrl()`. Anchors override the
+  global `cursor: default` with `cursor: pointer`.
+- **⌘C / ⌘A in this pane**: the dispatcher's text-region intercept (`command-dispatch.ts :: handleTextRegionShortcut`)
+  treats `.error-pane` as a text zone. ⌘C copies the text selection; ⌘A selects the whole pane (including hidden
+  `<details>` content). Neither logs `FE:user-action` nor fires file-scope behavior.
 
 ### For future agents
 

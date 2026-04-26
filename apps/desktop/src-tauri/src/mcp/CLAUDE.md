@@ -36,7 +36,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 
 ### Resources (`resources.rs`)
 
-- `cmdr://state`: Complete app state in YAML (both panes, volumes, dialogs). Includes MTP volumes with `name` and `id`, and per-pane `volumeId`.
+- `cmdr://state`: Complete app state in YAML (both panes, volumes, dialogs, active `listings` cache). Includes MTP volumes with `name` and `id`, and per-pane `volumeId`. The `listings` section reflects every entry in `LISTING_CACHE` (id, volumeId, path, entry count, ageMs) — useful for triaging orphan listings in error reports.
 - `cmdr://dialogs/available`: Static metadata about available dialogs
 - `cmdr://indexing`: Drive indexing status in plain text (current phase, timeline history, DB stats). Calls `indexing::get_debug_status()` and formats as human-readable text.
 - `cmdr://settings`: All settings with current values, defaults, types, and constraints. Fetched via round-trip to the frontend (`mcp-get-all-settings` event).

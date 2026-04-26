@@ -952,18 +952,24 @@ pub fn run() {
             permissions::open_privacy_settings,
             #[cfg(target_os = "macos")]
             permissions::open_appearance_settings,
+            #[cfg(target_os = "macos")]
+            permissions::open_system_settings_url,
             #[cfg(target_os = "linux")]
             permissions_linux::check_full_disk_access,
             #[cfg(target_os = "linux")]
             permissions_linux::open_privacy_settings,
             #[cfg(target_os = "linux")]
             permissions_linux::open_appearance_settings,
+            #[cfg(target_os = "linux")]
+            permissions_linux::open_system_settings_url,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::permissions::check_full_disk_access,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::permissions::open_privacy_settings,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::permissions::open_appearance_settings,
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+            stubs::permissions::open_system_settings_url,
             // Crash reporter commands
             commands::crash_reporter::check_pending_crash_report,
             commands::crash_reporter::dismiss_crash_report,
@@ -972,6 +978,7 @@ pub fn run() {
             commands::error_reporter::prepare_error_report_preview,
             commands::error_reporter::send_error_report,
             commands::error_reporter::record_user_action,
+            commands::error_reporter::record_breadcrumb,
             commands::error_reporter::record_settings_defaults,
             #[cfg(debug_assertions)]
             commands::error_reporter::save_error_report_to_disk,

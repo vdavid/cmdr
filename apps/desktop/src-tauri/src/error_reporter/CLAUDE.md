@@ -44,6 +44,14 @@ Manifest fields (`BundleManifest`):
 - `lastUserAction` (optional): last command dispatched through
   `handleCommandExecute` (`{commandId, at}`). Populated by the FE via
   `record_user_action`; `None` if the user hadn't acted yet at error time.
+  This is being deprecated in favor of `breadcrumbs` (which carry the same
+  data plus more); kept for now so older bundles parse cleanly.
+- `breadcrumbs`: rolling window of the most recent ~50 FE/BE events (oldest
+  first). Each entry is `{ at, kind, message, ctx? }`. Populated via the
+  `record_breadcrumb` Tauri command (FE wrapper:
+  `apps/desktop/src/lib/error-reporter/breadcrumbs.ts::recordBreadcrumb`).
+  Backend code can call `error_reporter::breadcrumbs::record(...)` directly.
+  See "Breadcrumbs" below.
 - `userNote` (optional): user-supplied free text. Trimmed; capped at 100 000 chars by the
   Tauri command layer.
 - `generatedAt`: ISO 8601 UTC timestamp.
@@ -72,6 +80,7 @@ SMB URIs, and UNC paths. See the redact module for the full pattern table.
 | `tests.rs`                 | Unit tests: zip structure, redaction, ID format/uniqueness, capping                                           |
 | `auto_dispatcher.rs`       | Flow B: opt-in auto-send on user-visible errors (60 s ± 10 s debounce, 1 MB tail, no retry on failure)        |
 | `auto_dispatcher_tests.rs` | Unit tests: debounce, opt-in flag, first-call wins, jitter band, crash-loop interaction                       |
+| `breadcrumbs.rs`           | Bounded ring buffer of recent FE/BE triage events (capacity 50). Snapshot is shipped in the manifest.         |
 
 ## Two-command frontend split (rationale)
 
@@ -219,6 +228,33 @@ up the orphaned window and spawns the flush task with the remaining time. If the
 deadline has already passed, the spawned task fires immediately. The `mark_flush_spawned`
 helper plus the late-arrival path in `set_app_handle` race against each other safely —
 the loser just bails.
+
+## Breadcrumbs
+
+A bounded ring buffer (capacity 50) of recent triage events. Each `Breadcrumb`
+is `{ at: ISO-8601, kind: String, message: String, ctx: Option<JSON> }`. The
+buffer's snapshot is included in `BundleManifest::breadcrumbs`. Empty buffers
+are omitted from JSON via `skip_serializing_if = "Vec::is_empty"`.
+
+Conventions for `kind`:
+
+- `command` — keyboard / palette / menu commands (auto-recorded by
+  `record_user_action`).
+- `nav` — navigation transitions (path or pane change).
+- `dialog` — open/close of major modals.
+- `transfer` — copy / move / delete lifecycle events.
+- `error-shown` — friendly error displayed to the user.
+
+Wire new event sources from the FE via
+`apps/desktop/src/lib/error-reporter/breadcrumbs.ts::recordBreadcrumb`. Wire
+backend events via `error_reporter::breadcrumbs::record(...)`. Both are
+fire-and-forget — failures (e.g. lock poisoning, IPC unavailable) are silent
+because breadcrumbs are best-effort instrumentation, not a feature.
+
+The `last_user_action` manifest field is being phased out — `breadcrumbs` of
+`kind: "command"` carry the same data plus arbitrary structured context. Keep
+`last_user_action` shipping for now so existing bundle viewers don't choke,
+but new code should rely on `breadcrumbs` for triage.
 
 ## Gotchas
 

@@ -6,13 +6,14 @@ turns the backend's `error-report-auto-sent` event into a confirmation toast.
 
 ## Files
 
-| File                             | Purpose                                                                               |
-| -------------------------------- | ------------------------------------------------------------------------------------- |
-| `error-report-flow.svelte.ts`    | Reactive store + `openErrorReportDialog(initialNote?)` entry point (Flow A)           |
-| `ErrorReportDialog.svelte`       | Preview-and-send dialog: preview, note textarea, manifest, send/cancel (Flow A)       |
-| `ErrorReportToastContent.svelte` | Flow A post-send confirmation toast — shows the server-issued ID + Copy               |
-| `auto-send-toast.svelte.ts`      | Flow B listener: subscribes to `error-report-auto-sent`, renders the auto-send toast  |
-| `AutoSendToastContent.svelte`    | Flow B toast UI — title, reference ID, "View" + "Change settings" links, 10 s timeout |
+| File                             | Purpose                                                                                                                                                                                                                                                                      |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `error-report-flow.svelte.ts`    | Reactive store + `openErrorReportDialog(initialNote?)` entry point (Flow A)                                                                                                                                                                                                  |
+| `ErrorReportDialog.svelte`       | Preview-and-send dialog: preview, note textarea, manifest, send/cancel (Flow A)                                                                                                                                                                                              |
+| `ErrorReportToastContent.svelte` | Flow A post-send confirmation toast — shows the server-issued ID + Copy                                                                                                                                                                                                      |
+| `auto-send-toast.svelte.ts`      | Flow B listener: subscribes to `error-report-auto-sent`, renders the auto-send toast                                                                                                                                                                                         |
+| `AutoSendToastContent.svelte`    | Flow B toast UI — title, reference ID, "View" + "Change settings" links, 10 s timeout                                                                                                                                                                                        |
+| `breadcrumbs.ts`                 | Thin `recordBreadcrumb(kind, message, ctx?)` wrapper around the `record_breadcrumb` IPC. Fire-and-forget; failures swallowed. Wire from FE event handlers to add triage context to error report bundles. See `error_reporter/CLAUDE.md` § Breadcrumbs for backend semantics. |
 
 ## Entry points
 

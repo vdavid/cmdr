@@ -37,6 +37,7 @@ use zip::write::{SimpleFileOptions, ZipWriter};
 mod tests;
 
 pub mod auto_dispatcher;
+pub mod breadcrumbs;
 
 #[cfg(test)]
 mod auto_dispatcher_tests;
@@ -243,6 +244,11 @@ pub struct BundleManifest {
     /// user hadn't done anything yet (e.g. the very first error after launch).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_user_action: Option<UserAction>,
+    /// Rolling window of recent FE/BE events that led up to the bundle build, oldest
+    /// first. Empty when nothing was recorded (e.g. very early failures, tests).
+    /// See `breadcrumbs.rs` for the buffer semantics.
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub breadcrumbs: Vec<breadcrumbs::Breadcrumb>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user_note: Option<String>,
     pub generated_at: String,
@@ -371,6 +377,7 @@ pub fn build_bundle<R: tauri::Runtime>(
         active_settings: cached_active_settings(app).clone(),
         log_levels: build_log_level_snapshot(),
         last_user_action: user_action::last(),
+        breadcrumbs: breadcrumbs::snapshot(),
         user_note: user_note.and_then(|n| {
             let trimmed = n.trim();
             if trimmed.is_empty() {

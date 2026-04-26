@@ -403,6 +403,22 @@ pub async fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> 
                 }
             }
 
+            // Active listings — every entry currently in LISTING_CACHE. Helps triage
+            // bugs caused by orphan listings (started but not bound to a pane) and
+            // race conditions involving in-flight directory loads.
+            let listings = crate::file_system::listing::caching::snapshot_listings();
+            if listings.is_empty() {
+                yaml.push_str("listings: []\n");
+            } else {
+                yaml.push_str("listings:\n");
+                for l in &listings {
+                    yaml.push_str(&format!(
+                        "  - id: {}\n    volumeId: {}\n    path: {:?}\n    entries: {}\n    ageMs: {}\n",
+                        l.listing_id, l.volume_id, l.path, l.entry_count, l.age_ms
+                    ));
+                }
+            }
+
             (yaml, "text/yaml")
         }
         "cmdr://dialogs/available" => {

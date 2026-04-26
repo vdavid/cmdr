@@ -124,6 +124,9 @@ Always use the checker script for compilation, linting, formatting, and tests. I
 - **Crash reports**: When the app crashes, it writes a crash file to the data dir (`crash-report.json` alongside
   `settings.json`). On next launch, the app detects this file and offers to send a crash report. See
   `src-tauri/src/crash_reporter/CLAUDE.md` for architecture details.
+- **Error reports**: When triaging an error report bundle (zip + `manifest.json`), read
+  `src-tauri/src/error_reporter/CLAUDE.md` first — it documents the bundle layout, what each piece captures, and the
+  redaction conventions.
 - **Hot reload**: `pnpm dev` hot-reloads. Max 15s for Rust, max 3s for frontend.
 - **Index DB queries**: The index SQLite DB uses a custom `platform_case` collation, so the `sqlite3` CLI can't query
   it. Use `cargo run -p index-query -- <db_path> "<sql>"` instead. See

@@ -134,6 +134,13 @@ bus.
 uFuzzy uses this flat format for performance. The code unpacks ranges into individual character indices for
 `matchedIndices`. If you change the highlighting approach, you need to understand this flat layout — `end` is exclusive.
 
+**Gotcha**: `handleCommandExecute` intercepts `edit.copy` and `selection.selectAll` BEFORE logging when the user's
+selection is inside an opt-in text region (`.error-pane` or `[data-text-region]`). **Why**: The native macOS Edit menu's
+accelerators (⌘C, ⌘A) fire through this dispatcher even when the user is selecting/copying plain text in the ErrorPane.
+Without the early bail, every text copy would log `FE:user-action edit.copy` and trigger file-scope side effects (file
+copy, file select-all) — polluting the user-action log used for rollback and breaking the user's expectation that ⌘C/⌘A
+do text things in selectable regions. See `handleTextRegionShortcut` in `command-dispatch.ts`.
+
 **Gotcha**: Adding a command with a menu item requires changes in four places. **Why**: The menu system (Rust) and
 command system (TypeScript) are separate codebases connected by string IDs. The four places are: (1)
 `command-registry.ts`, (2) `handleCommandExecute` switch in `command-dispatch.ts`, (3) `menu.rs` ID mappings, (4)

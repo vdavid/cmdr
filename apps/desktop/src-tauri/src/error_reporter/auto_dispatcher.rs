@@ -309,6 +309,11 @@ async fn flush(app: AppHandle<Wry>) {
     let capped = error_reporter::cap_bundle_to_mb(bundle.zip_bytes, AUTO_BUNDLE_CAP_MB);
     match error_reporter::upload(capped, &bundle.manifest, ERROR_REPORT_URL).await {
         Ok(result) => {
+            log::info!(
+                target: "cmdr_lib::error_reporter",
+                "Auto-send: error report uploaded, id={}",
+                result.id,
+            );
             if let Err(e) = app.emit(AUTO_SENT_EVENT, &result.id) {
                 log::warn!(
                     target: "cmdr_lib::error_reporter",

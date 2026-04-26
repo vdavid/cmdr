@@ -152,6 +152,23 @@ export async function openPrivacySettings(): Promise<void> {
   }
 }
 
+/**
+ * Opens an `x-apple.systempreferences:` deep link via `open(1)` on macOS.
+ *
+ * Used by friendly-error markdown links (e.g. iCloud TCC hint) that point at
+ * specific System Settings panes. We don't go through `openExternalUrl` because
+ * the Tauri opener plugin's default URL allowlist (http/https/mailto/tel) rejects
+ * the `x-apple.systempreferences:` scheme silently. The Rust-side command also
+ * validates the scheme, so passing arbitrary URLs through here is safe.
+ */
+export async function openSystemSettingsUrl(url: string): Promise<void> {
+  try {
+    await invoke('open_system_settings_url', { url })
+  } catch {
+    // Command not available (non-macOS) or URL rejected — silently fail
+  }
+}
+
 /** Opens the system appearance settings. On macOS, opens System Settings > Appearance. On Linux, opens the DE-specific appearance settings. */
 export async function openAppearanceSettings(): Promise<void> {
   try {

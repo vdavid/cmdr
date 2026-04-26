@@ -14,7 +14,7 @@ use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
 use crate::file_system::volume::VolumeError;
 use crate::file_system::volume::friendly_error::{
-    FriendlyError, enrich_with_provider, friendly_error_from_volume_error,
+    FriendlyError, enrich_with_provider, friendly_error_for_restricted_empty_root, friendly_error_from_volume_error,
 };
 use crate::file_system::watcher::start_watching;
 
@@ -499,6 +499,7 @@ pub(crate) async fn read_directory_with_progress(
                 sort_order,
                 directory_sort_mode: dir_sort_mode,
                 sequence: std::sync::atomic::AtomicU64::new(0),
+                created_at: std::time::Instant::now(),
             },
         );
     }
@@ -513,10 +514,25 @@ pub(crate) async fn read_directory_with_progress(
     }
 
     // Get volume root for the event (used by frontend to determine if at volume root)
-    let volume_root = crate::file_system::get_volume_manager()
-        .get(volume_id)
-        .map(|v| v.root().to_string_lossy().to_string())
+    let volume = crate::file_system::get_volume_manager().get(volume_id);
+    let volume_root_path = volume.as_ref().map(|v| v.root().to_path_buf());
+    let volume_root = volume_root_path
+        .as_ref()
+        .map(|p| p.to_string_lossy().to_string())
         .unwrap_or_else(|| "/".to_string());
+
+    // Restricted-empty hint: if the listing succeeded but came back empty AT the
+    // volume root, and the volume is one we know is commonly hidden by macOS TCC
+    // (e.g. iCloud Drive without Full Disk Access), surface a friendly hint instead
+    // of a blank pane. Real "I have zero files at the volume root" is rare enough
+    // that this hint is acceptable noise — and the FE shows a "Try again" button.
+    if total_count == 0
+        && volume_root_path.as_deref() == Some(path)
+        && let Some(friendly) = friendly_error_for_restricted_empty_root(volume_id, path)
+    {
+        events.emit_error(listing_id, friendly.raw_detail.clone(), Some(friendly));
+        return Ok(());
+    }
 
     // Emit completion event
     events.emit_complete(listing_id, total_count, max_filename_width, volume_root);

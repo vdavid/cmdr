@@ -47,7 +47,21 @@ pub fn record_user_action(command_id: String) {
     if command_id.is_empty() || command_id.chars().count() > MAX_COMMAND_ID_CHARS {
         return;
     }
-    error_reporter::user_action::record(command_id);
+    error_reporter::user_action::record(command_id.clone());
+    // Same event also lands in the breadcrumb stream so triagers see it in context
+    // alongside other FE events. Eventually `record_user_action` should be removed
+    // entirely in favor of breadcrumbs (last_user_action becomes a derived view).
+    error_reporter::breadcrumbs::record("command", &command_id, None);
+}
+
+/// Records a freeform breadcrumb event for the error-report manifest.
+///
+/// Called from FE event handlers (navigation, dialog open/close, etc.) to add
+/// triage context. Validation matches `record_user_action`: empty inputs and
+/// over-long fields are dropped silently. `ctx` is an optional structured payload.
+#[tauri::command]
+pub fn record_breadcrumb(kind: String, message: String, ctx: Option<serde_json::Value>) {
+    error_reporter::breadcrumbs::record(&kind, &message, ctx);
 }
 
 #[derive(Debug, Serialize)]
@@ -110,6 +124,12 @@ pub async fn save_error_report_to_disk(app: tauri::AppHandle, user_note: Option<
     let mut bundle = error_reporter::build_bundle(&app, BundleKind::User, note, BundleScope::Last24Hours)?;
     bundle.zip_bytes = error_reporter::cap_bundle_to_mb(bundle.zip_bytes, FLOW_A_BUNDLE_CAP_MB);
     let path = error_reporter::save_bundle_to_disk(&app, &bundle)?;
+    log::info!(
+        target: "cmdr_lib::error_reporter",
+        "Saved error report bundle to disk: id={} path={}",
+        bundle.manifest.id,
+        path.display(),
+    );
     Ok(path.display().to_string())
 }
 

@@ -45,6 +45,7 @@ fn insert_test_listing(id: &str, entries: Vec<FileEntry>) -> String {
             sort_order: SortOrder::Ascending,
             directory_sort_mode: DirectorySortMode::LikeFiles,
             sequence: std::sync::atomic::AtomicU64::new(0),
+            created_at: std::time::Instant::now(),
         },
     );
     listing_id

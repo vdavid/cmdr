@@ -30,6 +30,27 @@ pub fn open_appearance_settings() -> Result<(), String> {
     Ok(())
 }
 
+/// Opens an `x-apple.systempreferences:` deep link.
+///
+/// The frontend uses this for friendly-error markdown links that point at specific
+/// System Settings panes. We don't go through the Tauri opener plugin because its
+/// default URL allowlist only covers `http`/`https`/`mailto`/`tel` and would reject
+/// the `x-apple.systempreferences:` scheme silently. Restricting the input to that
+/// scheme keeps the surface tight (no arbitrary URL execution from the webview).
+#[tauri::command]
+pub fn open_system_settings_url(url: String) -> Result<(), String> {
+    if !url.starts_with("x-apple.systempreferences:") {
+        return Err(format!(
+            "Refusing to open URL with scheme other than `x-apple.systempreferences:`: {url}"
+        ));
+    }
+    std::process::Command::new("open")
+        .arg(&url)
+        .spawn()
+        .map_err(|e| format!("Failed to open System Settings: {}", e))?;
+    Ok(())
+}
+
 /// Checks if an I/O error is a permission denied error.
 #[allow(dead_code, reason = "Utility for future use")]
 pub fn is_permission_denied_error(error: &std::io::Error) -> bool {

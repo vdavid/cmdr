@@ -46,7 +46,9 @@ Frontend                          Backend
 
 **LISTING_CACHE**: Global `RwLock<HashMap<String, CachedListing>>`
 **Key**: `listing_id` (UUID per navigation)
-**Value**: `CachedListing { volume_id, path, entries, sort_by, sort_order, directory_sort_mode, sequence }`
+**Value**: `CachedListing { volume_id, path, entries, sort_by, sort_order, directory_sort_mode, sequence, created_at }`
+
+**Triage helper**: `caching::snapshot_listings()` returns a lightweight summary of every active listing (id, volume, path, entry count, age). Used by `cmdr://state` so error reports surface orphan listings (started but not bound to a pane).
 
 **Lifecycle**:
 1. `list_directory_start_streaming()` receives listing ID from frontend, spawns task

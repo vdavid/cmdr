@@ -60,6 +60,7 @@ fn insert_test_listing_on_volume(
             sort_order,
             directory_sort_mode: dir_sort_mode,
             sequence: std::sync::atomic::AtomicU64::new(0),
+            created_at: std::time::Instant::now(),
         },
     );
     listing_id

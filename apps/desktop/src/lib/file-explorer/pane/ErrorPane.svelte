@@ -3,7 +3,7 @@
     import IconCircleAlert from '~icons/lucide/circle-alert'
     import IconTriangleAlert from '~icons/lucide/triangle-alert'
     import type { FriendlyError } from '../types'
-    import { openPrivacySettings } from '$lib/tauri-commands'
+    import { openExternalUrl, openPrivacySettings, openSystemSettingsUrl } from '$lib/tauri-commands'
     import { isMacOS } from '$lib/shortcuts/key-capture'
     import Button from '$lib/ui/Button.svelte'
     import { renderErrorMarkdown } from './error-pane-utils'
@@ -33,6 +33,25 @@
         retryTimestamps = [...retryTimestamps, Date.now()]
         now = Date.now()
         onRetry?.()
+    }
+
+    /**
+     * Route anchor clicks inside the markdown blocks. `x-apple.systempreferences:` URLs
+     * go through a dedicated Rust IPC because Tauri's opener plugin only allows
+     * http/https/mailto/tel by default and would silently swallow them. Everything else
+     * goes through the standard external opener. The friendly-error markdown is
+     * backend-controlled (no user input), so no URL allowlisting is needed here.
+     */
+    function handleMarkdownLinkClick(e: MouseEvent) {
+        const link = (e.target instanceof Element ? e.target : null)?.closest('a')
+        const href = link?.getAttribute('href')
+        if (!link || !href) return
+        e.preventDefault()
+        if (href.startsWith('x-apple.systempreferences:')) {
+            void openSystemSettingsUrl(href)
+        } else {
+            void openExternalUrl(href)
+        }
     }
 
     function formatRelativeTime(timestampMs: number, currentMs: number): string {
@@ -75,12 +94,12 @@
         </h2>
         <p class="folder-path">{folderPath}</p>
 
-        <div class="explanation">
+        <div class="explanation" onclick={handleMarkdownLinkClick}>
             <!-- eslint-disable-next-line svelte/no-at-html-tags -- Input is our own hardcoded strings from Rust, not user content -->
             {@html renderErrorMarkdown(friendly.explanation)}
         </div>
 
-        <div class="suggestion">
+        <div class="suggestion" onclick={handleMarkdownLinkClick}>
             <!-- eslint-disable-next-line svelte/no-at-html-tags -- Input is our own hardcoded strings from Rust, not user content -->
             {@html renderErrorMarkdown(friendly.suggestion)}
         </div>
@@ -179,6 +198,8 @@
     .suggestion :global(a) {
         color: var(--color-accent-text);
         text-decoration: underline;
+        /* The global `cursor: default` on html overrides the anchor's default pointer. */
+        cursor: pointer;
     }
 
     .explanation :global(a:hover),

@@ -35,6 +35,8 @@ KNOWN_VOLUMES: OnceLock<Mutex<HashSet<String>>>
 
 `path_to_id` (keep only alphanumeric + `-`, lowercase, `/` → `"root"`) is `pub(crate)` in `mod.rs` and called from `watcher.rs`. The constant `DEFAULT_VOLUME_ID = "root"` is defined in `mod.rs` and used in both files.
 
+`ICLOUD_VOLUME_ID = "cloud-icloud"` is also exported from `mod.rs`. iCloud Drive is the only cloud-drive entry that gets a hardcoded ID (others are derived from their `~/Library/CloudStorage/<provider>` directory names). Cross-module callers should use the constant — `file_system/volume/friendly_error.rs` matches the literal string with a sync-point comment because `crate::volumes` is macOS-only and can't be imported from the cross-platform `friendly_error` module.
+
 ## Volume space
 
 `get_volume_space(path)` uses `NSURLVolumeTotalCapacityKey` and `NSURLVolumeAvailableCapacityForImportantUsageKey` (falls back to `NSURLVolumeAvailableCapacityKey`). Returns `None` for non-existent paths.

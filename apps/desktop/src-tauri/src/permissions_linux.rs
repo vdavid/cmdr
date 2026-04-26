@@ -20,6 +20,12 @@ pub fn open_privacy_settings() -> Result<(), String> {
     Err("Privacy settings aren't needed on Linux — file access is governed by standard Unix permissions, not app sandboxing.".to_string())
 }
 
+/// Stub: `x-apple.systempreferences:` URLs only exist on macOS.
+#[tauri::command]
+pub fn open_system_settings_url(_url: String) -> Result<(), String> {
+    Err("System Settings deep links only exist on macOS.".to_string())
+}
+
 /// Opens the system appearance settings via the desktop environment.
 /// Detects the DE from `$XDG_CURRENT_DESKTOP` and launches the appropriate settings app.
 /// When the env var is empty (common when launching via SSH), tries commands in order.

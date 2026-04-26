@@ -54,6 +54,11 @@ pub struct LocationInfo {
 /// Default volume ID for the root filesystem.
 pub const DEFAULT_VOLUME_ID: &str = "root";
 
+/// Volume ID for the iCloud Drive cloud drive entry. Hardcoded here so callers
+/// outside this module (e.g. `friendly_error::friendly_error_for_restricted_empty_root`)
+/// can match against it without a stringly-typed coupling. Renames break the build.
+pub const ICLOUD_VOLUME_ID: &str = "cloud-icloud";
+
 /// Determine whether a filesystem type supports trash.
 ///
 /// Local filesystems (APFS, HFS+, ext4, btrfs, xfs, zfs) support trash.
@@ -533,7 +538,7 @@ pub fn get_cloud_drives() -> Vec<LocationInfo> {
         let fs_type = get_fs_type(&icloud_path_str);
         let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
         drives.push(LocationInfo {
-            id: "cloud-icloud".to_string(),
+            id: ICLOUD_VOLUME_ID.to_string(),
             name: "iCloud Drive".to_string(),
             path: icloud_path_str,
             category: LocationCategory::CloudDrive,

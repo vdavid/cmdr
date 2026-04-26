@@ -36,9 +36,61 @@ export interface CommandDispatchContext {
   dialogs: CommandDispatchDialogs
 }
 
+/**
+ * Returns the closest selectable-text container (e.g. `ErrorPane`) the current text
+ * selection sits in, or `null` if the selection isn't inside one. Even a collapsed
+ * selection counts (the user clicked into the region), so ⌘A works without prior
+ * highlighting. Add `data-text-region` to opt new components into this routing.
+ */
+function activeTextRegion(): Element | null {
+  const sel = window.getSelection()
+  const anchor = sel?.anchorNode
+  if (!anchor) return null
+  const el = anchor.nodeType === Node.ELEMENT_NODE ? (anchor as Element) : anchor.parentElement
+  return el?.closest('.error-pane, [data-text-region]') ?? null
+}
+
+/**
+ * Intercepts text-region shortcuts (⌘C, ⌘A) BEFORE the dispatcher logs or records
+ * the action, so selecting text in the ErrorPane and copying it doesn't pollute the
+ * user-action log used for rollback context — and doesn't fire file-scope side
+ * effects (copy files, select all files). Returns `true` if the shortcut was handled.
+ *
+ * For `edit.copy` we only intercept when the selection is non-collapsed (something is
+ * actually selected); otherwise we fall through so the file copy path can run.
+ */
+function handleTextRegionShortcut(commandId: string): boolean {
+  if (commandId !== 'edit.copy' && commandId !== 'selection.selectAll') return false
+  const region = activeTextRegion()
+  if (!region) return false
+
+  if (commandId === 'edit.copy') {
+    const text = window.getSelection()?.toString() ?? ''
+    if (!text) return false
+    void navigator.clipboard.writeText(text)
+    return true
+  }
+
+  // selection.selectAll — replace the current selection with the whole region.
+  // Includes hidden content inside collapsed <details>, which is what the user
+  // actually wants when copying error context (technical details included).
+  const range = document.createRange()
+  range.selectNodeContents(region)
+  const sel = window.getSelection()
+  sel?.removeAllRanges()
+  sel?.addRange(range)
+  return true
+}
+
 // eslint-disable-next-line complexity -- Command dispatcher handles many cases; switch is the clearest pattern
 export async function handleCommandExecute(commandId: string, ctx: CommandDispatchContext): Promise<void> {
   const explorerRef = ctx.getExplorer()
+
+  // Bail before logging if the user's intent is text manipulation in a selectable
+  // region. Native menu accelerators (⌘C, ⌘A) flow through here even when focus is
+  // outside the file pane, so without this guard every text copy would log
+  // `edit.copy` / `selection.selectAll` and trigger file-scope behavior.
+  if (handleTextRegionShortcut(commandId)) return
 
   // Breadcrumb: every keyboard / palette / menu command flows through here. Info-level
   // → goes through the LogTape → Rust bridge → fern file chain so the breadcrumb shows
@@ -336,6 +388,16 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
       ) {
         // eslint-disable-next-line @typescript-eslint/no-deprecated -- No modern alternative for triggering native copy in text inputs
         document.execCommand('copy')
+        return
+      }
+      // If the user has selected text anywhere with `user-select: text`
+      // (for example, the ErrorPane), prefer copying that text over the file
+      // selection. Note: the +page.svelte global keydown bail doesn't help on
+      // macOS, where the native Edit > Copy menu accelerator fires before JS
+      // sees the keydown — this branch is the actual entry point in that case.
+      const selection = window.getSelection()
+      if (selection && !selection.isCollapsed && selection.toString().length > 0) {
+        void navigator.clipboard.writeText(selection.toString())
         return
       }
       void explorerRef?.copyToClipboard()

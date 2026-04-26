@@ -1008,6 +1008,13 @@
             return
         }
 
+        // Empty listing at a volume root (no ".." synthetic entry, no real entries):
+        // calling getFileAt(0) here would log a spurious FE/BE index-mismatch error.
+        if (totalCount === 0) {
+            entryUnderCursor = null
+            return
+        }
+
         // Adjust index for ".." entry
         const backendIndex = hasParent ? cursorIndex - 1 : cursorIndex
 

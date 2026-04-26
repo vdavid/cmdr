@@ -25,3 +25,9 @@ pub fn open_privacy_settings() -> Result<(), String> {
 pub fn open_appearance_settings() -> Result<(), String> {
     Err("Appearance settings not available on Linux".to_string())
 }
+
+/// Opens an `x-apple.systempreferences:` URL (stub: not applicable on this platform).
+#[tauri::command]
+pub fn open_system_settings_url(_url: String) -> Result<(), String> {
+    Err("System Settings deep links only exist on macOS.".to_string())
+}

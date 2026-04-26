@@ -10,6 +10,8 @@
  * focus/Escape handling.
  */
 
+import { recordBreadcrumb } from './breadcrumbs'
+
 interface FlowState {
   open: boolean
   initialNote: string
@@ -27,9 +29,11 @@ export const errorReportFlow = $state<FlowState>({
 export function openErrorReportDialog(initialNote?: string): void {
   errorReportFlow.initialNote = initialNote ?? ''
   errorReportFlow.open = true
+  recordBreadcrumb('error-report', 'dialog-opened', initialNote ? { hasInitialNote: true } : undefined)
 }
 
 export function closeErrorReportDialog(): void {
   errorReportFlow.open = false
   errorReportFlow.initialNote = ''
+  recordBreadcrumb('error-report', 'dialog-closed')
 }

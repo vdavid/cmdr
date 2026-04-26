@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{LazyLock, RwLock};
+use std::time::Instant;
 
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, entry_comparator};
@@ -58,6 +59,42 @@ pub(crate) struct CachedListing {
     /// Lives on the listing so it works for all volume types, including SMB/MTP
     /// which don't use the FSEvents-based `WatchedDirectory`.
     pub sequence: AtomicU64,
+    /// When this listing was created. Used by `snapshot_listings` for triage —
+    /// surfacing orphan listings (e.g., volume dropdown previews) in error reports.
+    pub created_at: Instant,
+}
+
+/// Lightweight summary of one cached listing, for `snapshot_listings`.
+pub struct ListingSummary {
+    pub listing_id: String,
+    pub volume_id: String,
+    pub path: PathBuf,
+    pub entry_count: usize,
+    pub age_ms: u128,
+}
+
+/// Returns a snapshot of every active listing in the cache. Used by `cmdr://state`
+/// so triagers can spot orphan listings (started but never bound to a pane —
+/// for example, when a volume dropdown commits a navigation that the user then
+/// abandons or that surfaces an error).
+pub fn snapshot_listings() -> Vec<ListingSummary> {
+    let cache = match LISTING_CACHE.read() {
+        Ok(c) => c,
+        Err(_) => return Vec::new(),
+    };
+    let now = Instant::now();
+    let mut out: Vec<ListingSummary> = cache
+        .iter()
+        .map(|(id, listing)| ListingSummary {
+            listing_id: id.clone(),
+            volume_id: listing.volume_id.clone(),
+            path: listing.path.clone(),
+            entry_count: listing.entries.len(),
+            age_ms: now.saturating_duration_since(listing.created_at).as_millis(),
+        })
+        .collect();
+    out.sort_by_key(|a| a.age_ms);
+    out
 }
 
 /// Finds all cached listings whose directory path matches `parent_path`.

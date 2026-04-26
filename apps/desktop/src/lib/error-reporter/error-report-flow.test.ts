@@ -6,8 +6,12 @@
  * so this is the right place to assert the open/close contract.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { errorReportFlow, openErrorReportDialog, closeErrorReportDialog } from './error-report-flow.svelte'
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn(() => Promise.resolve()),
+}))
 
 beforeEach(() => {
   closeErrorReportDialog()

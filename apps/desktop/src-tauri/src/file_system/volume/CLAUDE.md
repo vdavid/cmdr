@@ -203,7 +203,7 @@ collapsible "Technical details" section, never hidden but never in your face eit
 
 ### Architecture
 
-Two-layer mapping across two files:
+Two-layer mapping across two files, plus a third path for "succeeded but suspiciously empty":
 
 1. **`friendly_error_from_volume_error(err, path)`** (`friendly_error.rs`) — maps `VolumeError` variants and macOS errno
    codes (37 codes) to a `FriendlyError` with category (Transient/NeedsAction/Serious), title, explanation, suggestion,
@@ -211,6 +211,11 @@ Two-layer mapping across two files:
 2. **`enrich_with_provider(error, path)`** (`provider.rs`, re-exported from `friendly_error.rs`) — detects 19
    cloud/mount providers from path patterns and `statfs` filesystem type, then overwrites the suggestion with
    provider-specific advice.
+3. **`friendly_error_for_restricted_empty_root(volume_id, path)`** (`friendly_error.rs`) — for the case where the OS
+   returns a successful empty listing at a volume root that's commonly hidden by macOS TCC (currently iCloud Drive
+   without Full Disk Access). The streaming listing path (`file_system/listing/streaming.rs`) checks this after a
+   successful empty read at the volume root and emits `listing-error` with the hint instead of `listing-complete`.
+   Returns `None` for any other volume / non-root path so genuine empty directories don't get the warning.
 
 The frontend receives the fully-baked `FriendlyError` struct via the `listing-error` Tauri event and renders it with
 category-based visual styling. The frontend never sees errno codes or does OS-specific logic.
