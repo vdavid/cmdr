@@ -176,6 +176,10 @@ resilience, and common pitfalls.
 - We use [mise](https://mise.jdx.dev/) to manage tool versions (Go, Node, etc.), pinned in `.mise.toml`. Shims are on
   PATH via `~/.bashrc` and `~/.zshenv`, so `go` and `node` should just work. If `go` is "not found", check that
   `~/.local/share/mise/shims` is on `$PATH`.
+- After bumping npm deps, run `pnpm dedupe`. Without it, transitive deps (e.g. `postcss-html`'s `postcss`,
+  `@axe-core/playwright`'s `@playwright/test`) can stay pinned to older nested versions, producing weird false-positive
+  failures: stylelint 17.9 misparses Svelte inline `style="..."` attributes against an old postcss; website-typecheck
+  fails on a `Page` type mismatch when AxeBuilder gets a different Playwright version than the e2e specs.
 - ❌ **NEVER build the Tauri app with raw `cargo build`.** It produces a binary without the embedded frontend (white
   screen). Always build via `pnpm tauri build` or the `node scripts/tauri-wrapper.js build` wrapper from
   `apps/desktop/`. The `beforeBuildCommand` in `tauri.conf.json` runs the llama-server download (Go) and frontend build

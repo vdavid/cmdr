@@ -63,6 +63,10 @@ sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" apps/desktop/src-tauri/C
 TODAY=$(date +%Y-%m-%d)
 sed -i '' "s/## \[Unreleased\]/## [$VERSION] - $TODAY/" CHANGELOG.md
 
+# Run oxfmt across the repo so CHANGELOG / package.json / tauri.conf.json drift from
+# manual edits + the sed/`npm pkg set` mutations above doesn't fail CI on the release commit.
+./scripts/check.sh --check oxfmt
+
 # Commit and tag (only files touched by this script)
 git add \
   CHANGELOG.md \
