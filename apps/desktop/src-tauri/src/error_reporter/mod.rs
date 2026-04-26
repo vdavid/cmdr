@@ -17,7 +17,6 @@
 
 #[cfg(debug_assertions)]
 use crate::config;
-use crate::crash_reporter::ActiveSettings;
 use crate::logging;
 use crate::redact;
 use chrono::{DateTime, Datelike, Timelike, Utc};
@@ -49,9 +48,22 @@ mod auto_dispatcher_tests;
 /// work." Don't migrate noisy library-level errors (`smb2`, `nusb`, etc.); the goal is
 /// signal, not coverage.
 ///
-/// The macro evaluates its arguments exactly once. The `format!()` happens whether or not
-/// the auto-dispatcher is enabled — same cost as the underlying `log::error!`. The
-/// dispatcher's hot path bails out on a single atomic load when the opt-in flag is off.
+/// Captures a backtrace at the call site via [`std::backtrace::Backtrace::force_capture`]
+/// and emits it as a separate **debug-level** record under the
+/// `cmdr_lib::error_reporter::backtrace` target. The fern dispatch tree pins the file
+/// chain at Debug regardless of `RUST_LOG`/verbose, so the backtrace always lands in the
+/// log file (and therefore in error report bundles), but stdout's Info default keeps the
+/// terminal clean. The error-level message stays a single readable line.
+///
+/// The auto-dispatcher and the manifest's `userNote` see only the user-supplied message
+/// — the backtrace lives in the log file. Backtrace lines are redacted by the same
+/// path-redactor every other log line goes through, so build-machine paths embedded in
+/// symbol metadata don't leak.
+///
+/// The macro evaluates its arguments exactly once. The `format!()` and backtrace capture
+/// happen whether or not the auto-dispatcher is enabled — `force_capture` runs ~0.1–1 ms,
+/// negligible at error-event rates. The dispatcher's hot path bails out on a single
+/// atomic load when the opt-in flag is off.
 ///
 /// ```ignore
 /// use cmdr_lib::log_error;
@@ -62,12 +74,24 @@ mod auto_dispatcher_tests;
 macro_rules! log_error {
     (target: $target:expr, $($arg:tt)+) => {{
         let __msg = format!($($arg)+);
-        log::error!(target: $target, "{}", __msg);
+        let __bt = ::std::backtrace::Backtrace::force_capture();
+        ::log::error!(target: $target, "{}", __msg);
+        ::log::debug!(
+            target: "cmdr_lib::error_reporter::backtrace",
+            "Backtrace for [{}] {}:\n{}",
+            $target, __msg, __bt,
+        );
         $crate::error_reporter::auto_dispatcher::on_error_logged($target, &__msg);
     }};
     ($($arg:tt)+) => {{
         let __msg = format!($($arg)+);
-        log::error!("{}", __msg);
+        let __bt = ::std::backtrace::Backtrace::force_capture();
+        ::log::error!("{}", __msg);
+        ::log::debug!(
+            target: "cmdr_lib::error_reporter::backtrace",
+            "Backtrace for [{}] {}:\n{}",
+            module_path!(), __msg, __bt,
+        );
         $crate::error_reporter::auto_dispatcher::on_error_logged(module_path!(), &__msg);
     }};
 }
@@ -128,6 +152,48 @@ pub const FLOW_B_BUNDLE_CAP_MB: usize = 1;
 /// up to ~10% to honor this — better to ship 1.1 MB of useful context than 0.
 const MIN_TAIL_LINES_OF_NEWEST_FILE: usize = 50;
 
+/// Settings snapshot used in error report manifests, with all `Option<bool>` from the
+/// settings struct resolved against the registry defaults so triagers never see `null`.
+///
+/// **Source of defaults**: `apps/desktop/src/lib/settings/settings-registry.ts`. If a
+/// default changes there, mirror it here — and add a comment if the discrepancy is
+/// intentional (it usually isn't). The defaults are duplicated rather than fetched at
+/// runtime because the manifest is built before the frontend can answer round trips
+/// (and even when it could, paying a 5 s round-trip per error report is silly).
+///
+/// Distinct from [`crate::crash_reporter::ActiveSettings`]: that struct is the on-disk
+/// crash-file format and stays in `Option<bool>` shape for backward compatibility with
+/// crash files written by older app versions. Manifests don't have that constraint.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolvedSettings {
+    pub indexing_enabled: bool,
+    pub ai_provider: String,
+    pub mcp_enabled: bool,
+    pub mcp_port: u16,
+    pub verbose_logging: bool,
+    pub max_log_storage_mb: u64,
+    pub error_reports_enabled: bool,
+    pub crash_reports_enabled: bool,
+}
+
+impl ResolvedSettings {
+    /// Build a snapshot from the loaded backend settings, substituting registry defaults
+    /// for any field the user hasn't explicitly set.
+    fn from_settings(s: &crate::settings::loader::Settings) -> Self {
+        Self {
+            indexing_enabled: s.indexing_enabled.unwrap_or(true),
+            ai_provider: s.ai_provider.clone().unwrap_or_else(|| "local".to_string()),
+            mcp_enabled: s.developer_mcp_enabled.unwrap_or(false),
+            mcp_port: s.developer_mcp_port.unwrap_or(9224),
+            verbose_logging: s.verbose_logging.unwrap_or(false),
+            max_log_storage_mb: s.max_log_storage_mb.unwrap_or(200),
+            error_reports_enabled: s.error_reports_enabled.unwrap_or(false),
+            crash_reports_enabled: s.crash_reports_enabled.unwrap_or(false),
+        }
+    }
+}
+
 /// Metadata written into `manifest.json` at the root of the bundle.
 /// Mirrors the shape expected by `apps/api-server/src/error-report.ts`'s `ErrorReportMeta`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -138,10 +204,45 @@ pub struct BundleManifest {
     pub app_version: String,
     pub os_version: String,
     pub arch: String,
-    pub active_settings: ActiveSettings,
+    pub active_settings: ResolvedSettings,
+    /// Effective log thresholds at bundle-build time. Lets a triager tell whether the
+    /// absence of a debug line in the file means "didn't happen" or "filtered out."
+    pub log_levels: LogLevelSnapshot,
+    /// Most recent user-driven UI command before this bundle was built. `None` if the
+    /// user hadn't done anything yet (e.g. the very first error after launch).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_user_action: Option<UserAction>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user_note: Option<String>,
     pub generated_at: String,
+}
+
+/// Effective log thresholds resolved at logger init + the runtime stdout knob.
+///
+/// `stdoutDefault` is the chain's startup level (from `RUST_LOG` directive without a
+/// `module=`, or `Info` if unset). `stdoutCurrent` is the live `AtomicU8` which the
+/// verbose toggle flips. They're usually the same; they differ when the user changed
+/// the toggle after launch.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LogLevelSnapshot {
+    pub stdout_default: String,
+    pub stdout_current: String,
+    pub file_chain: String,
+    /// Per-module overrides applied to the stdout chain (noise suppression + RUST_LOG
+    /// directives). Stable insertion order: noise overrides first, then RUST_LOG.
+    pub stdout_module_overrides: Vec<(String, String)>,
+}
+
+/// One user action — emitted by `record_user_action` whenever the FE dispatches a
+/// command. Stamped into the manifest so triagers see "what was the user doing right
+/// before this fired?" without having to grep the breadcrumb stream.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserAction {
+    pub command_id: String,
+    /// ISO-8601 UTC. Easy to subtract from `generatedAt` to see the gap.
+    pub at: String,
 }
 
 /// In-memory bundle ready to upload (or save to disk in dev).
@@ -192,6 +293,11 @@ pub fn build_bundle<R: tauri::Runtime>(
     let mut total_redacted_lines: usize = 0;
     let mut live_file_name: Option<String> = None;
 
+    // Per-bundle redaction salt: 16 random bytes mixed into every path-segment hash so
+    // a triager can spot "same dir mentioned 12 times" within this bundle while the
+    // same path in another bundle hashes differently. The salt itself never ships.
+    let salt: [u8; 16] = rand::rng().random();
+
     if let Some(dir) = logging::log_dir() {
         let files = logging::list_recent_log_files(dir);
         if let Some(first) = files.first()
@@ -203,7 +309,7 @@ pub fn build_bundle<R: tauri::Runtime>(
             let Some(file_name) = path.file_name().and_then(|n| n.to_str()) else {
                 continue;
             };
-            let Some((lines, mtime)) = load_and_filter_log_file(&path, scope, now_utc, now_system) else {
+            let Some((lines, mtime)) = load_and_filter_log_file(&path, scope, now_utc, now_system, &salt) else {
                 continue;
             };
             if lines.is_empty() {
@@ -232,6 +338,8 @@ pub fn build_bundle<R: tauri::Runtime>(
         os_version: get_os_version(),
         arch: std::env::consts::ARCH.to_string(),
         active_settings: cached_active_settings(app).clone(),
+        log_levels: build_log_level_snapshot(),
+        last_user_action: user_action::last(),
         user_note: user_note.and_then(|n| {
             let trimmed = n.trim();
             if trimmed.is_empty() {
@@ -266,6 +374,7 @@ fn load_and_filter_log_file(
     scope: BundleScope,
     now_utc: DateTime<Utc>,
     now_system: SystemTime,
+    salt: &[u8],
 ) -> Option<(Vec<String>, SystemTime)> {
     let metadata = match std::fs::metadata(path) {
         Ok(m) => m,
@@ -316,7 +425,7 @@ fn load_and_filter_log_file(
         {
             continue;
         }
-        lines.push(redact::redact_line(&line).into_owned());
+        lines.push(redact::redact_line_salted(&line, salt).into_owned());
     }
 
     Some((lines, mtime))
@@ -685,17 +794,90 @@ pub fn save_bundle_to_disk<R: tauri::Runtime>(
 /// Cached snapshot of active settings. Populated lazily from the settings loader the
 /// first time a bundle is built, then reused. Mirrors the crash reporter's cache but
 /// stays local to this module so we don't depend on init ordering.
-fn cached_active_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> &'static ActiveSettings {
-    static CACHE: OnceLock<ActiveSettings> = OnceLock::new();
+fn cached_active_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> &'static ResolvedSettings {
+    static CACHE: OnceLock<ResolvedSettings> = OnceLock::new();
     CACHE.get_or_init(|| {
         let s = crate::settings::load_settings(app);
-        ActiveSettings {
-            indexing_enabled: s.indexing_enabled,
-            ai_provider: s.ai_provider,
-            mcp_enabled: s.developer_mcp_enabled,
-            verbose_logging: s.verbose_logging,
-        }
+        ResolvedSettings::from_settings(&s)
     })
+}
+
+/// Build a [`LogLevelSnapshot`] from the live state of `logging::dispatch`. The static
+/// `LOG_LEVEL_OVERRIDES` is populated once at logger init; `stdout_threshold()` is a
+/// live atomic load.
+fn build_log_level_snapshot() -> LogLevelSnapshot {
+    let (default_str, overrides) = log_level_overrides::snapshot();
+    LogLevelSnapshot {
+        stdout_default: default_str,
+        stdout_current: format!("{:?}", logging::dispatch::stdout_threshold()).to_lowercase(),
+        // The fern file chain is hard-coded to Debug+ (see logging::dispatch::init);
+        // pinning this here avoids a second source of truth.
+        file_chain: "debug".to_string(),
+        stdout_module_overrides: overrides,
+    }
+}
+
+/// Process-global capture of the stdout chain's startup default + per-module overrides.
+/// Populated by [`logging::dispatch::init`] via [`record`]; read by the bundle builder.
+pub mod log_level_overrides {
+    use std::sync::OnceLock;
+
+    /// `(default_level_str, [(module, level_str)])`. Stored verbatim so output is stable
+    /// regardless of `LevelFilter`'s `Debug`/`Display` formatting choices.
+    static SNAPSHOT: OnceLock<(String, Vec<(String, String)>)> = OnceLock::new();
+
+    /// Called once from `logging::dispatch::init` after RUST_LOG parsing. Subsequent
+    /// calls are no-ops — `OnceLock::set` returns `Err` after the first set.
+    pub fn record(default_level: log::LevelFilter, overrides: Vec<(String, log::LevelFilter)>) {
+        let default_str = format!("{default_level:?}").to_lowercase();
+        let entries: Vec<(String, String)> = overrides
+            .into_iter()
+            .map(|(m, l)| (m, format!("{l:?}").to_lowercase()))
+            .collect();
+        let _ = SNAPSHOT.set((default_str, entries));
+    }
+
+    pub(crate) fn snapshot() -> (String, Vec<(String, String)>) {
+        SNAPSHOT
+            .get()
+            .cloned()
+            .unwrap_or_else(|| ("info".to_string(), Vec::new()))
+    }
+}
+
+/// Records the most recent user-dispatched UI command. Read at bundle-build time and
+/// stamped into the manifest's `lastUserAction` field.
+pub mod user_action {
+    use super::UserAction;
+    use chrono::Utc;
+    use std::sync::Mutex;
+
+    static LAST: Mutex<Option<UserAction>> = Mutex::new(None);
+
+    /// Update the last-action record. Called from the `record_user_action` Tauri command
+    /// the FE invokes inside `handleCommandExecute`.
+    pub fn record(command_id: String) {
+        let action = UserAction {
+            command_id,
+            at: Utc::now().to_rfc3339(),
+        };
+        if let Ok(mut guard) = LAST.lock() {
+            *guard = Some(action);
+        }
+    }
+
+    /// Snapshot of the most recent action. `None` if nothing has been recorded yet.
+    pub fn last() -> Option<UserAction> {
+        LAST.lock().ok().and_then(|g| g.clone())
+    }
+
+    #[cfg(test)]
+    #[allow(dead_code, reason = "Reserved for future user_action tests")]
+    pub(crate) fn reset_for_test() {
+        if let Ok(mut g) = LAST.lock() {
+            *g = None;
+        }
+    }
 }
 
 fn get_os_version() -> String {

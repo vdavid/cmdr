@@ -8,7 +8,7 @@ pub mod dialog_state;
 mod executor;
 pub mod pane_state;
 mod protocol;
-mod resources;
+pub mod resources;
 mod server;
 mod tools;
 

@@ -160,6 +160,19 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 **Rescan notification system (`RescanReason` enum)**: Every code path that falls back to a full rescan emits an `index-rescan-notification` event with a `RescanReason` variant and human-readable details. The frontend maps each reason to a user-friendly toast message. Eight reasons: `StaleIndex` (pre-check gap), `JournalGap` (in-loop gap), `ReplayOverflow` (>10M events), `TooManySubdirRescans` (>1K MustScanSubDirs), `WatcherStartFailed`, `ReconcilerBufferOverflow` (>500K buffered events during scan), `IncompletePreviousScan` (has data but no `scan_completed_at`), `WatcherChannelOverflow` (FSEvents channel full, events dropped). The pre-check in `resume_or_scan()` catches stale indexes before starting the FSEvents stream, preventing the cmdr-fsevent-stream channel (32K capacity, `try_send`) from being overwhelmed.
 
+## Log levels
+
+Two high-volume per-event lines are at TRACE (off by default — file chain captures
+Debug+ only): `Writer: UpsertEntryV2 inserted "X"` and
+`Reconciler: removal for unknown path, skipping: X`. Together they were ~90% of normal
+log volume; the writer line is fully redundant with the existing `Writer: +N msgs (...)`
+aggregate, and the reconciler skip is mostly harmless build-output churn.
+
+The reconciler emits a DEBUG aggregate every ~5s — `Reconciler: skipped N removals
+for unknown paths in Xs [total], sample: <path>` — so error reports retain the
+existence-of-drift signal. Live in `reconciler.rs::unknown_path_skips`. To get the
+per-event detail back: `RUST_LOG=cmdr_lib::indexing::reconciler=trace,cmdr_lib::indexing::writer=trace,debug`.
+
 ## Gotchas
 
 **INSERT OR REPLACE on a populated DB is catastrophically slow**: The `platform_case` collation (NFD + case fold on macOS) runs for every B-tree comparison during unique index lookups. On an empty DB a full scan takes ~2.5 min; on a populated DB with 5.5M entries the same scan takes ~30 min because each `INSERT OR REPLACE` triggers ~20 collation calls to traverse the B-tree. `start_scan()` truncates `entries` and `dir_stats` via `TruncateData` + `flush_blocking()` before every scan to avoid this. Additionally, without truncation, old rows accumulate as orphaned subtrees (3-4x DB bloat per scan cycle) because `INSERT OR REPLACE` only deduplicates at the root level.

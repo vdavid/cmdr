@@ -7,6 +7,12 @@ groups drives a single pass; the dispatch closure inspects which group matched a
 matching rewriter. `Cow::Borrowed` is returned for lines with no matches so the no-PII case
 costs zero allocations.
 
+`redact_line_salted(line, &salt)` is the same pipeline with a per-bundle salt threaded into
+the leaf rewriters. Path segments that would collapse to `<dir>` / `<file>` instead emit
+`<dir:HHHHHH>` / `<file:HHHHHH>` where the 6 hex chars are `sha256(salt || segment)[..3]`.
+Same input → same hash within a single salt; different salt → no cross-bundle correlation.
+The bundle builder mints a fresh 16-byte random salt per build; the salt itself never ships.
+
 ## Pattern table
 
 | Group           | Matches                                              | Rewrites to                                             |
@@ -39,6 +45,20 @@ For paths, we keep:
 Everything else collapses to `<dir>` or `<file>`. So
 `/Users/john/Documents/budget.pdf` → `$HOME/Documents/<file>.pdf`, but
 `/Users/john/SecretProject/budget.pdf` → `$HOME/<dir>/<file>.pdf`.
+
+### Leaf classification: `<dir>` vs `<file>`
+
+The trailing segment is classified by `has_extension_like_suffix`:
+
+- Has extension-like suffix (`.X` where X is 1–8 alnum chars and the dot is not at position 0)
+  → `<file>.ext`
+- No such suffix → `<dir>`
+
+This means `notes.md` → `<file>.md` but `Application Support` → `<dir>`. Trade-off: an
+extensionless file like `id_rsa`, `README`, or `Makefile` will be (mis)labeled `<dir>`.
+Acceptable in our context — Cmdr's logs are dominated by directory listings, so defaulting
+to `<dir>` reads more accurately on real triage data than the pre-fix-7 always-`<file>`
+default.
 
 ### Decision: why path-shape preservation + allowlist
 

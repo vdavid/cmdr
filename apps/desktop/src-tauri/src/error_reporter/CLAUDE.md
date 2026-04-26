@@ -28,11 +28,26 @@ Manifest fields (`BundleManifest`):
   always shows the server's response ID, never the local one.
 - `kind`: `"user"` or `"auto"` (Phase 5).
 - `appVersion`, `osVersion`, `arch`: build/platform identifiers.
-- `activeSettings`: same booleans/enums the crash reporter ships
-  (`indexingEnabled`, `aiProvider`, `mcpEnabled`, `verboseLogging`).
+- `activeSettings`: settings snapshot via the `ResolvedSettings` struct — every field
+  resolved to its effective value (`null` is never shipped). Includes `indexingEnabled`,
+  `aiProvider`, `mcpEnabled`, `mcpPort`, `verboseLogging`, `maxLogStorageMb`,
+  `errorReportsEnabled`, `crashReportsEnabled`. Defaults are duplicated from
+  `apps/desktop/src/lib/settings/settings-registry.ts` — see `ResolvedSettings::from_settings`.
+- `logLevels`: `LogLevelSnapshot` with `stdoutDefault` (startup level), `stdoutCurrent`
+  (live atomic), `fileChain` (always `"debug"`), and `stdoutModuleOverrides` (noise
+  suppression + `RUST_LOG` directives in insertion order). Lets a triager tell whether
+  the absence of a debug line means "didn't happen" or "filtered out."
+- `lastUserAction` (optional): last command dispatched through
+  `handleCommandExecute` (`{commandId, at}`). Populated by the FE via
+  `record_user_action`; `None` if the user hadn't acted yet at error time.
 - `userNote` (optional): user-supplied free text. Trimmed; capped at 100 000 chars by the
   Tauri command layer.
 - `generatedAt`: ISO 8601 UTC timestamp.
+
+Distinct from `crash_reporter::ActiveSettings`: that struct is the on-disk crash file
+format and stays `Option<bool>`-shaped for backward compatibility with crash files
+written by older app versions. Manifests are built fresh per bundle and don't have
+that constraint, so the resolved shape lives in `error_reporter::ResolvedSettings`.
 
 Every log line is run through [`crate::redact::redact_line`](../redact/CLAUDE.md) before
 it hits the zip. The redactor handles file paths, hostnames, IPs, emails, URL userinfo,
@@ -156,6 +171,37 @@ load when the opt-in flag is off.
 
 The current set of migrated call sites is small and deliberate; expand it as we discover
 new user-visible errors. Do not bulk-migrate.
+
+### Backtrace capture
+
+Every `log_error!` call captures a backtrace via `Backtrace::force_capture()` and emits
+it as a **separate debug-level record** under `cmdr_lib::error_reporter::backtrace`.
+The fern dispatch tree pins the file chain at Debug regardless of `RUST_LOG`/verbose, so
+the backtrace always lands in the log file (and therefore in error report bundles). The
+stdout chain's Info default drops it on the floor, keeping the terminal clean. The
+error-level message stays a single readable line — pre-fix-* code emitted backtrace as
+continuation lines on the error record itself, which spammed the terminal even when no
+report was being built. The bundle's per-line window-trim passes through lines without a
+parseable leading ISO-8601 timestamp, so the backtrace continuation lines survive into
+Flow B reports intact. The redactor scrubs build-machine paths embedded in the symbol
+metadata via the same `redact_line` pass every other log line gets.
+
+The auto-dispatcher's `first_message` (which becomes the manifest's `userNote`) sees
+only the user-supplied message — the trace stays in the log file. So bundle manifests
+stay terse, and triage gets the call site without us having to wire stack-capture into
+each error site individually.
+
+`force_capture` ignores `RUST_BACKTRACE`. This is intentional — error report bundles
+need stack context regardless of the user's env.
+
+### State snapshot at error time
+
+`auto_dispatcher::on_error_logged` (called from every `log_error!`) also reads the
+`cmdr://state` MCP resource and emits the YAML as a debug-level record under
+`cmdr_lib::error_reporter::state_snapshot`. Throttled to one per 30 s so an error storm
+doesn't fill the file. **Always runs** (regardless of the Flow B opt-in) so manual
+"Send error report" bundles built minutes after a failure still have a snapshot.
+File-only via the same per-output filtering as the backtrace.
 
 ### AppHandle wiring
 

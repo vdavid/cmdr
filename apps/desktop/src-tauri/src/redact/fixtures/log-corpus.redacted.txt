@@ -1,7 +1,7 @@
 10:22:38.061 INFO  indexing::verifier  Verifier: 1 diffs in `$HOME/<dir>` (0 stale, 0 new files, 0 new dir, 1 modified)
 10:22:39.562 INFO  indexing::verifier  Verifier: 6 diffs in `$HOME/<dir>` (0 stale, 1 new files, 5 new dir, 0 modified)
-10:36:16.815 INFO  config  Using CMDR_DATA_DIR: $HOME/<dir>/Application Support/<file>
-10:51:24.236 INFO  config  Using CMDR_DATA_DIR: $HOME/<dir>/Application Support/<file>
+10:36:16.815 INFO  config  Using CMDR_DATA_DIR: $HOME/<dir>/Application Support/<dir>
+10:51:24.236 INFO  config  Using CMDR_DATA_DIR: $HOME/<dir>/Application Support/<dir>
 12:14:26.047 INFO  file_system  Reading $HOME/Documents/<file>.pdf
 12:17:42.577 INFO  file_system  Wrote $HOME/Downloads/<file>.dmg successfully
 12:19:37.842 INFO  file_system  Failed to read $HOME/Desktop/<file>.png
@@ -10,7 +10,7 @@
 12:26:25.511 INFO  file_system  Indexed $HOME/<dir>/<dir>/<dir>/<file>.jpg
 12:28:11.850 INFO  file_system  Stored at $HOME/Documents/<file>.docx
 14:30:10.697 INFO  file_system  Linux home: $HOME/Music/<file>.mp3
-14:38:58.423 INFO  file_system  Wrote $HOME/<dir>/<file>
+14:38:58.423 INFO  file_system  Wrote $HOME/<dir>/<dir>
 14:41:38.187 INFO  file_system  Path $HOME/Public/<file>.txt
 15:08:09.006 INFO  file_system  Volume mounted at /Volumes/<volume>
 15:08:09.096 INFO  file_system  Reading /Volumes/<volume>/Documents/<file>.txt
@@ -64,9 +64,9 @@
 17:00:04.000 INFO  net  Two: https://<userinfo>@a.com and https://<userinfo>@b.com
 18:00:00.000 INFO  build  error at /tmp/<dir>/src/<file>.rs:42:5
 18:00:00.001 INFO  build  cache at /tmp/<file>.txt
-18:00:00.002 INFO  build  ipc at /private/<dir>/<file>
+18:00:00.002 INFO  build  ipc at /private/<dir>/<dir>
 18:00:00.003 INFO  build  cache at /var/<dir>/<dir>/<dir>/<dir>/<file>.bin
-18:00:00.004 INFO  build  homebrew at /opt/<dir>/<dir>/<file>
+18:00:00.004 INFO  build  homebrew at /opt/<dir>/<dir>/<dir>
 19:00:00.000 INFO  win  Wrote $HOME\Desktop\<file>.txt
 19:00:00.001 INFO  win  Wrote $HOME\Documents\<file>.docx
 19:00:00.002 INFO  win  Wrote $HOME\<dir>\<dir>\<file>.json
@@ -122,9 +122,9 @@
 23:00:00.014 INFO  paths  Path $HOME/Movies/<file>.mp4
 23:00:00.015 INFO  paths  Path $HOME/Public/<file>.zip
 23:00:00.016 INFO  paths  Trailing slash $HOME/Documents/
-23:00:00.017 INFO  e2e  Listing dir $HOME/src/<file> finished
-23:00:00.018 INFO  e2e  Listing dir $HOME/<dir>/<dir>/<file>
-23:00:00.019 INFO  e2e  Listing dir $HOME/AppData/<file>
+23:00:00.017 INFO  e2e  Listing dir $HOME/src/<dir> finished
+23:00:00.018 INFO  e2e  Listing dir $HOME/<dir>/<dir>/<dir>
+23:00:00.019 INFO  e2e  Listing dir $HOME/AppData/<dir>
 23:00:00.020 INFO  mtp::device  Connected to <mtp-owner>'s Pixel 8 Pro
 23:00:00.021 INFO  mtp::device  device: <mtp-owner>'s iPhone 15 Pro detected
 23:00:00.022 INFO  mtp::device  <mtp-owner>'s Galaxy S24 Ultra connected

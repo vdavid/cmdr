@@ -119,6 +119,18 @@ pub fn init(opts: InitOptions) -> Result<(), fern::InitError> {
 
     set_stdout_threshold(stdout_default);
 
+    // Capture the resolved stdout default + per-module overrides for the error-report
+    // manifest. The error reporter's `log_level_overrides::record` is `OnceLock`-backed,
+    // so subsequent calls (only in tests) are no-ops.
+    {
+        let mut all_overrides: Vec<(String, log::LevelFilter)> = default_noise_overrides()
+            .into_iter()
+            .map(|(m, l)| (m.to_string(), l))
+            .collect();
+        all_overrides.extend(stdout_overrides.iter().cloned());
+        crate::error_reporter::log_level_overrides::record(stdout_default, all_overrides);
+    }
+
     // Stdout chain. Stderr (not stdout) so logs don't pollute commands that pipe stdout
     // — same behavior the previous plugin had.
     let mut stdout_chain = fern::Dispatch::new()
@@ -192,6 +204,15 @@ pub fn init(opts: InitOptions) -> Result<(), fern::InitError> {
     // even constructing the record. Set it to Trace so per-chain filters can see
     // everything; if either chain wants to drop, it does so itself.
     log::set_max_level(log::LevelFilter::Trace);
+    // One findable session-start anchor in the log file. Every other line carries
+    // its own ISO-8601 stamp, so this is just the human-readable header that lets
+    // a triager confirm "yes, this file starts with the launch I'm investigating."
+    log::info!(
+        target: "cmdr_lib::logging",
+        "Logger initialized: pid={pid}, app_version={version}",
+        pid = std::process::id(),
+        version = env!("CARGO_PKG_VERSION"),
+    );
     Ok(())
 }
 

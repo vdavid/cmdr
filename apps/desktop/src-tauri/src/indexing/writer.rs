@@ -813,7 +813,7 @@ fn upsert_insert_new(
         inode,
     ) {
         Ok(new_id) => {
-            log::debug!("Writer: UpsertEntryV2 inserted \"{name}\" (parent_id={parent_id}) → id={new_id}");
+            log::trace!("Writer: UpsertEntryV2 inserted \"{name}\" (parent_id={parent_id}) → id={new_id}");
             if is_directory {
                 // Initialize empty dir_stats for new directories so enrichment
                 // always has a row. Child events will update it incrementally.

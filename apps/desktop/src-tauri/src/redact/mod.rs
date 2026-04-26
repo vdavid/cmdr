@@ -17,6 +17,16 @@
 //! allowlist (`Documents`, `Downloads`, `Desktop`, ...). Unknown parent dirs collapse to
 //! `<dir>` so we never leak project-like names (`SecretProjectName`).
 //!
+//! # Salted mode (per-bundle correlation)
+//!
+//! [`redact_line`] emits bare `<dir>` / `<file>` tokens — useful, but indistinguishable
+//! when a log line mentions the same directory twenty times. The error reporter calls
+//! [`redact_line_salted`] instead, threading a 16-byte random salt minted at bundle
+//! build time. Salted mode emits `<dir:HHHHHH>` / `<file:HHHHHH>` where the 6 hex chars
+//! are the first 3 bytes of `blake3(salt || segment)`. Same path → same hash within a
+//! bundle, so a triager (or agent) can spot "same dir, mentioned 12 times." Different
+//! salt across bundles → no cross-bundle correlation, no rainbow tables.
+//!
 //! # Coverage
 //!
 //! See `CLAUDE.md` in this directory for the pattern table and the runbook for adding
@@ -49,12 +59,31 @@ const SAFE_PARENT_DIR_NAMES: &[&str] = &[
 ///
 /// Returns a [`Cow::Borrowed`] when no redaction was needed so we don't allocate
 /// on lines like `"Reconciler: switched to live mode"` that have no PII at all.
+///
+/// Bare `<dir>` / `<file>` tokens. For salted mode (correlatable hashes within a
+/// bundle), use [`redact_line_salted`].
 #[allow(
     dead_code,
     reason = "Public API for the Phase 4 error reporter; exercised by redact tests."
 )]
 pub fn redact_line(line: &str) -> Cow<'_, str> {
-    redactor_regex().replace_all(line, dispatch)
+    redactor_regex().replace_all(line, |caps: &Captures<'_>| dispatch(caps, None))
+}
+
+/// Salted variant of [`redact_line`]. Path segments that would collapse to `<dir>`
+/// or `<file>` instead emit `<dir:HHHHHH>` / `<file:HHHHHH>` where the 6 hex chars are
+/// `blake3(salt || segment)[..3]`. Same input → same output within a single salt;
+/// no cross-bundle correlation between different salts.
+///
+/// The salt is expected to be ≥ 16 bytes of cryptographic random per bundle. Anything
+/// shorter is accepted (the hash still correlates) but cross-bundle resistance suffers
+/// proportionally.
+#[allow(
+    dead_code,
+    reason = "Public API; wired by the error-report bundle builder once it generates per-bundle salts."
+)]
+pub fn redact_line_salted<'a>(line: &'a str, salt: &[u8]) -> Cow<'a, str> {
+    redactor_regex().replace_all(line, |caps: &Captures<'_>| dispatch(caps, Some(salt)))
 }
 
 /// Redact a multi-line text blob. Splits on `\n` and redacts each line independently
@@ -65,12 +94,7 @@ pub fn redact_line(line: &str) -> Cow<'_, str> {
 )]
 pub fn redact_text(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
-    let mut first = true;
     for line in text.split_inclusive('\n') {
-        if !first {
-            // split_inclusive keeps the trailing \n on the previous piece; no extra work needed.
-        }
-        first = false;
         out.push_str(&redact_line(line));
     }
     out
@@ -167,34 +191,34 @@ fn redactor_regex() -> &'static Regex {
     })
 }
 
-fn dispatch(caps: &Captures<'_>) -> String {
+fn dispatch(caps: &Captures<'_>, salt: Option<&[u8]>) -> String {
     if let Some(m) = caps.name("win_home") {
         let (path, tail) = split_trailing_noise(m.as_str());
-        return format!("{}{tail}", redact_windows_home(path));
+        return format!("{}{tail}", redact_windows_home(path, salt));
     }
     if let Some(m) = caps.name("unix_home") {
         let (path, tail) = split_trailing_noise(m.as_str());
-        return format!("{}{tail}", redact_unix_home(path));
+        return format!("{}{tail}", redact_unix_home(path, salt));
     }
     if let Some(m) = caps.name("unix_system") {
         let (path, tail) = split_trailing_noise(m.as_str());
-        return format!("{}{tail}", redact_unix_system(path));
+        return format!("{}{tail}", redact_unix_system(path, salt));
     }
     if let Some(m) = caps.name("volumes") {
         let (path, tail) = split_trailing_noise(m.as_str());
-        return format!("{}{tail}", redact_volumes(path));
+        return format!("{}{tail}", redact_volumes(path, salt));
     }
     if let Some(m) = caps.name("media") {
         let (path, tail) = split_trailing_noise(m.as_str());
-        return format!("{}{tail}", redact_media(path));
+        return format!("{}{tail}", redact_media(path, salt));
     }
     if let Some(m) = caps.name("smb_uri") {
         let (path, tail) = split_trailing_noise(m.as_str());
-        return format!("{}{tail}", redact_smb_uri(path));
+        return format!("{}{tail}", redact_smb_uri(path, salt));
     }
     if let Some(m) = caps.name("unc") {
         let (path, tail) = split_trailing_noise(m.as_str());
-        return format!("{}{tail}", redact_unc(path));
+        return format!("{}{tail}", redact_unc(path, salt));
     }
     if caps.name("url_userinfo").is_some() {
         // Preserve scheme and everything after the `@`, redact the userinfo.
@@ -316,7 +340,7 @@ fn is_word_char(b: u8) -> bool {
 
 // --- Path rewriters ---
 
-fn redact_unix_home(path: &str) -> String {
+fn redact_unix_home(path: &str, salt: Option<&[u8]>) -> String {
     // path like `/Users/<user>/...` or `/home/<user>/...`
     // Strip the `/Users/<user>` prefix and replace with `$HOME`.
     let rest = match path.split('/').nth(3) {
@@ -337,10 +361,10 @@ fn redact_unix_home(path: &str) -> String {
         }
         None => "",
     };
-    format!("$HOME{}", redact_path_tail(rest))
+    format!("$HOME{}", redact_path_tail(rest, salt))
 }
 
-fn redact_windows_home(path: &str) -> String {
+fn redact_windows_home(path: &str, salt: Option<&[u8]>) -> String {
     // `C:\Users\<user>\...` → `$HOME\...` (using backslashes to preserve shape)
     // Skip the first 3 `\` separators: `C:` + `\Users` + `\<user>`.
     let mut backslashes = 0;
@@ -357,11 +381,11 @@ fn redact_windows_home(path: &str) -> String {
     let rest = cut.map(|i| &path[i..]).unwrap_or("");
     // Normalize to forward slashes for the tail walker, then convert back.
     let normalized: String = rest.chars().map(|c| if c == '\\' { '/' } else { c }).collect();
-    let redacted_tail = redact_path_tail(&normalized);
+    let redacted_tail = redact_path_tail(&normalized, salt);
     format!("$HOME{}", redacted_tail.replace('/', "\\"))
 }
 
-fn redact_unix_system(path: &str) -> String {
+fn redact_unix_system(path: &str, salt: Option<&[u8]>) -> String {
     // `/tmp/<rest>`, `/var/<rest>`, `/private/<rest>`, `/opt/<rest>` — keep prefix verbatim,
     // redact everything below it with shape preservation.
     // Find the second `/` (end of the prefix dir), keep `/tmp/` etc., walk the tail.
@@ -382,34 +406,34 @@ fn redact_unix_system(path: &str) -> String {
         return prefix.to_string();
     }
     // tail is one or more segments separated by `/`. Reuse redact_path_tail by prepending `/`.
-    let redacted = redact_path_tail(&format!("/{tail}"));
+    let redacted = redact_path_tail(&format!("/{tail}"), salt);
     // strip the leading `/` we added back since `prefix` already ends in `/`
     format!("{}{}", prefix, redacted.strip_prefix('/').unwrap_or(&redacted))
 }
 
-fn redact_volumes(path: &str) -> String {
+fn redact_volumes(path: &str, salt: Option<&[u8]>) -> String {
     // `/Volumes/<label>/<rest>` → `/Volumes/<volume>/<redacted rest>`
-    redact_labeled_mount(path, "/Volumes/", "/Volumes/<volume>")
+    redact_labeled_mount(path, "/Volumes/", "/Volumes/<volume>", salt)
 }
 
-fn redact_media(path: &str) -> String {
+fn redact_media(path: &str, salt: Option<&[u8]>) -> String {
     // `/media/<label>/<rest>` → `/media/<volume>/<redacted rest>`
-    redact_labeled_mount(path, "/media/", "/media/<volume>")
+    redact_labeled_mount(path, "/media/", "/media/<volume>", salt)
 }
 
-fn redact_labeled_mount(path: &str, prefix: &str, prefix_out: &str) -> String {
+fn redact_labeled_mount(path: &str, prefix: &str, prefix_out: &str, salt: Option<&[u8]>) -> String {
     let after = path.strip_prefix(prefix).unwrap_or(path);
     // Label may contain spaces. Find the first `/` to end the label.
     match after.find('/') {
         Some(i) => {
             let rest = &after[i..]; // starts with `/`
-            format!("{prefix_out}{}", redact_path_tail(rest))
+            format!("{prefix_out}{}", redact_path_tail(rest, salt))
         }
         None => prefix_out.to_string(),
     }
 }
 
-fn redact_smb_uri(uri: &str) -> String {
+fn redact_smb_uri(uri: &str, salt: Option<&[u8]>) -> String {
     // `smb://host/share/path/file.ext` → `smb://<host>/<share>/<redacted path>`
     let after = uri.strip_prefix("smb://").unwrap_or(uri);
     // split host
@@ -422,10 +446,10 @@ fn redact_smb_uri(uri: &str) -> String {
         Some(parts) => (parts.0, format!("/{}", parts.1)),
         None => return "smb://<host>/<share>".to_string(),
     };
-    format!("smb://<host>/<share>{}", redact_path_tail(&tail))
+    format!("smb://<host>/<share>{}", redact_path_tail(&tail, salt))
 }
 
-fn redact_unc(unc: &str) -> String {
+fn redact_unc(unc: &str, salt: Option<&[u8]>) -> String {
     // `\\host\share\path\file.ext` → `\\<host>\<share>\<redacted path>`
     let after = unc.strip_prefix("\\\\").unwrap_or(unc);
     // normalize to forward slashes for reuse, then convert back
@@ -435,7 +459,7 @@ fn redact_unc(unc: &str) -> String {
         [_host] => r"\\<host>".to_string(),
         [_host, _share] => r"\\<host>\<share>".to_string(),
         [_host, _share, tail] => {
-            let redacted = redact_path_tail(&format!("/{tail}"));
+            let redacted = redact_path_tail(&format!("/{tail}"), salt);
             format!(r"\\<host>\<share>{}", redacted.replace('/', "\\"))
         }
         _ => r"\\<host>".to_string(),
@@ -446,8 +470,9 @@ fn redact_unc(unc: &str) -> String {
 /// Input starts with `/` (or is empty). Output starts with `/` (or is empty).
 ///
 /// Shape preservation: keep the filename's extension and the last directory name if it's
-/// in [`SAFE_PARENT_DIR_NAMES`]. Otherwise collapse to `<dir>` / `<file>`.
-fn redact_path_tail(tail: &str) -> String {
+/// in [`SAFE_PARENT_DIR_NAMES`]. Otherwise collapse to `<dir>` / `<file>` (or salted
+/// equivalents when `salt` is `Some`).
+fn redact_path_tail(tail: &str, salt: Option<&[u8]>) -> String {
     if tail.is_empty() {
         return String::new();
     }
@@ -462,31 +487,35 @@ fn redact_path_tail(tail: &str) -> String {
         // presence of an extension: segments with a `.X` suffix are files, otherwise dirs.
         let seg = segments[0];
         let is_file = has_extension_like_suffix(seg);
-        return format!("/{}", redact_leaf(seg, is_file));
+        return format!("/{}", redact_leaf(seg, is_file, salt));
     }
-    // Walk segments: all but the last are dirs; the last is a file (or trailing dir).
+    // Walk segments: all but the last are dirs; the last is guessed via the
+    // extension heuristic — leaves with `.ext` are files, leaves without are dirs.
+    // The pre-fix-7 code labeled every leaf `<file>`, which made directory listings
+    // (the most common log line) incorrectly read as files in error reports.
     let mut out = String::new();
     let last_idx = segments.len() - 1;
     for (i, seg) in segments.iter().enumerate() {
         out.push('/');
         if i == last_idx {
-            out.push_str(&redact_leaf(seg, true));
+            let is_file = has_extension_like_suffix(seg);
+            out.push_str(&redact_leaf(seg, is_file, salt));
         } else if i == last_idx - 1 {
             // Immediate parent dir of the leaf — allowlist check.
             if is_safe_parent_dir(seg) {
                 out.push_str(seg);
             } else {
-                out.push_str("<dir>");
+                out.push_str(&dir_token(seg, salt));
             }
         } else {
             // Ancestor dirs — always collapse.
-            out.push_str("<dir>");
+            out.push_str(&dir_token(seg, salt));
         }
     }
     out
 }
 
-fn redact_leaf(seg: &str, is_file: bool) -> String {
+fn redact_leaf(seg: &str, is_file: bool, salt: Option<&[u8]>) -> String {
     if seg.is_empty() {
         return String::new();
     }
@@ -494,7 +523,7 @@ fn redact_leaf(seg: &str, is_file: bool) -> String {
         return if is_safe_parent_dir(seg) {
             seg.to_string()
         } else {
-            "<dir>".to_string()
+            dir_token(seg, salt)
         };
     }
     // File: try to keep the extension.
@@ -503,10 +532,42 @@ fn redact_leaf(seg: &str, is_file: bool) -> String {
         // Only preserve "sane" extensions: <= 8 ASCII chars, alnum. Otherwise it's probably
         // a filename with a dot in the stem (e.g., `my.secret.project`), not an extension.
         if !ext.is_empty() && ext.len() <= 8 && ext.chars().all(|c| c.is_ascii_alphanumeric()) && dot > 0 {
-            return format!("<file>.{ext}");
+            return format!("{}.{ext}", file_token(seg, salt));
         }
     }
-    "<file>".to_string()
+    file_token(seg, salt)
+}
+
+fn dir_token(seg: &str, salt: Option<&[u8]>) -> String {
+    match salt {
+        Some(s) => format!("<dir:{}>", short_hash(s, seg)),
+        None => "<dir>".to_string(),
+    }
+}
+
+fn file_token(seg: &str, salt: Option<&[u8]>) -> String {
+    match salt {
+        Some(s) => format!("<file:{}>", short_hash(s, seg)),
+        None => "<file>".to_string(),
+    }
+}
+
+/// Short, salted, lowercase-hex hash for path segments. 6 hex chars = 3 bytes ≈ 16 M
+/// distinct values; collisions are possible but harmless — only correlation within a
+/// single bundle's window matters here, and a bundle holds at most low-thousands of
+/// distinct path segments. Cross-bundle correlation is prevented by varying the salt.
+///
+/// Uses SHA-256 (already in our dep tree for license device hashing) rather than
+/// pulling in a second hash crate just for this. The hash is overkill for what we
+/// need — we only consume the first 3 bytes — but the cost is one allocation per
+/// distinct path segment per bundle build, negligible.
+fn short_hash(salt: &[u8], segment: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(salt);
+    hasher.update(segment.as_bytes());
+    let bytes = hasher.finalize();
+    format!("{:02x}{:02x}{:02x}", bytes[0], bytes[1], bytes[2])
 }
 
 fn is_safe_parent_dir(name: &str) -> bool {

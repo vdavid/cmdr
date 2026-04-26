@@ -18,7 +18,11 @@ fn unix_home_paths() {
     let cases = [
         ("/Users/john/Documents/budget.pdf", "$HOME/Documents/<file>.pdf"),
         ("/Users/alice/Downloads/installer.dmg", "$HOME/Downloads/<file>.dmg"),
-        ("/home/bob/.ssh/id_rsa", "$HOME/<dir>/<file>"),
+        // `id_rsa` has no extension-like suffix → labeled `<dir>` under the post-fix-7
+        // heuristic. Acceptable trade-off: extensionless files (id_rsa, README, Makefile)
+        // are rare in our log corpus, while extensionless directories are common, so
+        // defaulting to `<dir>` reads more accurately on real triage data.
+        ("/home/bob/.ssh/id_rsa", "$HOME/<dir>/<dir>"),
         ("/Users/veszelovszki/SecretProject/notes.md", "$HOME/<dir>/<file>.md"),
         (
             "Error reading /Users/foo/Desktop/screenshot.png now",
@@ -31,11 +35,11 @@ fn unix_home_paths() {
         ("/Users/john", "$HOME"),
         (
             "/Users/veszelovszki/Library/Application Support/com.veszelovszki.cmdr-dev",
-            // "Library" is in allowlist as a parent dir. The leaf is the unknown app dir.
-            // Path walker: segments = [Library, Application Support, com.veszelovszki.cmdr-dev].
-            // Last is the dir name (treated as a file leaf with no real ext). Penultimate is
-            // "Application Support" (allowlisted). So shape is preserved one level only.
-            "$HOME/<dir>/Application Support/<file>",
+            // "Library" is in allowlist as a parent dir. The leaf `com.veszelovszki.cmdr-dev`
+            // has dots but the trailing segment `cmdr-dev` contains a `-` (not alnum), so
+            // `has_extension_like_suffix` returns false → leaf labeled `<dir>` (correct: it
+            // IS a directory). "Application Support" is the allowlisted penultimate parent.
+            "$HOME/<dir>/Application Support/<dir>",
         ),
     ];
     for (input, expected) in cases {
@@ -318,12 +322,14 @@ fn unix_system_paths() {
             "error at /tmp/<dir>/src/<file>.rs:42:5",
         ),
         ("/tmp/foo.txt", "/tmp/<file>.txt"),
-        ("/private/tmp/zeb_def_ipc_93056", "/private/<dir>/<file>"),
+        // `zeb_def_ipc_93056` has no extension-like suffix → `<dir>` (post-fix-7 default).
+        ("/private/tmp/zeb_def_ipc_93056", "/private/<dir>/<dir>"),
         (
             "/var/folders/xy/abcdef/T/cache.bin",
             "/var/<dir>/<dir>/<dir>/<dir>/<file>.bin",
         ),
-        ("/opt/homebrew/bin/something", "/opt/<dir>/<dir>/<file>"),
+        // `something` has no extension-like suffix → `<dir>` (post-fix-7 default).
+        ("/opt/homebrew/bin/something", "/opt/<dir>/<dir>/<dir>"),
         ("/tmp/", "/tmp/"),
     ];
     for (input, expected) in cases {

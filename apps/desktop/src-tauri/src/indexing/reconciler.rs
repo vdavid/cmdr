@@ -41,6 +41,72 @@ use crate::indexing::writer::{IndexWriter, WriteMessage};
 /// events is always safe.
 const MAX_BUFFER_CAPACITY: usize = 500_000;
 
+/// Aggregator for "removal for unknown path, skipping" events. The per-event line is
+/// at TRACE (off by default — file chain captures Debug+ only); this module emits a
+/// single DEBUG summary every ~5 s, so error report bundles still carry the
+/// existence-of-drift signal without the per-event noise.
+///
+/// Most skips are harmless build-output churn, but a sustained rate (or a sample path
+/// in an unexpected tree) can flag real reconciler/index drift. Triagers: if you need
+/// the per-event detail, run with `RUST_LOG=cmdr_lib::indexing::reconciler=trace,debug`.
+mod unknown_path_skips {
+    use std::sync::Mutex;
+    use std::time::Instant;
+
+    const FLUSH_INTERVAL_SECS: u64 = 5;
+    const SAMPLE_LEN: usize = 80;
+
+    struct State {
+        count_since_last_flush: u64,
+        total: u64,
+        last_flush: Instant,
+        /// One representative path from the current window. Truncated to SAMPLE_LEN
+        /// chars so a verbose log dir doesn't blow up the line. Cleared on flush.
+        sample: Option<String>,
+    }
+
+    static STATE: Mutex<Option<State>> = Mutex::new(None);
+
+    /// Increment the counter and emit a summary if the flush interval has elapsed.
+    /// Called on every skipped removal — cheap (one mutex acquisition, one branch).
+    pub(super) fn record(path: &str) {
+        let mut guard = match STATE.lock() {
+            Ok(g) => g,
+            Err(p) => p.into_inner(),
+        };
+        let state = guard.get_or_insert_with(|| State {
+            count_since_last_flush: 0,
+            total: 0,
+            last_flush: Instant::now(),
+            sample: None,
+        });
+        state.count_since_last_flush += 1;
+        state.total += 1;
+        if state.sample.is_none() {
+            let s = if path.len() > SAMPLE_LEN {
+                format!("{}…", &path[..SAMPLE_LEN])
+            } else {
+                path.to_string()
+            };
+            state.sample = Some(s);
+        }
+        if state.last_flush.elapsed().as_secs() >= FLUSH_INTERVAL_SECS {
+            let count = state.count_since_last_flush;
+            let total = state.total;
+            let sample = state.sample.clone().unwrap_or_default();
+            let secs = state.last_flush.elapsed().as_secs_f64();
+            state.count_since_last_flush = 0;
+            state.last_flush = Instant::now();
+            state.sample = None;
+            // Drop the lock before logging so the message format won't reenter under it.
+            drop(guard);
+            log::debug!(
+                "Reconciler: skipped {count} removals for unknown paths in {secs:.1}s [{total} total], sample: {sample}",
+            );
+        }
+    }
+}
+
 /// Buffers FSEvents during the initial scan and replays them after the scan completes.
 pub struct EventReconciler {
     /// Events buffered during scan, in arrival order.
@@ -623,7 +689,12 @@ fn handle_removal(
     let entry_id = match store::resolve_path(conn, normalized) {
         Ok(Some(id)) => id,
         Ok(None) => {
-            log::debug!("Reconciler: removal for unknown path, skipping: {normalized}");
+            // Per-event line at TRACE: useful when actively debugging reconciler/index
+            // drift, but ~90% of normal log volume comes from build-output churn that's
+            // genuinely harmless. The aggregate at DEBUG (below) gives the existence-of-
+            // drift signal without flooding the file.
+            log::trace!("Reconciler: removal for unknown path, skipping: {normalized}");
+            unknown_path_skips::record(normalized);
             return Some(affected);
         }
         Err(e) => {

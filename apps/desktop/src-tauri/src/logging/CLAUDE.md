@@ -55,6 +55,14 @@ size+count rotation behind a `Write` impl. Together they're ~250 LOC of glue plu
 `file-rotate` wraps `cmdr.log` and produces siblings like `cmdr.log.1`, `cmdr.log.2`, ...
 The `list_recent_log_files` helper sorts by mtime so the live file is always first.
 
+## Manifest snapshot
+
+`init` records the resolved stdout default + per-module overrides into
+`error_reporter::log_level_overrides::record` so the error-report bundle's
+`logLevels` field shows triagers what *could* have been logged. The file chain's
+`Debug` is hard-coded in the manifest — the dispatch tree is the only source of
+truth, and a triager seeing `fileChain: "debug"` should match what's in this file.
+
 ## Verbose toggle (`developer.verboseLogging`)
 
 Wired through `commands/logging.rs::set_log_level`, which calls

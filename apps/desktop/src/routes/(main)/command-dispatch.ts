@@ -14,10 +14,14 @@ import {
   setViewMode,
   readClipboardText,
 } from '$lib/tauri-commands'
+import { invoke } from '@tauri-apps/api/core'
 import { addToast } from '$lib/ui/toast'
 import { openSettingsWindow } from '$lib/settings/settings-window'
 import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
+import { getAppLogger } from '$lib/logging/logger'
 import type { ExplorerAPI } from './explorer-api'
+
+const log = getAppLogger('user-action')
 
 /** Callbacks for toggling dialog visibility from command dispatch */
 export interface CommandDispatchDialogs {
@@ -35,6 +39,15 @@ export interface CommandDispatchContext {
 // eslint-disable-next-line complexity -- Command dispatcher handles many cases; switch is the clearest pattern
 export async function handleCommandExecute(commandId: string, ctx: CommandDispatchContext): Promise<void> {
   const explorerRef = ctx.getExplorer()
+
+  // Breadcrumb: every keyboard / palette / menu command flows through here. Info-level
+  // → goes through the LogTape → Rust bridge → fern file chain so the breadcrumb shows
+  // up alongside backend logs in error-report bundles. Also recorded into the
+  // error-report manifest's `lastUserAction` field via the backend command below.
+  log.info(commandId)
+  void invoke('record_user_action', { commandId }).catch(() => {
+    // Best-effort: a failing record_user_action shouldn't break the dispatch.
+  })
 
   ctx.dialogs.showCommandPalette(false)
 

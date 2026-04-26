@@ -10,7 +10,23 @@ fn sample_manifest() -> BundleManifest {
         app_version: "0.0.0-test".to_string(),
         os_version: "macOS test".to_string(),
         arch: "aarch64".to_string(),
-        active_settings: ActiveSettings::default(),
+        active_settings: ResolvedSettings {
+            indexing_enabled: true,
+            ai_provider: "local".to_string(),
+            mcp_enabled: false,
+            mcp_port: 9224,
+            verbose_logging: false,
+            max_log_storage_mb: 200,
+            error_reports_enabled: false,
+            crash_reports_enabled: false,
+        },
+        log_levels: LogLevelSnapshot {
+            stdout_default: "info".to_string(),
+            stdout_current: "info".to_string(),
+            file_chain: "debug".to_string(),
+            stdout_module_overrides: Vec::new(),
+        },
+        last_user_action: None,
         user_note: Some("This thing failed".to_string()),
         generated_at: "2026-04-23T10:00:00+00:00".to_string(),
     }
@@ -350,8 +366,9 @@ fn build_bundle_24h_filter_drops_old_files() {
     // handle; the per-file scope filter is exercised via `load_and_filter_log_file`.
     let now_utc = Utc::now();
     let now_system = SystemTime::now();
-    let fresh_picked = load_and_filter_log_file(&fresh, BundleScope::Last24Hours, now_utc, now_system);
-    let stale_picked = load_and_filter_log_file(&stale, BundleScope::Last24Hours, now_utc, now_system);
+    let salt: [u8; 16] = [0u8; 16];
+    let fresh_picked = load_and_filter_log_file(&fresh, BundleScope::Last24Hours, now_utc, now_system, &salt);
+    let stale_picked = load_and_filter_log_file(&stale, BundleScope::Last24Hours, now_utc, now_system, &salt);
 
     let (fresh_lines, _) = fresh_picked.expect("fresh file always included");
     assert!(!fresh_lines.is_empty(), "fresh file lines should be kept");
@@ -399,8 +416,15 @@ fn build_bundle_window_scope_trims_old_lines() {
     .expect("write log");
 
     let now_system = SystemTime::now();
-    let (lines, _) = load_and_filter_log_file(&log_path, BundleScope::Window { first_error_at }, now_utc, now_system)
-        .expect("file should be loaded");
+    let salt: [u8; 16] = [0u8; 16];
+    let (lines, _) = load_and_filter_log_file(
+        &log_path,
+        BundleScope::Window { first_error_at },
+        now_utc,
+        now_system,
+        &salt,
+    )
+    .expect("file should be loaded");
 
     assert_eq!(lines.len(), 1, "expected exactly one line to survive: {lines:?}");
     assert!(

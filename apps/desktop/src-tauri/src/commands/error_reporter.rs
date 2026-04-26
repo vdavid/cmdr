@@ -17,6 +17,25 @@ const ERROR_REPORT_URL: &str = "https://api.getcmdr.com/error-report";
 /// guardrail so we don't waste effort building a bundle that'd be rejected.
 const MAX_USER_NOTE_CHARS: usize = 100_000;
 
+/// Cap on a single command-id length — guards against the FE accidentally pushing a
+/// pasted blob in here. Real command IDs in `command-registry.ts` are well under 64
+/// chars; 256 is generous.
+const MAX_COMMAND_ID_CHARS: usize = 256;
+
+/// Records the most recent FE user-driven command for the error-report manifest.
+///
+/// Called from `handleCommandExecute` in `apps/desktop/src/routes/(main)/command-dispatch.ts`,
+/// which is the single chokepoint for all keyboard / palette / menu commands. Cheap:
+/// one `Mutex` write, no I/O. Drops silently if the input is malformed (we'd rather
+/// keep the previous value than poison the manifest with garbage).
+#[tauri::command]
+pub fn record_user_action(command_id: String) {
+    if command_id.is_empty() || command_id.chars().count() > MAX_COMMAND_ID_CHARS {
+        return;
+    }
+    error_reporter::user_action::record(command_id);
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PreviewPayload {

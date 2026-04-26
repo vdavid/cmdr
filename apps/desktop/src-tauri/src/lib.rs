@@ -971,6 +971,7 @@ pub fn run() {
             // Error reporter commands (Flow A: user-initiated)
             commands::error_reporter::prepare_error_report_preview,
             commands::error_reporter::send_error_report,
+            commands::error_reporter::record_user_action,
             #[cfg(debug_assertions)]
             commands::error_reporter::save_error_report_to_disk,
             // Licensing commands
