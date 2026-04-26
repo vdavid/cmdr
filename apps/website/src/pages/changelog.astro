@@ -4,12 +4,10 @@ import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
 import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro'
 import { marked } from 'marked'
-import fs from 'node:fs'
-import path from 'node:path'
-
-// Read the changelog file at build time
-const changelogPath = path.resolve(import.meta.dirname, '../../../../CHANGELOG.md')
-const changelogContent = fs.readFileSync(changelogPath, 'utf-8')
+// Inline at build time. Astro 6 (Vite 7 internal) breaks the previous fs+path approach
+// because `import.meta.dirname` no longer points at the source file's directory after
+// bundling — `?raw` is the supported way to ship a file's contents into the bundle.
+import changelogContent from '../../../../CHANGELOG.md?raw'
 
 // Parse markdown to HTML
 const htmlContent = await marked.parse(changelogContent)

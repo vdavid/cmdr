@@ -35,7 +35,7 @@
 
 use crate::error_reporter::{self, BundleKind, BundleScope, FLOW_B_BUNDLE_CAP_MB};
 use chrono::{DateTime, Utc};
-use rand::Rng;
+use rand::RngExt;
 use std::sync::Mutex;
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicBool, Ordering};

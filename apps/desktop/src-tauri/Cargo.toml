@@ -58,7 +58,7 @@ alphanumeric-sort = "1.5"
 chrono = "0.4"
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 # Device ID hashing for fair-use license tracking
-sha2 = "0.10.9"
+sha2 = "0.11"
 log = "0.4"
 # fern: hand-rolled log dispatch tree with per-output filtering. Replaces tauri-plugin-log
 # (which routes everything through a single global level). The crate was already in the
@@ -94,9 +94,9 @@ time = { version = "0.3", features = ["parsing", "macros", "formatting"] }
 tauri-plugin-playwright = { version = "0.2.2", optional = true }
 # Error reporter: zip the bundle (manifest + redacted log files). `deflate` is the default
 # compression algorithm; we don't need bzip2/zstd/etc. for log text.
-zip = { version = "4.6", default-features = false, features = ["deflate"] }
+zip = { version = "8.6", default-features = false, features = ["deflate"] }
 # Error reporter: short-ID generation (`ERR-XXXXX`) using rejection sampling.
-rand = "0.9"
+rand = "0.10"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

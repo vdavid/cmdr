@@ -20,7 +20,7 @@ use crate::config;
 use crate::logging;
 use crate::redact;
 use chrono::{DateTime, Datelike, Timelike, Utc};
-use rand::Rng;
+use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::io::{BufRead, BufReader, Read, Write};

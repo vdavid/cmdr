@@ -21,7 +21,10 @@ fn compute_device_id() -> Option<String> {
     let uuid = read_platform_uuid()?;
     let salted = format!("cmdr:{uuid}");
     let hash = Sha256::digest(salted.as_bytes());
-    Some(format!("v1:{:x}", hash))
+    // sha2 0.11 returns a `hybrid_array::Array` newtype that doesn't impl `LowerHex`,
+    // so format the bytes by hand.
+    let hex: String = hash.iter().map(|b| format!("{b:02x}")).collect();
+    Some(format!("v1:{hex}"))
 }
 
 /// Read `IOPlatformUUID` from the IOKit registry via FFI.
@@ -126,11 +129,13 @@ mod tests {
         let uuid = "TEST-UUID-1234";
         let salted = format!("cmdr:{uuid}");
         let hash = Sha256::digest(salted.as_bytes());
-        let result = format!("v1:{:x}", hash);
+        let hex: String = hash.iter().map(|b| format!("{b:02x}")).collect();
+        let result = format!("v1:{hex}");
 
         let salted2 = format!("cmdr:{uuid}");
         let hash2 = Sha256::digest(salted2.as_bytes());
-        let result2 = format!("v1:{:x}", hash2);
+        let hex2: String = hash2.iter().map(|b| format!("{b:02x}")).collect();
+        let result2 = format!("v1:{hex2}");
 
         assert_eq!(result, result2);
         assert!(result.starts_with("v1:"));

@@ -88,9 +88,15 @@ pub fn reset_for_test() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    // Serializes tests in this module so they don't race on the global BUFFER
+    // when nextest runs them in parallel.
+    static SERIAL: Mutex<()> = Mutex::new(());
 
     #[test]
     fn record_and_snapshot_round_trip() {
+        let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
         reset_for_test();
         record("nav", "to /Users", None);
         record("command", "open-palette", Some(serde_json::json!({"source": "key"})));
@@ -103,6 +109,7 @@ mod tests {
 
     #[test]
     fn ring_buffer_drops_oldest_when_full() {
+        let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
         reset_for_test();
         for i in 0..(MAX_BREADCRUMBS + 5) {
             record("test", &format!("event-{i}"), None);
@@ -116,6 +123,7 @@ mod tests {
 
     #[test]
     fn rejects_empty_or_oversized_kind() {
+        let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
         reset_for_test();
         record("", "x", None);
         record(&"k".repeat(MAX_KIND_CHARS + 1), "x", None);
@@ -124,6 +132,7 @@ mod tests {
 
     #[test]
     fn message_is_truncated_to_max_chars() {
+        let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
         reset_for_test();
         let huge = "a".repeat(MAX_MESSAGE_CHARS * 4);
         record("k", &huge, None);
