@@ -5,7 +5,7 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.14.0] - 2026-04-26
 
 ### Added
 
@@ -19,6 +19,53 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 - **Log storage cap setting.** New `advanced.maxLogStorageMb` (default 200 MB, range 0–5000) controls how much disk
   space the rotated log files use. The file target now defaults to **debug** level so error reports carry useful
   context. Set to `0` to disable log storage entirely (and with it, the ability to send error reports).
+- **Per-output log level filtering.** Stdout stays at INFO with optional `RUST_LOG`-style per-module overrides while the
+  on-disk file chain always captures DEBUG, so error reports carry useful context without flooding the terminal. The
+  `developer.verboseLogging` toggle now flips the stdout threshold at runtime (Info ↔ Debug) without losing records
+  mid-swap. Replaces `tauri-plugin-log` with a hand-rolled `fern` Dispatch tree + `file-rotate` for native size+count
+  rotation ([319d5d37](https://github.com/vdavid/cmdr/commit/319d5d37)).
+
+### Fixed
+
+- Auto-dispatcher race when an error fired before the Tauri `AppHandle` was wired up — the debounce window opened with
+  no handle to send the report, so the bundle never shipped. Late-arriving handles now pick up active windows correctly
+  ([f069a712](https://github.com/vdavid/cmdr/commit/f069a712)).
+- Size column icons now align flush with the cell's right edge instead of drifting a pixel inwards
+  ([1d5f661a](https://github.com/vdavid/cmdr/commit/1d5f661a)).
+
+### Non-app
+
+- Bumped 24 npm packages (patch + minor; TypeScript held at 5.9). `pnpm dedupe` collapsed duplicate `postcss` and
+  `@playwright/test` versions, fixing stylelint false positives in inline `style="..."` attributes and a
+  `Page`-type mismatch in website-typecheck. Split `resolveValidPath` into a new `path-resolution.ts` to break an
+  `app-status-store.ts` ↔ `path-navigation.ts` import cycle. Per-test unique paths fix a `rust-tests-linux` collision
+  under higher parallelism ([b1a53acb](https://github.com/vdavid/cmdr/commit/b1a53acb)).
+- New `error-report` endpoint on the api server with R2 presigned-URL handoff, daily eviction sweep, and a dedicated
+  `ERROR_REPORT_META` KV namespace separate from `LICENSE_CODES`
+  ([1a2ea1c0](https://github.com/vdavid/cmdr/commit/1a2ea1c0),
+  [f78f76af](https://github.com/vdavid/cmdr/commit/f78f76af)).
+- Shared PII redactor for both crash files and error-report bundles — single source of truth so log lines redact
+  identically wherever they're inspected. Adds a per-bundle salted-hash mode (`<dir:abc123>` / `<file:abc123>`) for
+  in-bundle correlation without cross-bundle linkability, plus an `mtp_owner` pattern that strips `<Owner>'s <Model>`
+  shapes while preserving the model string for diagnostic context
+  ([1d719f36](https://github.com/vdavid/cmdr/commit/1d719f36),
+  [b64e2c2c](https://github.com/vdavid/cmdr/commit/b64e2c2c)).
+- `desktop-rust-log-error-macro` check fails CI on any raw `log::error!` outside the macro definition itself, so every
+  error site routes through the Flow B auto-dispatcher
+  ([79bc2a28](https://github.com/vdavid/cmdr/commit/79bc2a28)).
+- `changelog-commit-links` check now also verifies every linked SHA is reachable from `HEAD`, catching commits that got
+  dropped from history (rebase, force-push, etc.) before they ship
+  ([72375de6](https://github.com/vdavid/cmdr/commit/72375de6)).
+- `releasing.md` documents the `caffeinate -dimsu` requirement during release builds — the self-hosted runner lives on
+  the dev Mac and any sleep drops the runner connection mid-build
+  ([9f27228d](https://github.com/vdavid/cmdr/commit/9f27228d)).
+- Bumped `rustls-webpki` 0.103.12 → 0.103.13 for routine security maintenance
+  ([9ff7583d](https://github.com/vdavid/cmdr/commit/9ff7583d)).
+
+## [0.13.0] - 2026-04-22
+
+### Added
+
 - **SMB copies are ~30× faster on high-latency links.** A 100 × 10 KB copy from a NAS over Tailscale (~60 ms RTT)
   dropped from ~28 s (~280 ms/file) to 947 ms (9.5 ms/file) over four layered speedups: drop redundant `is_directory`
   stat probes in the copy pipeline (Fix 1, [94090555](https://github.com/vdavid/cmdr/commit/94090555)), send
