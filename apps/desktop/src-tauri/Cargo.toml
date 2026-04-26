@@ -35,7 +35,7 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
-tauri-plugin-mcp-bridge = "0.10"
+tauri-plugin-mcp-bridge = "0.11"
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2.6"
 serde = { version = "1", features = ["derive"] }
@@ -119,12 +119,12 @@ mime_guess = "2"
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 # MTP (Android device) support via pure Rust implementation
-mtp-rs = "0.12.0"
+mtp-rs = "0.13.2"
 # USB hotplug detection for MTP device watcher
 nusb = "0.2.3"
 bytes = "1"
 # mDNS discovery for network host browsing (pure Rust, cross-platform)
-mdns-sd = { version = "0.18", features = ["logging"] }
+mdns-sd = { version = "0.19", features = ["logging"] }
 # SMB2/3 protocol client for share enumeration (pure Rust, pipelined I/O).
 # When bumping: also re-vendor the test containers per
 # apps/desktop/test/smb-servers/.compose/VENDORED.md
