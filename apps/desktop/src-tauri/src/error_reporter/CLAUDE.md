@@ -31,8 +31,12 @@ Manifest fields (`BundleManifest`):
 - `activeSettings`: settings snapshot via the `ResolvedSettings` struct — every field
   resolved to its effective value (`null` is never shipped). Includes `indexingEnabled`,
   `aiProvider`, `mcpEnabled`, `mcpPort`, `verboseLogging`, `maxLogStorageMb`,
-  `errorReportsEnabled`, `crashReportsEnabled`. Defaults are duplicated from
-  `apps/desktop/src/lib/settings/settings-registry.ts` — see `ResolvedSettings::from_settings`.
+  `errorReportsEnabled`, `crashReportsEnabled`. Default resolution order per field:
+  user-set value → FE-pushed registry default (via `record_settings_defaults`,
+  pushed once at FE startup from `settings-store.ts::initializeSettings`) → hardcoded
+  fallback in `ResolvedSettings::from_settings`. The hardcoded values are a safety
+  net for "error fires before FE init" and unit tests; the registry stays the source
+  of truth at runtime.
 - `logLevels`: `LogLevelSnapshot` with `stdoutDefault` (startup level), `stdoutCurrent`
   (live atomic), `fileChain` (always `"debug"`), and `stdoutModuleOverrides` (noise
   suppression + `RUST_LOG` directives in insertion order). Lets a triager tell whether

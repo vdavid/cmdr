@@ -4,6 +4,7 @@
 
 import { load, type Store } from '@tauri-apps/plugin-store'
 import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { invoke } from '@tauri-apps/api/core'
 import type { SettingId, SettingsValues } from './types'
 import { SettingValidationError } from './types'
 import { getDefaultValue, settingsRegistry, validateSettingValue } from './settings-registry'
@@ -114,11 +115,35 @@ export async function initializeSettings(): Promise<void> {
     // Listen for cross-window setting changes
     await setupCrossWindowListener()
 
+    // Push the registry's default map to the backend so error-report manifests can
+    // resolve `null`-shaped settings against the live registry instead of duplicating
+    // defaults in Rust. Best-effort: a failure here only affects manifest resolution,
+    // which has hardcoded fallbacks. Don't block init on it.
+    void pushSettingsDefaultsToBackend()
+
     initialized = true
     log.debug('Settings initialization complete')
   } catch (error) {
     log.error('Failed to initialize settings: {error}', { error })
     throw error
+  }
+}
+
+/**
+ * Send the registry's default values to the backend's `record_settings_defaults`
+ * command. The backend uses this map in `ResolvedSettings::from_settings` to keep
+ * manifest defaults in sync with the registry. Silently swallows errors — the Rust
+ * side has hardcoded fallbacks for every field it reads.
+ */
+async function pushSettingsDefaultsToBackend(): Promise<void> {
+  try {
+    const defaults: Record<string, unknown> = {}
+    for (const def of settingsRegistry) {
+      defaults[def.id] = def.default
+    }
+    await invoke('record_settings_defaults', { defaults })
+  } catch (err) {
+    log.warn('Failed to push settings defaults to backend: {err}', { err })
   }
 }
 

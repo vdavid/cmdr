@@ -5,6 +5,7 @@
 
 use crate::error_reporter::{self, BundleKind, BundleManifest, BundleScope, FLOW_A_BUNDLE_CAP_MB};
 use serde::Serialize;
+use std::collections::HashMap;
 
 /// Server URL for error report ingestion. Mirrors the crash reporter pattern.
 #[cfg(debug_assertions)]
@@ -21,6 +22,19 @@ const MAX_USER_NOTE_CHARS: usize = 100_000;
 /// pasted blob in here. Real command IDs in `command-registry.ts` are well under 64
 /// chars; 256 is generous.
 const MAX_COMMAND_ID_CHARS: usize = 256;
+
+/// Pushes the FE settings-registry default map to the backend, where it feeds
+/// [`crate::error_reporter::ResolvedSettings::from_settings`] so manifests don't
+/// duplicate defaults between TypeScript and Rust.
+///
+/// Called once from `initializeSettings()` in `apps/desktop/src/lib/settings/settings-store.ts`
+/// after the registry has loaded. Subsequent calls overwrite (HMR-safe in dev).
+/// Failures are silent — the Rust side falls back to hardcoded defaults if the map
+/// is missing or doesn't include a given key.
+#[tauri::command]
+pub fn record_settings_defaults(defaults: HashMap<String, serde_json::Value>) {
+    error_reporter::settings_defaults::record(defaults);
+}
 
 /// Records the most recent FE user-driven command for the error-report manifest.
 ///

@@ -180,16 +180,47 @@ pub struct ResolvedSettings {
 impl ResolvedSettings {
     /// Build a snapshot from the loaded backend settings, substituting registry defaults
     /// for any field the user hasn't explicitly set.
+    ///
+    /// Default resolution order, per field:
+    /// 1. The user's persisted value, if any (`Some(_)` in the loader struct).
+    /// 2. The FE-pushed registry default (see [`settings_defaults`]). Avoids drift when
+    ///    the FE registry's default changes.
+    /// 3. A hardcoded fallback. Used only before the FE has called
+    ///    `record_settings_defaults` (very early errors, unit tests with no FE) — it's
+    ///    a safety net, not the primary source.
     fn from_settings(s: &crate::settings::loader::Settings) -> Self {
         Self {
-            indexing_enabled: s.indexing_enabled.unwrap_or(true),
-            ai_provider: s.ai_provider.clone().unwrap_or_else(|| "local".to_string()),
-            mcp_enabled: s.developer_mcp_enabled.unwrap_or(false),
-            mcp_port: s.developer_mcp_port.unwrap_or(9224),
-            verbose_logging: s.verbose_logging.unwrap_or(false),
-            max_log_storage_mb: s.max_log_storage_mb.unwrap_or(200),
-            error_reports_enabled: s.error_reports_enabled.unwrap_or(false),
-            crash_reports_enabled: s.crash_reports_enabled.unwrap_or(false),
+            indexing_enabled: s
+                .indexing_enabled
+                .or_else(|| settings_defaults::lookup_bool("indexing.enabled"))
+                .unwrap_or(true),
+            ai_provider: s.ai_provider.clone().unwrap_or_else(|| {
+                settings_defaults::lookup_string("ai.provider").unwrap_or_else(|| "local".to_string())
+            }),
+            mcp_enabled: s
+                .developer_mcp_enabled
+                .or_else(|| settings_defaults::lookup_bool("developer.mcpEnabled"))
+                .unwrap_or(false),
+            mcp_port: s
+                .developer_mcp_port
+                .or_else(|| settings_defaults::lookup_u16("developer.mcpPort"))
+                .unwrap_or(9224),
+            verbose_logging: s
+                .verbose_logging
+                .or_else(|| settings_defaults::lookup_bool("developer.verboseLogging"))
+                .unwrap_or(false),
+            max_log_storage_mb: s
+                .max_log_storage_mb
+                .or_else(|| settings_defaults::lookup_u64("advanced.maxLogStorageMb"))
+                .unwrap_or(200),
+            error_reports_enabled: s
+                .error_reports_enabled
+                .or_else(|| settings_defaults::lookup_bool("updates.errorReports"))
+                .unwrap_or(false),
+            crash_reports_enabled: s
+                .crash_reports_enabled
+                .or_else(|| settings_defaults::lookup_bool("updates.crashReports"))
+                .unwrap_or(false),
         }
     }
 }
@@ -842,6 +873,66 @@ pub mod log_level_overrides {
             .get()
             .cloned()
             .unwrap_or_else(|| ("info".to_string(), Vec::new()))
+    }
+}
+
+/// Holds the FE-pushed map of `settingId → default value`. Populated once at FE
+/// startup via the `record_settings_defaults` Tauri command, after `settingsRegistry`
+/// has loaded. Read by [`ResolvedSettings::from_settings`] to avoid duplicating
+/// defaults between the TS registry and Rust.
+///
+/// Intentionally a `Mutex<Option<...>>` rather than `OnceLock`: in dev/HMR the FE may
+/// reinitialize and push fresh defaults, and tests need to reset between runs.
+/// Reads are O(1) hash lookups; the mutex is uncontended in practice (one writer at
+/// FE init, then read-only).
+pub mod settings_defaults {
+    use serde_json::Value;
+    use std::collections::HashMap;
+    use std::sync::Mutex;
+
+    static DEFAULTS: Mutex<Option<HashMap<String, Value>>> = Mutex::new(None);
+
+    /// Replace the stored defaults map. Called from the `record_settings_defaults`
+    /// Tauri command. A `None` entry from a buggy FE caller is treated as "no
+    /// default available" — `lookup_*` falls through to the hardcoded fallback.
+    pub fn record(map: HashMap<String, Value>) {
+        if let Ok(mut guard) = DEFAULTS.lock() {
+            *guard = Some(map);
+        }
+    }
+
+    /// `true` if [`record`] has been called at least once. Diagnostic only —
+    /// production code paths fall back gracefully when the map isn't populated.
+    #[allow(dead_code, reason = "Diagnostic helper for future use / test seams")]
+    pub fn is_populated() -> bool {
+        DEFAULTS.lock().ok().is_some_and(|g| g.is_some())
+    }
+
+    fn get(key: &str) -> Option<Value> {
+        DEFAULTS.lock().ok()?.as_ref()?.get(key).cloned()
+    }
+
+    pub(super) fn lookup_bool(key: &str) -> Option<bool> {
+        get(key)?.as_bool()
+    }
+
+    pub(super) fn lookup_string(key: &str) -> Option<String> {
+        Some(get(key)?.as_str()?.to_string())
+    }
+
+    pub(super) fn lookup_u16(key: &str) -> Option<u16> {
+        u16::try_from(get(key)?.as_u64()?).ok()
+    }
+
+    pub(super) fn lookup_u64(key: &str) -> Option<u64> {
+        get(key)?.as_u64()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn reset_for_test() {
+        if let Ok(mut g) = DEFAULTS.lock() {
+            *g = None;
+        }
     }
 }
 

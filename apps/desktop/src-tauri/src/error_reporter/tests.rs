@@ -445,3 +445,96 @@ fn set_mtime_to_age(path: &Path, age: Duration) {
     let ft = filetime::FileTime::from_system_time(target);
     filetime::set_file_mtime(path, ft).expect("set_file_mtime");
 }
+
+/// Tests for `settings_defaults`: FE pushes the registry default map; the resolved
+/// settings prefer it over the hardcoded fallback when the loader's `Option<_>`
+/// fields are `None`.
+mod settings_defaults_tests {
+    use super::*;
+    use crate::error_reporter::settings_defaults;
+    use crate::settings::loader::Settings;
+    use serde_json::json;
+    use std::collections::HashMap;
+    use std::sync::Mutex;
+
+    /// Serialize tests in this module — `settings_defaults` is process-global state.
+    fn test_lock() -> std::sync::MutexGuard<'static, ()> {
+        static LOCK: Mutex<()> = Mutex::new(());
+        LOCK.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    /// With no FE defaults pushed, hardcoded fallbacks apply. This is the path that
+    /// runs in unit tests and during the first few hundred ms after launch, before
+    /// the FE has called `record_settings_defaults`.
+    #[test]
+    fn falls_back_to_hardcoded_when_no_defaults_recorded() {
+        let _g = test_lock();
+        settings_defaults::reset_for_test();
+
+        let resolved = ResolvedSettings::from_settings(&Settings::default());
+        assert!(
+            resolved.indexing_enabled,
+            "hardcoded default for indexing.enabled is true"
+        );
+        assert_eq!(resolved.ai_provider, "local");
+        assert_eq!(resolved.mcp_port, 9224);
+        assert_eq!(resolved.max_log_storage_mb, 200);
+        assert!(!resolved.error_reports_enabled);
+    }
+
+    /// FE-pushed defaults override the hardcoded fallback, but the user's persisted
+    /// value still wins over both. This is the load-bearing assertion: the registry
+    /// is the source of truth for "what would the value be if the user hadn't
+    /// touched it," and `from_settings` should honor that.
+    #[test]
+    fn fe_defaults_override_hardcoded_but_user_overrides_both() {
+        let _g = test_lock();
+        settings_defaults::reset_for_test();
+
+        let mut map = HashMap::new();
+        // FE registry says indexing is OFF by default (hypothetical — production says
+        // true). If `from_settings` ever drifts back to the hardcoded fallback, this
+        // test catches it.
+        map.insert("indexing.enabled".to_string(), json!(false));
+        map.insert("developer.mcpPort".to_string(), json!(12345));
+        map.insert("ai.provider".to_string(), json!("cloud"));
+        settings_defaults::record(map);
+
+        // Field with no user override → FE default applies.
+        let mut settings = Settings::default();
+        let resolved = ResolvedSettings::from_settings(&settings);
+        assert!(
+            !resolved.indexing_enabled,
+            "FE default (false) overrides hardcoded (true)"
+        );
+        assert_eq!(resolved.mcp_port, 12345);
+        assert_eq!(resolved.ai_provider, "cloud");
+
+        // Field WITH user override → user value wins over FE default.
+        settings.indexing_enabled = Some(true);
+        let resolved = ResolvedSettings::from_settings(&settings);
+        assert!(resolved.indexing_enabled, "user override beats FE default");
+
+        settings_defaults::reset_for_test();
+    }
+
+    /// A garbage value in the FE map (wrong type for the field) falls through to
+    /// the hardcoded fallback rather than panicking. Defensive: if FE registry ever
+    /// ships a malformed default, manifests degrade rather than break.
+    #[test]
+    fn type_mismatch_falls_through_to_hardcoded() {
+        let _g = test_lock();
+        settings_defaults::reset_for_test();
+
+        let mut map = HashMap::new();
+        map.insert("indexing.enabled".to_string(), json!("not a bool"));
+        map.insert("developer.mcpPort".to_string(), json!(true));
+        settings_defaults::record(map);
+
+        let resolved = ResolvedSettings::from_settings(&Settings::default());
+        assert!(resolved.indexing_enabled, "type mismatch → hardcoded fallback applies");
+        assert_eq!(resolved.mcp_port, 9224);
+
+        settings_defaults::reset_for_test();
+    }
+}
