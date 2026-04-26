@@ -141,6 +141,30 @@ fn list_directory_core_impl(
         read_dir_time.as_millis(),
         total_time.as_millis()
     );
+    if entries.is_empty() {
+        // 0 entries can mean: a genuinely empty dir, a permission/TCC restriction that
+        // macOS surfaces as an empty enumeration (e.g., iCloud Drive without Full Disk
+        // Access), or a cloud sync placeholder that hasn't materialized yet. Surface the
+        // path's own metadata so error reports distinguish "we got told the dir has no
+        // children" from "the path itself is broken".
+        let metadata_status = match fs::metadata(path) {
+            Ok(m) => {
+                let kind = if m.is_dir() {
+                    "dir"
+                } else if m.is_file() {
+                    "file"
+                } else {
+                    "other"
+                };
+                format!("kind={kind}, perms=0o{:o}, size={}", m.permissions().mode(), m.len())
+            }
+            Err(e) => format!("metadata failed: {e}"),
+        };
+        log::warn!(
+            "list_directory_core: 0 entries at {} ({metadata_status}). Could be genuinely empty, permission/TCC restricted (Full Disk Access?), or a cloud-sync placeholder.",
+            path.display(),
+        );
+    }
     benchmark::log_event("list_directory_core END");
 
     Ok(entries)

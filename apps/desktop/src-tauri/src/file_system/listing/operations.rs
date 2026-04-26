@@ -263,9 +263,11 @@ pub fn get_file_at(listing_id: &str, index: usize, include_hidden: bool) -> Resu
         // FE/BE index desync surfaces as broken cursor/selection. Use `log_error!` so
         // opt-in users help us catch the trigger conditions.
         crate::log_error!(
-            "get_file_at: index {} out of bounds (listing has {} entries) - frontend/backend index mismatch!",
+            "get_file_at: index {} out of bounds (listing {} has {} entries at {}) - frontend/backend index mismatch!",
             index,
-            total
+            listing_id,
+            total,
+            listing.path.display()
         );
     }
     Ok(result)
