@@ -36,8 +36,8 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 ### Non-app
 
 - Bumped 24 npm packages (patch + minor; TypeScript held at 5.9). `pnpm dedupe` collapsed duplicate `postcss` and
-  `@playwright/test` versions, fixing stylelint false positives in inline `style="..."` attributes and a
-  `Page`-type mismatch in website-typecheck. Split `resolveValidPath` into a new `path-resolution.ts` to break an
+  `@playwright/test` versions, fixing stylelint false positives in inline `style="..."` attributes and a `Page`-type
+  mismatch in website-typecheck. Split `resolveValidPath` into a new `path-resolution.ts` to break an
   `app-status-store.ts` ↔ `path-navigation.ts` import cycle. Per-test unique paths fix a `rust-tests-linux` collision
   under higher parallelism ([b1a53acb](https://github.com/vdavid/cmdr/commit/b1a53acb)).
 - New `error-report` endpoint on the api server with R2 presigned-URL handoff, daily eviction sweep, and a dedicated
@@ -51,8 +51,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   ([1d719f36](https://github.com/vdavid/cmdr/commit/1d719f36),
   [b64e2c2c](https://github.com/vdavid/cmdr/commit/b64e2c2c)).
 - `desktop-rust-log-error-macro` check fails CI on any raw `log::error!` outside the macro definition itself, so every
-  error site routes through the Flow B auto-dispatcher
-  ([79bc2a28](https://github.com/vdavid/cmdr/commit/79bc2a28)).
+  error site routes through the Flow B auto-dispatcher ([79bc2a28](https://github.com/vdavid/cmdr/commit/79bc2a28)).
 - `changelog-commit-links` check now also verifies every linked SHA is reachable from `HEAD`, catching commits that got
   dropped from history (rebase, force-push, etc.) before they ship
   ([72375de6](https://github.com/vdavid/cmdr/commit/72375de6)).
