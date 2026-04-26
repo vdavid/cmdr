@@ -17,15 +17,15 @@
   },
   "devDependencies": {
     "@sveltejs/adapter-cloudflare": "^7.2.8",
-    "wrangler": "^4.76.0",
-    "@sveltejs/kit": "^2.55.0",
+    "wrangler": "^4.85.0",
+    "@sveltejs/kit": "^2.58.0",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
-    "@tailwindcss/vite": "^4.2.2",
-    "svelte": "^5.54.1",
-    "svelte-check": "^4.4.5",
-    "tailwindcss": "^4.2.2",
+    "@tailwindcss/vite": "^4.2.4",
+    "svelte": "^5.55.5",
+    "svelte-check": "^4.4.6",
+    "tailwindcss": "^4.2.4",
     "typescript": "~5.9.3",
     "vite": "^7.3.1",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.5"
   }
 }
