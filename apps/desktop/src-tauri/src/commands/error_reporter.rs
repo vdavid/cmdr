@@ -18,11 +18,6 @@ const ERROR_REPORT_URL: &str = "https://api.getcmdr.com/error-report";
 /// guardrail so we don't waste effort building a bundle that'd be rejected.
 const MAX_USER_NOTE_CHARS: usize = 100_000;
 
-/// Cap on a single command-id length — guards against the FE accidentally pushing a
-/// pasted blob in here. Real command IDs in `command-registry.ts` are well under 64
-/// chars; 256 is generous.
-const MAX_COMMAND_ID_CHARS: usize = 256;
-
 /// Pushes the FE settings-registry default map to the backend, where it feeds
 /// [`crate::error_reporter::ResolvedSettings::from_settings`] so manifests don't
 /// duplicate defaults between TypeScript and Rust.
@@ -36,29 +31,12 @@ pub fn record_settings_defaults(defaults: HashMap<String, serde_json::Value>) {
     error_reporter::settings_defaults::record(defaults);
 }
 
-/// Records the most recent FE user-driven command for the error-report manifest.
-///
-/// Called from `handleCommandExecute` in `apps/desktop/src/routes/(main)/command-dispatch.ts`,
-/// which is the single chokepoint for all keyboard / palette / menu commands. Cheap:
-/// one `Mutex` write, no I/O. Drops silently if the input is malformed (we'd rather
-/// keep the previous value than poison the manifest with garbage).
-#[tauri::command]
-pub fn record_user_action(command_id: String) {
-    if command_id.is_empty() || command_id.chars().count() > MAX_COMMAND_ID_CHARS {
-        return;
-    }
-    error_reporter::user_action::record(command_id.clone());
-    // Same event also lands in the breadcrumb stream so triagers see it in context
-    // alongside other FE events. Eventually `record_user_action` should be removed
-    // entirely in favor of breadcrumbs (last_user_action becomes a derived view).
-    error_reporter::breadcrumbs::record("command", &command_id, None);
-}
-
 /// Records a freeform breadcrumb event for the error-report manifest.
 ///
-/// Called from FE event handlers (navigation, dialog open/close, etc.) to add
-/// triage context. Validation matches `record_user_action`: empty inputs and
-/// over-long fields are dropped silently. `ctx` is an optional structured payload.
+/// Called from FE event handlers (navigation, dialog open/close, command dispatch)
+/// to add triage context. Empty kinds and over-long messages are dropped silently
+/// inside `error_reporter::breadcrumbs::record`. `ctx` is an optional structured
+/// payload.
 #[tauri::command]
 pub fn record_breadcrumb(kind: String, message: String, ctx: Option<serde_json::Value>) {
     error_reporter::breadcrumbs::record(&kind, &message, ctx);

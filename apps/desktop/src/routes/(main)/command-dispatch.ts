@@ -92,13 +92,14 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
   // `edit.copy` / `selection.selectAll` and trigger file-scope behavior.
   if (handleTextRegionShortcut(commandId)) return
 
-  // Breadcrumb: every keyboard / palette / menu command flows through here. Info-level
-  // → goes through the LogTape → Rust bridge → fern file chain so the breadcrumb shows
-  // up alongside backend logs in error-report bundles. Also recorded into the
-  // error-report manifest's `lastUserAction` field via the backend command below.
+  // Every keyboard / palette / menu command flows through here. Two channels:
+  // - Info-level structured log → LogTape → Rust bridge → fern file chain, so the
+  //   line appears alongside backend logs in error-report bundles.
+  // - A `kind: "command"` breadcrumb → the manifest's rolling buffer, so triagers
+  //   see what the user did right before an error fired.
   log.info(commandId)
-  void invoke('record_user_action', { commandId }).catch(() => {
-    // Best-effort: a failing record_user_action shouldn't break the dispatch.
+  void invoke('record_breadcrumb', { kind: 'command', message: commandId, ctx: null }).catch(() => {
+    // Best-effort: a failing breadcrumb shouldn't break the dispatch.
   })
 
   ctx.dialogs.showCommandPalette(false)

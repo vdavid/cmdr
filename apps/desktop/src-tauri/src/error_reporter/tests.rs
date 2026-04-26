@@ -26,7 +26,6 @@ fn sample_manifest() -> BundleManifest {
             file_chain: "debug".to_string(),
             stdout_module_overrides: Vec::new(),
         },
-        last_user_action: None,
         breadcrumbs: Vec::new(),
         user_note: Some("This thing failed".to_string()),
         generated_at: "2026-04-23T10:00:00+00:00".to_string(),

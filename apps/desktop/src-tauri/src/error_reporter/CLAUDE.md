@@ -41,17 +41,14 @@ Manifest fields (`BundleManifest`):
   (live atomic), `fileChain` (always `"debug"`), and `stdoutModuleOverrides` (noise
   suppression + `RUST_LOG` directives in insertion order). Lets a triager tell whether
   the absence of a debug line means "didn't happen" or "filtered out."
-- `lastUserAction` (optional): last command dispatched through
-  `handleCommandExecute` (`{commandId, at}`). Populated by the FE via
-  `record_user_action`; `None` if the user hadn't acted yet at error time.
-  This is being deprecated in favor of `breadcrumbs` (which carry the same
-  data plus more); kept for now so older bundles parse cleanly.
 - `breadcrumbs`: rolling window of the most recent ~50 FE/BE events (oldest
   first). Each entry is `{ at, kind, message, ctx? }`. Populated via the
   `record_breadcrumb` Tauri command (FE wrapper:
   `apps/desktop/src/lib/error-reporter/breadcrumbs.ts::recordBreadcrumb`).
   Backend code can call `error_reporter::breadcrumbs::record(...)` directly.
-  See "Breadcrumbs" below.
+  The most recent `kind: "command"` entry is the equivalent of the old
+  `lastUserAction` field (removed); `handleCommandExecute` pushes one on every
+  keyboard / palette / menu dispatch. See "Breadcrumbs" below.
 - `userNote` (optional): user-supplied free text. Trimmed; capped at 100 000 chars by the
   Tauri command layer.
 - `generatedAt`: ISO 8601 UTC timestamp.
@@ -238,8 +235,10 @@ are omitted from JSON via `skip_serializing_if = "Vec::is_empty"`.
 
 Conventions for `kind`:
 
-- `command` — keyboard / palette / menu commands (auto-recorded by
-  `record_user_action`).
+- `command` — keyboard / palette / menu commands (pushed by `handleCommandExecute`
+  in `routes/(main)/command-dispatch.ts`). The most recent entry of this kind is
+  the equivalent of the old `lastUserAction` field, which was removed once
+  breadcrumbs subsumed it.
 - `nav` — navigation transitions (path or pane change).
 - `dialog` — open/close of major modals.
 - `transfer` — copy / move / delete lifecycle events.
@@ -250,11 +249,6 @@ Wire new event sources from the FE via
 backend events via `error_reporter::breadcrumbs::record(...)`. Both are
 fire-and-forget — failures (e.g. lock poisoning, IPC unavailable) are silent
 because breadcrumbs are best-effort instrumentation, not a feature.
-
-The `last_user_action` manifest field is being phased out — `breadcrumbs` of
-`kind: "command"` carry the same data plus arbitrary structured context. Keep
-`last_user_action` shipping for now so existing bundle viewers don't choke,
-but new code should rely on `breadcrumbs` for triage.
 
 ## Gotchas
 

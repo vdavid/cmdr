@@ -240,12 +240,9 @@ pub struct BundleManifest {
     /// Effective log thresholds at bundle-build time. Lets a triager tell whether the
     /// absence of a debug line in the file means "didn't happen" or "filtered out."
     pub log_levels: LogLevelSnapshot,
-    /// Most recent user-driven UI command before this bundle was built. `None` if the
-    /// user hadn't done anything yet (e.g. the very first error after launch).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub last_user_action: Option<UserAction>,
     /// Rolling window of recent FE/BE events that led up to the bundle build, oldest
-    /// first. Empty when nothing was recorded (e.g. very early failures, tests).
+    /// first. The last entry of `kind: "command"` is the most recent user-driven UI
+    /// command. Empty when nothing was recorded (e.g. very early failures, tests).
     /// See `breadcrumbs.rs` for the buffer semantics.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub breadcrumbs: Vec<breadcrumbs::Breadcrumb>,
@@ -269,17 +266,6 @@ pub struct LogLevelSnapshot {
     /// Per-module overrides applied to the stdout chain (noise suppression + RUST_LOG
     /// directives). Stable insertion order: noise overrides first, then RUST_LOG.
     pub stdout_module_overrides: Vec<(String, String)>,
-}
-
-/// One user action — emitted by `record_user_action` whenever the FE dispatches a
-/// command. Stamped into the manifest so triagers see "what was the user doing right
-/// before this fired?" without having to grep the breadcrumb stream.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UserAction {
-    pub command_id: String,
-    /// ISO-8601 UTC. Easy to subtract from `generatedAt` to see the gap.
-    pub at: String,
 }
 
 /// In-memory bundle ready to upload (or save to disk in dev).
@@ -376,7 +362,6 @@ pub fn build_bundle<R: tauri::Runtime>(
         arch: std::env::consts::ARCH.to_string(),
         active_settings: cached_active_settings(app).clone(),
         log_levels: build_log_level_snapshot(),
-        last_user_action: user_action::last(),
         breadcrumbs: breadcrumbs::snapshot(),
         user_note: user_note.and_then(|n| {
             let trimmed = n.trim();
@@ -938,41 +923,6 @@ pub mod settings_defaults {
     #[cfg(test)]
     pub(crate) fn reset_for_test() {
         if let Ok(mut g) = DEFAULTS.lock() {
-            *g = None;
-        }
-    }
-}
-
-/// Records the most recent user-dispatched UI command. Read at bundle-build time and
-/// stamped into the manifest's `lastUserAction` field.
-pub mod user_action {
-    use super::UserAction;
-    use chrono::Utc;
-    use std::sync::Mutex;
-
-    static LAST: Mutex<Option<UserAction>> = Mutex::new(None);
-
-    /// Update the last-action record. Called from the `record_user_action` Tauri command
-    /// the FE invokes inside `handleCommandExecute`.
-    pub fn record(command_id: String) {
-        let action = UserAction {
-            command_id,
-            at: Utc::now().to_rfc3339(),
-        };
-        if let Ok(mut guard) = LAST.lock() {
-            *guard = Some(action);
-        }
-    }
-
-    /// Snapshot of the most recent action. `None` if nothing has been recorded yet.
-    pub fn last() -> Option<UserAction> {
-        LAST.lock().ok().and_then(|g| g.clone())
-    }
-
-    #[cfg(test)]
-    #[allow(dead_code, reason = "Reserved for future user_action tests")]
-    pub(crate) fn reset_for_test() {
-        if let Ok(mut g) = LAST.lock() {
             *g = None;
         }
     }

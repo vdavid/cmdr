@@ -7,8 +7,10 @@
 //! ## Why not just use logs?
 //!
 //! Logs are noisy and unstructured. Breadcrumbs are structured (kind + ctx) and
-//! curated — only the kinds we care about during triage. Future work: replace
-//! `last_user_action` entirely (it's the same idea with N=1).
+//! curated — only the kinds we care about during triage. The `kind: "command"`
+//! breadcrumb subsumes what was previously the manifest's `last_user_action`
+//! field (since removed) — `handleCommandExecute` pushes one on every dispatch,
+//! and the most recent such entry is the "what did the user just do" signal.
 
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
