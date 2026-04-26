@@ -11,3 +11,5 @@ Before wrapping up, run through this checklist:
    itself.
 7. Did you have to reverse-engineer a flow, state machine, or async lifecycle that isn't documented? If so, add a brief
    section (5-10 lines) to the nearest `CLAUDE.md` so the next agent doesn't have to re-discover it.
+8. Meta question: shall we add anything more to this `wrap-up` command that we should genuinely benefit from at the end
+   of sessions like this one, without bloating it?
