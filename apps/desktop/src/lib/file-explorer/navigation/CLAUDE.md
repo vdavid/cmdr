@@ -7,7 +7,8 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 | File                             | Purpose                                                   |
 | -------------------------------- | --------------------------------------------------------- |
 | `navigation-history.ts`          | Purely functional immutable history stack                 |
-| `path-navigation.ts`             | Async path resolution with fallback chain                 |
+| `path-navigation.ts`             | Picks initial path when switching volumes                 |
+| `path-resolution.ts`             | Walk-up `resolveValidPath` (split out to break cycle)     |
 | `keyboard-shortcuts.ts`          | Home/End/PageUp/PageDown handling for file lists          |
 | `VolumeBreadcrumb.svelte`        | Clickable volume label + grouped dropdown                 |
 | `volume-grouping.ts`             | Pure logic: group volumes by category, get volume icons   |
@@ -44,15 +45,20 @@ Runs checks **in parallel** with 500ms frontend timeouts per check. Priority:
 3. Stored `lastUsedPath` for this volume
 4. Default: `~` for `DEFAULT_VOLUME_ID`, else volume root
 
+`withTimeout(promise, ms, fallback)` — imported from `$lib/utils/timing` and re-exported. Races a promise against a
+timeout, returning the fallback on expiry. Used by `determineNavigationPath` and also by `VolumeBreadcrumb.svelte`
+(wraps `getVolumeSpace`). `DualPaneExplorer.svelte` uses `resolvePathVolume` for startup tab restore (backend has its
+own 2s timeout, no frontend wrapper needed).
+
+## `path-resolution.ts`
+
 `resolveValidPath(targetPath, options?)` — walks parent tree until an existing directory is found. Accepts optional
 `{ pathExistsFn, timeoutMs }` — defaults to Tauri `pathExists` with 1s timeout per step. Used both at runtime (with
 timeouts) and at startup via `app-status-store.ts`'s `resolvePersistedPath` wrapper (no timeout, injected
 `pathExistsFn`). Fallback chain: parent dirs → `~` → `/` → `null` (volume unmounted).
 
-`withTimeout(promise, ms, fallback)` — imported from `$lib/utils/timing` and re-exported. Races a promise against a
-timeout, returning the fallback on expiry. Used by both functions above, and also by `VolumeBreadcrumb.svelte` (wraps
-`getVolumeSpace`). `DualPaneExplorer.svelte` uses `resolvePathVolume` for startup tab restore (backend has its own 2s
-timeout, no frontend wrapper needed).
+Lives in its own module so `app-status-store.ts` can import it without forming a cycle — `path-navigation.ts` itself
+imports `getLastUsedPathForVolume` from `app-status-store.ts`.
 
 ### Non-blocking navigation pattern
 

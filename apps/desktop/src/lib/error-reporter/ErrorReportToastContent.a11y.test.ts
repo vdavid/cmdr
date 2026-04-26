@@ -7,11 +7,7 @@
 
 import { describe, it, vi, expect } from 'vitest'
 import { mount, tick } from 'svelte'
-import ErrorReportToastContent, {
-  setLastSentReportId,
-  getLastSentReportId,
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
-} from './ErrorReportToastContent.svelte'
+import ErrorReportToastContent, { setLastSentReportId, getLastSentReportId } from './ErrorReportToastContent.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import { dismissToast } from '$lib/ui/toast'
 
@@ -54,10 +50,11 @@ describe('ErrorReportToastContent', () => {
     document.body.appendChild(target)
     mount(ErrorReportToastContent, { target, props: {} })
     await tick()
-    const copyButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Copy ID')
-    expect(copyButton).toBeDefined()
-    copyButton?.click()
+    const copyButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Copy ID')
+    if (!copyButton) throw new Error('Copy ID button missing')
+    copyButton.click()
     await tick()
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- vitest spy on prototype method
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('ERR-COPY1')
   })
 
@@ -68,9 +65,9 @@ describe('ErrorReportToastContent', () => {
     document.body.appendChild(target)
     mount(ErrorReportToastContent, { target, props: {} })
     await tick()
-    const dismissButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Dismiss')
-    expect(dismissButton).toBeDefined()
-    dismissButton?.click()
+    const dismissButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Dismiss')
+    if (!dismissButton) throw new Error('Dismiss button missing')
+    dismissButton.click()
     expect(dismissToast).toHaveBeenCalledWith('error-report-sent')
   })
 })

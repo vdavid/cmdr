@@ -94,11 +94,15 @@
         </h2>
         <p class="folder-path">{folderPath}</p>
 
+        <!-- Click delegate for anchor tags inside rendered markdown -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="explanation" onclick={handleMarkdownLinkClick}>
             <!-- eslint-disable-next-line svelte/no-at-html-tags -- Input is our own hardcoded strings from Rust, not user content -->
             {@html renderErrorMarkdown(friendly.explanation)}
         </div>
 
+        <!-- Click delegate for anchor tags inside rendered markdown -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="suggestion" onclick={handleMarkdownLinkClick}>
             <!-- eslint-disable-next-line svelte/no-at-html-tags -- Input is our own hardcoded strings from Rust, not user content -->
             {@html renderErrorMarkdown(friendly.suggestion)}
@@ -199,6 +203,7 @@
         color: var(--color-accent-text);
         text-decoration: underline;
         /* The global `cursor: default` on html overrides the anchor's default pointer. */
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         cursor: pointer;
     }
 

@@ -18,7 +18,7 @@ function createMockKv(store: Record<string, string> = {}): KVNamespace {
 }
 
 function createMockAnalyticsEngine(): AnalyticsEngineDataset {
-  return { writeDataPoint: vi.fn() } as unknown as AnalyticsEngineDataset
+  return { writeDataPoint: vi.fn() }
 }
 
 function createMockD1(): D1Database {

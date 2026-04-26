@@ -5,7 +5,7 @@ import type { Store } from '@tauri-apps/plugin-store'
 import type { SortColumn } from './file-explorer/types'
 import { defaultSortOrders } from './file-explorer/types'
 import type { PersistedTab, PersistedPaneTabs } from './file-explorer/tabs/tab-types'
-import { resolveValidPath } from './file-explorer/navigation/path-navigation'
+import { resolveValidPath } from './file-explorer/navigation/path-resolution'
 
 const STORE_NAME = 'app-status.json'
 const DEFAULT_PATH = '~'
@@ -367,7 +367,7 @@ export async function loadPaneTabs(
           volumeId: DEFAULT_VOLUME_ID,
           sortBy: DEFAULT_SORT_BY,
           sortOrder: defaultSortOrders[DEFAULT_SORT_BY],
-          viewMode: 'brief' as ViewMode,
+          viewMode: 'brief',
           pinned: false,
         },
       ],

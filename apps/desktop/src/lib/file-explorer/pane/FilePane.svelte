@@ -82,7 +82,7 @@
     import { isMtpVolumeId, getMtpDisplayPath } from '$lib/mtp'
     import * as benchmark from '$lib/benchmark'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
-    import { resolveValidPath } from '../navigation/path-navigation'
+    import { resolveValidPath } from '../navigation/path-resolution'
     import { homeDir } from '@tauri-apps/api/path'
     import {
         getVolumeSpace,

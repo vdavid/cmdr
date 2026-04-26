@@ -78,7 +78,6 @@
         setCaveat,
         buildSearchQuery,
         resetSearchState,
-        type PatternType,
     } from './search-state.svelte'
     import AiSearchRow from './AiSearchRow.svelte'
     import SearchInputArea from './SearchInputArea.svelte'
@@ -349,7 +348,7 @@
             changed.add('name')
         }
         if (result.display.patternType === 'regex' || result.display.patternType === 'glob') {
-            setPatternType(result.display.patternType as PatternType)
+            setPatternType(result.display.patternType)
             changed.add('patternType')
         }
         if (result.query.caseSensitive != null) {

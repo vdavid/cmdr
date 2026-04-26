@@ -10,7 +10,7 @@
 import { describe, it, vi, expect, beforeEach } from 'vitest'
 import { listen } from '@tauri-apps/api/event'
 import { addToast } from '$lib/ui/toast'
-// eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
+
 import { getLastAutoSentReportId } from './AutoSendToastContent.svelte'
 import { initAutoSendToastListener, cleanupAutoSendToastListener } from './auto-send-toast.svelte'
 
@@ -34,12 +34,14 @@ describe('auto-send toast listener', () => {
     cleanupAutoSendToastListener()
     vi.clearAllMocks()
     registeredHandler = undefined
-    vi.mocked(listen).mockImplementation(((event: string, handler: Handler) => {
+    /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument -- mock signature */
+    const impl = ((event: string, handler: Handler) => {
       expect(event).toBe('error-report-auto-sent')
       registeredHandler = handler
       return Promise.resolve(unlisten)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock signature
-    }) as any)
+    }) as any
+    vi.mocked(listen).mockImplementation(impl)
+    /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
   })
 
   it('registers exactly one Tauri listener on init', async () => {

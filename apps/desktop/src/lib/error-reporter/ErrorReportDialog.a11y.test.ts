@@ -88,10 +88,10 @@ describe('ErrorReportDialog', () => {
     await new Promise((r) => setTimeout(r, 300))
     await tick()
     const toggle = Array.from(target.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes("What's about to be sent"),
+      b.textContent.includes("What's about to be sent"),
     )
-    expect(toggle).toBeDefined()
-    toggle?.click()
+    if (!toggle) throw new Error('toggle missing')
+    toggle.click()
     await tick()
     expect(target.textContent).toContain('Manifest')
     expect(target.textContent).toContain('Sample of first')
@@ -121,10 +121,11 @@ describe('ErrorReportDialog', () => {
     await tick()
     await new Promise((r) => setTimeout(r, 300))
     await tick()
-    const copyButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Copy')
-    expect(copyButton).toBeDefined()
-    copyButton?.click()
+    const copyButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Copy')
+    if (!copyButton) throw new Error('Copy button missing')
+    copyButton.click()
     await tick()
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- vitest spy on prototype method
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('ERR-AB23X')
   })
 
@@ -139,7 +140,7 @@ describe('ErrorReportDialog', () => {
     // Each rocket emoji is two UTF-16 code units but one Unicode code point. With ~50k
     // emoji we sit in the soft-warning band by code-point count; the displayed counter
     // must show the code-point count, not the doubled UTF-16 length.
-    const textarea = target.querySelector('textarea') as HTMLTextAreaElement | null
+    const textarea = target.querySelector('textarea')
     expect(textarea).not.toBeNull()
     if (!textarea) throw new Error('textarea missing')
     const oneEmoji = '\u{1F680}' // rocket — 1 code point, 2 UTF-16 units
@@ -158,8 +159,8 @@ describe('ErrorReportDialog', () => {
 
     // Send button must still be enabled — 50 001 < 100 000 (the hard cap).
     const sendButton = Array.from(target.querySelectorAll('button')).find((b) =>
-      b.textContent?.trim().startsWith('Send report'),
-    ) as HTMLButtonElement | undefined
+      b.textContent.trim().startsWith('Send report'),
+    )
     expect(sendButton).toBeDefined()
     expect(sendButton?.disabled).toBe(false)
   })
@@ -172,7 +173,7 @@ describe('ErrorReportDialog', () => {
     await new Promise((r) => setTimeout(r, 300))
     await tick()
 
-    const textarea = target.querySelector('textarea') as HTMLTextAreaElement | null
+    const textarea = target.querySelector('textarea')
     if (!textarea) throw new Error('textarea missing')
     // 100 001 code-points of emoji — 200 002 UTF-16 units. Naive `.length` would have
     // already reported "over" at 50 001 emoji; what we're checking here is that the
@@ -182,8 +183,8 @@ describe('ErrorReportDialog', () => {
     await tick()
 
     const sendButton = Array.from(target.querySelectorAll('button')).find((b) =>
-      b.textContent?.trim().startsWith('Send report'),
-    ) as HTMLButtonElement | undefined
+      b.textContent.trim().startsWith('Send report'),
+    )
     expect(sendButton?.disabled).toBe(true)
   })
 
@@ -195,9 +196,9 @@ describe('ErrorReportDialog', () => {
     await new Promise((r) => setTimeout(r, 300))
     await tick()
     errorReportFlow.open = true
-    const cancelButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Cancel')
-    expect(cancelButton).toBeDefined()
-    cancelButton?.click()
+    const cancelButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Cancel')
+    if (!cancelButton) throw new Error('Cancel button missing')
+    cancelButton.click()
     await tick()
     expect(errorReportFlow.open).toBe(false)
   })

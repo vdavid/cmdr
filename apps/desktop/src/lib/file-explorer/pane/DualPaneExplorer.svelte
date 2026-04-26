@@ -37,7 +37,8 @@
     } from '../types'
     import { defaultSortOrders } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
-    import { determineNavigationPath, resolveValidPath } from '../navigation/path-navigation'
+    import { determineNavigationPath } from '../navigation/path-navigation'
+    import { resolveValidPath } from '../navigation/path-resolution'
 
     import {
         createHistory,

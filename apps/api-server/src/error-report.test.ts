@@ -130,7 +130,7 @@ const validMeta = {
 
 beforeEach(() => {
   // Swallow Discord webhook calls if one somehow gets through
-  globalThis.fetch = (() => Promise.resolve(new Response(null, { status: 204 }))) as unknown as typeof fetch
+  globalThis.fetch = () => Promise.resolve(new Response(null, { status: 204 }))
 })
 
 afterEach(() => {

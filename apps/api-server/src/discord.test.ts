@@ -124,7 +124,7 @@ describe('postErrorReportNotification', () => {
 
   it('POSTs JSON to the webhook on happy path', async () => {
     const mock = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })))
-    globalThis.fetch = mock as unknown as typeof fetch
+    globalThis.fetch = mock
 
     await postErrorReportNotification('https://discord/webhook', baseNotification)
 
@@ -144,7 +144,7 @@ describe('postErrorReportNotification', () => {
       .fn()
       .mockResolvedValueOnce(new Response(null, { status: 429, headers }))
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
-    globalThis.fetch = mock as unknown as typeof fetch
+    globalThis.fetch = mock
 
     const promise = postErrorReportNotification('https://discord/webhook', baseNotification)
     await vi.advanceTimersByTimeAsync(10)
@@ -162,7 +162,7 @@ describe('postErrorReportNotification', () => {
       .fn()
       .mockResolvedValueOnce(new Response(null, { status: 429, headers }))
       .mockResolvedValueOnce(new Response(null, { status: 500 }))
-    globalThis.fetch = mock as unknown as typeof fetch
+    globalThis.fetch = mock
 
     const promise = postErrorReportNotification('https://discord/webhook', baseNotification)
     await vi.advanceTimersByTimeAsync(50)
@@ -175,7 +175,7 @@ describe('postErrorReportNotification', () => {
 
   it('logs and drops when fetch throws', async () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    globalThis.fetch = (() => Promise.reject(new Error('network down'))) as unknown as typeof fetch
+    globalThis.fetch = () => Promise.reject(new Error('network down'))
 
     await expect(postErrorReportNotification('https://discord/webhook', baseNotification)).resolves.toBeUndefined()
 
@@ -195,7 +195,7 @@ describe('postEvictionNotification', () => {
 
   it('POSTs a plain-content message (no embed)', async () => {
     const mock = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })))
-    globalThis.fetch = mock as unknown as typeof fetch
+    globalThis.fetch = mock
 
     await postEvictionNotification('https://discord/webhook', {
       evictedCount: 3,

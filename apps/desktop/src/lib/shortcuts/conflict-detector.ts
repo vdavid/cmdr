@@ -25,7 +25,7 @@ export function findConflictsForShortcut(shortcut: string, scope: CommandScope, 
     if (!cmdShortcuts.includes(shortcut)) return false
 
     // Check if scopes overlap
-    return scopesOverlap(cmd.scope as CommandScope, scope)
+    return scopesOverlap(cmd.scope, scope)
   })
 }
 
@@ -65,7 +65,7 @@ export function getAllConflicts(): ShortcutConflict[] {
           const cScope = c.scope as CommandScope
           // Check if this command conflicts with any other
           const hasOverlap = conflictingCommands.some(
-            (other) => other.id !== c.id && scopesOverlap(cScope, other.scope as CommandScope),
+            (other) => other.id !== c.id && scopesOverlap(cScope, other.scope),
           )
           if (hasOverlap) {
             actualConflicts.push(c)

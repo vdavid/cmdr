@@ -156,7 +156,7 @@ describe('SearchResults a11y', () => {
         modifiedAt: 1_700_000_000,
         iconId: 'dir',
       },
-    ] as unknown as SearchResultEntry[]
+    ]
 
     const target = document.createElement('div')
     document.body.appendChild(target)

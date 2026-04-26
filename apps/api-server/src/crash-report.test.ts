@@ -21,7 +21,7 @@ function createMockD1(runImpl?: () => Promise<unknown>): {
 }
 
 function createMockAnalyticsEngine(): AnalyticsEngineDataset {
-  return { writeDataPoint: vi.fn() } as unknown as AnalyticsEngineDataset
+  return { writeDataPoint: vi.fn() }
 }
 
 function createBindings(overrides: Record<string, unknown> = {}) {

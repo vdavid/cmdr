@@ -2,7 +2,7 @@ import { describe, expect, it, vi, type Mock } from 'vitest'
 import { app } from './index'
 
 function createMockAnalyticsEngine(): AnalyticsEngineDataset {
-  return { writeDataPoint: vi.fn() } as unknown as AnalyticsEngineDataset
+  return { writeDataPoint: vi.fn() }
 }
 
 /** Mock D1Database that tracks prepare/bind/run calls. Returns mocks for assertions. */

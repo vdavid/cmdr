@@ -98,12 +98,7 @@ export type MtpConnectionError =
  * Checks if an error is an MTP connection error.
  */
 export function isMtpConnectionError(error: unknown): error is MtpConnectionError {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'type' in error &&
-    typeof (error as { type: unknown }).type === 'string'
-  )
+  return typeof error === 'object' && error !== null && 'type' in error && typeof error.type === 'string'
 }
 
 /**

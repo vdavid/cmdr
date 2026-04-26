@@ -7,11 +7,7 @@
 
 import { describe, it, vi, expect } from 'vitest'
 import { mount, tick } from 'svelte'
-import AutoSendToastContent, {
-  setLastAutoSentReportId,
-  getLastAutoSentReportId,
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
-} from './AutoSendToastContent.svelte'
+import AutoSendToastContent, { setLastAutoSentReportId, getLastAutoSentReportId } from './AutoSendToastContent.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import { dismissToast } from '$lib/ui/toast'
 import { openSettingsWindow } from '$lib/settings/settings-window'
@@ -58,9 +54,9 @@ describe('AutoSendToastContent', () => {
     document.body.appendChild(target)
     mount(AutoSendToastContent, { target, props: {} })
     await tick()
-    const viewButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'View')
-    expect(viewButton).toBeDefined()
-    viewButton?.click()
+    const viewButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'View')
+    if (!viewButton) throw new Error('View button missing')
+    viewButton.click()
     expect(dismissToast).toHaveBeenCalledWith('error-report-auto-sent')
     expect(openErrorReportDialog).toHaveBeenCalled()
   })
@@ -73,10 +69,10 @@ describe('AutoSendToastContent', () => {
     mount(AutoSendToastContent, { target, props: {} })
     await tick()
     const settingsButton = Array.from(target.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Change settings',
+      (b) => b.textContent.trim() === 'Change settings',
     )
-    expect(settingsButton).toBeDefined()
-    settingsButton?.click()
+    if (!settingsButton) throw new Error('Change settings button missing')
+    settingsButton.click()
     expect(dismissToast).toHaveBeenCalledWith('error-report-auto-sent')
     expect(openSettingsWindow).toHaveBeenCalled()
   })

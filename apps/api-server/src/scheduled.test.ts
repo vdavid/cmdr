@@ -328,7 +328,7 @@ describe('handleDailyEvictionSweep', () => {
   let originalFetch: typeof fetch
   beforeEach(() => {
     originalFetch = globalThis.fetch
-    globalThis.fetch = (() => Promise.resolve(new Response(null, { status: 204 }))) as unknown as typeof fetch
+    globalThis.fetch = () => Promise.resolve(new Response(null, { status: 204 }))
   })
   afterEach(() => {
     globalThis.fetch = originalFetch

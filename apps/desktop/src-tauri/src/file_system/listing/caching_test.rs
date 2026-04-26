@@ -106,7 +106,7 @@ fn test_find_listings_for_path_one_match() {
 fn test_find_listings_for_path_two_matches() {
     let id1 = insert_test_listing(
         "find_2match_a",
-        "/shared/dir",
+        "/shared/dir/two_matches",
         SortColumn::Size,
         SortOrder::Descending,
         DirectorySortMode::AlwaysByName,
@@ -114,14 +114,14 @@ fn test_find_listings_for_path_two_matches() {
     );
     let id2 = insert_test_listing(
         "find_2match_b",
-        "/shared/dir",
+        "/shared/dir/two_matches",
         SortColumn::Name,
         SortOrder::Ascending,
         DirectorySortMode::LikeFiles,
         vec![],
     );
 
-    let results = find_listings_for_path(&PathBuf::from("/shared/dir"));
+    let results = find_listings_for_path(&PathBuf::from("/shared/dir/two_matches"));
     assert_eq!(results.len(), 2);
 
     // Both IDs should be present (order unspecified since HashMap is unordered)
@@ -470,7 +470,7 @@ fn test_find_listings_for_path_on_volume_filters_by_volume() {
     let id1 = insert_test_listing_on_volume(
         "vol_filter_root",
         "root",
-        "/shared/dir",
+        "/shared/dir/vol_filter",
         SortColumn::Name,
         SortOrder::Ascending,
         DirectorySortMode::LikeFiles,
@@ -479,7 +479,7 @@ fn test_find_listings_for_path_on_volume_filters_by_volume() {
     let id2 = insert_test_listing_on_volume(
         "vol_filter_smb",
         "smb-nas",
-        "/shared/dir",
+        "/shared/dir/vol_filter",
         SortColumn::Name,
         SortOrder::Ascending,
         DirectorySortMode::LikeFiles,
@@ -487,17 +487,17 @@ fn test_find_listings_for_path_on_volume_filters_by_volume() {
     );
 
     // Filter by "root" — only id1
-    let results = find_listings_for_path_on_volume(Some("root"), &PathBuf::from("/shared/dir"));
+    let results = find_listings_for_path_on_volume(Some("root"), &PathBuf::from("/shared/dir/vol_filter"));
     assert_eq!(results.len(), 1);
     assert_eq!(results[0].0, "vol_filter_root");
 
     // Filter by "smb-nas" — only id2
-    let results = find_listings_for_path_on_volume(Some("smb-nas"), &PathBuf::from("/shared/dir"));
+    let results = find_listings_for_path_on_volume(Some("smb-nas"), &PathBuf::from("/shared/dir/vol_filter"));
     assert_eq!(results.len(), 1);
     assert_eq!(results[0].0, "vol_filter_smb");
 
     // No filter — both
-    let results = find_listings_for_path_on_volume(None, &PathBuf::from("/shared/dir"));
+    let results = find_listings_for_path_on_volume(None, &PathBuf::from("/shared/dir/vol_filter"));
     assert_eq!(results.len(), 2);
 
     cleanup_listing(&id1);

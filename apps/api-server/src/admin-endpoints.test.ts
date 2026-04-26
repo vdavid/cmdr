@@ -9,7 +9,7 @@ function createMockKv(): KVNamespace {
 }
 
 function createMockAnalyticsEngine(): AnalyticsEngineDataset {
-  return { writeDataPoint: vi.fn() } as unknown as AnalyticsEngineDataset
+  return { writeDataPoint: vi.fn() }
 }
 
 function createMockD1(queryResults: Record<string, unknown[]> = {}): D1Database {

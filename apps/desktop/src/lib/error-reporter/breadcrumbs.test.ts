@@ -42,7 +42,9 @@ describe('recordBreadcrumb', () => {
 
   it('swallows errors so breadcrumb failures never break the UI', async () => {
     mockedInvoke.mockRejectedValueOnce(new Error('IPC unavailable'))
-    expect(() => recordBreadcrumb('test', 'will-reject')).not.toThrow()
+    expect(() => {
+      recordBreadcrumb('test', 'will-reject')
+    }).not.toThrow()
     // Let the rejection settle on the microtask queue so coverage sees the catch branch.
     await Promise.resolve()
     expect(mockedInvoke).toHaveBeenCalledOnce()

@@ -17,7 +17,7 @@ function makeRecord(overrides: Partial<LogRecord> = {}): LogRecord {
     properties: {},
     timestamp: Date.now(),
     ...overrides,
-  } as LogRecord
+  }
 }
 
 describe('log-bridge', () => {

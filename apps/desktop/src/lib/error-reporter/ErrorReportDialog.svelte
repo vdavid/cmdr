@@ -16,7 +16,7 @@
         saveErrorReportToDisk,
         type PreviewPayload,
     } from '$lib/tauri-commands/error-reporter'
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
+     
     import ErrorReportToastContent, { setLastSentReportId } from './ErrorReportToastContent.svelte'
     import { closeErrorReportDialog, errorReportFlow } from './error-report-flow.svelte'
     import { getAppLogger } from '$lib/logging/logger'
@@ -135,7 +135,7 @@
     }
 
     function formatBytes(bytes: number): string {
-        if (bytes < 1024) return `${bytes} B`
+        if (bytes < 1024) return `${String(bytes)} B`
         if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
         return `${(bytes / 1024 / 1024).toFixed(2)} MB`
     }

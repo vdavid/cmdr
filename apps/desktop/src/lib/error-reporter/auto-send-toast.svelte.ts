@@ -9,7 +9,7 @@
 
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { addToast } from '$lib/ui/toast'
-// eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
+
 import AutoSendToastContent, { setLastAutoSentReportId } from './AutoSendToastContent.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 
@@ -36,6 +36,7 @@ export async function initAutoSendToastListener(): Promise<void> {
   unlisten = await listen<AutoSentPayload>('error-report-auto-sent', (event) => {
     const reportId = event.payload
     log.info('Error report auto-sent: {id}', { id: reportId })
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- Svelte module export type not resolved
     setLastAutoSentReportId(reportId)
     addToast(AutoSendToastContent, {
       id: TOAST_ID,

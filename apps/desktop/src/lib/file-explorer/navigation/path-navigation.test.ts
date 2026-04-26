@@ -12,8 +12,9 @@ vi.mock('$lib/app-status-store', () => ({
 const { pathExists } = await import('$lib/tauri-commands')
 const { getLastUsedPathForVolume } = await import('$lib/app-status-store')
 
-import { withTimeout, determineNavigationPath, resolveValidPath } from './path-navigation'
+import { withTimeout, determineNavigationPath } from './path-navigation'
 import type { OtherPaneState } from './path-navigation'
+import { resolveValidPath } from './path-resolution'
 
 const mockPathExists = vi.mocked(pathExists)
 const mockGetLastUsedPath = vi.mocked(getLastUsedPathForVolume)

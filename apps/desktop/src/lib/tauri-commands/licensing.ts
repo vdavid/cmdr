@@ -63,7 +63,7 @@ const validActivationErrorCodes = new Set<string>([
 export function parseActivationError(e: unknown): LicenseActivationError | null {
   // Case 1: already a parsed object with a `code` field
   if (typeof e === 'object' && e !== null && 'code' in e) {
-    const obj = e as { code: unknown }
+    const obj = e
     if (typeof obj.code === 'string' && validActivationErrorCodes.has(obj.code)) {
       return e as LicenseActivationError
     }
@@ -74,7 +74,7 @@ export function parseActivationError(e: unknown): LicenseActivationError | null 
     try {
       const parsed: unknown = JSON.parse(e)
       if (typeof parsed === 'object' && parsed !== null && 'code' in parsed) {
-        const obj = parsed as { code: unknown }
+        const obj = parsed
         if (typeof obj.code === 'string' && validActivationErrorCodes.has(obj.code)) {
           return parsed as LicenseActivationError
         }
