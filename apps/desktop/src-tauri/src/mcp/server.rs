@@ -287,12 +287,12 @@ async fn handle_mcp_get(headers: HeaderMap) -> Response {
         .and_then(|v| v.to_str().ok())
         .unwrap_or("none");
 
-    log::debug!(
+    log::trace!(
         "MCP: GET /mcp - SSE connection (user-agent: {}, origin: {})",
         user_agent,
         origin
     );
-    log::debug!("MCP: GET headers: {:?}", headers);
+    log::trace!("MCP: GET headers: {:?}", headers);
 
     // Validate Origin header (security requirement)
     if let Err(response) = validate_origin(&headers) {

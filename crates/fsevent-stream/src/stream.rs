@@ -31,7 +31,7 @@ use core_foundation::runloop::{kCFRunLoopBeforeWaiting, kCFRunLoopDefaultMode, C
 use core_foundation::string::CFString;
 use futures_core::Stream;
 use futures_util::stream::{iter, StreamExt};
-use log::{debug, error};
+use log::{error, trace};
 #[cfg(feature = "tokio")]
 use tokio1 as tokio;
 #[cfg(feature = "tokio")]
@@ -324,7 +324,7 @@ macro_rules! define_callback {
                     $body
                 }
 
-                debug!("Received {} event(s)", num_events);
+                trace!("Received {} event(s)", num_events);
 
                 let info = info as *const StreamContextInfo;
                 let event_handler = unsafe { &(*info).event_handler };
