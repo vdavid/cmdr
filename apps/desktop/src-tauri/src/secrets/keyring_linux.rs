@@ -38,10 +38,10 @@ impl KeyringStore {
             Ok(e) => e,
             Err(_) => return false,
         };
-        if entry.set_password("probe").is_err() {
+        if entry.set_secret(b"probe").is_err() {
             return false;
         }
-        let ok = entry.get_password().is_ok();
+        let ok = entry.get_secret().is_ok();
         let _ = entry.delete_credential();
         ok
     }
@@ -51,12 +51,10 @@ impl SecretStore for KeyringStore {
     fn set(&self, key: &str, value: &[u8]) -> Result<(), SecretStoreError> {
         debug!("Keyring: setting secret for key: {}", key);
         ensure_default_store();
-        let password = String::from_utf8(value.to_vec())
-            .map_err(|e| SecretStoreError::Other(format!("Value is not valid UTF-8: {}", e)))?;
         let entry = keyring_core::Entry::new(SERVICE_NAME, key)
             .map_err(|e| SecretStoreError::Other(format!("Failed to create keyring entry: {}", e)))?;
         entry
-            .set_password(&password)
+            .set_secret(value)
             .map_err(|e| SecretStoreError::Other(format!("Failed to store secret: {}", e)))
     }
 
@@ -65,8 +63,8 @@ impl SecretStore for KeyringStore {
         ensure_default_store();
         let entry = keyring_core::Entry::new(SERVICE_NAME, key)
             .map_err(|e| SecretStoreError::Other(format!("Failed to create keyring entry: {}", e)))?;
-        match entry.get_password() {
-            Ok(password) => Ok(password.into_bytes()),
+        match entry.get_secret() {
+            Ok(secret) => Ok(secret),
             Err(keyring_core::Error::NoEntry) => {
                 Err(SecretStoreError::NotFound(format!("No secret found for key: {}", key)))
             }

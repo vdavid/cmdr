@@ -51,14 +51,14 @@ app's data dir convention). Existing Linux alpha users would need to re-enter SM
 
 ## Gotchas
 
-- `keyring-core` works with strings, not bytes (the `set_password`/`get_password` API). Values are converted via
-  `String::from_utf8` (all current callers pass valid UTF-8). Non-UTF-8 values would error.
 - `keyring-core` requires a process-wide default store. We install ours lazily via a `Once` in `keyring_linux.rs`'s
   `ensure_default_store()` — called from every public method on `KeyringStore`. Replaced the legacy `keyring = "3"`
   crate during the v4 ecosystem split (the canonical `keyring` crate became a sample/example crate; cross-platform
   API moved to `keyring-core` and each backend ships separately). We picked the zbus-based backend
   (`zbus-secret-service-keyring-store` with `rt-tokio-crypto-rust`) since we already use zbus + tokio + RustCrypto —
   no system libdbus needed.
+- We use the `set_secret(&[u8])` / `get_secret() -> Vec<u8>` API on `keyring_core::Entry` so we can pass through
+  arbitrary binary values instead of forcing UTF-8 strings via `set_password` / `get_password`.
 - `EncryptedFileStore` and `PlainFileStore` have separate `Mutex` statics for file access serialization (they're
   compiled on different platforms).
 - `is_file_backed()` is checked by the frontend to show a one-time info toast about credential storage. In dev mode it
