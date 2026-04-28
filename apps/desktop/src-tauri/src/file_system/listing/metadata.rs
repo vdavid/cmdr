@@ -103,6 +103,14 @@ pub struct FileEntry {
     /// Recursive dir count (from drive index, None if not indexed)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub recursive_dir_count: Option<u64>,
+    /// When set on a virtual entry, the frontend navigates to this path
+    /// instead of treating the entry as a normal directory listing.
+    /// Inert until M3 wires it for `worktrees/` and `submodules/`. Lives on
+    /// the schema from M1 so M3 doesn't have to ripple a change through every
+    /// consumer (frontend list views, MCP `cmdr://state`, drag-drop, copy
+    /// preview, Brief/Full renderers).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub redirect_to_path: Option<String>,
 }
 
 impl FileEntry {
@@ -128,6 +136,7 @@ impl FileEntry {
             recursive_physical_size: None,
             recursive_file_count: None,
             recursive_dir_count: None,
+            redirect_to_path: None,
         }
     }
 }

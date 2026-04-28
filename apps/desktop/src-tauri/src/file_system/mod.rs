@@ -1,5 +1,6 @@
 //! File system module - operations, watchers, volumes, and providers.
 
+pub mod git;
 #[cfg(target_os = "linux")]
 pub(crate) mod linux_mounts;
 pub(crate) mod listing;

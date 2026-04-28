@@ -1,6 +1,7 @@
 <script lang="ts">
     import IconCircleAlert from '~icons/lucide/circle-alert'
     import IconHourglass from '~icons/lucide/hourglass'
+    import { listen, type UnlistenFn } from '@tauri-apps/api/event'
     import type { FileEntry, SortColumn, SortOrder, SyncStatus } from '../types'
     import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
     import { startSelectionDragTracking, type DragFileInfo } from '../drag/drag-drop'
@@ -8,6 +9,7 @@
     import SortableHeader from '../selection/SortableHeader.svelte'
     import FileIcon from '../selection/FileIcon.svelte'
     import InlineRenameEditor from '../rename/InlineRenameEditor.svelte'
+    import { fetchStatusMap, glyphFor, labelFor, type EntryStatusCode } from '../git/status-column'
     import {
         getSyncIconPath,
         createParentEntry,
@@ -62,6 +64,13 @@
         currentPath: string
         sortBy: SortColumn
         sortOrder: SortOrder
+        /**
+         * Repo root for the optional Git status column. `null` when the path
+         * isn't inside a worktree; `undefined` when the column is disabled.
+         */
+        gitRepoRoot?: string | null
+        /** Whether the optional Git status column should render. */
+        showGitColumn?: boolean
         /** Rename state for inline editing */
         renameState?: RenameState | null
         onSelect: (index: number, shiftKey?: boolean) => void
@@ -96,6 +105,8 @@
         currentPath,
         sortBy,
         sortOrder,
+        gitRepoRoot = null,
+        showGitColumn = false,
         renameState = null,
         onSelect,
         onNavigate,
@@ -141,8 +152,28 @@
     let columnWidths = $state({ ext: 60, size: 115, date: 80 })
     let skipTransition = $state(false)
 
+    /**
+     * Whether the optional Git column should render in the layout. We gate on
+     * both the user setting AND the presence of a repo root: outside a
+     * worktree, the column would just show blank cells, so we omit it
+     * entirely to keep the name column wide.
+     */
+    const gitColumnVisible = $derived(showGitColumn && !!gitRepoRoot)
+
+    /** Reactive map from path-relative-to-repo → status code. `null` while loading. */
+    let gitStatusMap = $state<Map<string, EntryStatusCode> | null>(null)
+
+    /**
+     * Single-glyph cell width. The header reads "Git" (3 chars at 12px ≈ 18px);
+     * floor at 24px so the column doesn't collapse below the glyph + a hair
+     * of breathing room.
+     */
+    const GIT_COLUMN_WIDTH = 28
+
     const gridTemplate = $derived(
-        `16px 1fr ${String(columnWidths.ext)}px ${String(columnWidths.size)}px ${String(columnWidths.date)}px`,
+        gitColumnVisible
+            ? `16px 1fr ${String(GIT_COLUMN_WIDTH)}px ${String(columnWidths.ext)}px ${String(columnWidths.size)}px ${String(columnWidths.date)}px`
+            : `16px 1fr ${String(columnWidths.ext)}px ${String(columnWidths.size)}px ${String(columnWidths.date)}px`,
     )
 
     // ==== Virtual scrolling state ====
@@ -465,6 +496,60 @@
         const endItem = virtualWindow.endIndex
         onVisibleRangeChange?.(startItem, endItem)
     })
+
+    /**
+     * Fetches the per-path git status map for `currentPath` and refreshes it
+     * whenever the watcher emits `git-state-changed` for the active repo.
+     *
+     * The map is keyed by repo-relative path (forward slashes), which is what
+     * `get_git_status_for_paths` returns. Cells look up by computing the
+     * relative path on render (see `gitStatusFor`).
+     */
+    $effect(() => {
+        if (!gitColumnVisible || !gitRepoRoot) {
+            gitStatusMap = null
+            return
+        }
+        const repo = gitRepoRoot
+        const dir = currentPath
+        // Track cacheGeneration so an explicit refresh reloads the map.
+        void cacheGeneration
+
+        let cancelled = false
+        let unlisten: UnlistenFn | undefined
+
+        async function load() {
+            const map = await fetchStatusMap(repo, dir).catch(() => null)
+            if (!cancelled) gitStatusMap = map
+        }
+
+        void load()
+        void listen<{ repoRoot: string }>('git-state-changed', (event) => {
+            if (event.payload.repoRoot === repo) void load()
+        }).then((fn) => {
+            if (cancelled) fn()
+            else unlisten = fn
+        })
+
+        return () => {
+            cancelled = true
+            unlisten?.()
+        }
+    })
+
+    /**
+     * Maps a row's absolute path to a status code, or `null` when the row is
+     * clean / outside the worktree. Repo-relative keys are computed against
+     * the active repo root so directories with the repo root in the middle of
+     * their path still hit.
+     */
+    function gitStatusFor(file: FileEntry): EntryStatusCode | null {
+        if (!gitStatusMap || !gitRepoRoot) return null
+        const root = gitRepoRoot.endsWith('/') ? gitRepoRoot : gitRepoRoot + '/'
+        if (!file.path.startsWith(root)) return null
+        const rel = file.path.slice(root.length)
+        return gitStatusMap.get(rel) ?? null
+    }
 </script>
 
 <div class="full-list-container" class:is-focused={isFocused} class:is-compact={isCompact}>
@@ -484,6 +569,9 @@
             currentSortOrder={sortOrder}
             onClick={onSortChange ?? (() => {})}
         />
+        {#if gitColumnVisible}
+            <span class="header-git" title="Git status of each file">Git</span>
+        {/if}
         <SortableHeader
             column="extension"
             label="Ext"
@@ -557,7 +645,7 @@
                     >
                         <FileIcon {file} {syncIcon} />
                         {#if renameState?.active && renameState.target?.index === globalIndex}
-                            <div class="col-rename">
+                            <div class="col-rename" class:has-git={gitColumnVisible}>
                                 <InlineRenameEditor
                                     value={renameState.currentName}
                                     severity={renameState.validation.severity}
@@ -574,6 +662,17 @@
                             </div>
                         {:else}
                             <span class="col-name" use:tooltip={{ text: file.name, overflowOnly: true }}>{getDisplayName(file.name, file.isDirectory)}</span>
+                            {#if gitColumnVisible}
+                                {@const status = gitStatusFor(file)}
+                                <span
+                                    class="col-git"
+                                    class:has-status={status !== null}
+                                    aria-label={status ? labelFor(status) : ''}
+                                    title={status ? labelFor(status) : ''}
+                                >
+                                    {status ? glyphFor(status) : ''}
+                                </span>
+                            {/if}
                             <span class="col-ext">{getDisplayExtension(file.name, file.isDirectory)}</span>
                         {/if}
                         <span
@@ -748,6 +847,37 @@
         grid-column: 2 / span 2;
         min-width: 0;
         height: 100%;
+    }
+
+    /* When the optional Git column is on, the editor also spans it. */
+    .col-rename.has-git {
+        grid-column: 2 / span 3;
+    }
+
+    .header-git {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        text-align: center;
+        align-self: center;
+        white-space: nowrap;
+        cursor: default;
+    }
+
+    .col-git {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-sm);
+        text-align: center;
+        color: var(--color-git-portal);
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    .col-git.has-status {
+        font-weight: 600;
+    }
+
+    .file-entry.is-selected .col-git {
+        color: var(--color-selection-fg);
     }
 
     .col-ext {

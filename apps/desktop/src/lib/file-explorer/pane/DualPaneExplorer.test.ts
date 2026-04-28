@@ -121,6 +121,8 @@ vi.mock('$lib/settings-store', () => ({
 vi.mock('$lib/settings', () => ({
   initializeSettings: vi.fn().mockResolvedValue(undefined),
   getSetting: vi.fn().mockReturnValue(undefined),
+  onSpecificSettingChange: vi.fn(() => () => {}),
+  onSettingChange: vi.fn(() => () => {}),
 }))
 
 describe('DualPaneExplorer', () => {

@@ -15,6 +15,7 @@ All under `apps/desktop/src/lib/`.
 | `file-explorer/selection/`  | Space/Shift/Cmd selection, range operations                                                                 |
 | `file-explorer/navigation/` | Back/forward history, breadcrumb, path utilities                                                            |
 | `file-explorer/network/`    | Network browser UI (SMB share browsing, login form)                                                         |
+| `file-explorer/git/`        | Breadcrumb chip, status-column helpers, reactive `RepoInfo` store (M1; virtual portal lands in M2)          |
 | `file-operations/`          | Transfer dialogs (copy/move/mkdir) with progress and conflict resolution                                    |
 | `file-viewer/`              | Read-only file viewer (opens in separate window, virtual scrolling)                                         |
 | `settings/`                 | Settings UI + registry-based architecture, reactive state                                                   |
@@ -44,6 +45,7 @@ All under `apps/desktop/src-tauri/src/`.
 | `file_system/listing/`          | Directory reading, streaming, caching, sorting — serves virtual scroll                                                                                  |
 | `file_system/write_operations/` | Copy/move/delete with safety patterns (temp+rename, staging, rollback)                                                                                  |
 | `file_system/volume/`           | `Volume` trait + implementations (Local, MTP, SMB, InMemory). Has a checklist and capability matrix for adding new backends — start there               |
+| `file_system/git/`              | Git browser foundation (M1): repo discovery, repo info, status, watcher, friendly errors. M2 wires the virtual `.git` portal                            |
 | `file_viewer/`                  | Three-backend file viewer (FullLoad, ByteSeek, LineIndex)                                                                                               |
 | `network/`                      | SMB: mDNS discovery, share listing (smb-rs + smbutil), mounting, Keychain                                                                               |
 | `mtp/`                          | MTP device management, file ops, event-based watching                                                                                                   |

@@ -103,6 +103,24 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 - **Low-level nav commands hidden** — `showInPalette: false` for arrow keys, Page Up/Down
 - **Execution handler in +page.svelte** — `handleCommandExecute` delegates to `explorerRef`
 
+## Git (`git/`)
+
+Breadcrumb chip + status-column helpers + per-repo reactive store. Subscribe-driven, never polls.
+
+- **`RepoChip.svelte`** — Pill rendered in the breadcrumb header. Six visual states: clean, ahead, behind, dirty,
+  detached, unborn. Tooltip carries the long-form status sentence (used by screen readers via `aria-label`).
+- **`git-store.svelte.ts`** — Per-repo reactive `RepoInfo` map with refcounted subscriptions. Two panes on the same repo
+  share one watcher. Live updates flow via `git-state-changed` Tauri event.
+- **`status-column.ts`** — Pure helpers (`glyphFor`, `labelFor`, `fetchStatusMap`) for the optional status column in
+  Full mode. Each cell carries a single-glyph code with a long-form `aria-label` and tooltip.
+
+`FilePane.svelte` wires the chip on every `currentPath` change: it does a one-shot `lookupRepoInfo`, then
+`subscribeToRepo` on a new repo, and `unsubscribeFromRepo` on unmount or path-off-repo. The chip respects the
+`fileExplorer.git.showRepoChip` setting. `FilePane` also forwards `gitRepoRoot` and `showGitColumn` to `FullList`, which
+drives the optional status column from its own `fetchStatusMap` + `git-state-changed` subscription.
+
+For the full module map, decisions, and gotchas, see `git/CLAUDE.md`.
+
 ## Network browser (`network/`)
 
 - **NetworkBrowser.svelte** — Top-level network view; lists discovered servers

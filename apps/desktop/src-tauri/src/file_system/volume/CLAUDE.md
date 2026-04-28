@@ -288,6 +288,18 @@ The `statfs` check runs only at error time (not on every listing), so the syscal
 
 `LocalPosixVolume` is wired into the indexing subsystem. `VolumeManager` is actively used.
 
+## Git delegation hooks (M2 placeholder)
+
+M1 of the git browser ships read-only metadata (repo info, per-entry status) without touching the `Volume` trait. M2 will add three thin hook points to `LocalPosixVolume`:
+
+- `list_directory` — calls `git::try_route_listing(resolved_path)` after `resolve()`. Returns the virtual listing for `.git/branches/...`, `.git/tags/...`, etc., or falls through.
+- `get_metadata` — calls `git::try_route_metadata(resolved_path)`.
+- `open_read_stream` — calls `git::try_open_blob_stream(resolved_path)`.
+
+All mutation methods (`create_file`, `create_directory`, `delete`, `rename`, `write_from_stream`) will detect virtual paths via `git::path::is_virtual(path)` and return `VolumeError::NotSupported`. `notify_mutation` will early-return for virtual paths since git mutations happen out-of-band (the user runs `git` in a terminal); state changes flow through the `.git`-watcher pipeline (`file_system/git/watcher.rs`) instead.
+
+These hooks are not present yet — M1 only adds the `redirectToPath: Option<String>` field on `FileEntry` so M3 doesn't have to ripple a schema change through every consumer when it wires worktree/submodule jumps.
+
 ## Key decisions
 
 **Decision**: Trait with optional methods defaulting to `NotSupported`/`false`

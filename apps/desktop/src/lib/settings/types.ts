@@ -101,6 +101,11 @@ export interface SettingsValues {
   'listing.sizeMismatchWarning': boolean
   'listing.stripedRows': boolean
 
+  // Git
+  'fileExplorer.git.showRepoChip': boolean
+  'fileExplorer.git.showStatusColumn': boolean
+  'fileExplorer.git.showVirtualGitPortal': boolean
+
   // File operations
   'fileOperations.mtpEnabled': boolean
   'fileOperations.mtpConnectionWarning': boolean

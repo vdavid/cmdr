@@ -21,6 +21,13 @@ export interface FileEntry {
   recursivePhysicalSize?: number
   recursiveFileCount?: number
   recursiveDirCount?: number
+  /**
+   * When set on a virtual entry, the frontend navigates to this path instead
+   * of treating the entry as a normal directory listing. Inert until M3
+   * wires it for `worktrees/` and `submodules/`. Lives on the schema from M1
+   * so M3 doesn't have to ripple a change through every consumer.
+   */
+  redirectToPath?: string
 }
 
 /** Cloud sync status for files in Dropbox/iCloud/etc. folders */

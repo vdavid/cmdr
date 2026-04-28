@@ -709,6 +709,11 @@ pub fn run() {
             commands::file_system::start_selection_drag,
             commands::file_system::prepare_self_drag_overlay,
             commands::file_system::clear_self_drag_overlay,
+            // Git browser (M1: detection, chip, status column)
+            commands::file_system::get_git_repo_info,
+            commands::file_system::subscribe_git_state,
+            commands::file_system::unsubscribe_git_state,
+            commands::file_system::get_git_status_for_paths,
             // Rename operations
             commands::rename::check_rename_permission,
             commands::rename::check_rename_validity,

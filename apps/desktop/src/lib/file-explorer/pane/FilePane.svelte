@@ -62,6 +62,9 @@
     import SelectionInfo from '../selection/SelectionInfo.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import VolumeBreadcrumb from '../navigation/VolumeBreadcrumb.svelte'
+    import RepoChip from '../git/RepoChip.svelte'
+    import { lookupRepoInfo, subscribeToRepo, unsubscribeFromRepo, type RepoInfo } from '../git/git-store.svelte'
+    import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import ErrorPane from './ErrorPane.svelte'
     import VolumeUnreachableBanner from './VolumeUnreachableBanner.svelte'
     import NetworkMountView from './NetworkMountView.svelte'
@@ -217,6 +220,67 @@
 
     // User's home directory path (e.g. "/Users/veszelovszki"), fetched once on mount
     let userHomePath = $state('')
+
+    // ── Git browser (M1) ────────────────────────────────────────────────
+    // Reactive RepoInfo for the breadcrumb chip. We subscribe lazily on path
+    // change and unsubscribe when the path moves outside the repo (or on
+    // unmount). Lookups are best-effort: a non-git path leaves `gitRepoInfo`
+    // as `null`.
+    let gitRepoInfo = $state<RepoInfo | null>(null)
+    let activeRepoRoot = $state<string | null>(null)
+    let showRepoChip = $state<boolean>(getSetting('fileExplorer.git.showRepoChip') as boolean)
+    let showGitStatusColumn = $state<boolean>(getSetting('fileExplorer.git.showStatusColumn') as boolean)
+
+    onSpecificSettingChange('fileExplorer.git.showRepoChip', (_id, v) => {
+        showRepoChip = v
+    })
+    onSpecificSettingChange('fileExplorer.git.showStatusColumn', (_id, v) => {
+        showGitStatusColumn = v
+    })
+
+    /**
+     * Drives the chip's and status column's data: looks up the repo for
+     * `currentPath`, subscribes to live updates if it's a new repo, and
+     * unsubscribes when the path leaves the previous repo.
+     *
+     * Runs whenever EITHER the chip or the status column is enabled — both
+     * read from `gitRepoInfo`. When both are off (or we're on a network /
+     * MTP volume that can't host a git repo), the subscription is dropped.
+     */
+    async function syncGitState(path: string): Promise<void> {
+        const gitFeaturesNeeded = showRepoChip || showGitStatusColumn
+        if (!gitFeaturesNeeded || isMtpVolumeId(volumeId) || isNetworkView) {
+            if (activeRepoRoot) {
+                await unsubscribeFromRepo(activeRepoRoot)
+                activeRepoRoot = null
+                gitRepoInfo = null
+            }
+            return
+        }
+        const info = await lookupRepoInfo(path).catch(() => null)
+        if (!info) {
+            if (activeRepoRoot) {
+                await unsubscribeFromRepo(activeRepoRoot)
+                activeRepoRoot = null
+                gitRepoInfo = null
+            }
+            return
+        }
+        if (activeRepoRoot && activeRepoRoot !== info.repoRoot) {
+            await unsubscribeFromRepo(activeRepoRoot)
+            activeRepoRoot = null
+        }
+        if (!activeRepoRoot) {
+            try {
+                gitRepoInfo = await subscribeToRepo(info.repoRoot)
+                activeRepoRoot = info.repoRoot
+            } catch {
+                gitRepoInfo = info
+            }
+        } else {
+            gitRepoInfo = info
+        }
+    }
 
     // Display path shown in the breadcrumb after the volume name.
     // For the root volume: replaces the home dir prefix with "~", otherwise shows absolute path.
@@ -1451,6 +1515,17 @@
         }
     })
 
+    // Sync the breadcrumb's git chip and the status column whenever the path
+    // changes (or when either feature toggle flips). Keep this effect tiny
+    // and side-effecting — actual repo lookup happens in `syncGitState` so
+    // we can call it from non-reactive paths too.
+    $effect(() => {
+        const path = currentPath
+        void showRepoChip
+        void showGitStatusColumn
+        void syncGitState(path)
+    })
+
     // Update global menu context when cursor position or focus changes (debounced — only matters for right-click)
     $effect(() => {
         if (!isFocused) return
@@ -1804,6 +1879,11 @@
         unlistenCancelled?.()
         unlistenSpaceChanged?.()
         void unwatchVolumeSpace(paneId)
+        // Drop the git subscription on unmount so the watcher tears down.
+        if (activeRepoRoot) {
+            void unsubscribeFromRepo(activeRepoRoot)
+            activeRepoRoot = null
+        }
     })
 </script>
 
@@ -1826,6 +1906,9 @@
             onSmbUpgradeLogin={handleSmbUpgradeLogin}
         />
         <span class="path">{breadcrumbDisplayPath}</span>
+        {#if showRepoChip && gitRepoInfo}
+            <RepoChip info={gitRepoInfo} />
+        {/if}
     </div>
     <div class="content">
         {#if unreachable}
@@ -1911,6 +1994,8 @@
                 {hasParent}
                 {sortBy}
                 {sortOrder}
+                gitRepoRoot={gitRepoInfo?.repoRoot ?? null}
+                showGitColumn={showGitStatusColumn}
                 renameState={rename.active ? rename : null}
                 parentPath={hasParent ? currentPath.substring(0, currentPath.lastIndexOf('/')) || '/' : ''}
                 {currentPath}

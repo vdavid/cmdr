@@ -21,7 +21,10 @@ without DOM performance issues.
   measured via pretext. Caller adds icon/gap/padding chrome and clamps to the min/max column-width range.
 - **FullList.svelte** – Reads `listing.sizeDisplay` (via `getSizeDisplayMode()`) and `listing.sizeMismatchWarning` (via
   `getSizeMismatchWarning()`) settings. Uses Lucide icons (via `unplugin-icons`): `~icons/lucide/circle-alert` for size
-  mismatch warnings and `~icons/lucide/hourglass` for stale index indicators
+  mismatch warnings and `~icons/lucide/hourglass` for stale index indicators. Also renders an optional Git status column
+  between Name and Ext when `gitRepoRoot` is set and `showGitColumn` is true (gated by the
+  `fileExplorer.git.showStatusColumn` setting in `FilePane`); fetches `fetchStatusMap` and refreshes on
+  `git-state-changed` for the active repo
 - **dir-size-display.test.ts** – Tests for `getDirSizeDisplayState` / `buildDirSizeTooltip` (functions in
   `full-list-utils.ts`)
 - **view-modes.test.ts** – Integration tests for hidden-file filtering and directory listing structure (uses

@@ -96,6 +96,16 @@
   /* === Selection === */
   --color-selection-fg: #c9a227;
 
+  /* === Git portal ===
+     * Distinct from `--color-accent` to keep the "you're in history-land" feel
+     * subtle and not alarming. A muted teal works well against the gold accent
+     * without competing visually. Used by the breadcrumb chip and the
+     * `.git/...` segment color. Pairs with `--color-git-portal-text` for body
+     * text contrast on tinted backgrounds. */
+  --color-git-portal: #0d7c8a;
+  --color-git-portal-text: #0a5d68;
+  --color-git-portal-subtle: color-mix(in oklch, var(--color-git-portal), transparent 85%);
+
   /* === Overlays === */
   --color-overlay: color-mix(in srgb, black, transparent 50%);
   --color-overlay-light: color-mix(in srgb, black, transparent 60%);
@@ -244,6 +254,12 @@
 
     /* === Selection === */
     --color-selection-fg: #d4a82a;
+
+    /* Git portal — brighter teal in dark mode for readability against
+       the dark background. */
+    --color-git-portal: #4dd0e1;
+    --color-git-portal-text: #80deea;
+    --color-git-portal-subtle: color-mix(in oklch, var(--color-git-portal), transparent 85%);
 
     /* === Search Highlight === */
     --color-highlight: rgba(255, 213, 100, 0.9);

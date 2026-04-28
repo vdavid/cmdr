@@ -97,6 +97,11 @@ tauri-plugin-playwright = { version = "0.2.2", optional = true }
 zip = { version = "8.6", default-features = false, features = ["deflate"] }
 # Error reporter: short-ID generation (`ERR-XXXXX`) using rejection sampling.
 rand = "0.10"
+# Pure-Rust git library for the git browser (M1: discover, repo info, status).
+# Pinned at 0.81.0 (published 2026-03-22, ~5 weeks old at landing) per
+# project rule on avoiding 0-day vulns. Default features include `status`,
+# `basic`, and `extras` which cover discover + ahead/behind + status walk.
+gix = "0.81"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

@@ -5,6 +5,18 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Git repo chip in the breadcrumb.** Open a folder inside a git clone and the breadcrumb shows a chip with the current
+  branch, ahead/behind counts vs the upstream, and a "dirty" indicator when the worktree has uncommitted changes.
+  Detached HEAD shows the short SHA; freshly-initialized repos show "no commits yet". Updates live as you commit, fetch,
+  or branch from the terminal — no polling, no refresh button. Toggle via **Settings > General > Git > Show repo chip**.
+  Foundation for the upcoming `.git` virtual portal (next milestone).
+- **Optional Git status column in Full mode.** Adds a single-glyph column (`M`, `A`, `D`, `?`, `!`) showing each file's
+  git status. Hidden by default; enable in **Settings > General > Git > Show git status column**.
+
 ## [0.14.0] - 2026-04-26
 
 ### Added

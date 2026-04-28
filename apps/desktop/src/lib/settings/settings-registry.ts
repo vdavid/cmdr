@@ -169,6 +169,41 @@ export const settingsRegistry: SettingDefinition[] = [
   },
 
   // ========================================================================
+  // General › Git
+  // ========================================================================
+  {
+    id: 'fileExplorer.git.showRepoChip',
+    section: ['General', 'Git'],
+    label: 'Show repo chip',
+    description: 'Shows the branch and dirty state in the breadcrumb when you open a folder inside a git repo.',
+    keywords: ['git', 'chip', 'branch', 'breadcrumb', 'repo', 'status'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
+    id: 'fileExplorer.git.showStatusColumn',
+    section: ['General', 'Git'],
+    label: 'Show git status column',
+    description: 'Adds a Git column in Full mode showing each file as modified, added, untracked, or ignored.',
+    keywords: ['git', 'status', 'column', 'modified', 'untracked', 'ignored'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
+    id: 'fileExplorer.git.showVirtualGitPortal',
+    section: ['General', 'Git'],
+    label: 'Show virtual git portal in .git',
+    description:
+      "When you `cd .git`, show a virtual portal with branches, tags, and commits instead of git's internal files.",
+    keywords: ['git', 'portal', 'virtual', 'branches', 'tags', 'history'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+
+  // ========================================================================
   // General › File operations
   // ========================================================================
   {
