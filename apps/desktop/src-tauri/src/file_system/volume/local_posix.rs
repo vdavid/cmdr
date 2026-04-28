@@ -4,6 +4,7 @@ use super::{
     CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, VolumeScanner,
     VolumeWatcher,
 };
+use crate::file_system::git;
 use crate::file_system::listing::{FileEntry, get_single_entry, list_directory_core};
 use crate::indexing::scanner::{self, ScanConfig, ScanError, ScanHandle, ScanSummary};
 use crate::indexing::watcher::{DriveWatcher, FsChangeEvent, WatcherError};
@@ -111,9 +112,14 @@ impl Volume for LocalPosixVolume {
         }
         let abs_path = self.resolve(path);
         Box::pin(async move {
-            spawn_blocking(move || list_directory_core(&abs_path).map_err(VolumeError::from))
-                .await
-                .unwrap()
+            spawn_blocking(move || {
+                if let Some(routed) = git::try_route_listing(&abs_path) {
+                    return routed;
+                }
+                list_directory_core(&abs_path).map_err(VolumeError::from)
+            })
+            .await
+            .unwrap()
         })
     }
 
@@ -131,9 +137,14 @@ impl Volume for LocalPosixVolume {
     ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
         Box::pin(async move {
-            spawn_blocking(move || get_single_entry(&abs_path).map_err(VolumeError::from))
-                .await
-                .unwrap()
+            spawn_blocking(move || {
+                if let Some(routed) = git::try_route_metadata(&abs_path) {
+                    return routed;
+                }
+                get_single_entry(&abs_path).map_err(VolumeError::from)
+            })
+            .await
+            .unwrap()
         })
     }
 
@@ -163,6 +174,73 @@ impl Volume for LocalPosixVolume {
         })
     }
 
+    fn notify_mutation<'a>(
+        &'a self,
+        volume_id: &'a str,
+        parent_path: &'a Path,
+        mutation: super::MutationEvent,
+    ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        // Virtual git paths receive their cache invalidations through the
+        // `.git`-watcher pipeline (`file_system::git::watcher`), not via
+        // mutation hooks. Mutating ops on them already return
+        // `NotSupported` above, but a future caller might land here through
+        // a different path — early-return rather than try to stat a path
+        // that has no real-FS counterpart.
+        if git::is_virtual(parent_path) {
+            return Box::pin(async {});
+        }
+        // Fall through to the trait default.
+        Box::pin(async move {
+            use super::MutationEvent;
+            use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
+            use crate::file_system::listing::reading::get_single_entry;
+
+            match mutation {
+                MutationEvent::Created(ref name) | MutationEvent::Modified(ref name) => {
+                    let entry_path = parent_path.join(name);
+                    match get_single_entry(&entry_path) {
+                        Ok(entry) => {
+                            let change = if matches!(mutation, MutationEvent::Created(_)) {
+                                DirectoryChange::Added(entry)
+                            } else {
+                                DirectoryChange::Modified(entry)
+                            };
+                            notify_directory_changed(volume_id, parent_path, change);
+                        }
+                        Err(e) => {
+                            log::warn!("notify_mutation: couldn't stat {}: {}", entry_path.display(), e);
+                        }
+                    }
+                }
+                MutationEvent::Deleted(name) => {
+                    notify_directory_changed(volume_id, parent_path, DirectoryChange::Removed(name));
+                }
+                MutationEvent::Renamed { from, to } => {
+                    let new_path = parent_path.join(&to);
+                    match get_single_entry(&new_path) {
+                        Ok(entry) => {
+                            notify_directory_changed(
+                                volume_id,
+                                parent_path,
+                                DirectoryChange::Renamed {
+                                    old_name: from,
+                                    new_entry: entry,
+                                },
+                            );
+                        }
+                        Err(e) => {
+                            log::warn!(
+                                "notify_mutation: couldn't stat renamed entry {}: {}",
+                                new_path.display(),
+                                e
+                            );
+                        }
+                    }
+                }
+            }
+        })
+    }
+
     fn supports_watching(&self) -> bool {
         true
     }
@@ -177,6 +255,9 @@ impl Volume for LocalPosixVolume {
         content: &'a [u8],
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
+        if git::is_virtual(&abs_path) {
+            return Box::pin(async { Err(VolumeError::NotSupported) });
+        }
         let content = content.to_vec();
         Box::pin(async move {
             spawn_blocking(move || {
@@ -193,6 +274,9 @@ impl Volume for LocalPosixVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
+        if git::is_virtual(&abs_path) {
+            return Box::pin(async { Err(VolumeError::NotSupported) });
+        }
         Box::pin(async move {
             spawn_blocking(move || {
                 std::fs::create_dir(&abs_path)?;
@@ -205,6 +289,9 @@ impl Volume for LocalPosixVolume {
 
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
+        if git::is_virtual(&abs_path) {
+            return Box::pin(async { Err(VolumeError::NotSupported) });
+        }
         Box::pin(async move {
             spawn_blocking(move || {
                 let metadata = std::fs::symlink_metadata(&abs_path)?;
@@ -228,6 +315,9 @@ impl Volume for LocalPosixVolume {
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let from_abs = self.resolve(from);
         let to_abs = self.resolve(to);
+        if git::is_virtual(&from_abs) || git::is_virtual(&to_abs) {
+            return Box::pin(async { Err(VolumeError::NotSupported) });
+        }
         Box::pin(async move {
             spawn_blocking(move || {
                 if !force && from_abs != to_abs && std::fs::symlink_metadata(&to_abs).is_ok() {
@@ -325,6 +415,9 @@ impl Volume for LocalPosixVolume {
         let abs_path = self.resolve(path);
         Box::pin(async move {
             spawn_blocking(move || {
+                if let Some(routed) = git::try_open_blob_stream(&abs_path) {
+                    return routed;
+                }
                 let metadata = std::fs::metadata(&abs_path)?;
                 if metadata.is_dir() {
                     return Err(VolumeError::IoError {
@@ -353,6 +446,9 @@ impl Volume for LocalPosixVolume {
         on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
     ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
         let dest_abs = self.resolve(dest);
+        if git::is_virtual(&dest_abs) {
+            return Box::pin(async { Err(VolumeError::NotSupported) });
+        }
         Box::pin(async move {
             // Ensure parent directory exists
             if let Some(parent) = dest_abs.parent() {

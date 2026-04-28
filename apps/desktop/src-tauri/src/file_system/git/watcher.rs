@@ -154,6 +154,57 @@ fn recompute_and_emit(app: &AppHandle, repo_root: &Path) {
         info,
     };
     let _ = app.emit("git-state-changed", payload);
+
+    invalidate_virtual_listings(&root);
+}
+
+/// Test entry point for `invalidate_virtual_listings`.
+#[cfg(test)]
+pub(crate) fn invalidate_for_test(repo_root: &Path) {
+    invalidate_virtual_listings(repo_root)
+}
+
+/// Invalidates any open virtual `.git/{branches,tags}/...` listings on the
+/// local volume so they re-read after a ref change.
+///
+/// M2 covers `branches/` and `tags/` only. M3 will extend this to commits,
+/// stash, worktrees, and submodules.
+fn invalidate_virtual_listings(repo_root: &Path) {
+    use crate::file_system::git::path::Cat;
+    use crate::file_system::listing::caching::{
+        DirectoryChange, find_listings_for_path_on_volume, get_listing_path, notify_directory_changed,
+    };
+    use crate::file_system::volume::DEFAULT_VOLUME_ID;
+
+    let dot_git = repo_root.join(".git");
+    let prefixes = [
+        dot_git.join(Cat::Branches.as_segment()),
+        dot_git.join(Cat::Tags.as_segment()),
+    ];
+
+    // We snapshot listing IDs and inspect each path against the prefixes.
+    // `find_listings_for_path_on_volume` is path-exact; we want any prefix
+    // match, so iterate the cache.
+    let snapshot = crate::file_system::listing::caching::snapshot_listings();
+    for entry in snapshot {
+        for prefix in &prefixes {
+            let listing_path = match get_listing_path(&entry.listing_id) {
+                Some(p) => p,
+                None => continue,
+            };
+            if listing_path.starts_with(prefix) || *prefix == listing_path {
+                // Only handle local volume listings; SMB / MTP volumes
+                // can't be inside a real `.git` of the host's filesystem.
+                if entry.volume_id != DEFAULT_VOLUME_ID {
+                    continue;
+                }
+                if !find_listings_for_path_on_volume(Some(&entry.volume_id), &listing_path).is_empty() {
+                    notify_directory_changed(&entry.volume_id, &listing_path, DirectoryChange::FullRefresh);
+                }
+                break;
+            }
+        }
+    }
 }
 
 /// Returns the gitdir for a worktree (handles gitlink files).

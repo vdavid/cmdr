@@ -288,17 +288,17 @@ The `statfs` check runs only at error time (not on every listing), so the syscal
 
 `LocalPosixVolume` is wired into the indexing subsystem. `VolumeManager` is actively used.
 
-## Git delegation hooks (M2 placeholder)
+## Git delegation hooks (M2)
 
-M1 of the git browser ships read-only metadata (repo info, per-entry status) without touching the `Volume` trait. M2 will add three thin hook points to `LocalPosixVolume`:
+`LocalPosixVolume` delegates three read-side methods to the git module after `resolve()`:
 
-- `list_directory` — calls `git::try_route_listing(resolved_path)` after `resolve()`. Returns the virtual listing for `.git/branches/...`, `.git/tags/...`, etc., or falls through.
-- `get_metadata` — calls `git::try_route_metadata(resolved_path)`.
-- `open_read_stream` — calls `git::try_open_blob_stream(resolved_path)`.
+- `list_directory` calls `git::try_route_listing(resolved_path)`. Returns the virtual listing for `.git/branches/...`, `.git/tags/...`, `.git/raw/...`, or falls through to real-FS listing.
+- `get_metadata` calls `git::try_route_metadata(resolved_path)`.
+- `open_read_stream` calls `git::try_open_blob_stream(resolved_path)`. Returns a `GitBlobReadStream` for blobs inside refs and a `std::fs`-backed read for `raw/` passthrough.
 
-All mutation methods (`create_file`, `create_directory`, `delete`, `rename`, `write_from_stream`) will detect virtual paths via `git::path::is_virtual(path)` and return `VolumeError::NotSupported`. `notify_mutation` will early-return for virtual paths since git mutations happen out-of-band (the user runs `git` in a terminal); state changes flow through the `.git`-watcher pipeline (`file_system/git/watcher.rs`) instead.
+All mutation methods (`create_file`, `create_directory`, `delete`, `rename`, `write_from_stream`) detect virtual paths via `git::is_virtual(path)` and return `VolumeError::NotSupported` immediately. `notify_mutation` early-returns for virtual paths since git mutations happen out-of-band (the user runs `git` in a terminal); state changes flow through the `.git`-watcher pipeline (`file_system/git/watcher.rs`) instead.
 
-These hooks are not present yet — M1 only adds the `redirectToPath: Option<String>` field on `FileEntry` so M3 doesn't have to ripple a schema change through every consumer when it wires worktree/submodule jumps.
+The hook order is fixed: `resolve()` first (normalizes the path), then `try_route_*`. This lets the user open `.git` from any volume-rooted path and get the portal regardless of whether the frontend sent an absolute or relative path.
 
 ## Key decisions
 

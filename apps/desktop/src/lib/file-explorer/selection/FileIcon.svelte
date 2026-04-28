@@ -3,6 +3,10 @@
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
     import { getFallbackEmoji } from '../views/file-list-utils'
     import { getIsCmdrGold } from '$lib/settings/reactive-settings.svelte'
+    import IconGitBranch from '~icons/lucide/git-branch'
+    import IconTag from '~icons/lucide/tag'
+    import IconGitCommit from '~icons/lucide/git-commit-horizontal'
+    import IconGitFork from '~icons/lucide/git-fork'
 
     interface Props {
         file: FileEntry
@@ -21,10 +25,27 @@
 
     const isFolderIcon = $derived(file.iconId === 'dir' || file.iconId === 'symlink-dir')
     const recolorToGold = $derived(isFolderIcon && getIsCmdrGold())
+
+    // Git portal icons resolve in the frontend via Lucide instead of going
+    // through the OS icon provider. The four IDs are reserved by the M1
+    // schema and rendered here in M2.
+    const isGitIcon = $derived(file.iconId.startsWith('git:'))
 </script>
 
 <span class="icon-wrapper">
-    {#if getIconUrl(file)}
+    {#if isGitIcon}
+        <span class="git-icon">
+            {#if file.iconId === 'git:branch'}
+                <IconGitBranch width="16" height="16" />
+            {:else if file.iconId === 'git:tag'}
+                <IconTag width="16" height="16" />
+            {:else if file.iconId === 'git:commit'}
+                <IconGitCommit width="16" height="16" />
+            {:else}
+                <IconGitFork width="16" height="16" />
+            {/if}
+        </span>
+    {:else if getIconUrl(file)}
         <img class="icon" class:gold-folder={recolorToGold} src={getIconUrl(file)} alt="" width="16" height="16" />
     {:else}
         <span class="icon-emoji">{getFallbackEmoji(file)}</span>
@@ -60,6 +81,15 @@
         width: 16px;
         text-align: center;
         display: block;
+    }
+
+    .git-icon {
+        display: inline-flex;
+        width: 16px;
+        height: 16px;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-git-portal-text);
     }
 
     .symlink-badge {

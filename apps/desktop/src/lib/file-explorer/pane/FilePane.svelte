@@ -62,6 +62,7 @@
     import SelectionInfo from '../selection/SelectionInfo.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import VolumeBreadcrumb from '../navigation/VolumeBreadcrumb.svelte'
+    import { splitPathSegments } from '../navigation/path-segments'
     import RepoChip from '../git/RepoChip.svelte'
     import { lookupRepoInfo, subscribeToRepo, unsubscribeFromRepo, type RepoInfo } from '../git/git-store.svelte'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
@@ -305,6 +306,11 @@
         // Root volume, outside home dir: show absolute path as-is
         return currentPath
     })
+
+    // Segmented form of the breadcrumb path so we can color anything inside
+    // a `.git/...` portal with the git-portal token. Pure derivation; the
+    // helper is unit-tested in `path-segments.test.ts`.
+    const breadcrumbSegments = $derived(splitPathSegments(breadcrumbDisplayPath))
 
     // Check if we're viewing an MTP device
     const isMtpView = $derived(isMtpVolumeId(volumeId))
@@ -1905,7 +1911,7 @@
             onVolumeChange={handleVolumeChangeFromBreadcrumb}
             onSmbUpgradeLogin={handleSmbUpgradeLogin}
         />
-        <span class="path">{breadcrumbDisplayPath}</span>
+        <span class="path">{#each breadcrumbSegments as seg, i (i)}{#if i > 0 && seg.text !== ''}<span class="path-sep">/</span>{/if}<span class:git-portal={seg.gitPortal}>{seg.text}</span>{/each}</span>
         {#if showRepoChip && gitRepoInfo}
             <RepoChip info={gitRepoInfo} />
         {/if}
@@ -2118,6 +2124,16 @@
         text-overflow: ellipsis;
         flex: 1;
         min-width: 0;
+    }
+
+    /* Segments inside a `.git/...` portal pick up the dedicated git-portal
+       token so the user can see at a glance they're "in history-land." */
+    .path :global(.git-portal) {
+        color: var(--color-git-portal-text);
+    }
+
+    .path :global(.path-sep) {
+        color: var(--color-text-tertiary);
     }
 
     .content {

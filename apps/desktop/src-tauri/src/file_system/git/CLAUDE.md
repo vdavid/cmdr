@@ -1,19 +1,27 @@
-# File system › git (M1 foundation)
+# File system › git (M1 foundation + M2 virtual portal)
 
 Backend module for the git browser. M1 ships repo discovery, repo info,
-status, the watcher, and friendly errors. M2 will add the virtual `.git`
-portal; M3 fills in commits, stash, worktrees, submodules.
+status, the watcher, and friendly errors. **M2 (this milestone) adds the
+virtual `.git` portal — `branches/`, `tags/`, `raw/` browsable as virtual
+trees, with cross-volume copy "for free" because git blobs flow through
+the existing `VolumeReadStream` abstraction.** M3 fills in commits, stash,
+worktrees, submodules.
 
 ## File map
 
 | File | Role |
 |---|---|
-| `mod.rs` | Public API re-exports (`discover_repo`, `repo_info`, `list_status`, watcher registry, friendly errors) |
+| `mod.rs` | Public API + the three volume hooks (`try_route_listing`, `try_route_metadata`, `try_open_blob_stream`) plus `is_virtual` for the mutation guards |
 | `repo.rs` | `discover_repo(path)` walking up via `gix::discover` (follows gitlinks). `repo_info(handle, root)` collects branch, detached SHA, unborn flag, upstream, ahead/behind, and `is_dirty`. Process-global `RepoCache` (`Arc<RwLock<HashMap>>`) keyed by canonical worktree root |
+| `path.rs` | `VirtualGitPath` enum, `Cat` enum, `classify(path)` parser, `to_path` inverse, `is_virtual(path)` for the volume hook short-circuits. Greedy ref-name match against the repo's known refs so `feature/foo` parses as one ref |
+| `virtual_listing.rs` | `list_root` (M2 exposes `branches/`, `tags/`, `raw/`), `list_branches`, `list_tags`, `list_raw` (real-FS passthrough), `get_metadata_for`, `resolve_ref_commit` (annotated tags peel through). Real-FS reads use `std::fs` to avoid recursing through the volume hook |
+| `tree.rs` | `list_tree`, `get_tree_entry`, `lookup_blob_id`, `read_blob` — gix tree walks. Permissions reflect `EntryKind::BlobExecutable` so cross-volume copy preserves the executable bit |
+| `read_blob.rs` | `GitBlobReadStream` — owns the full `Vec<u8>` and yields 256 KB chunks. See *Honest blob streaming* below |
 | `status.rs` | `list_status(repo, dir)` shells out to `git status --porcelain=v2 -z`. Parses the output into a `Vec<EntryStatus>` |
-| `watcher.rs` | `GitWatcherRegistry` — per-repo notify-rs debouncer. `subscribe(app, root)` returns the current `RepoInfo` synchronously and emits `git-state-changed` on relevant `.git/*` mutations. 200 ms debounce |
-| `friendly.rs` | `FriendlyGitError`, `FriendlyGitErrorKind` — six variants (`NotARepo`, `OrphanedWorktree`, `CorruptRepo`, `IndexLocked`, `PermissionDenied`, `BareRepo`). Active-voice copy, no "error" / "failed" |
-| `tests.rs` | Unit + integration tests for discover, repo_info, status, friendly errors |
+| `watcher.rs` | `GitWatcherRegistry` — per-repo notify-rs debouncer. `subscribe(app, root)` returns the current `RepoInfo` synchronously and emits `git-state-changed` on relevant `.git/*` mutations. 200 ms debounce. M2: also calls `notify_directory_changed(.., FullRefresh)` for any cached `.git/{branches,tags}/` listings on the local volume |
+| `friendly.rs` | `FriendlyGitError`, `FriendlyGitErrorKind` — seven variants (M1's six + `BlobTooLarge`). Active-voice copy, no "error" / "failed" |
+| `tests.rs` | M1 tests: discover, repo_info, status, friendly errors |
+| `m2_tests.rs` | M2 tests: classify, list_branches/tags/root, list_tree, blob-read parity with `git show`, cross-volume copy round-trip |
 | `bench.rs` | `#[ignore]` benchmark over a 50k-file synth fixture. Run with `cargo test --release -- --ignored --test-threads=1 bench_50k` |
 
 ## Tauri commands
@@ -61,6 +69,29 @@ is-dirty check the CLI offers) takes ~75 ms on the same fixture, so the
 target is a hair tighter than what any tool can deliver here. The hard cap
 in the bench is 100 ms; we land well under. Subsequent calls hit the
 process-wide repo handle cache and run in microseconds.
+
+## Volume hook contract (M2)
+
+The hook order inside `LocalPosixVolume` is fixed and load-bearing:
+
+1. `resolve(path)` runs first (existing). It normalizes absolute vs. relative paths against the volume root.
+2. After `resolve`, the volume method calls `git::try_route_*(resolved_path)`. If `Some`, that result is the volume method's return. Otherwise the existing real-FS path runs.
+
+Three hook points:
+
+- `list_directory` → `git::try_route_listing(resolved_path) -> Option<Result<Vec<FileEntry>, VolumeError>>`
+- `get_metadata` → `git::try_route_metadata(resolved_path) -> Option<Result<FileEntry, VolumeError>>`
+- `open_read_stream` → `git::try_open_blob_stream(resolved_path) -> Option<Result<Box<dyn VolumeReadStream>, VolumeError>>`
+
+All mutation methods (`create_file`, `create_directory`, `delete`, `rename`, `write_from_stream`) detect virtual paths via `git::is_virtual(path)` and return `VolumeError::NotSupported` immediately. `notify_mutation` early-returns for virtual paths since git mutations happen out-of-band; cache invalidation flows through the `.git`-watcher pipeline (`watcher.rs`).
+
+## Honest blob streaming
+
+gix in 0.81 returns whole-blob `Vec<u8>` for `Object::data` — there's no chunked loose-object reader exposed at the public surface yet. So `GitBlobReadStream` owns the full `Vec<u8>` and yields 256 KB chunks for the consumer API shape. **Memory cost equals blob size; chunked yield is for the consumer API, not memory streaming.** We refuse blobs over `tree::MAX_BLOB_BYTES` (256 MB) up-front via `FriendlyGitErrorKind::BlobTooLarge` rather than OOM. Future work: revisit when gix exposes a chunked loose-object reader (track upstream).
+
+## Ref-name flat rendering
+
+Branches like `feature/foo` show as a single entry called `feature/foo`, not nested `feature/` then `foo`. The classifier (`path::classify`) greedy-matches ref names against the repo's known refs (longest-first) before treating any remainder as a tree sub-path. The inverse (`to_path`) splits ref names on `/` so OS-native separators are used in the on-disk representation. This is the only place where the URL → path round-trip needs the repo open.
 
 ## Decisions
 

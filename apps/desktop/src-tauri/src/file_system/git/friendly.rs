@@ -26,6 +26,10 @@ pub enum FriendlyGitErrorKind {
     PermissionDenied,
     /// The repo is bare. We don't anchor the UX on bare repos.
     BareRepo,
+    /// Blob is larger than `MAX_BLOB_BYTES` (256 MB by default). Reading
+    /// would allocate the whole thing into RAM (gix limitation), so we
+    /// refuse instead of OOM-ing.
+    BlobTooLarge,
 }
 
 impl FriendlyGitErrorKind {
@@ -37,6 +41,7 @@ impl FriendlyGitErrorKind {
             FriendlyGitErrorKind::IndexLocked => "Another git is mid-write",
             FriendlyGitErrorKind::PermissionDenied => "Cmdr can't read this repo",
             FriendlyGitErrorKind::BareRepo => "Bare repos aren't supported yet",
+            FriendlyGitErrorKind::BlobTooLarge => "This file's too big to load from history",
         }
     }
 
@@ -58,6 +63,9 @@ impl FriendlyGitErrorKind {
             FriendlyGitErrorKind::BareRepo => {
                 "Bare repos don't have a working tree, and the git browser is built around one."
             }
+            FriendlyGitErrorKind::BlobTooLarge => {
+                "Cmdr reads git blobs whole-file at a time, and this one's over the safety cap."
+            }
         }
     }
 
@@ -77,6 +85,7 @@ impl FriendlyGitErrorKind {
                 "Open Disk Access in System Settings and grant Cmdr access to the folder."
             }
             FriendlyGitErrorKind::BareRepo => "Clone the repo into a working directory to use the git browser.",
+            FriendlyGitErrorKind::BlobTooLarge => "Check out the file from a working tree if you need it.",
         }
     }
 }

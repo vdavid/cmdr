@@ -16,6 +16,13 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   Foundation for the upcoming `.git` virtual portal (next milestone).
 - **Optional Git status column in Full mode.** Adds a single-glyph column (`M`, `A`, `D`, `?`, `!`) showing each file's
   git status. Hidden by default; enable in **Settings > General > Git > Show git status column**.
+- **Virtual `.git` portal.** Step into the `.git` folder of any clone and instead of seeing libgit internals, you'll see
+  `branches/`, `tags/`, and a `raw/` escape hatch. Drill into a ref like `branches/main/` and you're browsing the
+  working tree at that commit — preview files, sort, copy. Cross-volume copy works too: drag a file from
+  `.git/branches/feature-x/src/foo.rs` into the working tree to pluck a single file from another branch, no
+  `git checkout` needed. Breadcrumb segments inside the portal pick up a dedicated git-portal color so it's clear you're
+  in history-land. Refs with slashes (like `feature/foo`) render as one entry, not nested folders. Read-only — writes
+  are blocked at the volume layer. Commits, stash, worktrees, and submodules land in the next milestone.
 
 ## [0.14.0] - 2026-04-26
 
