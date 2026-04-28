@@ -22,7 +22,15 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   `.git/branches/feature-x/src/foo.rs` into the working tree to pluck a single file from another branch, no
   `git checkout` needed. Breadcrumb segments inside the portal pick up a dedicated git-portal color so it's clear you're
   in history-land. Refs with slashes (like `feature/foo`) render as one entry, not nested folders. Read-only — writes
-  are blocked at the volume layer. Commits, stash, worktrees, and submodules land in the next milestone.
+  are blocked at the volume layer.
+- **Commits, stash, worktrees, and submodules in the `.git` portal.** The portal now also exposes `commits/`, `stash/`,
+  `worktrees/`, and `submodules/`. Open `commits/` to browse HEAD-reachable history (newest first, capped at 5000 with a
+  "Load more" entry); each entry's name shows the short SHA plus the subject, and dates drive the date-sort. You can
+  also type or paste any commit SHA directly — `.git/commits/<sha>/...` resolves even for unreachable commits in shallow
+  clones. Stash entries appear as `stash/0/`, `stash/1/`, … browsing the working-tree state at stash time. Linked
+  worktrees and submodules show as redirect entries: opening one navigates straight to its working dir (which is itself
+  a git portal — turtles all the way down). The chip and listings stay live as you commit, stash, or `git worktree add`
+  from the terminal.
 
 ## [0.14.0] - 2026-04-26
 

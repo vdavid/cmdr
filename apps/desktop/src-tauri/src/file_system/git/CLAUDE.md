@@ -1,11 +1,15 @@
-# File system › git (M1 foundation + M2 virtual portal)
+# File system › git (M1 foundation + M2 virtual portal + M3 history)
 
 Backend module for the git browser. M1 ships repo discovery, repo info,
-status, the watcher, and friendly errors. **M2 (this milestone) adds the
-virtual `.git` portal — `branches/`, `tags/`, `raw/` browsable as virtual
-trees, with cross-volume copy "for free" because git blobs flow through
-the existing `VolumeReadStream` abstraction.** M3 fills in commits, stash,
-worktrees, submodules.
+status, the watcher, and friendly errors. M2 adds the virtual `.git`
+portal — `branches/`, `tags/`, `raw/` browsable as virtual trees, with
+cross-volume copy "for free" because git blobs flow through the existing
+`VolumeReadStream` abstraction. **M3 (this milestone) fills in commits,
+stash, worktrees, and submodules. The first two browse a commit tree
+just like branches/tags. The latter two surface `redirectToPath` so the
+frontend opens the worktree's / submodule's working dir directly — those
+working dirs are themselves git portals, so the experience cascades for
+free.**
 
 ## File map
 
@@ -15,6 +19,10 @@ worktrees, submodules.
 | `repo.rs` | `discover_repo(path)` walking up via `gix::discover` (follows gitlinks). `repo_info(handle, root)` collects branch, detached SHA, unborn flag, upstream, ahead/behind, and `is_dirty`. Process-global `RepoCache` (`Arc<RwLock<HashMap>>`) keyed by canonical worktree root |
 | `path.rs` | `VirtualGitPath` enum, `Cat` enum, `classify(path)` parser, `to_path` inverse, `is_virtual(path)` for the volume hook short-circuits. Greedy ref-name match against the repo's known refs so `feature/foo` parses as one ref |
 | `virtual_listing.rs` | `list_root` (M2 exposes `branches/`, `tags/`, `raw/`), `list_branches`, `list_tags`, `list_raw` (real-FS passthrough), `get_metadata_for`, `resolve_ref_commit` (annotated tags peel through). Real-FS reads use `std::fs` to avoid recursing through the volume hook |
+| `log.rs` | `list_commits` — gix `rev_walk` over HEAD-reachable commits; cap 5000, batch 200, polled `AtomicBool` cancel flag. `resolve_commit_id` resolves a SHA prefix even for unreachable commits |
+| `stash.rs` | `list_stashes`, `resolve_stash_commit` — shells out to `git stash list -z` (gix has no public stash API) |
+| `worktrees.rs` | `list_worktrees` — gix `Repository::worktrees()`. Each entry sets `redirect_to_path` to the worktree's working dir |
+| `submodules.rs` | `list_submodules` — gix `Repository::submodules()`. Each entry sets `redirect_to_path` to `<repo_root>/<rel-path>` |
 | `tree.rs` | `list_tree`, `get_tree_entry`, `lookup_blob_id`, `read_blob` — gix tree walks. Permissions reflect `EntryKind::BlobExecutable` so cross-volume copy preserves the executable bit |
 | `read_blob.rs` | `GitBlobReadStream` — owns the full `Vec<u8>` and yields 256 KB chunks. See *Honest blob streaming* below |
 | `status.rs` | `list_status(repo, dir)` shells out to `git status --porcelain=v2 -z`. Parses the output into a `Vec<EntryStatus>` |
@@ -22,6 +30,7 @@ worktrees, submodules.
 | `friendly.rs` | `FriendlyGitError`, `FriendlyGitErrorKind` — seven variants (M1's six + `BlobTooLarge`). Active-voice copy, no "error" / "failed" |
 | `tests.rs` | M1 tests: discover, repo_info, status, friendly errors |
 | `m2_tests.rs` | M2 tests: classify, list_branches/tags/root, list_tree, blob-read parity with `git show`, cross-volume copy round-trip |
+| `m3_tests.rs` | M3 tests: list_commits + sha browsing + cancellation + 1000-commit walk (`#[ignore]`), list_stashes, list_worktrees + redirect, list_submodules + redirect, watcher invalidation for `commits/` |
 | `bench.rs` | `#[ignore]` benchmark over a 50k-file synth fixture. Run with `cargo test --release -- --ignored --test-threads=1 bench_50k` |
 
 ## Tauri commands
@@ -50,6 +59,12 @@ Plus a non-recursive watch on `.git` itself so creating optional files
 (`MERGE_HEAD` during a merge) still triggers a recompute. Linked worktrees
 have their `.git` as a file (gitlink); the watcher resolves the gitdir
 through it.
+
+M3 adds per-worktree `HEAD` watches: at subscribe time we enumerate
+`<common-dir>/worktrees/<name>/HEAD` files and register one watch each.
+That keeps the chip live for every linked worktree. New worktrees added
+later are picked up indirectly via the main-HEAD watch (`git worktree
+add` writes to the main repo's `HEAD` too).
 
 ## Performance
 
@@ -94,6 +109,78 @@ gix in 0.81 returns whole-blob `Vec<u8>` for `Object::data` — there's no chunk
 Branches like `feature/foo` show as a single entry called `feature/foo`, not nested `feature/` then `foo`. The classifier (`path::classify`) greedy-matches ref names against the repo's known refs (longest-first) before treating any remainder as a tree sub-path. The inverse (`to_path`) splits ref names on `/` so OS-native separators are used in the on-disk representation. This is the only place where the URL → path round-trip needs the repo open.
 
 ## Decisions
+
+**Decision (M3)**: Shell out to `git stash list` rather than driving gix
+**Why**: gix 0.81 doesn't expose a public stash-list API. We could parse
+the `refs/stash` reflog by hand, but `git stash list -z --format=%H%x09%gd%x09%s%x09%ct`
+gives us git's canonical ordering, the exact `stash@{n}` indices users
+see in the terminal, and the commit-time / subject in one shot. The
+`git` CLI is already a system requirement (M1's status walk shells out
+too). Resolution of `stash@{n}` to a commit ID also goes through
+`git rev-parse stash@{n}` for the same reason — gix can't expand the
+`stash@{n}` syntax.
+
+**Decision (M3)**: Browse the **W (working-tree) commit** for stash entries
+**Why**: `git stash` records the dirty worktree as a merge commit (the
+"W" commit in git docs); its first parent ("B") is HEAD at stash time
+which is the *clean* tree, not the stashed changes. Browsing W matches
+what `git stash show <n>` shows. Verified against fixture: the file
+listing under `.git/stash/0/` matches `git stash show 0 --name-only`.
+
+**Decision (M3)**: gix `Repository::worktrees()` for the linked-worktree list
+**Why**: gix exposes a `worktrees() -> Vec<worktree::Proxy>` that reads
+`<common-dir>/worktrees/*/gitdir` and gives us the working-tree base
+path via `proxy.base()`. No shell-out needed. We skip proxies whose
+`base()` is missing — orphaned linked worktrees stay invisible rather
+than break the listing.
+
+**Decision (M3)**: gix `Repository::submodules()` for submodule listing
+**Why**: gix reads `.gitmodules` and yields one `Submodule` per entry
+with name + path. We resolve the submodule's working dir as
+`<repo_root>/<rel-path>` and set it on `redirect_to_path` so the
+frontend opens the working dir directly. The submodule itself is a
+git repo so the portal experience cascades for free.
+
+**Decision (M3)**: Streaming log capped at 5000 entries with a "Load more" sentinel
+**Why**: Per the plan, hard cap at 5000 keeps even pathological monorepos
+inside the listing pipeline's responsive window. Cmdr's own ~3000-commit
+history walks in ~7 ms, so the cap is a safety net, not a UX entry
+point. When the cap is hit, we append a synthetic entry whose
+`redirect_to_path` is `cmdr-git://load-more/<after-sha>`. The frontend
+intercepts the magic prefix and treats Enter as "fetch the next page"
+rather than "navigate to that path". M3 ships the marker; the
+pagination IPC isn't wired yet because Cmdr's own and almost every
+typical repo never hit the cap. Wiring is a one-method follow-up
+when the first user reports the cap.
+
+**Decision (M3)**: Volume hook stays single-shot; cancellation via task abort + polled flag
+**Why**: The plan called for `ListingEventSink` streaming. M2 already
+chose to keep the hook single-shot — the existing `Volume::list_directory`
+contract is "compute Vec, return". We honour that here too. Cancellation
+works two ways: (1) the listing pipeline's `spawn_blocking` task can be
+aborted on cancel, dropping the iterator; (2) we poll a per-process
+`AtomicBool` (`log::cancel_flag()`) inside the rev-walk callback every
+commit so a *cooperative* cancel takes effect within one commit decode
+(microseconds). The flag is opt-in for tests and unused by production
+listings (which rely on task abort). Streaming through `ListingEventSink`
+is M4 territory if the hook contract is changed at all.
+
+**Decision (M3)**: Per-worktree HEAD watch registration on enumeration
+**Why**: notify-debouncer-full doesn't natively glob, so
+`<common-dir>/worktrees/*/HEAD` can't be expressed as a single watch. We
+enumerate worktree gitdirs via `std::fs::read_dir(<common>/worktrees)`
+at subscribe time and register one watch per existing `HEAD`. Worktrees
+added later are picked up indirectly: `git worktree add` always touches
+the main repo's `HEAD` too, which fires our existing main-HEAD watch
+and re-emits `git-state-changed`. The cost is a few extra watcher
+entries (typical worktree counts are 1-5) — negligible.
+
+**Decision (M3)**: `Cat::browses_commit_tree()` replaces M2's `is_ref_listing_in_m2`
+**Why**: The semantics shift now that commits/ and stash/ also browse a
+commit tree (just resolved differently). Branches/tags peel through
+refs, commits resolve a SHA prefix, stash expands `stash@{n}`, but the
+*tree-walking* code path is identical. The new method name describes
+the contract. The dispatch lives in `mod.rs::resolve_commit_for_cat`.
 
 **Decision**: Shell out to `git status --porcelain=v2 -z` for `list_status`
 rather than driving `gix::Repository::status()` directly

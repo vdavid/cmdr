@@ -61,10 +61,12 @@ impl Cat {
         }
     }
 
-    /// True for categories that browse a ref tree (`branches`, `tags`).
-    /// Other categories are M3 territory or have category-specific shapes.
-    pub fn is_ref_listing_in_m2(&self) -> bool {
-        matches!(self, Cat::Branches | Cat::Tags)
+    /// True for categories whose `Ref(_, name)` resolves to a *commit
+    /// tree* the user can browse: branches, tags, commits, stash. The
+    /// other M3 categories (`worktrees`, `submodules`) emit a redirect
+    /// instead of a sub-tree.
+    pub fn browses_commit_tree(&self) -> bool {
+        matches!(self, Cat::Branches | Cat::Tags | Cat::Commits | Cat::Stash)
     }
 }
 
@@ -236,9 +238,10 @@ fn parse_after_dot_git(segments: &[String], handle: &RepoHandle) -> VirtualGitPa
     }
 
     // Greedy-match ref name against the repo's known refs for branches/tags.
-    // For other categories M2 doesn't list, fall back to first-segment ref
-    // name + remainder as sub-path; M3 will refine.
-    if cat.is_ref_listing_in_m2() {
+    // For all other categories the first segment is the entry name (a SHA
+    // for `commits/`, an index for `stash/`, a worktree/submodule name for
+    // `worktrees/` and `submodules/`).
+    if matches!(cat, Cat::Branches | Cat::Tags) {
         let known = ref_names_for_cat(handle, cat);
         if let Some((ref_name, sub)) = match_ref_name(rest, &known) {
             return if sub.is_empty() {
@@ -247,19 +250,9 @@ fn parse_after_dot_git(segments: &[String], handle: &RepoHandle) -> VirtualGitPa
                 VirtualGitPath::RefTree(cat, ref_name, sub)
             };
         }
-        // Unknown ref — treat the first segment as the ref name.
-        let ref_name = rest[0].clone();
-        let sub = rest[1..].join("/");
-        return if sub.is_empty() {
-            VirtualGitPath::Ref(cat, ref_name)
-        } else {
-            VirtualGitPath::RefTree(cat, ref_name, sub)
-        };
     }
 
-    // M3 categories: keep them parseable so `is_virtual` short-circuits the
-    // mutation hooks even today. The shape is the same: first segment is
-    // the entry, remainder is the sub-path.
+    // Default shape: first segment = entry, remainder = sub-path.
     let entry = rest[0].clone();
     let sub = rest[1..].join("/");
     if sub.is_empty() {

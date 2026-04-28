@@ -24,15 +24,20 @@ use super::repo::RepoHandle;
 
 /// Lists the categories visible at the portal root.
 ///
-/// M2 ships `branches/`, `tags/`, `raw/`. M3 will append `commits/`,
-/// `stash/`, `worktrees/`, `submodules/`. We deliberately omit M3 entries
-/// instead of stubbing — empty stubs feel broken; missing stubs feel
-/// "coming soon" without lying.
+/// All seven categories are listed: M2 shipped `branches/`, `tags/`,
+/// `raw/`; M3 added `commits/`, `stash/`, `worktrees/`, `submodules/`.
+/// Empty categories (no commits, no stashes) still show up — opening
+/// them shows an empty listing, which is more honest than hiding the
+/// concept altogether.
 pub fn list_root(repo_root: &Path) -> Vec<FileEntry> {
     let dot_git = repo_root.join(".git");
     let categories = [
         (Cat::Branches, "git:branch"),
         (Cat::Tags, "git:tag"),
+        (Cat::Commits, "git:commit"),
+        (Cat::Stash, "git:fork"),
+        (Cat::Worktrees, "git:fork"),
+        (Cat::Submodules, "git:fork"),
         (Cat::Raw, "git:fork"),
     ];
 
@@ -216,13 +221,48 @@ pub fn get_metadata_for(
             fe.icon_id = match cat {
                 Cat::Branches => "git:branch",
                 Cat::Tags => "git:tag",
-                _ => "git:commit",
+                Cat::Commits => "git:commit",
+                _ => "git:fork",
             }
             .to_string();
+            // For worktrees and submodules, surface the redirect even on a
+            // direct stat so drag-drop, clipboard, and copy preview see it.
+            match cat {
+                Cat::Worktrees => {
+                    use gix::bstr::ByteSlice;
+                    let repo = handle.to_thread_local();
+                    if let Ok(proxies) = repo.worktrees() {
+                        for p in proxies {
+                            if p.id().as_bstr() == name.as_bytes().as_bstr()
+                                && let Ok(base) = p.base()
+                            {
+                                fe.redirect_to_path = Some(base.display().to_string());
+                                break;
+                            }
+                        }
+                    }
+                }
+                Cat::Submodules => {
+                    use gix::bstr::ByteSlice;
+                    let repo = handle.to_thread_local();
+                    if let Ok(Some(modules)) = repo.submodules() {
+                        for sm in modules {
+                            if sm.name().as_bstr() == name.as_bytes().as_bstr()
+                                && let Ok(rel) = sm.path()
+                            {
+                                fe.redirect_to_path =
+                                    Some(repo_root.join(rel.to_str_lossy().as_ref()).display().to_string());
+                                break;
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
             Ok(fe)
         }
         RefTree(cat, name, sub) => {
-            let commit_id = resolve_ref_commit(handle, *cat, name)?;
+            let commit_id = super::resolve_commit_for_cat(handle, *cat, name)?;
             let display_path = repo_root
                 .join(".git")
                 .join(cat.as_segment())

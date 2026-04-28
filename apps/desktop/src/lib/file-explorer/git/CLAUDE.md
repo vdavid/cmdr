@@ -1,6 +1,8 @@
-# File explorer › git (M1 foundation)
+# File explorer › git (M1 + M2 + M3)
 
 Frontend module for the git browser. M1 ships the breadcrumb chip, status-column helpers, and the live `RepoInfo` store.
+M2 wires the virtual portal into `FilePane.svelte`'s breadcrumb. M3 wires `redirectToPath` navigation in
+`handleNavigate` so worktree / submodule entries open their working dir directly.
 
 ## File map
 
@@ -68,8 +70,18 @@ information gain. We treat the user setting as "show when meaningful" rather tha
 
 ## Gotchas
 
-**Gotcha**: The `redirectToPath` field on `FileEntry` lives on the schema from M1 but is inert until M3. Don't add
-navigation handling for it yet.
+## Redirect navigation (M3)
+
+`FileEntry.redirectToPath` is honoured in `FilePane.svelte::handleNavigate`. When set, opening the entry navigates to
+that path directly instead of treating it as a virtual subtree. Used today by:
+
+- `.git/worktrees/<name>` → linked worktree's working dir.
+- `.git/submodules/<name>` → submodule's working dir.
+- `.git/commits/__cmdr_load_more__` (synthetic "Load more" entry, prefix `cmdr-git://load-more/`) → currently a no-op on
+  Enter; pagination wiring lands when a user reports hitting the 5000-commit cap.
+
+`FullList.svelte` shows a tooltip "Opens &lt;path&gt;" for these entries (or "Press Enter to load the next page of
+commits" for the load-more sentinel) so users know they're about to navigate elsewhere.
 
 **Gotcha**: Status column data uses _relative_ paths (relative to the repo root). The `FullList.svelte` cell renderer
 needs to compute the relative path for each entry before lookup; don't compare against the absolute path.

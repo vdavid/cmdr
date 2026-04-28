@@ -36,18 +36,24 @@
 use std::path::Path;
 
 pub mod friendly;
+pub mod log;
 pub mod path;
 pub mod read_blob;
 pub mod repo;
+pub mod stash;
 pub mod status;
+pub mod submodules;
 pub mod tree;
 pub mod virtual_listing;
 pub mod watcher;
+pub mod worktrees;
 
 #[cfg(test)]
 mod bench;
 #[cfg(test)]
 mod m2_tests;
+#[cfg(test)]
+mod m3_tests;
 #[cfg(test)]
 mod tests;
 
@@ -89,14 +95,16 @@ pub fn try_route_listing(path: &Path) -> Option<Result<Vec<FileEntry>, VolumeErr
         Root => Ok(virtual_listing::list_root(&root)),
         Category(path::Cat::Branches) => virtual_listing::list_branches(&handle, &root),
         Category(path::Cat::Tags) => virtual_listing::list_tags(&handle, &root),
+        Category(path::Cat::Commits) => log::list_commits(&handle, &root),
+        Category(path::Cat::Stash) => stash::list_stashes(&handle, &root),
+        Category(path::Cat::Worktrees) => worktrees::list_worktrees(&handle, &root),
+        Category(path::Cat::Submodules) => submodules::list_submodules(&handle, &root),
         Category(path::Cat::Raw) => virtual_listing::list_raw(&root, ""),
-        Category(_) => {
-            // M3 categories — not listed yet. Return empty so the user
-            // sees an empty dir rather than a 404 if they URL-typed.
-            Ok(Vec::new())
-        }
-        Ref(cat, name) if cat.is_ref_listing_in_m2() => list_ref_tree(&handle, &root, *cat, name, ""),
-        RefTree(cat, name, sub) if cat.is_ref_listing_in_m2() => list_ref_tree(&handle, &root, *cat, name, sub),
+        Ref(cat, name) if cat.browses_commit_tree() => list_ref_tree(&handle, &root, *cat, name, ""),
+        RefTree(cat, name, sub) if cat.browses_commit_tree() => list_ref_tree(&handle, &root, *cat, name, sub),
+        // Worktrees and submodules are leaf entries with `redirectToPath`;
+        // listing them as if they were directories returns empty (the
+        // frontend redirects on Enter so this rarely fires in practice).
         Ref(_, _) | RefTree(_, _, _) => Ok(Vec::new()),
         Raw(sub) => virtual_listing::list_raw(&root, sub),
     };
@@ -116,8 +124,8 @@ pub fn try_open_blob_stream(path: &Path) -> Option<Result<Box<dyn VolumeReadStre
     let (virt, handle, root) = path::classify(path)?;
     use path::VirtualGitPath::*;
     let result = match &virt {
-        RefTree(cat, name, sub) if cat.is_ref_listing_in_m2() => {
-            let commit_id = match virtual_listing::resolve_ref_commit(&handle, *cat, name) {
+        RefTree(cat, name, sub) if cat.browses_commit_tree() => {
+            let commit_id = match resolve_commit_for_cat(&handle, *cat, name) {
                 Ok(id) => id,
                 Err(e) => return Some(Err(friendly_to_volume_error(e))),
             };
@@ -145,13 +153,37 @@ fn list_ref_tree(
     name: &str,
     sub: &str,
 ) -> Result<Vec<FileEntry>, FriendlyGitError> {
-    let commit_id = virtual_listing::resolve_ref_commit(handle, cat, name)?;
+    let commit_id = resolve_commit_for_cat(handle, cat, name)?;
     let display_parent = root
         .join(".git")
         .join(cat.as_segment())
         .join(name)
         .join(sub.replace('/', std::path::MAIN_SEPARATOR_STR));
     tree::list_tree(handle, commit_id, sub, &display_parent)
+}
+
+/// Resolves a `Cat::* / name` pair to the commit ID whose tree we should
+/// browse. Branches/tags peel through refs (M2), commits resolve the SHA
+/// prefix, stash resolves through `stash@{n}`.
+pub(crate) fn resolve_commit_for_cat(
+    handle: &repo::RepoHandle,
+    cat: path::Cat,
+    name: &str,
+) -> Result<gix::ObjectId, FriendlyGitError> {
+    match cat {
+        path::Cat::Branches | path::Cat::Tags => virtual_listing::resolve_ref_commit(handle, cat, name),
+        path::Cat::Commits => log::resolve_commit_id(handle, name),
+        path::Cat::Stash => {
+            let n: usize = name
+                .parse()
+                .map_err(|_| FriendlyGitError::new(FriendlyGitErrorKind::CorruptRepo, name.to_string()))?;
+            stash::resolve_stash_commit(handle, n)
+        }
+        _ => Err(FriendlyGitError::new(
+            FriendlyGitErrorKind::CorruptRepo,
+            name.to_string(),
+        )),
+    }
 }
 
 fn open_real_file_stream(real: &Path) -> Result<Box<dyn VolumeReadStream>, VolumeError> {

@@ -154,12 +154,16 @@ fn list_tags_yields_v1() {
 }
 
 #[test]
-fn list_root_omits_m3_categories() {
+fn list_root_includes_all_categories() {
+    // M3 added commits/stash/worktrees/submodules to the root listing.
     let dir = build_fixture_repo();
     let (_, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_root(&root);
     let names: Vec<_> = entries.iter().map(|e| e.name.as_str()).collect();
-    assert_eq!(names, vec!["branches", "tags", "raw"]);
+    assert_eq!(
+        names,
+        vec!["branches", "tags", "commits", "stash", "worktrees", "submodules", "raw"]
+    );
     cleanup(&dir);
 }
 

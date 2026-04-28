@@ -661,7 +661,17 @@
                                 />
                             </div>
                         {:else}
-                            <span class="col-name" use:tooltip={{ text: file.name, overflowOnly: true }}>{getDisplayName(file.name, file.isDirectory)}</span>
+                            <span
+                                class="col-name"
+                                use:tooltip={{
+                                    text: file.redirectToPath
+                                        ? file.redirectToPath.startsWith('cmdr-git://load-more/')
+                                            ? 'Press Enter to load the next page of commits'
+                                            : `Opens ${file.redirectToPath}`
+                                        : file.name,
+                                    overflowOnly: !file.redirectToPath,
+                                }}
+                            >{getDisplayName(file.name, file.isDirectory)}</span>
                             {#if gitColumnVisible}
                                 {@const status = gitStatusFor(file)}
                                 <span

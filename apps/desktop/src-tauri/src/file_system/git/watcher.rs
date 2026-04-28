@@ -164,11 +164,8 @@ pub(crate) fn invalidate_for_test(repo_root: &Path) {
     invalidate_virtual_listings(repo_root)
 }
 
-/// Invalidates any open virtual `.git/{branches,tags}/...` listings on the
-/// local volume so they re-read after a ref change.
-///
-/// M2 covers `branches/` and `tags/` only. M3 will extend this to commits,
-/// stash, worktrees, and submodules.
+/// Invalidates any open virtual `.git/{branches,tags,commits,stash,worktrees,submodules}/...`
+/// listings on the local volume so they re-read after a ref change.
 fn invalidate_virtual_listings(repo_root: &Path) {
     use crate::file_system::git::path::Cat;
     use crate::file_system::listing::caching::{
@@ -180,6 +177,10 @@ fn invalidate_virtual_listings(repo_root: &Path) {
     let prefixes = [
         dot_git.join(Cat::Branches.as_segment()),
         dot_git.join(Cat::Tags.as_segment()),
+        dot_git.join(Cat::Commits.as_segment()),
+        dot_git.join(Cat::Stash.as_segment()),
+        dot_git.join(Cat::Worktrees.as_segment()),
+        dot_git.join(Cat::Submodules.as_segment()),
     ];
 
     // We snapshot listing IDs and inspect each path against the prefixes.
@@ -231,7 +232,7 @@ fn git_dir_path(repo_root: &Path) -> PathBuf {
 /// See plan § Architecture > Watcher.
 fn watch_paths(repo_root: &Path) -> Vec<PathBuf> {
     let git_dir = git_dir_path(repo_root);
-    [
+    let mut paths: Vec<PathBuf> = [
         "HEAD",
         "ORIG_HEAD",
         "MERGE_HEAD",
@@ -243,5 +244,29 @@ fn watch_paths(repo_root: &Path) -> Vec<PathBuf> {
     ]
     .iter()
     .map(|sub| git_dir.join(sub))
-    .collect()
+    .collect();
+
+    // Linked worktrees: each has its own HEAD under
+    // `<common-dir>/worktrees/<name>/HEAD`. We register one watch per
+    // worktree at subscribe time. New worktrees added later are picked
+    // up via the non-recursive `.git` watch (the `worktrees/` parent
+    // directory's create event triggers a re-subscribe path on the
+    // refresh — and even without that, a `git worktree add` always
+    // touches `HEAD` in the main repo too, which fires a re-emit).
+    //
+    // Decision: per-worktree registration on enumeration rather than glob
+    // support. notify-debouncer-full doesn't natively glob. Registering
+    // each `worktrees/<name>/HEAD` keeps the notify config flat and
+    // self-documenting; the cost is a few extra watcher entries per
+    // worktree, which is negligible at typical worktree counts (1-5).
+    let worktrees_dir = git_dir.join("worktrees");
+    if let Ok(read) = std::fs::read_dir(&worktrees_dir) {
+        for entry in read.flatten() {
+            let head = entry.path().join("HEAD");
+            if head.exists() {
+                paths.push(head);
+            }
+        }
+    }
+    paths
 }

@@ -1162,6 +1162,24 @@
     }
 
     async function handleNavigate(entry: FileEntry) {
+        // `redirectToPath` is set by the backend on virtual entries that
+        // should open elsewhere (worktree / submodule working dirs, the
+        // commits/ "Load more" sentinel). For real file paths, redirect
+        // to that path. For the magic `cmdr-git://load-more/<sha>` URI,
+        // we'd kick off pagination — M3 ships the marker and treats it
+        // as a no-op for now (cmdr's own repo has < 5000 commits, so the
+        // cap doesn't trigger in normal use; pagination ships in a
+        // follow-up once the cap is reached often enough to matter).
+        if (entry.redirectToPath) {
+            const target = entry.redirectToPath
+            if (target.startsWith('cmdr-git://load-more/')) {
+                // Future: trigger pagination to fetch the next batch.
+                return
+            }
+            currentPath = target
+            await loadDirectory(target)
+            return
+        }
         if (entry.isDirectory) {
             // When navigating to parent (..), remember current folder name to select it
             const isGoingUp = entry.name === '..'
