@@ -12,7 +12,7 @@
 //! the cap, we append a synthetic "Load more…" entry. The frontend opens
 //! it with Enter to fetch the next page (handled via `redirect_to_path`,
 //! see `LOAD_MORE_REDIRECT_SCHEME`). Each batch is `BATCH_SIZE` (200)
-//! commits — the cap matches the plan, the batch size is what we'd flush
+//! commits – the cap matches the plan, the batch size is what we'd flush
 //! through `ListingEventSink` if/when we wire streaming through the volume
 //! hook (see decision below).
 //!
@@ -32,8 +32,15 @@
 //! inside the listing pipeline's `spawn_blocking` task, which the listing
 //! module aborts on cancel. We additionally poll an `AtomicBool` checked
 //! at every iteration so a cooperatively-cancelled walk stops within one
-//! commit decode (typically microseconds). The `AtomicBool` is plumbed
-//! via `LOG_CANCEL_FLAG` for tests and is opt-in for production callers.
+//! commit decode (typically microseconds).
+//!
+//! Production listings rely on the surrounding task abort; the polled
+//! flag is a `#[cfg(test)]` hook so a test can set it, run a list, and
+//! observe cooperative cancellation. Gating it behind `cfg(test)` avoids
+//! the previous footgun where a process-global `AtomicBool` could in
+//! theory let two concurrent commit listings interfere with each other
+//! (one's cancel would cancel the other). In production the walk is
+//! never cancelled cooperatively, only via task abort.
 //!
 //! ## Why not stream through `ListingEventSink` here
 //!
@@ -47,6 +54,7 @@
 //! without churning callers.
 
 use std::path::Path;
+#[cfg(test)]
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use gix::ObjectId;
@@ -81,16 +89,32 @@ pub const SHORT_SHA_LEN: usize = 7;
 /// ~3000 commits; the cap is a safety net, not a UX entry point).
 pub const LOAD_MORE_REDIRECT_SCHEME: &str = "cmdr-git://load-more/";
 
-/// Per-listing cancel flag. Set by the listing pipeline's cancel hook;
-/// polled inside the rev-walk callback every commit. Lives behind a
-/// `OnceLock` because the hook contract doesn't thread cancel state today.
+/// Test-only cooperative cancel flag. Set the flag, run a list, observe
+/// cancellation within one commit decode.
 ///
-/// Lookup pattern (used by tests): set the flag, run a list, observe
-/// cancellation. Production listings just leave this `false` and rely on
-/// the listing-pipeline `spawn_blocking` task abort for hard cancellation.
+/// Gated behind `#[cfg(test)]` so production builds don't carry a
+/// process-wide cancellation switch that two concurrent commit listings
+/// could interfere with. Production walks rely on `spawn_blocking` task
+/// abort for hard cancellation; that's enough because the cap (5000
+/// commits) keeps even pathological walks well inside the listing
+/// pipeline's responsive window.
+#[cfg(test)]
 pub fn cancel_flag() -> &'static AtomicBool {
     static FLAG: AtomicBool = AtomicBool::new(false);
     &FLAG
+}
+
+/// In production builds, the polled cancel check is a no-op. The compiler
+/// inlines this and dead-code-eliminates the surrounding `if cancel.load`
+/// branch, so there's zero runtime cost on the hot path.
+#[cfg(not(test))]
+fn cancel_is_set() -> bool {
+    false
+}
+
+#[cfg(test)]
+fn cancel_is_set() -> bool {
+    cancel_flag().load(Ordering::Relaxed)
 }
 
 /// Resolves a SHA-ish path segment to a commit `ObjectId`.
@@ -118,10 +142,14 @@ pub fn resolve_commit_id(handle: &RepoHandle, prefix: &str) -> Result<ObjectId, 
 
 /// True when `s` looks like a commit-id prefix (≥ 7 lowercase hex chars).
 ///
-/// We don't validate against the object database here — exposed as a
+/// We don't validate against the object database here. Exposed as a
 /// public helper so future code (URL pasting, drag-drop validation) can
 /// shape-check candidates before doing a real DB lookup. Resolution
 /// happens via `resolve_commit_id`.
+// TODO(M3.1): Wire from URL paste / drag-drop input validation. The dead
+// gate stays because the classifier already does the implicit shape check
+// through `resolve_commit_id`; this helper is for callers that want to
+// reject obviously-wrong input before paying for the DB lookup.
 #[allow(
     dead_code,
     reason = "Public helper for URL paste / drag-drop validation; the classifier doesn't call it because the SHA-shape check happens implicitly through resolve_commit_id"
@@ -155,14 +183,15 @@ pub fn list_commits(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEnt
         .all()
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
 
-    let cancel = cancel_flag();
     let mut out = Vec::with_capacity(MAX_COMMITS.min(BATCH_SIZE));
     let mut last_sha: Option<String> = None;
     let mut hit_cap = false;
     for (count, info) in walk.enumerate() {
-        // Polled cancellation — checked inside the iterator callback every
-        // commit. Per the plan: "spawn_blocking alone doesn't cancel".
-        if cancel.load(Ordering::Relaxed) {
+        // Polled cancellation: in tests, the flag lets us observe
+        // cooperative cancel; in production, this is a const `false` and
+        // the compiler drops the branch entirely. Hard cancel comes from
+        // the surrounding `spawn_blocking` task abort.
+        if cancel_is_set() {
             break;
         }
         if count >= MAX_COMMITS {
@@ -182,7 +211,7 @@ pub fn list_commits(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEnt
         let mut fe = FileEntry::new(short.clone(), entry_path.to_string_lossy().into_owned(), true, false);
         fe.icon_id = "git:commit".into();
         fe.permissions = 0o755;
-        // Display: `<short-sha> <subject>` — same shape as `git log
+        // Display: `<short-sha> <subject>` – same shape as `git log
         // --oneline` so users feel at home.
         fe.name = format!("{} {}", short, subject);
         fe.modified_at = Some(committer_secs as u64);

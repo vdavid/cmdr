@@ -9,7 +9,7 @@
 //!
 //! gix exposes `worktrees() -> Vec<worktree::Proxy>` which reads
 //! `<common-dir>/worktrees/*/gitdir` and gives us the working-tree base
-//! path via `proxy.base()`. That's exactly what we need — no shell-out.
+//! path via `proxy.base()`. That's exactly what we need – no shell-out.
 //!
 //! ## Real `.git/worktrees/` collision
 //!
@@ -38,7 +38,7 @@ pub fn list_worktrees(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileE
         let id = proxy.id().to_string();
         // base() reads `gitdir` and resolves the worktree path. Skip
         // worktrees whose base is missing rather than fail the whole
-        // listing — orphaned linked-worktrees are common after manual
+        // listing – orphaned linked-worktrees are common after manual
         // moves.
         let Ok(base) = proxy.base() else {
             continue;

@@ -1,4 +1,4 @@
-//! Integration tests for M3 — commits, stash, worktrees, submodules.
+//! Integration tests for M3 – commits, stash, worktrees, submodules.
 //!
 //! Builds tiny fixture repos with the `git` CLI (already a system
 //! requirement). The 1000+ commit fixture is built once and shared via
@@ -118,7 +118,7 @@ fn commit_tree_browsing_via_short_sha() {
 
 #[test]
 fn commits_caps_listing_at_max() {
-    // We test the cap in isolation rather than building 5001 commits —
+    // We test the cap in isolation rather than building 5001 commits :
     // that'd add ~30 s to the test suite. The cap path is exercised by
     // setting MAX_COMMITS-equivalent fixtures via the loop count check.
     // For now, just assert the constant value matches the plan.
@@ -187,9 +187,12 @@ fn list_stashes_returns_three_entries() {
         git(&dir, &["stash", "push", "-u", "-m", &format!("change {}", n)]);
     }
 
-    let entries = stash::list_stashes(&handle, &root).unwrap();
+    // The handle is still useful for `resolve_stash_commit` later in the
+    // file; suppress the unused warning for this test.
+    let _ = &handle;
+    let entries = stash::list_stashes(&root).unwrap();
     assert_eq!(entries.len(), 3);
-    // Newest-first ordering — git stash list follows reflog, newest at
+    // Newest-first ordering – git stash list follows reflog, newest at
     // the top, which means stash@{0} is the most recent.
     assert!(entries[0].name.starts_with("stash@{0}"));
     assert!(entries[2].name.starts_with("stash@{2}"));

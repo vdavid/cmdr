@@ -112,9 +112,15 @@ pub fn set_error_reports_enabled(value: bool) {
 /// `.git` shows the raw on-disk contents instead of the branches/tags/commits
 /// virtual folders. Pushed live from the frontend whenever
 /// `fileExplorer.git.showVirtualGitPortal` changes.
+///
+/// Flipping the atomic isn't enough on its own: panes already showing a
+/// virtual `.git/...` listing keep their cached children until the next
+/// navigation. We refresh every cached listing under any subscribed repo's
+/// `.git/` so the change is visible immediately.
 #[tauri::command]
 pub fn set_show_virtual_git_portal(enabled: bool) {
     crate::file_system::git::set_virtual_portal_enabled(enabled);
+    crate::file_system::git::watcher::refresh_all_virtual_listings_after_toggle();
 }
 
 /// Update menu accelerator for a command.

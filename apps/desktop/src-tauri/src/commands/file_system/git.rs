@@ -7,11 +7,12 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
-use serde::Serialize;
 use tauri::AppHandle;
 
-use crate::commands::util::{TimedOut, blocking_with_timeout_flag};
-use crate::file_system::git::{EntryStatus, RepoInfo, discover_repo, get_watcher_registry, list_status, repo_info};
+use crate::commands::util::{IpcError, TimedOut, blocking_result_with_timeout, blocking_with_timeout_flag};
+use crate::file_system::git::{
+    EntryStatus, FriendlyGitError, RepoInfo, discover_repo, get_watcher_registry, list_status, repo_info,
+};
 
 /// Budget per the M1 plan: discover + repo info ≤ 50 ms p95 on a 50k-file
 /// repo. We give the IPC layer 2 s to also cover slow NFS / SMB filesystems
@@ -20,6 +21,10 @@ const GIT_REPO_INFO_TIMEOUT: Duration = Duration::from_secs(2);
 /// Status walks can take longer on huge worktrees. 5 s lets the chip stay
 /// responsive without giving up before gix returns.
 const GIT_STATUS_TIMEOUT: Duration = Duration::from_secs(5);
+/// Subscribing matches `get_git_repo_info`: the synchronous handshake calls
+/// `discover_repo` + `repo_info` (the same `is_dirty` walk), so a hung repo
+/// could block the watcher registration without a timeout.
+const GIT_SUBSCRIBE_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Returns the repo info for any path inside a worktree, or `None` if there's
 /// no repo above it.
@@ -39,23 +44,27 @@ pub async fn get_git_repo_info(path: String) -> TimedOut<Option<RepoInfo>> {
 /// Subscribes a frontend pane to live `git-state-changed` events for the repo
 /// at `repo_root`. Returns the current `RepoInfo` synchronously so the chip
 /// never sees an empty interim state.
+///
+/// Wrapped in `blocking_result_with_timeout` because the synchronous handshake
+/// calls `discover_repo` + `repo_info` internally, both of which can stall on
+/// a hung repo (slow `is_dirty` walk on 50k files, dead NFS mount, etc.).
+/// Without this, IPC could freeze waiting for the watcher to register.
 #[tauri::command]
-pub async fn subscribe_git_state(app: AppHandle, repo_root: String) -> Result<RepoInfo, GitCommandError> {
-    let result = tokio::task::spawn_blocking(move || {
+pub async fn subscribe_git_state(app: AppHandle, repo_root: String) -> Result<RepoInfo, IpcError> {
+    blocking_result_with_timeout(GIT_SUBSCRIBE_TIMEOUT, move || {
         let path = PathBuf::from(&repo_root);
         get_watcher_registry()
             .subscribe(app, &path)
-            .map_err(GitCommandError::from_friendly)
+            .map_err(format_friendly_git_error)
     })
-    .await;
-    match result {
-        Ok(Ok(info)) => Ok(info),
-        Ok(Err(e)) => Err(e),
-        Err(_) => Err(GitCommandError {
-            title: "We couldn't subscribe to repo updates".to_string(),
-            message: "The git watcher task didn't finish in time. Try again in a moment.".to_string(),
-        }),
-    }
+    .await
+}
+
+/// Renders a `FriendlyGitError` as a one-line `title: explanation` string so
+/// it carries through `IpcError::message`. The frontend already calls
+/// `getIpcErrorMessage()` on caught failures, so this is what users see.
+fn format_friendly_git_error(err: FriendlyGitError) -> String {
+    format!("{}: {}", err.title(), err.explanation())
 }
 
 /// Drops one subscriber for the repo. The watcher itself stays alive until the
@@ -85,29 +94,4 @@ pub async fn get_git_status_for_paths(repo_root: String, dir: String) -> TimedOu
         list_status(&handle, &scope).unwrap_or_default()
     })
     .await
-}
-
-/// Friendly-shaped error for git IPC commands. Mirrors the conventions of
-/// `commands::util::IpcError` but carries the title separately so the
-/// frontend can render category-styled messages.
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GitCommandError {
-    pub title: String,
-    pub message: String,
-}
-
-impl GitCommandError {
-    fn from_friendly(err: crate::file_system::git::FriendlyGitError) -> Self {
-        Self {
-            title: err.title().to_string(),
-            message: err.explanation().to_string(),
-        }
-    }
-}
-
-impl std::fmt::Display for GitCommandError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", self.title, self.message)
-    }
 }

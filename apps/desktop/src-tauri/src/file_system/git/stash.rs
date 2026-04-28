@@ -6,7 +6,7 @@
 //! ## Decision: shell out for the listing
 //!
 //! gix 0.81 doesn't expose a stash-list API at the public surface. The
-//! reflog at `refs/stash` is the canonical source — each entry is a
+//! reflog at `refs/stash` is the canonical source – each entry is a
 //! merge commit `W` whose first parent is the original HEAD `B` and
 //! whose second parent (or third when `git stash -u`) is the index/
 //! untracked-files commit. We could parse the reflog by hand, but
@@ -18,7 +18,7 @@
 //!
 //! `git stash` records the dirty worktree state as a *merge commit* (the
 //! "W" commit). Its tree is the worktree at stash time. The first parent
-//! ("B") is HEAD at stash time — that's the *clean* tree, not the
+//! ("B") is HEAD at stash time – that's the *clean* tree, not the
 //! stashed changes. Users typing `.git/stash/0/...` expect to see what
 //! they stashed, so we browse W's tree directly.
 
@@ -33,8 +33,11 @@ use super::repo::RepoHandle;
 /// Lists stash entries as virtual directory entries `0`, `1`, …
 ///
 /// Each entry's display name is `stash@{n}: <subject>` so the listing
-/// reads naturally; the on-disk segment is just the index.
-pub fn list_stashes(_handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEntry>, FriendlyGitError> {
+/// reads naturally; the on-disk segment is just the index. We don't take
+/// a `RepoHandle` because gix has no public stash API and we shell out to
+/// `git -C <repo_root>` directly; the caller resolves `repo_root` from
+/// the same `discover_repo` cache so there's no redundant lookup.
+pub fn list_stashes(repo_root: &Path) -> Result<Vec<FileEntry>, FriendlyGitError> {
     let parent = repo_root.join(".git").join("stash");
     let output = Command::new("git")
         .arg("-C")
@@ -46,7 +49,7 @@ pub fn list_stashes(_handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEn
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
 
     if !output.status.success() {
-        // Non-zero exit doesn't mean "stash failed" — it can also mean
+        // Non-zero exit doesn't mean "stash failed" – it can also mean
         // the repo just doesn't have a stash yet. Treat as empty list.
         return Ok(Vec::new());
     }
@@ -89,7 +92,10 @@ pub fn list_stashes(_handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEn
 /// spawn per nav, which is negligible compared to the tree walk that
 /// follows.
 pub fn resolve_stash_commit(handle: &RepoHandle, n: usize) -> Result<gix::ObjectId, FriendlyGitError> {
-    let _ = handle; // gix isn't useful here; we go through git.
+    // gix has no `stash@{n}` parser; we shell out to `git rev-parse`.
+    // The handle is here only to derive the worktree root for the
+    // `git -C` cwd, via the same `work_dir()` path the rest of the
+    // module uses.
     use gix::bstr::ByteSlice;
     use std::path::PathBuf;
 
@@ -127,7 +133,7 @@ fn repo_root_from_handle(handle: &RepoHandle) -> Result<std::path::PathBuf, Frie
 }
 
 fn parse_stash_index(gd: &str) -> Option<usize> {
-    // gd looks like `stash@{0}` — pull the digits between `{` and `}`.
+    // gd looks like `stash@{0}` – pull the digits between `{` and `}`.
     let start = gd.find('{')?;
     let end = gd.find('}')?;
     if end <= start {

@@ -22,7 +22,7 @@
 //!
 //! gix in 0.81 returns whole-blob `Vec<u8>` for `Object::data`. The
 //! `GitBlobReadStream` owns that vec and yields 256 KB chunks for the
-//! consumer API shape — memory cost equals blob size. We refuse blobs
+//! consumer API shape – memory cost equals blob size. We refuse blobs
 //! over `tree::MAX_BLOB_BYTES` (256 MB) up-front rather than OOM. Future
 //! work: revisit when gix exposes a chunked loose-object reader.
 //!
@@ -118,7 +118,7 @@ pub fn try_route_listing(path: &Path) -> Option<Result<Vec<FileEntry>, VolumeErr
         Category(path::Cat::Branches) => virtual_listing::list_branches(&handle, &root),
         Category(path::Cat::Tags) => virtual_listing::list_tags(&handle, &root),
         Category(path::Cat::Commits) => log::list_commits(&handle, &root),
-        Category(path::Cat::Stash) => stash::list_stashes(&handle, &root),
+        Category(path::Cat::Stash) => stash::list_stashes(&root),
         Category(path::Cat::Worktrees) => worktrees::list_worktrees(&handle, &root),
         Category(path::Cat::Submodules) => submodules::list_submodules(&handle, &root),
         Category(path::Cat::Raw) => virtual_listing::list_raw(&root, ""),

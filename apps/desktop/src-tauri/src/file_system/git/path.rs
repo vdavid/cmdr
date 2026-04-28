@@ -10,7 +10,7 @@
 //!
 //! ## Why ref names render flat
 //!
-//! Ref names like `feature/foo` contain `/`. We render them flat — the ref
+//! Ref names like `feature/foo` contain `/`. We render them flat – the ref
 //! list shows one entry called `feature/foo`, not nested `feature/` then
 //! `foo`. Sub-paths inside a ref's tree (the actual file tree at the tip)
 //! still render as a normal hierarchy. The classifier handles this by
@@ -30,7 +30,7 @@ pub enum Cat {
     Stash,
     Worktrees,
     Submodules,
-    /// Escape hatch — `.git/raw/...` exposes the real on-disk gitdir.
+    /// Escape hatch – `.git/raw/...` exposes the real on-disk gitdir.
     Raw,
 }
 
@@ -73,18 +73,18 @@ impl Cat {
 /// Classified virtual git path.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VirtualGitPath {
-    /// `.git/` itself — shows the portal entries.
+    /// `.git/` itself – shows the portal entries.
     Root,
-    /// `.git/<category>/` — the category landing page (also a "ref list" for
+    /// `.git/<category>/` – the category landing page (also a "ref list" for
     /// branches and tags). Kept distinct so future categories with their own
     /// shape (`commits/<sha>/`) reuse the same parser entry point.
     Category(Cat),
-    /// `.git/<category>/<ref>` — a specific ref / sha / stash entry.
+    /// `.git/<category>/<ref>` – a specific ref / sha / stash entry.
     Ref(Cat, String),
-    /// `.git/<category>/<ref>/<sub_path>` — a sub-path inside a ref's tree.
+    /// `.git/<category>/<ref>/<sub_path>` – a sub-path inside a ref's tree.
     /// `sub_path` uses forward slashes, never starts with `/`.
     RefTree(Cat, String, String),
-    /// `.git/raw/<sub_path>` — direct passthrough into the real gitdir.
+    /// `.git/raw/<sub_path>` – direct passthrough into the real gitdir.
     /// `sub_path` is empty for `raw/` itself.
     Raw(String),
 }
@@ -106,7 +106,7 @@ impl VirtualGitPath {
 /// Cheap shape check: does this path live under any worktree's `.git/` dir?
 ///
 /// Walks `path`'s ancestors looking for a `.git` segment. We don't open a
-/// repo here — the volume hooks call this on every method invocation so it
+/// repo here – the volume hooks call this on every method invocation so it
 /// has to be fast. Repo discovery happens later, only for paths that
 /// actually need it.
 pub fn is_virtual(path: &Path) -> bool {
@@ -124,7 +124,7 @@ pub fn is_virtual(path: &Path) -> bool {
 /// - We can't open the repo (broken `.git`, permission denied, etc.).
 ///
 /// Errors are surfaced via the friendly-error path on actual operations,
-/// not here — this function is a router.
+/// not here – this function is a router.
 pub fn classify(path: &Path) -> Option<(VirtualGitPath, RepoHandle, PathBuf)> {
     let (worktree_root, after_dot_git) = split_at_dot_git(path)?;
     let (handle, canonical_root) = super::repo::discover_repo(&worktree_root).ok()?;
@@ -221,7 +221,7 @@ fn parse_after_dot_git(segments: &[String], handle: &RepoHandle) -> VirtualGitPa
 
     let cat_seg = &segments[0];
     let Some(cat) = Cat::from_segment(cat_seg) else {
-        // Unknown first segment — fall through to `Raw` so the user can
+        // Unknown first segment – fall through to `Raw` so the user can
         // browse `.git/refs/...` etc. as the real gitdir contents.
         let sub = segments.join("/");
         return VirtualGitPath::Raw(sub);

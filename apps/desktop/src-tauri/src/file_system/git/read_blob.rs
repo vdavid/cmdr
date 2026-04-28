@@ -2,7 +2,7 @@
 //!
 //! ## Honest streaming
 //!
-//! gix's `Object::data` is `Vec<u8>` for the whole blob — there's no
+//! gix's `Object::data` is `Vec<u8>` for the whole blob – there's no
 //! chunked loose-object reader exposed at the public surface in 0.81. So
 //! this stream owns the full `Vec<u8>` and yields slices in 256 KB chunks.
 //! Memory cost equals blob size; chunked yield is for the consumer API
@@ -17,7 +17,7 @@ use std::pin::Pin;
 
 use crate::file_system::volume::{VolumeError, VolumeReadStream};
 
-/// 256 KB — matches the consumer-friendly chunk size used by network read streams.
+/// 256 KB – matches the consumer-friendly chunk size used by network read streams.
 const CHUNK_SIZE: usize = 256 * 1024;
 
 /// Streaming reader over an in-memory `Vec<u8>` blob.

@@ -81,7 +81,7 @@ impl GitWatcherRegistry {
         for path in watch_paths(&root) {
             // Some paths (`refs/`) are dirs, others (`HEAD`, `index`) are files.
             // notify happily handles both. Missing paths are common (no MERGE_HEAD
-            // until a merge starts) — we register watches lazily by watching the
+            // until a merge starts) – we register watches lazily by watching the
             // `.git` dir non-recursively as a fallback so create-then-modify still fires.
             if path.exists() {
                 let mode = if path.is_dir() {
@@ -167,45 +167,85 @@ pub(crate) fn invalidate_for_test(repo_root: &Path) {
 /// Invalidates any open virtual `.git/{branches,tags,commits,stash,worktrees,submodules}/...`
 /// listings on the local volume so they re-read after a ref change.
 fn invalidate_virtual_listings(repo_root: &Path) {
+    let dot_git = repo_root.join(".git");
+    refresh_local_listings_under(&virtual_category_prefixes(&dot_git));
+}
+
+/// Builds prefixes for every virtual subtree under `<dot_git>/`. The portal
+/// toggle and the watcher both share this set: any listing path starting with
+/// any prefix is a virtual portal listing.
+pub(crate) fn virtual_category_prefixes(dot_git: &Path) -> Vec<PathBuf> {
     use crate::file_system::git::path::Cat;
+    [
+        Cat::Branches,
+        Cat::Tags,
+        Cat::Commits,
+        Cat::Stash,
+        Cat::Worktrees,
+        Cat::Submodules,
+    ]
+    .into_iter()
+    .map(|c| dot_git.join(c.as_segment()))
+    .collect()
+}
+
+/// Iterates the listing cache and emits `FullRefresh` for any local-volume
+/// listing whose path matches any of `prefixes` (prefix-match, including the
+/// prefix itself). SMB / MTP volumes can't be inside a real `.git` of the
+/// host's filesystem, so only the default volume is touched.
+pub(crate) fn refresh_local_listings_under(prefixes: &[PathBuf]) {
     use crate::file_system::listing::caching::{
         DirectoryChange, find_listings_for_path_on_volume, get_listing_path, notify_directory_changed,
+        snapshot_listings,
     };
     use crate::file_system::volume::DEFAULT_VOLUME_ID;
 
-    let dot_git = repo_root.join(".git");
-    let prefixes = [
-        dot_git.join(Cat::Branches.as_segment()),
-        dot_git.join(Cat::Tags.as_segment()),
-        dot_git.join(Cat::Commits.as_segment()),
-        dot_git.join(Cat::Stash.as_segment()),
-        dot_git.join(Cat::Worktrees.as_segment()),
-        dot_git.join(Cat::Submodules.as_segment()),
-    ];
-
-    // We snapshot listing IDs and inspect each path against the prefixes.
-    // `find_listings_for_path_on_volume` is path-exact; we want any prefix
-    // match, so iterate the cache.
-    let snapshot = crate::file_system::listing::caching::snapshot_listings();
+    if prefixes.is_empty() {
+        return;
+    }
+    let snapshot = snapshot_listings();
     for entry in snapshot {
-        for prefix in &prefixes {
-            let listing_path = match get_listing_path(&entry.listing_id) {
-                Some(p) => p,
-                None => continue,
-            };
-            if listing_path.starts_with(prefix) || *prefix == listing_path {
-                // Only handle local volume listings; SMB / MTP volumes
-                // can't be inside a real `.git` of the host's filesystem.
-                if entry.volume_id != DEFAULT_VOLUME_ID {
-                    continue;
-                }
-                if !find_listings_for_path_on_volume(Some(&entry.volume_id), &listing_path).is_empty() {
-                    notify_directory_changed(&entry.volume_id, &listing_path, DirectoryChange::FullRefresh);
-                }
-                break;
-            }
+        if entry.volume_id != DEFAULT_VOLUME_ID {
+            continue;
+        }
+        let Some(listing_path) = get_listing_path(&entry.listing_id) else {
+            continue;
+        };
+        let matches = prefixes
+            .iter()
+            .any(|prefix| listing_path.starts_with(prefix) || *prefix == listing_path);
+        if !matches {
+            continue;
+        }
+        if !find_listings_for_path_on_volume(Some(&entry.volume_id), &listing_path).is_empty() {
+            notify_directory_changed(&entry.volume_id, &listing_path, DirectoryChange::FullRefresh);
         }
     }
+}
+
+/// Refreshes every cached `.git/{branches,tags,commits,stash,worktrees,submodules}/...`
+/// listing across all currently-watched repos. Called when the user flips
+/// the virtual-portal setting so already-open panes pick up the change
+/// without a manual reload.
+///
+/// We pull the repo set from the watcher registry: anything we've subscribed
+/// to is by definition a worktree the user is looking at. Repos with no
+/// active subscription have no open listings to invalidate.
+pub fn refresh_all_virtual_listings_after_toggle() {
+    let registry = get_watcher_registry();
+    let roots: Vec<PathBuf> = match registry.inner.lock() {
+        Ok(inner) => inner.keys().cloned().collect(),
+        Err(_) => return,
+    };
+    let mut prefixes = Vec::new();
+    for root in roots {
+        let dot_git = root.join(".git");
+        prefixes.extend(virtual_category_prefixes(&dot_git));
+        // Also catch `.git` itself: if a pane sits at `.git/`, the toggle
+        // changes its rendered children (virtual entries vs. raw).
+        prefixes.push(dot_git);
+    }
+    refresh_local_listings_under(&prefixes);
 }
 
 /// Returns the gitdir for a worktree (handles gitlink files).
@@ -251,7 +291,7 @@ fn watch_paths(repo_root: &Path) -> Vec<PathBuf> {
     // worktree at subscribe time. New worktrees added later are picked
     // up via the non-recursive `.git` watch (the `worktrees/` parent
     // directory's create event triggers a re-subscribe path on the
-    // refresh — and even without that, a `git worktree add` always
+    // refresh – and even without that, a `git worktree add` always
     // touches `HEAD` in the main repo too, which fires a re-emit).
     //
     // Decision: per-worktree registration on enumeration rather than glob

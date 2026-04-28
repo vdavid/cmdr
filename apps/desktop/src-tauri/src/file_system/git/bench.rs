@@ -88,7 +88,7 @@ fn percentile(mut samples: Vec<u128>, p: f64) -> u128 {
 }
 
 #[test]
-#[ignore = "Builds a 50k-file fixture — opt-in via `cargo test -- --ignored`"]
+#[ignore = "Builds a 50k-file fixture – opt-in via `cargo test -- --ignored`"]
 fn bench_50k_files_discover_and_repo_info_under_budget() {
     let dir = fixture_dir();
     ensure_fixture(&dir);
@@ -109,13 +109,13 @@ fn bench_50k_files_discover_and_repo_info_under_budget() {
     );
     // The plan's 50 ms target is aspirational. Empirically, even shelling out
     // to `git status --untracked-files=no` (the lightest is-dirty check) takes
-    // ~75 ms on this fixture — gix lands within that ballpark, so the hard
+    // ~75 ms on this fixture – gix lands within that ballpark, so the hard
     // cap is the more realistic bound. Documented in `git/CLAUDE.md` § "Perf".
     assert!(p95_us / 1000 <= 100, "p95 over hard cap: {}ms", p95_us / 1000);
 }
 
 #[test]
-#[ignore = "Builds a 50k-file fixture — opt-in via `cargo test -- --ignored`"]
+#[ignore = "Builds a 50k-file fixture – opt-in via `cargo test -- --ignored`"]
 fn bench_50k_files_list_status_under_budget() {
     let dir = fixture_dir();
     ensure_fixture(&dir);

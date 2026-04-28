@@ -48,7 +48,7 @@ pub type RepoHandle = Arc<gix::ThreadSafeRepository>;
 /// Discovers a repo from any path inside a worktree.
 ///
 /// Walks up looking for `.git` (dir or gitlink file). Returns the `RepoHandle`
-/// and the canonical worktree root. Bare repos are rejected — without a
+/// and the canonical worktree root. Bare repos are rejected – without a
 /// working tree there's nothing for the file manager to anchor on.
 ///
 /// This is the single entry point for repo lookup; `repo_info` and
@@ -61,7 +61,7 @@ pub fn discover_repo(path: &Path) -> Result<(RepoHandle, PathBuf), FriendlyGitEr
 
     let repo = gix::ThreadSafeRepository::discover(path).map_err(map_discover_err)?;
     // `ThreadSafeRepository` only exposes `work_dir()` (no `workdir`).
-    // Suppress the deprecation warning here — gix kept work_dir on the
+    // Suppress the deprecation warning here – gix kept work_dir on the
     // ThreadSafe wrapper while only the Repository alias got a replacement.
     #[allow(
         deprecated,
@@ -177,7 +177,7 @@ fn short_sha(id: &gix::ObjectId) -> String {
 
 fn format_upstream(tracking: &gix::refs::FullNameRef) -> String {
     let s = tracking.as_bstr().to_string();
-    // tracking refs look like `refs/remotes/origin/main` — strip the prefix for display.
+    // tracking refs look like `refs/remotes/origin/main` – strip the prefix for display.
     s.strip_prefix("refs/remotes/").unwrap_or(&s).to_string()
 }
 
@@ -230,12 +230,22 @@ impl RepoCache {
     fn lookup_for_path(&self, path: &Path) -> Option<(RepoHandle, PathBuf)> {
         let canonical = path.canonicalize().ok()?;
         let inner = self.inner.read().ok()?;
+        // Pick the *longest* matching root deterministically. With nested
+        // submodules both the parent and the child match `canonical`; the
+        // child (deeper path, longer prefix) is the right repo to surface.
+        // HashMap iteration is unordered, so without this we'd randomly
+        // return parent or child.
+        let mut best: Option<(&PathBuf, &RepoHandle)> = None;
         for (root, handle) in inner.iter() {
-            if canonical.starts_with(root) {
-                return Some((handle.clone(), root.clone()));
+            if !canonical.starts_with(root) {
+                continue;
+            }
+            match best {
+                Some((current_root, _)) if root.as_os_str().len() <= current_root.as_os_str().len() => {}
+                _ => best = Some((root, handle)),
             }
         }
-        None
+        best.map(|(root, handle)| (handle.clone(), root.clone()))
     }
 
     fn insert(&self, root: PathBuf, handle: RepoHandle) {

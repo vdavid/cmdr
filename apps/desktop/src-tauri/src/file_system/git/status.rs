@@ -221,7 +221,7 @@ fn code_from_xy(xy: &str) -> Option<EntryStatusCode> {
     let mut chars = xy.chars();
     let x = chars.next()?;
     let y = chars.next()?;
-    // Index changes (X) take precedence — they reflect what's about to land.
+    // Index changes (X) take precedence – they reflect what's about to land.
     let from = |c: char| -> Option<EntryStatusCode> {
         match c {
             'M' => Some(EntryStatusCode::Modified),

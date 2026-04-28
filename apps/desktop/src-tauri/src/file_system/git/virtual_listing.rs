@@ -1,13 +1,13 @@
 //! Virtual `.git/` listings.
 //!
-//! - `list_root` — the portal root (M2 ships `branches/`, `tags/`, `raw/`)
-//! - `list_branches` / `list_tags` — refs as virtual dirs
-//! - `list_raw` — passthrough into the real on-disk `.git/<sub>` contents
+//! - `list_root` – the portal root (M2 ships `branches/`, `tags/`, `raw/`)
+//! - `list_branches` / `list_tags` – refs as virtual dirs
+//! - `list_raw` – passthrough into the real on-disk `.git/<sub>` contents
 //!
 //! These return `Vec<FileEntry>` because the existing `Volume::list_directory`
 //! contract is single-shot. The underlying gix iterators are fast enough
 //! (< 50 ms even on 10k branches) that streaming inside this layer doesn't
-//! add value yet — cancellation for the surrounding listing pipeline still
+//! add value yet – cancellation for the surrounding listing pipeline still
 //! works because the volume hook runs inside the listing's `spawn_blocking`
 //! task, which the listing module aborts on cancel.
 
@@ -26,7 +26,7 @@ use super::repo::RepoHandle;
 ///
 /// All seven categories are listed: M2 shipped `branches/`, `tags/`,
 /// `raw/`; M3 added `commits/`, `stash/`, `worktrees/`, `submodules/`.
-/// Empty categories (no commits, no stashes) still show up — opening
+/// Empty categories (no commits, no stashes) still show up – opening
 /// them shows an empty listing, which is more honest than hiding the
 /// concept altogether.
 pub fn list_root(repo_root: &Path) -> Vec<FileEntry> {
@@ -150,7 +150,7 @@ pub fn list_raw(repo_root: &Path, sub_path: &str) -> Result<Vec<FileEntry>, Frie
 ///
 /// For a normal worktree the gitdir is `<root>/.git`. For a linked
 /// worktree (gitlink), `<root>/.git` is a file pointing into
-/// `<main>/.git/worktrees/<name>` — this helper follows that.
+/// `<main>/.git/worktrees/<name>` – this helper follows that.
 pub fn real_gitdir_path(repo_root: &Path, sub_path: &str) -> PathBuf {
     let dot_git = repo_root.join(".git");
     let gitdir = if dot_git.is_file() {

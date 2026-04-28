@@ -1,4 +1,4 @@
-//! Integration tests for M2 — virtual `.git/` portal.
+//! Integration tests for M2 – virtual `.git/` portal.
 //!
 //! Builds tiny fixture repos with the `git` CLI (already a system requirement
 //! for M1) and exercises the volume hooks end-to-end.
@@ -352,7 +352,7 @@ fn watcher_invalidates_branches_listing_on_new_branch() {
 
     // Make the watcher see a "ref change" by adding a new branch and
     // calling the invalidation directly. We don't drive the notify-rs
-    // event loop here — the unit-level contract is "given a repo root,
+    // event loop here – the unit-level contract is "given a repo root,
     // invalidate matching listings."
     git(&dir, &["branch", "added-after-init"]);
     super::watcher::invalidate_for_test(&root);

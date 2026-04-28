@@ -137,36 +137,23 @@ test.describe('Git portal', () => {
     expect(await paneHasFile(tauriPage, 0, 'scripts')).toBe(true)
   })
 
-  test('copies a file from history to working tree, preserving executable bit', async ({ tauriPage }) => {
-    await ensureAppReady(tauriPage)
-
-    // Stage the on-disk destination: write a marker file we'll copy into.
-    // (We use the working tree's `scripts/` dir as the destination so the
-    // round-trip mirrors the documented "drag from .git pane to working
-    // pane" UX.) The test reads bytes + mode directly off disk afterward.
-    const sourcePath = path.join(repoPath(), '.git/branches/main/scripts')
-    const destDir = path.join(repoPath(), 'extracted')
-    fs.mkdirSync(destDir, { recursive: true })
-
-    // Rather than driving the whole copy UI (which has many moving parts),
-    // we exercise the volume `open_read_stream` path directly. The volume
-    // hook is what guarantees byte parity + permission preservation; if
-    // this round-trip works, drag-drop works (it's the same code path).
-    await navigateLeftPaneTo(tauriPage, sourcePath)
-    expect(await paneHasFile(tauriPage, 0, 'run.sh')).toBe(true)
-
-    // Read the blob via the same Tauri command the file-viewer uses, and
-    // compare bytes against `git show`.
-    const sourceBytes = execSync(`git -C "${repoPath()}" show main:scripts/run.sh`)
-    const expectedBytes = sourceBytes.toString('utf8')
-    expect(expectedBytes).toContain('hello from history')
-
-    // Verify the working-tree file still has its executable bit (this is
-    // the on-disk anchor for the cross-volume copy semantics — the portal
-    // tree exposes the same mode via `EntryKind::BlobExecutable`).
-    const realRunSh = path.join(repoPath(), 'scripts/run.sh')
-    const mode = fs.statSync(realRunSh).mode & 0o777
-    expect(mode & 0o111).not.toBe(0)
+  // Cross-volume copy + executable-bit preservation is covered honestly by
+  // the Rust integration test
+  // `file_system::git::m2_tests::cross_volume_copy_preserves_executable_bit`.
+  // That test drives the real `LocalPosixVolume::open_read_stream` and
+  // `write_from_stream` round-trip from a virtual `.git/branches/main/...`
+  // path to a real tmp dir, asserting byte parity against `git show` and
+  // that the destination's `0o755` bit is preserved.
+  //
+  // We skip the Playwright variant because the previous implementation
+  // never invoked an actual copy: it shelled out to `git show` and stat'd
+  // the working tree's pre-existing mode bits. That was a green-but-fake
+  // test. Driving the full copy UI from Playwright would require dialog
+  // automation we don't have here, and the Rust test already exercises
+  // the load-bearing code path (the volume hook + write stream).
+  test.skip('copies a file from history to working tree, preserving executable bit (covered by Rust integration test)', () => {
+    // Intentionally empty. See note above and `m2_tests.rs` →
+    // `cross_volume_copy_preserves_executable_bit`.
   })
 
   test('toggling the portal off shows raw .git contents', async ({ tauriPage }) => {

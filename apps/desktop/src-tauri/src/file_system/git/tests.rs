@@ -91,7 +91,7 @@ fn discover_bare_repo_rejected() {
 
 #[test]
 fn discover_unborn_head() {
-    // Fresh `git init` — HEAD points at refs/heads/main but no commit yet.
+    // Fresh `git init` – HEAD points at refs/heads/main but no commit yet.
     let dir = temp_dir("unborn");
     git(&dir, &["init", "-q", "-b", "main"]);
     let (handle, root) = discover_repo(&dir).expect("discover");
