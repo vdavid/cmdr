@@ -1,15 +1,19 @@
-# File system › git (M1 foundation + M2 virtual portal + M3 history)
+# File system › git (complete: M1 + M2 + M3 + M4)
 
-Backend module for the git browser. M1 ships repo discovery, repo info,
-status, the watcher, and friendly errors. M2 adds the virtual `.git`
-portal — `branches/`, `tags/`, `raw/` browsable as virtual trees, with
-cross-volume copy "for free" because git blobs flow through the existing
-`VolumeReadStream` abstraction. **M3 (this milestone) fills in commits,
-stash, worktrees, and submodules. The first two browse a commit tree
-just like branches/tags. The latter two surface `redirectToPath` so the
-frontend opens the worktree's / submodule's working dir directly — those
-working dirs are themselves git portals, so the experience cascades for
-free.**
+Backend module for the git browser. M1 shipped repo discovery, repo
+info, status, the watcher, and the friendly-error skeleton. M2 added
+the virtual `.git` portal — `branches/`, `tags/`, `raw/` browsable as
+virtual trees, with cross-volume copy "for free" because git blobs flow
+through the existing `VolumeReadStream` abstraction. M3 filled in
+commits, stash, worktrees, and submodules: the first two browse a
+commit tree just like branches/tags; the latter two surface
+`redirectToPath` so the frontend opens the worktree's / submodule's
+working dir directly. **M4 (this milestone) adds three things: a live
+toggle for the portal so `cd .git` can fall through to raw on-disk
+contents, FriendlyError integration end-to-end so every git failure
+reaches `ErrorPane` with a warm title + explanation + suggestion, and
+three new error variants (`ShallowBoundary`, `MissingObject`,
+`GitDirPermissionDenied`).**
 
 ## File map
 
@@ -27,7 +31,7 @@ free.**
 | `read_blob.rs` | `GitBlobReadStream` — owns the full `Vec<u8>` and yields 256 KB chunks. See *Honest blob streaming* below |
 | `status.rs` | `list_status(repo, dir)` shells out to `git status --porcelain=v2 -z`. Parses the output into a `Vec<EntryStatus>` |
 | `watcher.rs` | `GitWatcherRegistry` — per-repo notify-rs debouncer. `subscribe(app, root)` returns the current `RepoInfo` synchronously and emits `git-state-changed` on relevant `.git/*` mutations. 200 ms debounce. M2: also calls `notify_directory_changed(.., FullRefresh)` for any cached `.git/{branches,tags}/` listings on the local volume |
-| `friendly.rs` | `FriendlyGitError`, `FriendlyGitErrorKind` — seven variants (M1's six + `BlobTooLarge`). Active-voice copy, no "error" / "failed" |
+| `friendly.rs` | `FriendlyGitError`, `FriendlyGitErrorKind` — ten variants (M1's six, `BlobTooLarge` from M2, plus M4's `ShallowBoundary`, `MissingObject`, `GitDirPermissionDenied`). Active-voice copy, no "error" / "failed". `to_friendly_error()` builds a `volume::FriendlyError` for `ErrorPane`; `encode_for_volume_error()` + `try_decode_git_friendly()` carry the structured payload through `VolumeError::IoError` so the streaming pipeline rebuilds it on the way out |
 | `tests.rs` | M1 tests: discover, repo_info, status, friendly errors |
 | `m2_tests.rs` | M2 tests: classify, list_branches/tags/root, list_tree, blob-read parity with `git show`, cross-volume copy round-trip |
 | `m3_tests.rs` | M3 tests: list_commits + sha browsing + cancellation + 1000-commit walk (`#[ignore]`), list_stashes, list_worktrees + redirect, list_submodules + redirect, watcher invalidation for `commits/` |
@@ -41,6 +45,7 @@ Wired from `commands/file_system/git.rs`:
 - `subscribe_git_state(repo_root) -> RepoInfo` — registers a subscriber, returns current `RepoInfo` synchronously, then emits `git-state-changed` events
 - `unsubscribe_git_state(repo_root) -> ()` — drops one subscriber; tears down the watcher when refcount hits zero
 - `get_git_status_for_paths(repo_root, dir) -> TimedOut<Vec<EntryStatus>>` — porcelain v2 walk, 5 s timeout
+- `set_show_virtual_git_portal(enabled)` (in `commands::settings`) — flips the live portal toggle. Pushed by `settings-applier.ts` whenever `fileExplorer.git.showVirtualGitPortal` changes
 
 ## Watcher path set
 
@@ -109,6 +114,31 @@ gix in 0.81 returns whole-blob `Vec<u8>` for `Object::data` — there's no chunk
 Branches like `feature/foo` show as a single entry called `feature/foo`, not nested `feature/` then `foo`. The classifier (`path::classify`) greedy-matches ref names against the repo's known refs (longest-first) before treating any remainder as a tree sub-path. The inverse (`to_path`) splits ref names on `/` so OS-native separators are used in the on-disk representation. This is the only place where the URL → path round-trip needs the repo open.
 
 ## Decisions
+
+**Decision (M4)**: Live-toggleable portal via a process-global `AtomicBool`
+**Why**: `try_route_listing` / `try_route_metadata` / `try_open_blob_stream`
+each early-return `None` when the toggle is off, falling through to the
+real-FS path. This keeps the toggle a no-op cost (one atomic load per
+hook call) and makes "show me the raw `.git`" instant — no listing
+cache invalidation, no IPC dance. The setter is wired live from the
+frontend (`set_show_virtual_git_portal`) and seeded at startup from
+`Settings::show_virtual_git_portal`. Mutation guards (`is_virtual` in
+`local_posix`) intentionally don't consult the toggle: even with the
+portal off we don't want Cmdr to write to `.git/HEAD` from a copy
+dialog. Power users who really want to mutate `.git` use a terminal.
+
+**Decision (M4)**: Carry git-friendly payloads through `VolumeError::IoError`
+**Why**: `volume_hooks` return `Result<_, VolumeError>` (the contract is
+fixed), but the streaming pipeline calls `friendly_error_from_volume_error`
+to compute the `ErrorPane` payload — and that function previously knew
+nothing about git. Adding a `Friendly(FriendlyError)` variant to
+`VolumeError` would ripple through ~12 call sites. Instead, we serialize
+`FriendlyGitError` into the `IoError::message` field with a sentinel
+prefix (`__GIT_FRIENDLY__:<token>:<path>:<title>: <explanation>`) and
+have `friendly_error_from_volume_error` recognize and decode it
+up-front. Round-trip tested in `friendly::tests`. The encoded form
+also reads naturally in logs (`grep "__GIT_FRIENDLY__"` finds every
+git failure that bubbled to the user).
 
 **Decision (M3)**: Shell out to `git stash list` rather than driving gix
 **Why**: gix 0.81 doesn't expose a public stash-list API. We could parse

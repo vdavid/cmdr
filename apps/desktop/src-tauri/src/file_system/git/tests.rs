@@ -279,3 +279,33 @@ fn repo_info_recomputes_after_commit() {
     assert!(!after.is_dirty);
     cleanup(&dir);
 }
+
+// ── M4: virtual portal toggle ──────────────────────────────────────────
+
+/// `try_route_listing` short-circuits to `None` when the portal is off,
+/// letting `LocalPosixVolume` fall through to real-FS code. The toggle
+/// is process-global, so the test restores the previous value to avoid
+/// poisoning sibling tests that rely on the default.
+#[test]
+fn virtual_portal_toggle_short_circuits_volume_hooks() {
+    let dir = temp_dir("portal_toggle");
+    init_repo_with_commit(&dir);
+
+    let dot_git = dir.join(".git");
+
+    // Default ON: branches/tags listing is virtual.
+    super::set_virtual_portal_enabled(true);
+    assert!(super::is_virtual_portal_enabled());
+    let virt = super::try_route_listing(&dot_git);
+    assert!(virt.is_some(), "portal should be active when enabled");
+
+    // Turn OFF: hook returns None so the volume falls through to real-FS.
+    super::set_virtual_portal_enabled(false);
+    assert!(!super::is_virtual_portal_enabled());
+    let raw = super::try_route_listing(&dot_git);
+    assert!(raw.is_none(), "portal should defer to real-FS when disabled");
+
+    // Restore.
+    super::set_virtual_portal_enabled(true);
+    cleanup(&dir);
+}

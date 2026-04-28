@@ -3,6 +3,7 @@
     import FileOperationsSection from '$lib/settings/sections/FileOperationsSection.svelte'
     import ListingSection from '$lib/settings/sections/ListingSection.svelte'
     import DriveIndexingSection from '$lib/settings/sections/DriveIndexingSection.svelte'
+    import GitSection from '$lib/settings/sections/GitSection.svelte'
     import UpdatesSection from '$lib/settings/sections/UpdatesSection.svelte'
     import MtpSection from '$lib/settings/sections/MtpSection.svelte'
     import NetworkSection from '$lib/settings/sections/NetworkSection.svelte'
@@ -102,6 +103,12 @@
         {#if shouldShowSection(['General', 'Drive indexing'])}
             <section data-section-id="general-drive-indexing">
                 <DriveIndexingSection {searchQuery} />
+            </section>
+        {/if}
+
+        {#if shouldShowSection(['General', 'Git'])}
+            <section data-section-id="general-git">
+                <GitSection {searchQuery} />
             </section>
         {/if}
 

@@ -293,6 +293,7 @@ export {
   setSmbConcurrency,
   setMaxLogStorageMb,
   setErrorReportsEnabled,
+  setShowVirtualGitPortal,
   setIndexingEnabled,
   getDirStatsBatch,
   getE2eStartPath,

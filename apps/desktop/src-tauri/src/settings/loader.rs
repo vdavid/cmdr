@@ -67,6 +67,8 @@ pub struct Settings {
     pub max_log_storage_mb: Option<u64>,
     #[serde(alias = "updates.errorReports", default)]
     pub error_reports_enabled: Option<bool>,
+    #[serde(alias = "fileExplorer.git.showVirtualGitPortal", default)]
+    pub show_virtual_git_portal: Option<bool>,
 }
 
 fn default_show_hidden() -> bool {
@@ -91,6 +93,7 @@ impl Default for Settings {
             smb_concurrency: None,
             max_log_storage_mb: None,
             error_reports_enabled: None,
+            show_virtual_git_portal: None,
         }
     }
 }
@@ -147,6 +150,9 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         .and_then(|v| u16::try_from(v).ok());
     let max_log_storage_mb = json.get("advanced.maxLogStorageMb").and_then(|v| v.as_u64());
     let error_reports_enabled = json.get("updates.errorReports").and_then(|v| v.as_bool());
+    let show_virtual_git_portal = json
+        .get("fileExplorer.git.showVirtualGitPortal")
+        .and_then(|v| v.as_bool());
 
     Ok(Settings {
         show_hidden_files,
@@ -164,6 +170,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         smb_concurrency,
         max_log_storage_mb,
         error_reports_enabled,
+        show_virtual_git_portal,
     })
 }
 

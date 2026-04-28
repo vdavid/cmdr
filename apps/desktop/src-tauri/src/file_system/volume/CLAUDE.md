@@ -203,7 +203,13 @@ collapsible "Technical details" section, never hidden but never in your face eit
 
 ### Architecture
 
-Two-layer mapping across two files, plus a third path for "succeeded but suspiciously empty":
+Three-layer mapping across two files, plus a third path for "succeeded but suspiciously empty":
+
+**Layer 0 (M4)**: git-friendly-error pass-through. `friendly_error_from_volume_error` first calls
+`crate::file_system::git::friendly::try_decode_git_friendly` on the message. If the message starts with the
+`__GIT_FRIENDLY__` sentinel (set by the git module's `friendly_to_volume_error`), we decode the kind + path and return a
+fully-shaped `FriendlyError` with the right title, explanation, suggestion, and category — no errno mapping needed,
+no provider enrichment downstream. Keeps git-specific copy from getting clobbered by the generic I/O fallback.
 
 1. **`friendly_error_from_volume_error(err, path)`** (`friendly_error.rs`) — maps `VolumeError` variants and macOS errno
    codes (37 codes) to a `FriendlyError` with category (Transient/NeedsAction/Serious), title, explanation, suggestion,

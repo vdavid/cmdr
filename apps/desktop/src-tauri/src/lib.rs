@@ -387,6 +387,7 @@ pub fn run() {
 
             // Apply direct SMB connection setting (default: true)
             file_system::set_direct_smb_enabled(saved_settings.direct_smb_connection.unwrap_or(true));
+            file_system::git::set_virtual_portal_enabled(saved_settings.show_virtual_git_portal.unwrap_or(true));
             file_system::set_filter_safe_save_artifacts(saved_settings.filter_safe_save_artifacts.unwrap_or(true));
             file_system::set_smb_concurrency(saved_settings.smb_concurrency.unwrap_or(10) as usize);
 
@@ -1035,6 +1036,7 @@ pub fn run() {
             commands::settings::set_smb_concurrency_cmd,
             commands::settings::set_max_log_storage_mb,
             commands::settings::set_error_reports_enabled,
+            commands::settings::set_show_virtual_git_portal,
             // Logging commands (frontend log bridge + runtime level control)
             commands::logging::batch_fe_logs,
             commands::logging::set_log_level,

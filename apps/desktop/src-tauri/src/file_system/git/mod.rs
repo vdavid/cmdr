@@ -34,6 +34,7 @@
 //! treating any remainder as a tree sub-path. See `path.rs`.
 
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub mod friendly;
 pub mod log;
@@ -84,11 +85,32 @@ pub use path::is_virtual;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{VolumeError, VolumeReadStream};
 
+/// Whether the virtual `.git` portal is enabled. Set from the
+/// `fileExplorer.git.showVirtualGitPortal` setting at startup and on every
+/// toggle. When `false`, the volume hooks short-circuit to real-FS so
+/// users see the raw `.git` contents.
+static VIRTUAL_PORTAL_ENABLED: AtomicBool = AtomicBool::new(true);
+
+/// Sets the virtual portal preference. Called from app setup after
+/// loading settings, and live from the `set_show_virtual_git_portal`
+/// command on each toggle.
+pub fn set_virtual_portal_enabled(enabled: bool) {
+    VIRTUAL_PORTAL_ENABLED.store(enabled, Ordering::Relaxed);
+}
+
+/// Returns whether the virtual `.git` portal is enabled.
+pub fn is_virtual_portal_enabled() -> bool {
+    VIRTUAL_PORTAL_ENABLED.load(Ordering::Relaxed)
+}
+
 /// Volume hook for `list_directory`.
 ///
 /// Returns `Some(result)` when the path lives under a virtual `.git/...`
 /// portal; `None` when the caller should run real-FS code.
 pub fn try_route_listing(path: &Path) -> Option<Result<Vec<FileEntry>, VolumeError>> {
+    if !is_virtual_portal_enabled() {
+        return None;
+    }
     let (virt, handle, root) = path::classify(path)?;
     use path::VirtualGitPath::*;
     let result = match &virt {
@@ -113,6 +135,9 @@ pub fn try_route_listing(path: &Path) -> Option<Result<Vec<FileEntry>, VolumeErr
 
 /// Volume hook for `get_metadata`.
 pub fn try_route_metadata(path: &Path) -> Option<Result<FileEntry, VolumeError>> {
+    if !is_virtual_portal_enabled() {
+        return None;
+    }
     let (virt, handle, root) = path::classify(path)?;
     let result = virtual_listing::get_metadata_for(&root, &virt, &handle);
     Some(result.map_err(friendly_to_volume_error))
@@ -121,6 +146,9 @@ pub fn try_route_metadata(path: &Path) -> Option<Result<FileEntry, VolumeError>>
 /// Volume hook for `open_read_stream`. Returns `None` for paths that aren't
 /// virtual blobs.
 pub fn try_open_blob_stream(path: &Path) -> Option<Result<Box<dyn VolumeReadStream>, VolumeError>> {
+    if !is_virtual_portal_enabled() {
+        return None;
+    }
     let (virt, handle, root) = path::classify(path)?;
     use path::VirtualGitPath::*;
     let result = match &virt {
@@ -192,16 +220,14 @@ fn open_real_file_stream(real: &Path) -> Result<Box<dyn VolumeReadStream>, Volum
 }
 
 fn friendly_to_volume_error(err: FriendlyGitError) -> VolumeError {
-    match err.kind {
-        FriendlyGitErrorKind::NotARepo
-        | FriendlyGitErrorKind::CorruptRepo
-        | FriendlyGitErrorKind::OrphanedWorktree
-        | FriendlyGitErrorKind::IndexLocked
-        | FriendlyGitErrorKind::BareRepo
-        | FriendlyGitErrorKind::BlobTooLarge => VolumeError::IoError {
-            message: err.to_string(),
-            raw_os_error: None,
-        },
-        FriendlyGitErrorKind::PermissionDenied => VolumeError::PermissionDenied(err.path.clone()),
+    // Every kind rides through `IoError` with a sentinel-tagged message so the
+    // listing pipeline's friendly-error decoder can rebuild a structured
+    // `FriendlyError` for `ErrorPane`. Permission-denied used to use
+    // `VolumeError::PermissionDenied` directly, but doing so loses the git
+    // context (the user gets the generic "No permission" copy instead of the
+    // git-specific repair steps). The sentinel preserves it.
+    VolumeError::IoError {
+        message: err.encode_for_volume_error(),
+        raw_os_error: None,
     }
 }

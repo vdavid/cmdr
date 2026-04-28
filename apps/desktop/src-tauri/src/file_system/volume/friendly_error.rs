@@ -53,7 +53,18 @@ pub enum ErrorCategory {
 ///
 /// For `IoError` with a `raw_os_error`, matches against platform-specific errno codes.
 /// For typed `VolumeError` variants, maps directly to the right category.
+///
+/// Git failures arrive here wrapped in a sentinel-tagged `IoError` (see
+/// `git::friendly::encode_for_volume_error`). We decode them up-front so the
+/// `ErrorPane` shows git-specific titles and suggestions instead of the
+/// generic I/O copy.
 pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> FriendlyError {
+    if let VolumeError::IoError { message, .. } = err
+        && let Some(friendly) = crate::file_system::git::friendly::try_decode_git_friendly(message)
+    {
+        return friendly;
+    }
+
     let path_display = path.display().to_string();
 
     match err {
@@ -1153,10 +1164,13 @@ mod tests {
 
     #[test]
     fn error_messages_never_contain_error_or_failed() {
+        use crate::file_system::git::friendly::{FriendlyGitError, FriendlyGitErrorKind};
+
         let path = Path::new("/test/path");
 
-        // Test a selection of variants and errnos
-        let errors: Vec<VolumeError> = vec![
+        // Test a selection of variants and errnos, plus every git-friendly
+        // kind so the M4 additions stay clean.
+        let mut errors: Vec<VolumeError> = vec![
             VolumeError::NotFound("x".into()),
             VolumeError::PermissionDenied("x".into()),
             VolumeError::ConnectionTimeout("x".into()),
@@ -1177,6 +1191,23 @@ mod tests {
                 raw_os_error: Some(5),
             },
         ];
+        for kind in [
+            FriendlyGitErrorKind::NotARepo,
+            FriendlyGitErrorKind::OrphanedWorktree,
+            FriendlyGitErrorKind::CorruptRepo,
+            FriendlyGitErrorKind::IndexLocked,
+            FriendlyGitErrorKind::PermissionDenied,
+            FriendlyGitErrorKind::BareRepo,
+            FriendlyGitErrorKind::BlobTooLarge,
+            FriendlyGitErrorKind::ShallowBoundary,
+            FriendlyGitErrorKind::MissingObject,
+            FriendlyGitErrorKind::GitDirPermissionDenied,
+        ] {
+            errors.push(VolumeError::IoError {
+                message: FriendlyGitError::new(kind, "/some/repo/.git").encode_for_volume_error(),
+                raw_os_error: None,
+            });
+        }
 
         for err in &errors {
             let friendly = friendly_error_from_volume_error(err, path);

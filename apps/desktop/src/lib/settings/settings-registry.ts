@@ -174,9 +174,10 @@ export const settingsRegistry: SettingDefinition[] = [
   {
     id: 'fileExplorer.git.showRepoChip',
     section: ['General', 'Git'],
-    label: 'Show repo chip',
-    description: 'Shows the branch and dirty state in the breadcrumb when you open a folder inside a git repo.',
-    keywords: ['git', 'chip', 'branch', 'breadcrumb', 'repo', 'status'],
+    label: 'Show repository chip',
+    description:
+      'Display the current branch, ahead/behind, and dirty state above the file list when inside a git repository.',
+    keywords: ['git', 'chip', 'branch', 'breadcrumb', 'repo', 'status', 'ahead', 'behind', 'dirty'],
     type: 'boolean',
     default: true,
     component: 'switch',
@@ -185,8 +186,8 @@ export const settingsRegistry: SettingDefinition[] = [
     id: 'fileExplorer.git.showStatusColumn',
     section: ['General', 'Git'],
     label: 'Show git status column',
-    description: 'Adds a Git column in Full mode showing each file as modified, added, untracked, or ignored.',
-    keywords: ['git', 'status', 'column', 'modified', 'untracked', 'ignored'],
+    description: 'Add a column showing per-file git status (modified, untracked, etc.) in Full mode.',
+    keywords: ['git', 'status', 'column', 'modified', 'untracked', 'ignored', 'added', 'deleted'],
     type: 'boolean',
     default: false,
     component: 'switch',
@@ -194,10 +195,10 @@ export const settingsRegistry: SettingDefinition[] = [
   {
     id: 'fileExplorer.git.showVirtualGitPortal',
     section: ['General', 'Git'],
-    label: 'Show virtual git portal in .git',
+    label: 'Show virtual git portal',
     description:
-      "When you `cd .git`, show a virtual portal with branches, tags, and commits instead of git's internal files.",
-    keywords: ['git', 'portal', 'virtual', 'branches', 'tags', 'history'],
+      'When entering `.git`, show branches, tags, commits, and worktrees as browsable virtual folders. Disable to see the raw `.git` contents instead.',
+    keywords: ['git', 'portal', 'virtual', 'branches', 'tags', 'commits', 'worktrees', 'history'],
     type: 'boolean',
     default: true,
     component: 'switch',

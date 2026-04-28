@@ -3,11 +3,32 @@
 //! Mirrors the conventions of `volume::friendly_error`: warm, active voice,
 //! never the words "error" or "failed". Each variant is tested in
 //! `tests::friendly_*`.
+//!
+//! ## How git errors reach the user (M4)
+//!
+//! 1. A volume hook (`try_route_listing`, `try_route_metadata`,
+//!    `try_open_blob_stream`) returns `Err(FriendlyGitError)` from the
+//!    git module.
+//! 2. `mod.rs::friendly_to_volume_error` wraps it as a
+//!    `VolumeError::IoError` whose `message` carries a sentinel-tagged
+//!    payload (`__GIT_FRIENDLY__:<kind>:<path>:<title>: <explanation>`).
+//! 3. The streaming pipeline (`listing/streaming.rs`) emits a
+//!    `listing-error` event. `friendly_error_from_volume_error`
+//!    recognizes the sentinel via `try_decode_git_friendly` and
+//!    builds a fully-shaped `FriendlyError` so `ErrorPane` renders
+//!    title + explanation + suggestion + category.
 
 use std::error::Error as StdError;
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
+
+use crate::file_system::volume::friendly_error::{ErrorCategory, FriendlyError};
+
+/// Sentinel prefix on `VolumeError::IoError::message` that flags a
+/// git-friendly payload. `friendly_error_from_volume_error` strips it
+/// and rebuilds a structured `FriendlyError`.
+pub(crate) const GIT_FRIENDLY_SENTINEL: &str = "__GIT_FRIENDLY__";
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -30,6 +51,13 @@ pub enum FriendlyGitErrorKind {
     /// would allocate the whole thing into RAM (gix limitation), so we
     /// refuse instead of OOM-ing.
     BlobTooLarge,
+    /// User typed a SHA that's beyond the shallow-clone boundary.
+    ShallowBoundary,
+    /// gix can't find a referenced object — the pack file is missing or
+    /// corrupt.
+    MissingObject,
+    /// We can read the worktree but the OS denied the `.git` directory itself.
+    GitDirPermissionDenied,
 }
 
 impl FriendlyGitErrorKind {
@@ -42,6 +70,9 @@ impl FriendlyGitErrorKind {
             FriendlyGitErrorKind::PermissionDenied => "Cmdr can't read this repo",
             FriendlyGitErrorKind::BareRepo => "Bare repos aren't supported yet",
             FriendlyGitErrorKind::BlobTooLarge => "This file's too big to load from history",
+            FriendlyGitErrorKind::ShallowBoundary => "Beyond the shallow-clone boundary",
+            FriendlyGitErrorKind::MissingObject => "A git object is missing",
+            FriendlyGitErrorKind::GitDirPermissionDenied => "Cmdr can't open the `.git` folder",
         }
     }
 
@@ -66,27 +97,98 @@ impl FriendlyGitErrorKind {
             FriendlyGitErrorKind::BlobTooLarge => {
                 "Cmdr reads git blobs whole-file at a time, and this one's over the safety cap."
             }
+            FriendlyGitErrorKind::ShallowBoundary => {
+                "This commit lives past the boundary of your shallow clone, so its data isn't on disk."
+            }
+            FriendlyGitErrorKind::MissingObject => {
+                "Git is looking for an object that's no longer in the pack files. The repo might be partially fetched or damaged."
+            }
+            FriendlyGitErrorKind::GitDirPermissionDenied => {
+                "The OS denied access to the `.git` folder, even though the working tree is readable."
+            }
         }
     }
 
-    #[allow(
-        dead_code,
-        reason = "Used by frontend serialization and friendly_test variants in M4"
-    )]
     pub fn suggestion(&self) -> &'static str {
         match self {
             FriendlyGitErrorKind::NotARepo => "Open a folder inside a git clone to see the repo chip.",
             FriendlyGitErrorKind::OrphanedWorktree => {
                 "Try opening the main repo, or remove the orphan with `git worktree prune`."
             }
-            FriendlyGitErrorKind::CorruptRepo => "Check the repo with `git fsck`. A fresh clone often clears it up.",
-            FriendlyGitErrorKind::IndexLocked => "Wait for the running git command to finish, then try again.",
+            FriendlyGitErrorKind::CorruptRepo => {
+                "Run `git fsck` to inspect the repo. A fresh clone often clears it up."
+            }
+            FriendlyGitErrorKind::IndexLocked => {
+                "Wait for the running git command to finish, then navigate here again."
+            }
             FriendlyGitErrorKind::PermissionDenied => {
-                "Open Disk Access in System Settings and grant Cmdr access to the folder."
+                "Open **System Settings > Privacy & Security > Files and Folders** and grant Cmdr access to the folder."
             }
             FriendlyGitErrorKind::BareRepo => "Clone the repo into a working directory to use the git browser.",
-            FriendlyGitErrorKind::BlobTooLarge => "Check out the file from a working tree if you need it.",
+            FriendlyGitErrorKind::BlobTooLarge => "Check out the file from a working tree if you want to read it.",
+            FriendlyGitErrorKind::ShallowBoundary => {
+                "Run `git fetch --unshallow` (or `--depth=N`) to bring more history into the clone."
+            }
+            FriendlyGitErrorKind::MissingObject => {
+                "Try `git fetch` to repopulate the missing object, or `git fsck` to inspect the damage."
+            }
+            FriendlyGitErrorKind::GitDirPermissionDenied => {
+                "Open **System Settings > Privacy & Security > Files and Folders** and grant Cmdr access. \
+                 In Terminal, `ls -la .git` shows the current owner and mode."
+            }
         }
+    }
+
+    /// Maps each variant to the closest `ErrorCategory` so `ErrorPane` picks
+    /// the right icon and severity color.
+    pub fn category(&self) -> ErrorCategory {
+        match self {
+            // The user can act on these (clone differently, prune, fetch, fix permissions).
+            FriendlyGitErrorKind::NotARepo
+            | FriendlyGitErrorKind::OrphanedWorktree
+            | FriendlyGitErrorKind::PermissionDenied
+            | FriendlyGitErrorKind::BareRepo
+            | FriendlyGitErrorKind::BlobTooLarge
+            | FriendlyGitErrorKind::ShallowBoundary
+            | FriendlyGitErrorKind::GitDirPermissionDenied => ErrorCategory::NeedsAction,
+            // Goes away on its own once the other git command completes.
+            FriendlyGitErrorKind::IndexLocked => ErrorCategory::Transient,
+            // On-disk damage: serious, retry won't help.
+            FriendlyGitErrorKind::CorruptRepo | FriendlyGitErrorKind::MissingObject => ErrorCategory::Serious,
+        }
+    }
+
+    /// Stable string token used by the sentinel encoding.
+    pub(crate) fn token(&self) -> &'static str {
+        match self {
+            FriendlyGitErrorKind::NotARepo => "NotARepo",
+            FriendlyGitErrorKind::OrphanedWorktree => "OrphanedWorktree",
+            FriendlyGitErrorKind::CorruptRepo => "CorruptRepo",
+            FriendlyGitErrorKind::IndexLocked => "IndexLocked",
+            FriendlyGitErrorKind::PermissionDenied => "PermissionDenied",
+            FriendlyGitErrorKind::BareRepo => "BareRepo",
+            FriendlyGitErrorKind::BlobTooLarge => "BlobTooLarge",
+            FriendlyGitErrorKind::ShallowBoundary => "ShallowBoundary",
+            FriendlyGitErrorKind::MissingObject => "MissingObject",
+            FriendlyGitErrorKind::GitDirPermissionDenied => "GitDirPermissionDenied",
+        }
+    }
+
+    /// Inverse of `token()`. Used by the volume-error decoder.
+    pub(crate) fn from_token(s: &str) -> Option<Self> {
+        Some(match s {
+            "NotARepo" => Self::NotARepo,
+            "OrphanedWorktree" => Self::OrphanedWorktree,
+            "CorruptRepo" => Self::CorruptRepo,
+            "IndexLocked" => Self::IndexLocked,
+            "PermissionDenied" => Self::PermissionDenied,
+            "BareRepo" => Self::BareRepo,
+            "BlobTooLarge" => Self::BlobTooLarge,
+            "ShallowBoundary" => Self::ShallowBoundary,
+            "MissingObject" => Self::MissingObject,
+            "GitDirPermissionDenied" => Self::GitDirPermissionDenied,
+            _ => return None,
+        })
     }
 }
 
@@ -137,10 +239,46 @@ impl FriendlyGitError {
 
     #[allow(
         dead_code,
-        reason = "Surfaced via FriendlyError once UI in M4 wires the suggestion text"
+        reason = "Surfaced via to_friendly_error; kept for direct callers / tests"
     )]
     pub fn suggestion(&self) -> &'static str {
         self.kind.suggestion()
+    }
+
+    /// Build a fully-shaped `FriendlyError` for `ErrorPane`. The path goes
+    /// into `raw_detail` so power users can copy-paste it from the
+    /// "Technical details" disclosure.
+    pub fn to_friendly_error(&self) -> FriendlyError {
+        let raw_detail = match &self.raw {
+            Some(raw) if !raw.is_empty() => format!("git: {} ({})", self.kind.token(), raw),
+            _ => format!("git: {} (path={})", self.kind.token(), self.path),
+        };
+        FriendlyError {
+            category: self.kind.category(),
+            title: self.kind.title().to_string(),
+            explanation: self.kind.explanation().to_string(),
+            suggestion: self.kind.suggestion().to_string(),
+            raw_detail,
+            retry_hint: matches!(self.kind.category(), ErrorCategory::Transient),
+        }
+    }
+
+    /// Encode for embedding in a `VolumeError::IoError` message. The
+    /// `ListingErrorEvent` decoder strips the prefix and rebuilds the
+    /// `FriendlyError` via `try_decode_git_friendly`.
+    pub(crate) fn encode_for_volume_error(&self) -> String {
+        // Format: `__GIT_FRIENDLY__:<token>:<path>:<title>: <explanation>`
+        // We embed the human-readable suffix so `e.to_string()` (which the
+        // listing pipeline logs) still tells the next dev what happened
+        // when they grep through logs.
+        format!(
+            "{}:{}:{}:{}: {}",
+            GIT_FRIENDLY_SENTINEL,
+            self.kind.token(),
+            self.path,
+            self.kind.title(),
+            self.kind.explanation()
+        )
     }
 }
 
@@ -151,3 +289,126 @@ impl fmt::Display for FriendlyGitError {
 }
 
 impl StdError for FriendlyGitError {}
+
+/// If `message` carries a git-friendly sentinel, returns the decoded
+/// `FriendlyError`. The embedded path is forwarded back into the volume
+/// layer's friendly-error path.
+pub fn try_decode_git_friendly(message: &str) -> Option<FriendlyError> {
+    let rest = message.strip_prefix(GIT_FRIENDLY_SENTINEL)?.strip_prefix(':')?;
+    // Only the first three fields use `:` as a separator — `title` and
+    // `explanation` may also contain colons (and the explanation often does).
+    let (token, rest) = rest.split_once(':')?;
+    let (path, _human) = rest.split_once(':')?;
+    let kind = FriendlyGitErrorKind::from_token(token)?;
+    Some(FriendlyGitError::new(kind, path).to_friendly_error())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn never_says_error_or_failed(s: &str) {
+        let lower = s.to_lowercase();
+        // Skip tokens like the kind names themselves (the test inspects
+        // user-facing copy strings, not technical detail tokens).
+        for word in ["error", "failed"] {
+            assert!(!lower.contains(word), "{s:?} contains the forbidden word `{word}`");
+        }
+    }
+
+    #[test]
+    fn every_kind_has_title_explanation_suggestion() {
+        for kind in [
+            FriendlyGitErrorKind::NotARepo,
+            FriendlyGitErrorKind::OrphanedWorktree,
+            FriendlyGitErrorKind::CorruptRepo,
+            FriendlyGitErrorKind::IndexLocked,
+            FriendlyGitErrorKind::PermissionDenied,
+            FriendlyGitErrorKind::BareRepo,
+            FriendlyGitErrorKind::BlobTooLarge,
+            FriendlyGitErrorKind::ShallowBoundary,
+            FriendlyGitErrorKind::MissingObject,
+            FriendlyGitErrorKind::GitDirPermissionDenied,
+        ] {
+            assert!(!kind.title().is_empty(), "{kind:?} title");
+            assert!(!kind.explanation().is_empty(), "{kind:?} explanation");
+            assert!(!kind.suggestion().is_empty(), "{kind:?} suggestion");
+            never_says_error_or_failed(kind.title());
+            never_says_error_or_failed(kind.explanation());
+            never_says_error_or_failed(kind.suggestion());
+        }
+    }
+
+    #[test]
+    fn category_assignments_match_intent() {
+        // Spot-check the three categories so future renames don't silently
+        // change severity colors.
+        assert_eq!(FriendlyGitErrorKind::IndexLocked.category(), ErrorCategory::Transient);
+        assert_eq!(FriendlyGitErrorKind::NotARepo.category(), ErrorCategory::NeedsAction);
+        assert_eq!(FriendlyGitErrorKind::CorruptRepo.category(), ErrorCategory::Serious);
+        assert_eq!(
+            FriendlyGitErrorKind::ShallowBoundary.category(),
+            ErrorCategory::NeedsAction
+        );
+        assert_eq!(FriendlyGitErrorKind::MissingObject.category(), ErrorCategory::Serious);
+        assert_eq!(
+            FriendlyGitErrorKind::GitDirPermissionDenied.category(),
+            ErrorCategory::NeedsAction
+        );
+    }
+
+    #[test]
+    fn token_round_trip() {
+        for kind in [
+            FriendlyGitErrorKind::NotARepo,
+            FriendlyGitErrorKind::OrphanedWorktree,
+            FriendlyGitErrorKind::CorruptRepo,
+            FriendlyGitErrorKind::IndexLocked,
+            FriendlyGitErrorKind::PermissionDenied,
+            FriendlyGitErrorKind::BareRepo,
+            FriendlyGitErrorKind::BlobTooLarge,
+            FriendlyGitErrorKind::ShallowBoundary,
+            FriendlyGitErrorKind::MissingObject,
+            FriendlyGitErrorKind::GitDirPermissionDenied,
+        ] {
+            assert_eq!(FriendlyGitErrorKind::from_token(kind.token()), Some(kind));
+        }
+    }
+
+    #[test]
+    fn encoded_volume_error_decodes_back_to_friendly() {
+        let original = FriendlyGitError::new(FriendlyGitErrorKind::ShallowBoundary, "/repo/.git/commits/abc123");
+        let encoded = original.encode_for_volume_error();
+        let decoded = try_decode_git_friendly(&encoded).expect("sentinel-tagged message decodes");
+        assert_eq!(decoded.title, "Beyond the shallow-clone boundary");
+        assert_eq!(decoded.category, ErrorCategory::NeedsAction);
+        assert!(!decoded.retry_hint, "needs-action errors don't retry");
+    }
+
+    #[test]
+    fn non_sentinel_message_returns_none() {
+        assert!(try_decode_git_friendly("plain old IO problem").is_none());
+        assert!(try_decode_git_friendly("__GIT_FRIENDLY__not_well_formed").is_none());
+    }
+
+    #[test]
+    fn to_friendly_error_keeps_messages_clean() {
+        for kind in [
+            FriendlyGitErrorKind::NotARepo,
+            FriendlyGitErrorKind::OrphanedWorktree,
+            FriendlyGitErrorKind::CorruptRepo,
+            FriendlyGitErrorKind::IndexLocked,
+            FriendlyGitErrorKind::PermissionDenied,
+            FriendlyGitErrorKind::BareRepo,
+            FriendlyGitErrorKind::BlobTooLarge,
+            FriendlyGitErrorKind::ShallowBoundary,
+            FriendlyGitErrorKind::MissingObject,
+            FriendlyGitErrorKind::GitDirPermissionDenied,
+        ] {
+            let f = FriendlyGitError::new(kind, "/some/path").to_friendly_error();
+            never_says_error_or_failed(&f.title);
+            never_says_error_or_failed(&f.explanation);
+            never_says_error_or_failed(&f.suggestion);
+        }
+    }
+}

@@ -99,6 +99,18 @@ export async function setErrorReportsEnabled(value: boolean): Promise<void> {
   await invoke('set_error_reports_enabled', { value })
 }
 
+/**
+ * Enables or disables the virtual `.git` portal. When off, navigating into `.git` shows the raw
+ * on-disk contents instead of the branches/tags/commits virtual folders.
+ *
+ * Pushed live from the settings UI whenever `fileExplorer.git.showVirtualGitPortal` changes.
+ *
+ * @param enabled - True to keep the portal active, false to fall back to raw `.git` listings.
+ */
+export async function setShowVirtualGitPortal(enabled: boolean): Promise<void> {
+  await invoke('set_show_virtual_git_portal', { enabled })
+}
+
 // ============================================================================
 // MCP server commands
 // ============================================================================

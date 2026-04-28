@@ -16,6 +16,7 @@ import {
   setSmbConcurrency,
   setMaxLogStorageMb,
   setErrorReportsEnabled,
+  setShowVirtualGitPortal,
 } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 
@@ -59,6 +60,10 @@ async function applyBackendSettings(): Promise<void> {
   // and survives the (rare) case where the file's been edited out-of-band.
   await setErrorReportsEnabled(getSetting('updates.errorReports'))
 
+  // Virtual `.git` portal toggle. Same rationale as above — backend reads at startup,
+  // but a re-push keeps dev/hot-reload aligned with whatever the user persisted.
+  await setShowVirtualGitPortal(getSetting('fileExplorer.git.showVirtualGitPortal'))
+
   log.debug('Applied backend settings: debounce={debounce}ms, resolveTimeout={timeout}ms', {
     debounce: debounceMs,
     timeout: resolveTimeoutMs,
@@ -80,79 +85,64 @@ function applyAllSettings(): void {
 }
 
 /**
+ * Lookup table of straightforward "push-to-backend" setting wirings. Each entry
+ * is a fire-and-forget call mapping the setting value through to the Rust
+ * side. Settings with branching logic (like `advanced.maxLogStorageMb`) live
+ * in `handleSettingChange` directly so the table stays simple.
+ */
+const passthroughBackendHandlers: Record<string, (value: unknown) => void> = {
+  'developer.verboseLogging': (v) => void setVerboseLogging(v as boolean),
+  'advanced.fileWatcherDebounce': (v) => void updateFileWatcherDebounce(v as number),
+  'advanced.serviceResolveTimeout': (v) => void updateServiceResolveTimeout(v as number),
+  'indexing.enabled': (v) => void setIndexingEnabled(v as boolean),
+  'fileOperations.mtpEnabled': (v) => void setMtpEnabled(v as boolean),
+  'advanced.diskSpaceChangeThreshold': (v) => void setDiskSpaceThreshold(v as number),
+  'network.directSmbConnection': (v) => void setDirectSmbConnection(v as boolean),
+  'advanced.filterSafeSaveArtifacts': (v) => void setFilterSafeSaveArtifacts(v as boolean),
+  'network.smbConcurrency': (v) => void setSmbConcurrency(v as number),
+  'updates.errorReports': (v) => void setErrorReportsEnabled(v as boolean),
+  'fileExplorer.git.showVirtualGitPortal': (v) => void setShowVirtualGitPortal(v as boolean),
+}
+
+/**
  * Handles setting changes and applies them to the UI or backend.
+ *
+ * MCP server (`developer.mcpEnabled`, `developer.mcpPort`) is handled by
+ * `McpServerSection.svelte` in the settings window directly, not here, to
+ * avoid double-firing across windows. Date/time and file-size formats are
+ * read on-demand so they don't need a hook.
  */
 function handleSettingChange(id: string, value: unknown): void {
   log.debug('Setting changed: {id} = {value}', { id, value })
 
-  switch (id) {
-    case 'appearance.uiDensity':
-      applyDensity(value as UiDensity)
-      break
-    case 'developer.verboseLogging':
-      // Reconfigure logger when verbose logging setting changes
-      void setVerboseLogging(value as boolean)
-      break
-    case 'advanced.fileWatcherDebounce':
-      // Update Rust backend file watcher debounce
-      void updateFileWatcherDebounce(value as number)
-      break
-    case 'advanced.serviceResolveTimeout':
-      // Update Rust backend Bonjour resolve timeout
-      void updateServiceResolveTimeout(value as number)
-      break
-    case 'indexing.enabled':
-      // Start or stop drive indexing
-      void setIndexingEnabled(value as boolean)
-      break
-    case 'fileOperations.mtpEnabled':
-      // Enable or disable MTP (Android device) support
-      void setMtpEnabled(value as boolean)
-      break
-    case 'advanced.diskSpaceChangeThreshold':
-      // Update disk space poller threshold
-      void setDiskSpaceThreshold(value as number)
-      break
-    case 'network.directSmbConnection':
-      // Flip the backend flag that controls auto-upgrading SMB mounts to smb2
-      void setDirectSmbConnection(value as boolean)
-      break
-    case 'advanced.filterSafeSaveArtifacts':
-      // Toggle .sb-* noise filtering in the SMB watcher
-      void setFilterSafeSaveArtifacts(value as boolean)
-      break
-    case 'network.smbConcurrency':
-      // Update SMB batch-copy concurrency (backend clamps 1..=32)
-      void setSmbConcurrency(value as number)
-      break
-    case 'updates.errorReports':
-      // Flip the Flow B opt-in flag in the Rust auto-dispatcher. Default is off.
-      void setErrorReportsEnabled(value as boolean)
-      break
-    case 'advanced.maxLogStorageMb': {
-      const newValue = value as number
-      const oldValue = lastMaxLogStorageMb
-      lastMaxLogStorageMb = newValue
-      // Push the new keep-count to the backend and run an eager prune.
-      void setMaxLogStorageMb(newValue)
-      // Restart-required toast for `0 ↔ non-zero` transitions. Rotation strategy and target
-      // list are baked into `tauri-plugin-log` at app start, so flipping disabled/enabled
-      // only takes full effect after relaunch.
-      if (oldValue !== undefined && (oldValue === 0) !== (newValue === 0)) {
-        addToast('Restart Cmdr to apply the log storage change.', {
-          level: 'info',
-          dismissal: 'transient',
-          id: 'max-log-storage-restart',
-        })
-      }
-      break
-    }
-    // MCP server (developer.mcpEnabled, developer.mcpPort) is handled directly
-    // by McpServerSection.svelte in the settings window, not here. This avoids
-    // double-firing since both windows receive setting change events.
-    // Other settings that need immediate UI updates can be added here.
-    // Date/time format and file size format are read on-demand when rendering,
-    // so they don't need to trigger a re-render here
+  if (id === 'appearance.uiDensity') {
+    applyDensity(value as UiDensity)
+    return
+  }
+  if (id === 'advanced.maxLogStorageMb') {
+    applyMaxLogStorageMb(value as number)
+    return
+  }
+  const handler = passthroughBackendHandlers[id]
+  if (handler) handler(value)
+}
+
+/**
+ * Pushes a new log-storage cap to the backend and toasts a "restart required"
+ * notice for `0 ↔ non-zero` transitions. The rotation strategy and target list
+ * are baked in at app start, so those transitions only take full effect after
+ * relaunch — a non-zero ↔ non-zero change applies live.
+ */
+function applyMaxLogStorageMb(newValue: number): void {
+  const oldValue = lastMaxLogStorageMb
+  lastMaxLogStorageMb = newValue
+  void setMaxLogStorageMb(newValue)
+  if (oldValue !== undefined && (oldValue === 0) !== (newValue === 0)) {
+    addToast('Restart Cmdr to apply the log storage change.', {
+      level: 'info',
+      dismissal: 'transient',
+      id: 'max-log-storage-restart',
+    })
   }
 }
 

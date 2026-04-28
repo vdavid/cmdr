@@ -108,6 +108,15 @@ pub fn set_error_reports_enabled(value: bool) {
     crate::error_reporter::auto_dispatcher::set_enabled(value);
 }
 
+/// Enable or disable the virtual `.git` portal. When off, navigating into
+/// `.git` shows the raw on-disk contents instead of the branches/tags/commits
+/// virtual folders. Pushed live from the frontend whenever
+/// `fileExplorer.git.showVirtualGitPortal` changes.
+#[tauri::command]
+pub fn set_show_virtual_git_portal(enabled: bool) {
+    crate::file_system::git::set_virtual_portal_enabled(enabled);
+}
+
 /// Update menu accelerator for a command.
 /// Called from frontend when keyboard shortcuts are changed.
 #[tauri::command]

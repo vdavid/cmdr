@@ -1,8 +1,11 @@
-# File explorer › git (M1 + M2 + M3)
+# File explorer › git (complete: M1 + M2 + M3 + M4)
 
-Frontend module for the git browser. M1 ships the breadcrumb chip, status-column helpers, and the live `RepoInfo` store.
-M2 wires the virtual portal into `FilePane.svelte`'s breadcrumb. M3 wires `redirectToPath` navigation in
-`handleNavigate` so worktree / submodule entries open their working dir directly.
+Frontend module for the git browser. M1 shipped the breadcrumb chip, status-column helpers, and the live `RepoInfo`
+store. M2 wired the virtual portal into `FilePane.svelte`'s breadcrumb. M3 wired `redirectToPath` navigation in
+`handleNavigate` so worktree / submodule entries open their working dir directly. M4 ties everything together:
+**Settings > General > Git** has three live toggles (`GitSection.svelte`), `showVirtualGitPortal` round-trips through a
+Rust atomic to disable the backend portal hook in real time, and every git failure now lands in `ErrorPane` with warm
+copy via the FriendlyError pipeline.
 
 ## File map
 
@@ -42,8 +45,11 @@ Three keys, all under `fileExplorer.git.*`:
 
 - `fileExplorer.git.showRepoChip` (default `true`) — gates the chip render.
 - `fileExplorer.git.showStatusColumn` (default `false`) — gates the optional status column in Full mode.
-- `fileExplorer.git.showVirtualGitPortal` (default `true`) — controls whether `cd .git` shows the virtual portal (M2
-  wires it).
+- `fileExplorer.git.showVirtualGitPortal` (default `true`) — controls whether `cd .git` shows the virtual portal. M4
+  rebuilds the round-trip: `settings-applier.ts` calls `setShowVirtualGitPortal(value)` (Tauri command
+  `set_show_virtual_git_portal`), which flips a Rust `AtomicBool` consulted on every volume-hook entry. Toggling off
+  makes the portal stop hijacking `.git` listings immediately. **Settings > General > Git > GitSection.svelte** wires
+  the UI; `setShowVirtualGitPortal` lives in `tauri-commands/settings.ts`.
 
 ## Decisions
 

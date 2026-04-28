@@ -9,28 +9,28 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- **Git repo chip in the breadcrumb.** Open a folder inside a git clone and the breadcrumb shows a chip with the current
-  branch, ahead/behind counts vs the upstream, and a "dirty" indicator when the worktree has uncommitted changes.
-  Detached HEAD shows the short SHA; freshly-initialized repos show "no commits yet". Updates live as you commit, fetch,
-  or branch from the terminal — no polling, no refresh button. Toggle via **Settings > General > Git > Show repo chip**.
-  Foundation for the upcoming `.git` virtual portal (next milestone).
-- **Optional Git status column in Full mode.** Adds a single-glyph column (`M`, `A`, `D`, `?`, `!`) showing each file's
-  git status. Hidden by default; enable in **Settings > General > Git > Show git status column**.
-- **Virtual `.git` portal.** Step into the `.git` folder of any clone and instead of seeing libgit internals, you'll see
-  `branches/`, `tags/`, and a `raw/` escape hatch. Drill into a ref like `branches/main/` and you're browsing the
-  working tree at that commit — preview files, sort, copy. Cross-volume copy works too: drag a file from
-  `.git/branches/feature-x/src/foo.rs` into the working tree to pluck a single file from another branch, no
-  `git checkout` needed. Breadcrumb segments inside the portal pick up a dedicated git-portal color so it's clear you're
-  in history-land. Refs with slashes (like `feature/foo`) render as one entry, not nested folders. Read-only — writes
-  are blocked at the volume layer.
-- **Commits, stash, worktrees, and submodules in the `.git` portal.** The portal now also exposes `commits/`, `stash/`,
-  `worktrees/`, and `submodules/`. Open `commits/` to browse HEAD-reachable history (newest first, capped at 5000 with a
-  "Load more" entry); each entry's name shows the short SHA plus the subject, and dates drive the date-sort. You can
-  also type or paste any commit SHA directly — `.git/commits/<sha>/...` resolves even for unreachable commits in shallow
-  clones. Stash entries appear as `stash/0/`, `stash/1/`, … browsing the working-tree state at stash time. Linked
-  worktrees and submodules show as redirect entries: opening one navigates straight to its working dir (which is itself
-  a git portal — turtles all the way down). The chip and listings stay live as you commit, stash, or `git worktree add`
-  from the terminal.
+- **Git browser.** Cmdr now treats every git repo as first-class. Five things you can do that you couldn't before:
+  - **See branch + dirty state at a glance.** Open a folder inside a git clone and the breadcrumb shows a pill with the
+    current branch, ahead/behind counts vs upstream, and a dirty indicator. Detached HEAD shows the short SHA; brand-new
+    repos show "no commits yet". The pill updates live as you commit, fetch, or branch from a terminal — no polling, no
+    refresh button.
+  - **Browse history as folders.** Step into `.git` and see `branches/`, `tags/`, `commits/`, `stash/`, `worktrees/`,
+    `submodules/`, plus a `raw/` escape hatch. Drill into `branches/main/` (or `commits/<sha>/`) and you're browsing the
+    working tree at that point in history. Refs with slashes like `feature/foo` render as one entry, not nested folders.
+    Breadcrumb segments inside the portal use a dedicated git-portal color so it's clear you're in history-land.
+  - **Pluck a single file from another branch or commit.** Drag a file out of the history pane into the working tree.
+    Cmdr preserves the bytes and the executable bit. No `git checkout`, no risk of touching anything else. Type or paste
+    any SHA directly to reach unreachable commits, even in shallow clones.
+  - **Open linked worktrees and submodules with one keypress.** Each shows as a redirect entry — opening it jumps
+    straight to its working dir, which is itself a git portal. Turtles all the way down.
+  - **Show per-file git status in Full mode.** Optional column with single-glyph codes (`M`, `A`, `D`, `?`, `!`) and
+    long-form `aria-label`s for screen readers. Off by default; enable in **Settings > General > Git**.
+- **Friendly errors for the git browser.** Whatever goes wrong — the repo's damaged, the worktree's orphaned, the
+  commit's beyond a shallow boundary, the `.git` folder isn't readable, the file's too big to load from history, another
+  git command holds the index — Cmdr shows a warm, plain-language explanation in the error pane plus a concrete next
+  step, not a raw stack trace.
+- **Toggle each piece independently.** Three switches in **Settings > General > Git**: show the repo chip, show the
+  status column, and show the virtual portal. Disabling the portal lets `.git` browse like any other folder.
 
 ## [0.14.0] - 2026-04-26
 
