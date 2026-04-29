@@ -26,6 +26,11 @@ use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::RepoHandle;
 
 /// Lists linked worktrees as virtual entries with `redirectToPath` set.
+///
+/// Each entry's Modified column carries the worktree's HEAD commit date
+/// (so the user can spot stale worktrees at a glance). The Size column
+/// shows the worktree's checked-out branch (`on feature-x`) or short
+/// SHA when detached.
 pub fn list_worktrees(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEntry>, FriendlyGitError> {
     let parent = repo_root.join(".git").join("worktrees");
     let repo = handle.to_thread_local();
@@ -50,8 +55,43 @@ pub fn list_worktrees(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileE
         // Redirect navigation: opening this entry takes the user to the
         // worktree's working directory, which itself is a git portal.
         fe.redirect_to_path = Some(base.display().to_string());
+        // Decode the worktree's HEAD: a symbolic ref points at a branch
+        // (`on feature-x`), a detached HEAD shows the short SHA.
+        if let Ok(wt_repo) = proxy.into_repo() {
+            populate_worktree_columns(&mut fe, &wt_repo);
+        }
         out.push(fe);
     }
     out.sort_by_key(|a| a.name.to_lowercase());
     Ok(out)
+}
+
+fn populate_worktree_columns(fe: &mut FileEntry, wt_repo: &gix::Repository) {
+    if let Ok(head) = wt_repo.head() {
+        match &head.kind {
+            gix::head::Kind::Symbolic(reference) => {
+                let full = reference.name.as_bstr().to_string();
+                let branch = full.strip_prefix("refs/heads/").unwrap_or(&full).to_string();
+                fe.display_size = Some(format!("on {}", branch));
+                fe.display_size_tooltip = Some(format!("Branch `{}` is checked out", branch));
+            }
+            gix::head::Kind::Detached { target, .. } => {
+                let short: String = target.to_string().chars().take(7).collect();
+                fe.display_size = Some(short.clone());
+                fe.display_size_tooltip = Some(format!("Detached at {}", target));
+            }
+            gix::head::Kind::Unborn(_) => {
+                // Fresh worktree without commits — leave the cell blank.
+            }
+        }
+    }
+    if let Ok(id) = wt_repo.head_id()
+        && let Ok(commit) = wt_repo.find_commit(id.detach())
+        && let Ok(committer) = commit.committer()
+        && let Ok(time) = committer.time()
+    {
+        fe.modified_at = u64::try_from(time.seconds).ok();
+        fe.created_at = fe.modified_at;
+        fe.added_at = fe.modified_at;
+    }
 }

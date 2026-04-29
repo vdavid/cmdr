@@ -10,6 +10,7 @@ use gix::object::tree::EntryKind;
 
 use crate::file_system::listing::FileEntry;
 
+use super::column_meta::recursive_tree_size;
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::RepoHandle;
 
@@ -31,6 +32,11 @@ pub fn list_tree(
     let repo = handle.to_thread_local();
     let tree = resolve_tree_at(&repo, commit_id, sub_path)?;
 
+    // Snapshot date drives the Modified column for every file and subdir
+    // inside this commit's tree. Inside a frozen point in time, every
+    // entry shares the same date; that's semantically correct.
+    let snapshot_secs = commit_committer_secs(&repo, commit_id);
+
     let mut out = Vec::new();
     for entry in tree.iter() {
         let entry =
@@ -46,6 +52,24 @@ pub fn list_tree(
         );
         apply_kind(&mut fe, kind, &repo, entry.oid())?;
         fe.icon_id = pick_icon_id(&fe);
+        if matches!(kind, EntryKind::Tree) {
+            // Recursive byte total so dir sizes inside snapshots aren't
+            // blank. Cheap because we already have the entry's tree id.
+            let sub = if sub_path.is_empty() {
+                name.clone()
+            } else {
+                format!("{}/{}", sub_path, name)
+            };
+            if let Some(bytes) = recursive_tree_size(&repo, commit_id, &sub) {
+                fe.size = Some(bytes);
+                fe.recursive_size = Some(bytes);
+            }
+        }
+        if let Some(s) = snapshot_secs {
+            fe.modified_at = Some(s);
+            fe.created_at = Some(s);
+            fe.added_at = Some(s);
+        }
         out.push(fe);
     }
 
@@ -109,7 +133,26 @@ pub fn get_tree_entry(
     );
     apply_kind(&mut fe, kind, &repo, entry.oid())?;
     fe.icon_id = pick_icon_id(&fe);
+    // Snapshot date for the Modified cell.
+    if let Some(s) = commit_committer_secs(&repo, commit_id) {
+        fe.modified_at = Some(s);
+        fe.created_at = Some(s);
+        fe.added_at = Some(s);
+    }
+    if matches!(kind, EntryKind::Tree)
+        && let Some(bytes) = recursive_tree_size(&repo, commit_id, sub_path)
+    {
+        fe.size = Some(bytes);
+        fe.recursive_size = Some(bytes);
+    }
     Ok(fe)
+}
+
+fn commit_committer_secs(repo: &gix::Repository, commit_id: gix::ObjectId) -> Option<u64> {
+    let commit = repo.find_commit(commit_id).ok()?;
+    let committer = commit.committer().ok()?;
+    let time = committer.time().ok()?;
+    u64::try_from(time.seconds).ok()
 }
 
 /// Resolves the commit's tree at `sub_path`, descending into nested trees.

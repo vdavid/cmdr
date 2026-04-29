@@ -4,6 +4,7 @@
  */
 
 import { getSetting } from '$lib/settings/settings-store'
+import type { FileEntry } from '../types'
 import { formatSizeTriads } from '../selection/selection-info-utils'
 
 /** Layout constants for Full mode */
@@ -144,6 +145,35 @@ export function measureDateColumnWidth(formatFn: (timestamp: number) => string):
   // Add padding and enforce minimum width
   // Use Math.ceil to avoid subpixel rendering issues
   return Math.max(DATE_COLUMN_MIN_WIDTH, Math.ceil(maxWidth) + DATE_COLUMN_PADDING)
+}
+
+// ============================================================================
+// Display-size override (virtual git entries)
+// ============================================================================
+
+/**
+ * What the Size column should render for one row. Virtual git entries
+ * carry a `displaySize` string that's rendered verbatim (`+12 / -3`,
+ * `5 files`, `on main`, …); regular rows render formatted bytes from
+ * `size` / `physicalSize`. This helper centralizes the decision so the
+ * width-measurer and the renderer agree on what's drawn.
+ */
+export interface SizeDisplayPick {
+  /** When set, render this string verbatim. */
+  override?: string
+  /** Optional rich tooltip for the override (also used as aria-label). */
+  tooltip?: string
+}
+
+/**
+ * Picks the Size-column override for `entry`. Returns `{}` for normal
+ * rows (the renderer falls through to byte formatting).
+ */
+export function pickSizeDisplay(entry: FileEntry): SizeDisplayPick {
+  if (entry.displaySize !== undefined) {
+    return { override: entry.displaySize, tooltip: entry.displaySizeTooltip }
+  }
+  return {}
 }
 
 // ============================================================================

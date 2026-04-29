@@ -93,6 +93,11 @@ function sizeTextForEntry(
   sizeDisplayMode: 'smart' | 'logical' | 'physical',
   indexing: boolean,
 ): string {
+  // Virtual git entries override the Size cell with a short string
+  // (`+12 / -3`, `5 files`, …); measure that instead of the byte format.
+  if (entry.displaySize !== undefined) {
+    return entry.displaySize
+  }
   if (entry.isDirectory) {
     const s = getDisplaySize(entry.recursiveSize, entry.recursivePhysicalSize, sizeDisplayMode)
     if (s !== undefined) return triadsText(s)

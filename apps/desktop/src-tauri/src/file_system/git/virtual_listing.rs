@@ -18,6 +18,10 @@ use gix::refs::PartialName;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::reading::get_single_entry;
 
+use super::column_meta::{
+    self, ahead_behind_for_branch, commit_meta, head_commit_secs, newest_branch_tip_secs, newest_tag_secs,
+    tag_or_commit_secs,
+};
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::path::{Cat, strip_ref_prefix};
 use super::repo::RepoHandle;
@@ -29,7 +33,10 @@ use super::repo::RepoHandle;
 /// Empty categories (no commits, no stashes) still show up – opening
 /// them shows an empty listing, which is more honest than hiding the
 /// concept altogether.
-pub fn list_root(repo_root: &Path) -> Vec<FileEntry> {
+///
+/// Modified + Size columns are populated per category. See
+/// `column_meta` for the rules.
+pub fn list_root(handle: &RepoHandle, repo_root: &Path) -> Vec<FileEntry> {
     let dot_git = repo_root.join(".git");
     let categories = [
         (Cat::Branches, "git:branch"),
@@ -41,6 +48,13 @@ pub fn list_root(repo_root: &Path) -> Vec<FileEntry> {
         (Cat::Raw, "git:fork"),
     ];
 
+    let raw_mtime = std::fs::metadata(&dot_git).ok().and_then(|m| {
+        m.modified()
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_secs())
+    });
+
     categories
         .into_iter()
         .map(|(cat, icon)| {
@@ -49,15 +63,315 @@ pub fn list_root(repo_root: &Path) -> Vec<FileEntry> {
             let mut fe = FileEntry::new(segment.to_string(), path, true, false);
             fe.permissions = 0o755;
             fe.icon_id = icon.to_string();
+            populate_root_category(&mut fe, cat, handle, repo_root, raw_mtime);
             fe
         })
         .collect()
 }
 
+fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, repo_root: &Path, raw_mtime: Option<u64>) {
+    let repo = handle.to_thread_local();
+    match cat {
+        Cat::Branches => {
+            let count = count_local_branches(&repo);
+            fe.size = Some(count);
+            fe.display_size = Some(column_meta::pluralize(count, "branch", "branches"));
+            fe.display_size_tooltip = Some(format!("{} on this repo", fe.display_size.as_ref().unwrap()));
+            fe.modified_at = newest_branch_tip_secs(handle);
+        }
+        Cat::Tags => {
+            let count = count_tags(&repo);
+            fe.size = Some(count);
+            fe.display_size = Some(column_meta::pluralize(count, "tag", "tags"));
+            fe.display_size_tooltip = Some(format!("{} on this repo", fe.display_size.as_ref().unwrap()));
+            fe.modified_at = newest_tag_secs(handle);
+        }
+        Cat::Commits => {
+            let count = count_commits_capped(&repo);
+            fe.size = Some(count);
+            fe.display_size = Some(column_meta::pluralize(count, "commit", "commits"));
+            fe.display_size_tooltip = Some(format!("{} reachable from HEAD", fe.display_size.as_ref().unwrap()));
+            fe.modified_at = head_commit_secs(handle);
+        }
+        Cat::Stash => {
+            let count = super::stash::list_stashes(repo_root)
+                .map(|v| v.len() as u64)
+                .unwrap_or(0);
+            fe.size = Some(count);
+            fe.display_size = Some(column_meta::pluralize(count, "stash entry", "stash entries"));
+            fe.display_size_tooltip = Some(fe.display_size.clone().unwrap());
+            fe.modified_at = newest_stash_secs(repo_root);
+        }
+        Cat::Worktrees => {
+            let entries = super::worktrees::list_worktrees(handle, repo_root).unwrap_or_default();
+            let count = entries.len() as u64;
+            fe.size = Some(count);
+            fe.display_size = Some(column_meta::pluralize(count, "linked worktree", "linked worktrees"));
+            fe.display_size_tooltip = Some(fe.display_size.clone().unwrap());
+            fe.modified_at = newest_worktree_head_secs(&repo);
+        }
+        Cat::Submodules => {
+            let entries = super::submodules::list_submodules(handle, repo_root).unwrap_or_default();
+            let count = entries.len() as u64;
+            fe.size = Some(count);
+            fe.display_size = Some(column_meta::pluralize(count, "submodule", "submodules"));
+            fe.display_size_tooltip = Some(fe.display_size.clone().unwrap());
+            fe.modified_at = newest_submodule_secs(&repo, handle, repo_root);
+        }
+        Cat::Raw => {
+            fe.modified_at = raw_mtime;
+            // Raw stays without `display_size`; the recursive byte total
+            // would require walking the on-disk gitdir, and the Size cell
+            // for `.git/raw/` falls back to bytes.
+        }
+    }
+}
+
+/// Populates Modified + Size on a single `Ref(cat, name)` stat without
+/// re-running the full per-category listing. Mirrors what `list_branches`
+/// / `list_tags` / `list_commits` / etc. set per row, so a direct
+/// metadata fetch (for example, navigating into the entry) shows the
+/// same Size cell as the parent listing did.
+fn populate_ref_columns(fe: &mut FileEntry, cat: Cat, name: &str, handle: &RepoHandle, repo_root: &Path) {
+    let repo = handle.to_thread_local();
+    match cat {
+        Cat::Branches => {
+            if let Ok(id) = resolve_ref_commit(handle, Cat::Branches, name) {
+                if let Ok(meta) = commit_meta(&repo, id) {
+                    fe.modified_at = u64::try_from(meta.committer_secs).ok();
+                    fe.created_at = fe.modified_at;
+                    fe.added_at = fe.modified_at;
+                }
+                if let Some(ab) = ahead_behind_for_branch(&repo, name, id) {
+                    fe.size = Some(u64::from(ab.ahead));
+                    fe.display_size = Some(format!("+{} / -{}", ab.ahead, ab.behind));
+                    fe.display_size_tooltip = Some(format!(
+                        "{} commits ahead, {} commits behind `{}`",
+                        ab.ahead, ab.behind, ab.vs
+                    ));
+                }
+            }
+        }
+        Cat::Tags => {
+            if let Ok(id) = resolve_ref_commit(handle, Cat::Tags, name) {
+                if let Some(secs) = tag_or_commit_secs(&repo, id) {
+                    fe.modified_at = u64::try_from(secs).ok();
+                    fe.created_at = fe.modified_at;
+                    fe.added_at = fe.modified_at;
+                }
+                let short: String = id.to_string().chars().take(7).collect();
+                fe.display_size = Some(short);
+                fe.display_size_tooltip = Some(format!("Tagged commit {}", id));
+            }
+        }
+        Cat::Commits => {
+            if let Ok(id) = super::log::resolve_commit_id(handle, name) {
+                if let Ok(meta) = commit_meta(&repo, id) {
+                    fe.modified_at = u64::try_from(meta.committer_secs).ok();
+                    fe.created_at = fe.modified_at;
+                    fe.added_at = fe.modified_at;
+                }
+                if let Some(n) = column_meta::files_changed_count(&repo, id) {
+                    fe.size = Some(n);
+                    fe.display_size = Some(column_meta::pluralize(n, "file", "files"));
+                    fe.display_size_tooltip = Some(format!(
+                        "{} changed compared to the parent commit",
+                        column_meta::pluralize(n, "file", "files")
+                    ));
+                }
+            }
+        }
+        Cat::Stash => {
+            if let Ok(idx) = name.parse::<usize>()
+                && let Ok(entries) = super::stash::list_stashes(repo_root)
+                && let Some(found) = entries.into_iter().nth(idx)
+            {
+                fe.modified_at = found.modified_at;
+                fe.created_at = found.created_at;
+                fe.added_at = found.added_at;
+                fe.display_size = found.display_size;
+                fe.display_size_tooltip = found.display_size_tooltip;
+            }
+        }
+        Cat::Worktrees => {
+            if let Ok(entries) = super::worktrees::list_worktrees(handle, repo_root)
+                && let Some(found) = entries.into_iter().find(|e| e.name == name)
+            {
+                fe.modified_at = found.modified_at;
+                fe.created_at = found.created_at;
+                fe.added_at = found.added_at;
+                fe.display_size = found.display_size;
+                fe.display_size_tooltip = found.display_size_tooltip;
+            }
+        }
+        Cat::Submodules => {
+            if let Ok(entries) = super::submodules::list_submodules(handle, repo_root)
+                && let Some(found) = entries.into_iter().find(|e| e.name == name)
+            {
+                fe.modified_at = found.modified_at;
+                fe.created_at = found.created_at;
+                fe.added_at = found.added_at;
+                fe.display_size = found.display_size;
+                fe.display_size_tooltip = found.display_size_tooltip;
+            }
+        }
+        Cat::Raw => {} // raw entries get real-FS metadata via `get_single_entry`.
+    }
+}
+
+fn count_local_branches(repo: &gix::Repository) -> u64 {
+    let Ok(platform) = repo.references() else {
+        return 0;
+    };
+    let Ok(iter) = platform.local_branches() else {
+        return 0;
+    };
+    iter.flatten().count() as u64
+}
+
+fn count_tags(repo: &gix::Repository) -> u64 {
+    let Ok(platform) = repo.references() else {
+        return 0;
+    };
+    let Ok(iter) = platform.tags() else {
+        return 0;
+    };
+    iter.flatten().count() as u64
+}
+
+fn count_commits_capped(repo: &gix::Repository) -> u64 {
+    use gix::revision::walk::Sorting;
+    use gix::traverse::commit::simple::CommitTimeOrder;
+    let Ok(head) = repo.head_id() else { return 0 };
+    let Ok(walk) = repo
+        .rev_walk([head.detach()])
+        .sorting(Sorting::ByCommitTime(CommitTimeOrder::NewestFirst))
+        .all()
+    else {
+        return 0;
+    };
+    let mut count: u64 = 0;
+    for info in walk {
+        if info.is_err() {
+            break;
+        }
+        count = count.saturating_add(1);
+        // Cap matches `log::MAX_COMMITS` so the `.git/commits/` Size cell
+        // ("5000 commits") matches what the user sees on entering.
+        if count >= super::log::MAX_COMMITS as u64 {
+            break;
+        }
+    }
+    count
+}
+
+fn newest_stash_secs(repo_root: &Path) -> Option<u64> {
+    let entries = super::stash::list_stashes(repo_root).ok()?;
+    entries.iter().filter_map(|e| e.modified_at).max()
+}
+
+fn newest_worktree_head_secs(repo: &gix::Repository) -> Option<u64> {
+    let proxies = repo.worktrees().ok()?;
+    let mut newest: Option<i64> = None;
+    for proxy in proxies {
+        // Each proxy can open its own repo; we read its HEAD commit time.
+        let Ok(wt_repo) = proxy.into_repo() else { continue };
+        let Ok(id) = wt_repo.head_id() else { continue };
+        let Ok(commit) = wt_repo.find_commit(id.detach()) else {
+            continue;
+        };
+        let Ok(committer) = commit.committer() else { continue };
+        let Ok(time) = committer.time() else { continue };
+        newest = Some(newest.map_or(time.seconds, |n| n.max(time.seconds)));
+    }
+    newest.and_then(|s| u64::try_from(s).ok())
+}
+
+fn newest_submodule_secs(repo: &gix::Repository, _handle: &RepoHandle, repo_root: &Path) -> Option<u64> {
+    let modules = repo.submodules().ok()??;
+    let mut newest: Option<i64> = None;
+    for sm in modules {
+        // Pinned commit lives in the parent's index, not in the submodule's
+        // own ODB necessarily. We resolve via gix's submodule helpers.
+        let Some(secs) = pinned_commit_secs(&sm, repo_root) else {
+            continue;
+        };
+        newest = Some(newest.map_or(secs, |n| n.max(secs)));
+    }
+    newest.and_then(|s| u64::try_from(s).ok())
+}
+
+fn pinned_commit_secs(sm: &gix::Submodule<'_>, repo_root: &Path) -> Option<i64> {
+    // Open the submodule's own repo and resolve its HEAD; the pinned
+    // commit equals what's checked out there. If the submodule isn't
+    // initialized (no working tree yet), fall back to the parent's
+    // recorded id via `head_id`.
+    if let Ok(rel) = sm.path() {
+        let path = repo_root.join(rel.to_string());
+        if let Ok(opened) = gix::open(&path)
+            && let Ok(id) = opened.head_id()
+            && let Ok(commit) = opened.find_commit(id.detach())
+            && let Ok(committer) = commit.committer()
+            && let Ok(time) = committer.time()
+        {
+            return Some(time.seconds);
+        }
+    }
+    None
+}
+
 /// Lists local branches as virtual directory entries.
+///
+/// Each entry carries a real `modified_at` (branch tip's committer date)
+/// and a loose `display_size` showing ahead/behind relative to the
+/// branch's upstream — falling back to `main`/`master` for branches
+/// without a configured upstream. The numeric `size` field carries the
+/// ahead-count so within-category Size sort puts the most-ahead branch
+/// first.
 pub fn list_branches(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEntry>, FriendlyGitError> {
     let parent = repo_root.join(".git").join(Cat::Branches.as_segment());
-    list_refs_under(handle, &parent, Cat::Branches, "git:branch")
+    let repo = handle.to_thread_local();
+    let platform = repo
+        .references()
+        .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
+    let iter = platform
+        .local_branches()
+        .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
+
+    let mut out = Vec::new();
+    for r in iter.flatten() {
+        let mut r = r;
+        let full = r.name().as_bstr().to_string();
+        let short = strip_ref_prefix(&full, Cat::Branches);
+        if short.is_empty() {
+            continue;
+        }
+        let path = parent.join(&short).to_string_lossy().into_owned();
+        let mut fe = FileEntry::new(short.clone(), path, true, false);
+        fe.permissions = 0o755;
+        fe.icon_id = "git:branch".into();
+
+        if let Ok(tip) = r.peel_to_id() {
+            let tip_id = tip.detach();
+            if let Ok(meta) = commit_meta(&repo, tip_id) {
+                fe.modified_at = u64::try_from(meta.committer_secs).ok();
+                fe.created_at = fe.modified_at;
+                fe.added_at = fe.modified_at;
+            }
+            // Ahead/behind via upstream or fallback default branch.
+            if let Some(ab) = ahead_behind_for_branch(&repo, &short, tip_id) {
+                fe.size = Some(u64::from(ab.ahead));
+                fe.display_size = Some(format!("+{} / -{}", ab.ahead, ab.behind));
+                fe.display_size_tooltip = Some(format!(
+                    "{} commits ahead, {} commits behind `{}`",
+                    ab.ahead, ab.behind, ab.vs
+                ));
+            }
+        }
+        out.push(fe);
+    }
+    out.sort_by_key(|a| a.name.to_lowercase());
+    Ok(out)
 }
 
 /// Lists tags as virtual directory entries.
@@ -65,42 +379,47 @@ pub fn list_branches(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEn
 /// Annotated tags resolve through their tag object to the underlying
 /// commit at navigation time (in `tree::resolve_tree_at`), so this
 /// listing only carries the ref names themselves.
+///
+/// Each tag carries the annotated-tag date when present, otherwise the
+/// tagged commit's committer date. The Size column shows the short SHA
+/// of the tagged commit so users can ID it at a glance.
 pub fn list_tags(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEntry>, FriendlyGitError> {
     let parent = repo_root.join(".git").join(Cat::Tags.as_segment());
-    list_refs_under(handle, &parent, Cat::Tags, "git:tag")
-}
-
-fn list_refs_under(
-    handle: &RepoHandle,
-    parent: &Path,
-    cat: Cat,
-    icon: &str,
-) -> Result<Vec<FileEntry>, FriendlyGitError> {
     let repo = handle.to_thread_local();
     let platform = repo
         .references()
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
-    let iter = match cat {
-        Cat::Branches => platform
-            .local_branches()
-            .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?,
-        Cat::Tags => platform
-            .tags()
-            .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?,
-        _ => return Ok(Vec::new()),
-    };
+    let iter = platform
+        .tags()
+        .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
 
     let mut out = Vec::new();
     for r in iter.flatten() {
+        let mut r = r;
         let full = r.name().as_bstr().to_string();
-        let short = strip_ref_prefix(&full, cat);
+        let short = strip_ref_prefix(&full, Cat::Tags);
         if short.is_empty() {
             continue;
         }
         let path = parent.join(&short).to_string_lossy().into_owned();
         let mut fe = FileEntry::new(short, path, true, false);
         fe.permissions = 0o755;
-        fe.icon_id = icon.to_string();
+        fe.icon_id = "git:tag".into();
+
+        if let Ok(target) = r.peel_to_id() {
+            let target_id = target.detach();
+            if let Some(secs) = tag_or_commit_secs(&repo, target_id) {
+                fe.modified_at = u64::try_from(secs).ok();
+                fe.created_at = fe.modified_at;
+                fe.added_at = fe.modified_at;
+            }
+            // Display the wrapped commit's short SHA. Annotated tags peel
+            // to their commit through gix's `peel_to_id` chain when
+            // reading via `references()`, so `target_id` is the commit.
+            let short_sha: String = target_id.to_string().chars().take(7).collect();
+            fe.display_size = Some(short_sha.clone());
+            fe.display_size_tooltip = Some(format!("Tagged commit {}", target_id));
+        }
         out.push(fe);
     }
     out.sort_by_key(|a| a.name.to_lowercase());
@@ -193,6 +512,13 @@ pub fn get_metadata_for(
             let mut fe = FileEntry::new(".git".into(), path, true, false);
             fe.permissions = 0o755;
             fe.icon_id = "git:fork".into();
+            // Use the on-disk `.git/` mtime so the row isn't blank.
+            if let Ok(meta) = std::fs::metadata(repo_root.join(".git"))
+                && let Ok(t) = meta.modified()
+                && let Ok(d) = t.duration_since(std::time::UNIX_EPOCH)
+            {
+                fe.modified_at = Some(d.as_secs());
+            }
             Ok(fe)
         }
         Category(cat) => {
@@ -207,6 +533,12 @@ pub fn get_metadata_for(
                 Cat::Stash | Cat::Worktrees | Cat::Submodules | Cat::Raw => "git:fork",
             }
             .to_string();
+            let raw_mtime = std::fs::metadata(repo_root.join(".git"))
+                .ok()
+                .and_then(|m| m.modified().ok())
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map(|d| d.as_secs());
+            populate_root_category(&mut fe, *cat, handle, repo_root, raw_mtime);
             Ok(fe)
         }
         Ref(cat, name) => {
@@ -225,6 +557,7 @@ pub fn get_metadata_for(
                 _ => "git:fork",
             }
             .to_string();
+            populate_ref_columns(&mut fe, *cat, name, handle, repo_root);
             // For worktrees and submodules, surface the redirect even on a
             // direct stat so drag-drop, clipboard, and copy preview see it.
             match cat {

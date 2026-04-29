@@ -111,6 +111,20 @@ pub struct FileEntry {
     /// preview, Brief/Full renderers).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub redirect_to_path: Option<String>,
+    /// Loose Size-column override for virtual git entries: rendered verbatim
+    /// in the Full mode Size column instead of formatted bytes from `size`.
+    /// Examples: `+12 / -3`, `5 files`, `12 items`, `on main`, short SHA.
+    /// `size` keeps the within-category numeric sort key (ahead-count for
+    /// branches, files-changed for commits, item count for category roots).
+    /// Cross-category Size sorting is meaningless and that's an honest
+    /// tradeoff — each cell is self-explaining via tooltip + aria-label.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_size: Option<String>,
+    /// Optional rich tooltip string for the Size cell, used when
+    /// `display_size` is set. Example: "12 commits ahead, 3 commits behind
+    /// `origin/main`". Doubles as the aria-label for screen readers.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_size_tooltip: Option<String>,
 }
 
 impl FileEntry {
@@ -137,6 +151,8 @@ impl FileEntry {
             recursive_file_count: None,
             recursive_dir_count: None,
             redirect_to_path: None,
+            display_size: None,
+            display_size_tooltip: None,
         }
     }
 }

@@ -181,7 +181,11 @@ fn format_upstream(tracking: &gix::refs::FullNameRef) -> String {
     s.strip_prefix("refs/remotes/").unwrap_or(&s).to_string()
 }
 
-fn count_ahead_behind(repo: &gix::Repository, local: gix::ObjectId, upstream: gix::ObjectId) -> Option<(u32, u32)> {
+pub(crate) fn count_ahead_behind(
+    repo: &gix::Repository,
+    local: gix::ObjectId,
+    upstream: gix::ObjectId,
+) -> Option<(u32, u32)> {
     if local == upstream {
         return Some((0, 0));
     }
@@ -193,7 +197,7 @@ fn count_ahead_behind(repo: &gix::Repository, local: gix::ObjectId, upstream: gi
     Some((ahead, behind))
 }
 
-fn count_commits_between(repo: &gix::Repository, tip: gix::ObjectId, base: gix::ObjectId) -> Option<u32> {
+pub(crate) fn count_commits_between(repo: &gix::Repository, tip: gix::ObjectId, base: gix::ObjectId) -> Option<u32> {
     if tip == base {
         return Some(0);
     }

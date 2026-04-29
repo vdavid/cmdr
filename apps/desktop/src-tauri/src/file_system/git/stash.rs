@@ -79,6 +79,13 @@ pub fn list_stashes(repo_root: &Path) -> Result<Vec<FileEntry>, FriendlyGitError
         fe.modified_at = secs;
         fe.created_at = secs;
         fe.added_at = secs;
+        // Subject conventionally looks like `WIP on main: <head subject>`
+        // or `On main: <user message>`. Pull out the branch and surface
+        // it as a friendly Size cell.
+        if let Some(branch) = parse_stash_branch(subject) {
+            fe.display_size = Some(format!("on {}", branch));
+            fe.display_size_tooltip = Some(format!("Created on branch `{}`", branch));
+        }
         out.push(fe);
     }
 
@@ -132,6 +139,28 @@ fn repo_root_from_handle(handle: &RepoHandle) -> Result<std::path::PathBuf, Frie
         .ok_or_else(|| FriendlyGitError::new(FriendlyGitErrorKind::BareRepo, "<unknown>"))
 }
 
+/// Extracts the branch name from a stash subject.
+///
+/// Git's stash subjects come in two shapes:
+/// - `WIP on <branch>: <head subject>` — `git stash` (default).
+/// - `On <branch>: <message>` — `git stash push -m "<message>"`.
+///
+/// Returns `None` for unrecognized subjects (a custom format set via
+/// `stash.format` or a really old git that doesn't follow either
+/// convention).
+pub(crate) fn parse_stash_branch(subject: &str) -> Option<String> {
+    let rest = subject
+        .strip_prefix("WIP on ")
+        .or_else(|| subject.strip_prefix("On "))?;
+    let (branch, _) = rest.split_once(':')?;
+    let trimmed = branch.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
 fn parse_stash_index(gd: &str) -> Option<usize> {
     // gd looks like `stash@{0}` – pull the digits between `{` and `}`.
     let start = gd.find('{')?;
@@ -152,5 +181,31 @@ mod tests {
         assert_eq!(parse_stash_index("stash@{42}"), Some(42));
         assert_eq!(parse_stash_index(""), None);
         assert_eq!(parse_stash_index("notastash"), None);
+    }
+
+    #[test]
+    fn parses_stash_branch_from_default_subject() {
+        assert_eq!(
+            parse_stash_branch("WIP on main: 1234567 Initial commit"),
+            Some("main".to_string())
+        );
+        assert_eq!(
+            parse_stash_branch("WIP on feature/foo: abcdef0 wip"),
+            Some("feature/foo".to_string())
+        );
+    }
+
+    #[test]
+    fn parses_stash_branch_from_custom_message() {
+        assert_eq!(
+            parse_stash_branch("On main: my custom message"),
+            Some("main".to_string())
+        );
+    }
+
+    #[test]
+    fn parses_stash_branch_returns_none_for_unrecognized() {
+        assert_eq!(parse_stash_branch(""), None);
+        assert_eq!(parse_stash_branch("Random subject without branch"), None);
     }
 }

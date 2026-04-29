@@ -63,6 +63,7 @@ use gix::traverse::commit::simple::CommitTimeOrder;
 
 use crate::file_system::listing::FileEntry;
 
+use super::column_meta::{self, files_changed_count};
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::RepoHandle;
 
@@ -217,6 +218,17 @@ pub fn list_commits(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEnt
         fe.modified_at = Some(committer_secs as u64);
         fe.created_at = Some(author_secs as u64);
         fe.added_at = Some(author_secs as u64);
+        // Files-changed vs. first parent. For an initial commit (no
+        // parent), `files_changed_count` returns the total tree entry
+        // count — still a useful "size of this snapshot" cue.
+        if let Some(n) = files_changed_count(&repo, id) {
+            fe.size = Some(n);
+            fe.display_size = Some(column_meta::pluralize(n, "file", "files"));
+            fe.display_size_tooltip = Some(format!(
+                "{} changed compared to the parent commit",
+                column_meta::pluralize(n, "file", "files")
+            ));
+        }
         out.push(fe);
         last_sha = Some(short);
     }

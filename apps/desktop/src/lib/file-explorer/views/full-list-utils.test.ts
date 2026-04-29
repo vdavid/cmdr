@@ -8,7 +8,9 @@ import {
   getVirtualizationBufferRows,
   getDisplayExtension,
   getDisplayName,
+  pickSizeDisplay,
 } from './full-list-utils'
+import type { FileEntry } from '../types'
 
 // Mock the settings store
 vi.mock('$lib/settings/settings-store', () => ({
@@ -89,5 +91,50 @@ describe('getDisplayExtension / getDisplayName', () => {
   it('splits a dotfile with a secondary dot', () => {
     expect(getDisplayExtension('.env.local', false)).toBe('local')
     expect(getDisplayName('.env.local', false)).toBe('.env')
+  })
+})
+
+describe('pickSizeDisplay', () => {
+  function makeEntry(extra: Partial<FileEntry> = {}): FileEntry {
+    return {
+      name: 'main',
+      path: '/repo/.git/branches/main',
+      isDirectory: true,
+      isSymlink: false,
+      permissions: 0o755,
+      owner: '',
+      group: '',
+      iconId: 'git:branch',
+      extendedMetadataLoaded: true,
+      ...extra,
+    }
+  }
+
+  it('returns an empty pick for normal rows', () => {
+    expect(pickSizeDisplay(makeEntry({ size: 1234 }))).toEqual({})
+  })
+
+  it('returns the override when a virtual entry sets displaySize', () => {
+    const pick = pickSizeDisplay(makeEntry({ displaySize: '+3 / -1' }))
+    expect(pick.override).toBe('+3 / -1')
+    expect(pick.tooltip).toBeUndefined()
+  })
+
+  it('forwards the rich tooltip when present', () => {
+    const pick = pickSizeDisplay(
+      makeEntry({
+        displaySize: '+3 / -1',
+        displaySizeTooltip: '3 commits ahead, 1 commit behind `origin/main`',
+      }),
+    )
+    expect(pick.override).toBe('+3 / -1')
+    expect(pick.tooltip).toBe('3 commits ahead, 1 commit behind `origin/main`')
+  })
+
+  it('prefers override even when size is also set (sort key)', () => {
+    // Branches use `size` as the within-category sort key while showing the
+    // override string in the cell. The picker honors the override.
+    const pick = pickSizeDisplay(makeEntry({ size: 12, displaySize: '12 items' }))
+    expect(pick.override).toBe('12 items')
   })
 })

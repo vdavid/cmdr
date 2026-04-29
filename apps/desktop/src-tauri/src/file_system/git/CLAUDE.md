@@ -32,9 +32,11 @@ three new error variants (`ShallowBoundary`, `MissingObject`,
 | `status.rs` | `list_status(repo, dir)` shells out to `git status --porcelain=v2 -z`. Parses the output into a `Vec<EntryStatus>` |
 | `watcher.rs` | `GitWatcherRegistry` – per-repo notify-rs debouncer. `subscribe(app, root)` returns the current `RepoInfo` synchronously and emits `git-state-changed` on relevant `.git/*` mutations. 200 ms debounce. M2: also calls `notify_directory_changed(.., FullRefresh)` for any cached `.git/{branches,tags}/` listings on the local volume |
 | `friendly.rs` | `FriendlyGitError`, `FriendlyGitErrorKind` – ten variants (M1's six, `BlobTooLarge` from M2, plus M4's `ShallowBoundary`, `MissingObject`, `GitDirPermissionDenied`). Active-voice copy, no "error" / "failed". `to_friendly_error()` builds a `volume::FriendlyError` for `ErrorPane`; `encode_for_volume_error()` + `try_decode_git_friendly()` carry the structured payload through `VolumeError::IoError` so the streaming pipeline rebuilds it on the way out |
+| `column_meta.rs` | Per-row column-population helpers shared across `virtual_listing`, `log`, `tree`, etc. — `pluralize`, `ahead_behind_for_branch`, `commit_meta`, `files_changed_count`, `recursive_tree_size`, plus newest-of-set helpers for category-level Modified dates |
 | `tests.rs` | M1 tests: discover, repo_info, status, friendly errors |
 | `m2_tests.rs` | M2 tests: classify, list_branches/tags/root, list_tree, blob-read parity with `git show`, cross-volume copy round-trip |
 | `m3_tests.rs` | M3 tests: list_commits + sha browsing + cancellation + 1000-commit walk (`#[ignore]`), list_stashes, list_worktrees + redirect, list_submodules + redirect, watcher invalidation for `commits/` |
+| `m4_tests.rs` | M4 follow-up tests: Modified + Size column population per category — root counts, branches ahead/behind + sort key, tags short SHA, commits files-changed, stash branch parsing, worktree branch/SHA, submodule pinned SHA, snapshot-interior date + recursive bytes |
 | `bench.rs` | `#[ignore]` benchmark over a 50k-file synth fixture. Run with `cargo test --release -- --ignored --test-threads=1 bench_50k` |
 
 ## Tauri commands
@@ -112,6 +114,35 @@ gix in 0.81 returns whole-blob `Vec<u8>` for `Object::data` – there's no chunk
 ## Ref-name flat rendering
 
 Branches like `feature/foo` show as a single entry called `feature/foo`, not nested `feature/` then `foo`. The classifier (`path::classify`) greedy-matches ref names against the repo's known refs (longest-first) before treating any remainder as a tree sub-path. The inverse (`to_path`) splits ref names on `/` so OS-native separators are used in the on-disk representation. This is the only place where the URL → path round-trip needs the repo open.
+
+## Modified + Size columns for virtual entries
+
+Every virtual entry carries a real `modified_at` and most carry a `display_size` string that the frontend renders verbatim in the Full mode Size column. Backend-built; frontend is dumb.
+
+| Path | `modified_at` | `display_size` | `size` (sort key) |
+|---|---|---|---|
+| `.git/branches/` | newest branch tip date | `12 branches` | branch count |
+| `.git/tags/` | newest tag/commit date | `5 tags` | tag count |
+| `.git/commits/` | HEAD committer date | `123 commits` | commit count (capped at 5000) |
+| `.git/stash/` | newest stash creation date | `3 stash entries` | stash count |
+| `.git/worktrees/` | newest linked worktree HEAD | `2 linked worktrees` | worktree count |
+| `.git/submodules/` | newest pinned commit | `1 submodule` | submodule count |
+| `.git/raw/` | real `.git/` mtime | None (real bytes) | real bytes |
+| `branches/<name>/` | branch tip committer date | `+12 / -3` vs upstream (or fallback `main`/`master`) | ahead-count |
+| `tags/<name>/` | annotated tag date or commit date | short SHA | 0 |
+| `commits/<sha>/` | commit committer date | `5 files` (or `1 file`) | files-changed count |
+| `stash/<n>/` | stash creation date | `on main` (parsed from stash subject) | 0 |
+| `worktrees/<name>` (redirect) | worktree HEAD date | `on feature-x` or short SHA | 0 |
+| `submodules/<name>` (redirect) | pinned commit date | short SHA | 0 |
+| inside snapshots — files | snapshot commit date | None (blob bytes) | blob bytes |
+| inside snapshots — subdirs | snapshot commit date | None (recursive bytes) | recursive blob bytes |
+
+Cross-category Size sort is meaningless (ahead-count vs files-changed vs item count); that's an honest tradeoff — each cell is self-explaining via `display_size_tooltip` (also used as the aria-label).
+
+The frontend reads `display_size` / `display_size_tooltip` from `FileEntry`; the Full mode renderer (`FullList.svelte`) calls `pickSizeDisplay` from `full-list-utils.ts`, and `measure-column-widths.ts` already widens the Size column to fit the override string.
+
+**Decision (M4 follow-up)**: Eager-load ahead/behind for branches; eager-load files-changed for commits
+**Why**: Bench (release build, M-series): 100 branches with ahead/behind takes p50=33 ms / p95=36 ms — well under the 300 ms p95 budget the spec sets for the listing pipeline. Files-changed for 200 commits: p50=37 ms / p95=40 ms (200 µs / commit), so the typical Cmdr-sized repo (~3000 commits) lands ~600 ms and the 5000-commit cap lands ~1 s. We accept the worst-case 1 s on the cap because (1) Cmdr's own repo never hits the cap, (2) the listing pipeline runs the hook in `spawn_blocking` so the UI stays responsive, and (3) the alternative — lazy-load via a streamed IPC — would mean another round-trip per row and a placeholder `…` in the cell while it resolves. Document worth re-checking if a user reports the 5000-commit cap feeling slow; the M3 bench harness in `bench.rs` already covers 1000 commits and the new `bench_list_commits_files_changed` covers 200.
 
 ## Decisions
 

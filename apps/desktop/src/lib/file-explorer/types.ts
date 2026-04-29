@@ -28,6 +28,20 @@ export interface FileEntry {
    * so M3 doesn't have to ripple a change through every consumer.
    */
   redirectToPath?: string
+  /**
+   * Loose Size-column override for virtual git entries — for example,
+   * `+12 / -3`, `5 files`, `12 items`, `on main`, a short SHA. When set,
+   * the Size cell renders this string verbatim instead of formatted
+   * bytes from `size`. Cross-category Size sorting is meaningless on
+   * purpose; each cell is self-explaining via tooltip + aria-label.
+   */
+  displaySize?: string
+  /**
+   * Long-form tooltip for the Size cell when `displaySize` is set.
+   * Example: "12 commits ahead, 3 commits behind `origin/main`".
+   * Doubles as the aria-label for screen readers.
+   */
+  displaySizeTooltip?: string
 }
 
 /** Cloud sync status for files in Dropbox/iCloud/etc. folders */

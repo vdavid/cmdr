@@ -34,6 +34,7 @@
         hasSizeMismatch,
         getDisplayExtension,
         getDisplayName,
+        pickSizeDisplay,
     } from './full-list-utils'
     import { computeFullListColumnWidths } from './measure-column-widths'
     import {
@@ -618,6 +619,7 @@
                     {@const fileDisplaySize = !file.isDirectory
                         ? getDisplaySize(file.size, file.physicalSize, sizeDisplayMode)
                         : undefined}
+                    {@const sizeOverride = pickSizeDisplay(file)}
                     <!-- svelte-ignore a11y_interactive_supports_focus -->
                     <div
                         id={`file-${String(globalIndex)}`}
@@ -687,20 +689,25 @@
                         {/if}
                         <span
                             class="col-size"
-                            use:tooltip={file.isDirectory
-                                ? buildDirSizeTooltip(
-                                      file.recursiveSize,
-                                      file.recursivePhysicalSize,
-                                      file.recursiveFileCount ?? 0,
-                                      file.recursiveDirCount ?? 0,
-                                      indexing,
-                                      formatFileSize,
-                                      formatNumber,
-                                      pluralize,
-                                  )
-                                : buildFileSizeTooltip(file.size, file.physicalSize, formatFileSize)}
+                            aria-label={sizeOverride.tooltip ?? sizeOverride.override}
+                            use:tooltip={sizeOverride.override !== undefined
+                                ? (sizeOverride.tooltip ?? sizeOverride.override)
+                                : file.isDirectory
+                                  ? buildDirSizeTooltip(
+                                        file.recursiveSize,
+                                        file.recursivePhysicalSize,
+                                        file.recursiveFileCount ?? 0,
+                                        file.recursiveDirCount ?? 0,
+                                        indexing,
+                                        formatFileSize,
+                                        formatNumber,
+                                        pluralize,
+                                    )
+                                  : buildFileSizeTooltip(file.size, file.physicalSize, formatFileSize)}
                         >
-                            {#if file.isDirectory}
+                            {#if sizeOverride.override !== undefined}
+                                <span class="size-text">{sizeOverride.override}</span>
+                            {:else if file.isDirectory}
                                 {#if dirDisplaySize !== undefined}
                                     <span class="size-text"
                                         >{#each formatSizeTriads(dirDisplaySize) as triad, i (i)}<span

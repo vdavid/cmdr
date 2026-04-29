@@ -139,3 +139,95 @@ fn bench_50k_files_list_status_under_budget() {
     );
     assert!(p95_us / 1000 <= 100, "p95 over budget: {}ms", p95_us / 1000);
 }
+
+// ── Modified + Size column population bench (M4 follow-up) ──────────
+
+/// Builds a small repo with `branches` branches, each `ahead` commits ahead
+/// of `main`. Used to bench `list_branches` (Modified + ahead/behind).
+fn build_branches_fixture(branches: usize, ahead: usize) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!("cmdr_bench_branches_{}_{}", branches, std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).expect("create temp dir");
+    run(&dir, &["init", "-q", "-b", "main"]);
+    run(&dir, &["config", "user.name", "Bench"]);
+    run(&dir, &["config", "user.email", "bench@cmdr.local"]);
+    std::fs::write(dir.join("README.md"), "main\n").unwrap();
+    run(&dir, &["add", "."]);
+    run(&dir, &["commit", "-q", "-m", "main"]);
+    for b in 0..branches {
+        let name = format!("feature-{:03}", b);
+        run(&dir, &["branch", &name]);
+        run(&dir, &["checkout", "-q", &name]);
+        for a in 0..ahead {
+            std::fs::write(dir.join(format!("{}-{}.txt", name, a)), "x\n").unwrap();
+            run(&dir, &["add", "."]);
+            run(&dir, &["commit", "-q", "-m", &format!("{} #{}", name, a)]);
+        }
+        run(&dir, &["checkout", "-q", "main"]);
+    }
+    dir
+}
+
+#[test]
+#[ignore = "Slow: builds a 100-branch fixture; opt-in via `cargo test -- --ignored`"]
+fn bench_list_branches_with_ahead_behind() {
+    use super::virtual_listing;
+    let dir = build_branches_fixture(100, 3);
+    let (handle, root) = discover_repo(&dir).expect("discover");
+
+    // Warm caches.
+    let _ = virtual_listing::list_branches(&handle, &root);
+
+    let mut samples_us = Vec::with_capacity(RUNS);
+    for _ in 0..RUNS {
+        let start = Instant::now();
+        let entries = virtual_listing::list_branches(&handle, &root).expect("list_branches");
+        samples_us.push(start.elapsed().as_micros());
+        assert_eq!(entries.len(), 101, "main + 100 features");
+    }
+    let p95_us = percentile(samples_us.clone(), 95.0);
+    let p50_us = percentile(samples_us.clone(), 50.0);
+    eprintln!(
+        "list_branches (100 branches, ahead/behind): p50={}ms p95={}ms (lazy-load threshold: 500 ms total)",
+        p50_us / 1000,
+        p95_us / 1000
+    );
+    // Sanity guard: stay under the 500 ms threshold the spec calls out.
+    assert!(p95_us / 1000 <= 500, "p95 over 500 ms threshold: {}ms", p95_us / 1000);
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+#[ignore = "Slow: builds a 200-commit fixture; opt-in via `cargo test -- --ignored`"]
+fn bench_list_commits_files_changed() {
+    use super::log;
+    let dir = std::env::temp_dir().join(format!("cmdr_bench_commits_{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    run(&dir, &["init", "-q", "-b", "main"]);
+    run(&dir, &["config", "user.name", "Bench"]);
+    run(&dir, &["config", "user.email", "bench@cmdr.local"]);
+    for n in 0..200 {
+        std::fs::write(dir.join(format!("f{:03}.txt", n)), format!("x{}\n", n)).unwrap();
+        run(&dir, &["add", "."]);
+        run(&dir, &["commit", "-q", "-m", &format!("c{}", n)]);
+    }
+
+    let (handle, root) = discover_repo(&dir).expect("discover");
+    let _ = log::list_commits(&handle, &root);
+    let mut samples_us = Vec::with_capacity(RUNS);
+    for _ in 0..RUNS {
+        let start = Instant::now();
+        let _entries = log::list_commits(&handle, &root).expect("list_commits");
+        samples_us.push(start.elapsed().as_micros());
+    }
+    let p95_us = percentile(samples_us.clone(), 95.0);
+    let p50_us = percentile(samples_us.clone(), 50.0);
+    eprintln!(
+        "list_commits (200 commits, files-changed each): p50={}ms p95={}ms",
+        p50_us / 1000,
+        p95_us / 1000
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}

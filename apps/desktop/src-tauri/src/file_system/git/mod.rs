@@ -36,6 +36,7 @@
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+pub mod column_meta;
 pub mod friendly;
 pub mod log;
 pub mod path;
@@ -55,6 +56,8 @@ mod bench;
 mod m2_tests;
 #[cfg(test)]
 mod m3_tests;
+#[cfg(test)]
+mod m4_tests;
 #[cfg(test)]
 mod tests;
 
@@ -114,7 +117,7 @@ pub fn try_route_listing(path: &Path) -> Option<Result<Vec<FileEntry>, VolumeErr
     let (virt, handle, root) = path::classify(path)?;
     use path::VirtualGitPath::*;
     let result = match &virt {
-        Root => Ok(virtual_listing::list_root(&root)),
+        Root => Ok(virtual_listing::list_root(&handle, &root)),
         Category(path::Cat::Branches) => virtual_listing::list_branches(&handle, &root),
         Category(path::Cat::Tags) => virtual_listing::list_tags(&handle, &root),
         Category(path::Cat::Commits) => log::list_commits(&handle, &root),
