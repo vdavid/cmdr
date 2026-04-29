@@ -65,6 +65,7 @@
     import { splitPathSegments } from '../navigation/path-segments'
     import RepoChip from '../git/RepoChip.svelte'
     import { lookupRepoInfo, subscribeToRepo, unsubscribeFromRepo, type RepoInfo } from '../git/git-store.svelte'
+    import { isVirtualGitPath } from '../git/path-detection'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import ErrorPane from './ErrorPane.svelte'
     import VolumeUnreachableBanner from './VolumeUnreachableBanner.svelte'
@@ -1845,6 +1846,12 @@
         // Poll to detect externally deleted directories (macOS FSEvents doesn't notify)
         dirExistsPollInterval = setInterval(() => {
             if (!listingId || loading || isNetworkView || isMtpView) return
+            // Virtual `.git/<category>/...` paths don't exist on disk, so
+            // `pathExists` always returns false and the poll would evict
+            // the user back to `.git/`. The git watcher keeps these
+            // listings fresh via `git-state-changed` and the
+            // `directory-diff` events from `invalidate_virtual_listings`.
+            if (isVirtualGitPath(currentPath)) return
             void pathExists(currentPath).then((exists) => {
                 if (exists) {
                     dirNotExistsCount = 0

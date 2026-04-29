@@ -504,8 +504,13 @@ pub(crate) async fn read_directory_with_progress(
         );
     }
 
-    // Get the volume from VolumeManager to check if it supports watching
-    if let Some(volume) = crate::file_system::get_volume_manager().get(volume_id)
+    // Get the volume from VolumeManager to check if it supports watching.
+    // Virtual git portal paths (`.git/branches/...` and friends) don't
+    // exist on disk, so `notify` would error with "No path was found".
+    // Cache invalidation for those listings flows through
+    // `git::watcher::invalidate_virtual_listings` instead.
+    if !crate::file_system::git::is_virtual(path)
+        && let Some(volume) = crate::file_system::get_volume_manager().get(volume_id)
         && volume.supports_watching()
         && let Err(e) = start_watching(listing_id, path)
     {

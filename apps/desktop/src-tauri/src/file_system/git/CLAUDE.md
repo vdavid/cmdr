@@ -307,3 +307,13 @@ runs of the test bodies themselves are fine because they only read.
 expensive call in the chip pipeline
 **Why**: On 50k files it dominates the ~60 ms total. Don't add more work
 on the chip refresh path without re-benchmarking.
+
+**Gotcha**: Listings on virtual portal paths must skip `start_watching`
+**Why**: `listing/streaming.rs` starts a `notify` watcher on the listing's
+directory. For virtual paths (`.git/branches/...` etc.) the on-disk path
+doesn't exist, so `notify` errors with "No path was found" and the warn
+log spams every navigation. The fix: skip the watcher start when
+`git::is_virtual(path)`. Cache invalidation for virtual listings flows
+through `git::watcher::invalidate_virtual_listings` (via the per-repo
+`.git/HEAD`, `refs/`, `packed-refs` watchers), so no notify watch is
+needed on the virtual side.
