@@ -5,32 +5,58 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.15.0] - 2026-04-29
 
 ### Added
 
 - **Git browser.** Cmdr now treats every git repo as first-class. Five things you can do that you couldn't before:
   - **See branch + dirty state at a glance.** Open a folder inside a git clone and the breadcrumb shows a pill with the
     current branch, ahead/behind counts vs upstream, and a dirty indicator. Detached HEAD shows the short SHA; brand-new
-    repos show "no commits yet". The pill updates live as you commit, fetch, or branch from a terminal — no polling, no
+    repos show "no commits yet". The pill updates live as you commit, fetch, or branch from a terminal, no polling, no
     refresh button.
   - **Browse history as folders.** Step into `.git` and see `branches/`, `tags/`, `commits/`, `stash/`, `worktrees/`,
-    `submodules/`, plus a `raw/` escape hatch. Drill into `branches/main/` (or `commits/<sha>/`) and you're browsing the
-    working tree at that point in history. Refs with slashes like `feature/foo` render as one entry, not nested folders.
-    Breadcrumb segments inside the portal use a dedicated git-portal color so it's clear you're in history-land.
+    `submodules/`, plus a `raw/` escape hatch for the real `.git` internals. Drill into `branches/main/` (or
+    `commits/<sha>/`) and you're browsing the working tree at that point in history. Refs with slashes like
+    `feature/foo` render as one entry, not nested folders. Breadcrumb segments inside the portal use a dedicated
+    git-portal color so it's clear you're in history-land.
   - **Pluck a single file from another branch or commit.** Drag a file out of the history pane into the working tree.
     Cmdr preserves the bytes and the executable bit. No `git checkout`, no risk of touching anything else. Type or paste
     any SHA directly to reach unreachable commits, even in shallow clones.
-  - **Open linked worktrees and submodules with one keypress.** Each shows as a redirect entry — opening it jumps
+  - **Open linked worktrees and submodules with one keypress.** Each shows as a redirect entry; opening it jumps
     straight to its working dir, which is itself a git portal. Turtles all the way down.
   - **Show per-file git status in Full mode.** Optional column with single-glyph codes (`M`, `A`, `D`, `?`, `!`) and
-    long-form `aria-label`s for screen readers. Off by default; enable in **Settings > General > Git**.
-- **Friendly errors for the git browser.** Whatever goes wrong — the repo's damaged, the worktree's orphaned, the
-  commit's beyond a shallow boundary, the `.git` folder isn't readable, the file's too big to load from history, another
-  git command holds the index — Cmdr shows a warm, plain-language explanation in the error pane plus a concrete next
-  step, not a raw stack trace.
+    long-form `aria-label`s for screen readers. Off by default; enable in **Settings > General > Git**
+    ([314e9ae2](https://github.com/vdavid/cmdr/commit/314e9ae2),
+    [897df2c7](https://github.com/vdavid/cmdr/commit/897df2c7),
+    [1ebcfa1c](https://github.com/vdavid/cmdr/commit/1ebcfa1c)).
+- **Meaningful Modified and Size columns inside the git portal.** Every virtual entry carries a real timestamp (branch
+  tip date, tag date, commit date, stash creation date, snapshot date for files inside a tree). The Size column borrows
+  loose semantics so each row says something useful: `+12 / -3` ahead/behind for branches, `5 files` for commits,
+  `on main` for stashes and worktrees, short SHAs for tags and submodules, item counts for category roots. Tooltips and
+  `aria-label`s carry the long-form sentence ([31aec35c](https://github.com/vdavid/cmdr/commit/31aec35c)).
+- **Friendly errors for the git browser.** Whatever goes wrong (the repo's damaged, the worktree's orphaned, the commit
+  is beyond a shallow boundary, the `.git` folder isn't readable, the file's too big to load from history, another git
+  command holds the index), Cmdr shows a warm, plain-language explanation in the error pane plus a concrete next step,
+  not a raw stack trace ([19d5b075](https://github.com/vdavid/cmdr/commit/19d5b075),
+  [af64689f](https://github.com/vdavid/cmdr/commit/af64689f)).
 - **Toggle each piece independently.** Three switches in **Settings > General > Git**: show the repo chip, show the
-  status column, and show the virtual portal. Disabling the portal lets `.git` browse like any other folder.
+  status column, and show the virtual portal. Disabling the portal lets `.git` browse like any other folder; the toggle
+  invalidates open listings live so already-visible panes refresh on the spot
+  ([19d5b075](https://github.com/vdavid/cmdr/commit/19d5b075),
+  [af64689f](https://github.com/vdavid/cmdr/commit/af64689f)).
+
+### Fixed
+
+- Virtual `.git/<category>/...` paths no longer kick the user back to the parent after a few seconds. The frontend's
+  externally-deleted-directory poll and the backend's `notify` watcher both used to assume the listed path exists on
+  disk; both now skip the seven virtual git categories and rely on the per-repo `.git/HEAD` and `refs/` watchers for
+  invalidation ([bfcbfa48](https://github.com/vdavid/cmdr/commit/bfcbfa48)).
+
+### Non-app
+
+- Release process docs now require a runner sanity check 30 s after pushing the tag, watch the standalone CI run in
+  parallel, and verify the public surface (DMG count, `latest.json` version) once the release run reports complete.
+  Lifted from the prvw release flow.
 
 ## [0.14.0] - 2026-04-26
 
