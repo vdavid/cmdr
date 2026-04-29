@@ -26,8 +26,8 @@
 
   const subtitle = $derived.by((): string => {
     const parts: string[] = []
-    if (info.ahead != null && info.ahead > 0) parts.push(`+${info.ahead}`)
-    if (info.behind != null && info.behind > 0) parts.push(`-${info.behind}`)
+    if (info.ahead != null && info.ahead > 0) parts.push(`+${String(info.ahead)}`)
+    if (info.behind != null && info.behind > 0) parts.push(`-${String(info.behind)}`)
     if (info.isDirty) parts.push('dirty')
     return parts.join(' / ')
   })
@@ -44,7 +44,7 @@
     if (info.upstream) {
       const a = info.ahead ?? 0
       const b = info.behind ?? 0
-      lines.push(`${a} ahead, ${b} behind ${info.upstream}.`)
+      lines.push(`${String(a)} ahead, ${String(b)} behind ${info.upstream}.`)
     }
     if (info.isDirty) lines.push('Working tree has uncommitted changes.')
     return lines.join(' ')

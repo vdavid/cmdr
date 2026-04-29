@@ -7,6 +7,9 @@ Prepare a release based on docs/guides/releasing.md.
    - Commits have title + body — read all!
    - You can link multiple commits for changelog items if needed.
    - List major but non-app changes in a "Non-app" section.
+   - **Get commit SHAs via `git log --format='%h' --abbrev=8`** — never extend a 7-char prefix from `git log
+     --oneline` by guessing the next character. The committed changelog convention is 8 chars; let git produce them.
+     The `changelog-links` check will reject fabricated SHAs and abort the release.
    - **Add a `## [Unreleased]` heading** right after the format preamble (before the first versioned section), then put
      entries under it. The release script replaces this heading with the versioned one. The committed changelog has no
      `[Unreleased]` section between releases — you're creating it fresh each time.
@@ -17,17 +20,38 @@ Prepare a release based on docs/guides/releasing.md.
    launches), and give the user the `./scripts/release.sh x.x.x` command to run.
 5. **Offer to run the release script** for the user. Wait for confirmation before running.
 6. **Offer to push** with `git push origin main --tags`. Wait for confirmation before pushing.
-7. **After pushing**, immediately arm `caffeinate` to prevent the Mac from sleeping during the build. The self-hosted
-   runner lives on this Mac; any sleep — display or system — drops the runner connection and fails every in-flight
-   matrix job with `The self-hosted runner lost communication with the server`. See `docs/guides/releasing.md` § "Keep
-   the Mac awake during the build".
+7. **After pushing**, confirm the self-hosted runner picked up the build:
+   - Wait ~30 seconds, then run `gh run view <release-run-id> --json jobs` and check the `Build (...)` jobs.
+   - At least one `Build (...)` job should be `in_progress` (the self-hosted runner serializes the three matrix jobs,
+     so the others stay `queued` — that's normal).
+   - **If all three are still `queued` after ~30s, the self-hosted runner is down.** Confirm with
+     `launchctl list | grep cmdr` and look for `actions.runner.vdavid-cmdr.*`. Restart with
+     `cd ~/actions-runner-cmdr && ./svc.sh start` (fall back to `launchctl bootout` + `bootstrap` if `svc.sh` errors
+     with "Load failed: 5: Input/output error"). Re-check after another 30 s. The queued jobs pick up automatically
+     once the runner reports in — no need to re-trigger or re-tag.
+8. **Then arm `caffeinate`** to prevent the Mac from sleeping during the build. The self-hosted runner lives on this
+   Mac; any sleep — display or system — drops the runner connection and fails every in-flight matrix job with
+   `The self-hosted runner lost communication with the server`. See `docs/guides/releasing.md` § "Keep the Mac awake
+   during the build".
    - Run `caffeinate -dimsu` as a Bash `run_in_background` call. Capture the background task id so you can stop it.
    - Disarm it once the release workflow reports `completed` (success or failure — not just when the matrix is done).
    - If the user requests a re-run of failed jobs, re-arm caffeinate first.
-8. **After arming caffeinate**, start monitoring the CI build:
+9. **Monitor the CI build**:
    - Remind the user not to close their laptop for ~15 minutes while the self-hosted runner builds.
    - Poll `gh run view` every few minutes in the background and report progress (which jobs are done, which are still
      running). aarch64 and x86_64 builds took about 5min 10sec each, universal takes about 7 min.
    - Report when all jobs complete (success or failure). If a job fails, show the failure details, and advise how to
      fix.
    - Suggest the user to also track the build at https://github.com/vdavid/cmdr/actions.
+10. **In parallel, watch the standalone CI run** (the non-release `CI` workflow that fires on the same push):
+    - It's not a blocker for the release. If it goes red, fix it in the background while the release builds — small
+      things like lint regressions are common.
+    - Surface the failure to the user when convenient; don't interrupt release-build progress reporting for it.
+11. **After the release run succeeds, verify the public surface**:
+    - `gh release view vX.Y.Z --json assets,tagName,publishedAt` — confirm the expected DMGs are attached
+      (`Cmdr_X.Y.Z_aarch64.dmg`, `_x64.dmg`, `_universal.dmg`) and sizes look reasonable.
+    - Wait ~30 seconds for the website auto-deploy (the release workflow commits an updated `latest.json` and fires a
+      webhook), then `curl -s https://getcmdr.com/latest.json | jq -r .version` and confirm it matches `X.Y.Z`.
+    - If `latest.json` still shows the old version after ~2 minutes, the deploy webhook may have failed silently. Tell
+      the user; the manual fix is to re-trigger the website-deploy workflow via `workflow_dispatch` from the Actions
+      tab. Don't block release success on this — the GitHub Release is what users actually download.

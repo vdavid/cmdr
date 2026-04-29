@@ -91,11 +91,9 @@ that path directly instead of treating it as a virtual subtree. Used today by:
 
 - `.git/worktrees/<name>` → linked worktree's working dir.
 - `.git/submodules/<name>` → submodule's working dir.
-- `.git/commits/__cmdr_load_more__` (synthetic "Load more" entry, prefix `cmdr-git://load-more/`) → currently a no-op on
-  Enter; pagination wiring lands when a user reports hitting the 5000-commit cap.
 
-`FullList.svelte` shows a tooltip "Opens &lt;path&gt;" for these entries (or "Press Enter to load the next page of
-commits" for the load-more sentinel) so users know they're about to navigate elsewhere.
+`FullList.svelte` shows a tooltip "Opens &lt;path&gt;" for these entries so users know they're about to navigate
+elsewhere.
 
 **Gotcha**: Status column data uses _relative_ paths (relative to the repo root). The `FullList.svelte` cell renderer
 needs to compute the relative path for each entry before lookup; don't compare against the absolute path.

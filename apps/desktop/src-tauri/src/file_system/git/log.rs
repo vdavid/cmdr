@@ -5,16 +5,13 @@
 //! `addedAt` and `createdAt` carry the author date so date-sort works out
 //! of the box.
 //!
-//! ## Listing v1: HEAD-reachable, capped, paged
+//! ## Listing v1: HEAD-reachable, capped silently
 //!
 //! `list_commits` walks the rev graph from HEAD by commit time (newest
-//! first). We cap the listing at `MAX_COMMITS` (5000). When the walk hits
-//! the cap, we append a synthetic "Load more…" entry. The frontend opens
-//! it with Enter to fetch the next page (handled via `redirect_to_path`,
-//! see `LOAD_MORE_REDIRECT_SCHEME`). Each batch is `BATCH_SIZE` (200)
-//! commits – the cap matches the plan, the batch size is what we'd flush
-//! through `ListingEventSink` if/when we wire streaming through the volume
-//! hook (see decision below).
+//! first). We cap the listing at `MAX_COMMITS` (5000) and stop silently —
+//! Cmdr's own repo has ~3000 commits, so the cap is a safety net, not a UX
+//! entry point. Pagination ships when the cap is reached often enough to
+//! matter. `BATCH_SIZE` (200) only gates the cancellation-poll cadence.
 //!
 //! ## Direct path entry to any commit
 //!
@@ -80,15 +77,6 @@ pub const BATCH_SIZE: usize = 200;
 
 /// How many hex chars we display per short SHA. Matches `git log --oneline`.
 pub const SHORT_SHA_LEN: usize = 7;
-
-/// Marker prefix for the "Load more" entry's `redirectToPath`. The frontend
-/// special-cases entries whose `redirectToPath` starts with this scheme:
-/// pressing Enter calls `loadMoreCommits(repoRoot, afterSha, count)` which
-/// re-invokes the listing with a paginated cursor. M3 ships the marker;
-/// the actual loadMore IPC is best added with the FE pagination story
-/// once the cap is reached often enough to matter (Cmdr's repo today has
-/// ~3000 commits; the cap is a safety net, not a UX entry point).
-pub const LOAD_MORE_REDIRECT_SCHEME: &str = "cmdr-git://load-more/";
 
 /// Test-only cooperative cancel flag. Set the flag, run a list, observe
 /// cancellation within one commit decode.
@@ -164,8 +152,7 @@ pub fn looks_like_sha_prefix(s: &str) -> bool {
 
 /// Lists HEAD-reachable commits as virtual directory entries.
 ///
-/// Up to `MAX_COMMITS` entries; on cap, appends a "Load more" entry whose
-/// `redirectToPath` starts with `LOAD_MORE_REDIRECT_SCHEME`.
+/// Up to `MAX_COMMITS` entries; on cap the walk stops silently.
 pub fn list_commits(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEntry>, FriendlyGitError> {
     let parent = repo_root.join(".git").join("commits");
     let repo = handle.to_thread_local();
@@ -185,8 +172,6 @@ pub fn list_commits(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEnt
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
 
     let mut out = Vec::with_capacity(MAX_COMMITS.min(BATCH_SIZE));
-    let mut last_sha: Option<String> = None;
-    let mut hit_cap = false;
     for (count, info) in walk.enumerate() {
         // Polled cancellation: in tests, the flag lets us observe
         // cooperative cancel; in production, this is a const `false` and
@@ -196,7 +181,6 @@ pub fn list_commits(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEnt
             break;
         }
         if count >= MAX_COMMITS {
-            hit_cap = true;
             break;
         }
         let info =
@@ -230,12 +214,6 @@ pub fn list_commits(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEnt
             ));
         }
         out.push(fe);
-        last_sha = Some(short);
-    }
-
-    if hit_cap {
-        let load_more = make_load_more_entry(&parent, last_sha.as_deref());
-        out.push(load_more);
     }
 
     Ok(out)
@@ -275,17 +253,6 @@ fn decode_commit_meta(repo: &gix::Repository, id: ObjectId) -> Result<(String, i
 
 fn short_sha(id: &ObjectId) -> String {
     id.to_string().chars().take(SHORT_SHA_LEN).collect()
-}
-
-fn make_load_more_entry(parent: &Path, after_sha: Option<&str>) -> FileEntry {
-    let display_name = "Load more…".to_string();
-    let entry_path = parent.join("__cmdr_load_more__");
-    let mut fe = FileEntry::new(display_name, entry_path.to_string_lossy().into_owned(), true, false);
-    fe.icon_id = "git:commit".into();
-    fe.permissions = 0o755;
-    let after = after_sha.unwrap_or("");
-    fe.redirect_to_path = Some(format!("{}{}", LOAD_MORE_REDIRECT_SCHEME, after));
-    fe
 }
 
 #[cfg(test)]

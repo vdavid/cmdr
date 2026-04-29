@@ -90,7 +90,7 @@ function applyAllSettings(): void {
  * side. Settings with branching logic (like `advanced.maxLogStorageMb`) live
  * in `handleSettingChange` directly so the table stays simple.
  */
-const passthroughBackendHandlers: Record<string, (value: unknown) => void> = {
+const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => void>> = {
   'developer.verboseLogging': (v) => void setVerboseLogging(v as boolean),
   'advanced.fileWatcherDebounce': (v) => void updateFileWatcherDebounce(v as number),
   'advanced.serviceResolveTimeout': (v) => void updateServiceResolveTimeout(v as number),

@@ -51,6 +51,8 @@ RUN apt-get update && apt-get install -y \
     # SMB support for network E2E tests
     smbclient \
     cifs-utils \
+    # Git for tests that synthesize repository fixtures (git-portal.spec.ts)
+    git \
     # GVFS for gio mount (used by Cmdr's mount_linux.rs for user-space SMB mounting)
     gvfs \
     gvfs-backends \

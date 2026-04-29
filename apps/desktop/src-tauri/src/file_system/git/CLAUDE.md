@@ -217,17 +217,14 @@ with name + path. We resolve the submodule's working dir as
 frontend opens the working dir directly. The submodule itself is a
 git repo so the portal experience cascades for free.
 
-**Decision (M3)**: Streaming log capped at 5000 entries with a "Load more" sentinel
+**Decision (M3)**: Streaming log capped at 5000 entries, silent cap
 **Why**: Per the plan, hard cap at 5000 keeps even pathological monorepos
 inside the listing pipeline's responsive window. Cmdr's own ~3000-commit
-history walks in ~7 ms, so the cap is a safety net, not a UX entry
-point. When the cap is hit, we append a synthetic entry whose
-`redirect_to_path` is `cmdr-git://load-more/<after-sha>`. The frontend
-intercepts the magic prefix and treats Enter as "fetch the next page"
-rather than "navigate to that path". M3 ships the marker; the
-pagination IPC isn't wired yet because Cmdr's own and almost every
-typical repo never hit the cap. Wiring is a one-method follow-up
-when the first user reports the cap.
+history walks in ~7 ms, so the cap is a safety net, not a UX entry point.
+When the cap is hit the walk stops silently — no "Load more" affordance
+in v1 because tapping it would do nothing useful (pagination IPC isn't
+wired). When the first user reports hitting the cap, add the IPC + a
+real Load-more entry together so the affordance actually works.
 
 **Decision (M3)**: Volume hook stays single-shot; cancellation via task abort + polled flag
 **Why**: The plan called for `ListingEventSink` streaming. M2 already

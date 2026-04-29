@@ -29,7 +29,7 @@ interface GitStateChangedPayload {
   info: RepoInfo
 }
 
-const repos: Map<string, RepoEntry> = $state(new Map())
+const repos = $state<Map<string, RepoEntry>>(new Map())
 let unlisten: UnlistenFn | null = null
 
 async function ensureListener(): Promise<void> {
