@@ -7,9 +7,9 @@ Prepare a release based on docs/guides/releasing.md.
    - Commits have title + body — read all!
    - You can link multiple commits for changelog items if needed.
    - List major but non-app changes in a "Non-app" section.
-   - **Get commit SHAs via `git log --format='%h' --abbrev=8`** — never extend a 7-char prefix from `git log
-     --oneline` by guessing the next character. The committed changelog convention is 8 chars; let git produce them.
-     The `changelog-links` check will reject fabricated SHAs and abort the release.
+   - **Get commit SHAs via `git log --format='%h' --abbrev=8`** — never extend a 7-char prefix from `git log --oneline`
+     by guessing the next character. The committed changelog convention is 8 chars; let git produce them. The
+     `changelog-links` check will reject fabricated SHAs and abort the release.
    - **Add a `## [Unreleased]` heading** right after the format preamble (before the first versioned section), then put
      entries under it. The release script replaces this heading with the versioned one. The committed changelog has no
      `[Unreleased]` section between releases — you're creating it fresh each time.
@@ -22,13 +22,13 @@ Prepare a release based on docs/guides/releasing.md.
 6. **Offer to push** with `git push origin main --tags`. Wait for confirmation before pushing.
 7. **After pushing**, confirm the self-hosted runner picked up the build:
    - Wait ~30 seconds, then run `gh run view <release-run-id> --json jobs` and check the `Build (...)` jobs.
-   - At least one `Build (...)` job should be `in_progress` (the self-hosted runner serializes the three matrix jobs,
-     so the others stay `queued` — that's normal).
+   - At least one `Build (...)` job should be `in_progress` (the self-hosted runner serializes the three matrix jobs, so
+     the others stay `queued` — that's normal).
    - **If all three are still `queued` after ~30s, the self-hosted runner is down.** Confirm with
      `launchctl list | grep cmdr` and look for `actions.runner.vdavid-cmdr.*`. Restart with
      `cd ~/actions-runner-cmdr && ./svc.sh start` (fall back to `launchctl bootout` + `bootstrap` if `svc.sh` errors
-     with "Load failed: 5: Input/output error"). Re-check after another 30 s. The queued jobs pick up automatically
-     once the runner reports in — no need to re-trigger or re-tag.
+     with "Load failed: 5: Input/output error"). Re-check after another 30 s. The queued jobs pick up automatically once
+     the runner reports in — no need to re-trigger or re-tag.
 8. **Then arm `caffeinate`** to prevent the Mac from sleeping during the build. The self-hosted runner lives on this
    Mac; any sleep — display or system — drops the runner connection and fails every in-flight matrix job with
    `The self-hosted runner lost communication with the server`. See `docs/guides/releasing.md` § "Keep the Mac awake
