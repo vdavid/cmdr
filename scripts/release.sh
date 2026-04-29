@@ -65,9 +65,11 @@ sed -i '' "s/## \[Unreleased\]/## [$VERSION] - $TODAY/" CHANGELOG.md
 
 # Run oxfmt across the repo so CHANGELOG / package.json / tauri.conf.json drift from
 # manual edits + the sed/`npm pkg set` mutations above doesn't fail CI on the release commit.
+# This also reformats any unrelated files that drifted (for example, a `.claude/commands/*.md`
+# touched in the same uncommitted batch the user is releasing).
 ./scripts/check.sh --check oxfmt
 
-# Commit and tag (only files touched by this script)
+# Stage the files the script itself just bumped.
 git add \
   CHANGELOG.md \
   apps/website/src/pages/roadmap.astro \
@@ -75,6 +77,19 @@ git add \
   apps/desktop/src-tauri/tauri.conf.json \
   apps/desktop/src-tauri/Cargo.toml \
   Cargo.lock
+
+# Pick up anything oxfmt reformatted on top of those. `git add -u` only touches tracked
+# files that are already modified, and the pre-flight at the top of this script guaranteed
+# the working tree was clean before we started, so the only modifications that exist now
+# are the version bumps above plus oxfmt's auto-fixes. This keeps the release commit in
+# sync with what oxfmt --ci will see in CI on the freshly-pushed tag.
+git add -u
+
+# Belt-and-braces: confirm the staged tree passes oxfmt in CI mode (no auto-fix). If this
+# fails, the release commit would land with formatting drift that CI rejects, so abort
+# instead of pushing.
+./scripts/check.sh --check oxfmt --ci
+
 git commit -m "chore(release): v$VERSION"
 git tag "v$VERSION"
 
