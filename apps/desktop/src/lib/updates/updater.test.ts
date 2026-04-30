@@ -1,0 +1,174 @@
+/**
+ * Unit tests for the updater module's gating logic.
+ *
+ * The "update ready, restart now" toast must be suppressed during onboarding (the user just downloaded
+ * the app — they'd be confused) and while the FDA-revoked re-prompt is showing. These tests cover the
+ * pure predicate plus the two trigger paths (`notifyOnboardingComplete` and `setFdaPromptShowing`).
+ */
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+// `vi.mock` is hoisted to the top of the file. Module-scope mocks captured via `vi.hoisted` so the
+// references survive that hoist and stay accessible from the test bodies for assertions.
+const { addToastMock, loadSettingsMock, saveSettingsMock } = vi.hoisted(() => ({
+  addToastMock: vi.fn(),
+  loadSettingsMock: vi.fn(async () => ({
+    showHiddenFiles: true,
+    fullDiskAccessChoice: 'notAskedYet' as const,
+    isOnboarded: false,
+  })),
+  saveSettingsMock: vi.fn(async () => {}),
+}))
+
+vi.mock('$lib/ui/toast', () => ({
+  addToast: addToastMock,
+}))
+
+vi.mock('$lib/settings-store', () => ({
+  loadSettings: loadSettingsMock,
+  saveSettings: saveSettingsMock,
+}))
+
+// The settings registry hook is only used by `startUpdateChecker`, but importing the module pulls it in.
+vi.mock('$lib/settings/settings-store', () => ({
+  getSetting: vi.fn(() => 60 * 60 * 1000),
+  onSpecificSettingChange: vi.fn(() => () => {}),
+}))
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn(),
+}))
+
+vi.mock('@tauri-apps/api/app', () => ({
+  getVersion: vi.fn(async () => '0.0.0-test'),
+}))
+
+vi.mock('$lib/logging/logger', () => ({
+  getAppLogger: () => ({
+    debug: () => {},
+    info: () => {},
+    warn: () => {},
+    error: () => {},
+  }),
+}))
+
+// Now safe to import.
+import {
+  _resetUpdaterStateForTest,
+  _setUpdateStatusForTest,
+  notifyOnboardingComplete,
+  setFdaPromptShowing,
+  shouldShowUpdateToast,
+} from './updater.svelte'
+
+describe('shouldShowUpdateToast', () => {
+  it('returns true only when onboarded, FDA prompt closed, and status is ready', () => {
+    expect(shouldShowUpdateToast({ onboarded: true, fdaPromptShowing: false, status: 'ready' })).toBe(true)
+  })
+
+  it('returns false while not onboarded', () => {
+    expect(shouldShowUpdateToast({ onboarded: false, fdaPromptShowing: false, status: 'ready' })).toBe(false)
+  })
+
+  it('returns false while the FDA prompt is showing', () => {
+    expect(shouldShowUpdateToast({ onboarded: true, fdaPromptShowing: true, status: 'ready' })).toBe(false)
+  })
+
+  it.each(['idle', 'checking', 'downloading'] as const)('returns false when status is %s', (status) => {
+    expect(shouldShowUpdateToast({ onboarded: true, fdaPromptShowing: false, status })).toBe(false)
+  })
+
+  it('handles every cell of the truth table', () => {
+    const statuses = ['idle', 'checking', 'downloading', 'ready'] as const
+    for (const onboarded of [false, true]) {
+      for (const fdaPromptShowing of [false, true]) {
+        for (const status of statuses) {
+          const expected = onboarded && !fdaPromptShowing && status === 'ready'
+          expect(shouldShowUpdateToast({ onboarded, fdaPromptShowing, status })).toBe(expected)
+        }
+      }
+    }
+  })
+})
+
+describe('notifyOnboardingComplete', () => {
+  beforeEach(() => {
+    _resetUpdaterStateForTest()
+    addToastMock.mockClear()
+    saveSettingsMock.mockClear()
+  })
+
+  afterEach(() => {
+    _resetUpdaterStateForTest()
+  })
+
+  it('persists isOnboarded: true', async () => {
+    await notifyOnboardingComplete()
+    expect(saveSettingsMock).toHaveBeenCalledWith({ isOnboarded: true })
+  })
+
+  it('triggers the toast when an update is already ready', async () => {
+    _setUpdateStatusForTest('ready')
+    await notifyOnboardingComplete()
+    expect(addToastMock).toHaveBeenCalledTimes(1)
+    expect(addToastMock.mock.calls[0][1]).toMatchObject({ id: 'update', dismissal: 'persistent' })
+  })
+
+  it('does NOT trigger the toast when status is idle', async () => {
+    _setUpdateStatusForTest('idle')
+    await notifyOnboardingComplete()
+    expect(addToastMock).not.toHaveBeenCalled()
+  })
+
+  it('does NOT trigger the toast when status is downloading', async () => {
+    _setUpdateStatusForTest('downloading')
+    await notifyOnboardingComplete()
+    expect(addToastMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('setFdaPromptShowing', () => {
+  beforeEach(() => {
+    _resetUpdaterStateForTest()
+    addToastMock.mockClear()
+  })
+
+  afterEach(() => {
+    _resetUpdaterStateForTest()
+  })
+
+  it('does not show the toast on its own when flipped to true', () => {
+    _setUpdateStatusForTest('ready')
+    setFdaPromptShowing(true)
+    expect(addToastMock).not.toHaveBeenCalled()
+  })
+
+  it('re-shows the toast when flipped from true to false if onboarded and ready', async () => {
+    _setUpdateStatusForTest('ready')
+    await notifyOnboardingComplete()
+    addToastMock.mockClear()
+
+    setFdaPromptShowing(true)
+    expect(addToastMock).not.toHaveBeenCalled()
+
+    setFdaPromptShowing(false)
+    expect(addToastMock).toHaveBeenCalledTimes(1)
+    expect(addToastMock.mock.calls[0][1]).toMatchObject({ id: 'update', dismissal: 'persistent' })
+  })
+
+  it('does not show the toast on flip-to-false when not onboarded', () => {
+    _setUpdateStatusForTest('ready')
+    setFdaPromptShowing(true)
+    setFdaPromptShowing(false)
+    expect(addToastMock).not.toHaveBeenCalled()
+  })
+
+  it('does not show the toast on flip-to-false when status is not ready', async () => {
+    await notifyOnboardingComplete() // onboarded=true, status=idle
+    addToastMock.mockClear()
+
+    setFdaPromptShowing(true)
+    setFdaPromptShowing(false)
+    expect(addToastMock).not.toHaveBeenCalled()
+  })
+})

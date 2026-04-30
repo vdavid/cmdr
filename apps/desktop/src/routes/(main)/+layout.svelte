@@ -220,7 +220,7 @@
             // Mounted alongside the Flow A `ErrorReportDialog` for symmetry.
             void initAutoSendToastListener()
 
-            // Start checking for updates (skips in dev mode)
+            // Start checking for updates
             updateCleanup = startUpdateChecker()
 
             // Initialize AI state and event listeners (shows offer toast if eligible)

@@ -37,11 +37,30 @@ The frontend branches on platform at the top of `checkForUpdates()`:
 - **Non-macOS**: dynamically imports `@tauri-apps/plugin-updater` and calls `check()` / `downloadAndInstall()`. The
   custom updater Rust module is not compiled on these platforms.
 
-When `status` becomes `'ready'`, the updater calls
-`addToast(UpdateToastContent, { id: 'update', dismissal: 'persistent' })` to show the restart prompt via the global
-toast system. `UpdateToastContent.svelte` renders the toast body, calls `relaunch()` directly from
+When `status` becomes `'ready'`, the updater funnels through the `showUpdateToast()` helper instead of calling
+`addToast` directly. The helper consults `shouldShowUpdateToast({ onboarded, fdaPromptShowing, status })` — a pure,
+unit-tested predicate — and only fires `addToast(UpdateToastContent, { id: 'update', dismissal: 'persistent' })` when
+all three conditions hold. `UpdateToastContent.svelte` renders the toast body, calls `relaunch()` directly from
 `@tauri-apps/plugin-process` for the restart action, and handles the "Later" button by calling `dismissToast('update')`.
 There is no local `$state` dismissed flag — dismissal is managed entirely by the toast infrastructure.
+
+### Onboarding gating
+
+The toast must NOT show during first-launch onboarding (the user just downloaded the app — telling them to "restart to
+update" is confusing) nor while the FDA-revoked re-prompt is on screen (it'd stack two prompts). Two module-level
+`$state` flags drive this:
+
+- `onboarded` — seeded from `loadSettings().isOnboarded` on `startUpdateChecker()` start, then flipped by
+  `notifyOnboardingComplete()` (also persists `isOnboarded: true`).
+- `fdaPromptShowing` — flipped by `setFdaPromptShowing(value)` from `routes/(main)/+page.svelte` whenever the
+  `FullDiskAccessPrompt` opens or closes (any reason — first-run OR `wasRevoked`).
+
+When a gate opens (`notifyOnboardingComplete()` runs, or `setFdaPromptShowing(false)` flips), the helper re-attempts the
+toast. If the download completed during onboarding, `updateState.status` stays `'ready'` and the toast shows on unblock
+— nothing is lost.
+
+Two test-only hooks (`_resetUpdaterStateForTest`, `_setUpdateStatusForTest`) exist for the unit tests in
+`updater.test.ts`. Production code must not call them.
 
 ## Key decisions
 
@@ -75,7 +94,9 @@ interval is acceptable.
 - The `check_for_update` command returns `None` when `CI` env var is set — no network calls in CI.
 - No retry or backoff on error — the next interval fires a fresh attempt.
 - Default interval: 60 minutes. Configurable in settings from 5 minutes to 24 hours.
-- No tests exist — the module has hard dependencies on Tauri commands and the network.
+- Unit tests in `updater.test.ts` cover the gating logic via the pure `shouldShowUpdateToast` predicate plus the
+  `notifyOnboardingComplete` and `setFdaPromptShowing` triggers. The download-and-install path is still untested — it
+  has hard Tauri/network dependencies.
 - Cleanup is mandatory: the return value of `startUpdateChecker()` must be called in `onDestroy`.
 
 ## Dependencies
@@ -85,4 +106,5 @@ interval is acceptable.
 - `@tauri-apps/plugin-process` — `relaunch()`
 - `@tauri-apps/api/app` — `getVersion()`
 - `$lib/settings/settings-store` — `getSetting`, `onSpecificSettingChange`
+- `$lib/settings-store` — `loadSettings`, `saveSettings` (for the `isOnboarded` flag)
 - `$lib/logging/logger` — `getAppLogger` (logs via unified LogTape bridge)

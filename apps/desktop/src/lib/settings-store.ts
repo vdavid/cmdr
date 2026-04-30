@@ -11,11 +11,13 @@ export type FullDiskAccessChoice = 'allow' | 'deny' | 'notAskedYet'
 export interface Settings {
   showHiddenFiles: boolean
   fullDiskAccessChoice: FullDiskAccessChoice
+  isOnboarded: boolean
 }
 
 const DEFAULT_SETTINGS: Settings = {
   showHiddenFiles: true,
   fullDiskAccessChoice: 'notAskedYet',
+  isOnboarded: false,
 }
 
 let storeInstance: Store | null = null
@@ -36,6 +38,7 @@ export async function loadSettings(): Promise<Settings> {
     const store = await getStore()
     const showHiddenFiles = await store.get('showHiddenFiles')
     const fullDiskAccessChoice = await store.get('fullDiskAccessChoice')
+    const isOnboarded = await store.get('isOnboarded')
 
     const validChoices: FullDiskAccessChoice[] = ['allow', 'deny', 'notAskedYet']
     return {
@@ -43,6 +46,7 @@ export async function loadSettings(): Promise<Settings> {
       fullDiskAccessChoice: validChoices.includes(fullDiskAccessChoice as FullDiskAccessChoice)
         ? (fullDiskAccessChoice as FullDiskAccessChoice)
         : DEFAULT_SETTINGS.fullDiskAccessChoice,
+      isOnboarded: typeof isOnboarded === 'boolean' ? isOnboarded : DEFAULT_SETTINGS.isOnboarded,
     }
   } catch {
     // If store fails, return defaults
@@ -61,6 +65,9 @@ export async function saveSettings(settings: Partial<Settings>): Promise<void> {
     }
     if (settings.fullDiskAccessChoice !== undefined) {
       await store.set('fullDiskAccessChoice', settings.fullDiskAccessChoice)
+    }
+    if (settings.isOnboarded !== undefined) {
+      await store.set('isOnboarded', settings.isOnboarded)
     }
     await store.save()
   } catch {

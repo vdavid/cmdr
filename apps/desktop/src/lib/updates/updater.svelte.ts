@@ -4,6 +4,7 @@ import { getSetting, onSpecificSettingChange } from '$lib/settings/settings-stor
 import { getAppLogger } from '$lib/logging/logger'
 import UpdateToastContent from './UpdateToastContent.svelte'
 import { addToast } from '$lib/ui/toast'
+import { loadSettings, saveSettings } from '$lib/settings-store'
 
 const log = getAppLogger('updater')
 
@@ -33,6 +34,58 @@ const updateState = $state<UpdateState>({
   error: null,
 })
 
+// Module-level gating flags. The toast for "update ready, restart now" must NOT show during onboarding
+// (the user just downloaded the app — they'd be confused) nor while the FDA-revoked re-prompt is on screen.
+let onboarded = $state(false)
+let fdaPromptShowing = $state(false)
+
+/**
+ * Pure predicate for whether the "update ready" toast should show right now.
+ * Exported for unit testing the truth table.
+ */
+export function shouldShowUpdateToast(args: {
+  onboarded: boolean
+  fdaPromptShowing: boolean
+  status: UpdateState['status']
+}): boolean {
+  return args.onboarded && !args.fdaPromptShowing && args.status === 'ready'
+}
+
+/**
+ * Show the update-ready toast, but only if gating allows. Called from the download-complete branches
+ * and from the onboarding/FDA hooks below. When suppressed, we leave `updateState.status === 'ready'`
+ * so the download stays applied — the toast just doesn't render until the gate opens.
+ */
+function showUpdateToast(): void {
+  if (!shouldShowUpdateToast({ onboarded, fdaPromptShowing, status: updateState.status })) {
+    return
+  }
+  addToast(UpdateToastContent, { id: 'update', dismissal: 'persistent' })
+}
+
+/**
+ * Mark onboarding as complete. Persists the flag and, if an update is already ready, shows the toast.
+ * Called by the parent route once FDA onboarding finishes (either Allow or Deny path) or for users
+ * who already had FDA granted before this flag existed.
+ */
+export async function notifyOnboardingComplete(): Promise<void> {
+  onboarded = true
+  await saveSettings({ isOnboarded: true })
+  showUpdateToast()
+}
+
+/**
+ * Track whether the FDA prompt is on screen. While it's up, suppress the update toast so we don't
+ * pile two modals on top of each other. When it closes and an update is ready, re-attempt the toast.
+ */
+export function setFdaPromptShowing(value: boolean): void {
+  const wasShowing = fdaPromptShowing
+  fdaPromptShowing = value
+  if (wasShowing && !value) {
+    showUpdateToast()
+  }
+}
+
 export async function checkForUpdates(): Promise<void> {
   if (updateState.status === 'downloading' || updateState.status === 'ready') {
     return // Don't interrupt ongoing download or ready state
@@ -57,7 +110,7 @@ export async function checkForUpdates(): Promise<void> {
         log.info('v{version} installed, restart to apply', { version: update.version })
         updateState.status = 'ready'
         updateState.update = update
-        addToast(UpdateToastContent, { id: 'update', dismissal: 'persistent' })
+        showUpdateToast()
       } else {
         log.debug('v{version} is up to date', { version: currentVersion })
         updateState.status = 'idle'
@@ -74,7 +127,7 @@ export async function checkForUpdates(): Promise<void> {
         log.info('v{version} installed, restart to apply', { version: update.version })
         updateState.status = 'ready'
         updateState.update = { version: update.version, url: '', signature: '' }
-        addToast(UpdateToastContent, { id: 'update', dismissal: 'persistent' })
+        showUpdateToast()
       } else {
         log.debug('v{version} is up to date', { version: currentVersion })
         updateState.status = 'idle'
@@ -89,6 +142,13 @@ export async function checkForUpdates(): Promise<void> {
 
 export function startUpdateChecker(): () => void {
   log.debug('Started')
+
+  // Seed onboarded flag from persisted settings so returning users aren't gated.
+  void loadSettings().then((settings) => {
+    onboarded = settings.isOnboarded
+    // Edge case: an interval tick fired and reached 'ready' before this resolved.
+    showUpdateToast()
+  })
 
   // Check immediately on start
   void checkForUpdates()
@@ -113,4 +173,22 @@ export function startUpdateChecker(): () => void {
     clearInterval(intervalId)
     unsubscribe()
   }
+}
+
+/**
+ * Test-only hook: reset module-level gating flags. Production code should never call this.
+ */
+export function _resetUpdaterStateForTest(): void {
+  onboarded = false
+  fdaPromptShowing = false
+  updateState.status = 'idle'
+  updateState.update = null
+  updateState.error = null
+}
+
+/**
+ * Test-only hook: directly set the update state's status. Production code should never call this.
+ */
+export function _setUpdateStatusForTest(status: UpdateState['status']): void {
+  updateState.status = status
 }

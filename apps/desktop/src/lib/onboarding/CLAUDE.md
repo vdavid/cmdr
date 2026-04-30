@@ -30,6 +30,23 @@ The `wasRevoked` prop switches the copy from "first ask" to "revoked" framing.
    - `'allow'` (but FDA revoked) → show prompt with "revoked" framing.
    - `'deny'` → skip (user previously declined).
 
+## Onboarding flag and deferred update toast
+
+A separate `isOnboarded` boolean lives in `$lib/settings-store.ts` (default `false`). It exists so the auto-update
+"restart to apply" toast doesn't fire during first-launch onboarding (the user just downloaded the app — they'd be
+confused) nor stack on top of the FDA-revoked re-prompt.
+
+`+page.svelte` calls `notifyOnboardingComplete()` from `$lib/updates/updater.svelte` in two places:
+
+- `handleFdaComplete()` — fires whichever way the FDA prompt closes (Allow → restart hint, Deny → setting saved). The
+  helper persists `isOnboarded: true` itself, so the page doesn't double-save.
+- The `hasFda === true` branch — covers users who granted FDA before the flag existed. If `!settings.isOnboarded`, call
+  the helper so they get unblocked too.
+
+Around the same place where `showFdaPrompt = true` is set (both first-run and `wasRevoked`), `+page.svelte` also calls
+`setFdaPromptShowing(true)` so the updater suppresses the toast while the modal is up. `handleFdaComplete()` flips it
+back with `setFdaPromptShowing(false)`. See `$lib/updates/CLAUDE.md` § "Onboarding gating" for the updater side.
+
 ## Key decisions
 
 **Decision**: Three-state setting (`notAskedYet` / `allow` / `deny`) instead of a boolean. **Why**: The app needs to

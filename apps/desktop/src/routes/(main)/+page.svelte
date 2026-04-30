@@ -27,6 +27,7 @@
     } from '$lib/tauri-commands'
     import { SOFT_DIALOG_REGISTRY } from '$lib/ui/dialog-registry'
     import { loadSettings, saveSettings } from '$lib/settings-store'
+    import { notifyOnboardingComplete, setFdaPromptShowing } from '$lib/updates/updater.svelte'
     import { openSettingsWindow } from '$lib/settings/settings-window'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import {
@@ -409,14 +410,21 @@
             if (settings.fullDiskAccessChoice !== 'allow') {
                 await saveSettings({ fullDiskAccessChoice: 'allow' })
             }
+            // Cover users who granted FDA before the `isOnboarded` flag existed: if they're
+            // not yet flagged as onboarded, mark them so now (and unblock the update toast).
+            if (!settings.isOnboarded) {
+                await notifyOnboardingComplete()
+            }
             showApp = true
         } else if (settings.fullDiskAccessChoice === 'notAskedYet') {
             // First time - show onboarding
             showFdaPrompt = true
+            setFdaPromptShowing(true)
         } else if (settings.fullDiskAccessChoice === 'allow') {
             // User previously allowed but FDA was revoked - show prompt with different text
             showFdaPrompt = true
             fdaWasRevoked = true
+            setFdaPromptShowing(true)
         } else {
             // User explicitly denied - proceed without prompting
             showApp = true
@@ -488,7 +496,11 @@
 
     function handleFdaComplete() {
         showFdaPrompt = false
+        setFdaPromptShowing(false)
         showApp = true
+        // Mark onboarding as complete and (if an update is already ready) trigger the deferred toast.
+        // notifyOnboardingComplete persists `isOnboarded: true` itself — no double-save needed.
+        void notifyOnboardingComplete()
     }
 
     function handleExpirationModalClose() {
