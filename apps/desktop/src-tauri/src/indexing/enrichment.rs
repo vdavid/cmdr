@@ -182,6 +182,7 @@ pub(super) fn enrich_via_parent_id_on(
             entry.recursive_physical_size = Some(stats.recursive_physical_size);
             entry.recursive_file_count = Some(stats.recursive_file_count);
             entry.recursive_dir_count = Some(stats.recursive_dir_count);
+            entry.recursive_has_symlinks = Some(stats.recursive_has_symlinks);
         }
     }
     Ok(())
@@ -228,6 +229,7 @@ pub(super) fn enrich_via_individual_paths_on(entries: &mut [FileEntry], conn: &C
             entry.recursive_physical_size = Some(stats.recursive_physical_size);
             entry.recursive_file_count = Some(stats.recursive_file_count);
             entry.recursive_dir_count = Some(stats.recursive_dir_count);
+            entry.recursive_has_symlinks = Some(stats.recursive_has_symlinks);
         }
     }
 }

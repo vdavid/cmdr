@@ -17,7 +17,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 
-const SCHEMA_VERSION: &str = "9";
+const SCHEMA_VERSION: &str = "10";
 
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
@@ -37,16 +37,22 @@ pub struct DirStats {
     pub recursive_physical_size: u64,
     pub recursive_file_count: u64,
     pub recursive_dir_count: u64,
+    /// `true` if any descendant entry (or direct child) is a symlink.
+    /// Used by the UI to surface "size omits symlinked content" hints.
+    pub recursive_has_symlinks: bool,
 }
 
 /// Dir stats keyed by entry ID. Used internally by the integer-keyed store.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct DirStatsById {
     pub entry_id: i64,
     pub recursive_logical_size: u64,
     pub recursive_physical_size: u64,
     pub recursive_file_count: u64,
     pub recursive_dir_count: u64,
+    /// `true` if the directory's subtree (including direct children) contains
+    /// any symlink entries. Aggregated bottom-up alongside size totals.
+    pub recursive_has_symlinks: bool,
 }
 
 /// A row from the integer-keyed `entries` table. Used as the primary entry
@@ -269,7 +275,8 @@ const CREATE_TABLES_SQL: &str = "
         recursive_logical_size   INTEGER NOT NULL DEFAULT 0,
         recursive_physical_size  INTEGER NOT NULL DEFAULT 0,
         recursive_file_count     INTEGER NOT NULL DEFAULT 0,
-        recursive_dir_count      INTEGER NOT NULL DEFAULT 0
+        recursive_dir_count      INTEGER NOT NULL DEFAULT 0,
+        recursive_has_symlinks   INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS meta (
@@ -637,7 +644,7 @@ impl IndexStore {
     /// Look up dir_stats for a single entry by ID.
     pub fn get_dir_stats_by_id(conn: &Connection, entry_id: i64) -> Result<Option<DirStatsById>, IndexStoreError> {
         let mut stmt = conn.prepare_cached(
-            "SELECT entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count
+            "SELECT entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count, recursive_has_symlinks
              FROM dir_stats WHERE entry_id = ?1",
         )?;
         let result = stmt
@@ -648,6 +655,7 @@ impl IndexStore {
                     recursive_physical_size: row.get(2)?,
                     recursive_file_count: row.get(3)?,
                     recursive_dir_count: row.get(4)?,
+                    recursive_has_symlinks: row.get::<_, i32>(5)? != 0,
                 })
             })
             .optional()?;
@@ -678,7 +686,7 @@ impl IndexStore {
             .collect::<Vec<_>>()
             .join(", ");
         let sql = format!(
-            "SELECT entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count
+            "SELECT entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count, recursive_has_symlinks
              FROM dir_stats WHERE entry_id IN ({placeholders})"
         );
         let mut stmt = conn.prepare(&sql)?;
@@ -692,6 +700,7 @@ impl IndexStore {
                 recursive_physical_size: row.get(2)?,
                 recursive_file_count: row.get(3)?,
                 recursive_dir_count: row.get(4)?,
+                recursive_has_symlinks: row.get::<_, i32>(5)? != 0,
             })
         })?;
 
@@ -922,8 +931,8 @@ impl IndexStore {
         with_savepoint(conn, "upsert_stats", |conn| {
             let mut stmt = conn.prepare_cached(
                 "INSERT OR REPLACE INTO dir_stats
-                     (entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count)
-                 VALUES (?1, ?2, ?3, ?4, ?5)",
+                     (entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count, recursive_has_symlinks)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             )?;
             for s in stats {
                 stmt.execute(params![
@@ -932,6 +941,7 @@ impl IndexStore {
                     s.recursive_physical_size,
                     s.recursive_file_count,
                     s.recursive_dir_count,
+                    s.recursive_has_symlinks as i32,
                 ])?;
             }
             Ok(())
@@ -1252,6 +1262,7 @@ mod tests {
                 recursive_physical_size: 50_000,
                 recursive_file_count: 42,
                 recursive_dir_count: 5,
+                recursive_has_symlinks: false,
             }],
         )
         .unwrap();
@@ -1280,6 +1291,7 @@ mod tests {
                     recursive_physical_size: 100,
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
+                    recursive_has_symlinks: false,
                 },
                 DirStatsById {
                     entry_id: b_id,
@@ -1287,6 +1299,7 @@ mod tests {
                     recursive_physical_size: 200,
                     recursive_file_count: 2,
                     recursive_dir_count: 1,
+                    recursive_has_symlinks: false,
                 },
             ],
         )
@@ -1700,6 +1713,7 @@ mod tests {
                     recursive_physical_size: 42,
                     recursive_file_count: 1,
                     recursive_dir_count: 1,
+                    recursive_has_symlinks: false,
                 },
                 DirStatsById {
                     entry_id: b,
@@ -1707,6 +1721,7 @@ mod tests {
                     recursive_physical_size: 42,
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
+                    recursive_has_symlinks: false,
                 },
             ],
         )
@@ -1757,6 +1772,7 @@ mod tests {
                 recursive_physical_size: 12345,
                 recursive_file_count: 10,
                 recursive_dir_count: 3,
+                recursive_has_symlinks: false,
             }],
         )
         .unwrap();
@@ -1785,6 +1801,7 @@ mod tests {
                     recursive_physical_size: 100,
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
+                    recursive_has_symlinks: false,
                 },
                 DirStatsById {
                     entry_id: d2,
@@ -1792,6 +1809,7 @@ mod tests {
                     recursive_physical_size: 200,
                     recursive_file_count: 2,
                     recursive_dir_count: 1,
+                    recursive_has_symlinks: false,
                 },
             ],
         )

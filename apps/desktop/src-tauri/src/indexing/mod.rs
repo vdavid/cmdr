@@ -416,6 +416,7 @@ pub fn get_dir_stats(path: &str) -> Result<Option<DirStats>, String> {
             recursive_physical_size: s.recursive_physical_size,
             recursive_file_count: s.recursive_file_count,
             recursive_dir_count: s.recursive_dir_count,
+            recursive_has_symlinks: s.recursive_has_symlinks,
         }))
     })?
 }
@@ -451,6 +452,7 @@ pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, St
                     recursive_physical_size: s.recursive_physical_size,
                     recursive_file_count: s.recursive_file_count,
                     recursive_dir_count: s.recursive_dir_count,
+                    recursive_has_symlinks: s.recursive_has_symlinks,
                 });
             }
         }
@@ -846,6 +848,7 @@ mod tests {
             recursive_physical_size: 1500,
             recursive_file_count: 2,
             recursive_dir_count: 0,
+            recursive_has_symlinks: false,
         };
         IndexStore::upsert_dir_stats_by_id(&conn, &[updated_user]).expect("update user stats");
 
@@ -855,6 +858,7 @@ mod tests {
             recursive_physical_size: 1500,
             recursive_file_count: 2,
             recursive_dir_count: 1,
+            recursive_has_symlinks: false,
         };
         IndexStore::upsert_dir_stats_by_id(&conn, &[updated_home]).expect("update home stats");
 

@@ -102,6 +102,7 @@ describe('createParentEntry', () => {
       recursivePhysicalSize: 2048,
       recursiveFileCount: 3,
       recursiveDirCount: 1,
+      recursiveHasSymlinks: false,
     })
     expect(entry.recursiveSize).toBe(1024)
     expect(entry.recursivePhysicalSize).toBe(2048)
@@ -505,6 +506,7 @@ describe('updateIndexSizesInPlace', () => {
         recursivePhysicalSize: 2048,
         recursiveFileCount: 5,
         recursiveDirCount: 2,
+        recursiveHasSymlinks: false,
       },
     ])
 
@@ -582,8 +584,16 @@ describe('updateIndexSizesInPlace', () => {
         recursivePhysicalSize: 200,
         recursiveFileCount: 1,
         recursiveDirCount: 0,
+        recursiveHasSymlinks: false,
       },
-      { path: '/dir', recursiveSize: 5000, recursivePhysicalSize: 6000, recursiveFileCount: 42, recursiveDirCount: 3 },
+      {
+        path: '/dir',
+        recursiveSize: 5000,
+        recursivePhysicalSize: 6000,
+        recursiveFileCount: 42,
+        recursiveDirCount: 3,
+        recursiveHasSymlinks: false,
+      },
     ])
 
     const stats = await updateIndexSizesInPlace(entries, '/dir')
@@ -596,7 +606,14 @@ describe('updateIndexSizesInPlace', () => {
 
   it('returns current-dir stats even when there are no cached directories', async () => {
     vi.mocked(getDirStatsBatch).mockResolvedValue([
-      { path: '/dir', recursiveSize: 999, recursivePhysicalSize: 1000, recursiveFileCount: 7, recursiveDirCount: 1 },
+      {
+        path: '/dir',
+        recursiveSize: 999,
+        recursivePhysicalSize: 1000,
+        recursiveFileCount: 7,
+        recursiveDirCount: 1,
+        recursiveHasSymlinks: false,
+      },
     ])
 
     const stats = await updateIndexSizesInPlace([], '/dir')

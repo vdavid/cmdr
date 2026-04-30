@@ -827,6 +827,7 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
                                     recursive_physical_size: 0,
                                     recursive_file_count: 0,
                                     recursive_dir_count: 0,
+                                    recursive_has_symlinks: false,
                                 });
                             deltas.push((parent_id, stats));
                         }

@@ -362,8 +362,9 @@ impl WriterStats {
 /// (`bulk_get_children_stats_by_id` and `bulk_get_child_dir_ids`) by tracking
 /// the same information incrementally as entries are inserted.
 struct AccumulatorMaps {
-    /// `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count)` — direct children only.
-    direct_stats: HashMap<i64, (u64, u64, u64, u64)>,
+    /// `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count, has_symlinks_direct)` — direct children only.
+    /// `has_symlinks_direct` is `true` if any direct child of `parent_id` is a symlink.
+    direct_stats: HashMap<i64, (u64, u64, u64, u64, bool)>,
     /// `parent_id -> Vec<child_dir_id>` — direct child directories only.
     child_dirs: HashMap<i64, Vec<i64>>,
     /// Running count of entries inserted so far (for flushing progress).
@@ -383,7 +384,10 @@ impl AccumulatorMaps {
     fn accumulate(&mut self, entries: &[EntryRow]) {
         self.entries_inserted += entries.len() as u64;
         for entry in entries {
-            let stats = self.direct_stats.entry(entry.parent_id).or_insert((0, 0, 0, 0));
+            let stats = self.direct_stats.entry(entry.parent_id).or_insert((0, 0, 0, 0, false));
+            if entry.is_symlink {
+                stats.4 = true;
+            }
             if entry.is_directory {
                 stats.3 += 1;
                 self.child_dirs.entry(entry.parent_id).or_default().push(entry.id);
@@ -773,6 +777,10 @@ fn upsert_update_existing(
         if logical_delta != 0 || physical_delta != 0 {
             propagate_delta_by_id(conn, parent_id, logical_delta, physical_delta, 0, 0);
         }
+        // Symlink state change can flip the parent's `recursive_has_symlinks`.
+        if old.is_symlink != is_symlink {
+            propagate_recursive_has_symlinks(conn, parent_id);
+        }
     }
 }
 
@@ -825,6 +833,7 @@ fn upsert_insert_new(
                         recursive_physical_size: 0,
                         recursive_file_count: 0,
                         recursive_dir_count: 0,
+                        recursive_has_symlinks: false,
                     }],
                 ) {
                     log::warn!("Writer: init dir_stats for new dir id={new_id} failed: {e}");
@@ -834,6 +843,11 @@ fn upsert_insert_new(
                 let logical = logical_size.unwrap_or(0) as i64;
                 let physical = physical_size.unwrap_or(0) as i64;
                 propagate_delta_by_id(conn, parent_id, logical, physical, 1, 0);
+            }
+            // New symlink: walk the parent chain and OR in the flag.
+            // We start at parent_id so the parent's stats include this symlink.
+            if is_symlink {
+                propagate_recursive_has_symlinks(conn, parent_id);
             }
         }
         Err(e) => {
@@ -868,6 +882,11 @@ fn handle_delete_entry_by_id(conn: &rusqlite::Connection, entry_id: i64) {
             file_delta,
             dir_delta,
         );
+        // If we just deleted a symlink, the parent's `recursive_has_symlinks`
+        // may flip back to false (and propagate further up).
+        if entry.is_symlink {
+            propagate_recursive_has_symlinks(conn, entry.parent_id);
+        }
     }
     WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
 }
@@ -876,6 +895,27 @@ fn handle_delete_subtree_by_id(conn: &rusqlite::Connection, root_id: i64) {
     // Read subtree totals before deleting to get accurate delta
     let totals = IndexStore::get_subtree_totals_by_id(conn, root_id).ok();
     let parent_id = IndexStore::get_parent_id(conn, root_id).ok().flatten();
+    // Did the subtree contain any symlinks? Read the root's stored flag before
+    // deletion (covers descendants), and also check any direct symlink children.
+    let subtree_had_symlinks = {
+        let from_root = IndexStore::get_dir_stats_by_id(conn, root_id)
+            .ok()
+            .flatten()
+            .map(|s| s.recursive_has_symlinks)
+            .unwrap_or(false);
+        if from_root {
+            true
+        } else {
+            // The root itself might be a symlink (rare), or a child might be one
+            // without dir_stats covering it. Check directly.
+            conn.query_row(
+                "SELECT EXISTS(SELECT 1 FROM entries WHERE id = ?1 AND is_symlink = 1)",
+                rusqlite::params![root_id],
+                |row| row.get::<_, i32>(0).map(|n| n != 0),
+            )
+            .unwrap_or(false)
+        }
+    };
     if let Err(e) = IndexStore::delete_subtree_by_id(conn, root_id) {
         log::warn!("Index writer: delete_subtree_by_id failed for id={root_id}: {e}");
     }
@@ -889,6 +929,11 @@ fn handle_delete_subtree_by_id(conn: &rusqlite::Connection, root_id: i64) {
             -(file_count as i32),
             -(dir_count as i32),
         );
+        // If the deleted subtree contained any symlinks, the parent's
+        // `recursive_has_symlinks` may flip — recompute up the chain.
+        if subtree_had_symlinks {
+            propagate_recursive_has_symlinks(conn, pid);
+        }
     }
     WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
 }
@@ -971,6 +1016,15 @@ fn handle_compute_subtree_aggregates(conn: &rusqlite::Connection, root: &str) {
                 "Index writer: computed subtree aggregates for {count} dirs under {root} ({}ms)",
                 t.elapsed().as_millis(),
             );
+            // The subtree's own `recursive_has_symlinks` was just computed.
+            // Walk the parent chain so ancestors pick up changes (a symlink may
+            // have just appeared inside the subtree, or the last one disappeared).
+            if let Ok(Some(root_id)) = crate::indexing::store::resolve_path(conn, root)
+                && let Ok(Some(parent_id)) = IndexStore::get_parent_id(conn, root_id)
+                && parent_id != 0
+            {
+                propagate_recursive_has_symlinks(conn, parent_id);
+            }
         }
         Err(e) => log::warn!("Index writer: compute_subtree_aggregates({root}) failed: {e}"),
     }
@@ -1047,32 +1101,111 @@ fn propagate_delta_by_id(
         // Read existing stats
         let existing = IndexStore::get_dir_stats_by_id(conn, current_id).ok().flatten();
 
-        let (new_logical, new_physical, new_files, new_dirs) = match existing {
+        let (new_logical, new_physical, new_files, new_dirs, has_symlinks) = match existing {
             Some(s) => (
                 (s.recursive_logical_size as i64 + logical_size_delta).max(0) as u64,
                 (s.recursive_physical_size as i64 + physical_size_delta).max(0) as u64,
                 (s.recursive_file_count as i64 + i64::from(file_delta)).max(0) as u64,
                 (s.recursive_dir_count as i64 + i64::from(dir_delta)).max(0) as u64,
+                s.recursive_has_symlinks,
             ),
             None => (
                 logical_size_delta.max(0) as u64,
                 physical_size_delta.max(0) as u64,
                 i64::from(file_delta).max(0) as u64,
                 i64::from(dir_delta).max(0) as u64,
+                false,
             ),
         };
 
         if let Err(e) = conn.execute(
             "INSERT OR REPLACE INTO dir_stats
-                 (entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count)
-             VALUES (?1, ?2, ?3, ?4, ?5)",
-            rusqlite::params![current_id, new_logical, new_physical, new_files, new_dirs],
+                 (entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count, recursive_has_symlinks)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            rusqlite::params![current_id, new_logical, new_physical, new_files, new_dirs, has_symlinks as i32],
         ) {
             log::warn!("propagate_delta_by_id: upsert failed for id={current_id}: {e}");
             break;
         }
 
         // Walk up to parent
+        if current_id == ROOT_ID {
+            break;
+        }
+        match IndexStore::get_parent_id(conn, current_id) {
+            Ok(Some(pid)) if pid != 0 => current_id = pid,
+            _ => break,
+        }
+    }
+}
+
+/// Recompute `recursive_has_symlinks` for a directory from its direct children
+/// (`is_symlink`) plus its subdirectories' stored `recursive_has_symlinks`.
+///
+/// Returns the recomputed value, without writing it. Returns `false` if the
+/// directory has no children or the queries fail.
+fn recompute_recursive_has_symlinks(conn: &rusqlite::Connection, dir_id: i64) -> bool {
+    // Direct symlink child?
+    let direct: bool = conn
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM entries WHERE parent_id = ?1 AND is_symlink = 1)",
+            rusqlite::params![dir_id],
+            |row| row.get::<_, i32>(0).map(|n| n != 0),
+        )
+        .unwrap_or(false);
+    if direct {
+        return true;
+    }
+    // Any sub-directory with the flag set?
+    let from_subdirs: bool = conn
+        .query_row(
+            "SELECT EXISTS(
+                SELECT 1 FROM entries e
+                JOIN dir_stats ds ON ds.entry_id = e.id
+                WHERE e.parent_id = ?1 AND e.is_directory = 1 AND ds.recursive_has_symlinks = 1
+            )",
+            rusqlite::params![dir_id],
+            |row| row.get::<_, i32>(0).map(|n| n != 0),
+        )
+        .unwrap_or(false);
+    from_subdirs
+}
+
+/// Walk the parent chain, recomputing `recursive_has_symlinks` for each ancestor
+/// from its direct children + subdirs' stored flags.
+///
+/// Stops walking up as soon as an ancestor's recomputed value matches the value
+/// already in the DB — the OR-aggregate is monotonic, so once the value stabilizes,
+/// further ancestors won't change.
+///
+/// Used after symlink additions/removals (and subtree deletes that may have
+/// removed all symlinks in a branch). For pure size/count deltas this is a no-op
+/// and `propagate_delta_by_id` is enough.
+fn propagate_recursive_has_symlinks(conn: &rusqlite::Connection, start_id: i64) {
+    use crate::indexing::store::ROOT_ID;
+
+    let mut current_id = start_id;
+    while current_id != 0 {
+        let new_value = recompute_recursive_has_symlinks(conn, current_id);
+        let old_value = IndexStore::get_dir_stats_by_id(conn, current_id)
+            .ok()
+            .flatten()
+            .map(|s| s.recursive_has_symlinks);
+
+        if old_value == Some(new_value) {
+            // No change — the rest of the chain can't change either.
+            break;
+        }
+
+        // Update only the recursive_has_symlinks column, preserving other stats.
+        if let Err(e) = conn.execute(
+            "UPDATE dir_stats SET recursive_has_symlinks = ?1 WHERE entry_id = ?2",
+            rusqlite::params![new_value as i32, current_id],
+        ) {
+            log::warn!("propagate_recursive_has_symlinks: update failed for id={current_id}: {e}");
+            break;
+        }
+
         if current_id == ROOT_ID {
             break;
         }
@@ -1364,6 +1497,7 @@ mod tests {
                     recursive_physical_size: 500,
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
+                    recursive_has_symlinks: false,
                 }],
             )
             .unwrap();
@@ -1437,6 +1571,7 @@ mod tests {
                         recursive_physical_size: 300,
                         recursive_file_count: 1,
                         recursive_dir_count: 2,
+                        recursive_has_symlinks: false,
                     },
                     DirStatsById {
                         entry_id: 10,
@@ -1444,6 +1579,7 @@ mod tests {
                         recursive_physical_size: 300,
                         recursive_file_count: 1,
                         recursive_dir_count: 1,
+                        recursive_has_symlinks: false,
                     },
                 ],
             )
@@ -1502,6 +1638,7 @@ mod tests {
                     recursive_physical_size: 1000,
                     recursive_file_count: 5,
                     recursive_dir_count: 1,
+                    recursive_has_symlinks: false,
                 }],
             )
             .unwrap();
@@ -1557,6 +1694,7 @@ mod tests {
                     recursive_physical_size: 100,
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
+                    recursive_has_symlinks: false,
                 }],
             )
             .unwrap();
@@ -1725,6 +1863,7 @@ mod tests {
                     recursive_physical_size: 0,
                     recursive_file_count: 0,
                     recursive_dir_count: 0,
+                    recursive_has_symlinks: false,
                 }],
             )
             .unwrap();
@@ -1785,6 +1924,7 @@ mod tests {
                     recursive_physical_size: 200,
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
+                    recursive_has_symlinks: false,
                 }],
             )
             .unwrap();
@@ -1850,6 +1990,7 @@ mod tests {
                     recursive_physical_size: 0,
                     recursive_file_count: 0,
                     recursive_dir_count: 0,
+                    recursive_has_symlinks: false,
                 }],
             )
             .unwrap();
@@ -2044,6 +2185,7 @@ mod tests {
                     recursive_physical_size: 0,
                     recursive_file_count: 0,
                     recursive_dir_count: 0,
+                    recursive_has_symlinks: false,
                 }],
             )
             .unwrap();
@@ -2245,6 +2387,7 @@ mod tests {
                     recursive_physical_size: 0,
                     recursive_file_count: 0,
                     recursive_dir_count: 0,
+                    recursive_has_symlinks: false,
                 }],
             )
             .unwrap();
@@ -2289,6 +2432,249 @@ mod tests {
             "dir should only count the primary's size"
         );
         assert_eq!(stats.recursive_file_count, 2, "both links count as files");
+
+        writer.shutdown();
+    }
+
+    // ── recursive_has_symlinks tests ─────────────────────────────────
+
+    #[test]
+    fn upsert_symlink_propagates_recursive_has_symlinks_up() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Build a 2-level dir tree first (no symlinks).
+        // ROOT -> outer (id=10) -> inner (id=11)
+        let entries = vec![
+            EntryRow {
+                id: 10,
+                parent_id: ROOT_ID,
+                name: "outer".into(),
+                is_directory: true,
+                is_symlink: false,
+                logical_size: None,
+                physical_size: None,
+                modified_at: None,
+                inode: None,
+            },
+            EntryRow {
+                id: 11,
+                parent_id: 10,
+                name: "inner".into(),
+                is_directory: true,
+                is_symlink: false,
+                logical_size: None,
+                physical_size: None,
+                modified_at: None,
+                inode: None,
+            },
+        ];
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
+        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer.flush_blocking().unwrap();
+
+        // Confirm baseline: no symlinks anywhere
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            assert!(
+                !IndexStore::get_dir_stats_by_id(&conn, 11)
+                    .unwrap()
+                    .unwrap()
+                    .recursive_has_symlinks
+            );
+            assert!(
+                !IndexStore::get_dir_stats_by_id(&conn, 10)
+                    .unwrap()
+                    .unwrap()
+                    .recursive_has_symlinks
+            );
+        }
+
+        // Add a symlink under inner via UpsertEntryV2
+        writer
+            .send(WriteMessage::UpsertEntryV2 {
+                parent_id: 11,
+                name: "link".into(),
+                is_directory: false,
+                is_symlink: true,
+                logical_size: None,
+                physical_size: None,
+                modified_at: None,
+                inode: None,
+                nlink: None,
+            })
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        // Flag should propagate up to both inner and outer
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            assert!(
+                IndexStore::get_dir_stats_by_id(&conn, 11)
+                    .unwrap()
+                    .unwrap()
+                    .recursive_has_symlinks,
+                "inner should flip to true"
+            );
+            assert!(
+                IndexStore::get_dir_stats_by_id(&conn, 10)
+                    .unwrap()
+                    .unwrap()
+                    .recursive_has_symlinks,
+                "outer should propagate from inner"
+            );
+        }
+
+        writer.shutdown();
+    }
+
+    #[test]
+    fn delete_last_symlink_clears_recursive_has_symlinks_up() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // ROOT -> outer (id=20) -> link (id=21, symlink)
+        let entries = vec![
+            EntryRow {
+                id: 20,
+                parent_id: ROOT_ID,
+                name: "outer".into(),
+                is_directory: true,
+                is_symlink: false,
+                logical_size: None,
+                physical_size: None,
+                modified_at: None,
+                inode: None,
+            },
+            EntryRow {
+                id: 21,
+                parent_id: 20,
+                name: "link".into(),
+                is_directory: false,
+                is_symlink: true,
+                logical_size: None,
+                physical_size: None,
+                modified_at: None,
+                inode: None,
+            },
+        ];
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
+        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer.flush_blocking().unwrap();
+
+        // Baseline: outer has the flag set
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            assert!(
+                IndexStore::get_dir_stats_by_id(&conn, 20)
+                    .unwrap()
+                    .unwrap()
+                    .recursive_has_symlinks
+            );
+        }
+
+        // Delete the only symlink
+        writer.send(WriteMessage::DeleteEntryById(21)).unwrap();
+        writer.flush_blocking().unwrap();
+
+        // Flag should clear up the chain
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            assert!(
+                !IndexStore::get_dir_stats_by_id(&conn, 20)
+                    .unwrap()
+                    .unwrap()
+                    .recursive_has_symlinks,
+                "outer should clear after last symlink removed"
+            );
+        }
+
+        writer.shutdown();
+    }
+
+    #[test]
+    fn delete_subtree_with_symlinks_clears_parent_flag() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // ROOT -> top (id=30)
+        //   ├── doomed (id=31) -> link (id=32, symlink)
+        //   └── safe (id=33)  (no symlinks)
+        let entries = vec![
+            EntryRow {
+                id: 30,
+                parent_id: ROOT_ID,
+                name: "top".into(),
+                is_directory: true,
+                is_symlink: false,
+                logical_size: None,
+                physical_size: None,
+                modified_at: None,
+                inode: None,
+            },
+            EntryRow {
+                id: 31,
+                parent_id: 30,
+                name: "doomed".into(),
+                is_directory: true,
+                is_symlink: false,
+                logical_size: None,
+                physical_size: None,
+                modified_at: None,
+                inode: None,
+            },
+            EntryRow {
+                id: 32,
+                parent_id: 31,
+                name: "link".into(),
+                is_directory: false,
+                is_symlink: true,
+                logical_size: None,
+                physical_size: None,
+                modified_at: None,
+                inode: None,
+            },
+            EntryRow {
+                id: 33,
+                parent_id: 30,
+                name: "safe".into(),
+                is_directory: true,
+                is_symlink: false,
+                logical_size: None,
+                physical_size: None,
+                modified_at: None,
+                inode: None,
+            },
+        ];
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
+        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer.flush_blocking().unwrap();
+
+        // Baseline: top has the flag
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            assert!(
+                IndexStore::get_dir_stats_by_id(&conn, 30)
+                    .unwrap()
+                    .unwrap()
+                    .recursive_has_symlinks
+            );
+        }
+
+        // Delete the doomed subtree (which contained the only symlink)
+        writer.send(WriteMessage::DeleteSubtreeById(31)).unwrap();
+        writer.flush_blocking().unwrap();
+
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            assert!(
+                !IndexStore::get_dir_stats_by_id(&conn, 30)
+                    .unwrap()
+                    .unwrap()
+                    .recursive_has_symlinks,
+                "top should clear once the subtree containing the symlink is gone"
+            );
+        }
 
         writer.shutdown();
     }

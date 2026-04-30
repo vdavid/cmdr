@@ -78,7 +78,7 @@ All writes go through a dedicated `std::thread` via a bounded `sync_channel` (20
 
 Reads happen on separate WAL connections (any thread). A `ReadPool` provides thread-local read connections for enrichment and verification without contending on the `INDEXING` state-machine mutex.
 
-### SQLite schema (v9: integer-keyed, unified `name_folded` column, inode for hardlink dedup)
+### SQLite schema (v10: integer-keyed, unified `name_folded` column, inode for hardlink dedup, `recursive_has_symlinks` flag)
 
 One DB per volume. **Dev and prod use separate directories** (see AGENTS.md § Debugging):
 - **Prod**: `~/Library/Application Support/com.veszelovszki.cmdr/index-{volume_id}.db`
@@ -88,7 +88,7 @@ Three tables:
 - `entries` (id INTEGER PK, parent_id, name COLLATE platform_case, name_folded, is_directory, is_symlink, logical_size, physical_size, modified_at, inode). Root sentinel: id=1, parent_id=0, name="".
   - `name_folded TEXT NOT NULL` stores `normalize_for_comparison(name)` on all platforms. On macOS this is NFD + case fold; on Linux/Windows it's the identity (same as `name`). Index: `idx_parent_name_folded ON entries (parent_id, name_folded)`.
   - The old `idx_parent(parent_id)` from v5 is removed; the composite index replaces it.
-- `dir_stats` (entry_id INTEGER PK, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count)
+- `dir_stats` (entry_id INTEGER PK, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count, recursive_has_symlinks)
 - `meta` (key TEXT PK, value TEXT) WITHOUT ROWID
 
 WAL mode, 16 MB page cache, `auto_vacuum = INCREMENTAL` (free pages reclaimed via `PRAGMA incremental_vacuum` after truncation). Custom `platform_case` collation registered on every connection: case-insensitive + NFD normalization on macOS, binary on Linux. **Opening the DB with the sqlite3 CLI will fail** on queries touching the name column (the collation isn't registered).
@@ -101,6 +101,7 @@ History of changes:
 - **Schema v7**: Dual sizes. `entries.size` renamed to `entries.logical_size`, added `entries.physical_size`. `dir_stats.recursive_size` renamed to `dir_stats.recursive_logical_size`, added `dir_stats.recursive_physical_size`. Logical size = `meta.len()`, physical size = `st_blocks * 512` on Unix (both = `meta.len()` on non-Unix). The IPC boundary (`DirStats` struct) still exposes `recursive_size` mapped from `recursive_logical_size` to avoid frontend churn. `AccumulatorMaps.direct_stats` changed to 4-tuple `(logical_size_sum, physical_size_sum, file_count, dir_count)`.
 - **Schema v8**: Added `inode INTEGER` column to `entries` (after `modified_at`) for hardlink dedup. Added `idx_inode ON entries (inode)` index. `EntryRow` gains `inode: Option<u64>`. The scanner populates inode from `MetadataExt::ino()` for all files on Unix; dirs/symlinks get `None`. `has_sized_entry_for_inode()` enables the writer to check at upsert time whether another entry for the same inode already has non-NULL sizes, preventing overcounting when reconciler/verifier events overwrite the scanner's NULL-size dedup.
 - **Schema v9**: Unified `name_folded` column and `idx_parent_name_folded` index across all platforms (previously macOS only). On Linux/Windows, `normalize_for_comparison()` is the identity function, so `name_folded = name` — one extra column with no behavioral change. Eliminates 12 `#[cfg(target_os)]` blocks from store.rs SQL.
+- **Schema v10**: Added `recursive_has_symlinks INTEGER NOT NULL DEFAULT 0` to `dir_stats`. OR-aggregated bottom-up: a directory's flag is `true` iff any direct child is a symlink OR any child directory's stored flag is `true`. Surfaced via `DirStats.recursive_has_symlinks` (IPC) and `FileEntry.recursive_has_symlinks` (enrichment). The frontend renders an inline `(i)` icon next to a folder's size in `SelectionInfo` to explain why a symlink-only folder shows 0 bytes (we follow `du`/Finder's behavior of not double-counting symlinked content). Schema bump triggers a full re-scan on next launch — no online migration; the index is a disposable cache.
 
 ## How to test
 
@@ -152,6 +153,8 @@ function so the gate logic is unit-tested without touching `setup()`.
 **In-memory accumulation eliminates aggregation SQL queries**: During a full scan, the writer thread accumulates two HashMaps in `AccumulatorMaps` as `InsertEntriesV2` batches arrive: `direct_stats` (parent_id -> file size/count/dir count) and `child_dirs` (parent_id -> child dir IDs). When `ComputeAllAggregates` fires, these maps are passed to `compute_all_aggregates_with_maps()`, skipping the two expensive full-table-scan SQL queries (`bulk_get_children_stats_by_id` and `bulk_get_child_dir_ids`) that previously dominated aggregation time (~70%). Maps are cleared on `TruncateData` and after aggregation completes. Falls back to SQL queries if maps are empty.
 
 **Pre-computed `name_folded` instead of SQL collation in the index**: The old composite index `idx_parent_name(parent_id, name)` with `platform_case` collation took ~25 min to build for 5.1M entries on macOS because every B-tree comparison invoked NFD + case fold. The v5 workaround (simple `idx_parent` + match in Rust) required fetching all children per parent. `name_folded` stores the pre-computed `normalize_for_comparison(name)` at insert time, so the composite index uses binary collation and builds in seconds. `resolve_component` gets O(log n) lookups via a single indexed query. Since v9, `name_folded` exists on all platforms (on Linux/Windows it's identical to `name`), eliminating all platform-conditional SQL in store.rs.
+
+**Surface a `recursive_has_symlinks` flag instead of counting symlink bytes**: Cmdr's recursive size for a directory deliberately omits the bytes behind symlinked content, matching `du`/Finder. That avoids double-counting (a symlinked binary that lives in `/Applications` and is also linked from `~/.xmonad`), but it surprises users when a folder of mostly symlinks shows `0 bytes`. The fix is informational, not numerical: each `dir_stats` row carries a boolean `recursive_has_symlinks` aggregated bottom-up alongside size totals. The frontend renders a small `(i)` next to the size when the flag is set, with a tooltip explaining the omission. Live FSEvents and reconciler events update the flag up the parent chain via `propagate_recursive_has_symlinks` (in `writer.rs`). Adding a symlink only ever flips the flag to `true`; removing the last symlink in a subtree triggers a recompute that walks up until the recomputed value matches the existing one — the OR-aggregate is monotonic, so the chain stabilizes early.
 
 **Subtree aggregation uses scoped queries**: `scoped_get_children_stats_by_id` and `scoped_get_child_dir_ids` in `aggregator.rs` use recursive CTEs scoped to the target subtree, not full-table scans. This keeps subtree aggregation O(subtree_size) regardless of total DB size.
 

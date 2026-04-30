@@ -103,6 +103,11 @@ pub struct FileEntry {
     /// Recursive dir count (from drive index, None if not indexed)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub recursive_dir_count: Option<u64>,
+    /// True when the subtree contains symlinks (whose content is omitted from the
+    /// recursive size). Drives the "size omits symlinked content" hint in the UI.
+    /// `None` when the directory isn't indexed yet.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recursive_has_symlinks: Option<bool>,
     /// When set on a virtual entry, the frontend navigates to this path
     /// instead of treating the entry as a normal directory listing.
     /// Inert until M3 wires it for `worktrees/` and `submodules/`. Lives on
@@ -150,6 +155,7 @@ impl FileEntry {
             recursive_physical_size: None,
             recursive_file_count: None,
             recursive_dir_count: None,
+            recursive_has_symlinks: None,
             redirect_to_path: None,
             display_size: None,
             display_size_tooltip: None,

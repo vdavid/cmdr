@@ -900,6 +900,64 @@ mod tests {
     }
 
     #[test]
+    #[cfg(unix)]
+    fn scan_sets_recursive_has_symlinks_for_symlink_only_dir() {
+        // A directory containing only symlinks should report 0 bytes (matching
+        // `du`/Finder behavior) AND have recursive_has_symlinks = true so the UI
+        // can surface the "size omits symlinked content" hint.
+        let scan_root = scan_test_tempdir();
+        let links_dir = scan_root.path().join("links");
+        fs::create_dir(&links_dir).unwrap();
+        // Two symlinks pointing somewhere; targets don't have to exist for this test
+        std::os::unix::fs::symlink("/tmp/does-not-matter-1", links_dir.join("a")).unwrap();
+        std::os::unix::fs::symlink("/tmp/does-not-matter-2", links_dir.join("b")).unwrap();
+        // A neighboring dir with no symlinks
+        let plain = scan_root.path().join("plain");
+        fs::create_dir(&plain).unwrap();
+        fs::write(plain.join("hi.txt"), "hello").unwrap();
+
+        let (writer, db_path, _db_dir) = setup_writer();
+        let config = ScanConfig {
+            root: scan_root.path().to_path_buf(),
+            batch_size: 100,
+            num_threads: 1,
+        };
+        let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
+        let _summary = join_handle.join().expect("scan thread panicked").unwrap();
+
+        // Trigger aggregation, then flush
+        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer.flush_blocking().unwrap();
+        writer.shutdown();
+
+        // The scan maps the scan root to ROOT_ID, so children are under ROOT_ID.
+        let store = IndexStore::open(&db_path).unwrap();
+        let conn = store.read_conn();
+        let links_id = IndexStore::resolve_component(conn, ROOT_ID, "links")
+            .unwrap()
+            .expect("links dir indexed");
+        let plain_id = IndexStore::resolve_component(conn, ROOT_ID, "plain")
+            .unwrap()
+            .expect("plain dir indexed");
+
+        let links_stats = IndexStore::get_dir_stats_by_id(conn, links_id).unwrap().unwrap();
+        assert_eq!(
+            links_stats.recursive_logical_size, 0,
+            "symlink-only folder reports 0 bytes"
+        );
+        assert!(
+            links_stats.recursive_has_symlinks,
+            "symlink-only folder must surface the hint"
+        );
+
+        let plain_stats = IndexStore::get_dir_stats_by_id(conn, plain_id).unwrap().unwrap();
+        assert!(
+            !plain_stats.recursive_has_symlinks,
+            "neighbor without symlinks should stay false"
+        );
+    }
+
+    #[test]
     fn default_exclusions_populated() {
         let exclusions = default_exclusions();
         assert!(!exclusions.is_empty());

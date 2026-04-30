@@ -127,6 +127,7 @@ describe('computeFullListColumnWidths', () => {
         recursivePhysicalSize: 999_999_999_999,
         recursiveFileCount: 1,
         recursiveDirCount: 0,
+        recursiveHasSymlinks: false,
       },
     })
     expect(withParent.size).toBeGreaterThan(without.size)

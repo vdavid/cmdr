@@ -173,6 +173,8 @@ export interface DirStats {
   recursivePhysicalSize: number
   recursiveFileCount: number
   recursiveDirCount: number
+  /** `true` if the subtree contains any symlinks (whose content is omitted from the recursive size). */
+  recursiveHasSymlinks: boolean
 }
 
 /**

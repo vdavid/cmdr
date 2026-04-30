@@ -13,8 +13,12 @@ use rusqlite::{Connection, params};
 
 use crate::indexing::store::{DirStatsById, IndexStore, IndexStoreError, resolve_path};
 
-/// `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count)`.
-type ChildrenStatsMap = HashMap<i64, (u64, u64, u64, u64)>;
+/// `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count, has_symlinks_direct)`.
+///
+/// `has_symlinks_direct` is `true` if any direct child of `parent_id` is a symlink.
+/// OR-aggregated with descendant directories' `recursive_has_symlinks` during the
+/// bottom-up pass to compute each directory's `recursive_has_symlinks`.
+type ChildrenStatsMap = HashMap<i64, (u64, u64, u64, u64, bool)>;
 
 /// Progress phases reported during full aggregation.
 /// Wired up by the progress-reporting layer.
@@ -204,13 +208,14 @@ fn compute_bottom_up(
     let mut computed: HashMap<i64, DirStatsById> = HashMap::with_capacity(sorted_ids.len());
 
     for (i, &dir_id) in sorted_ids.iter().enumerate() {
-        let (logical_size_sum, physical_size_sum, file_count, child_dir_count) =
-            direct_stats.get(&dir_id).copied().unwrap_or((0, 0, 0, 0));
+        let (logical_size_sum, physical_size_sum, file_count, child_dir_count, has_symlinks_direct) =
+            direct_stats.get(&dir_id).copied().unwrap_or((0, 0, 0, 0, false));
 
         let mut recursive_logical_size = logical_size_sum;
         let mut recursive_physical_size = physical_size_sum;
         let mut recursive_file_count = file_count;
         let mut recursive_dir_count = child_dir_count;
+        let mut recursive_has_symlinks = has_symlinks_direct;
 
         if let Some(children) = child_dirs.get(&dir_id) {
             for &child_id in children {
@@ -222,6 +227,7 @@ fn compute_bottom_up(
                     recursive_physical_size += cs.recursive_physical_size;
                     recursive_file_count += cs.recursive_file_count;
                     recursive_dir_count += cs.recursive_dir_count;
+                    recursive_has_symlinks = recursive_has_symlinks || cs.recursive_has_symlinks;
                 }
             }
         }
@@ -234,6 +240,7 @@ fn compute_bottom_up(
                 recursive_physical_size,
                 recursive_file_count,
                 recursive_dir_count,
+                recursive_has_symlinks,
             },
         );
 
@@ -461,14 +468,15 @@ fn topological_sort_bottom_up(entries: &[(i64, i64)]) -> Vec<i64> {
 
 /// Bulk-load direct children stats for ALL parent IDs in a single SQL query.
 ///
-/// Returns a map: `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count)`.
+/// Returns a map: `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count, has_symlinks_direct)`.
 fn bulk_get_children_stats_by_id(conn: &Connection) -> Result<ChildrenStatsMap, IndexStoreError> {
     let mut stmt = conn.prepare(
         "SELECT parent_id,
                 COALESCE(SUM(CASE WHEN is_directory = 0 THEN logical_size ELSE 0 END), 0),
                 COALESCE(SUM(CASE WHEN is_directory = 0 THEN physical_size ELSE 0 END), 0),
                 COALESCE(SUM(CASE WHEN is_directory = 0 THEN 1 ELSE 0 END), 0),
-                COALESCE(SUM(CASE WHEN is_directory = 1 THEN 1 ELSE 0 END), 0)
+                COALESCE(SUM(CASE WHEN is_directory = 1 THEN 1 ELSE 0 END), 0),
+                COALESCE(MAX(is_symlink), 0)
          FROM entries
          GROUP BY parent_id",
     )?;
@@ -479,13 +487,14 @@ fn bulk_get_children_stats_by_id(conn: &Connection) -> Result<ChildrenStatsMap, 
             row.get::<_, u64>(2)?,
             row.get::<_, u64>(3)?,
             row.get::<_, u64>(4)?,
+            row.get::<_, i32>(5)? != 0,
         ))
     })?;
 
     let mut map = HashMap::new();
     for row in rows {
-        let (parent_id, logical_size, physical_size, files, dirs) = row?;
-        map.insert(parent_id, (logical_size, physical_size, files, dirs));
+        let (parent_id, logical_size, physical_size, files, dirs, has_symlinks) = row?;
+        map.insert(parent_id, (logical_size, physical_size, files, dirs, has_symlinks));
     }
     Ok(map)
 }
@@ -512,7 +521,7 @@ fn bulk_get_child_dir_ids(conn: &Connection) -> Result<HashMap<i64, Vec<i64>>, I
 fn bulk_get_all_dir_stats(conn: &Connection) -> Result<HashMap<i64, DirStatsById>, IndexStoreError> {
     let mut stmt = conn.prepare(
         "SELECT entry_id, recursive_logical_size, recursive_physical_size,
-                recursive_file_count, recursive_dir_count
+                recursive_file_count, recursive_dir_count, recursive_has_symlinks
          FROM dir_stats",
     )?;
     let rows = stmt.query_map([], |row| {
@@ -522,6 +531,7 @@ fn bulk_get_all_dir_stats(conn: &Connection) -> Result<HashMap<i64, DirStatsById
             recursive_physical_size: row.get(2)?,
             recursive_file_count: row.get(3)?,
             recursive_dir_count: row.get(4)?,
+            recursive_has_symlinks: row.get::<_, i32>(5)? != 0,
         })
     })?;
     let mut map = HashMap::new();
@@ -534,7 +544,7 @@ fn bulk_get_all_dir_stats(conn: &Connection) -> Result<HashMap<i64, DirStatsById
 
 /// Load direct children stats scoped to a subtree via recursive CTE.
 ///
-/// Returns a map: `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count)`.
+/// Returns a map: `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count, has_symlinks_direct)`.
 /// Only includes entries whose parent is within the subtree rooted at `root_id`.
 fn scoped_get_children_stats_by_id(conn: &Connection, root_id: i64) -> Result<ChildrenStatsMap, IndexStoreError> {
     let mut stmt = conn.prepare(
@@ -547,7 +557,8 @@ fn scoped_get_children_stats_by_id(conn: &Connection, root_id: i64) -> Result<Ch
                COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN e.logical_size ELSE 0 END), 0),
                COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN e.physical_size ELSE 0 END), 0),
                COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN 1 ELSE 0 END), 0),
-               COALESCE(SUM(CASE WHEN e.is_directory = 1 THEN 1 ELSE 0 END), 0)
+               COALESCE(SUM(CASE WHEN e.is_directory = 1 THEN 1 ELSE 0 END), 0),
+               COALESCE(MAX(e.is_symlink), 0)
         FROM entries e
         WHERE e.parent_id IN (SELECT id FROM subtree)
         GROUP BY e.parent_id",
@@ -559,12 +570,13 @@ fn scoped_get_children_stats_by_id(conn: &Connection, root_id: i64) -> Result<Ch
             row.get::<_, u64>(2)?,
             row.get::<_, u64>(3)?,
             row.get::<_, u64>(4)?,
+            row.get::<_, i32>(5)? != 0,
         ))
     })?;
     let mut map = HashMap::new();
     for row in rows {
-        let (parent_id, logical_size, physical_size, files, dirs) = row?;
-        map.insert(parent_id, (logical_size, physical_size, files, dirs));
+        let (parent_id, logical_size, physical_size, files, dirs, has_symlinks) = row?;
+        map.insert(parent_id, (logical_size, physical_size, files, dirs, has_symlinks));
     }
     Ok(map)
 }
@@ -640,6 +652,20 @@ mod tests {
             is_symlink: false,
             logical_size: Some(size),
             physical_size: Some(size),
+            modified_at: None,
+            inode: None,
+        }
+    }
+
+    fn make_symlink(id: i64, parent_id: i64, name: &str) -> EntryRow {
+        EntryRow {
+            id,
+            parent_id,
+            name: name.into(),
+            is_directory: false,
+            is_symlink: true,
+            logical_size: None,
+            physical_size: None,
             modified_at: None,
             inode: None,
         }
@@ -821,6 +847,7 @@ mod tests {
                 recursive_physical_size: 200,
                 recursive_file_count: 1,
                 recursive_dir_count: 0,
+                recursive_has_symlinks: false,
             }],
         )
         .unwrap();
@@ -855,6 +882,94 @@ mod tests {
     }
 
     // ── topological sort test ────────────────────────────────────────
+
+    // ── recursive_has_symlinks tests ─────────────────────────────────
+
+    #[test]
+    fn aggregate_propagates_recursive_has_symlinks() {
+        let (conn, _dir) = open_temp_conn();
+
+        // Tree:
+        //   /grand (id=2)
+        //   /grand/parent (id=3)
+        //   /grand/parent/leaf (id=4)
+        //   /grand/parent/leaf/link (id=5, symlink)
+        //   /grand/sibling (id=6) — no symlinks
+        //   /grand/sibling/file.txt (id=7, 100 bytes)
+        insert_entries(
+            &conn,
+            &[
+                make_dir(2, ROOT_ID, "grand"),
+                make_dir(3, 2, "parent"),
+                make_dir(4, 3, "leaf"),
+                make_symlink(5, 4, "link"),
+                make_dir(6, 2, "sibling"),
+                make_file(7, 6, "file.txt", 100),
+            ],
+        );
+
+        compute_all_aggregates(&conn).unwrap();
+
+        // The symlink leaf has the flag (direct child symlink)
+        assert!(
+            get_stats(&conn, 4).unwrap().recursive_has_symlinks,
+            "leaf has direct symlink"
+        );
+        // Parent gets it via subdir aggregation
+        assert!(
+            get_stats(&conn, 3).unwrap().recursive_has_symlinks,
+            "parent should propagate up"
+        );
+        // Grand gets it from /grand/parent
+        assert!(
+            get_stats(&conn, 2).unwrap().recursive_has_symlinks,
+            "grand should propagate up"
+        );
+        // Sibling has no symlinks anywhere in its subtree
+        assert!(
+            !get_stats(&conn, 6).unwrap().recursive_has_symlinks,
+            "sibling without symlinks should be false"
+        );
+        // Root sentinel inherits from /grand
+        assert!(get_stats(&conn, ROOT_ID).unwrap().recursive_has_symlinks);
+    }
+
+    #[test]
+    fn aggregate_no_symlinks_anywhere() {
+        let (conn, _dir) = open_temp_conn();
+        insert_entries(
+            &conn,
+            &[
+                make_dir(2, ROOT_ID, "a"),
+                make_file(3, 2, "f.txt", 100),
+                make_dir(4, 2, "b"),
+                make_file(5, 4, "g.txt", 200),
+            ],
+        );
+        compute_all_aggregates(&conn).unwrap();
+        assert!(!get_stats(&conn, 2).unwrap().recursive_has_symlinks);
+        assert!(!get_stats(&conn, 4).unwrap().recursive_has_symlinks);
+        assert!(!get_stats(&conn, ROOT_ID).unwrap().recursive_has_symlinks);
+    }
+
+    #[test]
+    fn aggregate_dir_with_only_symlinks_has_zero_size() {
+        let (conn, _dir) = open_temp_conn();
+        // /links contains only two symlinks — total size 0, but flag is true
+        insert_entries(
+            &conn,
+            &[
+                make_dir(2, ROOT_ID, "links"),
+                make_symlink(3, 2, "a"),
+                make_symlink(4, 2, "b"),
+            ],
+        );
+        compute_all_aggregates(&conn).unwrap();
+        let stats = get_stats(&conn, 2).unwrap();
+        assert_eq!(stats.recursive_logical_size, 0, "symlink-only folder reports 0 bytes");
+        assert_eq!(stats.recursive_file_count, 2, "symlinks count as files");
+        assert!(stats.recursive_has_symlinks, "flag must be set");
+    }
 
     #[test]
     fn topological_sort_produces_bottom_up_order() {

@@ -51,6 +51,12 @@ Stale indicator (Lucide hourglass icon via `~icons/lucide/hourglass`, rendered i
 `selection-summary` when `isScanning()` is true and directories are selected, because dir sizes may be incomplete during
 scanning.
 
+Symlink hint (Lucide info icon via `~icons/lucide/info`, rendered in tertiary text color) appears next to a directory's
+size in `file-info` mode when `entry.recursiveHasSymlinks === true`. The tooltip reads: "This folder contains symlinks.
+Symlinked content is not counted in the total to avoid double counting." This explains why a folder of symlinks may show
+`0 bytes` — Cmdr deliberately matches `du`/Finder behavior. The flag is computed by the indexing module
+(`recursive_has_symlinks` on `dir_stats`) and surfaced through enrichment.
+
 Filename truncation in `file-info` mode uses the `useShortenMiddle` action with `preferBreakAt: '.'` to preserve file
 extensions. The action uses pretext for canvas-based measurement and a built-in ResizeObserver.
 

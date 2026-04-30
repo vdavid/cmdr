@@ -21,6 +21,8 @@ export interface FileEntry {
   recursivePhysicalSize?: number
   recursiveFileCount?: number
   recursiveDirCount?: number
+  /** True when the subtree contains symlinks (whose content is omitted from the recursive size). */
+  recursiveHasSymlinks?: boolean
   /**
    * When set on a virtual entry, the frontend navigates to this path instead
    * of treating the entry as a normal directory listing. Inert until M3

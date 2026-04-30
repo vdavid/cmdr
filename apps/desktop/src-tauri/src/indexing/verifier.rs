@@ -376,6 +376,7 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                                 recursive_physical_size: 0,
                                 recursive_file_count: 0,
                                 recursive_dir_count: 0,
+                                recursive_has_symlinks: false,
                             });
                         deltas.push((p_id, stats));
                     }

@@ -1,5 +1,6 @@
 <script lang="ts">
     import IconHourglass from '~icons/lucide/hourglass'
+    import IconInfo from '~icons/lucide/info'
     import type { FileEntry, ListingStats } from '../types'
     import {
         buildDateTooltip,
@@ -116,6 +117,15 @@
         return formatDateTime(timestamp)
     })
     const dateTooltip = $derived(entry && !isBrokenSymlink && !isPermissionDenied ? buildDateTooltip(entry) : undefined)
+    // Show an info hint next to a directory's size when its subtree contains
+    // symlinks: their content is intentionally excluded from the recursive
+    // size (matching `du`/Finder), but that can be surprising for folders that
+    // are mostly symlinks.
+    const showSymlinkHint = $derived(
+        entry !== null && isDirectory && entry.recursiveHasSymlinks === true && !isBrokenSymlink && !isPermissionDenied,
+    )
+    const symlinkHintTooltip =
+        'This folder contains symlinks. Symlinked content is not counted in the total to avoid double counting.'
     // Calculate date column width using measured text width (same utility as FullList)
     const dateColumnWidth = $derived(measureDateColumnWidth(formatDateTime))
 
@@ -194,6 +204,16 @@
                 {#each sizeDisplay as triad, i (i)}
                     <span class={triad.tierClass}>{triad.value}</span>
                 {/each}
+            {/if}
+            {#if showSymlinkHint}
+                <span
+                    class="symlink-hint symlink-hint-icon"
+                    role="img"
+                    aria-label={symlinkHintTooltip}
+                    use:tooltip={symlinkHintTooltip}
+                >
+                    <IconInfo width="12" height="12" />
+                </span>
             {/if}
         </span>
         <span class="date" style="width: {dateColumnWidth}px;" use:tooltip={dateTooltip}>{dateDisplay}</span>
@@ -304,5 +324,18 @@
     .stale-icon {
         /* stylelint-disable-next-line declaration-property-value-disallowed-list -- small icon indicator, not body text */
         color: var(--color-accent);
+    }
+
+    .symlink-hint {
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
+        margin-left: var(--spacing-xs);
+        cursor: help;
+    }
+
+    .symlink-hint-icon {
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- small icon indicator, not body text */
+        color: var(--color-text-tertiary);
     }
 </style>
