@@ -6,14 +6,14 @@ use tauri::{
 };
 
 use super::{
-    ABOUT_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID, COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID,
-    EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FILE_COPY_ID,
-    FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID,
-    GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, HELP_SEND_ERROR_REPORT_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID,
-    PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SETTINGS_ID,
-    SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID,
-    ViewMode, build_sort_submenu, copy_path_accelerator, register_item, show_in_file_manager_accelerator,
-    show_in_file_manager_label,
+    ABOUT_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID, COPY_FILENAME_ID,
+    COPY_PATH_ID, DESELECT_ALL_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID,
+    ENTER_LICENSE_KEY_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID,
+    FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, HELP_SEND_ERROR_REPORT_ID, MenuItems,
+    NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, SEARCH_FILES_ID,
+    SELECT_ALL_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SWAP_PANES_ID, SWITCH_PANE_ID,
+    VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, ViewMode, build_sort_submenu, copy_path_accelerator, register_item,
+    show_in_file_manager_accelerator, show_in_file_manager_label,
 };
 
 /// Linux menu: builds all menus from scratch, matching the macOS menu structure.
@@ -99,6 +99,13 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         "Enter &license key..."
     };
     let license_item = MenuItem::with_id(app, ENTER_LICENSE_KEY_ID, license_label, true, None::<&str>)?;
+    let check_for_updates_item = MenuItem::with_id(
+        app,
+        CHECK_FOR_UPDATES_ID,
+        "Check for &updates\u{2026}",
+        true,
+        None::<&str>,
+    )?;
 
     let edit_menu = Submenu::with_items(
         app,
@@ -120,6 +127,7 @@ pub(crate) fn build_menu_linux<R: Runtime>(
             &PredefinedMenuItem::separator(app)?,
             &settings_item,
             &license_item,
+            &check_for_updates_item,
         ],
     )?;
     menu.append(&edit_menu)?;
@@ -274,7 +282,7 @@ pub(crate) fn build_menu_linux<R: Runtime>(
 
     // Edit menu positions: cut(0), copy(1), paste(2), move_here(3), sep(4),
     // select_all(5), deselect_all(6), sep(7), copy_path(8), copy_filename(9),
-    // sep(10), search_files(11), sep(12), settings(13), license(14)
+    // sep(10), search_files(11), sep(12), settings(13), license(14), check_for_updates(15)
     register_item(&mut items, EDIT_CUT_ID, &edit_cut_item, &edit_menu, 0);
     register_item(&mut items, EDIT_COPY_ID, &edit_copy_item, &edit_menu, 1);
     register_item(&mut items, EDIT_PASTE_ID, &edit_paste_item, &edit_menu, 2);
@@ -285,6 +293,13 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     register_item(&mut items, COPY_FILENAME_ID, &copy_filename_item, &edit_menu, 9);
     register_item(&mut items, SEARCH_FILES_ID, &search_files_item, &edit_menu, 11);
     register_item(&mut items, SETTINGS_ID, &settings_item, &edit_menu, 13);
+    register_item(
+        &mut items,
+        CHECK_FOR_UPDATES_ID,
+        &check_for_updates_item,
+        &edit_menu,
+        15,
+    );
 
     // View menu positions: full(0), brief(1), sep(2), hidden(3), sort(4), sep(5),
     // switch(6), swap(7), sep(8), palette(9)

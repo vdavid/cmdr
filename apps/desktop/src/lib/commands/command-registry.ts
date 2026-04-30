@@ -33,6 +33,14 @@ export const commands: Command[] = [
   },
   { id: 'app.settings', name: 'Open settings', scope: 'App', showInPalette: true, shortcuts: ['⌘,'] },
   {
+    id: 'app.checkForUpdates',
+    name: 'Check for updates…',
+    scope: 'App',
+    showInPalette: true,
+    shortcuts: [],
+    description: 'Check whether a newer version of Cmdr is available, and download it if so',
+  },
+  {
     id: 'help.sendErrorReport',
     name: 'Send error report…',
     scope: 'App',

@@ -96,6 +96,7 @@ const menuCommands = [
   // App-level
   'app.commandPalette',
   'app.settings',
+  'app.checkForUpdates',
   // File operations
   'file.view',
   'file.edit',

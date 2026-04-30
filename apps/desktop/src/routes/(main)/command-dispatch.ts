@@ -18,6 +18,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { addToast } from '$lib/ui/toast'
 import { openSettingsWindow } from '$lib/settings/settings-window'
 import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
+import { runMenuTriggeredCheck } from '$lib/updates/updater.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import type { ExplorerAPI } from './explorer-api'
 
@@ -132,6 +133,10 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
 
     case 'help.sendErrorReport':
       openErrorReportDialog()
+      return
+
+    case 'app.checkForUpdates':
+      void runMenuTriggeredCheck()
       return
 
     // === View commands ===

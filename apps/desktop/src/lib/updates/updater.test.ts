@@ -10,18 +10,31 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // `vi.mock` is hoisted to the top of the file. Module-scope mocks captured via `vi.hoisted` so the
 // references survive that hoist and stay accessible from the test bodies for assertions.
-const { addToastMock, loadSettingsMock, saveSettingsMock } = vi.hoisted(() => ({
+const {
+  addToastMock,
+  dismissToastMock,
+  loadSettingsMock,
+  saveSettingsMock,
+  invokeMock,
+  getVersionMock,
+  pluginCheckMock,
+} = vi.hoisted(() => ({
   addToastMock: vi.fn(),
+  dismissToastMock: vi.fn(),
   loadSettingsMock: vi.fn(async () => ({
     showHiddenFiles: true,
     fullDiskAccessChoice: 'notAskedYet' as const,
     isOnboarded: false,
   })),
   saveSettingsMock: vi.fn(async () => {}),
+  invokeMock: vi.fn(),
+  getVersionMock: vi.fn(async () => '0.0.0-test'),
+  pluginCheckMock: vi.fn(),
 }))
 
 vi.mock('$lib/ui/toast', () => ({
   addToast: addToastMock,
+  dismissToast: dismissToastMock,
 }))
 
 vi.mock('$lib/settings-store', () => ({
@@ -36,11 +49,18 @@ vi.mock('$lib/settings/settings-store', () => ({
 }))
 
 vi.mock('@tauri-apps/api/core', () => ({
-  invoke: vi.fn(),
+  invoke: invokeMock,
 }))
 
 vi.mock('@tauri-apps/api/app', () => ({
-  getVersion: vi.fn(async () => '0.0.0-test'),
+  getVersion: getVersionMock,
+}))
+
+// jsdom's userAgent does not include "Macintosh", so the updater takes the non-macOS branch and
+// dynamically imports `@tauri-apps/plugin-updater`. Mock that here so the test environment doesn't
+// try to load the real Tauri plugin.
+vi.mock('@tauri-apps/plugin-updater', () => ({
+  check: pluginCheckMock,
 }))
 
 vi.mock('$lib/logging/logger', () => ({
@@ -57,9 +77,12 @@ import {
   _resetUpdaterStateForTest,
   _setUpdateStatusForTest,
   notifyOnboardingComplete,
+  runMenuTriggeredCheck,
   setFdaPromptShowing,
   shouldShowUpdateToast,
+  updateState,
 } from './updater.svelte'
+import { formatUpdateStatus } from './update-status-text'
 
 describe('shouldShowUpdateToast', () => {
   it('returns true only when onboarded, FDA prompt closed, and status is ready', () => {
@@ -170,5 +193,91 @@ describe('setFdaPromptShowing', () => {
     setFdaPromptShowing(true)
     setFdaPromptShowing(false)
     expect(addToastMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('formatUpdateStatus', () => {
+  it('returns checking… string while checking', () => {
+    expect(formatUpdateStatus({ status: 'checking', error: null, previousVersion: '1.2.3', nextVersion: null })).toBe(
+      'Checking…',
+    )
+  })
+
+  it('returns no-updates string for idle after a successful check', () => {
+    expect(formatUpdateStatus({ status: 'idle', error: null, previousVersion: '1.2.3', nextVersion: null })).toBe(
+      'No updates found. Current version: v1.2.3',
+    )
+  })
+
+  it('returns empty string for idle before any check has run', () => {
+    expect(formatUpdateStatus({ status: 'idle', error: null, previousVersion: null, nextVersion: null })).toBe('')
+  })
+
+  it('returns downloading string with both versions', () => {
+    expect(
+      formatUpdateStatus({ status: 'downloading', error: null, previousVersion: '1.2.3', nextVersion: '1.3.0' }),
+    ).toBe('Update found, downloading v1.3.0 (current: v1.2.3)…')
+  })
+
+  it('returns installing string with both versions', () => {
+    expect(
+      formatUpdateStatus({ status: 'installing', error: null, previousVersion: '1.2.3', nextVersion: '1.3.0' }),
+    ).toBe('Installing v1.3.0 (current: v1.2.3)…')
+  })
+
+  it('returns null when error is set so the caller can render its own error UI', () => {
+    expect(
+      formatUpdateStatus({ status: 'idle', error: 'boom', previousVersion: '1.2.3', nextVersion: null }),
+    ).toBeNull()
+  })
+})
+
+describe('runMenuTriggeredCheck', () => {
+  beforeEach(() => {
+    _resetUpdaterStateForTest()
+    addToastMock.mockClear()
+    dismissToastMock.mockClear()
+    invokeMock.mockReset()
+    getVersionMock.mockClear()
+    pluginCheckMock.mockReset()
+  })
+
+  afterEach(() => {
+    _resetUpdaterStateForTest()
+  })
+
+  it('adds a status toast with id "update-check" and a 10s timeout, then runs checkForUpdates', async () => {
+    pluginCheckMock.mockResolvedValueOnce(null) // no update
+    await runMenuTriggeredCheck()
+    expect(addToastMock).toHaveBeenCalledTimes(1)
+    expect(addToastMock.mock.calls[0][1]).toMatchObject({ id: 'update-check', timeoutMs: 10000 })
+    expect(pluginCheckMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('dismisses the status toast when status flips to ready', async () => {
+    pluginCheckMock.mockResolvedValueOnce({
+      version: '1.3.0',
+      downloadAndInstall: vi.fn(async () => {}),
+    })
+    await notifyOnboardingComplete() // ensures the persistent toast is eligible too
+    addToastMock.mockClear()
+    await runMenuTriggeredCheck()
+    expect(updateState.status).toBe('ready')
+    expect(dismissToastMock).toHaveBeenCalledWith('update-check')
+  })
+
+  it('does not dismiss when status stays idle (no update found)', async () => {
+    pluginCheckMock.mockResolvedValueOnce(null)
+    await runMenuTriggeredCheck()
+    expect(updateState.status).toBe('idle')
+    expect(dismissToastMock).not.toHaveBeenCalled()
+  })
+
+  it('surfaces the error string on the state when the check rejects', async () => {
+    pluginCheckMock.mockRejectedValueOnce(new Error('network down'))
+    await runMenuTriggeredCheck()
+    expect(updateState.error).toBe('network down')
+    expect(updateState.status).toBe('idle')
+    expect(dismissToastMock).not.toHaveBeenCalled()
   })
 })

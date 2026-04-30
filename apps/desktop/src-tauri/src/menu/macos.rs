@@ -9,14 +9,14 @@ use tauri::{
 };
 
 use super::{
-    ABOUT_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID, COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID,
-    EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FILE_COPY_ID,
-    FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID,
-    GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, HELP_SEND_ERROR_REPORT_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID,
-    PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SETTINGS_ID,
-    SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID,
-    ViewMode, build_sort_submenu, copy_path_accelerator, register_item, show_in_file_manager_accelerator,
-    show_in_file_manager_label,
+    ABOUT_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID, COPY_FILENAME_ID,
+    COPY_PATH_ID, DESELECT_ALL_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID,
+    ENTER_LICENSE_KEY_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID,
+    FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, HELP_SEND_ERROR_REPORT_ID, MenuItems,
+    NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, SEARCH_FILES_ID,
+    SELECT_ALL_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SWAP_PANES_ID, SWITCH_PANE_ID,
+    VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, ViewMode, build_sort_submenu, copy_path_accelerator, register_item,
+    show_in_file_manager_accelerator, show_in_file_manager_label,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -35,6 +35,13 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         "Enter license key..."
     };
     let license_item = MenuItem::with_id(app, ENTER_LICENSE_KEY_ID, license_label, true, None::<&str>)?;
+    let check_for_updates_item = MenuItem::with_id(
+        app,
+        CHECK_FOR_UPDATES_ID,
+        "Check for updates\u{2026}",
+        true,
+        None::<&str>,
+    )?;
     let settings_item = MenuItem::with_id(app, SETTINGS_ID, "Settings...", true, Some("Cmd+,"))?;
 
     let app_menu = Submenu::with_items(
@@ -44,6 +51,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         &[
             &about_item,
             &license_item,
+            &check_for_updates_item,
             &PredefinedMenuItem::separator(app)?,
             &settings_item,
             &PredefinedMenuItem::separator(app)?,
@@ -331,6 +339,10 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         0,
     );
 
+    // cmdr menu positions: about(0), license(1), check_for_updates(2), sep(3), settings(4),
+    // sep(5), hide(6), hide_others(7), show_all(8), sep(9), quit(10)
+    register_item(&mut items, CHECK_FOR_UPDATES_ID, &check_for_updates_item, &app_menu, 2);
+
     Ok(MenuItems {
         menu,
         show_hidden_files: show_hidden_item,
@@ -449,6 +461,7 @@ fn set_macos_menu_icons_inner() {
             "cmdr" => &[
                 ("Enter license key\u{2026}", "key"),
                 ("See license details\u{2026}", "key"),
+                ("Check for updates\u{2026}", "arrow.down.circle"),
                 ("Settings\u{2026}", "gearshape"),
             ],
             "File" => &[

@@ -1,13 +1,16 @@
 # Updates module
 
-Auto-update checker and restart notification for the Cmdr desktop app.
+Auto-update checker, restart notification, and the user-triggered "Check for updates" affordances for the Cmdr desktop
+app.
 
 ## Key files
 
-| File                        | Purpose                                                            |
-| --------------------------- | ------------------------------------------------------------------ |
-| `updater.svelte.ts`         | Module-level `$state` singleton, update check loop, download logic |
-| `UpdateToastContent.svelte` | Toast body shown when an update is ready to install                |
+| File                             | Purpose                                                                             |
+| -------------------------------- | ----------------------------------------------------------------------------------- |
+| `updater.svelte.ts`              | Module-level `$state` singleton, update check loop, download logic                  |
+| `update-status-text.ts`          | Pure formatter: state → user-facing status string (shared by Settings and toast)    |
+| `UpdateToastContent.svelte`      | Toast body shown when an update is ready to install (`id: 'update'`, persistent)    |
+| `UpdateCheckToastContent.svelte` | Toast body for the menu-triggered phase status (`id: 'update-check'`, 10 s timeout) |
 
 ## Architecture
 
@@ -19,15 +22,26 @@ Auto-update checker and restart notification for the Cmdr desktop app.
    changes.
 4. Returns a cleanup function that `+layout.svelte` calls in `onDestroy`.
 
-`checkForUpdates()` transitions the state machine: `idle → checking → downloading → ready`. If an update is found, it
-downloads and installs automatically — no user confirmation needed. The user is only asked at the `ready` stage whether
-to restart now or later.
+`checkForUpdates()` transitions the state machine: `idle → checking → downloading → installing → ready` (macOS) or
+`idle → checking → downloading → ready` (non-macOS — see asymmetry below). If an update is found, it downloads and
+installs automatically — no user confirmation needed. The user is only asked at the `ready` stage whether to restart now
+or later.
 
 ```
-idle ──invoke──► checking ──update found──► downloading ──done──► ready
-  ▲                  │
+idle ──invoke──► checking ──update found──► downloading ──► installing ──► ready
+  ▲                  │                                      (macOS only)
   └──────error/no update
 ```
+
+`updateState` (the module-level `$state` singleton) is exported so UIs can read the current phase reactively. It carries
+`status`, `error`, `previousVersion` (snapshot of `getVersion()` taken when entering `checking`), and `nextVersion` (the
+target version, set when an update is found). The Settings > Updates section and `UpdateCheckToastContent.svelte` both
+read the singleton and format their status string through `formatUpdateStatus()` in `update-status-text.ts`.
+
+The macOS path runs `download_update` and `install_update` as two separate Tauri commands, so we expose distinct
+`downloading` and `installing` phases. The non-macOS path uses the Tauri updater plugin's fused `downloadAndInstall()`
+call, so it stays in `downloading` for the whole step. UIs treat both phases identically (different status strings, same
+button-disabled rule).
 
 The frontend branches on platform at the top of `checkForUpdates()`:
 
@@ -43,6 +57,24 @@ unit-tested predicate — and only fires `addToast(UpdateToastContent, { id: 'up
 all three conditions hold. `UpdateToastContent.svelte` renders the toast body, calls `relaunch()` directly from
 `@tauri-apps/plugin-process` for the restart action, and handles the "Later" button by calling `dismissToast('update')`.
 There is no local `$state` dismissed flag — dismissal is managed entirely by the toast infrastructure.
+
+### Menu-triggered "Check for updates"
+
+Two affordances let the user manually run a check and watch its progress:
+
+- **Settings > Updates**: a "Check for updates" button at the top of the section, disabled while
+  `updateState.status !== 'idle'`, with a status string below it derived from `formatUpdateStatus(updateState)`. The
+  error case renders a follow-up "Send error report" link that calls `openErrorReportDialog(\`Update check failed:
+  ${error}\`)`.
+- **Cmdr menu > Check for updates…**: dispatched as the `app.checkForUpdates` command. The frontend handler calls
+  `runMenuTriggeredCheck()` which fires `addToast(UpdateCheckToastContent, { id: 'update-check', timeoutMs: 10000 })`,
+  then awaits `checkForUpdates()`. Because `addToast` deduplicates by id, the toast updates in place as the phase
+  changes (`checking…` → `downloading v… (current: v…)…` → `installing v…`). When `status` flips to `ready` the helper
+  dismisses `'update-check'` so it doesn't overlap with the persistent restart toast (`id: 'update'`).
+
+The native menu item lives in the Cmdr submenu (macOS) right after "Enter license key…" — wired through
+`menu_id_to_command` / `command_id_to_menu_id` in `src-tauri/src/menu/mod.rs`, with the SF Symbol `arrow.down.circle`
+mapped in `macos.rs`. On Linux the same command appears at the bottom of the Edit submenu after the license item.
 
 ### Onboarding gating
 
