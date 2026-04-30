@@ -295,6 +295,7 @@ export {
   setErrorReportsEnabled,
   setShowVirtualGitPortal,
   setIndexingEnabled,
+  startIndexingAfterFdaDecision,
   getDirStatsBatch,
   getE2eStartPath,
   getAiStatus,

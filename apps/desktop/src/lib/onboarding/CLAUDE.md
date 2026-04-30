@@ -16,7 +16,25 @@ Access in macOS System Settings.
 Two actions are available:
 
 - **Open System Settings** — calls `openPrivacySettings()` via IPC, then shows a follow-up hint to restart the app.
-- **Deny** — saves `fullDiskAccessChoice: 'deny'` to settings and calls `onComplete()` to dismiss.
+- **Deny** — saves `fullDiskAccessChoice: 'deny'` to settings, calls `startIndexingAfterFdaDecision()` so the indexer
+  starts within this session, then calls `onComplete()` to dismiss.
+
+## Indexer FDA gate
+
+At app launch, the backend defers starting the drive indexer until the user has decided about Full Disk Access. The
+recursive scan from `/` would otherwise trigger macOS native permission popups (iCloud, Photos, etc.) that stack on top
+of this in-app FDA modal.
+
+The gate fires when `fullDiskAccessChoice === 'notAskedYet'` AND the OS-level FDA check returns false. After the user
+decides:
+
+- **Deny** path: `FullDiskAccessPrompt.svelte` calls `startIndexingAfterFdaDecision()` so the indexer starts in the
+  current session.
+- **Allow** path: the user grants FDA in System Settings, then restarts the app. On next launch the OS check returns
+  true, the gate passes, and the indexer auto-starts.
+
+The Tauri command is idempotent — calling it when indexing is already running is a no-op. See
+`src-tauri/src/indexing/CLAUDE.md` for the backend side.
 
 The `wasRevoked` prop switches the copy from "first ask" to "revoked" framing.
 

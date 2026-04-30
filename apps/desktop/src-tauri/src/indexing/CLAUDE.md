@@ -122,6 +122,15 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 
 ## Key decisions
 
+**Defer indexer auto-start until the user decides about Full Disk Access**: At first launch on macOS, recursively
+scanning from `/` opens iCloud Drive, Photos, and other TCC-protected directories, which makes macOS show native
+permission popups stacked on top of the in-app FDA modal. The result is a confusing pile of dialogs before the user has
+seen our prompt. `should_auto_start_indexing(indexing_enabled, fda_choice, os_fda_granted)` (in `mod.rs`) gates the
+launch-time start: it skips when `fda_choice == NotAskedYet` AND `os_fda_granted == false`. Once the user picks Allow
+(restart) or Deny (same session, via `start_indexing_after_fda_decision`), the indexer starts. `os_fda_granted == true`
+overrides `NotAskedYet` so users who granted FDA before our prompt persisted a choice still get auto-start. Pure
+function so the gate logic is unit-tested without touching `setup()`.
+
 **`getattrlistbulk` (via jwalk) for scanning, not `enumeratorAtURL` or `searchfs`**: Benchmarked on ~5M files (macOS, Apple Silicon, APFS). `getattrlistbulk` recursive walk: 1m49s with sizes. `enumeratorAtURL` with prefetched keys: 2m05s (+11%), found ~500K fewer entries. `searchfs`: fast for name lookup but can't return sizes. `mdfind`: undercounts (Spotlight excludes `.git/`, `node_modules/`, caches). `getattrlistbulk` is what jwalk uses under the hood on macOS, and adding size collection costs only ~4% overhead (packed in the same bulk buffer, no extra syscalls).
 
 **Physical sizes may overcount ~10-20% due to APFS clones**: Per-file `st_blocks * 512` sums to ~905 GB vs ~746 GB true volume usage (`statfs()`). APFS clones (Xcode, simulators, Time Machine, `cp` since Ventura) share underlying blocks but each clone reports full allocation. Volume usage bar always uses `statfs()` for true totals.

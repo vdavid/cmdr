@@ -18,7 +18,7 @@ Thin read-only settings loader used during Rust startup. The frontend owns all s
 ```rust
 Settings {
     show_hidden_files: bool,           // default true
-    full_disk_access_choice: ...,      // persisted by frontend only, #[allow(dead_code)]
+    full_disk_access_choice: ...,      // consulted at launch by indexer FDA gate
     developer_mcp_enabled: Option<bool>,
     developer_mcp_port: Option<u16>,
     indexing_enabled: Option<bool>,
@@ -69,7 +69,9 @@ These are top-level keys — the dot is part of the key name, not a nesting sepa
 
 - **One-way read only.** This module never writes. All writes go through the frontend's settings store.
 - Direct file reading is the correct design — multiple backend systems (MCP, indexing, crash reporter) need settings before the frontend loads.
-- `full_disk_access_choice` is marked `#[allow(dead_code)]` — it is persisted by the frontend but the backend takes no action on it.
+- `full_disk_access_choice` is consulted at app launch by the indexer FDA gate (`indexing::should_auto_start_indexing`)
+  to defer the recursive scan from `/` until the user has decided. See `indexing/CLAUDE.md` § "Defer indexer auto-start
+  until the user decides about Full Disk Access".
 - Falls back gracefully: missing file → use `Default`.
 
 ## Dependencies

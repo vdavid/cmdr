@@ -1,8 +1,11 @@
 <script lang="ts">
-    import { openPrivacySettings } from '$lib/tauri-commands'
+    import { openPrivacySettings, startIndexingAfterFdaDecision } from '$lib/tauri-commands'
     import { saveSettings } from '$lib/settings-store'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import { getAppLogger } from '$lib/logging/logger'
+
+    const log = getAppLogger('onboarding')
 
     interface Props {
         onComplete: () => void
@@ -20,6 +23,14 @@
 
     async function handleDeny() {
         await saveSettings({ fullDiskAccessChoice: 'deny' })
+        // Indexing was deferred at app launch (FDA gate). Now that the user has
+        // decided, start it within this session so they don't need to restart
+        // for the index to start populating.
+        try {
+            await startIndexingAfterFdaDecision()
+        } catch (error) {
+            log.warn('Failed to start indexing after FDA deny: {error}', { error })
+        }
         onComplete()
     }
 </script>

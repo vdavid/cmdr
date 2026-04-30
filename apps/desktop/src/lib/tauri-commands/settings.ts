@@ -148,6 +148,24 @@ export async function setIndexingEnabled(enabled: boolean): Promise<void> {
   await invoke('set_indexing_enabled', { enabled })
 }
 
+/**
+ * Starts the drive indexer after the user makes their Full Disk Access decision.
+ *
+ * At launch, the backend skips auto-starting the indexer when the FDA choice is
+ * `notAskedYet` and the OS reports FDA as not granted. Otherwise, recursively
+ * scanning from `/` triggers macOS native permission popups (iCloud, Photos, etc.)
+ * that stack on top of the in-app FDA modal.
+ *
+ * Call this after the user clicks "Deny" so indexing starts within the same
+ * session. The "Allow" path needs no call: the user restarts the app, and the
+ * launch-time gate passes via the OS check.
+ *
+ * Idempotent: a no-op when indexing is already running or initializing.
+ */
+export async function startIndexingAfterFdaDecision(): Promise<void> {
+  await invoke('start_indexing_after_fda_decision')
+}
+
 /** Index directory stats returned by the batch lookup. */
 export interface DirStats {
   path: string

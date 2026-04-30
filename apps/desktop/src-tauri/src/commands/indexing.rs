@@ -59,3 +59,20 @@ pub async fn set_indexing_enabled(app: AppHandle, enabled: bool) -> Result<(), S
     }
     Ok(())
 }
+
+/// Start the indexer once the user has decided about Full Disk Access.
+///
+/// At app launch, indexing is skipped when the FDA choice is `NotAskedYet` AND
+/// the OS reports FDA as not granted (see `should_auto_start_indexing`). The
+/// frontend calls this command after the user clicks "Deny" so the indexer
+/// starts within the same session. The "Allow" path needs no call: the user
+/// restarts the app, and the launch-time gate passes via the OS check.
+///
+/// Idempotent: a no-op when indexing is already running or initializing.
+#[tauri::command]
+pub async fn start_indexing_after_fda_decision(app: AppHandle) -> Result<(), String> {
+    if indexing::is_active() {
+        return Ok(());
+    }
+    indexing::start_indexing(&app)
+}

@@ -44,6 +44,8 @@ use store::{DirStats, IndexStore};
 use tauri::AppHandle;
 use writer::WriteMessage;
 
+use crate::settings::FullDiskAccessChoice;
+
 // ── Indexing state machine ────────────────────────────────────────────
 
 /// Lifecycle phases of the indexing system. Single source of truth for
@@ -83,6 +85,37 @@ pub fn should_auto_start(indexing_enabled: Option<bool>) -> bool {
     }
 
     // Default true (setting not yet stored means first launch, enabled by default)
+    true
+}
+
+/// Pure decision: should the indexer auto-start at app launch?
+///
+/// Combines the user's indexing-enabled setting with the FDA gate. The FDA gate
+/// blocks the indexer from scanning `/` before the user has decided about Full
+/// Disk Access — otherwise macOS native permission popups (iCloud, Photos, etc.)
+/// stack on top of the in-app FDA modal at first launch.
+///
+/// Auto-start when ALL of the following hold:
+/// - The user has not disabled indexing (`indexing_enabled != Some(false)`).
+/// - Either the user has already made an FDA choice (Allow or Deny), OR the OS
+///   reports FDA is currently granted. When the choice is `NotAskedYet` AND the
+///   OS check returns `false`, we skip auto-start until the user decides.
+pub fn should_auto_start_indexing(
+    indexing_enabled: Option<bool>,
+    fda_choice: FullDiskAccessChoice,
+    os_fda_granted: bool,
+) -> bool {
+    if !should_auto_start(indexing_enabled) {
+        return false;
+    }
+
+    // FDA gate: only block when the user hasn't decided AND the OS confirms FDA
+    // is not currently granted. If the OS check returns true, we know we won't
+    // trigger native permission popups, so it's safe to start.
+    if fda_choice == FullDiskAccessChoice::NotAskedYet && !os_fda_granted {
+        return false;
+    }
+
     true
 }
 
@@ -1054,6 +1087,87 @@ mod tests {
         for h in handles {
             h.join().expect("thread should not panic");
         }
+    }
+
+    // ── should_auto_start_indexing (FDA gate) ────────────────────────
+
+    /// First launch with no FDA grant: indexer must NOT auto-start.
+    /// Otherwise the recursive scan from `/` triggers macOS native permission
+    /// popups (iCloud, Photos, etc.) before the in-app FDA modal mounts.
+    #[test]
+    fn should_auto_start_indexing_blocked_when_not_asked_and_os_fda_false() {
+        assert!(!should_auto_start_indexing(
+            None,
+            FullDiskAccessChoice::NotAskedYet,
+            false
+        ));
+        assert!(!should_auto_start_indexing(
+            Some(true),
+            FullDiskAccessChoice::NotAskedYet,
+            false
+        ));
+    }
+
+    /// `NotAskedYet` but OS already grants FDA (user enabled it externally,
+    /// or stale persisted state): safe to auto-start.
+    #[test]
+    fn should_auto_start_indexing_allowed_when_os_fda_true_overrides_not_asked() {
+        assert!(should_auto_start_indexing(
+            None,
+            FullDiskAccessChoice::NotAskedYet,
+            true
+        ));
+        assert!(should_auto_start_indexing(
+            Some(true),
+            FullDiskAccessChoice::NotAskedYet,
+            true
+        ));
+    }
+
+    /// User picked Allow (typically restarts the app after granting in System
+    /// Settings): auto-start regardless of OS check (it should also be true,
+    /// but we trust the persisted choice).
+    #[test]
+    fn should_auto_start_indexing_allowed_when_user_choice_is_allow() {
+        assert!(should_auto_start_indexing(None, FullDiskAccessChoice::Allow, true));
+        // Even if the OS check returns false (FDA was revoked), the Allow
+        // branch still passes the gate — the +page.svelte revoked-prompt path
+        // handles re-asking the user. The indexer just won't be able to read
+        // protected dirs, which is fine; it skips them.
+        assert!(should_auto_start_indexing(None, FullDiskAccessChoice::Allow, false));
+    }
+
+    /// User picked Deny: indexer auto-starts (we respect the choice not to ask
+    /// again, and indexing without FDA still works for accessible paths).
+    #[test]
+    fn should_auto_start_indexing_allowed_when_user_choice_is_deny() {
+        assert!(should_auto_start_indexing(None, FullDiskAccessChoice::Deny, false));
+        assert!(should_auto_start_indexing(
+            Some(true),
+            FullDiskAccessChoice::Deny,
+            false
+        ));
+    }
+
+    /// Indexing disabled in settings always wins: never auto-start regardless
+    /// of FDA state.
+    #[test]
+    fn should_auto_start_indexing_blocked_when_indexing_disabled() {
+        assert!(!should_auto_start_indexing(
+            Some(false),
+            FullDiskAccessChoice::Allow,
+            true
+        ));
+        assert!(!should_auto_start_indexing(
+            Some(false),
+            FullDiskAccessChoice::Deny,
+            false
+        ));
+        assert!(!should_auto_start_indexing(
+            Some(false),
+            FullDiskAccessChoice::NotAskedYet,
+            true
+        ));
     }
 
     /// After clearing READ_POOL, `enrich_entries_with_index` returns early

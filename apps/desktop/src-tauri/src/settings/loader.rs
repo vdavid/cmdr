@@ -29,7 +29,6 @@ pub struct Settings {
     #[serde(alias = "showHiddenFiles", default = "default_show_hidden")]
     pub show_hidden_files: bool,
     #[serde(alias = "fullDiskAccessChoice", default)]
-    #[allow(dead_code, reason = "Only used by frontend, backend just persists it")]
     pub full_disk_access_choice: FullDiskAccessChoice,
     #[serde(alias = "developer.mcpEnabled", default)]
     pub developer_mcp_enabled: Option<bool>,

@@ -474,8 +474,22 @@ pub fn run() {
             // Initialize indexing state (does not start scanning until explicitly started)
             indexing::init();
 
-            // Auto-start indexing unless user disabled it in settings
-            if indexing::should_auto_start(saved_settings.indexing_enabled) {
+            // Auto-start indexing unless user disabled it in settings, or unless
+            // the FDA gate blocks (first launch with no Full Disk Access decision
+            // yet — starting the recursive scan from `/` would trigger macOS native
+            // permission popups before the in-app FDA modal mounts).
+            #[cfg(target_os = "macos")]
+            let os_fda_granted = permissions::check_full_disk_access();
+            #[cfg(target_os = "linux")]
+            let os_fda_granted = permissions_linux::check_full_disk_access();
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+            let os_fda_granted = stubs::permissions::check_full_disk_access();
+
+            if indexing::should_auto_start_indexing(
+                saved_settings.indexing_enabled,
+                saved_settings.full_disk_access_choice,
+                os_fda_granted,
+            ) {
                 let app_handle = app.handle().clone();
                 // Use tauri's runtime spawn instead of tokio::spawn since setup()
                 // runs synchronously before the Tokio runtime is fully available
@@ -484,8 +498,14 @@ pub fn run() {
                         log::warn!("Failed to auto-start indexing: {e}");
                     }
                 });
-            } else {
+            } else if saved_settings.indexing_enabled == Some(false) {
                 log::info!("Drive indexing auto-start skipped (disabled in settings)");
+            } else {
+                log::info!(
+                    "Drive indexing auto-start deferred until Full Disk Access decision (FDA choice: {:?}, OS-granted: {})",
+                    saved_settings.full_disk_access_choice,
+                    os_fda_granted,
+                );
             }
 
             Ok(())
@@ -1048,6 +1068,7 @@ pub fn run() {
             commands::indexing::get_dir_stats_batch,
             commands::indexing::clear_drive_index,
             commands::indexing::set_indexing_enabled,
+            commands::indexing::start_indexing_after_fda_decision,
             commands::indexing::get_index_debug_status,
             // Drive search commands
             commands::search::prepare_search_index,
