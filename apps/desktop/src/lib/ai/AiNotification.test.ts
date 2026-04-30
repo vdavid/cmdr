@@ -27,6 +27,7 @@ let mockState = {
     kvBytesPerToken: 106496,
     baseOverheadBytes: 3500000000,
   },
+  downloadToastUserDismissed: false,
 }
 
 function mountToast() {
@@ -50,6 +51,7 @@ describe('AiToastContent', () => {
         kvBytesPerToken: 106496,
         baseOverheadBytes: 3500000000,
       },
+      downloadToastUserDismissed: false,
     }
     vi.mocked(getAiState).mockReturnValue(mockState)
   })

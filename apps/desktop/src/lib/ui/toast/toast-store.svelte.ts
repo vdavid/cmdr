@@ -14,6 +14,18 @@ export interface ToastOptions {
   timeoutMs?: number
   /** Optional dedup key. If a toast with this ID exists, its content and level are replaced in place. */
   id?: string
+  /**
+   * Optional tooltip shown on the X (close) button. Useful when the toast also contains its own
+   * action buttons (for example, "Cancel"), so users can tell what each control does. When unset,
+   * no tooltip is rendered on the X.
+   */
+  closeTooltip?: string
+  /**
+   * Optional callback fired when the user dismisses the toast via the X button. Auto-dismiss on
+   * timeout and programmatic `dismissToast` calls do NOT trigger this — it's strictly a signal
+   * that the user actively closed the toast.
+   */
+  onDismiss?: () => void
 }
 
 export interface Toast {
@@ -23,6 +35,8 @@ export interface Toast {
   dismissal: ToastDismissal
   timeoutMs: number
   createdAt: number
+  closeTooltip?: string
+  onDismiss?: () => void
 }
 
 const maxVisibleToasts = 5
@@ -41,29 +55,39 @@ function findOldestTransientIndex(): number {
   return toasts.findIndex((t) => t.dismissal === 'transient')
 }
 
+function replaceExisting(index: number, content: ToastContent, level: ToastLevel, options?: ToastOptions): void {
+  toasts[index].content = content
+  toasts[index].level = level
+  toasts[index].closeTooltip = options?.closeTooltip
+  toasts[index].onDismiss = options?.onDismiss
+}
+
+/** Returns true if there's room for a new toast (after evicting if needed). */
+function makeRoomForNewToast(): boolean {
+  if (toasts.length < maxVisibleToasts) return true
+  const oldestTransientIndex = findOldestTransientIndex()
+  if (oldestTransientIndex === -1) {
+    // All slots are persistent — drop the new toast.
+    return false
+  }
+  removeAtIndex(oldestTransientIndex)
+  return true
+}
+
 export function addToast(content: ToastContent, options?: ToastOptions): string {
   const level = options?.level ?? 'info'
   const dismissal = options?.dismissal ?? 'transient'
   const timeoutMs = dismissal === 'persistent' ? 0 : (options?.timeoutMs ?? 4000)
   const id = options?.id ?? crypto.randomUUID()
 
-  // Dedup: replace content and level in place if ID already exists
+  // Dedup: replace content and level in place if ID already exists.
   const existingIndex = findIndexById(id)
   if (existingIndex !== -1) {
-    toasts[existingIndex].content = content
-    toasts[existingIndex].level = level
+    replaceExisting(existingIndex, content, level, options)
     return id
   }
 
-  // Enforce max visible limit
-  if (toasts.length >= maxVisibleToasts) {
-    const oldestTransientIndex = findOldestTransientIndex()
-    if (oldestTransientIndex === -1) {
-      // All 5 are persistent — drop the new toast
-      return id
-    }
-    removeAtIndex(oldestTransientIndex)
-  }
+  if (!makeRoomForNewToast()) return id
 
   const toast: Toast = {
     id,
@@ -72,6 +96,8 @@ export function addToast(content: ToastContent, options?: ToastOptions): string 
     dismissal,
     timeoutMs,
     createdAt: Date.now(),
+    closeTooltip: options?.closeTooltip,
+    onDismiss: options?.onDismiss,
   }
 
   toasts.push(toast)

@@ -57,6 +57,12 @@ provide checksums) — file size check only.
   reactive context. Calling it after an `await` (inside an async callback) causes `effect_orphan` because the reactive
   context is gone. It runs before `initAiState()` completes — the initial `$effect` fires with `hidden` state (no-op),
   then re-fires reactively when `initAiState()` changes the notification state.
+- **Downloading toast remembers user dismissal**: `aiState.downloadToastUserDismissed` is set when the user clicks X on
+  the downloading toast. While true, `ai-toast-sync.svelte.ts` won't re-add the toast even if the effect re-runs. The X
+  only hides the toast — the Rust download loop in `manager.rs` (`do_download`) keeps going because nothing sets
+  `cancel_requested`. Only the inline "Cancel" button calls `cancelAiDownload()` and aborts the actual download. The
+  flag resets in `handleDownload()` so the next download run shows the toast again. Other state transitions (offer,
+  installing, ready, starting) ignore the flag and always render — they're fresh signals.
 - **Status transitions are frontend-driven**: Backend emits `ai-download-progress` and `ai-install-complete` events.
   Frontend interprets these to update `aiStatus`. Backend has no "status" concept — just `AiState` (installed/port/pid).
 - **llama-server is NOT auto-restarted**: Health monitoring (periodic restart on crash) is deferred. If server crashes,

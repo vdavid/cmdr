@@ -146,6 +146,15 @@ Levels: `info` (default), `success`, `warn`, `error`. Dismissal: `transient` (4s
 
 Call `dismissTransientToasts()` on pane navigation to clear stale feedback.
 
+`ToastOptions` extras for component-content toasts that have their own action buttons:
+
+- `closeTooltip?: string` — tooltip text shown on hover/focus over the X button. Set this when the toast also has its
+  own buttons (for example, an inline "Cancel"), so users can tell what each control does. Without it, no tooltip
+  renders.
+- `onDismiss?: () => void` — fires only when the user clicks X (or the inline "Send error report…" link). Auto-dismiss
+  on timeout and programmatic `dismissToast()` calls do NOT trigger it. Use this when the caller needs to remember "the
+  user closed this," for example to avoid re-adding a toast that's tied to long-running background work.
+
 ## CommandBox
 
 `CommandBox.svelte` — monospace terminal command with a one-click Copy button and 2-second "Copied!" feedback. Takes a

@@ -21,6 +21,12 @@ interface AiStateData {
   downloadProgress: AiDownloadProgress | null
   progressText: string
   modelInfo: AiModelInfo | null
+  /**
+   * Set to true when the user clicks the X on the downloading toast. While true, the toast sync
+   * effect won't re-add the toast, even though the download keeps running in the background. The
+   * flag resets whenever a new download run starts (on transition into `'downloading'`).
+   */
+  downloadToastUserDismissed: boolean
 }
 
 const aiState = $state<AiStateData>({
@@ -28,6 +34,7 @@ const aiState = $state<AiStateData>({
   downloadProgress: null,
   progressText: '',
   modelInfo: null,
+  downloadToastUserDismissed: false,
 })
 
 export function getAiState(): AiStateData {
@@ -40,6 +47,12 @@ export function resetForTesting(): void {
   aiState.downloadProgress = null
   aiState.progressText = ''
   aiState.modelInfo = null
+  aiState.downloadToastUserDismissed = false
+}
+
+/** Marks the downloading toast as user-dismissed for the current download run. */
+export function markDownloadToastDismissed(): void {
+  aiState.downloadToastUserDismissed = true
 }
 
 export async function initAiState(): Promise<() => void> {
@@ -93,6 +106,8 @@ export async function handleDownload(): Promise<void> {
   setSetting('ai.provider', 'local')
   aiState.notificationState = 'downloading'
   aiState.downloadProgress = { bytesDownloaded: 0, totalBytes: 0, speed: 0, etaSeconds: 0 }
+  // New download run — clear any previous user-dismissed flag so the toast shows again.
+  aiState.downloadToastUserDismissed = false
   try {
     await startAiDownload()
   } catch {

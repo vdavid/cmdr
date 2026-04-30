@@ -88,6 +88,44 @@ describe('clearAllToasts', () => {
   })
 })
 
+describe('closeTooltip and onDismiss', () => {
+  it('stores closeTooltip on the toast when passed', () => {
+    addToast(dummyContent, { closeTooltip: 'Close — work continues in background' })
+    expect(getToasts()[0].closeTooltip).toBe('Close — work continues in background')
+  })
+
+  it('leaves closeTooltip undefined when not passed', () => {
+    addToast(dummyContent)
+    expect(getToasts()[0].closeTooltip).toBeUndefined()
+  })
+
+  it('stores onDismiss on the toast when passed', () => {
+    const onDismiss = (): void => {}
+    addToast(dummyContent, { onDismiss })
+    expect(getToasts()[0].onDismiss).toBe(onDismiss)
+  })
+
+  it('replaces closeTooltip and onDismiss on dedup', () => {
+    const first = (): void => {}
+    const second = (): void => {}
+    addToast(dummyContent, { id: 'dup', closeTooltip: 'first', onDismiss: first })
+    addToast(dummyContent, { id: 'dup', closeTooltip: 'second', onDismiss: second })
+
+    const toast = getToasts()[0]
+    expect(toast.closeTooltip).toBe('second')
+    expect(toast.onDismiss).toBe(second)
+  })
+
+  it('clears closeTooltip and onDismiss on dedup when subsequent call omits them', () => {
+    addToast(dummyContent, { id: 'dup', closeTooltip: 'first', onDismiss: () => {} })
+    addToast(dummyContent, { id: 'dup' })
+
+    const toast = getToasts()[0]
+    expect(toast.closeTooltip).toBeUndefined()
+    expect(toast.onDismiss).toBeUndefined()
+  })
+})
+
 describe('default values', () => {
   it('defaults level to info', () => {
     addToast(dummyContent)

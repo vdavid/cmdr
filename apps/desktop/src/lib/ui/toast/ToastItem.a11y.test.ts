@@ -23,7 +23,8 @@ describe('ToastItem a11y', () => {
         level: 'info',
         dismissal: 'transient',
         timeoutMs: 4000,
-        ondismiss: vi.fn(),
+        onTimeout: vi.fn(),
+        onUserDismiss: vi.fn(),
       },
     })
     await tick()
@@ -41,7 +42,8 @@ describe('ToastItem a11y', () => {
         level: 'success',
         dismissal: 'transient',
         timeoutMs: 4000,
-        ondismiss: vi.fn(),
+        onTimeout: vi.fn(),
+        onUserDismiss: vi.fn(),
       },
     })
     await tick()
@@ -59,7 +61,8 @@ describe('ToastItem a11y', () => {
         level: 'warn',
         dismissal: 'persistent',
         timeoutMs: 0,
-        ondismiss: vi.fn(),
+        onTimeout: vi.fn(),
+        onUserDismiss: vi.fn(),
       },
     })
     await tick()
@@ -77,7 +80,8 @@ describe('ToastItem a11y', () => {
         level: 'error',
         dismissal: 'transient',
         timeoutMs: 4000,
-        ondismiss: vi.fn(),
+        onTimeout: vi.fn(),
+        onUserDismiss: vi.fn(),
       },
     })
     await tick()

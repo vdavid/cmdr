@@ -2,6 +2,7 @@
     import { onMount, onDestroy } from 'svelte'
     import type { ToastContent, ToastLevel, ToastDismissal } from './toast-store.svelte'
     import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
 
     interface Props {
         id: string
@@ -9,10 +10,14 @@
         level: ToastLevel
         dismissal: ToastDismissal
         timeoutMs: number
-        ondismiss: (id: string) => void
+        closeTooltip?: string
+        /** Called when the auto-dismiss timer fires for transient toasts. */
+        onTimeout: (id: string) => void
+        /** Called when the user clicks the X button or the inline action. */
+        onUserDismiss: (id: string) => void
     }
 
-    const { id, content, level, dismissal, timeoutMs, ondismiss }: Props = $props()
+    const { id, content, level, dismissal, timeoutMs, closeTooltip, onTimeout, onUserDismiss }: Props = $props()
 
     let timer: ReturnType<typeof setTimeout> | undefined
 
@@ -26,13 +31,13 @@
         // start from. They can edit before sending.
         const initialNote = typeof content === 'string' ? content : ''
         openErrorReportDialog(initialNote)
-        ondismiss(id)
+        onUserDismiss(id)
     }
 
     onMount(() => {
         if (dismissal === 'transient') {
             timer = setTimeout(() => {
-                ondismiss(id)
+                onTimeout(id)
             }, timeoutMs)
         }
     })
@@ -67,8 +72,9 @@
     <button
         class="toast-close"
         onclick={() => {
-            ondismiss(id)
+            onUserDismiss(id)
         }}
+        use:tooltip={closeTooltip}
         aria-label="Dismiss notification"
     >
         <svg

@@ -3,6 +3,12 @@
     import ToastItem from './ToastItem.svelte'
 
     const toasts = getToasts()
+
+    function handleUserDismiss(id: string): void {
+        const toast = toasts.find((t) => t.id === id)
+        toast?.onDismiss?.()
+        dismissToast(id)
+    }
 </script>
 
 {#if toasts.length > 0}
@@ -14,7 +20,9 @@
                 level={toast.level}
                 dismissal={toast.dismissal}
                 timeoutMs={toast.timeoutMs}
-                ondismiss={dismissToast}
+                closeTooltip={toast.closeTooltip}
+                onTimeout={dismissToast}
+                onUserDismiss={handleUserDismiss}
             />
         {/each}
     </div>
