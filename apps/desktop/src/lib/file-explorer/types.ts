@@ -167,8 +167,13 @@ export type LocationCategory =
   | 'network'
   | 'mobile_device'
 
-/** SMB connection quality. `direct` = smb2 session active, `os_mount` = OS mount fallback. */
-export type SmbConnectionState = 'direct' | 'os_mount'
+/**
+ * SMB connection quality. `direct` = smb2 session active, `os_mount` = OS mount
+ * fallback, `disconnected` = SmbVolume exists but its smb2 session is broken
+ * (the reconnect manager runs the recovery cycle). Non-SMB volumes carry no
+ * value at all.
+ */
+export type SmbConnectionState = 'direct' | 'os_mount' | 'disconnected'
 
 /**
  * Information about a location (volume, folder, or cloud drive).

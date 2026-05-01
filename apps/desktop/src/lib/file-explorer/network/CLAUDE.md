@@ -4,13 +4,14 @@ SMB network discovery UI: host list, per-host share list, login form, and a sing
 
 ## Key files
 
-| File                           | Purpose                                                                   |
-| ------------------------------ | ------------------------------------------------------------------------- |
-| `network-store.svelte.ts`      | Module-level `$state` singleton for all network data                      |
-| `NetworkBrowser.svelte`        | Host list table — rendered when pane is on the `network` volume           |
-| `ShareBrowser.svelte`          | Share list for a specific host, handles auth flow                         |
-| `NetworkLoginForm.svelte`      | Credential form rendered inside `ShareBrowser`                            |
-| `ConnectToServerDialog.svelte` | Modal dialog for manually connecting to a server by address/IP/smb:// URL |
+| File                              | Purpose                                                                                                                                                                                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `network-store.svelte.ts`         | Module-level `$state` singleton for all network data                                                                                                                                                                                             |
+| `NetworkBrowser.svelte`           | Host list table — rendered when pane is on the `network` volume                                                                                                                                                                                  |
+| `ShareBrowser.svelte`             | Share list for a specific host, handles auth flow                                                                                                                                                                                                |
+| `NetworkLoginForm.svelte`         | Credential form rendered inside `ShareBrowser`                                                                                                                                                                                                   |
+| `ConnectToServerDialog.svelte`    | Modal dialog for manually connecting to a server by address/IP/smb:// URL                                                                                                                                                                        |
+| `smb-reconnect-manager.svelte.ts` | Per-volume backoff cycle that re-establishes a Disconnected `SmbVolume`. Listens to `smb-connection-changed` from the backend, drives the FE state machine for `SmbReconnectingView`, exposes `subscribe` / `startCycle` / `retryNow` / `cancel` |
 
 ## `network-store.svelte.ts`
 

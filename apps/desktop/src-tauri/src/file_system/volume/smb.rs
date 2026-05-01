@@ -1796,11 +1796,14 @@ impl Volume for SmbVolume {
     }
 
     fn smb_connection_state(&self) -> Option<SmbConnectionState> {
-        match self.connection_state() {
-            ConnectionState::Direct => Some(SmbConnectionState::Direct),
-            ConnectionState::OsMount => Some(SmbConnectionState::OsMount),
-            ConnectionState::Disconnected => None,
-        }
+        // SmbVolume always returns `Some` so the frontend can distinguish
+        // "not an SMB volume" (None) from "SMB volume in trouble"
+        // (Some(Disconnected)). The reconnect manager keys off the latter.
+        Some(match self.connection_state() {
+            ConnectionState::Direct => SmbConnectionState::Direct,
+            ConnectionState::OsMount => SmbConnectionState::OsMount,
+            ConnectionState::Disconnected => SmbConnectionState::Disconnected,
+        })
     }
 
     fn attempt_reconnect<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {

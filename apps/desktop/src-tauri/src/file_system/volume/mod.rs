@@ -17,10 +17,16 @@ use std::pin::Pin;
 use std::sync::atomic::AtomicBool;
 use tokio::sync::mpsc;
 
-/// SMB connection state for the frontend indicator.
+/// SMB connection state for the frontend indicator and the reconnect UI.
 ///
 /// `Direct` means Cmdr's smb2 session is active (fast path).
 /// `OsMount` means only the OS mount is alive (fallback path).
+/// `Disconnected` means an SmbVolume exists but its smb2 session is broken — the
+/// frontend reconnect manager owns the recovery cycle.
+///
+/// Non-SMB volumes return `None` from `Volume::smb_connection_state()` (trait
+/// default). The frontend uses this to distinguish "this isn't an SMB volume"
+/// (no value) from "this is an SMB volume in trouble" (Some(Disconnected)).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SmbConnectionState {
@@ -28,6 +34,9 @@ pub enum SmbConnectionState {
     Direct,
     /// Using OS mount only — slower fallback (yellow indicator).
     OsMount,
+    /// Cmdr's smb2 session has dropped. The frontend swaps to `SmbReconnectingView`
+    /// and the per-volume reconnect manager runs the backoff cycle.
+    Disconnected,
 }
 
 /// Default volume ID for the root filesystem.

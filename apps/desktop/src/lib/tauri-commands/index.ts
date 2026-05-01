@@ -127,6 +127,7 @@ export {
   mountNetworkShare,
   upgradeToSmbVolume,
   upgradeToSmbVolumeWithCredentials,
+  reconnectSmbVolume,
   type UpgradeResult,
   connectToServer,
   removeManualServer,

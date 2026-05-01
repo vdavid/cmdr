@@ -5,10 +5,25 @@
         originalPath: string
         retrying: boolean
         onRetry: () => void
-        onOpenHome: () => void
+        onOpenHome?: () => void
+        /**
+         * SMB give-up variant: shown when the per-volume reconnect manager
+         * exhausted its backoff cycle. Replaces "Open home folder" with
+         * "Disconnect" (the connection stays alive by default; the user
+         * explicitly drops it). The detail line also adapts.
+         */
+        smbGaveUp?: boolean
+        onDisconnect?: () => void
     }
 
-    const { originalPath, retrying, onRetry, onOpenHome }: Props = $props()
+    const {
+        originalPath,
+        retrying,
+        onRetry,
+        onOpenHome,
+        smbGaveUp = false,
+        onDisconnect,
+    }: Props = $props()
 </script>
 
 <div class="unreachable-banner" role="alert">
@@ -22,13 +37,24 @@
             <span class="banner-message">Couldn't reach {originalPath}</span>
         </div>
         <p class="banner-detail">
-            The volume for this path didn't respond in time. It may be a network drive that's currently unavailable.
+            {#if smbGaveUp}
+                Cmdr tried reconnecting several times but the server didn't come back. The connection stays available
+                for now — try again, or disconnect to drop it.
+            {:else}
+                The volume for this path didn't respond in time. It may be a network drive that's currently unavailable.
+            {/if}
         </p>
         <div class="banner-actions">
             <Button size="mini" onclick={onRetry} disabled={retrying}>
                 {retrying ? 'Retrying...' : 'Retry'}
             </Button>
-            <Button size="mini" onclick={onOpenHome}>Open home folder</Button>
+            {#if smbGaveUp}
+                {#if onDisconnect}
+                    <Button size="mini" onclick={onDisconnect}>Disconnect</Button>
+                {/if}
+            {:else if onOpenHome}
+                <Button size="mini" onclick={onOpenHome}>Open home folder</Button>
+            {/if}
         </div>
     </div>
 </div>

@@ -29,6 +29,7 @@ let retryFailedTimer: ReturnType<typeof setTimeout> | null = null
 let receivedEvent = false
 let initialized = $state(false)
 let unlistenVolumesChanged: UnlistenFn | undefined
+let unlistenSmbConnectionChanged: UnlistenFn | undefined
 
 /** Returns the current volume list. Reactive. */
 export function getVolumes(): VolumeInfo[] {
@@ -104,6 +105,25 @@ export async function initVolumeStore(): Promise<void> {
     })
   })
 
+  // Subscribe to SMB connection-state changes so the picker dot, the
+  // `currentVolumeInfo.smbConnectionState` field, and any pane-level UI keying
+  // off this volume update the moment a session flips Direct/Disconnected,
+  // without waiting for the next `volumes-changed` (which may not fire — the
+  // volume itself didn't appear or disappear, just its session quality).
+  unlistenSmbConnectionChanged = await listen<{ volumeId: string; state: 'direct' | 'disconnected' }>(
+    'smb-connection-changed',
+    (event) => {
+      const { volumeId, state } = event.payload
+      const idx = volumes.findIndex((v) => v.id === volumeId)
+      if (idx < 0) return
+      // Replace the entry so consumers using `$derived` over `getVolumes()` re-run.
+      const next = [...volumes]
+      next[idx] = { ...next[idx], smbConnectionState: state }
+      volumes = next
+      logger.debug('smb-connection-changed: {volumeId} → {state}', { volumeId, state })
+    },
+  )
+
   // Bootstrap: fetch initial list via IPC (in case the backend event
   // fired before we subscribed, or hasn't fired yet)
   const result = await listVolumes()
@@ -122,6 +142,8 @@ export async function initVolumeStore(): Promise<void> {
 export function cleanupVolumeStore(): void {
   unlistenVolumesChanged?.()
   unlistenVolumesChanged = undefined
+  unlistenSmbConnectionChanged?.()
+  unlistenSmbConnectionChanged = undefined
   volumes = []
   timedOut = false
   refreshing = false

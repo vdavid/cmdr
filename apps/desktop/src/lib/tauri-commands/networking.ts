@@ -336,6 +336,17 @@ export async function upgradeToSmbVolumeWithCredentials(
   })
 }
 
+/**
+ * Tries to rebuild the smb2 session for a Disconnected `SmbVolume` in place.
+ *
+ * Called by the per-volume reconnect manager on each backoff tick (and on
+ * "Retry now" / lazy nav-time retry). Backend single-flights concurrent calls.
+ * Resolves on success; throws on failure with an `IpcError`-shaped exception.
+ */
+export async function reconnectSmbVolume(volumeId: string): Promise<void> {
+  await invoke('reconnect_smb_volume', { volumeId })
+}
+
 // ============================================================================
 // Manual server management (macOS only)
 // ============================================================================

@@ -71,6 +71,8 @@
     import VolumeUnreachableBanner from './VolumeUnreachableBanner.svelte'
     import NetworkMountView from './NetworkMountView.svelte'
     import MtpConnectionView from './MtpConnectionView.svelte'
+    import SmbReconnectingView from './SmbReconnectingView.svelte'
+    import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
     import NetworkLoginForm from '../network/NetworkLoginForm.svelte'
     import { createSelectionState } from './selection-state.svelte'
     import { createRenameState } from '../rename/rename-state.svelte'
@@ -99,7 +101,7 @@
         type VolumeSpaceInfo,
     } from '$lib/tauri-commands'
     import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
-    import { requestVolumeRefresh } from '$lib/stores/volume-store.svelte'
+    import { requestVolumeRefresh, getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
     import type { UnreachableState } from '../tabs/tab-types'
     import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
@@ -319,6 +321,72 @@
     // Check if this is a device-only MTP ID (needs connection)
     // Device-only IDs start with "mtp-" but don't contain ":" (no storage ID)
     const isMtpDeviceOnly = $derived(isMtpView && volumeId.startsWith('mtp-') && !volumeId.includes(':'))
+
+    // Look up the live volume info (used for the share name in the reconnecting
+    // view and to decide whether subscribing to the SMB reconnect manager is
+    // even relevant for this pane).
+    const currentVolumeInfo = $derived(getStoreVolumes().find((v) => v.id === volumeId) ?? null)
+    /** True if this pane is on an SMB share (any state — direct, os_mount, or disconnected). */
+    const isSmbVolume = $derived(currentVolumeInfo?.smbConnectionState !== undefined)
+    /**
+     * Reactive: the per-volume reconnect cycle state, or `null` if no cycle is
+     * running. The manager is the single source of truth for the view — by the
+     * time this is non-null, the backend has already emitted `disconnected` and
+     * the manager has scheduled the first attempt.
+     */
+    const reconnectState = $derived(smbReconnectManager.getState(volumeId))
+    /** Show the reconnecting view while a cycle is in flight (waiting/attempting). */
+    const showSmbReconnecting = $derived(
+        reconnectState !== null && (reconnectState.status === 'waiting' || reconnectState.status === 'attempting'),
+    )
+    /** Show the gave-up state — uses the existing unreachable banner with an added Disconnect button. */
+    const showSmbGaveUp = $derived(reconnectState !== null && reconnectState.status === 'gave-up')
+
+    // Subscribe to the per-volume reconnect manager whenever this pane is on
+    // an SMB share. The subscription is refcounted (multiple panes on the same
+    // share share one cycle) and serves two purposes:
+    // 1. Tells the manager "someone is watching" — the cycle starts on the next
+    //    `disconnected` event (via `handleDisconnected`), but only if subscribers > 0.
+    // 2. Registers a success callback so the pane re-runs `loadDirectory` after
+    //    a successful reconnect. (Reactive `$effect` covers showing/hiding the view.)
+    $effect(() => {
+        if (!isSmbVolume) return
+        const targetVolumeId = volumeId
+        const onSuccess = () => {
+            log.info('[FilePane] SMB reconnect succeeded for {volumeId}, reloading {path}', {
+                volumeId: targetVolumeId,
+                path: currentPath,
+            })
+            void loadDirectory(currentPath)
+        }
+        const unsubscribe = smbReconnectManager.subscribe(targetVolumeId, onSuccess)
+        // If we land on a Disconnected SMB share without a cycle running (e.g. user
+        // navigated to a share that was already broken), kick off the cycle ourselves.
+        if (currentVolumeInfo?.smbConnectionState === 'disconnected') {
+            smbReconnectManager.startCycle(targetVolumeId)
+        }
+        return unsubscribe
+    })
+
+    function handleSmbReconnectCancel() {
+        smbReconnectManager.cancel(volumeId)
+        // Walk up to the nearest reachable folder, same fallback chain we use elsewhere.
+        void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
+            navigateToFallback(validPath)
+        })
+    }
+
+    function handleSmbReconnectDisconnect() {
+        smbReconnectManager.cancel(volumeId)
+        // The volume picker's existing "disconnect from server" path handles the
+        // backend unmount. For now we just navigate away — eject from the
+        // volume picker is the cleanest way to drop the connection.
+        // TODO: wire up an explicit disconnect command if needed; for now, the
+        //       Cancel action and dropping the OS mount cover it.
+        void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
+            navigateToFallback(validPath)
+        })
+    }
 
     // Network browsing state - tracked here for history navigation integration
     let currentNetworkHost = $state<NetworkHost | null>(null)
@@ -1948,6 +2016,22 @@
                 retrying={unreachable.retrying}
                 onRetry={() => onRetryUnreachable?.()}
                 onOpenHome={() => onOpenHome?.()}
+            />
+        {:else if showSmbReconnecting && reconnectState}
+            <SmbReconnectingView
+                {volumeId}
+                shareName={currentVolumeInfo?.name ?? volumeId}
+                cycleState={reconnectState}
+                onCancel={handleSmbReconnectCancel}
+                onDisconnect={handleSmbReconnectDisconnect}
+            />
+        {:else if showSmbGaveUp}
+            <VolumeUnreachableBanner
+                originalPath={currentVolumeInfo?.name ?? volumePath}
+                retrying={false}
+                onRetry={() => { smbReconnectManager.retryNow(volumeId); }}
+                smbGaveUp={true}
+                onDisconnect={handleSmbReconnectDisconnect}
             />
         {:else if isNetworkView}
             <NetworkMountView
