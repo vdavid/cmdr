@@ -111,7 +111,7 @@ class SmbReconnectManager {
       if (onSuccess) entry.successCallbacks.add(onSuccess)
       log.debug('subscribe({volumeId}): refcount={refcount}', { volumeId, refcount: entry.refcount })
 
-      return () =>
+      return () => {
         untrack(() => {
           const e = this.map.get(volumeId)
           if (!e) return
@@ -123,6 +123,7 @@ class SmbReconnectManager {
             this.map.delete(volumeId)
           }
         })
+      }
     })
   }
 

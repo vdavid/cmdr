@@ -21,14 +21,16 @@ const {
 } = vi.hoisted(() => ({
   addToastMock: vi.fn(),
   dismissToastMock: vi.fn(),
-  loadSettingsMock: vi.fn(async () => ({
-    showHiddenFiles: true,
-    fullDiskAccessChoice: 'notAskedYet' as const,
-    isOnboarded: false,
-  })),
-  saveSettingsMock: vi.fn(async () => {}),
+  loadSettingsMock: vi.fn(() =>
+    Promise.resolve({
+      showHiddenFiles: true,
+      fullDiskAccessChoice: 'notAskedYet' as const,
+      isOnboarded: false,
+    }),
+  ),
+  saveSettingsMock: vi.fn(() => Promise.resolve()),
   invokeMock: vi.fn(),
-  getVersionMock: vi.fn(async () => '0.0.0-test'),
+  getVersionMock: vi.fn(() => Promise.resolve('0.0.0-test')),
   pluginCheckMock: vi.fn(),
 }))
 

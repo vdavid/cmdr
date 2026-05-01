@@ -21,7 +21,7 @@ import path from 'path'
 import { execSync } from 'child_process'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, getFixtureRoot, fileExistsInPane, pollUntil, sleep } from './helpers.js'
+import { ensureAppReady, getFixtureRoot, fileExistsInPane, pollUntil } from './helpers.js'
 
 /** Matches the `PageLike` alias used inside `helpers.ts`. */
 type PageLike = TauriPage | BrowserPageAdapter
@@ -87,26 +87,6 @@ async function navigateLeftPaneTo(tauriPage: PageLike, target: string): Promise<
 
 async function paneHasFile(tauriPage: PageLike, paneIndex: number, name: string, timeout = 5000): Promise<boolean> {
   return pollUntil(tauriPage, async () => fileExistsInPane(tauriPage, name, paneIndex), timeout)
-}
-
-async function setSetting(tauriPage: PageLike, key: string, value: unknown): Promise<void> {
-  // The settings store is exposed via the standard `settings:set` event channel.
-  // We poke it directly via the JS bridge to keep the test independent of the
-  // settings-window UI flow.
-  await tauriPage.evaluate(`(function() {
-    var invoke = window.__TAURI_INTERNALS__.invoke;
-    invoke('plugin:store|set', {
-      path: 'settings.json',
-      key: ${JSON.stringify(key)},
-      value: ${JSON.stringify(value)}
-    });
-    invoke('plugin:store|save', { path: 'settings.json' });
-    // Also push to the live-apply backend hook for immediate effect.
-    if (${JSON.stringify(key)} === 'fileExplorer.git.showVirtualGitPortal') {
-      invoke('set_show_virtual_git_portal', { enabled: ${JSON.stringify(value)} });
-    }
-  })()`)
-  await sleep(150)
 }
 
 test.describe('Git portal', () => {

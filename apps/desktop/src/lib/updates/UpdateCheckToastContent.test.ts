@@ -21,15 +21,15 @@ vi.mock('$lib/ui/toast', () => ({
   dismissToast: vi.fn(),
 }))
 vi.mock('$lib/settings-store', () => ({
-  loadSettings: vi.fn(async () => ({ isOnboarded: false })),
-  saveSettings: vi.fn(async () => {}),
+  loadSettings: vi.fn(() => Promise.resolve({ isOnboarded: false })),
+  saveSettings: vi.fn(() => Promise.resolve()),
 }))
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn(() => 60 * 60 * 1000),
   onSpecificSettingChange: vi.fn(() => () => {}),
 }))
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }))
-vi.mock('@tauri-apps/api/app', () => ({ getVersion: vi.fn(async () => '1.2.3') }))
+vi.mock('@tauri-apps/api/app', () => ({ getVersion: vi.fn(() => Promise.resolve('1.2.3')) }))
 vi.mock('@tauri-apps/plugin-updater', () => ({ check: vi.fn() }))
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ debug: () => {}, info: () => {}, warn: () => {}, error: () => {} }),
@@ -95,9 +95,7 @@ describe('UpdateCheckToastContent', () => {
     const target = render()
     await tick()
     expect(target.textContent).toContain('Error: kaboom')
-    const link = Array.from(target.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Send error report',
-    )
+    const link = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Send error report')
     expect(link).toBeTruthy()
     link?.click()
     expect(openErrorReportDialogMock).toHaveBeenCalledWith('Update check failed: kaboom')

@@ -39,11 +39,11 @@ vi.mock('$lib/settings/settings-store', () => ({
 }))
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }))
-vi.mock('@tauri-apps/api/app', () => ({ getVersion: vi.fn(async () => '1.2.3') }))
+vi.mock('@tauri-apps/api/app', () => ({ getVersion: vi.fn(() => Promise.resolve('1.2.3')) }))
 vi.mock('@tauri-apps/plugin-updater', () => ({ check: vi.fn() }))
 vi.mock('$lib/settings-store', () => ({
-  loadSettings: vi.fn(async () => ({ isOnboarded: false })),
-  saveSettings: vi.fn(async () => {}),
+  loadSettings: vi.fn(() => Promise.resolve({ isOnboarded: false })),
+  saveSettings: vi.fn(() => Promise.resolve()),
 }))
 vi.mock('$lib/ui/toast', () => ({
   addToast: vi.fn(),
@@ -63,7 +63,7 @@ function render() {
 }
 
 function getCheckButton(target: HTMLElement): HTMLButtonElement {
-  const btn = Array.from(target.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Check for updates')
+  const btn = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Check for updates')
   if (!btn) throw new Error('Check for updates button missing')
   return btn
 }
@@ -121,9 +121,7 @@ describe('UpdatesSection', () => {
     const target = render()
     await tick()
     expect(target.textContent).toContain('Error: something exploded')
-    const link = Array.from(target.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Send error report',
-    )
+    const link = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Send error report')
     expect(link).toBeTruthy()
     link?.click()
     expect(openErrorReportDialogMock).toHaveBeenCalledWith('Update check failed: something exploded')
