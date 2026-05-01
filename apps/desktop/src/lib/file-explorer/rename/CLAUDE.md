@@ -29,10 +29,11 @@ Operates on cursor item only; selection is preserved and irrelevant.
 
 Implemented in `rename-operations.ts::executeRenameSave()`:
 
-1. **Extension check**: If `extensionPolicy === 'ask'` and the extensions differ in more than letter case
-   (`extensionsDifferIgnoringCase()` from `filename-validation.ts`), return `{ type: 'extension-ask' }`. Caller shows
+1. **Extension check**: If `extensionPolicy === 'ask'` and the extensions differ meaningfully
+   (`extensionsDifferMeaningfully()` from `filename-validation.ts`), return `{ type: 'extension-ask' }`. Caller shows
    ExtensionChangeDialog. If user clicks "Keep", retry with `skipExtensionCheck=true`. Case-only changes like
-   `photo.JPG` → `photo.jpg` skip the dialog entirely.
+   `photo.JPG` → `photo.jpg` and known-equivalent changes like `.jpeg` → `.jpg` or `.md` → `.txt` skip the dialog
+   entirely.
 
 2. **Backend validity check**: Call `checkRenameValidity(parentPath, originalName, trimmedName)`. Returns:
    - `{ valid: false, error }` → return `{ type: 'error' }`
@@ -117,7 +118,8 @@ trimmed value.
   discard rename. File watcher events during editing don't cancel (backend will catch issues on save).
 - **Extension validation gotcha**: If setting is "no", changing extension shows red border during editing. If setting is
   "ask", no red border (waits for save to show dialog). If setting is "yes", never validates extension. Case-only
-  extension changes (e.g. `.JPG` → `.jpg`) are treated as no change in all modes.
+  extension changes (e.g. `.JPG` → `.jpg`) and known-equivalent changes (e.g. `.jpeg` → `.jpg`, `.md` → `.txt`) are
+  treated as no change in all modes.
 - **Same-name edge case**: If `trimmedName === originalName`, treat as cancel (no-op). Don't emit file watcher event or
   refresh pane. Avoids spurious refresh on whitespace-only edits.
 - **Click-to-rename interference**: Double-click on name area must open file/folder (normal behavior), not activate

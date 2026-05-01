@@ -9,6 +9,7 @@ import {
   validateConflict,
   validateFilename,
   getExtension,
+  extensionsDifferMeaningfully,
 } from './filename-validation'
 
 describe('validateDisallowedChars', () => {
@@ -180,13 +181,99 @@ describe('getExtension', () => {
   })
 })
 
+describe('extensionsDifferMeaningfully', () => {
+  it('detects a real extension change', () => {
+    expect(extensionsDifferMeaningfully('file.txt', 'file.json')).toBe(true)
+  })
+
+  it('ignores case-only changes', () => {
+    expect(extensionsDifferMeaningfully('photo.JPG', 'photo.jpg')).toBe(false)
+    expect(extensionsDifferMeaningfully('archive.TAR.GZ', 'archive.TAR.gz')).toBe(false)
+  })
+
+  it('ignores no-op changes', () => {
+    expect(extensionsDifferMeaningfully('file.txt', 'renamed.txt')).toBe(false)
+  })
+
+  it('ignores changes within the JPEG group', () => {
+    expect(extensionsDifferMeaningfully('photo.jpeg', 'photo.jpg')).toBe(false)
+    expect(extensionsDifferMeaningfully('photo.jpg', 'photo.jpe')).toBe(false)
+    expect(extensionsDifferMeaningfully('photo.jfif', 'photo.JPEG')).toBe(false)
+  })
+
+  it('ignores changes within the TIFF group', () => {
+    expect(extensionsDifferMeaningfully('scan.tif', 'scan.tiff')).toBe(false)
+  })
+
+  it('ignores changes within the HTML group', () => {
+    expect(extensionsDifferMeaningfully('page.htm', 'page.html')).toBe(false)
+  })
+
+  it('ignores changes within the YAML group', () => {
+    expect(extensionsDifferMeaningfully('config.yml', 'config.yaml')).toBe(false)
+  })
+
+  it('ignores changes within the MPEG group', () => {
+    expect(extensionsDifferMeaningfully('clip.mpg', 'clip.mpeg')).toBe(false)
+  })
+
+  it('ignores changes within the MIDI group', () => {
+    expect(extensionsDifferMeaningfully('song.mid', 'song.midi')).toBe(false)
+  })
+
+  it('ignores changes within the AIFF group', () => {
+    expect(extensionsDifferMeaningfully('sound.aif', 'sound.aiff')).toBe(false)
+  })
+
+  it('ignores changes within the QuickTime group', () => {
+    expect(extensionsDifferMeaningfully('movie.qt', 'movie.mov')).toBe(false)
+  })
+
+  it('ignores changes within the markdown/text group', () => {
+    expect(extensionsDifferMeaningfully('notes.md', 'notes.txt')).toBe(false)
+    expect(extensionsDifferMeaningfully('notes.markdown', 'notes.md')).toBe(false)
+    expect(extensionsDifferMeaningfully('notes.TXT', 'notes.Markdown')).toBe(false)
+  })
+
+  it('flags changes that cross groups', () => {
+    expect(extensionsDifferMeaningfully('photo.jpg', 'photo.tif')).toBe(true)
+    expect(extensionsDifferMeaningfully('notes.md', 'notes.html')).toBe(true)
+  })
+
+  it('flags adding an extension to a name that had none', () => {
+    expect(extensionsDifferMeaningfully('Makefile', 'Makefile.txt')).toBe(true)
+  })
+
+  it('flags removing an extension', () => {
+    expect(extensionsDifferMeaningfully('readme.txt', 'readme')).toBe(true)
+  })
+
+  it('treats a no-extension to no-extension rename as no change', () => {
+    expect(extensionsDifferMeaningfully('Makefile', 'Dockerfile')).toBe(false)
+  })
+
+  it('trims the new name before comparing', () => {
+    expect(extensionsDifferMeaningfully('photo.jpg', '  photo.jpeg  ')).toBe(false)
+  })
+
+  it('treats a dotfile without extension as no extension', () => {
+    // getExtension('.gitignore') === '', so renaming to .gitkeep is also no extension
+    expect(extensionsDifferMeaningfully('.gitignore', '.gitkeep')).toBe(false)
+  })
+
+  it('uses only the last extension on multi-dot names', () => {
+    expect(extensionsDifferMeaningfully('archive.tar.gz', 'archive.tar.bz2')).toBe(true)
+    expect(extensionsDifferMeaningfully('photo.backup.jpeg', 'photo.backup.jpg')).toBe(false)
+  })
+})
+
 describe('validateExtensionChange', () => {
   it('allows when setting is yes', () => {
-    expect(validateExtensionChange('file.txt', 'file.md', 'yes').severity).toBe('ok')
+    expect(validateExtensionChange('file.txt', 'file.json', 'yes').severity).toBe('ok')
   })
 
   it('errors when setting is no and ext changed', () => {
-    const result = validateExtensionChange('file.txt', 'file.md', 'no')
+    const result = validateExtensionChange('file.txt', 'file.json', 'no')
     expect(result.severity).toBe('error')
   })
 
@@ -195,7 +282,7 @@ describe('validateExtensionChange', () => {
   })
 
   it('allows when setting is ask (dialog handles it)', () => {
-    expect(validateExtensionChange('file.txt', 'file.md', 'ask').severity).toBe('ok')
+    expect(validateExtensionChange('file.txt', 'file.json', 'ask').severity).toBe('ok')
   })
 
   it('allows case-only extension change when setting is no', () => {
@@ -203,7 +290,12 @@ describe('validateExtensionChange', () => {
   })
 
   it('still errors on real extension change when setting is no', () => {
-    expect(validateExtensionChange('file.txt', 'file.md', 'no').severity).toBe('error')
+    expect(validateExtensionChange('file.txt', 'file.json', 'no').severity).toBe('error')
+  })
+
+  it('allows equivalent-extension changes when setting is no', () => {
+    expect(validateExtensionChange('photo.jpeg', 'photo.jpg', 'no').severity).toBe('ok')
+    expect(validateExtensionChange('notes.md', 'notes.txt', 'no').severity).toBe('ok')
   })
 })
 
@@ -260,7 +352,7 @@ describe('validateFilename', () => {
   })
 
   it('validates extension change with no setting', () => {
-    const result = validateFilename('file.md', 'file.txt', parentPath, siblings, 'no')
+    const result = validateFilename('file.json', 'file.txt', parentPath, siblings, 'no')
     expect(result.severity).toBe('error')
   })
 })

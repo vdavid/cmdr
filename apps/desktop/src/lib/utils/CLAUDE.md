@@ -62,9 +62,11 @@ interface ValidationResult {
   (e.g. `.gitignore` → `''`). Implemented as `lastIndexOf('.') <= 0`.
 - Extension change behavior is controlled by the `allowExtensionChanges` user setting (`yes`/`no`/`ask`). `'ask'`
   returns `ok` at validation time — the save dialog handles it separately.
-- `extensionsDifferIgnoringCase(oldName, newName)` is the shared helper that decides whether an extension change is
-  meaningful. Case-only changes (e.g. `.JPG` → `.jpg`) are treated as no change so users aren't pestered to confirm a
-  metadata tweak. Used by both `validateExtensionChange` and the rename save flow's "ask" gate.
+- `extensionsDifferMeaningfully(oldName, newName)` is the shared helper that decides whether an extension change is
+  worth a confirmation. It returns false for case-only changes (e.g. `.JPG` → `.jpg`) and for changes between known
+  equivalents (e.g. `.jpeg` → `.jpg`, `.md` → `.txt`), so users aren't pestered to confirm a metadata tweak. The
+  equivalence groups live in `EQUIVALENT_EXTENSION_GROUPS` in the same file — extend that constant to add more aliases.
+  Used by both `validateExtensionChange` and the rename save flow's "ask" gate.
 
 ## confirm-dialog.ts
 

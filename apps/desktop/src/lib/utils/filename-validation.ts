@@ -77,12 +77,46 @@ export function getExtension(filename: string): string {
 }
 
 /**
- * True if the extensions differ in more than just letter case.
- * Case-only extension changes (e.g. `photo.JPG` → `photo.jpg`) are treated as no change,
- * so users aren't pestered to confirm something that's effectively a metadata tweak.
+ * Extensions treated as equivalent — switching between any two in a group skips the rename warning.
+ * Each group lists spellings of the same underlying format, lowercase, no leading dot.
+ *
+ * The `md`/`markdown`/`txt` group is included by deliberate choice: Markdown is plain text and
+ * the routing tradeoff (different "Open with" defaults) is accepted as a feature, not a bug.
  */
-export function extensionsDifferIgnoringCase(oldName: string, newName: string): boolean {
-  return getExtension(oldName).toLowerCase() !== getExtension(newName.trim()).toLowerCase()
+const EQUIVALENT_EXTENSION_GROUPS: readonly (readonly string[])[] = [
+  ['jpg', 'jpeg', 'jpe', 'jfif'],
+  ['tif', 'tiff'],
+  ['htm', 'html'],
+  ['yml', 'yaml'],
+  ['mpg', 'mpeg'],
+  ['mid', 'midi'],
+  ['aif', 'aiff'],
+  ['qt', 'mov'],
+  ['md', 'markdown', 'txt'],
+]
+
+/** Precomputed `ext -> groupIndex` map for O(1) equivalence lookup. */
+const EXTENSION_TO_GROUP: ReadonlyMap<string, number> = new Map(
+  EQUIVALENT_EXTENSION_GROUPS.flatMap((group, i) => group.map((ext) => [ext, i] as const)),
+)
+
+function normalizedExt(filename: string): string {
+  const ext = getExtension(filename).toLowerCase()
+  return ext.startsWith('.') ? ext.slice(1) : ext
+}
+
+/**
+ * True if the extension change is meaningful enough to warrant a confirmation.
+ * Returns false for case-only changes (`photo.JPG` → `photo.jpg`) and for changes
+ * between known equivalents (`photo.jpeg` → `photo.jpg`, `notes.md` → `notes.txt`),
+ * so users aren't pestered to confirm what's effectively a metadata tweak.
+ */
+export function extensionsDifferMeaningfully(oldName: string, newName: string): boolean {
+  const oldExt = normalizedExt(oldName)
+  const newExt = normalizedExt(newName.trim())
+  if (oldExt === newExt) return false
+  const oldGroup = EXTENSION_TO_GROUP.get(oldExt)
+  return oldGroup === undefined || oldGroup !== EXTENSION_TO_GROUP.get(newExt)
 }
 
 /** Validates extension change against the user's preference. */
@@ -93,7 +127,7 @@ export function validateExtensionChange(
 ): ValidationResult {
   if (allowExtensionChanges === 'yes') return OK_RESULT
 
-  if (!extensionsDifferIgnoringCase(oldName, newName)) return OK_RESULT
+  if (!extensionsDifferMeaningfully(oldName, newName)) return OK_RESULT
 
   if (allowExtensionChanges === 'no') {
     const oldExt = getExtension(oldName)
