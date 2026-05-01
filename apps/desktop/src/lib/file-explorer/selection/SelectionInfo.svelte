@@ -7,13 +7,19 @@
         getSizeDisplay,
         isBrokenSymlink as checkBrokenSymlink,
         isPermissionDenied as checkPermissionDenied,
-        formatSizeTriads,
+        formatSizeForDisplay,
         pluralize,
         formatNumber,
         calculatePercentage,
     } from './selection-info-utils'
     import { measureDateColumnWidth } from '../views/full-list-utils'
-    import { formatFileSize, formatDateTime, getSizeDisplayMode } from '$lib/settings/reactive-settings.svelte'
+    import {
+        formatFileSize,
+        formatDateTime,
+        getSizeDisplayMode,
+        getHumanFriendlySizeUnits,
+        getFileSizeFormat,
+    } from '$lib/settings/reactive-settings.svelte'
     import {
         getDisplaySize,
         buildFileSizeTooltip,
@@ -77,6 +83,10 @@
     const scanning = $derived(isScanning())
 
     const sizeDisplayMode = $derived(getSizeDisplayMode())
+    const sizeFormatOpts = $derived({
+        humanFriendly: getHumanFriendlySizeUnits(),
+        format: getFileSizeFormat(),
+    })
     const displayName = $derived(entry?.name ?? '')
     const isDirectory = $derived(entry?.isDirectory ?? false)
     const isBrokenSymlink = $derived(checkBrokenSymlink(entry))
@@ -90,7 +100,9 @@
               )
             : undefined,
     )
-    const sizeDisplay = $derived(getSizeDisplay(entry, isBrokenSymlink, isPermissionDenied, displaySize))
+    const sizeDisplay = $derived(
+        getSizeDisplay(entry, isBrokenSymlink, isPermissionDenied, displaySize, sizeFormatOpts),
+    )
     const sizeTooltip = $derived(
         entry
             ? isDirectory
@@ -172,9 +184,9 @@
 
     const sizePercentage = $derived(calculatePercentage(selectedSize, totalSize))
 
-    // Size triads for selection summary
-    const selectedSizeTriads = $derived(formatSizeTriads(selectedSize))
-    const totalSizeTriads = $derived(formatSizeTriads(totalSize))
+    // Size display for selection summary (triads in raw mode, single span in human-friendly mode)
+    const selectedSizeTriads = $derived(formatSizeForDisplay(selectedSize, sizeFormatOpts))
+    const totalSizeTriads = $derived(formatSizeForDisplay(totalSize, sizeFormatOpts))
 
     // Tooltip shows human-readable sizes; includes both content and on-disk when they differ
     const selectionSizeTooltip = $derived(

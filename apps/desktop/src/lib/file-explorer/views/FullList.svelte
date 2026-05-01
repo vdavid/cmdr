@@ -23,7 +23,7 @@
         type DirStats,
     } from './file-list-utils'
     import { getDirStatsBatch } from '$lib/tauri-commands'
-    import { formatSizeTriads, formatNumber, pluralize } from '../selection/selection-info-utils'
+    import { formatSizeForDisplay, formatNumber, pluralize } from '../selection/selection-info-utils'
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
     import {
         getVisibleItemsCount as getVisibleItemsCountUtil,
@@ -45,6 +45,8 @@
         getSizeDisplayMode,
         getSizeMismatchWarning,
         getStripedRows,
+        getHumanFriendlySizeUnits,
+        getFileSizeFormat,
     } from '$lib/settings/reactive-settings.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -146,6 +148,12 @@
     // Striped rows setting
     const stripedRows = $derived(getStripedRows())
 
+    // Human-friendly vs. raw-bytes size formatting
+    const sizeFormatOpts = $derived({
+        humanFriendly: getHumanFriendlySizeUnits(),
+        format: getFileSizeFormat(),
+    })
+
     // Drive index state — show spinner while scanning OR aggregating (sizes aren't ready until aggregation finishes)
     const indexing = $derived(isScanning() || isAggregating())
 
@@ -237,6 +245,7 @@
             indexing,
             showSizeMismatchWarning,
             sortBy,
+            sizeFormatOpts,
         })
     })
 
@@ -706,7 +715,7 @@
                             {:else if file.isDirectory}
                                 {#if dirDisplaySize !== undefined}
                                     <span class="size-text"
-                                        >{#each formatSizeTriads(dirDisplaySize) as triad, i (i)}<span
+                                        >{#each formatSizeForDisplay(dirDisplaySize, sizeFormatOpts) as triad, i (i)}<span
                                                 class={triad.tierClass}>{triad.value}</span
                                             >{/each}</span
                                     >
@@ -746,7 +755,7 @@
                                 {/if}
                             {:else if fileDisplaySize !== undefined}
                                 <span class="size-text"
-                                    >{#each formatSizeTriads(fileDisplaySize) as triad, i (i)}<span
+                                    >{#each formatSizeForDisplay(fileDisplaySize, sizeFormatOpts) as triad, i (i)}<span
                                             class={triad.tierClass}>{triad.value}</span
                                         >{/each}</span
                                 >

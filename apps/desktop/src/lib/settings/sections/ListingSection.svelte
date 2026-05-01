@@ -16,6 +16,10 @@
 
     const dirSortDef = getSettingDefinition('listing.directorySortMode') ?? { label: '', description: '' }
     const sizeDisplayDef = getSettingDefinition('listing.sizeDisplay') ?? { label: '', description: '' }
+    const humanFriendlySizeUnitsDef = getSettingDefinition('listing.humanFriendlySizeUnits') ?? {
+        label: '',
+        description: '',
+    }
     const sizeMismatchDef = getSettingDefinition('listing.sizeMismatchWarning') ?? { label: '', description: '' }
     const stripedRowsDef = getSettingDefinition('listing.stripedRows') ?? { label: '', description: '' }
 </script>
@@ -39,6 +43,16 @@
             {searchQuery}
         >
             <SettingToggleGroup id="listing.sizeDisplay" />
+        </SettingRow>
+    {/if}
+    {#if shouldShow('listing.humanFriendlySizeUnits')}
+        <SettingRow
+            id="listing.humanFriendlySizeUnits"
+            label={humanFriendlySizeUnitsDef.label}
+            description={humanFriendlySizeUnitsDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="listing.humanFriendlySizeUnits" />
         </SettingRow>
     {/if}
     {#if shouldShow('listing.sizeMismatchWarning')}

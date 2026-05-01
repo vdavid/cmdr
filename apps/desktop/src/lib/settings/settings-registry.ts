@@ -147,6 +147,17 @@ export const settingsRegistry: SettingDefinition[] = [
   },
 
   {
+    id: 'listing.humanFriendlySizeUnits',
+    section: ['General', 'Listing'],
+    label: 'Human-friendly size units',
+    description: 'On: shows 1.02 MB. Off: shows raw bytes for precise comparison.',
+    keywords: ['size', 'human', 'bytes', 'unit', 'format', 'raw', 'precise'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+
+  {
     id: 'listing.sizeMismatchWarning',
     section: ['General', 'Listing'],
     label: 'Size mismatch warning',

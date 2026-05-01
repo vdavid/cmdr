@@ -9,8 +9,9 @@
 
 import * as pretext from '@chenglou/pretext'
 
-import { formatSizeTriads } from '../selection/selection-info-utils'
+import { formatSizeForDisplay } from '../selection/selection-info-utils'
 import type { FileEntry, SortColumn } from '../types'
+import type { FileSizeFormat } from '$lib/settings/types'
 import { createPretextMeasure } from '$lib/utils/shorten-middle'
 
 import type { DirStats } from './file-list-utils'
@@ -81,9 +82,18 @@ export function _setMeasureForTests(fn: ((text: string) => number) | null): void
   measureUnavailable = false
 }
 
-/** Concatenated triad string as it appears in the DOM (with U+2009 thin-space separators). */
-function triadsText(bytes: number): string {
-  return formatSizeTriads(bytes)
+export interface SizeFormatOpts {
+  humanFriendly: boolean
+  format: FileSizeFormat
+}
+
+/**
+ * The full size-cell string as it appears in the DOM. In raw-bytes mode this
+ * is the concatenation of the triad chunks (with their U+2009 thin-space
+ * separators); in human-friendly mode it's something like "1.02 MB".
+ */
+function sizeCellText(bytes: number, opts: SizeFormatOpts): string {
+  return formatSizeForDisplay(bytes, opts)
     .map((t) => t.value)
     .join('')
 }
@@ -92,6 +102,7 @@ function sizeTextForEntry(
   entry: FileEntry,
   sizeDisplayMode: 'smart' | 'logical' | 'physical',
   indexing: boolean,
+  sizeFormatOpts: SizeFormatOpts,
 ): string {
   // Virtual git entries override the Size cell with a short string
   // (`+12 / -3`, `5 files`, …); measure that instead of the byte format.
@@ -100,11 +111,11 @@ function sizeTextForEntry(
   }
   if (entry.isDirectory) {
     const s = getDisplaySize(entry.recursiveSize, entry.recursivePhysicalSize, sizeDisplayMode)
-    if (s !== undefined) return triadsText(s)
+    if (s !== undefined) return sizeCellText(s, sizeFormatOpts)
     return indexing ? 'Scanning...' : '<dir>'
   }
   const s = getDisplaySize(entry.size, entry.physicalSize, sizeDisplayMode)
-  return s !== undefined ? triadsText(s) : ''
+  return s !== undefined ? sizeCellText(s, sizeFormatOpts) : ''
 }
 
 /** Pixel width of the size-column icons that follow the text for this row. */
@@ -132,8 +143,18 @@ export function computeFullListColumnWidths(args: {
   indexing: boolean
   showSizeMismatchWarning: boolean
   sortBy: SortColumn
+  sizeFormatOpts: SizeFormatOpts
 }): ColumnWidths {
-  const { entries, parentDirStats, formatDateTime, sizeDisplayMode, indexing, showSizeMismatchWarning, sortBy } = args
+  const {
+    entries,
+    parentDirStats,
+    formatDateTime,
+    sizeDisplayMode,
+    indexing,
+    showSizeMismatchWarning,
+    sortBy,
+    sizeFormatOpts,
+  } = args
 
   const measure = getMeasure()
   if (!measure) {
@@ -158,7 +179,7 @@ export function computeFullListColumnWidths(args: {
       if (w > extMax) extMax = w
     }
 
-    const sizeText = sizeTextForEntry(entry, sizeDisplayMode, indexing)
+    const sizeText = sizeTextForEntry(entry, sizeDisplayMode, indexing, sizeFormatOpts)
     const iconSuffix = sizeIconSuffixForEntry(entry, indexing, showSizeMismatchWarning)
     const rowSize = (sizeText ? measure(sizeText) : 0) + iconSuffix
     if (rowSize > sizeMax) sizeMax = rowSize
@@ -175,7 +196,7 @@ export function computeFullListColumnWidths(args: {
   if (parentDirStats) {
     const s = getDisplaySize(parentDirStats.recursiveSize, parentDirStats.recursivePhysicalSize, sizeDisplayMode)
     if (s !== undefined) {
-      const w = measure(triadsText(s)) + sizeIconSuffixMax
+      const w = measure(sizeCellText(s, sizeFormatOpts)) + sizeIconSuffixMax
       if (w > sizeMax) sizeMax = w
     }
   }

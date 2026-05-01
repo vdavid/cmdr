@@ -19,6 +19,8 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   formatFileSize: (n: number) => `${String(n)} B`,
   formatDateTime: (t: number | undefined) => (t ? '2025-03-14 10:30' : ''),
   getSizeDisplayMode: () => 'smart',
+  getHumanFriendlySizeUnits: () => false,
+  getFileSizeFormat: () => 'binary',
 }))
 
 function makeDir(overrides: Partial<Record<string, unknown>> = {}) {

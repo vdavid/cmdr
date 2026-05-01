@@ -48,6 +48,9 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
 
 - `listing.sizeDisplay` — enum (smart/logical/physical), default smart, toggle-group. Reactive getter:
   `getSizeDisplayMode()`.
+- `listing.humanFriendlySizeUnits` — boolean, default true, switch. Reactive getter: `getHumanFriendlySizeUnits()`. ON
+  shows "1.02 MB" in size columns and the SelectionInfo primary size readout; OFF shows raw bytes with thin-space triad
+  separators. Volume/disk-space displays, dialogs, and tooltips that already show both formats are unaffected.
 - `listing.sizeMismatchWarning` — boolean, default true, switch. Reactive getter: `getSizeMismatchWarning()`.
 
 `AdvancedSection` includes `advanced.maxLogStorageMb` — number, default 200, range 0–5000, MB suffix. `0` disables log

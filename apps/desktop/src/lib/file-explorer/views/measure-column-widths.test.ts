@@ -35,6 +35,7 @@ const baseArgs = {
   indexing: false,
   showSizeMismatchWarning: false,
   sortBy: 'name' as const,
+  sizeFormatOpts: { humanFriendly: false, format: 'binary' as const },
 }
 
 describe('computeFullListColumnWidths', () => {
@@ -139,5 +140,19 @@ describe('computeFullListColumnWidths', () => {
     expect(w.ext).toBeGreaterThanOrEqual(28)
     expect(w.size).toBeGreaterThanOrEqual(40)
     expect(w.date).toBeGreaterThanOrEqual(70)
+  })
+
+  it('size column tracks the human-friendly format when enabled', () => {
+    _setMeasureForTests(fakeMeasure)
+    const big = entry({ name: 'z.bin', size: 123_456_789, physicalSize: 123_456_789 })
+    const raw = computeFullListColumnWidths({ ...baseArgs, entries: [big] })
+    const human = computeFullListColumnWidths({
+      ...baseArgs,
+      entries: [big],
+      sizeFormatOpts: { humanFriendly: true, format: 'binary' },
+    })
+    // "123 456 789" (with thin spaces) is 11 visible chars; "117.74 MB" is 9.
+    // With our deterministic length*7 measurer the human-friendly cell is narrower.
+    expect(human.size).toBeLessThan(raw.size)
   })
 })

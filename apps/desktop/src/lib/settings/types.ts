@@ -98,6 +98,7 @@ export interface SettingsValues {
   // Listing
   'listing.directorySortMode': DirectorySortMode
   'listing.sizeDisplay': SizeDisplayMode
+  'listing.humanFriendlySizeUnits': boolean
   'listing.sizeMismatchWarning': boolean
   'listing.stripedRows': boolean
 

@@ -4,6 +4,8 @@
  */
 
 import type { FileEntry } from '../types'
+import type { FileSizeFormat } from '$lib/settings/types'
+import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
 
 // Size tier colors for digit triads (indexed: 0=bytes, 1=kB, 2=MB, 3=GB, 4=TB+)
 export const sizeTierClasses = ['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb']
@@ -33,6 +35,42 @@ export function formatSizeTriads(bytes: number): { value: string; tierClass: str
     ...t,
     value: i < triads.length - 1 ? t.value + '\u2009' : t.value, // thin space separator
   }))
+}
+
+/**
+ * Picks a size tier CSS class for a human-friendly size string like
+ * "1.02 MB" or "512 bytes". Returns the closest of `sizeTierClasses` so the
+ * unit-tagged span uses the same coloring as the raw-bytes triad mode.
+ */
+export function tierClassForUnit(unit: string): string {
+  const lower = unit.toLowerCase()
+  if (lower === 'bytes') return 'size-bytes'
+  if (lower === 'kb') return 'size-kb' // matches KB (binary) and kB (SI)
+  if (lower === 'mb') return 'size-mb'
+  if (lower === 'gb') return 'size-gb'
+  // TB, PB and anything beyond fall back to the highest defined tier
+  return 'size-tb'
+}
+
+/**
+ * Formats a byte count for display in views/status bar based on the user's
+ * "human-friendly size units" preference. Returns an array of tier-tagged
+ * spans:
+ * - In human-friendly mode, returns one element like `{ value: '1.02 MB', tierClass: 'size-mb' }`.
+ * - In raw-bytes mode, delegates to {@link formatSizeTriads} which returns one element per digit triad.
+ */
+export function formatSizeForDisplay(
+  bytes: number,
+  opts: { humanFriendly: boolean; format: FileSizeFormat },
+): { value: string; tierClass: string }[] {
+  if (!opts.humanFriendly) {
+    return formatSizeTriads(bytes)
+  }
+  const formatted = formatFileSizeWithFormat(bytes, opts.format)
+  // The formatter returns "<value> <unit>"; the unit is the last whitespace-separated token.
+  const spaceIndex = formatted.lastIndexOf(' ')
+  const unit = spaceIndex >= 0 ? formatted.slice(spaceIndex + 1) : ''
+  return [{ value: formatted, tierClass: tierClassForUnit(unit) }]
 }
 
 /** Formats timestamp as YYYY-MM-DD hh:mm:ss */
@@ -65,12 +103,14 @@ export function getSizeDisplay(
   isBrokenSymlink: boolean,
   isPermissionDenied: boolean,
   displaySize?: number,
+  formatOpts?: { humanFriendly: boolean; format: FileSizeFormat },
 ): { value: string; tierClass: string }[] | 'DIR' | null {
   if (!entry || isBrokenSymlink || isPermissionDenied) return null
-  if (entry.isDirectory) return displaySize !== undefined ? formatSizeTriads(displaySize) : 'DIR'
+  const opts = formatOpts ?? { humanFriendly: false, format: 'binary' as const }
+  if (entry.isDirectory) return displaySize !== undefined ? formatSizeForDisplay(displaySize, opts) : 'DIR'
   const size = displaySize ?? entry.size
   if (size === undefined) return null
-  return formatSizeTriads(size)
+  return formatSizeForDisplay(size, opts)
 }
 
 /** Determines date display for an entry */

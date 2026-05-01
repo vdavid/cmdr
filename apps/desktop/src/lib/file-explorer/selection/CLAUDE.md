@@ -20,6 +20,12 @@ Exported functions:
 
 - `formatSizeTriads(bytes)` — splits byte count into digit triads, each tagged with a `tierClass`. Uses U+2009
   thin-space as separator between triads.
+- `formatSizeForDisplay(bytes, { humanFriendly, format })` — single entry point used by views and the status bar to
+  render byte counts. In raw-bytes mode delegates to `formatSizeTriads`. In human-friendly mode returns one tier-tagged
+  span like `{ value: '1.02 MB', tierClass: 'size-mb' }`. The tier is picked from the chosen unit via
+  `tierClassForUnit`, so coloring stays consistent with the triad mode.
+- `tierClassForUnit(unit)` — maps the unit suffix from `formatFileSizeWithFormat` (`bytes`, `KB`/`kB`, `MB`, `GB`, `TB`,
+  `PB`) to one of `sizeTierClasses`. TB and PB cap at `size-tb`.
 - `formatDate(timestamp)` — Unix seconds → `"YYYY-MM-DD HH:MM:SS"` local time.
 - `buildDateTooltip(entry)` — multiline string with created/opened/added/modified dates.
 - `getSizeDisplay(entry, isBrokenSymlink, isPermissionDenied)` — returns triads array, `'DIR'`, or `null`.
@@ -84,9 +90,13 @@ every unsorted header. Handles both `onclick` and `onkeydown` (Enter/Space).
 
 ## Key decisions
 
-**Decision**: Size displayed as raw byte count with colored digit triads, not as human-readable "1.23 MB" **Why**:
-Human-readable values lose precision and make it impossible to compare similarly-sized files. Triads with tier-based CSS
-coloring (bytes/KB/MB/GB/TB) give both precision and quick visual scanning. Human-readable is available as a tooltip.
+**Decision**: Size column / status bar primary readout follows the `listing.humanFriendlySizeUnits` toggle. ON (default)
+shows "1.02 MB" via `formatFileSizeWithFormat`. OFF shows colored digit triads via `formatSizeTriads`. Both modes flow
+through the shared `formatSizeForDisplay` helper. **Why**: Human-readable is friendlier for most users, but power users
+(and David) want precise byte counts to compare similarly-sized files. The tier-based CSS coloring
+(`size-bytes`/`size-kb`/`size-mb`/`size-gb`/`size-tb`) is preserved in both modes — in human-friendly mode the entire
+formatted string takes the tier of its chosen unit. Tooltips on file/dir/selection size still always show both formats
+so the other one is always one hover away.
 
 **Decision**: Middle truncation in `file-info` mode uses the `useShortenMiddle` Svelte action (from `$lib/utils/`) with
 `preferBreakAt: '.'` and `startRatio: 0.7`, not CSS `text-overflow: ellipsis` **Why**: CSS ellipsis truncates from the

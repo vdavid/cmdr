@@ -4,6 +4,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   formatSizeTriads,
+  formatSizeForDisplay,
+  tierClassForUnit,
   formatDate,
   buildDateTooltip,
   getSizeDisplay,
@@ -303,6 +305,97 @@ describe('isPermissionDenied', () => {
 describe('sizeTierClasses', () => {
   it('has correct classes in order', () => {
     expect(sizeTierClasses).toEqual(['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb'])
+  })
+})
+
+describe('tierClassForUnit', () => {
+  it('maps bytes to size-bytes', () => {
+    expect(tierClassForUnit('bytes')).toBe('size-bytes')
+  })
+
+  it('maps KB and kB to size-kb', () => {
+    expect(tierClassForUnit('KB')).toBe('size-kb')
+    expect(tierClassForUnit('kB')).toBe('size-kb')
+  })
+
+  it('maps MB to size-mb', () => {
+    expect(tierClassForUnit('MB')).toBe('size-mb')
+  })
+
+  it('maps GB to size-gb', () => {
+    expect(tierClassForUnit('GB')).toBe('size-gb')
+  })
+
+  it('maps TB and PB to size-tb (capped)', () => {
+    expect(tierClassForUnit('TB')).toBe('size-tb')
+    expect(tierClassForUnit('PB')).toBe('size-tb')
+  })
+})
+
+describe('formatSizeForDisplay', () => {
+  describe('raw-bytes mode (humanFriendly: false)', () => {
+    it('delegates to formatSizeTriads for small values', () => {
+      const result = formatSizeForDisplay(512, { humanFriendly: false, format: 'binary' })
+      expect(result).toEqual(formatSizeTriads(512))
+    })
+
+    it('delegates to formatSizeTriads for large values', () => {
+      const result = formatSizeForDisplay(1_073_208, { humanFriendly: false, format: 'binary' })
+      expect(result).toEqual(formatSizeTriads(1_073_208))
+      // Sanity-check: matches user's example "1 073 208" (with thin spaces)
+      expect(result.map((t) => t.value).join('')).toBe('1 073 208')
+    })
+
+    it('ignores the format option in raw-bytes mode', () => {
+      const binary = formatSizeForDisplay(1024, { humanFriendly: false, format: 'binary' })
+      const si = formatSizeForDisplay(1024, { humanFriendly: false, format: 'si' })
+      expect(binary).toEqual(si)
+    })
+  })
+
+  describe('human-friendly mode (humanFriendly: true)', () => {
+    it('returns one element with size-bytes for sub-KB binary values', () => {
+      const result = formatSizeForDisplay(512, { humanFriendly: true, format: 'binary' })
+      expect(result).toHaveLength(1)
+      expect(result[0]).toEqual({ value: '512 bytes', tierClass: 'size-bytes' })
+    })
+
+    it('returns size-kb for binary 1024', () => {
+      const result = formatSizeForDisplay(1024, { humanFriendly: true, format: 'binary' })
+      expect(result).toEqual([{ value: '1.00 KB', tierClass: 'size-kb' }])
+    })
+
+    it('returns size-mb for ~1 MB (matches feature spec example "1.02 MB")', () => {
+      const result = formatSizeForDisplay(1_073_208, { humanFriendly: true, format: 'binary' })
+      expect(result).toEqual([{ value: '1.02 MB', tierClass: 'size-mb' }])
+    })
+
+    it('returns size-gb for ~1 GB binary', () => {
+      const result = formatSizeForDisplay(1024 ** 3, { humanFriendly: true, format: 'binary' })
+      expect(result).toEqual([{ value: '1.00 GB', tierClass: 'size-gb' }])
+    })
+
+    it('returns size-tb for TB and beyond', () => {
+      const tb = formatSizeForDisplay(1024 ** 4, { humanFriendly: true, format: 'binary' })
+      const pb = formatSizeForDisplay(1024 ** 5, { humanFriendly: true, format: 'binary' })
+      expect(tb[0].tierClass).toBe('size-tb')
+      expect(pb[0].tierClass).toBe('size-tb')
+    })
+
+    it('boundary: SI 1000 is 1.00 kB (size-kb tier)', () => {
+      const result = formatSizeForDisplay(1000, { humanFriendly: true, format: 'si' })
+      expect(result).toEqual([{ value: '1.00 kB', tierClass: 'size-kb' }])
+    })
+
+    it('boundary: binary 1023 is still bytes', () => {
+      const result = formatSizeForDisplay(1023, { humanFriendly: true, format: 'binary' })
+      expect(result).toEqual([{ value: '1023 bytes', tierClass: 'size-bytes' }])
+    })
+
+    it('SI 1024 is 1.02 kB', () => {
+      const result = formatSizeForDisplay(1024, { humanFriendly: true, format: 'si' })
+      expect(result).toEqual([{ value: '1.02 kB', tierClass: 'size-kb' }])
+    })
   })
 })
 
