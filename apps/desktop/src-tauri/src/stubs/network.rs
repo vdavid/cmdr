@@ -362,6 +362,12 @@ pub async fn reconnect_smb_volume(_volume_id: String) -> Result<(), String> {
     Err("Direct SMB connection not supported on this platform".to_string())
 }
 
+/// Disconnects an SMB volume (stub: returns error).
+#[tauri::command]
+pub async fn disconnect_smb_volume(_volume_id: String) -> Result<(), String> {
+    Err("Direct SMB connection not supported on this platform".to_string())
+}
+
 /// Connects to a manual server (stub: returns error).
 #[tauri::command]
 pub async fn connect_to_server(_address: String, _app_handle: tauri::AppHandle) -> Result<ManualConnectResult, String> {

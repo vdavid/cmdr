@@ -347,6 +347,19 @@ export async function reconnectSmbVolume(volumeId: string): Promise<void> {
   await invoke('reconnect_smb_volume', { volumeId })
 }
 
+/**
+ * Disconnects an SMB volume by unmounting it at the OS level (macOS) or by
+ * dropping the smb2 session (Linux, until GVFS unmount is wired up). The
+ * `volumes-changed` event removes the volume from the picker shortly after.
+ *
+ * Resolves on success; throws on failure with an `IpcError`-shaped exception
+ * (for example, "diskutil unmount failed: Resource busy" if a Finder window
+ * still has the volume open).
+ */
+export async function disconnectSmbVolume(volumeId: string): Promise<void> {
+  await invoke('disconnect_smb_volume', { volumeId })
+}
+
 // ============================================================================
 // Manual server management (macOS only)
 // ============================================================================

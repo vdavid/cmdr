@@ -97,9 +97,11 @@
         unwatchVolumeSpace,
         showBreadcrumbContextMenu,
         upgradeToSmbVolumeWithCredentials,
+        disconnectSmbVolume,
         type UpgradeResult,
         type VolumeSpaceInfo,
     } from '$lib/tauri-commands'
+    import { getIpcErrorMessage } from '$lib/tauri-commands/ipc-types'
     import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
     import { requestVolumeRefresh, getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
     import type { UnreachableState } from '../tabs/tab-types'
@@ -378,12 +380,17 @@
     }
 
     function handleSmbReconnectDisconnect() {
-        smbReconnectManager.cancel(volumeId)
-        // The volume picker's existing "disconnect from server" path handles the
-        // backend unmount. For now we just navigate away — eject from the
-        // volume picker is the cleanest way to drop the connection.
-        // TODO: wire up an explicit disconnect command if needed; for now, the
-        //       Cancel action and dropping the OS mount cover it.
+        const targetVolumeId = volumeId
+        smbReconnectManager.cancel(targetVolumeId)
+        // Fire the OS-level unmount (macOS: `diskutil unmount`). We don't await
+        // here — the FSEvents-driven `volumes-changed` will tear down the
+        // SmbVolume and remove the entry; meanwhile the user expects the pane
+        // to leave the broken share immediately, so navigate away in parallel.
+        void disconnectSmbVolume(targetVolumeId).catch((e: unknown) => {
+            const message = getIpcErrorMessage(e)
+            log.warn('Disconnect SMB volume {volumeId} failed: {error}', { volumeId: targetVolumeId, error: message })
+            addToast(`Couldn't disconnect: ${message}`, { level: 'error' })
+        })
         void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
             navigateToFallback(validPath)
         })
