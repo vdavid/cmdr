@@ -23,6 +23,7 @@ export {
   clearSelfDragOverlay,
   getPathLimits,
   pathExists,
+  pathExistsChecked,
   createDirectory,
   createFile,
   getSyncStatus,

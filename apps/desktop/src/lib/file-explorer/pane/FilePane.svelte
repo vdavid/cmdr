@@ -21,7 +21,7 @@
         cancelListing,
         findFileIndex,
         findFileIndices,
-        pathExists,
+        pathExistsChecked,
         getFileAt,
         getListingStats,
         getMaxFilenameWidth,
@@ -930,9 +930,11 @@
                             return
                         }
 
-                        // For local volumes, check if the path was deleted
-                        void pathExists(loadPath).then((exists) => {
-                            if (!exists) {
+                        // For local volumes, check if the path was deleted.
+                        // Use the checked variant so a connection-blip "false" doesn't get treated as
+                        // "deleted" — show the error pane in that case instead of walking up.
+                        void pathExistsChecked(loadPath).then(({ data: exists, timedOut }) => {
+                            if (!exists && !timedOut) {
                                 // Path is gone — auto-navigate to nearest valid parent
                                 log.info('Listing error for deleted path, navigating to valid parent: {path}', {
                                     path: loadPath,
@@ -941,7 +943,7 @@
                                     navigateToFallback(validPath)
                                 })
                             } else {
-                                // Path exists but has another error (permission denied, etc.)
+                                // Path exists, or we couldn't tell — show the original listing error
                                 resetLoadingState(event.payload.message, false, event.payload.friendly)
                             }
                         })
@@ -1841,31 +1843,40 @@
             // listings fresh via `git-state-changed` and the
             // `directory-diff` events from `invalidate_virtual_listings`.
             if (isVirtualGitPath(currentPath)) return
-            void pathExists(currentPath).then((exists) => {
+            void pathExistsChecked(currentPath).then(({ data: exists, timedOut }) => {
+                // `timedOut` covers both a 2s syscall timeout and an SMB volume in
+                // `Disconnected` state — in both cases we don't know whether the path
+                // exists. Reset the counter and wait for the connection to recover.
+                if (timedOut) {
+                    dirNotExistsCount = 0
+                    return
+                }
                 if (exists) {
                     dirNotExistsCount = 0
                     return
                 }
 
-                // Require 2 consecutive "not exists" before navigating away.
-                // A single false can be a timeout on a slow volume (pathExists
-                // returns false on timeout), so we need a second confirmation.
+                // Require 2 consecutive confirmed "not exists" before navigating away.
                 dirNotExistsCount++
                 if (dirNotExistsCount < 2) return
 
                 // If on an external volume, check whether the volume root itself is gone.
                 // If so, skip — the volume unmount handler will manage the transition.
                 if (volumePath !== '/') {
-                    void pathExists(volumePath).then((volumeExists) => {
-                        if (!volumeExists) return
-                        log.info(
-                            'Directory {dir} no longer exists, navigating to nearest valid parent under {volume}',
-                            { dir: currentPath, volume: volumePath },
-                        )
-                        void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
-                            navigateToFallback(validPath)
-                        })
-                    })
+                    void pathExistsChecked(volumePath).then(
+                        ({ data: volumeExists, timedOut: volumeTimedOut }) => {
+                            // If we couldn't tell whether the volume is there, don't walk up.
+                            if (volumeTimedOut) return
+                            if (!volumeExists) return
+                            log.info(
+                                'Directory {dir} no longer exists, navigating to nearest valid parent under {volume}',
+                                { dir: currentPath, volume: volumePath },
+                            )
+                            void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
+                                navigateToFallback(validPath)
+                            })
+                        },
+                    )
                 } else {
                     log.info('Directory {dir} no longer exists, navigating to nearest valid parent', {
                         dir: currentPath,

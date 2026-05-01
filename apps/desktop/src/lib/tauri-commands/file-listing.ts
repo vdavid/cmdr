@@ -277,7 +277,18 @@ export async function getPathLimits(): Promise<PathLimits> {
  * @returns True if the path exists.
  */
 export async function pathExists(path: string, volumeId?: string): Promise<boolean> {
-  return invoke<boolean>('path_exists', { volumeId, path })
+  const result = await invoke<TimedOut<boolean>>('path_exists', { volumeId, path })
+  return result.data
+}
+
+/**
+ * Like `pathExists`, but returns the full `TimedOut<boolean>` so the caller can tell
+ * "doesn't exist" from "couldn't tell" (timeout, or SMB volume in `Disconnected` state).
+ * Use this where treating a transient connection blip as "deleted" would be wrong —
+ * for example, the directory-eviction poll in `FilePane.svelte`.
+ */
+export async function pathExistsChecked(path: string, volumeId?: string): Promise<TimedOut<boolean>> {
+  return invoke<TimedOut<boolean>>('path_exists', { volumeId, path })
 }
 
 /**

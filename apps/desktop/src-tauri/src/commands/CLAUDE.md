@@ -44,7 +44,7 @@ immediately to business-logic modules. No significant logic lives here.
 **Why**: The original `blocking_with_timeout` returned a fallback value indistinguishable from a real empty/none result. The frontend couldn't tell "no volumes mounted" from "timed out before listing volumes." Two wrapper types solve this:
 - `TimedOut<T>` (`{ data: T, timedOut: bool }`) — for commands that don't return `Result` (collections, `Option`, `()`). Use `blocking_with_timeout_flag` to produce these.
 - `IpcError` (`{ message: String, timedOut: bool }`) — for commands returning `Result<T, _>`. Use `blocking_result_with_timeout` or map `tokio::time::timeout` errors to `IpcError::timeout()`.
-The frontend has matching TypeScript types in `$lib/tauri-commands/ipc-types.ts` (`TimedOut<T>`, `IpcError`, `isIpcError`, `getIpcErrorMessage`). The old `blocking_with_timeout` is kept for `path_exists` and other commands where timeout distinction isn't needed.
+The frontend has matching TypeScript types in `$lib/tauri-commands/ipc-types.ts` (`TimedOut<T>`, `IpcError`, `isIpcError`, `getIpcErrorMessage`). `path_exists` returns `TimedOut<bool>` and is also SMB-aware: an `SmbVolume` in `Disconnected` state returns an immediate `false` (no timeout), so the command checks `volume.smb_connection_state()` after the call and surfaces that as `timedOut: true`. The frontend uses this to avoid evicting users from a network folder on transient connection blips. The bare `blocking_with_timeout` helper is still around for any future read where timeout distinction genuinely isn't needed.
 
 **Decision**: JSON for all Tauri IPC, not binary formats (MessagePack, Protobuf).
 **Why**: Benchmarked with real directory listings: MessagePack is 34-58% SLOWER than JSON despite being 17-19% smaller. Tauri serializes `Vec<u8>` as a JSON array of numbers, so binary data gets wrapped in JSON anyway, negating size benefits and adding extra decoding overhead. See [benchmark data](../../../../../docs/notes/json-ipc-benchmarks.md).
@@ -60,7 +60,7 @@ The frontend has matching TypeScript types in `$lib/tauri-commands/ipc-types.ts`
 - **No business logic here.** If you find yourself adding branching or data transformation, move it to the relevant subsystem module.
 - **`spawn_blocking` for filesystem I/O.** All blocking operations in async commands are wrapped in `tokio::task::spawn_blocking`.
 - **Timeout-protected I/O with distinguishable results.** All filesystem-touching commands use timeout wrappers from `util.rs`. Timeouts: 2s for reads, 5s for writes (`create_directory`, `rename_file`), 15s for trash (`move_to_trash`), 30s for recursive scans. Three helpers:
-  - `blocking_with_timeout(duration, fallback, closure)` — returns raw `T`, timeout indistinguishable from fallback. Used only where distinction isn't needed (like `path_exists`).
+  - `blocking_with_timeout(duration, fallback, closure)` — returns raw `T`, timeout indistinguishable from fallback. Reserved for cases where the distinction genuinely doesn't matter; prefer the `_flag` variant by default.
   - `blocking_with_timeout_flag(duration, fallback, closure)` → `TimedOut<T>` — for commands returning `Vec`, `HashMap`, `Option`, or `()`. Frontend unwraps `.data` and can check `.timedOut`.
   - `blocking_result_with_timeout(duration, closure)` → `Result<T, IpcError>` — for commands that already return `Result`. Timeout becomes `Err(IpcError { message, timedOut: true })`.
   - For P2 commands using raw `tokio::time::timeout`, map the `Elapsed` error to `IpcError::timeout()` and other errors to `IpcError::from_err(msg)`.

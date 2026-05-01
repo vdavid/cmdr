@@ -15,7 +15,7 @@ use crate::file_system::{
 use std::path::{Path, PathBuf};
 use tokio::time::Duration;
 
-use crate::commands::util::{IpcError, TimedOut, blocking_with_timeout};
+use crate::commands::util::{IpcError, TimedOut};
 use crate::file_system::validation::{MAX_NAME_BYTES, MAX_PATH_BYTES};
 
 use super::expand_tilde;
@@ -37,8 +37,12 @@ pub fn get_path_limits() -> PathLimits {
     }
 }
 
+/// Returns `TimedOut<bool>` so the frontend can distinguish a real "doesn't exist"
+/// from "we couldn't tell" (timeout, or SMB volume in `Disconnected` state). Without this
+/// distinction, the directory-eviction poll in `FilePane.svelte` evicts users from a
+/// network folder on any transient connection blip.
 #[tauri::command]
-pub async fn path_exists(volume_id: Option<String>, path: String) -> bool {
+pub async fn path_exists(volume_id: Option<String>, path: String) -> TimedOut<bool> {
     let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
 
     // For local volumes, expand tilde
@@ -46,15 +50,51 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> bool {
 
     // Try to use Volume abstraction
     if let Some(volume) = get_volume_manager().get(&volume_id) {
-        let path_for_check = expanded_path.clone();
-        return tokio::time::timeout(PATH_EXISTS_TIMEOUT, volume.exists(Path::new(&path_for_check)))
-            .await
-            .unwrap_or_default();
-    }
+        // For SMB volumes, an immediate `false` from `exists()` may be the connection
+        // being dead (`clone_session` returns `Err`) rather than the path actually missing.
+        // Snapshot whether this is an SMB volume by whether it reports an SMB connection state.
+        let is_smb = volume.smb_connection_state().is_some();
 
-    // Fallback for unknown volumes (shouldn't happen in practice)
-    let path_buf = PathBuf::from(expanded_path);
-    blocking_with_timeout(PATH_EXISTS_TIMEOUT, false, move || path_buf.exists()).await
+        let path_for_check = expanded_path.clone();
+        match tokio::time::timeout(PATH_EXISTS_TIMEOUT, volume.exists(Path::new(&path_for_check))).await {
+            Ok(exists) => {
+                // SMB volume just transitioned to `Disconnected`? The `false` we got back
+                // is meaningless — surface it as a timeout-equivalent so callers know.
+                if !exists && is_smb && volume.smb_connection_state().is_none() {
+                    return TimedOut {
+                        data: false,
+                        timed_out: true,
+                    };
+                }
+                TimedOut {
+                    data: exists,
+                    timed_out: false,
+                }
+            }
+            Err(_) => TimedOut {
+                data: false,
+                timed_out: true,
+            },
+        }
+    } else {
+        // Fallback for unknown volumes (shouldn't happen in practice)
+        let path_buf = PathBuf::from(expanded_path);
+        let result = tokio::time::timeout(
+            PATH_EXISTS_TIMEOUT,
+            tokio::task::spawn_blocking(move || path_buf.exists()),
+        )
+        .await;
+        match result {
+            Ok(Ok(exists)) => TimedOut {
+                data: exists,
+                timed_out: false,
+            },
+            _ => TimedOut {
+                data: false,
+                timed_out: true,
+            },
+        }
+    }
 }
 
 // ============================================================================
