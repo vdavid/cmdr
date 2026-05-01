@@ -5,6 +5,101 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-05-01
+
+### Added
+
+- **SMB live reconnect.** When the smb2 session for a network share drops, Cmdr now stays in the folder and runs a
+  5-attempt backoff cycle (2/4/8/16/30 s, 60 s total) right inside the pane. Both panes on the same share share a single
+  cycle; success re-runs `loadDirectory` automatically; give-up swaps to the existing unreachable banner with a working
+  Disconnect button. The session rebuilds in place — same `SmbVolume`, same `volumeId`, same Full Disk Access
+  permissions, no re-auth — because connection params now cache for the volume's lifetime. Concurrent operations wait on
+  a single-flight reconnect lock instead of dog-piling the server. Auth failure re-pulls credentials from the secret
+  store and retries once before giving up. Unmount mid-cycle short-circuits cleanly so a fresh session never lands in an
+  orphaned volume. The reconnect view shows an attempt counter and a progress bar driven by `requestAnimationFrame`, and
+  three buttons with disambiguating tooltips: Retry now, Cancel, Disconnect
+  ([d96bc4b4](https://github.com/vdavid/cmdr/commit/d96bc4b4),
+  [0c1d3680](https://github.com/vdavid/cmdr/commit/0c1d3680)).
+- **Disconnect actually disconnects.** Previously the Disconnect button in `SmbReconnectingView` and the gave-up
+  unreachable banner behaved like a fancy Cancel. Now it runs a real per-volume unmount: `diskutil unmount` on macOS
+  (FSEvents picks up the unmount and tears down `VolumeManager`), `smb2`-session drop on Linux. If `diskutil` returns
+  "Resource busy" because Finder has the volume open, the user sees an actionable toast instead of silent failure
+  ([c5a410aa](https://github.com/vdavid/cmdr/commit/c5a410aa)).
+- **Check for updates from inside the app.** Two new affordances, both reading the same shared update state:
+  - **Settings > Updates**: a "Check for updates" button at the top of the section, disabled while a check is in flight,
+    with status text below cycling through `Checking…` → `No updates found. Current version: vX.Y.Z` →
+    `Update found, downloading vX.Y.Z (current: vA.B.C)…` → `Installing vX.Y.Z (current: vA.B.C)…`. On error, a "Send
+    error report" link opens the error reporter pre-populated with the failure context.
+  - **Cmdr menu > Check for updates…** (right after "Enter license key…"): same status flow, surfaced as a toast that
+    supersedes itself as the phase changes and dismisses cleanly when the persistent restart toast takes over.
+
+  The macOS update path now exposes a separate `installing` substate — the custom updater runs `download_update` and
+  `install_update` as two distinct Tauri invokes, so the UI can say "Installing" instead of a misleading "Downloading"
+  during the sync-into-bundle step ([00470b96](https://github.com/vdavid/cmdr/commit/00470b96)).
+
+- **Human-friendly size units toggle.** New `Settings > Listing > Human-friendly size units` switch. Default ON shows
+  `1.02 MB`-style values; OFF shows raw bytes with thousands separators for precise comparison. Affects the Full list
+  size column and the SelectionInfo size readout. Tooltips that already showed both formats are unchanged on purpose,
+  and so are volume/disk space, dialogs, search results, and the drive-indexing section
+  ([c8cc1008](https://github.com/vdavid/cmdr/commit/c8cc1008)).
+- **Symlink-aware size hint.** Folders containing symlinks anywhere in their tree now show a small info icon next to the
+  size with the tooltip "This folder contains symlinks. Symlinked content is not counted in the total to avoid double
+  counting." Cmdr's recursive size aggregation matches `du` and Finder by intentionally skipping symlink targets, so a
+  folder of only symlinks reports 0 bytes — surfacing that fact removes a frequent "huh?" moment. The flag
+  (`recursive_has_symlinks`) propagates bottom-up alongside size totals; the index schema bumped to v10 to carry it
+  ([0d83a7b2](https://github.com/vdavid/cmdr/commit/0d83a7b2)).
+- **AI download toast: clear close affordance.** The X on the "Downloading AI model…" toast now has the tooltip "Close
+  this notification — the download will continue in the background", and clicking it actually keeps the toast hidden for
+  the rest of the download run — previously `ai-toast-sync` re-added it within ~200 ms because the next
+  `ai-download-progress` event re-ran its `$effect`. Cancel still cancels
+  ([97f1cee3](https://github.com/vdavid/cmdr/commit/97f1cee3)).
+- **Rename: skip warning for equivalent file extensions.** Renaming `foo.jpg` → `foo.jpeg` (or `htm`/`html`,
+  `yml`/`yaml`, `tif`/`tiff`, `mpg`/`mpeg`, `mid`/`midi`, `aif`/`aiff`, `qt`/`mov`, `md`/`markdown`/`txt`) no longer
+  trips the "you're changing the file type" confirmation. Cross-group changes still warn
+  ([55592ba4](https://github.com/vdavid/cmdr/commit/55592ba4)).
+
+### Fixed
+
+- **Brief network blips no longer kick you out of the folder.** A few seconds of bad WiFi on a NAS share used to trigger
+  the directory-eviction poll and "navigate to nearest valid parent" mid-session. The `pathExists` Tauri command now
+  returns a structured `TimedOut<bool>` result and is SMB-aware (a `Disconnected` `SmbVolume` reports timed-out
+  instantly, no syscall timeout fires). The eviction logic in `FilePane` only walks up on a real not-found
+  ([48ac9bf8](https://github.com/vdavid/cmdr/commit/48ac9bf8)).
+- **Update toast no longer interrupts onboarding.** New `isOnboarded` flag (default `false`) gates the "restart to
+  update" toast during first-launch onboarding. Same gate covers the FDA-revoked re-prompt path. Background download
+  still runs — only the toast surface is deferred — so the update is ready the moment onboarding finishes
+  ([ffeb7d96](https://github.com/vdavid/cmdr/commit/ffeb7d96)).
+- **Indexer no longer triggers macOS permission popups during onboarding.** Recursive scan from `/` was being kicked off
+  in `setup()` regardless of FDA state, stacking iCloud/Photos/etc. native dialogs over our in-app explanation modal.
+  The indexer now waits until the user has either granted FDA (and restarted, where the launch-time OS check passes the
+  gate) or explicitly clicked Deny ([59aca717](https://github.com/vdavid/cmdr/commit/59aca717)).
+- **SMB reconnect: runaway subscribe loop after hot reload.** Both panes stuck on "Loading…" with thousands of
+  subscribe/unsubscribe pairs per second from the reconnect manager. Caused by `SvelteMap.get` reads inside a Svelte
+  `$effect` becoming tracked deps that the manager's own writes invalidated, looping forever. Map-mutating methods now
+  run inside `untrack()` so caller `$effect`s don't pick up internal reads
+  ([91bc2e46](https://github.com/vdavid/cmdr/commit/91bc2e46)).
+- **SMB reconnect: `onSuccess` could fire twice in one cycle.** Both `runAttempt`'s success branch and the
+  `smb-connection-changed` listener could call `handleDirect`, double-triggering `loadDirectory` in `FilePane`. The
+  handler is now guarded by a baseline-shape check and is safely idempotent
+  ([3f6b1b0d](https://github.com/vdavid/cmdr/commit/3f6b1b0d)).
+
+### Non-app
+
+- **Release script** now stages `oxfmt` auto-fixes alongside the version bumps (via `git add -u` after the bump-stage
+  plus a second `oxfmt --ci` pass), so any pre-release `.claude/commands/*.md` reformats end up in the release commit
+  instead of failing CI on the release tag ([d523e236](https://github.com/vdavid/cmdr/commit/d523e236)).
+- Three pre-existing eslint warnings the SMB work surfaced when running the full check matrix end-to-end — unused
+  helper, async-without-await, redundant optional chaining — fixed so CI is green again
+  ([5e4eb307](https://github.com/vdavid/cmdr/commit/5e4eb307)).
+- Tier-3 a11y test for `UpdateCheckToastContent`; new module-level CLAUDE.md section in `file-explorer/network/` that
+  ties together the four moving parts of the SMB live-reconnect dance (BE event → volume-store patch → reconnect manager
+  → FilePane effect) so the next agent doesn't have to reverse-engineer it
+  ([e8656bb9](https://github.com/vdavid/cmdr/commit/e8656bb9),
+  [a3638ee7](https://github.com/vdavid/cmdr/commit/a3638ee7)).
+- Skip the flaky `git-portal toggle` E2E (the toggle round-trip was too racy for the 30 s Playwright budget); Rust unit
+  tests cover the underlying behavior. Retire when we have a "wait for portal state to settle" hook
+  ([129c27ce](https://github.com/vdavid/cmdr/commit/129c27ce)).
+
 ## [0.15.0] - 2026-04-29
 
 ### Added
