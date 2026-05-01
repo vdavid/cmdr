@@ -573,6 +573,7 @@ pub async fn disconnect_smb_volume(volume_id: String) -> Result<(), crate::comma
         )));
     }
 
+    #[cfg(target_os = "macos")]
     let mount_path = volume.root().to_string_lossy().to_string();
 
     #[cfg(target_os = "macos")]
