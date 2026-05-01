@@ -352,6 +352,7 @@
     $effect(() => {
         if (!isSmbVolume) return
         const targetVolumeId = volumeId
+        const isDisconnected = currentVolumeInfo?.smbConnectionState === 'disconnected'
         const onSuccess = () => {
             log.info('[FilePane] SMB reconnect succeeded for {volumeId}, reloading {path}', {
                 volumeId: targetVolumeId,
@@ -362,7 +363,7 @@
         const unsubscribe = smbReconnectManager.subscribe(targetVolumeId, onSuccess)
         // If we land on a Disconnected SMB share without a cycle running (e.g. user
         // navigated to a share that was already broken), kick off the cycle ourselves.
-        if (currentVolumeInfo?.smbConnectionState === 'disconnected') {
+        if (isDisconnected) {
             smbReconnectManager.startCycle(targetVolumeId)
         }
         return unsubscribe

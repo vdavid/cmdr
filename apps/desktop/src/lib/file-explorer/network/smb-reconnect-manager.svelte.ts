@@ -21,6 +21,7 @@
  * - `cancel(volumeId)` clears the cycle without touching the connection.
  */
 
+import { untrack } from 'svelte'
 import { SvelteMap } from 'svelte/reactivity'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { reconnectSmbVolume } from '$lib/tauri-commands'
@@ -88,28 +89,41 @@ class SmbReconnectManager {
    * Subscribes a viewer (typically a FilePane) to this volume's reconnect
    * cycle. The optional `onSuccess` callback fires when the cycle completes.
    * Returns an unsubscribe function — call it on volume change / unmount.
+   *
+   * Gotcha/Why: every method that both reads and writes the SvelteMap is
+   * wrapped in `untrack`. Without it, calling `subscribe` from a Svelte
+   * `$effect` would track the `map.get(volumeId)` read, then the subsequent
+   * `map.set` would invalidate that dep, the effect would re-run, and we'd
+   * be in a tight subscribe→unsubscribe loop that pegs the main thread (verified
+   * — both panes stuck on Loading…). `untrack` decouples our internal map
+   * accesses from the caller's reactive context. Reactive readers like the
+   * `getState`-backed `$derived` still work because `untrack` only suppresses
+   * read tracking; writes still fire invalidations to anyone with a tracked dep.
    */
   subscribe(volumeId: string, onSuccess?: () => void): () => void {
-    let entry = this.map.get(volumeId)
-    if (!entry) {
-      entry = freshEntry()
-      this.map.set(volumeId, entry)
-    }
-    entry.refcount++
-    if (onSuccess) entry.successCallbacks.add(onSuccess)
-    log.debug('subscribe({volumeId}): refcount={refcount}', { volumeId, refcount: entry.refcount })
-
-    return () => {
-      const e = this.map.get(volumeId)
-      if (!e) return
-      e.refcount--
-      if (onSuccess) e.successCallbacks.delete(onSuccess)
-      log.debug('unsubscribe({volumeId}): refcount={refcount}', { volumeId, refcount: e.refcount })
-      if (e.refcount <= 0) {
-        if (e.timerId) clearTimeout(e.timerId)
-        this.map.delete(volumeId)
+    return untrack(() => {
+      let entry = this.map.get(volumeId)
+      if (!entry) {
+        entry = freshEntry()
+        this.map.set(volumeId, entry)
       }
-    }
+      entry.refcount++
+      if (onSuccess) entry.successCallbacks.add(onSuccess)
+      log.debug('subscribe({volumeId}): refcount={refcount}', { volumeId, refcount: entry.refcount })
+
+      return () =>
+        untrack(() => {
+          const e = this.map.get(volumeId)
+          if (!e) return
+          e.refcount--
+          if (onSuccess) e.successCallbacks.delete(onSuccess)
+          log.debug('unsubscribe({volumeId}): refcount={refcount}', { volumeId, refcount: e.refcount })
+          if (e.refcount <= 0) {
+            if (e.timerId) clearTimeout(e.timerId)
+            this.map.delete(volumeId)
+          }
+        })
+    })
   }
 
   /** Reactive read of the current cycle state, or `null` if no cycle is running. */
@@ -137,13 +151,15 @@ class SmbReconnectManager {
    * No-op if a cycle is already running for this volume.
    */
   startCycle(volumeId: string): void {
-    let entry = this.map.get(volumeId)
-    if (!entry) {
-      entry = freshEntry()
-      this.map.set(volumeId, entry)
-    }
-    if (entry.timerId !== null || entry.state.status === 'attempting') return
-    this.beginAttempt(volumeId, 0)
+    untrack(() => {
+      let entry = this.map.get(volumeId)
+      if (!entry) {
+        entry = freshEntry()
+        this.map.set(volumeId, entry)
+      }
+      if (entry.timerId !== null || entry.state.status === 'attempting') return
+      this.beginAttempt(volumeId, 0)
+    })
   }
 
   /**
@@ -154,14 +170,16 @@ class SmbReconnectManager {
    * Disabled during `attempting` (the button itself is disabled in the view).
    */
   retryNow(volumeId: string): void {
-    const entry = this.map.get(volumeId)
-    if (!entry) return
-    if (entry.state.status === 'attempting') return
-    if (entry.timerId) {
-      clearTimeout(entry.timerId)
-      entry.timerId = null
-    }
-    void this.runAttempt(volumeId, 0)
+    untrack(() => {
+      const entry = this.map.get(volumeId)
+      if (!entry) return
+      if (entry.state.status === 'attempting') return
+      if (entry.timerId) {
+        clearTimeout(entry.timerId)
+        entry.timerId = null
+      }
+      void this.runAttempt(volumeId, 0)
+    })
   }
 
   /**
@@ -170,49 +188,58 @@ class SmbReconnectManager {
    * reconnect path will pick up.
    */
   cancel(volumeId: string): void {
-    const entry = this.map.get(volumeId)
-    if (!entry) return
-    if (entry.timerId) clearTimeout(entry.timerId)
-    entry.timerId = null
-    entry.state = freshState()
-    // Force reactivity by re-setting the entry with a new state object.
-    this.map.set(volumeId, entry)
+    untrack(() => {
+      const entry = this.map.get(volumeId)
+      if (!entry) return
+      if (entry.timerId) clearTimeout(entry.timerId)
+      entry.timerId = null
+      entry.state = freshState()
+      // Force reactivity by re-setting the entry with a new state object.
+      this.map.set(volumeId, entry)
+    })
   }
 
   // ── Internal ──────────────────────────────────────────────────────
+  // All map-mutating internals run inside `untrack` so a Svelte reactive
+  // caller never ends up tracking our internal `map.get` reads.
 
   private handleDisconnected(volumeId: string): void {
-    const entry = this.map.get(volumeId)
-    if (!entry) return // No subscribers — lazy reconnect handles it on next nav.
-    if (entry.timerId !== null || entry.state.status === 'attempting') return
-    this.beginAttempt(volumeId, 0)
+    untrack(() => {
+      const entry = this.map.get(volumeId)
+      if (!entry) return // No subscribers — lazy reconnect handles it on next nav.
+      if (entry.timerId !== null || entry.state.status === 'attempting') return
+      this.beginAttempt(volumeId, 0)
+    })
   }
 
   private handleDirect(volumeId: string): void {
-    const entry = this.map.get(volumeId)
-    if (!entry) return
-    // Idempotent: if no cycle is in flight (state is the baseline + no timer),
-    // there's nothing to clean up and no subscribers to notify. This guards
-    // against double-firing when both `runAttempt`'s success branch and the
-    // `smb-connection-changed` event fire — whichever runs first wins.
-    const noActiveCycle = entry.state.status === 'waiting' && entry.timerId === null && entry.state.attemptIndex === 0
-    if (noActiveCycle) return
-    if (entry.timerId) clearTimeout(entry.timerId)
-    entry.timerId = null
-    entry.state = freshState()
-    this.map.set(volumeId, entry) // notify subscribers
-    for (const cb of entry.successCallbacks) {
-      try {
-        cb()
-      } catch (e) {
-        log.warn('Reconnect success callback threw: {error}', { error: String(e) })
+    untrack(() => {
+      const entry = this.map.get(volumeId)
+      if (!entry) return
+      // Idempotent: if no cycle is in flight (state is the baseline + no timer),
+      // there's nothing to clean up and no subscribers to notify. This guards
+      // against double-firing when both `runAttempt`'s success branch and the
+      // `smb-connection-changed` event fire — whichever runs first wins.
+      const noActiveCycle = entry.state.status === 'waiting' && entry.timerId === null && entry.state.attemptIndex === 0
+      if (noActiveCycle) return
+      if (entry.timerId) clearTimeout(entry.timerId)
+      entry.timerId = null
+      entry.state = freshState()
+      this.map.set(volumeId, entry) // notify subscribers
+      for (const cb of entry.successCallbacks) {
+        try {
+          cb()
+        } catch (e) {
+          log.warn('Reconnect success callback threw: {error}', { error: String(e) })
+        }
       }
-    }
+    })
   }
 
   /**
    * Schedules attempt `attemptIndex` after the corresponding backoff delay.
-   * Sets `status='waiting'` and the progress-bar timing fields.
+   * Sets `status='waiting'` and the progress-bar timing fields. Caller is
+   * responsible for the surrounding `untrack` (the public methods all are).
    */
   private beginAttempt(volumeId: string, attemptIndex: number): void {
     const entry = this.map.get(volumeId)

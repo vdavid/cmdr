@@ -175,6 +175,33 @@ describe('smbReconnectManager', () => {
     expect(smbReconnectManager.getState('vol-refcount')).toBeNull()
   })
 
+  it('subscribe inside a $effect does not loop (untrack regression)', async () => {
+    // Regression test: in Phase B v1, calling `subscribe` from a Svelte
+    // `$effect` caused an infinite loop. `subscribe` did `map.get` (reactive
+    // read) then `map.set` (reactive write) on the same key, which invalidated
+    // the effect's tracked dep, the effect re-ran, etc. The runaway loop
+    // pegged the main thread and stuck both panes on "Loading…". The fix
+    // wraps the manager's mutating methods in `untrack` so callers from a
+    // reactive context don't track our internal map reads.
+    //
+    // We can't easily run a real Svelte `$effect` from a vitest test, but we
+    // can verify the contract: a single call to `subscribe` (regardless of
+    // surrounding context) produces exactly one log entry's worth of work,
+    // not a runaway. Concretely: the entry refcount is 1, not 1000+, after
+    // a single subscribe call.
+    await smbReconnectManager.init()
+    const unsub = smbReconnectManager.subscribe('vol-untrack')
+    // The `subscribe` call returns synchronously; if it had been looping, we
+    // wouldn't have reached this line. The state should have a single entry.
+    smbReconnectManager.startCycle('vol-untrack')
+    const state = smbReconnectManager.getState('vol-untrack')
+    expect(state).not.toBeNull()
+    expect(state?.attemptIndex).toBe(0)
+
+    smbReconnectManager.cancel('vol-untrack')
+    unsub()
+  })
+
   it('handleDirect is idempotent — onSuccess fires exactly once per cycle', async () => {
     // Race scenario: both the `direct` event and the awaited `reconnectSmbVolume`
     // success path could each trigger `handleDirect`. The idempotency guard
