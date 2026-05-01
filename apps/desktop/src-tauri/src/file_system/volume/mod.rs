@@ -445,6 +445,17 @@ pub trait Volume: Send + Sync {
     /// sessions, cancel background tasks, etc.). Default is a no-op.
     fn on_unmount(&self) {}
 
+    /// Tries to rebuild this volume's underlying session in place after a
+    /// transient connection loss. Idempotent and expected to be single-flight.
+    ///
+    /// Default returns `Err(NotSupported)`. Only `SmbVolume` overrides today —
+    /// it's invoked by the FE reconnect manager on each backoff tick and on the
+    /// "Retry now" button. Future network/cloud volumes should override this
+    /// when they have a story for in-place reconnect.
+    fn attempt_reconnect<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+
     // ========================================
     // Watching: Optional, default no-op
     // ========================================

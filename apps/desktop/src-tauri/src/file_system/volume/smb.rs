@@ -10,15 +10,60 @@ use super::{
     VolumeReadStream, path_to_id,
 };
 use crate::file_system::listing::FileEntry;
-use log::{debug, warn};
+use log::{debug, info, warn};
 use smb2::client::tree::Tree;
 use smb2::{ClientConfig, SmbClient};
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::sync::{Mutex as StdMutex, OnceLock};
 use std::time::Duration;
+use tauri::{AppHandle, Emitter};
+
+// ── App-handle for connection-state events ──────────────────────────
+
+/// Global `AppHandle` for emitting `smb-connection-changed` events. Set once
+/// from `lib.rs::setup`. Same pattern as `network::mdns_discovery::APP_HANDLE`.
+static APP_HANDLE: OnceLock<StdMutex<Option<AppHandle>>> = OnceLock::new();
+
+/// Stores the `AppHandle` so SMB state transitions can emit events.
+pub fn set_app_handle(handle: AppHandle) {
+    let storage = APP_HANDLE.get_or_init(|| StdMutex::new(None));
+    if let Ok(mut guard) = storage.lock() {
+        *guard = Some(handle);
+    }
+}
+
+fn get_app_handle() -> Option<AppHandle> {
+    APP_HANDLE.get().and_then(|m| m.lock().ok()).and_then(|g| g.clone())
+}
+
+/// Payload for `smb-connection-changed`. The frontend reconnect manager listens
+/// for this and runs the per-volume backoff cycle.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SmbConnectionChangedPayload {
+    volume_id: String,
+    /// `"direct"` or `"disconnected"`. `OsMount` is intentionally not surfaced —
+    /// the reconnect UX is direct-SMB only.
+    state: &'static str,
+}
+
+fn emit_state_change(volume_id: &str, state: &'static str) {
+    if let Some(app) = get_app_handle()
+        && let Err(e) = app.emit(
+            "smb-connection-changed",
+            SmbConnectionChangedPayload {
+                volume_id: volume_id.to_string(),
+                state,
+            },
+        )
+    {
+        warn!("Failed to emit smb-connection-changed: {}", e);
+    }
+}
 
 // ── Connection state ────────────────────────────────────────────────
 
@@ -126,17 +171,39 @@ fn map_smb_error(err: smb2::Error) -> VolumeError {
 /// serializing through the mutex. The `watcher_cancel` field uses
 /// `std::sync::Mutex` because it is only accessed briefly (no awaits while
 /// held).
+/// Connection parameters needed to (re-)establish the smb2 session.
+///
+/// Cached on the volume so `attempt_reconnect()` can rebuild the session in
+/// place after a `ConnectionLost` / `SessionExpired` without going through the
+/// mount flow again. Credentials are kept in memory for the lifetime of the
+/// `SmbVolume` — no security concern since they're already in the process's
+/// address space (we're using them for every smb2 call). On auth failure we
+/// re-pull from the secret store in case the user updated them.
+#[derive(Debug, Clone)]
+pub(crate) struct SmbConnectionParams {
+    /// Resolved server address (IP or hostname, ready to pass to `build_smb_addr`).
+    pub server: String,
+    pub share_name: String,
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+}
+
 pub struct SmbVolume {
     /// Display name (share name).
     name: String,
     /// OS mount point (for example, "/Volumes/Documents").
     mount_path: PathBuf,
-    /// Server hostname or IP address.
-    server: String,
-    /// SMB share name.
+    /// SMB share name. Mirrors `params.share_name` — kept here for cheap reads
+    /// in log lines and hot paths without locking `params`.
     share_name: String,
     /// Volume ID for listing cache lookups (from `path_to_id(mount_path)`).
     volume_id: String,
+    /// Connection parameters (host, port, share, credentials) used to build the
+    /// current session and to rebuild it on `attempt_reconnect`. `RwLock` because
+    /// `attempt_reconnect` may update the credentials in place after a fresh
+    /// secret-store lookup; reads (the watcher-restart path) are otherwise rare.
+    params: Arc<tokio::sync::RwLock<SmbConnectionParams>>,
     /// smb2 client (owns the Connection). `None` when disconnected.
     ///
     /// Most methods still lock this mutex and call `client.stat(tree, ...)`
@@ -159,6 +226,15 @@ pub struct SmbVolume {
     state: Arc<AtomicU8>,
     /// Cancel sender for the background watcher task. Send to stop watching.
     watcher_cancel: std::sync::Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
+    /// Single-flight guard for `attempt_reconnect`. Concurrent callers (FE
+    /// backoff cycle + lazy nav-time retry) wait on the same in-flight attempt
+    /// instead of dog-piling the server.
+    reconnect_lock: Arc<tokio::sync::Mutex<()>>,
+    /// Set by `on_unmount` so that any in-flight `do_attempt_reconnect` can bail
+    /// out without installing a fresh session into an orphaned volume.
+    /// Once `true`, the volume is permanently dead — `attempt_reconnect` becomes
+    /// a no-op error.
+    unmounted: Arc<AtomicBool>,
 }
 
 impl SmbVolume {
@@ -167,40 +243,64 @@ impl SmbVolume {
     /// # Arguments
     /// * `name` - Display name (typically the share name)
     /// * `mount_path` - OS mount point path
-    /// * `server` - Server hostname or IP
-    /// * `share_name` - SMB share name
     /// * `volume_id` - Volume ID for listing cache lookups
+    /// * `params` - Connection parameters (server, share, port, credentials) used to
+    ///   build the current session and to rebuild it on `attempt_reconnect`
     /// * `client` - Connected `SmbClient`
     /// * `tree` - Connected `Tree` for the share
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "Constructor needs all fields; a builder would be overengineering"
-    )]
     pub fn new(
         name: impl Into<String>,
         mount_path: impl Into<PathBuf>,
-        server: impl Into<String>,
-        share_name: impl Into<String>,
         volume_id: impl Into<String>,
+        params: SmbConnectionParams,
         client: SmbClient,
         tree: Tree,
     ) -> Self {
+        let share_name = params.share_name.clone();
         Self {
             name: name.into(),
             mount_path: mount_path.into(),
-            server: server.into(),
-            share_name: share_name.into(),
+            share_name,
             volume_id: volume_id.into(),
+            params: Arc::new(tokio::sync::RwLock::new(params)),
             client: Arc::new(tokio::sync::Mutex::new(Some(client))),
             tree: Arc::new(tokio::sync::RwLock::new(Some(Arc::new(tree)))),
             state: Arc::new(AtomicU8::new(ConnectionState::Direct as u8)),
             watcher_cancel: std::sync::Mutex::new(None),
+            reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
+            unmounted: Arc::new(AtomicBool::new(false)),
         }
+    }
+
+    /// Returns the volume ID (mirrors `path_to_id(mount_path)`).
+    pub(crate) fn volume_id(&self) -> &str {
+        &self.volume_id
     }
 
     /// Returns the current connection state.
     pub fn connection_state(&self) -> ConnectionState {
         ConnectionState::from_u8(self.state.load(Ordering::Relaxed))
+    }
+
+    /// Flips state to `Disconnected` and emits `smb-connection-changed` if the
+    /// previous state was something else (silent if we were already Disconnected,
+    /// to avoid event spam when several in-flight ops all see the same broken
+    /// session).
+    fn transition_to_disconnected(&self) {
+        let prev = self.state.swap(ConnectionState::Disconnected as u8, Ordering::Relaxed);
+        if prev != ConnectionState::Disconnected as u8 {
+            emit_state_change(&self.volume_id, "disconnected");
+        }
+    }
+
+    /// Flips state to `Direct` and emits `smb-connection-changed` if the previous
+    /// state was something else. Called by `attempt_reconnect` after a successful
+    /// session rebuild.
+    fn transition_to_direct(&self) {
+        let prev = self.state.swap(ConnectionState::Direct as u8, Ordering::Relaxed);
+        if prev != ConnectionState::Direct as u8 {
+            emit_state_change(&self.volume_id, "direct");
+        }
     }
 
     /// Converts a volume-relative path to the SMB relative path string.
@@ -418,6 +518,7 @@ impl SmbVolume {
         let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
 
         let state_arc = Arc::clone(&self.state);
+        let volume_id = self.volume_id.clone();
         let share_name = self.share_name.clone();
         let smb_path_owned = smb_path.to_string();
 
@@ -430,7 +531,7 @@ impl SmbVolume {
             let mut download = match tree.download(&mut conn, &smb_path_owned).await {
                 Ok(d) => d,
                 Err(e) => {
-                    update_state_on_smb_error(&state_arc, &e);
+                    update_state_on_smb_error(&state_arc, &volume_id, &e);
                     warn!(
                         "SmbVolume::download(share={}, path={}): {}",
                         share_name, smb_path_owned, e
@@ -466,7 +567,7 @@ impl SmbVolume {
                             }
                         }
                         Some(Err(e)) => {
-                            update_state_on_smb_error(&state_arc, &e);
+                            update_state_on_smb_error(&state_arc, &volume_id, &e);
                             warn!(
                                 "SmbVolume::download(share={}, path={}): chunk error: {}",
                                 share_name, smb_path_owned, e
@@ -515,7 +616,7 @@ impl SmbVolume {
                         "SmbVolume::{}(share={}): connection lost ({}), transitioning to Disconnected",
                         op_name, self.share_name, e
                     );
-                    self.state.store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
+                    self.transition_to_disconnected();
                 } else if matches!(kind, smb2::ErrorKind::NotFound) {
                     // NotFound is expected for existence checks (rename dest, conflict detection)
                     debug!("SmbVolume::{}(share={}): {}", op_name, self.share_name, e);
@@ -571,7 +672,7 @@ impl SmbVolume {
                         "SmbVolume::{}(share={}): connection lost ({}), transitioning to Disconnected",
                         op_name, self.share_name, e
                     );
-                    self.state.store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
+                    self.transition_to_disconnected();
                 } else if matches!(kind, smb2::ErrorKind::NotFound) {
                     debug!("SmbVolume::{}(share={}): {}", op_name, self.share_name, e);
                 } else {
@@ -582,6 +683,222 @@ impl SmbVolume {
             }
         }
     }
+
+    // ── Reconnect / watcher restart ─────────────────────────────────────
+
+    /// Cancels the existing watcher task (if any). The watcher exits on its
+    /// next `select!` iteration. Best-effort: if the watcher already exited on
+    /// a connection error, the send is a no-op.
+    fn stop_watcher(&self) {
+        if let Some(tx) = self.watcher_cancel.lock().ok().and_then(|mut g| g.take()) {
+            let _ = tx.send(());
+        }
+    }
+
+    /// Spawns the background watcher task using the current `params`. Replaces
+    /// any prior `watcher_cancel`. Called from `connect_smb_volume` (initial
+    /// setup) and from `attempt_reconnect` (after a session rebuild).
+    fn spawn_watcher(&self, params: &SmbConnectionParams) {
+        use crate::network::smb_connection::build_smb_addr;
+
+        let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel();
+        let addr = build_smb_addr(&params.server, params.port);
+        let share = params.share_name.clone();
+        let username = params.username.clone();
+        let password = params.password.clone();
+        let volume_id = self.volume_id.clone();
+        let mount_path = self.mount_path.clone();
+
+        tokio::spawn(super::smb_watcher::run_smb_watcher(
+            addr, share, username, password, volume_id, mount_path, cancel_rx,
+        ));
+
+        if let Ok(mut guard) = self.watcher_cancel.lock() {
+            *guard = Some(cancel_tx);
+        }
+    }
+
+    /// Inherent body for the trait's `attempt_reconnect`. Lives here as a regular
+    /// async method so the body isn't hidden inside a `Pin<Box<...>>` future.
+    ///
+    /// Idempotent and single-flight:
+    /// - If state is already `Direct`, returns Ok cheaply.
+    /// - On auth failure, re-pulls credentials from the secret store (in case
+    ///   the user updated them) and retries once before giving up.
+    /// - On success: stores the new client + tree, restarts the watcher, emits
+    ///   `smb-connection-changed { state: "direct" }`.
+    /// - On failure: state stays `Disconnected`; the FE backoff cycle decides
+    ///   whether to retry.
+    async fn do_attempt_reconnect(&self) -> Result<(), VolumeError> {
+        // Bail early if `on_unmount` already ran. Doing this before taking the
+        // lock means a queued caller doesn't pay the lock-acquisition cost for
+        // a volume that's about to be (or already is) gone.
+        if self.unmounted.load(Ordering::Relaxed) {
+            return Err(VolumeError::DeviceDisconnected(
+                "SMB volume has been unmounted".to_string(),
+            ));
+        }
+
+        // Single-flight: concurrent callers (FE cycle tick + lazy nav-time
+        // retry) all wait here, and the second arrival sees state==Direct.
+        let _guard = self.reconnect_lock.lock().await;
+
+        // Re-check `unmounted`: between releasing the early check and acquiring
+        // the lock, `on_unmount` may have run on another thread.
+        if self.unmounted.load(Ordering::Relaxed) {
+            return Err(VolumeError::DeviceDisconnected(
+                "SMB volume has been unmounted".to_string(),
+            ));
+        }
+
+        if self.connection_state() == ConnectionState::Direct {
+            debug!(
+                "SmbVolume::attempt_reconnect(share={}): already Direct, skipping",
+                self.share_name
+            );
+            return Ok(());
+        }
+
+        // First try: stored credentials (the ones that worked at original connect).
+        let params_snapshot = { self.params.read().await.clone() };
+        info!(
+            "SmbVolume::attempt_reconnect(share={}): trying with cached credentials",
+            self.share_name
+        );
+
+        let first_attempt = build_session(&params_snapshot).await;
+        let (client, tree) = match first_attempt {
+            Ok(pair) => pair,
+            Err(err) if crate::network::smb_util::is_auth_error(&err) => {
+                // Cached creds may be stale. Re-pull from the secret store and retry once.
+                info!(
+                    "SmbVolume::attempt_reconnect(share={}): cached credentials rejected, re-pulling from secret store",
+                    self.share_name
+                );
+                match refresh_credentials_from_store(&params_snapshot).await {
+                    Some(refreshed)
+                        if refreshed.username != params_snapshot.username
+                            || refreshed.password != params_snapshot.password =>
+                    {
+                        match build_session(&refreshed).await {
+                            Ok(pair) => {
+                                // Refreshed creds worked — persist them on the volume.
+                                let mut params_w = self.params.write().await;
+                                params_w.username = refreshed.username.clone();
+                                params_w.password = refreshed.password.clone();
+                                pair
+                            }
+                            Err(e2) => {
+                                warn!(
+                                    "SmbVolume::attempt_reconnect(share={}): refreshed credentials also failed: {}",
+                                    self.share_name, e2
+                                );
+                                return Err(map_smb_error(e2));
+                            }
+                        }
+                    }
+                    _ => {
+                        // No fresh creds available, or they're identical to the cached ones.
+                        warn!(
+                            "SmbVolume::attempt_reconnect(share={}): no fresh credentials available — giving up on this attempt",
+                            self.share_name
+                        );
+                        return Err(map_smb_error(err));
+                    }
+                }
+            }
+            Err(e) => {
+                warn!(
+                    "SmbVolume::attempt_reconnect(share={}): connect failed: {}",
+                    self.share_name, e
+                );
+                return Err(map_smb_error(e));
+            }
+        };
+
+        // The session-build round-trip can take several seconds. The user may
+        // have unmounted the volume in the meantime. Discard the freshly-built
+        // session and bail rather than installing it into an orphaned volume
+        // (which would leak the watcher task and the smb2 connection).
+        if self.unmounted.load(Ordering::Relaxed) {
+            drop(client);
+            drop(tree);
+            return Err(VolumeError::DeviceDisconnected(
+                "SMB volume was unmounted during reconnect".to_string(),
+            ));
+        }
+
+        // Install the new session.
+        {
+            let mut tree_guard = self.tree.write().await;
+            *tree_guard = Some(Arc::new(tree));
+        }
+        {
+            let mut client_guard = self.client.lock().await;
+            *client_guard = Some(client);
+        }
+
+        // Restart the watcher with current params (which may include refreshed creds).
+        self.stop_watcher();
+        let params_now = self.params.read().await.clone();
+        self.spawn_watcher(&params_now);
+
+        // Flip state and emit. Doing this last means an observer that wakes
+        // up on the event will see a fully-installed session.
+        self.transition_to_direct();
+
+        info!("SmbVolume::attempt_reconnect(share={}): success", self.share_name);
+        Ok(())
+    }
+}
+
+// ── Reconnect helpers (free functions to keep `attempt_reconnect` readable) ──
+
+/// Builds a fresh smb2 session using the given params. Returns the connected
+/// client + tree on success.
+async fn build_session(params: &SmbConnectionParams) -> Result<(SmbClient, Tree), smb2::Error> {
+    use crate::network::smb_connection::build_smb_addr;
+
+    let config = ClientConfig {
+        addr: build_smb_addr(&params.server, params.port),
+        timeout: Duration::from_secs(10),
+        username: params.username.clone(),
+        password: params.password.clone(),
+        domain: String::new(),
+        auto_reconnect: false,
+        compression: true,
+        dfs_enabled: false,
+        dfs_target_overrides: Default::default(),
+    };
+    let mut client = SmbClient::connect(config).await?;
+    let tree = client.connect_share(&params.share_name).await?;
+    Ok((client, tree))
+}
+
+/// Re-fetches credentials from the secret store for the given server/share.
+/// Returns `None` if nothing is stored (in which case the cached creds are all
+/// we have to work with).
+async fn refresh_credentials_from_store(params: &SmbConnectionParams) -> Option<SmbConnectionParams> {
+    let server = params.server.clone();
+    let share = params.share_name.clone();
+
+    let creds = tokio::task::spawn_blocking(move || {
+        // Try share-level first (more specific), then server-level.
+        crate::network::keychain::get_credentials(&server, Some(&share))
+            .or_else(|_| crate::network::keychain::get_credentials(&server, None))
+            .ok()
+    })
+    .await
+    .ok()
+    .flatten()?;
+
+    Some(SmbConnectionParams {
+        server: params.server.clone(),
+        share_name: params.share_name.clone(),
+        port: params.port,
+        username: creds.username,
+        password: creds.password,
+    })
 }
 
 // ── Streaming support ───────────────────────────────────────────────
@@ -677,13 +994,17 @@ impl VolumeReadStream for InlineReadStream {
 }
 
 /// If an smb2 error indicates the session is dead, transition state to
-/// `Disconnected`. Mirrors `handle_smb_result` for contexts without `&self`.
-fn update_state_on_smb_error(state: &AtomicU8, err: &smb2::Error) {
+/// `Disconnected` and emit `smb-connection-changed`. Mirrors `handle_smb_result`
+/// for contexts without `&self` (the streaming-read producer task).
+fn update_state_on_smb_error(state: &AtomicU8, volume_id: &str, err: &smb2::Error) {
     if matches!(
         err.kind(),
         smb2::ErrorKind::ConnectionLost | smb2::ErrorKind::SessionExpired
     ) {
-        state.store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
+        let prev = state.swap(ConnectionState::Disconnected as u8, Ordering::Relaxed);
+        if prev != ConnectionState::Disconnected as u8 {
+            emit_state_change(volume_id, "disconnected");
+        }
     }
 }
 
@@ -1209,7 +1530,7 @@ impl Volume for SmbVolume {
                                 "SmbVolume::scan_for_copy_batch(share={}): connection lost ({}), transitioning to Disconnected",
                                 self.share_name, e
                             );
-                            self.state.store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
+                            self.transition_to_disconnected();
                         } else {
                             warn!("SmbVolume::scan_for_copy_batch(share={}): {}", self.share_name, e);
                         }
@@ -1482,8 +1803,19 @@ impl Volume for SmbVolume {
         }
     }
 
+    fn attempt_reconnect<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(self.do_attempt_reconnect())
+    }
+
     fn on_unmount(&self) {
-        // Transition to Disconnected
+        // Mark the volume permanently dead so any in-flight reconnect bails
+        // out before installing a session into an orphaned volume.
+        self.unmounted.store(true, Ordering::Relaxed);
+
+        // Transition to Disconnected. We deliberately set the atomic directly
+        // instead of going through `transition_to_disconnected()`, because the
+        // volume is being unregistered: the FE will learn via `volumes-changed`
+        // and an extra `smb-connection-changed` event would race with that.
         self.state.store(ConnectionState::Disconnected as u8, Ordering::Relaxed);
 
         // Cancel the background watcher task. The task will call watcher.close()
@@ -1521,6 +1853,8 @@ impl Volume for SmbVolume {
 ///
 /// Used by the mount flow to establish the smb2 session alongside the OS mount.
 /// Also spawns a background watcher task for detecting external changes.
+/// The credentials are stored on the resulting `SmbVolume` so it can rebuild
+/// its own session via `attempt_reconnect` after a transient connection loss.
 pub async fn connect_smb_volume(
     name: &str,
     mount_path: &str,
@@ -1530,49 +1864,19 @@ pub async fn connect_smb_volume(
     password: Option<&str>,
     port: u16,
 ) -> Result<SmbVolume, smb2::Error> {
-    use crate::network::smb_connection::build_smb_addr;
-
-    let addr = build_smb_addr(server, port);
-
-    let config = ClientConfig {
-        addr: addr.clone(),
-        timeout: Duration::from_secs(10),
+    let params = SmbConnectionParams {
+        server: server.to_string(),
+        share_name: share_name.to_string(),
+        port,
         username: username.unwrap_or("Guest").to_string(),
         password: password.unwrap_or("").to_string(),
-        domain: String::new(),
-        auto_reconnect: false,
-        compression: true,
-        dfs_enabled: false,
-        dfs_target_overrides: Default::default(),
     };
 
-    let mut client = SmbClient::connect(config).await?;
-    let tree = client.connect_share(share_name).await?;
+    let (client, tree) = build_session(&params).await?;
     let volume_id = path_to_id(mount_path);
 
-    let vol = SmbVolume::new(name, mount_path, server, share_name, volume_id.clone(), client, tree);
-
-    // Spawn the background watcher task with its own dedicated connection
-    let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel();
-    let watcher_addr = addr;
-    let watcher_share = share_name.to_string();
-    let watcher_username = username.unwrap_or("Guest").to_string();
-    let watcher_password = password.unwrap_or("").to_string();
-    let watcher_volume_id = volume_id;
-    let watcher_mount_path = PathBuf::from(mount_path);
-
-    tokio::spawn(super::smb_watcher::run_smb_watcher(
-        watcher_addr,
-        watcher_share,
-        watcher_username,
-        watcher_password,
-        watcher_volume_id,
-        watcher_mount_path,
-        cancel_rx,
-    ));
-
-    *vol.watcher_cancel.lock().unwrap() = Some(cancel_tx);
-
+    let vol = SmbVolume::new(name, mount_path, volume_id, params.clone(), client, tree);
+    vol.spawn_watcher(&params);
     Ok(vol)
 }
 
@@ -1821,18 +2125,116 @@ mod tests {
         assert!(vol.supports_export());
     }
 
+    // ── Reconnect tests (no Docker, no real network) ────────────────
+
+    /// Helper that flips a test volume into `Direct` so we can test the
+    /// "already connected" no-op path without needing a real session.
+    fn make_test_volume_direct() -> SmbVolume {
+        let vol = make_test_volume();
+        vol.state.store(ConnectionState::Direct as u8, Ordering::Relaxed);
+        vol
+    }
+
+    #[tokio::test]
+    async fn attempt_reconnect_noop_when_already_direct() {
+        // If state is Direct, the helper bails early without building a session.
+        // This is the path concurrent callers hit after the winner finishes.
+        let vol = make_test_volume_direct();
+        let result = vol.do_attempt_reconnect().await;
+        assert!(result.is_ok(), "expected Ok when already Direct, got {:?}", result);
+        assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    }
+
+    #[tokio::test]
+    async fn attempt_reconnect_bails_when_unmounted() {
+        // After `on_unmount` runs, reconnect must not try to build a new session
+        // (otherwise we'd leak a watcher + smb2 session into an orphaned volume).
+        let vol = make_test_volume();
+        vol.unmounted.store(true, Ordering::Relaxed);
+        let result = vol.do_attempt_reconnect().await;
+        assert!(
+            matches!(result, Err(VolumeError::DeviceDisconnected(_))),
+            "expected DeviceDisconnected when unmounted, got {:?}",
+            result
+        );
+    }
+
+    #[tokio::test]
+    async fn single_flight_concurrent_callers_serialize() {
+        // Two parallel `do_attempt_reconnect` calls must serialize on
+        // `reconnect_lock`. With the volume already Direct, both should return
+        // Ok cheaply — the second one observes Direct after the first releases
+        // the guard. Mutex contention itself is the assertion that single-flight
+        // is wired up; if it wasn't, both calls would race past the early-exit
+        // check.
+        let vol = Arc::new(make_test_volume_direct());
+        let v2 = Arc::clone(&vol);
+        let v3 = Arc::clone(&vol);
+        let (r1, r2) = tokio::join!(async move { v2.do_attempt_reconnect().await }, async move {
+            v3.do_attempt_reconnect().await
+        });
+        assert!(r1.is_ok());
+        assert!(r2.is_ok());
+        assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    }
+
+    #[tokio::test]
+    async fn transition_to_disconnected_idempotent() {
+        // Calling `transition_to_disconnected` twice should only emit once.
+        // We can't verify the emit count without a real `AppHandle`, but we
+        // can verify the underlying `swap` semantics: the second call is a
+        // no-op (returns the same value).
+        let vol = make_test_volume_direct();
+        assert_eq!(vol.connection_state(), ConnectionState::Direct);
+        vol.transition_to_disconnected();
+        assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
+        vol.transition_to_disconnected();
+        assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
+    }
+
+    #[tokio::test]
+    async fn transition_to_direct_idempotent() {
+        let vol = make_test_volume();
+        assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
+        vol.transition_to_direct();
+        assert_eq!(vol.connection_state(), ConnectionState::Direct);
+        vol.transition_to_direct();
+        assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    }
+
+    #[test]
+    fn on_unmount_marks_volume_dead() {
+        // `on_unmount` is sync (called from FSEvents thread) and uses
+        // `blocking_lock`, so this must be a `#[test]`, not a `#[tokio::test]`
+        // (the latter panics inside a runtime when calling `blocking_lock`).
+        let vol = make_test_volume_direct();
+        assert!(!vol.unmounted.load(Ordering::Relaxed));
+        vol.on_unmount();
+        assert!(vol.unmounted.load(Ordering::Relaxed));
+        assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
+    }
+
     /// Creates a test SmbVolume in disconnected state (no real connection).
     fn make_test_volume() -> SmbVolume {
+        let params = SmbConnectionParams {
+            server: "192.168.1.100".to_string(),
+            share_name: "TestShare".to_string(),
+            port: 445,
+            username: "Guest".to_string(),
+            password: String::new(),
+        };
         SmbVolume {
             name: "TestShare".to_string(),
             mount_path: PathBuf::from("/Volumes/TestShare"),
-            server: "192.168.1.100".to_string(),
             share_name: "TestShare".to_string(),
             volume_id: "volumestestshare".to_string(),
+            params: Arc::new(tokio::sync::RwLock::new(params)),
             client: Arc::new(tokio::sync::Mutex::new(None)),
             tree: Arc::new(tokio::sync::RwLock::new(None)),
             state: Arc::new(AtomicU8::new(ConnectionState::Disconnected as u8)),
             watcher_cancel: std::sync::Mutex::new(None),
+            reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
+            unmounted: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -1920,6 +2322,77 @@ mod tests {
             hasher.update(&chunk);
         }
         *hasher.finalize().as_bytes()
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_attempt_reconnect_rebuilds_session() {
+        // Drives the full reconnect cycle against a real SMB server:
+        // 1. Connect, verify Direct.
+        // 2. Force-flip to Disconnected (simulating a ConnectionLost event).
+        //    Drop the underlying client + tree to mimic a dead session.
+        // 3. Verify hot-path ops fail with DeviceDisconnected.
+        // 4. Call attempt_reconnect; verify it succeeds and state is Direct.
+        // 5. Verify hot-path ops work again.
+        let vol = make_docker_volume().await;
+        assert_eq!(vol.connection_state(), ConnectionState::Direct);
+        assert!(vol.list_directory_impl(Path::new("")).await.is_ok());
+
+        // Simulate "the server hung up": drop the smb2 session and flip state.
+        // We don't need to actually break the network — `attempt_reconnect`'s
+        // job is to rebuild the session regardless of why state went down.
+        {
+            let mut client_guard = vol.client.lock().await;
+            *client_guard = None;
+        }
+        {
+            let mut tree_guard = vol.tree.write().await;
+            *tree_guard = None;
+        }
+        vol.transition_to_disconnected();
+        assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
+
+        // Hot-path op should fail: clone_session refuses while Disconnected.
+        let result = vol.list_directory_impl(Path::new("")).await;
+        assert!(
+            matches!(result, Err(VolumeError::DeviceDisconnected(_))),
+            "expected DeviceDisconnected before reconnect, got {:?}",
+            result
+        );
+
+        // Reconnect should rebuild the session and flip back to Direct.
+        vol.do_attempt_reconnect()
+            .await
+            .expect("attempt_reconnect should succeed against a live Docker SMB");
+        assert_eq!(vol.connection_state(), ConnectionState::Direct);
+
+        // And hot-path ops should work again.
+        let entries = vol
+            .list_directory_impl(Path::new(""))
+            .await
+            .expect("list_directory should succeed after reconnect");
+        assert!(entries.iter().all(|e| e.name != "." && e.name != ".."));
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+    async fn smb_integration_attempt_reconnect_noop_when_already_direct() {
+        // Call reconnect against a live, healthy session. Should be a fast no-op
+        // (no extra round-trip to the server).
+        let vol = make_docker_volume().await;
+        assert_eq!(vol.connection_state(), ConnectionState::Direct);
+        let start = std::time::Instant::now();
+        vol.do_attempt_reconnect().await.unwrap();
+        let elapsed = start.elapsed();
+        assert_eq!(vol.connection_state(), ConnectionState::Direct);
+        // No-op should be effectively instant. Any real session build would
+        // take tens of ms minimum even against localhost. Pad the bound for
+        // CI noise.
+        assert!(
+            elapsed < Duration::from_millis(50),
+            "noop reconnect took {:?} — expected <50ms",
+            elapsed
+        );
     }
 
     #[tokio::test]

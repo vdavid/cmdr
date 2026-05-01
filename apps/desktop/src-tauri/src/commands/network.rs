@@ -516,6 +516,32 @@ pub async fn disconnect_network_host(
     Ok(result)
 }
 
+// --- SMB direct-connection reconnect ---
+
+/// Tries to rebuild the smb2 session for a Disconnected `SmbVolume` in place.
+///
+/// Called by the frontend reconnect manager on each backoff tick (and on
+/// "Retry now" / lazy nav-time retry). Backend single-flights concurrent calls,
+/// so the FE is free to fire on its own schedule. Returns `Ok(())` on success
+/// (state is now `Direct`), or an `IpcError` describing why the rebuild failed.
+///
+/// Calling this on a non-SMB volume yields `IpcError` with `NotSupported` —
+/// the trait default. The FE only ever invokes this for known SMB volumes.
+#[tauri::command]
+pub async fn reconnect_smb_volume(volume_id: String) -> Result<(), crate::commands::util::IpcError> {
+    use crate::commands::util::IpcError;
+    use crate::file_system::get_volume_manager;
+
+    let volume = get_volume_manager()
+        .get(&volume_id)
+        .ok_or_else(|| IpcError::from_err(format!("Volume not found: {}", volume_id)))?;
+
+    volume
+        .attempt_reconnect()
+        .await
+        .map_err(|e| IpcError::from_err(e.to_string()))
+}
+
 // --- Manual Server Commands ---
 
 use crate::network::manual_servers::{self, ManualConnectResult};

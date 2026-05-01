@@ -317,6 +317,12 @@ pub fn run() {
             // Initialize the volume manager with the root volume
             file_system::init_volume_manager();
 
+            // Stash the AppHandle so SmbVolume can emit `smb-connection-changed`
+            // events when sessions die or come back. The frontend reconnect
+            // manager listens for these to drive its per-volume backoff cycle.
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            file_system::volume::smb::set_app_handle(app.handle().clone());
+
             // Start network host discovery (mDNS)
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::start_discovery(app.handle().clone());
@@ -918,6 +924,8 @@ pub fn run() {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::upgrade_to_smb_volume_with_credentials,
             #[cfg(any(target_os = "macos", target_os = "linux"))]
+            commands::network::reconnect_smb_volume,
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::connect_to_server,
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::remove_manual_server,
@@ -961,6 +969,8 @@ pub fn run() {
             stubs::network::upgrade_to_smb_volume,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::upgrade_to_smb_volume_with_credentials,
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+            stubs::network::reconnect_smb_volume,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::connect_to_server,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]

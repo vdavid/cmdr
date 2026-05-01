@@ -16,7 +16,7 @@ Every file system operation (listing, copy, rename, delete, indexing, watching) 
 | `manager.rs` | `VolumeManager` — thread-safe `RwLock<HashMap>` registry; supports a default volume |
 | `local_posix.rs` | `LocalPosixVolume` — real filesystem; delegates listing to `file_system::listing`, indexing to `indexing::scanner`, watching to `indexing::watcher` (FSEvents), copy scanning via `walkdir`. Uses `libc::statvfs` FFI for space info. |
 | `mtp.rs` | `MtpVolume` — MTP device storage; async `Volume` trait with direct async MTP calls. Uses `MtpReadStream` for streaming (calls `FileDownload::next_chunk().await` directly). Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
-| `smb.rs` | `SmbVolume` — SMB share storage; async `Volume` trait with direct async smb2 calls. Splits session storage into `Arc<Mutex<Option<SmbClient>>>` + `Arc<RwLock<Option<Arc<Tree>>>>` so the hot read/write paths can clone `Connection` under a brief lock and drive compound / download ops without serializing on the client mutex. `AtomicU8` connection state. Also contains `connect_smb_volume()`. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
+| `smb.rs` | `SmbVolume` — SMB share storage; async `Volume` trait with direct async smb2 calls. Splits session storage into `Arc<Mutex<Option<SmbClient>>>` + `Arc<RwLock<Option<Arc<Tree>>>>` so the hot read/write paths can clone `Connection` under a brief lock and drive compound / download ops without serializing on the client mutex. `AtomicU8` connection state. Caches `SmbConnectionParams` (host, share, port, credentials) so `attempt_reconnect` can rebuild the session in place after a transient disconnect, single-flighted via `reconnect_lock`. Holds a global `AppHandle` (`set_app_handle` in `lib.rs::setup`) for emitting `smb-connection-changed` events. Also contains `connect_smb_volume()`. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
 | `smb_watcher.rs` | Background SMB change watcher (`run_smb_watcher`). Owns a dedicated smb2 connection for `CHANGE_NOTIFY`, debounces events, feeds `notify_directory_changed`. Spawned by `connect_smb_volume()`. |
 | `in_memory.rs` | `InMemoryVolume` — `RwLock<HashMap>` store for tests; also used for stress tests (`with_file_count`) |
 
@@ -45,6 +45,7 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `supports_local_fs_access()` — whether `std::fs` operations (stat, read_dir) work on this volume's paths. Default `true`. `MtpVolume` and `SmbVolume` return `false`. Used to skip the legacy synthetic entry diff path (now superseded by `notify_mutation`).
 - `notify_mutation(volume_id, parent_path, mutation)` — called after a successful mutation (create, delete, rename) to update the listing cache immediately. Default impl uses `std::fs` (works for `LocalPosixVolume`). `SmbVolume` and `MtpVolume` override to use their own protocol's `get_metadata`. Fire-and-forget, no error propagation.
 - `smb_connection_state()` — returns `Some(SmbConnectionState)` for SMB volumes (green/yellow indicator in volume picker). Default `None`. Only `SmbVolume` implements it.
+- `attempt_reconnect()` — tries to rebuild the volume's underlying session in place after a transient connection loss. Default `Err(NotSupported)`. Only `SmbVolume` overrides today; the Tauri command `reconnect_smb_volume` and the FE reconnect manager call this on each backoff tick. Idempotent and single-flight: concurrent callers wait on the same in-flight attempt instead of dog-piling the server.
 - `on_unmount()` — lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
 - `scanner()` / `watcher()` — drive indexing hooks; `None` by default.
 - `space_poll_interval()` — recommended interval for the live disk-space poller (`space_poller.rs`). Default 2 s (local volumes). `SmbVolume` and `MtpVolume` override to 5 s. `InMemoryVolume` returns `None` (no polling). The poller uses this to tick each volume at its own cadence.
@@ -183,6 +184,26 @@ SMB mounts are automatically upgraded to `SmbVolume` (direct smb2 connection) in
 Both paths check the `network.directSmbConnection` setting (global `AtomicBool`). Both are best-effort — failures log a
 warning and the volume stays as `LocalPosixVolume`. The "Connect directly" UI action (`upgrade_to_smb_volume` command)
 provides a manual upgrade path.
+
+## SMB live-reconnect lifecycle
+
+When a hot-path op hits `ConnectionLost` / `SessionExpired`, `handle_smb_result` flips state to `Disconnected` and
+`transition_to_disconnected` emits `smb-connection-changed { volumeId, state: "disconnected" }`. The frontend reconnect
+manager listens for this event and runs a per-volume backoff cycle (timer-driven, calling the
+`reconnect_smb_volume(volumeId)` Tauri command on each tick).
+
+`SmbVolume::do_attempt_reconnect` is the single source of truth for re-establishing the session:
+
+1. Acquires `reconnect_lock` (single-flight: concurrent FE-cycle and lazy-nav callers wait here).
+2. If state is already `Direct`, returns Ok cheaply.
+3. Tries `build_session()` with the cached `SmbConnectionParams` (the credentials that worked at original connect).
+4. If that fails with an auth error, calls `refresh_credentials_from_store` (which re-reads from `keychain::get_credentials`) and retries once with the fresh creds. On success, the new credentials replace the cached ones via `params.write()`.
+5. On success: installs the new client + tree, restarts the watcher with `spawn_watcher` (the prior watcher is cancelled via `stop_watcher` first), then `transition_to_direct` flips state and emits `smb-connection-changed { state: "direct" }`. Doing the state flip last means observers wake up to a fully-installed session.
+6. On failure: state stays `Disconnected`. The FE backoff cycle decides whether to retry.
+
+Credentials are kept in memory for the lifetime of the `SmbVolume` (no security concern — they're already in the
+process's address space for every smb2 call). Only re-pulled from the secret store on auth failure, in case the user
+updated them.
 
 ## Friendly error system
 
