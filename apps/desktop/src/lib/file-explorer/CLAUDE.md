@@ -156,7 +156,12 @@ Core explorer UI components:
 - **MtpConnectionView.svelte** / **NetworkMountView.svelte** — Placeholder panes for MTP/network mount states
 - **PaneResizer.svelte** — Drag handle between the two panes
 - **ErrorPane.svelte** — Unified error display for listing failures. See [Error display](#error-display) below.
-- **VolumeUnreachableBanner.svelte** — Shown when a tab's volume resolution timed out at startup (retry + open home)
+- **VolumeUnreachableBanner.svelte** — Shown when a tab's volume resolution timed out at startup (retry + open home),
+  and also when the SMB reconnect manager has given up after exhausting its backoff cycle (retry + disconnect —
+  `smbGaveUp` variant)
+- **SmbReconnectingView.svelte** — Shown while the per-volume SMB reconnect cycle is running (waiting/attempting).
+  Spinner + progress bar for the current backoff window + dynamic body text. Three actions: Retry now / Cancel /
+  Disconnect. Driven by `smb-reconnect-manager.svelte.ts` in `network/`.
 - **selection-state.svelte.ts** — Reactive selection set (indices) with range/toggle helpers
 - **sorting-handlers.ts** / **transfer-operations.ts** / **tab-operations.ts** — Pure logic extracted from
   DualPaneExplorer

@@ -141,6 +141,32 @@ User activates "Connect to server..." row
                  └─ if sharePath → autoMountShare triggers mount
 ```
 
+## SMB live-reconnect flow (cross-component)
+
+When a direct-SMB session drops mid-use, four pieces coordinate to recover:
+
+1. **Backend** (`SmbVolume::handle_smb_result` in `volume/smb.rs`) detects `ConnectionLost` / `SessionExpired`, flips
+   state to `Disconnected`, and emits `smb-connection-changed { volumeId, state: "disconnected" }`. (See
+   `volume/CLAUDE.md` § SMB live-reconnect lifecycle for the BE detail.)
+2. **`stores/volume-store.svelte.ts`** listens for that event and patches the matching volume's `smbConnectionState`
+   field — keeps the picker dot, the breadcrumb, and `currentVolumeInfo` reactive without waiting for the next
+   `volumes-changed`.
+3. **`smb-reconnect-manager.svelte.ts`** also listens, and (if any subscribers are present) starts a per-volume backoff
+   cycle by calling `reconnectSmbVolume(volumeId)` on each tick. Cycle resolves when the BE emits a follow-up
+   `state: "direct"` event.
+4. **`FilePane.svelte`** subscribes to the manager via `$effect` whenever the pane is on an SMB volume. Subscription is
+   refcounted (both panes on the same share share one cycle). When the manager has an active cycle, FilePane swaps the
+   file list for `SmbReconnectingView`. On `gave-up`, it swaps to `VolumeUnreachableBanner` (`smbGaveUp` variant). On
+   success, the registered `onSuccess` callback re-runs `loadDirectory`.
+
+The lazy-nav path: if the user opens a share that's already `Disconnected` (no fresh event in flight), the FilePane
+`$effect` notices `currentVolumeInfo?.smbConnectionState === 'disconnected'` and calls `manager.startCycle(volumeId)`
+directly.
+
+The Disconnect button: `disconnectSmbVolume(volumeId)` Tauri command shells out to `diskutil unmount` (macOS) → FSEvents
+fires → `SmbVolume::on_unmount` runs → volume removed from `VolumeManager` → `volumes-changed` event removes it from the
+picker.
+
 ## Key decisions
 
 **Decision**: Network discovery runs at app startup, not when the user opens the Network volume **Why**: mDNS host

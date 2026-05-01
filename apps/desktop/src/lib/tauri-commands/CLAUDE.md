@@ -25,7 +25,7 @@ import { listDirectoryStart } from '$lib/tauri-commands/file-listing'
 | `write-operations.ts` | Copy/move/delete, conflict resolution, scan preview, `formatBytes`/`formatDuration`                                                                                             |
 | `rename.ts`           | `checkRenamePermission`, `checkRenameValidity`, `renameFile`, `moveToTrash`                                                                                                     |
 | `storage.ts`          | `listVolumes`, `getVolumeSpace`, `watchVolumeSpace`/`unwatchVolumeSpace`, `checkFullDiskAccess`, `openPrivacySettings`                                                          |
-| `networking.ts`       | SMB host discovery, share listing, Keychain credential ops, mounting                                                                                                            |
+| `networking.ts`       | SMB host discovery, share listing, Keychain credential ops, mounting, direct-connection upgrade, in-place `reconnectSmbVolume` and per-volume `disconnectSmbVolume`             |
 | `mtp.ts`              | Android MTP: device listing, connect/disconnect, file ops, transfer progress, volume copy                                                                                       |
 | `licensing.ts`        | License status, activation, expiry, server validation                                                                                                                           |
 | `settings.ts`         | Port checking, file watcher debounce, indexing toggle, MCP server control, AI subsystem commands                                                                                |
