@@ -191,6 +191,12 @@ class SmbReconnectManager {
   private handleDirect(volumeId: string): void {
     const entry = this.map.get(volumeId)
     if (!entry) return
+    // Idempotent: if no cycle is in flight (state is the baseline + no timer),
+    // there's nothing to clean up and no subscribers to notify. This guards
+    // against double-firing when both `runAttempt`'s success branch and the
+    // `smb-connection-changed` event fire — whichever runs first wins.
+    const noActiveCycle = entry.state.status === 'waiting' && entry.timerId === null && entry.state.attemptIndex === 0
+    if (noActiveCycle) return
     if (entry.timerId) clearTimeout(entry.timerId)
     entry.timerId = null
     entry.state = freshState()
@@ -238,11 +244,9 @@ class SmbReconnectManager {
 
     try {
       await reconnectSmbVolume(volumeId)
-      // Success — let the `smb-connection-changed` listener handle cleanup so
-      // the path that runs is the same whether success comes from us or from
-      // an unrelated trigger (lazy nav, manual reconnect from another window).
-      // As a defensive backstop in case the event never arrives, also clean up
-      // here. `handleDirect` is idempotent.
+      // Success — defensive backstop in case the `smb-connection-changed`
+      // event somehow doesn't arrive (unexpected, but `handleDirect` is
+      // idempotent so calling both paths is safe).
       this.handleDirect(volumeId)
     } catch (e) {
       log.info('Reconnect attempt {attempt} for {volumeId} failed: {error}', {

@@ -175,6 +175,24 @@ describe('smbReconnectManager', () => {
     expect(smbReconnectManager.getState('vol-refcount')).toBeNull()
   })
 
+  it('handleDirect is idempotent — onSuccess fires exactly once per cycle', async () => {
+    // Race scenario: both the `direct` event and the awaited `reconnectSmbVolume`
+    // success path could each trigger `handleDirect`. The idempotency guard
+    // ensures `onSuccess` only fires once.
+    await smbReconnectManager.init()
+    const onSuccess = vi.fn()
+    const unsub = smbReconnectManager.subscribe('vol-once', onSuccess)
+    smbReconnectManager.startCycle('vol-once')
+    // Resolve `reconnectSmbVolume` AND emit the `direct` event (simulating both
+    // paths racing to clean up). Only one should win and notify.
+    mockReconnect.mockResolvedValueOnce(undefined)
+    await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS[0])
+    emit('vol-once', 'direct')
+    expect(onSuccess).toHaveBeenCalledTimes(1)
+
+    unsub()
+  })
+
   it('two subscribers see the same state object (one cycle, both panes)', async () => {
     await smbReconnectManager.init()
     const unsub1 = smbReconnectManager.subscribe('vol-shared')
