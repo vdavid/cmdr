@@ -75,6 +75,20 @@ jobs:
           echo -n "$APPLE_API_KEY_BASE64" | base64 --decode \
             > ~/private_keys/AuthKey_${APPLE_API_KEY}.p8
 
+      - name: Detach stale Cmdr* DMG mounts
+        # tauri-action's bundle_dmg.sh fails fast (~3 s) when the "Cmdr" volume name is already
+        # taken in /Volumes (typically from a previous Finder double-click on an old DMG —
+        # the self-hosted runner shares /Volumes with the dev's interactive session). Detach any
+        # leftovers so the new bundle gets the canonical volume name. scripts/release.sh has the
+        # same guard pre-tag-push, but this catches mounts that appear AFTER the tag push.
+        run: |
+          while IFS= read -r vol; do
+            if [[ -n "$vol" ]]; then
+              echo "Detaching stale mount: $vol"
+              hdiutil detach "$vol" -force >/dev/null 2>&1 || true
+            fi
+          done < <(mount | awk -F' on ' '/\/Volumes\/Cmdr/ { sub(/ \(.*$/, "", $2); print $2 }')
+
       - name: Build, sign, and notarize
         uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # v0
         env:

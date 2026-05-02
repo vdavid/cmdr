@@ -85,6 +85,19 @@ main, and triggers a website deploy. If it fails:
 - **Website deploy webhook failed**: re-trigger manually by pushing any commit to main, or SSH into the server and run
   the deploy script.
 
+### `bundle_dmg.sh` fails fast (~3 s) on the universal/aarch64/x86_64 build
+
+A leftover `/Volumes/Cmdr` mount (typically from a Finder double-click on an old DMG) makes the new
+bundle fail because the volume name is already taken. Both `scripts/release.sh` and the release
+workflow detach `/Volumes/Cmdr*` mounts before building, so this should be self-healing. If you hit
+it anyway (for example, you mounted a DMG between the workflow's detach step and the actual build),
+detach manually and re-run failed jobs:
+
+```bash
+hdiutil detach /Volumes/Cmdr -force      # or "Cmdr 1", etc.
+gh run rerun <release-run-id> --failed
+```
+
 ### Tauri bundles unexpected binaries
 
 Tauri's bundler includes all `[[bin]]` targets from the cmdr package, not just the main `Cmdr` binary. Dev-only tools
