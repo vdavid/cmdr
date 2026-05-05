@@ -11,6 +11,14 @@ describe('formatDateTimeWithFormat', () => {
     expect(formatDateTimeWithFormat(undefined, 'iso', '')).toBe('')
   })
 
+  it('returns empty string for null timestamp (JSON-serialized None over the wire)', () => {
+    expect(formatDateTimeWithFormat(null, 'iso', '')).toBe('')
+  })
+
+  it('returns empty string for zero timestamp (empty git categories have no meaningful date)', () => {
+    expect(formatDateTimeWithFormat(0, 'iso', '')).toBe('')
+  })
+
   it('formats as ISO (YYYY-MM-DD HH:mm)', () => {
     expect(formatDateTimeWithFormat(timestamp, 'iso', '')).toBe('2024-03-15 14:30')
   })

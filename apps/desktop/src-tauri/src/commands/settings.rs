@@ -117,8 +117,13 @@ pub fn set_error_reports_enabled(value: bool) {
 /// virtual `.git/...` listing keep their cached children until the next
 /// navigation. We refresh every cached listing under any subscribed repo's
 /// `.git/` so the change is visible immediately.
+/// `async` is load-bearing here: the body fans out to `notify_directory_changed`
+/// which calls `tokio::spawn` to emit cache-refresh events. Sync Tauri commands
+/// run on the IPC main thread, which has no Tokio reactor — `spawn` panicked
+/// there with "there is no reactor running" (see crash report 2026-05-05).
+/// Marking the command `async` puts it on a Tokio worker, where `spawn` works.
 #[tauri::command]
-pub fn set_show_virtual_git_portal(enabled: bool) {
+pub async fn set_show_virtual_git_portal(enabled: bool) {
     crate::file_system::git::set_virtual_portal_enabled(enabled);
     crate::file_system::git::watcher::refresh_all_virtual_listings_after_toggle();
 }

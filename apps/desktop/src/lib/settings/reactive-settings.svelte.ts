@@ -182,7 +182,7 @@ export function getStripedRows(): boolean {
  * Format a timestamp according to current settings.
  * @param timestamp Unix timestamp in seconds
  */
-export function formatDateTime(timestamp: number | undefined): string {
+export function formatDateTime(timestamp: number | null | undefined): string {
   return formatDateTimeWithFormat(timestamp, dateTimeFormat, customDateTimeFormat)
 }
 

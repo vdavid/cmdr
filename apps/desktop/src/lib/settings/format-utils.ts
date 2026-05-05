@@ -7,16 +7,19 @@ import type { DateTimeFormat, FileSizeFormat } from './types'
 
 /**
  * Format a timestamp according to the given format.
+ * Returns an empty string for missing timestamps (`null`, `undefined`, or zero
+ * — virtual git entries that have no meaningful date land on `null` over the
+ * wire but `0` from a few legacy code paths; treat both as absent).
  * @param timestamp Unix timestamp in seconds
  * @param format The date/time format to use
  * @param customFormat Custom format string (used when format is 'custom')
  */
 export function formatDateTimeWithFormat(
-  timestamp: number | undefined,
+  timestamp: number | null | undefined,
   format: DateTimeFormat,
   customFormat: string,
 ): string {
-  if (timestamp === undefined) return ''
+  if (timestamp == null || timestamp === 0) return ''
 
   const date = new Date(timestamp * 1000)
 
