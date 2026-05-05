@@ -782,6 +782,14 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        /* Soften the selection color flip. */
+        transition: color 50ms ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .name {
+            transition: none;
+        }
     }
 
     .file-entry.is-selected .name {

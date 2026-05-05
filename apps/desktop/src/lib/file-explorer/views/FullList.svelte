@@ -840,9 +840,35 @@
         transition: none;
     }
 
+    /* Soften the selection/cursor color flip on the cells whose color changes. */
+    .file-entry .col-name,
+    .file-entry .col-ext,
+    .file-entry .col-size,
+    .file-entry .col-date,
+    .file-entry .col-git,
+    .file-entry .size-dir,
+    .file-entry :global(.size-bytes),
+    .file-entry :global(.size-kb),
+    .file-entry :global(.size-mb),
+    .file-entry :global(.size-gb),
+    .file-entry :global(.size-tb) {
+        transition: color 50ms ease;
+    }
+
     @media (prefers-reduced-motion: reduce) {
         .header-row,
-        .file-entry {
+        .file-entry,
+        .file-entry .col-name,
+        .file-entry .col-ext,
+        .file-entry .col-size,
+        .file-entry .col-date,
+        .file-entry .col-git,
+        .file-entry .size-dir,
+        .file-entry :global(.size-bytes),
+        .file-entry :global(.size-kb),
+        .file-entry :global(.size-mb),
+        .file-entry :global(.size-gb),
+        .file-entry :global(.size-tb) {
             transition: none;
         }
     }
