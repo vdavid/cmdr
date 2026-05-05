@@ -153,7 +153,10 @@ telemetry.get('/download/:version/:arch', async (c) => {
     await dbWrite
   }
 
-  return c.redirect(`https://github.com/vdavid/cmdr/releases/download/v${version}/Cmdr_${version}_${arch}.dmg`, 302)
+  // tauri-action names the Intel DMG `_x64.dmg`, not `_x86_64.dmg`. Map at the boundary —
+  // we keep `x86_64` everywhere else (uname, Rust target triple, D1, telemetry, website).
+  const fileArch = arch === 'x86_64' ? 'x64' : arch
+  return c.redirect(`https://github.com/vdavid/cmdr/releases/download/v${version}/Cmdr_${version}_${fileArch}.dmg`, 302)
 })
 
 export { telemetry }

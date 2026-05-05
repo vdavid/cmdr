@@ -407,6 +407,11 @@ silently failing. Costs one extra HMAC check on mismatch.
 under concurrent `/activate` requests. **Why**: KV doesn't support atomic increment. The counter is approximate — if
 exact counts matter, query the CF API to list KV keys, or switch to Durable Objects / D1.
 
+**Gotcha**: The `/download/:version/:arch` redirect maps `x86_64` → `x64` in the filename. **Why**: `tauri-action` names
+the Intel DMG `Cmdr_<ver>_x64.dmg`, but the rest of the codebase (URL path, D1 telemetry, website data attrs, Rust
+target triple, `uname -m`) consistently uses `x86_64`. Mapping at the boundary keeps everything else canonical. Same
+convention is already used in `.github/workflows/release.yml` when reading DMG sizes for `latest.json`.
+
 ## Dependencies
 
 Runtime: `hono`, `@noble/ed25519`, `resend` Dev: `wrangler`, `vitest`, `typescript`, `eslint`, `prettier`

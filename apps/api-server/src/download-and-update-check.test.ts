@@ -32,7 +32,7 @@ function createBindings(overrides: Record<string, unknown> = {}) {
 }
 
 describe('GET /download/:version/:arch', () => {
-  it('redirects to GitHub Releases', async () => {
+  it('redirects aarch64 to the matching DMG', async () => {
     const bindings = createBindings()
     const res = await app.request('/download/1.2.3/aarch64', {}, bindings)
 
@@ -40,6 +40,36 @@ describe('GET /download/:version/:arch', () => {
     expect(res.headers.get('location')).toBe(
       'https://github.com/vdavid/cmdr/releases/download/v1.2.3/Cmdr_1.2.3_aarch64.dmg',
     )
+  })
+
+  it('redirects x86_64 to the x64-named DMG (tauri-action filename quirk)', async () => {
+    const bindings = createBindings()
+    const res = await app.request('/download/1.2.3/x86_64', {}, bindings)
+
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe(
+      'https://github.com/vdavid/cmdr/releases/download/v1.2.3/Cmdr_1.2.3_x64.dmg',
+    )
+  })
+
+  it('redirects universal to the matching DMG', async () => {
+    const bindings = createBindings()
+    const res = await app.request('/download/1.2.3/universal', {}, bindings)
+
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe(
+      'https://github.com/vdavid/cmdr/releases/download/v1.2.3/Cmdr_1.2.3_universal.dmg',
+    )
+  })
+
+  it('still records x86_64 (not x64) in D1 — filename mapping is purely cosmetic', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await app.request('/download/1.2.3/x86_64', {}, bindings)
+
+    // bindArgs: [app_version, arch, country, continent]
+    expect(bindMock.mock.calls[0][1]).toBe('x86_64')
   })
 
   it('inserts correct data into D1 downloads table', async () => {
