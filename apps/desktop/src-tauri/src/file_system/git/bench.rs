@@ -215,6 +215,116 @@ fn bench_list_branches_with_ahead_behind() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+// ── Per-file Modified dates inside snapshots ────────────────────────
+
+/// Builds a deep-history fixture: `commits` commits, each touching one
+/// file in a 100-entry top-level dir. Used to bench the per-file date
+/// walk-once batching at "Cmdr-scale" (5000 commits) and "monorepo-scale"
+/// (50k commits).
+fn build_deep_history_fixture(commits: usize, top_level_files: usize, name: &str) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!("cmdr_bench_per_file_dates_{}_{}", name, std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    run(&dir, &["init", "-q", "-b", "main"]);
+    run(&dir, &["config", "user.name", "Bench"]);
+    run(&dir, &["config", "user.email", "bench@cmdr.local"]);
+    // Seed `top_level_files` files in one commit so the listing has
+    // something to walk over.
+    for f in 0..top_level_files {
+        std::fs::write(dir.join(format!("f{:04}.txt", f)), b"seed\n").unwrap();
+    }
+    run(&dir, &["add", "."]);
+    run(&dir, &["commit", "-q", "-m", "seed"]);
+    // Then `commits-1` follow-up commits. Each touches a single file in a
+    // round-robin pattern so each top-level file gets its date set fairly
+    // recently.
+    for n in 1..commits {
+        let f = n % top_level_files;
+        std::fs::write(dir.join(format!("f{:04}.txt", f)), format!("change {}\n", n).as_bytes()).unwrap();
+        run(&dir, &["add", "."]);
+        run(&dir, &["commit", "-q", "-m", &format!("c{}", n)]);
+    }
+    dir
+}
+
+#[test]
+#[ignore = "Slow: builds a 5000-commit fixture; opt-in via `cargo test -- --ignored`"]
+fn bench_per_file_dates_5k_commits_under_budget() {
+    use super::path::Cat;
+    use super::snapshot_dates;
+    use super::virtual_listing;
+    let dir = build_deep_history_fixture(5_000, 100, "5k");
+    let (handle, _) = discover_repo(&dir).expect("discover");
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").expect("resolve main");
+
+    // Cold: clear cache before each run.
+    let mut cold = Vec::with_capacity(RUNS);
+    for _ in 0..RUNS {
+        snapshot_dates::clear_cache();
+        let start = Instant::now();
+        let dates = snapshot_dates::decode_per_file_dates(&handle, commit, "").expect("dates");
+        cold.push(start.elapsed().as_micros());
+        assert_eq!(dates.len(), 100, "every top-level entry dated");
+    }
+    let cold_p95 = percentile(cold.clone(), 95.0);
+    let cold_p50 = percentile(cold.clone(), 50.0);
+    eprintln!(
+        "per_file_dates 100 entries / 5k commits (cold): p50={}ms p95={}ms (budget 200 ms)",
+        cold_p50 / 1000,
+        cold_p95 / 1000
+    );
+    assert!(cold_p95 / 1000 <= 200, "p95 over 200 ms budget: {}ms", cold_p95 / 1000);
+
+    // Warm: cache hit.
+    snapshot_dates::clear_cache();
+    let _ = snapshot_dates::decode_per_file_dates(&handle, commit, "").expect("warmup");
+    let mut warm = Vec::with_capacity(RUNS);
+    for _ in 0..RUNS {
+        let start = Instant::now();
+        let _ = snapshot_dates::decode_per_file_dates(&handle, commit, "").expect("dates");
+        warm.push(start.elapsed().as_micros());
+    }
+    let warm_p95 = percentile(warm.clone(), 95.0);
+    let warm_p50 = percentile(warm.clone(), 50.0);
+    eprintln!(
+        "per_file_dates (warm, cache hit): p50={}µs p95={}µs",
+        warm_p50, warm_p95
+    );
+    assert!(warm_p95 <= 5_000, "warm p95 over 5 ms: {}µs", warm_p95);
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+#[ignore = "Very slow: builds a 50k-commit fixture; opt-in via `cargo test -- --ignored`"]
+fn bench_per_file_dates_50k_commits_under_budget() {
+    use super::path::Cat;
+    use super::snapshot_dates;
+    use super::virtual_listing;
+    let dir = build_deep_history_fixture(50_000, 100, "50k");
+    let (handle, _) = discover_repo(&dir).expect("discover");
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").expect("resolve main");
+
+    let mut cold = Vec::with_capacity(RUNS);
+    for _ in 0..RUNS {
+        snapshot_dates::clear_cache();
+        let start = Instant::now();
+        let _ = snapshot_dates::decode_per_file_dates(&handle, commit, "").expect("dates");
+        cold.push(start.elapsed().as_micros());
+    }
+    let cold_p95 = percentile(cold.clone(), 95.0);
+    let cold_p50 = percentile(cold.clone(), 50.0);
+    eprintln!(
+        "per_file_dates 100 entries / 50k commits (cold, capped at {} commits walked): p50={}ms p95={}ms (budget 500 ms)",
+        snapshot_dates::MAX_COMMITS_PER_WALK,
+        cold_p50 / 1000,
+        cold_p95 / 1000
+    );
+    assert!(cold_p95 / 1000 <= 500, "p95 over 500 ms budget: {}ms", cold_p95 / 1000);
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 #[test]
 #[ignore = "Slow: builds a 200-commit fixture; opt-in via `cargo test -- --ignored`"]
 fn bench_list_commits_files_changed() {

@@ -42,6 +42,7 @@ pub mod log;
 pub mod path;
 pub mod read_blob;
 pub mod repo;
+pub mod snapshot_dates;
 pub mod stash;
 pub mod status;
 pub mod submodules;
@@ -58,6 +59,8 @@ mod m2_tests;
 mod m3_tests;
 #[cfg(test)]
 mod m4_tests;
+#[cfg(test)]
+mod snapshot_dates_tests;
 #[cfg(test)]
 mod tests;
 

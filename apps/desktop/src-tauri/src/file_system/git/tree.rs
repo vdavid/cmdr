@@ -13,6 +13,7 @@ use crate::file_system::listing::FileEntry;
 use super::column_meta::recursive_tree_size;
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::RepoHandle;
+use super::snapshot_dates;
 
 /// Per-blob byte cap for cross-volume copies and previews. Above this we
 /// surface a friendly "blob too big" rather than allocate the whole thing.
@@ -32,10 +33,12 @@ pub fn list_tree(
     let repo = handle.to_thread_local();
     let tree = resolve_tree_at(&repo, commit_id, sub_path)?;
 
-    // Snapshot date drives the Modified column for every file and subdir
-    // inside this commit's tree. Inside a frozen point in time, every
-    // entry shares the same date; that's semantically correct.
+    // Per-file Modified dates: each entry's date reflects the most recent
+    // commit that touched it (or any file underneath, for subdirs). Falls
+    // back to the snapshot date when an entry hasn't been touched within
+    // the walk cap. See `snapshot_dates` for the algorithm.
     let snapshot_secs = commit_committer_secs(&repo, commit_id);
+    let per_file_dates = snapshot_dates::decode_per_file_dates(handle, commit_id, sub_path).unwrap_or_default();
 
     let mut out = Vec::new();
     for entry in tree.iter() {
@@ -65,7 +68,10 @@ pub fn list_tree(
                 fe.recursive_size = Some(bytes);
             }
         }
-        if let Some(s) = snapshot_secs {
+        // Per-file date if we found one in the walk; otherwise fall back to
+        // the snapshot's commit date so the cell never reads as blank.
+        let entry_secs = per_file_dates.get(&name).copied().or(snapshot_secs);
+        if let Some(s) = entry_secs {
             fe.modified_at = Some(s);
             fe.created_at = Some(s);
             fe.added_at = Some(s);
@@ -133,8 +139,16 @@ pub fn get_tree_entry(
     );
     apply_kind(&mut fe, kind, &repo, entry.oid())?;
     fe.icon_id = pick_icon_id(&fe);
-    // Snapshot date for the Modified cell.
-    if let Some(s) = commit_committer_secs(&repo, commit_id) {
+    // Per-file date for the Modified cell. We compute the parent dir's
+    // date map (cheap because the cache is shared with `list_tree`) and
+    // pull the entry's name out. Falls back to the snapshot date.
+    let (parent_path, leaf_name) = split_parent_and_leaf(sub_path);
+    let per_file_dates = snapshot_dates::decode_per_file_dates(handle, commit_id, parent_path).unwrap_or_default();
+    let entry_secs = per_file_dates
+        .get(leaf_name)
+        .copied()
+        .or_else(|| commit_committer_secs(&repo, commit_id));
+    if let Some(s) = entry_secs {
         fe.modified_at = Some(s);
         fe.created_at = Some(s);
         fe.added_at = Some(s);
@@ -146,6 +160,16 @@ pub fn get_tree_entry(
         fe.recursive_size = Some(bytes);
     }
     Ok(fe)
+}
+
+/// Splits `sub_path` into `(parent_dir, leaf_name)` using forward slashes.
+///
+/// `"src/lib/mod.rs"` → `("src/lib", "mod.rs")`. `"foo"` → `("", "foo")`.
+fn split_parent_and_leaf(sub_path: &str) -> (&str, &str) {
+    match sub_path.rfind('/') {
+        Some(idx) => (&sub_path[..idx], &sub_path[idx + 1..]),
+        None => ("", sub_path),
+    }
 }
 
 fn commit_committer_secs(repo: &gix::Repository, commit_id: gix::ObjectId) -> Option<u64> {

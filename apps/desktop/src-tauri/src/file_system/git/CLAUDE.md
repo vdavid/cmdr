@@ -27,7 +27,8 @@ three new error variants (`ShallowBoundary`, `MissingObject`,
 | `stash.rs` | `list_stashes(repo_root)`, `resolve_stash_commit(handle, n)` – shells out to `git stash list -z` and `git rev-parse stash@{n}` (gix has no public stash API). `list_stashes` doesn't take a `RepoHandle` because the shell-out only needs `repo_root` for `git -C` |
 | `worktrees.rs` | `list_worktrees` – gix `Repository::worktrees()`. Each entry sets `redirect_to_path` to the worktree's working dir |
 | `submodules.rs` | `list_submodules` – gix `Repository::submodules()`. Each entry sets `redirect_to_path` to `<repo_root>/<rel-path>` |
-| `tree.rs` | `list_tree`, `get_tree_entry`, `lookup_blob_id`, `read_blob` – gix tree walks. Permissions reflect `EntryKind::BlobExecutable` so cross-volume copy preserves the executable bit |
+| `tree.rs` | `list_tree`, `get_tree_entry`, `lookup_blob_id`, `read_blob` – gix tree walks. Permissions reflect `EntryKind::BlobExecutable` so cross-volume copy preserves the executable bit. `list_tree` calls `snapshot_dates::decode_per_file_dates` for per-file Modified dates, falling back to the snapshot date |
+| `snapshot_dates.rs` | `decode_per_file_dates(commit, dir_path)` walks commits backwards from `commit`, diffs each against its first parent, and attributes the committer time to any pending top-level entry the diff touches. Capped at `MAX_COMMITS_PER_WALK` (1000). FIFO-bounded process-global cache keyed on `(commit_id, dir_path)` — cache is content-addressable so it never goes stale |
 | `read_blob.rs` | `GitBlobReadStream` – owns the full `Vec<u8>` and yields 256 KB chunks. See *Honest blob streaming* below |
 | `status.rs` | `list_status(repo, dir)` runs a full-repo `git status --porcelain=v2 -z` once per `.git/index` mtime, caches the result in a process-global `RwLock<HashMap<RepoRoot, CachedStatus>>`, and slices it by `dir`. The watcher invalidates the snapshot whenever `.git/*` changes. Parses porcelain v2 in `parse_porcelain_v2`. |
 | `watcher.rs` | `GitWatcherRegistry` – per-repo notify-rs debouncer. `subscribe(app, root)` returns the current `RepoInfo` synchronously and emits `git-state-changed` on relevant `.git/*` mutations. 200 ms debounce. M2: also calls `notify_directory_changed(.., FullRefresh)` for any cached `.git/{branches,tags}/` listings on the local volume |
@@ -134,8 +135,8 @@ Every virtual entry carries a real `modified_at` and most carry a `display_size`
 | `stash/<n>/` | stash creation date | `on main` (parsed from stash subject) | 0 |
 | `worktrees/<name>` (redirect) | worktree HEAD date | `on feature-x` or short SHA | 0 |
 | `submodules/<name>` (redirect) | pinned commit date | short SHA | 0 |
-| inside snapshots — files | snapshot commit date | None (blob bytes) | blob bytes |
-| inside snapshots — subdirs | snapshot commit date | None (recursive bytes) | recursive blob bytes |
+| inside snapshots — files | most recent commit that touched the file (fallback: snapshot commit date) | None (blob bytes) | blob bytes |
+| inside snapshots — subdirs | most recent commit that touched any file underneath (fallback: snapshot commit date) | None (recursive bytes) | recursive blob bytes |
 
 Cross-category Size sort is meaningless (ahead-count vs files-changed vs item count); that's an honest tradeoff — each cell is self-explaining via `display_size_tooltip` (also used as the aria-label).
 
@@ -145,6 +146,9 @@ The frontend reads `display_size` / `display_size_tooltip` from `FileEntry`; the
 **Why**: Bench (release build, M-series): 100 branches with ahead/behind takes p50=33 ms / p95=36 ms — well under the 300 ms p95 budget the spec sets for the listing pipeline. Files-changed for 200 commits: p50=37 ms / p95=40 ms (200 µs / commit), so the typical Cmdr-sized repo (~3000 commits) lands ~600 ms and the 5000-commit cap lands ~1 s. We accept the worst-case 1 s on the cap because (1) Cmdr's own repo never hits the cap, (2) the listing pipeline runs the hook in `spawn_blocking` so the UI stays responsive, and (3) the alternative — lazy-load via a streamed IPC — would mean another round-trip per row and a placeholder `…` in the cell while it resolves. Document worth re-checking if a user reports the 5000-commit cap feeling slow; the M3 bench harness in `bench.rs` already covers 1000 commits and the new `bench_list_commits_files_changed` covers 200.
 
 ## Decisions
+
+**Decision (M4 follow-up)**: Per-file Modified dates inside snapshot listings via walk-once batching
+**Why**: The snapshot date ("when this commit landed") is the same value for every file inside a `branches/main/`, `commits/<sha>/`, etc. listing — semantically correct as a "frozen point in time", but useless as a "when did I last work on this?" hint. We now run a single rev-walk per `(commit_id, dir_path)` listing: from the snapshot commit backwards by commit time, first-parent only, diffing each commit against its first parent (gix's `Tree::changes()::for_each_to_obtain_tree`). Each `Change.location` is matched against the directory's top-level entries; the first-seen commit's committer time wins. The walk stops early when every entry is dated, after `MAX_COMMITS_PER_WALK` (1000), or when the rev-walk exits. Initial commits short-circuit. Cache is process-global, FIFO-bounded at 50 keys, content-addressable so it never invalidates. Bench: 100 entries × 5000 commits cold p95=21 ms (budget 200 ms), warm p95=2 µs. 50k-commit fixture sits inside the 500 ms budget too. Entries that don't surface within the cap fall back to the snapshot date so the cell never reads as blank.
 
 **Decision (M4 follow-up)**: Cache `list_status` results keyed by `.git/index` mtime
 **Why**: Status used to walk the worktree on every `listing-complete` (every nav,
