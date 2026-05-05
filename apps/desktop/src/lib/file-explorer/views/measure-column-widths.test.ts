@@ -47,21 +47,23 @@ describe('computeFullListColumnWidths', () => {
     _setMeasureForTests(fakeMeasure)
     const w = computeFullListColumnWidths({ ...baseArgs, entries: [] })
     // With sortBy='name', none of Ext/Size/Modified are active, so each gets
-    // HEADER_CHROME_INACTIVE (8). "Ext" = 21 + 8 = 29; "Size" = 28 + 8 = 36
-    // → clamped to MIN_SIZE_WIDTH (40); "Modified" = 56 + 8 = 64 → clamped to
-    // MIN_DATE_WIDTH (70).
-    expect(w.ext).toBe(29)
+    // HEADER_CHROME_INACTIVE (0 — labels sit flush with column-track edges).
+    // "Ext" = 21 → clamped to MIN_EXT_WIDTH (28); "Size" = 28 → clamped to
+    // MIN_SIZE_WIDTH (40); "Modified" = 56 → clamped to MIN_DATE_WIDTH (70).
+    expect(w.ext).toBe(28)
     expect(w.size).toBe(40)
     expect(w.date).toBe(70)
   })
 
   it('widens the active sort column to reserve room for the caret', () => {
     _setMeasureForTests(fakeMeasure)
+    // The ext column is the one whose floor (MIN_EXT_WIDTH = 28) sits below
+    // "Ext" + active chrome (21 + 12 = 33), so the caret allowance is visible.
+    // Size and Date floors swallow the caret allowance whole, so we test ext.
     const nameSorted = computeFullListColumnWidths({ ...baseArgs, entries: [] })
-    const sizeSorted = computeFullListColumnWidths({ ...baseArgs, entries: [], sortBy: 'size' })
-    // size col picks up the caret (+12 chrome) when sortBy==='size'; ext stays inactive.
-    expect(sizeSorted.size).toBeGreaterThan(nameSorted.size)
-    expect(sizeSorted.ext).toBe(nameSorted.ext)
+    const extSorted = computeFullListColumnWidths({ ...baseArgs, entries: [], sortBy: 'extension' })
+    expect(extSorted.ext).toBeGreaterThan(nameSorted.ext)
+    expect(extSorted.size).toBe(nameSorted.size)
   })
 
   it('widens size column when a large file is present', () => {

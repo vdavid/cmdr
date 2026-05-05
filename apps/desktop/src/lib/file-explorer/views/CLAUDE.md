@@ -122,11 +122,13 @@ layout recalc. `transform` uses GPU compositor for 60fps.
 200], don't re-fetch. If scrolled to [250, 300], expand fetch to [0, 550] to include buffer. `shouldResetCache()`
 handles this.
 
-**Gotcha**: `HEADER_CHROME_ACTIVE/INACTIVE` in `measure-column-widths.ts` are tied to `SortableHeader`'s padding + flex
-gap + caret glyph (`--spacing-xs` = 4px × 3 + 8px caret = 20px active, 4px × 2 = 8px inactive) **Why**: If you change
-those CSS values or the caret size/markup, update the two constants or column widths drift. The values aren't derived
-from the live DOM because pretext measurement runs without a reference element — everything is computed from the
-pre-known chrome formula.
+**Gotcha**: `HEADER_CHROME_ACTIVE/INACTIVE` in `measure-column-widths.ts` are tied to `SortableHeader`'s flex gap +
+caret glyph (4px gap + 8px caret = 12px active, 0px inactive). The button keeps 4px horizontal padding for hover-state
+breathing room, but an equal negative margin (`margin: 0 calc(-1 * var(--spacing-xs))`) pulls it back out so the label
+still lines up with the data cells below — only gap+caret count toward the track width. **Why**: If you change those CSS
+values or the caret size/markup, update the two constants or column widths drift. The values aren't derived from the
+live DOM because pretext measurement runs without a reference element — everything is computed from the pre-known chrome
+formula.
 
 **Gotcha**: Width transitions would "slide" on dir switches, because the header (FullList) and columns (BriefList)
 persist across navs **Why**: When `shouldResetCache` fires, both lists set a `skipTransition` flag and clear it after

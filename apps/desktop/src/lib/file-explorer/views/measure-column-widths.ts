@@ -33,15 +33,19 @@ const FONT = '12px -apple-system, BlinkMacSystemFont, sans-serif'
 
 /**
  * Header overhead inside `SortableHeader` for the column currently being sorted:
- * 4px padding left + 4px padding right + 4px flex gap + 8px caret.
+ * 4px flex gap + 8px caret. The button's 4px horizontal padding is canceled
+ * by an equal negative horizontal margin, so the label lines up with the data
+ * cells below — only the gap+caret count toward the column track width.
  */
-const HEADER_CHROME_ACTIVE = 20
+const HEADER_CHROME_ACTIVE = 12
 
 /**
- * Header overhead for a column that isn't being sorted: the caret is `display: none`,
- * which collapses both the glyph and the flex gap. Only the button's own padding remains.
+ * Header overhead for a column that isn't being sorted: the caret is
+ * `display: none`, which collapses both the glyph and the flex gap. The
+ * button's padding is offset by the negative margin, so the label is flush
+ * against the track edges and chrome is zero.
  */
-const HEADER_CHROME_INACTIVE = 8
+const HEADER_CHROME_INACTIVE = 0
 
 /** Extra px added to the final column width. Zero by design — `Math.ceil` already
  *  rounds up, and the pretext measurement matches the browser's own text layout. */

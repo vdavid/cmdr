@@ -47,6 +47,11 @@
         align-items: center;
         gap: var(--spacing-xs);
         padding: 0 var(--spacing-xs);
+        /* Negative horizontal margin pulls the button 4px outside the column
+           track on each side. Combined with the 4px internal padding, the
+           label still lines up with the data cells below, while the hover
+           background gets breathing room and adjacent buttons sit closer. */
+        margin: 0 calc(-1 * var(--spacing-xs));
         background: transparent;
         border: none;
         font: inherit;
