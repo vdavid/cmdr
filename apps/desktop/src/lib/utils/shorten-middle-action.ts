@@ -5,6 +5,12 @@ export interface ShortenMiddleParams {
   text: string
   preferBreakAt?: string
   startRatio?: number
+  /**
+   * When true, the native `title` tooltip is set only when truncation actually
+   * happened (so short, fully-visible text doesn't trigger a redundant tooltip).
+   * Defaults to false — previous callers always show the full text on hover.
+   */
+  tooltipWhenTruncated?: boolean
 }
 
 // Shared across all action instances so the dynamic import runs at most once.
@@ -41,7 +47,16 @@ export function useShortenMiddle(node: HTMLElement, params: ShortenMiddleParams)
   node.style.textOverflow = 'ellipsis'
   node.style.whiteSpace = 'nowrap'
   node.textContent = params.text
-  node.title = params.text
+  if (!params.tooltipWhenTruncated) node.title = params.text
+
+  function applyTitle(truncated: boolean): void {
+    if (params.tooltipWhenTruncated) {
+      if (truncated) node.title = currentText
+      else node.removeAttribute('title')
+    } else {
+      node.title = currentText
+    }
+  }
 
   function truncate() {
     if (!measureWidth) return
@@ -52,6 +67,7 @@ export function useShortenMiddle(node: HTMLElement, params: ShortenMiddleParams)
       startRatio: params.startRatio,
     })
     node.textContent = result
+    applyTitle(result !== currentText)
   }
 
   // Load pretext, then switch from CSS fallback to pixel-accurate truncation
@@ -76,11 +92,12 @@ export function useShortenMiddle(node: HTMLElement, params: ShortenMiddleParams)
       params = newParams
       if (!textChanged) return
       currentText = newParams.text
-      node.title = currentText
       if (measureWidth) {
         truncate()
       } else {
         node.textContent = currentText
+        if (!params.tooltipWhenTruncated) node.title = currentText
+        else node.removeAttribute('title')
       }
     },
     destroy() {

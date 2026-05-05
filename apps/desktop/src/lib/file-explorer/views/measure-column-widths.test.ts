@@ -84,6 +84,23 @@ describe('computeFullListColumnWidths', () => {
     expect(long.ext).toBeGreaterThan(short.ext)
   })
 
+  it('caps the ext column so a pathological extension cannot dominate the row', () => {
+    _setMeasureForTests(fakeMeasure)
+    const longExt = 'extension-extension-extension-extension-extension'
+    // Cap sample is "extensionxx" (11 chars × 7 = 77 px) — text only, no chrome.
+    const capped = computeFullListColumnWidths({
+      ...baseArgs,
+      entries: [entry({ name: `a.${longExt}` })],
+    })
+    expect(capped.ext).toBe('extensionxx'.length * 7)
+    // And: the cap doesn't shrink columns below what real shorter extensions deserve.
+    const normal = computeFullListColumnWidths({
+      ...baseArgs,
+      entries: [entry({ name: 'a.js' })],
+    })
+    expect(capped.ext).toBeGreaterThan(normal.ext)
+  })
+
   it('widens date column based on longest formatted date', () => {
     _setMeasureForTests(fakeMeasure)
     const short = computeFullListColumnWidths({

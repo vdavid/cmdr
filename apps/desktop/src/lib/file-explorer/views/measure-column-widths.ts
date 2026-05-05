@@ -55,6 +55,17 @@ const MIN_EXT_WIDTH = 28
 const MIN_SIZE_WIDTH = 40
 const MIN_DATE_WIDTH = 70
 
+/**
+ * Cap-width sample for the Ext column. A pathological extension like
+ * `extension-extension-extension-…` would otherwise stretch the column wide
+ * enough to push the rest of the row off-screen. The sample is measured with
+ * pretext at the current font, so the cap scales with font size/family.
+ * `extensionxx` ≈ 11 chars — generous enough for real-world long extensions
+ * (`controller`, `component`) without truncating, and just over the literal
+ * word "extension" so that word itself never gets clipped.
+ */
+const EXT_CAP_SAMPLE = 'extensionxx'
+
 let measureWidthCached: ((text: string) => number) | null = null
 let measureUnavailable = false
 
@@ -168,6 +179,12 @@ export function computeFullListColumnWidths(args: {
   let sizeMax = measure('Size') + chromeFor('size')
   let dateMax = measure('Modified') + chromeFor('modified')
 
+  // Cap on per-row Ext text width so a single pathological extension can't
+  // push the rest of the row off-screen. Compared against the row's text-only
+  // measurement (no chrome), so the header bound — `measure('Ext') + chrome` —
+  // can still win when no real extension is wider.
+  const extCap = measure(EXT_CAP_SAMPLE)
+
   // Per-row icons in the size column live to the right of the text; count the
   // widest icon suffix we've seen so we can add it to the data width.
   let sizeIconSuffixMax = 0
@@ -175,7 +192,7 @@ export function computeFullListColumnWidths(args: {
   for (const entry of entries) {
     const ext = getDisplayExtension(entry.name, entry.isDirectory)
     if (ext) {
-      const w = measure(ext)
+      const w = Math.min(measure(ext), extCap)
       if (w > extMax) extMax = w
     }
 

@@ -36,6 +36,13 @@ All under `apps/desktop/src/lib/`.
 | `utils/`                    | Filename validation, confirm dialog utilities                                                                                                                                                                                                                                                                         |
 | `font-metrics/`             | Character width measurement for accurate Brief mode column sizing                                                                                                                                                                                                                                                     |
 
+**Frontend text measurement always uses `@chenglou/pretext`.** When the frontend needs to know the pixel width of a
+string (column shrink-wrapping, middle-truncation, viewer line heights, etc.), call
+`createPretextMeasure(font, pretext)` from `lib/utils/shorten-middle.ts` rather than rolling a Canvas `measureText` or
+DOM-reflow path. Pretext matches the browser's own text shaping and is dynamically imported so it doesn't bloat the
+initial bundle. The separate `font-metrics/` module above is a distinct concern — it ships per-character widths to Rust
+for backend column sizing.
+
 ## Backend (Rust + Tauri 2)
 
 All under `apps/desktop/src-tauri/src/`.

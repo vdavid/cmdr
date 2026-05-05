@@ -50,6 +50,7 @@
     } from '$lib/settings/reactive-settings.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import type { RenameState } from '../rename/rename-state.svelte'
 
     interface Props {
@@ -690,7 +691,13 @@
                                     {status ? glyphFor(status) : ''}
                                 </span>
                             {/if}
-                            <span class="col-ext">{getDisplayExtension(file.name, file.isDirectory)}</span>
+                            <span
+                                class="col-ext"
+                                use:useShortenMiddle={{
+                                    text: getDisplayExtension(file.name, file.isDirectory),
+                                    tooltipWhenTruncated: true,
+                                }}
+                            ></span>
                         {/if}
                         <span
                             class="col-size"
