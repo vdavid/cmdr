@@ -30,7 +30,7 @@ export function createInitialTabState(
   path: string,
   volumeId: string,
   sortBy: SortColumn = DEFAULT_SORT_BY,
-  viewMode: ViewMode = 'brief',
+  viewMode: ViewMode = 'full',
 ): TabState {
   return {
     id: crypto.randomUUID(),

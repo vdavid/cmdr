@@ -62,7 +62,7 @@ async function resolvePersistedPath(path: string, pathExistsFn: (p: string) => P
 }
 
 function parseViewMode(raw: unknown): ViewMode {
-  return raw === 'full' || raw === 'brief' ? raw : 'brief'
+  return raw === 'full' || raw === 'brief' ? raw : 'full'
 }
 
 function parseSortColumn(raw: unknown): SortColumn {
@@ -367,7 +367,7 @@ export async function loadPaneTabs(
           volumeId: DEFAULT_VOLUME_ID,
           sortBy: DEFAULT_SORT_BY,
           sortOrder: defaultSortOrders[DEFAULT_SORT_BY],
-          viewMode: 'brief',
+          viewMode: 'full',
           pinned: false,
         },
       ],

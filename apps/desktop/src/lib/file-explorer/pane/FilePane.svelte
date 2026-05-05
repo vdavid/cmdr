@@ -146,7 +146,7 @@
         volumeName,
         isFocused = false,
         showHiddenFiles = true,
-        viewMode = 'brief',
+        viewMode = 'full',
         sortBy = 'name',
         sortOrder = 'ascending',
         directorySortMode = 'likeFiles',
