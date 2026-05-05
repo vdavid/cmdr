@@ -4,30 +4,18 @@
 //! never the words "error" or "failed". Each variant is tested in
 //! `tests::friendly_*`.
 //!
-//! ## How git errors reach the user (M4)
+//! ## How git errors reach the user
 //!
 //! 1. A volume hook (`try_route_listing`, `try_route_metadata`,
 //!    `try_open_blob_stream`) returns `Err(FriendlyGitError)` from the
 //!    git module.
-//! 2. `mod.rs::friendly_to_volume_error` wraps it as a
-//!    `VolumeError::IoError` whose `message` carries a sentinel-tagged,
-//!    NUL-separated payload (`__GIT_FRIENDLY__\0<kind>\0<path>\0<title>\0<explanation>`).
+//! 2. `mod.rs::friendly_to_volume_error` wraps it as
+//!    `VolumeError::FriendlyGit(FriendlyGitError)` — a typed variant that
+//!    carries the kind + path + optional raw detail end-to-end.
 //! 3. The streaming pipeline (`listing/streaming.rs`) emits a
-//!    `listing-error` event. `friendly_error_from_volume_error`
-//!    recognizes the sentinel via `try_decode_git_friendly` and
-//!    builds a fully-shaped `FriendlyError` so `ErrorPane` renders
-//!    title + explanation + suggestion + category.
-//!
-//! ### Why NUL-separated, not `:`
-//!
-//! Paths can contain `:` on macOS (resource forks), Windows (drive letters),
-//! and from git itself (`stash@{0}` is a valid stash spec). An earlier
-//! `split_once(':')` chain mangled any of these. NUL is forbidden in POSIX
-//! and Windows paths and never appears inside titles or explanations, so
-//! it's the safe field separator. The on-the-wire message also reads
-//! naturally in logs because `\0` renders as nothing (or as a visible
-//! escape, depending on the viewer); the sentinel itself stays
-//! grep-friendly.
+//!    `listing-error` event. `friendly_error_from_volume_error` matches
+//!    on `FriendlyGit` and calls `to_friendly_error()` so `ErrorPane`
+//!    renders title + explanation + suggestion + category.
 
 use std::error::Error as StdError;
 use std::fmt;
@@ -35,11 +23,6 @@ use std::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::file_system::volume::friendly_error::{ErrorCategory, FriendlyError};
-
-/// Sentinel prefix on `VolumeError::IoError::message` that flags a
-/// git-friendly payload. `friendly_error_from_volume_error` strips it
-/// and rebuilds a structured `FriendlyError`.
-pub(crate) const GIT_FRIENDLY_SENTINEL: &str = "__GIT_FRIENDLY__";
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -169,8 +152,9 @@ impl FriendlyGitErrorKind {
         }
     }
 
-    /// Stable string token used by the sentinel encoding.
-    pub(crate) fn token(&self) -> &'static str {
+    /// Stable identifier used inside `raw_detail` so power users can grep
+    /// logs and bug reports for a specific kind.
+    fn token(&self) -> &'static str {
         match self {
             FriendlyGitErrorKind::NotARepo => "NotARepo",
             FriendlyGitErrorKind::OrphanedWorktree => "OrphanedWorktree",
@@ -183,23 +167,6 @@ impl FriendlyGitErrorKind {
             FriendlyGitErrorKind::MissingObject => "MissingObject",
             FriendlyGitErrorKind::GitDirPermissionDenied => "GitDirPermissionDenied",
         }
-    }
-
-    /// Inverse of `token()`. Used by the volume-error decoder.
-    pub(crate) fn from_token(s: &str) -> Option<Self> {
-        Some(match s {
-            "NotARepo" => Self::NotARepo,
-            "OrphanedWorktree" => Self::OrphanedWorktree,
-            "CorruptRepo" => Self::CorruptRepo,
-            "IndexLocked" => Self::IndexLocked,
-            "PermissionDenied" => Self::PermissionDenied,
-            "BareRepo" => Self::BareRepo,
-            "BlobTooLarge" => Self::BlobTooLarge,
-            "ShallowBoundary" => Self::ShallowBoundary,
-            "MissingObject" => Self::MissingObject,
-            "GitDirPermissionDenied" => Self::GitDirPermissionDenied,
-            _ => return None,
-        })
     }
 }
 
@@ -273,26 +240,6 @@ impl FriendlyGitError {
             retry_hint: matches!(self.kind.category(), ErrorCategory::Transient),
         }
     }
-
-    /// Encode for embedding in a `VolumeError::IoError` message. The
-    /// `ListingErrorEvent` decoder strips the prefix and rebuilds the
-    /// `FriendlyError` via `try_decode_git_friendly`.
-    pub(crate) fn encode_for_volume_error(&self) -> String {
-        // Format: `__GIT_FRIENDLY__\0<token>\0<path>\0<title>\0<explanation>`.
-        // NUL separators keep paths with `:` (Windows drive letters, macOS
-        // resource forks, `stash@{0}` specs) intact through the round-trip.
-        // The sentinel prefix stays at the start of the string so log greps
-        // for `__GIT_FRIENDLY__` still hit every git failure that bubbled
-        // to the user.
-        format!(
-            "{}\0{}\0{}\0{}\0{}",
-            GIT_FRIENDLY_SENTINEL,
-            self.kind.token(),
-            self.path,
-            self.kind.title(),
-            self.kind.explanation()
-        )
-    }
 }
 
 impl fmt::Display for FriendlyGitError {
@@ -302,24 +249,6 @@ impl fmt::Display for FriendlyGitError {
 }
 
 impl StdError for FriendlyGitError {}
-
-/// If `message` carries a git-friendly sentinel, returns the decoded
-/// `FriendlyError`. The embedded path is forwarded back into the volume
-/// layer's friendly-error path.
-pub fn try_decode_git_friendly(message: &str) -> Option<FriendlyError> {
-    // Format: `__GIT_FRIENDLY__\0<token>\0<path>\0<title>\0<explanation>`.
-    // We need only the token and the path to rebuild the `FriendlyError`;
-    // title / explanation come from the kind's static copy. Reading them
-    // off the wire would let buggy senders corrupt user-facing strings.
-    let rest = message.strip_prefix(GIT_FRIENDLY_SENTINEL)?.strip_prefix('\0')?;
-    let mut parts = rest.splitn(5, '\0');
-    let token = parts.next()?;
-    let path = parts.next()?;
-    // The remaining title / explanation fields are present but ignored on
-    // decode (kept on the wire for log readability and forward-compat).
-    let kind = FriendlyGitErrorKind::from_token(token)?;
-    Some(FriendlyGitError::new(kind, path).to_friendly_error())
-}
 
 #[cfg(test)]
 mod tests {
@@ -376,63 +305,31 @@ mod tests {
     }
 
     #[test]
-    fn token_round_trip() {
-        for kind in [
-            FriendlyGitErrorKind::NotARepo,
-            FriendlyGitErrorKind::OrphanedWorktree,
-            FriendlyGitErrorKind::CorruptRepo,
-            FriendlyGitErrorKind::IndexLocked,
-            FriendlyGitErrorKind::PermissionDenied,
-            FriendlyGitErrorKind::BareRepo,
-            FriendlyGitErrorKind::BlobTooLarge,
-            FriendlyGitErrorKind::ShallowBoundary,
-            FriendlyGitErrorKind::MissingObject,
-            FriendlyGitErrorKind::GitDirPermissionDenied,
-        ] {
-            assert_eq!(FriendlyGitErrorKind::from_token(kind.token()), Some(kind));
-        }
-    }
+    fn typed_variant_to_friendly_preserves_path_with_colon_chars() {
+        use crate::file_system::volume::VolumeError;
+        use crate::file_system::volume::friendly_error::friendly_error_from_volume_error;
 
-    #[test]
-    fn encoded_volume_error_decodes_back_to_friendly() {
-        let original = FriendlyGitError::new(FriendlyGitErrorKind::ShallowBoundary, "/repo/.git/commits/abc123");
-        let encoded = original.encode_for_volume_error();
-        let decoded = try_decode_git_friendly(&encoded).expect("sentinel-tagged message decodes");
-        assert_eq!(decoded.title, "Beyond the shallow-clone boundary");
-        assert_eq!(decoded.category, ErrorCategory::NeedsAction);
-        assert!(!decoded.retry_hint, "needs-action errors don't retry");
-    }
-
-    #[test]
-    fn non_sentinel_message_returns_none() {
-        assert!(try_decode_git_friendly("plain old IO problem").is_none());
-        assert!(try_decode_git_friendly("__GIT_FRIENDLY__not_well_formed").is_none());
-        // Older-format `:`-separated payloads must NOT decode silently :
-        // we changed wire formats in the M4 fixup and want a clean miss
-        // rather than a half-parsed surprise.
-        assert!(try_decode_git_friendly("__GIT_FRIENDLY__:NotARepo:/some/path:Title: Body").is_none());
-    }
-
-    #[test]
-    fn round_trips_path_with_colon_chars() {
-        // macOS resource fork style, Windows drive letter, and a stash spec
-        // all contain `:`. The split-by-NUL decoder must keep them intact.
+        // macOS resource fork style, Windows drive letter, a stash spec, and
+        // a path with embedded colons all need to ride through the typed
+        // variant unchanged. The earlier `:`-split sentinel path mangled
+        // these; the typed variant just carries them.
         for path in [
             "/Users/me/repo/file:rsrc",
             "C:/Users/me/repo",
             "stash@{0}",
             "/repo/.git/stash/0/path:with:colons.txt",
         ] {
-            let original = FriendlyGitError::new(FriendlyGitErrorKind::ShallowBoundary, path);
-            let encoded = original.encode_for_volume_error();
-            let decoded = try_decode_git_friendly(&encoded).expect("sentinel decodes");
-            assert_eq!(decoded.title, "Beyond the shallow-clone boundary");
+            let err = VolumeError::FriendlyGit(FriendlyGitError::new(FriendlyGitErrorKind::ShallowBoundary, path));
+            let friendly = friendly_error_from_volume_error(&err, std::path::Path::new(path));
+            assert_eq!(friendly.title, "Beyond the shallow-clone boundary");
+            assert_eq!(friendly.category, ErrorCategory::NeedsAction);
+            assert!(!friendly.retry_hint, "needs-action variants don't retry");
             // The path lands in `raw_detail` via `to_friendly_error`'s
-            // `path=...` branch, so we can grep for it round-tripped.
+            // `path=...` branch, so log greps still find it.
             assert!(
-                decoded.raw_detail.contains(path),
+                friendly.raw_detail.contains(path),
                 "raw_detail {:?} should preserve path {path:?}",
-                decoded.raw_detail
+                friendly.raw_detail
             );
         }
     }

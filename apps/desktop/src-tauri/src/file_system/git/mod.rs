@@ -223,14 +223,10 @@ fn open_real_file_stream(real: &Path) -> Result<Box<dyn VolumeReadStream>, Volum
 }
 
 fn friendly_to_volume_error(err: FriendlyGitError) -> VolumeError {
-    // Every kind rides through `IoError` with a sentinel-tagged message so the
-    // listing pipeline's friendly-error decoder can rebuild a structured
-    // `FriendlyError` for `ErrorPane`. Permission-denied used to use
-    // `VolumeError::PermissionDenied` directly, but doing so loses the git
-    // context (the user gets the generic "No permission" copy instead of the
-    // git-specific repair steps). The sentinel preserves it.
-    VolumeError::IoError {
-        message: err.encode_for_volume_error(),
-        raw_os_error: None,
-    }
+    // Carry the structured payload through the typed variant so the listing
+    // pipeline's friendly-error mapper rebuilds a fully-shaped `FriendlyError`
+    // for `ErrorPane`. Using `VolumeError::PermissionDenied` for the gitdir
+    // permission case would lose the git-specific repair copy (the user
+    // would land on the generic "No permission" branch).
+    VolumeError::FriendlyGit(err)
 }

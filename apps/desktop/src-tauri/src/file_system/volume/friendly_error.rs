@@ -54,20 +54,16 @@ pub enum ErrorCategory {
 /// For `IoError` with a `raw_os_error`, matches against platform-specific errno codes.
 /// For typed `VolumeError` variants, maps directly to the right category.
 ///
-/// Git failures arrive here wrapped in a sentinel-tagged `IoError` (see
-/// `git::friendly::encode_for_volume_error`). We decode them up-front so the
-/// `ErrorPane` shows git-specific titles and suggestions instead of the
-/// generic I/O copy.
+/// Git failures arrive as `VolumeError::FriendlyGit(FriendlyGitError)` from the
+/// `file_system::git` volume hooks; we hand the carried payload straight to
+/// `to_friendly_error` so `ErrorPane` shows git-specific titles and suggestions
+/// instead of the generic I/O copy.
 pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> FriendlyError {
-    if let VolumeError::IoError { message, .. } = err
-        && let Some(friendly) = crate::file_system::git::friendly::try_decode_git_friendly(message)
-    {
-        return friendly;
-    }
-
     let path_display = path.display().to_string();
 
     match err {
+        VolumeError::FriendlyGit(git_err) => git_err.to_friendly_error(),
+
         VolumeError::NotFound(_) => FriendlyError {
             category: ErrorCategory::NeedsAction,
             title: "Path not found".into(),
@@ -1203,10 +1199,7 @@ mod tests {
             FriendlyGitErrorKind::MissingObject,
             FriendlyGitErrorKind::GitDirPermissionDenied,
         ] {
-            errors.push(VolumeError::IoError {
-                message: FriendlyGitError::new(kind, "/some/repo/.git").encode_for_volume_error(),
-                raw_os_error: None,
-            });
+            errors.push(VolumeError::FriendlyGit(FriendlyGitError::new(kind, "/some/repo/.git")));
         }
 
         for err in &errors {

@@ -31,7 +31,7 @@ three new error variants (`ShallowBoundary`, `MissingObject`,
 | `read_blob.rs` | `GitBlobReadStream` – owns the full `Vec<u8>` and yields 256 KB chunks. See *Honest blob streaming* below |
 | `status.rs` | `list_status(repo, dir)` runs a full-repo `git status --porcelain=v2 -z` once per `.git/index` mtime, caches the result in a process-global `RwLock<HashMap<RepoRoot, CachedStatus>>`, and slices it by `dir`. The watcher invalidates the snapshot whenever `.git/*` changes. Parses porcelain v2 in `parse_porcelain_v2`. |
 | `watcher.rs` | `GitWatcherRegistry` – per-repo notify-rs debouncer. `subscribe(app, root)` returns the current `RepoInfo` synchronously and emits `git-state-changed` on relevant `.git/*` mutations. 200 ms debounce. M2: also calls `notify_directory_changed(.., FullRefresh)` for any cached `.git/{branches,tags}/` listings on the local volume |
-| `friendly.rs` | `FriendlyGitError`, `FriendlyGitErrorKind` – ten variants (M1's six, `BlobTooLarge` from M2, plus M4's `ShallowBoundary`, `MissingObject`, `GitDirPermissionDenied`). Active-voice copy, no "error" / "failed". `to_friendly_error()` builds a `volume::FriendlyError` for `ErrorPane`; `encode_for_volume_error()` + `try_decode_git_friendly()` carry the structured payload through `VolumeError::IoError` so the streaming pipeline rebuilds it on the way out |
+| `friendly.rs` | `FriendlyGitError`, `FriendlyGitErrorKind` – ten variants (M1's six, `BlobTooLarge` from M2, plus M4's `ShallowBoundary`, `MissingObject`, `GitDirPermissionDenied`). Active-voice copy, no "error" / "failed". `to_friendly_error()` builds a `volume::FriendlyError` for `ErrorPane`. The volume hooks wrap a `FriendlyGitError` directly inside the typed `VolumeError::FriendlyGit` variant so the streaming pipeline carries the structured payload end-to-end without string parsing |
 | `column_meta.rs` | Per-row column-population helpers shared across `virtual_listing`, `log`, `tree`, etc. — `pluralize`, `ahead_behind_for_branch`, `commit_meta`, `files_changed_count`, `recursive_tree_size`, plus newest-of-set helpers for category-level Modified dates |
 | `tests.rs` | M1 tests: discover, repo_info, status, friendly errors |
 | `m2_tests.rs` | M2 tests: classify, list_branches/tags/root, list_tree, blob-read parity with `git show`, cross-volume copy round-trip |
@@ -193,21 +193,20 @@ stash,worktrees,submodules}/...` (plus `.git/` itself). The helper
 logic and only touch the local volume (SMB / MTP volumes can't be
 inside the host's `.git`).
 
-**Decision (M4)**: Carry git-friendly payloads through `VolumeError::IoError`
-**Why**: `volume_hooks` return `Result<_, VolumeError>` (the contract is
-fixed), but the streaming pipeline calls `friendly_error_from_volume_error`
-to compute the `ErrorPane` payload, and that function previously knew
-nothing about git. Adding a `Friendly(FriendlyError)` variant to
-`VolumeError` would ripple through ~12 call sites. Instead, we serialize
-`FriendlyGitError` into the `IoError::message` field with a sentinel
-prefix and NUL-separated fields
-(`__GIT_FRIENDLY__\0<token>\0<path>\0<title>\0<explanation>`), and have
-`friendly_error_from_volume_error` recognize and decode it up-front.
-Round-trip tested in `friendly::tests`. The sentinel stays grep-friendly
-(`grep "__GIT_FRIENDLY__"` finds every git failure that bubbled to the
-user); NUL is the field separator because paths can contain `:` (Windows
-drive letters, macOS resource forks, `stash@{0}` specs) and an earlier
-`split_once(':')` chain mangled them.
+**Decision**: Typed `VolumeError::FriendlyGit(FriendlyGitError)` variant
+**Why**: The volume hooks return `Result<_, VolumeError>` and the
+streaming pipeline calls `friendly_error_from_volume_error` to compute
+the `ErrorPane` payload. We carry the structured payload through a
+typed enum variant so the path from "git layer detected something" to
+"frontend renders FriendlyError pane" is type-checked end-to-end. An
+earlier shape stuffed a sentinel-tagged, NUL-separated string
+(`__GIT_FRIENDLY__\0<token>\0<path>\0<title>\0<explanation>`) into
+`VolumeError::IoError::message` and had the friendly mapper parse it.
+That worked but it was string-shaped data inside a typed enum — a
+maintenance hazard. The typed variant kept the call-site shape (one
+match arm in `friendly_error_from_volume_error`, one match arm in
+`map_volume_error`), and dropped two helpers (`encode_for_volume_error`,
+`try_decode_git_friendly`) plus the sentinel constant.
 
 **Decision (M3)**: Shell out to `git stash list` rather than driving gix
 **Why**: gix 0.81 doesn't expose a public stash-list API. We could parse

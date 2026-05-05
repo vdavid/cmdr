@@ -163,6 +163,15 @@ pub enum VolumeError {
         message: String,
         raw_os_error: Option<i32>,
     },
+    /// Structured git-layer failure.
+    ///
+    /// Carries the full `FriendlyGitError` (kind + path + optional raw detail)
+    /// so the listing pipeline's `friendly_error_from_volume_error` can hand
+    /// `ErrorPane` a fully-shaped `FriendlyError` (title, explanation,
+    /// suggestion, category) without parsing strings. Built by the volume
+    /// hooks in `file_system::git::mod` (`try_route_listing`,
+    /// `try_route_metadata`, `try_open_blob_stream`).
+    FriendlyGit(crate::file_system::git::friendly::FriendlyGitError),
 }
 
 impl std::fmt::Display for VolumeError {
@@ -178,6 +187,7 @@ impl std::fmt::Display for VolumeError {
             Self::ConnectionTimeout(msg) => write!(f, "Connection timed out: {}", msg),
             Self::Cancelled(msg) => write!(f, "Cancelled: {}", msg),
             Self::IoError { message, .. } => write!(f, "I/O error: {}", message),
+            Self::FriendlyGit(err) => write!(f, "git: {}", err),
         }
     }
 }

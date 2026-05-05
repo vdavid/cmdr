@@ -1162,6 +1162,10 @@ pub(super) fn map_volume_error(context_path: &str, e: VolumeError) -> WriteOpera
             path: context_path.to_string(),
             message,
         },
+        VolumeError::FriendlyGit(git_err) => WriteOperationError::IoError {
+            path: context_path.to_string(),
+            message: git_err.to_string(),
+        },
     }
 }
 

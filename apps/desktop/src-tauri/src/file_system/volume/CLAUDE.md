@@ -226,11 +226,12 @@ collapsible "Technical details" section, never hidden but never in your face eit
 
 Three-layer mapping across two files, plus a third path for "succeeded but suspiciously empty":
 
-**Layer 0 (M4)**: git-friendly-error pass-through. `friendly_error_from_volume_error` first calls
-`crate::file_system::git::friendly::try_decode_git_friendly` on the message. If the message starts with the
-`__GIT_FRIENDLY__` sentinel (set by the git module's `friendly_to_volume_error`), we decode the kind + path and return a
-fully-shaped `FriendlyError` with the right title, explanation, suggestion, and category — no errno mapping needed,
-no provider enrichment downstream. Keeps git-specific copy from getting clobbered by the generic I/O fallback.
+**Layer 0**: typed git pass-through. `VolumeError::FriendlyGit(FriendlyGitError)` is a dedicated variant the git
+module's volume hooks (`try_route_listing`, `try_route_metadata`, `try_open_blob_stream`) return when they detect a
+git-shaped failure. `friendly_error_from_volume_error` matches it first and calls `to_friendly_error()` on the carried
+payload, returning a fully-shaped `FriendlyError` with the right title, explanation, suggestion, and category — no
+errno mapping needed, no provider enrichment downstream. Keeps git-specific copy from getting clobbered by the generic
+I/O fallback, end-to-end type-checked, no string parsing.
 
 1. **`friendly_error_from_volume_error(err, path)`** (`friendly_error.rs`) — maps `VolumeError` variants and macOS errno
    codes (37 codes) to a `FriendlyError` with category (Transient/NeedsAction/Serious), title, explanation, suggestion,
