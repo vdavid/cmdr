@@ -3,13 +3,34 @@
 #[cfg(target_os = "macos")]
 use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
 #[cfg(target_os = "macos")]
+use crate::native_drag;
+#[cfg(target_os = "macos")]
 use std::path::PathBuf;
 #[cfg(target_os = "macos")]
 use std::sync::mpsc::channel;
 #[cfg(target_os = "macos")]
 use tauri::Manager;
 
-/// Initiates native drag from Rust directly, looking up paths from LISTING_CACHE (macOS only).
+/// Begins a native drag with the given file paths. Used for single-file drags
+/// where the frontend has the path directly (no listing-cache lookup needed).
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn start_drag_paths(app: tauri::AppHandle, paths: Vec<String>, icon_path: String) -> Result<(), String> {
+    let path_bufs: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
+    if path_bufs.is_empty() {
+        return Err("No valid files to drag".to_string());
+    }
+    run_drag_on_main_thread(&app, path_bufs, PathBuf::from(icon_path))
+}
+
+/// Stub for non-macOS platforms. Returns an error since drag is not yet implemented.
+#[cfg(not(target_os = "macos"))]
+#[tauri::command]
+pub fn start_drag_paths(_app: tauri::AppHandle, _paths: Vec<String>, _icon_path: String) -> Result<(), String> {
+    Err("Drag operation is not yet supported on this platform".to_string())
+}
+
+/// Initiates native drag from Rust directly, looking up paths from `LISTING_CACHE` (macOS only).
 #[cfg(target_os = "macos")]
 #[tauri::command]
 pub fn start_selection_drag(
@@ -18,64 +39,15 @@ pub fn start_selection_drag(
     selected_indices: Vec<usize>,
     include_hidden: bool,
     has_parent: bool,
-    mode: String,
     icon_path: String,
 ) -> Result<(), String> {
-    // Get file paths from the cached listing
     let paths = ops_get_paths_at_indices(&listing_id, &selected_indices, include_hidden, has_parent)?;
 
     if paths.is_empty() {
         return Err("No valid files to drag".to_string());
     }
 
-    // Get the main window
-    let window = app.get_webview_window("main").ok_or("Main window not found")?;
-
-    // Determine drag mode (Send-safe)
-    let is_copy_mode = mode == "copy";
-
-    // Store icon path for use in closure (PathBuf is Send)
-    let icon_path_buf = PathBuf::from(icon_path);
-
-    // Use a channel to get the result from the main thread
-    let (tx, rx) = channel();
-
-    // Run on main thread (required by macOS for drag operations)
-    // Create DragItem inside the closure since it's not Send
-    app.run_on_main_thread(move || {
-        // Build DragItem inside the closure (not Send due to Data variant)
-        let item = drag::DragItem::Files(paths);
-
-        // Load icon from file path
-        let icon = drag::Image::File(icon_path_buf);
-
-        // Create options with the drag mode
-        let options = drag::Options {
-            skip_animatation_on_cancel_or_failure: false,
-            mode: if is_copy_mode {
-                drag::DragMode::Copy
-            } else {
-                drag::DragMode::Move
-            },
-        };
-
-        let result = drag::start_drag(
-            &window,
-            item,
-            icon,
-            |_result, _cursor_pos| {
-                // Callback when drag completes - we don't need to do anything here
-            },
-            options,
-        );
-        let _ = tx.send(result);
-    })
-    .map_err(|e| format!("Failed to run on main thread: {}", e))?;
-
-    // Wait for the result
-    rx.recv()
-        .map_err(|_| "Failed to receive drag result")?
-        .map_err(|e| format!("Drag operation failed: {}", e))
+    run_drag_on_main_thread(&app, paths, PathBuf::from(icon_path))
 }
 
 /// Stub for non-macOS platforms. Returns an error since drag is not yet implemented.
@@ -87,10 +59,26 @@ pub fn start_selection_drag(
     _selected_indices: Vec<usize>,
     _include_hidden: bool,
     _has_parent: bool,
-    _mode: String,
     _icon_path: String,
 ) -> Result<(), String> {
     Err("Drag operation is not yet supported on this platform".to_string())
+}
+
+/// Hops to the AppKit main thread, builds the drag session, and returns synchronously.
+/// `NSDraggingItem`s and the source class are not `Send`, so everything happens inside
+/// the closure; the result travels back via a one-shot channel.
+#[cfg(target_os = "macos")]
+fn run_drag_on_main_thread(app: &tauri::AppHandle, paths: Vec<PathBuf>, icon_path: PathBuf) -> Result<(), String> {
+    let window = app.get_webview_window("main").ok_or("Main window not found")?;
+    let (tx, rx) = channel();
+
+    app.run_on_main_thread(move || {
+        let result = native_drag::start_drag(&window, paths, &icon_path);
+        let _ = tx.send(result);
+    })
+    .map_err(|e| format!("Failed to run on main thread: {}", e))?;
+
+    rx.recv().map_err(|_| "Failed to receive drag result")?
 }
 
 // ============================================================================

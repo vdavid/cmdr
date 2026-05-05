@@ -51,8 +51,6 @@ uuid = { version = "1.19.0", features = ["v4"] }
 tauri-plugin-clipboard-manager = "2"
 notify-debouncer-full = "0.7.0"
 bincode2 = "2"
-tauri-plugin-drag = "2.1.0"
-drag = "2.1.0"
 tauri-plugin-fs = "2.4.4"
 alphanumeric-sort = "1.5"
 chrono = "0.4"

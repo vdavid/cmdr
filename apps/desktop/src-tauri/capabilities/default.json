@@ -30,7 +30,6 @@
         "store:default",
         "clipboard-manager:default",
         "mcp-bridge:default",
-        "drag:default",
         "fs:allow-temp-write",
         "fs:allow-remove",
         "updater:default",

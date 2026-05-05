@@ -19,6 +19,7 @@ export {
   getListingStats,
   refreshListingIndexSizes,
   startSelectionDrag,
+  startDragPaths,
   prepareSelfDragOverlay,
   clearSelfDragOverlay,
   getPathLimits,

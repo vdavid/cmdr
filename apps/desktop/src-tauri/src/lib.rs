@@ -24,9 +24,6 @@ use env_logger as _;
 use mimalloc as _;
 //noinspection RsUnusedImport
 use notify as _;
-//noinspection RsUnusedImport
-// drag is used by tauri-plugin-drag for drag-and-drop support
-use drag as _;
 //noinspection ALL
 // smb2 crate is used in network/smb_client module (macOS + Linux)
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -97,6 +94,8 @@ mod mcp;
 mod menu;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp;
+#[cfg(target_os = "macos")]
+mod native_drag;
 mod net;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod network;
@@ -199,7 +198,6 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
-        .plugin(tauri_plugin_drag::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_dialog::init())
@@ -734,6 +732,7 @@ pub fn run() {
             commands::file_system::get_listing_stats,
             commands::file_system::refresh_listing_index_sizes,
             commands::file_system::start_selection_drag,
+            commands::file_system::start_drag_paths,
             commands::file_system::prepare_self_drag_overlay,
             commands::file_system::clear_self_drag_overlay,
             // Git browser (M1: detection, chip, status column)

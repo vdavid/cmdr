@@ -7,16 +7,35 @@ pane-to-pane drags.
 
 ### Drag-out (initiating drags)
 
-Two code paths for performance:
+Two backend commands, both routed through `native_drag.rs` so the pasteboard payload is identical:
 
-- **Single file**: Frontend `@crabnebula/tauri-plugin-drag` — simple, direct
-- **Multi-file selection**: Backend Rust command — avoids IPC overhead for large selections
+- **Single file** → `start_drag_paths` (frontend passes the file path directly)
+- **Multi-file selection** → `start_selection_drag` (backend resolves paths from the listing cache, avoiding IPC
+  overhead for large selections)
+
+Pasteboard layout per drag (one `NSPasteboardItem` per file):
+
+- Every item: `public.file-url` (the URL's `absoluteString`) — Finder, IntelliJ, etc. iterate items reading this.
+- First item only: `public.utf8-plain-text` with the full shell-escaped path list joined by spaces — terminals (Warp,
+  etc.) read this via `pasteboard.string(forType:)` and insert the text at the cursor.
+- Later items: `public.utf8-plain-text` with their own escaped path (so item-iterating consumers don't see duplicates).
+- First item only: `NSFilenamesPboardType` (legacy `NSArray<NSString>` of all paths). Required for stock wry's
+  `collect_paths`, which reads only this type and `unwrap()`s if absent — see
+  [wry#1723](https://github.com/tauri-apps/wry/pull/1723) for the upstream fix. Drop this once wry ships a release
+  containing the fix and we bump our `tauri-runtime-wry`.
+
+Source operation mask: permissive (`Copy | Link | Generic | Move`). macOS arbitrates the actual operation via modifier
+keys (Alt → Copy, Cmd → Move, Ctrl-Alt → Link) and destination preference. Restricting the mask to a single op breaks
+terminals (which only accept Copy).
 
 Key files:
 
 - `drag-drop.ts` — Mouse tracking, threshold detection, drag initiation
 - `drag-image-renderer.ts` — Canvas rendering for rich OS drag preview (retina-aware, fading edges)
-- `file_system.rs` (`start_selection_drag` command) — Resolves paths from cache, dispatches to main thread
+- `commands/file_system/drag.rs` — `start_drag_paths` and `start_selection_drag` Tauri commands; both hop to the AppKit
+  main thread before calling into `native_drag::start_drag`
+- `native_drag.rs` — Builds `NSPasteboardItem`s as above, wraps each in an `NSDraggingItem`, and begins the dragging
+  session via a custom `CmdrDragSource` that returns the permissive op mask
 
 ### Drop-in (receiving drops)
 
@@ -62,6 +81,15 @@ Key files:
 - **Decision**: Rich PNG drag image for external visibility, transparent 1x1 inside window
   - **Why**: Self-drags swap images mid-drag via `setDraggingFrame:contents:` (entered → transparent, exited → rich).
     DOM overlay provides feedback inside.
+- **Decision**: Custom `native_drag.rs` instead of the upstream `drag` crate
+  - **Why**: The upstream crate writes only `public.file-url` per item and uses a single-op mask (Move OR Copy). That
+    failed three ways: (1) terminals like Warp listen for `public.utf8-plain-text`, not file URLs, so drops were
+    silently dropped; (2) wry's `collect_paths` reads `NSFilenamesPboardType` and panics if the auto-derivation fails —
+    see [wry#1723](https://github.com/tauri-apps/wry/pull/1723) for the upstream fix; (3) terminals only accept
+    `NSDragOperationCopy`, so a Move-only source mask makes them reject the drop entirely. Our version advertises
+    file-URL + shell-escaped text + legacy filenames per the layout above, and publishes a permissive op mask.
+    Finder/IntelliJ behavior is unchanged (they read file URLs); terminals get working text drops; macOS modifier keys
+    arbitrate the operation natively.
 - **Decision**: Modifier keys tracked via NSEvent.modifierFlags
   - **Why**: Tauri doesn't expose modifier state in DragDropEvent. Emits `drag-modifiers` event only when state changes.
 - **Decision**: Viewport position correction only in dev mode
@@ -93,6 +121,21 @@ Key files:
 - **Gotcha**: Drag image shows 12 names max, overlay shows 20 max
   - **Why**: Different limits: canvas is fixed-size retina-aware, DOM is flexible. Truncation: first 8/10 + "and N
     more".
+- **Gotcha**: `public.file-url` must be set with `setString:` not `setPropertyList:`
+  - **Why**: Setting it via the property-list path (e.g., from `NSURL.pasteboardPropertyListForType:`) produces a value
+    AppKit can't parse back into a URL — logs "An invalid URL was found on the pasteboard" and breaks downstream
+    derivations like `NSFilenamesPboardType`. Use `[item setString: url.absoluteString forType: "public.file-url"]`.
+- **Gotcha**: Stock wry panics on self-drag re-entry without `NSFilenamesPboardType`
+  - **Why**: `wry-0.54.x::wkwebview::drag_drop::collect_paths` reads only the legacy `NSFilenamesPboardType` and
+    `unwrap()`s. AppKit advertises the type as "available" via auto-derivation but fails to produce the property list,
+    hitting the unwrap. We always publish `NSFilenamesPboardType` explicitly on the first dragging item.
+    [wry#1723](https://github.com/tauri-apps/wry/pull/1723) fixes this upstream by switching `collect_paths` to
+    `readObjectsForClasses:[NSURL]options:`. Once that PR lands and the fix ships in a wry release we consume, drop our
+    `NSFilenamesPboardType` publishing.
+- **Gotcha**: Source op mask must include the destination's required operation
+  - **Why**: The destination's `draggingEntered:` is constrained to the source's mask. Terminals only accept
+    `NSDragOperationCopy`; if the source publishes Move-only, the drop is rejected and the drag animates back. Publish a
+    permissive mask (`Copy | Link | Generic | Move`) and let macOS modifier keys arbitrate.
 
 ## Platform support
 

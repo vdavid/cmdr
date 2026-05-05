@@ -112,9 +112,6 @@ importers:
       '@chenglou/pretext':
         specifier: ^0.0.6
         version: 0.0.6
-      '@crabnebula/tauri-plugin-drag':
-        specifier: ^2.1.0
-        version: 2.1.0
       '@leeoniya/ufuzzy':
         specifier: ^1.0.19
         version: 1.0.19
@@ -511,9 +508,6 @@ packages:
 
   '@cloudflare/workers-types@4.20260426.1':
     resolution: {integrity: sha512-cBYeQaWwv/jFV8ualmwp6wIxmAf0rDe2DPPQwPbslKmPHqgv861YpAvm45r05K40QboZgxNQVIPgNkmtHqZeJQ==}
-
-  '@crabnebula/tauri-plugin-drag@2.1.0':
-    resolution: {integrity: sha512-LnUXAZwQt1cdMoGDLJ6ogW9wFCYServCZXlGadS7CA+CZ9eXS7L+Q7QyQW6g/zGw9YI2MwKFqf1aSNBGyWw+OA==}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -6690,10 +6684,6 @@ snapshots:
     optional: true
 
   '@cloudflare/workers-types@4.20260426.1': {}
-
-  '@crabnebula/tauri-plugin-drag@2.1.0':
-    dependencies:
-      '@tauri-apps/api': 2.10.1
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:

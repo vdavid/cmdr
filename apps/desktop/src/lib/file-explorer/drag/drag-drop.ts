@@ -3,16 +3,22 @@
 //
 // ## macOS timing invariant
 //
-// `startDrag()` (from @crabnebula/tauri-plugin-drag) resolves BEFORE macOS delivers
+// `startDragPaths()` / `startSelectionDrag()` resolve BEFORE macOS delivers
 // `draggingEntered:`/`draggingExited:` events to the webview. Any state that the native
 // swizzle reads (SELF_DRAG_ACTIVE, rich image path) must NOT be cleared from JS code
-// that runs after `startDrag` resolves — it would race with the AppKit callbacks.
+// that runs after the start call resolves — it would race with the AppKit callbacks.
 // Self-drag state is only cleared on drop (via endSelfDragSession from the drop handler).
+//
+// ## Pasteboard types
+//
+// Both backend commands route through `native_drag.rs`, which advertises both
+// `public.file-url` AND `public.utf8-plain-text` so terminals like Warp receive
+// shell-escaped paths as text. The crabnebula plugin only advertised file URLs,
+// which terminals don't subscribe to.
 
-import { startDrag } from '@crabnebula/tauri-plugin-drag'
 import { tempDir, join } from '@tauri-apps/api/path'
 import { getCachedIcon } from '$lib/icon-cache'
-import { startSelectionDrag, prepareSelfDragOverlay, clearSelfDragOverlay } from '$lib/tauri-commands'
+import { startSelectionDrag, startDragPaths, prepareSelfDragOverlay, clearSelfDragOverlay } from '$lib/tauri-commands'
 import { getSetting } from '$lib/settings/settings-store'
 import { cancelClickToRename } from '../rename/rename-activation'
 import { renderDragImage } from './drag-image-renderer'
@@ -285,13 +291,13 @@ export function startSelectionDragTracking(
         cbs.onDragStart?.()
       }
 
-      // Alt/Option key = copy mode, otherwise move mode (matches Finder behavior)
-      const mode = moveEvent.altKey ? 'copy' : 'move'
-
+      // The backend publishes a permissive op mask (Copy | Move | Generic | Link); macOS
+      // arbitrates the actual operation via modifier keys live during the drag (Alt → Copy,
+      // Cmd → Move, Ctrl-Alt → Link), so we no longer pass mode here.
       if (ctx.type === 'single') {
-        void performSingleFileDrag(ctx.path, ctx.iconId, mode, ctx.fileInfo)
+        void performSingleFileDrag(ctx.path, ctx.iconId, ctx.fileInfo)
       } else {
-        void performSelectionDrag(ctx, mode)
+        void performSelectionDrag(ctx)
       }
 
       cancelDragTracking()
@@ -347,12 +353,7 @@ export function cancelDragTracking(): void {
  * Uses the rich PNG as the OS drag image (visible outside the window).
  * The native swizzle hides it over our window so the DOM overlay takes over.
  */
-async function performSingleFileDrag(
-  filePath: string,
-  iconId: string,
-  mode: 'copy' | 'move',
-  fileInfo?: DragFileInfo,
-): Promise<void> {
+async function performSingleFileDrag(filePath: string, iconId: string, fileInfo?: DragFileInfo): Promise<void> {
   const fileInfos = fileInfo ? [fileInfo] : undefined
   const resolved = await resolveDragIconPath(iconId, fileInfos)
   if (!resolved) return
@@ -364,14 +365,10 @@ async function performSingleFileDrag(
   // Store rich image path so native swizzle can swap to it on window exit
   await prepareSelfDragOverlay(resolved.path)
 
-  // Don't reset draggingFromSelf after startDrag — it resolves before the OS
-  // delivers drop/leave events. The flag is cleared by the drop handler.
+  // Don't reset draggingFromSelf after the start call — it resolves before the
+  // OS delivers drop/leave events. The flag is cleared by the drop handler.
   draggingFromSelf = true
-  await startDrag({
-    item: [filePath],
-    icon: resolved.path,
-    mode,
-  })
+  await startDragPaths([filePath], resolved.path)
 }
 
 /**
@@ -379,7 +376,7 @@ async function performSingleFileDrag(
  * This avoids transferring file paths over IPC for large selections.
  * Uses the rich PNG as the OS drag image (visible outside, hidden inside by native swizzle).
  */
-async function performSelectionDrag(context: SelectionDragContext, mode: 'copy' | 'move'): Promise<void> {
+async function performSelectionDrag(context: SelectionDragContext): Promise<void> {
   const resolved = await resolveDragIconPath(context.iconId, context.fileInfos)
   if (!resolved) return
 
@@ -391,12 +388,5 @@ async function performSelectionDrag(context: SelectionDragContext, mode: 'copy' 
 
   // Don't reset draggingFromSelf after startDrag — see performSingleFileDrag comment.
   draggingFromSelf = true
-  await startSelectionDrag(
-    context.listingId,
-    context.indices,
-    context.includeHidden,
-    context.hasParent,
-    mode,
-    resolved.path,
-  )
+  await startSelectionDrag(context.listingId, context.indices, context.includeHidden, context.hasParent, resolved.path)
 }

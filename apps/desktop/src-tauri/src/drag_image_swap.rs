@@ -9,11 +9,12 @@
 //! ## Timing invariant
 //!
 //! `SELF_DRAG_ACTIVE` is set via IPC from the frontend and read from AppKit swizzle
-//! callbacks on the main thread. The `@crabnebula/tauri-plugin-drag` `startDrag()`
-//! resolves **before** macOS delivers `draggingEntered:`/`draggingExited:` events.
-//! Therefore, state must **never** be cleared from JS async callbacks that run after
-//! `startDrag` resolves — they race with the swizzle. State is only cleared on drop
-//! (via the Tauri `clear_self_drag_overlay` command from the frontend drop handler).
+//! callbacks on the main thread. The `start_drag_paths` / `start_selection_drag`
+//! commands return **before** macOS delivers `draggingEntered:`/`draggingExited:`
+//! events. Therefore, state must **never** be cleared from JS async callbacks that
+//! run after the start call resolves — they race with the swizzle. State is only
+//! cleared on drop (via the Tauri `clear_self_drag_overlay` command from the
+//! frontend drop handler).
 
 use std::ffi::CString;
 use std::ptr::NonNull;

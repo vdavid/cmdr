@@ -225,11 +225,12 @@ export async function getListingStats(
 /**
  * Starts a native drag operation for selected files from a cached listing.
  * This initiates the drag from Rust directly, avoiding IPC transfer of file paths.
+ * The backend publishes a permissive operation mask (Copy | Move | Generic | Link);
+ * macOS arbitrates the actual operation via modifier keys and destination preference.
  * @param listingId - The listing ID from listDirectoryStart.
  * @param selectedIndices - Frontend indices of selected files.
  * @param includeHidden - Whether hidden files are shown (affects index mapping).
  * @param hasParent - Whether the ".." entry is shown at index 0.
- * @param mode - Drag mode: "copy" or "move".
  * @param iconPath - Path to the drag preview icon (temp file).
  */
 export async function startSelectionDrag(
@@ -237,10 +238,19 @@ export async function startSelectionDrag(
   selectedIndices: number[],
   includeHidden: boolean,
   hasParent: boolean,
-  mode: 'copy' | 'move',
   iconPath: string,
 ): Promise<void> {
-  await invoke('start_selection_drag', { listingId, selectedIndices, includeHidden, hasParent, mode, iconPath })
+  await invoke('start_selection_drag', { listingId, selectedIndices, includeHidden, hasParent, iconPath })
+}
+
+/**
+ * Begins a native drag with explicit file paths. Used for single-file drags
+ * where the frontend has the path directly. Advertises both `public.file-url`
+ * and `public.utf8-plain-text` so terminal apps (Warp, etc.) can paste paths
+ * as text. Operation mask is permissive — macOS picks the actual operation.
+ */
+export async function startDragPaths(paths: string[], iconPath: string): Promise<void> {
+  await invoke('start_drag_paths', { paths, iconPath })
 }
 
 /**
