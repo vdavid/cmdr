@@ -78,6 +78,24 @@ export const settingsRegistry: SettingDefinition[] = [
     },
   },
   {
+    id: 'appearance.sizeColors',
+    section: ['General', 'Appearance'],
+    label: 'Size colors',
+    description:
+      'Color file sizes in the file list by tier. Rainbow uses green/yellow/orange/red/purple. Accent uses shades of the app accent color.',
+    keywords: ['size', 'color', 'tier', 'rainbow', 'accent', 'highlight', 'kb', 'mb', 'gb', 'tb'],
+    type: 'enum',
+    default: 'rainbow',
+    component: 'toggle-group',
+    constraints: {
+      options: [
+        { value: 'none', label: 'None' },
+        { value: 'accent', label: 'Accent' },
+        { value: 'rainbow', label: 'Rainbow' },
+      ],
+    },
+  },
+  {
     id: 'appearance.dateTimeFormat',
     section: ['General', 'Appearance'],
     label: 'Date and time format',

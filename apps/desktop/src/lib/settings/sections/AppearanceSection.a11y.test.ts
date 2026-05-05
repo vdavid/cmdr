@@ -17,6 +17,7 @@ vi.mock('$lib/settings/settings-store', () => ({
     if (key === 'appearance.uiDensity') return 'comfortable'
     if (key === 'appearance.useAppIconsForDocuments') return false
     if (key === 'appearance.fileSizeFormat') return 'auto'
+    if (key === 'appearance.sizeColors') return 'rainbow'
     if (key === 'appearance.dateTimeFormat') return 'iso'
     if (key === 'appearance.customDateTimeFormat') return 'YYYY-MM-DD HH:mm'
     return undefined

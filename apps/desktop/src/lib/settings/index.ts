@@ -22,6 +22,7 @@ export type {
   SettingSearchResult,
   SettingsValues,
   SettingType,
+  SizeColorsPalette,
   ThemeMode,
   UiDensity,
 } from './types'

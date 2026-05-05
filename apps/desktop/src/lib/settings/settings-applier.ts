@@ -3,7 +3,14 @@
  * Updates CSS variables, DOM properties, and syncs backend configurations when settings change.
  */
 
-import { getSetting, onSettingChange, initializeSettings, type UiDensity, densityMappings } from '$lib/settings'
+import {
+  getSetting,
+  onSettingChange,
+  initializeSettings,
+  type UiDensity,
+  type SizeColorsPalette,
+  densityMappings,
+} from '$lib/settings'
 import { getAppLogger, setVerboseLogging } from '$lib/logging/logger'
 import {
   updateFileWatcherDebounce,
@@ -31,6 +38,15 @@ let unsubscribe: (() => void) | undefined
  * reconfigure API — dropping / adding the `Folder` target only happens at build time).
  */
 let lastMaxLogStorageMb: number | undefined
+
+/**
+ * Applies the size-tier color palette by setting `data-size-colors` on the
+ * root element. App.css scopes alternative palettes to this attribute.
+ */
+function applySizeColors(palette: SizeColorsPalette): void {
+  document.documentElement.dataset.sizeColors = palette
+  log.debug('Applied size colors palette: {palette}', { palette })
+}
 
 /**
  * Applies UI density settings to CSS custom properties.
@@ -78,6 +94,9 @@ function applyAllSettings(): void {
   const density = getSetting('appearance.uiDensity')
   applyDensity(density)
 
+  // Size-tier color palette
+  applySizeColors(getSetting('appearance.sizeColors'))
+
   // Backend settings (async, fire-and-forget for startup)
   void applyBackendSettings()
 
@@ -117,6 +136,10 @@ function handleSettingChange(id: string, value: unknown): void {
 
   if (id === 'appearance.uiDensity') {
     applyDensity(value as UiDensity)
+    return
+  }
+  if (id === 'appearance.sizeColors') {
+    applySizeColors(value as SizeColorsPalette)
     return
   }
   if (id === 'advanced.maxLogStorageMb') {

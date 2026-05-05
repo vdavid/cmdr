@@ -24,6 +24,7 @@
     const uiDensityDef = getSettingDefinition('appearance.uiDensity') ?? { label: '', description: '' }
     const appIconsDef = getSettingDefinition('appearance.useAppIconsForDocuments') ?? { label: '', description: '' }
     const fileSizeDef = getSettingDefinition('appearance.fileSizeFormat') ?? { label: '', description: '' }
+    const sizeColorsDef = getSettingDefinition('appearance.sizeColors') ?? { label: '', description: '' }
     const dateTimeDef = getSettingDefinition('appearance.dateTimeFormat') ?? { label: '', description: '' }
 
     // App color state
@@ -135,6 +136,17 @@
             {searchQuery}
         >
             <SettingSelect id="appearance.fileSizeFormat" />
+        </SettingRow>
+    {/if}
+
+    {#if shouldShow('appearance.sizeColors')}
+        <SettingRow
+            id="appearance.sizeColors"
+            label={sizeColorsDef.label}
+            description={sizeColorsDef.description}
+            {searchQuery}
+        >
+            <SettingToggleGroup id="appearance.sizeColors" />
         </SettingRow>
     {/if}
 

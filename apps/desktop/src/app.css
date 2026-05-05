@@ -122,12 +122,16 @@
   --color-highlight: rgba(255, 213, 0, 0.4);
   --color-highlight-active: rgba(255, 150, 50, 0.6);
 
-  /* === Size tier colors (depth progression: bigger = deeper blue) === */
-  --color-size-bytes: color-mix(in srgb, var(--color-text-secondary) 85%, #88aacc);
-  --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 78%, #88aacc);
-  --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 70%, #5599dd);
-  --color-size-gb: color-mix(in srgb, var(--color-text-secondary) 60%, #2288ee);
-  --color-size-tb: color-mix(in srgb, var(--color-text-secondary) 60%, #0066ff);
+  /* === Size tier colors ===
+     * Three palettes selectable via the `appearance.sizeColors` setting,
+     * applied as a `data-size-colors` attribute on `<html>` by the settings
+     * applier. The default block here is the Rainbow palette so first paint
+     * matches the default setting value. */
+  --color-size-bytes: color-mix(in srgb, var(--color-text-secondary) 70%, #44bb44);
+  --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 70%, #f0c000);
+  --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff8c00);
+  --color-size-gb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff4444);
+  --color-size-tb: color-mix(in srgb, var(--color-text-secondary) 70%, #aa44ff);
 
   /* === Size tier colors — selected state (gold depth progression) === */
   --color-size-bytes-selected: color-mix(in srgb, var(--color-text-secondary) 40%, var(--color-selection-fg));
@@ -184,6 +188,27 @@
   --z-notification: 400;
   /* Tooltips (above all other layers) */
   --z-tooltip: 500;
+}
+
+/* === Size tier palette: Accent ===
+   Depth progression based on the active accent color, so the gradient tracks
+   whatever the user's system / Cmdr-gold accent resolves to. */
+:root[data-size-colors='accent'] {
+  --color-size-bytes: color-mix(in srgb, var(--color-text-secondary) 85%, var(--color-accent));
+  --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 70%, var(--color-accent));
+  --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 55%, var(--color-accent));
+  --color-size-gb: color-mix(in srgb, var(--color-text-secondary) 40%, var(--color-accent));
+  --color-size-tb: var(--color-accent);
+}
+
+/* === Size tier palette: None ===
+   All tiers fall back to the secondary text color — no coloring. */
+:root[data-size-colors='none'] {
+  --color-size-bytes: var(--color-text-secondary);
+  --color-size-kb: var(--color-text-secondary);
+  --color-size-mb: var(--color-text-secondary);
+  --color-size-gb: var(--color-text-secondary);
+  --color-size-tb: var(--color-text-secondary);
 }
 
 /* Dark Mode - automatically applied when user's system prefers dark mode */

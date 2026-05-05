@@ -83,6 +83,7 @@ export type ExtensionChangePolicy = 'yes' | 'no' | 'ask'
 export type DirectorySortMode = 'likeFiles' | 'alwaysByName'
 export type SizeDisplayMode = 'smart' | 'logical' | 'physical'
 export type AppColor = 'system' | 'cmdr-gold'
+export type SizeColorsPalette = 'none' | 'accent' | 'rainbow'
 export type AiProvider = 'off' | 'openai-compatible' | 'local'
 export type AiLocalContextSize = '2048' | '4096' | '8192' | '16384' | '32768' | '65536' | '131072' | '262144'
 
@@ -92,6 +93,7 @@ export interface SettingsValues {
   'appearance.uiDensity': UiDensity
   'appearance.useAppIconsForDocuments': boolean
   'appearance.fileSizeFormat': FileSizeFormat
+  'appearance.sizeColors': SizeColorsPalette
   'appearance.dateTimeFormat': DateTimeFormat
   'appearance.customDateTimeFormat': string
 
