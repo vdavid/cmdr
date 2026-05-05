@@ -117,27 +117,44 @@ fn bench_50k_files_discover_and_repo_info_under_budget() {
 #[test]
 #[ignore = "Builds a 50k-file fixture – opt-in via `cargo test -- --ignored`"]
 fn bench_50k_files_list_status_under_budget() {
+    use super::status::invalidate_status_cache;
     let dir = fixture_dir();
     ensure_fixture(&dir);
 
-    let (handle, _root) = discover_repo(&dir).expect("discover");
-    // Warm-up: gix's caches and the OS page cache.
-    let _ = list_status(&handle, &dir);
+    let (handle, root) = discover_repo(&dir).expect("discover");
 
-    let mut samples_us = Vec::with_capacity(RUNS);
+    // ── Cold path: invalidate before each run so we measure a real walk.
+    let mut cold_us = Vec::with_capacity(RUNS);
+    for _ in 0..RUNS {
+        invalidate_status_cache(&root);
+        let start = Instant::now();
+        let _entries = list_status(&handle, &dir).expect("status");
+        cold_us.push(start.elapsed().as_micros());
+    }
+    let cold_p95 = percentile(cold_us.clone(), 95.0);
+    let cold_p50 = percentile(cold_us.clone(), 50.0);
+    eprintln!(
+        "list_status (cold, full walk): p50={}ms p95={}ms (budget 100 ms)",
+        cold_p50 / 1000,
+        cold_p95 / 1000
+    );
+    assert!(cold_p95 / 1000 <= 100, "cold p95 over budget: {}ms", cold_p95 / 1000);
+
+    // ── Warm path: walk once, then time cache hits. Should be sub-millisecond.
+    invalidate_status_cache(&root);
+    let _ = list_status(&handle, &dir).expect("warmup");
+    let mut warm_us = Vec::with_capacity(RUNS);
     for _ in 0..RUNS {
         let start = Instant::now();
         let _entries = list_status(&handle, &dir).expect("status");
-        samples_us.push(start.elapsed().as_micros());
+        warm_us.push(start.elapsed().as_micros());
     }
-    let p95_us = percentile(samples_us.clone(), 95.0);
-    let p50_us = percentile(samples_us.clone(), 50.0);
-    eprintln!(
-        "list_status: p50={}ms p95={}ms (budget 100 ms)",
-        p50_us / 1000,
-        p95_us / 1000
-    );
-    assert!(p95_us / 1000 <= 100, "p95 over budget: {}ms", p95_us / 1000);
+    let warm_p95 = percentile(warm_us.clone(), 95.0);
+    let warm_p50 = percentile(warm_us.clone(), 50.0);
+    eprintln!("list_status (warm, cached): p50={}µs p95={}µs", warm_p50, warm_p95);
+    // Warm path is in-memory slice + mtime stat. Allow generous 5 ms ceiling
+    // so a busy CI box doesn't flake; in practice this lands under 1 ms.
+    assert!(warm_p95 <= 5_000, "warm p95 over 5ms: {}µs", warm_p95);
 }
 
 // ── Modified + Size column population bench (M4 follow-up) ──────────

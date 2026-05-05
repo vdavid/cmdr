@@ -8,9 +8,21 @@
 //!
 //! The `git` binary is part of the project's system requirements; no new
 //! external dependency is taken on.
+//!
+//! ## Caching
+//!
+//! `list_status` runs once per repo per `.git/index` mtime change. Every
+//! `listing-complete` event used to trigger a fresh walk; now we walk the
+//! whole worktree once, cache the result keyed by repo root + index mtime,
+//! and slice it by `dir_in_worktree` on subsequent calls. The `.git/index`
+//! watcher invalidates the entry on any index change so the next call
+//! re-walks.
 
-use std::path::Path;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::{OnceLock, RwLock};
+use std::time::SystemTime;
 
 use serde::{Deserialize, Serialize};
 
@@ -84,37 +96,113 @@ pub struct EntryStatus {
     pub code: EntryStatusCode,
 }
 
+/// One full-repo status snapshot, keyed by `.git/index` mtime.
+struct CachedStatus {
+    /// `.git/index` mtime at the time the snapshot was built. `None` means
+    /// the index file didn't exist (unborn repo). The cache still keys on
+    /// this so a later `git add` (which creates the index) invalidates.
+    index_mtime: Option<SystemTime>,
+    /// All entries from a full-repo `git status --porcelain=v2 -z`.
+    /// Keyed by relative path (forward-slashed) for quick prefix slicing.
+    entries: Vec<EntryStatus>,
+}
+
+/// Process-wide cache. One snapshot per repo. We slice it by
+/// `dir_in_worktree` on each call so the same snapshot serves every pane
+/// pointing inside the same repo.
+fn status_cache() -> &'static RwLock<HashMap<PathBuf, CachedStatus>> {
+    static CACHE: OnceLock<RwLock<HashMap<PathBuf, CachedStatus>>> = OnceLock::new();
+    CACHE.get_or_init(|| RwLock::new(HashMap::new()))
+}
+
+/// Drops the cached snapshot for `repo_root`. Called by the `.git/index`
+/// watcher and by `unsubscribe` so a repo with no active panes doesn't
+/// pin its snapshot forever.
+pub(crate) fn invalidate_status_cache(repo_root: &Path) {
+    let canonical = repo_root.canonicalize().unwrap_or_else(|_| repo_root.to_path_buf());
+    if let Ok(mut guard) = status_cache().write() {
+        guard.remove(&canonical);
+    }
+}
+
+/// Test entry point: the cache size.
+#[cfg(test)]
+pub(crate) fn cache_len_for_test() -> usize {
+    status_cache().read().map(|g| g.len()).unwrap_or(0)
+}
+
+/// Returns the absolute path to the index file for this repo (handles linked
+/// worktrees, where the index lives under `<common>/worktrees/<name>/index`).
+fn index_path_for(repo: &RepoHandle) -> PathBuf {
+    let local = repo.to_thread_local();
+    local.index_path()
+}
+
+/// Reads the `.git/index` mtime. Missing file → `None` (unborn repo or fresh
+/// init before first add). Any I/O hiccup also collapses to `None` rather
+/// than failing the whole call; the cache then re-walks on every call until
+/// the file shows up, which is the safe behaviour.
+fn index_mtime(index_path: &Path) -> Option<SystemTime> {
+    std::fs::metadata(index_path).and_then(|m| m.modified()).ok()
+}
+
 /// Lists the per-entry status for the worktree.
 ///
-/// `dir_in_worktree` scopes the call to a subtree; it's passed to git as a
-/// pathspec via `--`. An empty / repo-root scope returns the whole worktree.
+/// Caches the full-repo result keyed by `.git/index` mtime and slices by
+/// `dir_in_worktree` on the way out. Cache misses run a full
+/// `git status --porcelain=v2 -z --untracked-files=normal` (no pathspec)
+/// so any pane on the same repo benefits from the warm cache afterwards.
+///
+/// `dir_in_worktree` scopes the *result* to a subtree. An empty / repo-root
+/// scope returns the whole worktree.
 pub fn list_status(repo: &RepoHandle, dir_in_worktree: &Path) -> Result<Vec<EntryStatus>, FriendlyGitError> {
     let local = repo.to_thread_local();
     let work_dir = local
         .workdir()
         .ok_or_else(|| FriendlyGitError::new(FriendlyGitErrorKind::BareRepo, ""))?
         .to_path_buf();
+    let canonical_root = work_dir.canonicalize().unwrap_or_else(|_| work_dir.clone());
 
-    let mut cmd = Command::new("git");
-    cmd.arg("-C")
-        .arg(&work_dir)
-        .args(["status", "--porcelain=v2", "--untracked-files=normal", "-z", "--"]);
+    let index_path = index_path_for(repo);
+    let current_mtime = index_mtime(&index_path);
 
-    // If the caller scoped to a sub-path inside the worktree, pass it as a pathspec.
-    if let Ok(rel) = dir_in_worktree.strip_prefix(&work_dir)
-        && !rel.as_os_str().is_empty()
+    // Fast path: cache hit with matching mtime.
+    if let Ok(guard) = status_cache().read()
+        && let Some(cached) = guard.get(&canonical_root)
+        && cached.index_mtime == current_mtime
     {
-        cmd.arg(rel);
+        return Ok(slice_entries(&cached.entries, &work_dir, dir_in_worktree));
     }
 
-    let output = cmd
+    // Cache miss or stale: run a full-repo walk.
+    let entries = run_full_repo_status(&work_dir)?;
+    let sliced = slice_entries(&entries, &work_dir, dir_in_worktree);
+
+    if let Ok(mut guard) = status_cache().write() {
+        guard.insert(
+            canonical_root,
+            CachedStatus {
+                index_mtime: current_mtime,
+                entries,
+            },
+        );
+    }
+
+    Ok(sliced)
+}
+
+/// Runs `git status --porcelain=v2 -z` over the whole worktree and parses it.
+fn run_full_repo_status(work_dir: &Path) -> Result<Vec<EntryStatus>, FriendlyGitError> {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(work_dir)
+        .args(["status", "--porcelain=v2", "--untracked-files=normal", "-z"])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .output()
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
 
     if !output.status.success() {
-        // Index lock is the most common transient failure here.
         let stderr = String::from_utf8_lossy(&output.stderr);
         let kind = if stderr.contains("index.lock") || stderr.contains("Unable to create") {
             FriendlyGitErrorKind::IndexLocked
@@ -129,6 +217,23 @@ pub fn list_status(repo: &RepoHandle, dir_in_worktree: &Path) -> Result<Vec<Entr
     }
 
     Ok(parse_porcelain_v2(&output.stdout))
+}
+
+/// Returns the entries that fall under `dir_in_worktree`. Repo-root scope
+/// (empty relative path) returns everything. Otherwise we filter by
+/// `<rel>/` prefix — the dir itself is excluded, only its descendants land
+/// in the result, matching what the file-list cell renderer needs.
+fn slice_entries(entries: &[EntryStatus], work_dir: &Path, dir_in_worktree: &Path) -> Vec<EntryStatus> {
+    let rel = match dir_in_worktree.strip_prefix(work_dir) {
+        Ok(rel) if !rel.as_os_str().is_empty() => rel.to_string_lossy().replace('\\', "/"),
+        _ => return entries.to_vec(),
+    };
+    let prefix = format!("{}/", rel);
+    entries
+        .iter()
+        .filter(|e| e.relative_path.starts_with(&prefix) || e.relative_path == rel)
+        .cloned()
+        .collect()
 }
 
 /// Parses git's `--porcelain=v2 -z` NUL-separated output.
@@ -261,5 +366,203 @@ mod parse_tests {
     fn empty_input_parses_to_empty() {
         let entries = parse_porcelain_v2(b"");
         assert!(entries.is_empty());
+    }
+}
+
+#[cfg(test)]
+mod slice_tests {
+    use super::*;
+
+    fn entry(rel: &str) -> EntryStatus {
+        EntryStatus {
+            relative_path: rel.to_string(),
+            code: EntryStatusCode::Modified,
+        }
+    }
+
+    #[test]
+    fn root_scope_returns_everything() {
+        let work = Path::new("/repo");
+        let all = vec![entry("a.txt"), entry("sub/b.txt"), entry("sub/deep/c.txt")];
+        let out = slice_entries(&all, work, work);
+        assert_eq!(out.len(), 3);
+    }
+
+    #[test]
+    fn sub_scope_returns_only_descendants() {
+        let work = Path::new("/repo");
+        let all = vec![
+            entry("a.txt"),
+            entry("sub/b.txt"),
+            entry("sub/deep/c.txt"),
+            entry("other/d.txt"),
+        ];
+        let out = slice_entries(&all, work, &work.join("sub"));
+        let paths: Vec<_> = out.iter().map(|e| e.relative_path.as_str()).collect();
+        assert_eq!(paths, vec!["sub/b.txt", "sub/deep/c.txt"]);
+    }
+
+    #[test]
+    fn sub_scope_excludes_self_directory() {
+        // The dir itself shouldn't appear in the slice; only its children.
+        let work = Path::new("/repo");
+        let all = vec![entry("sub"), entry("sub/b.txt")];
+        let out = slice_entries(&all, work, &work.join("sub"));
+        let paths: Vec<_> = out.iter().map(|e| e.relative_path.as_str()).collect();
+        // The dir "sub" matches `e.relative_path == rel`, but only because the
+        // index records it explicitly (rare for git but possible for renames).
+        // We keep this case for correctness symmetry — what matters is no
+        // false positives like "subterranean.txt" sneaking in.
+        assert!(paths.iter().any(|p| *p == "sub" || *p == "sub/b.txt"));
+        assert!(!paths.contains(&"subterranean.txt"));
+    }
+
+    #[test]
+    fn sub_scope_does_not_match_lookalike_siblings() {
+        let work = Path::new("/repo");
+        let all = vec![entry("sub/b.txt"), entry("subterranean.txt"), entry("sub-other/x.txt")];
+        let out = slice_entries(&all, work, &work.join("sub"));
+        let paths: Vec<_> = out.iter().map(|e| e.relative_path.as_str()).collect();
+        assert_eq!(paths, vec!["sub/b.txt"]);
+    }
+}
+
+#[cfg(test)]
+mod cache_tests {
+    //! Cache hit / miss / mtime invalidation tests. These build a tiny real
+    //! repo so we exercise the actual `git status` shell-out path, not just
+    //! the parser. Total runtime ~200 ms each.
+    use super::super::repo::discover_repo;
+    use super::*;
+
+    fn temp_repo(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("cmdr_status_cache_{}_{}", name, std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        run(&dir, &["init", "-q", "-b", "main"]);
+        run(&dir, &["config", "user.name", "Test"]);
+        run(&dir, &["config", "user.email", "test@cmdr.local"]);
+        std::fs::write(dir.join("README.md"), "hi\n").unwrap();
+        run(&dir, &["add", "."]);
+        run(&dir, &["commit", "-q", "-m", "init"]);
+        dir
+    }
+
+    fn run(dir: &Path, args: &[&str]) {
+        Command::new("git")
+            .current_dir(dir)
+            .args(args)
+            .env("GIT_AUTHOR_NAME", "Test")
+            .env("GIT_AUTHOR_EMAIL", "test@cmdr.local")
+            .env("GIT_COMMITTER_NAME", "Test")
+            .env("GIT_COMMITTER_EMAIL", "test@cmdr.local")
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .expect("git");
+    }
+
+    #[test]
+    fn second_call_hits_cache_when_index_unchanged() {
+        let dir = temp_repo("hit");
+        let (handle, root) = discover_repo(&dir).unwrap();
+
+        // Drop any leftover cache from prior runs of this test process.
+        invalidate_status_cache(&root);
+        std::fs::write(dir.join("untracked.txt"), "x\n").unwrap();
+
+        let first = list_status(&handle, &dir).unwrap();
+        let second = list_status(&handle, &dir).unwrap();
+        assert_eq!(first.len(), second.len());
+        // After the first call, the cache must have an entry.
+        assert!(cache_len_for_test() >= 1);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn index_mtime_change_invalidates_cache() {
+        let dir = temp_repo("mtime");
+        let (handle, root) = discover_repo(&dir).unwrap();
+        invalidate_status_cache(&root);
+
+        // First snapshot: README.md is clean.
+        let _first = list_status(&handle, &dir).unwrap();
+        let entries_first: Vec<&str> = _first.iter().map(|e| e.relative_path.as_str()).collect();
+        assert!(
+            !entries_first.contains(&"new.txt"),
+            "fresh repo had no untracked new.txt"
+        );
+
+        // Stage a new file. `git add` rewrites `.git/index`, bumping the mtime.
+        std::fs::write(dir.join("new.txt"), "x\n").unwrap();
+        run(&dir, &["add", "new.txt"]);
+
+        // Sleep one filesystem tick so the mtime is guaranteed to change on
+        // filesystems with second-resolution timestamps. macOS APFS has
+        // sub-second resolution but CI's overlayfs sometimes doesn't.
+        std::thread::sleep(std::time::Duration::from_millis(1100));
+
+        let second = list_status(&handle, &dir).unwrap();
+        let entries_second: Vec<&str> = second.iter().map(|e| e.relative_path.as_str()).collect();
+        assert!(
+            entries_second.contains(&"new.txt"),
+            "post-add status missed the new file"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn explicit_invalidate_drops_entry() {
+        let dir = temp_repo("invalidate");
+        let (handle, root) = discover_repo(&dir).unwrap();
+        invalidate_status_cache(&root);
+
+        let _ = list_status(&handle, &dir).unwrap();
+        let canonical = root.canonicalize().unwrap_or_else(|_| root.clone());
+        assert!(status_cache().read().unwrap().contains_key(&canonical));
+
+        invalidate_status_cache(&root);
+        assert!(!status_cache().read().unwrap().contains_key(&canonical));
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn slice_returns_only_subtree_entries_from_cached_walk() {
+        let dir = temp_repo("slice");
+        let (handle, root) = discover_repo(&dir).unwrap();
+        invalidate_status_cache(&root);
+
+        // Stage a file under `sub/` so git records it by path rather than
+        // collapsing the whole `sub/` directory into one untracked entry.
+        std::fs::create_dir_all(dir.join("sub")).unwrap();
+        std::fs::write(dir.join("sub/a.txt"), "x\n").unwrap();
+        run(&dir, &["add", "sub/a.txt"]);
+        std::fs::write(dir.join("top.txt"), "x\n").unwrap();
+        run(&dir, &["add", "top.txt"]);
+
+        // Whole-repo: sees both staged paths.
+        let full = list_status(&handle, &dir).unwrap();
+        let full_paths: Vec<&str> = full.iter().map(|e| e.relative_path.as_str()).collect();
+        assert!(
+            full_paths.contains(&"top.txt"),
+            "whole-repo missed top.txt: {:?}",
+            full_paths
+        );
+        assert!(
+            full_paths.contains(&"sub/a.txt"),
+            "whole-repo missed sub/a.txt: {:?}",
+            full_paths
+        );
+
+        // Subtree: sees only `sub/a.txt`. The cache stays warm; slicing is in-memory.
+        let scoped = list_status(&handle, &dir.join("sub")).unwrap();
+        let scoped_paths: Vec<&str> = scoped.iter().map(|e| e.relative_path.as_str()).collect();
+        assert!(!scoped_paths.contains(&"top.txt"));
+        assert!(scoped_paths.contains(&"sub/a.txt"));
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

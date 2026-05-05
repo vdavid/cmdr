@@ -117,6 +117,10 @@ impl GitWatcherRegistry {
             if sub.refcount == 0 {
                 inner.remove(&canonical);
                 super::repo::evict_handle(&canonical);
+                // Last subscriber's gone: drop the status snapshot too so
+                // we don't leak full-repo-sized caches for repos no pane is
+                // looking at any more.
+                super::status::invalidate_status_cache(&canonical);
             }
         }
     }
@@ -154,6 +158,12 @@ fn recompute_and_emit(app: &AppHandle, repo_root: &Path) {
         info,
     };
     let _ = app.emit("git-state-changed", payload);
+
+    // Any `.git/*` mutation we watch for is a superset of "the index might
+    // have moved", so we drop the cached status snapshot every time. The
+    // next `list_status` call re-walks. Cheap (HashMap remove) so we don't
+    // bother filtering by event type.
+    super::status::invalidate_status_cache(&root);
 
     invalidate_virtual_listings(&root);
 }

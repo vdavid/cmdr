@@ -29,7 +29,7 @@ three new error variants (`ShallowBoundary`, `MissingObject`,
 | `submodules.rs` | `list_submodules` – gix `Repository::submodules()`. Each entry sets `redirect_to_path` to `<repo_root>/<rel-path>` |
 | `tree.rs` | `list_tree`, `get_tree_entry`, `lookup_blob_id`, `read_blob` – gix tree walks. Permissions reflect `EntryKind::BlobExecutable` so cross-volume copy preserves the executable bit |
 | `read_blob.rs` | `GitBlobReadStream` – owns the full `Vec<u8>` and yields 256 KB chunks. See *Honest blob streaming* below |
-| `status.rs` | `list_status(repo, dir)` shells out to `git status --porcelain=v2 -z`. Parses the output into a `Vec<EntryStatus>` |
+| `status.rs` | `list_status(repo, dir)` runs a full-repo `git status --porcelain=v2 -z` once per `.git/index` mtime, caches the result in a process-global `RwLock<HashMap<RepoRoot, CachedStatus>>`, and slices it by `dir`. The watcher invalidates the snapshot whenever `.git/*` changes. Parses porcelain v2 in `parse_porcelain_v2`. |
 | `watcher.rs` | `GitWatcherRegistry` – per-repo notify-rs debouncer. `subscribe(app, root)` returns the current `RepoInfo` synchronously and emits `git-state-changed` on relevant `.git/*` mutations. 200 ms debounce. M2: also calls `notify_directory_changed(.., FullRefresh)` for any cached `.git/{branches,tags}/` listings on the local volume |
 | `friendly.rs` | `FriendlyGitError`, `FriendlyGitErrorKind` – ten variants (M1's six, `BlobTooLarge` from M2, plus M4's `ShallowBoundary`, `MissingObject`, `GitDirPermissionDenied`). Active-voice copy, no "error" / "failed". `to_friendly_error()` builds a `volume::FriendlyError` for `ErrorPane`; `encode_for_volume_error()` + `try_decode_git_friendly()` carry the structured payload through `VolumeError::IoError` so the streaming pipeline rebuilds it on the way out |
 | `column_meta.rs` | Per-row column-population helpers shared across `virtual_listing`, `log`, `tree`, etc. — `pluralize`, `ahead_behind_for_branch`, `commit_meta`, `files_changed_count`, `recursive_tree_size`, plus newest-of-set helpers for category-level Modified dates |
@@ -145,6 +145,29 @@ The frontend reads `display_size` / `display_size_tooltip` from `FileEntry`; the
 **Why**: Bench (release build, M-series): 100 branches with ahead/behind takes p50=33 ms / p95=36 ms — well under the 300 ms p95 budget the spec sets for the listing pipeline. Files-changed for 200 commits: p50=37 ms / p95=40 ms (200 µs / commit), so the typical Cmdr-sized repo (~3000 commits) lands ~600 ms and the 5000-commit cap lands ~1 s. We accept the worst-case 1 s on the cap because (1) Cmdr's own repo never hits the cap, (2) the listing pipeline runs the hook in `spawn_blocking` so the UI stays responsive, and (3) the alternative — lazy-load via a streamed IPC — would mean another round-trip per row and a placeholder `…` in the cell while it resolves. Document worth re-checking if a user reports the 5000-commit cap feeling slow; the M3 bench harness in `bench.rs` already covers 1000 commits and the new `bench_list_commits_files_changed` covers 200.
 
 ## Decisions
+
+**Decision (M4 follow-up)**: Cache `list_status` results keyed by `.git/index` mtime
+**Why**: Status used to walk the worktree on every `listing-complete` (every nav,
+every diff). On a 50k-file repo that's ~75 ms per nav. We now run one full-repo
+walk per index change, store the result in a process-global
+`RwLock<HashMap<RepoRoot, CachedStatus>>`, and slice by `dir_in_worktree` on
+each call. Cached calls land sub-millisecond on the same fixture (warm p95 in
+the bench is bounded by an arbitrary 5 ms ceiling so a busy CI doesn't flake).
+The watcher (`watcher.rs::recompute_and_emit`) drops the cache entry on every
+`.git/*` mutation it observes, so the next call repopulates. The
+`unsubscribe`-on-last-pane path also drops the entry so an unwatched repo
+doesn't pin a full-repo-sized snapshot.
+
+**Decision (M4 follow-up)**: Always run with `--untracked-files=normal`, no
+"skip untracked outside the worktree root" trick
+**Why**: An earlier sketch had us pass `--untracked-files=no` when the caller
+scoped to a sub-path inside the worktree, on the theory that listing a deep
+subdir doesn't need the full untracked walk. With the cache above, the
+untracked walk runs once per index change anyway and the cost is amortized
+across every subsequent listing — the extra complexity (two code paths,
+mismatched cache keys for the same repo) buys nothing measurable. We always
+walk the full worktree with `--untracked-files=normal` and let the cache do
+the work.
 
 **Decision (M4)**: Live-toggleable portal via a process-global `AtomicBool`
 **Why**: `try_route_listing` / `try_route_metadata` / `try_open_blob_stream`
