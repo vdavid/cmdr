@@ -30,7 +30,10 @@ function entry(overrides: Partial<FileEntry>): FileEntry {
 
 const baseArgs = {
   parentDirStats: null,
-  formatDateTime: (t: number) => new Date(t * 1000).toISOString().slice(0, 19).replace('T', ' '),
+  formatDateTimeParts: (t: number) => ({
+    left: new Date(t * 1000).toISOString().slice(0, 19).replace('T', ' '),
+    right: null,
+  }),
   sizeDisplayMode: 'smart' as const,
   indexing: false,
   showSizeMismatchWarning: false,
@@ -107,15 +110,56 @@ describe('computeFullListColumnWidths', () => {
     _setMeasureForTests(fakeMeasure)
     const short = computeFullListColumnWidths({
       ...baseArgs,
-      formatDateTime: () => 'today',
+      formatDateTimeParts: () => ({ left: 'today', right: null }),
       entries: [entry({ name: 'a', modifiedAt: 1 })],
     })
     const long = computeFullListColumnWidths({
       ...baseArgs,
-      formatDateTime: () => '2026-12-31 23:59:59',
+      formatDateTimeParts: () => ({ left: '2026-12-31 23:59:59', right: null }),
       entries: [entry({ name: 'a', modifiedAt: 1 })],
     })
     expect(long.date).toBeGreaterThan(short.date)
+  })
+
+  it('reports dateLeft and total width when rows have split dates', () => {
+    _setMeasureForTests(fakeMeasure)
+    const w = computeFullListColumnWidths({
+      ...baseArgs,
+      formatDateTimeParts: () => ({ left: '2026-12-31', right: '23:59' }),
+      entries: [entry({ name: 'a', modifiedAt: 1 })],
+    })
+    // left "2026-12-31" = 10 × 7 = 70; right "23:59" = 5 × 7 = 35; gap = 4.
+    // Total 70 + 4 + 35 = 109, which beats MIN_DATE_WIDTH (70).
+    expect(w.dateLeft).toBe(70)
+    expect(w.date).toBe(109)
+  })
+
+  it('uses the widest left half across all rows when splits are uneven', () => {
+    _setMeasureForTests(fakeMeasure)
+    let i = 0
+    const formatDateTimeParts = () => {
+      const lefts = ['short', '2026-01-30']
+      const left = lefts[i % 2]
+      i++
+      return { left, right: '14:30' }
+    }
+    const w = computeFullListColumnWidths({
+      ...baseArgs,
+      formatDateTimeParts,
+      entries: [entry({ name: 'a', modifiedAt: 1 }), entry({ name: 'b', modifiedAt: 2 })],
+    })
+    // dateLeft = max("short" = 35, "2026-01-30" = 70) = 70.
+    expect(w.dateLeft).toBe(70)
+  })
+
+  it('keeps dateLeft at zero when no row produces a split', () => {
+    _setMeasureForTests(fakeMeasure)
+    const w = computeFullListColumnWidths({
+      ...baseArgs,
+      formatDateTimeParts: () => ({ left: '2026-12-31 23:59', right: null }),
+      entries: [entry({ name: 'a', modifiedAt: 1 })],
+    })
+    expect(w.dateLeft).toBe(0)
   })
 
   it('reserves icon width when a directory has a stale size during indexing', () => {

@@ -118,10 +118,11 @@ export const settingsRegistry: SettingDefinition[] = [
     id: 'appearance.customDateTimeFormat',
     section: ['General', 'Appearance'],
     label: 'Custom date/time format',
-    description: 'Format string for custom date/time display. Use placeholders like YYYY, MM, DD, HH, mm, ss.',
+    description:
+      'Format string for custom date/time display. Use placeholders like YYYY, MM, DD, HH, mm, ss. Add a single `|` to split the date and time into two aligned columns (e.g. `YYYY-MM-DD | HH:mm`).',
     keywords: ['custom', 'format', 'date', 'time', 'placeholder'],
     type: 'string',
-    default: 'YYYY-MM-DD HH:mm',
+    default: 'YYYY-MM-DD | HH:mm',
     component: 'text-input',
   },
 

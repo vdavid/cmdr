@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatDateTimeWithFormat, formatFileSizeWithFormat } from './format-utils'
+import { formatDateTimeWithFormat, formatDateTimePartsWithFormat, formatFileSizeWithFormat } from './format-utils'
 
 // Fixed timestamp: 2024-03-15 14:30:45 UTC
 // We use a local date to avoid timezone flakiness
@@ -42,6 +42,49 @@ describe('formatDateTimeWithFormat', () => {
   it('formats system locale (returns non-empty string)', () => {
     const result = formatDateTimeWithFormat(timestamp, 'system', '')
     expect(result.length).toBeGreaterThan(0)
+  })
+})
+
+describe('formatDateTimePartsWithFormat', () => {
+  it('returns empty parts for missing timestamp', () => {
+    expect(formatDateTimePartsWithFormat(null, 'iso', '')).toEqual({ left: '', right: null })
+    expect(formatDateTimePartsWithFormat(undefined, 'iso', '')).toEqual({ left: '', right: null })
+    expect(formatDateTimePartsWithFormat(0, 'iso', '')).toEqual({ left: '', right: null })
+  })
+
+  it('splits ISO into date and time halves', () => {
+    expect(formatDateTimePartsWithFormat(timestamp, 'iso', '')).toEqual({ left: '2024-03-15', right: '14:30' })
+  })
+
+  it('splits short into date and time halves', () => {
+    expect(formatDateTimePartsWithFormat(timestamp, 'short', '')).toEqual({ left: '03/15', right: '14:30' })
+  })
+
+  it('splits a custom format on `|` and trims whitespace around it', () => {
+    expect(formatDateTimePartsWithFormat(timestamp, 'custom', 'YYYY/MM/DD | HH:mm:ss')).toEqual({
+      left: '2024/03/15',
+      right: '14:30:45',
+    })
+  })
+
+  it('returns no right half for a custom format without `|`', () => {
+    expect(formatDateTimePartsWithFormat(timestamp, 'custom', 'YYYY/MM/DD HH:mm')).toEqual({
+      left: '2024/03/15 14:30',
+      right: null,
+    })
+  })
+
+  it('treats a degenerate `format |` (empty right side) as no split', () => {
+    expect(formatDateTimePartsWithFormat(timestamp, 'custom', 'YYYY-MM-DD |')).toEqual({
+      left: '2024-03-15',
+      right: null,
+    })
+  })
+
+  it('keeps system-locale output unsplit', () => {
+    const parts = formatDateTimePartsWithFormat(timestamp, 'system', '')
+    expect(parts.right).toBeNull()
+    expect(parts.left.length).toBeGreaterThan(0)
   })
 })
 

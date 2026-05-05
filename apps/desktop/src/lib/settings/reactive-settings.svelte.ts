@@ -15,7 +15,12 @@ import {
   type AppColor,
   densityMappings,
 } from '$lib/settings'
-import { formatDateTimeWithFormat, formatFileSizeWithFormat } from './format-utils'
+import {
+  formatDateTimeWithFormat,
+  formatDateTimePartsWithFormat,
+  formatFileSizeWithFormat,
+  type DateTimeParts,
+} from './format-utils'
 import { getAppLogger } from '$lib/logging/logger'
 import { clearExtensionIconCache } from '$lib/icon-cache'
 
@@ -184,6 +189,16 @@ export function getStripedRows(): boolean {
  */
 export function formatDateTime(timestamp: number | null | undefined): string {
   return formatDateTimeWithFormat(timestamp, dateTimeFormat, customDateTimeFormat)
+}
+
+/**
+ * Format a timestamp into its two halves (left + optional right) according to
+ * current settings. The file list uses this so the right halves (typically
+ * the time digits) can line up across rows even when the date width varies.
+ * @param timestamp Unix timestamp in seconds
+ */
+export function formatDateTimeParts(timestamp: number | null | undefined): DateTimeParts {
+  return formatDateTimePartsWithFormat(timestamp, dateTimeFormat, customDateTimeFormat)
 }
 
 /**

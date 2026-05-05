@@ -107,6 +107,7 @@ vi.mock('$lib/icon-cache', async () => {
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getRowHeight: vi.fn().mockReturnValue(24),
   formatDateTime: vi.fn().mockReturnValue('2025-01-01 00:00'),
+  formatDateTimeParts: vi.fn().mockReturnValue({ left: '2025-01-01', right: '00:00' }),
   formatFileSize: vi.fn().mockReturnValue('1.0 KB'),
   getUseAppIconsForDocuments: vi.fn().mockReturnValue(true),
   getSizeDisplayMode: vi.fn().mockReturnValue('smart'),

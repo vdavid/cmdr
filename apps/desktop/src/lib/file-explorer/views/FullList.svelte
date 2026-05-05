@@ -40,7 +40,7 @@
     import {
         getRowHeight,
         getIsCompactDensity,
-        formatDateTime,
+        formatDateTimeParts,
         formatFileSize,
         getSizeDisplayMode,
         getSizeMismatchWarning,
@@ -159,7 +159,7 @@
     const indexing = $derived(isScanning() || isAggregating())
 
     // Column widths are declared after the virtual window, which gates parent-row inclusion.
-    let columnWidths = $state({ ext: 60, size: 115, date: 80 })
+    let columnWidths = $state({ ext: 60, size: 115, date: 80, dateLeft: 0 })
     let skipTransition = $state(false)
 
     /**
@@ -241,7 +241,7 @@
         columnWidths = computeFullListColumnWidths({
             entries: visible,
             parentDirStats: parentStats,
-            formatDateTime,
+            formatDateTimeParts,
             sizeDisplayMode,
             indexing,
             showSizeMismatchWarning,
@@ -630,6 +630,7 @@
                         ? getDisplaySize(file.size, file.physicalSize, sizeDisplayMode)
                         : undefined}
                     {@const sizeOverride = pickSizeDisplay(file)}
+                    {@const dateParts = formatDateTimeParts(file.modifiedAt)}
                     <!-- svelte-ignore a11y_interactive_supports_focus -->
                     <div
                         id={`file-${String(globalIndex)}`}
@@ -768,7 +769,15 @@
                                 >
                             {/if}
                         </span>
-                        <span class="col-date">{formatDateTime(file.modifiedAt)}</span>
+                        <span class="col-date">
+                            {#if dateParts.right !== null && columnWidths.dateLeft > 0}
+                                <span class="date-left" style="width: {columnWidths.dateLeft}px"
+                                    >{dateParts.left}</span
+                                ><span class="date-right">{dateParts.right}</span>
+                            {:else}
+                                {dateParts.left}
+                            {/if}
+                        </span>
                     </div>
                 {/each}
             </div>
@@ -989,6 +998,24 @@
         text-overflow: ellipsis;
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
+        white-space: nowrap;
+    }
+
+    /* Split date cells: `.date-left` is fixed-width (set inline from the
+       column-widths measurer) so the right halves align across rows. The 4px
+       margin on `.date-right` is mirrored as `DATE_PARTS_GAP` in
+       `measure-column-widths.ts` — keep them in sync. */
+    .date-left {
+        display: inline-block;
+        text-align: right;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: bottom;
+    }
+
+    .date-right {
+        margin-left: var(--spacing-xs);
     }
 
     .file-entry.is-selected .col-name {

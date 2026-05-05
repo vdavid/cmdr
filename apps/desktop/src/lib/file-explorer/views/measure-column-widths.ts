@@ -12,6 +12,7 @@ import * as pretext from '@chenglou/pretext'
 import { formatSizeForDisplay } from '../selection/selection-info-utils'
 import type { FileEntry, SortColumn } from '../types'
 import type { FileSizeFormat } from '$lib/settings/types'
+import type { DateTimeParts } from '$lib/settings/format-utils'
 import { createPretextMeasure } from '$lib/utils/shorten-middle'
 
 import type { DirStats } from './file-list-utils'
@@ -20,7 +21,14 @@ import { getDisplayExtension, getDisplaySize, hasSizeMismatch } from './full-lis
 export interface ColumnWidths {
   ext: number
   size: number
+  /** Total date column width (including the inter-half gap when split). */
   date: number
+  /**
+   * Pixel width of the left half of split date cells. Used as the inline-block
+   * width of `.date-left` so the right halves (typically the time) line up
+   * across rows. Zero when no visible row produces a `|` split.
+   */
+  dateLeft: number
 }
 
 /**
@@ -58,6 +66,14 @@ const SIZE_ICON_WIDTH = 14
 const MIN_EXT_WIDTH = 28
 const MIN_SIZE_WIDTH = 40
 const MIN_DATE_WIDTH = 70
+
+/**
+ * Visual gap between the date and time halves of a split date cell.
+ * `var(--spacing-xs)` (4px) — set as `margin-left` on `.date-right` in
+ * `FullList.svelte`. Mirror this value if the CSS changes, or split-date
+ * columns will be one or two pixels off.
+ */
+const DATE_PARTS_GAP = 4
 
 /**
  * Cap-width sample for the Ext column. A pathological extension like
@@ -133,6 +149,36 @@ function sizeTextForEntry(
   return s !== undefined ? sizeCellText(s, sizeFormatOpts) : ''
 }
 
+/**
+ * Running maxima for the date column. `total` is the row width when the date
+ * is not split; `splitLeft` and `splitRight` accumulate when at least one row
+ * has a `|` split. Pulled into its own helper to keep
+ * `computeFullListColumnWidths` under the lint complexity cap.
+ */
+interface DateMaxima {
+  total: number
+  splitLeft: number
+  splitRight: number
+}
+
+function foldDate(
+  current: DateMaxima,
+  parts: { left: string; right: string | null },
+  measure: (text: string) => number,
+): DateMaxima {
+  if (parts.right === null) {
+    const w = measure(parts.left)
+    return w > current.total ? { ...current, total: w } : current
+  }
+  const lw = measure(parts.left)
+  const rw = measure(parts.right)
+  return {
+    total: current.total,
+    splitLeft: lw > current.splitLeft ? lw : current.splitLeft,
+    splitRight: rw > current.splitRight ? rw : current.splitRight,
+  }
+}
+
 /** Pixel width of the size-column icons that follow the text for this row. */
 function sizeIconSuffixForEntry(entry: FileEntry, indexing: boolean, showSizeMismatchWarning: boolean): number {
   let suffix = 0
@@ -153,7 +199,7 @@ function sizeIconSuffixForEntry(entry: FileEntry, indexing: boolean, showSizeMis
 export function computeFullListColumnWidths(args: {
   entries: FileEntry[]
   parentDirStats?: DirStats | null
-  formatDateTime: (timestamp: number) => string
+  formatDateTimeParts: (timestamp: number) => DateTimeParts
   sizeDisplayMode: 'smart' | 'logical' | 'physical'
   indexing: boolean
   showSizeMismatchWarning: boolean
@@ -163,7 +209,7 @@ export function computeFullListColumnWidths(args: {
   const {
     entries,
     parentDirStats,
-    formatDateTime,
+    formatDateTimeParts,
     sizeDisplayMode,
     indexing,
     showSizeMismatchWarning,
@@ -173,7 +219,7 @@ export function computeFullListColumnWidths(args: {
 
   const measure = getMeasure()
   if (!measure) {
-    return { ext: MIN_EXT_WIDTH, size: MIN_SIZE_WIDTH, date: MIN_DATE_WIDTH }
+    return { ext: MIN_EXT_WIDTH, size: MIN_SIZE_WIDTH, date: MIN_DATE_WIDTH, dateLeft: 0 }
   }
 
   const chromeFor = (column: SortColumn): number => (sortBy === column ? HEADER_CHROME_ACTIVE : HEADER_CHROME_INACTIVE)
@@ -193,6 +239,11 @@ export function computeFullListColumnWidths(args: {
   // widest icon suffix we've seen so we can add it to the data width.
   let sizeIconSuffixMax = 0
 
+  // Track the two halves of split date cells separately so the renderer can
+  // line up the right halves across rows. `splitLeft`/`splitRight` stay at 0
+  // unless at least one row has a `|` split.
+  let date: DateMaxima = { total: dateMax, splitLeft: 0, splitRight: 0 }
+
   for (const entry of entries) {
     const ext = getDisplayExtension(entry.name, entry.isDirectory)
     if (ext) {
@@ -207,10 +258,10 @@ export function computeFullListColumnWidths(args: {
     if (iconSuffix > sizeIconSuffixMax) sizeIconSuffixMax = iconSuffix
 
     if (entry.modifiedAt !== undefined) {
-      const w = measure(formatDateTime(entry.modifiedAt))
-      if (w > dateMax) dateMax = w
+      date = foldDate(date, formatDateTimeParts(entry.modifiedAt), measure)
     }
   }
+  dateMax = date.total
 
   // The ".." row borrows the current folder's recursive size — often the largest
   // number in the listing, so fold it in or the column snaps wider the moment it loads.
@@ -222,9 +273,18 @@ export function computeFullListColumnWidths(args: {
     }
   }
 
+  // If any row had a split date, fold the two halves into the total. Header
+  // overhead (caret allowance for sortBy='modified') is already baked into
+  // the initial dateMax; we just take the larger of header and split-data.
+  if (date.splitLeft > 0 || date.splitRight > 0) {
+    const splitTotal = date.splitLeft + DATE_PARTS_GAP + date.splitRight
+    if (splitTotal > dateMax) dateMax = splitTotal
+  }
+
   return {
     ext: Math.max(MIN_EXT_WIDTH, Math.ceil(extMax + WIDTH_PADDING)),
     size: Math.max(MIN_SIZE_WIDTH, Math.ceil(sizeMax + WIDTH_PADDING)),
     date: Math.max(MIN_DATE_WIDTH, Math.ceil(dateMax + WIDTH_PADDING)),
+    dateLeft: Math.ceil(date.splitLeft),
   }
 }
