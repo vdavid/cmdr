@@ -2,9 +2,10 @@
  * Tier 3 a11y tests for `TransferDialog.svelte`.
  *
  * Copy/move destination picker. Volume store, Tauri IPC, and settings
- * are stubbed. Tests cover copy, move, and drag-drop (with toggle)
- * states. The dialog mounts lots of event-listener boilerplate, so
- * events return no-op unsubscribers.
+ * are stubbed. Tests cover the copy and move initial states; the
+ * copy/move toggle is always present, so both tests exercise it. The
+ * dialog mounts lots of event-listener boilerplate, so events return
+ * no-op unsubscribers.
  */
 
 import { describe, it, vi } from 'vitest'
@@ -42,7 +43,7 @@ vi.mock('$lib/stores/volume-store.svelte', () => ({
 }))
 
 describe('TransferDialog a11y', () => {
-  it('copy dialog (no toggle) has no a11y violations', async () => {
+  it('copy dialog has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(TransferDialog, {
@@ -86,33 +87,6 @@ describe('TransferDialog a11y', () => {
         sortOrder: 'ascending',
         sourceVolumeId: 'root',
         destVolumeId: 'root',
-        onConfirm: () => {},
-        onCancel: () => {},
-      },
-    })
-    await tick()
-    await expectNoA11yViolations(target)
-  })
-
-  it('drag-drop with copy/move toggle has no a11y violations', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(TransferDialog, {
-      target,
-      props: {
-        operationType: 'copy',
-        sourcePaths: ['/Users/test/file.txt'],
-        destinationPath: '/Users/test/dest',
-        direction: 'left',
-        currentVolumeId: 'root',
-        fileCount: 1,
-        folderCount: 0,
-        sourceFolderPath: '/Users/test',
-        sortColumn: 'name',
-        sortOrder: 'ascending',
-        sourceVolumeId: 'root',
-        destVolumeId: 'root',
-        allowOperationToggle: true,
         onConfirm: () => {},
         onCancel: () => {},
       },

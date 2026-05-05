@@ -51,8 +51,6 @@
         sourceVolumeId: string
         /** Destination volume ID */
         destVolumeId: string
-        /** When true, shows a copy/move segmented control (for drag-and-drop). */
-        allowOperationToggle?: boolean
         /** When true, dialog auto-confirms without user interaction (MCP). */
         autoConfirm?: boolean
         /** Conflict resolution policy for auto-confirm (MCP). */
@@ -84,7 +82,6 @@
         sourceVolumeId,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Part of Props interface, used by parent
         destVolumeId,
-        allowOperationToggle = false,
         autoConfirm = false,
         autoConfirmOnConflict,
         onConfirm,
@@ -402,21 +399,19 @@
 >
     {#snippet title()}{dialogTitle}{/snippet}
 
-    <!-- Copy/Move toggle (shown for drag-and-drop, where the user hasn't chosen yet) -->
-    {#if allowOperationToggle}
-        <div class="operation-toggle">
-            <button
-                class="toggle-option"
-                class:active={activeOperationType === 'copy'}
-                onclick={() => (activeOperationType = 'copy')}>Copy</button
-            >
-            <button
-                class="toggle-option"
-                class:active={activeOperationType === 'move'}
-                onclick={() => (activeOperationType = 'move')}>Move</button
-            >
-        </div>
-    {/if}
+    <!-- Copy/Move toggle -->
+    <div class="operation-toggle">
+        <button
+            class="toggle-option"
+            class:active={activeOperationType === 'copy'}
+            onclick={() => (activeOperationType = 'copy')}>Copy</button
+        >
+        <button
+            class="toggle-option"
+            class:active={activeOperationType === 'move'}
+            onclick={() => (activeOperationType = 'move')}>Move</button
+        >
+    </div>
 
     <!-- Direction indicator -->
     <DirectionIndicator sourcePath={sourceFolderPath} {destinationPath} {direction} />

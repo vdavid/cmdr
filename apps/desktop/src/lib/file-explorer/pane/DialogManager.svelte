@@ -98,7 +98,6 @@
             sortOrder={transferDialogProps.sortOrder}
             sourceVolumeId={transferDialogProps.sourceVolumeId}
             destVolumeId={transferDialogProps.destVolumeId}
-            allowOperationToggle={transferDialogProps.allowOperationToggle}
             autoConfirm={transferDialogProps.autoConfirm}
             autoConfirmOnConflict={transferDialogProps.autoConfirmOnConflict}
             onConfirm={onTransferConfirm}

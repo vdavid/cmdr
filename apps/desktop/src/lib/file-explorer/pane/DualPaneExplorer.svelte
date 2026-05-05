@@ -776,10 +776,9 @@
         const destPath = targetFolderPath ?? getPanePath(targetPane)
         const destVolId = getPaneVolumeId(targetPane)
 
-        dialogs.showTransfer({
-            ...buildTransferPropsFromDroppedPaths(operation, paths, destPath, targetPane, destVolId, sortBy, sortOrder),
-            allowOperationToggle: true,
-        })
+        dialogs.showTransfer(
+            buildTransferPropsFromDroppedPaths(operation, paths, destPath, targetPane, destVolId, sortBy, sortOrder),
+        )
     }
 
     /** Extracts the last path component as a display name. */
