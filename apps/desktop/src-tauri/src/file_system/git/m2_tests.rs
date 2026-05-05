@@ -121,10 +121,17 @@ fn classify_and_round_trip() {
         VirtualGitPath::RefTree(Cat::Tags, "v1.0".into(), "README.md".into())
     );
 
-    // Raw passthrough.
-    let p = dot_git.join("raw").join("HEAD");
-    let (virt, _, _) = classify(&p).expect("classify raw");
-    assert_eq!(virt, VirtualGitPath::Raw("HEAD".into()));
+    // Real `.git/*` entries don't classify as virtual – the volume hook
+    // returns `None` and the LocalPosixVolume real-FS path takes over.
+    assert!(classify(&dot_git.join("HEAD")).is_none(), "HEAD is real, not virtual");
+    assert!(
+        classify(&dot_git.join("config")).is_none(),
+        "config is real, not virtual"
+    );
+    assert!(
+        classify(&dot_git.join("refs").join("heads").join("main")).is_none(),
+        "refs/ is real, not virtual"
+    );
 
     cleanup(&dir);
 }
@@ -154,16 +161,92 @@ fn list_tags_yields_v1() {
 }
 
 #[test]
-fn list_root_includes_all_categories() {
-    // M3 added commits/stash/worktrees/submodules to the root listing.
+fn list_root_mixes_real_and_virtual_entries() {
+    // The portal root surfaces real `.git/*` files (HEAD, config, hooks/,
+    // objects/, refs/) followed by the six virtual category entries
+    // (branches, tags, commits, stash, worktrees, submodules) in fixed
+    // order. Real entries that collide with a virtual category name get
+    // filtered out so the virtual one wins.
     let dir = build_fixture_repo();
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_root(&handle, &root);
     let names: Vec<_> = entries.iter().map(|e| e.name.as_str()).collect();
-    assert_eq!(
-        names,
-        vec!["branches", "tags", "commits", "stash", "worktrees", "submodules", "raw"]
-    );
+
+    // Real `.git/*` entries appear (every fresh git init creates these).
+    for must_have in ["HEAD", "config", "hooks", "info", "objects", "refs"] {
+        assert!(
+            names.contains(&must_have),
+            "real .git/{} must show up in the root listing: got {:?}",
+            must_have,
+            names
+        );
+    }
+
+    // The six virtual categories appear in fixed order, after every real
+    // entry.
+    let virtual_order = ["branches", "tags", "commits", "stash", "worktrees", "submodules"];
+    let positions: Vec<usize> = virtual_order
+        .iter()
+        .map(|n| {
+            names
+                .iter()
+                .position(|x| x == n)
+                .unwrap_or_else(|| panic!("virtual entry {} missing from {:?}", n, names))
+        })
+        .collect();
+    assert_eq!(positions, (names.len() - 6..names.len()).collect::<Vec<_>>());
+    for w in positions.windows(2) {
+        assert!(w[0] < w[1], "virtual entries should keep fixed order: {:?}", positions);
+    }
+
+    // Collision filter: the deprecated real `.git/branches/` directory
+    // must not show up as a real entry. The virtual `branches/` is the
+    // only entry called `branches` in the listing.
+    let branches_count = names.iter().filter(|n| **n == "branches").count();
+    assert_eq!(branches_count, 1, "virtual branches/ takes precedence over real one");
+
+    // `raw/` should not appear anywhere – we dropped it in favour of the
+    // mixed real + virtual listing.
+    assert!(!names.contains(&"raw"), "raw/ category was removed");
+
+    cleanup(&dir);
+}
+
+#[test]
+fn list_root_real_entries_sort_dirs_first_alpha() {
+    let dir = build_fixture_repo();
+    let (handle, root) = discover_repo(&dir).unwrap();
+    let entries = virtual_listing::list_root(&handle, &root);
+
+    // Slice off the trailing six virtual entries; everything before is real.
+    let real = &entries[..entries.len() - 6];
+
+    // Dirs come before files.
+    let last_dir = real.iter().rposition(|e| e.is_directory);
+    let first_file = real.iter().position(|e| !e.is_directory);
+    if let (Some(ld), Some(ff)) = (last_dir, first_file) {
+        assert!(ld < ff, "dirs must come before files in real entries: {:?}", real);
+    }
+
+    // Within dirs and within files, alphabetical (case-insensitive).
+    let dir_names: Vec<String> = real
+        .iter()
+        .filter(|e| e.is_directory)
+        .map(|e| e.name.to_lowercase())
+        .collect();
+    let mut sorted = dir_names.clone();
+    sorted.sort();
+    assert_eq!(dir_names, sorted, "real dirs must sort alphabetically");
+
+    let file_names: Vec<String> = real
+        .iter()
+        .filter(|e| !e.is_directory)
+        .map(|e| e.name.to_lowercase())
+        .collect();
+    let mut sorted = file_names.clone();
+    sorted.sort();
+    assert_eq!(file_names, sorted, "real files must sort alphabetically");
+
     cleanup(&dir);
 }
 
@@ -226,23 +309,16 @@ async fn blob_stream_drains_to_full_blob() {
 }
 
 #[test]
-fn raw_passthrough_lists_real_gitdir() {
-    let dir = build_fixture_repo();
-    let (_, root) = discover_repo(&dir).unwrap();
-    let entries = virtual_listing::list_raw(&root, "").expect("list_raw");
-    let names: Vec<_> = entries.iter().map(|e| e.name.as_str()).collect();
-    assert!(names.contains(&"HEAD"));
-    assert!(names.contains(&"refs"));
-    cleanup(&dir);
-}
-
-#[test]
 fn is_virtual_routes_through_volume_hooks() {
     let dir = build_fixture_repo();
     let (_, root) = discover_repo(&dir).unwrap();
+    // `is_virtual` is the mutation-guard cheap shape check: any path with
+    // `.git` in it counts. That's by design – we never want to write to
+    // `.git/HEAD` from a copy dialog, even though it's a real on-disk file.
     assert!(is_virtual(&root.join(".git")));
     assert!(is_virtual(&root.join(".git/branches")));
     assert!(is_virtual(&root.join(".git/branches/main/README.md")));
+    assert!(is_virtual(&root.join(".git/HEAD")));
     assert!(!is_virtual(&root.join("scripts/run.sh")));
     cleanup(&dir);
 }

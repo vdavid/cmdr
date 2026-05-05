@@ -57,6 +57,13 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
   `yml`/`yaml`, `tif`/`tiff`, `mpg`/`mpeg`, `mid`/`midi`, `aif`/`aiff`, `qt`/`mov`, `md`/`markdown`/`txt`) no longer
   trips the "you're changing the file type" confirmation. Cross-group changes still warn
   ([55592ba4](https://github.com/vdavid/cmdr/commit/55592ba4)).
+- **Git browser: real `.git/*` files alongside virtual entries.** Opening `.git/` now shows the real on-disk contents
+  (HEAD, config, hooks/, info/, objects/, packed-refs, refs/, ORIG_HEAD, …) sorted dirs-first alphabetical, followed by
+  the six virtual categories (branches, tags, commits, stash, worktrees, submodules) in fixed order. Real entries
+  navigate through the standard real-FS path; virtual entries route to the git module's tree-walking code. The previous
+  `raw/` escape hatch is gone — its contents are now one click away instead of two. The deprecated real `.git/branches/`
+  directory and the real `.git/worktrees/` in linked-worktree setups stay hidden behind the friendly virtual entries
+  with the same name.
 
 ### Fixed
 

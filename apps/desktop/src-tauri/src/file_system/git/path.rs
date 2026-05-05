@@ -2,11 +2,14 @@
 //!
 //! Maps an on-disk absolute path to a `VirtualGitPath` describing what the
 //! user wants to see: the portal root, a category (`branches/`, `tags/`,
-//! `raw/`), a specific ref, or a sub-path inside a ref's tree.
+//! `commits/`, `stash/`, `worktrees/`, `submodules/`), a specific ref, or
+//! a sub-path inside a ref's tree.
 //!
-//! M2 ships only `branches/`, `tags/`, and `raw/` categories. The `Cat` enum
-//! reserves slots for `Commits`, `Stash`, `Worktrees`, `Submodules` so M3
-//! can add them without changing the parse contract.
+//! Real `.git/*` entries (`HEAD`, `config`, `hooks/`, `objects/`, etc.)
+//! aren't classified here – they fall through to the real-FS code path
+//! via the volume hook returning `None`. The portal root listing
+//! (`virtual_listing::list_root`) merges the real entries with the
+//! virtual categories so the user sees both.
 //!
 //! ## Why ref names render flat
 //!
@@ -30,8 +33,6 @@ pub enum Cat {
     Stash,
     Worktrees,
     Submodules,
-    /// Escape hatch – `.git/raw/...` exposes the real on-disk gitdir.
-    Raw,
 }
 
 impl Cat {
@@ -44,7 +45,6 @@ impl Cat {
             Cat::Stash => "stash",
             Cat::Worktrees => "worktrees",
             Cat::Submodules => "submodules",
-            Cat::Raw => "raw",
         }
     }
 
@@ -56,14 +56,24 @@ impl Cat {
             "stash" => Some(Cat::Stash),
             "worktrees" => Some(Cat::Worktrees),
             "submodules" => Some(Cat::Submodules),
-            "raw" => Some(Cat::Raw),
             _ => None,
         }
     }
 
+    /// All six virtual categories, in the fixed display order used by
+    /// `virtual_listing::list_root` and the post-toggle invalidation set.
+    pub const ALL: [Cat; 6] = [
+        Cat::Branches,
+        Cat::Tags,
+        Cat::Commits,
+        Cat::Stash,
+        Cat::Worktrees,
+        Cat::Submodules,
+    ];
+
     /// True for categories whose `Ref(_, name)` resolves to a *commit
     /// tree* the user can browse: branches, tags, commits, stash. The
-    /// other M3 categories (`worktrees`, `submodules`) emit a redirect
+    /// other categories (`worktrees`, `submodules`) emit a redirect
     /// instead of a sub-tree.
     pub fn browses_commit_tree(&self) -> bool {
         matches!(self, Cat::Branches | Cat::Tags | Cat::Commits | Cat::Stash)
@@ -73,10 +83,10 @@ impl Cat {
 /// Classified virtual git path.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VirtualGitPath {
-    /// `.git/` itself – shows the portal entries.
+    /// `.git/` itself – shows the portal entries plus real `.git/*` files.
     Root,
     /// `.git/<category>/` – the category landing page (also a "ref list" for
-    /// branches and tags). Kept distinct so future categories with their own
+    /// branches and tags). Kept distinct so categories with their own
     /// shape (`commits/<sha>/`) reuse the same parser entry point.
     Category(Cat),
     /// `.git/<category>/<ref>` – a specific ref / sha / stash entry.
@@ -84,21 +94,17 @@ pub enum VirtualGitPath {
     /// `.git/<category>/<ref>/<sub_path>` – a sub-path inside a ref's tree.
     /// `sub_path` uses forward slashes, never starts with `/`.
     RefTree(Cat, String, String),
-    /// `.git/raw/<sub_path>` – direct passthrough into the real gitdir.
-    /// `sub_path` is empty for `raw/` itself.
-    Raw(String),
 }
 
 impl VirtualGitPath {
-    /// Convenience: the category for category-shaped variants. `None` for `Root` / `Raw`.
-    #[allow(dead_code, reason = "Public helper for downstream IPC + M3 consumers")]
+    /// Convenience: the category for category-shaped variants. `None` for `Root`.
+    #[allow(dead_code, reason = "Public helper for downstream IPC consumers")]
     pub fn category(&self) -> Option<Cat> {
         match self {
             VirtualGitPath::Root => None,
             VirtualGitPath::Category(c) => Some(*c),
             VirtualGitPath::Ref(c, _) => Some(*c),
             VirtualGitPath::RefTree(c, _, _) => Some(*c),
-            VirtualGitPath::Raw(_) => Some(Cat::Raw),
         }
     }
 }
@@ -122,6 +128,9 @@ pub fn is_virtual(path: &Path) -> bool {
 /// Returns `None` when:
 /// - The path isn't inside any `.git/` (the caller should run real-FS code).
 /// - We can't open the repo (broken `.git`, permission denied, etc.).
+/// - The path points at a real `.git/*` entry that isn't a virtual category
+///   (`HEAD`, `config`, `hooks/`, `objects/`, etc.). The volume hook then
+///   falls through to the real-FS code path.
 ///
 /// Errors are surfaced via the friendly-error path on actual operations,
 /// not here – this function is a router.
@@ -129,7 +138,7 @@ pub fn classify(path: &Path) -> Option<(VirtualGitPath, RepoHandle, PathBuf)> {
     let (worktree_root, after_dot_git) = split_at_dot_git(path)?;
     let (handle, canonical_root) = super::repo::discover_repo(&worktree_root).ok()?;
 
-    let parsed = parse_after_dot_git(&after_dot_git, &handle);
+    let parsed = parse_after_dot_git(&after_dot_git, &handle)?;
     Some((parsed, handle, canonical_root))
 }
 
@@ -156,12 +165,6 @@ pub fn to_path(virt: &VirtualGitPath, repo_root: &Path) -> PathBuf {
             out.push(cat.as_segment());
             out.push(name);
             // Push each segment so OS-native separators are used.
-            for piece in sub.split('/').filter(|p| !p.is_empty()) {
-                out.push(piece);
-            }
-        }
-        VirtualGitPath::Raw(sub) => {
-            out.push(Cat::Raw.as_segment());
             for piece in sub.split('/').filter(|p| !p.is_empty()) {
                 out.push(piece);
             }
@@ -214,27 +217,21 @@ fn split_at_dot_git(path: &Path) -> Option<(PathBuf, Vec<String>)> {
 }
 
 /// Parses the segments after `.git/` against the repo's refs.
-fn parse_after_dot_git(segments: &[String], handle: &RepoHandle) -> VirtualGitPath {
+///
+/// Returns `None` for paths that point at real `.git/*` entries (anything
+/// whose first segment isn't a virtual category). The volume hook then
+/// returns `None` so the caller falls through to real-FS reads.
+fn parse_after_dot_git(segments: &[String], handle: &RepoHandle) -> Option<VirtualGitPath> {
     if segments.is_empty() {
-        return VirtualGitPath::Root;
+        return Some(VirtualGitPath::Root);
     }
 
     let cat_seg = &segments[0];
-    let Some(cat) = Cat::from_segment(cat_seg) else {
-        // Unknown first segment – fall through to `Raw` so the user can
-        // browse `.git/refs/...` etc. as the real gitdir contents.
-        let sub = segments.join("/");
-        return VirtualGitPath::Raw(sub);
-    };
-
-    if matches!(cat, Cat::Raw) {
-        let sub = segments[1..].join("/");
-        return VirtualGitPath::Raw(sub);
-    }
+    let cat = Cat::from_segment(cat_seg)?;
 
     let rest = &segments[1..];
     if rest.is_empty() {
-        return VirtualGitPath::Category(cat);
+        return Some(VirtualGitPath::Category(cat));
     }
 
     // Greedy-match ref name against the repo's known refs for branches/tags.
@@ -244,22 +241,22 @@ fn parse_after_dot_git(segments: &[String], handle: &RepoHandle) -> VirtualGitPa
     if matches!(cat, Cat::Branches | Cat::Tags) {
         let known = ref_names_for_cat(handle, cat);
         if let Some((ref_name, sub)) = match_ref_name(rest, &known) {
-            return if sub.is_empty() {
+            return Some(if sub.is_empty() {
                 VirtualGitPath::Ref(cat, ref_name)
             } else {
                 VirtualGitPath::RefTree(cat, ref_name, sub)
-            };
+            });
         }
     }
 
     // Default shape: first segment = entry, remainder = sub-path.
     let entry = rest[0].clone();
     let sub = rest[1..].join("/");
-    if sub.is_empty() {
+    Some(if sub.is_empty() {
         VirtualGitPath::Ref(cat, entry)
     } else {
         VirtualGitPath::RefTree(cat, entry, sub)
-    }
+    })
 }
 
 fn match_ref_name(segments: &[String], known: &[String]) -> Option<(String, String)> {
@@ -282,7 +279,7 @@ fn ref_names_for_cat(handle: &RepoHandle, cat: Cat) -> Vec<String> {
     let iter = match cat {
         Cat::Branches => platform.local_branches().ok(),
         Cat::Tags => platform.tags().ok(),
-        _ => return Vec::new(),
+        Cat::Commits | Cat::Stash | Cat::Worktrees | Cat::Submodules => return Vec::new(),
     };
     let Some(iter) = iter else {
         return Vec::new();
@@ -302,7 +299,7 @@ pub(crate) fn strip_ref_prefix(full: &str, cat: Cat) -> String {
     match cat {
         Cat::Branches => full.strip_prefix("refs/heads/").unwrap_or(full).to_string(),
         Cat::Tags => full.strip_prefix("refs/tags/").unwrap_or(full).to_string(),
-        _ => full.to_string(),
+        Cat::Commits | Cat::Stash | Cat::Worktrees | Cat::Submodules => full.to_string(),
     }
 }
 
@@ -315,7 +312,7 @@ mod tests {
     fn is_virtual_detects_dot_git_anywhere() {
         assert!(is_virtual(Path::new("/tmp/repo/.git")));
         assert!(is_virtual(Path::new("/tmp/repo/.git/branches/main")));
-        assert!(is_virtual(Path::new("/tmp/repo/.git/raw/HEAD")));
+        assert!(is_virtual(Path::new("/tmp/repo/.git/HEAD")));
         assert!(!is_virtual(Path::new("/tmp/repo/src/main.rs")));
         assert!(!is_virtual(Path::new("/tmp/repo")));
     }
@@ -347,17 +344,17 @@ mod tests {
 
     #[test]
     fn cat_segment_round_trip() {
-        for cat in [
-            Cat::Branches,
-            Cat::Tags,
-            Cat::Commits,
-            Cat::Stash,
-            Cat::Worktrees,
-            Cat::Submodules,
-            Cat::Raw,
-        ] {
+        for cat in Cat::ALL {
             let s = cat.as_segment();
             assert_eq!(Cat::from_segment(s), Some(cat));
+        }
+    }
+
+    #[test]
+    fn cat_from_segment_rejects_real_dot_git_entries() {
+        // These are real `.git/*` names. They must not classify as virtual.
+        for name in ["HEAD", "config", "hooks", "info", "objects", "refs", "raw", "logs"] {
+            assert_eq!(Cat::from_segment(name), None, "{} should not be a virtual cat", name);
         }
     }
 
@@ -415,22 +412,5 @@ mod tests {
         let root = Path::new("/repo");
         let v = VirtualGitPath::RefTree(Cat::Branches, "main".into(), "src/lib.rs".into());
         assert_eq!(to_path(&v, root), Path::new("/repo/.git/branches/main/src/lib.rs"));
-    }
-
-    #[test]
-    fn to_path_round_trips_raw() {
-        let root = Path::new("/repo");
-        assert_eq!(
-            to_path(&VirtualGitPath::Raw(String::new()), root),
-            Path::new("/repo/.git/raw")
-        );
-        assert_eq!(
-            to_path(&VirtualGitPath::Raw("HEAD".into()), root),
-            Path::new("/repo/.git/raw/HEAD")
-        );
-        assert_eq!(
-            to_path(&VirtualGitPath::Raw("refs/heads/main".into()), root),
-            Path::new("/repo/.git/raw/refs/heads/main")
-        );
     }
 }

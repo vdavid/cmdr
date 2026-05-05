@@ -1,8 +1,14 @@
 //! Virtual `.git/` listings.
 //!
-//! - `list_root` – the portal root (M2 ships `branches/`, `tags/`, `raw/`)
+//! - `list_root` – the portal root: real `.git/*` entries (HEAD, config,
+//!   hooks/, objects/, refs/, etc.) followed by the six virtual category
+//!   entries (`branches/`, `tags/`, `commits/`, `stash/`, `worktrees/`,
+//!   `submodules/`).
 //! - `list_branches` / `list_tags` – refs as virtual dirs
-//! - `list_raw` – passthrough into the real on-disk `.git/<sub>` contents
+//!
+//! Real `.git/*` entries that aren't the root listing fall through to the
+//! real-FS code path via the volume hook returning `None` for non-virtual
+//! paths.
 //!
 //! These return `Vec<FileEntry>` because the existing `Volume::list_directory`
 //! contract is single-shot. The underlying gix iterators are fast enough
@@ -26,50 +32,84 @@ use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::path::{Cat, strip_ref_prefix};
 use super::repo::RepoHandle;
 
-/// Lists the categories visible at the portal root.
+/// Lists the portal root: real `.git/*` entries first, virtual category
+/// entries after.
 ///
-/// All seven categories are listed: M2 shipped `branches/`, `tags/`,
-/// `raw/`; M3 added `commits/`, `stash/`, `worktrees/`, `submodules/`.
-/// Empty categories (no commits, no stashes) still show up – opening
-/// them shows an empty listing, which is more honest than hiding the
-/// concept altogether.
+/// Real entries come from a direct `std::fs::read_dir` on the resolved
+/// gitdir (handles linked-worktree gitlinks). They sort dirs-first,
+/// alphabetical, matching the listing pipeline's default. Then the six
+/// virtual categories (`branches/`, `tags/`, `commits/`, `stash/`,
+/// `worktrees/`, `submodules/`) append in fixed order.
 ///
-/// Modified + Size columns are populated per category. See
-/// `column_meta` for the rules.
+/// Real entries whose name collides with a virtual category get filtered
+/// out – the virtual entry wins. In practice this hides the deprecated
+/// real `.git/branches/` directory (git itself stopped using it long ago)
+/// and the `.git/worktrees/` directory in linked-worktree setups (its
+/// internals belong to git, not to the user). Power users who really
+/// want the raw bytes can open the gitdir from the terminal.
+///
+/// Modified + Size columns are populated per category. See `column_meta`
+/// for the rules. Empty categories still show up – opening them lists
+/// nothing, which is more honest than hiding the concept altogether.
 pub fn list_root(handle: &RepoHandle, repo_root: &Path) -> Vec<FileEntry> {
     let dot_git = repo_root.join(".git");
-    let categories = [
-        (Cat::Branches, "git:branch"),
-        (Cat::Tags, "git:tag"),
-        (Cat::Commits, "git:commit"),
-        (Cat::Stash, "git:fork"),
-        (Cat::Worktrees, "git:fork"),
-        (Cat::Submodules, "git:fork"),
-        (Cat::Raw, "git:fork"),
-    ];
 
-    let raw_mtime = std::fs::metadata(&dot_git).ok().and_then(|m| {
-        m.modified()
-            .ok()
-            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-            .map(|d| d.as_secs())
+    let virtual_names: std::collections::HashSet<&'static str> = Cat::ALL.iter().map(|c| c.as_segment()).collect();
+
+    let mut real_entries = read_real_dot_git(repo_root);
+    real_entries.retain(|fe| !virtual_names.contains(fe.name.as_str()));
+    real_entries.sort_by(|a, b| match (a.is_directory, b.is_directory) {
+        (true, false) => std::cmp::Ordering::Less,
+        (false, true) => std::cmp::Ordering::Greater,
+        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
     });
 
-    categories
-        .into_iter()
-        .map(|(cat, icon)| {
-            let segment = cat.as_segment();
-            let path = dot_git.join(segment).to_string_lossy().into_owned();
-            let mut fe = FileEntry::new(segment.to_string(), path, true, false);
-            fe.permissions = 0o755;
-            fe.icon_id = icon.to_string();
-            populate_root_category(&mut fe, cat, handle, repo_root, raw_mtime);
-            fe
-        })
-        .collect()
+    let mut out = real_entries;
+    for cat in Cat::ALL {
+        let icon = match cat {
+            Cat::Branches => "git:branch",
+            Cat::Tags => "git:tag",
+            Cat::Commits => "git:commit",
+            Cat::Stash | Cat::Worktrees | Cat::Submodules => "git:fork",
+        };
+        let segment = cat.as_segment();
+        let path = dot_git.join(segment).to_string_lossy().into_owned();
+        let mut fe = FileEntry::new(segment.to_string(), path, true, false);
+        fe.permissions = 0o755;
+        fe.icon_id = icon.to_string();
+        populate_root_category(&mut fe, cat, handle, repo_root);
+        out.push(fe);
+    }
+    out
 }
 
-fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, repo_root: &Path, raw_mtime: Option<u64>) {
+/// Reads the real on-disk gitdir for the portal root listing. Bypasses
+/// the volume hook (`std::fs` directly) to avoid recursing back into
+/// `git::try_route_listing`. Returns an empty Vec on any I/O hiccup;
+/// the virtual entries below carry the conceptual structure regardless.
+fn read_real_dot_git(repo_root: &Path) -> Vec<FileEntry> {
+    let gitdir = real_gitdir_path(repo_root);
+    let Ok(read) = std::fs::read_dir(&gitdir) else {
+        return Vec::new();
+    };
+    let dot_git = repo_root.join(".git");
+    let mut out = Vec::new();
+    for entry in read.flatten() {
+        let abs = entry.path();
+        let Ok(mut fe) = get_single_entry(&abs) else {
+            continue;
+        };
+        // Display under `<repo>/.git/<name>` so URLs stay anchored at the
+        // worktree (and so navigation into a linked-worktree gitdir's
+        // `.git/HEAD` keeps the worktree-rooted form). For non-gitlink
+        // worktrees, this is identical to `abs`.
+        fe.path = dot_git.join(&fe.name).to_string_lossy().into_owned();
+        out.push(fe);
+    }
+    out
+}
+
+fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, repo_root: &Path) {
     let repo = handle.to_thread_local();
     match cat {
         Cat::Branches => {
@@ -117,12 +157,6 @@ fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, rep
             fe.display_size = Some(column_meta::pluralize(count, "submodule", "submodules"));
             fe.display_size_tooltip = Some(fe.display_size.clone().unwrap());
             fe.modified_at = newest_submodule_secs(&repo, handle, repo_root);
-        }
-        Cat::Raw => {
-            fe.modified_at = raw_mtime;
-            // Raw stays without `display_size`; the recursive byte total
-            // would require walking the on-disk gitdir, and the Size cell
-            // for `.git/raw/` falls back to bytes.
         }
     }
 }
@@ -215,7 +249,6 @@ fn populate_ref_columns(fe: &mut FileEntry, cat: Cat, name: &str, handle: &RepoH
                 fe.display_size_tooltip = found.display_size_tooltip;
             }
         }
-        Cat::Raw => {} // raw entries get real-FS metadata via `get_single_entry`.
     }
 }
 
@@ -426,77 +459,24 @@ pub fn list_tags(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEntry>
     Ok(out)
 }
 
-/// Reads the real on-disk `.git/<sub_path>` directory.
-///
-/// This bypasses the volume hook to avoid recursion: we use `std::fs`
-/// directly. Calling back into `LocalPosixVolume::list_directory` would
-/// classify the path as virtual again and loop forever.
-pub fn list_raw(repo_root: &Path, sub_path: &str) -> Result<Vec<FileEntry>, FriendlyGitError> {
-    let display_parent = repo_root.join(".git").join(Cat::Raw.as_segment());
-    let real = real_gitdir_path(repo_root, sub_path);
-
-    let read = std::fs::read_dir(&real).map_err(|e| FriendlyGitError {
-        kind: FriendlyGitErrorKind::PermissionDenied,
-        path: real.display().to_string(),
-        raw: Some(e.to_string()),
-    })?;
-
-    let mut out = Vec::new();
-    for entry in read.flatten() {
-        let abs = entry.path();
-        // Stat the real on-disk entry but rewrite its display path to live
-        // under `.git/raw/...` so the URL the user sees stays virtual.
-        let Ok(mut fe) = get_single_entry(&abs) else {
-            continue;
-        };
-        let virt_path = if sub_path.is_empty() {
-            display_parent.join(&fe.name)
-        } else {
-            display_parent.join(sub_path).join(&fe.name)
-        };
-        fe.path = virt_path.to_string_lossy().into_owned();
-        out.push(fe);
-    }
-    out.sort_by(|a, b| match (a.is_directory, b.is_directory) {
-        (true, false) => std::cmp::Ordering::Less,
-        (false, true) => std::cmp::Ordering::Greater,
-        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
-    });
-    Ok(out)
-}
-
-/// Resolves a virtual `raw/<sub>` path to the actual on-disk gitdir entry.
+/// Resolves the actual on-disk gitdir for a worktree.
 ///
 /// For a normal worktree the gitdir is `<root>/.git`. For a linked
 /// worktree (gitlink), `<root>/.git` is a file pointing into
 /// `<main>/.git/worktrees/<name>` – this helper follows that.
-pub fn real_gitdir_path(repo_root: &Path, sub_path: &str) -> PathBuf {
+pub fn real_gitdir_path(repo_root: &Path) -> PathBuf {
     let dot_git = repo_root.join(".git");
-    let gitdir = if dot_git.is_file() {
-        if let Ok(content) = std::fs::read_to_string(&dot_git)
-            && let Some(stripped) = content.trim().strip_prefix("gitdir:")
-        {
-            let p = stripped.trim();
-            if Path::new(p).is_absolute() {
-                PathBuf::from(p)
-            } else {
-                repo_root.join(p)
-            }
-        } else {
-            dot_git.clone()
+    if dot_git.is_file()
+        && let Ok(content) = std::fs::read_to_string(&dot_git)
+        && let Some(stripped) = content.trim().strip_prefix("gitdir:")
+    {
+        let p = stripped.trim();
+        if Path::new(p).is_absolute() {
+            return PathBuf::from(p);
         }
-    } else {
-        dot_git
-    };
-    if sub_path.is_empty() {
-        gitdir
-    } else {
-        let mut out = gitdir;
-        for piece in sub_path.split('/').filter(|p| !p.is_empty()) {
-            out.push(piece);
-        }
-        out
+        return repo_root.join(p);
     }
+    dot_git
 }
 
 /// Returns metadata for a single virtual entry. Used by `try_route_metadata`.
@@ -530,15 +510,10 @@ pub fn get_metadata_for(
                 Cat::Branches => "git:branch",
                 Cat::Tags => "git:tag",
                 Cat::Commits => "git:commit",
-                Cat::Stash | Cat::Worktrees | Cat::Submodules | Cat::Raw => "git:fork",
+                Cat::Stash | Cat::Worktrees | Cat::Submodules => "git:fork",
             }
             .to_string();
-            let raw_mtime = std::fs::metadata(repo_root.join(".git"))
-                .ok()
-                .and_then(|m| m.modified().ok())
-                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                .map(|d| d.as_secs());
-            populate_root_category(&mut fe, *cat, handle, repo_root, raw_mtime);
+            populate_root_category(&mut fe, *cat, handle, repo_root);
             Ok(fe)
         }
         Ref(cat, name) => {
@@ -554,7 +529,7 @@ pub fn get_metadata_for(
                 Cat::Branches => "git:branch",
                 Cat::Tags => "git:tag",
                 Cat::Commits => "git:commit",
-                _ => "git:fork",
+                Cat::Stash | Cat::Worktrees | Cat::Submodules => "git:fork",
             }
             .to_string();
             populate_ref_columns(&mut fe, *cat, name, handle, repo_root);
@@ -603,33 +578,6 @@ pub fn get_metadata_for(
                 .join(sub.replace('/', std::path::MAIN_SEPARATOR_STR));
             super::tree::get_tree_entry(handle, commit_id, sub, &display_path)
         }
-        Raw(sub) => {
-            if sub.is_empty() {
-                let path = repo_root
-                    .join(".git")
-                    .join(Cat::Raw.as_segment())
-                    .to_string_lossy()
-                    .into_owned();
-                let mut fe = FileEntry::new(Cat::Raw.as_segment().into(), path, true, false);
-                fe.permissions = 0o755;
-                fe.icon_id = "git:fork".into();
-                return Ok(fe);
-            }
-            let real = real_gitdir_path(repo_root, sub);
-            let mut fe = get_single_entry(&real).map_err(|e| FriendlyGitError {
-                kind: FriendlyGitErrorKind::PermissionDenied,
-                path: real.display().to_string(),
-                raw: Some(e.to_string()),
-            })?;
-            // Rewrite display path back into the virtual namespace.
-            fe.path = repo_root
-                .join(".git")
-                .join(Cat::Raw.as_segment())
-                .join(sub)
-                .to_string_lossy()
-                .into_owned();
-            Ok(fe)
-        }
     }
 }
 
@@ -641,7 +589,7 @@ pub fn resolve_ref_commit(handle: &RepoHandle, cat: Cat, name: &str) -> Result<g
     let full = match cat {
         Cat::Branches => format!("refs/heads/{}", name),
         Cat::Tags => format!("refs/tags/{}", name),
-        _ => {
+        Cat::Commits | Cat::Stash | Cat::Worktrees | Cat::Submodules => {
             return Err(FriendlyGitError::new(
                 FriendlyGitErrorKind::CorruptRepo,
                 name.to_string(),

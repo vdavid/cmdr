@@ -13,10 +13,12 @@
 //!
 //! ## Real `.git/worktrees/` collision
 //!
-//! Linked-worktree setups have a real `.git/worktrees/` directory. We
-//! shadow it with the virtual one. The real directory contents stay
-//! reachable under `.git/raw/worktrees/` (the existing M2 escape hatch).
-//! The chip tooltip and the git/CLAUDE.md document this.
+//! Linked-worktree setups have a real `.git/worktrees/` directory. The
+//! virtual entry shadows it: the portal root listing filters real
+//! entries that collide with virtual category names, so the user sees
+//! the friendly virtual `worktrees/` instead of the raw gitdir
+//! internals. Power users who really want the raw bytes can open the
+//! gitdir from the terminal.
 
 use std::path::Path;
 

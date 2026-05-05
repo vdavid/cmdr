@@ -320,9 +320,9 @@ The `statfs` check runs only at error time (not on every listing), so the syscal
 
 `LocalPosixVolume` delegates three read-side methods to the git module after `resolve()`:
 
-- `list_directory` calls `git::try_route_listing(resolved_path)`. Returns the virtual listing for `.git/branches/...`, `.git/tags/...`, `.git/raw/...`, or falls through to real-FS listing.
+- `list_directory` calls `git::try_route_listing(resolved_path)`. Returns the virtual listing for `.git/`, `.git/branches/...`, `.git/tags/...`, `.git/commits/...`, `.git/stash/...`, `.git/worktrees/...`, or `.git/submodules/...`. Real `.git/*` entries (HEAD, config, hooks/, objects/, refs/, etc.) get `None` from the hook and fall through to real-FS listing. The portal root (`.git/`) returns a mixed listing: real entries plus the six virtual categories.
 - `get_metadata` calls `git::try_route_metadata(resolved_path)`.
-- `open_read_stream` calls `git::try_open_blob_stream(resolved_path)`. Returns a `GitBlobReadStream` for blobs inside refs and a `std::fs`-backed read for `raw/` passthrough.
+- `open_read_stream` calls `git::try_open_blob_stream(resolved_path)`. Returns a `GitBlobReadStream` for blobs inside refs; real `.git/*` files fall through to the LocalPosixVolume real-FS reader.
 
 All mutation methods (`create_file`, `create_directory`, `delete`, `rename`, `write_from_stream`) detect virtual paths via `git::is_virtual(path)` and return `VolumeError::NotSupported` immediately. `notify_mutation` early-returns for virtual paths since git mutations happen out-of-band (the user runs `git` in a terminal); state changes flow through the `.git`-watcher pipeline (`file_system/git/watcher.rs`) instead.
 

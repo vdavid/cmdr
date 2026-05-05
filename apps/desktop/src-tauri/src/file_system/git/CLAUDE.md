@@ -2,18 +2,21 @@
 
 Backend module for the git browser. M1 shipped repo discovery, repo
 info, status, the watcher, and the friendly-error skeleton. M2 added
-the virtual `.git` portal – `branches/`, `tags/`, `raw/` browsable as
+the virtual `.git` portal – `branches/` and `tags/` browsable as
 virtual trees, with cross-volume copy "for free" because git blobs flow
 through the existing `VolumeReadStream` abstraction. M3 filled in
 commits, stash, worktrees, and submodules: the first two browse a
 commit tree just like branches/tags; the latter two surface
 `redirectToPath` so the frontend opens the worktree's / submodule's
-working dir directly. **M4 (this milestone) adds three things: a live
-toggle for the portal so `cd .git` can fall through to raw on-disk
-contents, FriendlyError integration end-to-end so every git failure
-reaches `ErrorPane` with a warm title + explanation + suggestion, and
-three new error variants (`ShallowBoundary`, `MissingObject`,
-`GitDirPermissionDenied`).**
+working dir directly. M4 added three things: a live toggle for the
+portal so `cd .git` can fall through to raw on-disk contents,
+FriendlyError integration end-to-end so every git failure reaches
+`ErrorPane` with a warm title + explanation + suggestion, and three
+new error variants (`ShallowBoundary`, `MissingObject`,
+`GitDirPermissionDenied`). **The portal root listing now mixes real
+`.git/*` entries (HEAD, config, hooks/, objects/, refs/, …) with the
+six virtual categories so the user sees everything in one place; the
+old `raw/` escape hatch is gone.**
 
 ## File map
 
@@ -22,7 +25,7 @@ three new error variants (`ShallowBoundary`, `MissingObject`,
 | `mod.rs` | Public API + the three volume hooks (`try_route_listing`, `try_route_metadata`, `try_open_blob_stream`) plus `is_virtual` for the mutation guards |
 | `repo.rs` | `discover_repo(path)` walking up via `gix::discover` (follows gitlinks). `repo_info(handle, root)` collects branch, detached SHA, unborn flag, upstream, ahead/behind, and `is_dirty`. Process-global `RepoCache` (`Arc<RwLock<HashMap>>`) keyed by canonical worktree root |
 | `path.rs` | `VirtualGitPath` enum, `Cat` enum, `classify(path)` parser, `to_path` inverse, `is_virtual(path)` for the volume hook short-circuits. Greedy ref-name match against the repo's known refs so `feature/foo` parses as one ref |
-| `virtual_listing.rs` | `list_root` (M2 exposes `branches/`, `tags/`, `raw/`), `list_branches`, `list_tags`, `list_raw` (real-FS passthrough), `get_metadata_for`, `resolve_ref_commit` (annotated tags peel through). Real-FS reads use `std::fs` to avoid recursing through the volume hook |
+| `virtual_listing.rs` | `list_root` (mixes real `.git/*` entries + the six virtual categories), `list_branches`, `list_tags`, `get_metadata_for`, `resolve_ref_commit` (annotated tags peel through), `real_gitdir_path` (follows gitlinks). Real-FS reads use `std::fs` to avoid recursing through the volume hook |
 | `log.rs` | `list_commits` – gix `rev_walk` over HEAD-reachable commits; cap 5000, batch 200, `#[cfg(test)]` cooperative cancel flag (production relies on `spawn_blocking` task abort). `resolve_commit_id` resolves a SHA prefix even for unreachable commits |
 | `stash.rs` | `list_stashes(repo_root)`, `resolve_stash_commit(handle, n)` – shells out to `git stash list -z` and `git rev-parse stash@{n}` (gix has no public stash API). `list_stashes` doesn't take a `RepoHandle` because the shell-out only needs `repo_root` for `git -C` |
 | `worktrees.rs` | `list_worktrees` – gix `Repository::worktrees()`. Each entry sets `redirect_to_path` to the worktree's working dir |
@@ -128,7 +131,6 @@ Every virtual entry carries a real `modified_at` and most carry a `display_size`
 | `.git/stash/` | newest stash creation date | `3 stash entries` | stash count |
 | `.git/worktrees/` | newest linked worktree HEAD | `2 linked worktrees` | worktree count |
 | `.git/submodules/` | newest pinned commit | `1 submodule` | submodule count |
-| `.git/raw/` | real `.git/` mtime | None (real bytes) | real bytes |
 | `branches/<name>/` | branch tip committer date | `+12 / -3` vs upstream (or fallback `main`/`master`) | ahead-count |
 | `tags/<name>/` | annotated tag date or commit date | short SHA | 0 |
 | `commits/<sha>/` | commit committer date | `5 files` (or `1 file`) | files-changed count |
@@ -146,6 +148,9 @@ The frontend reads `display_size` / `display_size_tooltip` from `FileEntry`; the
 **Why**: Bench (release build, M-series): 100 branches with ahead/behind takes p50=33 ms / p95=36 ms — well under the 300 ms p95 budget the spec sets for the listing pipeline. Files-changed for 200 commits: p50=37 ms / p95=40 ms (200 µs / commit), so the typical Cmdr-sized repo (~3000 commits) lands ~600 ms and the 5000-commit cap lands ~1 s. We accept the worst-case 1 s on the cap because (1) Cmdr's own repo never hits the cap, (2) the listing pipeline runs the hook in `spawn_blocking` so the UI stays responsive, and (3) the alternative — lazy-load via a streamed IPC — would mean another round-trip per row and a placeholder `…` in the cell while it resolves. Document worth re-checking if a user reports the 5000-commit cap feeling slow; the M3 bench harness in `bench.rs` already covers 1000 commits and the new `bench_list_commits_files_changed` covers 200.
 
 ## Decisions
+
+**Decision**: Mixed real + virtual portal root listing; `raw/` escape hatch dropped
+**Why**: Hiding real `.git/*` contents behind a separate `raw/` category meant two extra clicks (open `.git/`, open `raw/`) for anyone wanting to peek at `HEAD`, `config`, `hooks/`, `objects/`, etc. The virtual entries already cover the friendly view; surfacing the real entries in the same listing gives power users one-click access without the `raw/` indirection. The classifier (`path::classify`) returns `None` for any `.git/*` segment that isn't a virtual category name, so the volume hook falls through to the real-FS path automatically — no new code on the read side, the existing LocalPosixVolume handles it. Real entries whose name collides with a virtual category get filtered out: the deprecated `.git/branches/` directory (git itself stopped writing to it years ago) and `.git/worktrees/` in linked-worktree setups (its internals belong to git, not to the user) hide behind the friendly virtual entries. Power users who really want the raw bytes open the gitdir from the terminal. Sort order: real entries dirs-first alphabetical (matching the listing pipeline default), then the six virtual categories in fixed order (branches, tags, commits, stash, worktrees, submodules).
 
 **Decision (M4 follow-up)**: Per-file Modified dates inside snapshot listings via walk-once batching
 **Why**: The snapshot date ("when this commit landed") is the same value for every file inside a `branches/main/`, `commits/<sha>/`, etc. listing — semantically correct as a "frozen point in time", but useless as a "when did I last work on this?" hint. We now run a single rev-walk per `(commit_id, dir_path)` listing: from the snapshot commit backwards by commit time, first-parent only, diffing each commit against its first parent (gix's `Tree::changes()::for_each_to_obtain_tree`). Each `Change.location` is matched against the directory's top-level entries; the first-seen commit's committer time wins. The walk stops early when every entry is dated, after `MAX_COMMITS_PER_WALK` (1000), or when the rev-walk exits. Initial commits short-circuit. Cache is process-global, FIFO-bounded at 50 keys, content-addressable so it never invalidates. Bench: 100 entries × 5000 commits cold p95=21 ms (budget 200 ms), warm p95=2 µs. 50k-commit fixture sits inside the 500 ms budget too. Entries that don't surface within the cap fall back to the snapshot date so the cell never reads as blank.

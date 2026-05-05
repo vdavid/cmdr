@@ -112,8 +112,11 @@ fn root_listing_populates_size_with_item_counts() {
         "commits/ display says 'commits'"
     );
 
-    let raw = by_name["raw"];
-    assert!(raw.modified_at.is_some(), "raw/ Modified comes from .git/ mtime");
+    // Real `.git/*` entries land in the mixed listing too. HEAD is the
+    // canary: every fresh git init writes one.
+    let head = by_name.get("HEAD").expect("real .git/HEAD shows up in root");
+    assert!(!head.is_directory, "HEAD is a real file");
+    assert!(head.modified_at.is_some(), "real entries carry stat mtime");
 
     cleanup(&dir);
 }

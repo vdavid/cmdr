@@ -186,17 +186,7 @@ fn invalidate_virtual_listings(repo_root: &Path) {
 /// any prefix is a virtual portal listing.
 pub(crate) fn virtual_category_prefixes(dot_git: &Path) -> Vec<PathBuf> {
     use crate::file_system::git::path::Cat;
-    [
-        Cat::Branches,
-        Cat::Tags,
-        Cat::Commits,
-        Cat::Stash,
-        Cat::Worktrees,
-        Cat::Submodules,
-    ]
-    .into_iter()
-    .map(|c| dot_git.join(c.as_segment()))
-    .collect()
+    Cat::ALL.iter().map(|c| dot_git.join(c.as_segment())).collect()
 }
 
 /// Iterates the listing cache and emits `FullRefresh` for any local-volume
@@ -252,7 +242,7 @@ pub fn refresh_all_virtual_listings_after_toggle() {
         let dot_git = root.join(".git");
         prefixes.extend(virtual_category_prefixes(&dot_git));
         // Also catch `.git` itself: if a pane sits at `.git/`, the toggle
-        // changes its rendered children (virtual entries vs. raw).
+        // changes its rendered children (real + virtual vs. real-only).
         prefixes.push(dot_git);
     }
     refresh_local_listings_under(&prefixes);

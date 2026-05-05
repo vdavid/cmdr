@@ -2,16 +2,22 @@
 //!
 //! M1 ships repo detection, repo info, status, the `.git/*` watcher, and
 //! friendly-error mapping. M2 adds the virtual portal: `branches/`,
-//! `tags/`, `raw/` browsable as virtual trees, with cross-volume copy
-//! "for free" because git blobs flow through the existing `VolumeReadStream`
-//! abstraction.
+//! `tags/`, `commits/`, `stash/`, `worktrees/`, `submodules/` browsable
+//! as virtual trees, with cross-volume copy "for free" because git blobs
+//! flow through the existing `VolumeReadStream` abstraction. The portal
+//! root listing also surfaces real `.git/*` entries (HEAD, config,
+//! hooks/, objects/, refs/, …) alongside the virtual categories – the
+//! user sees everything in one place and navigates real entries through
+//! the standard real-FS path.
 //!
-//! ## Volume hook contract (M2)
+//! ## Volume hook contract
 //!
 //! `LocalPosixVolume` calls `git::try_route_*` after `resolve()`. Order is
 //! load-bearing: `resolve` normalizes the absolute path, then we classify
 //! against any enclosing `.git/`. If a virtual path matches we return its
-//! result; otherwise the volume falls through to real-FS code.
+//! result; otherwise (real `.git/*` entries, or paths outside any `.git/`)
+//! the classifier returns `None` and the volume falls through to real-FS
+//! code.
 //!
 //! All mutation methods short-circuit virtual paths via `path::is_virtual`
 //! and return `VolumeError::NotSupported`. Git mutations happen out-of-band
@@ -112,7 +118,9 @@ pub fn is_virtual_portal_enabled() -> bool {
 /// Volume hook for `list_directory`.
 ///
 /// Returns `Some(result)` when the path lives under a virtual `.git/...`
-/// portal; `None` when the caller should run real-FS code.
+/// portal; `None` when the caller should run real-FS code (real `.git/*`
+/// entries like `HEAD`, `config`, `objects/`, etc., and paths outside any
+/// `.git/`).
 pub fn try_route_listing(path: &Path) -> Option<Result<Vec<FileEntry>, VolumeError>> {
     if !is_virtual_portal_enabled() {
         return None;
@@ -127,14 +135,12 @@ pub fn try_route_listing(path: &Path) -> Option<Result<Vec<FileEntry>, VolumeErr
         Category(path::Cat::Stash) => stash::list_stashes(&root),
         Category(path::Cat::Worktrees) => worktrees::list_worktrees(&handle, &root),
         Category(path::Cat::Submodules) => submodules::list_submodules(&handle, &root),
-        Category(path::Cat::Raw) => virtual_listing::list_raw(&root, ""),
         Ref(cat, name) if cat.browses_commit_tree() => list_ref_tree(&handle, &root, *cat, name, ""),
         RefTree(cat, name, sub) if cat.browses_commit_tree() => list_ref_tree(&handle, &root, *cat, name, sub),
         // Worktrees and submodules are leaf entries with `redirectToPath`;
         // listing them as if they were directories returns empty (the
         // frontend redirects on Enter so this rarely fires in practice).
         Ref(_, _) | RefTree(_, _, _) => Ok(Vec::new()),
-        Raw(sub) => virtual_listing::list_raw(&root, sub),
     };
     Some(result.map_err(friendly_to_volume_error))
 }
@@ -150,12 +156,13 @@ pub fn try_route_metadata(path: &Path) -> Option<Result<FileEntry, VolumeError>>
 }
 
 /// Volume hook for `open_read_stream`. Returns `None` for paths that aren't
-/// virtual blobs.
+/// virtual blobs (real `.git/*` files fall through to the real-FS reader
+/// via the volume hook returning `None`).
 pub fn try_open_blob_stream(path: &Path) -> Option<Result<Box<dyn VolumeReadStream>, VolumeError>> {
     if !is_virtual_portal_enabled() {
         return None;
     }
-    let (virt, handle, root) = path::classify(path)?;
+    let (virt, handle, _root) = path::classify(path)?;
     use path::VirtualGitPath::*;
     let result = match &virt {
         RefTree(cat, name, sub) if cat.browses_commit_tree() => {
@@ -169,11 +176,6 @@ pub fn try_open_blob_stream(path: &Path) -> Option<Result<Box<dyn VolumeReadStre
             };
             tree::read_blob(&handle, blob_id)
                 .map(|bytes| Box::new(read_blob::GitBlobReadStream::new(bytes)) as Box<dyn VolumeReadStream>)
-        }
-        Raw(sub) if !sub.is_empty() => {
-            // Real-FS file under .git/raw/...
-            let real = virtual_listing::real_gitdir_path(&root, sub);
-            return Some(open_real_file_stream(&real));
         }
         _ => return Some(Err(VolumeError::NotSupported)),
     };
@@ -213,16 +215,11 @@ pub(crate) fn resolve_commit_for_cat(
                 .map_err(|_| FriendlyGitError::new(FriendlyGitErrorKind::CorruptRepo, name.to_string()))?;
             stash::resolve_stash_commit(handle, n)
         }
-        _ => Err(FriendlyGitError::new(
+        path::Cat::Worktrees | path::Cat::Submodules => Err(FriendlyGitError::new(
             FriendlyGitErrorKind::CorruptRepo,
             name.to_string(),
         )),
     }
-}
-
-fn open_real_file_stream(real: &Path) -> Result<Box<dyn VolumeReadStream>, VolumeError> {
-    let bytes = std::fs::read(real).map_err(VolumeError::from)?;
-    Ok(Box::new(read_blob::GitBlobReadStream::new(bytes)) as Box<dyn VolumeReadStream>)
 }
 
 fn friendly_to_volume_error(err: FriendlyGitError) -> VolumeError {
