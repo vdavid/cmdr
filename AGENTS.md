@@ -176,6 +176,12 @@ resilience, and common pitfalls.
 - When adding a new user-facing action, add it to `command-registry.ts` and `handleCommandExecute` in
   `routes/(main)/command-dispatch.ts`.
 - If you added a new Tauri command touching the filesystem, check `docs/architecture.md` § Platform constraints.
+- ❌ **Tauri APIs fail silently without permissions.** Whenever you call a new Tauri API from a window — `setMinSize`,
+  `setTitle`, `show`, plugin commands, anything new — add the matching permission to that window's capability file in
+  `src-tauri/capabilities/{default,settings,viewer}.json`. Without it, the call rejects with a generic "not allowed"
+  error and your feature looks broken with no obvious cause. Surface failures by `await`-ing the call inside a
+  `try/catch` and logging the error rather than `void`-ing the promise. See `src-tauri/capabilities/CLAUDE.md` for the
+  per-window split and naming conventions.
 - We use [mise](https://mise.jdx.dev/) to manage tool versions (Go, Node, etc.), pinned in `.mise.toml`. Shims are on
   PATH via `~/.bashrc` and `~/.zshenv`, so `go` and `node` should just work. If `go` is "not found", check that
   `~/.local/share/mise/shims` is on `$PATH`.

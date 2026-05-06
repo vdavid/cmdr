@@ -8,6 +8,8 @@
     "permissions": [
         "core:window:allow-close",
         "core:window:allow-set-focus",
+        "core:window:allow-set-min-size",
+        "core:window:allow-set-max-size",
         "core:event:default",
         "core:app:allow-set-app-theme",
         "core:webview:allow-internal-toggle-devtools",

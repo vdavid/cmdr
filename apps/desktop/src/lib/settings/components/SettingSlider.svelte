@@ -129,10 +129,13 @@
         width: 100%;
     }
 
-    /* The root needs explicit sizing for Ark UI slider to work */
+    /* The root needs explicit sizing for Ark UI slider to work.
+     * `min-width: 60px` lets the track shrink in narrow rows so the unit
+     * label after the number input still fits. The thumb stays interactive
+     * down to that floor; below it Ark UI handles the cramped layout. */
     :global(.slider-root) {
         flex: 1;
-        min-width: 120px;
+        min-width: 60px;
     }
 
     :global(.slider-control) {

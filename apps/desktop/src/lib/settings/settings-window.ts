@@ -2,11 +2,19 @@
  * Settings window management.
  * Creates and manages the settings window as a separate Tauri window.
  *
- * Dimensions scale with the user's effective text size: at 100% the values
- * below are the literal pixel dimensions; at 200% everything is doubled.
- * This keeps all settings rows visible and proportional. The settings page
- * itself updates `setMinSize`/`setMaxSize` live when the user moves the
- * slider — see `routes/settings/+page.svelte`.
+ * **Sizing model.** Width has two parts:
+ *
+ *   window_width = chrome (fixed) + content_area (scales with text size)
+ *
+ * The chrome covers the fixed-width sidebar (220 px) plus the content
+ * wrapper's horizontal padding (16 px each side = 32 px). Whatever the text
+ * scale, those values stay constant — only the readable content area scales,
+ * so a row reads with the same proportions at every size. Height scales
+ * fully (no fixed-height chrome inside).
+ *
+ * The settings page (`routes/settings/+page.svelte`) updates `setMinSize` /
+ * `setMaxSize` live when the user moves the slider so the constraints track
+ * the new scale. See that file for the live-update logic.
  */
 
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
@@ -16,12 +24,28 @@ import { getEffectiveScale } from '$lib/text-size.svelte'
 
 const log = getAppLogger('settings')
 
-/** Base dimensions at scale = 1 (the historical hard-coded values). */
-export const SETTINGS_BASE_WIDTH = 800
+/**
+ * Fixed-width chrome that does NOT scale with text size:
+ *   - Sidebar: 220 px (`.settings-sidebar { width: 220px }`)
+ *   - Content wrapper padding: `var(--spacing-lg)` × 2 = 32 px
+ *
+ * Keep in sync with `routes/settings/+page.svelte`'s `.settings-sidebar` and
+ * `.settings-content-wrapper` rules.
+ */
+export const SETTINGS_CHROME_WIDTH = 252
+
+/** Content-area width at scale = 1. Window total = chrome + content × scale. */
+export const SETTINGS_CONTENT_BASE_MIN_WIDTH = 348
+export const SETTINGS_CONTENT_BASE_MAX_WIDTH = 600
+
+/** Height scales fully — no fixed-height chrome inside the settings layout. */
 export const SETTINGS_BASE_HEIGHT = 600
-export const SETTINGS_BASE_MAX_WIDTH = 852
-export const SETTINGS_BASE_MIN_WIDTH = 600
 export const SETTINGS_BASE_MIN_HEIGHT = 400
+
+export const settingsMinWidth = (scale: number): number =>
+  SETTINGS_CHROME_WIDTH + SETTINGS_CONTENT_BASE_MIN_WIDTH * scale
+export const settingsMaxWidth = (scale: number): number =>
+  SETTINGS_CHROME_WIDTH + SETTINGS_CONTENT_BASE_MAX_WIDTH * scale
 
 /**
  * Opens the settings window, or focuses it if already open. When `section` is provided,
@@ -49,11 +73,13 @@ export async function openSettingsWindow(section?: string[]): Promise<void> {
   new WebviewWindow('settings', {
     url: section ? `/settings?section=${encodeURIComponent(JSON.stringify(section))}` : '/settings',
     title: 'Settings',
-    width: SETTINGS_BASE_WIDTH * scale,
+    // Open at max width so the content-area starts at its scaled cap; user can
+    // shrink down to `settingsMinWidth(scale)`.
+    width: settingsMaxWidth(scale),
     height: SETTINGS_BASE_HEIGHT * scale,
-    minWidth: SETTINGS_BASE_MIN_WIDTH * scale,
+    minWidth: settingsMinWidth(scale),
     minHeight: SETTINGS_BASE_MIN_HEIGHT * scale,
-    maxWidth: SETTINGS_BASE_MAX_WIDTH * scale,
+    maxWidth: settingsMaxWidth(scale),
     center: true,
     resizable: true,
     decorations: true,

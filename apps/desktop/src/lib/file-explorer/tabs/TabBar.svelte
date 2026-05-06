@@ -143,12 +143,20 @@
     .tab-bar {
         display: flex;
         align-items: end;
-        height: var(--spacing-tab-bar-height);
-        min-height: var(--spacing-tab-bar-height);
-        max-height: var(--spacing-tab-bar-height);
+        /* Total height = scaled tab band + 3 px non-scaled top spacer.
+         * The spacer is bg-secondary (same as the bar), so it visually reads
+         * as a slim continuation of the (fixed-height) window title-bar above.
+         * Tabs anchor to the bar's content-area bottom (align-items: end);
+         * with `box-sizing: border-box`, the padding-top reduces the content
+         * area to exactly `--spacing-tab-bar-height`, so the colored top edge
+         * of the active tab sits 3 px below the title-bar at every scale. */
+        height: calc(var(--spacing-tab-bar-height) + 3px);
+        min-height: calc(var(--spacing-tab-bar-height) + 3px);
+        max-height: calc(var(--spacing-tab-bar-height) + 3px);
         background-color: var(--color-bg-secondary);
         border-bottom: 1px solid var(--color-border);
-        padding: 0 var(--spacing-xxs);
+        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- 3px is a deliberate non-scaling visual offset, no spacing token fits */
+        padding: 3px var(--spacing-xxs) 0;
         overflow: hidden;
     }
 
@@ -170,12 +178,11 @@
         min-width: 32px;
         max-width: 180px;
         flex: 1 1 0;
-        /* Scales with --font-scale so the colored top of the active tab stays
-         * flush below the (fixed-height) window title-bar at every scale.
-         * Without this, the bar grew but the tab kept a fixed 24px height,
-         * pushing the colored top down at large scales / behind the title-bar
-         * at small scales. */
-        height: calc(24px * var(--font-scale));
+        /* Tabs fill the entire bar height. With `.tab-bar { align-items: end }`
+         * and the tab matching the bar height, the colored top edge of the
+         * active tab is always at the bar's top — flush below the (fixed)
+         * window title-bar at every text scale. */
+        height: var(--spacing-tab-bar-height);
         padding: 0 var(--spacing-sm);
         border: none;
         border-radius: var(--radius-sm) var(--radius-sm) 0 0;
@@ -207,9 +214,9 @@
         background-color: color-mix(in oklch, var(--color-bg-primary), var(--color-accent) 4%);
         color: var(--color-text-primary);
         font-weight: 500;
-        /* Scales with --font-scale; mirrors `.tab { height }` plus 1px to cover
-         * the tab-bar bottom border. */
-        height: calc(25px * var(--font-scale));
+        /* Bar height + 1px so the active tab covers the tab-bar bottom border;
+         * the extra px hangs below via `margin-bottom: -1px`. */
+        height: calc(var(--spacing-tab-bar-height) + 1px);
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin-bottom: -1px;
         z-index: 1;

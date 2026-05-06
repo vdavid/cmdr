@@ -76,7 +76,7 @@
     }
 </script>
 
-<div class="settings-content">
+<div>
     <!-- Summary pages for top-level sections -->
     {#if showSummary}
         <SectionSummary sectionName={selectedSection[0]} onNavigate={handleNavigate} />
@@ -185,9 +185,11 @@
 </div>
 
 <style>
-    .settings-content {
-        max-width: 600px;
-    }
+    /* No content max-width: settings rows fill the wrapper, which is window
+     * width minus the fixed sidebar (220 px) and content padding (32 px).
+     * Window min/max in `lib/settings/settings-window.ts` make the available
+     * content area scale proportionally with text size, so the right edge of
+     * the content always snaps to the right edge of the window. */
 
     section {
         margin-bottom: var(--spacing-lg);

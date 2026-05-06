@@ -28,7 +28,21 @@ for available permission identifiers.
 ## Gotchas
 
 **Gotcha**: Missing permissions fail silently at runtime.
-**Why**: Tauri doesn't crash or warn visibly when a webview calls an API it lacks permission for. The call just returns a generic "not allowed" error. If a new Tauri API call (e.g., `setFocus`, `setTitle`) is added to a window's frontend code, the corresponding permission must be added here or it will silently fail. Check the browser console for "not allowed" errors.
+**Why**: Tauri doesn't crash or warn visibly when a webview calls an API it lacks permission for. The call just rejects its promise with a generic
+`window.set_X not allowed. Permissions associated with this command: core:window:allow-set-X` error.
+If a new Tauri API call (e.g., `setFocus`, `setTitle`, `setMinSize`, `setMaxSize`, plugin commands) is added to a window's frontend code, the matching permission must be added to that window's capability file (`default.json` for the main window, `settings.json` for settings, `viewer.json` for viewer windows). Without it the call rejects with no UI feedback — the feature just looks broken.
+
+**Mitigation pattern**: any Tauri call that affects the UI shape should be `await`-ed inside `try/catch` with a `log.warn` on failure, never `void`-ed. The instant failure log is what catches missing permissions during development before the user does. Pattern:
+
+```typescript
+try {
+  await win.setMaxSize(maxSize)
+} catch (e) {
+  log.warn('setMaxSize failed: {error}', { error: String(e) })
+}
+```
+
+This same pattern caught the missing `core:window:allow-set-min-size` / `allow-set-max-size` permissions when `routes/settings/+page.svelte` started using them for live text-size resizing — see `AGENTS.md` § Critical rules for the higher-level callout.
 
 **Gotcha**: `opener:allow-open-path` needs explicit glob patterns for hidden files.
 **Why**: The default `opener:allow-open-path` permission doesn't match dotfiles. The `"**/*"` glob excludes files starting with `.`, so a separate `"**/.*"` pattern is required. Without it, opening hidden files from the file manager would silently fail.

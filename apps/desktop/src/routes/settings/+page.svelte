@@ -8,11 +8,7 @@
     import { initializeShortcuts, flushPendingSave as flushShortcutsSave } from '$lib/shortcuts'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initTextSize, cleanupTextSize, getEffectiveScale } from '$lib/text-size.svelte'
-    import {
-        SETTINGS_BASE_MAX_WIDTH,
-        SETTINGS_BASE_MIN_HEIGHT,
-        SETTINGS_BASE_MIN_WIDTH,
-    } from '$lib/settings/settings-window'
+    import { SETTINGS_BASE_MIN_HEIGHT, settingsMaxWidth, settingsMinWidth } from '$lib/settings/settings-window'
     import { getMatchingSections } from '$lib/settings/settings-search'
     import { loadLastSettingsSection, saveLastSettingsSection } from '$lib/app-status-store'
     import { getAppLogger } from '$lib/logging/logger'
@@ -45,9 +41,14 @@
     /**
      * Settings-window dimensions track the effective text scale: at 100% the
      * base values match the historical layout; at other scales the min/max
-     * grow proportionally so all rows stay visible. Tauri has no
-     * "no max height" knob — we set a very large value (50_000 logical px)
-     * which is effectively unbounded for practical use.
+     * grow proportionally so all rows stay visible. Tauri has no "no max
+     * height" knob — we set a very large value (50_000 logical px) which is
+     * effectively unbounded for practical use.
+     *
+     * Standard NSWindow clamping behavior: when the new constraints leave the
+     * current frame out of bounds, macOS clamps it to fit. Otherwise the
+     * frame stays where the user put it. The `appearance.textSize` slider
+     * itself debounces re-measurement, so the window doesn't thrash.
      *
      * Reading `getEffectiveScale()` inside `$effect` makes this re-run on
      * every scale change (system Accessibility settle or user slider move).
@@ -55,10 +56,20 @@
     $effect(() => {
         const scale = getEffectiveScale()
         const win = getCurrentWindow()
-        const minSize = new LogicalSize(SETTINGS_BASE_MIN_WIDTH * scale, SETTINGS_BASE_MIN_HEIGHT * scale)
-        const maxSize = new LogicalSize(SETTINGS_BASE_MAX_WIDTH * scale, 50_000)
-        void win.setMinSize(minSize)
-        void win.setMaxSize(maxSize)
+        const minSize = new LogicalSize(settingsMinWidth(scale), SETTINGS_BASE_MIN_HEIGHT * scale)
+        const maxSize = new LogicalSize(settingsMaxWidth(scale), 50_000)
+        // Awaited rather than fire-and-forget so a missing capability surfaces
+        // as a warn log instead of silently swallowing the rejection. Tauri
+        // rejects without these perms in `capabilities/settings.json`:
+        // `core:window:allow-set-min-size`, `core:window:allow-set-max-size`.
+        void (async () => {
+            try {
+                await win.setMinSize(minSize)
+                await win.setMaxSize(maxSize)
+            } catch (e) {
+                log.warn('Settings window setMinSize/setMaxSize failed: {error}', { error: String(e) })
+            }
+        })()
     })
 
     // Handle search input
