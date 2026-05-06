@@ -5,7 +5,7 @@
  * The `prepareErrorReportPreview` IPC is mocked so the test runs deterministically.
  */
 
-import { describe, it, vi, expect, beforeEach } from 'vitest'
+import { describe, it, vi, expect, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import ErrorReportDialog from './ErrorReportDialog.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
@@ -57,6 +57,15 @@ Object.defineProperty(navigator, 'clipboard', {
 describe('ErrorReportDialog', () => {
   beforeEach(() => {
     closeErrorReportDialog()
+    // Tests run in Vitest's `test` mode where `import.meta.env.DEV` is true
+    // by default. Pretend we're a release build so the dialog's dev-mode
+    // Send-disable doesn't shadow the assertions below — there's a separate
+    // test ("disables Send in dev builds") for the dev-disable behavior.
+    vi.stubEnv('DEV', false)
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   it('default render has no a11y violations', async () => {
