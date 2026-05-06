@@ -5,683 +5,431 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Add dynamic text size slider in Settings (75–150%, ⌘+/⌘-/⌘0 shortcuts)
+  ([a326bca6](https://github.com/vdavid/cmdr/commit/a326bca6),
+  [ca78382d](https://github.com/vdavid/cmdr/commit/ca78382d),
+  [e207effb](https://github.com/vdavid/cmdr/commit/e207effb))
+- Add "Open with" and system Services to menus ([71e6061b](https://github.com/vdavid/cmdr/commit/71e6061b))
+- Add iCloud Drive cloud actions to context menu ([01bc0dae](https://github.com/vdavid/cmdr/commit/01bc0dae))
+- Split Brief/Full menu items to per-pane View > Left/Right submenus
+  ([7f4d123d](https://github.com/vdavid/cmdr/commit/7f4d123d))
+- Add networking toggle, lazy mDNS, no more local-network prompt at launch
+  ([d2ae5170](https://github.com/vdavid/cmdr/commit/d2ae5170))
+- Faster external drive detection, fixes USB-C dock invisibility
+  ([6527d850](https://github.com/vdavid/cmdr/commit/6527d850))
+- Drag & drop matches Finder (same-volume Move, cross-volume Copy, modifier overrides)
+  ([64db140f](https://github.com/vdavid/cmdr/commit/64db140f))
+- Drag & drop "+" badge tracks the actual op, no flicker ([cf8e3818](https://github.com/vdavid/cmdr/commit/cf8e3818),
+  [dcfe439e](https://github.com/vdavid/cmdr/commit/dcfe439e))
+- Drag files into terminals (Warp etc.) ([97d10675](https://github.com/vdavid/cmdr/commit/97d10675))
+- Add Trash/Delete toggle to delete dialog ([778296dd](https://github.com/vdavid/cmdr/commit/778296dd))
+- Always show Copy/Move toggle in transfer dialog ([450363e6](https://github.com/vdavid/cmdr/commit/450363e6))
+- Default to Full mode on fresh installs ([57ba47c1](https://github.com/vdavid/cmdr/commit/57ba47c1))
+- File list typography polish: aligned dates, aligned headers, fade selection, clamped Ext
+  ([474f7414](https://github.com/vdavid/cmdr/commit/474f7414),
+  [e9aec7bd](https://github.com/vdavid/cmdr/commit/e9aec7bd),
+  [88f56367](https://github.com/vdavid/cmdr/commit/88f56367),
+  [c5698998](https://github.com/vdavid/cmdr/commit/c5698998))
+- Add size-color palette setting (Rainbow / Accent / None) ([5fe0d77e](https://github.com/vdavid/cmdr/commit/5fe0d77e))
+- Restore double-click-to-zoom on macOS title bar ([f95441dc](https://github.com/vdavid/cmdr/commit/f95441dc))
+- Focus search when Settings opens ([cb88685d](https://github.com/vdavid/cmdr/commit/cb88685d))
+- Hand cursor on License dialog support and Buy links ([554b3801](https://github.com/vdavid/cmdr/commit/554b3801))
+- Show real .git/\* files alongside virtual categories in git portal
+  ([33219321](https://github.com/vdavid/cmdr/commit/33219321))
+- Per-file Modified dates inside git portal snapshots ([3cead878](https://github.com/vdavid/cmdr/commit/3cead878))
+- Cache git status per index change, near-instant repeat navs
+  ([19f0e98e](https://github.com/vdavid/cmdr/commit/19f0e98e))
+- Error-report preview now lands under 200 ms on big log dirs (was 30+ s)
+  ([f24f255c](https://github.com/vdavid/cmdr/commit/f24f255c))
+- Send error reports in dev too, tagged \[DEV\] ([63ebabf6](https://github.com/vdavid/cmdr/commit/63ebabf6))
+- Persistent "Save bundle to disk" toast with Reveal in Finder
+  ([0debff1c](https://github.com/vdavid/cmdr/commit/0debff1c))
+- getcmdr.com comments follow live theme changes ([7333b13c](https://github.com/vdavid/cmdr/commit/7333b13c))
+
+### Fixed
+
+- Fix Intel DMG download 404 ([19f797da](https://github.com/vdavid/cmdr/commit/19f797da))
+- Fix crash on virtual git portal toggle; empty git roots no longer render as 1970-01-01
+  ([b266737e](https://github.com/vdavid/cmdr/commit/b266737e))
+- Fix folder size column losing value after rename ([b1d032c1](https://github.com/vdavid/cmdr/commit/b1d032c1),
+  [d7e08e16](https://github.com/vdavid/cmdr/commit/d7e08e16))
+
+### Non-app
+
+- Big dead-code cleanup, 355 lines across 22 files ([a6b46131](https://github.com/vdavid/cmdr/commit/a6b46131))
+- Bump GitHub Actions to Node 24 ([2f02fa7e](https://github.com/vdavid/cmdr/commit/2f02fa7e))
+- Replace claude-md-staleness with claude-md-reminder (fires in-loop, not weeks later)
+  ([60e30be5](https://github.com/vdavid/cmdr/commit/60e30be5))
+
 ## [0.16.0] - 2026-05-01
 
 ### Added
 
-- **SMB live reconnect.** When the smb2 session for a network share drops, Cmdr now stays in the folder and runs a
-  5-attempt backoff cycle (2/4/8/16/30 s, 60 s total) right inside the pane. Both panes on the same share share a single
-  cycle; success re-runs `loadDirectory` automatically; give-up swaps to the existing unreachable banner with a working
-  Disconnect button. The session rebuilds in place — same `SmbVolume`, same `volumeId`, same Full Disk Access
-  permissions, no re-auth — because connection params now cache for the volume's lifetime. Concurrent operations wait on
-  a single-flight reconnect lock instead of dog-piling the server. Auth failure re-pulls credentials from the secret
-  store and retries once before giving up. Unmount mid-cycle short-circuits cleanly so a fresh session never lands in an
-  orphaned volume. The reconnect view shows an attempt counter and a progress bar driven by `requestAnimationFrame`, and
-  three buttons with disambiguating tooltips: Retry now, Cancel, Disconnect
+- Add SMB live reconnect, 5-attempt backoff right in the pane, no re-auth
   ([d96bc4b4](https://github.com/vdavid/cmdr/commit/d96bc4b4),
-  [0c1d3680](https://github.com/vdavid/cmdr/commit/0c1d3680)).
-- **Disconnect actually disconnects.** Previously the Disconnect button in `SmbReconnectingView` and the gave-up
-  unreachable banner behaved like a fancy Cancel. Now it runs a real per-volume unmount: `diskutil unmount` on macOS
-  (FSEvents picks up the unmount and tears down `VolumeManager`), `smb2`-session drop on Linux. If `diskutil` returns
-  "Resource busy" because Finder has the volume open, the user sees an actionable toast instead of silent failure
-  ([c5a410aa](https://github.com/vdavid/cmdr/commit/c5a410aa)).
-- **Check for updates from inside the app.** Two new affordances, both reading the same shared update state:
-  - **Settings > Updates**: a "Check for updates" button at the top of the section, disabled while a check is in flight,
-    with status text below cycling through `Checking…` → `No updates found. Current version: vX.Y.Z` →
-    `Update found, downloading vX.Y.Z (current: vA.B.C)…` → `Installing vX.Y.Z (current: vA.B.C)…`. On error, a "Send
-    error report" link opens the error reporter pre-populated with the failure context.
-  - **Cmdr menu > Check for updates…** (right after "Enter license key…"): same status flow, surfaced as a toast that
-    supersedes itself as the phase changes and dismisses cleanly when the persistent restart toast takes over.
-
-  The macOS update path now exposes a separate `installing` substate — the custom updater runs `download_update` and
-  `install_update` as two distinct Tauri invokes, so the UI can say "Installing" instead of a misleading "Downloading"
-  during the sync-into-bundle step ([00470b96](https://github.com/vdavid/cmdr/commit/00470b96)).
-
-- **Human-friendly size units toggle.** New `Settings > Listing > Human-friendly size units` switch. Default ON shows
-  `1.02 MB`-style values; OFF shows raw bytes with thousands separators for precise comparison. Affects the Full list
-  size column and the SelectionInfo size readout. Tooltips that already showed both formats are unchanged on purpose,
-  and so are volume/disk space, dialogs, search results, and the drive-indexing section
-  ([c8cc1008](https://github.com/vdavid/cmdr/commit/c8cc1008)).
-- **Symlink-aware size hint.** Folders containing symlinks anywhere in their tree now show a small info icon next to the
-  size with the tooltip "This folder contains symlinks. Symlinked content is not counted in the total to avoid double
-  counting." Cmdr's recursive size aggregation matches `du` and Finder by intentionally skipping symlink targets, so a
-  folder of only symlinks reports 0 bytes — surfacing that fact removes a frequent "huh?" moment. The flag
-  (`recursive_has_symlinks`) propagates bottom-up alongside size totals; the index schema bumped to v10 to carry it
-  ([0d83a7b2](https://github.com/vdavid/cmdr/commit/0d83a7b2)).
-- **AI download toast: clear close affordance.** The X on the "Downloading AI model…" toast now has the tooltip "Close
-  this notification — the download will continue in the background", and clicking it actually keeps the toast hidden for
-  the rest of the download run — previously `ai-toast-sync` re-added it within ~200 ms because the next
-  `ai-download-progress` event re-ran its `$effect`. Cancel still cancels
-  ([97f1cee3](https://github.com/vdavid/cmdr/commit/97f1cee3)).
-- **Rename: skip warning for equivalent file extensions.** Renaming `foo.jpg` → `foo.jpeg` (or `htm`/`html`,
-  `yml`/`yaml`, `tif`/`tiff`, `mpg`/`mpeg`, `mid`/`midi`, `aif`/`aiff`, `qt`/`mov`, `md`/`markdown`/`txt`) no longer
-  trips the "you're changing the file type" confirmation. Cross-group changes still warn
-  ([55592ba4](https://github.com/vdavid/cmdr/commit/55592ba4)).
-- **Git browser: real `.git/*` files alongside virtual entries.** Opening `.git/` now shows the real on-disk contents
-  (HEAD, config, hooks/, info/, objects/, packed-refs, refs/, ORIG_HEAD, …) sorted dirs-first alphabetical, followed by
-  the six virtual categories (branches, tags, commits, stash, worktrees, submodules) in fixed order. Real entries
-  navigate through the standard real-FS path; virtual entries route to the git module's tree-walking code. The previous
-  `raw/` escape hatch is gone — its contents are now one click away instead of two. The deprecated real `.git/branches/`
-  directory and the real `.git/worktrees/` in linked-worktree setups stay hidden behind the friendly virtual entries
-  with the same name.
+  [0c1d3680](https://github.com/vdavid/cmdr/commit/0c1d3680))
+- Disconnect button now actually unmounts (toast if Finder's holding the volume)
+  ([c5a410aa](https://github.com/vdavid/cmdr/commit/c5a410aa))
+- Add Check for updates from inside app ([00470b96](https://github.com/vdavid/cmdr/commit/00470b96))
+- Add human-friendly size units toggle ([c8cc1008](https://github.com/vdavid/cmdr/commit/c8cc1008))
+- Add symlink-aware size hint, info icon explains exclusion (matches du and Finder)
+  ([0d83a7b2](https://github.com/vdavid/cmdr/commit/0d83a7b2))
+- AI download toast X stays closed for the rest of the download
+  ([97f1cee3](https://github.com/vdavid/cmdr/commit/97f1cee3))
+- Skip rename warning for equivalent extensions (jpg/jpeg, htm/html, yml/yaml, tif/tiff, etc.)
+  ([55592ba4](https://github.com/vdavid/cmdr/commit/55592ba4))
 
 ### Fixed
 
-- **Brief network blips no longer kick you out of the folder.** A few seconds of bad WiFi on a NAS share used to trigger
-  the directory-eviction poll and "navigate to nearest valid parent" mid-session. The `pathExists` Tauri command now
-  returns a structured `TimedOut<bool>` result and is SMB-aware (a `Disconnected` `SmbVolume` reports timed-out
-  instantly, no syscall timeout fires). The eviction logic in `FilePane` only walks up on a real not-found
-  ([48ac9bf8](https://github.com/vdavid/cmdr/commit/48ac9bf8)).
-- **Update toast no longer interrupts onboarding.** New `isOnboarded` flag (default `false`) gates the "restart to
-  update" toast during first-launch onboarding. Same gate covers the FDA-revoked re-prompt path. Background download
-  still runs — only the toast surface is deferred — so the update is ready the moment onboarding finishes
-  ([ffeb7d96](https://github.com/vdavid/cmdr/commit/ffeb7d96)).
-- **Indexer no longer triggers macOS permission popups during onboarding.** Recursive scan from `/` was being kicked off
-  in `setup()` regardless of FDA state, stacking iCloud/Photos/etc. native dialogs over our in-app explanation modal.
-  The indexer now waits until the user has either granted FDA (and restarted, where the launch-time OS check passes the
-  gate) or explicitly clicked Deny ([59aca717](https://github.com/vdavid/cmdr/commit/59aca717)).
-- **SMB reconnect: runaway subscribe loop after hot reload.** Both panes stuck on "Loading…" with thousands of
-  subscribe/unsubscribe pairs per second from the reconnect manager. Caused by `SvelteMap.get` reads inside a Svelte
-  `$effect` becoming tracked deps that the manager's own writes invalidated, looping forever. Map-mutating methods now
-  run inside `untrack()` so caller `$effect`s don't pick up internal reads
-  ([91bc2e46](https://github.com/vdavid/cmdr/commit/91bc2e46)).
-- **SMB reconnect: `onSuccess` could fire twice in one cycle.** Both `runAttempt`'s success branch and the
-  `smb-connection-changed` listener could call `handleDirect`, double-triggering `loadDirectory` in `FilePane`. The
-  handler is now guarded by a baseline-shape check and is safely idempotent
-  ([3f6b1b0d](https://github.com/vdavid/cmdr/commit/3f6b1b0d)).
-
-### Non-app
-
-- **Release script** now stages `oxfmt` auto-fixes alongside the version bumps (via `git add -u` after the bump-stage
-  plus a second `oxfmt --ci` pass), so any pre-release `.claude/commands/*.md` reformats end up in the release commit
-  instead of failing CI on the release tag ([d523e236](https://github.com/vdavid/cmdr/commit/d523e236)).
-- Three pre-existing eslint warnings the SMB work surfaced when running the full check matrix end-to-end — unused
-  helper, async-without-await, redundant optional chaining — fixed so CI is green again
-  ([5e4eb307](https://github.com/vdavid/cmdr/commit/5e4eb307)).
-- Tier-3 a11y test for `UpdateCheckToastContent`; new module-level CLAUDE.md section in `file-explorer/network/` that
-  ties together the four moving parts of the SMB live-reconnect dance (BE event → volume-store patch → reconnect manager
-  → FilePane effect) so the next agent doesn't have to reverse-engineer it
-  ([e8656bb9](https://github.com/vdavid/cmdr/commit/e8656bb9),
-  [a3638ee7](https://github.com/vdavid/cmdr/commit/a3638ee7)).
-- Skip the flaky `git-portal toggle` E2E (the toggle round-trip was too racy for the 30 s Playwright budget); Rust unit
-  tests cover the underlying behavior. Retire when we have a "wait for portal state to settle" hook
-  ([129c27ce](https://github.com/vdavid/cmdr/commit/129c27ce)).
+- Fix temp network issues kicking users out of folders ([48ac9bf8](https://github.com/vdavid/cmdr/commit/48ac9bf8))
+- Suppress "Restart to update" toast during first-launch onboarding
+  ([ffeb7d96](https://github.com/vdavid/cmdr/commit/ffeb7d96))
+- Fix indexer triggering macOS perm popups while onboarding: now waits for FDA
+  ([59aca717](https://github.com/vdavid/cmdr/commit/59aca717))
+- Fix SMB reconnect runaway subscribe loop after hot reload ([91bc2e46](https://github.com/vdavid/cmdr/commit/91bc2e46))
+- Fix SMB reconnect double-triggering loadDirectory ([3f6b1b0d](https://github.com/vdavid/cmdr/commit/3f6b1b0d))
 
 ## [0.15.0] - 2026-04-29
 
 ### Added
 
-- **Git browser.** Cmdr now treats every git repo as first-class. Five things you can do that you couldn't before:
-  - **See branch + dirty state at a glance.** Open a folder inside a git clone and the breadcrumb shows a pill with the
-    current branch, ahead/behind counts vs upstream, and a dirty indicator. Detached HEAD shows the short SHA; brand-new
-    repos show "no commits yet". The pill updates live as you commit, fetch, or branch from a terminal, no polling, no
-    refresh button.
-  - **Browse history as folders.** Step into `.git` and see `branches/`, `tags/`, `commits/`, `stash/`, `worktrees/`,
-    `submodules/`, plus a `raw/` escape hatch for the real `.git` internals. Drill into `branches/main/` (or
-    `commits/<sha>/`) and you're browsing the working tree at that point in history. Refs with slashes like
-    `feature/foo` render as one entry, not nested folders. Breadcrumb segments inside the portal use a dedicated
-    git-portal color so it's clear you're in history-land.
-  - **Pluck a single file from another branch or commit.** Drag a file out of the history pane into the working tree.
-    Cmdr preserves the bytes and the executable bit. No `git checkout`, no risk of touching anything else. Type or paste
-    any SHA directly to reach unreachable commits, even in shallow clones.
-  - **Open linked worktrees and submodules with one keypress.** Each shows as a redirect entry; opening it jumps
-    straight to its working dir, which is itself a git portal. Turtles all the way down.
-  - **Show per-file git status in Full mode.** Optional column with single-glyph codes (`M`, `A`, `D`, `?`, `!`) and
-    long-form `aria-label`s for screen readers. Off by default; enable in **Settings > General > Git**
-    ([314e9ae2](https://github.com/vdavid/cmdr/commit/314e9ae2),
-    [897df2c7](https://github.com/vdavid/cmdr/commit/897df2c7),
-    [1ebcfa1c](https://github.com/vdavid/cmdr/commit/1ebcfa1c)).
-- **Meaningful Modified and Size columns inside the git portal.** Every virtual entry carries a real timestamp (branch
-  tip date, tag date, commit date, stash creation date, snapshot date for files inside a tree). The Size column borrows
-  loose semantics so each row says something useful: `+12 / -3` ahead/behind for branches, `5 files` for commits,
-  `on main` for stashes and worktrees, short SHAs for tags and submodules, item counts for category roots. Tooltips and
-  `aria-label`s carry the long-form sentence ([31aec35c](https://github.com/vdavid/cmdr/commit/31aec35c)).
-- **Friendly errors for the git browser.** Whatever goes wrong (the repo's damaged, the worktree's orphaned, the commit
-  is beyond a shallow boundary, the `.git` folder isn't readable, the file's too big to load from history, another git
-  command holds the index), Cmdr shows a warm, plain-language explanation in the error pane plus a concrete next step,
-  not a raw stack trace ([19d5b075](https://github.com/vdavid/cmdr/commit/19d5b075),
-  [af64689f](https://github.com/vdavid/cmdr/commit/af64689f)).
-- **Toggle each piece independently.** Three switches in **Settings > General > Git**: show the repo chip, show the
-  status column, and show the virtual portal. Disabling the portal lets `.git` browse like any other folder; the toggle
-  invalidates open listings live so already-visible panes refresh on the spot
+- Add git browser: live branch/dirty pill in breadcrumb, browse `.git/branches/`, `tags/`, `commits/`, `stash/`,
+  `worktrees/`, `submodules/` as folders, drag any file out of any branch or commit into working tree (preserves bytes
+  and exec bit, no `git checkout`), optional per-file status column with M/A/D/?/! glyphs
+  ([314e9ae2](https://github.com/vdavid/cmdr/commit/314e9ae2),
+  [897df2c7](https://github.com/vdavid/cmdr/commit/897df2c7),
+  [1ebcfa1c](https://github.com/vdavid/cmdr/commit/1ebcfa1c))
+- Meaningful Modified and Size columns in git portal (`+12 / -3` for branches, `5 files` for commits, `on main` for
+  stashes, short SHAs for tags) ([31aec35c](https://github.com/vdavid/cmdr/commit/31aec35c))
+- Add friendly errors for git browser ([19d5b075](https://github.com/vdavid/cmdr/commit/19d5b075),
+  [af64689f](https://github.com/vdavid/cmdr/commit/af64689f))
+- Add Git toggles in Settings (repo chip, status column, virtual portal)
   ([19d5b075](https://github.com/vdavid/cmdr/commit/19d5b075),
-  [af64689f](https://github.com/vdavid/cmdr/commit/af64689f)).
+  [af64689f](https://github.com/vdavid/cmdr/commit/af64689f))
 
 ### Fixed
 
-- Virtual `.git/<category>/...` paths no longer kick the user back to the parent after a few seconds. The frontend's
-  externally-deleted-directory poll and the backend's `notify` watcher both used to assume the listed path exists on
-  disk; both now skip the seven virtual git categories and rely on the per-repo `.git/HEAD` and `refs/` watchers for
-  invalidation ([bfcbfa48](https://github.com/vdavid/cmdr/commit/bfcbfa48)).
-
-### Non-app
-
-- Release process docs now require a runner sanity check 30 s after pushing the tag, watch the standalone CI run in
-  parallel, and verify the public surface (DMG count, `latest.json` version) once the release run reports complete.
-  Lifted from the prvw release flow.
+- Fix virtual `.git/<category>/...` paths kicking pane back to parent
+  ([bfcbfa48](https://github.com/vdavid/cmdr/commit/bfcbfa48))
 
 ## [0.14.0] - 2026-04-26
 
 ### Added
 
-- **Error reports.** When something goes wrong, you can now ship a redacted diagnostic bundle (manifest + recent
-  debug-level log tail) to the maintainer with one click. Two flows: **Help > Send error report…** (or the new button on
-  error toasts) opens a preview dialog so you see exactly what's about to be sent, and clicking **Send** is the consent;
-  no setting required. Optionally, opt in to auto-send via the new `updates.errorReports` setting (default off) — when
-  enabled, user-visible errors fire a debounced auto-send and a toast lets you view the bundle or change settings. Every
-  bundle goes through the shared path-shape-preserving redactor (`Documents/<file>.pdf` style). Reports are anonymous —
-  the short `ERR-XXXXX` ID is the only correlation handle.
-- **Log storage cap setting.** New `advanced.maxLogStorageMb` (default 200 MB, range 0–5000) controls how much disk
-  space the rotated log files use. The file target now defaults to **debug** level so error reports carry useful
-  context. Set to `0` to disable log storage entirely (and with it, the ability to send error reports).
-- **Per-output log level filtering.** Stdout stays at INFO with optional `RUST_LOG`-style per-module overrides while the
-  on-disk file chain always captures DEBUG, so error reports carry useful context without flooding the terminal. The
-  `developer.verboseLogging` toggle now flips the stdout threshold at runtime (Info ↔ Debug) without losing records
-  mid-swap. Replaces `tauri-plugin-log` with a hand-rolled `fern` Dispatch tree + `file-rotate` for native size+count
-  rotation ([319d5d37](https://github.com/vdavid/cmdr/commit/319d5d37)).
+- Add error reports: one-click redacted diagnostic bundle via Help menu or error toast, with optional auto-send and a
+  short ERR-XXXXX correlation ID ([6d904aa6](https://github.com/vdavid/cmdr/commit/6d904aa6),
+  [51b6102a](https://github.com/vdavid/cmdr/commit/51b6102a))
+- Add log storage cap setting (default 200 MB, 0 disables log storage and error reports)
+  ([f3dbf514](https://github.com/vdavid/cmdr/commit/f3dbf514))
+- Add per-output log filtering, with a verbose-logging toggle in Settings
+  ([319d5d37](https://github.com/vdavid/cmdr/commit/319d5d37))
 
 ### Fixed
 
-- Auto-dispatcher race when an error fired before the Tauri `AppHandle` was wired up — the debounce window opened with
-  no handle to send the report, so the bundle never shipped. Late-arriving handles now pick up active windows correctly
-  ([f069a712](https://github.com/vdavid/cmdr/commit/f069a712)).
-- Size column icons now align flush with the cell's right edge instead of drifting a pixel inwards
-  ([1d5f661a](https://github.com/vdavid/cmdr/commit/1d5f661a)).
+- Fix auto-sent error reports dropping when fired before the Tauri handle exists
+  ([f069a712](https://github.com/vdavid/cmdr/commit/f069a712))
+- Align Size column icons flush right ([1d5f661a](https://github.com/vdavid/cmdr/commit/1d5f661a))
 
 ### Non-app
 
-- Bumped 24 npm packages (patch + minor; TypeScript held at 5.9). `pnpm dedupe` collapsed duplicate `postcss` and
-  `@playwright/test` versions, fixing stylelint false positives in inline `style="..."` attributes and a `Page`-type
-  mismatch in website-typecheck. Split `resolveValidPath` into a new `path-resolution.ts` to break an
-  `app-status-store.ts` ↔ `path-navigation.ts` import cycle. Per-test unique paths fix a `rust-tests-linux` collision
-  under higher parallelism ([b1a53acb](https://github.com/vdavid/cmdr/commit/b1a53acb)).
-- New `error-report` endpoint on the api server with R2 presigned-URL handoff, daily eviction sweep, and a dedicated
-  `ERROR_REPORT_META` KV namespace separate from `LICENSE_CODES`
+- Add error-report endpoint on api server with R2 presigned-URL handoff
   ([1a2ea1c0](https://github.com/vdavid/cmdr/commit/1a2ea1c0),
-  [f78f76af](https://github.com/vdavid/cmdr/commit/f78f76af)).
-- Shared PII redactor for both crash files and error-report bundles — single source of truth so log lines redact
-  identically wherever they're inspected. Adds a per-bundle salted-hash mode (`<dir:abc123>` / `<file:abc123>`) for
-  in-bundle correlation without cross-bundle linkability, plus an `mtp_owner` pattern that strips `<Owner>'s <Model>`
-  shapes while preserving the model string for diagnostic context
+  [f78f76af](https://github.com/vdavid/cmdr/commit/f78f76af))
+- Add shared PII redactor for crash files and error-report bundles
   ([1d719f36](https://github.com/vdavid/cmdr/commit/1d719f36),
-  [b64e2c2c](https://github.com/vdavid/cmdr/commit/b64e2c2c)).
-- `desktop-rust-log-error-macro` check fails CI on any raw `log::error!` outside the macro definition itself, so every
-  error site routes through the Flow B auto-dispatcher ([79bc2a28](https://github.com/vdavid/cmdr/commit/79bc2a28)).
-- `changelog-commit-links` check now also verifies every linked SHA is reachable from `HEAD`, catching commits that got
-  dropped from history (rebase, force-push, etc.) before they ship
-  ([72375de6](https://github.com/vdavid/cmdr/commit/72375de6)).
-- `releasing.md` documents the `caffeinate -dimsu` requirement during release builds — the self-hosted runner lives on
-  the dev Mac and any sleep drops the runner connection mid-build
-  ([9f27228d](https://github.com/vdavid/cmdr/commit/9f27228d)).
-- Bumped `rustls-webpki` 0.103.12 → 0.103.13 for routine security maintenance
-  ([9ff7583d](https://github.com/vdavid/cmdr/commit/9ff7583d)).
+  [b64e2c2c](https://github.com/vdavid/cmdr/commit/b64e2c2c))
 
 ## [0.13.0] - 2026-04-22
 
 ### Added
 
-- **SMB copies are ~30× faster on high-latency links.** A 100 × 10 KB copy from a NAS over Tailscale (~60 ms RTT)
-  dropped from ~28 s (~280 ms/file) to 947 ms (9.5 ms/file) over four layered speedups: drop redundant `is_directory`
-  stat probes in the copy pipeline (Fix 1, [94090555](https://github.com/vdavid/cmdr/commit/94090555)), send
-  CREATE+READ+CLOSE / CREATE+WRITE+FLUSH+CLOSE as a single compound frame for small reads/writes (Fix 3,
-  [9d6df0e9](https://github.com/vdavid/cmdr/commit/9d6df0e9)), unblock session-level concurrency by cloning
-  `smb2::Connection` per download (Fix 2, [4009b9ba](https://github.com/vdavid/cmdr/commit/4009b9ba)), and pipeline the
-  pre-copy scan-phase stats over one SMB session (Fix 4, [77ea6e81](https://github.com/vdavid/cmdr/commit/77ea6e81)).
-  Effective concurrency 16× on the 100-file workload. Full analysis in `docs/notes/phase4-rtt-investigation.md`.
-- `network.smbConcurrency` setting (Phase 4.3) — controls how many concurrent SMB operations run per session for batch
-  copies. Default 10, range 1–32. Applies immediately without restart
+- SMB copies ~30× faster on high-latency links (100×10 KB over ~60 ms RTT: ~28 s to ~1 s)
+  ([94090555](https://github.com/vdavid/cmdr/commit/94090555),
+  [9d6df0e9](https://github.com/vdavid/cmdr/commit/9d6df0e9),
+  [4009b9ba](https://github.com/vdavid/cmdr/commit/4009b9ba),
+  [77ea6e81](https://github.com/vdavid/cmdr/commit/77ea6e81))
+- Add SMB concurrency setting (default 10, range 1–32, live)
   ([7fdd85e3](https://github.com/vdavid/cmdr/commit/7fdd85e3),
   [aa331c4e](https://github.com/vdavid/cmdr/commit/aa331c4e),
-  [f46d45e4](https://github.com/vdavid/cmdr/commit/f46d45e4)).
-- Current folder's total on the `..` row — shows recursive size, file count, and dir count for the folder you're in (not
-  the parent), with the same tooltip and size-mismatch indicators as any directory row
-  ([36212ede](https://github.com/vdavid/cmdr/commit/36212ede)).
-- Full mode shrink-wraps Ext / Size / Modified columns to give the name column every spare pixel. Width changes animate
-  over 300 ms, dir switches snap. The `..` row's huge recursive size only counts toward column width while actually
-  on-screen ([7325c8f8](https://github.com/vdavid/cmdr/commit/7325c8f8)).
-- Brief mode shrink-wraps each column to its widest visible filename, capped at `maxFilenameWidth` and floored at
-  `MIN_COLUMN_WIDTH`. 300 ms width transitions, nav snaps ([c336dbba](https://github.com/vdavid/cmdr/commit/c336dbba)).
-- Filename tooltip on truncation — hover a clipped filename in Brief or Full mode to see the full name. In Brief mode,
-  directories combine the full name with the existing dir-size tooltip
-  ([f37d7e51](https://github.com/vdavid/cmdr/commit/f37d7e51)).
-- Volume tooltip on tabs — every tab now shows `{volume name} — {full path}` on hover, so you can tell at a glance
-  whether a tab is local, external, or on a cloud volume ([b6663988](https://github.com/vdavid/cmdr/commit/b6663988)).
+  [f46d45e4](https://github.com/vdavid/cmdr/commit/f46d45e4))
+- `..` row shows current folder's totals, not parent's ([36212ede](https://github.com/vdavid/cmdr/commit/36212ede))
+- Full mode shrink-wraps Ext/Size/Modified to give Name every spare pixel
+  ([7325c8f8](https://github.com/vdavid/cmdr/commit/7325c8f8))
+- Brief mode shrink-wraps each column to its widest filename
+  ([c336dbba](https://github.com/vdavid/cmdr/commit/c336dbba))
+- Filename tooltip on truncation in Brief and Full ([f37d7e51](https://github.com/vdavid/cmdr/commit/f37d7e51))
+- Volume tooltip on tabs ([b6663988](https://github.com/vdavid/cmdr/commit/b6663988))
 
 ### Fixed
 
-- **Security:** smb2 bumped to 0.7.2, which fixes an off-by-2 in the DFS referral V2 response parser that let any
-  DFS-enabled server (malicious or buggy) crash cmdr with a crafted referral. Caught by cargo-fuzz
-  ([7e7eaf76](https://github.com/vdavid/cmdr/commit/7e7eaf76)).
-- Canceling a small SMB upload now actually cancels — the compound write fast-path used to silently drain the source,
-  send the WRITE, and only then honor the cancel flag (which it ignored entirely). Now checks cancellation per chunk
-  during drain and aborts before any bytes touch the wire; progress callbacks fire during the drain instead of only once
-  post-write ([f948731c](https://github.com/vdavid/cmdr/commit/f948731c)).
-- Clicking a file already under the cursor no longer eats the drag — the click started the click-to-rename timer and
-  returned early before drag tracking could arm. Grabbing the cursor item (alone or as part of a selection) now drags
-  correctly; rename timer cancels once the drag threshold is crossed
-  ([cccf0095](https://github.com/vdavid/cmdr/commit/cccf0095)).
-- ⌘C now copies selected text instead of files when there's a non-collapsed text selection. The global shortcut dispatch
-  was intercepting ⌘C unconditionally, blocking native text copy in panes like the error pane where `user-select: text`
-  is set ([47f03b20](https://github.com/vdavid/cmdr/commit/47f03b20)).
-- Drag & drop blocks dropping a folder onto itself or into its own descendants, with "Can't drop here" feedback instead
-  of letting the drag through and producing a backend error. The `..` row accepts drops as a normal parent-folder target
-  ([b7c3d960](https://github.com/vdavid/cmdr/commit/b7c3d960)).
-- Frontend hot reload is reliable again after swapping UnoCSS for unplugin-icons — UnoCSS's dev plugin was regenerating
-  `virtual:uno.css` on every Svelte save, triggering SvelteKit's root-layout TDZ crash (sveltejs/kit#15287). Icons now
-  import as tree-shaken inline SVG components via `~icons/lucide/{name}`
-  ([00906566](https://github.com/vdavid/cmdr/commit/00906566)).
+- Security: bump smb2 to 0.7.2, fixes a crafted DFS referral crashing Cmdr
+  ([7e7eaf76](https://github.com/vdavid/cmdr/commit/7e7eaf76))
+- Fix small SMB uploads ignoring cancel ([f948731c](https://github.com/vdavid/cmdr/commit/f948731c))
+- Fix click-on-cursor eating the next drag ([cccf0095](https://github.com/vdavid/cmdr/commit/cccf0095))
+- ⌘C now copies selected text when there's a text selection ([47f03b20](https://github.com/vdavid/cmdr/commit/47f03b20))
+- Block dropping a folder onto itself or its descendants ("Can't drop here" feedback); `..` accepts drops
+  ([b7c3d960](https://github.com/vdavid/cmdr/commit/b7c3d960))
+- Fix frontend hot reload (swap UnoCSS for unplugin-icons) ([00906566](https://github.com/vdavid/cmdr/commit/00906566))
 
 ### Changed
 
-- **Breaking (internal API):** The `Volume` trait no longer exposes `export_to_local` and `import_from_local`. Every
-  cross-volume copy now flows through `open_read_stream` + `write_from_stream` (or the APFS clonefile fast path when
-  both sides are `LocalPosixVolume` on the same volume). Adding a new volume backend takes two streaming methods instead
-  of four, and concurrency (Phase 4.2) plugs into one dispatch point. Only in-tree consumer was `volume_copy.rs`; no
-  external crates depended on the removed methods. See `docs/notes/phase4-volume-copy-unification.md`.
-- Cross-volume batch copies now run up to N streams in parallel instead of one-at-a-time. N is
-  `min(source.max_concurrent_ops(), dest.max_concurrent_ops(), 32)` — `SmbVolume` returns 10 (tunable via
-  `network.smbConcurrency`), `LocalPosixVolume` returns physical-core-ish clamped to 4..=16, `MtpVolume` returns 1,
-  `InMemoryVolume` returns 32. Batches of 1–2 items stay sequential. New trait method
-  `Volume::max_concurrent_ops() -> usize` (default 1) lets each backend advertise its parallelism. Abort-on-first-error
-  and cancel-under-concurrency preserve existing semantics; partial-file cleanup walks every in-flight task's
-  destination.
-- `Volume::scan_for_copy_batch` now returns `BatchScanResult { aggregate, per_path }`, so the copy engine populates its
-  `source_hints` map from one trait call instead of re-probing each source. `SmbVolume` overrides to pipeline all
-  per-path stats over one SMB session via `FuturesUnordered` on cloned `Connection`s
-  ([77ea6e81](https://github.com/vdavid/cmdr/commit/77ea6e81)).
-- `Volume::open_read_stream_with_hint(path, size_hint)` added to the trait (default falls through to
-  `open_read_stream`). `SmbVolume` uses it to pick the compound read fast-path when the caller knows the file fits in
-  one READ ([9d6df0e9](https://github.com/vdavid/cmdr/commit/9d6df0e9)).
-- smb2 dependency moved from `git` source to crates.io ([96f4bbd3](https://github.com/vdavid/cmdr/commit/96f4bbd3)),
-  then bumped through 0.7.1 (adds `Tree::download` for concurrent streaming reads on a cloned `Connection`,
-  [0ec95a79](https://github.com/vdavid/cmdr/commit/0ec95a79)) and 0.7.2 (DFS referral parse fix,
-  [7e7eaf76](https://github.com/vdavid/cmdr/commit/7e7eaf76)).
+- Internal: cross-volume copies flow through stream API (plus APFS clonefile fast path); batch copies run in parallel
+  per-backend ([eb99c37c](https://github.com/vdavid/cmdr/commit/eb99c37c),
+  [508a0fe1](https://github.com/vdavid/cmdr/commit/508a0fe1),
+  [50b7221e](https://github.com/vdavid/cmdr/commit/50b7221e),
+  [39c71eed](https://github.com/vdavid/cmdr/commit/39c71eed))
+- Move smb2 from git to crates.io, bump through 0.7.1 and 0.7.2
+  ([96f4bbd3](https://github.com/vdavid/cmdr/commit/96f4bbd3),
+  [0ec95a79](https://github.com/vdavid/cmdr/commit/0ec95a79),
+  [7e7eaf76](https://github.com/vdavid/cmdr/commit/7e7eaf76))
 
 ### Non-app
 
-- **Docker SMB integration tests now run on every push.** New `desktop-rust-integration-tests` check starts the core SMB
-  containers, runs the 26 `smb_integration_*` tests, and stops the containers on exit. Closes the gap that let the
-  compound-write cancel/progress bug sit undetected on `main` for four days
-  ([257269bb](https://github.com/vdavid/cmdr/commit/257269bb)).
-- Byte-level blake3 hash verification on every existing SMB copy test — destination bytes now compared to source, not
-  just size or return value. Three tests previously only verified metadata; four large-file tests upgraded from
-  multi-megabyte `Vec<u8>` equality to streaming hash with hex-pair mismatch output
-  ([fd5a2d84](https://github.com/vdavid/cmdr/commit/fd5a2d84)).
-- 100-way concurrent copy cross-contamination guard — 100 files with unique `blake3(b"cmdr-fix8-" || i)` content copied
-  through the real `copy_volumes_with_progress` pipeline (same path production uses), per-index verified. Catches buffer
-  reuse across tasks, wrong-buffer-to-wrong-path routing, and MessageId demux swaps on cloned `Connection`s that
-  identical-content tests can't see ([97062e64](https://github.com/vdavid/cmdr/commit/97062e64)).
-- SMB copy soak harness — `smb_soak_copy_loop` test plus `scripts/soak-smb.sh` wrapper and `workflow_dispatch`-only CI
-  job. 30-min Docker-based run completed 41,984 iterations with zero drift in wall-clock, memory, file descriptors, or
-  SMB credits ([3a9b58f2](https://github.com/vdavid/cmdr/commit/3a9b58f2),
-  [6a9e046d](https://github.com/vdavid/cmdr/commit/6a9e046d)).
-- Settings live-apply is now a documented MUST rule — every setting applies immediately without restart. Rule lives in
-  both Rust and TS settings `CLAUDE.md` files with explicit recipes for adding new settings. Restart-required is now
-  formally a bug ([cd1958ba](https://github.com/vdavid/cmdr/commit/cd1958ba)).
-- Deflaked two intermittently-failing tests (`test_dir_name` collision under parallel nextest execution,
-  hidden-file-toggle Playwright E2E race), bumped multi-chunk SMB stream test sizes past the 8 MB `max_read_size` Samba
-  negotiates, and added `env_logger` as a dev-dep so SMB wire-trace logging works in integration and bench tests
-  ([a48a323e](https://github.com/vdavid/cmdr/commit/a48a323e),
-  [f7823a0b](https://github.com/vdavid/cmdr/commit/f7823a0b),
-  [009b851e](https://github.com/vdavid/cmdr/commit/009b851e),
-  [75f856e8](https://github.com/vdavid/cmdr/commit/75f856e8)).
-- `changelog-commit-links` check validates every `https://github.com/vdavid/cmdr/commit/<sha>` URL in CHANGELOG.md
-  resolves to a real commit, via a single `git cat-file --batch-check` process — catches typos, truncated SHAs, and
-  prefixes ambiguous with trees before they land. Runs in the desktop-svelte, website, and api-server CI jobs (each does
-  a full-depth checkout so historical SHAs resolve). Surfaced and fixed 8 bad links in the 0.12.0 and earlier sections
-  along the way ([4e28130](https://github.com/vdavid/cmdr/commit/4e28130)).
+- Run Docker SMB integration tests on every push (26 tests against real servers)
+  ([257269bb](https://github.com/vdavid/cmdr/commit/257269bb))
+- Byte-level blake3 hash verification on every SMB copy test
+  ([fd5a2d84](https://github.com/vdavid/cmdr/commit/fd5a2d84))
+- SMB copy soak harness: 30-min Docker run, 41,984 iterations, zero drift
+  ([3a9b58f2](https://github.com/vdavid/cmdr/commit/3a9b58f2),
+  [6a9e046d](https://github.com/vdavid/cmdr/commit/6a9e046d))
+- Add changelog-commit-links check (surfaced and fixed 8 bad links)
+  ([4e28130](https://github.com/vdavid/cmdr/commit/4e28130))
 
 ## [0.12.0] - 2026-04-18
 
 ### Added
 
-- Friendly error pane for listing failures — plain-language titles, provider-aware suggestions (Dropbox, Google Drive,
-  OneDrive, iCloud, MacDroid, macFUSE/SSHFS, VeraCrypt, and 12 more), collapsible technical details, and retry with
-  attempt history for transient errors. Two-layer mapping: 37 macOS errno codes → `FriendlyError` (Transient /
-  NeedsAction / Serious categories), then path- and `statfs`-based enrichment for 19 cloud/mount providers
-  ([eec50ff](https://github.com/vdavid/cmdr/commit/eec50ff), [cc7bb3](https://github.com/vdavid/cmdr/commit/cc7bb3))
-- Live disk space updates in the status bar — backend polls `statvfs`/NSURL per watched volume, emits
-  `volume-space-changed` when deltas exceed a configurable threshold (`advanced.diskSpaceChangeThreshold`). Deduplicates
-  per volume across panes, 3s timeout per fetch so hung mounts don't stall
+- Add friendly error pane for listing failures (provider-aware suggestions for Dropbox, Drive, OneDrive, iCloud,
+  MacDroid, VeraCrypt, etc.) ([eec50ff](https://github.com/vdavid/cmdr/commit/eec50ff),
+  [cc7bb3](https://github.com/vdavid/cmdr/commit/cc7bb3))
+- Live disk-space updates in status bar (configurable threshold, 3 s timeout)
   ([d67dd3](https://github.com/vdavid/cmdr/commit/d67dd3))
-- Breadcrumb "Copy path" context menu — right-click the breadcrumb header to copy the current directory's full path,
-  `file.copyCurrentDirectoryPath` configurable in Settings ([eb4d3c](https://github.com/vdavid/cmdr/commit/eb4d3c))
-- SMB streaming read + write — `SmbVolume` now implements `open_read_stream` and `write_from_stream`, so MTP↔SMB and
-  SMB↔SMB copies flow through memory without temp files, and large local↔NAS copies stay bounded to ~1 MiB peak RAM
-  instead of buffering the whole file ([ac71bd](https://github.com/vdavid/cmdr/commit/ac71bd),
-  [a82709](https://github.com/vdavid/cmdr/commit/a82709), [35120d](https://github.com/vdavid/cmdr/commit/35120d),
-  [043597f](https://github.com/vdavid/cmdr/commit/043597f))
-- SMB mount disambiguation — two shares with the same name from different servers now get unique mount points (`public`,
-  `public-1`, …) via `kNetFSForceNewSessionKey`. Volume switcher shows `{share} on {server}` so it's clear which is
-  which ([76671b](https://github.com/vdavid/cmdr/commit/76671b))
-- SMB login form on direct-connection upgrade — instead of an opaque error toast, shows `NetworkLoginForm` inline when
-  credentials are missing or wrong; structured `UpgradeResult` distinguishes auth needs from network errors
-  ([b315b4](https://github.com/vdavid/cmdr/commit/b315b4))
-- Instant dialog open for large selections — batch `get_paths_at_indices` / `get_files_at_indices` Tauri commands
-  replace per-file IPC loops. Copy/Move dialogs for 50k files open in ~1 ms instead of ~10 s
+- Add "Copy path" to breadcrumb context menu ([eb4d3c](https://github.com/vdavid/cmdr/commit/eb4d3c))
+- Add SMB streaming reads/writes (MTP↔SMB and SMB↔SMB copies skip temp files, ~1 MiB peak RAM)
+  ([ac71bd](https://github.com/vdavid/cmdr/commit/ac71bd), [a82709](https://github.com/vdavid/cmdr/commit/a82709),
+  [35120d](https://github.com/vdavid/cmdr/commit/35120d), [043597f](https://github.com/vdavid/cmdr/commit/043597f))
+- Disambiguate same-named SMB shares per server ([76671b](https://github.com/vdavid/cmdr/commit/76671b))
+- Inline SMB login form on direct-connection upgrade ([b315b4](https://github.com/vdavid/cmdr/commit/b315b4))
+- Instant dialog open for large selections (50k-file Copy/Move: ~10 s to ~1 ms)
   ([48ea60](https://github.com/vdavid/cmdr/commit/48ea60))
-- MTP Samsung support — late-arriving storages announced via `StoreAdded`/`StoreRemoved` are registered/unregistered on
-  the fly; phones that report 0 storages at connect time now appear in the volume selector
+- Add MTP Samsung support (phones reporting 0 storages at connect time now appear)
   ([14b3ac](https://github.com/vdavid/cmdr/commit/14b3ac))
-- MTP batch scan for copy — `scan_for_copy_batch` groups paths by parent directory and lists each parent once. A copy of
-  14,825 files now uses one USB `GetObjectHandles` per parent instead of one per file
+- Batch MTP scan for copy (one USB call per parent dir, not per file)
   ([70978c](https://github.com/vdavid/cmdr/commit/70978c))
-- Rename: skip extension confirm on case-only changes — `photo.JPG` → `photo.jpg` no longer triggers the extension
-  dialog or the red-border guard ([1401017](https://github.com/vdavid/cmdr/commit/1401017))
-- Filename + extension split in Full view — `photo.jpg` renders as `photo` + `jpg` in separate columns, inline rename
-  editor spans both cells for more room ([275d091](https://github.com/vdavid/cmdr/commit/275d091))
-- Volume selector polish — spacebar area is clickable, dropdown renders over the function key bar via `position: fixed`,
-  resizes on window resize, submenus render outside the scrollable dropdown to avoid clipping
+- Skip rename extension warning on case-only changes (photo.JPG to photo.jpg)
+  ([1401017](https://github.com/vdavid/cmdr/commit/1401017))
+- Split filename + extension in Full view ([275d091](https://github.com/vdavid/cmdr/commit/275d091))
+- Volume selector polish (clickable spacebar area, no clipping over F-key bar)
   ([700eac](https://github.com/vdavid/cmdr/commit/700eac))
-- File operation dialog polish — thousands-separator formatting for all file/dir counts, pixel-accurate mid-text
-  truncation via `@chenglou/pretext` (preserves extensions and path separators), fixed 500 px width eliminates jitter
-  during progress ([d67dd3](https://github.com/vdavid/cmdr/commit/d67dd3))
-- Debug window error-pane preview — all 47 error states with provider dropdown and L/R pane trigger buttons, wired via
-  `debug-inject-error` events ([cc7bb3](https://github.com/vdavid/cmdr/commit/cc7bb3))
+- File-op dialog polish (thousand separators, mid-text truncation, fixed 500 px width)
+  ([d67dd3](https://github.com/vdavid/cmdr/commit/d67dd3))
+- Add debug-window error-pane preview with all 47 error states ([cc7bb3](https://github.com/vdavid/cmdr/commit/cc7bb3))
 
 ### Fixed
 
-- Don't log user cancels as ERROR — cancellation now propagates as `VolumeError::Cancelled` at three SMB sites instead
-  of being erased into `IoError("Operation cancelled")`; `copy_between_volumes` / `move_between_volumes` skip the
-  duplicate `write-error` emit on cancels ([6f79392](https://github.com/vdavid/cmdr/commit/6f79392))
-- Copy/move crash from reactivity race — `TransferDialog` now guards `$derived.by` against null `sourcePaths`, tracks a
-  `destroyed` flag for stale async IPC results, and defers prop teardown via `queueMicrotask` so `onDestroy` fires first
-  ([0cdd7d](https://github.com/vdavid/cmdr/commit/0cdd7d))
-- Stuck "Scanning 0 files" transfer dialog — `TransferDialog` now awaits `startScanPreview` before calling `onConfirm`
-  so `previewId` is always set; `TransferProgressDialog` no longer tries to adopt `previewId` from racing events
-  ([dd06d68](https://github.com/vdavid/cmdr/commit/dd06d68))
-- Double-dispatched MCP autoConfirm copies — `waitForScanThenStart` raced between the scan-complete listener and the
-  status check. Both paths now converge on an idempotent `kickOff()` guarded by a `started` flag
-  ([4af22ab](https://github.com/vdavid/cmdr/commit/4af22ab))
-- File watcher panicked on 500+ external changes — fallback-to-full-reread path spawned via `tokio::spawn` from the
-  notify-rs debouncer thread (no Tokio runtime context). Switched to `tauri::async_runtime::spawn`
-  ([4087e30](https://github.com/vdavid/cmdr/commit/4087e30))
-- APFS-aware copy space check — `validate_disk_space` and `get_space_info_for_path` used `statvfs` which ignores
-  purgeable space (APFS snapshots, iCloud caches); now use `get_volume_space()` on macOS to match Finder and the status
-  bar ([3454656](https://github.com/vdavid/cmdr/commit/3454656))
-- SMB paths round-trip correctly — three fixes: `parse_smbutil_output` now keyword-detects columns instead of
-  `split_whitespace` (share names like "Time Machine" work), `manual_servers.rs` serializes concurrent writes via
-  `STORE_LOCK`, and file viewer search uses UTF-16 code units for match `column`/`length` so highlights land in the
-  right place after emoji / CJK ([97c0481](https://github.com/vdavid/cmdr/commit/97c0481))
-- SMB port handling — virtual E2E hosts now prefer `SMB_E2E_{SVC}_PORT` over docker-compose host ports; port extracted
-  from `statfs` and threaded through `upgrade_to_smb_volume`; volume display name resolves mDNS service names to human
-  hosts ([c26f7e8](https://github.com/vdavid/cmdr/commit/c26f7e8),
+- User cancels no longer log as ERROR ([6f79392](https://github.com/vdavid/cmdr/commit/6f79392))
+- Fix copy/move crash from a reactivity race ([0cdd7d](https://github.com/vdavid/cmdr/commit/0cdd7d))
+- Fix stuck "Scanning 0 files" transfer dialog ([dd06d68](https://github.com/vdavid/cmdr/commit/dd06d68))
+- Fix double-dispatched MCP autoConfirm copies ([4af22ab](https://github.com/vdavid/cmdr/commit/4af22ab))
+- Fix file watcher panic on 500+ external changes ([4087e30](https://github.com/vdavid/cmdr/commit/4087e30))
+- Match Finder for copy space checks (count APFS purgeable space)
+  ([3454656](https://github.com/vdavid/cmdr/commit/3454656))
+- Fix SMB paths with spaces, serialize concurrent manual-server writes, fix viewer search after emoji/CJK
+  ([97c0481](https://github.com/vdavid/cmdr/commit/97c0481))
+- Fix SMB port handling and human host display for mDNS names ([c26f7e8](https://github.com/vdavid/cmdr/commit/c26f7e8),
   [017b7043](https://github.com/vdavid/cmdr/commit/017b7043))
-- SMB "Connect directly" on QNAP — `smb2` bumped to tolerate servers that split compound responses across transport
-  frames (spec-legal per MS-SMB2 3.3.4.1.3); the `expected 3 compound responses, got 1` warnings against QNAP / Samba
-  NASes are gone ([2666db8](https://github.com/vdavid/cmdr/commit/2666db8))
-- Clear-index button WCAG contrast — the disabled state with `opacity: 0.4` dropped contrast to 1.78:1 in light mode;
-  now hidden entirely when there's no index ([b1915d9](https://github.com/vdavid/cmdr/commit/b1915d9))
-- Network pane stuck on old host after mount success — `NetworkMountView.handleShareSelect` didn't propagate the cleared
-  host up to `FilePane`, so re-entering Network re-mounted `ShareBrowser` for the stale host
-  ([41c1860](https://github.com/vdavid/cmdr/commit/41c1860))
-- `llama-server` session startup on Linux — new `secrets/` module keeps credential storage working even when the keyring
-  is locked (real write/read/delete probe), respects `CMDR_DATA_DIR` for the encrypted-file fallback, and bypasses
-  Keychain entirely in dev mode so Cmdr doesn't prompt on every HMR
+- Fix "Connect directly" on QNAP ([2666db8](https://github.com/vdavid/cmdr/commit/2666db8))
+- Hide Clear-index button when there's no index (fixes AA contrast)
+  ([b1915d9](https://github.com/vdavid/cmdr/commit/b1915d9))
+- Network pane no longer sticks on old host after mount ([41c1860](https://github.com/vdavid/cmdr/commit/41c1860))
+- Fix llama-server startup on Linux with locked keyring (encrypted-file fallback)
   ([55ccde3](https://github.com/vdavid/cmdr/commit/55ccde3))
 
 ### Improved
 
-- Async `Volume` trait — 20 I/O methods now return `Pin<Box<dyn Future + Send>>`, eliminating every `block_on` in the
-  volume layer. `LocalPosixVolume` uses `spawn_blocking`, `MtpVolume` talks to `MtpConnectionManager` via `.await`,
-  `SmbVolume` swaps to `tokio::sync::Mutex`. Copy/move/delete pipelines are plain `async fn`; conflict resolution uses
-  `tokio::sync::oneshot` instead of `Condvar`. Removes the nested-runtime panics that previously broke MTP↔SMB and
-  bounds per-file memory for cross-volume streaming ([531bb9b](https://github.com/vdavid/cmdr/commit/531bb9b),
-  [9d4982a](https://github.com/vdavid/cmdr/commit/9d4982a), [694ddc1](https://github.com/vdavid/cmdr/commit/694ddc1))
-- MTP channel-based read stream — `MtpReadStream` is now a consumer of a bounded `sync_channel(4)` filled by a
-  background task, so it's safe to call `next_chunk()` inside any runtime context (previous `block_on`-based stream
-  panicked when nested inside SMB's `block_on`) ([1598f8c](https://github.com/vdavid/cmdr/commit/1598f8c))
-- Cancelled SMB uploads use `FileWriter::abort()` — skips the server FLUSH/fsync on a file we're about to delete, saving
-  ~100 ms to ~1 s per cancel on slow NAS ([6fa0780](https://github.com/vdavid/cmdr/commit/6fa0780))
+- Async Volume trait end-to-end, no more nested-runtime panics on MTP/SMB
+  ([531bb9b](https://github.com/vdavid/cmdr/commit/531bb9b), [9d4982a](https://github.com/vdavid/cmdr/commit/9d4982a),
+  [694ddc1](https://github.com/vdavid/cmdr/commit/694ddc1))
+- MTP read stream now safe from any runtime context ([1598f8c](https://github.com/vdavid/cmdr/commit/1598f8c))
+- Cancelled SMB uploads skip server FLUSH (~100 ms to 1 s saved per cancel)
+  ([6fa0780](https://github.com/vdavid/cmdr/commit/6fa0780))
 
 ### Non-app
 
-- Design-time WCAG contrast checker (`scripts/check-a11y-contrast`) — parses `app.css` + every Svelte `<style>` block,
-  resolves CSS variables (nested `color-mix(in srgb | oklch, ...)` with premultiplied alpha), computes contrast in
-  light + dark modes separately, flags pairs below 4.5:1 / 3:1. Runs in ~300 ms on 85 files. Replaces the flaky
-  `color-contrast` axe rule (WebKit builds disagreed on how to resolve nested `color-mix()` chains)
+- Add design-time WCAG contrast checker (resolves CSS vars and color-mix chains, replaces flaky axe rule)
   ([db25f0d](https://github.com/vdavid/cmdr/commit/db25f0d), [55af258](https://github.com/vdavid/cmdr/commit/55af258))
-- Fix 18 real WCAG AA contrast failures surfaced by the new checker — add `--color-error-text` / `--color-warning-text`
-  tokens for text on tinted bgs, swap warning-white to `--color-accent-fg`, keep base accent color on hover and use
-  underline for affordance ([747507f](https://github.com/vdavid/cmdr/commit/747507f),
+- Fix 18 real WCAG AA contrast failures ([747507f](https://github.com/vdavid/cmdr/commit/747507f),
   [67d42ba](https://github.com/vdavid/cmdr/commit/67d42ba), [4a15a53](https://github.com/vdavid/cmdr/commit/4a15a53))
-- Tier 3 component-level a11y tests — 61 `.a11y.test.ts` files (from 5), 146 passing, runs in ~6.3 s via Vitest/jsdom.
-  New `a11y-coverage` check enforces that every tracked `.svelte` file under `apps/desktop/src/lib/` has a colocated
-  test or an allowlist entry ([33300a4](https://github.com/vdavid/cmdr/commit/33300a4),
-  [d56c1df](https://github.com/vdavid/cmdr/commit/d56c1df), [398bf7a](https://github.com/vdavid/cmdr/commit/398bf7a))
-- Switch from Lucide components to UnoCSS pure-CSS icons — zero JS runtime, recolor via `currentColor` + CSS vars,
-  `mask-image` rendering ([93548fa](https://github.com/vdavid/cmdr/commit/93548fa))
-- File-length check + allowlist — tool flags files growing past a tracked size, 31 baseline entries. Split 20+ long
-  files into sub-800-line modules (`volume_copy.rs`, `scan.rs`, `smb.rs`, `integration_test.rs`, `AiSection.svelte`,
-  `+page.svelte`, `DualPaneExplorer.svelte`, and more) — pure mechanical splits, no logic changes
+- Add tier-3 component-level a11y tests (61 files, 146 tests, ~6.3 s) and a11y-coverage check
+  ([33300a4](https://github.com/vdavid/cmdr/commit/33300a4), [d56c1df](https://github.com/vdavid/cmdr/commit/d56c1df),
+  [398bf7a](https://github.com/vdavid/cmdr/commit/398bf7a))
+- Switch Lucide to UnoCSS pure-CSS icons ([93548fa](https://github.com/vdavid/cmdr/commit/93548fa))
+- Add file-length check; split 20+ long files into sub-800-line modules
   ([7514cb4](https://github.com/vdavid/cmdr/commit/7514cb4), [2939bfe](https://github.com/vdavid/cmdr/commit/2939bfe),
   [4514a83](https://github.com/vdavid/cmdr/commit/4514a83), [315609a](https://github.com/vdavid/cmdr/commit/315609a))
-- `OperationEventSink` + `ListingEventSink` traits decouple copy/move/listing pipelines from `tauri::AppHandle` —
-  enables unit tests without a Tauri runtime; `CollectorEventSink` stores events for assertions
-  ([35fea46](https://github.com/vdavid/cmdr/commit/35fea46), [0a6ae61](https://github.com/vdavid/cmdr/commit/0a6ae61))
-- Vendor the smb2 consumer Docker containers under `.compose/` with `VENDORED.md` bump instructions — CI no longer needs
-  to extract them via `cargo run` (which required GTK deps that aren't in the test container)
-  ([d50b963](https://github.com/vdavid/cmdr/commit/d50b963))
-- Linux E2E runs in Docker to match local — same image, same `./scripts/e2e-linux.sh` flow developers use. Cache volumes
-  overridable via env so `actions/cache` can persist them between runs
-  ([8803c3c](https://github.com/vdavid/cmdr/commit/8803c3c), [f39177c](https://github.com/vdavid/cmdr/commit/f39177c))
-- Remove legacy CrabNebula/WebDriverIO macOS E2E suite — Playwright now covers all 15 macOS tests. Drops 9 npm devDeps,
-  the `automation` Cargo feature, and `tauri-plugin-automation`
+- Run Linux E2E in Docker ([8803c3c](https://github.com/vdavid/cmdr/commit/8803c3c),
+  [f39177c](https://github.com/vdavid/cmdr/commit/f39177c))
+- Drop CrabNebula/WebDriverIO macOS E2E suite (Playwright covers all 15)
   ([4cecfb9](https://github.com/vdavid/cmdr/commit/4cecfb9))
-- E2E file entries matched by `data-filename` attribute, not `.col-name` text — decouples tests from display format
-  ([5a8f6af](https://github.com/vdavid/cmdr/commit/5a8f6af))
-- Upgrade `rustls-webpki` 0.103.11 → 0.103.12 (RUSTSEC-2026-0098/0099), `bitstream-io` 4.9.0 → 4.10.0 (drops yanked
-  `core2`); `cargo-audit` now parses `--json` for one-line-per-advisory output with 26 upstream ignores
+- Upgrade rustls-webpki 0.103.12 (RUSTSEC-2026-0098/0099) and bitstream-io 4.10.0
   ([3734502](https://github.com/vdavid/cmdr/commit/3734502))
-- HMR crash recovery — catch SvelteKit TDZ crash on root layout HMR and auto-reload via `sessionStorage` debounce, move
-  `virtual:uno.css` HMR handler to a stable `hmr-recovery.ts` module
-  ([700eac](https://github.com/vdavid/cmdr/commit/700eac))
-- Auto-sign E2E binaries with a "Cmdr Dev" self-signed cert — no more Keychain prompts during `scripts/check.sh`
-  ([23b920d](https://github.com/vdavid/cmdr/commit/23b920d))
-- Error-handling contributor guide (`docs/error-handling.md`) — maps the Rust → IPC → Svelte error pipeline, lists all
-  `VolumeError` variants, errno codes, providers ([a4a5fdb](https://github.com/vdavid/cmdr/commit/a4a5fdb))
+- Add docs/error-handling.md contributor guide ([a4a5fdb](https://github.com/vdavid/cmdr/commit/a4a5fdb))
 
 ## [0.11.1] - 2026-04-10
 
 ### Added
 
-- Striped rows setting — alternating row shading in Full and Brief view modes, auto-adapts to light/dark mode
+- Add striped-rows setting (alternating row shading in Full and Brief)
   ([faa2534](https://github.com/vdavid/cmdr/commit/faa2534))
-- MTP per-file copy progress and mid-file cancellation — progress callback on every USB chunk, instant cancel via USB
-  SIC abort (~300ms instead of draining the full stream) ([ac5ec4d](https://github.com/vdavid/cmdr/commit/ac5ec4d),
-  [a66adf6](https://github.com/vdavid/cmdr/commit/a66adf6))
+- Add MTP per-file copy progress and instant mid-file cancel (~300 ms via USB SIC abort)
+  ([ac5ec4d](https://github.com/vdavid/cmdr/commit/ac5ec4d), [a66adf6](https://github.com/vdavid/cmdr/commit/a66adf6))
 
 ### Fixed
 
-- View menu Full/Brief checkmarks now sync when switching panes
-  ([6e36a49](https://github.com/vdavid/cmdr/commit/6e36a49))
-- MTP: export files directly instead of guess-and-fallback, eliminating `ObjectNotFound` error log spam on every copy
-  ([0cc675a](https://github.com/vdavid/cmdr/commit/0cc675a))
-- MTP: fix mid-stream cancel corrupting USB session and making device unresponsive — bump `mtp-rs` to 0.11.0
+- Sync View menu Full/Brief checkmarks across panes ([6e36a49](https://github.com/vdavid/cmdr/commit/6e36a49))
+- Stop MTP `ObjectNotFound` log spam on every copy ([0cc675a](https://github.com/vdavid/cmdr/commit/0cc675a))
+- Fix MTP mid-stream cancel corrupting USB session (mtp-rs 0.11.0)
   ([a66adf6](https://github.com/vdavid/cmdr/commit/a66adf6))
-- A11y: darken `--color-accent-text` for WCAG AA compliance, fix search input placeholder opacity
+- A11y: darken accent-text for WCAG AA, fix search placeholder opacity
   ([b7744dd](https://github.com/vdavid/cmdr/commit/b7744dd))
-- Fix lint errors in `VolumeBreadcrumb`, `TransferDialog`, `+layout.svelte`
-  ([90b5ea0](https://github.com/vdavid/cmdr/commit/90b5ea0))
-- Fix Linux compilation — move shared SMB types to cross-platform module, add `get_smb_mount_info` for Linux
+- Fix Linux compilation (cross-platform SMB types, get_smb_mount_info)
   ([00c5f18](https://github.com/vdavid/cmdr/commit/00c5f18))
 
 ## [0.11.0] - 2026-04-10
 
 ### Added
 
-- SMB direct connections — file operations now go through the smb2 protocol directly, bypassing the OS mount (~4x
-  faster). The OS mount stays for Finder/Terminal compatibility
+- Add SMB direct connections via smb2 (~4× faster, OS mount stays for Finder/Terminal)
   ([dea46ec](https://github.com/vdavid/cmdr/commit/dea46ec))
-- SMB auto-upgrade — pre-existing and newly detected SMB mounts are automatically upgraded to direct connections in the
-  background, controlled by `network.directSmbConnection` setting
+- Auto-upgrade existing and new SMB mounts to direct connections in the background
   ([a6ab2ca](https://github.com/vdavid/cmdr/commit/a6ab2ca))
-- SMB "Connect to server" — enter hostname, IP, or `smb://` URL to connect to hosts not found by Bonjour. Persisted
-  across restarts. Context menu to disconnect, forget server, or forget saved password
+- Add "Connect to server" for SMB by hostname, IP, or `smb://` URL (persisted, context-menu Disconnect/Forget)
   ([2df24ac](https://github.com/vdavid/cmdr/commit/2df24ac))
-- SMB connection status indicators — green/yellow circles in volume picker and breadcrumb show whether a share uses a
-  direct (fast) or OS mount (slower) connection, with one-click upgrade option
-  ([0473250](https://github.com/vdavid/cmdr/commit/0473250))
-- SMB real-time progress for file transfers — pipelined I/O with throttled progress events, cancellation flows through
-  to smb2 ([f530355](https://github.com/vdavid/cmdr/commit/f530355))
-- SMB write operations — create, delete, rename, copy, and move all work through smb2 direct connections with full
-  conflict handling ([e72c082](https://github.com/vdavid/cmdr/commit/e72c082),
-  [4f030d7](https://github.com/vdavid/cmdr/commit/4f030d7))
-- SMB/MTP unified change notifications — `notify_directory_changed` with incremental listing cache patches, smb2
-  background watcher via `CHANGE_NOTIFY` long-poll, fixes "listing doesn't update after create/delete/rename"
+- Add SMB connection status indicators with one-click upgrade ([0473250](https://github.com/vdavid/cmdr/commit/0473250))
+- Real-time SMB transfer progress with end-to-end cancel ([f530355](https://github.com/vdavid/cmdr/commit/f530355))
+- All SMB write ops (create, delete, rename, copy, move) through direct connections with full conflict handling
+  ([e72c082](https://github.com/vdavid/cmdr/commit/e72c082), [4f030d7](https://github.com/vdavid/cmdr/commit/4f030d7))
+- Unified SMB/MTP change notifications with incremental cache patches
   ([2d0bc98](https://github.com/vdavid/cmdr/commit/2d0bc98))
-- SMB native connection warning — transfer dialog warns when using OS mount (slower, cancel/rollback may be delayed)
-  ([d25de48](https://github.com/vdavid/cmdr/commit/d25de48))
-- MTP auto-suppress `ptpcamerad` on macOS — no more manual steps to stop the daemon from competing for USB access,
-  auto-restored on disconnect and app exit ([d161f9b](https://github.com/vdavid/cmdr/commit/d161f9b))
-- MTP settings — toggle to disable MTP entirely, device connection toast with "Don't show again" option, dedicated
-  settings section ([2467ece](https://github.com/vdavid/cmdr/commit/2467ece),
-  [70d8d40](https://github.com/vdavid/cmdr/commit/70d8d40))
-- Brief mode: show real recursive directory sizes in selection info
+- Warn in transfer dialog when using slower OS mount ([d25de48](https://github.com/vdavid/cmdr/commit/d25de48))
+- Auto-suppress ptpcamerad on macOS for MTP ([d161f9b](https://github.com/vdavid/cmdr/commit/d161f9b))
+- Add MTP settings (disable toggle, "Don't show again" toast, dedicated section)
+  ([2467ece](https://github.com/vdavid/cmdr/commit/2467ece), [70d8d40](https://github.com/vdavid/cmdr/commit/70d8d40))
+- Brief mode shows real recursive directory sizes in selection info
   ([53ee5ef](https://github.com/vdavid/cmdr/commit/53ee5ef))
 - Cursor jumps to newly created directories ([eff84d1](https://github.com/vdavid/cmdr/commit/eff84d1))
 
 ### Fixed
 
-- Copy progress: per-file counter now increments per individual file during directory copies, not per top-level item.
-  Stale scan events from previous operations are rejected ([d10d9cc](https://github.com/vdavid/cmdr/commit/d10d9cc))
-- SMB faster deletes — skip stat round-trip, halves round-trips for bulk deletes. Rollback now includes the in-progress
-  item ([0e7f072](https://github.com/vdavid/cmdr/commit/0e7f072))
-- Copy cancellation — directory tree copies now check cancellation between each file instead of looping without checking
-  ([a7d401a](https://github.com/vdavid/cmdr/commit/a7d401a))
-- Cross-volume copy with SmbVolume — `is_local_volume()` no longer misclassifies SmbVolume as local
-  ([4a86a85](https://github.com/vdavid/cmdr/commit/4a86a85))
-- SMB paths with accented characters — NFC normalization fixes `STATUS_OBJECT_PATH_NOT_FOUND` on macOS
-  ([baaccc8](https://github.com/vdavid/cmdr/commit/baaccc8))
-- Keychain lookup for SMB — resolves IP → hostname via mDNS so credentials are found regardless of address format
+- Fix per-file copy progress (counts files, not top-level items)
+  ([d10d9cc](https://github.com/vdavid/cmdr/commit/d10d9cc))
+- Faster SMB deletes (skip stat round-trip) ([0e7f072](https://github.com/vdavid/cmdr/commit/0e7f072))
+- Copy cancellation checks between every file in tree copies ([a7d401a](https://github.com/vdavid/cmdr/commit/a7d401a))
+- Fix cross-volume copy misclassifying SmbVolume as local ([4a86a85](https://github.com/vdavid/cmdr/commit/4a86a85))
+- Fix SMB paths with accented characters (NFC normalization) ([baaccc8](https://github.com/vdavid/cmdr/commit/baaccc8))
+- Resolve SMB IPs to hostnames via mDNS so Keychain finds saved credentials
   ([b1addfd](https://github.com/vdavid/cmdr/commit/b1addfd))
 - Show login form on stale Keychain credentials instead of empty share list
   ([46609f1](https://github.com/vdavid/cmdr/commit/46609f1))
-- Volume-boundary navigation — prevents navigating above SMB mount root into `/Volumes`, falls back to home when
-  unreachable ([d25de48](https://github.com/vdavid/cmdr/commit/d25de48))
-- Stale cursor index after file ops — cursor/selection adjustment now happens before `fetchEntryUnderCursor`
-  ([945093b](https://github.com/vdavid/cmdr/commit/945093b))
-- Drag & drop after wry upgrade — webview class discovery now uses live instance instead of hardcoded class name
-  ([a816c77](https://github.com/vdavid/cmdr/commit/a816c77))
-- Stale dir sizes after copy/create — `reconcile_subtree` auto-creates new root directories, pending rescans are no
-  longer abandoned ([1479108](https://github.com/vdavid/cmdr/commit/1479108))
-- Scan preview race in progress dialog — subscribe to events before checking completion status
-  ([5d9b91b](https://github.com/vdavid/cmdr/commit/5d9b91b))
-- `dir_stats` count drift on file↔dir type changes — writer now detects and corrects the old type's count
-  ([364ddf1](https://github.com/vdavid/cmdr/commit/364ddf1))
-- Index entry ID race — unified all ID allocation through a shared atomic counter
-  ([6e173e4](https://github.com/vdavid/cmdr/commit/6e173e4))
-- MTP move not refreshing UI on Linux — bump `mtp-rs` to v0.9.1 for `ObjectInfoChanged` events
-  ([5b27ead](https://github.com/vdavid/cmdr/commit/5b27ead))
+- Block navigating above SMB mount root, fall back to home when unreachable
+  ([d25de48](https://github.com/vdavid/cmdr/commit/d25de48))
+- Fix stale cursor index after file ops ([945093b](https://github.com/vdavid/cmdr/commit/945093b))
+- Fix drag & drop after wry upgrade ([a816c77](https://github.com/vdavid/cmdr/commit/a816c77))
+- Fix stale dir sizes after copy/create ([1479108](https://github.com/vdavid/cmdr/commit/1479108))
+- Fix scan-preview race in progress dialog ([5d9b91b](https://github.com/vdavid/cmdr/commit/5d9b91b))
+- Fix dir_stats count drift on file/dir type changes ([364ddf1](https://github.com/vdavid/cmdr/commit/364ddf1))
+- Fix index entry ID race via shared atomic counter ([6e173e4](https://github.com/vdavid/cmdr/commit/6e173e4))
+- Fix MTP move not refreshing UI on Linux (mtp-rs 0.9.1) ([5b27ead](https://github.com/vdavid/cmdr/commit/5b27ead))
 
 ### Non-app
 
-- Replace `smb`/`smb-rpc` crates with custom `smb2` crate — cleaner API, proper error types, no NDR debug-format parsing
-  hacks ([2d7904f](https://github.com/vdavid/cmdr/commit/2d7904f))
-- CI: upgrade actions to Node.js 24 ([e5820bb](https://github.com/vdavid/cmdr/commit/e5820bb))
-- Testing: fix multiple E2E flakes — MTP cache staleness, theme race, hidden files toggle, Docker shell quoting
-  ([5009971](https://github.com/vdavid/cmdr/commit/5009971), [52faf43](https://github.com/vdavid/cmdr/commit/52faf43))
-- Suppress noisy `tao` and indexing dev logs ([21b041b](https://github.com/vdavid/cmdr/commit/21b041b),
-  [9bf0e00](https://github.com/vdavid/cmdr/commit/9bf0e00))
+- Replace smb/smb-rpc crates with our own smb2 ([2d7904f](https://github.com/vdavid/cmdr/commit/2d7904f))
 
 ## [0.10.0] - 2026-04-08
 
 ### Added
 
-- Copy rollback is now visible — progress bars count backwards from the cancellation point, rollback button shows
-  "Rolling back...", Cancel stays active to stop the rollback ([0ac5d0](https://github.com/vdavid/cmdr/commit/0ac5d0))
-- Dual progress bars in transfer dialogs — size-based and file-count-based, hidden during scanning phase
-  ([ced9d2](https://github.com/vdavid/cmdr/commit/ced9d2))
-- MCP: `cmdr://settings` resource and `set_setting` tool — inspect and change all settings without opening the Settings
-  window ([c71115](https://github.com/vdavid/cmdr/commit/c71115))
-- MCP: `move_cursor` now awaits frontend confirmation, fixing race where `copy` fires before cursor has moved
-  ([6341c25](https://github.com/vdavid/cmdr/commit/6341c25))
+- Visible copy rollback (progress bars count back, Cancel stops the rollback)
+  ([0ac5d0](https://github.com/vdavid/cmdr/commit/0ac5d0))
+- Dual progress bars in transfer dialogs (size + file count) ([ced9d2](https://github.com/vdavid/cmdr/commit/ced9d2))
+- MCP: cmdr://settings resource and set_setting tool ([c71115](https://github.com/vdavid/cmdr/commit/c71115))
+- MCP: move_cursor awaits frontend confirmation ([6341c25](https://github.com/vdavid/cmdr/commit/6341c25))
 
 ### Fixed
 
-- MTP: move conflicts no longer silently overwrite — both cross-volume and same-volume moves now show the conflict
-  dialog with Skip/Overwrite options, same as copy ([27f2ff](https://github.com/vdavid/cmdr/commit/27f2ff))
-- MTP: fix watcher missing external file changes — listing cache key mismatch made every invalidation a no-op, masked on
-  macOS by the 5s cache TTL but visible on Linux where inotify fires instantly
-  ([266026](https://github.com/vdavid/cmdr/commit/266026))
-- MTP: fix event debouncer permanently dropping events — suppressed events in the 500ms window are now scheduled for a
-  trailing emit ([21b3bc](https://github.com/vdavid/cmdr/commit/21b3bc))
-- MTP: fix pane falling back to local root after copy — `refresh_listing` was calling `std::fs` on MTP paths, emitting a
-  spurious `directory-deleted` event ([9deba7](https://github.com/vdavid/cmdr/commit/9deba7))
-- MTP: fix volumes missing from copy/move dialog, fix destination volume dropdown not updating on change
-  ([cd6603](https://github.com/vdavid/cmdr/commit/cd6603))
-- MTP: fix event loop lock contention — clone `MtpDevice` for event polling instead of holding mutex during
-  `next_event()`, unblocking copy/move/scan operations ([0461e33](https://github.com/vdavid/cmdr/commit/0461e33),
+- Fix MTP move conflicts silently overwriting ([27f2ff](https://github.com/vdavid/cmdr/commit/27f2ff))
+- Fix MTP watcher missing external file changes ([266026](https://github.com/vdavid/cmdr/commit/266026))
+- Fix MTP event debouncer dropping suppressed events ([21b3bc](https://github.com/vdavid/cmdr/commit/21b3bc))
+- Fix MTP pane falling back to local root after copy ([9deba7](https://github.com/vdavid/cmdr/commit/9deba7))
+- Fix MTP volumes missing from copy/move dialog ([cd6603](https://github.com/vdavid/cmdr/commit/cd6603))
+- Fix MTP event-loop lock contention blocking copy/move/scan ([0461e33](https://github.com/vdavid/cmdr/commit/0461e33),
   [547a41](https://github.com/vdavid/cmdr/commit/547a41))
-- MTP: fix scan preview showing 0/0/0 in confirmation dialog, reduce USB round-trips for conflict checks
-  ([4e1efa](https://github.com/vdavid/cmdr/commit/4e1efa))
-- MTP: fix rename conflicts not showing dialog on non-local volumes, fix paste guard checking clipboard before MTP
-  rejection ([25f2b2](https://github.com/vdavid/cmdr/commit/25f2b2))
-- Copy: fix "Cancel" (keep partial files) triggering unintended rollback — `onDestroy` race condition overwrote the
-  user's choice ([3042f2](https://github.com/vdavid/cmdr/commit/3042f2))
-- Copy: fix cancellation hanging 30+ seconds on network mounts — use chunked copy instead of `copyfile(3)` for all
-  non-APFS-clone copies ([816e9e](https://github.com/vdavid/cmdr/commit/816e9e))
-- Fix UI blocking on network filesystem operations — move validation into `spawn_blocking`, emit `write-error` for
-  handler errors ([bed59d](https://github.com/vdavid/cmdr/commit/bed59d))
-- Indexing: fix replay progress showing "Scanning..." instead of the replay overlay with progress bar and ETA
+- Fix MTP scan preview showing 0/0/0 in confirmation dialog ([4e1efa](https://github.com/vdavid/cmdr/commit/4e1efa))
+- Fix MTP rename conflicts not showing dialog on non-local volumes
+  ([25f2b2](https://github.com/vdavid/cmdr/commit/25f2b2))
+- Fix copy "Cancel" (keep partial files) triggering unintended rollback
+  ([3042f2](https://github.com/vdavid/cmdr/commit/3042f2))
+- Fix copy cancel hanging 30+ s on network mounts ([816e9e](https://github.com/vdavid/cmdr/commit/816e9e))
+- Fix UI blocking on network filesystem ops ([bed59d](https://github.com/vdavid/cmdr/commit/bed59d))
+- Fix indexing replay progress showing "Scanning..." instead of replay overlay
   ([32c053](https://github.com/vdavid/cmdr/commit/32c053))
-- Volume selector: push-based model replaces polling, fix race conditions on mount/unmount
-  ([b09665](https://github.com/vdavid/cmdr/commit/b09665))
-- Volume path resolution via `statfs` — resolves in <1ms regardless of network mount health, handles APFS firmlinks
+- Push-based volume selector, fixes mount/unmount races ([b09665](https://github.com/vdavid/cmdr/commit/b09665))
+- Fix volume path resolution to <1 ms regardless of mount health, handle APFS firmlinks
   ([5a1f78](https://github.com/vdavid/cmdr/commit/5a1f78))
-- Harden unsafe Rust code — checked main thread markers, scoped `Send` impls, `SAFETY` comments on `transmute` calls
+- Harden unsafe Rust (main-thread markers, scoped Send impls, SAFETY comments)
   ([541804](https://github.com/vdavid/cmdr/commit/541804))
 
 ### Improved
 
-- Typed write operation errors replace string parsing — 9 specific variants (`DeviceDisconnected`, `ReadOnlyDevice`,
-  `FileLocked`, etc.) instead of `IoError(String)` catch-all ([c10e06](https://github.com/vdavid/cmdr/commit/c10e06))
-- Typed volume errors — MTP errors stop being erased into `IoError(String)` and guessed back via string matching
-  ([8f2296](https://github.com/vdavid/cmdr/commit/8f2296))
-- MTP: unified backend move — frontend no longer orchestrates three-stage MTP moves, backend handles strategy
+- Typed write-op errors (9 variants) replace string parsing ([c10e06](https://github.com/vdavid/cmdr/commit/c10e06))
+- Typed MTP volume errors ([8f2296](https://github.com/vdavid/cmdr/commit/8f2296))
+- Backend owns MTP move strategy, frontend no longer orchestrates
   ([547a41](https://github.com/vdavid/cmdr/commit/547a41))
-- Demote noisy per-file copy/move/MTP logs from INFO to DEBUG, add `level_for` filters for third-party crates
-  ([357fef](https://github.com/vdavid/cmdr/commit/357fef))
+- Demote noisy per-file copy/move/MTP logs from INFO to DEBUG ([357fef](https://github.com/vdavid/cmdr/commit/357fef))
 
 ### Non-app
 
-- Accessibility: fix all WCAG violations found by axe-core — proper ARIA roles, focus indicators, color contrast, screen
-  reader landmarks ([d29a7c](https://github.com/vdavid/cmdr/commit/d29a7c),
+- Fix all WCAG violations found by axe-core ([d29a7c](https://github.com/vdavid/cmdr/commit/d29a7c),
   [438046](https://github.com/vdavid/cmdr/commit/438046), [6e6230](https://github.com/vdavid/cmdr/commit/6e6230))
-- E2E: port all tests from WebDriverIO to Playwright, add 80+ new tests covering MTP operations, SMB, file conflicts,
-  accessibility, and indexing
-- E2E: replace all test sleeps with event-driven waits ([3b5565](https://github.com/vdavid/cmdr/commit/3b5565))
-- Tooling: replace Prettier with oxfmt (10–20x faster) ([995f8c](https://github.com/vdavid/cmdr/commit/995f8c))
-- Tooling: auto-invalidate Docker `node_modules` on lockfile change
-  ([ac4e26](https://github.com/vdavid/cmdr/commit/ac4e26))
-- Refactor: split indexing module (1951 lines → focused files), extract shared `compute_bottom_up()`, unify
-  `name_folded` across platforms ([390864](https://github.com/vdavid/cmdr/commit/390864))
-- Website: light/dark theme with toggle, features page, OG images, blog Like buttons
-- Dashboard: color-coded charts, GitHub star tracking, improved error reporting
+- Port E2E tests from WebDriverIO to Playwright; add 80+ tests (MTP, SMB, conflicts, a11y, indexing)
+  ([77d05937](https://github.com/vdavid/cmdr/commit/77d05937),
+  [7d58bd6c](https://github.com/vdavid/cmdr/commit/7d58bd6c),
+  [4f83aeb8](https://github.com/vdavid/cmdr/commit/4f83aeb8))
+- Replace Prettier with oxfmt (10–20× faster) ([995f8c](https://github.com/vdavid/cmdr/commit/995f8c))
+- Split indexing module (1951 lines) into focused files ([390864](https://github.com/vdavid/cmdr/commit/390864))
+- Add light/dark website theme, features page, OG images, blog Like buttons
+  ([49dbe782](https://github.com/vdavid/cmdr/commit/49dbe782),
+  [98bdcc35](https://github.com/vdavid/cmdr/commit/98bdcc35),
+  [56a9e764](https://github.com/vdavid/cmdr/commit/56a9e764),
+  [5cff7c35](https://github.com/vdavid/cmdr/commit/5cff7c35))
+- Dashboard: color-coded charts, GitHub star tracking, error reporting
+  ([4b7c9e1e](https://github.com/vdavid/cmdr/commit/4b7c9e1e),
+  [67efc4ae](https://github.com/vdavid/cmdr/commit/67efc4ae),
+  [2e26b956](https://github.com/vdavid/cmdr/commit/2e26b956))
 
 ## [0.9.1] - 2026-03-24
 
 ### Fixed
 
-- Fix orphaned llama-server processes — rapid AI provider switching (Local → OpenAI → Local) could leave `llama-server`
-  running after app quit. Spawn + PID tracking now happen in a single lock, plus `pgrep`-based cleanup on startup
+- Fix orphaned llama-server processes after rapid AI provider switching
   ([b3382e](https://github.com/vdavid/cmdr/commit/b3382e))
-- Fix vendor-specific MTP device detection (Kindle, USB class `0xFF` devices) via `mtp-rs` 0.4.1 upgrade, also fixes
-  indefinite event polling blocking MTP operations on idle devices
+- Fix vendor-specific MTP detection (Kindle, USB class 0xFF) via mtp-rs 0.4.1
   ([1a170d](https://github.com/vdavid/cmdr/commit/1a170d))
 
 ### Non-app
 
-- API server: migrate telemetry from Analytics Engine to D1, add crash email notifications via Resend, add admin
-  endpoints for downloads/active-users/crashes, rename `license-server` → `api-server`
+- API server: migrate telemetry to D1, add crash email notifications via Resend, rename license-server to api-server
   ([7dc0da](https://github.com/vdavid/cmdr/commit/7dc0da))
-- Refactor: split `search.rs` (2361 lines) and `SearchDialog.svelte` (1552 lines) into focused modules
+- Split search.rs (2361 lines) and SearchDialog.svelte (1552 lines) into focused modules
   ([c17c21](https://github.com/vdavid/cmdr/commit/c17c21))
-- Refactor: deduplicate repeated code patterns across Rust, Svelte, TypeScript, and Go
-  ([52afe3](https://github.com/vdavid/cmdr/commit/52afe3))
-- Upgrade 9 Rust dependencies — `reqwest` 0.13, `rusqlite` 0.39, `notify-debouncer-full` 0.7, and more
+- Deduplicate repeated patterns across Rust, Svelte, TS, and Go ([52afe3](https://github.com/vdavid/cmdr/commit/52afe3))
+- Bump 9 Rust deps (reqwest 0.13, rusqlite 0.39, notify-debouncer-full 0.7, etc.)
   ([929556](https://github.com/vdavid/cmdr/commit/929556))
-- Tooling: skip `pnpm install` when lockfile unchanged, saving ~20s per run
+- Skip pnpm install when lockfile unchanged (~20 s saved per run)
   ([8d2b39](https://github.com/vdavid/cmdr/commit/8d2b39))
 - Blog: add Kindle support article ([5c9d5b](https://github.com/vdavid/cmdr/commit/5c9d5b))
 
@@ -689,120 +437,103 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Add whole-drive file search (⌘F) — in-memory index with rayon parallel scan, glob/regex patterns, size/date filters,
-  scope filtering, keyboard-navigable dialog, AI mode via configured LLM, two-pass AI search with preflight refinement,
-  case sensitivity toggle, system folder exclusion, MCP `search` and `ai_search` tools
+- Add whole-drive file search (⌘F): glob/regex, size/date filters, scope, AI mode, MCP search and ai_search tools
   ([058136](https://github.com/vdavid/cmdr/commit/058136), [15110c](https://github.com/vdavid/cmdr/commit/15110c),
   [8c3546](https://github.com/vdavid/cmdr/commit/8c3546), [cf5827](https://github.com/vdavid/cmdr/commit/cf5827),
   [415db3](https://github.com/vdavid/cmdr/commit/415db3), [21d32e](https://github.com/vdavid/cmdr/commit/21d32e),
   [26d682](https://github.com/vdavid/cmdr/commit/26d682))
-- Add opt-in crash reporting — panic hook + signal handler write crash files, dialog lets users inspect and send on next
-  launch, crash loop protection, no PII ([016ee3](https://github.com/vdavid/cmdr/commit/016ee3),
-  [be29af](https://github.com/vdavid/cmdr/commit/be29af))
-- Add Shift+F4: create new file and open in default editor, Total Commander style
+- Add opt-in crash reporting (panic hook + signal handler, inspect-and-send dialog, no PII)
+  ([016ee3](https://github.com/vdavid/cmdr/commit/016ee3), [be29af](https://github.com/vdavid/cmdr/commit/be29af))
+- Add Shift+F4 (Total Commander style): create new file, open in default editor
   ([da8ca9](https://github.com/vdavid/cmdr/commit/da8ca9))
-- Add smart size display — store both logical and physical sizes, show `min(logical, physical)` by default with setting
-  to switch, dual-size tooltips with colored byte triads, hardlink dedup via inode tracking, size mismatch warning icon,
-  hourglass icon for stale sizes ([1d666a](https://github.com/vdavid/cmdr/commit/1d666a),
-  [b302d0](https://github.com/vdavid/cmdr/commit/b302d0), [065820](https://github.com/vdavid/cmdr/commit/065820),
-  [1d588f](https://github.com/vdavid/cmdr/commit/1d588f), [a93a8b](https://github.com/vdavid/cmdr/commit/a93a8b),
-  [9c450c](https://github.com/vdavid/cmdr/commit/9c450c))
-- Add Ext column in Full mode — sortable, between Name and Size ([e834b4](https://github.com/vdavid/cmdr/commit/e834b4))
-- Add replay progress overlay — shows "Updating index..." with progress bar and ETA during cold-start replay
-  ([f166b0](https://github.com/vdavid/cmdr/commit/f166b0))
-- MTP: show live disk space in volume breadcrumb dropdown and status bar
-  ([b155f1](https://github.com/vdavid/cmdr/commit/b155f1), [c4cc26](https://github.com/vdavid/cmdr/commit/c4cc26))
-- MTP: show loading progress when opening large folders ([77ebaa](https://github.com/vdavid/cmdr/commit/77ebaa))
-- Add missing focus indicators on search and command palette inputs
-  ([179221](https://github.com/vdavid/cmdr/commit/179221))
-- Selection summary now includes directory sizes ([3928c1c](https://github.com/vdavid/cmdr/commit/3928c1c))
+- Add smart size display (min logical/physical, dual-size tooltips, hardlink dedup, mismatch icons)
+  ([1d666a](https://github.com/vdavid/cmdr/commit/1d666a), [b302d0](https://github.com/vdavid/cmdr/commit/b302d0),
+  [065820](https://github.com/vdavid/cmdr/commit/065820), [1d588f](https://github.com/vdavid/cmdr/commit/1d588f),
+  [a93a8b](https://github.com/vdavid/cmdr/commit/a93a8b), [9c450c](https://github.com/vdavid/cmdr/commit/9c450c))
+- Add sortable Ext column in Full mode ([e834b4](https://github.com/vdavid/cmdr/commit/e834b4))
+- Add replay progress overlay during cold-start ([f166b0](https://github.com/vdavid/cmdr/commit/f166b0))
+- Show live MTP disk space in volume dropdown and status bar ([b155f1](https://github.com/vdavid/cmdr/commit/b155f1),
+  [c4cc26](https://github.com/vdavid/cmdr/commit/c4cc26))
+- Show MTP loading progress on large folders ([77ebaa](https://github.com/vdavid/cmdr/commit/77ebaa))
+- Add focus indicators on search and command palette inputs ([179221](https://github.com/vdavid/cmdr/commit/179221))
+- Selection summary includes directory sizes ([3928c1c](https://github.com/vdavid/cmdr/commit/3928c1c))
 - MCP: show directory sizes in state resource ([9cb775](https://github.com/vdavid/cmdr/commit/9cb775))
 
 ### Fixed
 
-- Fix macOS multi-GB memory leak — add `autoreleasepool` wrappers around all ObjC API calls on background threads, 50M
-  retained objects / 5 GB after 20h of runtime ([777f9e](https://github.com/vdavid/cmdr/commit/777f9e))
-- Fix stack overflow crash in sync status — use dedicated OS threads with 8 MB stacks instead of rayon for NSURL/XPC
-  calls ([fa28cd](https://github.com/vdavid/cmdr/commit/fa28cd))
-- Fix size overcounting — hardlink dedup via inode column, cloud-only files no longer counted as local, smart size mode
-  for dataless files ([fe5eff](https://github.com/vdavid/cmdr/commit/fe5eff))
-- Fix file watcher: instant updates in large dirs via incremental stat-and-compare instead of full re-read, synthetic
-  diffs for mkdir ([df558e](https://github.com/vdavid/cmdr/commit/df558e))
-- Fix selection clearing after file operations — clear on source pane after move/copy/delete/trash, gradual deselection
-  per source item ([538ec5](https://github.com/vdavid/cmdr/commit/538ec5))
-- Fix selection indices drifting after external file changes — pure index adjustment on structural diffs
-  ([453ec0](https://github.com/vdavid/cmdr/commit/453ec0))
+- Fix multi-GB macOS memory leak (ObjC calls on background threads now run inside autoreleasepool)
+  ([777f9e](https://github.com/vdavid/cmdr/commit/777f9e))
+- Fix stack overflow in sync status (8 MB OS threads instead of rayon for NSURL/XPC calls)
+  ([fa28cd](https://github.com/vdavid/cmdr/commit/fa28cd))
+- Fix size overcounting (hardlink dedup, exclude cloud-only files, smart-size for dataless)
+  ([fe5eff](https://github.com/vdavid/cmdr/commit/fe5eff))
+- Fix file watcher: instant updates in large dirs via incremental diffs
+  ([df558e](https://github.com/vdavid/cmdr/commit/df558e))
+- Fix selection clearing after file ops; gradual deselection per source item
+  ([538ec5](https://github.com/vdavid/cmdr/commit/538ec5))
+- Fix selection indices drifting after external file changes ([453ec0](https://github.com/vdavid/cmdr/commit/453ec0))
 - Fix cursor lost after deleting all files ([17808d](https://github.com/vdavid/cmdr/commit/17808d))
-- Fix stale dir sizes on rename — writer now emits notifications after both delete+insert commit
-  ([10213d](https://github.com/vdavid/cmdr/commit/10213d))
-- Fix indexing won't start on fresh DB — `scanning` flag moved to correct path
-  ([a61376d](https://github.com/vdavid/cmdr/commit/a61376d))
-- Fix "Scanning..." stuck after replay — clear scanning in replay-complete handler
-  ([4a44d7](https://github.com/vdavid/cmdr/commit/4a44d7), [fb796e](https://github.com/vdavid/cmdr/commit/fb796e))
-- Fix verifier + replay transaction conflict — use named savepoints instead of nested transactions
+- Fix stale dir sizes on rename ([10213d](https://github.com/vdavid/cmdr/commit/10213d))
+- Fix indexing not starting on fresh DB ([a61376d](https://github.com/vdavid/cmdr/commit/a61376d))
+- Fix "Scanning..." stuck after replay ([4a44d7](https://github.com/vdavid/cmdr/commit/4a44d7),
+  [fb796e](https://github.com/vdavid/cmdr/commit/fb796e))
+- Fix verifier + replay transaction conflict via named savepoints
   ([72ca9f](https://github.com/vdavid/cmdr/commit/72ca9f))
-- Fix MTP browsing panic and show device name instead of storage name for single-storage devices
+- Fix MTP browsing panic; show device name on single-storage devices
   ([d37b8a](https://github.com/vdavid/cmdr/commit/d37b8a))
 - Fix MTP duplicate directory listing on connect ([17efe8](https://github.com/vdavid/cmdr/commit/17efe8))
-- Fix MCP stale state after server crash, auto-probe port when configured port is in use
+- Fix MCP stale state after server crash; auto-probe port when configured port is in use
   ([0369d2](https://github.com/vdavid/cmdr/commit/0369d2), [d69f87](https://github.com/vdavid/cmdr/commit/d69f87))
 - Fix OpenAI compatibility ([795a67](https://github.com/vdavid/cmdr/commit/795a67))
-- Hide misleading rollback button for move operations ([fbdba5](https://github.com/vdavid/cmdr/commit/fbdba5))
-- Raise replay and journal gap thresholds to reduce unnecessary full rescans
+- Hide misleading rollback button for move ops ([fbdba5](https://github.com/vdavid/cmdr/commit/fbdba5))
+- Raise replay/journal gap thresholds to reduce unnecessary full rescans
   ([377919](https://github.com/vdavid/cmdr/commit/377919), [af2bf7](https://github.com/vdavid/cmdr/commit/af2bf7))
 
 ### Non-app
 
-- Analytics dashboard: full-stack metrics view with 6 data sources, rich download timelines, agent-readable report
+- Add full-stack analytics dashboard (6 data sources, agent-readable report)
   ([b4f740](https://github.com/vdavid/cmdr/commit/b4f740), [0766c4](https://github.com/vdavid/cmdr/commit/0766c4),
   [b97028](https://github.com/vdavid/cmdr/commit/b97028))
-- Tooling: enforce CSS design tokens via Stylelint — spacing, colors, font sizes, border radius, z-index
-  ([50f2b4](https://github.com/vdavid/cmdr/commit/50f2b4), [e3259b](https://github.com/vdavid/cmdr/commit/e3259b),
-  [36b340](https://github.com/vdavid/cmdr/commit/36b340))
-- Testing: remove desktop smoke tests (covered by Vitest + Linux E2E), speed up store tests by ~20s
-  ([c6210a](https://github.com/vdavid/cmdr/commit/c6210a), [dab071](https://github.com/vdavid/cmdr/commit/dab071))
-- Refactors: reduce structural code duplication across write ops, listing, events, and search dialog
+- Enforce CSS design tokens via Stylelint ([50f2b4](https://github.com/vdavid/cmdr/commit/50f2b4),
+  [e3259b](https://github.com/vdavid/cmdr/commit/e3259b), [36b340](https://github.com/vdavid/cmdr/commit/36b340))
+- Drop desktop smoke tests, speed up store tests by ~20 s ([c6210a](https://github.com/vdavid/cmdr/commit/c6210a),
+  [dab071](https://github.com/vdavid/cmdr/commit/dab071))
+- Reduce code duplication across write ops, listing, events, search dialog
   ([33ec2f](https://github.com/vdavid/cmdr/commit/33ec2f))
-- Website: add story + testimonials sections, landing page polish, fix Docker healthcheck, fix Remark42 CSP
+- Website: story + testimonials sections, landing page polish, Docker healthcheck, Remark42 CSP
   ([d5a7f4](https://github.com/vdavid/cmdr/commit/d5a7f4), [51acd8](https://github.com/vdavid/cmdr/commit/51acd8),
   [424a80](https://github.com/vdavid/cmdr/commit/424a80), [dd5e34](https://github.com/vdavid/cmdr/commit/dd5e34))
-- MTP: upgrade mtp-rs to v0.2.0 ([634255](https://github.com/vdavid/cmdr/commit/634255))
+- Bump mtp-rs to 0.2.0 ([634255](https://github.com/vdavid/cmdr/commit/634255))
 
 ## [0.8.2] - 2026-03-15
 
 ### Fixed
 
-- Fix crash on launch after auto-update — `fs::copy` overwrote files in-place keeping the same inode, causing macOS
-  kernel code signing cache to SIGKILL the app. Now writes to a temp file then `rename()` for a fresh inode
+- Fix crash on launch after auto-update (kernel code-signing cache SIGKILL: temp + rename for a fresh inode)
   ([d2923af](https://github.com/vdavid/cmdr/commit/d2923af))
-- Fix indexing: per-navigation verifier catches index drift via background readdir diffs with 30s debounce, excluded
-  system paths (`/System`, `/dev`) no longer inserted as empty stubs, unified exclusion checks across
-  scanner/reconciler/verifier ([0f28b51](https://github.com/vdavid/cmdr/commit/0f28b51),
-  [b0b1730](https://github.com/vdavid/cmdr/commit/b0b1730))
-- Fix dir size display during indexing — show "Scanning..." during aggregation phase, refresh panes on
-  aggregation-complete instead of scan-complete ([d0746fb](https://github.com/vdavid/cmdr/commit/d0746fb))
-- Fix navigation latency — fire-and-forget verification (no mutex block), parallelize 6 sequential `listen()` calls,
-  remove redundant index enrichment from `get_file_range` ([a4e87f1](https://github.com/vdavid/cmdr/commit/a4e87f1))
-- Fix indexing performance: replace composite index with integer-only (25 min → seconds for 5.1M entries), add
-  `name_folded` column for O(log n) path resolution, deduplicate replay events (99% reduction in high-churn scenarios)
+- Fix indexing drift: per-navigation verifier with 30 s debounce; skip /System and /dev as empty stubs
+  ([0f28b51](https://github.com/vdavid/cmdr/commit/0f28b51), [b0b1730](https://github.com/vdavid/cmdr/commit/b0b1730))
+- Fix dir size display during indexing (refresh on aggregation-complete, not scan-complete)
+  ([d0746fb](https://github.com/vdavid/cmdr/commit/d0746fb))
+- Fix navigation latency: fire-and-forget verification, parallelize 6 listen() calls
+  ([a4e87f1](https://github.com/vdavid/cmdr/commit/a4e87f1))
+- Fix indexing perf (integer-only index: 25 min to seconds on 5.1M entries; 99% replay-event dedup)
   ([a5b5beb](https://github.com/vdavid/cmdr/commit/a5b5beb), [44fecd6](https://github.com/vdavid/cmdr/commit/44fecd6),
   [d9877c1](https://github.com/vdavid/cmdr/commit/d9877c1))
 
 ### Non-app
 
-- Tooling: separate dev and prod log dirs, fix Linux Rust test output capture, fix smoke test timeout
+- Separate dev and prod log dirs, fix Linux test output capture, fix smoke test timeout
   ([e8762be](https://github.com/vdavid/cmdr/commit/e8762be), [83d2365](https://github.com/vdavid/cmdr/commit/83d2365),
   [88901f9](https://github.com/vdavid/cmdr/commit/88901f9))
-- Docs: improve agent instructions ([dec19cf](https://github.com/vdavid/cmdr/commit/dec19cf))
+- Improve agent instructions ([dec19cf](https://github.com/vdavid/cmdr/commit/dec19cf))
 
 ## [0.8.1] - 2026-03-14
 
 ### Fixed
 
-- Fix indexing: lock-free dir stats reads (bypass `INDEXING` mutex), remove redundant `PathResolver` LRU cache with
-  latent staleness bug, remove broken micro-scans, fix "DB is locked" in post-scan reconciler, fix overlay race during
-  index rebuild, fix lost scan metadata causing full rescan on every restart, fix dir→file replacement leaving orphaned
-  children ([50bd4fa](https://github.com/vdavid/cmdr/commit/50bd4fa),
+- Fix indexing (lock-free dir-stats reads, drop stale PathResolver cache, fix "DB is locked", fix overlay race, lost
+  scan metadata, dir→file replacement orphans) ([50bd4fa](https://github.com/vdavid/cmdr/commit/50bd4fa),
   [44abfd1](https://github.com/vdavid/cmdr/commit/44abfd1), [7319c5c](https://github.com/vdavid/cmdr/commit/7319c5c),
   [26785fc](https://github.com/vdavid/cmdr/commit/26785fc), [795e48b](https://github.com/vdavid/cmdr/commit/795e48b),
   [424eedb](https://github.com/vdavid/cmdr/commit/424eedb), [dbccec1](https://github.com/vdavid/cmdr/commit/dbccec1),
@@ -811,60 +542,45 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Non-app
 
-- Indexing: add concurrency stress tests, event loop tests, and reconciler tests
+- Add indexing concurrency stress tests, event loop tests, reconciler tests
   ([3ad3adc](https://github.com/vdavid/cmdr/commit/3ad3adc), [8a084cd](https://github.com/vdavid/cmdr/commit/8a084cd),
   [dbccec1](https://github.com/vdavid/cmdr/commit/dbccec1))
-- Docs: `ReadPool` thread safety correction, release gotchas from v0.8.0
-  ([a6b5c0a](https://github.com/vdavid/cmdr/commit/a6b5c0a), [4aaa53f](https://github.com/vdavid/cmdr/commit/4aaa53f))
 
 ## [0.8.0] - 2026-03-13
 
 ### Added
 
-- Add custom macOS updater that preserves Full Disk Access permissions across updates — syncs files into existing `.app`
-  bundle instead of replacing it, with privilege escalation when needed
+- Add custom macOS updater that preserves Full Disk Access (syncs into existing .app bundle, privilege escalation)
   ([190a637](https://github.com/vdavid/cmdr/commit/190a637))
-- Add MTP delete, rename, and move operations with full progress, cancellation, and dry-run support
+- Add MTP delete, rename, move (full progress, cancel, dry-run)
   ([812ad07](https://github.com/vdavid/cmdr/commit/812ad07))
-- Add breadcrumb improvements: path displays "/" prefix, abbreviates home directory to "~"
-  ([44b7105](https://github.com/vdavid/cmdr/commit/44b7105))
-- Add auto-rescan on FSEvents channel overflow with user notification toast
-  ([ca7cece](https://github.com/vdavid/cmdr/commit/ca7cece))
-- Add index debug dashboard with live DB stats, watcher status, event rate sparkline, and `MustScanSubDirs` log
+- Add breadcrumb polish ("/" prefix, "~" for home) ([44b7105](https://github.com/vdavid/cmdr/commit/44b7105))
+- Add auto-rescan on FSEvents channel overflow ([ca7cece](https://github.com/vdavid/cmdr/commit/ca7cece))
+- Add index debug dashboard (DB stats, watcher status, event-rate sparkline)
   ([7510ec3](https://github.com/vdavid/cmdr/commit/7510ec3))
 
 ### Fixed
 
-- Fix indexing: interrupt-safe reconciler replaces destructive `MustScanSubDirs` handling, stop micro-scans after
-  cold-start replay, faster bulk inserts by dropping/recreating index, fix false FSEvents deletions, fix missing dir
-  sizes after replay, eliminate enrichment lock contention, periodic DB vacuum
-  ([31df59e](https://github.com/vdavid/cmdr/commit/31df59e), [981b311](https://github.com/vdavid/cmdr/commit/981b311),
-  [da74290](https://github.com/vdavid/cmdr/commit/da74290), [f0c225f](https://github.com/vdavid/cmdr/commit/f0c225f),
-  [bf0b47f](https://github.com/vdavid/cmdr/commit/bf0b47f), [d125a24](https://github.com/vdavid/cmdr/commit/d125a24),
-  [67684bb](https://github.com/vdavid/cmdr/commit/67684bb))
-- Fix drag swizzle failing on wry 0.54+ — moved install to `RunEvent::Ready` after webview creation
-  ([2680bae](https://github.com/vdavid/cmdr/commit/2680bae))
-- Fix MCP live start/stop UX: query backend state as ground truth, serialize operations, auto-check port availability,
-  unified status messages ([f4c107a](https://github.com/vdavid/cmdr/commit/f4c107a))
+- Fix indexing (interrupt-safe reconciler, stop micro-scans, faster bulk inserts, false FSEvents deletes, missing dir
+  sizes after replay, periodic DB vacuum) ([31df59e](https://github.com/vdavid/cmdr/commit/31df59e),
+  [981b311](https://github.com/vdavid/cmdr/commit/981b311), [da74290](https://github.com/vdavid/cmdr/commit/da74290),
+  [f0c225f](https://github.com/vdavid/cmdr/commit/f0c225f), [bf0b47f](https://github.com/vdavid/cmdr/commit/bf0b47f),
+  [d125a24](https://github.com/vdavid/cmdr/commit/d125a24), [67684bb](https://github.com/vdavid/cmdr/commit/67684bb))
+- Fix drag swizzle failing on wry 0.54+ ([2680bae](https://github.com/vdavid/cmdr/commit/2680bae))
+- Fix MCP live start/stop UX (backend state as ground truth, port auto-check)
+  ([f4c107a](https://github.com/vdavid/cmdr/commit/f4c107a))
 - Fix MCP server not stopping on app quit ([61fe290](https://github.com/vdavid/cmdr/commit/61fe290))
 - Fix traffic light position in production builds ([b74ed39](https://github.com/vdavid/cmdr/commit/b74ed39))
-- Fix scan overlay showing stale state — refresh UI after full scan completes
-  ([218bcb9](https://github.com/vdavid/cmdr/commit/218bcb9))
+- Fix scan overlay showing stale state ([218bcb9](https://github.com/vdavid/cmdr/commit/218bcb9))
 
 ### Non-app
 
-- Vendor `cmdr-fsevent-stream` fork into monorepo as workspace crate
-  ([8b937a6](https://github.com/vdavid/cmdr/commit/8b937a6))
-- Website: fix two FOUC flickers on page load (light mode flash, newsletter icon flash)
-  ([8c21ac7](https://github.com/vdavid/cmdr/commit/8c21ac7))
-- Tooling: self-hosted macOS GitHub Actions runner ([665f63a](https://github.com/vdavid/cmdr/commit/665f63a)), index DB
-  query tool ([37f1062](https://github.com/vdavid/cmdr/commit/37f1062)), extract website deploy workflow
-  ([5744636](https://github.com/vdavid/cmdr/commit/5744636)), trim Linux test output
-  ([b9d0ef2](https://github.com/vdavid/cmdr/commit/b9d0ef2)), fix release script
-  ([190bfe9](https://github.com/vdavid/cmdr/commit/190bfe9), [233c8dd](https://github.com/vdavid/cmdr/commit/233c8dd))
-- Refactors: split indexing `mod.rs` into `enrichment.rs`, `event_loop.rs`, `events.rs`
-  ([bb7d57f](https://github.com/vdavid/cmdr/commit/bb7d57f))
-- Dev: pink title bar to distinguish dev from prod ([d2c9ae4](https://github.com/vdavid/cmdr/commit/d2c9ae4))
+- Vendor cmdr-fsevent-stream fork as workspace crate ([8b937a6](https://github.com/vdavid/cmdr/commit/8b937a6))
+- Fix two FOUC flickers on website page load ([8c21ac7](https://github.com/vdavid/cmdr/commit/8c21ac7))
+- Set up self-hosted macOS GitHub Actions runner; add index DB query tool, website deploy workflow extracted
+  ([665f63a](https://github.com/vdavid/cmdr/commit/665f63a), [37f1062](https://github.com/vdavid/cmdr/commit/37f1062),
+  [5744636](https://github.com/vdavid/cmdr/commit/5744636))
+- Pink title bar in dev to distinguish from prod ([d2c9ae4](https://github.com/vdavid/cmdr/commit/d2c9ae4))
 
 ## [0.7.1] - 2026-03-12
 
@@ -877,64 +593,53 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Add AI settings with three providers (off / cloud API / local LLM), 15 cloud presets with per-provider key storage,
-  connection check, model combobox, RAM gauge, and context size control
-  ([b41365b](https://github.com/vdavid/cmdr/commit/b41365b), [abfc248](https://github.com/vdavid/cmdr/commit/abfc248),
-  [423e669](https://github.com/vdavid/cmdr/commit/423e669))
-- Add live MCP server start/stop in Settings — no app restart needed
-  ([e0c55e7](https://github.com/vdavid/cmdr/commit/e0c55e7))
-- Add stale index detection with user notification toast and automatic rescan
-  ([b590a54](https://github.com/vdavid/cmdr/commit/b590a54))
-- Add device tracking for license abuse detection with fair use terms in ToS
+- Add AI settings: three providers (off / cloud / local LLM), 15 cloud presets, per-provider keys, model combobox, RAM
+  gauge, context size ([b41365b](https://github.com/vdavid/cmdr/commit/b41365b),
+  [abfc248](https://github.com/vdavid/cmdr/commit/abfc248), [423e669](https://github.com/vdavid/cmdr/commit/423e669))
+- Live MCP server start/stop in Settings (no app restart) ([e0c55e7](https://github.com/vdavid/cmdr/commit/e0c55e7))
+- Add stale index detection with toast + auto-rescan ([b590a54](https://github.com/vdavid/cmdr/commit/b590a54))
+- Add device tracking for license abuse, fair-use terms in ToS
   ([cf4f913](https://github.com/vdavid/cmdr/commit/cf4f913))
-- Add license section to Settings with status display, action buttons, and dynamic labels across the app
+- Add license section to Settings (status display, action buttons, dynamic labels)
   ([39cf7b4](https://github.com/vdavid/cmdr/commit/39cf7b4))
 - Improve app icon for macOS Sequoia ([cc80d28](https://github.com/vdavid/cmdr/commit/cc80d28))
 
 ### Changed
 
-- Remove supporter license tier — legacy keys gracefully map to Personal
-  ([c0a63f5](https://github.com/vdavid/cmdr/commit/c0a63f5))
-- Split Settings UI horizontally 50-50% ([9493f88](https://github.com/vdavid/cmdr/commit/9493f88))
-- Rename settings file from `settings-v2.json` to `settings.json`
-  ([d987cc8](https://github.com/vdavid/cmdr/commit/d987cc8))
+- Drop supporter license tier (legacy keys map to Personal) ([c0a63f5](https://github.com/vdavid/cmdr/commit/c0a63f5))
+- Split Settings UI horizontally 50/50 ([9493f88](https://github.com/vdavid/cmdr/commit/9493f88))
+- Rename settings-v2.json to settings.json ([d987cc8](https://github.com/vdavid/cmdr/commit/d987cc8))
 
 ### Fixed
 
-- Fix startup panic from `blocking_lock` in async context ([f9855ca](https://github.com/vdavid/cmdr/commit/f9855ca))
-- Fix SQLite write pragmas running on read-only connections, causing panic in subtree scans
+- Fix startup panic from blocking_lock in async context ([f9855ca](https://github.com/vdavid/cmdr/commit/f9855ca))
+- Fix SQLite write pragmas on read-only connections (panic in subtree scans)
   ([a53a275](https://github.com/vdavid/cmdr/commit/a53a275))
-- Fix llama-server not stopping on app quit, keeping stale PIDs alive, and using excessive memory (256k → 4k default
-  context) ([eae70f1](https://github.com/vdavid/cmdr/commit/eae70f1),
-  [ffcbc81](https://github.com/vdavid/cmdr/commit/ffcbc81), [e45c742](https://github.com/vdavid/cmdr/commit/e45c742))
-- Fix Settings UI freezing for ~5s when stopping AI server — instant SIGKILL for stateless llama-server
+- Fix llama-server not stopping on quit, stale PIDs, excess memory (256k to 4k default context)
+  ([eae70f1](https://github.com/vdavid/cmdr/commit/eae70f1), [ffcbc81](https://github.com/vdavid/cmdr/commit/ffcbc81),
+  [e45c742](https://github.com/vdavid/cmdr/commit/e45c742))
+- Fix Settings UI freezing ~5 s when stopping AI server (instant SIGKILL for stateless llama-server)
   ([2af7ee8](https://github.com/vdavid/cmdr/commit/2af7ee8))
-- Fix dev and prod app data clashing on same machine — dev now uses separate data directory and MCP port
-  ([b8b058a](https://github.com/vdavid/cmdr/commit/b8b058a))
-- Fix fallback path resolution falling to `/` instead of `~` ([8d7c644](https://github.com/vdavid/cmdr/commit/8d7c644))
-- Fix indexing: 100x faster aggregation via in-memory accumulation, DB auto vacuum, truncate before full scan, live
-  index size in Settings ([47a2e8e](https://github.com/vdavid/cmdr/commit/47a2e8e),
-  [cad1af5](https://github.com/vdavid/cmdr/commit/cad1af5), [aff2046](https://github.com/vdavid/cmdr/commit/aff2046),
-  [96323e9](https://github.com/vdavid/cmdr/commit/96323e9))
-- Fix FSEvents storms causing high memory pressure — mimalloc allocator, 1s dedup window, reduced SQLite cache and
-  channel buffers ([207ddee](https://github.com/vdavid/cmdr/commit/207ddee))
+- Separate dev/prod data dir and MCP port ([b8b058a](https://github.com/vdavid/cmdr/commit/b8b058a))
+- Fix fallback path resolution falling to / instead of ~ ([8d7c644](https://github.com/vdavid/cmdr/commit/8d7c644))
+- Fix indexing (100× faster aggregation, DB auto-vacuum, truncate before full scan)
+  ([47a2e8e](https://github.com/vdavid/cmdr/commit/47a2e8e), [cad1af5](https://github.com/vdavid/cmdr/commit/cad1af5),
+  [aff2046](https://github.com/vdavid/cmdr/commit/aff2046), [96323e9](https://github.com/vdavid/cmdr/commit/96323e9))
+- Fix FSEvents storms causing memory pressure (mimalloc, 1 s dedup window)
+  ([207ddee](https://github.com/vdavid/cmdr/commit/207ddee))
 
 ### Non-app
 
-- Docs: replace 19 ADRs with colocated Decision/Why entries in 11 CLAUDE.md files, slim down AGENTS.md from 245 to 93
-  lines, add `@wrap-up` and `@plan` commands ([ccf5cc7](https://github.com/vdavid/cmdr/commit/ccf5cc7),
-  [d297a1a](https://github.com/vdavid/cmdr/commit/d297a1a), [0595796](https://github.com/vdavid/cmdr/commit/0595796))
-- Website: show version + file size on all download buttons, fix Intel/Apple detection flicker, fix a11y warning, fix
-  Umami script collision ([bd17056](https://github.com/vdavid/cmdr/commit/bd17056),
-  [ec35b1f](https://github.com/vdavid/cmdr/commit/ec35b1f), [55c950e](https://github.com/vdavid/cmdr/commit/55c950e),
-  [0ad03f4](https://github.com/vdavid/cmdr/commit/0ad03f4))
-- Tooling: add html-validate and circular dep checks, pass kill signals in checker script, remove pnpm audit check
-  ([3dbd5af](https://github.com/vdavid/cmdr/commit/3dbd5af), [4bead2b](https://github.com/vdavid/cmdr/commit/4bead2b),
-  [ce3eae1](https://github.com/vdavid/cmdr/commit/ce3eae1), [2c588bf](https://github.com/vdavid/cmdr/commit/2c588bf))
-- Refactors: extract volume grouping, menu platform code, viewer scroll/search; eliminate all circular deps
+- Replace 19 ADRs with colocated Decision/Why entries in 11 CLAUDE.md files; slim AGENTS.md from 245 to 93 lines
+  ([ccf5cc7](https://github.com/vdavid/cmdr/commit/ccf5cc7), [d297a1a](https://github.com/vdavid/cmdr/commit/d297a1a),
+  [0595796](https://github.com/vdavid/cmdr/commit/0595796))
+- Website: version + file size on download buttons, fix Intel/Apple detection flicker
+  ([bd17056](https://github.com/vdavid/cmdr/commit/bd17056), [ec35b1f](https://github.com/vdavid/cmdr/commit/ec35b1f))
+- Add html-validate and circular-dep checks ([3dbd5af](https://github.com/vdavid/cmdr/commit/3dbd5af),
+  [4bead2b](https://github.com/vdavid/cmdr/commit/4bead2b))
+- Eliminate all circular deps via refactor (volume grouping, menu platform code, viewer scroll/search)
   ([7740fbc](https://github.com/vdavid/cmdr/commit/7740fbc), [8522e71](https://github.com/vdavid/cmdr/commit/8522e71),
   [e16bd91](https://github.com/vdavid/cmdr/commit/e16bd91), [7ed1cea](https://github.com/vdavid/cmdr/commit/7ed1cea))
-- Add missing tests across multiple modules ([b53ce59](https://github.com/vdavid/cmdr/commit/b53ce59))
 
 ## [0.6.1] - 2026-03-10
 
@@ -946,7 +651,7 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- Fix OOM crash from unbounded indexing buffers — toggling Full Disk Access could replay millions of FSEvents with zero
+- Fix OOM crash from unbounded indexing buffers; toggling Full Disk Access could replay millions of FSEvents with zero
   backpressure, consuming 500+ GB RAM. All buffers are now bounded (~350 MB peak), with a memory watchdog that stops
   indexing at 16 GB ([f1501ec](https://github.com/vdavid/cmdr/commit/f1501ec))
 

@@ -3,7 +3,6 @@ Prepare a release based on docs/guides/releasing.md.
 1. Prerequisite: Run `gh secret list` and verify that `TAURI_SIGNING_PRIVATE_KEY` and
    `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` both exist. If either is missing, warn the user and stop.
 2. Update @CHANGELOG.md based on git commits since last release.
-   - Read the file first to match its style.
    - Commits have title + body — read all!
    - You can link multiple commits for changelog items if needed.
    - List major but non-app changes in a "Non-app" section.
@@ -13,6 +12,60 @@ Prepare a release based on docs/guides/releasing.md.
    - **Add a `## [Unreleased]` heading** right after the format preamble (before the first versioned section), then put
      entries under it. The release script replaces this heading with the versioned one. The committed changelog has no
      `[Unreleased]` section between releases — you're creating it fresh each time.
+
+   ### Style: plain-sentence, dense, impact-focused
+   - **Each entry is one sentence.** No `**Bold title:** Body.`; the headline IS the entry. Most entries land under 20
+     words; many under 10. Big aggregated entries for tentpole features (think Linux alpha, Git browser launch) can run
+     several lines if they bundle many real commits.
+   - **No em-dashes** (`—`). They are AI hallmarks. Use parens, commas, colons, or rephrase. En-dashes in ranges are OK.
+     Vary the connector, don't default to `;`. Use `:` to explain or qualify, `,` for a tight list, parens for am aside,
+     new sentence when two ideas don't compress. `;` is OK for other cases.
+   - **Lead with a verb often.** `Add X`, `Fix X`, `Make Y`, `Drop Z`. The bottom of the file is a calibration reference
+     for this; read a handful of entries before drafting.
+   - **Cut aggressively.** Strip internal type names, file paths, code fragments, "why we picked X", etc. Git history
+     has those. Keep impactful & interesting value details.
+   - **Omit low-impact entries.** Tooling-only commits like "release script now stages oxfmt fixes" or "cleared 3 eslint
+     warnings, CI is green again" don't earn a changelog line. If a non-app item has no interesting story for a reader,
+     drop it.
+   - **Read the bottom 160 lines of the file** to calibrate the style. These are hand-written and exemplary.
+
+   #### Before / after examples
+
+   **Don't**:
+
+   > - **Dynamic text size.** New `Settings > Appearance > Text size` slider (75–150 %, default 100 %) that compounds
+   >   with the macOS Accessibility text-size setting. New `View > Zoom` submenu with `⌘+` / `⌘-` / `⌘0` to zoom in,
+   >   out, and reset. Everything scales: row height, icons, column widths, breadcrumbs, viewer ([3 SHAs]).
+
+   **Do**:
+
+   > - Add dynamic text size slider in Settings (75–150%, ⌘+/⌘-/⌘0 shortcuts) ([3 > > SHAs]).
+
+   **Don't**:
+
+   > - Brief network blips no longer kick you out of the folder; only a real not-found triggers eviction
+   >   ([48ac9bf8](...)).
+
+   **Do**:
+
+   > - Fix temp network issues kicking users out of folders ([48ac9bf8](...)).
+
+   **Don't**:
+
+   > - Friendly errors for the git browser: damaged repos, orphaned worktrees, shallow-boundary commits, locked indexes
+   >   get plain-language explanations and a next step ([19d5b075](...), [af64689f](...)).
+
+   **Do**:
+
+   > - Add friendly errors for git browser ([19d5b075](...), [af64689f](...)).
+
+   **Keep long when warranted** (true tentpole launches like Linux alpha — many real commits, big story):
+
+   > - Add Linux support (alpha): volumes via /proc/mounts, file ops with reflink support, trash via FreeDesktop spec,
+   >   inotify file watching, MTP ungated, SMB via mDNS + smbclient fallback, GVFS-mounted shares as volumes, native
+   >   file icons via freedesktop-icons, accent color via XDG Desktop Portal, encrypted credential fallback when no
+   >   system keyring, distro-specific install hints, USB permission handling ([13 SHAs]).
+
 3. Suggest updates to the roadmap.
    - Read @apps/website/src/pages/roadmap.astro as well. Is there anything to tick off (with a date!) or a major
      development worth mentioning?
