@@ -264,28 +264,6 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
 ///
 /// Returns `None` if the `statfs` call fails (for example, the volume was
 /// ejected between listing and probing).
-/// Returns the filesystem ID (`f_fsid`) for a path via `statfs`, as raw bytes.
-/// Two paths on the same filesystem have the same `f_fsid`.
-/// Used to detect whether a mount point has settled (differs from root's fsid).
-///
-/// We compare as bytes because `libc::fsid_t`'s fields are private on macOS.
-pub(crate) fn get_fsid(path: &str) -> Option<[u8; size_of::<libc::fsid_t>()]> {
-    use std::ffi::CString;
-
-    let c_path = CString::new(path).ok()?;
-    let mut stat: std::mem::MaybeUninit<libc::statfs> = std::mem::MaybeUninit::uninit();
-
-    let result = unsafe { libc::statfs(c_path.as_ptr(), stat.as_mut_ptr()) };
-    if result != 0 {
-        return None;
-    }
-
-    let stat = unsafe { stat.assume_init() };
-    // Safe: fsid_t is a plain-old-data struct, reading as bytes is well-defined
-    let bytes: [u8; size_of::<libc::fsid_t>()] = unsafe { std::mem::transmute(stat.f_fsid) };
-    Some(bytes)
-}
-
 fn get_fs_type(path: &str) -> Option<String> {
     use std::ffi::CString;
 
@@ -439,8 +417,6 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
     use objc2::rc::autoreleasepool;
     use objc2_foundation::{NSArray, NSFileManager, NSURL, NSVolumeEnumerationOptions};
 
-    let root_fsid = get_fsid("/");
-
     // Drain autoreleased ObjC objects (NSFileManager, NSArray, NSURL).
     // Called from spawn_blocking threads that lack AppKit's autorelease pool.
     autoreleasepool(|_| {
@@ -477,17 +453,6 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
 
             // Only include /Volumes/* paths (actual mounted volumes)
             if !path.starts_with("/Volumes/") {
-                continue;
-            }
-
-            // Skip volumes whose mount hasn't settled yet. macOS fires the
-            // FSEvent before NSFileManager metadata is ready — the path exists
-            // but statfs still reports the root filesystem's ID. Including it
-            // would show wrong metadata (root volume's name/icon/type).
-            if let Some(root) = root_fsid
-                && get_fsid(&path) == Some(root)
-            {
-                log::debug!("Skipping {} (fsid matches root — mount not settled)", path);
                 continue;
             }
 

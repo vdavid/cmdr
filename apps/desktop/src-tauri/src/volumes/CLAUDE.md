@@ -1,13 +1,13 @@
 # Volumes
 
-macOS volume and location discovery, plus live mount/unmount watching via FSEvents.
+macOS volume and location discovery, plus live mount/unmount watching via `NSWorkspace` notifications.
 
 ## Key files
 
 | File | Purpose |
 |---|---|
 | `mod.rs` | `LocationInfo` type and `VolumeInfo` type alias (`pub use LocationInfo as VolumeInfo` for backwards compatibility), `LocationCategory` enum, `SmbConnectionState` enum. `list_locations()`, `get_volume_space()`, `parse_cloud_provider_name()`, `get_mount_point()` (statfs-based mount resolution with APFS firmlink normalization), `resolve_path_volume_fast()` (builds `VolumeInfo` from statfs without enumerating volumes), and private helpers using `objc2`/`objc2_foundation`. |
-| `watcher.rs` | `notify` (FSEvents) watcher on `/Volumes`. Detects mount/unmount by diffing against `KNOWN_VOLUMES`. Registers/unregisters with `VolumeManager` via `register_volume_with_manager`/`unregister_volume_from_manager` (coupling to `file_system::get_volume_manager()`). Emits `volume-mounted` / `volume-unmounted` Tauri events (still needed — `DualPaneExplorer` uses `volume-unmounted` with the volume path to redirect panes off ejected volumes). Triggers `volume_broadcast::emit_volumes_changed()` on changes. Spawns a mount-settle watcher that polls `fsid` until the volume metadata is ready. |
+| `watcher.rs` | `NSWorkspace` mount/unmount observer. Subscribes to `NSWorkspaceDidMountNotification` and `NSWorkspaceDidUnmountNotification`, extracts the volume path from `NSWorkspaceVolumeURLKey`, and dispatches to `handle_volume_mounted` / `handle_volume_unmounted`. Those register/unregister with `VolumeManager` (via `register_volume_with_manager` / `unregister_volume_from_manager` — coupling to `file_system::get_volume_manager()`), emit per-volume `volume-mounted` / `volume-unmounted` Tauri events (`DualPaneExplorer` uses `volume-unmounted` with the volume path to redirect panes off ejected volumes), and trigger `volume_broadcast::emit_volumes_changed()`. |
 
 ## Location categories
 
@@ -23,13 +23,12 @@ Network        — /Network (commented out, pending sidebar implementation)
 
 ## Global state in `watcher.rs`
 
-All three statics use `OnceLock` — `start_volume_watcher` is idempotent (second call returns early):
-
 ```rust
-APP_HANDLE:    OnceLock<AppHandle>
-WATCHER:       OnceLock<Mutex<Option<RecommendedWatcher>>>
-KNOWN_VOLUMES: OnceLock<Mutex<HashSet<String>>>
+APP_HANDLE:         OnceLock<AppHandle>  // app handle for emitting events
+OBSERVER_INSTALLED: OnceLock<()>         // idempotency gate
 ```
+
+`start_volume_watcher` is idempotent (second call returns early). The observer `RcBlock` closures aren't kept in our own static — `addObserverForName:object:queue:usingBlock:` retains the block for the lifetime of the registration, and we never remove the observer. Same pattern as `file_system/open_with.rs`.
 
 ## `path_to_id`
 
@@ -66,11 +65,11 @@ KNOWN_VOLUMES: OnceLock<Mutex<HashSet<String>>>
 
 ## Key decisions
 
-**Decision**: Use `OnceLock` for all three watcher statics (`APP_HANDLE`, `WATCHER`, `KNOWN_VOLUMES`)
-**Why**: `start_volume_watcher` must be idempotent — calling it twice (e.g., if app setup runs again) should not create a second FSEvents stream. `OnceLock::set` failing on the second call is the idempotency gate. `LazyLock` would initialize eagerly, which doesn't work because the `AppHandle` isn't available at static-init time.
+**Decision**: Use `NSWorkspace` notifications (`NSWorkspaceDidMountNotification` / `NSWorkspaceDidUnmountNotification`) instead of an FSEvents watcher on `/Volumes`
+**Why**: FSEvents fires when the kernel writes a directory entry under `/Volumes`, which races the mount: `statfs` on the new mount point still returns the root filesystem's `fsid` until the OS finishes mounting. The previous implementation papered over this with a `spawn_mount_settle_watcher` that polled `fsid` for up to 10 s, but slow drives behind USB-C/Thunderbolt docks can take longer; if the poll timed out, `get_attached_volumes` filtered the volume out and only an app restart surfaced it. `NSWorkspace` notifications are posted by `diskarbitrationd` *after* the mount is fully settled and `NSFileManager` metadata is ready, so there's no race to paper over and the volume always shows up. They also carry the volume URL directly in `userInfo[NSWorkspaceVolumeURLKey]` — no diffing or polling needed. DiskArbitration would also work but requires a CFRunLoop scheduled separately from Tokio; `NSWorkspace` rides on the AppKit runloop Tauri already runs.
 
-**Decision**: Detect mount/unmount by diffing `KNOWN_VOLUMES` against `get_current_volumes()`, not by trusting FSEvents event types
-**Why**: FSEvents on `/Volumes` fires `Create`, `Remove`, and `Modify` events, but mount operations can produce multiple events in rapid succession (e.g., a `Modify` followed by a `Create`). Diffing against known state is a reliable debounce — the exact event type doesn't matter; only the before/after difference does.
+**Decision**: Use `OnceLock` for `APP_HANDLE` and `OBSERVER_INSTALLED`
+**Why**: `start_volume_watcher` must be idempotent — calling it twice (e.g., if app setup runs again) must not double-subscribe. `OnceLock::set` failing on the second call is the idempotency gate. `LazyLock` would initialize eagerly, which doesn't work because the `AppHandle` isn't available at static-init time.
 
 **Decision**: Use `NSURLVolumeAvailableCapacityForImportantUsageKey` with fallback to `NSURLVolumeAvailableCapacityKey`
 **Why**: The "ForImportantUsage" key accounts for purgeable space (iCloud, APFS snapshots) — it reports how much space the OS would make available if needed, which matches what Finder shows. The plain key reports only physically free blocks, which can be misleadingly low on APFS volumes with purgeable data. The fallback handles older macOS versions where the key doesn't exist.
@@ -95,7 +94,13 @@ KNOWN_VOLUMES: OnceLock<Mutex<HashSet<String>>>
 **Gotcha**: `get_main_volume`, `get_attached_volumes`, and `get_volume_space` wrap their bodies in `objc2::rc::autoreleasepool`
 **Why**: These functions are called from `spawn_blocking` threads (via `blocking_with_timeout_flag` in commands). Without an autorelease pool, the `NSFileManager`, `NSURL`, `NSString`, and `NSNumber` objects created per call accumulate in a default pool that is never drained, causing memory leaks over hours.
 
+**Gotcha**: The observer block in `watcher.rs::install_observers` runs on the main thread
+**Why**: With `queue: nil` passed to `addObserverForName:object:queue:usingBlock:`, AppKit dispatches the block on the same thread that posted the notification. `diskarbitrationd` posts on the main thread, so the block runs there. Keep the body cheap: `register_volume_with_manager` is microseconds, `try_upgrade_smb_mount` and `volume_broadcast::emit_volumes_changed` both `tauri::async_runtime::spawn`, and `app.emit` is non-blocking. Don't add any blocking I/O here without moving it onto a background task.
+
+**Gotcha**: `userInfo` is downcast with `Retained::cast_unchecked` to `NSDictionary<NSString, NSURL>`
+**Why**: AppKit documents the value under `NSWorkspaceVolumeURLKey` as an `NSURL`. The unchecked cast trades a runtime type check for a hard contract on Apple's side. If Apple ever changed this, the next `objectForKey` access would either return `None` (best case) or be unsound. A safer alternative is `cast::<NSDictionary>` plus a `downcast::<NSURL>` per value, but that costs an Objective-C `isKindOfClass:` call per notification. Today we lean on the documented contract; revisit if a future macOS version breaks it.
+
 ## Dependencies
 
-External: `notify`, `dirs`, `objc2`, `objc2_foundation`
+External: `dirs`, `objc2`, `objc2_foundation`, `objc2_app_kit` (`NSWorkspace`), `block2` (`RcBlock` for the observer callbacks)
 Internal: `crate::file_system::{get_volume_manager, volume::LocalPosixVolume}`, `crate::icons::get_icon_for_path`

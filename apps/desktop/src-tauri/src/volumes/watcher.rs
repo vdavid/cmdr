@@ -1,163 +1,146 @@
 //! Volume mount/unmount watcher for macOS.
 //!
-//! Watches the /Volumes directory for changes using FSEvents, detecting when
-//! volumes are mounted or unmounted, and emits Tauri events to the frontend.
+//! Subscribes to `NSWorkspace`'s mount/unmount notifications. When the OS
+//! mounts a volume (USB drive, disk image, SMB share, etc.), `diskarbitrationd`
+//! posts `NSWorkspaceDidMountNotification` on the shared workspace's
+//! notification center. By the time our observer fires, the volume is fully
+//! mounted and `NSFileManager` metadata is ready — no fsid settle dance needed.
+//!
+//! See `apps/desktop/src-tauri/src/volumes/CLAUDE.md` for the rationale on
+//! choosing NSWorkspace over FSEvents and DiskArbitration.
 
+use block2::RcBlock;
 use log::{debug, error};
-use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-use std::collections::HashSet;
-use std::path::Path;
-use std::sync::{Mutex, OnceLock};
+use objc2::rc::Retained;
+use objc2_app_kit::{
+    NSWorkspace, NSWorkspaceDidMountNotification, NSWorkspaceDidUnmountNotification, NSWorkspaceVolumeURLKey,
+};
+use objc2_foundation::{NSDictionary, NSNotification, NSString, NSURL};
+use std::ptr::NonNull;
+use std::sync::OnceLock;
 use tauri::{AppHandle, Emitter};
 
-/// Global app handle for emitting events from the watcher
+/// Global app handle for emitting events from the observer.
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 
-/// The watcher instance (kept alive for the duration of the app)
-static WATCHER: OnceLock<Mutex<Option<RecommendedWatcher>>> = OnceLock::new();
+/// Marker — set after the NSWorkspace observer has been installed.
+/// Idempotency gate so repeat calls to `start_volume_watcher` don't double-subscribe.
+static OBSERVER_INSTALLED: OnceLock<()> = OnceLock::new();
 
-/// Track known volume paths for comparison
-static KNOWN_VOLUMES: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
-
-/// Payload for volume mount/unmount events
+/// Payload for volume mount/unmount events.
 #[derive(Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeEventPayload {
-    /// The volume path (like "/Volumes/MyDrive")
+    /// The volume path (like "/Volumes/MyDrive").
     pub volume_path: String,
 }
 
-/// Get the current set of volumes in /Volumes
-fn get_current_volumes() -> HashSet<String> {
-    let mut volumes = HashSet::new();
-    if let Ok(entries) = std::fs::read_dir("/Volumes") {
-        for entry in entries.flatten() {
-            if let Some(name) = entry.path().to_str() {
-                volumes.insert(name.to_string());
-            }
-        }
-    }
-    volumes
-}
-
-/// Start watching for volume mount/unmount events.
-/// Call this once at app initialization.
+/// Start observing volume mount/unmount notifications. Idempotent.
+///
+/// Call once at app setup. Subsequent calls are no-ops.
 pub fn start_volume_watcher(app: &AppHandle) {
-    // Store app handle for event emission
     if APP_HANDLE.set(app.clone()).is_err() {
         debug!("Volume watcher already initialized");
         return;
     }
+    install_observers();
+}
 
-    // Initialize known volumes
-    let initial_volumes = get_current_volumes();
-    let known = KNOWN_VOLUMES.get_or_init(|| Mutex::new(HashSet::new()));
-    if let Ok(mut known_guard) = known.lock() {
-        *known_guard = initial_volumes.clone();
-        debug!("Initial volumes: {:?}", known_guard);
+/// Stops the watcher. No-op — `NSWorkspace` observers are retained by the
+/// notification center and are intended to live for the app's lifetime.
+#[allow(
+    dead_code,
+    reason = "Symmetry with the Linux watcher; kept for future explicit cleanup"
+)]
+pub fn stop_volume_watcher() {
+    debug!("stop_volume_watcher called (no-op for NSWorkspace observers)");
+}
+
+fn install_observers() {
+    if OBSERVER_INSTALLED.set(()).is_err() {
+        return;
     }
 
-    debug!("Starting volume mount/unmount watcher on /Volumes");
+    let workspace = NSWorkspace::sharedWorkspace();
+    let center = workspace.notificationCenter();
 
-    // Create a watcher for /Volumes directory
-    let watcher_result = notify::recommended_watcher(move |result: Result<Event, notify::Error>| match result {
-        Ok(event) => handle_fs_event(event),
-        Err(e) => error!("Volume watcher error: {}", e),
+    let mount_block = RcBlock::new(|n: NonNull<NSNotification>| {
+        // Safety: NSNotificationCenter delivers a valid notification pointer.
+        let notification = unsafe { n.as_ref() };
+        if let Some(path) = volume_path_from_notification(notification) {
+            handle_volume_mounted(&path);
+        } else {
+            debug!("NSWorkspaceDidMountNotification missing NSWorkspaceVolumeURLKey");
+        }
     });
 
-    match watcher_result {
-        Ok(mut watcher) => {
-            // Watch /Volumes with non-recursive mode (we only care about direct children)
-            let volumes_path = Path::new("/Volumes");
-            if let Err(e) = watcher.watch(volumes_path, RecursiveMode::NonRecursive) {
-                error!("Failed to watch /Volumes: {}", e);
-                return;
-            }
-
-            // Store the watcher to keep it alive
-            let watcher_storage = WATCHER.get_or_init(|| Mutex::new(None));
-            if let Ok(mut guard) = watcher_storage.lock() {
-                *guard = Some(watcher);
-            }
-
-            debug!("Volume watcher started successfully");
+    let unmount_block = RcBlock::new(|n: NonNull<NSNotification>| {
+        let notification = unsafe { n.as_ref() };
+        if let Some(path) = volume_path_from_notification(notification) {
+            handle_volume_unmounted(&path);
+        } else {
+            debug!("NSWorkspaceDidUnmountNotification missing NSWorkspaceVolumeURLKey");
         }
-        Err(e) => {
-            error!("Failed to create volume watcher: {}", e);
-        }
+    });
+
+    // Safety: the notification name constants are valid AppKit globals, and
+    // `addObserverForName:object:queue:usingBlock:` retains the block for the
+    // lifetime of the observer registration. We never remove the observer
+    // (mirrors the pattern in `file_system/open_with.rs`), so the block lives
+    // for the rest of the process.
+    unsafe {
+        center.addObserverForName_object_queue_usingBlock(
+            Some(NSWorkspaceDidMountNotification),
+            None,
+            None,
+            &mount_block,
+        );
+        center.addObserverForName_object_queue_usingBlock(
+            Some(NSWorkspaceDidUnmountNotification),
+            None,
+            None,
+            &unmount_block,
+        );
     }
+
+    debug!("NSWorkspace volume mount/unmount observer installed");
 }
 
-/// Handle filesystem events on /Volumes
-fn handle_fs_event(event: Event) {
-    // We're interested in Create and Remove events
-    match event.kind {
-        EventKind::Create(_) | EventKind::Remove(_) | EventKind::Modify(_) => {
-            // Debounce: compare current state with known state
-            check_for_volume_changes();
-        }
-        _ => {}
-    }
+/// Extract the volume path from an `NSWorkspace` mount/unmount notification's
+/// `userInfo` dictionary.
+///
+/// `NSWorkspaceVolumeURLKey` carries the file URL of the (un)mounted volume.
+/// Returns `None` if `userInfo` is missing the key — defensive: AppKit always
+/// includes it for these notifications, but synthetic posts (e.g. tests) might
+/// not.
+pub(crate) fn volume_path_from_notification(notification: &NSNotification) -> Option<String> {
+    let user_info = notification.userInfo()?;
+
+    // The notification's userInfo is `NSDictionary<NSString *, id>` per Apple
+    // docs. We narrow the value type to `NSURL` so `objectForKey` returns the
+    // URL directly — every observed mount/unmount notification carries an
+    // `NSURL` under this key.
+    let typed: Retained<NSDictionary<NSString, NSURL>> = unsafe { Retained::cast_unchecked(user_info) };
+
+    // `NSWorkspaceVolumeURLKey` is a `&'static NSString` constant from AppKit
+    // (`extern "C"` static — accessing it requires `unsafe`).
+    let key: &NSString = unsafe { NSWorkspaceVolumeURLKey };
+    let url = typed.objectForKey(key)?;
+
+    let ns_path = url.path()?;
+    Some(ns_path.to_string())
 }
 
-/// Check for volume changes by comparing current state with known state
-fn check_for_volume_changes() {
-    let current_volumes = get_current_volumes();
+/// Handle a mount notification: register the volume, attempt SMB upgrade,
+/// emit the per-volume Tauri event, and broadcast a volume-list refresh.
+///
+/// Public for tests so the handler logic can be exercised without posting
+/// real `NSWorkspace` notifications.
+pub(crate) fn handle_volume_mounted(volume_path: &str) {
+    debug!("Volume mounted: {}", volume_path);
 
-    let known = match KNOWN_VOLUMES.get() {
-        Some(k) => k,
-        None => return,
-    };
-
-    let mut known_guard = match known.lock() {
-        Ok(g) => g,
-        Err(_) => return,
-    };
-
-    let mounted: Vec<_> = current_volumes.difference(&known_guard).cloned().collect();
-    let unmounted: Vec<_> = known_guard.difference(&current_volumes).cloned().collect();
-
-    for path in &mounted {
-        debug!("Volume mounted: {}", path);
-        emit_volume_mounted(path);
-        // Wait for macOS to settle the mount, then re-broadcast.
-        // FSEvents fire before NSFileManager metadata is ready — the fsid
-        // still matches root. We poll until it differs, then emit.
-        spawn_mount_settle_watcher(path.clone());
-    }
-
-    for path in &unmounted {
-        debug!("Volume unmounted: {}", path);
-        emit_volume_unmounted(path);
-    }
-
-    // Broadcast updated volume list to frontend
-    if !mounted.is_empty() || !unmounted.is_empty() {
-        crate::volume_broadcast::emit_volumes_changed();
-    }
-
-    // Update known volumes
-    *known_guard = current_volumes;
-}
-
-/// Stop watching for volume events.
-/// Call this on app shutdown.
-#[allow(dead_code, reason = "Will be used for explicit cleanup on app shutdown")]
-pub fn stop_volume_watcher() {
-    if let Some(watcher_storage) = WATCHER.get()
-        && let Ok(mut guard) = watcher_storage.lock()
-    {
-        *guard = None;
-    }
-    debug!("Volume watcher stopped");
-}
-
-/// Emit a volume mounted event to the frontend and register with VolumeManager.
-fn emit_volume_mounted(volume_path: &str) {
-    // Register the new volume with VolumeManager so it can be used for file operations
     register_volume_with_manager(volume_path);
 
-    // If it's an SMB mount and direct connections are enabled, try to upgrade
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     try_upgrade_smb_mount(volume_path);
 
@@ -167,16 +150,47 @@ fn emit_volume_mounted(volume_path: &str) {
         };
         if let Err(e) = app.emit("volume-mounted", payload) {
             error!("Failed to emit volume-mounted event: {}", e);
-        } else {
-            debug!("Emitted volume-mounted event for {}", volume_path);
         }
     }
+
+    crate::volume_broadcast::emit_volumes_changed();
 }
 
-/// Register a mounted volume with the VolumeManager.
+/// Handle an unmount notification: tear down the SMB session if any,
+/// unregister the volume, emit the per-volume Tauri event, and broadcast.
 ///
-/// Uses `register_if_absent` so that a pre-registered `SmbVolume` (from the
-/// mount flow) is not replaced by a `LocalPosixVolume`.
+/// Public for tests so the handler logic can be exercised without posting
+/// real `NSWorkspace` notifications.
+pub(crate) fn handle_volume_unmounted(volume_path: &str) {
+    debug!("Volume unmounted: {}", volume_path);
+
+    // Call `on_unmount` before unregistering so an `SmbVolume` can disconnect
+    // its smb2 session cleanly.
+    {
+        let volume_id = super::path_to_id(volume_path);
+        if let Some(volume) = crate::file_system::get_volume_manager().get(&volume_id) {
+            volume.on_unmount();
+        }
+    }
+
+    unregister_volume_from_manager(volume_path);
+
+    if let Some(app) = APP_HANDLE.get() {
+        let payload = VolumeEventPayload {
+            volume_path: volume_path.to_string(),
+        };
+        if let Err(e) = app.emit("volume-unmounted", payload) {
+            error!("Failed to emit volume-unmounted event: {}", e);
+        }
+    }
+
+    crate::volume_broadcast::emit_volumes_changed();
+}
+
+/// Register a mounted volume with the `VolumeManager`.
+///
+/// Uses `register_if_absent` so a pre-registered `SmbVolume` (from the mount
+/// flow) is not replaced by a `LocalPosixVolume`.
 fn register_volume_with_manager(volume_path: &str) {
     use crate::file_system::get_volume_manager;
     use crate::file_system::volume::LocalPosixVolume;
@@ -185,7 +199,6 @@ fn register_volume_with_manager(volume_path: &str) {
 
     let volume_id = super::path_to_id(volume_path);
 
-    // Get volume name from path
     let name = Path::new(volume_path)
         .file_name()
         .and_then(|n| n.to_str())
@@ -204,80 +217,13 @@ fn register_volume_with_manager(volume_path: &str) {
     }
 }
 
-/// Emit a volume unmounted event to the frontend and unregister from VolumeManager.
-fn emit_volume_unmounted(volume_path: &str) {
-    // Call on_unmount before unregistering (lets SmbVolume disconnect its smb2 session)
-    {
-        let volume_id = super::path_to_id(volume_path);
-        if let Some(volume) = crate::file_system::get_volume_manager().get(&volume_id) {
-            volume.on_unmount();
-        }
-    }
-
-    // Unregister the volume from VolumeManager
-    unregister_volume_from_manager(volume_path);
-
-    if let Some(app) = APP_HANDLE.get() {
-        let payload = VolumeEventPayload {
-            volume_path: volume_path.to_string(),
-        };
-        if let Err(e) = app.emit("volume-unmounted", payload) {
-            error!("Failed to emit volume-unmounted event: {}", e);
-        } else {
-            debug!("Emitted volume-unmounted event for {}", volume_path);
-        }
-    }
-}
-
-/// Unregister a volume from the VolumeManager.
+/// Unregister a volume from the `VolumeManager`.
 fn unregister_volume_from_manager(volume_path: &str) {
     use crate::file_system::get_volume_manager;
 
     let volume_id = super::path_to_id(volume_path);
-
     get_volume_manager().unregister(&volume_id);
     debug!("Unregistered volume: {} ({})", volume_id, volume_path);
-}
-
-/// Spawns a task that waits for a newly mounted volume's metadata to settle.
-///
-/// macOS fires FSEvents before `NSFileManager` metadata is ready — `statfs`
-/// on the mount point still returns the root filesystem's ID. We poll up to
-/// 10 times (1s apart) until the fsid differs from root, then re-broadcast
-/// the volume list so the frontend picks up the volume with correct metadata.
-fn spawn_mount_settle_watcher(volume_path: String) {
-    tauri::async_runtime::spawn(async move {
-        let root_fsid = super::get_fsid("/");
-        let Some(root) = root_fsid else { return };
-
-        for attempt in 1..=10 {
-            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-
-            // Volume was unmounted while we were waiting
-            if !Path::new(&volume_path).exists() {
-                debug!("Mount settle: {} disappeared, stopping", volume_path);
-                return;
-            }
-
-            match super::get_fsid(&volume_path) {
-                Some(fsid) if fsid != root => {
-                    debug!(
-                        "Mount settle: {} ready after {}s (fsid differs from root)",
-                        volume_path, attempt
-                    );
-                    crate::volume_broadcast::emit_volumes_changed();
-                    return;
-                }
-                _ => {
-                    debug!("Mount settle: {} not ready yet (attempt {}/10)", volume_path, attempt);
-                }
-            }
-        }
-
-        // Give up after 10s — emit anyway as best effort
-        debug!("Mount settle: {} timed out after 10s, emitting anyway", volume_path);
-        crate::volume_broadcast::emit_volumes_changed();
-    });
 }
 
 /// Tries to upgrade an SMB mount to a direct smb2 connection in the background.
@@ -293,7 +239,7 @@ fn try_upgrade_smb_mount(volume_path: &str) {
     }
 
     let Some(info) = get_smb_mount_info(volume_path) else {
-        return; // Not an SMB mount
+        return;
     };
 
     let mount_path = volume_path.to_string();
@@ -320,22 +266,181 @@ fn try_upgrade_smb_mount(volume_path: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use objc2_foundation::{NSDictionary, NSString, NSURL};
 
     #[test]
-    fn test_volume_event_payload_serialization() {
+    fn payload_serializes_with_camel_case_key() {
         let payload = VolumeEventPayload {
             volume_path: "/Volumes/MyDrive".to_string(),
         };
         let json = serde_json::to_string(&payload).unwrap();
-        assert!(json.contains("volumePath"));
+        assert!(json.contains("volumePath"), "expected camelCase 'volumePath' in {json}");
         assert!(json.contains("/Volumes/MyDrive"));
     }
 
+    /// Builds a synthetic `NSNotification` whose `userInfo` carries a file URL
+    /// under `NSWorkspaceVolumeURLKey`, matching the shape AppKit posts for
+    /// real mount/unmount events.
+    fn synthetic_volume_notification(volume_path: &str) -> Retained<NSNotification> {
+        let path_ns = NSString::from_str(volume_path);
+        let url = NSURL::fileURLWithPath(&path_ns);
+        let key: &NSString = unsafe { NSWorkspaceVolumeURLKey };
+
+        let user_info: Retained<NSDictionary<NSString, NSURL>> =
+            NSDictionary::from_slices::<NSString>(&[key], &[&*url]);
+
+        let name = unsafe { NSWorkspaceDidMountNotification };
+        let user_info_any: Retained<NSDictionary> = unsafe { Retained::cast_unchecked(user_info) };
+        unsafe { NSNotification::notificationWithName_object_userInfo(name, None, Some(&user_info_any)) }
+    }
+
     #[test]
-    fn test_get_current_volumes() {
-        let volumes = get_current_volumes();
-        // /Volumes should always have at least "Macintosh HD" or similar
-        // This test just ensures the function doesn't panic
-        assert!(volumes.is_empty() || !volumes.is_empty());
+    fn extracts_volume_path_from_well_formed_notification() {
+        let notification = synthetic_volume_notification("/Volumes/MyDrive");
+        let path = volume_path_from_notification(&notification);
+        assert_eq!(path.as_deref(), Some("/Volumes/MyDrive"));
+    }
+
+    #[test]
+    fn extracts_volume_path_with_unicode_name() {
+        // Cyrillic and CJK characters in a single code point each — these
+        // aren't decomposable, so they round-trip through `NSURL` cleanly.
+        // Latin diacritics like "Útikönyv" do *not* round-trip: macOS file
+        // URLs canonicalize to NFD (e.g. "Ú" → "U" + combining acute), which
+        // is normal for paths returned from `NSURL.path()` and is what real
+        // mount notifications also deliver.
+        let notification = synthetic_volume_notification("/Volumes/Привет東京");
+        let path = volume_path_from_notification(&notification);
+        assert_eq!(path.as_deref(), Some("/Volumes/Привет東京"));
+    }
+
+    #[test]
+    fn returns_none_when_user_info_missing() {
+        let name = unsafe { NSWorkspaceDidMountNotification };
+        // Notification with no userInfo — defensive against malformed posts.
+        let notification = unsafe { NSNotification::notificationWithName_object_userInfo(name, None, None) };
+        assert!(volume_path_from_notification(&notification).is_none());
+    }
+
+    #[test]
+    fn returns_none_when_volume_url_key_absent() {
+        // userInfo is present but lacks NSWorkspaceVolumeURLKey.
+        let other_key = NSString::from_str("UnrelatedKey");
+        let other_value = NSString::from_str("UnrelatedValue");
+        let user_info: Retained<NSDictionary<NSString, NSString>> =
+            NSDictionary::from_slices::<NSString>(&[&other_key], &[&*other_value]);
+        let user_info_any: Retained<NSDictionary> = unsafe { Retained::cast_unchecked(user_info) };
+
+        let name = unsafe { NSWorkspaceDidMountNotification };
+        let notification =
+            unsafe { NSNotification::notificationWithName_object_userInfo(name, None, Some(&user_info_any)) };
+        assert!(volume_path_from_notification(&notification).is_none());
+    }
+
+    #[test]
+    fn handle_volume_mounted_registers_with_volume_manager() {
+        use crate::file_system::get_volume_manager;
+
+        // Unique path so this test doesn't collide with parallel tests.
+        let volume_path = "/Volumes/cmdr-test-mount-register";
+        let volume_id = super::super::path_to_id(volume_path);
+
+        // Make sure we start clean.
+        get_volume_manager().unregister(&volume_id);
+        assert!(
+            get_volume_manager().get(&volume_id).is_none(),
+            "precondition: volume should not be registered"
+        );
+
+        handle_volume_mounted(volume_path);
+
+        assert!(
+            get_volume_manager().get(&volume_id).is_some(),
+            "expected volume registered after mount handler"
+        );
+
+        get_volume_manager().unregister(&volume_id);
+    }
+
+    #[test]
+    fn handle_volume_unmounted_unregisters_from_volume_manager() {
+        use crate::file_system::get_volume_manager;
+        use crate::file_system::volume::LocalPosixVolume;
+        use std::sync::Arc;
+
+        let volume_path = "/Volumes/cmdr-test-mount-unregister";
+        let volume_id = super::super::path_to_id(volume_path);
+
+        // Pre-register so the unmount handler has something to remove.
+        let volume = Arc::new(LocalPosixVolume::new("cmdr-test", volume_path));
+        get_volume_manager().register_if_absent(&volume_id, volume);
+        assert!(
+            get_volume_manager().get(&volume_id).is_some(),
+            "precondition: volume should be registered"
+        );
+
+        handle_volume_unmounted(volume_path);
+
+        assert!(
+            get_volume_manager().get(&volume_id).is_none(),
+            "expected volume unregistered after unmount handler"
+        );
+    }
+
+    #[test]
+    fn mount_then_unmount_round_trip_leaves_no_registration() {
+        use crate::file_system::get_volume_manager;
+
+        let volume_path = "/Volumes/cmdr-test-roundtrip";
+        let volume_id = super::super::path_to_id(volume_path);
+        get_volume_manager().unregister(&volume_id);
+
+        handle_volume_mounted(volume_path);
+        assert!(get_volume_manager().get(&volume_id).is_some());
+
+        handle_volume_unmounted(volume_path);
+        assert!(get_volume_manager().get(&volume_id).is_none());
+    }
+
+    /// End-to-end wire-up test: install the real NSWorkspace observer, post a
+    /// synthetic mount notification on the workspace's notification center,
+    /// and verify our handler actually ran (the volume becomes registered).
+    ///
+    /// `addObserverForName:object:queue:usingBlock:` with `queue: nil` delivers
+    /// the block synchronously on the posting thread, so by the time
+    /// `postNotification:` returns, our handler has already executed.
+    ///
+    /// This is the gold-standard test: it exercises the entire observer chain,
+    /// not just the extraction helper. If the observer block isn't retained
+    /// correctly, or if the cast/key lookup is wrong, this test catches it.
+    #[test]
+    fn end_to_end_post_notification_runs_handler() {
+        use crate::file_system::get_volume_manager;
+
+        // Ensure the observer is wired up. Idempotent — safe to call from
+        // multiple tests; only the first call actually installs.
+        install_observers();
+
+        let volume_path = "/Volumes/cmdr-test-e2e-post";
+        let volume_id = super::super::path_to_id(volume_path);
+
+        // Start clean.
+        get_volume_manager().unregister(&volume_id);
+        assert!(get_volume_manager().get(&volume_id).is_none());
+
+        // Build and post the notification on the actual NSWorkspace center
+        // — same channel real mount events arrive on.
+        let notification = synthetic_volume_notification(volume_path);
+        let workspace = NSWorkspace::sharedWorkspace();
+        let center = workspace.notificationCenter();
+        center.postNotification(&notification);
+
+        assert!(
+            get_volume_manager().get(&volume_id).is_some(),
+            "observer block did not fire for posted NSWorkspaceDidMountNotification"
+        );
+
+        // Cleanup.
+        get_volume_manager().unregister(&volume_id);
     }
 }
