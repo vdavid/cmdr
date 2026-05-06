@@ -104,6 +104,14 @@ halves line up. The contract: `formatDateTimePartsWithFormat` (in `lib/settings/
 width; `FullList` renders `.date-left` (inline-block, fixed width, right-aligned) followed by `.date-right`
 (`margin-left: var(--spacing-xs)`). Tooltips/MCP/status bar still see joined strings via `formatDateTimeWithFormat`.
 
+**Decision**: Column-width measurers (canvas in `full-list-utils.ts`, pretext in `measure-column-widths.ts` and
+`measure-brief-column-widths.ts`) cache their measurer/context per text scale and rebuild on the **debounced** "settled"
+scale event from `lib/text-size.svelte::onDebouncedScaleChange`, not on every reactive read. **Why**: the CSS layer
+reflows immediately via `--font-scale`, so users see text grow live. Recomputing per-column widths on every slider step
+would thrash pretext rebuilds. Coalescing to the same 1 s + idle window the font-metrics IPC uses keeps the UI smooth
+during drag and snaps to correct widths once the user releases. `FullList` and `BriefList` track the settle event via a
+local `scaleSettleTick` `$state` they bump from the subscription, then read inside the column-width `$effect`.
+
 ## Gotchas
 
 **Gotcha**: `$state()` cannot live in `.ts` files **Why**: `virtual-scroll.ts` is pure functions. Reactive state must be

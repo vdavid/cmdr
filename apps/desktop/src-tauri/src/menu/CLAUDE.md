@@ -109,7 +109,12 @@ template auto-tinting). However, **full-color non-template images do render corr
 
 ## Menu structure
 
-Both platforms share: File, Edit, View (with Sort by submenu), Go, Tab, Help.
+Both platforms share: File, Edit, View (with Sort by and Zoom submenus), Go, Tab, Help.
+
+The **Zoom** submenu (`build_zoom_submenu`) holds the text-size presets (75/100/125/150 %) plus Zoom in (`Cmd+Plus`) /
+Zoom out (`Cmd+Minus`) / 100 % (`Cmd+0`). Items are `App`-scoped so the keyboard accelerators fire in any focused window.
+Linux skips the in/out accelerators because GTK intercepts `Cmd+Plus` / `Cmd+Minus` at the toolkit level — the JS
+shortcut dispatch path covers Linux.
 macOS adds: cmdr (app menu), Window. See the menu item ID constants in `mod.rs` for the full item list.
 
 Viewer windows get a minimal menu: File (Close), Edit (clipboard), View (Word wrap), and on macOS
