@@ -241,14 +241,30 @@ pub(super) async fn run_live_event_loop(
 /// Drain the pending events map, process each through the reconciler, and
 /// send a single `UpdateLastEventId` for the batch.
 ///
-/// Uses a two-pass approach to handle parent-before-child ordering:
-/// 1. Process directory creation events first (sorted by path depth)
-/// 2. Flush the writer so the read connection can resolve new parent IDs
-/// 3. Process remaining events (file creations, modifications, removals)
+/// Three-phase approach:
 ///
-/// Without this, child file events in the same batch as their parent
-/// directory's creation event would fail to resolve the parent ID and be
-/// silently skipped ("parent not in DB").
+/// **Phase 1 — Directory creations:** Sort by path depth and process parents
+/// before children, then flush so the read connection sees the newly created
+/// rows when later phases resolve children.
+///
+/// **Phase 1.5 — Rename detection by inode:** For every event flagged
+/// `item_renamed` whose path still exists on disk, stat the path and look
+/// up its inode. If the DB already has an entry with that inode at a
+/// *different* `(parent_id, name)`, send `MoveEntryV2` to reuse the existing
+/// row — preserving its `entry_id` and (for directories) its `dir_stats`.
+/// The matched event is removed from the batch so Phase 2 doesn't re-process
+/// it. Then we flush again so Phase 2's `resolve_path` sees the moved row;
+/// the OLD-path event of the same rename will then silently no-op.
+///
+/// **Phase 2 — Everything else:** Files, modifications, removals, and any
+/// rename events that didn't match by inode (the OLD-path side of a successful
+/// match, or both sides of an inode-unstable rename — exFAT/FAT-family
+/// volumes). The latter falls through to today's create/delete behaviour.
+///
+/// Without Phase 1, child file events in the same 1s batch as their parent
+/// directory's creation event would fail `resolve_path()` and be silently
+/// skipped ("parent not in DB"). Without Phase 1.5, renames are processed as
+/// delete+insert, which clears the renamed dir's `dir_stats`.
 pub(super) fn process_live_batch(
     pending_events: &mut HashMap<String, watcher::FsChangeEvent>,
     reconciler: &mut EventReconciler,
@@ -290,6 +306,19 @@ pub(super) fn process_live_batch(
         });
     }
 
+    // Pass 1.5: rename detection by inode. Removes matched events from
+    // `other_events` and replaces the create/delete dance with a single
+    // `MoveEntryV2`, preserving the entry's `dir_stats`.
+    let rename_handled = detect_renames_by_inode(&mut other_events, conn, writer, pending_paths, &mut max_event_id);
+    if rename_handled > 0 {
+        // Flush so Phase 2's `resolve_path` calls see the moved rows. Without
+        // this, the OLD-path event of a matched rename could see the row at
+        // its original `(parent_id, name)` and try to delete it.
+        tokio::task::block_in_place(|| {
+            let _ = writer.flush_blocking();
+        });
+    }
+
     // Pass 2: process everything else
     for (_path, event) in &other_events {
         max_event_id = max_event_id.max(event.event_id);
@@ -299,6 +328,134 @@ pub(super) fn process_live_batch(
     if max_event_id > 0 {
         let _ = writer.send(WriteMessage::UpdateLastEventId(max_event_id));
     }
+}
+
+/// Inspect every `item_renamed` event in `events`. For each path that still
+/// exists on disk and has an inode that already maps to a DB entry at a
+/// *different* `(parent_id, name)`, send `MoveEntryV2` and remove the event.
+///
+/// Returns the number of renames handled so the caller can decide whether to
+/// flush before Phase 2.
+///
+/// Events whose stat fails are *not* removed — they're either the OLD-path
+/// side of a successful match (which silently no-ops in Phase 2 once the row
+/// has moved) or true removals/unrelated noise that Phase 2 needs to see.
+pub(super) fn detect_renames_by_inode(
+    events: &mut Vec<(String, watcher::FsChangeEvent)>,
+    conn: &Connection,
+    writer: &IndexWriter,
+    pending_paths: &mut HashSet<String>,
+    max_event_id: &mut u64,
+) -> usize {
+    let mut handled = 0usize;
+
+    events.retain(|(path, event)| {
+        if !event.flags.item_renamed {
+            return true;
+        }
+
+        let metadata = match std::fs::symlink_metadata(path) {
+            Ok(m) => m,
+            // Path doesn't exist (or is unreadable). Could be the OLD-path
+            // event of a successful rename, or a true removal. Phase 2
+            // handles both.
+            Err(_) => return true,
+        };
+
+        let is_dir = metadata.is_dir();
+        let is_symlink = metadata.is_symlink();
+        let snap = super::metadata::extract_metadata(&metadata, is_dir, is_symlink);
+
+        // Symlink, or a filesystem without stable inodes (exFAT/FAT-family).
+        // Fall through to today's create/delete behaviour.
+        let inode = match snap.inode {
+            Some(i) => i,
+            None => return true,
+        };
+
+        let existing_id = match IndexStore::find_entry_by_inode(conn, inode) {
+            Ok(Some(id)) => id,
+            // No DB row for this inode — Phase 2 will create one.
+            Ok(None) => return true,
+            Err(e) => {
+                log::warn!(target: "indexing::event_loop", "rename pre-pass: find_entry_by_inode({inode}) failed: {e}");
+                return true;
+            }
+        };
+
+        let (new_parent_path, new_name) = match split_parent_and_name(path) {
+            Some(p) => p,
+            None => return true,
+        };
+
+        let new_parent_id = match store::resolve_path(conn, &new_parent_path) {
+            Ok(Some(id)) => id,
+            // New parent isn't in the DB yet; let Phase 2 handle it via the
+            // existing create/modify path. Without a parent ID we can't move.
+            Ok(None) => return true,
+            Err(e) => {
+                log::warn!(
+                    target: "indexing::event_loop",
+                    "rename pre-pass: resolve_path({new_parent_path}) failed: {e}",
+                );
+                return true;
+            }
+        };
+
+        // Defensive no-op: if the entry is already at the target location
+        // (e.g. an inode collision on a non-rename event), skip.
+        if let Ok(Some(old_entry)) = IndexStore::get_entry_by_id(conn, existing_id)
+            && old_entry.parent_id == new_parent_id
+                && store::normalize_for_comparison(&old_entry.name) == store::normalize_for_comparison(&new_name)
+            {
+                return true;
+            }
+
+        if let Err(e) = writer.send(WriteMessage::MoveEntryV2 {
+            entry_id: existing_id,
+            new_parent_id,
+            new_name: new_name.clone(),
+        }) {
+            log::warn!(target: "indexing::event_loop", "rename pre-pass: MoveEntryV2 send failed: {e}");
+            return true;
+        }
+
+        log::debug!(
+            target: "indexing::event_loop",
+            "rename pre-pass: matched inode={inode} → MoveEntryV2 id={existing_id} new_parent={new_parent_id} name={new_name}",
+        );
+
+        // Surface the new parent path to the UI. The old parent's dir-updated
+        // event is already covered by the OLD-path event still in
+        // `pending_events` (the reconciler emits it from `process_live_event`
+        // when its `resolve_path` no-ops, via `emit_dir_updated`).
+        pending_paths.insert(new_parent_path);
+        *max_event_id = (*max_event_id).max(event.event_id);
+        handled += 1;
+        false
+    });
+
+    handled
+}
+
+/// Split `/a/b/c` into (`/a/b`, `c`). Returns `None` for paths whose trailing
+/// component is empty (the root `/`).
+fn split_parent_and_name(path: &str) -> Option<(String, String)> {
+    let trimmed = path.strip_suffix('/').unwrap_or(path);
+    if trimmed.is_empty() {
+        return None;
+    }
+    let idx = trimmed.rfind('/')?;
+    let name = &trimmed[idx + 1..];
+    if name.is_empty() {
+        return None;
+    }
+    let parent = if idx == 0 {
+        "/".to_string()
+    } else {
+        trimmed[..idx].to_string()
+    };
+    Some((parent, name.to_string()))
 }
 
 // ── Replay event loop (cold start sinceWhen) ─────────────────────────
@@ -1680,5 +1837,357 @@ mod tests {
         assert_eq!(raw_count, 750, "should have 750 raw events");
         // 1 (journal) + 20 (chrome) + 50 (unique) = 71 unique paths
         assert_eq!(pending.len(), 71, "should deduplicate to 71 unique paths");
+    }
+
+    // ── split_parent_and_name tests (pure helper) ────────────────────
+
+    #[test]
+    fn split_parent_and_name_handles_normal_paths() {
+        assert_eq!(
+            split_parent_and_name("/a/b/c"),
+            Some(("/a/b".to_string(), "c".to_string()))
+        );
+        assert_eq!(
+            split_parent_and_name("/Users/foo/bar.txt"),
+            Some(("/Users/foo".to_string(), "bar.txt".to_string()))
+        );
+    }
+
+    #[test]
+    fn split_parent_and_name_handles_root_child() {
+        assert_eq!(
+            split_parent_and_name("/foo"),
+            Some(("/".to_string(), "foo".to_string()))
+        );
+    }
+
+    #[test]
+    fn split_parent_and_name_strips_trailing_slash() {
+        assert_eq!(
+            split_parent_and_name("/a/b/c/"),
+            Some(("/a/b".to_string(), "c".to_string()))
+        );
+    }
+
+    #[test]
+    fn split_parent_and_name_rejects_root_only() {
+        assert_eq!(split_parent_and_name("/"), None);
+        assert_eq!(split_parent_and_name(""), None);
+    }
+
+    // ── detect_renames_by_inode integration tests ────────────────────
+
+    use crate::indexing::store::{DirStatsById, ROOT_ID};
+
+    /// Create a temp dir under CARGO_MANIFEST_DIR (Linux's `should_exclude`
+    /// blocks `/tmp/`, but we don't actually scan here — the path just has
+    /// to exist on disk so `stat` succeeds and gives us a real inode).
+    fn rename_test_tempdir() -> tempfile::TempDir {
+        let base = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        tempfile::Builder::new()
+            .prefix("cmdr-rename-test-")
+            .tempdir_in(base)
+            .expect("create temp dir")
+    }
+
+    /// Spawn a writer + DB and return everything callers need.
+    fn rename_test_setup() -> (IndexWriter, std::path::PathBuf, tempfile::TempDir) {
+        let dir = tempfile::tempdir().expect("create db temp dir");
+        let db_path = dir.path().join("rename-test.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+        (writer, db_path, dir)
+    }
+
+    /// Insert each path component as a directory entry, returning the deepest
+    /// dir's entry_id. Mirrors `verifier::tests::ensure_path_in_db`.
+    fn insert_path_chain(db_path: &Path, path: &Path, writer: &IndexWriter) -> i64 {
+        let conn = IndexStore::open_write_connection(db_path).unwrap();
+        let path_str = path.to_string_lossy();
+        let components: Vec<&str> = path_str.split('/').filter(|c| !c.is_empty()).collect();
+        let mut parent_id = ROOT_ID;
+        for component in components {
+            parent_id = match IndexStore::resolve_component(&conn, parent_id, component) {
+                Ok(Some(id)) => id,
+                _ => IndexStore::insert_entry_v2(&conn, parent_id, component, true, false, None, None, None, None)
+                    .unwrap(),
+            };
+        }
+        let db_next_id = IndexStore::get_next_id(&conn).unwrap();
+        writer.next_id().fetch_max(db_next_id, Ordering::Relaxed);
+        parent_id
+    }
+
+    fn renamed_event(path: &str, event_id: u64) -> watcher::FsChangeEvent {
+        make_event(
+            path,
+            event_id,
+            watcher::FsEventFlags {
+                item_renamed: true,
+                item_is_dir: true,
+                ..Default::default()
+            },
+        )
+    }
+
+    /// Same-parent rename: dir created on disk under a known parent. The DB
+    /// has an entry under the same parent at a *different* name with the
+    /// dir's inode pre-populated. The pre-pass should rename the row in
+    /// place, preserving its `dir_stats`.
+    #[test]
+    fn detect_renames_by_inode_same_parent_uses_move_and_preserves_stats() {
+        let fs_root = rename_test_tempdir();
+        let new_dir_path = fs_root.path().join("Bar");
+        std::fs::create_dir(&new_dir_path).expect("create renamed dir");
+
+        let inode =
+            std::os::unix::fs::MetadataExt::ino(&std::fs::symlink_metadata(&new_dir_path).expect("stat renamed dir"));
+
+        let (writer, db_path, _db_dir) = rename_test_setup();
+        let parent_id = insert_path_chain(&db_path, fs_root.path(), &writer);
+
+        // Insert the "old name" entry with the renamed dir's inode and pre-populate
+        // its dir_stats. This is what the pre-pass should preserve.
+        let foo_id = {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            let id = IndexStore::insert_entry_v2(&conn, parent_id, "Foo", true, false, None, None, None, Some(inode))
+                .unwrap();
+            IndexStore::upsert_dir_stats_by_id(
+                &conn,
+                &[DirStatsById {
+                    entry_id: id,
+                    recursive_logical_size: 12_345,
+                    recursive_physical_size: 12_345,
+                    recursive_file_count: 9,
+                    recursive_dir_count: 0,
+                    recursive_has_symlinks: false,
+                }],
+            )
+            .unwrap();
+            id
+        };
+
+        let mut events = vec![(
+            new_dir_path.to_string_lossy().to_string(),
+            renamed_event(&new_dir_path.to_string_lossy(), 100),
+        )];
+        let mut pending_paths = HashSet::new();
+        let mut max_event_id = 0u64;
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let handled = detect_renames_by_inode(&mut events, &conn, &writer, &mut pending_paths, &mut max_event_id);
+        writer.flush_blocking().unwrap();
+
+        assert_eq!(handled, 1, "should detect the rename and emit one MoveEntryV2");
+        assert_eq!(events.len(), 0, "matched event should be removed from the batch");
+        assert_eq!(max_event_id, 100);
+        assert!(pending_paths.contains(&fs_root.path().to_string_lossy().to_string()));
+
+        let read_conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let entry = IndexStore::get_entry_by_id(&read_conn, foo_id).unwrap().unwrap();
+        assert_eq!(entry.name, "Bar", "row should be renamed in place");
+        assert_eq!(entry.parent_id, parent_id);
+
+        let stats = IndexStore::get_dir_stats_by_id(&read_conn, foo_id).unwrap().unwrap();
+        assert_eq!(stats.recursive_logical_size, 12_345, "dir_stats preserved");
+        assert_eq!(stats.recursive_file_count, 9);
+
+        writer.shutdown();
+    }
+
+    /// Cross-parent move: the inode lives in a new parent on disk, but the
+    /// DB has it under a different parent. The pre-pass should issue a
+    /// `MoveEntryV2` that propagates the moved subtree's totals from the
+    /// old ancestor chain to the new one.
+    #[test]
+    fn detect_renames_by_inode_cross_parent_propagates_deltas() {
+        let fs_root = rename_test_tempdir();
+        let dir_a = fs_root.path().join("A");
+        let dir_b = fs_root.path().join("B");
+        std::fs::create_dir(&dir_a).unwrap();
+        std::fs::create_dir(&dir_b).unwrap();
+        let new_dir_path = dir_b.join("D");
+        std::fs::create_dir(&new_dir_path).unwrap();
+
+        let inode =
+            std::os::unix::fs::MetadataExt::ino(&std::fs::symlink_metadata(&new_dir_path).expect("stat new dir"));
+
+        let (writer, db_path, _db_dir) = rename_test_setup();
+        let _root_id = insert_path_chain(&db_path, fs_root.path(), &writer);
+        let dir_a_id = insert_path_chain(&db_path, &dir_a, &writer);
+        let dir_b_id = insert_path_chain(&db_path, &dir_b, &writer);
+
+        // Pre-populate stats so we can observe the propagation deltas.
+        // A starts with the moved dir's contribution, B starts empty.
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        IndexStore::upsert_dir_stats_by_id(
+            &conn,
+            &[
+                DirStatsById {
+                    entry_id: dir_a_id,
+                    recursive_logical_size: 2048,
+                    recursive_physical_size: 4096,
+                    recursive_file_count: 3,
+                    recursive_dir_count: 1,
+                    recursive_has_symlinks: false,
+                },
+                DirStatsById {
+                    entry_id: dir_b_id,
+                    recursive_logical_size: 0,
+                    recursive_physical_size: 0,
+                    recursive_file_count: 0,
+                    recursive_dir_count: 0,
+                    recursive_has_symlinks: false,
+                },
+            ],
+        )
+        .unwrap();
+
+        // Insert D under A (the OLD location) with the inode of B/D and pre-populated stats.
+        let d_id =
+            IndexStore::insert_entry_v2(&conn, dir_a_id, "D", true, false, None, None, None, Some(inode)).unwrap();
+        IndexStore::upsert_dir_stats_by_id(
+            &conn,
+            &[DirStatsById {
+                entry_id: d_id,
+                recursive_logical_size: 2048,
+                recursive_physical_size: 4096,
+                recursive_file_count: 3,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: false,
+            }],
+        )
+        .unwrap();
+        drop(conn);
+
+        let mut events = vec![(
+            new_dir_path.to_string_lossy().to_string(),
+            renamed_event(&new_dir_path.to_string_lossy(), 200),
+        )];
+        let mut pending_paths = HashSet::new();
+        let mut max_event_id = 0u64;
+
+        let read_conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let handled = detect_renames_by_inode(&mut events, &read_conn, &writer, &mut pending_paths, &mut max_event_id);
+        writer.flush_blocking().unwrap();
+
+        assert_eq!(handled, 1);
+        assert_eq!(events.len(), 0);
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let d = IndexStore::get_entry_by_id(&conn, d_id).unwrap().unwrap();
+        assert_eq!(d.parent_id, dir_b_id, "D should now live under B");
+
+        let a_stats = IndexStore::get_dir_stats_by_id(&conn, dir_a_id).unwrap().unwrap();
+        assert_eq!(a_stats.recursive_logical_size, 0, "A loses the moved subtree's bytes");
+        assert_eq!(a_stats.recursive_file_count, 0);
+        assert_eq!(a_stats.recursive_dir_count, 0);
+
+        let b_stats = IndexStore::get_dir_stats_by_id(&conn, dir_b_id).unwrap().unwrap();
+        assert_eq!(b_stats.recursive_logical_size, 2048);
+        assert_eq!(b_stats.recursive_file_count, 3);
+        assert_eq!(b_stats.recursive_dir_count, 1, "B gains D itself in its dir count");
+
+        writer.shutdown();
+    }
+
+    /// Inode-unstable filesystems (exFAT/FAT) report a different inode for
+    /// the renamed dir than the DB has. The pre-pass leaves the event in
+    /// the batch so Phase 2 falls through to today's create/delete path —
+    /// no regression from current behaviour.
+    #[test]
+    fn detect_renames_by_inode_no_match_keeps_event() {
+        let fs_root = rename_test_tempdir();
+        let new_dir_path = fs_root.path().join("Bar");
+        std::fs::create_dir(&new_dir_path).unwrap();
+
+        let (writer, db_path, _db_dir) = rename_test_setup();
+        let parent_id = insert_path_chain(&db_path, fs_root.path(), &writer);
+
+        // Old DB entry with an inode that doesn't match what's on disk.
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        IndexStore::insert_entry_v2(&conn, parent_id, "Foo", true, false, None, None, None, Some(99_999_999)).unwrap();
+        drop(conn);
+
+        let mut events = vec![(
+            new_dir_path.to_string_lossy().to_string(),
+            renamed_event(&new_dir_path.to_string_lossy(), 50),
+        )];
+        let mut pending_paths = HashSet::new();
+        let mut max_event_id = 0u64;
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let handled = detect_renames_by_inode(&mut events, &conn, &writer, &mut pending_paths, &mut max_event_id);
+
+        assert_eq!(handled, 0, "no inode match → no rename detected");
+        assert_eq!(events.len(), 1, "event remains for Phase 2");
+        assert_eq!(max_event_id, 0, "max_event_id only bumped on matches");
+        assert!(pending_paths.is_empty());
+
+        writer.shutdown();
+    }
+
+    /// Events without `item_renamed` set are passed through untouched even
+    /// if their inode would happen to match a DB row.
+    #[test]
+    fn detect_renames_by_inode_ignores_non_renamed_events() {
+        let fs_root = rename_test_tempdir();
+        let new_dir_path = fs_root.path().join("Bar");
+        std::fs::create_dir(&new_dir_path).unwrap();
+
+        let inode = std::os::unix::fs::MetadataExt::ino(&std::fs::symlink_metadata(&new_dir_path).unwrap());
+
+        let (writer, db_path, _db_dir) = rename_test_setup();
+        let parent_id = insert_path_chain(&db_path, fs_root.path(), &writer);
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        IndexStore::insert_entry_v2(&conn, parent_id, "Foo", true, false, None, None, None, Some(inode)).unwrap();
+        drop(conn);
+
+        // Non-renamed event (item_modified) — the pre-pass must ignore it.
+        let modified = make_event(
+            &new_dir_path.to_string_lossy(),
+            42,
+            watcher::FsEventFlags {
+                item_modified: true,
+                item_is_dir: true,
+                ..Default::default()
+            },
+        );
+        let mut events = vec![(new_dir_path.to_string_lossy().to_string(), modified)];
+        let mut pending_paths = HashSet::new();
+        let mut max_event_id = 0u64;
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let handled = detect_renames_by_inode(&mut events, &conn, &writer, &mut pending_paths, &mut max_event_id);
+
+        assert_eq!(handled, 0);
+        assert_eq!(events.len(), 1, "non-renamed event is passed through");
+
+        writer.shutdown();
+    }
+
+    /// `item_renamed` event whose path is gone (the OLD-path side of a
+    /// rename pair) stays in the batch — the pre-pass only handles new-path
+    /// events. Phase 2 will resolve the old path; if a `MoveEntryV2` already
+    /// landed for the same inode, `resolve_path` returns None and Phase 2
+    /// silently no-ops.
+    #[test]
+    fn detect_renames_by_inode_keeps_old_path_event_when_path_is_gone() {
+        let (writer, db_path, _db_dir) = rename_test_setup();
+        let _ = insert_path_chain(&db_path, Path::new("/some/parent"), &writer);
+
+        // Path doesn't exist on disk — symlink_metadata will fail.
+        let gone_path = "/some/parent/RemovedOrRenamedAway";
+        let mut events = vec![(gone_path.to_string(), renamed_event(gone_path, 7))];
+        let mut pending_paths = HashSet::new();
+        let mut max_event_id = 0u64;
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let handled = detect_renames_by_inode(&mut events, &conn, &writer, &mut pending_paths, &mut max_event_id);
+
+        assert_eq!(handled, 0);
+        assert_eq!(events.len(), 1, "gone-path event must remain for Phase 2 to handle");
+
+        writer.shutdown();
     }
 }

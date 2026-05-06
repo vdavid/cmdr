@@ -744,6 +744,25 @@ impl IndexStore {
         Ok(found.is_some())
     }
 
+    /// Look up an entry by inode. Returns the first matching entry's ID, or `None`.
+    ///
+    /// Uses the `idx_inode` index. Used by the live event loop's rename
+    /// pre-pass: when an `item_renamed` event arrives, the new path is stat'd
+    /// to get its inode, then matched against this query. On filesystems that
+    /// preserve directory inodes across rename (APFS/HFS+/ext4/btrfs/XFS/NTFS),
+    /// a hit means we can `MoveEntryV2` the existing row in place, preserving
+    /// its `entry_id` and therefore its `dir_stats`.
+    ///
+    /// Multiple entries can share an inode (hardlinks for files); the `LIMIT 1`
+    /// is fine because the rename pre-pass only needs to know whether _some_
+    /// existing entry already represents this inode. For directory renames the
+    /// inode is unique by construction.
+    pub fn find_entry_by_inode(conn: &Connection, inode: u64) -> Result<Option<i64>, IndexStoreError> {
+        let mut stmt = conn.prepare_cached("SELECT id FROM entries WHERE inode = ?1 LIMIT 1")?;
+        let result = stmt.query_row(params![inode], |row| row.get::<_, i64>(0)).optional()?;
+        Ok(result)
+    }
+
     /// Resolve a path component under a given parent. Returns the child entry ID.
     pub fn resolve_component(conn: &Connection, parent_id: i64, name: &str) -> Result<Option<i64>, IndexStoreError> {
         let mut stmt =

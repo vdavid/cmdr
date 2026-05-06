@@ -18,10 +18,15 @@ pub(super) struct MetadataSnapshot {
 /// For directories and symlinks, sizes are `None` (they don't contribute
 /// to disk usage accounting). For regular files, `logical_size` is
 /// `meta.len()` and `physical_size` is `st_blocks * 512` on Unix.
+///
+/// Directories carry their inode (used for inode-based rename detection in
+/// the live event loop on filesystems where the kernel preserves directory
+/// inodes across rename — APFS/HFS+/ext4/btrfs/XFS/NTFS). Symlinks still get
+/// `inode: None` since they aren't addressed by inode anywhere today.
 pub(super) fn extract_metadata(metadata: &std::fs::Metadata, is_dir: bool, is_symlink: bool) -> MetadataSnapshot {
     let modified_at = extract_mtime(metadata);
 
-    if is_dir || is_symlink {
+    if is_symlink {
         return MetadataSnapshot {
             logical_size: None,
             physical_size: None,
@@ -29,6 +34,31 @@ pub(super) fn extract_metadata(metadata: &std::fs::Metadata, is_dir: bool, is_sy
             inode: None,
             nlink: None,
         };
+    }
+
+    if is_dir {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+            let ino = metadata.ino();
+            return MetadataSnapshot {
+                logical_size: None,
+                physical_size: None,
+                modified_at,
+                inode: if ino != 0 { Some(ino) } else { None },
+                nlink: None,
+            };
+        }
+        #[cfg(not(unix))]
+        {
+            return MetadataSnapshot {
+                logical_size: None,
+                physical_size: None,
+                modified_at,
+                inode: None,
+                nlink: None,
+            };
+        }
     }
 
     #[cfg(unix)]

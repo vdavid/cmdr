@@ -72,6 +72,17 @@ pub enum WriteMessage {
         inode: Option<u64>,
         nlink: Option<u64>,
     },
+    /// Live event loop's rename pre-pass: move an existing entry to a new
+    /// `(parent_id, name)`, preserving its `entry_id` (and therefore any
+    /// `dir_stats` for directories). Detected by inode match against the
+    /// post-rename path. Cross-parent moves propagate the entry's contribution
+    /// down the old ancestor chain and up the new one. Same-parent renames
+    /// don't change ancestor totals so no propagation is needed.
+    MoveEntryV2 {
+        entry_id: i64,
+        new_parent_id: i64,
+        new_name: String,
+    },
     /// Watcher: delete a single entry and its dir_stats by entry ID.
     DeleteEntryById(i64),
     /// Watcher: delete a subtree (directory removed with all children) by entry ID.
@@ -255,6 +266,7 @@ struct StatsSnapshot {
     total: u64,
     insert_entries: u64,
     upsert_entry: u64,
+    move_entry: u64,
     delete_entry: u64,
     delete_subtree: u64,
     propagate_delta: u64,
@@ -284,6 +296,7 @@ impl WriterStats {
         match msg {
             WriteMessage::InsertEntriesV2(_) => self.current.insert_entries += 1,
             WriteMessage::UpsertEntryV2 { .. } => self.current.upsert_entry += 1,
+            WriteMessage::MoveEntryV2 { .. } => self.current.move_entry += 1,
             WriteMessage::DeleteEntryById(_) => self.current.delete_entry += 1,
             WriteMessage::DeleteSubtreeById(_) | WriteMessage::DeleteDescendantsById(_) => {
                 self.current.delete_subtree += 1;
@@ -316,6 +329,7 @@ impl WriterStats {
         let deltas: &[(&str, u64)] = &[
             ("inserts", self.current.insert_entries - self.previous.insert_entries),
             ("upserts", self.current.upsert_entry - self.previous.upsert_entry),
+            ("moves", self.current.move_entry - self.previous.move_entry),
             ("deletes", self.current.delete_entry - self.previous.delete_entry),
             (
                 "delete_subtrees",
@@ -504,6 +518,13 @@ fn process_message(
                 nlink,
                 next_id,
             );
+        }
+        WriteMessage::MoveEntryV2 {
+            entry_id,
+            new_parent_id,
+            new_name,
+        } => {
+            handle_move_entry_v2(conn, entry_id, new_parent_id, new_name);
         }
         WriteMessage::DeleteEntryById(entry_id) => {
             handle_delete_entry_by_id(conn, entry_id);
@@ -854,6 +875,135 @@ fn upsert_insert_new(
             log::warn!("Index writer: insert_entry_v2 failed for {name}: {e}");
         }
     }
+}
+
+/// Move an existing entry to a new `(parent_id, name)`, preserving its
+/// `entry_id` and (for directories) its `dir_stats`.
+///
+/// Used by the live event loop's rename pre-pass: when an `item_renamed`
+/// event arrives whose new path has an inode that already exists in the DB
+/// at a *different* `(parent_id, name)`, we rename the row in place rather
+/// than going through delete+insert (which would lose `dir_stats`).
+///
+/// Cross-parent moves subtract the entry's contribution from the old
+/// ancestor chain and add it to the new one. Same-parent renames don't
+/// change ancestor totals so no propagation runs. The OR-aggregated
+/// `recursive_has_symlinks` flag is recomputed both ways for cross-parent
+/// moves: the old chain may need to clear it (if this was the last
+/// symlink-bearing branch), the new chain may need to set it.
+fn handle_move_entry_v2(conn: &rusqlite::Connection, entry_id: i64, new_parent_id: i64, new_name: String) {
+    use crate::indexing::store::normalize_for_comparison;
+
+    let old_entry = match IndexStore::get_entry_by_id(conn, entry_id) {
+        Ok(Some(e)) => e,
+        Ok(None) => {
+            log::debug!(target: "indexing::writer", "MoveEntryV2: entry id={entry_id} no longer exists, skipping");
+            return;
+        }
+        Err(e) => {
+            log::warn!("Index writer: MoveEntryV2 get_entry_by_id({entry_id}) failed: {e}");
+            return;
+        }
+    };
+
+    // Defensive no-op when the move would be a no-op anyway. Compares names
+    // by their folded form so a rename that only changes case-folding
+    // (e.g. NFD vs NFC on macOS) doesn't trigger spurious propagation.
+    if old_entry.parent_id == new_parent_id
+        && normalize_for_comparison(&old_entry.name) == normalize_for_comparison(&new_name)
+    {
+        log::debug!(
+            target: "indexing::writer",
+            "MoveEntryV2: id={entry_id} already at target (parent_id={new_parent_id}, name={new_name}), no-op",
+        );
+        return;
+    }
+
+    let new_name_folded = normalize_for_comparison(&new_name);
+    if let Err(e) = conn.execute(
+        "UPDATE entries SET parent_id = ?1, name = ?2, name_folded = ?3 WHERE id = ?4",
+        rusqlite::params![new_parent_id, new_name, new_name_folded, entry_id],
+    ) {
+        log::warn!("Index writer: MoveEntryV2 update failed for id={entry_id}: {e}");
+        return;
+    }
+
+    log::debug!(
+        target: "indexing::writer",
+        "MoveEntryV2: id={entry_id} \"{}\" → \"{}\" (parent_id {} → {})",
+        old_entry.name,
+        new_name,
+        old_entry.parent_id,
+        new_parent_id,
+    );
+
+    // Same-parent rename: ancestor totals unchanged, just the row's name moved.
+    if old_entry.parent_id == new_parent_id {
+        WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+        return;
+    }
+
+    // Cross-parent move: subtract from the old chain, add to the new chain.
+    let (logical_delta, physical_delta, file_delta, dir_delta) = if old_entry.is_directory {
+        let totals = IndexStore::get_dir_stats_by_id(conn, entry_id).ok().flatten();
+        let (logical, physical, files, dirs) = match totals {
+            Some(s) => (
+                s.recursive_logical_size as i64,
+                s.recursive_physical_size as i64,
+                s.recursive_file_count as i64,
+                s.recursive_dir_count as i64,
+            ),
+            None => (0, 0, 0, 0),
+        };
+        // The directory itself contributes one to the dir count of every ancestor.
+        (logical, physical, files as i32, (dirs + 1) as i32)
+    } else {
+        (
+            old_entry.logical_size.unwrap_or(0) as i64,
+            old_entry.physical_size.unwrap_or(0) as i64,
+            1,
+            0,
+        )
+    };
+
+    propagate_delta_by_id(
+        conn,
+        old_entry.parent_id,
+        -logical_delta,
+        -physical_delta,
+        -file_delta,
+        -dir_delta,
+    );
+    propagate_delta_by_id(
+        conn,
+        new_parent_id,
+        logical_delta,
+        physical_delta,
+        file_delta,
+        dir_delta,
+    );
+
+    // The `recursive_has_symlinks` flag may flip on either chain. The old
+    // chain might lose its only symlink-bearing descendant; the new chain
+    // might gain one. `propagate_recursive_has_symlinks` is monotonic on
+    // additions and recomputes correctly on removals, so calling it on both
+    // is safe and stops walking as soon as a value stabilizes.
+    if old_entry.is_symlink {
+        propagate_recursive_has_symlinks(conn, old_entry.parent_id);
+        propagate_recursive_has_symlinks(conn, new_parent_id);
+    } else if old_entry.is_directory {
+        let had_symlinks = IndexStore::get_dir_stats_by_id(conn, entry_id)
+            .ok()
+            .flatten()
+            .map(|s| s.recursive_has_symlinks)
+            .unwrap_or(false);
+        if had_symlinks {
+            propagate_recursive_has_symlinks(conn, old_entry.parent_id);
+            propagate_recursive_has_symlinks(conn, new_parent_id);
+        }
+    }
+
+    WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
 }
 
 fn handle_delete_entry_by_id(conn: &rusqlite::Connection, entry_id: i64) {
@@ -2675,6 +2825,423 @@ mod tests {
                 "top should clear once the subtree containing the symlink is gone"
             );
         }
+
+        writer.shutdown();
+    }
+
+    // ── MoveEntryV2 tests ────────────────────────────────────────────
+
+    /// Helper: insert a dir with dir_stats. Returns nothing — the caller knows the id it asked for.
+    fn insert_dir_with_stats(
+        writer: &IndexWriter,
+        db_path: &Path,
+        id: i64,
+        parent_id: i64,
+        name: &str,
+        stats: DirStatsById,
+    ) {
+        writer
+            .send(WriteMessage::InsertEntriesV2(vec![EntryRow {
+                id,
+                parent_id,
+                name: name.into(),
+                is_directory: true,
+                is_symlink: false,
+                logical_size: None,
+                physical_size: None,
+                modified_at: None,
+                inode: None,
+            }]))
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        let conn = IndexStore::open_write_connection(db_path).unwrap();
+        IndexStore::upsert_dir_stats_by_id(&conn, &[stats]).unwrap();
+    }
+
+    #[test]
+    fn move_entry_v2_same_parent_preserves_dir_stats() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Parent dir + child dir with non-trivial dir_stats. The whole point
+        // of MoveEntryV2 vs. delete+insert is preserving these numbers.
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            10,
+            ROOT_ID,
+            "home",
+            DirStatsById {
+                entry_id: 10,
+                recursive_logical_size: 5_000,
+                recursive_physical_size: 5_000,
+                recursive_file_count: 7,
+                recursive_dir_count: 1,
+                recursive_has_symlinks: false,
+            },
+        );
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            20,
+            10,
+            "Foo",
+            DirStatsById {
+                entry_id: 20,
+                recursive_logical_size: 5_000,
+                recursive_physical_size: 5_000,
+                recursive_file_count: 7,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: false,
+            },
+        );
+
+        // Same-parent rename: "Foo" → "Bar".
+        writer
+            .send(WriteMessage::MoveEntryV2 {
+                entry_id: 20,
+                new_parent_id: 10,
+                new_name: "Bar".into(),
+            })
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let entry = IndexStore::get_entry_by_id(&conn, 20).unwrap().unwrap();
+        assert_eq!(entry.name, "Bar", "name should be updated");
+        assert_eq!(entry.parent_id, 10, "parent unchanged");
+
+        let moved_stats = IndexStore::get_dir_stats_by_id(&conn, 20).unwrap().unwrap();
+        assert_eq!(
+            moved_stats.recursive_logical_size, 5_000,
+            "moved dir keeps its own stats"
+        );
+        assert_eq!(moved_stats.recursive_file_count, 7);
+
+        let parent_stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
+        assert_eq!(
+            parent_stats.recursive_logical_size, 5_000,
+            "parent stats unchanged for same-parent rename"
+        );
+        assert_eq!(parent_stats.recursive_file_count, 7);
+        assert_eq!(parent_stats.recursive_dir_count, 1);
+
+        writer.shutdown();
+    }
+
+    #[test]
+    fn move_entry_v2_cross_parent_propagates_deltas() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Two sibling dirs A and B, each with their own pre-populated stats.
+        // Then a child dir D under A with non-trivial stats.
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            10,
+            ROOT_ID,
+            "A",
+            DirStatsById {
+                entry_id: 10,
+                recursive_logical_size: 1024,
+                recursive_physical_size: 2048,
+                recursive_file_count: 5,
+                recursive_dir_count: 1,
+                recursive_has_symlinks: false,
+            },
+        );
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            11,
+            ROOT_ID,
+            "B",
+            DirStatsById {
+                entry_id: 11,
+                recursive_logical_size: 0,
+                recursive_physical_size: 0,
+                recursive_file_count: 0,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: false,
+            },
+        );
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            20,
+            10,
+            "D",
+            DirStatsById {
+                entry_id: 20,
+                recursive_logical_size: 1024,
+                recursive_physical_size: 2048,
+                recursive_file_count: 5,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: false,
+            },
+        );
+
+        writer
+            .send(WriteMessage::MoveEntryV2 {
+                entry_id: 20,
+                new_parent_id: 11,
+                new_name: "D".into(),
+            })
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+        // D itself: same dir_stats, new parent.
+        let d_entry = IndexStore::get_entry_by_id(&conn, 20).unwrap().unwrap();
+        assert_eq!(d_entry.parent_id, 11);
+        let d_stats = IndexStore::get_dir_stats_by_id(&conn, 20).unwrap().unwrap();
+        assert_eq!(d_stats.recursive_logical_size, 1024);
+        assert_eq!(d_stats.recursive_file_count, 5);
+
+        // A: lost D's contribution (size 1024, 5 files, 1 dir for D itself).
+        let a_stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
+        assert_eq!(a_stats.recursive_logical_size, 0);
+        assert_eq!(a_stats.recursive_physical_size, 0);
+        assert_eq!(a_stats.recursive_file_count, 0);
+        assert_eq!(a_stats.recursive_dir_count, 0);
+
+        // B: gained D's contribution.
+        let b_stats = IndexStore::get_dir_stats_by_id(&conn, 11).unwrap().unwrap();
+        assert_eq!(b_stats.recursive_logical_size, 1024);
+        assert_eq!(b_stats.recursive_physical_size, 2048);
+        assert_eq!(b_stats.recursive_file_count, 5);
+        assert_eq!(b_stats.recursive_dir_count, 1);
+
+        writer.shutdown();
+    }
+
+    #[test]
+    fn move_entry_v2_file_cross_parent_propagates_deltas() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Two parent dirs, both starting with empty stats.
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            10,
+            ROOT_ID,
+            "A",
+            DirStatsById {
+                entry_id: 10,
+                recursive_logical_size: 700,
+                recursive_physical_size: 700,
+                recursive_file_count: 1,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: false,
+            },
+        );
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            11,
+            ROOT_ID,
+            "B",
+            DirStatsById {
+                entry_id: 11,
+                recursive_logical_size: 0,
+                recursive_physical_size: 0,
+                recursive_file_count: 0,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: false,
+            },
+        );
+
+        // Insert a file under A (size 700, contributes 1 file).
+        writer
+            .send(WriteMessage::InsertEntriesV2(vec![EntryRow {
+                id: 30,
+                parent_id: 10,
+                name: "f.txt".into(),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(700),
+                physical_size: Some(700),
+                modified_at: Some(1700000000),
+                inode: Some(99),
+            }]))
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        // Move file to B.
+        writer
+            .send(WriteMessage::MoveEntryV2 {
+                entry_id: 30,
+                new_parent_id: 11,
+                new_name: "f.txt".into(),
+            })
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let a_stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
+        assert_eq!(a_stats.recursive_logical_size, 0, "A loses the file's size");
+        assert_eq!(a_stats.recursive_file_count, 0);
+
+        let b_stats = IndexStore::get_dir_stats_by_id(&conn, 11).unwrap().unwrap();
+        assert_eq!(b_stats.recursive_logical_size, 700);
+        assert_eq!(b_stats.recursive_file_count, 1);
+        assert_eq!(b_stats.recursive_dir_count, 0, "files don't contribute to dir count");
+
+        writer.shutdown();
+    }
+
+    #[test]
+    fn move_entry_v2_no_op_when_target_matches_current() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            10,
+            ROOT_ID,
+            "home",
+            DirStatsById {
+                entry_id: 10,
+                recursive_logical_size: 1024,
+                recursive_physical_size: 1024,
+                recursive_file_count: 3,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: false,
+            },
+        );
+
+        // Capture the generation before the no-op.
+        let gen_before = WRITER_GENERATION.load(Ordering::Relaxed);
+
+        writer
+            .send(WriteMessage::MoveEntryV2 {
+                entry_id: 10,
+                new_parent_id: ROOT_ID,
+                new_name: "home".into(),
+            })
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let stats = IndexStore::get_dir_stats_by_id(&conn, 10).unwrap().unwrap();
+        assert_eq!(stats.recursive_logical_size, 1024, "no-op preserves stats");
+        assert_eq!(stats.recursive_file_count, 3);
+
+        // Generation should not have moved (the no-op short-circuits).
+        let gen_after = WRITER_GENERATION.load(Ordering::Relaxed);
+        assert_eq!(gen_before, gen_after, "no-op should not bump WRITER_GENERATION");
+
+        writer.shutdown();
+    }
+
+    #[test]
+    fn move_entry_v2_cross_parent_propagates_recursive_has_symlinks() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            10,
+            ROOT_ID,
+            "A",
+            DirStatsById {
+                entry_id: 10,
+                recursive_logical_size: 0,
+                recursive_physical_size: 0,
+                recursive_file_count: 0,
+                recursive_dir_count: 1,
+                recursive_has_symlinks: true,
+            },
+        );
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            11,
+            ROOT_ID,
+            "B",
+            DirStatsById {
+                entry_id: 11,
+                recursive_logical_size: 0,
+                recursive_physical_size: 0,
+                recursive_file_count: 0,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: false,
+            },
+        );
+        // The dir being moved carries the symlink flag in its own subtree.
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            20,
+            10,
+            "D",
+            DirStatsById {
+                entry_id: 20,
+                recursive_logical_size: 0,
+                recursive_physical_size: 0,
+                recursive_file_count: 0,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: true,
+            },
+        );
+
+        writer
+            .send(WriteMessage::MoveEntryV2 {
+                entry_id: 20,
+                new_parent_id: 11,
+                new_name: "D".into(),
+            })
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let b_stats = IndexStore::get_dir_stats_by_id(&conn, 11).unwrap().unwrap();
+        assert!(
+            b_stats.recursive_has_symlinks,
+            "new parent should pick up the symlink-bearing subtree"
+        );
+
+        writer.shutdown();
+    }
+
+    #[test]
+    fn move_entry_v2_bumps_writer_generation() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        insert_dir_with_stats(
+            &writer,
+            &db_path,
+            10,
+            ROOT_ID,
+            "Foo",
+            DirStatsById {
+                entry_id: 10,
+                recursive_logical_size: 0,
+                recursive_physical_size: 0,
+                recursive_file_count: 0,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: false,
+            },
+        );
+
+        let before = WRITER_GENERATION.load(Ordering::Relaxed);
+        writer
+            .send(WriteMessage::MoveEntryV2 {
+                entry_id: 10,
+                new_parent_id: ROOT_ID,
+                new_name: "Bar".into(),
+            })
+            .unwrap();
+        writer.flush_blocking().unwrap();
+        let after = WRITER_GENERATION.load(Ordering::Relaxed);
+        assert!(after > before, "WRITER_GENERATION should bump after a real move");
 
         writer.shutdown();
     }
