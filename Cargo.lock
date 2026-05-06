@@ -1178,7 +1178,7 @@ dependencies = [
 
 [[package]]
 name = "cmdr"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "alphanumeric-sort",
  "axum",
