@@ -31,8 +31,11 @@ array but is skipped via a `skipRanges` set.
 
 ## Font ID
 
-The font ID `'system-400-12'` is **hardcoded in both TypeScript and Rust** and must stay in sync. It encodes
-`fontFamily-fontWeight-fontSize`. When font settings become user-configurable this will read from settings instead.
+Font IDs encode `fontFamily-fontWeight-fontSize`, e.g. `system-400-12` (the default at scale 1). The size component
+follows the effective text scale: `getCurrentFontId()` reads `getEffectiveScale()` from `$lib/text-size` and rounds
+`12 * scale` to the nearest pixel. Any new size produces a fresh cache miss → re-measure → IPC to Rust → new
+`{font_id}.bin` on disk. Multiple sizes coexist in the in-memory cache and on disk; `load_all_metrics_from_disk`
+preloads them all at app startup.
 
 For measurement, `'system'` resolves to `'-apple-system, BlinkMacSystemFont, system-ui, sans-serif'`.
 
@@ -54,10 +57,11 @@ of thousands of `measureText` calls). Running it synchronously during app boot w
 `requestIdleCallback` defers it until the browser is idle. The `setTimeout(0)` fallback handles environments where
 `requestIdleCallback` is unavailable (some WebView configurations).
 
-**Decision**: Hardcoded font ID (`system-400-12`) in both TypeScript and Rust. **Why**: Font settings are not yet
-user-configurable. Hardcoding avoids premature abstraction. When font customization ships, this single constant becomes
-a settings read. The ID format (`family-weight-size`) is designed to be a cache key — changing any parameter invalidates
-the cached metrics.
+**Decision**: Font ID is now derived from the effective text scale. **Why**: Adding the `appearance.textSize` setting
+(compounded with the macOS Accessibility text size) means Brief mode renders text at different pixel sizes per user. The
+Rust width cache is keyed by exact font ID, so the only correct fix is to vary the ID with size. The ID format
+(`family-weight-size`) was already designed as a cache key — flipping the size component naturally invalidates and
+triggers a re-measure. Multiple sizes coexist in the cache; the Rust side never evicts.
 
 ## Key patterns and gotchas
 
@@ -72,8 +76,9 @@ the cached metrics.
 
 ## Exported functions
 
-- `ensureFontMetricsLoaded()` — main entry point; checks cache, schedules measurement if needed
-- `getCurrentFontId()` — returns the current hardcoded font ID (`'system-400-12'`)
+- `ensureFontMetricsLoaded()` — main entry point; checks cache, schedules measurement if needed. `lib/text-size.ts`
+  calls this on a 1 s debounce after each scale change.
+- `getCurrentFontId()` — returns the font ID for the current effective scale (e.g. `system-400-12`, `system-400-15`).
 
 ## Dependencies
 

@@ -149,17 +149,36 @@
   --spacing-xl: 24px;
   --spacing-2xl: 32px;
 
-  /* === Sizing === */
-  --spacing-tab-bar-height: 28px;
+  /* === Sizing ===
+   * `--spacing-icon-size` scales the file-list icon column with the user's
+   * text size. The 16 base mirrors the historical hardcoded width — density
+   * is intentionally NOT a factor (the densityMappings `iconSize` field is
+   * unused for now; revisit once density is reworked).
+   *
+   * Row height and density-spacing flow through JS getters (inline `style=`
+   * on virtualized rows), so they're not declared as CSS tokens. Keeping
+   * them out of CSS prevents stylelint from surfacing them as "unused".
+   */
+  --spacing-tab-bar-height: calc(28px * var(--font-scale));
+  --spacing-icon-size: calc(16px * var(--font-scale));
 
-  /* === Typography === */
+  /* === Typography ===
+   * Sizes are in rem so they scale with `html` font-size, which itself follows
+   * `--font-scale` (system Accessibility × user setting). At scale 1, the
+   * pixel values match the inline comments below and 1rem = 16px.
+   *
+   * `--font-scale` is written to `:root` by `lib/text-size.svelte.ts` on
+   * startup; the `1` here is the static default for the moments before it
+   * runs (e.g. before SvelteKit hydrates).
+   */
   --font-system: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-size-xs: 10px;
-  --font-size-sm: 12px;
-  --font-size-md: 14px;
-  --font-size-lg: 16px;
-  --font-size-xl: 20px;
+  --font-scale: 1;
+  --font-size-xs: 0.625rem; /* 10px */
+  --font-size-sm: 0.75rem; /* 12px */
+  --font-size-md: 0.875rem; /* 14px */
+  --font-size-lg: 1rem; /* 16px */
+  --font-size-xl: 1.25rem; /* 20px */
 
   /* === Border radius === */
   --radius-xs: 2px;
@@ -525,15 +544,21 @@ a:focus-visible,
   }
 }
 
-/* Fixed font-size for native-app-like behavior:
- * - Establishes 1rem = 16px (makes rem and px interchangeable)
- * - Only responds to OS display scaling (System Settings → Displays)
- * - Ignores WebKit's font-size preferences (unlike percentage-based font-size)
- * This is intentional: we want macOS-native behavior, not web-browser behavior.
+/* Native-app-like base, scaled by user + system text size.
+ *
+ * `--font-scale` is the single compounded value (system Accessibility text
+ * size × user `appearance.textSize` slider). It's set on `:root` by
+ * `lib/text-size.svelte.ts` and defaults to 1 before that runs. At scale 1
+ * the base remains 16px so 1rem = 16px continues to hold; at other scales
+ * rem follows the user's preference instead of being a fixed pixel constant.
+ *
+ * This is intentional: we want macOS-native behavior, not web-browser
+ * font-size preferences. We only honor OS display scaling (Displays) and the
+ * Accessibility text-size signal — never WebKit's per-site font-size pref.
  */
 html {
   /* stylelint-disable-next-line declaration-property-value-disallowed-list -- base size, not a component value */
-  font-size: 16px;
+  font-size: calc(16px * var(--font-scale));
 }
 
 html,

@@ -170,7 +170,12 @@
         min-width: 32px;
         max-width: 180px;
         flex: 1 1 0;
-        height: 24px;
+        /* Scales with --font-scale so the colored top of the active tab stays
+         * flush below the (fixed-height) window title-bar at every scale.
+         * Without this, the bar grew but the tab kept a fixed 24px height,
+         * pushing the colored top down at large scales / behind the title-bar
+         * at small scales. */
+        height: calc(24px * var(--font-scale));
         padding: 0 var(--spacing-sm);
         border: none;
         border-radius: var(--radius-sm) var(--radius-sm) 0 0;
@@ -202,8 +207,9 @@
         background-color: color-mix(in oklch, var(--color-bg-primary), var(--color-accent) 4%);
         color: var(--color-text-primary);
         font-weight: 500;
-        /* Extend down 1px to cover the tab-bar bottom border */
-        height: 25px;
+        /* Scales with --font-scale; mirrors `.tab { height }` plus 1px to cover
+         * the tab-bar bottom border. */
+        height: calc(25px * var(--font-scale));
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         margin-bottom: -1px;
         z-index: 1;

@@ -124,3 +124,42 @@ pub fn init_font_metrics<R: tauri::Runtime>(app: &tauri::AppHandle<R>, font_id: 
         log::debug!("Font metrics: Loaded from disk for font: {}", font_id);
     }
 }
+
+/// Loads every `*.bin` file from the on-disk font-metrics directory into the
+/// in-memory cache.
+///
+/// With user-controlled text scaling, the same install can have measurements
+/// for several font sizes side-by-side (`system-400-12`, `system-400-15`, …).
+/// Pre-loading them all at startup avoids a re-measure burst on first paint
+/// when the user has previously chosen a non-default size.
+pub fn load_all_metrics_from_disk<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
+    let Ok(data_dir) = crate::config::resolved_app_data_dir(app) else {
+        return;
+    };
+    let metrics_dir = data_dir.join("font-metrics");
+    let Ok(entries) = fs::read_dir(&metrics_dir) else {
+        return;
+    };
+
+    let mut loaded = 0usize;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|s| s.to_str()) != Some("bin") {
+            continue;
+        }
+        let Some(font_id) = path.file_stem().and_then(|s| s.to_str()) else {
+            continue;
+        };
+        let Ok(bytes) = fs::read(&path) else { continue };
+        let Ok(metrics): Result<FontMetrics, _> = bincode2::deserialize(&bytes) else {
+            continue;
+        };
+        if let Ok(mut cache) = METRICS_CACHE.write() {
+            cache.insert(font_id.to_string(), metrics);
+            loaded += 1;
+        }
+    }
+    if loaded > 0 {
+        log::debug!("Font metrics: Loaded {loaded} cached size(s) from disk");
+    }
+}

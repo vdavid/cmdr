@@ -1,12 +1,18 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
-    import { getCurrentWindow } from '@tauri-apps/api/window'
+    import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
     import SettingsSidebar from '$lib/settings/components/SettingsSidebar.svelte'
     import SettingsContent from '$lib/settings/components/SettingsContent.svelte'
     import { initializeSettings, forceSave as forceSettingsSave } from '$lib/settings'
     import { initializeShortcuts, flushPendingSave as flushShortcutsSave } from '$lib/shortcuts'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
+    import { initTextSize, cleanupTextSize, getEffectiveScale } from '$lib/text-size.svelte'
+    import {
+        SETTINGS_BASE_MAX_WIDTH,
+        SETTINGS_BASE_MIN_HEIGHT,
+        SETTINGS_BASE_MIN_WIDTH,
+    } from '$lib/settings/settings-window'
     import { getMatchingSections } from '$lib/settings/settings-search'
     import { loadLastSettingsSection, saveLastSettingsSection } from '$lib/app-status-store'
     import { getAppLogger } from '$lib/logging/logger'
@@ -35,6 +41,25 @@
 
     // Log page script initialization
     log.debug('Settings page script loaded')
+
+    /**
+     * Settings-window dimensions track the effective text scale: at 100% the
+     * base values match the historical layout; at other scales the min/max
+     * grow proportionally so all rows stay visible. Tauri has no
+     * "no max height" knob — we set a very large value (50_000 logical px)
+     * which is effectively unbounded for practical use.
+     *
+     * Reading `getEffectiveScale()` inside `$effect` makes this re-run on
+     * every scale change (system Accessibility settle or user slider move).
+     */
+    $effect(() => {
+        const scale = getEffectiveScale()
+        const win = getCurrentWindow()
+        const minSize = new LogicalSize(SETTINGS_BASE_MIN_WIDTH * scale, SETTINGS_BASE_MIN_HEIGHT * scale)
+        const maxSize = new LogicalSize(SETTINGS_BASE_MAX_WIDTH * scale, 50_000)
+        void win.setMinSize(minSize)
+        void win.setMaxSize(maxSize)
+    })
 
     // Handle search input
     function handleSearch(query: string) {
@@ -119,6 +144,9 @@
             // Read system accent color from macOS and listen for changes
             await initAccentColor()
 
+            // Apply compounded text size (system Accessibility × user setting)
+            await initTextSize()
+
             // Load last viewed section, but a `?section=...` URL param wins so callers (like
             // the volume picker's "Network (disabled)" entry) can deep-link. The param is a
             // JSON-encoded string array so section names with `/` (like "SMB/Network shares")
@@ -179,6 +207,7 @@
         unlistenFocusSelf?.()
         unlistenNavigate?.()
         cleanupAccentColor()
+        cleanupTextSize()
     })
 
     // Also handle beforeunload for when window is closed directly

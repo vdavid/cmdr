@@ -18,6 +18,7 @@ import {
 } from '$lib/tauri-commands'
 import { invoke } from '@tauri-apps/api/core'
 import { addToast } from '$lib/ui/toast'
+import { getSetting, setSetting } from '$lib/settings'
 import { openSettingsWindow } from '$lib/settings/settings-window'
 import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
 import { runMenuTriggeredCheck } from '$lib/updates/updater.svelte'
@@ -156,6 +157,32 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
       // Use Tauri command to set mode and sync menu radio state
       await setViewMode('full')
       return
+
+    // === Zoom commands ===
+    // Each writes `appearance.textSize`; the settings store cross-window-syncs
+    // and `lib/text-size.svelte.ts` recomputes the effective scale.
+    case 'view.zoom.set75':
+      setSetting('appearance.textSize', 75)
+      return
+    case 'view.zoom.set100':
+      setSetting('appearance.textSize', 100)
+      return
+    case 'view.zoom.set125':
+      setSetting('appearance.textSize', 125)
+      return
+    case 'view.zoom.set150':
+      setSetting('appearance.textSize', 150)
+      return
+    case 'view.zoom.in': {
+      const current = getSetting('appearance.textSize')
+      setSetting('appearance.textSize', Math.min(150, current + 10))
+      return
+    }
+    case 'view.zoom.out': {
+      const current = getSetting('appearance.textSize')
+      setSetting('appearance.textSize', Math.max(75, current - 10))
+      return
+    }
 
     // === Pane commands ===
     case 'pane.switch':

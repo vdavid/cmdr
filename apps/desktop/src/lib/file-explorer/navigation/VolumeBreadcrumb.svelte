@@ -707,8 +707,8 @@
     }
 
     .icon {
-        width: 14px;
-        height: 14px;
+        width: calc(14px * var(--font-scale));
+        height: calc(14px * var(--font-scale));
         object-fit: contain;
     }
 
@@ -789,15 +789,15 @@
     }
 
     .volume-icon {
-        width: 16px;
-        height: 16px;
+        width: var(--spacing-icon-size);
+        height: var(--spacing-icon-size);
         object-fit: contain;
         flex-shrink: 0;
     }
 
     .volume-icon-placeholder {
         font-size: var(--font-size-md);
-        width: 16px;
+        width: var(--spacing-icon-size);
         text-align: center;
         flex-shrink: 0;
     }
@@ -810,7 +810,7 @@
     }
 
     .checkmark {
-        width: 14px;
+        width: calc(14px * var(--font-scale));
         font-size: var(--font-size-sm);
         flex-shrink: 0;
     }

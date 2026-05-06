@@ -2,6 +2,9 @@
   "$comment": "Files listed here are exempt from coverage thresholds. Each entry should include a reason. Remove entries as you add tests.",
   "files": {
     "accent-color.ts": { "reason": "Depends on Tauri invoke and listen APIs" },
+    "text-size.svelte.ts": {
+      "reason": "Pure compoundScale tested in text-size.svelte.test.ts; remainder is Tauri invoke/listen + DOM style glue + Svelte $state"
+    },
     "commands/command-registry.ts": {
       "reason": "95% static command definitions; filtering validated by fuzzy-search tests"
     },

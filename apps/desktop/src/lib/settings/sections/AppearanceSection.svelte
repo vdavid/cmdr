@@ -7,6 +7,7 @@
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
+    import SettingSlider from '../components/SettingSlider.svelte'
     import { getSettingDefinition, getSetting, setSetting, onSpecificSettingChange } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
     import { openAppearanceSettings } from '$lib/tauri-commands'
@@ -22,6 +23,7 @@
 
     // Get definitions for rendering (with fallbacks for type safety)
     const appColorDef = getSettingDefinition('appearance.appColor') ?? { label: '', description: '' }
+    const textSizeDef = getSettingDefinition('appearance.textSize') ?? { label: '', description: '' }
     const uiDensityDef = getSettingDefinition('appearance.uiDensity') ?? { label: '', description: '' }
     const appIconsDef = getSettingDefinition('appearance.useAppIconsForDocuments') ?? { label: '', description: '' }
     const fileSizeDef = getSettingDefinition('appearance.fileSizeFormat') ?? { label: '', description: '' }
@@ -103,6 +105,18 @@
                     <span class="app-color-label">Cmdr gold</span>
                 </label>
             </div>
+        </SettingRow>
+    {/if}
+
+    {#if shouldShow('appearance.textSize')}
+        <SettingRow
+            id="appearance.textSize"
+            label={textSizeDef.label}
+            description={textSizeDef.description}
+            split
+            {searchQuery}
+        >
+            <SettingSlider id="appearance.textSize" unit="%" />
         </SettingRow>
     {/if}
 

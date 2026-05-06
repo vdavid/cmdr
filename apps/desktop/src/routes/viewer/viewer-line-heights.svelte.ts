@@ -1,5 +1,6 @@
 import type { PreparedText } from '@chenglou/pretext'
 import { getAppLogger } from '$lib/logging/logger'
+import { getEffectiveScale } from '$lib/text-size.svelte'
 
 const log = getAppLogger('viewer')
 
@@ -17,7 +18,24 @@ const pretextReady = import('@chenglou/pretext')
     })
   })
 
-const LINE_HEIGHT = 18
+/**
+ * Base viewer line height at scale 1, in CSS pixels. The CSS rule
+ * `.line { height: calc(18px * var(--text-scale, 1)) }` and `getLineHeight()`
+ * (below) are paired — keep them in sync if you change the base.
+ */
+const LINE_HEIGHT_BASE = 18
+
+/**
+ * Returns the viewer line height in CSS pixels at the current effective text
+ * scale. Use this everywhere instead of a constant — the value changes when
+ * the user moves the text-size slider or macOS Accessibility settles.
+ *
+ * Read inside Svelte `$derived`/`$effect` to track scale changes.
+ */
+export function getLineHeight(): number {
+  return Math.max(1, Math.round(LINE_HEIGHT_BASE * getEffectiveScale()))
+}
+
 const MAX_LINES = 50_000
 const PREPARE_TIMEOUT_MS = 2_000
 
@@ -31,8 +49,6 @@ const scheduleIdle: (cb: IdleRequestCallback) => number =
         }, 1) as unknown as number
 const FONT_VALIDATION_TEST_STRING = 'ABCDabcd1234!@#$%^&*()_+-=[]{}|;:,./<>?'
 const FONT_VALIDATION_TOLERANCE_PX = 1
-
-export { LINE_HEIGHT }
 
 /**
  * Resolves the actual font string from the viewer's CSS custom properties.
@@ -133,7 +149,7 @@ export function createLineHeightMap() {
     let acc = 0
     for (let i = 0; i < n; i++) {
       sums[i] = acc
-      const result = currentLayoutFn(preparedTexts[i], maxWidth, LINE_HEIGHT)
+      const result = currentLayoutFn(preparedTexts[i], maxWidth, getLineHeight())
       acc += result.height
     }
     sums[n] = acc
@@ -187,6 +203,17 @@ export function createLineHeightMap() {
     if (!ready || preparedTexts.length === 0) return
     if (newWidth === currentMaxWidth) return
     buildPrefixSum(newWidth)
+  }
+
+  /**
+   * Force a re-layout at the current width — used when the line height itself
+   * changed (e.g. text-size slider settled) but the container width hasn't.
+   * Pretext layout returns line heights, which scale with `getLineHeight()`,
+   * so the prefix sum needs rebuilding.
+   */
+  function recomputeForLineHeightChange() {
+    if (!ready || preparedTexts.length === 0) return
+    buildPrefixSum(currentMaxWidth)
   }
 
   /**
@@ -284,6 +311,7 @@ export function createLineHeightMap() {
     getLineAtPosition,
     getTotalHeight,
     reflow,
+    recomputeForLineHeightChange,
     prepareLines,
     cancel,
   }

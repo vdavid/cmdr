@@ -22,6 +22,7 @@
     import { getDirStatsBatch } from '$lib/tauri-commands'
     import { buildDirSizeTooltip, hasSizeMismatch } from './full-list-utils'
     import { getRowHeight, formatFileSize, getSizeMismatchWarning, getStripedRows } from '$lib/settings/reactive-settings.svelte'
+    import { onDebouncedScaleChange } from '$lib/text-size.svelte'
     import { getSetting } from '$lib/settings/settings-store'
     import { measureWidestFilename } from './measure-brief-column-widths'
     import { SvelteMap } from 'svelte/reactivity'
@@ -260,6 +261,21 @@
     let skipTransition = $state(false)
     let prevItemsPerColumn = 0
 
+    /**
+     * Bumped by `onDebouncedScaleChange` after the user releases the
+     * text-size slider. The pretext measurer in `measure-brief-column-widths`
+     * is invalidated by the same event, so re-running this effect produces
+     * widths that match the new font size.
+     */
+    let scaleSettleTick = $state(0)
+    $effect(() => {
+        const unsub = onDebouncedScaleChange(() => {
+            columnWidthsMap.clear()
+            scaleSettleTick++
+        })
+        return unsub
+    })
+
     $effect(() => {
         // Reset when column index semantics change.
         if (itemsPerColumn !== prevItemsPerColumn) {
@@ -269,7 +285,9 @@
     })
 
     $effect(() => {
-        // Re-measure whenever visible columns (or their cached contents) change.
+        // Re-measure whenever visible columns (or their cached contents) change,
+        // and after a settled scale change (tracked via the tick).
+        void scaleSettleTick
         const cols = visibleColumns
         const cap = maxFilenameWidth
         for (const col of cols) {
@@ -703,7 +721,7 @@
 
     .header-row {
         display: flex;
-        height: 22px;
+        height: calc(22px * var(--font-scale));
         background: var(--color-bg-header);
         border-bottom: 1px solid var(--color-border);
         flex-shrink: 0;
@@ -803,7 +821,7 @@
 
     .empty-folder-overlay {
         position: absolute;
-        top: 22px; /* Below the header row */
+        top: calc(22px * var(--font-scale)); /* Below the header row */
         left: 0;
         right: 0;
         bottom: 0;

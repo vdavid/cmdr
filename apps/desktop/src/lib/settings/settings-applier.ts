@@ -3,14 +3,7 @@
  * Updates CSS variables, DOM properties, and syncs backend configurations when settings change.
  */
 
-import {
-  getSetting,
-  onSettingChange,
-  initializeSettings,
-  type UiDensity,
-  type SizeColorsPalette,
-  densityMappings,
-} from '$lib/settings'
+import { getSetting, onSettingChange, initializeSettings, type UiDensity, type SizeColorsPalette } from '$lib/settings'
 import { getAppLogger, setVerboseLogging } from '$lib/logging/logger'
 import {
   updateFileWatcherDebounce,
@@ -50,13 +43,15 @@ function applySizeColors(palette: SizeColorsPalette): void {
 }
 
 /**
- * Applies UI density settings to CSS custom properties.
+ * Density currently has no CSS-side effect — `--spacing-icon-size` is owned
+ * by `app.css` as `calc(16px * var(--font-scale))`, and row height /
+ * density-spacing flow through `getRowHeight()` / `getDensitySpacing()`
+ * getters in `reactive-settings.svelte.ts` (used for inline styles on
+ * virtualized rows). The applier still re-runs `applyDensity()` on
+ * `appearance.uiDensity` change so JS getters re-evaluate via the reactive
+ * `uiDensity` state in `reactive-settings.svelte.ts`.
  */
 function applyDensity(density: UiDensity): void {
-  const values = densityMappings[density]
-  document.documentElement.style.setProperty('--row-height', `${String(values.rowHeight)}px`)
-  document.documentElement.style.setProperty('--icon-size', `${String(values.iconSize)}px`)
-  document.documentElement.style.setProperty('--density-spacing', `${String(values.spacing)}px`)
   log.debug('Applied density: {density}', { density })
 }
 

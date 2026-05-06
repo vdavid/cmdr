@@ -15,7 +15,8 @@ Binary font metrics cache and text width calculation for Brief mode column sizin
 | `calculate_max_width(texts, font_id)` | Find the widest string from a slice; returns `None` if font ID not in cache |
 | `load_from_disk(app, font_id)` | Read `{font_id}.bin` (bincode2) from `~/…/font-metrics/` |
 | `save_to_disk(app, font_id, widths)` | Serialize and write metrics to `{font_id}.bin` |
-| `init_font_metrics(app, font_id)` | Called at app startup — loads from disk into cache if file exists |
+| `init_font_metrics(app, font_id)` | Called at app startup — loads a single specific font ID from disk into cache if its file exists |
+| `load_all_metrics_from_disk(app)` | Called at app startup — scans `~/…/font-metrics/` and pre-loads every `*.bin` file. Used so user-customized text sizes are warm on first paint. |
 
 ### Internal state
 
@@ -27,7 +28,7 @@ METRICS_CACHE: LazyLock<RwLock<HashMap<String, FontMetrics>>>
 
 ## Key patterns
 
-- **Cache key format**: `"{family}-{weight}-{size}"`, e.g. `"system-400-12"`. Must match what the frontend's `getCurrentFontId()` returns — a mismatch means `calculate_max_width` returns `None`.
+- **Cache key format**: `"{family}-{weight}-{size}"`, e.g. `"system-400-12"`. Must match what the frontend's `getCurrentFontId()` returns — a mismatch means `calculate_max_width` returns `None`. The size component now varies with the user's `appearance.textSize` × system Accessibility text size, so several sizes can live in the cache simultaneously (e.g. `system-400-12` and `system-400-15`).
 - **Disk format**: bincode2 binary (~426 KB for a full Latin character set). File path: `~/Library/Application Support/…/font-metrics/{font_id}.bin`.
 - **Unmeasured code points** (e.g., rare Unicode) fall back to `average_width` computed as the mean of all measured widths.
 - `calculate_max_width` is the primary public entry point for width calculation. `FontMetrics::calculate_text_width` is the per-string method used internally.

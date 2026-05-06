@@ -9,28 +9,43 @@ import * as pretext from '@chenglou/pretext'
 
 import type { FileEntry } from '../types'
 import { createPretextMeasure } from '$lib/utils/shorten-middle'
+import { getEffectiveScale, onDebouncedScaleChange } from '$lib/text-size.svelte'
 
-/**
- * CSS `font` shorthand matching `.brief-list` (`var(--font-system)` at 12px).
- * Kept in sync with `apps/desktop/src/app.css` — pretext warns `system-ui`
- * is unsafe for layout accuracy, so we lead with `-apple-system`.
- */
-const FONT = '12px -apple-system, BlinkMacSystemFont, sans-serif'
+/** Base font size of `.brief-list` at scale 1 — multiplied by effective text scale. */
+const BASE_FONT_PX = 12
+
+function buildFont(scale: number): string {
+  const px = Math.max(1, Math.round(BASE_FONT_PX * scale))
+  return `${String(px)}px -apple-system, BlinkMacSystemFont, sans-serif`
+}
 
 let measureWidthCached: ((text: string) => number) | null = null
 let measureUnavailable = false
+let cachedScale = 0
+
+if (typeof window !== 'undefined') {
+  onDebouncedScaleChange(() => {
+    measureWidthCached = null
+    measureUnavailable = false
+    cachedScale = 0
+  })
+}
 
 function getMeasure(): ((text: string) => number) | null {
-  if (measureWidthCached) return measureWidthCached
-  if (measureUnavailable) return null
+  const scale = getEffectiveScale()
+  if (measureWidthCached && scale === cachedScale) return measureWidthCached
+  if (measureUnavailable && scale === cachedScale) return null
   if (typeof document === 'undefined') return null
   try {
-    const candidate = createPretextMeasure(FONT, pretext)
+    const candidate = createPretextMeasure(buildFont(scale), pretext)
     candidate('probe')
     measureWidthCached = candidate
+    cachedScale = scale
+    measureUnavailable = false
     return measureWidthCached
   } catch {
     measureUnavailable = true
+    cachedScale = scale
     return null
   }
 }

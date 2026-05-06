@@ -36,6 +36,16 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
 - In-memory cache for synchronous reads via `getSetting()`
 - Cross-window sync: emits `settings:changed` events when values change
 
+### Text size (`appearance.textSize`)
+
+`appearance.textSize` (slider 50–200%, default 100%) compounds with the macOS Accessibility > Display > Text Size value
+to produce the effective scale that `lib/text-size.ts` writes to `--font-scale` on `:root`. **Compounding lives in
+exactly one place** — `text-size.ts`'s `computeAndApply()`. The CSS
+`html { font-size: calc(16px * var(--font-scale, 1)) }` plus rem-based `--font-size-*` tokens in `app.css` cover
+typography; `applyDensity()` in `settings-applier.ts` multiplies row-height/icon-size/density-spacing by the same
+`--font-scale` so layout grows with text. After each scale change, `text-size.ts` re-triggers
+`ensureFontMetricsLoaded()` on a 1 s debounce so Rust gets fresh Brief-mode width data for the new font ID.
+
 ### Reactive state (`reactive-settings.svelte.ts`)
 
 - Svelte 5 `$state` for settings that affect UI rendering (density, date format, file size format, directory sort mode)

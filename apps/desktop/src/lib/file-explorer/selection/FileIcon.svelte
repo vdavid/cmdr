@@ -61,14 +61,14 @@
 <style>
     .icon-wrapper {
         position: relative;
-        width: 16px;
-        height: 16px;
+        width: var(--spacing-icon-size);
+        height: var(--spacing-icon-size);
         flex-shrink: 0;
     }
 
     .icon {
-        width: 16px;
-        height: 16px;
+        width: var(--spacing-icon-size);
+        height: var(--spacing-icon-size);
         object-fit: contain;
     }
 
@@ -78,15 +78,15 @@
 
     .icon-emoji {
         font-size: var(--font-size-sm);
-        width: 16px;
+        width: var(--spacing-icon-size);
         text-align: center;
         display: block;
     }
 
     .git-icon {
         display: inline-flex;
-        width: 16px;
-        height: 16px;
+        width: var(--spacing-icon-size);
+        height: var(--spacing-icon-size);
         align-items: center;
         justify-content: center;
         color: var(--color-git-portal-text);

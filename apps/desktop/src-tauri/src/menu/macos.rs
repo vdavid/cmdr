@@ -15,8 +15,8 @@ use super::{
     FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, HELP_SEND_ERROR_REPORT_ID, MenuItems,
     NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, SEARCH_FILES_ID,
     SELECT_ALL_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SWAP_PANES_ID, SWITCH_PANE_ID,
-    VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, ViewMode, build_sort_submenu, copy_path_accelerator, register_item,
-    show_in_file_manager_accelerator, show_in_file_manager_label,
+    VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, ViewMode, build_sort_submenu, build_zoom_submenu, copy_path_accelerator,
+    register_item, show_in_file_manager_accelerator, show_in_file_manager_label,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -184,6 +184,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         Some("Cmd+Shift+."),
     )?;
     let sort_submenu = build_sort_submenu(app, "Sort by")?;
+    let zoom_submenu = build_zoom_submenu(app, Some("Cmd+0"), Some("Cmd+Plus"), Some("Cmd+Minus"))?;
     let switch_pane_item = MenuItem::with_id(app, SWITCH_PANE_ID, "Switch pane", true, Some("Tab"))?;
     let swap_panes_item = MenuItem::with_id(app, SWAP_PANES_ID, "Swap panes", true, Some("Cmd+U"))?;
     let command_palette_item =
@@ -199,6 +200,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
             &PredefinedMenuItem::separator(app)?,
             &show_hidden_item,
             &sort_submenu,
+            &zoom_submenu,
             &PredefinedMenuItem::separator(app)?,
             &switch_pane_item,
             &swap_panes_item,
@@ -317,11 +319,11 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     register_item(&mut items, COPY_FILENAME_ID, &copy_filename_item, &edit_menu, 12);
     register_item(&mut items, SEARCH_FILES_ID, &search_files_item, &edit_menu, 14);
 
-    // View menu positions: full(0), brief(1), sep(2), hidden(3), sort(4), sep(5),
-    // switch(6), swap(7), sep(8), palette(9)
-    register_item(&mut items, SWITCH_PANE_ID, &switch_pane_item, &view_submenu, 6);
-    register_item(&mut items, SWAP_PANES_ID, &swap_panes_item, &view_submenu, 7);
-    register_item(&mut items, COMMAND_PALETTE_ID, &command_palette_item, &view_submenu, 9);
+    // View menu positions: full(0), brief(1), sep(2), hidden(3), sort(4), zoom(5), sep(6),
+    // switch(7), swap(8), sep(9), command(10)
+    register_item(&mut items, SWITCH_PANE_ID, &switch_pane_item, &view_submenu, 7);
+    register_item(&mut items, SWAP_PANES_ID, &swap_panes_item, &view_submenu, 8);
+    register_item(&mut items, COMMAND_PALETTE_ID, &command_palette_item, &view_submenu, 10);
 
     // Go menu positions: back(0), forward(1), sep(2), parent(3)
     register_item(&mut items, GO_BACK_ID, &go_back_item, &go_menu, 0);

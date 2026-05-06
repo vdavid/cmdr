@@ -86,6 +86,30 @@ export const commands: Command[] = [
   },
 
   // ============================================================================
+  // Main window - Zoom (text size) commands
+  // ============================================================================
+  { id: 'view.zoom.set75', name: 'Zoom to 75%', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  {
+    id: 'view.zoom.set100',
+    name: 'Zoom to 100%',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘0'],
+  },
+  { id: 'view.zoom.set125', name: 'Zoom to 125%', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  { id: 'view.zoom.set150', name: 'Zoom to 150%', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  {
+    id: 'view.zoom.in',
+    name: 'Zoom in',
+    scope: 'Main window',
+    // ⌘+ is the native menu accelerator (Cmd+Plus on macOS = Cmd+Shift+=);
+    // ⌘= is included so the unshifted `=` key fires zoom-in too.
+    shortcuts: ['⌘+', '⌘='],
+    showInPalette: true,
+  },
+  { id: 'view.zoom.out', name: 'Zoom out', scope: 'Main window', showInPalette: true, shortcuts: ['⌘-'] },
+
+  // ============================================================================
   // Main window - Sort commands (also accessible via menu)
   // ============================================================================
   { id: 'sort.byName', name: 'Sort by name', scope: 'Main window', showInPalette: true, shortcuts: [] },

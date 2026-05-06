@@ -42,7 +42,9 @@ scroll layer — the height map stores unscaled positions.
 
 - `$state(false)` in `.svelte.ts` triggers `@typescript-eslint/no-unnecessary-condition` because the linter doesn't know
   the value is mutated via Svelte reactivity. Use an inline eslint-disable comment with a reason.
-- `LINE_HEIGHT` (18px) must stay in sync with the `.line { height: 18px }` CSS rule in `+page.svelte`.
+- `getLineHeight()` (returns `18px × effective scale`) and the CSS rule
+  `.line { height: calc(18px * var(--font-scale)) }` in `+page.svelte` must stay paired. Both read the same scale — the
+  JS function for virtualization math, the CSS rule for layout. If you change the 18 base, change both.
 - `runHeightMapInitEffect` guards with `if (heightMap.ready) return` to avoid re-preparing when only `textWidth`
   changes. Width-only changes are handled by `runHeightMapReflowEffect` via `reflow()` (instant) instead of re-running
   the async `prepareLines` pipeline. Without this guard, both effects would race on width changes.

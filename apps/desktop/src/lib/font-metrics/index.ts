@@ -6,14 +6,35 @@ import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('fontMetrics')
 
+/** Base font size that the file list (Brief mode) renders text at, at scale 1. */
+const BASE_FONT_SIZE_PX = 12
+
+/**
+ * Reads the effective text scale set by `lib/text-size.svelte.ts` on `:root`.
+ *
+ * We read the CSS variable rather than importing `getEffectiveScale` to avoid
+ * a circular import (text-size re-triggers `ensureFontMetricsLoaded` after
+ * each scale change). The DOM is the single contract both modules agree on,
+ * and text-size always writes `--font-scale` before notifying us.
+ */
+function readEffectiveScale(): number {
+  if (typeof window === 'undefined') return 1
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--font-scale').trim()
+  const parsed = Number.parseFloat(raw)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1
+}
+
 /**
  * Gets the current font configuration ID.
- * For now, this is hardcoded to the system font at 12px.
- * When font settings become user-configurable, this will read from settings.
+ *
+ * The size component scales with the effective text-size multiplier (system
+ * Accessibility × user setting). The Rust cache keys metrics by this exact
+ * string, so a new scale produces a new cache miss and re-measure. The Rust
+ * side keeps multiple sizes in memory side-by-side — no eviction needed.
  */
 export function getCurrentFontId(): string {
-  // Hardcoded for now - matches CSS --font-system at --font-size-sm (12px)
-  return 'system-400-12'
+  const size = Math.max(1, Math.round(BASE_FONT_SIZE_PX * readEffectiveScale()))
+  return `system-400-${String(size)}`
 }
 
 /**

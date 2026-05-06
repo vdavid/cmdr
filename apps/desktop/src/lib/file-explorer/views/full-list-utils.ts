@@ -4,6 +4,7 @@
  */
 
 import { getSetting } from '$lib/settings/settings-store'
+import { getEffectiveScale, onDebouncedScaleChange } from '$lib/text-size.svelte'
 import type { FileEntry } from '../types'
 import { formatSizeTriads } from '../selection/selection-info-utils'
 
@@ -50,33 +51,52 @@ export function getDisplayName(name: string, isDirectory: boolean): string {
 // ============================================================================
 
 /**
- * The date column font specification matching CSS: var(--font-size-sm) = 12px, system font.
- * Used for accurate text width measurement via Canvas API.
+ * Base font size of the date column at scale 1, in CSS pixels. Mirrors
+ * `--font-size-sm` and is multiplied by the current effective text scale
+ * before being handed to canvas text measurement.
  */
-const DATE_COLUMN_FONT = '12px -apple-system, BlinkMacSystemFont, system-ui, sans-serif'
+const DATE_COLUMN_BASE_FONT_PX = 12
 
-/** Extra padding for the date column width (accounts for rounding and breathing room) */
+/** Extra padding for the date column width (accounts for rounding and breathing room) at scale 1 */
 const DATE_COLUMN_PADDING = 8
 
-/** Minimum date column width to prevent collapsing on very short formats */
+/** Minimum date column width at scale 1 — scaled at use site so it stays proportional. */
 const DATE_COLUMN_MIN_WIDTH = 70
 
 /** Cached canvas context for text measurement (reused for performance) */
 let measureCanvas: CanvasRenderingContext2D | null = null
+let measureCanvasScale = 0
+
+/**
+ * Reset the cached measurement canvas when the scale settles to a new value.
+ * The next `getMeasureContext` call will rebuild the context with the new
+ * font size. We deliberately wait for the debounced "settled" event rather
+ * than re-running on every step of a slider drag — column widths update only
+ * at rest, while the CSS layer reflows live.
+ */
+if (typeof window !== 'undefined') {
+  onDebouncedScaleChange(() => {
+    measureCanvas = null
+    measureCanvasScale = 0
+  })
+}
 
 /**
  * Get or create a canvas context for text measurement.
- * The canvas is created once and reused for performance.
+ * The canvas is created once per scale and reused for performance.
  */
 function getMeasureContext(): CanvasRenderingContext2D | null {
-  if (!measureCanvas) {
-    // Check if we're in a browser environment (may be SSR)
-    if (typeof document === 'undefined') return null
-    const canvas = document.createElement('canvas')
-    measureCanvas = canvas.getContext('2d')
-    if (measureCanvas) {
-      measureCanvas.font = DATE_COLUMN_FONT
-    }
+  const scale = getEffectiveScale()
+  if (measureCanvas && scale === measureCanvasScale) {
+    return measureCanvas
+  }
+  if (typeof document === 'undefined') return null
+  const canvas = document.createElement('canvas')
+  measureCanvas = canvas.getContext('2d')
+  if (measureCanvas) {
+    const px = Math.max(1, Math.round(DATE_COLUMN_BASE_FONT_PX * scale))
+    measureCanvas.font = `${String(px)}px -apple-system, BlinkMacSystemFont, system-ui, sans-serif`
+    measureCanvasScale = scale
   }
   return measureCanvas
 }
@@ -142,9 +162,14 @@ export function measureDateColumnWidth(formatFn: (timestamp: number) => string):
     }
   }
 
-  // Add padding and enforce minimum width
-  // Use Math.ceil to avoid subpixel rendering issues
-  return Math.max(DATE_COLUMN_MIN_WIDTH, Math.ceil(maxWidth) + DATE_COLUMN_PADDING)
+  // Add padding and enforce minimum width. Both scale with text size so the
+  // column stays proportional at large scales — at 200%, an 8 px breathing
+  // gap looks pinched.
+  // Use Math.ceil to avoid subpixel rendering issues.
+  const scale = getEffectiveScale()
+  const minWidth = Math.round(DATE_COLUMN_MIN_WIDTH * scale)
+  const padding = Math.round(DATE_COLUMN_PADDING * scale)
+  return Math.max(minWidth, Math.ceil(maxWidth) + padding)
 }
 
 // ============================================================================

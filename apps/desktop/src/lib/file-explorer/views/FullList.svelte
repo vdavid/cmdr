@@ -39,6 +39,7 @@
     import { computeFullListColumnWidths } from './measure-column-widths'
     import {
         getRowHeight,
+        getIconSize,
         getIsCompactDensity,
         formatDateTimeParts,
         formatFileSize,
@@ -49,6 +50,7 @@
         getFileSizeFormat,
     } from '$lib/settings/reactive-settings.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
+    import { onDebouncedScaleChange } from '$lib/text-size.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import type { RenameState } from '../rename/rename-state.svelte'
@@ -162,6 +164,28 @@
     let columnWidths = $state({ ext: 60, size: 115, date: 80, dateLeft: 0 })
     let skipTransition = $state(false)
 
+    /** Icon column width in the grid template — tracks density × text scale. */
+    const iconColWidth = $derived(getIconSize())
+
+    /**
+     * Scale-settled "tick" — bumped from `onDebouncedScaleChange` so the
+     * column-width `$effect` re-runs after the user releases the text-size
+     * slider (or the OS settles a new accessibility size). Live drag is
+     * already covered by CSS reflow; this catches the canvas-measured
+     * Ext / Size / Modified columns up to the new font.
+     */
+    let scaleSettleTick = $state(0)
+    let unsubscribeScale: (() => void) | undefined
+    $effect(() => {
+        unsubscribeScale = onDebouncedScaleChange(() => {
+            scaleSettleTick++
+        })
+        return () => {
+            unsubscribeScale?.()
+            unsubscribeScale = undefined
+        }
+    })
+
     /**
      * Whether the optional Git column should render in the layout. We gate on
      * both the user setting AND the presence of a repo root: outside a
@@ -182,8 +206,8 @@
 
     const gridTemplate = $derived(
         gitColumnVisible
-            ? `16px 1fr ${String(GIT_COLUMN_WIDTH)}px ${String(columnWidths.ext)}px ${String(columnWidths.size)}px ${String(columnWidths.date)}px`
-            : `16px 1fr ${String(columnWidths.ext)}px ${String(columnWidths.size)}px ${String(columnWidths.date)}px`,
+            ? `${String(iconColWidth)}px 1fr ${String(GIT_COLUMN_WIDTH)}px ${String(columnWidths.ext)}px ${String(columnWidths.size)}px ${String(columnWidths.date)}px`
+            : `${String(iconColWidth)}px 1fr ${String(columnWidths.ext)}px ${String(columnWidths.size)}px ${String(columnWidths.date)}px`,
     )
 
     // ==== Virtual scrolling state ====
@@ -223,6 +247,9 @@
     const isParentRowVisible = $derived(hasParent && firstVisibleGlobalIndex === 0)
 
     $effect(() => {
+        // Re-run when the scale settles (canvas measurer was just invalidated).
+        // Reading the tick keeps it as a Svelte dep without affecting any logic.
+        void scaleSettleTick
         const first = firstVisibleGlobalIndex
         const last = lastVisibleGlobalIndex
         const parentOffset = hasParent ? 1 : 0
@@ -816,13 +843,13 @@
         padding: var(--spacing-xxs) var(--spacing-sm);
         background: var(--color-bg-header);
         border-bottom: 1px solid var(--color-border);
-        height: 22px;
+        height: calc(22px * var(--font-scale));
         flex-shrink: 0;
         transition: grid-template-columns 300ms ease;
     }
 
     .header-icon {
-        width: 16px;
+        width: var(--spacing-icon-size);
     }
 
     .virtual-spacer {

@@ -23,6 +23,7 @@ import {
 } from './format-utils'
 import { getAppLogger } from '$lib/logging/logger'
 import { clearExtensionIconCache } from '$lib/icon-cache'
+import { getEffectiveScale } from '$lib/text-size.svelte'
 
 const log = getAppLogger('reactive-settings')
 
@@ -134,9 +135,30 @@ export function cleanupReactiveSettings(): void {
 // Getters for reactive values (use these in components)
 // ============================================================================
 
-/** Get current row height based on density */
+/**
+ * Get current row height in pixels.
+ *
+ * Compounds the density baseline with the effective text scale (system
+ * Accessibility × user `appearance.textSize`). Reading `getEffectiveScale()`
+ * inside this function makes it trackable inside `$derived`/`$effect`, so
+ * components that do `const rowHeight = $derived(getRowHeight())` re-flow
+ * automatically when the user moves the text-size slider.
+ */
 export function getRowHeight(): number {
-  return densityMappings[uiDensity].rowHeight
+  return Math.round(densityMappings[uiDensity].rowHeight * getEffectiveScale())
+}
+
+/**
+ * Get current icon size in pixels (file-list icons, etc.).
+ *
+ * Density is intentionally NOT a factor — the historical icon size was a
+ * hardcoded 16 px regardless of density. Only the text-size scale applies.
+ * Components that need this in JS (e.g. for `grid-template-columns`) read
+ * this getter; the matching CSS token is `--spacing-icon-size` in app.css.
+ */
+const ICON_SIZE_BASE = 16
+export function getIconSize(): number {
+  return Math.round(ICON_SIZE_BASE * getEffectiveScale())
 }
 
 /** Get whether the current density is compact */

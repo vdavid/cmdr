@@ -93,6 +93,13 @@ const menuCommands = [
   // View modes (CheckMenuItems, special handling in Rust)
   'view.fullMode',
   'view.briefMode',
+  // Zoom (text-size) presets and step
+  'view.zoom.set75',
+  'view.zoom.set100',
+  'view.zoom.set125',
+  'view.zoom.set150',
+  'view.zoom.in',
+  'view.zoom.out',
   // App-level
   'app.commandPalette',
   'app.settings',

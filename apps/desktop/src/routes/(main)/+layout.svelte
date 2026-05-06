@@ -9,6 +9,7 @@
     import { initSettingsApplier, cleanupSettingsApplier } from '$lib/settings/settings-applier'
     import { initReactiveSettings, cleanupReactiveSettings } from '$lib/settings/reactive-settings.svelte'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
+    import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
     import { initializeShortcuts, setupMcpShortcutsListener, cleanupMcpShortcutsListener } from '$lib/shortcuts'
     import { setupMcpMainBridge, cleanupMcpMainBridge } from '$lib/settings'
     import {
@@ -184,6 +185,9 @@
             // Read system accent color from macOS and listen for changes
             await initAccentColor()
 
+            // Apply compounded text size (system Accessibility × user setting)
+            await initTextSize()
+
             // Initialize keyboard shortcuts store (loads custom shortcuts from disk)
             await initializeShortcuts()
 
@@ -250,6 +254,7 @@
         aiCleanup?.()
         // Cleanup other modules
         cleanupAccentColor()
+        cleanupTextSize()
         cleanupReactiveSettings()
         cleanupSettingsApplier()
         cleanupMcpShortcutsListener()

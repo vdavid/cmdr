@@ -26,6 +26,15 @@ use crate::file_system::sync_status::SyncStatus;
 pub const SHOW_HIDDEN_FILES_ID: &str = "show_hidden_files";
 pub const VIEW_MODE_FULL_ID: &str = "view_mode_full";
 pub const VIEW_MODE_BRIEF_ID: &str = "view_mode_brief";
+
+/// Zoom (text-size) submenu under View. Each preset writes
+/// `appearance.textSize`; in/out adjust by 25 percentage points.
+pub const VIEW_ZOOM_75_ID: &str = "view_zoom_75";
+pub const VIEW_ZOOM_100_ID: &str = "view_zoom_100";
+pub const VIEW_ZOOM_125_ID: &str = "view_zoom_125";
+pub const VIEW_ZOOM_150_ID: &str = "view_zoom_150";
+pub const VIEW_ZOOM_IN_ID: &str = "view_zoom_in";
+pub const VIEW_ZOOM_OUT_ID: &str = "view_zoom_out";
 pub const OPEN_ID: &str = "open";
 pub const EDIT_ID: &str = "edit";
 pub const FILE_VIEW_ID: &str = "file_view";
@@ -151,6 +160,14 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         CLOUD_MAKE_OFFLINE_ID => Some(("cloud.makeOffline", CommandScope::FileScoped)),
         CLOUD_REMOVE_DOWNLOAD_ID => Some(("cloud.removeDownload", CommandScope::FileScoped)),
 
+        // Zoom (text size) — App scope so ⌘0/⌘+/⌘- work in any focused window.
+        VIEW_ZOOM_75_ID => Some(("view.zoom.set75", CommandScope::App)),
+        VIEW_ZOOM_100_ID => Some(("view.zoom.set100", CommandScope::App)),
+        VIEW_ZOOM_125_ID => Some(("view.zoom.set125", CommandScope::App)),
+        VIEW_ZOOM_150_ID => Some(("view.zoom.set150", CommandScope::App)),
+        VIEW_ZOOM_IN_ID => Some(("view.zoom.in", CommandScope::App)),
+        VIEW_ZOOM_OUT_ID => Some(("view.zoom.out", CommandScope::App)),
+
         // Not mapped: CheckMenuItems (show_hidden_files, view modes), close-tab (special logic),
         // viewer word wrap, tab context menu actions, sort items, "open-with:*" (prefix-routed
         // before this lookup in `lib.rs::on_menu_event`).
@@ -196,6 +213,12 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "file.quickLook" => Some(QUICK_LOOK_ID),
         "selection.selectAll" => Some(SELECT_ALL_ID),
         "selection.deselectAll" => Some(DESELECT_ALL_ID),
+        "view.zoom.set75" => Some(VIEW_ZOOM_75_ID),
+        "view.zoom.set100" => Some(VIEW_ZOOM_100_ID),
+        "view.zoom.set125" => Some(VIEW_ZOOM_125_ID),
+        "view.zoom.set150" => Some(VIEW_ZOOM_150_ID),
+        "view.zoom.in" => Some(VIEW_ZOOM_IN_ID),
+        "view.zoom.out" => Some(VIEW_ZOOM_OUT_ID),
         "edit.cut" => Some(EDIT_CUT_ID),
         "edit.copy" => Some(EDIT_COPY_ID),
         "edit.paste" => Some(EDIT_PASTE_ID),
@@ -440,6 +463,42 @@ fn build_sort_submenu<R: Runtime>(app: &AppHandle<R>, label: &str) -> tauri::Res
             &PredefinedMenuItem::separator(app)?,
             &sort_asc,
             &sort_desc,
+        ],
+    )
+}
+
+/// Builds the View > Zoom submenu (shared between macOS and Linux).
+///
+/// Each preset item writes `appearance.textSize` directly via the unified
+/// command-execute event. Zoom in/out adjust the value by 10 percentage
+/// points. `accel_in` / `accel_out` are platform-specific accelerator strings
+/// (macOS uses `Cmd+Plus` / `Cmd+Minus`, Linux uses `None` because GTK
+/// intercepts these keys at the toolkit level).
+fn build_zoom_submenu<R: Runtime>(
+    app: &AppHandle<R>,
+    accel_100: Option<&str>,
+    accel_in: Option<&str>,
+    accel_out: Option<&str>,
+) -> tauri::Result<Submenu<R>> {
+    let zoom_75 = MenuItem::with_id(app, VIEW_ZOOM_75_ID, "75%", true, None::<&str>)?;
+    let zoom_100 = MenuItem::with_id(app, VIEW_ZOOM_100_ID, "100%", true, accel_100)?;
+    let zoom_125 = MenuItem::with_id(app, VIEW_ZOOM_125_ID, "125%", true, None::<&str>)?;
+    let zoom_150 = MenuItem::with_id(app, VIEW_ZOOM_150_ID, "150%", true, None::<&str>)?;
+    let zoom_in = MenuItem::with_id(app, VIEW_ZOOM_IN_ID, "Zoom in", true, accel_in)?;
+    let zoom_out = MenuItem::with_id(app, VIEW_ZOOM_OUT_ID, "Zoom out", true, accel_out)?;
+
+    Submenu::with_items(
+        app,
+        "Zoom",
+        true,
+        &[
+            &zoom_75,
+            &zoom_100,
+            &zoom_125,
+            &zoom_150,
+            &PredefinedMenuItem::separator(app)?,
+            &zoom_in,
+            &zoom_out,
         ],
     )
 }

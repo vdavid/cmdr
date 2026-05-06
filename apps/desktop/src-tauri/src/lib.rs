@@ -111,6 +111,8 @@ mod settings;
 mod space_poller;
 mod system_memory;
 #[cfg(target_os = "macos")]
+mod text_size;
+#[cfg(target_os = "macos")]
 mod updater;
 mod volume_broadcast;
 #[cfg(target_os = "macos")]
@@ -388,8 +390,14 @@ pub fn run() {
             #[cfg(target_os = "linux")]
             accent_color_linux::observe_accent_color_changes(app.handle().clone());
 
-            // Initialize font metrics for default font (system font at 12px)
+            // Observe macOS Accessibility > Display > Text Size changes
+            #[cfg(target_os = "macos")]
+            text_size::observe_system_text_size_changes(app.handle().clone());
+
+            // Initialize font metrics. Loads the default 12px set plus any other
+            // sizes the user has previously picked via the text-size slider.
             font_metrics::init_font_metrics(app.handle(), "system-400-12");
+            font_metrics::load_all_metrics_from_disk(app.handle());
 
             // Start mDNS network discovery only for returning users who've already answered the
             // OS Local Network prompt at least once. Fresh installs stay quiet at launch — the
@@ -1082,6 +1090,11 @@ pub fn run() {
             accent_color_linux::get_accent_color,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::accent_color::get_accent_color,
+            // System text size multiplier (macOS reads NSGlobalDomain, others return 1.0)
+            #[cfg(target_os = "macos")]
+            text_size::get_system_text_size_multiplier,
+            #[cfg(not(target_os = "macos"))]
+            stubs::text_size::get_system_text_size_multiplier,
             // Permission commands (platform-specific)
             #[cfg(target_os = "macos")]
             permissions::check_full_disk_access,

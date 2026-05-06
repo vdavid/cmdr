@@ -34,6 +34,23 @@ export const settingsRegistry: SettingDefinition[] = [
     },
   },
   {
+    id: 'appearance.textSize',
+    section: ['General', 'Appearance'],
+    label: 'Text size',
+    description:
+      'Scales text and UI throughout the app. Compounds with the macOS Accessibility text size — 100% means "exactly the system size".',
+    keywords: ['text', 'size', 'font', 'larger', 'smaller', 'accessibility', 'a11y', 'zoom', 'scale'],
+    type: 'number',
+    default: 100,
+    component: 'slider',
+    constraints: {
+      min: 75,
+      max: 150,
+      step: 5,
+      sliderStops: [75, 100, 125, 150],
+    },
+  },
+  {
     id: 'appearance.uiDensity',
     section: ['General', 'Appearance'],
     label: 'UI density',

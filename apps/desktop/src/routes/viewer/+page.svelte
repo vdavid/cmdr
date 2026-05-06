@@ -25,6 +25,7 @@
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
     import { initializeSettings, getSetting, setSetting } from '$lib/settings'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
+    import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
     import { createViewerSearch } from './viewer-search.svelte'
@@ -472,6 +473,10 @@
             // Settings store not available in this context, use defaults
         }
 
+        // Apply compounded text size after settings are loaded so the user's
+        // persisted slider value is honored on first paint.
+        await initTextSize()
+
         const params = new URLSearchParams(window.location.search)
         const pathParam = params.get('path')
 
@@ -512,6 +517,7 @@
 
     onDestroy(() => {
         cleanupAccentColor()
+        cleanupTextSize()
         cleanupListeners()
         search.destroy()
         scroll.destroy()
@@ -820,7 +826,9 @@
     .line {
         display: flex;
         padding: 0 var(--spacing-sm);
-        height: 18px;
+        /* Stays in sync with `getLineHeight()` in `viewer-line-heights.svelte.ts`
+         * via the `--font-scale` root variable. */
+        height: calc(18px * var(--font-scale));
     }
 
     .line:hover {

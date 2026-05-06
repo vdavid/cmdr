@@ -1,7 +1,8 @@
 import { SvelteMap } from 'svelte/reactivity'
 import { viewerGetLines, isIpcError } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
-import { createLineHeightMap, LINE_HEIGHT } from './viewer-line-heights.svelte'
+import { createLineHeightMap, getLineHeight } from './viewer-line-heights.svelte'
+import { onDebouncedScaleChange } from '$lib/text-size.svelte'
 
 const log = getAppLogger('viewer')
 
@@ -22,7 +23,7 @@ interface ScrollDeps {
   getTextWidth: () => number
 }
 
-export { LINE_HEIGHT, MAX_SCROLL_HEIGHT }
+export { getLineHeight, MAX_SCROLL_HEIGHT }
 
 export function createViewerScroll(deps: ScrollDeps) {
   const lineCache = new SvelteMap<number, string>()
@@ -37,9 +38,9 @@ export function createViewerScroll(deps: ScrollDeps) {
   let contentWidth = $state(0)
 
   let wordWrap = $state(false)
-  let avgWrappedLineHeight = $state(LINE_HEIGHT)
+  let avgWrappedLineHeight = $state(getLineHeight())
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- wordWrap is reactive $state
-  const effectiveLineHeight = $derived(wordWrap ? avgWrappedLineHeight : LINE_HEIGHT)
+  const effectiveLineHeight = $derived(wordWrap ? avgWrappedLineHeight : getLineHeight())
 
   let fetchDebounceTimer: ReturnType<typeof setTimeout> | undefined
   let currentFetchId = 0
@@ -305,7 +306,7 @@ export function createViewerScroll(deps: ScrollDeps) {
     }
   }
 
-  let prevScrollLineHeight = LINE_HEIGHT
+  let prevScrollLineHeight = getLineHeight()
   function runScrollCompensationEffect() {
     const newSLH = scrollLineHeight
     if (!contentRef || prevScrollLineHeight === newSLH) {
@@ -379,9 +380,18 @@ export function createViewerScroll(deps: ScrollDeps) {
     }
   }
 
+  // After the user settles on a new text scale, the line height the height
+  // map baked in is stale. Re-layout (without changing width) so wrapped-line
+  // heights match the new font. This runs inside the same debounced "settled"
+  // event the file-list column-width path uses, so we don't thrash mid-drag.
+  const unsubscribeScaleChange = onDebouncedScaleChange(() => {
+    heightMap.recomputeForLineHeightChange()
+  })
+
   function destroy() {
     if (fetchDebounceTimer) clearTimeout(fetchDebounceTimer)
     heightMap.cancel()
+    unsubscribeScaleChange()
   }
 
   return {

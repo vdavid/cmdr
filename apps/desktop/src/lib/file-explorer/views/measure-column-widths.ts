@@ -14,6 +14,7 @@ import type { FileEntry, SortColumn } from '../types'
 import type { FileSizeFormat } from '$lib/settings/types'
 import type { DateTimeParts } from '$lib/settings/format-utils'
 import { createPretextMeasure } from '$lib/utils/shorten-middle'
+import { getEffectiveScale, onDebouncedScaleChange } from '$lib/text-size.svelte'
 
 import type { DirStats } from './file-list-utils'
 import { getDisplayExtension, getDisplaySize, hasSizeMismatch } from './full-list-utils'
@@ -31,13 +32,19 @@ export interface ColumnWidths {
   dateLeft: number
 }
 
+/** Base font size of the file-list columns at scale 1, in CSS pixels. */
+const BASE_FONT_PX = 12
+
 /**
- * CSS `font` shorthand matching `.col-date`, `.col-size`, `.col-ext` when rendered
- * with `var(--font-system)` at `var(--font-size-sm)` = 12px. Must stay in sync with
- * `apps/desktop/src/app.css` — pretext's README warns `system-ui` is unsafe for
- * layout accuracy, so we lead with `-apple-system` which resolves on macOS.
+ * Builds the CSS `font` shorthand for `.col-date`, `.col-size`, `.col-ext`
+ * scaled by the current effective text size. Pretext's README warns
+ * `system-ui` is unsafe for layout accuracy, so we lead with `-apple-system`
+ * which resolves on macOS.
  */
-const FONT = '12px -apple-system, BlinkMacSystemFont, sans-serif'
+function buildFont(scale: number): string {
+  const px = Math.max(1, Math.round(BASE_FONT_PX * scale))
+  return `${String(px)}px -apple-system, BlinkMacSystemFont, sans-serif`
+}
 
 /**
  * Header overhead inside `SortableHeader` for the column currently being sorted:
@@ -88,21 +95,43 @@ const EXT_CAP_SAMPLE = 'extensionxx'
 
 let measureWidthCached: ((text: string) => number) | null = null
 let measureUnavailable = false
+let cachedScale = 0
+
+/**
+ * Subscribe once to "settled" scale changes and invalidate the pretext
+ * measurer so the next `getMeasure` call rebuilds it with the new font size.
+ *
+ * Why "debounced" rather than reactive: pretext rebuilds are fast but the
+ * follow-up column-width recomputes aren't free, and we don't want to thrash
+ * during slider drag. The CSS layer reflows immediately via `--text-scale`;
+ * this path catches up after the user releases.
+ */
+if (typeof window !== 'undefined') {
+  onDebouncedScaleChange(() => {
+    measureWidthCached = null
+    measureUnavailable = false
+    cachedScale = 0
+  })
+}
 
 function getMeasure(): ((text: string) => number) | null {
-  if (measureWidthCached) return measureWidthCached
-  if (measureUnavailable) return null
+  const scale = getEffectiveScale()
+  if (measureWidthCached && scale === cachedScale) return measureWidthCached
+  if (measureUnavailable && scale === cachedScale) return null
   if (typeof document === 'undefined') return null
   // Guard the first call: pretext relies on Canvas 2D, which jsdom doesn't implement.
   // If that's the environment (unit tests rendering FullList), fall back to floor widths
   // forever instead of throwing on every render.
   try {
-    const candidate = createPretextMeasure(FONT, pretext)
+    const candidate = createPretextMeasure(buildFont(scale), pretext)
     candidate('probe')
     measureWidthCached = candidate
+    cachedScale = scale
+    measureUnavailable = false
     return measureWidthCached
   } catch {
     measureUnavailable = true
+    cachedScale = scale
     return null
   }
 }
