@@ -18,7 +18,13 @@
 
 import { tempDir, join } from '@tauri-apps/api/path'
 import { getCachedIcon } from '$lib/icon-cache'
-import { startSelectionDrag, startDragPaths, prepareSelfDragOverlay, clearSelfDragOverlay } from '$lib/tauri-commands'
+import {
+  startSelectionDrag,
+  startDragPaths,
+  prepareSelfDragOverlay,
+  clearSelfDragOverlay,
+  setSelfDragResolvedOperation,
+} from '$lib/tauri-commands'
 import { getSetting } from '$lib/settings/settings-store'
 import { cancelClickToRename } from '../rename/rename-activation'
 import { renderDragImage } from './drag-image-renderer'
@@ -365,6 +371,13 @@ async function performSingleFileDrag(filePath: string, iconId: string, fileInfo?
   // Store rich image path so native swizzle can swap to it on window exit
   await prepareSelfDragOverlay(resolved.path)
 
+  // Seed the swizzle with our best-guess op so the very first draggingEntered:
+  // returns Move (no badge) instead of wry's hardcoded Copy ("+"). 'move' wins
+  // over 'copy' as the default because it's the same-volume case (most common)
+  // and because a "+" appearing later feels intentional, while a "+" disappearing
+  // would feel like a glitch.
+  await setSelfDragResolvedOperation('move')
+
   // Don't reset draggingFromSelf after the start call — it resolves before the
   // OS delivers drop/leave events. The flag is cleared by the drop handler.
   draggingFromSelf = true
@@ -385,6 +398,9 @@ async function performSelectionDrag(context: SelectionDragContext): Promise<void
 
   // Store rich image path so native swizzle can swap to it on window exit
   await prepareSelfDragOverlay(resolved.path)
+
+  // Seed the swizzle with our best-guess op — see performSingleFileDrag comment.
+  await setSelfDragResolvedOperation('move')
 
   // Don't reset draggingFromSelf after startDrag — see performSingleFileDrag comment.
   draggingFromSelf = true

@@ -169,13 +169,13 @@ Key files:
     > 1 `NSDraggingItem`s on the pasteboard. Even when the OS image is swapped to transparent for self-drags, the badges
     > still draw because they're separate sprites near the cursor, not painted onto the image surface. Don't try to
     > replace or skin them — invest custom branding into `DragOverlay.svelte` instead, which is fully under our control.
-- **Gotcha**: The "+" badge may briefly flash on the first frame of a self-drag
-  - **Why**: Our swizzle overrides the wry-default `Copy` return only after the frontend has pushed a resolved op via
-    `setSelfDragResolvedOperation`. The very first `draggingEntered:` can run before that IPC lands, so macOS can show
-    "+" for a frame or two before flipping to the correct op on the next `draggingUpdated:`. Visible as a tiny flicker
-    on the very first drag start, not on subsequent updates. To eliminate it entirely we'd need to push an initial
-    "best-guess" op (likely `Move`, since same-volume default is Move) right before `startDrag`. Not done yet because
-    the flicker is nearly imperceptible in practice.
+- **Gotcha**: For cross-volume self-drags, the "+" badge may appear ~1–2 frames late
+  - **Why**: Both `performSingleFileDrag` and `performSelectionDrag` seed the swizzle with `'move'` via
+    `setSelfDragResolvedOperation` right before `startDrag`, so the same-volume case (the default, most common) shows no
+    "+" from frame one. For cross-volume drags the resolved op is `'copy'`, but JS only learns the target volume after
+    the first `handleDragOver`, so the badge flips from "no +" to "+" on the next `draggingUpdated:` — a slight "+"
+    appearing late, ~5–30ms. Picked this direction over the reverse because a badge appearing later feels intentional,
+    while a badge appearing-then-disappearing reads as a glitch.
 
 ## Platform support
 
