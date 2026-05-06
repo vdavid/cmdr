@@ -124,7 +124,11 @@ row intentionally spans the full width.
 - **settings-applier.ts** — Listens for setting changes and applies side effects (CSS vars, backend config sync)
 - **network-settings.ts** — Network-specific setting helpers (proxy config, SMB auth defaults)
 - **settings-window.ts** — Logic for opening/focusing/closing the settings window (Tauri window management)
-- **format-utils.ts** — Shared formatters used in settings UI (e.g., duration, file-size display strings)
+- **format-utils.ts** — Shared formatters used in settings UI (e.g., duration, file-size display strings). Date/time
+  formats may include a single optional `|` that splits each formatted cell into a left half (typically the date) and a
+  right half (typically the time). `formatDateTimePartsWithFormat` returns `{ left, right | null }` for the file-list
+  renderer; `formatDateTimeWithFormat` joins parts with a space for tooltips, MCP, and the status bar. Built-in `iso`
+  and `short` formats include `|` internally; custom format default is `YYYY-MM-DD | HH:mm`.
 - **mcp-main-bridge.ts** — MCP bridge for settings; handles `mcp-get-all-settings` and `mcp-set-setting` round-trip
   events in the main window (always alive), enabling AI agents to query and modify settings without the settings window
   open

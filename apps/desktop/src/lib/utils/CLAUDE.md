@@ -111,6 +111,10 @@ start or end), and custom ellipsis strings.
 `createPretextMeasure()` creates a `measureWidth` function backed by `@chenglou/pretext`'s `prepareWithSegments` +
 `measureNaturalWidth`. Caches prepared texts for repeated measurements of the same string.
 
+`useShortenMiddle` Svelte action accepts `tooltipWhenTruncated?: boolean` (default `false`). When set, the native
+`title` is applied only when truncation actually trimmed the string; short, fully-visible text doesn't get a redundant
+tooltip. Existing callers default to always-on tooltip behavior.
+
 ## Dependencies
 
 - `filename-validation.ts` — zero external dependencies

@@ -97,6 +97,13 @@ when that row is actually on screen — otherwise the size column would stay ove
 `SelectionInfo` keeps using `measureDateColumnWidth` (worst-case sampling) because it renders a single-entry snapshot
 with no "visible set" to measure from.
 
+**Decision**: Date column may split into two aligned sub-columns via a `|` in the format string **Why**: Time digits
+across rows zigzag horizontally when date widths vary (e.g., locale formats, custom strings). The split makes the right
+halves line up. The contract: `formatDateTimePartsWithFormat` (in `lib/settings/format-utils.ts`) returns
+`{ left, right | null }`; `computeFullListColumnWidths` measures the two halves separately and exposes a `dateLeft`
+width; `FullList` renders `.date-left` (inline-block, fixed width, right-aligned) followed by `.date-right`
+(`margin-left: var(--spacing-xs)`). Tooltips/MCP/status bar still see joined strings via `formatDateTimeWithFormat`.
+
 ## Gotchas
 
 **Gotcha**: `$state()` cannot live in `.ts` files **Why**: `virtual-scroll.ts` is pure functions. Reactive state must be
@@ -121,6 +128,11 @@ layout recalc. `transform` uses GPU compositor for 60fps.
 **Gotcha**: Cache re-fetch during scroll uses range expansion **Why**: If visible range is [100, 150] but cached is [0,
 200], don't re-fetch. If scrolled to [250, 300], expand fetch to [0, 550] to include buffer. `shouldResetCache()`
 handles this.
+
+**Gotcha**: `DATE_PARTS_GAP` (4px) in `measure-column-widths.ts` mirrors the `margin-left: var(--spacing-xs)` on
+`.date-right` in `FullList.svelte`. **Why**: The measurer adds it to the total date column width when any visible row
+splits via `|`. If you change either value, change both — split-date columns will be one or two pixels off from what the
+renderer actually draws otherwise.
 
 **Gotcha**: `HEADER_CHROME_ACTIVE/INACTIVE` in `measure-column-widths.ts` are tied to `SortableHeader`'s flex gap +
 caret glyph (4px gap + 8px caret = 12px active, 0px inactive). The button keeps 4px horizontal padding for hover-state
