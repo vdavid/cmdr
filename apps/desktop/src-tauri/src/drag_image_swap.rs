@@ -19,7 +19,7 @@
 use std::ffi::CString;
 use std::ptr::NonNull;
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
 use objc2::msg_send;
 use objc2::runtime::{AnyClass, AnyObject, Bool};
@@ -34,6 +34,21 @@ static SELF_DRAG_ACTIVE: AtomicBool = AtomicBool::new(false);
 /// Path to the rich drag image for self-drags. Used by `draggingExited:` to swap back
 /// to the rich image when the cursor leaves the window.
 static SELF_DRAG_RICH_PATH: Mutex<Option<String>> = Mutex::new(None);
+
+/// Operation chosen by the frontend for the current self-drag. Returned from the swizzled
+/// `draggingEntered:`/`draggingUpdated:` so the OS-rendered "+" badge tracks our resolved
+/// op (Copy → +, Move → no badge) instead of wry's hardcoded Copy.
+/// Encoded as `u8`: 0 = unset (forward wry's default), 1 = Copy, 2 = Move.
+static SELF_DRAG_RESOLVED_OP: AtomicU8 = AtomicU8::new(RESOLVED_OP_UNSET);
+const RESOLVED_OP_UNSET: u8 = 0;
+const RESOLVED_OP_COPY: u8 = 1;
+const RESOLVED_OP_MOVE: u8 = 2;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SelfDragOp {
+    Copy,
+    Move,
+}
 
 // Warn-once flags
 static WARNED_NSIMAGE_MISSING: AtomicBool = AtomicBool::new(false);
@@ -53,8 +68,33 @@ pub fn set_self_drag_active(rich_image_path: String) {
 /// Clears the self-drag state. Call on drop completion or drag cancellation.
 pub fn clear_self_drag_state() {
     SELF_DRAG_ACTIVE.store(false, Ordering::Relaxed);
+    SELF_DRAG_RESOLVED_OP.store(RESOLVED_OP_UNSET, Ordering::Relaxed);
     if let Ok(mut guard) = SELF_DRAG_RICH_PATH.lock() {
         *guard = None;
+    }
+}
+
+/// True when the frontend has marked a self-drag as active via `set_self_drag_active`.
+pub fn is_self_drag_active() -> bool {
+    SELF_DRAG_ACTIVE.load(Ordering::Relaxed)
+}
+
+/// Stores the resolved op chosen by the frontend's `pickDropOperation`. The swizzle reads
+/// this on `draggingEntered:`/`draggingUpdated:` to override wry's hardcoded Copy return.
+pub fn set_self_drag_resolved_op(op: SelfDragOp) {
+    let encoded = match op {
+        SelfDragOp::Copy => RESOLVED_OP_COPY,
+        SelfDragOp::Move => RESOLVED_OP_MOVE,
+    };
+    SELF_DRAG_RESOLVED_OP.store(encoded, Ordering::Relaxed);
+}
+
+/// Returns the resolved op set by the frontend, or `None` if unset.
+pub fn get_self_drag_resolved_op() -> Option<SelfDragOp> {
+    match SELF_DRAG_RESOLVED_OP.load(Ordering::Relaxed) {
+        RESOLVED_OP_COPY => Some(SelfDragOp::Copy),
+        RESOLVED_OP_MOVE => Some(SelfDragOp::Move),
+        _ => None,
     }
 }
 

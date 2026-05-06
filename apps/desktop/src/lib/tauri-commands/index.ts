@@ -22,6 +22,7 @@ export {
   startDragPaths,
   prepareSelfDragOverlay,
   clearSelfDragOverlay,
+  setSelfDragResolvedOperation,
   getPathLimits,
   pathExists,
   pathExistsChecked,

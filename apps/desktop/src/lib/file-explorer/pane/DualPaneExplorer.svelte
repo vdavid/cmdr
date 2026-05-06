@@ -6,7 +6,7 @@
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
     import { toBackendCursorIndex, toBackendIndices } from '$lib/file-operations/transfer/transfer-dialog-utils'
-    import { getFileAt, getFilesAtIndices, openInEditor } from '$lib/tauri-commands'
+    import { getFileAt, getFilesAtIndices, openInEditor, setSelfDragResolvedOperation } from '$lib/tauri-commands'
     import { saveAppStatus, saveLastUsedPathForVolume, type ViewMode } from '$lib/app-status-store'
     import { saveSettings, subscribeToSettingsChanges } from '$lib/settings-store'
     import {
@@ -236,6 +236,14 @@
     // cleared on drag-leave/drop. Used to block dropping onto the source itself
     // or into one of its descendants.
     let currentDragSourcePaths: string[] = []
+
+    // Last cursor position seen during the current drag. Used to re-run handleDragOver
+    // when the modifier state changes without a mouse move (so the OS "+" badge can
+    // update via setSelfDragResolvedOperation even when the cursor is still).
+    let lastDragPosition: { x: number; y: number } | null = null
+
+    // Last resolved op pushed to the native swizzle. Dedupe for IPC traffic.
+    let lastPushedSelfDragOp: 'move' | 'copy' | null = null
 
     // Refs for pane wrapper elements (used for hit-testing drop targets)
     const paneWrapperEls = $state<Record<'left' | 'right', HTMLDivElement | undefined>>({
@@ -846,6 +854,7 @@
 
     /** Updates drop-target highlights and overlay as the cursor moves during a drag. */
     function handleDragOver(position: { x: number; y: number }) {
+        lastDragPosition = position
         const resolved = resolveDropTarget(position.x, position.y, paneWrapperEls.left, paneWrapperEls.right)
 
         // Block drops onto the source itself or into one of its descendants.
@@ -882,6 +891,20 @@
         })
 
         updateOverlay(position.x, position.y, targetName, canDrop, operation)
+
+        pushSelfDragOpIfChanged(operation)
+    }
+
+    /**
+     * Pushes the resolved op to the native swizzle so the OS-rendered "+" copy badge
+     * tracks reality (Copy → +, Move → no badge). Deduped via `lastPushedSelfDragOp`
+     * to keep IPC traffic to op transitions only.
+     */
+    function pushSelfDragOpIfChanged(operation: 'move' | 'copy') {
+        if (!getIsDraggingFromSelf()) return
+        if (operation === lastPushedSelfDragOp) return
+        lastPushedSelfDragOp = operation
+        void setSelfDragResolvedOperation(operation)
     }
 
     /** Handles the drop event: resolves the target and opens the transfer dialog. */
@@ -1004,6 +1027,12 @@
             'drag-modifiers',
             (event) => {
                 setModifiers(event.payload)
+                // Re-evaluate the resolved op (and overlay action line) on modifier change
+                // without a mouse move. Otherwise the OS "+" badge wouldn't update until
+                // the cursor moves, lagging the user's intent.
+                if (lastDragPosition !== null) {
+                    handleDragOver(lastDragPosition)
+                }
             },
         )
 
@@ -1053,6 +1082,8 @@
                 void endSelfDragSession()
                 externalDragHasLargeImage = false
                 currentDragSourcePaths = []
+                lastDragPosition = null
+                lastPushedSelfDragOp = null
             } else {
                 // 'leave' — cursor left the window or drag was cancelled
                 clearDropTargets()
@@ -1064,6 +1095,9 @@
                 // State is cleaned up when startDrag resolves (finally block) or on drop.
                 externalDragHasLargeImage = false
                 currentDragSourcePaths = []
+                lastDragPosition = null
+                // Keep lastPushedSelfDragOp set so re-entry doesn't redundantly re-push the
+                // same op. clear_self_drag_state on the native side resets the AtomicU8 too.
                 // Do NOT clear the fingerprint here — that's the key to re-entry detection
             }
         })

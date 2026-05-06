@@ -34,7 +34,7 @@ use objc2_foundation::{NSDictionary, NSInteger, NSRect, NSSize};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::drag_image_swap;
+use crate::drag_image_swap::{self, SelfDragOp};
 
 /// NSEventModifierFlagShift = 1 << 17
 const NS_EVENT_MODIFIER_FLAG_SHIFT: usize = 1 << 17;
@@ -285,6 +285,20 @@ unsafe fn call_original_exited(this: &AnyObject, cmd: Sel, drag_info: &AnyObject
     }
 }
 
+/// Returns our resolved-op override for the current self-drag, or `None` to defer to wry.
+/// The OS draws the green "+" copy badge based on the destination's returned `NSDragOperation`;
+/// wry's stock implementation returns `Copy` unconditionally, so without this override the
+/// badge would always show "+" even for Move operations.
+fn self_drag_op_override() -> Option<usize> {
+    if !drag_image_swap::is_self_drag_active() {
+        return None;
+    }
+    drag_image_swap::get_self_drag_resolved_op().map(|op| match op {
+        SelfDragOp::Copy => NSDragOperation::Copy.0,
+        SelfDragOp::Move => NSDragOperation::Move.0,
+    })
+}
+
 // --- draggingEntered: swizzle ---
 
 unsafe extern "C-unwind" fn swizzled_dragging_entered(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) -> usize {
@@ -324,8 +338,10 @@ unsafe extern "C-unwind" fn swizzled_dragging_entered(this: &AnyObject, cmd: Sel
         );
     }
 
-    // Always forward to wry's original implementation, even if our logic failed.
-    unsafe { call_original_entered(this, cmd, drag_info) }
+    // Forward to wry's original so its event handler still fires, but override the return
+    // value with our resolved op for self-drags so the OS-rendered "+" badge matches reality.
+    let wry_op = unsafe { call_original_entered(this, cmd, drag_info) };
+    self_drag_op_override().unwrap_or(wry_op)
 }
 
 // --- draggingUpdated: swizzle ---
@@ -345,8 +361,10 @@ unsafe extern "C-unwind" fn swizzled_dragging_updated(this: &AnyObject, cmd: Sel
         );
     }
 
-    // Always forward to wry's original implementation.
-    unsafe { call_original_updated(this, cmd, drag_info) }
+    // Forward to wry, then override the return value for self-drags. AppKit re-fires
+    // draggingUpdated: on modifier-key changes too, so this keeps the badge in sync.
+    let wry_op = unsafe { call_original_updated(this, cmd, drag_info) };
+    self_drag_op_override().unwrap_or(wry_op)
 }
 
 // --- draggingExited: swizzle ---

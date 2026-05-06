@@ -113,6 +113,14 @@ Key files:
 - **Decision**: Viewport position correction only in dev mode
   - **Why**: DevTools docked mode shrinks viewport but Tauri reports window-relative positions. Offset computed via
     `outerSize()` vs `innerHeight`. Zero overhead in prod.
+- **Decision**: Self-drag op override — swizzle returns our resolved `NSDragOperation`, not wry's
+  - **Why**: Wry's stock `draggingEntered:`/`draggingUpdated:` returns `NSDragOperation::Copy` unconditionally for file
+    pasteboards. Without an override, macOS would always draw the green "+" copy badge inside our window even when the
+    user is performing a Move. The swizzle in `drag_image_detection.rs` forwards to wry's implementation (so Tauri's
+    `onDragDropEvent` keeps firing), then substitutes the return value with our resolved op when `SELF_DRAG_ACTIVE` is
+    true. The frontend pushes the resolved op via `setSelfDragResolvedOperation` from both `handleDragOver` (target
+    hover changes) and the `drag-modifiers` event handler (modifier-only changes), deduped to op transitions only so IPC
+    traffic is minimal. External drag-in is unaffected — `SELF_DRAG_ACTIVE` is false then, so wry's default applies.
 
 ## Gotchas
 
@@ -154,6 +162,20 @@ Key files:
   - **Why**: The destination's `draggingEntered:` is constrained to the source's mask. Terminals only accept
     `NSDragOperationCopy`; if the source publishes Move-only, the drop is rejected and the drag animates back. Publish a
     permissive mask (`Copy | Link | Generic | Move`) and let macOS modifier keys arbitrate.
+- **Gotcha**: The green "+" copy badge and the red multi-item count circle are macOS-rendered, not ours
+  - **Why**: AppKit's dragging service composites both adornments on top of whatever drag image we hand it. There's no
+    public API to disable, restyle, or recolor them — they're system UI. The "+" tracks the resolved `NSDragOperation`
+    (`Copy` → green +, `Link` → curly arrow, `Move`/`Generic` → no badge); the count circle appears whenever there are
+    > 1 `NSDraggingItem`s on the pasteboard. Even when the OS image is swapped to transparent for self-drags, the badges
+    > still draw because they're separate sprites near the cursor, not painted onto the image surface. Don't try to
+    > replace or skin them — invest custom branding into `DragOverlay.svelte` instead, which is fully under our control.
+- **Gotcha**: The "+" badge may briefly flash on the first frame of a self-drag
+  - **Why**: Our swizzle overrides the wry-default `Copy` return only after the frontend has pushed a resolved op via
+    `setSelfDragResolvedOperation`. The very first `draggingEntered:` can run before that IPC lands, so macOS can show
+    "+" for a frame or two before flipping to the correct op on the next `draggingUpdated:`. Visible as a tiny flicker
+    on the very first drag start, not on subsequent updates. To eliminate it entirely we'd need to push an initial
+    "best-guess" op (likely `Move`, since same-volume default is Move) right before `startDrag`. Not done yet because
+    the flicker is nearly imperceptible in practice.
 
 ## Platform support
 

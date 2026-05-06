@@ -110,3 +110,24 @@ pub fn clear_self_drag_overlay() {
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
 pub fn clear_self_drag_overlay() {}
+
+/// Pushes the resolved drop operation for the current self-drag down to the native swizzle.
+/// The swizzled `draggingEntered:`/`draggingUpdated:` reads this and overrides wry's hardcoded
+/// `Copy` return so the OS-rendered "+" badge tracks our chosen op (Copy → +, Move → no badge).
+/// Unknown values are ignored.
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn set_self_drag_resolved_op(operation: String) {
+    use crate::drag_image_swap::SelfDragOp;
+    let op = match operation.as_str() {
+        "copy" => SelfDragOp::Copy,
+        "move" => SelfDragOp::Move,
+        _ => return,
+    };
+    crate::drag_image_swap::set_self_drag_resolved_op(op);
+}
+
+/// No-op on non-macOS platforms.
+#[cfg(not(target_os = "macos"))]
+#[tauri::command]
+pub fn set_self_drag_resolved_op(_operation: String) {}

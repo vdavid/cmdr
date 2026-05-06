@@ -270,6 +270,16 @@ export async function clearSelfDragOverlay(): Promise<void> {
   await invoke('clear_self_drag_overlay')
 }
 
+/**
+ * Pushes the frontend's resolved drop operation down to the native swizzle so the
+ * OS-rendered "+" copy badge tracks reality (Copy → +, Move → no badge). Without this,
+ * wry's `draggingEntered:`/`draggingUpdated:` returns `Copy` unconditionally and the
+ * badge always shows "+" even on Move. No-op on non-macOS.
+ */
+export async function setSelfDragResolvedOperation(operation: 'move' | 'copy'): Promise<void> {
+  await invoke('set_self_drag_resolved_op', { operation })
+}
+
 export interface PathLimits {
   maxNameBytes: number
   maxPathBytes: number
