@@ -4,6 +4,23 @@ Lives under `src-tauri/src/logging/`. Owns the log pipeline end to end via a han
 `fern` Dispatch tree. Replaced `tauri-plugin-log` to get **per-output level filtering**:
 file target locked at Debug, terminal defaults to Info.
 
+## Rules for adding log calls
+
+- **Use `log::*!` macros only.** `eprintln!` / `println!` / `dbg!` bypass this entire
+  pipeline (no level filtering, no file output, no inclusion in error-report bundles)
+  and are denied by clippy at the crate root.
+- **Always pass a scoped `target:`** so logs are filterable via `RUST_LOG`:
+  ```rust
+  log::debug!(target: "open_with", "candidates intersected: {n}");
+  log::warn!(target: "cloud_actions", "evict failed: {e}");
+  ```
+  Then dev sees just that subsystem with `RUST_LOG=open_with=debug pnpm dev`. Without a
+  `target:`, the log gets the file's module path as its target — workable but noisier
+  and harder to filter consistently. For new subsystems, pick a short stable `target:`
+  string and use it across that module's log calls.
+- The verbose toggle in Settings flips the stdout chain to Debug at runtime; `RUST_LOG`
+  overrides it at startup. The file chain is always Debug when log storage is enabled.
+
 ## File map
 
 | File          | Purpose                                                                                                                                       |

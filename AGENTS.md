@@ -180,6 +180,12 @@ resilience, and common pitfalls.
   `@axe-core/playwright`'s `@playwright/test`) can stay pinned to older nested versions, producing weird false-positive
   failures: stylelint 17.9 misparses Svelte inline `style="..."` attributes against an old postcss; website-typecheck
   fails on a `Page` type mismatch when AxeBuilder gets a different Playwright version than the e2e specs.
+- ❌ **NEVER use `eprintln!`, `println!`, or `dbg!` in `src-tauri/` code.** They bypass the fern logger — no level
+  filtering, no file output, no inclusion in error-report bundles. Clippy denies them at the crate root. Use
+  `log::debug!` / `log::info!` / `log::warn!` / `log::error!` with a scoped `target:` (for example
+  `log::debug!(target: "open_with", "...")`) so logs are filterable via `RUST_LOG`. **READ
+  [`apps/desktop/src-tauri/src/logging/CLAUDE.md`](apps/desktop/src-tauri/src/logging/CLAUDE.md) before adding any log
+  call or touching the log pipeline** — it has the rules and the why.
 - ❌ **NEVER build the Tauri app with raw `cargo build`.** It produces a binary without the embedded frontend (white
   screen). Always build via `pnpm tauri build` or the `node scripts/tauri-wrapper.js build` wrapper from
   `apps/desktop/`. The `beforeBuildCommand` in `tauri.conf.json` runs the llama-server download (Go) and frontend build
