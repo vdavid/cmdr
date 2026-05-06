@@ -45,7 +45,7 @@ const REMEASURE_DEBOUNCE_MS = 1000
  * scale changes. Outside of Svelte runes, prefer `getEffectiveScale()` (which
  * reads this value as a snapshot).
  */
-// eslint-disable-next-line prefer-const -- Svelte 5 $state proxy: never reassigned, mutated via property assign
+
 let effectiveScale = $state(1)
 
 let systemMultiplier = 1

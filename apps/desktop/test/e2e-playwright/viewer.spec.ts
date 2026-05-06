@@ -146,7 +146,16 @@ test.describe('File viewer error handling', () => {
     await tauriPage.waitForSelector('.viewer-container', 15000)
     await tauriPage.waitForSelector('.status-message', 10000)
 
-    const text = await tauriPage.textContent('.status-message')
-    expect(text).toContain('No file path')
+    // Status starts as "Loading…" before the missing-path branch resolves; poll the textContent so we read it after it
+    // settles rather than the moment the element first exists. Slow Linux Docker E2E flakes here without the poll.
+    const settled = await pollUntil(
+      tauriPage,
+      async () => {
+        const t = await tauriPage.textContent('.status-message')
+        return t !== null && t.includes('No file path')
+      },
+      10000,
+    )
+    expect(settled).toBe(true)
   })
 })
