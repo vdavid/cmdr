@@ -5,7 +5,7 @@ const shipped = [
         icon: '/icons/database.svg',
         title: 'Live full-disk index',
         description:
-            'Indexes your entire drive once in about 4 minutes. Then stays current forever, even across restarts.',
+            'Indexes <em>your entire drive</em> in 4 minutes. Once. Then stays current forever, even across restarts.',
     },
     {
         slug: 'private-llm',
@@ -64,7 +64,7 @@ const upcoming = [
                 Built for <span class="gradient-text">power users</span>
             </h2>
             <p class="mx-auto max-w-2xl text-lg text-[var(--color-text-secondary)]">
-                Fast, keyboard-driven, and getting smarter every week.
+                Unimaginably fast, keyboard-driven, and gets smarter every week.
             </p>
         </div>
 
@@ -78,7 +78,7 @@ const upcoming = [
                     >
                         <img src={feature.icon} alt="" class="mb-4 size-10" />
                         <h3 class="mb-2 text-xl font-semibold">{feature.title}</h3>
-                        <p class="text-[var(--color-text-secondary)]">{feature.description}</p>
+                        <p class="text-[var(--color-text-secondary)]" set:html={feature.description} />
                     </a>
                 ))
             }
@@ -104,7 +104,7 @@ const upcoming = [
                         )}
                         <img src={feature.icon} alt="" class="mb-4 size-10" />
                         <h3 class="mb-2 text-xl font-semibold">{feature.title}</h3>
-                        <p class="text-[var(--color-text-secondary)]">{feature.description}</p>
+                        <p class="text-[var(--color-text-secondary)]" set:html={feature.description} />
                     </a>
                 ))
             }

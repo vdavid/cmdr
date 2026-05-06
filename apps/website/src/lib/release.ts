@@ -2,6 +2,9 @@ import latestRelease from '../../public/latest.json'
 
 export const version = latestRelease.version
 
+/** Display version: drops a trailing `.0` patch (`0.16.0` → `0.16`), keeps non-zero patches (`0.16.1`). */
+export const versionDisplay = version.endsWith('.0') ? version.slice(0, -2) : version
+
 const downloadBase = import.meta.env.PUBLIC_DOWNLOAD_BASE_URL
 const githubBase = `https://github.com/vdavid/cmdr/releases/download/v${version}`
 

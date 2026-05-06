@@ -1,5 +1,5 @@
 ---
-import { version, dmgUrls, dmgSizes } from '../lib/release'
+import { version, versionDisplay, dmgUrls, dmgSizes } from '../lib/release'
 
 interface Props {
     variant: 'hero' | 'card' | 'header' | 'mobile' | 'pricing'
@@ -43,9 +43,9 @@ const hasGlow = variant === 'hero' || variant === 'card'
         {
             variant === 'hero' && (
                 <span class="split-btn__stack split-btn__stack--center">
-                    <span class="split-btn__label">Download free</span>
+                    <span class="split-btn__label">Download for macOS</span>
                     <span class="split-btn__sub">
-                        {version}
+                        {versionDisplay}
                         {dmgSizes && <span data-download-size> · {dmgSizes.universal}</span>}
                     </span>
                 </span>
@@ -57,7 +57,7 @@ const hasGlow = variant === 'hero' || variant === 'card'
                 <span class="split-btn__stack split-btn__stack--center">
                     <span class="split-btn__label">Download for macOS</span>
                     <span class="split-btn__sub">
-                        {version}
+                        {versionDisplay}
                         {dmgSizes && <span data-download-size> · {dmgSizes.universal}</span>}
                     </span>
                 </span>
@@ -69,7 +69,7 @@ const hasGlow = variant === 'hero' || variant === 'card'
                 <span class="split-btn__stack">
                     <span class="split-btn__label">Download</span>
                     <span class="split-btn__sub split-btn__sub--header">
-                        {version}
+                        {versionDisplay}
                         {dmgSizes && <span data-download-size> · {dmgSizes.universal}</span>}
                     </span>
                 </span>
@@ -81,7 +81,7 @@ const hasGlow = variant === 'hero' || variant === 'card'
                 <span class="split-btn__stack split-btn__stack--center">
                     <span class="split-btn__label">Download for macOS</span>
                     <span class="split-btn__sub">
-                        {version}
+                        {versionDisplay}
                         {dmgSizes && <span data-download-size> · {dmgSizes.universal}</span>}
                     </span>
                 </span>
@@ -93,7 +93,7 @@ const hasGlow = variant === 'hero' || variant === 'card'
                 <span class="split-btn__stack">
                     <span class="split-btn__label split-btn__label--pricing">Download Cmdr</span>
                     <span class="split-btn__sub">
-                        {version}
+                        {versionDisplay}
                         {dmgSizes && <span data-download-size> · {dmgSizes.universal}</span>}
                     </span>
                 </span>

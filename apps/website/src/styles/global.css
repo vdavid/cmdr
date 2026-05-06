@@ -32,6 +32,9 @@
   --color-accent-glow: rgba(255, 194, 6, 0.4);
   --color-accent-contrast: #14130f;
 
+  /* Resting underline color for body links — change here, not in every component */
+  --color-link-underline: var(--color-border);
+
   /* Semantic colors */
   --color-warning: #ff4d6d;
 
@@ -71,6 +74,21 @@ body {
 ::selection {
   background-color: var(--color-accent);
   color: var(--color-accent-contrast);
+}
+
+/* Body link with a faint resting underline that brightens to the accent on hover.
+   Color is inherited from the surrounding text — set text color separately if needed. */
+.link-muted {
+  text-decoration-line: underline;
+  text-decoration-color: var(--color-link-underline);
+  text-underline-offset: 2px;
+  transition:
+    color 200ms,
+    text-decoration-color 200ms;
+}
+
+.link-muted:hover {
+  text-decoration-color: var(--color-accent);
 }
 
 /* Gradient text utility */
