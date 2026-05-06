@@ -40,7 +40,7 @@
         sortOrder: SortOrder
         /** When true, dialog auto-confirms without user interaction (MCP). */
         autoConfirm?: boolean
-        onConfirm: (previewId: string | null) => void
+        onConfirm: (previewId: string | null, isPermanent: boolean) => void
         onCancel: () => void
     }
 
@@ -58,8 +58,8 @@
         onCancel,
     }: Props = $props()
 
-    // Force permanent when trash not supported
-    const isPermanent = $derived(initialIsPermanent || !supportsTrash)
+    // User-facing toggle. Forced to permanent on volumes that don't support trash.
+    let isPermanent = $state(initialIsPermanent || !supportsTrash)
 
     const dialogTitle = $derived(generateDeleteTitle(sourceItems, isFromCursor))
     const abbreviatedPath = $derived(abbreviatePath(sourceFolderPath))
@@ -158,7 +158,7 @@
             isPermanent,
             count: sourceItems.length,
         })
-        onConfirm(previewId)
+        onConfirm(previewId, isPermanent)
     }
 
     function handleCancel() {
@@ -230,6 +230,22 @@
             <p id="delete-warning-text">
                 <strong>This volume doesn't support trash.</strong> Files will be permanently deleted.
             </p>
+        </div>
+    {/if}
+
+    <!-- Trash/Delete toggle -->
+    {#if supportsTrash}
+        <div class="operation-toggle">
+            <button
+                class="toggle-option"
+                class:active={!isPermanent}
+                onclick={() => (isPermanent = false)}>Trash</button
+            >
+            <button
+                class="toggle-option toggle-option-danger"
+                class:active={isPermanent}
+                onclick={() => (isPermanent = true)}>Delete</button
+            >
         </div>
     {/if}
 
@@ -464,5 +480,50 @@
         gap: var(--spacing-md);
         justify-content: center;
         padding: 0 var(--spacing-xl) var(--spacing-xl);
+    }
+
+    /* Trash/Delete segmented control */
+    .operation-toggle {
+        display: flex;
+        justify-content: center;
+        gap: 0;
+        padding: 0 var(--spacing-xl) var(--spacing-md);
+    }
+
+    .toggle-option {
+        padding: var(--spacing-xs) var(--spacing-lg);
+        font-size: var(--font-size-sm);
+        font-weight: 500;
+        border: 1px solid var(--color-border-strong);
+        background: transparent;
+        color: var(--color-text-secondary);
+        transition: all var(--transition-base);
+        min-width: 60px;
+    }
+
+    .toggle-option:first-child {
+        border-radius: var(--radius-md) 0 0 var(--radius-md);
+        border-right: none;
+    }
+
+    .toggle-option:last-child {
+        border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    }
+
+    .toggle-option.active {
+        background: var(--color-accent);
+        border-color: var(--color-accent);
+        color: var(--color-accent-fg);
+    }
+
+    .toggle-option-danger.active {
+        background: var(--color-error-bg);
+        border-color: var(--color-error);
+        color: var(--color-error-text);
+    }
+
+    .toggle-option:not(.active):hover {
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
     }
 </style>

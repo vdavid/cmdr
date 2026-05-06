@@ -78,7 +78,7 @@
         onNewFileCreated: (fileName: string) => void
         onNewFileCancel: () => void
         onAlertClose: () => void
-        onDeleteConfirm: (previewId: string | null) => void
+        onDeleteConfirm: (previewId: string | null, isPermanent: boolean) => void
         onDeleteCancel: () => void
     } = $props()
 </script>

@@ -294,10 +294,9 @@ export function createDialogState(deps: DialogStateDeps) {
       deps.onRefocus()
     },
 
-    handleDeleteConfirm(previewId: string | null) {
+    handleDeleteConfirm(previewId: string | null, isPermanent: boolean) {
       if (!deleteDialogProps) return
 
-      const isPermanent = deleteDialogProps.isPermanent || !deleteDialogProps.supportsTrash
       const opType: TransferOperationType = isPermanent ? 'delete' : 'trash'
 
       // Collect per-item sizes for trash progress if available
@@ -508,8 +507,11 @@ export function createDialogState(deps: DialogStateDeps) {
           transferDialogProps.operationType,
           false, // scanInProgress not tracked when confirming programmatically
         )
-      } else if (dialogType === 'delete-confirmation' && showDeleteDialog) {
-        this.handleDeleteConfirm(null) // previewId not available
+      } else if (dialogType === 'delete-confirmation' && showDeleteDialog && deleteDialogProps) {
+        // previewId not available when confirming programmatically.
+        // For MCP auto-confirm, honor whatever the props initialized with.
+        const isPermanent = deleteDialogProps.isPermanent || !deleteDialogProps.supportsTrash
+        this.handleDeleteConfirm(null, isPermanent)
       }
     },
   }

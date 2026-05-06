@@ -2282,8 +2282,8 @@
     }}
     showDeleteDialog={dialogs.showDeleteDialog}
     deleteDialogProps={dialogs.deleteDialogProps}
-    onDeleteConfirm={(previewId: string | null) => {
-        dialogs.handleDeleteConfirm(previewId)
+    onDeleteConfirm={(previewId: string | null, isPermanent: boolean) => {
+        dialogs.handleDeleteConfirm(previewId, isPermanent)
     }}
     onDeleteCancel={() => {
         dialogs.handleDeleteCancel()

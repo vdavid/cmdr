@@ -10,8 +10,9 @@ dialog before acting. Reuses `TransferProgressDialog` for progress display.
 ## Files
 
 - **DeleteDialog.svelte**: Confirmation dialog with file list (max 10 items + overflow), live scan stats, symlink
-  notice, and no-trash volume warning. Uses `ModalDialog` with `role="dialog"` for trash and `role="alertdialog"` for
-  permanent delete.
+  notice, no-trash volume warning, and a Trash/Delete segmented control that lets the user flip the operation in-dialog
+  (hidden on no-trash volumes, where permanent is forced). Uses `ModalDialog` with `role="dialog"` for trash and
+  `role="alertdialog"` for permanent delete — the role flips reactively when the toggle changes.
 - **delete-dialog-utils.ts**: Pure utility functions: `generateDeleteTitle()` (handles "N selected files" vs "1 file
   under cursor"), `abbreviatePath()`, `getSymlinkNotice()`, `countSymlinks()`.
 - **delete-dialog-utils.test.ts**: Vitest tests for the pure utilities.
@@ -23,7 +24,8 @@ dialog before acting. Reuses `TransferProgressDialog` for progress display.
 3. **Selection**: `DualPaneExplorer.openDeleteDialog(permanent)` builds props from selection or cursor item (same
    pattern as copy/move). Looks up `supportsTrash` from the source volume's `VolumeInfo`.
 4. **Dialog**: `DeleteDialog` opens with file list, scan preview starts in background via `startScanPreview()`
-5. **Confirm**: `dialog-state.svelte.ts::handleDeleteConfirm()` transitions to `TransferProgressDialog` with
+5. **Confirm**: `DeleteDialog` passes back the active `isPermanent` (from the toggle), and
+   `dialog-state.svelte.ts::handleDeleteConfirm(previewId, isPermanent)` transitions to `TransferProgressDialog` with
    `operationType: 'trash'` or `'delete'`
 6. **Backend**: `trash_files_start()` or `delete_files_start()` in `write_operations/mod.rs` runs the operation
 7. **Progress**: `TransferProgressDialog` shows items/bytes progress with cancel support
@@ -31,7 +33,9 @@ dialog before acting. Reuses `TransferProgressDialog` for progress display.
 
 ## Key design decisions
 
-- **Trash by default**: F8 moves to trash. Permanent delete requires explicit Shift+F8. No setting to change this.
+- **Trash by default**: F8 moves to trash. Shift+F8 opens the same dialog with permanent preselected. Either way, the
+  user can flip the mode via the Trash/Delete segmented control before confirming, so the shortcut just sets the initial
+  state.
 - **Always show dialog**: No `confirmBeforeDelete` setting. Delete is destructive, so the user always sees what they're
   about to delete. Both delete settings were removed from the settings registry.
 - **No undo**: Cmdr doesn't implement undo, but items trashed via `NSFileManager.trashItemAtURL` support Finder's "Put
