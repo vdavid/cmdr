@@ -4,18 +4,18 @@ Reusable UI components used across the entire desktop app.
 
 ## Key files
 
-| File                     | Purpose                                                                  |
-| ------------------------ | ------------------------------------------------------------------------ |
-| `ModalDialog.svelte`     | Central modal container: overlay, dragging, Escape, focus, MCP tracking  |
-| `dialog-registry.ts`     | `SOFT_DIALOG_REGISTRY` array — single source of truth for all dialog IDs |
-| `Button.svelte`          | Styled button with variant and size props                                |
-| `LinkButton.svelte`      | Link-styled button; the only sanctioned `cursor: pointer` in the app     |
-| `CommandBox.svelte`      | Copyable terminal command (monospace + Copy button)                      |
-| `LoadingIcon.svelte`     | Animated spinner with progressive status text                            |
-| `AlertDialog.svelte`     | Single-action confirmation dialog built on `ModalDialog`                 |
-| `ProgressBar.svelte`     | Reusable progress bar (just the bar, no labels or layout)                |
-| `ProgressOverlay.svelte` | Floating top-right progress indicator: spinner, progress bar, ETA        |
-| `toast/`                 | Centralized toast notification system — store, container, item           |
+| File                     | Purpose                                                                                        |
+| ------------------------ | ---------------------------------------------------------------------------------------------- |
+| `ModalDialog.svelte`     | Central modal container: overlay, dragging, Escape, focus, MCP tracking                        |
+| `dialog-registry.ts`     | `SOFT_DIALOG_REGISTRY` array — single source of truth for all dialog IDs                       |
+| `Button.svelte`          | Styled button with variant and size props                                                      |
+| `LinkButton.svelte`      | Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned `cursor: pointer` |
+| `CommandBox.svelte`      | Copyable terminal command (monospace + Copy button)                                            |
+| `LoadingIcon.svelte`     | Animated spinner with progressive status text                                                  |
+| `AlertDialog.svelte`     | Single-action confirmation dialog built on `ModalDialog`                                       |
+| `ProgressBar.svelte`     | Reusable progress bar (just the bar, no labels or layout)                                      |
+| `ProgressOverlay.svelte` | Floating top-right progress indicator: spinner, progress bar, ETA                              |
+| `toast/`                 | Centralized toast notification system — store, container, item                                 |
 
 ## ModalDialog
 
@@ -85,18 +85,21 @@ Variants: `primary` | `secondary` (default) | `danger`. Sizes: `regular` (defaul
 
 ## LinkButton
 
-Use this for any "link" that's actually an in-app action (open settings, toggle help, etc.). It renders a `<button>`
-styled as a link and is the **only** place in the app that opts back into `cursor: pointer` — Cmdr globally sets
-`cursor: default` on `html` and `<a>` for native macOS feel (`app.css:363-366`), and stylelint blocks `cursor: pointer`
-everywhere else (`.stylelintrc.mjs:38`). Don't roll your own link-styled button with raw CSS; the cursor opt-in stays in
-one place by convention.
+Use this for anything that should look and behave like a link. Renders a `<button>` by default (in-app actions like
+"Open settings", "Show format help"), or an `<a>` when you pass `href` (for external URLs — mailto:, https:// — that
+your `onclick` intercepts and routes through `openExternalUrl()`). It is the **only** place in the app that opts back
+into `cursor: pointer` — Cmdr globally sets `cursor: default` on `html` and `<a>` for native macOS feel
+(`app.css:363-366`), and stylelint blocks `cursor: pointer` everywhere else (`.stylelintrc.mjs:38`). Don't roll your own
+link-styled button or anchor with raw CSS; the cursor opt-in stays in one place by convention.
 
 Hover keeps the resting accent-text color (the lighter `--color-accent-hover` doesn't meet 4.5:1 contrast on white) —
 the underline is enough affordance.
 
-Real `<a>` tags for external URLs are a different concern: they go through `openExternalUrl()` (or the markdown link
-delegate in `ErrorPane`) and need SvelteKit's `resolve()` for internal routes. Don't extend `LinkButton` to cover those
-without thinking through the navigation layer.
+The `href` mode includes a per-line eslint disable for `svelte/no-navigation-without-resolve`. That rule wants
+SvelteKit's `resolve()`, which is for internal routes; we route external URLs through `openExternalUrl()` after
+`event.preventDefault()` in `onclick`. The `<a href>` is decorative — it gives screen readers the right semantics and
+preserves "right-click → Copy link." For SvelteKit-internal navigation, don't use `LinkButton`; use `<a>` with
+`resolve()` directly.
 
 ## LoadingIcon
 

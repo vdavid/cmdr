@@ -20,6 +20,7 @@
     } from './licensing-store.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import LinkButton from '$lib/ui/LinkButton.svelte'
     import { addToast } from '$lib/ui/toast/toast-store.svelte'
 
     interface Props {
@@ -324,8 +325,8 @@
                 <div class="warning-banner">
                     <span class="warning-text">
                         This key couldn't be verified with the server. Please try a different key or email us at
-                        <a href="mailto:{SUPPORT_EMAIL}" class="support-link" onclick={handleEmailClick}
-                            >{SUPPORT_EMAIL}</a
+                        <LinkButton href="mailto:{SUPPORT_EMAIL}" onclick={handleEmailClick}
+                            >{SUPPORT_EMAIL}</LinkButton
                         >.
                     </span>
                 </div>
@@ -384,13 +385,12 @@
             </div>
         {:else if !isLoading}
             <p class="description">
-                Paste your license key from the email you received after purchase. Don't have one yet? <a
+                Paste your license key from the email you received after purchase. Don't have one yet? <LinkButton
                     href="https://getcmdr.com/pricing"
-                    class="buy-link"
                     onclick={(event: MouseEvent) => {
                         event.preventDefault()
                         void openExternalUrl('https://getcmdr.com/pricing')
-                    }}>Get a license</a
+                    }}>Get a license</LinkButton
                 >.
             </p>
 
@@ -419,22 +419,22 @@
                     {#if isServerInvalidError && serverInvalidRetryCount >= 3}
                         We've tried {serverInvalidRetryCount} times and it didn't work. We're sorry for the trouble — please
                         drop us a message at
-                        <a href="mailto:{SUPPORT_EMAIL}" class="support-link" onclick={handleEmailClick}
-                            >{SUPPORT_EMAIL}</a
+                        <LinkButton href="mailto:{SUPPORT_EMAIL}" onclick={handleEmailClick}
+                            >{SUPPORT_EMAIL}</LinkButton
                         >
 
                         and we'll sort it out.
                     {:else if isServerInvalidError}
                         If you believe this is a mistake, email us at
-                        <a href="mailto:{SUPPORT_EMAIL}" class="support-link" onclick={handleEmailClick}
-                            >{SUPPORT_EMAIL}</a
+                        <LinkButton href="mailto:{SUPPORT_EMAIL}" onclick={handleEmailClick}
+                            >{SUPPORT_EMAIL}</LinkButton
                         >
 
                         and we'll sort it out.
                     {:else}
                         If you need help, contact us at
-                        <a href="mailto:{SUPPORT_EMAIL}" class="support-link" onclick={handleEmailClick}
-                            >{SUPPORT_EMAIL}</a
+                        <LinkButton href="mailto:{SUPPORT_EMAIL}" onclick={handleEmailClick}
+                            >{SUPPORT_EMAIL}</LinkButton
                         >.
                     {/if}
                 </p>
@@ -594,24 +594,6 @@
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
         line-height: 1.5;
-    }
-
-    .support-link {
-        color: var(--color-accent-text);
-        text-decoration: underline;
-    }
-
-    .support-link:hover {
-        color: var(--color-accent-hover);
-    }
-
-    .buy-link {
-        color: var(--color-accent-text);
-        text-decoration: underline;
-    }
-
-    .buy-link:hover {
-        color: var(--color-accent-hover);
     }
 
     .button-row {

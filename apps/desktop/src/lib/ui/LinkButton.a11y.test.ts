@@ -51,4 +51,23 @@ describe('LinkButton a11y', () => {
     await tick()
     await expectNoA11yViolations(target)
   })
+
+  it('href mode (renders <a>) has no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(LinkButton, {
+      target,
+      props: { href: 'https://getcmdr.com/pricing', children: snip('Get a license') },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('href mode with mailto has no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(LinkButton, { target, props: { href: 'mailto:hi@example.com', children: snip('hi@example.com') } })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
 })

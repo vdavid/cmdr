@@ -1,7 +1,21 @@
+<!--
+  Link-styled element. Renders <button> for in-app actions (default) or <a> when
+  `href` is set. Owns the only sanctioned `cursor: pointer` in the app — Cmdr
+  globally sets `cursor: default` on `html` and `<a>` for native macOS feel.
+
+  When using `href`: the URL is decorative (for screen readers, right-click "Copy
+  link"). Always intercept the click via `onclick` and route through
+  `openExternalUrl()` — Tauri blocks raw `<a>` navigation. The eslint disable for
+  `svelte/no-navigation-without-resolve` is intentional here: that rule wants
+  SvelteKit's `resolve()`, which doesn't apply to externally-intercepted URLs.
+-->
 <script lang="ts">
     import type { Snippet } from 'svelte'
 
     interface Props {
+        href?: string
+        target?: string
+        rel?: string
         type?: 'button' | 'submit'
         disabled?: boolean
         onclick?: (e: MouseEvent) => void
@@ -9,12 +23,28 @@
         children: Snippet
     }
 
-    const { type = 'button', disabled = false, onclick, 'aria-label': ariaLabel, children }: Props = $props()
+    const {
+        href,
+        target,
+        rel,
+        type = 'button',
+        disabled = false,
+        onclick,
+        'aria-label': ariaLabel,
+        children,
+    }: Props = $props()
 </script>
 
-<button class="link-button" {type} {disabled} {onclick} aria-label={ariaLabel}>
-    {@render children()}
-</button>
+{#if href}
+    <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+    <a class="link-button" {href} {target} {rel} {onclick} aria-label={ariaLabel}>
+        {@render children()}
+    </a>
+{:else}
+    <button class="link-button" {type} {disabled} {onclick} aria-label={ariaLabel}>
+        {@render children()}
+    </button>
+{/if}
 
 <style>
     .link-button {
