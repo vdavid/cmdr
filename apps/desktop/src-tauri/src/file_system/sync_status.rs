@@ -23,7 +23,7 @@ use std::path::Path;
 const SF_DATALESS: u32 = 0x40000000;
 
 /// Sync status for a file in a cloud-synced folder (Dropbox, iCloud, etc.).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SyncStatus {
     Synced,
@@ -32,6 +32,7 @@ pub enum SyncStatus {
     Uploading,
     Downloading,
     /// Not a cloud file or status cannot be determined.
+    #[default]
     Unknown,
 }
 

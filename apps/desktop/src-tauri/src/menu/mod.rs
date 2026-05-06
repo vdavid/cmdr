@@ -4,14 +4,23 @@
 mod linux;
 #[cfg(target_os = "macos")]
 mod macos;
+#[cfg(target_os = "macos")]
+pub mod open_with;
 
 use crate::ignore_poison::IgnorePoison;
 use std::collections::HashMap;
+#[cfg(target_os = "macos")]
+use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{
     AppHandle, Runtime, Wry,
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
 };
+
+#[cfg(target_os = "macos")]
+use crate::file_system::open_with::OpenWithChoices;
+#[cfg(target_os = "macos")]
+use crate::file_system::sync_status::SyncStatus;
 
 /// Menu item IDs for file actions.
 pub const SHOW_HIDDEN_FILES_ID: &str = "show_hidden_files";
@@ -34,6 +43,10 @@ pub const QUICK_LOOK_ID: &str = "quick_look";
 pub const RENAME_ID: &str = "rename";
 pub const SELECT_ALL_ID: &str = "select_all_files";
 pub const DESELECT_ALL_ID: &str = "deselect_all";
+
+/// Menu item IDs for cloud actions (macOS File Provider).
+pub const CLOUD_MAKE_OFFLINE_ID: &str = "cloud_make_offline";
+pub const CLOUD_REMOVE_DOWNLOAD_ID: &str = "cloud_remove_download";
 
 /// Menu item IDs for clipboard operations (Edit menu).
 pub const EDIT_CUT_ID: &str = "edit_cut";
@@ -134,8 +147,13 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         SELECT_ALL_ID => Some(("selection.selectAll", CommandScope::FileScoped)),
         DESELECT_ALL_ID => Some(("selection.deselectAll", CommandScope::FileScoped)),
 
+        // Cloud actions (macOS File Provider)
+        CLOUD_MAKE_OFFLINE_ID => Some(("cloud.makeOffline", CommandScope::FileScoped)),
+        CLOUD_REMOVE_DOWNLOAD_ID => Some(("cloud.removeDownload", CommandScope::FileScoped)),
+
         // Not mapped: CheckMenuItems (show_hidden_files, view modes), close-tab (special logic),
-        // viewer word wrap, tab context menu actions, sort items
+        // viewer word wrap, tab context menu actions, sort items, "open-with:*" (prefix-routed
+        // before this lookup in `lib.rs::on_menu_event`).
         _ => None,
     }
 }
@@ -182,6 +200,8 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "edit.copy" => Some(EDIT_COPY_ID),
         "edit.paste" => Some(EDIT_PASTE_ID),
         "edit.pasteAsMove" => Some(EDIT_PASTE_MOVE_ID),
+        "cloud.makeOffline" => Some(CLOUD_MAKE_OFFLINE_ID),
+        "cloud.removeDownload" => Some(CLOUD_REMOVE_DOWNLOAD_ID),
         _ => None,
     }
 }
@@ -189,8 +209,21 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
 /// Context for the current menu selection.
 #[derive(Clone, Default)]
 pub struct MenuContext {
+    /// The right-clicked file's path (the "primary" file, used for single-file actions
+    /// like "Copy 'filename'", Get info, Quick look).
     pub path: String,
     pub filename: String,
+    /// All paths the menu's actions should affect. For a right-click on a non-selected
+    /// file, this is just `[path]`. For a right-click on a file that's part of a
+    /// multi-selection, this is the full selection. Used by "Open with" launches and
+    /// by cloud actions when the user wants the action to apply across all selected
+    /// files.
+    pub paths: Vec<String>,
+    /// Map of bundle ID → app path for the most-recent "Open with" submenu. Populated
+    /// when the context menu is built; consumed when the user clicks an
+    /// `open-with:<bundle-id>` item.
+    #[cfg(target_os = "macos")]
+    pub open_with_apps: HashMap<String, PathBuf>,
 }
 
 /// Context for the network host context menu (stored so on_menu_event can emit it).
@@ -429,20 +462,114 @@ fn register_item<R: Runtime>(
     );
 }
 
+/// Per-file information needed to build a fully-populated context menu.
+///
+/// On non-macOS this is empty; on macOS it carries the cloud sync status (used to
+/// decide between "Make available offline" and "Remove download"), whether the file
+/// lives in any File Provider domain (gates cloud actions), and the precomputed
+/// "Open with" candidate apps.
+#[cfg(target_os = "macos")]
+#[derive(Default)]
+pub struct FileContextInfo {
+    pub sync_status: SyncStatus,
+    pub is_cloud: bool,
+    pub open_with: OpenWithChoices,
+}
+
+#[cfg(not(target_os = "macos"))]
+#[derive(Default)]
+pub struct FileContextInfo;
+
+/// Result of building a file context menu — the menu itself, plus (on macOS) a
+/// `bundle_id → app_path` map that the caller stores in `MenuState.context.open_with_apps`
+/// so `lib.rs::on_menu_event` can resolve `open-with:<bundle-id>` clicks back to an app URL.
+pub struct ContextMenuResult<R: Runtime> {
+    pub menu: Menu<R>,
+    #[cfg(target_os = "macos")]
+    pub open_with_apps: HashMap<String, PathBuf>,
+}
+
+/// Max chars in the `Copy "<filename>"` context menu label before middle-ellipsis kicks in.
+/// Picked to fit typical filenames while capping pathological 100+ char names that blow the menu width.
+const COPY_FILENAME_MAX_CHARS: usize = 50;
+
+/// Truncate a filename for use inside a menu label, preserving the extension.
+///
+/// If the filename fits within `max_chars` (counted in chars, not bytes), it's returned unchanged.
+/// Otherwise produces `<prefix>…<suffix>` where the suffix keeps the file extension plus a few
+/// preceding chars, and the prefix takes ~60% of the budget. Operates on chars so multi-byte
+/// UTF-8 sequences are never split mid-codepoint.
+fn truncate_for_menu_label(filename: &str, max_chars: usize) -> String {
+    let total_chars = filename.chars().count();
+    if total_chars <= max_chars {
+        return filename.to_string();
+    }
+
+    // Reserve one char for the ellipsis itself.
+    if max_chars == 0 {
+        return String::new();
+    }
+    if max_chars == 1 {
+        return "\u{2026}".to_string();
+    }
+    let budget = max_chars - 1;
+    let prefix_chars = budget * 6 / 10;
+    let suffix_chars = budget - prefix_chars;
+
+    // Find the extension (everything after the last '.', but only if there's a non-empty stem).
+    // `Path::extension` skips leading-dot files and returns just the ext without the dot, which is
+    // what we want here — we treat names like ".gitignore" as extensionless.
+    let ext_with_dot = std::path::Path::new(filename)
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| format!(".{e}"))
+        .unwrap_or_default();
+    let ext_chars = ext_with_dot.chars().count();
+
+    // If the extension alone doesn't fit in the suffix budget, fall back to a plain ~60/40
+    // middle-ellipsis split (the extension is too long to be useful here anyway).
+    let suffix: String = if ext_chars > 0 && ext_chars <= suffix_chars {
+        // Keep the full extension plus some chars before it (the part of the stem near the end).
+        let pre_ext_chars = suffix_chars - ext_chars;
+        let stem_len = total_chars - ext_chars;
+        let take_from = stem_len.saturating_sub(pre_ext_chars);
+        filename
+            .chars()
+            .skip(take_from)
+            .take(pre_ext_chars + ext_chars)
+            .collect()
+    } else {
+        filename.chars().skip(total_chars - suffix_chars).collect()
+    };
+
+    let prefix: String = filename.chars().take(prefix_chars).collect();
+    format!("{prefix}\u{2026}{suffix}")
+}
+
 /// Builds a context menu for a specific file.
 pub fn build_context_menu<R: Runtime>(
     app: &AppHandle<R>,
     filename: &str,
     is_directory: bool,
-) -> tauri::Result<Menu<R>> {
+    info: &FileContextInfo,
+) -> tauri::Result<ContextMenuResult<R>> {
     let menu = Menu::new(app)?;
 
     // Open / View / Edit group (files only)
+    #[cfg(target_os = "macos")]
+    let mut open_with_apps: HashMap<String, PathBuf> = HashMap::new();
     if !is_directory {
         let open_item = MenuItem::with_id(app, OPEN_ID, "Open", true, None::<&str>)?;
         let view_item = MenuItem::with_id(app, FILE_VIEW_ID, "View", true, Some("F3"))?;
         let edit_item = MenuItem::with_id(app, EDIT_ID, "Edit", true, Some("F4"))?;
         menu.append(&open_item)?;
+        #[cfg(target_os = "macos")]
+        {
+            // Open with submenu — Finder convention: shown for files, not directories.
+            let (submenu, map) = open_with::build_open_with_submenu(app, &info.open_with.candidates)?;
+            menu.append(&submenu)?;
+            open_with_apps = map;
+        }
         menu.append(&view_item)?;
         menu.append(&edit_item)?;
         menu.append(&PredefinedMenuItem::separator(app)?)?;
@@ -478,7 +605,10 @@ pub fn build_context_menu<R: Runtime>(
     let copy_filename_item = MenuItem::with_id(
         app,
         COPY_FILENAME_ID,
-        format!("Copy \"{}\"", filename),
+        format!(
+            "Copy \"{}\"",
+            truncate_for_menu_label(filename, COPY_FILENAME_MAX_CHARS)
+        ),
         true,
         Some("Cmd+C"),
     )?;
@@ -486,6 +616,35 @@ pub fn build_context_menu<R: Runtime>(
     menu.append(&show_in_finder_item)?;
     menu.append(&copy_filename_item)?;
     menu.append(&copy_path_item)?;
+
+    // Cloud actions (macOS File Provider) — only show when the file is in a
+    // cloud-managed folder, gated by sync status.
+    #[cfg(target_os = "macos")]
+    if info.is_cloud {
+        let cloud_item = match info.sync_status {
+            SyncStatus::OnlineOnly => Some(MenuItem::with_id(
+                app,
+                CLOUD_MAKE_OFFLINE_ID,
+                "Make available offline",
+                true,
+                None::<&str>,
+            )?),
+            SyncStatus::Synced => Some(MenuItem::with_id(
+                app,
+                CLOUD_REMOVE_DOWNLOAD_ID,
+                "Remove download",
+                true,
+                None::<&str>,
+            )?),
+            // Uploading/Downloading: action already in flight, don't offer either.
+            // Unknown: status query failed, hide to avoid confusion.
+            _ => None,
+        };
+        if let Some(item) = cloud_item {
+            menu.append(&PredefinedMenuItem::separator(app)?)?;
+            menu.append(&item)?;
+        }
+    }
 
     // Quick Look and Get Info are macOS-only
     #[cfg(target_os = "macos")]
@@ -497,7 +656,11 @@ pub fn build_context_menu<R: Runtime>(
         menu.append(&quick_look_item)?;
     }
 
-    Ok(menu)
+    Ok(ContextMenuResult {
+        menu,
+        #[cfg(target_os = "macos")]
+        open_with_apps,
+    })
 }
 
 /// Builds a context menu for the breadcrumb path bar.
@@ -990,6 +1153,8 @@ mod tests {
             "selection.deselectAll",
             "help.sendErrorReport",
             "app.checkForUpdates",
+            "cloud.makeOffline",
+            "cloud.removeDownload",
         ];
 
         for command_id in &command_ids {
@@ -999,6 +1164,79 @@ mod tests {
                 .unwrap_or_else(|| panic!("menu_id_to_command missing for menu_id from command {command_id}"));
             assert_eq!(back, *command_id, "roundtrip mismatch for {command_id}");
         }
+    }
+
+    #[test]
+    fn test_truncate_for_menu_label_short_passes_through() {
+        assert_eq!(truncate_for_menu_label("hello.txt", 50), "hello.txt");
+        assert_eq!(truncate_for_menu_label("", 50), "");
+        // Exactly at the limit
+        let exactly_50 = "a".repeat(50);
+        assert_eq!(truncate_for_menu_label(&exactly_50, 50), exactly_50);
+    }
+
+    #[test]
+    fn test_truncate_for_menu_label_long_with_extension_keeps_extension() {
+        let long = "Obviously Awesome How to Nail Product Positioning so Customers Get It, Buy It, Love It Audiobook - m4b.epub";
+        let truncated = truncate_for_menu_label(long, 50);
+        assert!(truncated.chars().count() <= 50);
+        assert!(
+            truncated.ends_with(".epub"),
+            "expected extension preserved, got: {truncated}"
+        );
+        assert!(truncated.contains('\u{2026}'), "expected ellipsis, got: {truncated}");
+        assert!(
+            truncated.starts_with("Obviously"),
+            "expected prefix preserved, got: {truncated}"
+        );
+    }
+
+    #[test]
+    fn test_truncate_for_menu_label_long_without_extension() {
+        let long = "a".repeat(100);
+        let truncated = truncate_for_menu_label(&long, 50);
+        assert!(truncated.chars().count() <= 50);
+        assert!(truncated.contains('\u{2026}'));
+        // No extension means a ~60/40 split with the ellipsis in the middle.
+        let parts: Vec<&str> = truncated.split('\u{2026}').collect();
+        assert_eq!(parts.len(), 2);
+        assert!(!parts[0].is_empty());
+        assert!(!parts[1].is_empty());
+    }
+
+    #[test]
+    fn test_truncate_for_menu_label_multibyte_utf8() {
+        // Each emoji is multi-byte in UTF-8; the helper must count chars and never split mid-byte.
+        let name = "🎉".repeat(40) + ".txt";
+        let truncated = truncate_for_menu_label(&name, 20);
+        assert!(truncated.chars().count() <= 20);
+        // Round-trip through str must succeed (already guaranteed by String, but assert it's valid):
+        assert!(std::str::from_utf8(truncated.as_bytes()).is_ok());
+        assert!(truncated.contains('\u{2026}'));
+        assert!(truncated.ends_with(".txt"));
+
+        // Accented chars (single codepoint each) should also work cleanly.
+        let accented = "ÁrvíztűrőTükörfúrógép".repeat(5);
+        let truncated2 = truncate_for_menu_label(&accented, 15);
+        assert!(truncated2.chars().count() <= 15);
+        assert!(std::str::from_utf8(truncated2.as_bytes()).is_ok());
+    }
+
+    #[test]
+    fn test_truncate_for_menu_label_max_smaller_than_extension() {
+        // When the extension is longer than the suffix budget, fall back to plain middle-ellipsis.
+        // ".verylongextension" is 18 chars; with max_chars=10, suffix budget is only 4.
+        let name = "stem.verylongextension";
+        let truncated = truncate_for_menu_label(name, 10);
+        assert!(truncated.chars().count() <= 10);
+        assert!(truncated.contains('\u{2026}'));
+        // Should not panic; should produce valid UTF-8.
+        assert!(std::str::from_utf8(truncated.as_bytes()).is_ok());
+
+        // Edge: max_chars = 1 yields just the ellipsis.
+        assert_eq!(truncate_for_menu_label("anything.txt", 1), "\u{2026}");
+        // Edge: max_chars = 0 yields empty string.
+        assert_eq!(truncate_for_menu_label("anything.txt", 0), "");
     }
 
     #[test]

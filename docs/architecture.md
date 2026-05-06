@@ -137,6 +137,12 @@ Rules that cut across many modules. All existing commands follow these — apply
 - **Keychain**: stores network credentials and trial state. Uses `security-framework` crate.
 - **copyfile(3)**: preserves xattrs, ACLs, resource forks. `COPYFILE_CLONE` for instant APFS clones.
 - **ptpcamerad**: auto-claims USB devices. MTP shows workaround dialog with Terminal command.
+- **File Provider integration**: `file_system/cloud_actions.rs` calls `NSFileProviderManager` for evict / download on
+  iCloud Drive, Dropbox, Google Drive, OneDrive, Box. `file_system/open_with.rs` uses
+  `NSWorkspace.URLsForApplicationsToOpenURL:` for "Open with" candidates. Both APIs descend into `fileproviderd` XPC for
+  cloud-stub files, which can blow rayon's 2 MB worker stack — both modules use dedicated 8 MB-stack OS threads. The
+  Services menu (Quick Actions, third-party action extensions) is wired via `PredefinedMenuItem::services` in the `cmdr`
+  app menu.
 
 ### Dev mode
 

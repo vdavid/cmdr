@@ -359,6 +359,22 @@ export const commands: Command[] = [
     shortcuts: [],
     description: 'Opens the context menu for the file under the cursor',
   },
+  {
+    id: 'cloud.makeOffline',
+    name: 'Make available offline',
+    scope: 'Main window/File list',
+    showInPalette: isMacOS(),
+    shortcuts: [],
+    description: 'Downloads a cloud-stored file so it stays available without an internet connection',
+  },
+  {
+    id: 'cloud.removeDownload',
+    name: 'Remove download',
+    scope: 'Main window/File list',
+    showInPalette: isMacOS(),
+    shortcuts: [],
+    description: 'Removes the local copy of a cloud file, leaving it available online only',
+  },
 
   // ============================================================================
   // File list - Selection commands

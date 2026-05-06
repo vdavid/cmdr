@@ -64,6 +64,8 @@ export {
   quickLook,
   getInfo,
   openInEditor,
+  cloudMakeAvailableOffline,
+  cloudRemoveDownload,
 } from './file-actions'
 
 // Icons (fetching and cache management)

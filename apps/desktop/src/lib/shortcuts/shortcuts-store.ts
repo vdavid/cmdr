@@ -111,6 +111,9 @@ const menuCommands = [
   'file.quickLook',
   'file.copyPath',
   'file.copyFilename',
+  // Cloud actions (macOS File Provider — items only show when the right-clicked file is in a cloud folder)
+  'cloud.makeOffline',
+  'cloud.removeDownload',
   // Selection
   'selection.selectAll',
   'selection.deselectAll',

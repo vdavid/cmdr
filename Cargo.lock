@@ -237,7 +237,7 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "parking_lot",
  "percent-encoding",
- "windows-sys 0.60.2",
+ "windows-sys 0.52.0",
  "wl-clipboard-rs",
  "x11rb",
 ]
@@ -1222,6 +1222,7 @@ dependencies = [
  "nusb",
  "objc2 0.6.4",
  "objc2-app-kit 0.3.2",
+ "objc2-file-provider",
  "objc2-foundation 0.3.2",
  "plist",
  "rand 0.10.1",
@@ -5771,6 +5772,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "objc2-file-provider"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e75524f6dcc079d5722a85797b2d29079ebecb0b88352f0ecb18011f7d84655"
+dependencies = [
+ "bitflags 2.11.1",
+ "block2 0.6.2",
+ "objc2 0.6.4",
+ "objc2-core-foundation",
+ "objc2-foundation 0.3.2",
+]
+
+[[package]]
 name = "objc2-foundation"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6777,7 +6791,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.60.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]

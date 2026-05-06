@@ -1,5 +1,6 @@
 //! File system module - operations, watchers, volumes, and providers.
 
+pub mod cloud_actions;
 pub mod git;
 #[cfg(target_os = "linux")]
 pub(crate) mod linux_mounts;
@@ -8,6 +9,8 @@ pub(crate) mod listing;
 mod macos_metadata;
 #[cfg(test)]
 mod mock_provider;
+#[cfg(target_os = "macos")]
+pub mod open_with;
 #[cfg(test)]
 mod provider;
 #[cfg(test)]

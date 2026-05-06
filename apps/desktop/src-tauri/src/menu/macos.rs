@@ -55,6 +55,11 @@ pub(crate) fn build_menu_macos<R: Runtime>(
             &PredefinedMenuItem::separator(app)?,
             &settings_item,
             &PredefinedMenuItem::separator(app)?,
+            // System Services menu — populated by AppKit with Action extensions and other apps'
+            // services (Ghostty's "New tab here", Nimble Commander's "Reveal", Quick Actions, etc.).
+            // muda's PredefinedMenuItem::services wires `NSApplication.servicesMenu` for us.
+            &PredefinedMenuItem::services(app, None)?,
+            &PredefinedMenuItem::separator(app)?,
             &PredefinedMenuItem::hide(app, None)?,
             &PredefinedMenuItem::hide_others(app, None)?,
             &PredefinedMenuItem::show_all(app, None)?,

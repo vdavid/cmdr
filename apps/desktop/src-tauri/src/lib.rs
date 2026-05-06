@@ -4,8 +4,9 @@
 #![warn(unused_crate_dependencies)]
 // Warn on redundant path prefixes (like std::path::Path when Path is imported)
 #![warn(unused_qualifications)]
-// Use log::* macros instead of println!/eprintln! for proper log level control
-#![deny(clippy::print_stdout, clippy::print_stderr)]
+// Use log::* macros instead of println!/eprintln!/dbg! for proper log level control
+// and so error-report bundles capture the context. See `logging/CLAUDE.md` for the rules.
+#![deny(clippy::print_stdout, clippy::print_stderr, clippy::dbg_macro)]
 // Require justification for all #[allow] attributes
 #![warn(clippy::allow_attributes_without_reason)]
 
@@ -425,6 +426,11 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             menu::set_macos_menu_icons();
 
+            // Subscribe to NSWorkspace launch/terminate notifications so the "Open with"
+            // candidate cache invalidates when the user installs or removes apps.
+            #[cfg(target_os = "macos")]
+            file_system::open_with::start_invalidation_observer();
+
             // Store the CheckMenuItem references in app state
             let menu_state = MenuState::default();
             *menu_state.show_hidden_files.lock_ignore_poison() = Some(menu_items.show_hidden_files);
@@ -671,6 +677,59 @@ pub fn run() {
                 return;
             }
 
+            // === Open with submenu: dynamic IDs prefix-routed before unified dispatch ===
+            // Items have IDs like `open-with:com.apple.Xcode` — too dynamic to enumerate
+            // in `menu_id_to_command`. We resolve the bundle ID back to an app path via
+            // `MenuState.context.open_with_apps` and call the launch helper directly.
+            #[cfg(target_os = "macos")]
+            if let Some(bundle_id) = id.strip_prefix(menu::open_with::OPEN_WITH_ID_PREFIX) {
+                use crate::file_system::open_with::open_paths_with;
+                use std::path::PathBuf;
+
+                let menu_state = app.state::<MenuState<tauri::Wry>>();
+                let ctx = menu_state.context.lock_ignore_poison();
+                let app_path = ctx.open_with_apps.get(bundle_id).cloned();
+                let paths: Vec<PathBuf> = ctx.paths.iter().map(PathBuf::from).collect();
+                drop(ctx);
+
+                if let Some(app_path) = app_path
+                    && !paths.is_empty()
+                {
+                    if let Err(e) = open_paths_with(&paths, &app_path) {
+                        log::warn!("Open with failed for {bundle_id}: {e}");
+                    }
+                } else {
+                    log::warn!("Open with: missing app or paths for {bundle_id}");
+                }
+                return;
+            }
+
+            // === Open with → Other... : show NSOpenPanel, then launch ===
+            #[cfg(target_os = "macos")]
+            if id == menu::open_with::OPEN_WITH_OTHER_ID {
+                use crate::file_system::open_with::{open_paths_with, pick_app_via_open_panel};
+                use std::path::PathBuf;
+
+                let menu_state = app.state::<MenuState<tauri::Wry>>();
+                let paths: Vec<PathBuf> = menu_state
+                    .context
+                    .lock_ignore_poison()
+                    .paths
+                    .iter()
+                    .map(PathBuf::from)
+                    .collect();
+
+                // NSOpenPanel must run on the main thread. on_menu_event is invoked on
+                // the main thread by Tauri/muda, so this is safe.
+                if let Some(app_path) = pick_app_via_open_panel()
+                    && !paths.is_empty()
+                    && let Err(e) = open_paths_with(&paths, &app_path)
+                {
+                    log::warn!("Open with (Other...) failed: {e}");
+                }
+                return;
+            }
+
             // === Unified dispatch: look up command ID from the mapping ===
             if let Some((command_id, scope)) = menu_id_to_command(id) {
                 if scope == CommandScope::FileScoped {
@@ -776,6 +835,8 @@ pub fn run() {
             commands::ui::quick_look,
             commands::ui::get_info,
             commands::ui::open_in_editor,
+            commands::ui::cloud_make_available_offline,
+            commands::ui::cloud_remove_download,
             mcp::pane_state::update_left_pane_state,
             mcp::pane_state::update_right_pane_state,
             mcp::pane_state::update_focused_pane,

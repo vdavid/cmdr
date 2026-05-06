@@ -1,6 +1,6 @@
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
-    CLOSE_TAB_ID, CommandScope, MenuState, build_breadcrumb_context_menu, build_context_menu,
+    CLOSE_TAB_ID, CommandScope, FileContextInfo, MenuState, build_breadcrumb_context_menu, build_context_menu,
     build_network_host_context_menu, build_tab_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command,
 };
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -23,16 +23,80 @@ pub fn show_file_context_menu<R: Runtime>(
     path: String,
     filename: String,
     is_directory: bool,
+    paths: Vec<String>,
 ) -> Result<(), String> {
     let app = window.app_handle();
 
-    // Update context first so menu events have the right data
-    update_menu_context(app.clone(), path, filename.clone());
+    // The "primary" path drives single-file actions like "Copy 'filename'", Get info,
+    // Quick look. `paths` carries the full selection that "Open with" and cloud actions
+    // should apply to — it equals `[path]` when the right-clicked file isn't part of a
+    // multi-selection, or the entire selection otherwise.
+    let context_paths = if paths.is_empty() { vec![path.clone()] } else { paths };
 
-    let menu = build_context_menu(app, &filename, is_directory).map_err(|e| e.to_string())?;
-    menu.popup(window).map_err(|e| e.to_string())?;
+    // Compute per-file context (sync status, FP-domain membership, candidate "Open with"
+    // apps). The LaunchServices query for candidates can take 50-200 ms on a cold cache,
+    // which delays the popup; the cache (in `file_system::open_with`) keeps later
+    // right-clicks fast.
+    #[cfg(target_os = "macos")]
+    let info = build_file_context_info(&path, &context_paths);
+    #[cfg(not(target_os = "macos"))]
+    let info = FileContextInfo;
+
+    // Update menu context so on_menu_event has paths + bundle map for the new items.
+    {
+        let state = app.state::<MenuState<R>>();
+        let mut context = state.context.lock_ignore_poison();
+        context.path = path.clone();
+        context.filename = filename.clone();
+        context.paths = context_paths;
+        #[cfg(target_os = "macos")]
+        {
+            // Filled in from build_context_menu's return value below.
+            context.open_with_apps.clear();
+        }
+    }
+
+    let result = build_context_menu(app, &filename, is_directory, &info).map_err(|e| e.to_string())?;
+
+    // Stash the bundle_id → app_path map so on_menu_event can resolve clicks on
+    // `open-with:<bundle-id>` items back to a real app URL.
+    #[cfg(target_os = "macos")]
+    {
+        let state = app.state::<MenuState<R>>();
+        let mut context = state.context.lock_ignore_poison();
+        context.open_with_apps = result.open_with_apps;
+    }
+
+    result.menu.popup(window).map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn build_file_context_info(primary_path: &str, all_paths: &[String]) -> FileContextInfo {
+    use crate::file_system::cloud_actions::is_in_cloud_storage;
+    use crate::file_system::open_with::compute_open_with_choices;
+    use crate::file_system::sync_status::get_sync_statuses;
+    use std::path::PathBuf;
+
+    let path_buf = PathBuf::from(primary_path);
+    let is_cloud = is_in_cloud_storage(&path_buf);
+
+    // Sync status of the primary path only — drives the cloud-action label.
+    let sync_status = if is_cloud {
+        let mut statuses = get_sync_statuses(vec![primary_path.to_string()]);
+        statuses.remove(primary_path).unwrap_or_default()
+    } else {
+        Default::default()
+    };
+
+    let open_with = compute_open_with_choices(all_paths.iter().map(PathBuf::from).collect());
+
+    FileContextInfo {
+        sync_status,
+        is_cloud,
+        open_with,
+    }
 }
 
 /// Shows a native context menu for the breadcrumb path bar.
@@ -207,6 +271,27 @@ pub fn open_in_editor(path: String) -> Result<(), String> {
         .spawn()
         .map_err(|e| e.to_string())?;
     Ok(())
+}
+
+/// Make a cloud-managed file available offline (download it). On macOS, talks to the
+/// File Provider extension responsible for the file (iCloud Drive, Dropbox, GDrive,
+/// OneDrive, Box, etc.).
+#[tauri::command]
+pub async fn cloud_make_available_offline(path: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        crate::file_system::cloud_actions::request_download(std::path::Path::new(&path))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Evict a cloud-managed file's local copy, leaving a placeholder. Counterpart to
+/// `cloud_make_available_offline`.
+#[tauri::command]
+pub async fn cloud_remove_download(path: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || crate::file_system::cloud_actions::evict_item(std::path::Path::new(&path)))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]

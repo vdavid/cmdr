@@ -6,13 +6,18 @@ window focus context.
 
 ## File layout
 
-- `mod.rs` — shared types (`MenuState`, `MenuItems`, `MenuItemEntry`, `CommandScope`, `ViewMode`),
-  constants (all menu item IDs), ID mapping functions (`menu_id_to_command`,
-  `command_id_to_menu_id`), platform-aware accelerator/label helpers, the `build_menu` dispatcher,
-  context menu builders, viewer menu builder, and accelerator update functions.
+- `mod.rs` — shared types (`MenuState`, `MenuItems`, `MenuItemEntry`, `CommandScope`, `ViewMode`,
+  `FileContextInfo`, `ContextMenuResult`), constants (all menu item IDs), ID mapping functions
+  (`menu_id_to_command`, `command_id_to_menu_id`), platform-aware accelerator/label helpers, the
+  `build_menu` dispatcher, context menu builders, viewer menu builder, and accelerator update
+  functions.
 - `macos.rs` — `build_menu_macos` (full macOS menu bar), `cleanup_macos_menus` (removes
   system-injected Edit items, registers Help menu), `set_macos_menu_icons` (SF Symbol icons via
   objc2 FFI), and their helpers.
+- `open_with.rs` (macOS) — `build_open_with_submenu` for the file context menu's "Open with"
+  submenu. Returns the submenu plus a `bundle_id → app_path` map that callers stash in
+  `MenuState.context.open_with_apps` so `on_menu_event` can resolve dynamic `open-with:<bundle-id>`
+  click targets.
 - `linux.rs` — `build_menu_linux` (full Linux/GTK menu bar with mnemonics, no F-key accelerators).
 
 ## Key concepts
@@ -31,6 +36,12 @@ Exceptions that do NOT use `"execute-command"`:
   `tab.close`
 - **Sort items**: emit `"menu-sort"` with field/direction payload
 - **Tab context menu**: emits specific tab action events with tab index payload
+- **Open with** (macOS): items have dynamic IDs like `open-with:com.apple.Xcode` that can't be
+  enumerated in `menu_id_to_command`. `on_menu_event` prefix-matches `open-with:` and calls
+  `file_system::open_with::open_paths_with` directly, looking up the app URL via
+  `MenuState.context.open_with_apps[bundle_id]` and the launch paths via
+  `MenuState.context.paths`. The "Other..." entry shows an `NSOpenPanel` filtered to `.app`
+  bundles and launches the chosen app the same way.
 
 ### MenuState
 
@@ -41,7 +52,10 @@ Shared state managed via `tauri::State<MenuState<Wry>>`. Holds:
 - `view_submenu` + position indices for view mode accelerator updates (remove/recreate/reinsert)
 - `items: HashMap<String, MenuItemEntry>` for the ~20 regular MenuItems that need accelerator
   updates and enable/disable
-- `context: MenuContext` for right-click context menu (path, filename)
+- `context: MenuContext` for right-click context menu — `path` (primary right-clicked file),
+  `filename`, `paths` (full selection if the right-clicked file is part of it, else `[path]`),
+  and (macOS) `open_with_apps` (`bundle_id → app_path` map populated when "Open with" submenu
+  is built, consumed by `on_menu_event` on click)
 
 ### Accelerator sync
 
@@ -73,9 +87,13 @@ Uses `objc2::exception::catch` because NSMenu operations can raise ObjC exceptio
 `NSApplication.mainMenu()` and calling `NSImage(systemSymbolName:)` + `setImage:` on each
 `NSMenuItem` matched by title. This produces true template images that auto-tint on
 selection highlighting. Also handles nested submenus (Sort by) via
-`apply_sf_symbols_to_nested_submenu`. Context menus do NOT have icons — Tauri doesn't expose the
-raw `NSMenu` pointer for context menus, and rasterized SF Symbol bitmaps via `IconMenuItem` look
-poor (no template auto-tinting).
+`apply_sf_symbols_to_nested_submenu`.
+
+Context menus don't get SF Symbols for our own items — Tauri doesn't expose the raw `NSMenu`
+pointer for context menus, and rasterized SF Symbol bitmaps via `IconMenuItem` look poor (no
+template auto-tinting). However, **full-color non-template images do render correctly** through
+`IconMenuItem`, and that's what the "Open with" submenu uses for app-bundle icons (loaded via
+`file_system::open_with::load_app_icon` from the `.icns` in each app's `Contents/Resources`).
 
 ## Platform differences
 

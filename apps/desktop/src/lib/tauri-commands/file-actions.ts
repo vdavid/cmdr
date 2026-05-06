@@ -21,12 +21,36 @@ export async function openExternalUrl(url: string): Promise<void> {
 
 /**
  * Shows a native context menu for a file.
- * @param path - Absolute path to the file.
- * @param filename - Name of the file.
+ * @param path - Absolute path to the right-clicked file (the "primary" file).
+ * @param filename - Name of the right-clicked file.
  * @param isDirectory - Whether the entry is a directory.
+ * @param paths - All paths the menu's actions should affect. For a right-click on a non-selected
+ *                file, pass `[path]`. For a right-click on a file that's part of a multi-selection,
+ *                pass the full selection so "Open with" launches all files at once.
  */
-export async function showFileContextMenu(path: string, filename: string, isDirectory: boolean): Promise<void> {
-  await invoke('show_file_context_menu', { path, filename, isDirectory })
+export async function showFileContextMenu(
+  path: string,
+  filename: string,
+  isDirectory: boolean,
+  paths: string[],
+): Promise<void> {
+  await invoke('show_file_context_menu', { path, filename, isDirectory, paths })
+}
+
+/**
+ * Make a cloud-managed file available offline (download it). macOS only — talks to the
+ * File Provider extension responsible for the file (iCloud Drive, Dropbox, GDrive, etc.).
+ */
+export async function cloudMakeAvailableOffline(path: string): Promise<void> {
+  await invoke('cloud_make_available_offline', { path })
+}
+
+/**
+ * Evict a cloud-managed file's local copy, leaving a placeholder. Counterpart to
+ * `cloudMakeAvailableOffline`.
+ */
+export async function cloudRemoveDownload(path: string): Promise<void> {
+  await invoke('cloud_remove_download', { path })
 }
 
 /**

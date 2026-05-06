@@ -25,6 +25,7 @@
         getFileAt,
         getListingStats,
         getMaxFilenameWidth,
+        getPathsAtIndices,
         getSyncStatus,
         getTotalCount,
         listDirectoryEnd,
@@ -1237,7 +1238,21 @@
 
     async function handleContextMenu(entry: FileEntry) {
         if (entry.name === '..') return // No context menu for parent entry
-        await showFileContextMenu(entry.path, entry.name, entry.isDirectory)
+        // Match Finder: if the right-clicked entry is part of the current selection,
+        // actions apply to the whole selection. Otherwise they apply to just this entry.
+        let paths = [entry.path]
+        if (listingId && selection.selectedIndices.size > 0) {
+            const indices = Array.from(selection.selectedIndices)
+            try {
+                const selectedPaths = await getPathsAtIndices(listingId, indices, includeHidden, hasParent)
+                if (selectedPaths.includes(entry.path)) {
+                    paths = selectedPaths
+                }
+            } catch {
+                // Selection lookup failed — fall back to single-file action.
+            }
+        }
+        await showFileContextMenu(entry.path, entry.name, entry.isDirectory, paths)
     }
 
     async function handleNavigate(entry: FileEntry) {

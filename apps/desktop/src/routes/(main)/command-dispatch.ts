@@ -13,6 +13,8 @@ import {
   toggleHiddenFiles,
   setViewMode,
   readClipboardText,
+  cloudMakeAvailableOffline,
+  cloudRemoveDownload,
 } from '$lib/tauri-commands'
 import { invoke } from '@tauri-apps/api/core'
 import { addToast } from '$lib/ui/toast'
@@ -362,6 +364,30 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
       const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
       if (entryUnderCursor) {
         await getInfo(entryUnderCursor.path)
+      }
+      return
+    }
+
+    case 'cloud.makeOffline': {
+      const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
+      if (entryUnderCursor) {
+        try {
+          await cloudMakeAvailableOffline(entryUnderCursor.path)
+        } catch (e) {
+          addToast(`Couldn't download from cloud. ${e}`, { level: 'error' })
+        }
+      }
+      return
+    }
+
+    case 'cloud.removeDownload': {
+      const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
+      if (entryUnderCursor) {
+        try {
+          await cloudRemoveDownload(entryUnderCursor.path)
+        } catch (e) {
+          addToast(`Couldn't remove the download. ${e}`, { level: 'error' })
+        }
       }
       return
     }

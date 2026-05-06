@@ -4,6 +4,22 @@ Core filesystem operations: directory listing, file writing, sync status, volume
 
 Submodule docs: [listing/](listing/CLAUDE.md), [write_operations/](write_operations/CLAUDE.md), [volume/](volume/CLAUDE.md).
 
+## Cloud actions and "Open with" (macOS)
+
+- `cloud_actions.rs` — wraps `NSFileProviderManager.evictItem(...)` and
+  `requestDownloadForItem(...)` so the file context menu can offer "Make available offline" and
+  "Remove download" for any File-Provider-managed file (iCloud Drive, Dropbox, Google Drive,
+  OneDrive, Box). Detection is fast (`is_in_cloud_storage` — pure path-prefix check against
+  `~/Library/Mobile Documents/com~apple~CloudDocs` and `~/Library/CloudStorage/`); the actual
+  evict/download chain calls async FP APIs synchronously via completion handlers + `mpsc::sync_channel`.
+- `open_with.rs` — `URLsForApplicationsToOpenURL:` for candidate apps, with multi-selection
+  intersection. Session cache keyed by lowercased extension. Subscribes to
+  `NSWorkspace.didLaunchApplicationNotification` / `didTerminateApplicationNotification` for
+  invalidation (per AGENTS.md "Subscribe, don't poll" — TTL is fallback only). `open_paths_with`
+  launches with one multi-URL `openURLs:withApplicationAtURL:configuration:completionHandler:`
+  call. `pick_app_via_open_panel` shows `NSOpenPanel` filtered to `.app` bundles for the
+  "Open with → Other..." entry. Worker threads use 8 MB stacks (FileProvider XPC depth).
+
 ## Gotchas
 
 **Never use rayon (or any constrained-stack thread pool) for calls into macOS frameworks.**
