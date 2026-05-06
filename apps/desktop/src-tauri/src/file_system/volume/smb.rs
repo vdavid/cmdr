@@ -2263,17 +2263,21 @@ mod tests {
 
     /// Unique directory name for test isolation.
     ///
-    /// Combines a nanosecond timestamp with a process-wide atomic counter so
-    /// that tests running in parallel on the same process never collide (the
-    /// nanosecond clock resolution isn't fine enough on its own — we've seen
-    /// multiple tests grab the same nanos within a nextest run).
+    /// Combines the PID, a nanosecond timestamp, and a process-wide atomic
+    /// counter so that tests running in parallel never collide — neither
+    /// within one process (the nanosecond clock resolution isn't fine enough
+    /// on its own) nor across the separate processes nextest forks per test
+    /// (where the static counter resets to 0 and two processes hitting the
+    /// same nanos window would otherwise produce identical names, leaving
+    /// stale directories on the SMB share for later runs to trip on).
     fn test_dir_name() -> String {
         use std::sync::atomic::{AtomicU64, Ordering};
         use std::time::{SystemTime, UNIX_EPOCH};
         static COUNTER: AtomicU64 = AtomicU64::new(0);
         let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
         let n = COUNTER.fetch_add(1, Ordering::Relaxed);
-        format!("cmdr-test-{}-{}", ts, n)
+        let pid = std::process::id();
+        format!("cmdr-test-{pid}-{ts}-{n}")
     }
 
     /// Ensures a test directory is clean before use (deletes recursively if it exists).
