@@ -23,12 +23,10 @@ use chrono::{DateTime, Datelike, Timelike, Utc};
 use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::io::{BufRead, BufReader, Read, Write};
-use std::path::Path;
-#[cfg(debug_assertions)]
-use std::path::PathBuf;
+use std::io::{BufRead, BufReader, Read, Seek, SeekFrom, Write};
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 use zip::DateTime as ZipDateTime;
 use zip::ZipArchive;
 use zip::write::{SimpleFileOptions, ZipWriter};
@@ -38,6 +36,7 @@ mod tests;
 
 pub mod auto_dispatcher;
 pub mod breadcrumbs;
+mod tail_walker;
 
 #[cfg(test)]
 mod auto_dispatcher_tests;
@@ -139,26 +138,47 @@ impl BuildMode {
 
 /// Time filter applied when picking which log content to include.
 ///
-/// - `Last24Hours`: include log files whose mtime is within the last 24 hours. Used by
-///   Flow A — the user just clicked "send error report," they care about what they
-///   saw recently.
-/// - `Window { first_error_at }`: include only content whose timestamp falls inside
+/// - `Recent { window }`: include only log lines whose leading ISO-8601 timestamp falls
+///   within `[now - window, now]`. The default for Flow A's manual-send path is one
+///   hour (`flow_a_default()`). Implemented as a tail-walker that reads each log file
+///   from the end backward in 64 KB chunks, stops the moment it crosses the cutoff,
+///   and streams lines straight into the zip writer — no full-file read, no
+///   intermediate `Vec<String>`. Lines without a parseable timestamp (panic backtrace
+///   continuation, state YAML) pass through untouched; the cut boundary always lands
+///   on a timestamped line. See [`tail_walker`] for the implementation.
+/// - `Window { first_error_at }`: include content whose timestamp falls inside
 ///   `[first_error_at - 30 min, now]`. Files entirely outside that window are dropped;
-///   the file containing the lower bound is head-trimmed line-by-line by parsing the
-///   leading ISO-8601 stamp the file chain writes (see
-///   [`logging::dispatch::file_timestamp`]). Used by Flow B — the window is anchored on
-///   the actual error, so we ship surrounding context without the noise.
+///   surviving files are line-filtered by parsing the leading ISO-8601 stamp. Used by
+///   Flow B (auto-send) — the window is anchored on the actual error, so we ship
+///   surrounding context without the noise. This path still uses the full-read +
+///   per-line filter pipeline because the bundle-build runs off the user's hot path
+///   (in a debounced background task) and the simpler code is easier to reason about
+///   for the auto-send flow.
 #[derive(Debug, Clone, Copy)]
 pub enum BundleScope {
-    Last24Hours,
+    Recent { window: Duration },
     Window { first_error_at: DateTime<Utc> },
+}
+
+impl BundleScope {
+    /// Default Flow A scope: last hour of log content. Manual error reports are about
+    /// "something that just happened" — anything older is irrelevant noise.
+    pub fn flow_a_default() -> Self {
+        BundleScope::Recent {
+            window: FLOW_A_DEFAULT_WINDOW,
+        }
+    }
 }
 
 /// 30 minutes of pre-error context for Flow B.
 const FLOW_B_PRE_ERROR_WINDOW: chrono::Duration = chrono::Duration::minutes(30);
 
-/// Last-24-hour cutoff for Flow A.
-const FLOW_A_MAX_AGE: chrono::Duration = chrono::Duration::hours(24);
+/// Default window for Flow A's manual-send path. Picked from "what would a user mean
+/// when they click 'send error report'?" — anything that happened in the past hour, not
+/// last week's session. Lowered from the original 24 h after the streaming rewrite: with
+/// tail-walking we could afford a wider window cheaply, but a wider window dilutes triage
+/// signal more than it adds context.
+const FLOW_A_DEFAULT_WINDOW: Duration = Duration::from_secs(60 * 60);
 
 /// Hard cap for Flow A bundles. 1 MB compressed lands at roughly 19 MB uncompressed,
 /// which still gives plenty of recent log context. Lowered from the original 10 MB
@@ -293,6 +313,18 @@ pub struct LogLevelSnapshot {
 }
 
 /// In-memory bundle ready to upload (or save to disk in dev).
+///
+/// `sample_first` and `sample_last` are the preview samples the dialog renders. With the
+/// post-fix-7 tail-walker pipeline:
+/// - `sample_first` is the **oldest** lines we kept for the live file (the head of the
+///   in-window content, NOT the head of the file on disk — that one is hours/days old
+///   and not in the bundle).
+/// - `sample_last` is the **newest** lines (the very tail of what we shipped).
+///
+/// The field names are kept for FE compatibility with `apps/desktop/src/lib/error-reporter/`
+/// — see the dialog's "Sample of first/last N lines" headings. The semantics changed
+/// (under the old pipeline `sample_first` was the file's first lines, full stop), but
+/// "oldest kept" / "newest kept" matches what a triager actually wants to see.
 #[derive(Debug, Clone)]
 pub struct BuiltBundle {
     pub id: String,
@@ -323,6 +355,21 @@ struct PreparedFile {
 /// (the commands layer enforces 100 000 chars) — we store it verbatim.
 ///
 /// `scope` controls which log content makes it into the bundle. See [`BundleScope`].
+///
+/// ## Pipeline
+///
+/// `BundleScope::Recent { window }` (Flow A) walks each log file from the end backward
+/// via [`tail_walker::walk_tail`], redacts each in-window line on the fly, and streams
+/// it directly into the zip writer. The streaming path tracks a running compressed-size
+/// estimate (via the underlying buffer's length) and stops adding content once it
+/// crosses [`FLOW_A_BUNDLE_CAP_MB`]. No `cap_bundle_to_mb` post-pass is needed for this
+/// scope.
+///
+/// `BundleScope::Window { first_error_at }` (Flow B / auto-send) uses the legacy
+/// "read whole file, line-filter by timestamp, redact, BTreeMap, build_zip" pipeline.
+/// The auto-dispatcher then runs `cap_bundle_to_mb` on the result. This path is left
+/// unchanged because the auto-send flow runs off the user's hot path and the simpler
+/// code is easier to reason about for that flow.
 pub fn build_bundle<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     kind: BundleKind,
@@ -330,53 +377,13 @@ pub fn build_bundle<R: tauri::Runtime>(
     scope: BundleScope,
 ) -> Result<BuiltBundle, String> {
     let id = generate_short_id();
-
     let now_utc = Utc::now();
     let now_system = SystemTime::now();
-
-    // BTreeMap so zip order is deterministic — same inputs, same bytes out. Matters for
-    // the preview hash and for byte-level tests.
-    let mut prepared: BTreeMap<String, PreparedFile> = BTreeMap::new();
-    let mut total_redacted_lines: usize = 0;
-    let mut live_file_name: Option<String> = None;
 
     // Per-bundle redaction salt: 16 random bytes mixed into every path-segment hash so
     // a triager can spot "same dir mentioned 12 times" within this bundle while the
     // same path in another bundle hashes differently. The salt itself never ships.
     let salt: [u8; 16] = rand::rng().random();
-
-    if let Some(dir) = logging::log_dir() {
-        let files = logging::list_recent_log_files(dir);
-        if let Some(first) = files.first()
-            && let Some(name) = first.file_name().and_then(|n| n.to_str())
-        {
-            live_file_name = Some(name.to_string());
-        }
-        for path in files {
-            let Some(file_name) = path.file_name().and_then(|n| n.to_str()) else {
-                continue;
-            };
-            let Some((lines, mtime)) = load_and_filter_log_file(&path, scope, now_utc, now_system, &salt) else {
-                continue;
-            };
-            if lines.is_empty() {
-                continue;
-            }
-            total_redacted_lines += lines.len();
-            prepared.insert(file_name.to_string(), PreparedFile { lines, mtime });
-        }
-    }
-
-    // Derive samples from the most recent log file (the live one in normal operation).
-    let (sample_first, sample_last) = match live_file_name.as_ref().and_then(|name| prepared.get(name)) {
-        Some(file) => {
-            let first: Vec<String> = file.lines.iter().take(SAMPLE_FIRST_LINES).cloned().collect();
-            let start = file.lines.len().saturating_sub(SAMPLE_LAST_LINES);
-            let last: Vec<String> = file.lines[start..].to_vec();
-            (first, last)
-        }
-        None => (Vec::new(), Vec::new()),
-    };
 
     let manifest = BundleManifest {
         id: id.clone(),
@@ -397,6 +404,276 @@ pub fn build_bundle<R: tauri::Runtime>(
             }
         }),
         generated_at: now_utc.to_rfc3339(),
+    };
+
+    match scope {
+        BundleScope::Recent { window } => {
+            let cutoff = now_utc - chrono::Duration::from_std(window).unwrap_or(chrono::Duration::hours(1));
+            let files = match logging::log_dir() {
+                Some(dir) => logging::list_recent_log_files(dir),
+                None => Vec::new(),
+            };
+            build_bundle_streaming(id, manifest, files, cutoff, now_system, &salt)
+        }
+        BundleScope::Window { .. } => build_bundle_legacy_window(id, manifest, scope, now_utc, now_system, &salt),
+    }
+}
+
+/// Streaming Flow A pipeline. Walks log files newest-first via the tail walker, redacts
+/// each in-window line, and streams it into the zip writer. Stops the moment the
+/// compressed output crosses [`FLOW_A_BUNDLE_CAP_MB`] OR the tail walker hits the
+/// timestamp cutoff in every file we visit.
+///
+/// Compressed-size tracking: the `ZipWriter` is constructed over a [`CountingCursor`]
+/// (a `Cursor<Vec<u8>>` wrapper holding an `Arc<AtomicU64>` counting bytes written
+/// through it). The counter increments on every `Write::write` to the inner cursor,
+/// which is what the `zip` crate's deflater calls after compressing each chunk. We poll
+/// the counter after each line to decide whether to stop. Reading is lock-free
+/// (`Ordering::Relaxed`) and adds zero latency to the hot path.
+fn build_bundle_streaming(
+    id: String,
+    manifest: BundleManifest,
+    files: Vec<PathBuf>,
+    cutoff: DateTime<Utc>,
+    now_system: SystemTime,
+    salt: &[u8],
+) -> Result<BuiltBundle, String> {
+    let cap_bytes = FLOW_A_BUNDLE_CAP_MB * 1024 * 1024;
+
+    let counter = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
+    let cursor = CountingCursor::new(counter.clone());
+
+    // Sample lines: oldest-first (head of what we kept) and newest-first reversed back
+    // to chronological order (the very tail of the live file).
+    let mut sample_first: Vec<String> = Vec::new();
+    let mut sample_last: Vec<String> = Vec::new();
+    let mut total_redacted_lines: usize = 0;
+
+    let mut writer = ZipWriter::new(cursor);
+
+    // Manifest first. Deflate level 1 (the rest of the bundle uses 1 too). We keep
+    // deflate-stored over `Stored` here so the `zip` crate writes a consistent layout.
+    let manifest_opts = SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated)
+        .compression_level(Some(1))
+        .last_modified_time(zip_dt(now_system));
+    let manifest_json = serde_json::to_string_pretty(&manifest).map_err(|e| format!("manifest: {e}"))?;
+    writer
+        .start_file("manifest.json", manifest_opts)
+        .map_err(|e| format!("start manifest: {e}"))?;
+    writer
+        .write_all(manifest_json.as_bytes())
+        .map_err(|e| format!("write manifest: {e}"))?;
+
+    let mut is_first_file = true;
+    let mut budget_exhausted = false;
+
+    for path in files {
+        if budget_exhausted {
+            break;
+        }
+        let Some(file_name) = path.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+
+        // Cheap pre-check: skip files whose mtime is older than the cutoff. Nothing
+        // newer than its mtime can be inside the file.
+        let mtime = match std::fs::metadata(&path).and_then(|m| m.modified()) {
+            Ok(m) => m,
+            Err(err) => {
+                log::warn!(
+                    target: "cmdr_lib::error_reporter",
+                    "Skipping log file {} (couldn't stat: {err})",
+                    path.display(),
+                );
+                continue;
+            }
+        };
+        let mtime_utc: DateTime<Utc> = mtime.into();
+        if mtime_utc < cutoff {
+            continue;
+        }
+
+        let walk = match tail_walker::walk_tail(&path, cutoff) {
+            Ok(r) => r,
+            Err(err) => {
+                log::warn!(
+                    target: "cmdr_lib::error_reporter",
+                    "Skipping log file {} (tail-walk failed: {err})",
+                    path.display(),
+                );
+                continue;
+            }
+        };
+
+        if walk.lines.is_empty() {
+            // If we bailed at the cutoff with no lines, older rotations would be
+            // older still — stop walking entirely.
+            if walk.hit_cutoff {
+                break;
+            }
+            continue;
+        }
+
+        let entry_opts = SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated)
+            .compression_level(Some(1))
+            .last_modified_time(zip_dt(mtime));
+        if writer.start_file(format!("logs/{file_name}"), entry_opts).is_err() {
+            continue;
+        }
+
+        for line in &walk.lines {
+            let redacted = redact::redact_line_salted(line, salt);
+            if writer.write_all(redacted.as_bytes()).is_err() || writer.write_all(b"\n").is_err() {
+                budget_exhausted = true;
+                break;
+            }
+            total_redacted_lines += 1;
+
+            if is_first_file {
+                if sample_first.len() < SAMPLE_FIRST_LINES {
+                    sample_first.push(redacted.clone().into_owned());
+                }
+                if sample_last.len() < SAMPLE_LAST_LINES {
+                    sample_last.push(redacted.clone().into_owned());
+                } else {
+                    // Sliding window: drop oldest, push newest. The Vec is small so
+                    // the O(n) shift is irrelevant.
+                    sample_last.remove(0);
+                    sample_last.push(redacted.clone().into_owned());
+                }
+            }
+
+            // Mid-file cap check. The deflater holds an internal buffer of up to ~64 KB
+            // that hasn't been flushed to the cursor yet, so the counter is a lower
+            // bound on the eventual on-disk size — there's a small overshoot risk on
+            // the order of one chunk + the central directory tail (~few hundred bytes
+            // per entry). Both are well inside the cap's headroom.
+            let bytes_so_far = counter.load(std::sync::atomic::Ordering::Relaxed) as usize;
+            if bytes_so_far >= cap_bytes {
+                budget_exhausted = true;
+                break;
+            }
+        }
+
+        is_first_file = false;
+
+        // Older rotations contain only older lines; if we just hit the cutoff in
+        // this file, anything older is by definition outside the window.
+        if walk.hit_cutoff {
+            break;
+        }
+    }
+
+    let buf = match writer.finish() {
+        Ok(cur) => cur.into_inner(),
+        Err(e) => return Err(format!("finish zip: {e}")),
+    };
+
+    Ok(BuiltBundle {
+        id,
+        zip_bytes: buf,
+        manifest,
+        total_redacted_lines,
+        sample_first,
+        sample_last,
+    })
+}
+
+/// `Cursor<Vec<u8>>` adapter that increments an `AtomicU64` by `buf.len()` on every
+/// `Write::write` call. Lets the streaming zip pipeline poll the running compressed
+/// byte count without taking an unsafe `get_mut()` borrow on the `ZipWriter`.
+///
+/// The counter measures bytes the `zip` crate emitted to the cursor — i.e. compressed
+/// payload + per-entry headers up to the last deflate flush. The crate's internal
+/// deflate buffer (up to ~64 KB) lags behind, so callers should treat the counter as a
+/// lower bound on the final size and budget conservatively.
+struct CountingCursor {
+    inner: std::io::Cursor<Vec<u8>>,
+    counter: std::sync::Arc<std::sync::atomic::AtomicU64>,
+}
+
+impl CountingCursor {
+    fn new(counter: std::sync::Arc<std::sync::atomic::AtomicU64>) -> Self {
+        Self {
+            inner: std::io::Cursor::new(Vec::new()),
+            counter,
+        }
+    }
+
+    fn into_inner(self) -> Vec<u8> {
+        self.inner.into_inner()
+    }
+}
+
+impl Write for CountingCursor {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let n = self.inner.write(buf)?;
+        self.counter.fetch_add(n as u64, std::sync::atomic::Ordering::Relaxed);
+        Ok(n)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.inner.flush()
+    }
+}
+
+impl Seek for CountingCursor {
+    fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
+        self.inner.seek(pos)
+    }
+}
+
+/// Legacy "read full file, line-filter, redact, BTreeMap, build_zip" pipeline used by
+/// Flow B (`BundleScope::Window`). Kept as-is because the auto-dispatcher already runs
+/// `cap_bundle_to_mb` on the result and the auto-send code path runs in a debounced
+/// background task off the user's hot path.
+fn build_bundle_legacy_window(
+    id: String,
+    manifest: BundleManifest,
+    scope: BundleScope,
+    now_utc: DateTime<Utc>,
+    now_system: SystemTime,
+    salt: &[u8],
+) -> Result<BuiltBundle, String> {
+    // BTreeMap so zip order is deterministic — same inputs, same bytes out. Matters for
+    // the preview hash and for byte-level tests.
+    let mut prepared: BTreeMap<String, PreparedFile> = BTreeMap::new();
+    let mut total_redacted_lines: usize = 0;
+    let mut live_file_name: Option<String> = None;
+
+    if let Some(dir) = logging::log_dir() {
+        let files = logging::list_recent_log_files(dir);
+        if let Some(first) = files.first()
+            && let Some(name) = first.file_name().and_then(|n| n.to_str())
+        {
+            live_file_name = Some(name.to_string());
+        }
+        for path in files {
+            let Some(file_name) = path.file_name().and_then(|n| n.to_str()) else {
+                continue;
+            };
+            let Some((lines, mtime)) = load_and_filter_log_file(&path, scope, now_utc, now_system, salt) else {
+                continue;
+            };
+            if lines.is_empty() {
+                continue;
+            }
+            total_redacted_lines += lines.len();
+            prepared.insert(file_name.to_string(), PreparedFile { lines, mtime });
+        }
+    }
+
+    // Derive samples from the most recent log file (the live one in normal operation).
+    let (sample_first, sample_last) = match live_file_name.as_ref().and_then(|name| prepared.get(name)) {
+        Some(file) => {
+            let first: Vec<String> = file.lines.iter().take(SAMPLE_FIRST_LINES).cloned().collect();
+            let start = file.lines.len().saturating_sub(SAMPLE_LAST_LINES);
+            let last: Vec<String> = file.lines[start..].to_vec();
+            (first, last)
+        }
+        None => (Vec::new(), Vec::new()),
     };
 
     let zip_bytes = build_zip(&manifest, &prepared, now_system).map_err(|e| format!("build zip: {e}"))?;
@@ -440,7 +717,9 @@ fn load_and_filter_log_file(
     // File-level filter. If a file's mtime is older than the lower bound of the scope's
     // window, skip it entirely — its newest line is older than what we want.
     let lower_bound = match scope {
-        BundleScope::Last24Hours => now_utc - FLOW_A_MAX_AGE,
+        BundleScope::Recent { window } => {
+            now_utc - chrono::Duration::from_std(window).unwrap_or(chrono::Duration::hours(1))
+        }
         BundleScope::Window { first_error_at } => first_error_at - FLOW_B_PRE_ERROR_WINDOW,
     };
     let mtime_utc: DateTime<Utc> = mtime.into();
@@ -598,7 +877,7 @@ pub async fn upload(zip_bytes: Vec<u8>, manifest: &BundleManifest, server_url: &
     let meta_json = serde_json::to_string(manifest).map_err(|e| format!("serialize manifest: {e}"))?;
 
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(30))
+        .timeout(Duration::from_secs(30))
         .build()
         .map_err(|e| format!("HTTP client: {e}"))?;
 
@@ -815,10 +1094,7 @@ fn pick_tail_within_budget<'a>(lines: &[&'a [u8]], budget: usize) -> Vec<&'a [u8
 
 /// Reads an entry's bytes plus its stored mtime. `None` if the entry doesn't exist or
 /// can't be read.
-fn read_entry_with_mtime<R: Read + std::io::Seek>(
-    archive: &mut ZipArchive<R>,
-    name: &str,
-) -> Option<(Vec<u8>, ZipDateTime)> {
+fn read_entry_with_mtime<R: Read + Seek>(archive: &mut ZipArchive<R>, name: &str) -> Option<(Vec<u8>, ZipDateTime)> {
     let mut entry = archive.by_name(name).ok()?;
     let mtime = entry.last_modified().unwrap_or_default();
     let mut bytes = Vec::new();

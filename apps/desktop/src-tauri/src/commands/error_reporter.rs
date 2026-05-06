@@ -62,15 +62,18 @@ pub struct SendResult {
 /// Build the bundle in-memory and return preview metadata. No network. No disk writes.
 /// The zip bytes are dropped after measuring so we don't ferry MB across IPC.
 ///
-/// Scope: last 24 hours of log content, capped at 1 MB compressed (see
-/// [`error_reporter::cap_bundle_to_mb`] and [`FLOW_A_BUNDLE_CAP_MB`]).
+/// Scope: last hour of log content (see [`BundleScope::flow_a_default`]). Capped at
+/// 1 MB compressed during streaming via [`FLOW_A_BUNDLE_CAP_MB`] — early termination,
+/// no post-hoc trimming. The trailing `cap_bundle_to_mb` is a defense-in-depth no-op
+/// for this path (the streaming pipeline already enforces the cap) but stays in case
+/// the manifest grows large enough to push the bundle over by itself.
 #[tauri::command]
 pub async fn prepare_error_report_preview(
     app: tauri::AppHandle,
     user_note: Option<String>,
 ) -> Result<PreviewPayload, String> {
     let note = validate_user_note(user_note)?;
-    let bundle = error_reporter::build_bundle(&app, BundleKind::User, note, BundleScope::Last24Hours)?;
+    let bundle = error_reporter::build_bundle(&app, BundleKind::User, note, BundleScope::flow_a_default())?;
     let capped = error_reporter::cap_bundle_to_mb(bundle.zip_bytes, FLOW_A_BUNDLE_CAP_MB);
     Ok(PreviewPayload {
         id: bundle.id,
@@ -87,7 +90,7 @@ pub async fn prepare_error_report_preview(
 #[tauri::command]
 pub async fn send_error_report(app: tauri::AppHandle, user_note: Option<String>) -> Result<SendResult, String> {
     let note = validate_user_note(user_note)?;
-    let bundle = error_reporter::build_bundle(&app, BundleKind::User, note, BundleScope::Last24Hours)?;
+    let bundle = error_reporter::build_bundle(&app, BundleKind::User, note, BundleScope::flow_a_default())?;
     let capped = error_reporter::cap_bundle_to_mb(bundle.zip_bytes, FLOW_A_BUNDLE_CAP_MB);
     let result = error_reporter::upload(capped, &bundle.manifest, ERROR_REPORT_URL).await?;
     Ok(SendResult { id: result.id })
@@ -99,7 +102,7 @@ pub async fn send_error_report(app: tauri::AppHandle, user_note: Option<String>)
 #[tauri::command]
 pub async fn save_error_report_to_disk(app: tauri::AppHandle, user_note: Option<String>) -> Result<String, String> {
     let note = validate_user_note(user_note)?;
-    let mut bundle = error_reporter::build_bundle(&app, BundleKind::User, note, BundleScope::Last24Hours)?;
+    let mut bundle = error_reporter::build_bundle(&app, BundleKind::User, note, BundleScope::flow_a_default())?;
     bundle.zip_bytes = error_reporter::cap_bundle_to_mb(bundle.zip_bytes, FLOW_A_BUNDLE_CAP_MB);
     let path = error_reporter::save_bundle_to_disk(&app, &bundle)?;
     log::info!(

@@ -77,8 +77,9 @@ SMB URIs, and UNC paths. See the redact module for the full pattern table.
 
 | File                       | Purpose                                                                                                       |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `mod.rs`                   | `build_bundle`, `build_zip`, `generate_short_id`, `upload`, `cap_bundle_to_mb`, `save_bundle_to_disk` (debug); also exports the `log_error!` macro |
-| `tests.rs`                 | Unit tests: zip structure, redaction, ID format/uniqueness, capping                                           |
+| `mod.rs`                   | `build_bundle` (dispatches by scope), `build_bundle_streaming` (Flow A streaming pipeline), `CountingCursor`, `build_zip`, `generate_short_id`, `upload`, `cap_bundle_to_mb`, `save_bundle_to_disk` (debug); also exports the `log_error!` macro |
+| `tail_walker.rs`           | Reads a log file from the END backward in 64 KB chunks, yields lines newest-first, stops at the timestamp cutoff. Handles long lines that span multiple chunks, lines without leading timestamps (panic continuations), and CRLF defensively. |
+| `tests.rs`                 | Unit tests: zip structure, redaction, ID format/uniqueness, capping, streaming pipeline                       |
 | `auto_dispatcher.rs`       | Flow B: opt-in auto-send on user-visible errors (60 s ± 10 s debounce, 1 MB tail, no retry on failure)        |
 | `auto_dispatcher_tests.rs` | Unit tests: debounce, opt-in flag, first-call wins, jitter band, crash-loop interaction                       |
 | `breadcrumbs.rs`           | Bounded ring buffer of recent FE/BE triage events (capacity 50). Snapshot is shipped in the manifest.         |
@@ -117,20 +118,68 @@ The dialog has an extra "Save bundle to disk (debug)" button in dev that calls
 
 `build_bundle` takes a `BundleScope`:
 
-- `BundleScope::Last24Hours` — Flow A. Files whose mtime falls outside the last 24 h are
-  skipped entirely. Capped at 1 MB compressed via `cap_bundle_to_mb`. (Lowered from 10 MB
-  after QA: 10 MB compressed = ~190 MB uncompressed, way more than triage needs. The
-  server still enforces its own 10 MB ceiling — we apply the smaller client-side cap so
-  the user's upload is fast and the bundle's tail stays useful.)
+- `BundleScope::Recent { window }` — Flow A. The default is one hour
+  (`BundleScope::flow_a_default()`); the manual-send path uses it. The pipeline is
+  **tail-walker + streaming-zip**:
+  1. List active log files newest-first via `logging::list_recent_log_files`.
+  2. For each file, skip outright if its mtime is older than `now - window`.
+  3. Otherwise call `tail_walker::walk_tail`, which reads the file from the END
+     backward in 64 KB chunks and yields lines newest-first. The walker stops the
+     moment it hits a leading ISO-8601 stamp older than the cutoff.
+  4. Each line is redacted on the fly via `redact_line_salted` and streamed straight
+     into a `ZipWriter` over a `CountingCursor` (a `Cursor<Vec<u8>>` wrapper holding
+     an `AtomicU64` of bytes written through it).
+  5. After every line, the running compressed-byte counter is polled. The instant
+     it crosses `FLOW_A_BUNDLE_CAP_MB * 1024 * 1024`, streaming stops mid-file.
+  6. Walking continues to older rotations only if the cutoff hasn't fired yet AND
+     the cap hasn't been reached.
+
+  No `cap_bundle_to_mb` post-pass is needed for this scope (the streaming pipeline
+  already enforces the cap). The trailing call in `commands/error_reporter.rs` is
+  defense-in-depth in case a manifest-only edge case ever pushes the bundle over.
+  Compression is **deflate level 1** — triage logs don't need a 5 % size win at the
+  cost of 2× CPU.
+
 - `BundleScope::Window { first_error_at }` — Flow B. The window is
   `[first_error_at - 30 min, now]`. Files whose mtime is older than the lower bound are
   skipped; surviving files are line-filtered by parsing the leading ISO-8601 timestamp
-  the file chain writes (see `logging::dispatch::file_timestamp`). Capped at 1 MB.
+  the file chain writes (see `logging::dispatch::file_timestamp`). Uses the legacy
+  "read whole file → redact → BTreeMap → `build_zip` → `cap_bundle_to_mb`" pipeline,
+  unchanged from the pre-streaming era. Auto-send runs in a debounced background task
+  off the user's hot path, so the simpler shape is fine here.
+
+### Why a tail-walker?
+
+The user-initiated bundle is capped at 1 MB compressed (~19 MB uncompressed). On a
+populated log dir (4 × ~50 MB rotated files + 1 live file ≈ 180 MB), the pre-streaming
+pipeline read **all 180 MB**, redacted every line into a `Vec<String>`, materialized a
+`BTreeMap<filename, PreparedFile>`, then trimmed the head off the result with
+`cap_bundle_to_mb`. End-to-end "Preparing preview…" took 30+ seconds and "Save bundle
+to disk" sometimes hung visibly. The new path reads only as far back as the cutoff
+(typically a few hundred KB at the tail of the live file) and lands in ~100–200 ms.
+
+### Why per-line, not per-file, filtering?
+
+The file-mtime pre-check is a fast-path. The actual decision lives at the line level
+because mtime tells you when the file was last *written*, not when each line landed.
+On a quiet machine, `cmdr.log` could have been touched 5 minutes ago but most of its
+content is days old.
+
+### Why deflate level 1?
+
+Real logs deflate to ~5–10 % of source at level 6 (default). Level 1 lands at ~6–11 %,
+i.e. ~10–20 % bigger. For a 1 MB cap, that's 100–200 KB — irrelevant. For CPU, level 1
+is 2–3× faster than level 6 in deflate-flate2. Triage cares about latency (the user is
+sitting in front of the dialog) more than 100 KB on the wire.
+
+### `cap_bundle_to_mb` (Flow B and post-hoc fallback)
 
 `cap_bundle_to_mb` trims log content from the **head** of the newest file (line by line)
 rather than dropping whole files. Always preserves `manifest.json` verbatim and the last
-50 lines of the newest file (even if it pushes the cap by ~10%) — better to ship 1.1 MB
-of useful tail than 0 useful lines, which is what the pre-fix-6 implementation did.
+50 lines of the newest file (even if it pushes the cap by ~10%). Used by Flow B (the
+auto-dispatcher's bundle is built with the legacy pipeline and trimmed afterwards) and
+as a defense-in-depth pass on Flow A in case a future manifest grows large enough to
+exceed the cap on its own.
 
 ## Flow B (auto-send on error)
 
@@ -266,16 +315,42 @@ because breadcrumbs are best-effort instrumentation, not a feature.
   not at app startup. Settings that change after the first bundle won't appear in
   subsequent reports until restart. This matches the crash reporter's behavior — the
   whole point is to capture the state the user was in when the failure happened.
-- `build_zip` uses a `BTreeMap` keyed by filename for deterministic ordering. The live
-  `cmdr.log` sorts before rotated `cmdr.log.1`/`.2`/... siblings because `.` < any
-  digit, so iterating ascending gives newest-first for the log files themselves.
+- `build_zip` (Flow B legacy path) uses a `BTreeMap` keyed by filename for deterministic
+  ordering. The live `cmdr.log` sorts before rotated `cmdr.log.1`/`.2`/... siblings
+  because `.` < any digit, so iterating ascending gives newest-first for the log files
+  themselves. Flow A's streaming pipeline does NOT use a `BTreeMap` — it iterates
+  `list_recent_log_files`'s mtime-sorted output directly and writes entries in walk
+  order.
 - Per-entry mtimes are set explicitly (manifest = `now`, logs = source-file mtime).
   Without this, the `zip` crate's `SimpleFileOptions::default()` writes 1980-01-01 for
   every entry — extracted bundles look like ancient archives.
 - Server-side ID generation may differ from the client's local ID. Always trust the
   `id` field in the upload response — that's the one the user reports back to us.
-- `BundleScope::Window` line-trimming relies on the file chain's ISO-8601 timestamp
-  format. Lines without a parseable leading timestamp pass through (the alternative —
-  drop them — risks losing useful context). Pre-fix-3 logs that started with
-  `HH:MM:SS.mmm` will NOT trim by line, only by file mtime. New logs (post fix #3)
-  trim cleanly.
+- The line-timestamp filter (Flow A's tail walker AND Flow B's per-line filter) relies
+  on the file chain's ISO-8601 stamp format
+  (`YYYY-MM-DDTHH:MM:SS.mmm±HH:MM`, see `logging::dispatch::file_timestamp`). Lines
+  without a parseable leading timestamp pass through untouched — they're treated as
+  continuation lines of a multi-line record (panic backtraces, state-snapshot YAML).
+  The cut boundary always lands on a timestamped line so we never ship a partial
+  panic prefix.
+- **Tail walker chunk size**: `tail_walker::CHUNK_SIZE` is 64 KB. A single log line
+  larger than the chunk (state YAML, deep stack frames) spans multiple chunks; the
+  walker accumulates them in a `pending` buffer until a `\n` shows up. Don't
+  introduce a max-line-length assumption — backtrace symbol metadata can produce
+  ~10 KB lines with no upper bound.
+- **Compressed-size tracking** during streaming uses an `AtomicU64` on a wrapping
+  `Cursor` (`CountingCursor` in `mod.rs`). The deflater holds an internal buffer of up
+  to ~64 KB that hasn't been flushed to the cursor yet, so the counter is a *lower
+  bound* on the eventual on-disk size. Budget conservatively. Don't try to read the
+  buffer's `Vec::len()` directly through `ZipWriter::get_mut()` — that's `unsafe` per
+  the crate docs and would let the writer's internal seek state and the buffer drift
+  out of sync.
+- **CountingCursor + ZipWriter ownership**: `ZipWriter::new` takes the `CountingCursor`
+  by value. To get the bytes back, `writer.finish()` returns the wrapped cursor; call
+  `into_inner()` on it to extract the `Vec<u8>`. Don't try to thread an `&mut Vec<u8>`
+  through it — the borrow checker will fight the `Arc<AtomicU64>` you also need.
+- Pre-fix-3 logs that started with `HH:MM:SS.mmm` (the legacy stdout-style stamp) won't
+  parse as ISO 8601, so they'd pass through both filters as "untimestamped continuation
+  lines." For Flow A this means the tail walker won't stop at any of them — it'll keep
+  going and get filtered by the file-mtime pre-check instead. For new logs (post
+  fix #3), the line filter trims cleanly.

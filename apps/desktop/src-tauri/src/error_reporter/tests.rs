@@ -391,7 +391,7 @@ fn build_bundle_24h_filter_drops_old_files() {
 
     let dir = std::env::temp_dir().join(format!(
         "cmdr-error-reporter-24h-{}",
-        std::time::SystemTime::now()
+        SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_nanos())
             .unwrap_or(0),
@@ -410,8 +410,14 @@ fn build_bundle_24h_filter_drops_old_files() {
     let now_utc = Utc::now();
     let now_system = SystemTime::now();
     let salt: [u8; 16] = [0u8; 16];
-    let fresh_picked = load_and_filter_log_file(&fresh, BundleScope::Last24Hours, now_utc, now_system, &salt);
-    let stale_picked = load_and_filter_log_file(&stale, BundleScope::Last24Hours, now_utc, now_system, &salt);
+    // The legacy file-by-mtime filter was the Flow A path, but Flow A now uses the
+    // streaming tail walker. Run this assertion against the legacy path via the
+    // `Recent { window: 24h }` configuration — same behavior, easier-to-read intent.
+    let scope = BundleScope::Recent {
+        window: Duration::from_secs(24 * 3600),
+    };
+    let fresh_picked = load_and_filter_log_file(&fresh, scope, now_utc, now_system, &salt);
+    let stale_picked = load_and_filter_log_file(&stale, scope, now_utc, now_system, &salt);
 
     let (fresh_lines, _) = fresh_picked.expect("fresh file always included");
     assert!(!fresh_lines.is_empty(), "fresh file lines should be kept");
@@ -433,7 +439,7 @@ fn build_bundle_window_scope_trims_old_lines() {
 
     let dir = std::env::temp_dir().join(format!(
         "cmdr-error-reporter-window-{}",
-        std::time::SystemTime::now()
+        SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_nanos())
             .unwrap_or(0),
@@ -579,5 +585,278 @@ mod settings_defaults_tests {
         assert_eq!(resolved.mcp_port, 9224);
 
         settings_defaults::reset_for_test();
+    }
+}
+
+/// Tests for the Flow A streaming pipeline (`build_bundle_streaming`). These exercise
+/// the tail-walker / streaming-zip / cap-early-termination pieces without going through
+/// `build_bundle` (which needs a Tauri app handle for the manifest snapshot).
+mod streaming_tests {
+    use super::*;
+    use std::fs;
+    use std::io::Write as IoWrite;
+
+    fn make_log_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "cmdr-streaming-{name}-{}",
+            SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0),
+        ));
+        fs::create_dir_all(&dir).expect("temp dir");
+        dir
+    }
+
+    fn iso(ts: DateTime<Utc>) -> String {
+        ts.with_timezone(&chrono::Local)
+            .format("%Y-%m-%dT%H:%M:%S%.3f%:z")
+            .to_string()
+    }
+
+    /// Streaming pipeline: full file fits in cap, tail-walker stops at the cutoff,
+    /// only in-window lines survive. Manifest is preserved.
+    #[test]
+    fn streaming_keeps_in_window_lines() {
+        let dir = make_log_dir("basic");
+        let log = dir.join("cmdr.log");
+        let now = Utc::now();
+
+        let mut f = fs::File::create(&log).unwrap();
+        writeln!(f, "{} INFO 2-hour-old line", iso(now - chrono::Duration::hours(2))).unwrap();
+        writeln!(
+            f,
+            "{} INFO 30-min-old line (kept)",
+            iso(now - chrono::Duration::minutes(30))
+        )
+        .unwrap();
+        writeln!(
+            f,
+            "{} INFO 1-min-old line (kept)",
+            iso(now - chrono::Duration::minutes(1))
+        )
+        .unwrap();
+        drop(f);
+
+        let cutoff = now - chrono::Duration::hours(1);
+        let bundle = build_bundle_streaming(
+            "ERR-TEST1".to_string(),
+            sample_manifest(),
+            vec![log.clone()],
+            cutoff,
+            SystemTime::now(),
+            &[0u8; 16],
+        )
+        .expect("build_bundle_streaming");
+
+        let entries = read_zip_entries(&bundle.zip_bytes);
+        assert!(entries.contains_key("manifest.json"));
+        let log_body = entries.get("logs/cmdr.log").expect("log entry present");
+        assert!(!log_body.contains("2-hour-old"), "old line must be dropped: {log_body}");
+        assert!(log_body.contains("30-min-old"));
+        assert!(log_body.contains("1-min-old"));
+        // Two kept lines.
+        assert_eq!(bundle.total_redacted_lines, 2);
+        // sample_first/last are populated.
+        assert!(!bundle.sample_first.is_empty());
+        assert!(!bundle.sample_last.is_empty());
+
+        fs::remove_dir_all(&dir).ok();
+    }
+
+    /// Continuation lines (no leading timestamp) ride along with the previous
+    /// timestamped line. Exercise via a panic-style block straddling the cutoff.
+    #[test]
+    fn streaming_keeps_panic_continuation_lines_intact() {
+        let dir = make_log_dir("panic");
+        let log = dir.join("cmdr.log");
+        let now = Utc::now();
+        let mut f = fs::File::create(&log).unwrap();
+        writeln!(f, "{} INFO old1", iso(now - chrono::Duration::hours(2))).unwrap();
+        writeln!(
+            f,
+            "{} INFO old2",
+            iso(now - chrono::Duration::hours(1) - chrono::Duration::minutes(1))
+        )
+        .unwrap();
+        writeln!(
+            f,
+            "{} ERROR something panicked",
+            iso(now - chrono::Duration::minutes(30))
+        )
+        .unwrap();
+        writeln!(f, "   stack: frame 0").unwrap();
+        writeln!(f, "   stack: frame 1").unwrap();
+        writeln!(f, "{} INFO recovered", iso(now - chrono::Duration::minutes(1))).unwrap();
+        drop(f);
+
+        let cutoff = now - chrono::Duration::hours(1);
+        let bundle = build_bundle_streaming(
+            "ERR-TEST2".to_string(),
+            sample_manifest(),
+            vec![log.clone()],
+            cutoff,
+            SystemTime::now(),
+            &[0u8; 16],
+        )
+        .unwrap();
+
+        let entries = read_zip_entries(&bundle.zip_bytes);
+        let log_body = entries.get("logs/cmdr.log").expect("log entry");
+        assert!(log_body.contains("something panicked"));
+        assert!(log_body.contains("frame 0"));
+        assert!(log_body.contains("frame 1"));
+        assert!(log_body.contains("recovered"));
+        assert!(!log_body.contains("old1"));
+        assert!(!log_body.contains("old2"));
+
+        fs::remove_dir_all(&dir).ok();
+    }
+
+    /// Cap stops streaming: a synthetic file forces the compressed cap before the
+    /// timestamp boundary; the bundle is well-formed and contains some content.
+    /// (The test asserts on byte ceiling and zip validity rather than line-by-line
+    /// content, since which lines survive depends on the deflate buffer's flush timing.)
+    #[test]
+    fn streaming_stops_at_cap() {
+        let dir = make_log_dir("cap");
+        let log = dir.join("cmdr.log");
+        let now = Utc::now();
+        let mut f = fs::File::create(&log).unwrap();
+        // 50 000 pseudo-random lines, all in-window, ~250 bytes each (incl. timestamp)
+        // ≈ 12 MB raw. Pseudo-random body deflates poorly so the 1 MB cap should
+        // trigger early termination in the streaming pipeline.
+        let line_count = 50_000u32;
+        for i in 0..line_count {
+            let ts = iso(now - chrono::Duration::seconds((line_count - i) as i64));
+            let token: String = (0..200)
+                .map(|k| {
+                    let n = (i as u64).wrapping_mul(2_654_435_761).wrapping_add(k as u64);
+                    char::from(33u8 + ((n & 0xFF) as u8 % 90))
+                })
+                .collect();
+            writeln!(f, "{ts} INFO body={token}").unwrap();
+        }
+        drop(f);
+
+        let cutoff = now - chrono::Duration::hours(2);
+        let bundle = build_bundle_streaming(
+            "ERR-CAP".to_string(),
+            sample_manifest(),
+            vec![log.clone()],
+            cutoff,
+            SystemTime::now(),
+            &[0u8; 16],
+        )
+        .unwrap();
+
+        // Cap is 1 MB. Allow some overshoot for the deflater's flush buffer + the
+        // central directory; ~1.5 MB is a comfortable upper bound.
+        let cap_bytes = FLOW_A_BUNDLE_CAP_MB * 1024 * 1024;
+        assert!(
+            bundle.zip_bytes.len() <= cap_bytes + 512 * 1024,
+            "expected zip <= cap + 512KB headroom; got {}",
+            bundle.zip_bytes.len()
+        );
+        // And the bundle is a valid zip with manifest + at least one log entry.
+        let entries = read_zip_entries(&bundle.zip_bytes);
+        assert!(entries.contains_key("manifest.json"));
+        assert!(entries.keys().any(|k| k.starts_with("logs/")));
+        // Streaming must have terminated before consuming everything.
+        assert!(
+            (bundle.total_redacted_lines as u32) < line_count,
+            "expected early termination; consumed all {} lines",
+            bundle.total_redacted_lines,
+        );
+
+        fs::remove_dir_all(&dir).ok();
+    }
+
+    /// Empty + nonexistent files are handled cleanly.
+    #[test]
+    fn streaming_handles_empty_and_missing_files() {
+        let dir = make_log_dir("empty");
+        let empty = dir.join("cmdr.log");
+        fs::write(&empty, b"").unwrap();
+        let missing = dir.join("does-not-exist.log");
+
+        let bundle = build_bundle_streaming(
+            "ERR-EMPTY".to_string(),
+            sample_manifest(),
+            vec![missing, empty],
+            Utc::now() - chrono::Duration::hours(1),
+            SystemTime::now(),
+            &[0u8; 16],
+        )
+        .unwrap();
+        let entries = read_zip_entries(&bundle.zip_bytes);
+        // Manifest is always present.
+        assert!(entries.contains_key("manifest.json"));
+        // No log entry for an empty file.
+        assert!(!entries.keys().any(|k| k.starts_with("logs/")));
+        fs::remove_dir_all(&dir).ok();
+    }
+
+    /// Performance smoke test: a single ~80 MB file (4× the cmdr.log rotation size on
+    /// real machines fully populates a typical log dir) must build a bundle in well
+    /// under a second. Marked `#[ignore]` so CI doesn't hold the wall-clock budget;
+    /// run manually with `cargo nextest run streaming_perf -- --ignored`.
+    ///
+    /// The pre-streaming pipeline took 30+ seconds on this kind of input on a dev
+    /// machine; the streaming path lands in 50–200 ms.
+    #[test]
+    #[ignore = "perf benchmark; run with --ignored"]
+    fn streaming_perf_under_one_second_on_big_file() {
+        let dir = make_log_dir("perf");
+        let log = dir.join("cmdr.log");
+        let now = Utc::now();
+
+        // Build an ~80 MB file: 99 % of lines are 2 hours old (well outside the 1 hour
+        // window), 1 % are recent. The streaming walker should bail almost immediately
+        // when it hits the cutoff at the front edge of the recent section.
+        let mut f = fs::File::create(&log).unwrap();
+        for i in 0..400_000u32 {
+            let ts_off_secs = if i < 396_000 {
+                7200 + (400_000 - i) as i64 // old
+            } else {
+                ((400_000 - i) as i64).max(1) // recent
+            };
+            let ts = iso(now - chrono::Duration::seconds(ts_off_secs));
+            // Pad each line out to ~200 bytes to hit ~80 MB total.
+            writeln!(
+                f,
+                "{ts} INFO line index={i} body=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            )
+            .unwrap();
+        }
+        drop(f);
+
+        let cutoff = now - chrono::Duration::hours(1);
+        let start = std::time::Instant::now();
+        let bundle = build_bundle_streaming(
+            "ERR-PERF".to_string(),
+            sample_manifest(),
+            vec![log.clone()],
+            cutoff,
+            SystemTime::now(),
+            &[0u8; 16],
+        )
+        .unwrap();
+        let elapsed = start.elapsed();
+
+        // Clippy denies `print_stderr` crate-wide; `log::info!` is the clippy-clean
+        // way to surface a perf result. Run with `cargo nextest run --nocapture
+        // streaming_perf` and `RUST_LOG=cmdr_lib::error_reporter::perf=info` to see
+        // the timing.
+        log::info!(
+            target: "cmdr_lib::error_reporter::perf",
+            "streaming_perf: built {}-byte bundle in {elapsed:?}",
+            bundle.zip_bytes.len(),
+        );
+        assert!(
+            elapsed < Duration::from_secs(1),
+            "streaming pipeline should finish in <1s on an 80 MB log; took {elapsed:?}",
+        );
+        fs::remove_dir_all(&dir).ok();
     }
 }
