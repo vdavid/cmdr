@@ -19,20 +19,33 @@ const remark42Host = 'https://comments.getcmdr.com'
 <script is:inline define:vars={{ remark42Host, isDev }}>
     if (!isDev) {
         // Detect color scheme, respecting explicit theme override from toggle
-        var explicitTheme = document.documentElement.dataset.theme
-        var prefersDark = explicitTheme
-            ? explicitTheme === 'dark'
-            : window.matchMedia('(prefers-color-scheme: dark)').matches
+        function currentTheme() {
+            var explicit = document.documentElement.dataset.theme
+            var dark = explicit
+                ? explicit === 'dark'
+                : window.matchMedia('(prefers-color-scheme: dark)').matches
+            return dark ? 'dark' : 'light'
+        }
         window.remark_config = {
             host: remark42Host,
             site_id: 'getcmdr',
-            theme: prefersDark ? 'dark' : 'light',
+            theme: currentTheme(),
             max_shown_comments: 25,
         }
         var embedScript = document.createElement('script')
         embedScript.src = remark42Host + '/web/embed.js'
         embedScript.defer = true
         document.head.appendChild(embedScript)
+
+        // Keep widget in sync with the toggle (data-theme) and system pref (Auto appearance)
+        function syncTheme() {
+            if (window.REMARK42) window.REMARK42.changeTheme(currentTheme())
+        }
+        new MutationObserver(syncTheme).observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme'],
+        })
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncTheme)
     }
 </script>
 
