@@ -9,6 +9,7 @@ Reusable UI components used across the entire desktop app.
 | `ModalDialog.svelte`     | Central modal container: overlay, dragging, Escape, focus, MCP tracking  |
 | `dialog-registry.ts`     | `SOFT_DIALOG_REGISTRY` array — single source of truth for all dialog IDs |
 | `Button.svelte`          | Styled button with variant and size props                                |
+| `LinkButton.svelte`      | Link-styled button; the only sanctioned `cursor: pointer` in the app     |
 | `CommandBox.svelte`      | Copyable terminal command (monospace + Copy button)                      |
 | `LoadingIcon.svelte`     | Animated spinner with progressive status text                            |
 | `AlertDialog.svelte`     | Single-action confirmation dialog built on `ModalDialog`                 |
@@ -81,6 +82,21 @@ inside `{ html }` tooltips. The `html` variant renders via `innerHTML` — only 
 
 Variants: `primary` | `secondary` (default) | `danger`. Sizes: `regular` (default) | `mini`. Extends
 `HTMLButtonAttributes` so all native button attributes pass through.
+
+## LinkButton
+
+Use this for any "link" that's actually an in-app action (open settings, toggle help, etc.). It renders a `<button>`
+styled as a link and is the **only** place in the app that opts back into `cursor: pointer` — Cmdr globally sets
+`cursor: default` on `html` and `<a>` for native macOS feel (`app.css:363-366`), and stylelint blocks `cursor: pointer`
+everywhere else (`.stylelintrc.mjs:38`). Don't roll your own link-styled button with raw CSS; the cursor opt-in stays in
+one place by convention.
+
+Hover keeps the resting accent-text color (the lighter `--color-accent-hover` doesn't meet 4.5:1 contrast on white) —
+the underline is enough affordance.
+
+Real `<a>` tags for external URLs are a different concern: they go through `openExternalUrl()` (or the markdown link
+delegate in `ErrorPane`) and need SvelteKit's `resolve()` for internal routes. Don't extend `LinkButton` to cover those
+without thinking through the navigation layer.
 
 ## LoadingIcon
 

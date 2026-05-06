@@ -6,6 +6,7 @@
     import SettingSelect from '../components/SettingSelect.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
+    import LinkButton from '$lib/ui/LinkButton.svelte'
     import { getSettingDefinition, getSetting, setSetting, onSpecificSettingChange } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
     import { openAppearanceSettings } from '$lib/tauri-commands'
@@ -68,8 +69,8 @@
         <SettingRow id="appearance.appColor" label={appColorDef.label} description="" split {searchQuery}>
             {#snippet descriptionContent()}
                 To change your system theme color, go to
-                <button type="button" class="appearance-link" onclick={() => void openAppearanceSettings()}
-                    >{isMacOS() ? 'System Settings > Appearance' : 'your system appearance settings'}</button
+                <LinkButton onclick={() => void openAppearanceSettings()}
+                    >{isMacOS() ? 'System Settings > Appearance' : 'your system appearance settings'}</LinkButton
                 >.
             {/snippet}
             <div class="app-color-options">
@@ -173,13 +174,11 @@
                                 <div class="format-preview">
                                     Preview: <strong>{formatPreview(customFormat)}</strong>
                                 </div>
-                                <button
-                                    type="button"
-                                    class="help-toggle"
-                                    onclick={() => (showFormatHelp = !showFormatHelp)}
-                                >
-                                    {showFormatHelp ? 'Hide format help' : 'Show format help'}
-                                </button>
+                                <span class="help-toggle-wrapper">
+                                    <LinkButton onclick={() => (showFormatHelp = !showFormatHelp)}>
+                                        {showFormatHelp ? 'Hide format help' : 'Show format help'}
+                                    </LinkButton>
+                                </span>
                                 {#if showFormatHelp}
                                     <div class="format-help">
                                         <h4>Format placeholders</h4>
@@ -265,22 +264,6 @@
         font-size: var(--font-size-sm);
     }
 
-    .appearance-link {
-        color: var(--color-accent-text);
-        font-size: var(--font-size-sm);
-        text-decoration: underline;
-        padding: 0;
-        background: none;
-        border: none;
-    }
-
-    .appearance-link:hover {
-        /* Keep the a11y-safe accent-text color on hover; add underline for visual
-           affordance instead of switching to the lighter `--color-accent-hover`
-           which doesn't meet 4.5:1 on white. */
-        text-decoration: underline;
-    }
-
     .date-time-setting {
         /* Fill the split column; min-width prevents collapse */
         width: 100%;
@@ -319,14 +302,8 @@
         font-family: var(--font-mono);
     }
 
-    .help-toggle {
+    .help-toggle-wrapper {
         align-self: flex-start;
-        padding: 0;
-        background: none;
-        border: none;
-        color: var(--color-accent-text);
-        font-size: var(--font-size-sm);
-        text-decoration: underline;
     }
 
     .format-help {

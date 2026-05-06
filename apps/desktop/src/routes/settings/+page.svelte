@@ -113,8 +113,13 @@
 
             initialized = true
 
-            // Focus will be handled naturally by the browser's tab order
             await tick()
+
+            // Focus the search input on open so users can start typing immediately.
+            const searchInput = document.querySelector('.search-input')
+            if (searchInput instanceof HTMLElement) {
+                searchInput.focus()
+            }
 
             // Listen for focus-self events (from ⌘, when window is already open).
             // Self-focusing is needed because cross-window setFocus() doesn't reliably
@@ -122,7 +127,11 @@
             unlistenFocusSelf = await listen('focus-self', () => {
                 // setTimeout(0) defers past the originating keydown handler —
                 // without it, macOS restores focus to the main window.
-                setTimeout(() => void getCurrentWindow().setFocus(), 0)
+                setTimeout(() => {
+                    void getCurrentWindow().setFocus()
+                    const input = document.querySelector('.search-input')
+                    if (input instanceof HTMLElement) input.focus()
+                }, 0)
             })
 
             log.debug('Settings page ready')
