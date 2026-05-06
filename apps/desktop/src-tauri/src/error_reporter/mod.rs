@@ -116,6 +116,27 @@ pub enum BundleKind {
     Auto,
 }
 
+/// Whether this bundle was built by a release or a debug build of the desktop app.
+/// Forwarded to the api server in the manifest so triage can tell dev-run reports
+/// (which the api server tags `[DEV]` in Discord) apart from production reports.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum BuildMode {
+    Release,
+    Debug,
+}
+
+impl BuildMode {
+    /// Resolved at compile time from `cfg!(debug_assertions)`.
+    pub fn current() -> Self {
+        if cfg!(debug_assertions) {
+            BuildMode::Debug
+        } else {
+            BuildMode::Release
+        }
+    }
+}
+
 /// Time filter applied when picking which log content to include.
 ///
 /// - `Last24Hours`: include log files whose mtime is within the last 24 hours. Used by
@@ -233,6 +254,9 @@ impl ResolvedSettings {
 pub struct BundleManifest {
     pub id: String,
     pub kind: BundleKind,
+    /// Release vs debug build of the desktop app. Lets the api server tag dev-run
+    /// reports so triage can keep them separate from production traffic.
+    pub build_mode: BuildMode,
     pub app_version: String,
     pub os_version: String,
     pub arch: String,
@@ -357,6 +381,7 @@ pub fn build_bundle<R: tauri::Runtime>(
     let manifest = BundleManifest {
         id: id.clone(),
         kind,
+        build_mode: BuildMode::current(),
         app_version: env!("CARGO_PKG_VERSION").to_string(),
         os_version: get_os_version(),
         arch: std::env::consts::ARCH.to_string(),
@@ -552,14 +577,17 @@ pub fn generate_short_id() -> String {
     out
 }
 
-/// POST the bundle to the ingestion server. In dev/CI this skips the network call and
-/// synthesizes a response using the locally generated ID.
+/// POST the bundle to the ingestion server. In CI this skips the network call and
+/// synthesizes a response using the locally generated ID — CI runs shouldn't pollute
+/// the live error-report channel even if a test triggers a report. Debug builds DO
+/// upload; the manifest's `buildMode: "debug"` field lets the server tag those
+/// reports `[DEV]` so triage can separate them from production traffic.
 pub async fn upload(zip_bytes: Vec<u8>, manifest: &BundleManifest, server_url: &str) -> Result<UploadResult, String> {
-    let should_skip = cfg!(debug_assertions) || std::env::var("CI").is_ok();
+    let should_skip = std::env::var("CI").is_ok();
     if should_skip {
         log::info!(
             target: "cmdr_lib::error_reporter",
-            "Skipping error report upload (dev mode or CI). Local ID: {}",
+            "Skipping error report upload (CI). Local ID: {}",
             manifest.id,
         );
         return Ok(UploadResult {

@@ -11,6 +11,7 @@ import {
 const baseNotification: ErrorReportNotification = {
   id: 'ERR-A2345',
   kind: 'user',
+  buildMode: 'release',
   appVersion: '0.13.0',
   osVersion: '15.3.1',
   arch: 'aarch64',
@@ -96,6 +97,18 @@ describe('buildErrorReportPayload', () => {
       embeds: { fields: { name: string; value: string }[] }[]
     }
     expect(payload.embeds[0].fields.find((f) => f.name === 'User note')).toBeUndefined()
+  })
+
+  it('prefixes the title with [DEV] when buildMode is debug', () => {
+    const payload = buildErrorReportPayload({ ...baseNotification, buildMode: 'debug' }) as {
+      embeds: { title: string }[]
+    }
+    expect(payload.embeds[0].title).toBe('[DEV] Error report ERR-A2345')
+  })
+
+  it('does not prefix the title when buildMode is release', () => {
+    const payload = buildErrorReportPayload(baseNotification) as { embeds: { title: string }[] }
+    expect(payload.embeds[0].title).toBe('Error report ERR-A2345')
   })
 })
 

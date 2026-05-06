@@ -27,6 +27,10 @@ Manifest fields (`BundleManifest`):
 - `id`: short ID (`ERR-XXXXX`) generated client-side. **Server may regenerate** — UI
   always shows the server's response ID, never the local one.
 - `kind`: `"user"` or `"auto"` (Phase 5).
+- `buildMode`: `"release"` or `"debug"`. Resolved at compile time from
+  `cfg!(debug_assertions)` via `BuildMode::current()`. Forwarded to the api server so the
+  Discord notification embed prefixes the title with `[DEV]` for debug-build reports —
+  triage can keep dev-run reports apart from real production traffic at a glance.
 - `appVersion`, `osVersion`, `arch`: build/platform identifiers.
 - `activeSettings`: settings snapshot via the `ResolvedSettings` struct — every field
   resolved to its effective value (`null` is never shipped). Includes `indexingEnabled`,
@@ -94,11 +98,17 @@ dialog. Re-building is cheap (the heavy work is reading + redacting log lines, w
 runs on the blocking pool either way), and the inputs are deterministic enough that the
 preview hash matches what'll be uploaded.
 
-## Dev/CI bypass
+## CI bypass
 
-[`upload`] checks `cfg!(debug_assertions) || std::env::var("CI").is_ok()`. In either
-case it returns the locally-generated ID without calling the network. Mirrors the crash
-reporter's bypass — same reasoning (no production data pollution from dev runs).
+[`upload`] checks `std::env::var("CI").is_ok()` and short-circuits on a hit, returning
+the locally-generated ID without calling the network. CI runs shouldn't pollute the
+live error-report channel even if a test triggers a report.
+
+Debug builds **do** upload — that's the point of "Send error report" working in dev. The
+manifest carries `buildMode: "debug"`, which the api server reads to prefix the Discord
+embed title with `[DEV]` so triage can separate dev-run reports from production traffic
+at a glance. (Pre-fix-* `upload()` skipped the network in `cfg!(debug_assertions)` too,
+which made dev-mode "Send report" silently no-op — confusing and unhelpful.)
 
 The dialog has an extra "Save bundle to disk (debug)" button in dev that calls
 `save_error_report_to_disk` instead, writing the zip to the app data dir for inspection.

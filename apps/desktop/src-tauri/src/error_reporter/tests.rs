@@ -7,6 +7,7 @@ fn sample_manifest() -> BundleManifest {
     BundleManifest {
         id: "ERR-AB23X".to_string(),
         kind: BundleKind::User,
+        build_mode: BuildMode::Release,
         app_version: "0.0.0-test".to_string(),
         os_version: "macOS test".to_string(),
         arch: "aarch64".to_string(),
@@ -132,6 +133,48 @@ fn redaction_is_applied_to_log_lines() {
         log_body.contains("$HOME"),
         "expected `$HOME` token in redacted output (got: {log_body})"
     );
+}
+
+#[test]
+fn build_mode_serializes_lowercase() {
+    let release = serde_json::to_string(&BuildMode::Release).unwrap();
+    assert_eq!(release, "\"release\"");
+    let debug = serde_json::to_string(&BuildMode::Debug).unwrap();
+    assert_eq!(debug, "\"debug\"");
+}
+
+#[test]
+fn manifest_serializes_build_mode_with_camel_case_key() {
+    let now = SystemTime::now();
+    let manifest = sample_manifest();
+    let bytes = build_zip(&manifest, &BTreeMap::new(), now).unwrap();
+    let entries = read_zip_entries(&bytes);
+    let manifest_json = entries.get("manifest.json").unwrap();
+    assert!(
+        manifest_json.contains("\"buildMode\": \"release\""),
+        "expected `\"buildMode\": \"release\"` in manifest JSON, got: {manifest_json}",
+    );
+
+    // Debug build serializes to "debug".
+    let mut debug_manifest = sample_manifest();
+    debug_manifest.build_mode = BuildMode::Debug;
+    let bytes = build_zip(&debug_manifest, &BTreeMap::new(), now).unwrap();
+    let entries = read_zip_entries(&bytes);
+    let manifest_json = entries.get("manifest.json").unwrap();
+    assert!(
+        manifest_json.contains("\"buildMode\": \"debug\""),
+        "expected `\"buildMode\": \"debug\"` in manifest JSON, got: {manifest_json}",
+    );
+}
+
+#[test]
+fn build_mode_current_matches_cfg() {
+    let expected = if cfg!(debug_assertions) {
+        BuildMode::Debug
+    } else {
+        BuildMode::Release
+    };
+    assert_eq!(BuildMode::current(), expected);
 }
 
 #[test]

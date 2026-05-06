@@ -9,6 +9,13 @@
 export interface ErrorReportNotification {
   id: string
   kind: 'user' | 'auto'
+  /**
+   * Forwarded from the manifest. `'debug'` reports come from a dev build of the
+   * desktop app (`cfg!(debug_assertions)`), and we prefix the embed title with
+   * `[DEV]` so triage can tell them apart from production traffic at a glance.
+   * Defaults to `'release'` upstream when older clients don't set it.
+   */
+  buildMode: 'release' | 'debug'
   appVersion: string
   osVersion: string
   arch: string
@@ -60,10 +67,11 @@ export function buildErrorReportPayload(n: ErrorReportNotification): unknown {
     fields.push({ name: 'User note', value: truncatedNote })
   }
 
+  const titlePrefix = n.buildMode === 'debug' ? '[DEV] ' : ''
   return {
     embeds: [
       {
-        title: `Error report ${n.id}`,
+        title: `${titlePrefix}Error report ${n.id}`,
         color: ERROR_REPORT_EMBED_COLOR,
         fields,
       },

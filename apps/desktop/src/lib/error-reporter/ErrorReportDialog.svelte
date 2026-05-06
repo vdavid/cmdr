@@ -21,7 +21,6 @@
     import BundleSavedToastContent, { setLastSavedBundlePath } from './BundleSavedToastContent.svelte'
     import { closeErrorReportDialog, errorReportFlow } from './error-report-flow.svelte'
     import { getAppLogger } from '$lib/logging/logger'
-    import { tooltip } from '$lib/tooltip/tooltip'
 
     const log = getAppLogger('errorReportDialog')
 
@@ -123,16 +122,6 @@
         }
     }
 
-    // In dev / debug builds the backend's `upload()` function intentionally
-    // short-circuits before hitting the network (see `error_reporter::upload`),
-    // so clicking Send used to look like it succeeded but did nothing. Disable
-    // the button instead and explain via a tooltip — the Save-to-disk button
-    // is right next to it for inspecting the bundle locally.
-    const sendDisabledInDev = isDev
-    const sendTooltip = sendDisabledInDev
-        ? "Disabled in dev builds — uploads are skipped on purpose so dev runs don't pollute prod. Use 'Save bundle to disk' to inspect the report locally."
-        : undefined
-
     async function handleCopyId() {
         if (!preview) return
         await navigator.clipboard.writeText(preview.id)
@@ -146,13 +135,7 @@
 
     function handleKeydown(event: KeyboardEvent) {
         // Cmd/Ctrl+Enter sends. Plain Enter is consumed by the textarea.
-        if (
-            (event.metaKey || event.ctrlKey) &&
-            event.key === 'Enter' &&
-            !sending &&
-            !noteOverLimit &&
-            !sendDisabledInDev
-        ) {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter' && !sending && !noteOverLimit) {
             event.preventDefault()
             void handleSend()
         }
@@ -263,15 +246,13 @@
             {/if}
             <span class="spacer"></span>
             <Button variant="secondary" onclick={handleClose} disabled={sending}>Cancel</Button>
-            <span use:tooltip={sendTooltip}>
-                <Button
-                    variant="primary"
-                    onclick={() => void handleSend()}
-                    disabled={sending || noteOverLimit || preparing || sendDisabledInDev}
-                >
-                    {sending ? 'Sending…' : 'Send report'}
-                </Button>
-            </span>
+            <Button
+                variant="primary"
+                onclick={() => void handleSend()}
+                disabled={sending || noteOverLimit || preparing}
+            >
+                {sending ? 'Sending…' : 'Send report'}
+            </Button>
         </div>
     </div>
 </ModalDialog>

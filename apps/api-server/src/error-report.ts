@@ -22,6 +22,14 @@ const DEFAULT_BUCKET_NAME = 'cmdr-error-reports'
 
 export interface ErrorReportMeta {
   kind: 'user' | 'auto'
+  /**
+   * Set by the desktop client from `cfg!(debug_assertions)`. `'debug'` reports
+   * come from a dev build of the app; the Discord notification gets a `[DEV]`
+   * prefix so triage can keep them apart from production traffic. Optional for
+   * backwards compatibility with older clients that didn't set it — unset is
+   * treated as `'release'`.
+   */
+  buildMode?: 'release' | 'debug'
   appVersion: string
   osVersion: string
   arch: string
@@ -38,6 +46,7 @@ function isValidMeta(value: unknown): value is ErrorReportMeta {
     if (typeof val !== 'string' || val.length === 0) return false
   }
   if (v['userNote'] !== undefined && typeof v['userNote'] !== 'string') return false
+  if (v['buildMode'] !== undefined && v['buildMode'] !== 'release' && v['buildMode'] !== 'debug') return false
   return true
 }
 
@@ -128,6 +137,7 @@ async function postUploadWork(
     await postErrorReportNotification(env.DISCORD_WEBHOOK_URL, {
       id: args.id,
       kind: args.meta.kind,
+      buildMode: args.meta.buildMode ?? 'release',
       appVersion: args.meta.appVersion,
       osVersion: args.meta.osVersion,
       arch: args.meta.arch,
