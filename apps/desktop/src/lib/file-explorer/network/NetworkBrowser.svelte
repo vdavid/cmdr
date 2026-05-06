@@ -36,6 +36,7 @@
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { confirmDialog } from '$lib/utils/confirm-dialog'
     import { addToast } from '$lib/ui/toast'
+    import { triggerNetworkDiscovery } from './lazy-trigger'
 
     /** Row height for host list (matches Full list) */
     const HOST_ROW_HEIGHT = 20
@@ -66,6 +67,11 @@
 
     // Refresh stale shares when component mounts (entering network view)
     onMount(() => {
+        // Lazy-start mDNS the first time the user enters Network. Triggers the macOS
+        // Local Network prompt on first call after a fresh install. No-op if discovery
+        // is already running or networking is disabled.
+        triggerNetworkDiscovery()
+
         refreshAllStaleShares()
         // Check credentials for all hosts that need auth
         for (const host of hosts) {

@@ -66,6 +66,11 @@ Full list: `AppearanceSection`, `ListingSection`, `FileOperationsSection`, `MtpS
 `NetworkSection`, `LoggingSection`, `McpServerSection`, `UpdatesSection`, `ThemesSection`, `AdvancedSection`,
 `DriveIndexingSection`, `AiSection`, `LicenseSection`, `ViewerSection`.
 
+`NetworkSection` includes `network.enabled` — boolean, default true, switch. The top-of-section toggle. When off, the
+volume picker shows "Network (disabled)" and the backend stops mDNS + clears discovered hosts. Below the switch is a
+non-interactive Local Network access info card with a deep link to System Settings > Privacy & Security > Local Network
+(via `openSystemSettingsUrl`). See `network/CLAUDE.md` (frontend and backend) for the full lifecycle.
+
 `AiSection` is a hybrid special section (like `LicenseSection` above): it combines dynamic runtime state from the
 backend (via `getAiRuntimeStatus()` and Tauri events) with registry settings (`ai.provider`, `ai.cloudProvider`,
 `ai.cloudProviderConfigs`, etc.). It's split into three files:
@@ -123,7 +128,11 @@ row intentionally spans the full width.
 - **settings-search.ts** — Fuzzy search over setting definitions; returns ranked matches with highlight ranges
 - **settings-applier.ts** — Listens for setting changes and applies side effects (CSS vars, backend config sync)
 - **network-settings.ts** — Network-specific setting helpers (proxy config, SMB auth defaults)
-- **settings-window.ts** — Logic for opening/focusing/closing the settings window (Tauri window management)
+- **settings-window.ts** — Logic for opening/focusing/closing the settings window (Tauri window management). Accepts an
+  optional `section` array (e.g. `['Network', 'SMB/Network shares']`) to deep-link a specific section. Two delivery
+  paths: (a) new-window — JSON-encoded array on the URL as `?section=...` (JSON because section names can contain `/`,
+  e.g. "SMB/Network shares"); (b) already-open window — emits a `navigate-to-section` Tauri event the settings page
+  listens for. The settings page also reads the URL param at mount, so reloads or fresh-opens land on the same section.
 - **format-utils.ts** — Shared formatters used in settings UI (e.g., duration, file-size display strings). Date/time
   formats may include a single optional `|` that splits each formatted cell into a left half (typically the date) and a
   right half (typically the time). `formatDateTimePartsWithFormat` returns `{ left, right | null }` for the file-list
@@ -206,6 +215,14 @@ that have menu items (`view.fullMode`, `view.briefMode`). Most commands don't ne
 
 Settings with `showInAdvanced: true` appear in the Advanced section with auto-generated UI. No custom component needed.
 Just add to registry and it works.
+
+### Hidden internal-state settings
+
+`hidden: true` on a `SettingDefinition` excludes it from both the main section tree and the Advanced section, but the
+value is still persisted via the same store and accessible via `getSetting`/`setSetting`. Use this for internal flags
+the backend or business logic needs to track but the user shouldn't see — for example, `network.firstTriggerDone`, which
+records whether we've ever performed a gated network action so subsequent launches can start mDNS eagerly without
+re-prompting.
 
 ### Density mapping is internal
 

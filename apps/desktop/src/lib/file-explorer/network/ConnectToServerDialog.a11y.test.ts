@@ -14,6 +14,7 @@ vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   connectToServer: vi.fn(() => Promise.resolve({ host: { id: 'h', name: 'nas.local' }, sharePath: null })),
+  ensureNetworkDiscoveryStarted: vi.fn(() => Promise.resolve()),
 }))
 
 describe('ConnectToServerDialog a11y', () => {

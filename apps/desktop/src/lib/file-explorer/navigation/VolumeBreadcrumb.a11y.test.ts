@@ -35,6 +35,7 @@ vi.mock('$lib/ui/toast', () => ({
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   formatFileSize: (n: number) => `${String(n)} B`,
+  getNetworkEnabled: () => true,
 }))
 
 describe('VolumeBreadcrumb a11y', () => {

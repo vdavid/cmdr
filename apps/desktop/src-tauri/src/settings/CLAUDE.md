@@ -30,6 +30,8 @@ Settings {
     disk_space_change_threshold_mb: Option<u64>, // from "advanced.diskSpaceChangeThreshold"
     max_log_storage_mb: Option<u64>,               // from "advanced.maxLogStorageMb"
     error_reports_enabled: Option<bool>,           // from "updates.errorReports" (Flow B opt-in, default off)
+    network_enabled: Option<bool>,                 // from "network.enabled" (default on; off renders picker as "Network (disabled)")
+    network_first_trigger_done: Option<bool>,      // from "network.firstTriggerDone" (hidden internal flag — true if we've ever triggered the macOS Local Network prompt)
 }
 ```
 

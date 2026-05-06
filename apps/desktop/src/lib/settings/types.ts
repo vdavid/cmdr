@@ -54,6 +54,8 @@ export interface SettingDefinition {
   requiresRestart?: boolean
   disabled?: boolean
   disabledReason?: string
+  /** Internal state that should not appear in any section (main tree or Advanced). Persisted via the same store. */
+  hidden?: boolean
 
   // UI hints
   component?:
@@ -122,6 +124,8 @@ export interface SettingsValues {
   'updates.errorReports': boolean
 
   // Network
+  'network.enabled': boolean
+  'network.firstTriggerDone': boolean
   'network.directSmbConnection': boolean
   'network.shareCacheDuration': number
   'network.timeoutMode': NetworkTimeoutMode

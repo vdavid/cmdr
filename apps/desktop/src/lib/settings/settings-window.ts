@@ -16,23 +16,28 @@ const SETTINGS_MIN_WIDTH = 600
 const SETTINGS_MIN_HEIGHT = 400
 
 /**
- * Opens the settings window, or focuses it if already open.
- * Uses `WebviewWindow.getByLabel` to reliably detect an existing window
- * instead of a module-level JS reference that can go stale.
+ * Opens the settings window, or focuses it if already open. When `section` is provided,
+ * the settings window listens for the `navigate-to-section` event and scrolls/highlights
+ * the matching section path (e.g., `['Network', 'SMB/Network shares']`).
  */
-export async function openSettingsWindow(): Promise<void> {
+export async function openSettingsWindow(section?: string[]): Promise<void> {
   const existing = await WebviewWindow.getByLabel('settings')
   if (existing) {
     // Emit to the settings window so it can self-focus. Cross-window setFocus()
     // doesn't reliably bring a window to front on macOS.
     await emitTo('settings', 'focus-self')
+    if (section) {
+      await emitTo('settings', 'navigate-to-section', { section })
+    }
     return
   }
 
   log.debug('Creating new settings window')
 
+  // JSON-encode the section path because section names can contain `/` (e.g.
+  // "SMB/Network shares"). Plain `join('/')` would split incorrectly on the receiving end.
   new WebviewWindow('settings', {
-    url: '/settings',
+    url: section ? `/settings?section=${encodeURIComponent(JSON.stringify(section))}` : '/settings',
     title: 'Settings',
     width: SETTINGS_WIDTH,
     height: SETTINGS_HEIGHT,

@@ -3,6 +3,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { connectToServer } from '$lib/tauri-commands'
+    import { triggerNetworkDiscovery } from './lazy-trigger'
     import type { NetworkHost } from '../types'
 
     type DialogState = 'idle' | 'connecting' | 'error'
@@ -22,6 +23,12 @@
     const canSubmit = $derived(address.trim().length > 0 && dialogState !== 'connecting')
 
     onMount(async () => {
+        // Lazy-start mDNS — opening this dialog signals intent to do networking, and
+        // `connectToServer` itself opens a TCP socket to a private IP (which would also
+        // trigger the macOS Local Network prompt on its own). Triggering here first means
+        // the prompt fires alongside the dialog rather than after the user hits Connect.
+        triggerNetworkDiscovery()
+
         await tick()
         inputRef?.focus()
     })

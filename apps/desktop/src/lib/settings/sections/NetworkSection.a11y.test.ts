@@ -9,6 +9,7 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn((key: string) => {
+    if (key === 'network.enabled') return true
     if (key === 'network.directSmbConnection') return true
     if (key === 'network.shareCacheDuration') return 300
     if (key === 'network.timeoutMode') return 'balanced'
@@ -23,6 +24,7 @@ vi.mock('$lib/settings/settings-store', () => ({
 
 vi.mock('$lib/tauri-commands', () => ({
   invoke: vi.fn(() => Promise.resolve()),
+  openSystemSettingsUrl: vi.fn(() => Promise.resolve()),
 }))
 
 describe('NetworkSection a11y', () => {

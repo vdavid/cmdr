@@ -107,6 +107,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   formatFileSize: vi.fn().mockReturnValue('1.0 KB'),
   getUseAppIconsForDocuments: vi.fn().mockReturnValue(true),
   getSizeDisplayMode: vi.fn().mockReturnValue('smart'),
+  getNetworkEnabled: vi.fn().mockReturnValue(true),
 }))
 
 vi.mock('$lib/drag-drop', () => ({ startDragTracking: vi.fn() }))

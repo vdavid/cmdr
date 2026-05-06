@@ -1,14 +1,13 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "ignoreBinaries": ["only-allow", "rustc"],
-  "ignore": ["src/lib/tauri-commands/**"],
+  "ignore": ["src/lib/tauri-commands/**", "src/unplugin-icons.d.ts"],
   "ignoreUnresolved": ["~icons/.+"],
   "ignoreDependencies": [
     "oxlint",
     "@tauri-apps/cli",
     "@testing-library/svelte",
     "prettier-plugin-svelte",
-    "axe-core",
     "@iconify-json/lucide"
   ],
   "ignoreExportsUsedInFile": true,

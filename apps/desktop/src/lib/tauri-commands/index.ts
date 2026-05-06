@@ -139,6 +139,8 @@ export {
   showNetworkHostContextMenu,
   onNetworkHostContextAction,
   disconnectNetworkHost,
+  ensureNetworkDiscoveryStarted,
+  setNetworkEnabled,
 } from './networking'
 
 // Write operations (copy, move, delete)

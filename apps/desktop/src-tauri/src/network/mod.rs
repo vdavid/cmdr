@@ -123,6 +123,26 @@ pub fn get_discovery_state_value() -> DiscoveryState {
     state.state
 }
 
+/// Clears all discovered hosts and resets discovery state to `Idle`.
+/// Called when networking is disabled via the user toggle so the frontend store empties
+/// without waiting for `network-host-lost` events from a stopped daemon.
+pub fn clear_discovered_hosts<R: tauri::Runtime>(app_handle: &impl Emitter<R>) {
+    let removed_ids: Vec<String> = {
+        let mut state = get_discovery_state().lock_ignore_poison();
+        let ids: Vec<String> = state.hosts.keys().cloned().collect();
+        state.hosts.clear();
+        state.state = DiscoveryState::Idle;
+        ids
+    };
+    for id in removed_ids {
+        let _ = app_handle.emit("network-host-lost", serde_json::json!({ "id": id }));
+    }
+    let _ = app_handle.emit(
+        "network-discovery-state-changed",
+        serde_json::json!({ "state": DiscoveryState::Idle }),
+    );
+}
+
 /// Called by the mDNS discovery module when a host is discovered.
 pub(crate) fn on_host_found<R: tauri::Runtime>(host: NetworkHost, app_handle: &impl Emitter<R>) {
     let mut state = get_discovery_state().lock_ignore_poison();

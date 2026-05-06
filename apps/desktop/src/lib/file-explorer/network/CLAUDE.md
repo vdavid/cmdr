@@ -6,6 +6,7 @@ SMB network discovery UI: host list, per-host share list, login form, and a sing
 
 | File                              | Purpose                                                                                                                                                                                                                                          |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `lazy-trigger.ts`                 | Single chokepoint for kicking off mDNS discovery on user intent. See "Lazy mDNS trigger" below                                                                                                                                                   |
 | `network-store.svelte.ts`         | Module-level `$state` singleton for all network data                                                                                                                                                                                             |
 | `NetworkBrowser.svelte`           | Host list table — rendered when pane is on the `network` volume                                                                                                                                                                                  |
 | `ShareBrowser.svelte`             | Share list for a specific host, handles auth flow                                                                                                                                                                                                |
@@ -167,11 +168,31 @@ The Disconnect button: `disconnectSmbVolume(volumeId)` Tauri command shells out 
 fires → `SmbVolume::on_unmount` runs → volume removed from `VolumeManager` → `volumes-changed` event removes it from the
 picker.
 
+## Lazy mDNS trigger
+
+`lazy-trigger.ts` exports a single `triggerNetworkDiscovery()` function. Call it whenever the user signals intent to do
+networking. It:
+
+1. No-ops if `network.enabled === false`.
+2. Calls `ensureNetworkDiscoveryStarted()` (idempotent backend command — first call kicks off the mDNS daemon, which in
+   turn fires the macOS "Cmdr wants to find devices on local networks" prompt the very first time it runs).
+3. Sets `network.firstTriggerDone = true` so subsequent app launches start mDNS eagerly (returning users get full speed
+   without re-prompts).
+
+Call sites: `NetworkBrowser.onMount` (entering the Network view), `ConnectToServerDialog.onMount` (manual server entry
+opens a TCP socket to a private IP, which would trigger the prompt anyway), and `VolumeBreadcrumb.handleSubmenuAction`
+(the OS-mount → direct-smb2 upgrade also opens a private-IP socket).
+
+Don't gate on `network.enabled` at the call site — the helper is the single chokepoint.
+
 ## Key decisions
 
-**Decision**: Network discovery runs at app startup, not when the user opens the Network volume **Why**: mDNS host
-discovery and resolution are slow (seconds). Starting early means hosts and their share counts are already populated by
-the time the user navigates to the Network view. The cost is a few background IPC calls on startup.
+**Decision**: Network discovery runs lazily on first user intent, not at app startup **Why**: macOS's Local Network
+permission prompt fires the moment we start mDNS browsing. Doing that at app launch forces the prompt on fresh installs
+before the user has any context. We defer to `triggerNetworkDiscovery()` calls from user actions (Network click, Connect
+to server…, smb2 upgrade) and persist `network.firstTriggerDone` so returning users still get the warm-cache benefit.
+See `src-tauri/src/network/CLAUDE.md` § "Lazy mDNS startup" for the backend side. The old behavior (start at launch) is
+preserved for `smb-e2e` feature builds so tests don't have to wait for discovery.
 
 **Decision**: Resolution and share prefetch are fire-and-forget (non-blocking, errors silently discarded) **Why**:
 Network hosts come and go. A timeout or unreachable host during prefetch is normal, not an error worth showing. The UI

@@ -7,6 +7,7 @@
     import SettingNumberInput from '../components/SettingNumberInput.svelte'
     import { getSettingDefinition } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
+    import { openSystemSettingsUrl } from '$lib/tauri-commands'
 
     interface Props {
         searchQuery: string
@@ -17,12 +18,47 @@
     const shouldShow = $derived(createShouldShow(searchQuery))
 
     const defaultDef = { label: '', description: '' }
+    const networkEnabledDef = getSettingDefinition('network.enabled') ?? defaultDef
     const directSmbDef = getSettingDefinition('network.directSmbConnection') ?? defaultDef
     const cacheDurationDef = getSettingDefinition('network.shareCacheDuration') ?? defaultDef
     const timeoutModeDef = getSettingDefinition('network.timeoutMode') ?? defaultDef
+
+    function handlePrivacyLinkClick(event: MouseEvent) {
+        event.preventDefault()
+        void openSystemSettingsUrl('x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork')
+    }
 </script>
 
 <SettingsSection title="SMB/Network shares">
+    {#if shouldShow('network.enabled')}
+        <SettingRow
+            id="network.enabled"
+            label={networkEnabledDef.label}
+            description={networkEnabledDef.description}
+            {searchQuery}
+        >
+            <SettingSwitch id="network.enabled" />
+        </SettingRow>
+
+        <div class="local-network-info">
+            <h3>Local Network access</h3>
+            <p>
+                Cmdr needs Local Network access to find SMB servers, list available shares, and connect directly for
+                faster file transfers. The first time you open Network or use <strong>Connect to server…</strong>, macOS
+                will ask — say yes.
+            </p>
+            <p>
+                Manage this anytime in <button type="button" class="link-button" onclick={handlePrivacyLinkClick}
+                    >System Settings &gt; Privacy &amp; Security &gt; Local Network</button
+                >.
+            </p>
+            <p class="muted">
+                Without it, Cmdr can still read and write files on shares that are already mounted — you just can't
+                discover new servers or use our faster direct connection.
+            </p>
+        </div>
+    {/if}
+
     {#if shouldShow('network.directSmbConnection')}
         <SettingRow
             id="network.directSmbConnection"
@@ -77,5 +113,53 @@
 
     .custom-timeout {
         margin-top: var(--spacing-xs);
+    }
+
+    .local-network-info {
+        padding: var(--spacing-sm) var(--spacing-md);
+        margin: var(--spacing-xs) 0 var(--spacing-md);
+        background: var(--color-bg-secondary);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-sm);
+        line-height: 1.5;
+    }
+
+    .local-network-info h3 {
+        margin: 0 0 var(--spacing-xs);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+    }
+
+    .local-network-info p {
+        margin: 0 0 var(--spacing-xs);
+    }
+
+    .local-network-info p:last-child {
+        margin-bottom: 0;
+    }
+
+    .local-network-info .muted {
+        color: var(--color-text-secondary);
+    }
+
+    .local-network-info .link-button {
+        padding: 0;
+        margin: 0;
+        background: none;
+        border: none;
+        font: inherit;
+        color: var(--color-accent-text);
+        text-decoration: underline;
+    }
+
+    .local-network-info .link-button:hover {
+        text-decoration: none;
+    }
+
+    .local-network-info .link-button:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+        border-radius: var(--radius-sm);
     }
 </style>

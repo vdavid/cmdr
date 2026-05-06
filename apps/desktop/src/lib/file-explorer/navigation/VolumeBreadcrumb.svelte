@@ -1,9 +1,11 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
     import { resolvePathVolume, upgradeToSmbVolume, type UpgradeResult } from '$lib/tauri-commands'
+    import { triggerNetworkDiscovery } from '../network/lazy-trigger'
     import { addToast, dismissToast } from '$lib/ui/toast'
     import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
-    import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import { formatFileSize, getNetworkEnabled } from '$lib/settings/reactive-settings.svelte'
+    import { openSettingsWindow } from '$lib/settings/settings-window'
     import { tooltip } from '$lib/tooltip/tooltip'
     import type { VolumeInfo, SmbConnectionState } from '../types'
     import {
@@ -75,8 +77,10 @@
     const currentVolumeName = $derived(currentVolume?.name ?? 'Volume')
     const currentVolumeIcon = $derived(getIconForVolume(currentVolume))
 
-    // Group volumes by category for display
-    const groupedVolumes = $derived(groupByCategory(volumes))
+    // Group volumes by category for display. The grouping helper renames the synthetic
+    // "Network" entry to "Network (disabled)" when networking is off; the click handler
+    // checks `getNetworkEnabled()` and routes to settings instead of navigating.
+    const groupedVolumes = $derived(groupByCategory(volumes, { networkEnabled: getNetworkEnabled() }))
 
     // Flat list of all volumes for keyboard navigation
     const allVolumes = $derived(groupedVolumes.flatMap((g) => g.items))
@@ -135,6 +139,14 @@
 
     async function handleVolumeSelect(volume: VolumeInfo) {
         isOpen = false
+
+        // "Network (disabled)" entry → don't navigate, deep-link to the toggle in Settings
+        // so the user can flip it on. Identified by the synthetic id, not the label, so
+        // future label tweaks don't break this branch.
+        if (volume.id === 'network' && !getNetworkEnabled()) {
+            void openSettingsWindow(['Network', 'SMB/Network shares'])
+            return
+        }
 
         // Check if this is a favorite (shortcut) or an actual volume
         if (volume.category === 'favorite') {
@@ -377,6 +389,11 @@
         closeSubmenu()
         closeBreadcrumbPopup()
         if (!vid) return
+
+        // Direct smb2 upgrade opens a TCP socket to a private IP — that triggers macOS's
+        // Local Network prompt on its own, so this is the right moment to also kick off
+        // mDNS discovery for the rest of the network UI.
+        triggerNetworkDiscovery()
 
         const connectingToastId = addToast('Connecting directly...', { dismissal: 'persistent' })
 

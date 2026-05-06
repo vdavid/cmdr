@@ -384,6 +384,37 @@ export async function removeManualServer(serverId: string): Promise<void> {
   await invoke('remove_manual_server', { serverId })
 }
 
+/**
+ * Idempotently kicks off mDNS discovery if it isn't running yet. Call this when the user
+ * takes their first network action: clicking "Network" in the volume picker, opening
+ * "Connect to server…", or upgrading a mounted share to direct smb2.
+ *
+ * The first call here is what triggers macOS's "Cmdr wants to find devices on local
+ * networks" prompt. Returns immediately on subsequent calls. No-op when networking is
+ * disabled (the caller is expected to gate on `network.enabled` before calling).
+ */
+export async function ensureNetworkDiscoveryStarted(): Promise<void> {
+  try {
+    await invoke('ensure_network_discovery_started')
+  } catch {
+    // Stub on unsupported platforms — silently swallow
+  }
+}
+
+/**
+ * Pushes the `network.enabled` toggle live to the backend. When `false`, stops mDNS and
+ * clears the discovered host list (the frontend store empties via `network-host-lost`).
+ * When `true`, the backend stays passive — discovery starts only when the user takes a
+ * network action and the frontend calls `ensureNetworkDiscoveryStarted`.
+ */
+export async function setNetworkEnabled(enabled: boolean): Promise<void> {
+  try {
+    await invoke('set_network_enabled', { enabled })
+  } catch {
+    // Stub on unsupported platforms — silently swallow
+  }
+}
+
 // ============================================================================
 // Network host context menu
 // ============================================================================

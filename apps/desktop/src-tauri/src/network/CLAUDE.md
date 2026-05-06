@@ -36,6 +36,31 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 
 ## Key decisions
 
+### Lazy mDNS startup gated on user toggle and first-trigger flag
+
+`network::start_discovery()` no longer fires unconditionally in `lib.rs::setup`. Instead, two settings drive the
+lifecycle:
+
+- **`network.enabled`** (boolean, default `true`) — top-level user toggle in `Settings > Network > SMB/Network shares`.
+  When `false`, the picker shows "Network (disabled)", no mDNS daemon runs, and no proactive smb2 upgrades happen.
+- **`network.firstTriggerDone`** (boolean, default `false`, hidden) — tracks whether we've already performed a gated
+  network action. Persisted across launches.
+
+At startup, mDNS starts only if `network.enabled && (firstTriggerDone || smb-e2e feature)`. On a fresh install,
+`firstTriggerDone == false` so we stay quiet and the macOS "Cmdr wants to find devices on local networks" prompt
+doesn't fire at app launch.
+
+The frontend calls `ensure_network_discovery_started` (idempotent) when the user takes a network action — clicking
+"Network" in the picker, opening "Connect to server…", or hitting the OS-mount → direct-smb2 upgrade indicator. That
+first call is what triggers the OS prompt. We also flip `firstTriggerDone = true` so subsequent launches start mDNS
+eagerly without surprising the user.
+
+`set_network_enabled(false)` stops the daemon and clears `DISCOVERY_STATE.hosts`, emitting `network-host-lost` events
+so the frontend store empties. `set_network_enabled(true)` is a no-op — the user must take a network action to
+re-trigger discovery.
+
+The E2E build feature (`smb-e2e`) bypasses both gates so virtual SMB hosts are populated before tests run.
+
 ### `NetFSMountURLAsync` for SMB mounting (not `mount_smbfs` CLI)
 
 Non-blocking (UI stays responsive), credentials passed via secure API (not exposed in process list), native Keychain

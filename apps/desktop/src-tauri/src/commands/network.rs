@@ -639,3 +639,37 @@ pub async fn connect_to_server(address: String, app_handle: tauri::AppHandle) ->
 pub fn remove_manual_server(server_id: String, app_handle: tauri::AppHandle) -> Result<(), String> {
     manual_servers::remove_manual_server(&server_id, &app_handle)
 }
+
+/// Idempotently starts mDNS discovery if it isn't running. Triggered by the frontend the first
+/// time the user takes a network action (clicks "Network", opens "Connect to server…", or
+/// upgrades a mounted share to direct smb2). The first call here is what triggers macOS's
+/// "Cmdr wants to find devices on local networks" prompt — we defer to the latest reasonable
+/// moment so fresh installs don't see the prompt at launch.
+///
+/// Also kicks off the existing-SMB-mount upgrade pass: if macOS auto-remounted SMB shares
+/// at login, this is the first moment we can open direct smb2 connections to them (TCP to a
+/// private IP also gates on the Local Network permission).
+///
+/// Reloads manually-added servers in case discovery was previously stopped (toggle-off path)
+/// and `DISCOVERY_STATE` got cleared.
+#[tauri::command]
+pub fn ensure_network_discovery_started(app_handle: tauri::AppHandle) {
+    crate::network::start_discovery(app_handle.clone());
+    manual_servers::load_manual_servers(&app_handle);
+    crate::file_system::upgrade_existing_smb_mounts();
+
+    #[cfg(feature = "smb-e2e")]
+    crate::network::virtual_smb_hosts::setup_virtual_smb_hosts(&app_handle);
+}
+
+/// Live-apply the `network.enabled` toggle. When `false`, stops mDNS and clears the discovered
+/// host list (frontend store empties via emitted `network-host-lost` events). When `true`, this
+/// is a no-op — the frontend triggers `ensure_network_discovery_started` separately when the
+/// user takes a network action.
+#[tauri::command]
+pub fn set_network_enabled(enabled: bool, app_handle: tauri::AppHandle) {
+    if !enabled {
+        crate::network::mdns_discovery::stop_discovery();
+        crate::network::clear_discovered_hosts(&app_handle);
+    }
+}

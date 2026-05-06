@@ -38,6 +38,7 @@ let sizeDisplay = $state<SizeDisplayMode>('smart')
 let humanFriendlySizeUnits = $state<boolean>(true)
 let sizeMismatchWarning = $state<boolean>(true)
 let stripedRows = $state<boolean>(false)
+let networkEnabled = $state<boolean>(true)
 
 let initialized = false
 let unsubscribe: (() => void) | undefined
@@ -65,6 +66,7 @@ export async function initReactiveSettings(): Promise<void> {
     humanFriendlySizeUnits = getSetting('listing.humanFriendlySizeUnits')
     sizeMismatchWarning = getSetting('listing.sizeMismatchWarning')
     stripedRows = getSetting('listing.stripedRows')
+    networkEnabled = getSetting('network.enabled')
 
     // Subscribe to changes (including cross-window changes)
     unsubscribe = onSettingChange((id, value) => {
@@ -105,6 +107,9 @@ export async function initReactiveSettings(): Promise<void> {
           break
         case 'listing.stripedRows':
           stripedRows = value as boolean
+          break
+        case 'network.enabled':
+          networkEnabled = value as boolean
           break
       }
     })
@@ -177,6 +182,11 @@ export function getFileSizeFormat(): FileSizeFormat {
 /** Get whether striped rows are enabled */
 export function getStripedRows(): boolean {
   return stripedRows
+}
+
+/** Get whether networking (SMB discovery + connections) is enabled. */
+export function getNetworkEnabled(): boolean {
+  return networkEnabled
 }
 
 // ============================================================================

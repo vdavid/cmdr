@@ -390,6 +390,18 @@ pub async fn disconnect_network_host(
     Ok(vec![])
 }
 
+/// Lazy-starts network discovery (stub: no-op).
+#[tauri::command]
+pub fn ensure_network_discovery_started(_app_handle: tauri::AppHandle) {
+    // No-op on platforms without network discovery
+}
+
+/// Live-applies the `network.enabled` toggle (stub: no-op).
+#[tauri::command]
+pub fn set_network_enabled(_enabled: bool, _app_handle: tauri::AppHandle) {
+    // No-op on platforms without network discovery
+}
+
 // ============================================================================
 // Non-command functions (kept for API compatibility, not called on Linux)
 // ============================================================================

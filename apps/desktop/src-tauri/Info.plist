@@ -20,5 +20,7 @@
     <string>Cmdr needs access to your Documents folder to browse and manage files there.</string>
     <key>NSDownloadsFolderUsageDescription</key>
     <string>Cmdr needs access to your Downloads folder to browse and manage files there.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Cmdr uses your local network to discover SMB file servers like NAS devices and connect to them for browsing and transferring files.</string>
 </dict>
 </plist>

@@ -322,13 +322,14 @@ pub fn run() {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             file_system::volume::smb::set_app_handle(app.handle().clone());
 
-            // Start network host discovery (mDNS)
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
-            network::start_discovery(app.handle().clone());
-
-            // Register virtual SMB hosts for E2E testing (after discovery start so they appear alongside real hosts)
-            #[cfg(feature = "smb-e2e")]
-            network::virtual_smb_hosts::setup_virtual_smb_hosts(app.handle());
+            // Network discovery (mDNS) startup is deferred — see the post-`load_settings`
+            // block below. Starting mDNS here would trigger macOS's "Cmdr wants to find devices
+            // on local networks" prompt at app launch even on first install before the user has
+            // shown any interest in networking. We only start at launch for returning users (who
+            // already answered the OS prompt at least once, tracked via `network.firstTriggerDone`).
+            //
+            // For E2E builds, virtual SMB hosts also live alongside discovery — they're only
+            // injected once discovery is up.
 
             // Initialize volume broadcast (must be before watchers so they can emit)
             volume_broadcast::init(app.handle());
@@ -390,6 +391,23 @@ pub fn run() {
             // Initialize font metrics for default font (system font at 12px)
             font_metrics::init_font_metrics(app.handle(), "system-400-12");
 
+            // Start mDNS network discovery only for returning users who've already answered the
+            // OS Local Network prompt at least once. Fresh installs stay quiet at launch — the
+            // frontend calls `ensure_network_discovery_started` lazily on first user network
+            // action (clicks "Network", opens "Connect to server…", upgrades a mounted share).
+            // E2E builds always start so virtual hosts are populated before tests run.
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            let should_start_network_at_launch = saved_settings.network_enabled.unwrap_or(true)
+                && (saved_settings.network_first_trigger_done.unwrap_or(false) || cfg!(feature = "smb-e2e"));
+
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            if should_start_network_at_launch {
+                network::start_discovery(app.handle().clone());
+
+                #[cfg(feature = "smb-e2e")]
+                network::virtual_smb_hosts::setup_virtual_smb_hosts(app.handle());
+            }
+
             // Apply direct SMB connection setting (default: true)
             file_system::set_direct_smb_enabled(saved_settings.direct_smb_connection.unwrap_or(true));
             file_system::git::set_virtual_portal_enabled(saved_settings.show_virtual_git_portal.unwrap_or(true));
@@ -401,9 +419,16 @@ pub fn run() {
             space_poller::set_threshold_mb(saved_settings.disk_space_change_threshold_mb.unwrap_or(1));
             space_poller::start();
 
-            // Upgrade existing SMB mounts to direct smb2 connections (background, non-blocking)
+            // Upgrade existing SMB mounts to direct smb2 connections (background, non-blocking).
+            // Gated on the same lazy-startup conditions as mDNS above — opening a TCP socket to
+            // a private-IP SMB server triggers macOS's Local Network prompt independently, so
+            // we must not run this on fresh installs either. Returning users already answered
+            // the prompt; lazy users wait until they click Network or use the picker's "Connect
+            // directly" indicator.
             #[cfg(any(target_os = "macos", target_os = "linux"))]
-            file_system::upgrade_existing_smb_mounts();
+            if should_start_network_at_launch {
+                file_system::upgrade_existing_smb_mounts();
+            }
 
             // Check if there's an existing license (for menu text)
             let has_existing_license = licensing::get_license_info(app.handle()).is_some();
@@ -994,6 +1019,14 @@ pub fn run() {
             commands::network::remove_manual_server,
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             commands::network::disconnect_network_host,
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            commands::network::ensure_network_discovery_started,
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            commands::network::set_network_enabled,
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+            stubs::network::ensure_network_discovery_started,
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+            stubs::network::set_network_enabled,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             stubs::network::list_network_hosts,
             #[cfg(not(any(target_os = "macos", target_os = "linux")))]

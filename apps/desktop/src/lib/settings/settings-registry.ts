@@ -359,6 +359,28 @@ export const settingsRegistry: SettingDefinition[] = [
   // Network › SMB/Network shares
   // ========================================================================
   {
+    id: 'network.enabled',
+    section: ['Network', 'SMB/Network shares'],
+    label: 'Enable networking',
+    description:
+      "Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, but won't ask macOS for Local Network access.",
+    keywords: ['network', 'enable', 'enabled', 'smb', 'discovery', 'mdns', 'bonjour', 'local', 'permission'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
+    id: 'network.firstTriggerDone',
+    section: ['Network', 'SMB/Network shares'],
+    label: 'Network discovery started',
+    description: 'Internal: tracks whether discovery has been triggered at least once. Hidden from the UI.',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
+  },
+  {
     id: 'network.directSmbConnection',
     section: ['Network', 'SMB/Network shares'],
     label: 'Connect directly to SMB shares',
@@ -864,7 +886,7 @@ export function getSettingsInSection(sectionPath: string[]): SettingDefinition[]
  * Get all settings marked for the Advanced section.
  */
 export function getAdvancedSettings(): SettingDefinition[] {
-  return settingsRegistry.filter((s) => s.showInAdvanced)
+  return settingsRegistry.filter((s) => s.showInAdvanced && !s.hidden)
 }
 
 /**
@@ -990,6 +1012,7 @@ export function buildSectionTree(): SettingsSection[] {
 
   for (const setting of settingsRegistry) {
     if (setting.showInAdvanced) continue // Advanced settings are handled separately
+    if (setting.hidden) continue // Internal-only settings (e.g., network.firstTriggerDone)
 
     let currentLevel = root
     let currentPath: string[] = []

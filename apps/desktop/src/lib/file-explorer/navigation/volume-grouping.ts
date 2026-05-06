@@ -15,7 +15,15 @@ const categoryOrder: { category: LocationCategory; label: string }[] = [
   { category: 'network', label: 'Network' },
 ]
 
-export function groupByCategory(vols: VolumeInfo[]): VolumeGroup[] {
+export interface GroupingOptions {
+  /** When false, the synthetic "Network" entry shows as "Network (disabled)" and clicking it opens settings instead of navigating. */
+  networkEnabled: boolean
+}
+
+export function groupByCategory(
+  vols: VolumeInfo[],
+  options: GroupingOptions = { networkEnabled: true },
+): VolumeGroup[] {
   const groups: VolumeGroup[] = []
 
   for (const { category, label } of categoryOrder) {
@@ -26,20 +34,21 @@ export function groupByCategory(vols: VolumeInfo[]): VolumeGroup[] {
       }
     } else if (category === 'network') {
       // Network section: show a single "Network" item that opens NetworkBrowser
-      // Also include any pre-mounted network volumes (mounted shares)
+      // Also include any pre-mounted network volumes (mounted shares).
+      // When networking is disabled in Settings, the synthetic entry is labelled
+      // "Network (disabled)" — already-mounted shares stay listed (filesystem I/O on
+      // them doesn't need Local Network permission).
       const networkVolumes = vols.filter((v) => v.category === 'network')
 
-      // Create the single "Network" entry that opens NetworkBrowser
       const networkItem: VolumeInfo = {
         id: 'network',
-        name: 'Network',
+        name: options.networkEnabled ? 'Network' : 'Network (disabled)',
         path: 'smb://', // Virtual path
         category: 'network' as const,
         icon: undefined, // Will use placeholder
         isEjectable: false,
       }
 
-      // Show network entry plus any mounted shares
       const allItems = [networkItem, ...networkVolumes]
       groups.push({ category, label, items: allItems })
     } else {

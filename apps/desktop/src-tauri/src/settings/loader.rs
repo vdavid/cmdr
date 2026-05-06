@@ -68,6 +68,10 @@ pub struct Settings {
     pub error_reports_enabled: Option<bool>,
     #[serde(alias = "fileExplorer.git.showVirtualGitPortal", default)]
     pub show_virtual_git_portal: Option<bool>,
+    #[serde(alias = "network.enabled", default)]
+    pub network_enabled: Option<bool>,
+    #[serde(alias = "network.firstTriggerDone", default)]
+    pub network_first_trigger_done: Option<bool>,
 }
 
 fn default_show_hidden() -> bool {
@@ -93,6 +97,8 @@ impl Default for Settings {
             max_log_storage_mb: None,
             error_reports_enabled: None,
             show_virtual_git_portal: None,
+            network_enabled: None,
+            network_first_trigger_done: None,
         }
     }
 }
@@ -152,6 +158,8 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let show_virtual_git_portal = json
         .get("fileExplorer.git.showVirtualGitPortal")
         .and_then(|v| v.as_bool());
+    let network_enabled = json.get("network.enabled").and_then(|v| v.as_bool());
+    let network_first_trigger_done = json.get("network.firstTriggerDone").and_then(|v| v.as_bool());
 
     Ok(Settings {
         show_hidden_files,
@@ -170,6 +178,8 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         max_log_storage_mb,
         error_reports_enabled,
         show_virtual_git_portal,
+        network_enabled,
+        network_first_trigger_done,
     })
 }
 

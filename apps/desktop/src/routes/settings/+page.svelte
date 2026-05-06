@@ -19,6 +19,19 @@
     let initialized = $state(false)
     let contentElement: HTMLElement | null = $state(null)
     let unlistenFocusSelf: UnlistenFn | undefined
+    let unlistenNavigate: UnlistenFn | undefined
+
+    function safeParseSectionParam(raw: string): string[] | null {
+        try {
+            const parsed = JSON.parse(raw) as unknown
+            if (Array.isArray(parsed) && parsed.every((s) => typeof s === 'string')) {
+                return parsed
+            }
+        } catch {
+            // ignore — treat as no deep-link
+        }
+        return null
+    }
 
     // Log page script initialization
     log.debug('Settings page script loaded')
@@ -106,10 +119,20 @@
             // Read system accent color from macOS and listen for changes
             await initAccentColor()
 
-            // Load last viewed section
-            const lastSection = await loadLastSettingsSection()
-            selectedSection = lastSection
-            log.debug('Restored last settings section: {section}', { section: lastSection.join(' > ') })
+            // Load last viewed section, but a `?section=...` URL param wins so callers (like
+            // the volume picker's "Network (disabled)" entry) can deep-link. The param is a
+            // JSON-encoded string array so section names with `/` (like "SMB/Network shares")
+            // round-trip safely.
+            const urlSection = new URLSearchParams(window.location.search).get('section')
+            const parsed = urlSection ? safeParseSectionParam(urlSection) : null
+            if (parsed) {
+                selectedSection = parsed
+                log.debug('Opened settings to URL section: {section}', { section: parsed.join(' > ') })
+            } else {
+                const lastSection = await loadLastSettingsSection()
+                selectedSection = lastSection
+                log.debug('Restored last settings section: {section}', { section: lastSection.join(' > ') })
+            }
 
             initialized = true
 
@@ -134,6 +157,13 @@
                 }, 0)
             })
 
+            // Cross-window deep-link: when the volume picker's "Network (disabled)" entry
+            // (or anything else) opens an already-running settings window with a target
+            // section, navigate there.
+            unlistenNavigate = await listen<{ section: string[] }>('navigate-to-section', (event) => {
+                handleSectionSelect(event.payload.section)
+            })
+
             log.debug('Settings page ready')
         } catch (error) {
             log.error('Failed to initialize settings: {error}', { error })
@@ -147,6 +177,7 @@
         void Promise.all([forceSettingsSave(), flushShortcutsSave()])
         // Clean up event listeners
         unlistenFocusSelf?.()
+        unlistenNavigate?.()
         cleanupAccentColor()
     })
 
