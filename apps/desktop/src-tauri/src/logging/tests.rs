@@ -121,17 +121,6 @@ fn eager_prune_handles_missing_dir() {
     assert_eq!(deleted, 0);
 }
 
-#[test]
-fn current_total_log_bytes_sums_only_log_files() {
-    let dir = make_temp_dir("bytes");
-    fs::write(dir.join("cmdr.log"), b"hello").unwrap();
-    fs::write(dir.join("cmdr.log.1"), b"world!").unwrap();
-    fs::write(dir.join("settings.json"), b"ignored").unwrap();
-    let total = current_total_log_bytes(&dir);
-    assert_eq!(total, 5 + 6, "only active log files contribute");
-    fs::remove_dir_all(&dir).ok();
-}
-
 /// Fix #2 (pattern half): the pre-`319d5d37` `tauri-plugin-log` rotation files
 /// (`Cmdr_<timestamp>.log`) must NOT appear in `list_recent_log_files`. They're
 /// cleaned up at startup by `cleanup_legacy_log_files`, but until that sweep runs

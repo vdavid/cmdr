@@ -46,16 +46,6 @@ pub fn start_volume_watcher(app: &AppHandle) {
     install_observers();
 }
 
-/// Stops the watcher. No-op — `NSWorkspace` observers are retained by the
-/// notification center and are intended to live for the app's lifetime.
-#[allow(
-    dead_code,
-    reason = "Symmetry with the Linux watcher; kept for future explicit cleanup"
-)]
-pub fn stop_volume_watcher() {
-    debug!("stop_volume_watcher called (no-op for NSWorkspace observers)");
-}
-
 fn install_observers() {
     if OBSERVER_INSTALLED.set(()).is_err() {
         return;

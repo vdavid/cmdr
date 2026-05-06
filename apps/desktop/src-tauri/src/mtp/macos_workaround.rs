@@ -143,16 +143,6 @@ pub fn get_usb_exclusive_owner() -> Option<String> {
     None
 }
 
-/// Checks if ptpcamerad is likely blocking MTP access.
-///
-/// Returns true if ptpcamerad is running and has a USB device claimed.
-#[allow(dead_code, reason = "Utility function for future use in diagnostics")]
-pub fn is_ptpcamerad_blocking() -> bool {
-    get_usb_exclusive_owner()
-        .map(|owner| owner.contains("ptpcamera"))
-        .unwrap_or(false)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

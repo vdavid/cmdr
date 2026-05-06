@@ -10,8 +10,6 @@ use std::sync::OnceLock;
 pub struct LinuxDistro {
     pub id: String,
     pub id_like: Vec<String>,
-    #[allow(dead_code, reason = "Parsed for future UI use (e.g. about dialog)")]
-    pub pretty_name: String,
 }
 
 /// High-level distro family, determines the package manager.
@@ -43,15 +41,12 @@ impl LinuxDistro {
     fn parse(content: &str) -> Option<Self> {
         let mut id = String::new();
         let mut id_like = String::new();
-        let mut pretty_name = String::new();
 
         for line in content.lines() {
             if let Some(val) = line.strip_prefix("ID=") {
                 id = val.trim_matches('"').to_lowercase();
             } else if let Some(val) = line.strip_prefix("ID_LIKE=") {
                 id_like = val.trim_matches('"').to_lowercase();
-            } else if let Some(val) = line.strip_prefix("PRETTY_NAME=") {
-                pretty_name = val.trim_matches('"').to_string();
             }
         }
 
@@ -62,7 +57,6 @@ impl LinuxDistro {
         Some(Self {
             id,
             id_like: id_like.split_whitespace().map(String::from).collect(),
-            pretty_name,
         })
     }
 
@@ -115,7 +109,6 @@ mod tests {
         let d = distro("ID=ubuntu\nID_LIKE=debian\nPRETTY_NAME=\"Ubuntu 22.04 LTS\"\n").unwrap();
         assert_eq!(d.id, "ubuntu");
         assert_eq!(d.id_like, vec!["debian"]);
-        assert_eq!(d.pretty_name, "Ubuntu 22.04 LTS");
         assert_eq!(d.family(), DistroFamily::Debian);
         assert_eq!(d.install_command("smbclient").unwrap(), "sudo apt install smbclient");
     }

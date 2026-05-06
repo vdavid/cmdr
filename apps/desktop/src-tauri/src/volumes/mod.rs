@@ -319,13 +319,6 @@ pub fn list_locations() -> Vec<LocationInfo> {
         }
     }
 
-    // 5. Network - commented out for now as /Network requires special handling
-    // for loc in get_network_locations() {
-    //     if seen_paths.insert(loc.path.clone()) {
-    //         locations.push(loc);
-    //     }
-    // }
-
     locations
 }
 
@@ -585,30 +578,6 @@ fn parse_cloud_provider_name(dir_name: &str) -> (String, String) {
     (String::new(), String::new())
 }
 
-/// Get network locations.
-#[allow(dead_code, reason = "Will be used when network locations sidebar is implemented")]
-fn get_network_locations() -> Vec<LocationInfo> {
-    let mut locations = Vec::new();
-
-    // Always include Network like Finder does
-    // Even if /Network doesn't exist as a directory, it's a browseable location in Finder
-    let network_path = "/Network";
-    locations.push(LocationInfo {
-        id: "network".to_string(),
-        name: "Network".to_string(),
-        path: network_path.to_string(),
-        category: LocationCategory::Network,
-        icon: None, // Will use placeholder in frontend
-        is_ejectable: false,
-        fs_type: None,
-        supports_trash: false,
-        is_read_only: false,
-        smb_connection_state: None,
-    });
-
-    locations
-}
-
 /// Get the display name for a volume.
 fn get_volume_name(url: &objc2_foundation::NSURL, path: &str) -> String {
     // Try localized name first
@@ -715,32 +684,6 @@ pub use LocationInfo as VolumeInfo;
 /// Legacy function - now calls list_locations
 pub fn list_mounted_volumes() -> Vec<LocationInfo> {
     list_locations()
-}
-
-#[allow(dead_code, reason = "Utility kept for future path-to-volume resolution")]
-pub fn find_volume_for_path(path: &str) -> Option<String> {
-    let locations = list_locations();
-    let mut best_match: Option<&LocationInfo> = None;
-    let mut best_len = 0;
-
-    for loc in &locations {
-        if path.starts_with(&loc.path) && loc.path.len() > best_len {
-            best_match = Some(loc);
-            best_len = loc.path.len();
-        }
-    }
-
-    best_match.map(|v| v.id.clone())
-}
-
-#[allow(dead_code, reason = "Utility kept for future volume status checks")]
-pub fn is_volume_mounted(volume_id: &str) -> bool {
-    list_locations().iter().any(|v| v.id == volume_id)
-}
-
-#[allow(dead_code, reason = "Utility kept for future volume lookup operations")]
-pub fn get_volume_by_id(volume_id: &str) -> Option<LocationInfo> {
-    list_locations().into_iter().find(|v| v.id == volume_id)
 }
 
 #[cfg(test)]

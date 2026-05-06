@@ -154,10 +154,22 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         view_mode == ViewMode::Brief,
         Some("Cmd+2"),
     )?;
-    let view_mode_full_right_item =
-        CheckMenuItem::with_id(app, VIEW_MODE_FULL_RIGHT_ID, full_view_label(), true, false, None::<&str>)?;
-    let view_mode_brief_right_item =
-        CheckMenuItem::with_id(app, VIEW_MODE_BRIEF_RIGHT_ID, brief_view_label(), true, true, None::<&str>)?;
+    let view_mode_full_right_item = CheckMenuItem::with_id(
+        app,
+        VIEW_MODE_FULL_RIGHT_ID,
+        full_view_label(),
+        true,
+        false,
+        None::<&str>,
+    )?;
+    let view_mode_brief_right_item = CheckMenuItem::with_id(
+        app,
+        VIEW_MODE_BRIEF_RIGHT_ID,
+        brief_view_label(),
+        true,
+        true,
+        None::<&str>,
+    )?;
 
     let view_left_pane_submenu = Submenu::with_items(
         app,

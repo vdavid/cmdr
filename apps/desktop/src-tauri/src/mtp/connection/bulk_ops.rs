@@ -1,7 +1,6 @@
 //! Bulk and recursive MTP operations (scan, recursive download/upload).
 
 use log::debug;
-use std::path::Path;
 
 use super::errors::MtpConnectionError;
 use super::{MtpConnectionManager, normalize_mtp_path};
@@ -150,106 +149,5 @@ impl MtpConnectionManager {
             total_bytes: entry.size.unwrap_or(0),
             top_level_is_directory: false,
         })
-    }
-
-    /// Uploads a file or directory from local filesystem to MTP device recursively.
-    ///
-    /// If the source is a directory, creates the directory on the device and
-    /// recursively uploads all contents.
-    ///
-    /// # Arguments
-    ///
-    /// * `device_id` - The connected device ID
-    /// * `storage_id` - The storage ID within the device
-    /// * `local_source` - Local source path (file or directory)
-    /// * `dest_folder` - Destination folder path on device
-    ///
-    /// # Returns
-    ///
-    /// Total bytes transferred.
-    ///
-    /// Currently unused since `MtpVolume::import_from_local` was removed
-    /// in Phase 4; cross-volume copies now stream via `write_from_stream`.
-    /// Kept as a reference for future batch-upload work.
-    #[allow(dead_code, reason = "Retained for future batch-upload API — see Phase 4 notes")]
-    pub async fn upload_recursive(
-        &self,
-        device_id: &str,
-        storage_id: u32,
-        local_source: &Path,
-        dest_folder: &str,
-    ) -> Result<u64, MtpConnectionError> {
-        debug!(
-            "MTP upload_recursive: device={}, storage={}, source={}, dest={}",
-            device_id,
-            storage_id,
-            local_source.display(),
-            dest_folder
-        );
-
-        let metadata = tokio::fs::metadata(local_source)
-            .await
-            .map_err(|e| MtpConnectionError::Other {
-                device_id: device_id.to_string(),
-                message: format!("Failed to read local path: {}", e),
-            })?;
-
-        if metadata.is_file() {
-            // Upload single file
-            let operation_id = format!("upload-{}", uuid::Uuid::new_v4());
-            let result = self
-                .upload_file(device_id, storage_id, local_source, dest_folder, None, &operation_id)
-                .await?;
-            Ok(result.size.unwrap_or(0))
-        } else if metadata.is_dir() {
-            // Create directory on device and upload contents
-            let dir_name = local_source
-                .file_name()
-                .ok_or_else(|| MtpConnectionError::Other {
-                    device_id: device_id.to_string(),
-                    message: "Invalid directory path".to_string(),
-                })?
-                .to_string_lossy()
-                .to_string();
-
-            // Create the directory on the device
-            let new_folder = self
-                .create_folder(device_id, storage_id, dest_folder, &dir_name)
-                .await?;
-            let new_folder_path = new_folder.path;
-
-            // Upload all contents
-            let mut total_bytes = 0u64;
-            let mut entries = tokio::fs::read_dir(local_source)
-                .await
-                .map_err(|e| MtpConnectionError::Other {
-                    device_id: device_id.to_string(),
-                    message: format!("Failed to read local directory: {}", e),
-                })?;
-
-            while let Some(entry) = entries.next_entry().await.map_err(|e| MtpConnectionError::Other {
-                device_id: device_id.to_string(),
-                message: format!("Failed to read directory entry: {}", e),
-            })? {
-                let entry_path = entry.path();
-                let bytes =
-                    Box::pin(self.upload_recursive(device_id, storage_id, &entry_path, &new_folder_path)).await?;
-                total_bytes += bytes;
-            }
-
-            debug!(
-                "MTP upload_recursive: directory {} complete, {} bytes",
-                local_source.display(),
-                total_bytes
-            );
-            Ok(total_bytes)
-        } else {
-            // Not a file or directory (symlink, etc.) - skip
-            debug!(
-                "MTP upload_recursive: skipping non-file/non-directory: {}",
-                local_source.display()
-            );
-            Ok(0)
-        }
     }
 }

@@ -506,18 +506,6 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
     })
 }
 
-/// Find the volume that contains a given path using longest-prefix match.
-#[allow(dead_code, reason = "Utility kept for future path-to-volume resolution")]
-pub fn find_volume_for_path(path: &str) -> Option<String> {
-    let locations = list_locations();
-    locations
-        .iter()
-        .filter(|loc| loc.category != LocationCategory::Favorite)
-        .filter(|loc| path.starts_with(&loc.path))
-        .max_by_key(|loc| loc.path.len())
-        .map(|loc| loc.id.clone())
-}
-
 pub(crate) use crate::file_system::volume::path_to_id;
 
 /// Extract a display name from a mount path.

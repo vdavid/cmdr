@@ -51,12 +51,6 @@ pub fn open_system_settings_url(url: String) -> Result<(), String> {
     Ok(())
 }
 
-/// Checks if an I/O error is a permission denied error.
-#[allow(dead_code, reason = "Utility for future use")]
-pub fn is_permission_denied_error(error: &std::io::Error) -> bool {
-    error.kind() == std::io::ErrorKind::PermissionDenied
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -65,23 +59,5 @@ mod tests {
     fn test_has_full_disk_access_returns_bool() {
         // Just verify it doesn't panic - the return value is a bool by type system
         let _result: bool = check_full_disk_access();
-    }
-
-    #[test]
-    fn test_is_permission_denied_error_detects_correctly() {
-        let perm_err = std::io::Error::from_raw_os_error(13);
-        assert!(is_permission_denied_error(&perm_err));
-
-        let not_found = std::io::Error::from_raw_os_error(2);
-        assert!(!is_permission_denied_error(&not_found));
-    }
-
-    #[test]
-    fn test_is_permission_denied_error_with_error_kind() {
-        let perm_err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "test");
-        assert!(is_permission_denied_error(&perm_err));
-
-        let other_err = std::io::Error::new(std::io::ErrorKind::NotFound, "test");
-        assert!(!is_permission_denied_error(&other_err));
     }
 }

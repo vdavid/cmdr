@@ -17,8 +17,7 @@
 //!   does NOT reconfigure the chain, but [`eager_prune`] uses it to delete excess
 //!   archived files immediately when the user lowers the cap.
 //! - **One-shot pruner** ([`eager_prune`]): for the user-lowered-the-cap case.
-//! - **Listing helpers** ([`list_recent_log_files`], [`current_total_log_bytes`]): for
-//!   bundle building and diagnostics.
+//! - **Listing helper** ([`list_recent_log_files`]): for bundle building and diagnostics.
 
 pub mod dispatch;
 
@@ -171,15 +170,6 @@ pub fn cleanup_legacy_log_files(log_dir: &Path) -> usize {
         }
     }
     deleted
-}
-
-/// Sums sizes of all active log files in the log dir. Returns `0` if the dir is missing.
-#[allow(dead_code, reason = "Diagnostic helper; wired up by Phase 4 bundle manifest")]
-pub fn current_total_log_bytes(log_dir: &Path) -> u64 {
-    list_recent_log_files(log_dir)
-        .into_iter()
-        .filter_map(|p| std::fs::metadata(&p).ok().map(|m| m.len()))
-        .sum()
 }
 
 /// Deletes all but the `keep_n` newest `*.log*` files in `log_dir`.

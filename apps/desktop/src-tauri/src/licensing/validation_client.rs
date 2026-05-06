@@ -45,16 +45,16 @@ struct ValidationRequest {
 }
 
 /// Response from the /activate endpoint.
+///
+/// `organizationName` is intentionally not declared — serde drops unknown fields and the
+/// org name is read from the verified license payload, not this response.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivateResponse {
     pub license_key: Option<String>,
-    /// Organization name from KV store (also embedded in license_key payload).
-    #[allow(dead_code, reason = "Deserialized from API response, not yet displayed in UI")]
-    pub organization_name: Option<String>,
     #[allow(
         dead_code,
-        reason = "Deserialized from API response; errors now mapped to typed LicenseActivationError"
+        reason = "Deserialized from API response; production errors map to the typed LicenseActivationError, but the field is exercised by deserialization tests"
     )]
     pub error: Option<String>,
 }

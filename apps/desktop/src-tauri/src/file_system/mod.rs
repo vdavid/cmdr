@@ -62,8 +62,6 @@ pub use write_operations::{
     list_active_operations, move_files_start, trash_files_start,
 };
 // Re-export volume copy types and functions
-// TODO: Remove this allow once volume_copy is integrated into Tauri commands (Phase 5)
-#[allow(unused_imports, reason = "Volume copy not yet integrated into Tauri commands")]
 pub use write_operations::{
     VolumeCopyConfig, VolumeCopyScanResult, copy_between_volumes, move_between_volumes, scan_for_volume_copy,
 };

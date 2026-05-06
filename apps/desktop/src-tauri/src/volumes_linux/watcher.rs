@@ -85,22 +85,6 @@ pub fn start_volume_watcher(app: &AppHandle) {
     start_gvfs_watcher();
 }
 
-/// Stop both volume watchers (proc/mounts and GVFS).
-#[allow(dead_code, reason = "Symmetry with macOS, will be used for explicit cleanup")]
-pub fn stop_volume_watcher() {
-    if let Some(storage) = WATCHER.get()
-        && let Ok(mut guard) = storage.lock()
-    {
-        *guard = None;
-    }
-    if let Some(storage) = GVFS_WATCHER.get()
-        && let Ok(mut guard) = storage.lock()
-    {
-        *guard = None;
-    }
-    debug!("Linux volume watchers stopped");
-}
-
 /// Handle filesystem events on /proc/mounts.
 fn handle_fs_event(event: Event) {
     match event.kind {

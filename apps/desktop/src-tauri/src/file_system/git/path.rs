@@ -96,18 +96,7 @@ pub enum VirtualGitPath {
     RefTree(Cat, String, String),
 }
 
-impl VirtualGitPath {
-    /// Convenience: the category for category-shaped variants. `None` for `Root`.
-    #[allow(dead_code, reason = "Public helper for downstream IPC consumers")]
-    pub fn category(&self) -> Option<Cat> {
-        match self {
-            VirtualGitPath::Root => None,
-            VirtualGitPath::Category(c) => Some(*c),
-            VirtualGitPath::Ref(c, _) => Some(*c),
-            VirtualGitPath::RefTree(c, _, _) => Some(*c),
-        }
-    }
-}
+impl VirtualGitPath {}
 
 /// Cheap shape check: does this path live under any worktree's `.git/` dir?
 ///

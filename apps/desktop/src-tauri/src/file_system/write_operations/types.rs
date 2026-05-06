@@ -183,11 +183,6 @@ pub struct DryRunResult {
     pub conflicts_sampled: bool,
 }
 
-/// Legacy constant, kept for backward compatibility.
-/// The actual value is now configurable via WriteOperationConfig.max_conflicts_to_show.
-#[allow(dead_code, reason = "Kept for backward compatibility")]
-pub const MAX_CONFLICTS_IN_RESULT: usize = 200;
-
 // ============================================================================
 // Operation status (for query APIs)
 // ============================================================================

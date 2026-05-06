@@ -23,7 +23,6 @@ pub enum DirectoryChange {
     /// An entry was renamed within the same directory.
     Renamed { old_name: String, new_entry: FileEntry },
     /// Unknown or bulk change — trigger a full re-read via the Volume trait.
-    #[allow(dead_code, reason = "M3 will use this for smb2 watcher's STATUS_NOTIFY_ENUM_DIR")]
     FullRefresh,
 }
 

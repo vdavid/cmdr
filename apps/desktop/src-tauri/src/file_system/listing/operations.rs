@@ -3,8 +3,6 @@
 //! This is the synchronous, frontend-facing API. Low-level disk I/O is in reading.rs,
 //! async streaming is in streaming.rs.
 
-#![allow(dead_code, reason = "Boilerplate for future use")]
-
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -41,22 +39,6 @@ pub struct ListingStartResult {
     pub total_count: usize,
     /// In pixels, for Brief mode columns. None if font metrics are not available.
     pub max_filename_width: Option<f32>,
-}
-
-/// Starts a new directory listing.
-///
-/// Reads the directory once, caches it, and returns listing ID + total count.
-/// Frontend then fetches visible ranges on demand via `get_file_range`.
-pub async fn list_directory_start(path: &Path, include_hidden: bool) -> Result<ListingStartResult, std::io::Error> {
-    list_directory_start_with_volume(
-        "root",
-        path,
-        include_hidden,
-        SortColumn::Name,
-        SortOrder::Ascending,
-        DirectorySortMode::LikeFiles,
-    )
-    .await
 }
 
 /// Starts a new directory listing using a specific volume.

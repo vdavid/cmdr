@@ -1197,13 +1197,6 @@ pub mod settings_defaults {
         }
     }
 
-    /// `true` if [`record`] has been called at least once. Diagnostic only —
-    /// production code paths fall back gracefully when the map isn't populated.
-    #[allow(dead_code, reason = "Diagnostic helper for future use / test seams")]
-    pub fn is_populated() -> bool {
-        DEFAULTS.lock().ok().is_some_and(|g| g.is_some())
-    }
-
     fn get(key: &str) -> Option<Value> {
         DEFAULTS.lock().ok()?.as_ref()?.get(key).cloned()
     }

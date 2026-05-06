@@ -3,8 +3,13 @@
 //! This module provides the `Volume` trait which abstracts file system operations,
 //! enabling different storage backends (local filesystem, in-memory for testing, etc.).
 
-// TODO: Remove this once Volume is integrated into operations.rs (Phase 2)
-#![allow(dead_code, reason = "Volume abstraction not yet integrated into operations.rs")]
+// The Volume trait surface defines optional capability methods and helper types
+// (VolumeScanner, VolumeWatcher, MutationEvent variants, etc.) that are part of
+// the public API for future backends but aren't all called from production code
+// paths today. InMemoryVolume + its helpers are test-only scaffolding.
+// `#![deny(unused)]` at the crate root would flag these against a non-test build,
+// so we relax dead-code checking for the whole submodule.
+#![allow(dead_code, reason = "Trait API surface and test-only scaffolding")]
 
 use crate::file_system::listing::FileEntry;
 use crate::indexing::scanner::{ScanConfig, ScanError, ScanHandle, ScanSummary};
