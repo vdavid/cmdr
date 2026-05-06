@@ -16,8 +16,9 @@ Favorite       — hardcoded: /Applications, ~/Desktop, ~/Documents, ~/Downloads
 MainVolume     — root volume at "/"
 AttachedVolume — /Volumes/* (skips /System, Preboot, Recovery, CloudStorage)
 CloudDrive     — iCloud at ~/Library/Mobile Documents/…, providers at ~/Library/CloudStorage/
-Network        — /Network (commented out, pending sidebar implementation)
 ```
+
+The `LocationCategory::Network` enum variant exists for future use but is currently unconstructed — the OS-level `/Network` browseable location doesn't surface as a sidebar entry yet.
 
 `list_locations()` aggregates all categories in order and deduplicates by path using a `HashSet<String>`.
 

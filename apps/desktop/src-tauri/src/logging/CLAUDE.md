@@ -25,7 +25,7 @@ file target locked at Debug, terminal defaults to Info.
 
 | File          | Purpose                                                                                                                                       |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mod.rs`      | `OnceLock<PathBuf>` for the resolved log dir, `AtomicUsize` for keep-count, `eager_prune`, `list_recent_log_files`, `current_total_log_bytes` |
+| `mod.rs`      | `OnceLock<PathBuf>` for the resolved log dir, `AtomicUsize` for keep-count, `eager_prune`, `list_recent_log_files` |
 | `dispatch.rs` | `init` (builds + installs the fern tree), `set_stdout_threshold` / `stdout_threshold` (verbose toggle knob)                                   |
 | `tests.rs`    | Pruner / listing helper unit tests                                                                                                            |
 
@@ -56,7 +56,6 @@ chains are independent.
 | `set_log_dir(path)` / `log_dir()`    | Cache the resolved dir once at logger-init time; the error-report bundle builder reads it back                        |
 | `set_keep_count(n)` / `keep_count()` | Live view of the keep-N value the file chain was built with                                                           |
 | `list_recent_log_files(dir)`         | Active log files (`cmdr.log` plus `cmdr.log.<digits>`) newest-first by mtime. Rejects legacy `Cmdr_*.log` files       |
-| `current_total_log_bytes(dir)`       | Sum sizes of active log files (diagnostic)                                                                            |
 | `eager_prune(dir, keep_n)`           | One-shot: delete everything beyond `keep_n` newest. Used after the user lowers the cap so they see files vanish now.  |
 | `cleanup_legacy_log_files(dir)`      | One-shot startup sweep: remove `Cmdr_<timestamp>.log` files left over from the pre-`319d5d37` `tauri-plugin-log` setup |
 
