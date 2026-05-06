@@ -345,19 +345,6 @@
         }
     }
 
-    /** Start window drag when title bar is clicked */
-    async function handleTitleBarMouseDown(e: MouseEvent) {
-        if (e.buttons === 1) {
-            e.preventDefault() // Prevent focus shift away from explorer
-            try {
-                const { getCurrentWindow } = await import('@tauri-apps/api/window')
-                await getCurrentWindow().startDragging()
-            } catch {
-                // Not in Tauri environment
-            }
-        }
-    }
-
     onMount(async () => {
         // Hide loading screen
         const loadingScreen = document.getElementById('loading-screen')
@@ -617,8 +604,7 @@
 
 <div class="page-container">
     {#if isMacOS()}
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <header class="title-bar" class:dev-mode={import.meta.env.DEV} onmousedown={handleTitleBarMouseDown}>
+        <header class="title-bar" class:dev-mode={import.meta.env.DEV} data-tauri-drag-region>
             <span class="title-text">{import.meta.env.DEV ? `DEV MODE - ${windowTitle} - DEV MODE` : windowTitle}</span>
         </header>
     {/if}
