@@ -644,7 +644,11 @@ pub fn build_context_menu<R: Runtime>(
     app: &AppHandle<R>,
     filename: &str,
     is_directory: bool,
-    #[cfg_attr(not(target_os = "macos"), allow(unused_variables))] info: &FileContextInfo,
+    #[cfg_attr(
+        not(target_os = "macos"),
+        allow(unused_variables, reason = "all reads of `info` sit inside macOS-gated branches")
+    )]
+    info: &FileContextInfo,
 ) -> tauri::Result<ContextMenuResult<R>> {
     let menu = Menu::new(app)?;
 
