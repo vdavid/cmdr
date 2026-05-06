@@ -84,8 +84,7 @@ export {
   updateMenuContext,
   setMenuContext,
   toggleHiddenFiles,
-  setViewMode,
-  syncViewModeMenu,
+  updateViewModeMenu,
   showMainWindow,
   updatePinTabMenu,
 } from './app-state'

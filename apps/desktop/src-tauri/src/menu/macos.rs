@@ -15,8 +15,9 @@ use super::{
     FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, HELP_SEND_ERROR_REPORT_ID, MenuItems,
     NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, SEARCH_FILES_ID,
     SELECT_ALL_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SWAP_PANES_ID, SWITCH_PANE_ID,
-    VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID, ViewMode, build_sort_submenu, build_zoom_submenu, copy_path_accelerator,
-    register_item, show_in_file_manager_accelerator, show_in_file_manager_label,
+    VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode,
+    brief_view_label, build_sort_submenu, build_zoom_submenu, copy_path_accelerator, full_view_label, register_item,
+    show_in_file_manager_accelerator, show_in_file_manager_label,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -159,22 +160,45 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     menu.append(&edit_menu)?;
 
     // --- View menu ---
-    let view_mode_full_item = CheckMenuItem::with_id(
+    // View > Left pane > {Full, Brief} and View > Right pane > {Full, Brief}.
+    // Both pairs always exist; only the active pane's pair carries the keyboard
+    // accelerator (⌘1/⌘2 by default), and it "follows" focus on Tab via
+    // `rebuild_view_mode_items`. Initial build: left is the default active pane,
+    // both modes default to Brief.
+    let view_mode_full_left_item = CheckMenuItem::with_id(
         app,
-        VIEW_MODE_FULL_ID,
-        "Full view",
+        VIEW_MODE_FULL_LEFT_ID,
+        full_view_label(),
         true,
         view_mode == ViewMode::Full,
         Some("Cmd+1"),
     )?;
-    let view_mode_brief_item = CheckMenuItem::with_id(
+    let view_mode_brief_left_item = CheckMenuItem::with_id(
         app,
-        VIEW_MODE_BRIEF_ID,
-        "Brief view",
+        VIEW_MODE_BRIEF_LEFT_ID,
+        brief_view_label(),
         true,
         view_mode == ViewMode::Brief,
         Some("Cmd+2"),
     )?;
+    let view_mode_full_right_item =
+        CheckMenuItem::with_id(app, VIEW_MODE_FULL_RIGHT_ID, full_view_label(), true, false, None::<&str>)?;
+    let view_mode_brief_right_item =
+        CheckMenuItem::with_id(app, VIEW_MODE_BRIEF_RIGHT_ID, brief_view_label(), true, true, None::<&str>)?;
+
+    let view_left_pane_submenu = Submenu::with_items(
+        app,
+        "Left pane",
+        true,
+        &[&view_mode_full_left_item, &view_mode_brief_left_item],
+    )?;
+    let view_right_pane_submenu = Submenu::with_items(
+        app,
+        "Right pane",
+        true,
+        &[&view_mode_full_right_item, &view_mode_brief_right_item],
+    )?;
+
     let show_hidden_item = CheckMenuItem::with_id(
         app,
         SHOW_HIDDEN_FILES_ID,
@@ -195,8 +219,8 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         "View",
         true,
         &[
-            &view_mode_full_item,
-            &view_mode_brief_item,
+            &view_left_pane_submenu,
+            &view_right_pane_submenu,
             &PredefinedMenuItem::separator(app)?,
             &show_hidden_item,
             &sort_submenu,
@@ -209,10 +233,6 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         ],
     )?;
     menu.append(&view_submenu)?;
-
-    // View mode items are at positions 0 and 1 in our freshly built View submenu
-    let view_full_pos: usize = 0;
-    let view_brief_pos: usize = 1;
 
     // --- Go menu ---
     let go_back_item = MenuItem::with_id(app, GO_BACK_ID, "Back", true, Some("Cmd+["))?;
@@ -353,11 +373,12 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     Ok(MenuItems {
         menu,
         show_hidden_files: show_hidden_item,
-        view_mode_full: view_mode_full_item,
-        view_mode_brief: view_mode_brief_item,
-        view_submenu,
-        view_mode_full_position: view_full_pos,
-        view_mode_brief_position: view_brief_pos,
+        view_mode_full_left: view_mode_full_left_item,
+        view_mode_brief_left: view_mode_brief_left_item,
+        view_mode_full_right: view_mode_full_right_item,
+        view_mode_brief_right: view_mode_brief_right_item,
+        view_left_pane_submenu,
+        view_right_pane_submenu,
         pin_tab: pin_tab_item,
         items,
         sort_submenu,

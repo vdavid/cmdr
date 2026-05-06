@@ -124,19 +124,20 @@ export async function toggleHiddenFiles(): Promise<boolean> {
 }
 
 /**
- * Set view mode and sync menu radio button state.
- * @param mode - 'full' or 'brief'
+ * Pushes the full View menu state to the backend: which pane is active and the
+ * current view mode of each pane. The backend updates check states on all four
+ * per-pane items, and migrates the keyboard accelerator (⌘1/⌘2 by default) to
+ * the active pane's pair if focus changed.
+ *
+ * Call on initial mount, focus change, swap, and after any view-mode change
+ * (palette, MCP, menu click round-trip).
  */
-export async function setViewMode(mode: 'full' | 'brief'): Promise<void> {
-  await invoke('set_view_mode', { mode })
-}
-
-/**
- * Sync the View menu checkmarks to match the given mode, without emitting events.
- * Used when the focused pane changes so the menu reflects the active pane's view mode.
- */
-export async function syncViewModeMenu(mode: 'full' | 'brief'): Promise<void> {
-  await invoke('sync_view_mode_menu', { mode })
+export async function updateViewModeMenu(
+  activePane: 'left' | 'right',
+  leftMode: 'full' | 'brief',
+  rightMode: 'full' | 'brief',
+): Promise<void> {
+  await invoke('update_view_mode_menu', { activePane, leftMode, rightMode })
 }
 
 // ============================================================================

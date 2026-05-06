@@ -46,10 +46,15 @@ Exceptions that do NOT use `"execute-command"`:
 ### MenuState
 
 Shared state managed via `tauri::State<MenuState<Wry>>`. Holds:
-- Named `CheckMenuItem` references (`show_hidden_files`, `view_mode_full`, `view_mode_brief`) for
-  checked-state sync
+- Named `CheckMenuItem` references (`show_hidden_files`, plus four per-pane view-mode items:
+  `view_mode_full_left/right` and `view_mode_brief_left/right`) for checked-state sync
 - `pin_tab` MenuItem reference for dynamic label changes ("Pin tab" / "Unpin tab")
-- `view_submenu` + position indices for view mode accelerator updates (remove/recreate/reinsert)
+- `view_left_pane_submenu` / `view_right_pane_submenu` — the two pane-scoped submenus that hold
+  the Full/Brief CheckMenuItems (Full at position 0, Brief at position 1). Used by
+  `rebuild_view_mode_items` to remove/recreate/reinsert items when accelerators move on focus change.
+- Cached view-mode state (`view_mode_active_pane`, `view_mode_left`, `view_mode_right`,
+  `view_mode_full_accel`, `view_mode_brief_accel`) used by `rebuild_view_mode_items` to
+  attach the keyboard accelerator only to the currently-active pane's pair
 - `items: HashMap<String, MenuItemEntry>` for the ~20 regular MenuItems that need accelerator
   updates and enable/disable
 - `context: MenuContext` for right-click context menu — `path` (primary right-clicked file),
@@ -62,9 +67,27 @@ Shared state managed via `tauri::State<MenuState<Wry>>`. Holds:
 Menu accelerators must match user-customized shortcuts. Since Tauri has no `set_accelerator()` API,
 updating an accelerator requires removing the old item, creating a new one with the new accelerator,
 and reinserting at the same position. `update_menu_item_accelerator()` handles regular items via the
-HashMap; `update_view_mode_accelerator()` handles CheckMenuItems separately to preserve checked state.
+HashMap; `rebuild_view_mode_items()` handles the four per-pane view-mode CheckMenuItems together
+because they share a single accelerator pair (⌘1 / ⌘2 by default) that "follows" the active pane.
 
-The frontend triggers this via `invoke('update_menu_accelerator')` from `shortcuts-store.ts`.
+The frontend triggers regular-item updates via `invoke('update_menu_accelerator')` from
+`shortcuts-store.ts`, and triggers view-mode rebuilds via `invoke('update_view_mode_menu')` from
+`DualPaneExplorer.svelte` on focus change, swap, and any view-mode toggle.
+
+### Per-pane view modes
+
+The View menu nests two pane-scoped submenus: `View > Left pane > {Full view, Brief view}` and
+`View > Right pane > {Full view, Brief view}`. Both pairs of `CheckMenuItem`s always exist; only
+the **active** pane's pair carries the keyboard accelerator (⌘1/⌘2 by default). When focus
+switches between panes, the frontend pushes `update_view_mode_menu(activePane, leftMode, rightMode)`,
+and the backend's `rebuild_view_mode_items` removes and recreates the items inside their parent
+pane submenu so the accelerator visibly migrates to the newly-active pair. This makes the per-pane
+scope discoverable while keeping ⌘1/⌘2 as a focus-aware shortcut for the active pane.
+
+Click-on-inactive-pane works without changing focus: opening `View > Right pane > Brief view`
+while the left pane is active emits `view-mode-changed` with `pane: "right"`, and the frontend
+updates the right pane's mode without touching focus. The frontend then pushes
+`update_view_mode_menu` so the check states stay consistent.
 
 ### Context-aware enable/disable
 
@@ -145,6 +168,9 @@ also Window and Help.
 
 **Decision**: CheckMenuItems (view modes, show hidden) use separate event paths instead of `"execute-command"`.
 **Why**: CheckMenuItems auto-toggle their checked state on click. If the click also emitted `"execute-command"` and the frontend toggled the setting, the state would double-toggle (menu toggles once, frontend toggles again). Instead, these items emit `"settings-changed"` or `"view-mode-changed"` directly, treating the menu click as the authoritative state change.
+
+**Decision**: Per-pane View submenus (`View > Left pane > …`, `View > Right pane > …`) with the accelerator following the active pane.
+**Why**: The previous single Full/Brief pair always targeted the active pane, but that scope was invisible in the menu — testers were slow to figure out how to change the inactive pane's view. Nesting each pane's Full/Brief items inside its own submenu makes the scope obvious without cluttering the View root. The accelerator is attached only to the active pane's pair (and migrates on focus change via `rebuild_view_mode_items`) so the shortcut remains accurate — pressing ⌘1 always affects the active pane, and the visible binding sits next to the items it actually targets.
 
 **Decision**: SF Symbol icons only on the menu bar, not on context menus.
 **Why**: Tauri doesn't support SF Symbols natively. For the menu bar, we walk `NSApplication.mainMenu()` post-construction via objc2 FFI and set SF Symbols directly on `NSMenuItem` objects — this produces true template images that auto-tint correctly. Context menus don't get icons because Tauri doesn't expose the raw `NSMenu` pointer, and the alternative (rasterized bitmaps via `IconMenuItem`) produces visually poor results (no template tinting, wrong size/weight).

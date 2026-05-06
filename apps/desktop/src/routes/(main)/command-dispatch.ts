@@ -11,7 +11,6 @@ import {
   getInfo,
   openInEditor,
   toggleHiddenFiles,
-  setViewMode,
   readClipboardText,
   cloudMakeAvailableOffline,
   cloudRemoveDownload,
@@ -149,13 +148,11 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
       return
 
     case 'view.briefMode':
-      // Use Tauri command to set mode and sync menu radio state
-      await setViewMode('brief')
+      explorerRef?.setViewMode('brief')
       return
 
     case 'view.fullMode':
-      // Use Tauri command to set mode and sync menu radio state
-      await setViewMode('full')
+      explorerRef?.setViewMode('full')
       return
 
     // === Zoom commands ===

@@ -129,8 +129,9 @@ use menu::{
     CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, MenuState, NETWORK_HOST_DISCONNECT_ID,
     NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID,
     SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
-    SORT_DESCENDING_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_ID, VIEW_MODE_FULL_ID,
-    VIEWER_WORD_WRAP_ID, ViewMode, menu_id_to_command,
+    SORT_DESCENDING_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID,
+    VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEWER_WORD_WRAP_ID, ViewMode,
+    menu_id_to_command,
 };
 use tauri::{Emitter, Manager};
 
@@ -467,11 +468,12 @@ pub fn run() {
             // Store the CheckMenuItem references in app state
             let menu_state = MenuState::default();
             *menu_state.show_hidden_files.lock_ignore_poison() = Some(menu_items.show_hidden_files);
-            *menu_state.view_mode_full.lock_ignore_poison() = Some(menu_items.view_mode_full);
-            *menu_state.view_mode_brief.lock_ignore_poison() = Some(menu_items.view_mode_brief);
-            *menu_state.view_submenu.lock_ignore_poison() = Some(menu_items.view_submenu);
-            *menu_state.view_mode_full_position.lock_ignore_poison() = menu_items.view_mode_full_position;
-            *menu_state.view_mode_brief_position.lock_ignore_poison() = menu_items.view_mode_brief_position;
+            *menu_state.view_mode_full_left.lock_ignore_poison() = Some(menu_items.view_mode_full_left);
+            *menu_state.view_mode_brief_left.lock_ignore_poison() = Some(menu_items.view_mode_brief_left);
+            *menu_state.view_mode_full_right.lock_ignore_poison() = Some(menu_items.view_mode_full_right);
+            *menu_state.view_mode_brief_right.lock_ignore_poison() = Some(menu_items.view_mode_brief_right);
+            *menu_state.view_left_pane_submenu.lock_ignore_poison() = Some(menu_items.view_left_pane_submenu);
+            *menu_state.view_right_pane_submenu.lock_ignore_poison() = Some(menu_items.view_right_pane_submenu);
             *menu_state.pin_tab.lock_ignore_poison() = Some(menu_items.pin_tab);
             *menu_state.items.lock_ignore_poison() = menu_items.items;
             *menu_state.sort_submenu.lock_ignore_poison() = Some(menu_items.sort_submenu);
@@ -571,19 +573,39 @@ pub fn run() {
                 }
                 return;
             }
-            if id == VIEW_MODE_FULL_ID || id == VIEW_MODE_BRIEF_ID {
+            if id == VIEW_MODE_FULL_LEFT_ID
+                || id == VIEW_MODE_BRIEF_LEFT_ID
+                || id == VIEW_MODE_FULL_RIGHT_ID
+                || id == VIEW_MODE_BRIEF_RIGHT_ID
+            {
+                // Per-pane view mode click. Sync the affected pane's pair (the muda click
+                // already toggled the clicked item, so unchecking the sibling is enough),
+                // store the new mode in MenuState, and notify the frontend with the target
+                // pane so it can update without changing focus.
+                let (pane, mode_str) = match id {
+                    VIEW_MODE_FULL_LEFT_ID => ("left", "full"),
+                    VIEW_MODE_BRIEF_LEFT_ID => ("left", "brief"),
+                    VIEW_MODE_FULL_RIGHT_ID => ("right", "full"),
+                    VIEW_MODE_BRIEF_RIGHT_ID => ("right", "brief"),
+                    _ => unreachable!(),
+                };
                 let menu_state = app.state::<MenuState<tauri::Wry>>();
-                let (full_guard, brief_guard) = (
-                    menu_state.view_mode_full.lock_ignore_poison(),
-                    menu_state.view_mode_brief.lock_ignore_poison(),
-                );
-                if let (Some(full_item), Some(brief_item)) = (full_guard.as_ref(), brief_guard.as_ref()) {
-                    let is_full = id == VIEW_MODE_FULL_ID;
-                    let _ = full_item.set_checked(is_full);
-                    let _ = brief_item.set_checked(!is_full);
-                    let mode = if is_full { "full" } else { "brief" };
-                    let _ = app.emit_to("main", "view-mode-changed", serde_json::json!({ "mode": mode }));
+                let new_mode = if mode_str == "full" {
+                    ViewMode::Full
+                } else {
+                    ViewMode::Brief
+                };
+                if pane == "left" {
+                    *menu_state.view_mode_left.lock_ignore_poison() = new_mode;
+                } else {
+                    *menu_state.view_mode_right.lock_ignore_poison() = new_mode;
                 }
+                let _ = menu::sync_view_mode_check_states(&menu_state);
+                let _ = app.emit_to(
+                    "main",
+                    "view-mode-changed",
+                    serde_json::json!({ "mode": mode_str, "pane": pane }),
+                );
                 return;
             }
 
@@ -862,8 +884,7 @@ pub fn run() {
             commands::ui::update_menu_context,
             commands::ui::set_menu_context,
             commands::ui::toggle_hidden_files,
-            commands::ui::set_view_mode,
-            commands::ui::sync_view_mode_menu,
+            commands::ui::update_view_mode_menu,
             commands::ui::show_in_finder,
             commands::ui::copy_to_clipboard,
             commands::ui::quick_look,

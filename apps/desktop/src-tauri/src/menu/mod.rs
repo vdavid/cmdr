@@ -24,8 +24,15 @@ use crate::file_system::sync_status::SyncStatus;
 
 /// Menu item IDs for file actions.
 pub const SHOW_HIDDEN_FILES_ID: &str = "show_hidden_files";
-pub const VIEW_MODE_FULL_ID: &str = "view_mode_full";
-pub const VIEW_MODE_BRIEF_ID: &str = "view_mode_brief";
+/// View mode CheckMenuItems — one pair per pane, nested under per-pane submenus
+/// (View > Left pane > Full view / Brief view, and the same for Right pane).
+/// The keyboard shortcut (⌘1/⌘2 by default) only attaches to the items belonging
+/// to the active pane, and "moves" to the other pane on focus change.
+/// See `rebuild_view_mode_items`.
+pub const VIEW_MODE_FULL_LEFT_ID: &str = "view_mode_full_left";
+pub const VIEW_MODE_BRIEF_LEFT_ID: &str = "view_mode_brief_left";
+pub const VIEW_MODE_FULL_RIGHT_ID: &str = "view_mode_full_right";
+pub const VIEW_MODE_BRIEF_RIGHT_ID: &str = "view_mode_brief_right";
 
 /// Zoom (text-size) submenu under View. Each preset writes
 /// `appearance.textSize`; in/out adjust by 25 percentage points.
@@ -266,14 +273,28 @@ pub struct MenuItemEntry<R: Runtime> {
 /// Stores references to menu items and current context.
 pub struct MenuState<R: Runtime> {
     pub show_hidden_files: Mutex<Option<CheckMenuItem<R>>>,
-    pub view_mode_full: Mutex<Option<CheckMenuItem<R>>>,
-    pub view_mode_brief: Mutex<Option<CheckMenuItem<R>>>,
+    /// Per-pane view mode CheckMenuItems. Both pairs always exist; only the active
+    /// pane's pair carries keyboard accelerators. See `rebuild_view_mode_items`.
+    pub view_mode_full_left: Mutex<Option<CheckMenuItem<R>>>,
+    pub view_mode_brief_left: Mutex<Option<CheckMenuItem<R>>>,
+    pub view_mode_full_right: Mutex<Option<CheckMenuItem<R>>>,
+    pub view_mode_brief_right: Mutex<Option<CheckMenuItem<R>>>,
     pub context: Mutex<MenuContext>,
-    /// Reference to the View submenu for accelerator updates
-    pub view_submenu: Mutex<Option<Submenu<R>>>,
-    /// Positions of items in View submenu (for reinsertion after accelerator updates)
-    pub view_mode_full_position: Mutex<usize>,
-    pub view_mode_brief_position: Mutex<usize>,
+    /// Per-pane submenus that hold the Full/Brief CheckMenuItems. The View submenu
+    /// itself just nests these two (`Left pane >` and `Right pane >`).
+    /// Each pane's Full item is at position 0, Brief at position 1.
+    pub view_left_pane_submenu: Mutex<Option<Submenu<R>>>,
+    pub view_right_pane_submenu: Mutex<Option<Submenu<R>>>,
+    /// Cached state used by `rebuild_view_mode_items` to know which side gets the accelerator
+    /// and what each side's checked state should be. Frontend pushes updates via
+    /// `update_view_mode_menu`. Defaults: active = left, both modes = brief.
+    pub view_mode_active_pane: Mutex<String>,
+    pub view_mode_left: Mutex<ViewMode>,
+    pub view_mode_right: Mutex<ViewMode>,
+    /// Cached view-mode shortcuts. Frontend pushes updates via `update_menu_accelerator`.
+    /// Defaults match the labels created in `build_menu_*` (Cmd+1 / Cmd+2).
+    pub view_mode_full_accel: Mutex<Option<String>>,
+    pub view_mode_brief_accel: Mutex<Option<String>>,
     /// Pin/unpin tab menu item (label toggles based on active tab state)
     pub pin_tab: Mutex<Option<MenuItem<R>>>,
     /// Generic menu items keyed by menu item ID, for accelerator and enable/disable updates.
@@ -288,12 +309,18 @@ impl<R: Runtime> Default for MenuState<R> {
     fn default() -> Self {
         Self {
             show_hidden_files: Mutex::new(None),
-            view_mode_full: Mutex::new(None),
-            view_mode_brief: Mutex::new(None),
+            view_mode_full_left: Mutex::new(None),
+            view_mode_brief_left: Mutex::new(None),
+            view_mode_full_right: Mutex::new(None),
+            view_mode_brief_right: Mutex::new(None),
             context: Mutex::new(MenuContext::default()),
-            view_submenu: Mutex::new(None),
-            view_mode_full_position: Mutex::new(0),
-            view_mode_brief_position: Mutex::new(0),
+            view_left_pane_submenu: Mutex::new(None),
+            view_right_pane_submenu: Mutex::new(None),
+            view_mode_active_pane: Mutex::new("left".to_string()),
+            view_mode_left: Mutex::new(ViewMode::Brief),
+            view_mode_right: Mutex::new(ViewMode::Brief),
+            view_mode_full_accel: Mutex::new(Some("Cmd+1".to_string())),
+            view_mode_brief_accel: Mutex::new(Some("Cmd+2".to_string())),
             pin_tab: Mutex::new(None),
             items: Mutex::new(HashMap::new()),
             sort_submenu: Mutex::new(None),
@@ -306,14 +333,18 @@ impl<R: Runtime> Default for MenuState<R> {
 pub struct MenuItems<R: Runtime> {
     pub menu: Menu<R>,
     pub show_hidden_files: CheckMenuItem<R>,
-    pub view_mode_full: CheckMenuItem<R>,
-    pub view_mode_brief: CheckMenuItem<R>,
-    /// Reference to View submenu for accelerator updates
-    pub view_submenu: Submenu<R>,
-    /// Position of Full view item in View submenu
-    pub view_mode_full_position: usize,
-    /// Position of Brief view item in View submenu
-    pub view_mode_brief_position: usize,
+    /// Per-pane view-mode CheckMenuItems (only the left pair carries the
+    /// accelerator at construction time; the right pair gets it after the
+    /// frontend's first `update_view_mode_menu` call if right is the saved
+    /// active pane).
+    pub view_mode_full_left: CheckMenuItem<R>,
+    pub view_mode_brief_left: CheckMenuItem<R>,
+    pub view_mode_full_right: CheckMenuItem<R>,
+    pub view_mode_brief_right: CheckMenuItem<R>,
+    /// Per-pane submenus (Full at position 0, Brief at position 1) — used by
+    /// `rebuild_view_mode_items` to reinsert items after accelerator changes.
+    pub view_left_pane_submenu: Submenu<R>,
+    pub view_right_pane_submenu: Submenu<R>,
     /// Pin/unpin tab menu item (label updated dynamically by frontend)
     pub pin_tab: MenuItem<R>,
     /// Generic menu items for accelerator updates, keyed by menu item ID.
@@ -910,51 +941,139 @@ pub fn frontend_shortcut_to_accelerator(shortcut: &str) -> Option<String> {
     if result.is_empty() { None } else { Some(result) }
 }
 
-/// Update the accelerator for a view mode menu item.
-/// Returns the new CheckMenuItem reference if successful.
-pub fn update_view_mode_accelerator<R: Runtime>(
-    app: &AppHandle<R>,
-    menu_state: &MenuState<R>,
-    is_full_mode: bool,
-    new_accelerator: Option<&str>,
-    is_checked: bool,
-) -> tauri::Result<CheckMenuItem<R>> {
-    let view_submenu_guard = menu_state.view_submenu.lock_ignore_poison();
-    let view_submenu = view_submenu_guard
+/// Platform-aware label for the per-pane view-mode CheckMenuItems.
+/// Linux uses GTK mnemonics; macOS doesn't.
+#[cfg(target_os = "macos")]
+pub(crate) fn full_view_label() -> &'static str {
+    "Full view"
+}
+
+#[cfg(not(target_os = "macos"))]
+pub(crate) fn full_view_label() -> &'static str {
+    "&Full view"
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn brief_view_label() -> &'static str {
+    "Brief view"
+}
+
+#[cfg(not(target_os = "macos"))]
+pub(crate) fn brief_view_label() -> &'static str {
+    "&Brief view"
+}
+
+/// Rebuilds the four per-pane view-mode `CheckMenuItem`s with the current
+/// state cached in `MenuState`: active pane, per-pane modes, and full/brief
+/// shortcuts.
+///
+/// The accelerator is attached only to the active pane's pair, so that the
+/// shortcut hint visually "follows" focus. Items are removed from the per-pane
+/// submenu (Left pane / Right pane) and reinserted at the same position
+/// (Full=0, Brief=1), since Tauri has no `set_accelerator()` API. The new
+/// `CheckMenuItem` references replace the old ones in `MenuState`.
+///
+/// Frontend pushes a rebuild on pane focus change and on shortcut customization.
+pub fn rebuild_view_mode_items<R: Runtime>(app: &AppHandle<R>, menu_state: &MenuState<R>) -> tauri::Result<()> {
+    let left_submenu_guard = menu_state.view_left_pane_submenu.lock_ignore_poison();
+    let right_submenu_guard = menu_state.view_right_pane_submenu.lock_ignore_poison();
+    let left_submenu = left_submenu_guard
+        .as_ref()
+        .ok_or_else(|| tauri::Error::InvalidWindowHandle)?;
+    let right_submenu = right_submenu_guard
         .as_ref()
         .ok_or_else(|| tauri::Error::InvalidWindowHandle)?;
 
-    let (menu_item_guard, position_guard, menu_id, label) = if is_full_mode {
-        (
-            menu_state.view_mode_full.lock_ignore_poison(),
-            menu_state.view_mode_full_position.lock_ignore_poison(),
-            VIEW_MODE_FULL_ID,
-            "&Full view",
-        )
-    } else {
-        (
-            menu_state.view_mode_brief.lock_ignore_poison(),
-            menu_state.view_mode_brief_position.lock_ignore_poison(),
-            VIEW_MODE_BRIEF_ID,
-            "&Brief view",
-        )
+    let active_pane = menu_state.view_mode_active_pane.lock_ignore_poison().clone();
+    let left_mode = *menu_state.view_mode_left.lock_ignore_poison();
+    let right_mode = *menu_state.view_mode_right.lock_ignore_poison();
+    let full_accel = menu_state.view_mode_full_accel.lock_ignore_poison().clone();
+    let brief_accel = menu_state.view_mode_brief_accel.lock_ignore_poison().clone();
+
+    let left_active = active_pane == "left";
+    let full_label = full_view_label();
+    let brief_label = brief_view_label();
+
+    // Helper: replace one CheckMenuItem inside its pane submenu, preserving its position.
+    let swap = |slot: &Mutex<Option<CheckMenuItem<R>>>,
+                parent: &Submenu<R>,
+                position: usize,
+                id: &str,
+                label: &str,
+                checked: bool,
+                accel: Option<&str>|
+     -> tauri::Result<()> {
+        let mut guard = slot.lock_ignore_poison();
+        if let Some(old) = guard.as_ref() {
+            parent.remove(old)?;
+        }
+        let new_item = CheckMenuItem::with_id(app, id, label, true, checked, accel)?;
+        parent.insert(&new_item, position)?;
+        *guard = Some(new_item);
+        Ok(())
     };
 
-    let old_item = menu_item_guard
-        .as_ref()
-        .ok_or_else(|| tauri::Error::InvalidWindowHandle)?;
-    let position = *position_guard;
+    swap(
+        &menu_state.view_mode_full_left,
+        left_submenu,
+        0,
+        VIEW_MODE_FULL_LEFT_ID,
+        full_label,
+        left_mode == ViewMode::Full,
+        if left_active { full_accel.as_deref() } else { None },
+    )?;
+    swap(
+        &menu_state.view_mode_brief_left,
+        left_submenu,
+        1,
+        VIEW_MODE_BRIEF_LEFT_ID,
+        brief_label,
+        left_mode == ViewMode::Brief,
+        if left_active { brief_accel.as_deref() } else { None },
+    )?;
+    swap(
+        &menu_state.view_mode_full_right,
+        right_submenu,
+        0,
+        VIEW_MODE_FULL_RIGHT_ID,
+        full_label,
+        right_mode == ViewMode::Full,
+        if !left_active { full_accel.as_deref() } else { None },
+    )?;
+    swap(
+        &menu_state.view_mode_brief_right,
+        right_submenu,
+        1,
+        VIEW_MODE_BRIEF_RIGHT_ID,
+        brief_label,
+        right_mode == ViewMode::Brief,
+        if !left_active { brief_accel.as_deref() } else { None },
+    )?;
 
-    // Remove the old item
-    view_submenu.remove(old_item)?;
+    Ok(())
+}
 
-    // Create new item with new accelerator
-    let new_item = CheckMenuItem::with_id(app, menu_id, label, true, is_checked, new_accelerator)?;
+/// Sets only the checked state on the existing per-pane view-mode items,
+/// without touching accelerators. Used for in-place updates (a click in
+/// the same pane, palette toggle) where active pane and shortcuts are
+/// unchanged.
+pub fn sync_view_mode_check_states<R: Runtime>(menu_state: &MenuState<R>) -> tauri::Result<()> {
+    let left_mode = *menu_state.view_mode_left.lock_ignore_poison();
+    let right_mode = *menu_state.view_mode_right.lock_ignore_poison();
 
-    // Insert at same position
-    view_submenu.insert(&new_item, position)?;
-
-    Ok(new_item)
+    if let Some(item) = menu_state.view_mode_full_left.lock_ignore_poison().as_ref() {
+        item.set_checked(left_mode == ViewMode::Full)?;
+    }
+    if let Some(item) = menu_state.view_mode_brief_left.lock_ignore_poison().as_ref() {
+        item.set_checked(left_mode == ViewMode::Brief)?;
+    }
+    if let Some(item) = menu_state.view_mode_full_right.lock_ignore_poison().as_ref() {
+        item.set_checked(right_mode == ViewMode::Full)?;
+    }
+    if let Some(item) = menu_state.view_mode_brief_right.lock_ignore_poison().as_ref() {
+        item.set_checked(right_mode == ViewMode::Brief)?;
+    }
+    Ok(())
 }
 
 /// Update the accelerator for any menu item tracked in the items HashMap.
@@ -1171,8 +1290,10 @@ mod tests {
     fn test_menu_id_to_command_unmapped() {
         // Items with special handling return None
         assert_eq!(menu_id_to_command(SHOW_HIDDEN_FILES_ID), None);
-        assert_eq!(menu_id_to_command(VIEW_MODE_FULL_ID), None);
-        assert_eq!(menu_id_to_command(VIEW_MODE_BRIEF_ID), None);
+        assert_eq!(menu_id_to_command(VIEW_MODE_FULL_LEFT_ID), None);
+        assert_eq!(menu_id_to_command(VIEW_MODE_BRIEF_LEFT_ID), None);
+        assert_eq!(menu_id_to_command(VIEW_MODE_FULL_RIGHT_ID), None);
+        assert_eq!(menu_id_to_command(VIEW_MODE_BRIEF_RIGHT_ID), None);
         assert_eq!(menu_id_to_command(VIEWER_WORD_WRAP_ID), None);
         assert_eq!(menu_id_to_command(SORT_BY_NAME_ID), None);
         assert_eq!(menu_id_to_command("unknown_id"), None);

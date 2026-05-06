@@ -24,7 +24,7 @@
         cutFilesToClipboard,
         readClipboardFiles,
         clearClipboardCutState,
-        syncViewModeMenu,
+        updateViewModeMenu,
     } from '$lib/tauri-commands'
     import type {
         VolumeInfo,
@@ -321,6 +321,13 @@
         return pane === 'left' ? leftViewMode : rightViewMode
     }
 
+    /** Pushes the full View menu state (active pane + per-pane modes) to the backend so
+     * the per-pane menu items show correct check marks and the keyboard accelerator
+     * (⌘1/⌘2 by default) attaches to the active pane's pair. */
+    function pushViewMenuState() {
+        void updateViewModeMenu(focusedPane, getPaneViewMode('left'), getPaneViewMode('right'))
+    }
+
     function getPaneVolumePath(pane: 'left' | 'right'): string {
         return pane === 'left' ? leftVolumePath : rightVolumePath
     }
@@ -601,7 +608,7 @@
             saveAppStatus({ focusedPane: pane })
             void updateFocusedPane(pane)
             syncPinTabMenu()
-            void syncViewModeMenu(getPaneViewMode(pane))
+            pushViewMenuState()
         }
         // Always restore DOM focus (needed after inline rename or dialog close within a pane)
         containerElement?.focus()
@@ -978,7 +985,7 @@
 
         initialized = true
         syncPinTabMenu()
-        void syncViewModeMenu(getPaneViewMode(focusedPane))
+        pushViewMenuState()
 
         // Sync initial tab state to MCP backend
         syncTabsToBackend()
@@ -998,12 +1005,15 @@
             }
         })
 
-        // Subscribe to view mode changes from the backend menu
-        unlistenViewMode = await listen<{ mode: ViewMode }>('view-mode-changed', (event) => {
+        // Subscribe to view mode changes from the backend menu. The payload's `pane`
+        // says which pane the click targets (per-pane menu items), so an inactive-pane
+        // click changes that pane's mode without altering focus.
+        unlistenViewMode = await listen<{ mode: ViewMode; pane?: 'left' | 'right' }>('view-mode-changed', (event) => {
+            const targetPane = event.payload.pane ?? focusedPane
             const newMode = event.payload.mode
-            setPaneViewMode(focusedPane, newMode)
-            saveAppStatus({ [paneKey(focusedPane, 'viewMode')]: newMode })
-            saveTabsForPaneSide(focusedPane)
+            setPaneViewMode(targetPane, newMode)
+            saveAppStatus({ [paneKey(targetPane, 'viewMode')]: newMode })
+            saveTabsForPaneSide(targetPane)
         })
 
         // Subscribe to volume unmount events (redirect panes off ejected volumes)
@@ -1596,7 +1606,7 @@
         focusedPane = newFocus
         saveAppStatus({ focusedPane: newFocus })
         void updateFocusedPane(newFocus)
-        void syncViewModeMenu(getPaneViewMode(newFocus))
+        pushViewMenuState()
         containerElement?.focus()
     }
 
@@ -1705,6 +1715,7 @@
         setPaneViewMode(targetPane, mode)
         saveAppStatus({ [paneKey(targetPane, 'viewMode')]: mode })
         saveTabsForPaneSide(targetPane)
+        pushViewMenuState()
     }
 
     /**

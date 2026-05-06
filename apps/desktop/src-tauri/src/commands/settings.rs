@@ -7,8 +7,8 @@ use crate::file_system::{
 };
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
-    MenuState, command_id_to_menu_id, frontend_shortcut_to_accelerator, update_menu_item_accelerator,
-    update_view_mode_accelerator,
+    MenuState, command_id_to_menu_id, frontend_shortcut_to_accelerator, rebuild_view_mode_items,
+    update_menu_item_accelerator,
 };
 #[cfg(target_os = "macos")]
 use crate::network::mdns_discovery::update_resolve_timeout;
@@ -138,33 +138,19 @@ pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str)
     let accelerator = frontend_shortcut_to_accelerator(shortcut);
 
     match command_id {
-        // View mode CheckMenuItems need special handling to preserve checked state
+        // View mode CheckMenuItems are per-pane and the accelerator only attaches to the
+        // active pane's pair. Cache the new accel in MenuState and rebuild — the rebuild
+        // re-reads cached accels and active-pane state in one shot.
         "view.fullMode" => {
-            let is_checked = menu_state
-                .view_mode_full
-                .lock_ignore_poison()
-                .as_ref()
-                .and_then(|item| item.is_checked().ok())
-                .unwrap_or(false);
-
-            let new_item = update_view_mode_accelerator(&app, &menu_state, true, accelerator.as_deref(), is_checked)
+            *menu_state.view_mode_full_accel.lock_ignore_poison() = accelerator;
+            rebuild_view_mode_items(&app, &menu_state)
                 .map_err(|e| format!("Failed to update Full view accelerator: {e}"))?;
-
-            *menu_state.view_mode_full.lock_ignore_poison() = Some(new_item);
             Ok(())
         }
         "view.briefMode" => {
-            let is_checked = menu_state
-                .view_mode_brief
-                .lock_ignore_poison()
-                .as_ref()
-                .and_then(|item| item.is_checked().ok())
-                .unwrap_or(true);
-
-            let new_item = update_view_mode_accelerator(&app, &menu_state, false, accelerator.as_deref(), is_checked)
+            *menu_state.view_mode_brief_accel.lock_ignore_poison() = accelerator;
+            rebuild_view_mode_items(&app, &menu_state)
                 .map_err(|e| format!("Failed to update Brief view accelerator: {e}"))?;
-
-            *menu_state.view_mode_brief.lock_ignore_poison() = Some(new_item);
             Ok(())
         }
         // All other commands: use the generic HashMap-based update

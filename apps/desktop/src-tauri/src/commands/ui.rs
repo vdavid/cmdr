@@ -1,7 +1,8 @@
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
-    CLOSE_TAB_ID, CommandScope, FileContextInfo, MenuState, build_breadcrumb_context_menu, build_context_menu,
-    build_network_host_context_menu, build_tab_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command,
+    CLOSE_TAB_ID, CommandScope, FileContextInfo, MenuState, ViewMode, build_breadcrumb_context_menu,
+    build_context_menu, build_network_host_context_menu, build_tab_context_menu, frontend_shortcut_to_accelerator,
+    menu_id_to_command, rebuild_view_mode_items, sync_view_mode_check_states,
 };
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use std::process::Command;
@@ -138,38 +139,47 @@ pub fn toggle_hidden_files<R: Runtime>(app: AppHandle<R>) -> Result<bool, String
     Ok(new_state)
 }
 
-/// Set view mode - updates menu radio buttons and emits event.
-/// This is used by the command palette to sync with menu state.
+/// Pushes the full View menu state from the frontend: which pane is active and
+/// the per-pane view modes. The menu's check states are updated for both pane
+/// pairs, and if the active pane changed since the last call the keyboard
+/// accelerators are migrated to the newly-active pair via
+/// `rebuild_view_mode_items`. Called on initial mount, focus change, swap, and
+/// after any view-mode change (palette, MCP, menu click round-trip).
 #[tauri::command]
-pub fn set_view_mode<R: Runtime>(app: AppHandle<R>, mode: String) -> Result<(), String> {
-    sync_view_mode_menu_impl::<R>(&app, &mode)?;
-
-    // Emit event to frontend
-    app.emit("view-mode-changed", serde_json::json!({ "mode": mode }))
-        .map_err(|e| e.to_string())?;
-
-    Ok(())
-}
-
-/// Sync the View menu checkmarks to match the given mode, without emitting any event.
-/// Called when the focused pane changes so the menu reflects the active pane's view mode.
-#[tauri::command]
-pub fn sync_view_mode_menu<R: Runtime>(app: AppHandle<R>, mode: String) -> Result<(), String> {
-    sync_view_mode_menu_impl::<R>(&app, &mode)
-}
-
-fn sync_view_mode_menu_impl<R: Runtime>(app: &AppHandle<R>, mode: &str) -> Result<(), String> {
-    let menu_state = app.state::<MenuState<R>>();
-    let full_guard = menu_state.view_mode_full.lock_ignore_poison();
-    let brief_guard = menu_state.view_mode_brief.lock_ignore_poison();
-
-    let (Some(full_item), Some(brief_item)) = (full_guard.as_ref(), brief_guard.as_ref()) else {
-        return Err("Menu not initialized".to_string());
+pub fn update_view_mode_menu<R: Runtime>(
+    app: AppHandle<R>,
+    active_pane: String,
+    left_mode: String,
+    right_mode: String,
+) -> Result<(), String> {
+    if active_pane != "left" && active_pane != "right" {
+        return Err(format!("Invalid active_pane: {active_pane}"));
+    }
+    let parse_mode = |s: &str| match s {
+        "full" => Ok(ViewMode::Full),
+        "brief" => Ok(ViewMode::Brief),
+        other => Err(format!("Invalid view mode: {other}")),
     };
+    let left = parse_mode(&left_mode)?;
+    let right = parse_mode(&right_mode)?;
 
-    let is_full = mode == "full";
-    full_item.set_checked(is_full).map_err(|e| e.to_string())?;
-    brief_item.set_checked(!is_full).map_err(|e| e.to_string())?;
+    let menu_state = app.state::<MenuState<R>>();
+
+    // Stash new state, then decide whether a full rebuild is needed.
+    let active_changed = {
+        let mut guard = menu_state.view_mode_active_pane.lock_ignore_poison();
+        let changed = *guard != active_pane;
+        *guard = active_pane;
+        changed
+    };
+    *menu_state.view_mode_left.lock_ignore_poison() = left;
+    *menu_state.view_mode_right.lock_ignore_poison() = right;
+
+    if active_changed {
+        rebuild_view_mode_items(&app, &menu_state).map_err(|e| e.to_string())?;
+    } else {
+        sync_view_mode_check_states(&menu_state).map_err(|e| e.to_string())?;
+    }
 
     Ok(())
 }
@@ -397,11 +407,25 @@ pub fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Resul
     if let Some(ref item) = *menu_state.show_hidden_files.lock_ignore_poison() {
         let _ = item.set_enabled(enabled);
     }
-    if let Some(ref item) = *menu_state.view_mode_full.lock_ignore_poison() {
+    if let Some(ref item) = *menu_state.view_mode_full_left.lock_ignore_poison() {
         let _ = item.set_enabled(enabled);
     }
-    if let Some(ref item) = *menu_state.view_mode_brief.lock_ignore_poison() {
+    if let Some(ref item) = *menu_state.view_mode_brief_left.lock_ignore_poison() {
         let _ = item.set_enabled(enabled);
+    }
+    if let Some(ref item) = *menu_state.view_mode_full_right.lock_ignore_poison() {
+        let _ = item.set_enabled(enabled);
+    }
+    if let Some(ref item) = *menu_state.view_mode_brief_right.lock_ignore_poison() {
+        let _ = item.set_enabled(enabled);
+    }
+    // Disable the parent "Left pane" / "Right pane" submenus too, so they appear
+    // greyed out instead of opening to reveal disabled items.
+    if let Some(ref submenu) = *menu_state.view_left_pane_submenu.lock_ignore_poison() {
+        let _ = submenu.set_enabled(enabled);
+    }
+    if let Some(ref submenu) = *menu_state.view_right_pane_submenu.lock_ignore_poison() {
+        let _ = submenu.set_enabled(enabled);
     }
     if let Some(ref submenu) = *menu_state.sort_submenu.lock_ignore_poison() {
         let _ = submenu.set_enabled(enabled);
