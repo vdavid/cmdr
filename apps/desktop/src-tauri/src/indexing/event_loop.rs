@@ -2190,4 +2190,111 @@ mod tests {
 
         writer.shutdown();
     }
+
+    // ── process_live_batch end-to-end rename ─────────────────────────
+
+    /// Full pipeline test: a rename produces two FSEvents in one batch
+    /// (old-path gone, new-path exists). `process_live_batch` should pair
+    /// them via the inode pre-pass, emit a single `MoveEntryV2`, and the
+    /// OLD-path event must silent-no-op in Phase 2 (because `resolve_path`
+    /// no longer finds the row at the old name after the flush).
+    ///
+    /// This is the test the rename fix has to pass for the end-to-end
+    /// "renamed dir keeps its size" property to hold.
+    #[test]
+    fn process_live_batch_rename_preserves_dir_stats_and_old_path_no_ops() {
+        let fs_root = rename_test_tempdir();
+        let new_dir_path = fs_root.path().join("Bar");
+        std::fs::create_dir(&new_dir_path).expect("create renamed dir");
+
+        let inode = std::os::unix::fs::MetadataExt::ino(&std::fs::symlink_metadata(&new_dir_path).unwrap());
+
+        let (writer, db_path, _db_dir) = rename_test_setup();
+        let parent_id = insert_path_chain(&db_path, fs_root.path(), &writer);
+
+        // The renamed-from row, with the renamed dir's inode and pre-populated stats.
+        let foo_id = {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            let id = IndexStore::insert_entry_v2(&conn, parent_id, "Foo", true, false, None, None, None, Some(inode))
+                .unwrap();
+            IndexStore::upsert_dir_stats_by_id(
+                &conn,
+                &[DirStatsById {
+                    entry_id: id,
+                    recursive_logical_size: 42_000,
+                    recursive_physical_size: 42_000,
+                    recursive_file_count: 17,
+                    recursive_dir_count: 0,
+                    recursive_has_symlinks: false,
+                }],
+            )
+            .unwrap();
+            id
+        };
+
+        // Build the batch the way the live loop would: HashMap keyed by
+        // path, both halves of the rename pair present.
+        let mut pending_events: HashMap<String, watcher::FsChangeEvent> = HashMap::new();
+        let new_path_str = new_dir_path.to_string_lossy().to_string();
+        let old_path_str = fs_root.path().join("Foo").to_string_lossy().to_string();
+        pending_events.insert(new_path_str.clone(), renamed_event(&new_path_str, 200));
+        pending_events.insert(old_path_str.clone(), renamed_event(&old_path_str, 201));
+
+        let mut reconciler = EventReconciler::new();
+        reconciler.switch_to_live();
+
+        // process_live_batch flushes via tokio::task::block_in_place, which
+        // requires being inside a multi-thread runtime.
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        rt.block_on(async {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            let mut pending_paths = HashSet::new();
+            process_live_batch(&mut pending_events, &mut reconciler, &conn, &writer, &mut pending_paths);
+        });
+        writer.flush_blocking().unwrap();
+
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+        // The original row survives — same id, renamed in place.
+        let entry = IndexStore::get_entry_by_id(&conn, foo_id).unwrap().unwrap();
+        assert_eq!(entry.name, "Bar", "row should be renamed in place");
+        assert_eq!(entry.parent_id, parent_id);
+
+        // dir_stats preserved — the whole point of the fix.
+        let stats = IndexStore::get_dir_stats_by_id(&conn, foo_id).unwrap().unwrap();
+        assert_eq!(
+            stats.recursive_logical_size, 42_000,
+            "dir_stats preserved across rename"
+        );
+        assert_eq!(stats.recursive_file_count, 17);
+
+        // No second row was created at the new name (delete+insert would
+        // have left a fresh entry_id with zero stats). Query by name_folded
+        // so the assertion is platform-agnostic (macOS folds case + NFD).
+        let bar_folded = store::normalize_for_comparison("Bar");
+        let row_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM entries WHERE parent_id = ?1 AND name_folded = ?2",
+                rusqlite::params![parent_id, bar_folded],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(row_count, 1, "exactly one row should match (parent, 'Bar')");
+
+        // No leftover row at the old name either.
+        let foo_folded = store::normalize_for_comparison("Foo");
+        let leftover: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM entries WHERE parent_id = ?1 AND name_folded = ?2",
+                rusqlite::params![parent_id, foo_folded],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(leftover, 0, "old name should be gone after the rename");
+
+        writer.shutdown();
+    }
 }
