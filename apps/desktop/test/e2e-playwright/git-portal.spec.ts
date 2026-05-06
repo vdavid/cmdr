@@ -98,13 +98,17 @@ test.describe('Git portal', () => {
     await ensureAppReady(tauriPage)
     await navigateLeftPaneTo(tauriPage, path.join(repoPath(), '.git'))
 
-    // The virtual portal exposes branches, tags, commits, raw at a minimum.
-    // (worktrees and submodules only appear when present; this fixture has
-    // none, so we don't assert on them.)
+    // The portal root mixes the six virtual categories with the real
+    // `.git/*` entries. Branches, tags, and commits always appear (the
+    // optional virtual categories — stash/worktrees/submodules — only
+    // surface when present, which this fixture doesn't set up). Real
+    // entries like HEAD and config prove the mixed listing renders both
+    // sides side-by-side instead of hiding the on-disk contents.
     expect(await paneHasFile(tauriPage, 0, 'branches')).toBe(true)
     expect(await paneHasFile(tauriPage, 0, 'tags')).toBe(true)
     expect(await paneHasFile(tauriPage, 0, 'commits')).toBe(true)
-    expect(await paneHasFile(tauriPage, 0, 'raw')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'HEAD')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'config')).toBe(true)
   })
 
   test('navigates branches/main and sees the tree at HEAD', async ({ tauriPage }) => {

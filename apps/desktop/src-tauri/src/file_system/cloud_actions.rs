@@ -19,17 +19,22 @@
 //! (iCloud Drive). For Dropbox/GDrive/OneDrive items the menu items don't appear;
 //! the user has to use the provider's own client (or Finder).
 //!
-use std::path::{Path, PathBuf};
+use std::path::Path;
+#[cfg(target_os = "macos")]
+use std::path::PathBuf;
 
 /// Subdirectory under `$HOME` for iCloud Drive items.
+#[cfg(target_os = "macos")]
 pub const ICLOUD_DRIVE_SUBPATH: &str = "Library/Mobile Documents/com~apple~CloudDocs";
 
+#[cfg(target_os = "macos")]
 fn home_dir() -> Option<PathBuf> {
     std::env::var_os("HOME").map(PathBuf::from)
 }
 
 /// Returns true only for paths inside iCloud Drive — the location where
 /// `FileManager.evictUbiquitousItem` / `startDownloadingUbiquitousItem` work.
+#[cfg(target_os = "macos")]
 pub fn is_in_icloud_drive(path: &Path) -> bool {
     let Some(home) = home_dir() else {
         return false;
@@ -119,7 +124,7 @@ pub fn request_download(_path: &Path) -> Result<(), String> {
     Err("Cloud actions are only available on macOS".to_string())
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "macos"))]
 mod tests {
     use super::*;
 

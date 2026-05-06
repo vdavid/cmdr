@@ -398,7 +398,7 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
         try {
           await cloudMakeAvailableOffline(entryUnderCursor.path)
         } catch (e) {
-          addToast(`Couldn't download from cloud. ${e}`, { level: 'error' })
+          addToast(`Couldn't download from cloud. ${String(e)}`, { level: 'error' })
         }
       }
       return
@@ -410,7 +410,7 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
         try {
           await cloudRemoveDownload(entryUnderCursor.path)
         } catch (e) {
-          addToast(`Couldn't remove the download. ${e}`, { level: 'error' })
+          addToast(`Couldn't remove the download. ${String(e)}`, { level: 'error' })
         }
       }
       return
