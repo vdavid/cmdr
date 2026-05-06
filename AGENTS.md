@@ -7,6 +7,9 @@ Downloadable at [the website](https://getcmdr.com).
 
 - Dev server: `pnpm dev` at repo root
 - Prod build: `pnpm build` at repo root
+- Both must run **at repo root**. The root `package.json` has no `tauri` script, so `pnpm tauri dev` only works from
+  inside `apps/desktop/`. Prefer the root form — both paths flow through `tauri-wrapper.js` and are equivalent, but the
+  root form is what's documented and what other tooling assumes.
 
 ## Principles
 
