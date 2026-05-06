@@ -472,7 +472,10 @@ fn register_item<R: Runtime>(
 #[derive(Default)]
 pub struct FileContextInfo {
     pub sync_status: SyncStatus,
-    pub is_cloud: bool,
+    /// Whether this path is in iCloud Drive specifically — gates the cloud action menu
+    /// items. Eviction / download work via `FileManager` ubiquity APIs, which only
+    /// support iCloud (not third-party File Providers). See `cloud_actions.rs` for why.
+    pub is_icloud_drive: bool,
     pub open_with: OpenWithChoices,
 }
 
@@ -620,7 +623,7 @@ pub fn build_context_menu<R: Runtime>(
     // Cloud actions (macOS File Provider) — only show when the file is in a
     // cloud-managed folder, gated by sync status.
     #[cfg(target_os = "macos")]
-    if info.is_cloud {
+    if info.is_icloud_drive {
         let cloud_item = match info.sync_status {
             SyncStatus::OnlineOnly => Some(MenuItem::with_id(
                 app,

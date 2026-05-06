@@ -6,12 +6,19 @@ Submodule docs: [listing/](listing/CLAUDE.md), [write_operations/](write_operati
 
 ## Cloud actions and "Open with" (macOS)
 
-- `cloud_actions.rs` — wraps `NSFileProviderManager.evictItem(...)` and
-  `requestDownloadForItem(...)` so the file context menu can offer "Make available offline" and
-  "Remove download" for any File-Provider-managed file (iCloud Drive, Dropbox, Google Drive,
-  OneDrive, Box). Detection is fast (`is_in_cloud_storage` — pure path-prefix check against
-  `~/Library/Mobile Documents/com~apple~CloudDocs` and `~/Library/CloudStorage/`); the actual
-  evict/download chain calls async FP APIs synchronously via completion handlers + `mpsc::sync_channel`.
+- `cloud_actions.rs` — wraps `FileManager.evictUbiquitousItem(at:)` and
+  `startDownloadingUbiquitousItem(at:)` so the file context menu can offer "Make available
+  offline" and "Remove download". **iCloud Drive only.** `NSFileProviderManager`'s host-side
+  methods looked like the cross-provider API but are reserved for the app that *bundles* the
+  File Provider extension (Dropbox.app for Dropbox etc.) — third-party apps get
+  `NSFileProviderErrorProviderNotFound` ("The application cannot be used right now") on the
+  enumerate / evict / download calls. The `FileManager` ubiquity APIs route through iCloud's
+  separate code path and accept any URL inside an iCloud container, so we offer the menu
+  items only for paths under `~/Library/Mobile Documents/com~apple~CloudDocs/`. Module-doc
+  comment in `cloud_actions.rs` has the full story for future agents.
+
+  `is_in_icloud_drive` (strict path-prefix check against
+  `~/Library/Mobile Documents/com~apple~CloudDocs/`) gates the eviction menu items.
 - `open_with.rs` — `URLsForApplicationsToOpenURL:` for candidate apps, with multi-selection
   intersection. Session cache keyed by lowercased extension. Subscribes to
   `NSWorkspace.didLaunchApplicationNotification` / `didTerminateApplicationNotification` for

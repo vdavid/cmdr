@@ -157,9 +157,6 @@ objc2-app-kit = { version = "0.3", features = [
     "NSApplication", "NSMenu", "NSMenuItem", "NSPasteboard", "NSRunningApplication",
     "NSWorkspace", "NSPanel", "NSOpenPanel", "NSSavePanel", "NSWindow", "NSResponder",
 ] }
-objc2-file-provider = { version = "0.3", features = [
-    "Extension", "NSFileProviderDomain", "NSFileProviderItem", "NSFileProviderError",
-] }
 block2 = "0.6"
 security-framework = "3.2"
 # Drive indexing: macOS FSEvents watcher with event IDs and sinceWhen replay

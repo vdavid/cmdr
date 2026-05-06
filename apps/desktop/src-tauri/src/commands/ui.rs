@@ -74,16 +74,16 @@ pub fn show_file_context_menu<R: Runtime>(
 
 #[cfg(target_os = "macos")]
 fn build_file_context_info(primary_path: &str, all_paths: &[String]) -> FileContextInfo {
-    use crate::file_system::cloud_actions::is_in_cloud_storage;
+    use crate::file_system::cloud_actions::is_in_icloud_drive;
     use crate::file_system::open_with::compute_open_with_choices;
     use crate::file_system::sync_status::get_sync_statuses;
     use std::path::PathBuf;
 
     let path_buf = PathBuf::from(primary_path);
-    let is_cloud = is_in_cloud_storage(&path_buf);
+    let is_icloud_drive = is_in_icloud_drive(&path_buf);
 
     // Sync status of the primary path only — drives the cloud-action label.
-    let sync_status = if is_cloud {
+    let sync_status = if is_icloud_drive {
         let mut statuses = get_sync_statuses(vec![primary_path.to_string()]);
         statuses.remove(primary_path).unwrap_or_default()
     } else {
@@ -94,7 +94,7 @@ fn build_file_context_info(primary_path: &str, all_paths: &[String]) -> FileCont
 
     FileContextInfo {
         sync_status,
-        is_cloud,
+        is_icloud_drive,
         open_with,
     }
 }
