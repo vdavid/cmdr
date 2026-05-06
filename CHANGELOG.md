@@ -64,6 +64,8 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 - Bump GitHub Actions to Node 24 ([2f02fa7e](https://github.com/vdavid/cmdr/commit/2f02fa7e))
 - Replace claude-md-staleness with claude-md-reminder (fires in-loop, not weeks later)
   ([60e30be5](https://github.com/vdavid/cmdr/commit/60e30be5))
+- Big CHANGELOG cleanup: shorten long items and document style guidelines.
+  ([8f3daa0a](https://github.com/vdavid/cmdr/commit/8f3daa0a))
 
 ## [0.16.0] - 2026-05-01
 
