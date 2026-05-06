@@ -122,7 +122,7 @@ There's no dynamic registration.
 ### Menu accelerator sync
 
 When shortcuts change, `updateMenuAccelerator()` calls `invoke('update_menu_accelerator')` to update the native menu
-label. The `menuCommands` array in `shortcuts-store.ts` lists all ~30 commands that have menu items. At startup,
+label. The `menuCommands` array in `shortcuts-store.ts` lists all ~40 commands that have menu items. At startup,
 `syncMenuAccelerators()` pushes any persisted customizations into the menu. On the Rust side, `MenuState.items` is a
 `HashMap<String, MenuItemEntry>` that tracks regular `MenuItem`s by ID; `update_menu_item_accelerator()` handles the
 remove/recreate/reinsert cycle. View mode CheckMenuItems still use the separate `update_view_mode_accelerator()` path to

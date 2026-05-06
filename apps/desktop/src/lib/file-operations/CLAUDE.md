@@ -14,6 +14,8 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
 
 1. **TransferDialog** (destination picker + dry-run scan)
    - Pre-fills destination from opposite pane
+   - Segmented Copy/Move toggle is always shown so the user can flip the operation regardless of how the dialog was
+     triggered (F5/F6, command palette, or drag-and-drop)
    - Validates path structure via `validateDirectoryPath()` from `$lib/utils/filename-validation` (empty, absolute, null
      bytes, length limits), then checks logical constraints (subfolder, same location)
    - Optional dry-run scan to detect conflicts upfront
