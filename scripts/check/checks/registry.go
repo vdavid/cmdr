@@ -432,12 +432,12 @@ var AllChecks = []CheckDefinition{
 		Run:         RunFileLength,
 	},
 	{
-		ID:          "claude-md-staleness",
-		DisplayName: "CLAUDE.md staleness",
+		ID:          "claude-md-reminder",
+		DisplayName: "CLAUDE.md reminder",
 		App:         AppOther,
 		Tech:        "📏 Metrics",
 		DependsOn:   nil,
-		Run:         RunClaudeMdStaleness,
+		Run:         RunClaudeMdReminder,
 	},
 	{
 		ID:          "changelog-commit-links",

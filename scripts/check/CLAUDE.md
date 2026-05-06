@@ -194,7 +194,7 @@ before tests.
 | Website    | Docker  | docker-build                                                                                                                                                                                        |
 | API server | TS      | oxfmt, eslint, typecheck, tests                                                                                                                                                                     |
 | Scripts    | Go      | gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests                                                                                                             |
-| Other      | Metrics | file-length (warn-only), CLAUDE.md-staleness (warn-only), changelog-commit-links                                                                                                                    |
+| Other      | Metrics | file-length (warn-only), CLAUDE.md-reminder (warn-only), changelog-commit-links                                                                                                                     |
 
 ## Output format
 
