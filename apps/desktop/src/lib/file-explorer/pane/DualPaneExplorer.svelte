@@ -125,14 +125,15 @@
     import { getDirectorySortMode } from '$lib/settings/reactive-settings.svelte'
     import { resolveDropTarget } from '../drag/drop-target-hit-testing'
     import { isInvalidSelfDescendantDrop } from '../drag/drop-target-validation'
+    import { pickDropOperation } from '../drag/drop-operation'
     import DragOverlay from '../drag/DragOverlay.svelte'
     import { showOverlay, updateOverlay, hideOverlay, type OverlayFileInfo } from '../drag/drag-overlay.svelte.js'
     import { getCachedIcon } from '$lib/icon-cache'
     import {
         startModifierTracking,
         stopModifierTracking,
-        getIsAltHeld,
-        setAltHeld,
+        getModifierState,
+        setModifiers,
     } from '../modifier-key-tracker.svelte'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import { addToast } from '$lib/ui/toast'
@@ -873,7 +874,12 @@
             resolved?.type === 'pane' && getIsDraggingFromSelf() && resolved.paneId === focusedPane
         const canDrop = resolved !== null && !isSelfPaneNoOp && !isInvalidSelfDrop
         const targetName = resolveTargetDisplayName(resolved, dropTargetFolderPath)
-        const operation = getIsAltHeld() ? 'move' : 'copy'
+        const operation = pickDropOperation({
+            sourcePath: currentDragSourcePaths[0] ?? null,
+            targetPath: effectiveTarget,
+            volumes,
+            modifiers: getModifierState(),
+        })
 
         updateOverlay(position.x, position.y, targetName, canDrop, operation)
     }
@@ -882,9 +888,17 @@
     function handleDrop(paths: string[], position: { x: number; y: number }) {
         const resolved = resolveDropTarget(position.x, position.y, paneWrapperEls.left, paneWrapperEls.right)
         const folderPath = dropTargetFolderPath
+        const effectiveTarget = targetPathOf(resolved)
 
-        // Read the modifier BEFORE stopping the tracker (which resets altKeyHeld)
-        const operation = getIsAltHeld() ? 'move' : 'copy'
+        // Read modifiers BEFORE stopping the tracker (which resets state).
+        // Same source-of-truth as the overlay (`handleDragOver`) so the displayed
+        // operation matches what we actually run.
+        const operation = pickDropOperation({
+            sourcePath: paths[0] ?? null,
+            targetPath: effectiveTarget,
+            volumes,
+            modifiers: getModifierState(),
+        })
 
         clearDropTargets()
         hideOverlay()
@@ -896,7 +910,6 @@
         if (resolved.type === 'pane' && getIsDraggingFromSelf() && targetPane === focusedPane) return
 
         // Guard against drops onto the source itself or into its descendants
-        const effectiveTarget = targetPathOf(resolved)
         if (effectiveTarget !== null && isInvalidSelfDescendantDrop(effectiveTarget, paths)) return
 
         handleFileDrop(paths, targetPane, resolved.type === 'folder' ? (folderPath ?? undefined) : undefined, operation)
@@ -987,9 +1000,12 @@
 
         // Listen for native modifier key state during drags (macOS).
         // [NSEvent modifierFlags] works even when the webview doesn't have keyboard focus.
-        unlistenDragModifiers = await listen<{ altHeld: boolean }>('drag-modifiers', (event) => {
-            setAltHeld(event.payload.altHeld)
-        })
+        unlistenDragModifiers = await listen<{ altHeld: boolean; cmdHeld: boolean; shiftHeld: boolean }>(
+            'drag-modifiers',
+            (event) => {
+                setModifiers(event.payload)
+            },
+        )
 
         // Listen for index directory updates to refresh panes when sizes change
         unlistenIndexEvents = await initIndexEvents(handleIndexDirUpdated)

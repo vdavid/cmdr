@@ -7,7 +7,7 @@
 //!
 //! Events emitted:
 //! - `drag-image-size` `{ width, height }` — on drag enter
-//! - `drag-modifiers` `{ altHeld }` — on drag enter and every drag update (only when changed)
+//! - `drag-modifiers` `{ altHeld, cmdHeld, shiftHeld }` — on drag enter and every drag update (only when changed)
 //!
 //! ## Resilience
 //!
@@ -15,7 +15,8 @@
 //! from the actual webview instance (not a hardcoded name), so wry version changes are safe.
 //! If macOS deprecates APIs we rely on, the swizzle degrades gracefully:
 //! - Drag image detection disabled → the DOM overlay is always shown (redundant but functional)
-//! - Modifier key detection disabled → falls back to JS keydown/keyup (works when webview has focus)
+//! - Modifier key detection disabled → falls back to JS keydown/keyup (works when webview has focus,
+//!   but not during OS-level drags initiated outside the window)
 //! - Image swapping disabled → self-drags show the OS drag image over the window (functional)
 //!
 //! Rust panics inside swizzled functions are caught via `catch_unwind` to prevent crashes
@@ -35,8 +36,12 @@ use tauri::{AppHandle, Emitter, Manager};
 
 use crate::drag_image_swap;
 
+/// NSEventModifierFlagShift = 1 << 17
+const NS_EVENT_MODIFIER_FLAG_SHIFT: usize = 1 << 17;
 /// NSEventModifierFlagOption = 1 << 19 (Option/Alt key)
 const NS_EVENT_MODIFIER_FLAG_OPTION: usize = 1 << 19;
+/// NSEventModifierFlagCommand = 1 << 20
+const NS_EVENT_MODIFIER_FLAG_COMMAND: usize = 1 << 20;
 
 #[derive(Clone, Serialize)]
 struct DragImageSize {
@@ -44,10 +49,14 @@ struct DragImageSize {
     height: f64,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Serialize)]
 struct DragModifiers {
     #[serde(rename = "altHeld")]
     alt_held: bool,
+    #[serde(rename = "cmdHeld")]
+    cmd_held: bool,
+    #[serde(rename = "shiftHeld")]
+    shift_held: bool,
 }
 
 static ORIGINAL_ENTERED_IMP: OnceLock<Imp> = OnceLock::new();
@@ -55,8 +64,10 @@ static ORIGINAL_UPDATED_IMP: OnceLock<Imp> = OnceLock::new();
 static ORIGINAL_EXITED_IMP: OnceLock<Imp> = OnceLock::new();
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 
-/// Tracks previous alt state so we only emit `drag-modifiers` when it changes.
+/// Tracks previous modifier state so we only emit `drag-modifiers` when something changes.
 static LAST_ALT_HELD: AtomicBool = AtomicBool::new(false);
+static LAST_CMD_HELD: AtomicBool = AtomicBool::new(false);
+static LAST_SHIFT_HELD: AtomicBool = AtomicBool::new(false);
 
 // Warn-once flags to prevent log spam for issues that recur on every drag event.
 static WARNED_NSEVENT_MISSING: AtomicBool = AtomicBool::new(false);
@@ -178,41 +189,53 @@ unsafe fn install_swizzles(webview_ptr: *mut std::ffi::c_void) {
 
 // --- Modifier key detection ---
 
-/// Reads the current Option/Alt key state from `[NSEvent modifierFlags]`.
+/// Reads the current Alt/Cmd/Shift modifier state from `[NSEvent modifierFlags]`.
 /// This is a class method that reads hardware state — works even when the webview isn't focused.
-/// Returns `false` if NSEvent can't be found (graceful degradation).
-fn is_option_held() -> bool {
+/// Returns all flags as `false` if NSEvent can't be found (graceful degradation).
+fn read_modifiers() -> DragModifiers {
     let Some(cls) = AnyClass::get(c"NSEvent") else {
         warn_once(
             &WARNED_NSEVENT_MISSING,
-            "drag_image_detection: NSEvent class not found — Alt/Option detection during drags \
+            "drag_image_detection: NSEvent class not found — modifier key detection during drags \
              is disabled. This is a core AppKit class and shouldn't disappear; if it did, check \
              whether macOS moved it to a different framework or renamed it. Modifier detection \
              falls back to JS keydown/keyup, which doesn't work during OS-level drags.",
         );
-        return false;
+        return DragModifiers {
+            alt_held: false,
+            cmd_held: false,
+            shift_held: false,
+        };
     };
     let flags: usize = unsafe { msg_send![cls, modifierFlags] };
-    flags & NS_EVENT_MODIFIER_FLAG_OPTION != 0
+    DragModifiers {
+        alt_held: flags & NS_EVENT_MODIFIER_FLAG_OPTION != 0,
+        cmd_held: flags & NS_EVENT_MODIFIER_FLAG_COMMAND != 0,
+        shift_held: flags & NS_EVENT_MODIFIER_FLAG_SHIFT != 0,
+    }
 }
 
-/// Emits `drag-modifiers` if the alt state changed since last emission.
+/// Emits `drag-modifiers` if any tracked modifier changed since last emission.
 fn emit_modifiers_if_changed() {
-    let alt_held = is_option_held();
-    let prev = LAST_ALT_HELD.swap(alt_held, Ordering::Relaxed);
-    if alt_held != prev
+    let mods = read_modifiers();
+    let prev_alt = LAST_ALT_HELD.swap(mods.alt_held, Ordering::Relaxed);
+    let prev_cmd = LAST_CMD_HELD.swap(mods.cmd_held, Ordering::Relaxed);
+    let prev_shift = LAST_SHIFT_HELD.swap(mods.shift_held, Ordering::Relaxed);
+    if (mods.alt_held != prev_alt || mods.cmd_held != prev_cmd || mods.shift_held != prev_shift)
         && let Some(app_handle) = APP_HANDLE.get()
     {
-        let _ = app_handle.emit("drag-modifiers", DragModifiers { alt_held });
+        let _ = app_handle.emit("drag-modifiers", mods);
     }
 }
 
 /// Emits `drag-modifiers` unconditionally (used on drag enter to set initial state).
 fn emit_modifiers_forced() {
-    let alt_held = is_option_held();
-    LAST_ALT_HELD.store(alt_held, Ordering::Relaxed);
+    let mods = read_modifiers();
+    LAST_ALT_HELD.store(mods.alt_held, Ordering::Relaxed);
+    LAST_CMD_HELD.store(mods.cmd_held, Ordering::Relaxed);
+    LAST_SHIFT_HELD.store(mods.shift_held, Ordering::Relaxed);
     if let Some(app_handle) = APP_HANDLE.get() {
-        let _ = app_handle.emit("drag-modifiers", DragModifiers { alt_held });
+        let _ = app_handle.emit("drag-modifiers", mods);
     }
 }
 

@@ -46,8 +46,11 @@ Key files:
 - `drop-target-hit-testing.ts` — Pure logic: `document.elementFromPoint()` + `data-drop-target-path` walk
 - `drop-target-validation.ts` — Pure logic: blocks drops onto the source itself or into a descendant
 - `DragOverlay.svelte` + `drag-overlay.svelte.ts` — Floating label near cursor
-- `../modifier-key-tracker.svelte.ts` — Alt/Option state (DragDropEvent doesn't include modifiers; lives in parent
+- `../modifier-key-tracker.svelte.ts` — Alt/Cmd/Shift state (DragDropEvent doesn't include modifiers; lives in parent
   `file-explorer/` directory)
+- `drop-operation.ts` — Pure logic: resolves the `'move' | 'copy'` operation from source/target paths, the volumes list,
+  and the current modifier state. Same function feeds the overlay label and the actual drop, so the displayed and
+  executed operation can never disagree.
 - `drag-position.ts` — Corrects Tauri coords for docked DevTools (dev-only, zero overhead in prod)
 - Integration in `DualPaneExplorer.svelte`
 
@@ -68,7 +71,7 @@ Key files:
 ## Key decisions
 
 - **Decision**: Always show confirmation dialog on drop
-  - **Why**: Drag-and-drop is imprecise. Default operation is copy (safer than move).
+  - **Why**: Drag-and-drop is imprecise. The dialog is the safety net regardless of which operation is preselected.
 - **Decision**: Same-pane pane-level drops are no-ops
   - **Why**: Dropping onto a subfolder within the same pane is valid.
 - **Decision**: Block drops onto the source itself or into a descendant
@@ -92,6 +95,21 @@ Key files:
     arbitrate the operation natively.
 - **Decision**: Modifier keys tracked via NSEvent.modifierFlags
   - **Why**: Tauri doesn't expose modifier state in DragDropEvent. Emits `drag-modifiers` event only when state changes.
+- **Decision**: Drop operation follows Finder's volume-aware default plus Alt/Cmd/Shift modifiers
+  - **Default**: same volume → Move, cross-volume → Copy (matches Finder's behavior on a stock macOS install).
+  - **Alt (Option)** held → force Copy. Beats Cmd/Shift if both are held — the user is asking for Copy.
+  - **Cmd** held → force Move. Matches Finder's force-move modifier.
+  - **Shift** held → force Move. Windows convention; included as a friendly accelerator for cross-platform users.
+  - **Why**: Earlier we kept Copy-as-default for safety, but it created a confusing inconsistency: dragging out of Cmdr
+    to the Desktop becomes Move (macOS arbitrates the outgoing operation from the source mask + modifiers), so the same
+    gesture meant different things inside vs. outside the app. Matching Finder removes that surprise. The confirmation
+    dialog still catches mistakes, so we don't lose the safety net.
+  - The same `pickDropOperation` runs for both the live overlay (`handleDragOver`) and the actual drop (`handleDrop`),
+    so the two can't diverge.
+- **Decision**: Internal-drop modifier semantics align with the outgoing arbitration macOS does for us
+  - **Why**: For drags out to other apps, AppKit arbitrates the operation from the source mask plus modifiers (Alt →
+    Copy, Cmd → Move, Ctrl-Alt → Link). We own the choice for internal drops, so we replicate the same Alt/Cmd
+    convention. Shift is an extra Move accelerator for Windows-trained users; Link isn't supported.
 - **Decision**: Viewport position correction only in dev mode
   - **Why**: DevTools docked mode shrinks viewport but Tauri reports window-relative positions. Offset computed via
     `outerSize()` vs `innerHeight`. Zero overhead in prod.
