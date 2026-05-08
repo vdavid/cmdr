@@ -1,7 +1,6 @@
 {
   "name": "cmdr",
   "private": true,
-  "packageManager": "pnpm@10.33.2",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "dev": "pnpm --filter @cmdr/desktop tauri dev",
