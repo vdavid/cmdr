@@ -169,7 +169,10 @@ Core explorer UI components:
   tab managers
 - **index-events.ts** — Throttled index-dir-updated handler with macOS `/private/` symlink resolution
 - **dialog-state.svelte.ts** — Dialog state and handlers (transfer, delete/trash, new folder, alert, error) extracted
-  from DualPaneExplorer via factory pattern
+  from DualPaneExplorer via factory pattern. `TransferErrorPropsData` carries an optional `FriendlyError` (from the
+  backend `write-error` event payload) alongside the typed `WriteOperationError`;
+  `handleTransferError(error, friendly?)` accepts both and stores them so the rendered dialog (see
+  `file-operations/CLAUDE.md`) can prefer the backend copy.
 - **rename-flow.svelte.ts** — Rename flow logic (validation, conflict/extension dialogs) extracted from FilePane
 
 ### Live disk space

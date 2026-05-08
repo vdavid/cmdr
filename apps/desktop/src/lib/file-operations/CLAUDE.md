@@ -37,7 +37,13 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
    - Cancel button → rollback transaction (user chooses keep/rollback)
 
 3. **TransferErrorDialog** (error display)
-   - Operation-specific error messaging via `transfer-error-messages.ts`
+   - Renders the backend `FriendlyError` payload from `WriteErrorEvent.friendly` when present (markdown via
+     `renderErrorMarkdown`, anchor click delegate to `openSystemSettingsUrl` / `openExternalUrl`). Falls back to the
+     FE-derived `getUserFriendlyMessage` from `transfer-error-messages.ts` when the event has no friendly attached.
+   - Container colors and icon vary by `friendly.category`: error-bg + CircleAlert (`serious`), warning-bg +
+     TriangleAlert (`transient`), neutral secondary-bg + Info (`needs_action`).
+   - "Retry" button shows when `category === 'transient'` or the friendly's `retryHint` is true.
+   - Same shape as the listing-error path's `ErrorPane.svelte`, just adapted to a modal dialog.
 
 ### Shared utilities (`transfer/`)
 

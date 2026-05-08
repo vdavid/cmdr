@@ -109,19 +109,8 @@ pub struct WriteErrorEvent {
 impl WriteErrorEvent {
     /// Construct a `WriteErrorEvent`, automatically deriving the `FriendlyError`
     /// payload from the typed `error` variant via `friendly_from_write_error`.
-    /// Every emit site goes through here, so every `write-error` event the FE
-    /// receives carries a `friendly` payload it can render directly.
-    ///
-    /// Volume-aware paths that still hold the originating `VolumeError + path`
-    /// could in principle bypass this and call
-    /// `friendly_error_from_volume_error` + `enrich_with_provider` directly to
-    /// pick up provider-specific suggestions (the same way the listing-error
-    /// path does). Today no emit site does that — the `VolumeError` is
-    /// consumed by `map_volume_error` per-source inside the inner async block,
-    /// while the emit happens at the operation level. Threading the friendly
-    /// across that boundary is feasible (capture in a local cell, surface
-    /// alongside the final `Err(WriteOperationError)`) but is its own piece
-    /// of work — see follow-up if/when provider-specific copy is needed.
+    /// Every emit site goes through here by default, so every `write-error` event
+    /// the FE receives carries a `friendly` payload it can render directly.
     pub fn new(operation_id: String, operation_type: WriteOperationType, error: WriteOperationError) -> Self {
         let friendly = Some(crate::file_system::volume::friendly_error::friendly_from_write_error(
             &error,
@@ -131,6 +120,34 @@ impl WriteErrorEvent {
             operation_type,
             error,
             friendly,
+        }
+    }
+
+    /// Construct a `WriteErrorEvent` with the `FriendlyError` derived from the
+    /// originating `VolumeError + path` via the richer
+    /// `friendly_error_from_volume_error` + `enrich_with_provider` pipeline (the
+    /// same one the listing-error path uses). Picks up provider-specific
+    /// suggestions like "This folder is managed by **MacDroid**…" that the
+    /// `WriteOperationError`-shaped `friendly_from_write_error` can't reach.
+    ///
+    /// Use this from volume-aware emit paths that still have the original
+    /// `VolumeError + path` in scope (`volume_move`, `volume_copy`). When that
+    /// context isn't available, fall back to `new`.
+    pub fn with_friendly(
+        operation_id: String,
+        operation_type: WriteOperationType,
+        error: WriteOperationError,
+        volume_error: &crate::file_system::volume::VolumeError,
+        path: &Path,
+    ) -> Self {
+        use crate::file_system::volume::friendly_error::{enrich_with_provider, friendly_error_from_volume_error};
+        let mut friendly = friendly_error_from_volume_error(volume_error, path);
+        enrich_with_provider(&mut friendly, path);
+        Self {
+            operation_id,
+            operation_type,
+            error,
+            friendly: Some(friendly),
         }
     }
 }
