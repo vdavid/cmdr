@@ -15,6 +15,8 @@ pub mod client;
 #[cfg(test)]
 mod client_integration_test;
 #[cfg(test)]
+mod client_local_llama_test;
+#[cfg(test)]
 mod client_real_anthropic_test;
 #[cfg(test)]
 mod client_real_openai_test;

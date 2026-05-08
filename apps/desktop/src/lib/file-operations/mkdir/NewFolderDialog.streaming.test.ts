@@ -55,7 +55,6 @@ vi.mock('$lib/tauri-commands', () => ({
   refreshListing: vi.fn(() => Promise.resolve()),
 }))
 
-
 function mountDialog() {
   hoisted.state.active = undefined
   const target = document.createElement('div')
