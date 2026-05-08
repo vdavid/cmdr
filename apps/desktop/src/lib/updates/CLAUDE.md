@@ -125,6 +125,9 @@ interval is acceptable.
 - The update manifest endpoint is hardcoded in the Rust backend (`https://getcmdr.com/latest.json`), not in TypeScript.
 - The `check_for_update` command returns `None` when `CI` env var is set — no network calls in CI.
 - No retry or backoff on error — the next interval fires a fresh attempt.
+- The catch in `checkForUpdates()` logs at `warn`, not `error`, so transient network failures during the periodic
+  background check don't trip the auto error reporter (Flow B). The Settings UI still surfaces the message via
+  `updateState.error`. See `apps/desktop/src-tauri/src/error_reporter/CLAUDE.md` § convention.
 - Default interval: 60 minutes. Configurable in settings from 5 minutes to 24 hours.
 - Unit tests in `updater.test.ts` cover the gating logic via the pure `shouldShowUpdateToast` predicate plus the
   `notifyOnboardingComplete` and `setFdaPromptShowing` triggers. The download-and-install path is still untested — it

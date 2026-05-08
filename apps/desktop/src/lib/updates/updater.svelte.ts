@@ -85,59 +85,117 @@ export async function checkForUpdates(): Promise<void> {
   updateState.status = 'checking'
   updateState.error = null
 
+  log.debug('Checking for updates (current: v{version})...', { version: currentVersion })
+
+  // Platform branches diverge significantly: macOS runs three custom commands (split download +
+  // install phases, preserves TCC), non-macOS uses the Tauri plugin's fused `downloadAndInstall`.
+  // The two-phase error handling (warn on check, error on download/install) lives inside each.
+  if (isMacOS) {
+    await runMacUpdateFlow(currentVersion)
+  } else {
+    await runPluginUpdateFlow(currentVersion)
+  }
+}
+
+/**
+ * macOS path: custom updater that preserves TCC/Full Disk Access permissions by syncing files
+ * into the existing `.app` bundle. Three Tauri commands; download and install are distinct
+ * phases so the UI can show separate `downloading` and `installing` states.
+ */
+async function runMacUpdateFlow(currentVersion: string): Promise<void> {
+  let update: UpdateInfo | null
   try {
-    log.debug('Checking for updates (current: v{version})...', { version: currentVersion })
-
-    if (isMacOS) {
-      // macOS: custom updater preserves TCC/Full Disk Access permissions.
-      // Platform asymmetry: the macOS path runs `download_update` and `install_update` as two
-      // distinct invokes, so we can split the UI into a `downloading` phase and an `installing`
-      // phase. The non-macOS path uses one fused `downloadAndInstall()` and stays in `downloading`.
-      const update = await invoke<UpdateInfo | null>('check_for_update')
-
-      if (update !== null) {
-        log.info('Update available: v{current} -> v{next}', { current: currentVersion, next: update.version })
-        updateState.nextVersion = update.version
-        updateState.status = 'downloading'
-        await invoke('download_update', { url: update.url, signature: update.signature })
-        updateState.status = 'installing'
-        await invoke('install_update')
-        log.info('v{version} installed, restart to apply', { version: update.version })
-        updateState.status = 'ready'
-        updateState.update = update
-        showUpdateToast()
-      } else {
-        log.debug('v{version} is up to date', { version: currentVersion })
-        updateState.status = 'idle'
-        updateState.nextVersion = null
-      }
-    } else {
-      // Non-macOS: delegate to the Tauri updater plugin. `downloadAndInstall()` is a single fused
-      // call, so we can't expose a separate `installing` phase here — we stay in `downloading`
-      // throughout. The Settings/menu UIs accept this asymmetry.
-      const { check } = await import('@tauri-apps/plugin-updater')
-      const update = await check()
-
-      if (update) {
-        log.info('Update available: v{current} -> v{next}', { current: currentVersion, next: update.version })
-        updateState.nextVersion = update.version
-        updateState.status = 'downloading'
-        await update.downloadAndInstall()
-        log.info('v{version} installed, restart to apply', { version: update.version })
-        updateState.status = 'ready'
-        updateState.update = { version: update.version, url: '', signature: '' }
-        showUpdateToast()
-      } else {
-        log.debug('v{version} is up to date', { version: currentVersion })
-        updateState.status = 'idle'
-        updateState.nextVersion = null
-      }
-    }
+    update = await invoke<UpdateInfo | null>('check_for_update')
   } catch (error) {
-    updateState.status = 'idle'
-    updateState.nextVersion = null
-    updateState.error = error instanceof Error ? error.message : String(error)
-    log.error('Check failed: {error}', { error: updateState.error })
+    finishCheckWithFailure(error, 'check')
+    return
+  }
+
+  if (update === null) {
+    finishCheckWithNoUpdate(currentVersion)
+    return
+  }
+
+  log.info('Update available: v{current} -> v{next}', { current: currentVersion, next: update.version })
+  updateState.nextVersion = update.version
+  updateState.status = 'downloading'
+
+  try {
+    await invoke('download_update', { url: update.url, signature: update.signature })
+    updateState.status = 'installing'
+    await invoke('install_update')
+  } catch (error) {
+    finishCheckWithFailure(error, 'download-install')
+    return
+  }
+
+  log.info('v{version} installed, restart to apply', { version: update.version })
+  updateState.status = 'ready'
+  updateState.update = update
+  showUpdateToast()
+}
+
+/**
+ * Non-macOS path: Tauri updater plugin. `downloadAndInstall()` is fused so we stay in
+ * `downloading` throughout the second phase (no separate `installing` state).
+ */
+async function runPluginUpdateFlow(currentVersion: string): Promise<void> {
+  let update: Awaited<ReturnType<typeof import('@tauri-apps/plugin-updater').check>>
+  try {
+    const { check } = await import('@tauri-apps/plugin-updater')
+    update = await check()
+  } catch (error) {
+    finishCheckWithFailure(error, 'check')
+    return
+  }
+
+  if (!update) {
+    finishCheckWithNoUpdate(currentVersion)
+    return
+  }
+
+  log.info('Update available: v{current} -> v{next}', { current: currentVersion, next: update.version })
+  updateState.nextVersion = update.version
+  updateState.status = 'downloading'
+
+  try {
+    await update.downloadAndInstall()
+  } catch (error) {
+    finishCheckWithFailure(error, 'download-install')
+    return
+  }
+
+  log.info('v{version} installed, restart to apply', { version: update.version })
+  updateState.status = 'ready'
+  updateState.update = { version: update.version, url: '', signature: '' }
+  showUpdateToast()
+}
+
+function finishCheckWithNoUpdate(currentVersion: string): void {
+  log.debug('v{version} is up to date', { version: currentVersion })
+  updateState.status = 'idle'
+  updateState.nextVersion = null
+}
+
+/**
+ * Reset state and log the failure at the right level for the phase.
+ *
+ * - `'check'` failures (network, DNS, bad manifest) are transient and expected on the periodic
+ *   background tick — log at warn so they don't trip the auto error reporter on a momentary blip.
+ * - `'download-install'` failures (signature mismatch, FS errors, partial writes) reach a code
+ *   path the user already opted into — log at error so they DO trip auto-report. The Settings
+ *   UI surfaces both via `updateState.error` regardless of log level.
+ *
+ * See `apps/desktop/src-tauri/src/error_reporter/CLAUDE.md` § convention.
+ */
+function finishCheckWithFailure(error: unknown, phase: 'check' | 'download-install'): void {
+  updateState.status = 'idle'
+  updateState.nextVersion = null
+  updateState.error = error instanceof Error ? error.message : String(error)
+  if (phase === 'check') {
+    log.warn('Check failed: {error}', { error: updateState.error })
+  } else {
+    log.error('Download/install failed: {error}', { error: updateState.error })
   }
 }
 

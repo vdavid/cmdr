@@ -38,6 +38,18 @@ signatures use base64(minisign-text-format) encoding, matching Tauri's internal 
 `do shell script ... with administrator privileges` shows the native macOS auth dialog. `rsync` is used because it
 expresses the full sync (copy + delete stale) in a single shell command.
 
+**Decision**: Bounded `connect_timeout` (10 s) and overall `timeout` (30 s) on the manifest fetch.
+**Why**: `reqwest::get` uses a default client with no overall timeout. A stuck TCP handshake to the redirect target
+(`getcmdr.com/latest.json`) was observed to hang for 2.5 min before reporting `error sending request for url …`,
+which made transient network blips look like a hung app and tripped the auto error reporter. The bounds keep the
+periodic check honest. Download/install paths are intentionally NOT timed out — they run with user attention and
+can legitimately take a while.
+
+**Decision**: Walk `reqwest::Error::source()` for log-friendly messages (`describe_error_chain`).
+**Why**: `reqwest::Error`'s `Display` only prints the outermost layer (`error sending request for url …`), so logs
+hid the real cause (DNS lookup, TCP connect timeout, TLS handshake). Walking the source chain surfaces the
+underlying error class without pulling in `anyhow`.
+
 **Decision**: Atomic rename (write to temp file, then `rename()`) instead of in-place `fs::copy`.
 **Why**: `fs::copy` overwrites the destination in-place, keeping the same inode. macOS's kernel code signing cache
 keys on inode — it validates the new binary's pages against the old binary's cached code directory, causing
