@@ -105,14 +105,14 @@ fn test_origin_validation_localhost_variants() {
     let localhost_origins = [
         "http://localhost",
         "http://localhost:3000",
-        "http://localhost:9224",
+        "http://localhost:19224",
         "https://localhost",
         "https://localhost:443",
         "http://127.0.0.1",
-        "http://127.0.0.1:9224",
+        "http://127.0.0.1:19224",
         "https://127.0.0.1",
         "http://[::1]",
-        "https://[::1]:9224",
+        "https://[::1]:19224",
     ];
 
     for origin in localhost_origins {

@@ -9,7 +9,7 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 ### Server (`server.rs`)
 
 - Runs in a background tokio task spawned at app startup
-- Binds to `127.0.0.1:9224` by default (localhost only for security). If the port is taken, auto-probes upward (up to 100 ports) to find an available one
+- Binds to `127.0.0.1:19224` (prod) or `127.0.0.1:19225` (dev) by default — localhost only for security. Dev and prod intentionally differ so a dev session and an installed prod build can run side-by-side. If the port is taken, auto-probes upward (up to 100 ports) to find an available one. The defaults live as `DEFAULT_PORT` in `config.rs` and are mirrored in the FE settings registry.
 - Streamable HTTP transport (MCP spec 2025-11-25)
 - Endpoints: `POST /mcp` (JSON-RPC), `GET /mcp` (optional SSE), `GET /mcp/health`
 
@@ -58,7 +58,7 @@ Tools where the backend can't fully validate preconditions use `mcp_round_trip`:
 
 ### Configuration (`config.rs`)
 
-Constants and configuration for the MCP server (port, bind address, transport settings). Default port is 9224 for all build types (dev and prod use separate data dirs, so no collision risk).
+Constants and configuration for the MCP server (port, bind address, transport settings). `DEFAULT_PORT` is build-mode-dependent: 19224 in prod, 19225 in dev — different so a dev session and an installed prod build don't collide on the same port (separate data dirs alone don't help since the port is a process-wide network resource). Mirrored in the FE registry; both are in 10000–29999 per AGENTS.md.
 
 ### Dialog state (`dialog_state.rs`)
 

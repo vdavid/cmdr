@@ -246,7 +246,7 @@ impl ResolvedSettings {
             mcp_port: s
                 .developer_mcp_port
                 .or_else(|| settings_defaults::lookup_u16("developer.mcpPort"))
-                .unwrap_or(9224),
+                .unwrap_or(crate::mcp::config::DEFAULT_PORT),
             verbose_logging: s
                 .verbose_logging
                 .or_else(|| settings_defaults::lookup_bool("developer.verboseLogging"))

@@ -2,6 +2,18 @@
 
 use std::env;
 
+/// Default MCP port. Dev and prod intentionally differ so a developer can run both
+/// simultaneously without the dev server colliding with their installed prod build.
+/// Both sit in the 10000–29999 range per AGENTS.md (no standard ports for services we ship).
+/// Existing users with MCP enabled but the port left at the old 9224 default will auto-jump
+/// to the new prod default on upgrade — call out in release notes.
+///
+/// Mirrored in the FE settings registry (`apps/desktop/src/lib/settings/settings-registry.ts`).
+#[cfg(debug_assertions)]
+pub const DEFAULT_PORT: u16 = 19225;
+#[cfg(not(debug_assertions))]
+pub const DEFAULT_PORT: u16 = 19224;
+
 /// Configuration for the MCP server.
 /// Priority: environment variables > user settings > defaults
 #[derive(Debug, Clone)]
@@ -36,12 +48,12 @@ impl McpConfig {
         // Priority for port:
         // 1. CMDR_MCP_PORT env var (explicit dev override)
         // 2. User setting (developer.mcpPort)
-        // 3. Default: 9224 (same for all build types — dev and prod use separate data dirs)
+        // 3. Default: build-mode-dependent (see DEFAULT_PORT above)
         let port = env::var("CMDR_MCP_PORT")
             .ok()
             .and_then(|v| v.parse().ok())
             .or(setting_port)
-            .unwrap_or(9224);
+            .unwrap_or(DEFAULT_PORT);
 
         Self { enabled, port }
     }
@@ -82,10 +94,9 @@ mod tests {
 
     #[test]
     fn test_from_settings_with_no_settings() {
-        // When no settings are provided, should use defaults
+        // When no settings are provided, should use the build-mode default.
         let config = McpConfig::from_settings_and_env(None, None);
-        // Default port is always 9224 regardless of build type
-        assert_eq!(config.port, 9224);
+        assert_eq!(config.port, DEFAULT_PORT);
         // In debug builds, enabled is true by default
         #[cfg(debug_assertions)]
         assert!(config.enabled);

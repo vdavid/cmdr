@@ -3,7 +3,7 @@
 //! Provides a Streamable HTTP server that exposes cmdr functionality as MCP tools,
 //! enabling AI agents to control the file manager.
 
-mod config;
+pub mod config;
 pub mod dialog_state;
 mod executor;
 pub mod pane_state;

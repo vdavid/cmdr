@@ -670,7 +670,10 @@ export const settingsRegistry: SettingDefinition[] = [
     description: 'Preferred port for the MCP server. If in use, the next available port is used automatically.',
     keywords: ['port', 'mcp', 'network'],
     type: 'number',
-    default: 9224,
+    // Dev and prod intentionally differ so a developer can run both side-by-side. Mirrors
+    // `DEFAULT_PORT` in `apps/desktop/src-tauri/src/mcp/config.rs`. Both in 10000–29999 per
+    // AGENTS.md no-standard-ports rule.
+    default: import.meta.env.DEV ? 19225 : 19224,
     component: 'number-input',
     constraints: {
       min: 1024,

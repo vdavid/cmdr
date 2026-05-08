@@ -15,7 +15,7 @@ fn sample_manifest() -> BundleManifest {
             indexing_enabled: true,
             ai_provider: "local".to_string(),
             mcp_enabled: false,
-            mcp_port: 9224,
+            mcp_port: crate::mcp::config::DEFAULT_PORT,
             verbose_logging: false,
             max_log_storage_mb: 200,
             error_reports_enabled: false,
@@ -526,7 +526,7 @@ mod settings_defaults_tests {
             "hardcoded default for indexing.enabled is true"
         );
         assert_eq!(resolved.ai_provider, "local");
-        assert_eq!(resolved.mcp_port, 9224);
+        assert_eq!(resolved.mcp_port, crate::mcp::config::DEFAULT_PORT);
         assert_eq!(resolved.max_log_storage_mb, 200);
         assert!(!resolved.error_reports_enabled);
     }
@@ -582,7 +582,7 @@ mod settings_defaults_tests {
 
         let resolved = ResolvedSettings::from_settings(&Settings::default());
         assert!(resolved.indexing_enabled, "type mismatch → hardcoded fallback applies");
-        assert_eq!(resolved.mcp_port, 9224);
+        assert_eq!(resolved.mcp_port, crate::mcp::config::DEFAULT_PORT);
 
         settings_defaults::reset_for_test();
     }
