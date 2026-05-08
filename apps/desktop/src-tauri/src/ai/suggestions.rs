@@ -1,9 +1,11 @@
-//! Folder name suggestions powered by AI (local LLM or OpenAI-compatible API).
+//! Folder name suggestions powered by AI (local LLM or Cloud AI provider).
 //!
 //! Builds a prompt from the current directory listing, calls the configured AI backend,
 //! and parses the response into validated folder name suggestions.
 
-use super::client::{AiBackend, ChatCompletionOptions};
+use genai::chat::ChatOptions;
+
+use super::manager::BackendResolution;
 use crate::file_system::get_file_at;
 
 /// Maximum number of file names to include in the prompt context.
@@ -13,10 +15,9 @@ const MAX_SUGGESTIONS: usize = 5;
 
 /// Generates folder name suggestions for the given directory.
 ///
-/// Routes based on the configured AI provider:
-/// - `off`: returns empty
-/// - `local`: uses local llama-server (if running)
-/// - `openai-compatible`: uses remote OpenAI-compatible API
+/// Suggestions are a nice-to-have enhancement — every "no backend" case (provider off,
+/// missing key, local server not running) silently returns `Ok(Vec::new())`. UI hides
+/// the feature instead of surfacing an error.
 #[tauri::command]
 pub async fn get_folder_suggestions(
     listing_id: String,
@@ -29,31 +30,23 @@ pub async fn get_folder_suggestions(
         current_path
     );
 
-    let provider = super::manager::get_provider();
-    match provider.as_str() {
-        "off" => {
+    let backend = match super::manager::resolve_backend() {
+        BackendResolution::Ready(b) => b,
+        BackendResolution::Off => {
             log::debug!("AI suggestions: provider is off, returning empty");
-            Ok(Vec::new())
+            return Ok(Vec::new());
         }
-        "local" => get_suggestions_from_backend(&listing_id, &current_path, include_hidden, None).await,
-        "openai-compatible" => {
-            let (api_key, base_url, model) = super::manager::get_openai_config();
-            if api_key.is_empty() {
-                log::debug!("AI suggestions: OpenAI API key not configured, returning empty");
-                return Ok(Vec::new());
-            }
-            let backend = AiBackend::OpenAi {
-                api_key,
-                base_url,
-                model,
-            };
-            get_suggestions_from_backend(&listing_id, &current_path, include_hidden, Some(backend)).await
+        BackendResolution::NotConfigured(reason) => {
+            log::debug!("AI suggestions: backend not configured ({reason}), returning empty");
+            return Ok(Vec::new());
         }
-        _ => {
-            log::debug!("AI suggestions: unknown provider '{provider}', returning empty");
-            Ok(Vec::new())
+        BackendResolution::UnknownProvider(p) => {
+            log::debug!("AI suggestions: unknown provider '{p}', returning empty");
+            return Ok(Vec::new());
         }
-    }
+    };
+
+    get_suggestions_from_backend(&listing_id, &current_path, include_hidden, backend).await
 }
 
 /// Gets file names from the listing cache (up to MAX_CONTEXT_ENTRIES).
@@ -121,43 +114,25 @@ fn parse_suggestions(response: &str, existing_names: &[String]) -> Vec<String> {
 }
 
 /// Calls the AI backend and returns parsed suggestions.
-/// If `backend` is None, uses the local llama-server (looks up port from manager state).
 async fn get_suggestions_from_backend(
     listing_id: &str,
     current_path: &str,
     include_hidden: bool,
-    backend: Option<AiBackend>,
+    backend: super::client::AiBackend,
 ) -> Result<Vec<String>, String> {
-    let backend = match backend {
-        Some(b) => b,
-        None => {
-            let port = match super::manager::get_port() {
-                Some(p) => p,
-                None => {
-                    log::debug!("AI suggestions: local server not running (no port)");
-                    return Ok(Vec::new());
-                }
-            };
-            AiBackend::Local { port }
-        }
-    };
-
     let file_names = get_file_names(listing_id, include_hidden);
     let prompt = build_prompt(current_path, &file_names);
 
     log::debug!("AI suggestions: calling AI with {} files in context", file_names.len());
     log::trace!("AI suggestions: prompt:\n{prompt}");
 
-    let options = ChatCompletionOptions {
-        system_prompt: String::from(
-            "You are a pattern-matching assistant. Carefully observe the style, language, and formatting of existing items, then generate new items that match exactly. Output only what is requested, no formatting or explanation.",
-        ),
-        temperature: 0.6,
-        max_tokens: 150,
-        top_p: 0.95,
-    };
+    let system_prompt = "You are a pattern-matching assistant. Carefully observe the style, language, and formatting of existing items, then generate new items that match exactly. Output only what is requested, no formatting or explanation.";
+    let options = ChatOptions::default()
+        .with_temperature(0.6)
+        .with_max_tokens(150)
+        .with_top_p(0.95);
 
-    match super::client::chat_completion(&backend, &prompt, &options).await {
+    match super::client::chat_completion(&backend, system_prompt, &prompt, &options).await {
         Ok(response) => {
             log::trace!("AI suggestions: raw response:\n{response}");
             let suggestions = parse_suggestions(&response, &file_names);

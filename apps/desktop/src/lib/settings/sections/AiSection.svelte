@@ -91,10 +91,10 @@
 
     const providerTooltips: Record<string, string> = {
         off: 'AI features are turned off. Cmdr works fully without AI \u2014 suggestions and smart features are simply hidden.',
-        'openai-compatible':
-            "Bring your own API key for fast, high-quality AI. Works with OpenAI, Groq, Together AI, Azure OpenAI, Anthropic (via proxy), or any local server you're running (Ollama, LM Studio, etc.). Requires an internet connection (unless using a local server). No disk space or memory used by Cmdr.",
+        'cloud':
+            "Bring your own API key for fast, high-quality AI. Works with OpenAI, Anthropic (Claude), Google (Gemini), xAI (Grok), Groq, DeepSeek, OpenRouter, or any local server you're running (Ollama, LM Studio, etc.). Requires an internet connection (unless using a local server). No disk space or memory used by Cmdr.",
         local: 'Runs a small language model entirely on your device. Maximum privacy \u2014 nothing leaves your computer. Works offline. Uses ~2 GB disk space and ~400 MB memory (varies with context size). Requires Apple Silicon (M1+).',
-        'local-disabled': 'Local AI requires Apple Silicon (M1 or later). Use OpenAI-compatible instead.',
+        'local-disabled': 'Local AI requires Apple Silicon (M1 or later). Use Cloud AI instead.',
     }
 
     function getProviderTooltip(value: string): string {
@@ -136,15 +136,15 @@
                     </button>
                     <button
                         class="provider-option"
-                        class:selected={provider === 'openai-compatible'}
+                        class:selected={provider === 'cloud'}
                         onclick={() => {
-                            handleProviderSelect('openai-compatible')
+                            handleProviderSelect('cloud')
                         }}
-                        use:tooltip={getProviderTooltip('openai-compatible')}
+                        use:tooltip={getProviderTooltip('cloud')}
                         role="radio"
-                        aria-checked={provider === 'openai-compatible'}
+                        aria-checked={provider === 'cloud'}
                     >
-                        Cloud / API
+                        Cloud AI
                     </button>
                     <button
                         class="provider-option"
@@ -164,7 +164,7 @@
         {/if}
 
         <!-- Cloud / API section -->
-        {#if provider === 'openai-compatible'}
+        {#if provider === 'cloud'}
             <AiCloudSection {searchQuery} {shouldShow} />
         {/if}
 

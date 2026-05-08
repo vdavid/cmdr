@@ -33,16 +33,16 @@ struct ManagerState {
     download_in_progress: bool,
     /// True while the server is starting up (health check polling)
     server_starting: bool,
-    /// AI provider mode: "off", "openai-compatible", or "local"
+    /// AI provider mode: "off", "cloud", or "local"
     provider: String,
     /// Context size for local llama-server
     context_size: u32,
-    /// OpenAI-compatible API key (stored here so suggestions.rs can read without settings files)
-    openai_api_key: String,
-    /// OpenAI-compatible base URL
-    openai_base_url: String,
-    /// OpenAI-compatible model name
-    openai_model: String,
+    /// Cloud-AI provider API key (stored here so suggestions.rs can read without settings files)
+    cloud_api_key: String,
+    /// Cloud-AI provider base URL (e.g. `https://api.openai.com/v1`, `https://api.anthropic.com/v1/`)
+    cloud_base_url: String,
+    /// Cloud-AI provider model name (e.g. `gpt-4o-mini`, `claude-sonnet-4-5`, `gemini-2.5-flash`)
+    cloud_model: String,
 }
 
 const STATE_FILENAME: &str = "ai-state.json";
@@ -68,9 +68,9 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
         server_starting: false,
         provider: String::from("local"),
         context_size: 4096,
-        openai_api_key: String::new(),
-        openai_base_url: String::from("https://api.openai.com/v1"),
-        openai_model: String::from("gpt-4o-mini"),
+        cloud_api_key: String::new(),
+        cloud_base_url: String::from("https://api.openai.com/v1"),
+        cloud_model: String::from("gpt-4o-mini"),
     });
 
     // Belt-and-suspenders: stop ALL llama-server processes from our AI directory,
@@ -143,19 +143,51 @@ pub fn get_provider() -> String {
         .unwrap_or_else(|| String::from("off"))
 }
 
-/// Returns the OpenAI config stored in manager state.
-pub fn get_openai_config() -> (String, String, String) {
+/// Returns the cloud-AI config (api_key, base_url, model) stored in manager state.
+pub fn get_cloud_config() -> (String, String, String) {
     let manager = MANAGER.lock_ignore_poison();
     manager
         .as_ref()
-        .map(|m| {
-            (
-                m.openai_api_key.clone(),
-                m.openai_base_url.clone(),
-                m.openai_model.clone(),
-            )
-        })
+        .map(|m| (m.cloud_api_key.clone(), m.cloud_base_url.clone(), m.cloud_model.clone()))
         .unwrap_or_default()
+}
+
+/// Resolves the configured AI provider into either a ready-to-use [`AiBackend`] or
+/// a reason why one couldn't be built.
+///
+/// Centralizes the provider-routing logic so callers (`suggestions.rs`,
+/// `commands/search.rs`) just match on the variants and decide whether the case
+/// should be hard-error or graceful-empty.
+pub enum BackendResolution {
+    /// `provider = "off"` — AI features are turned off.
+    Off,
+    /// Provider is set but missing config (e.g. local server not running, cloud key blank).
+    /// Includes a human-readable reason suitable for error toasts.
+    NotConfigured(&'static str),
+    /// Backend is ready to use.
+    Ready(super::client::AiBackend),
+    /// Provider value isn't recognized.
+    UnknownProvider(String),
+}
+
+pub fn resolve_backend() -> BackendResolution {
+    let provider = get_provider();
+    match provider.as_str() {
+        "off" => BackendResolution::Off,
+        "local" => match get_port() {
+            Some(port) => BackendResolution::Ready(super::client::AiBackend::local(port)),
+            None => BackendResolution::NotConfigured("Local AI server isn't running. Start it in settings."),
+        },
+        "cloud" => {
+            let (api_key, base_url, model) = get_cloud_config();
+            if api_key.is_empty() {
+                BackendResolution::NotConfigured("Cloud AI API key not configured. Add it in settings.")
+            } else {
+                BackendResolution::Ready(super::client::AiBackend::remote(api_key, base_url, model))
+            }
+        }
+        _ => BackendResolution::UnknownProvider(provider),
+    }
 }
 
 /// Starts the AI download (binary + model).
@@ -374,12 +406,12 @@ pub fn configure_ai<R: Runtime>(
     app: AppHandle<R>,
     provider: String,
     context_size: u32,
-    openai_api_key: String,
-    openai_base_url: String,
-    openai_model: String,
+    cloud_api_key: String,
+    cloud_base_url: String,
+    cloud_model: String,
 ) {
     log::debug!(
-        "AI configure: provider={provider}, context_size={context_size}, base_url={openai_base_url}, model={openai_model}"
+        "AI configure: provider={provider}, context_size={context_size}, base_url={cloud_base_url}, model={cloud_model}"
     );
 
     // Single lock: decide, stop, spawn — no race window for orphan processes
@@ -401,9 +433,9 @@ pub fn configure_ai<R: Runtime>(
 
         m.provider = provider.clone();
         m.context_size = context_size;
-        m.openai_api_key = openai_api_key;
-        m.openai_base_url = openai_base_url;
-        m.openai_model = openai_model;
+        m.cloud_api_key = cloud_api_key;
+        m.cloud_base_url = cloud_base_url;
+        m.cloud_model = cloud_model;
 
         // Spawn server synchronously so child_pid is set before the lock is released.
         // Only the health check (up to 60s) runs async.

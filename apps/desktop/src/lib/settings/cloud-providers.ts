@@ -28,7 +28,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     requiresApiKey: true,
     supportsModelList: false,
     isLocal: false,
-    description: 'Claude models via OpenAI-compatible endpoint. Strong reasoning and safety.',
+    description: 'Claude models via the native Anthropic API. Strong reasoning and safety.',
   },
   {
     id: 'google-gemini',

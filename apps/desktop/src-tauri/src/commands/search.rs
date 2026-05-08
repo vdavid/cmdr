@@ -7,7 +7,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde::Serialize;
 
-use crate::ai::client::{AiBackend, ChatCompletionOptions};
+use genai::chat::ChatOptions;
+
+use crate::ai::client::AiBackend;
+use crate::ai::manager::BackendResolution;
 use crate::indexing::get_read_pool;
 use crate::search::{
     self, DIALOG_OPEN, ParsedScope, SEARCH_INDEX, SearchIndexState, SearchQuery, SearchResult, drop_search_index,
@@ -313,27 +316,14 @@ pub struct TranslateDisplay {
 }
 
 /// Resolves the AI backend from the current provider configuration.
+///
+/// Search needs a hard error (not graceful empty) so the toast tells the user how to fix it.
 fn resolve_ai_backend() -> Result<AiBackend, String> {
-    let provider = crate::ai::manager::get_provider();
-    match provider.as_str() {
-        "off" => Err("AI is not configured. Enable an AI provider in settings.".to_string()),
-        "local" => {
-            let port = crate::ai::manager::get_port()
-                .ok_or_else(|| "Local AI server isn't running. Start it in settings.".to_string())?;
-            Ok(AiBackend::Local { port })
-        }
-        "openai-compatible" => {
-            let (api_key, base_url, model) = crate::ai::manager::get_openai_config();
-            if api_key.is_empty() {
-                return Err("OpenAI API key not configured. Add it in settings.".to_string());
-            }
-            Ok(AiBackend::OpenAi {
-                api_key,
-                base_url,
-                model,
-            })
-        }
-        _ => Err(format!("Unknown AI provider: {provider}")),
+    match crate::ai::manager::resolve_backend() {
+        BackendResolution::Ready(b) => Ok(b),
+        BackendResolution::Off => Err("AI is not configured. Enable an AI provider in settings.".to_string()),
+        BackendResolution::NotConfigured(reason) => Err(reason.to_string()),
+        BackendResolution::UnknownProvider(p) => Err(format!("Unknown AI provider: {p}")),
     }
 }
 
@@ -351,15 +341,13 @@ pub async fn translate_search_query(natural_query: String) -> Result<TranslateRe
         system_prompt.len()
     );
 
-    let options = ChatCompletionOptions {
-        system_prompt,
-        temperature: 0.3,
-        max_tokens: 200,
-        top_p: 0.9,
-    };
+    let options = ChatOptions::default()
+        .with_temperature(0.3)
+        .with_max_tokens(200)
+        .with_top_p(0.9);
 
     let t0 = std::time::Instant::now();
-    let response = crate::ai::client::chat_completion(&backend, &natural_query, &options)
+    let response = crate::ai::client::chat_completion(&backend, &system_prompt, &natural_query, &options)
         .await
         .map_err(|e| {
             log::warn!(

@@ -28,7 +28,7 @@ describe('SettingPasswordInput a11y', () => {
     mount(SettingPasswordInput, {
       target,
       props: {
-        id: 'ai.openaiApiKey',
+        id: 'ai.cloudProvider',
         placeholder: 'sk-...',
         ariaLabel: 'API key',
       },
@@ -44,7 +44,7 @@ describe('SettingPasswordInput a11y', () => {
     mount(SettingPasswordInput, {
       target,
       props: {
-        id: 'ai.openaiApiKey',
+        id: 'ai.cloudProvider',
         placeholder: 'sk-...',
         ariaLabel: 'API key',
       },
@@ -59,7 +59,7 @@ describe('SettingPasswordInput a11y', () => {
     mount(SettingPasswordInput, {
       target,
       props: {
-        id: 'ai.openaiApiKey',
+        id: 'ai.cloudProvider',
         placeholder: 'sk-...',
         ariaLabel: 'API key',
         value: 'sk-12345',
@@ -77,7 +77,7 @@ describe('SettingPasswordInput a11y', () => {
     mount(SettingPasswordInput, {
       target,
       props: {
-        id: 'ai.openaiApiKey',
+        id: 'ai.cloudProvider',
         placeholder: 'sk-...',
         ariaLabel: 'API key',
         disabled: true,

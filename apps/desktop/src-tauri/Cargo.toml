@@ -100,6 +100,20 @@ rand = "0.10"
 # project rule on avoiding 0-day vulns. Default features include `status`,
 # `basic`, and `extras` which cover discover + ahead/behind + status walk.
 gix = "0.81"
+# Multi-provider LLM client. Normalizes OpenAI / OpenAI Responses / Anthropic / Gemini /
+# xAI / Groq / DeepSeek / Ollama / OpenRouter / etc. Auto-routes `gpt-5*` / `*-codex` /
+# `*-pro` to the Responses API; uses native protocols for Anthropic + Gemini. Replaces
+# hand-rolled chat-completions JSON in `ai/client.rs`, which broke on (1) reasoning models
+# that reject custom `temperature` (HTTP 400) and (2) Responses-only models that 404 on
+# `/v1/chat/completions`.
+#
+# Pinned at the EXACT 0.6.0-beta.19 (published 2026-05-06). 0.6 is in active beta with
+# weekly releases, but the API surface we use is stable across the 0.6 line, and this is
+# the first version that auto-routes plain `gpt-5*` to the Responses API (PR #167) — 0.5.3
+# only routed `*-pro` and `*-codex`. Stable 0.6.0 isn't out yet; bumping to a future
+# `0.6.0-beta.20` should be a no-op for us, but pin exact to avoid surprise breakage on
+# `cargo update`. Solo maintainer; MIT/Apache-2.0; ~25k LOC if we ever need to fork.
+genai = "=0.6.0-beta.19"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
@@ -183,6 +197,10 @@ env_logger = "0.11.10"
 # For test-only cryptographic key generation (compatible with ed25519-dalek's rand_core 0.6)
 rand_core = { version = "0.6", features = ["getrandom"] }
 tempfile = "3"
+# HTTP mock server for AI client integration tests. Verifies request shape (temperature
+# present on chat/completions, omitted on /v1/responses) and parsing without burning
+# real API quota. Pinned at 0.6.5 (latest stable, published 2025-08-24).
+wiremock = "0.6.5"
 
 [[example]]
 name = "smb_compose"

@@ -1,10 +1,10 @@
 # AI subsystem
 
-AI features powered by local LLM (llama-server) or OpenAI-compatible APIs. Currently used for folder name suggestions.
+AI features powered by local LLM (llama-server) or remote LLM providers. Currently used for folder name suggestions and natural-language search.
 
 Three provider modes:
 - **Off**: No AI features.
-- **OpenAI-compatible** (BYOK): Any OpenAI-compatible API. Works on any hardware.
+- **Cloud AI** (BYOK): OpenAI / Anthropic / Gemini / xAI / Groq / DeepSeek / OpenRouter / any OpenAI-compatible endpoint. Adapter is picked from the model name. Works on any hardware. Persisted as `ai.provider = "cloud"`; the Rust constructor is `AiBackend::remote(...)` because the same code path handles native Anthropic/Gemini protocols too.
 - **Local LLM**: On-device llama-server. Requires Apple Silicon (aarch64).
 
 ## Key files
@@ -12,11 +12,13 @@ Three provider modes:
 | File | Purpose |
 |---|---|
 | `mod.rs` | Types (`AiStatus`, `AiState`, `DownloadProgress`, `ModelInfo`), model registry (`AVAILABLE_MODELS`, `DEFAULT_MODEL_ID`), `is_local_ai_supported()` gate |
-| `manager.rs` | Central coordinator. Global `Mutex<Option<ManagerState>>` singleton. Most Tauri commands live here. Stores provider + OpenAI config in `ManagerState`. |
+| `manager.rs` | Central coordinator. Global `Mutex<Option<ManagerState>>` singleton. Most Tauri commands live here. Stores provider + cloud-AI config (`cloud_api_key`/`cloud_base_url`/`cloud_model`). Exposes `resolve_backend() -> BackendResolution` so callers don't reinvent provider routing. |
 | `download.rs` | HTTP streaming download with Range-based resume. Emits `ai-download-progress` events (200ms throttle). Cooperative cancellation via function parameter (`Fn() -> bool`). |
 | `extract.rs` | Copies bundled `llama-server` binary + dylibs from `resources/ai/` to the AI data dir. Sets Unix permissions, handles symlinks. |
 | `process.rs` | Spawns child process with `DYLD_LIBRARY_PATH` set. Instant SIGKILL to stop (llama-server is stateless; macOS reclaims all GPU/mmap resources). `kill_process` for fire-and-forget (quit, orphans), `kill_and_reap_in_background` for normal operation (reaps zombie in bg thread). `kill_stale_llama_servers` for belt-and-suspenders orphan cleanup by process name. Port discovery via `bind(:0)`. |
-| `client.rs` | reqwest client with `AiBackend` enum: `Local { port }` or `OpenAi { api_key, base_url, model }`. Routes requests accordingly. |
+| `client.rs` | `genai`-backed chat client. `AiBackend` is a struct bundling a long-lived `genai::Client` with a model name; built via `AiBackend::local(port)` or `AiBackend::remote(api_key, base_url, model)`. The model name picks the adapter (`claude-*` → Anthropic native, `gemini-*` → Gemini native, `gpt-5*`/`*-pro`/`*-codex` → OpenAI Responses API, etc.). Auto-omits `temperature`/`top_p` for OpenAI Responses adapter and for chat-completions reasoning models (`o1*`, `o3*`, `o4*`, `chatgpt-*`, `gpt-5*` defense-in-depth) and substitutes `ReasoningEffort::Low`. Local backend forces the OpenAI adapter via a `ServiceTargetResolver` pinning endpoint to `http://127.0.0.1:<port>/v1/`. |
+| `client_integration_test.rs` | `wiremock`-based tests covering request shape per adapter (chat completions vs Responses API), parsing, error mapping. Always run in CI. |
+| `client_real_openai_test.rs` | `#[ignore]`-gated smoke tests against `api.openai.com`. Run with `OPENAI_API_KEY=$(security find-generic-password -a "$USER" -s "OPENAI_API_KEY" -w) cargo nextest run --lib --run-ignored only ai::client_real_openai_test`. Costs ~$0.001 per full run. Use after refactors that touch `client.rs`. |
 | `suggestions.rs` | Builds few-shot prompt from listing cache, routes to configured backend, sanitizes response. |
 
 ### Tauri commands
@@ -42,12 +44,15 @@ Frontend loads
             -> emit 'ai-server-ready' when healthy
 ```
 
-## Provider routing in suggestions
+## Provider routing
 
-`get_folder_suggestions` reads `provider` from `ManagerState`:
-- `off` -> returns empty
-- `local` -> uses local llama-server (if running)
-- `openai-compatible` -> builds `AiBackend::OpenAi` from stored config, calls `chat_completion`
+Centralized in `manager::resolve_backend() -> BackendResolution`:
+- `Off`: provider is `"off"`.
+- `NotConfigured(reason)`: provider is set but missing config (local server not running, cloud key blank).
+- `Ready(AiBackend)`: backend ready to call `chat_completion` on.
+- `UnknownProvider(name)`: provider value isn't recognized.
+
+Callers decide what to do per case. `suggestions.rs` returns empty on any non-Ready (folder suggestions are nice-to-have). `commands/search.rs::translate_search_query` returns the human-readable reason as an error so the UI can toast it.
 
 ## Download/install event sequence
 
@@ -108,7 +113,16 @@ The frontend (`AiSection.svelte`) tracks `installStep` state and displays "Step 
 direction is to make OpenAI-compatible the primary recommended path, with local LLM as the secondary option for
 privacy-focused users. The architecture doesn't fight this switch — it's just a default value change.
 
+**Decision**: Use `genai` crate as the chat client instead of hand-rolled `reqwest` JSON.
+**Why**: We hit two production bugs that were per-provider quirks: (1) GPT-5/o-series chat models reject any non-default `temperature` (HTTP 400), and (2) `gpt-*-pro` / `*-codex` models only respond on `/v1/responses`, not `/v1/chat/completions` (HTTP 404). Each new model adds another quirk. `genai` normalizes ~20 providers, auto-routes Responses-API models, and gives us Anthropic / Gemini / xAI / OpenRouter for free with the same code path. Tradeoff: pinned at `0.5.3` (stable, ~3 months old) with a solo maintainer; mitigated by it being MIT/Apache-2.0 + small enough to fork if needed.
+
 ## Gotchas
+
+**Gotcha**: `genai` requires `base_url` to end with `/`. Without the trailing slash, `Url::join("chat/completions")` strips the last segment and you'd hit `https://api.openai.com/chat/completions` (404) instead of `/v1/chat/completions`. `client.rs::build_client` normalizes by appending `/` if missing.
+
+**Gotcha**: `genai 0.6` auto-routes `gpt-5*`, `*-codex`, `*-pro` to the Responses API, but `o1*`/`o3*`/`o4*`/`chatgpt-*` stay on Chat Completions even though they also reject custom `temperature`. We layer `is_openai_chat_reasoning_model()` on top to strip `temperature`/`top_p` and substitute `ReasoningEffort::Low` for those. The heuristic also matches `gpt-5*` as defense-in-depth in case `genai`'s routing rule changes.
+
+**Gotcha**: For reasoning models, `max_tokens` (`max_output_tokens` on Responses API) covers reasoning + visible answer combined. Real-world finding: at `ReasoningEffort::Low`, `gpt-5-mini` consumed all 40 tokens thinking and emitted no `output_text` — `first_text()` returned `None`. `suggestions.rs` (`max_tokens=150`) and `commands/search.rs` (`max_tokens=200`) may occasionally produce empty results when the user picks a reasoning model. Bump to `max_tokens >= 300` if empty-result rate becomes a problem; the empty-result graceful degradation already covers it functionally.
 
 **Gotcha**: `tauri::async_runtime::spawn` is used in `configure_ai` and `start_ai_server` instead of `tokio::spawn`.
 **Why**: These may run during Tauri setup before the tokio runtime is fully available. `tauri::async_runtime::spawn` uses Tauri's own runtime which is always ready at that point.
@@ -127,5 +141,6 @@ privacy-focused users. The architecture doesn't fight this switch — it's just 
 
 ## Dependencies
 
-External: `reqwest`, `tokio`, `libc`, `futures_util`
+External: `genai` (chat normalization), `reqwest` (download streaming + `health_check`), `tokio`, `libc`, `futures_util`
+Dev: `wiremock` (HTTP mock for `client_integration_test.rs`)
 Internal: `crate::ignore_poison::IgnorePoison`, `crate::file_system::get_file_at`

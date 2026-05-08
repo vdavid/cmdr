@@ -86,7 +86,7 @@ export type DirectorySortMode = 'likeFiles' | 'alwaysByName'
 export type SizeDisplayMode = 'smart' | 'logical' | 'physical'
 export type AppColor = 'system' | 'cmdr-gold'
 export type SizeColorsPalette = 'none' | 'accent' | 'rainbow'
-export type AiProvider = 'off' | 'openai-compatible' | 'local'
+export type AiProvider = 'off' | 'cloud' | 'local'
 export type AiLocalContextSize = '2048' | '4096' | '8192' | '16384' | '32768' | '65536' | '131072' | '262144'
 
 export interface SettingsValues {
@@ -144,9 +144,6 @@ export interface SettingsValues {
 
   // AI
   'ai.provider': AiProvider
-  'ai.openaiApiKey': string
-  'ai.openaiBaseUrl': string
-  'ai.openaiModel': string
   'ai.localContextSize': AiLocalContextSize
   'ai.cloudProvider': string
   'ai.cloudProviderConfigs': string // JSON blob

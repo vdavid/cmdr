@@ -13,7 +13,6 @@
         cloudProviderPresets,
     } from '$lib/settings'
     import { checkAiConnection } from '$lib/tauri-commands'
-    import { getAppLogger } from '$lib/logging/logger'
     import { pushConfigToBackend } from './ai-settings-utils'
 
     interface Props {
@@ -22,8 +21,6 @@
     }
 
     const { searchQuery, shouldShow }: Props = $props()
-
-    const logger = getAppLogger('ai-settings-cloud')
 
     // Cloud provider state
     let cloudProviderId = $state(getSetting('ai.cloudProvider'))
@@ -58,9 +55,6 @@
 
     // Event listeners cleanup
     const unlistenFns: Array<() => void> = []
-
-    // Migrate old settings to new per-provider config if needed
-    migrateOldSettings()
 
     // Load current cloud provider config into local state
     loadCloudProviderConfig(cloudProviderId)
@@ -141,34 +135,6 @@
         if (connectionCheckTimer) {
             clearTimeout(connectionCheckTimer)
             connectionCheckTimer = null
-        }
-    }
-
-    function migrateOldSettings(): void {
-        const oldApiKey = getSetting('ai.openaiApiKey')
-        const oldConfigs = getSetting('ai.cloudProviderConfigs')
-
-        if (oldApiKey && oldConfigs === '{}') {
-            const oldBaseUrl = getSetting('ai.openaiBaseUrl')
-            const oldModel = getSetting('ai.openaiModel')
-
-            // Detect which provider the old base URL matches
-            const matchedPreset = cloudProviderPresets.find(
-                (p) => p.id !== 'custom' && p.baseUrl && oldBaseUrl.startsWith(p.baseUrl.replace(/\/$/, '')),
-            )
-            const detectedId = matchedPreset?.id ?? 'custom'
-
-            const config = {
-                apiKey: oldApiKey,
-                model: oldModel,
-                ...(detectedId === 'custom' || detectedId === 'azure-openai' ? { baseUrl: oldBaseUrl } : {}),
-            }
-
-            setSetting('ai.cloudProvider', detectedId)
-            setSetting('ai.cloudProviderConfigs', setProviderConfig('{}', detectedId, config))
-            cloudProviderId = detectedId
-
-            logger.info('Migrated old OpenAI settings to cloud provider config: {provider}', { provider: detectedId })
         }
     }
 

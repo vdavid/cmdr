@@ -301,11 +301,11 @@ export async function getAiRuntimeStatus(): Promise<AiRuntimeStatus> {
 export async function configureAi(
   provider: string,
   contextSize: number,
-  openaiApiKey: string,
-  openaiBaseUrl: string,
-  openaiModel: string,
+  cloudApiKey: string,
+  cloudBaseUrl: string,
+  cloudModel: string,
 ): Promise<void> {
-  await invoke('configure_ai', { provider, contextSize, openaiApiKey, openaiBaseUrl, openaiModel })
+  await invoke('configure_ai', { provider, contextSize, cloudApiKey, cloudBaseUrl, cloudModel })
 }
 
 /** Stops the local llama-server without uninstalling. */

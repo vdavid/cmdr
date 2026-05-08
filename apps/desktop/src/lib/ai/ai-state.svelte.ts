@@ -56,9 +56,9 @@ export function markDownloadToastDismissed(): void {
 }
 
 export async function initAiState(): Promise<() => void> {
-  // Don't show toast when provider is off or openai-compatible
+  // Don't show toast when provider is off or cloud
   const aiProvider = getSetting('ai.provider')
-  if (aiProvider === 'off' || aiProvider === 'openai-compatible') {
+  if (aiProvider === 'off' || aiProvider === 'cloud') {
     return () => {}
   }
 
