@@ -316,6 +316,7 @@ export {
   optInAi,
   isAiOptedOut,
   getFolderSuggestions,
+  streamFolderSuggestions,
   getAiRuntimeStatus,
   configureAi,
   stopAiServer,
@@ -331,6 +332,8 @@ export type {
   AiConnectionCheckResult,
   DirStats,
   SystemMemoryInfo,
+  SuggestionStreamEvent,
+  FolderSuggestionsStream,
 } from './settings'
 
 // Tab context menu

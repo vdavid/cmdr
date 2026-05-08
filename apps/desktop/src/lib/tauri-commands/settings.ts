@@ -1,6 +1,6 @@
 // Settings commands and AI-related commands
 
-import { invoke } from '@tauri-apps/api/core'
+import { Channel, invoke } from '@tauri-apps/api/core'
 
 // ============================================================================
 // Settings commands
@@ -358,4 +358,56 @@ export async function getFolderSuggestions(
   } catch {
     return []
   }
+}
+
+/** Wire-format event for streaming folder suggestions. Mirrors the Rust enum. */
+export type SuggestionStreamEvent =
+  | { type: 'suggestion'; name: string }
+  | { type: 'done' }
+  | { type: 'cancelled' }
+  | { type: 'failed' }
+
+/** Handle returned by `streamFolderSuggestions`. */
+export interface FolderSuggestionsStream {
+  /** Resolves when the backend command returns (after Done/Cancelled/Failed has been delivered). */
+  promise: Promise<void>
+  /** Cancels the in-flight stream. Idempotent; safe to call after natural completion. */
+  cancel: () => Promise<void>
+}
+
+/**
+ * Streams folder name suggestions, calling `onEvent` for each event from the backend.
+ *
+ * The backend always resolves the IPC promise to `void` — all signaling (suggestions,
+ * completion, cancellation, failure) goes through the channel. Cancel via the returned
+ * handle, not by ignoring the promise: Tauri 2's `Channel::send` is fire-and-forget,
+ * so the backend cannot detect frontend abandonment without the explicit cancel command.
+ */
+export function streamFolderSuggestions(
+  listingId: string,
+  currentPath: string,
+  includeHidden: boolean,
+  onEvent: (event: SuggestionStreamEvent) => void,
+): FolderSuggestionsStream {
+  const requestId = crypto.randomUUID()
+  const channel = new Channel<SuggestionStreamEvent>()
+  channel.onmessage = onEvent
+  const promise = invoke('stream_folder_suggestions', {
+    requestId,
+    listingId,
+    currentPath,
+    includeHidden,
+    onEvent: channel,
+  }).then(
+    () => undefined,
+    () => undefined, // Tauri command is contracted to return Ok(()), but webview teardown can reject; swallow.
+  )
+  const cancel = async (): Promise<void> => {
+    try {
+      await invoke('cancel_folder_suggestions', { requestId })
+    } catch {
+      // Idempotent — entry may already be gone.
+    }
+  }
+  return { promise, cancel }
 }

@@ -12,8 +12,9 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use futures_util::stream::{BoxStream, StreamExt};
 use genai::adapter::AdapterKind;
-use genai::chat::{ChatMessage, ChatOptions, ChatRequest, ReasoningEffort};
+use genai::chat::{ChatMessage, ChatOptions, ChatRequest, ChatStreamEvent, ReasoningEffort};
 use genai::resolver::{AuthData, Endpoint, ServiceTargetResolver};
 use genai::{Client, ModelIden, ServiceTarget};
 
@@ -133,6 +134,63 @@ pub async fn chat_completion(
 
     log::trace!("AI chat_completion: extracted content: {text}");
     Ok(text)
+}
+
+/// Streams a chat completion. Returns a boxed stream of content chunks.
+///
+/// Same per-model option fixups as [`chat_completion`] (reasoning models get
+/// `temperature`/`top_p` stripped and `ReasoningEffort::Low` substituted). Reasoning,
+/// thought-signature, and tool-call chunks are filtered out — callers only see the
+/// visible text content. Stream ends when `genai` emits `End` or errors; an empty
+/// stream (zero chunks) is valid and matches the same graceful-degradation contract
+/// as `chat_completion`'s "AI returned no text" case.
+///
+/// Cancellation: drop the returned stream. The `genai::ChatStreamResponse`'s reqwest
+/// body is closed, billing stops on cloud providers, local-LLM compute is freed.
+pub async fn chat_completion_stream(
+    backend: &AiBackend,
+    system_prompt: &str,
+    user_prompt: &str,
+    options: &ChatOptions,
+) -> Result<BoxStream<'static, Result<String, AiError>>, AiError> {
+    let target = backend
+        .client
+        .resolve_service_target(&backend.model)
+        .await
+        .map_err(map_genai_error)?;
+
+    let effective_options = adjust_for_model(options, &target);
+
+    let req = ChatRequest::new(vec![
+        ChatMessage::system(system_prompt.to_owned()),
+        ChatMessage::user(user_prompt.to_owned()),
+    ]);
+
+    log::debug!(
+        "AI chat_completion_stream: opening stream (adapter={:?}, model={})",
+        target.model.adapter_kind,
+        &*target.model.model_name
+    );
+
+    let res = backend
+        .client
+        .exec_chat_stream(&backend.model, req, Some(&effective_options))
+        .await
+        .map_err(map_genai_error)?;
+
+    // Map ChatStreamEvent → Option<String>: keep only visible content; drop reasoning,
+    // thought-signature, tool-call chunks; pass through errors mapped to AiError.
+    let stream = res.stream.filter_map(|item| async move {
+        match item {
+            Ok(ChatStreamEvent::Chunk(chunk)) => Some(Ok(chunk.content)),
+            Ok(ChatStreamEvent::Start | ChatStreamEvent::End(_)) => None,
+            Ok(ChatStreamEvent::ReasoningChunk(_) | ChatStreamEvent::ThoughtSignatureChunk(_)) => None,
+            Ok(ChatStreamEvent::ToolCallChunk(_)) => None,
+            Err(e) => Some(Err(map_genai_error(e))),
+        }
+    });
+
+    Ok(stream.boxed())
 }
 
 /// Per-model option fixup: reasoning-class models reject `temperature`. Returns a

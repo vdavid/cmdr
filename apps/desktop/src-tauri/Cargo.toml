@@ -74,6 +74,11 @@ reqwest = { version = "0.13", features = ["json", "rustls", "stream", "multipart
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "sync", "macros"] }
 futures-util = "0.3"
+# tokio-util: provides `CancellationToken` for cooperative cancellation of streaming
+# AI suggestions (`ai/suggestions.rs::stream_folder_suggestions`). The `rt` feature
+# enables runtime integration (token wakeups via tokio's reactor). 0.7.18 is the latest
+# stable (published 2026-01-04). MIT license; tracks tokio's release cadence.
+tokio-util = { version = "0.7.18", features = ["rt"] }
 tower-http = { version = "0.6", features = ["cors"] }
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"

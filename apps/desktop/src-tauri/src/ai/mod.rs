@@ -15,12 +15,18 @@ pub mod client;
 #[cfg(test)]
 mod client_integration_test;
 #[cfg(test)]
+mod client_real_anthropic_test;
+#[cfg(test)]
 mod client_real_openai_test;
+#[cfg(test)]
+mod client_streaming_test;
 mod download;
 pub mod extract;
 pub mod manager;
 mod process;
 pub mod suggestions;
+#[cfg(test)]
+mod suggestions_streaming_test;
 
 use serde::{Deserialize, Serialize};
 

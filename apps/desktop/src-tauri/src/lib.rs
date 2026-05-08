@@ -1182,6 +1182,8 @@ pub fn run() {
             ai::manager::opt_in_ai,
             ai::manager::is_ai_opted_out,
             ai::suggestions::get_folder_suggestions,
+            ai::suggestions::stream_folder_suggestions,
+            ai::suggestions::cancel_folder_suggestions,
             // MCP server live control
             commands::mcp::set_mcp_enabled,
             commands::mcp::set_mcp_port,

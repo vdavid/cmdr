@@ -5,10 +5,11 @@
         findFileIndex,
         getAiStatus,
         getFileAt,
-        getFolderSuggestions,
         isIpcError,
         listen,
         refreshListing,
+        streamFolderSuggestions,
+        type FolderSuggestionsStream,
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import { validateDisallowedChars, validateNameLength, validatePathLength } from '$lib/utils/filename-validation'
@@ -43,7 +44,8 @@
     // AI suggestions - start with null to indicate "checking", then true/false once known
     let aiAvailable = $state<boolean | null>(null)
     let aiSuggestions = $state<string[]>([])
-    let aiLoading = $state(false)
+    let aiStreaming = $state(false)
+    let suggestionsStream: FolderSuggestionsStream | undefined
 
     // Debounce timer for validation
     let validateTimer: ReturnType<typeof setTimeout> | undefined
@@ -130,6 +132,10 @@
     onDestroy(() => {
         if (validateTimer) clearTimeout(validateTimer)
         unlistenDiff?.()
+        // Cancel the in-flight stream. Tauri 2's `Channel::send` is fire-and-forget;
+        // without this explicit signal the backend would keep streaming after the dialog
+        // closes, billing cloud providers and pegging local-LLM compute.
+        void suggestionsStream?.cancel()
     })
 
     async function fetchAiSuggestions() {
@@ -139,15 +145,32 @@
                 aiAvailable = false
                 return
             }
-
             aiAvailable = true
-            aiLoading = true
-            aiSuggestions = await getFolderSuggestions(listingId, currentPath, showHiddenFiles)
+            aiSuggestions = []
+            aiStreaming = true
+
+            suggestionsStream = streamFolderSuggestions(
+                listingId,
+                currentPath,
+                showHiddenFiles,
+                (event) => {
+                    switch (event.type) {
+                        case 'suggestion':
+                            aiSuggestions = [...aiSuggestions, event.name]
+                            break
+                        case 'done':
+                        case 'cancelled':
+                        case 'failed':
+                            aiStreaming = false
+                            break
+                    }
+                },
+            )
+            await suggestionsStream.promise
         } catch {
             // Graceful degradation — hide suggestions on error
             aiSuggestions = []
-        } finally {
-            aiLoading = false
+            aiStreaming = false
         }
     }
 
@@ -250,10 +273,8 @@
         {#if aiAvailable !== false}
             <div class="ai-suggestions" aria-label="AI suggestions">
                 <span class="ai-suggestions-header">AI suggestions:</span>
-                {#if aiAvailable === null || aiLoading}
-                    <span class="ai-suggestions-loading">Loading...</span>
-                {:else if aiSuggestions.length > 0}
-                    <ul role="list">
+                {#if aiSuggestions.length > 0}
+                    <ul role="list" aria-live="polite" aria-relevant="additions">
                         {#each aiSuggestions as suggestion (suggestion)}
                             <li role="listitem">
                                 <button
@@ -267,9 +288,14 @@
                                 </button>
                             </li>
                         {/each}
+                        {#if aiStreaming}
+                            <li role="listitem" aria-hidden="true">
+                                <span class="suggestion-item suggestion-pending">…</span>
+                            </li>
+                        {/if}
                     </ul>
-                {:else}
-                    <span class="ai-suggestions-empty">No suggestions</span>
+                {:else if aiStreaming}
+                    <span class="suggestion-item suggestion-pending" aria-hidden="true">…</span>
                 {/if}
             </div>
         {/if}
@@ -378,13 +404,6 @@
         margin-bottom: var(--spacing-sm);
     }
 
-    .ai-suggestions-loading,
-    .ai-suggestions-empty {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-        font-style: italic;
-    }
-
     .ai-suggestions ul {
         list-style: none;
         margin: 0;
@@ -420,5 +439,27 @@
         outline: 2px solid var(--color-accent);
         outline-offset: 1px;
         box-shadow: var(--shadow-focus-contrast);
+    }
+
+    /* Trailing pulsing chip while suggestions are still streaming. Matches the regular
+       chip dimensions so the list doesn't reflow on completion. */
+    .suggestion-pending {
+        animation: suggestion-pulse 1.2s ease-in-out infinite;
+        opacity: 0.5;
+        pointer-events: none;
+        cursor: default;
+    }
+
+    @keyframes suggestion-pulse {
+        50% {
+            opacity: 0.3;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .suggestion-pending {
+            animation: none;
+            opacity: 0.4;
+        }
     }
 </style>

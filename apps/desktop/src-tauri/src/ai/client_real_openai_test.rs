@@ -11,9 +11,10 @@
 //! endpoints being up. They're for one-time confidence after refactors, not for
 //! regression detection.
 
+use futures_util::StreamExt;
 use genai::chat::ChatOptions;
 
-use super::client::{AiBackend, chat_completion};
+use super::client::{AiBackend, chat_completion, chat_completion_stream};
 
 const BASE_URL: &str = "https://api.openai.com/v1/";
 
@@ -98,4 +99,64 @@ async fn smoke_o3_mini_omits_temperature() {
 
     assert!(!res.trim().is_empty(), "response should be non-empty");
     log::info!(target: "ai_smoke","o3-mini → {res}");
+}
+
+// --- Streaming smokes ---
+
+async fn collect_stream(backend: &AiBackend, model_label: &str) -> String {
+    let mut stream = chat_completion_stream(
+        backend,
+        "You answer in exactly one short sentence.",
+        "Say the word 'pong'.",
+        &opts(),
+    )
+    .await
+    .expect("stream open");
+    let mut text = String::new();
+    let mut chunks = 0;
+    while let Some(item) = stream.next().await {
+        let chunk = item.expect("chunk ok");
+        text.push_str(&chunk);
+        chunks += 1;
+    }
+    log::info!(target: "ai_smoke", "{model_label} stream → {chunks} chunks, total: {text}");
+    text
+}
+
+#[tokio::test]
+#[ignore = "real API call — set OPENAI_API_KEY to run"]
+async fn smoke_gpt_4o_mini_stream() {
+    let Some(api_key) = api_key_or_skip() else {
+        panic!("OPENAI_API_KEY not set");
+    };
+    let backend = AiBackend::remote(api_key, String::from(BASE_URL), String::from("gpt-4o-mini"));
+    let text = collect_stream(&backend, "gpt-4o-mini").await;
+    assert!(!text.trim().is_empty(), "expected non-empty assembled text");
+}
+
+#[tokio::test]
+#[ignore = "real API call — set OPENAI_API_KEY to run"]
+async fn smoke_gpt_5_mini_stream() {
+    // Routes through Responses API. Reasoning may eat budget; with max_tokens=200 we
+    // expect at least *some* output_text. Acceptable to assert "stream completed
+    // without error" rather than "non-empty" — reasoning models are inherently variable.
+    let Some(api_key) = api_key_or_skip() else {
+        panic!("OPENAI_API_KEY not set");
+    };
+    let backend = AiBackend::remote(api_key, String::from(BASE_URL), String::from("gpt-5-mini"));
+    let _text = collect_stream(&backend, "gpt-5-mini").await;
+    // Don't assert non-empty: reasoning models can legitimately return zero output_text
+    // chunks if the budget is tight. The streaming pipeline working without panicking
+    // is the assertion.
+}
+
+#[tokio::test]
+#[ignore = "real API call — set OPENAI_API_KEY to run"]
+async fn smoke_o3_mini_stream() {
+    let Some(api_key) = api_key_or_skip() else {
+        panic!("OPENAI_API_KEY not set");
+    };
+    let backend = AiBackend::remote(api_key, String::from(BASE_URL), String::from("o3-mini"));
+    let _text = collect_stream(&backend, "o3-mini").await;
+    // Same caveat as gpt-5-mini.
 }
