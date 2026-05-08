@@ -15,7 +15,7 @@
         TransferErrorPropsData,
         DeleteDialogPropsData,
     } from './dialog-state.svelte'
-    import type { ConflictResolution, TransferOperationType, WriteOperationError } from '../types'
+    import type { ConflictResolution, FriendlyError, TransferOperationType, WriteOperationError } from '../types'
 
     const {
         showTransferDialog,
@@ -71,7 +71,7 @@
         onTransferCancel: () => void
         onTransferComplete: (filesProcessed: number, bytesProcessed: number) => void
         onTransferCancelled: (filesProcessed: number) => void
-        onTransferError: (error: WriteOperationError) => void
+        onTransferError: (error: WriteOperationError, friendly?: FriendlyError) => void
         onTransferErrorClose: () => void
         onNewFolderCreated: (folderName: string) => void
         onNewFolderCancel: () => void
@@ -177,6 +177,7 @@
     <TransferErrorDialog
         operationType={transferErrorProps.operationType}
         error={transferErrorProps.error}
+        friendlyError={transferErrorProps.friendly}
         onClose={onTransferErrorClose}
     />
 {/if}

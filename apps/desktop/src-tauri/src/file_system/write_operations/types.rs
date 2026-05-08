@@ -89,12 +89,50 @@ pub struct WriteCompleteEvent {
 }
 
 /// Error event payload.
+///
+/// `error` is the typed variant for programmatic FE handling and tests; `friendly`
+/// is the rendered user-facing copy (title + explanation + suggestion + category)
+/// produced by the same `friendly_error_from_volume_error` + `enrich_with_provider`
+/// pipeline the listing-error path uses. When `friendly` is `None`, the FE falls
+/// back to variant-based messages (`transfer-error-messages.ts`) — that branch
+/// stays in place for local-FS error paths that bypass `VolumeError`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WriteErrorEvent {
     pub operation_id: String,
     pub operation_type: WriteOperationType,
     pub error: WriteOperationError,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub friendly: Option<crate::file_system::volume::friendly_error::FriendlyError>,
+}
+
+impl WriteErrorEvent {
+    /// Construct a `WriteErrorEvent`, automatically deriving the `FriendlyError`
+    /// payload from the typed `error` variant via `friendly_from_write_error`.
+    /// Every emit site goes through here, so every `write-error` event the FE
+    /// receives carries a `friendly` payload it can render directly.
+    ///
+    /// Volume-aware paths that still hold the originating `VolumeError + path`
+    /// could in principle bypass this and call
+    /// `friendly_error_from_volume_error` + `enrich_with_provider` directly to
+    /// pick up provider-specific suggestions (the same way the listing-error
+    /// path does). Today no emit site does that — the `VolumeError` is
+    /// consumed by `map_volume_error` per-source inside the inner async block,
+    /// while the emit happens at the operation level. Threading the friendly
+    /// across that boundary is feasible (capture in a local cell, surface
+    /// alongside the final `Err(WriteOperationError)`) but is its own piece
+    /// of work — see follow-up if/when provider-specific copy is needed.
+    pub fn new(operation_id: String, operation_type: WriteOperationType, error: WriteOperationError) -> Self {
+        let friendly = Some(crate::file_system::volume::friendly_error::friendly_from_write_error(
+            &error,
+        ));
+        Self {
+            operation_id,
+            operation_type,
+            error,
+            friendly,
+        }
+    }
 }
 
 /// Emitted when all files belonging to a top-level source item have been processed.

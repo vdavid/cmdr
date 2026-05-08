@@ -190,11 +190,7 @@ pub async fn copy_between_volumes(
                     );
                     let _ = app_for_error.emit(
                         "write-error",
-                        WriteErrorEvent {
-                            operation_id: operation_id_for_cleanup,
-                            operation_type: WriteOperationType::Copy,
-                            error: write_err,
-                        },
+                        WriteErrorEvent::new(operation_id_for_cleanup, WriteOperationType::Copy, write_err),
                     );
                 }
             }
@@ -1086,7 +1082,7 @@ async fn volume_rollback_with_progress(
 /// For files: calls `volume.delete()` directly.
 /// For directories: lists contents, deletes children (files first, then subdirs),
 /// then deletes the directory itself. Best-effort — logs errors but continues.
-async fn delete_volume_path_recursive(volume: &Arc<dyn Volume>, path: &Path) -> Result<(), VolumeError> {
+pub(super) async fn delete_volume_path_recursive(volume: &Arc<dyn Volume>, path: &Path) -> Result<(), VolumeError> {
     let is_dir = match volume.is_directory(path).await {
         Ok(true) => true,
         Ok(false) => false,
@@ -1744,6 +1740,55 @@ mod tests {
         // File should have source content (overwritten)
         let mut stream = dest.open_read_stream(Path::new("/file.txt")).await.unwrap();
         assert_eq!(stream.next_chunk().await.unwrap().unwrap(), b"new version");
+    }
+
+    // ── delete_volume_path_recursive ──────────────────────────────────
+    //
+    // Regression coverage for the move-between-volumes recursive-delete fix.
+    // `Volume::delete` is contractually for files or *empty* directories
+    // (LocalPosix uses `std::fs::remove_dir`); cross-volume moves rely on
+    // this helper to clear out the source tree depth-first.
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn delete_volume_path_recursive_removes_nonempty_directory() {
+        let vol = Arc::new(InMemoryVolume::new("V"));
+        vol.create_directory(Path::new("/photos")).await.unwrap();
+        vol.create_file(Path::new("/photos/a.jpg"), b"a").await.unwrap();
+        vol.create_file(Path::new("/photos/b.jpg"), b"b").await.unwrap();
+        vol.create_directory(Path::new("/photos/sub")).await.unwrap();
+        vol.create_file(Path::new("/photos/sub/c.jpg"), b"c").await.unwrap();
+
+        let result: Arc<dyn Volume> = vol.clone();
+        delete_volume_path_recursive(&result, Path::new("/photos"))
+            .await
+            .unwrap();
+
+        assert!(!vol.exists(Path::new("/photos")).await);
+        assert!(!vol.exists(Path::new("/photos/a.jpg")).await);
+        assert!(!vol.exists(Path::new("/photos/sub/c.jpg")).await);
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn delete_volume_path_recursive_removes_single_file() {
+        let vol = Arc::new(InMemoryVolume::new("V"));
+        vol.create_file(Path::new("/file.txt"), b"hi").await.unwrap();
+
+        let result: Arc<dyn Volume> = vol.clone();
+        delete_volume_path_recursive(&result, Path::new("/file.txt"))
+            .await
+            .unwrap();
+
+        assert!(!vol.exists(Path::new("/file.txt")).await);
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn delete_volume_path_recursive_missing_path_is_ok() {
+        // Used during move cleanup where the path may already be gone (cancelled mid-op,
+        // partial state). No error.
+        let vol = Arc::new(InMemoryVolume::new("V"));
+        let result: Arc<dyn Volume> = vol.clone();
+        let r = delete_volume_path_recursive(&result, Path::new("/never-existed")).await;
+        assert!(r.is_ok(), "expected Ok, got {r:?}");
     }
 
     // ── Phase 4.2 concurrency tests ──────────────────────────────────

@@ -439,6 +439,14 @@ export interface WriteErrorEvent {
   operationId: string
   operationType: WriteOperationType
   error: WriteOperationError
+  /**
+   * Pre-rendered friendly error info for the transfer error dialog.
+   * The backend always populates this for write errors (via
+   * `friendly_from_write_error`); the dialog renders it directly. The legacy
+   * variant-based copy in `transfer-error-messages.ts` is kept as a fallback
+   * for older event shapes and tests.
+   */
+  friendly?: FriendlyError
 }
 
 /** Emitted when all files belonging to a top-level source item have been processed. */

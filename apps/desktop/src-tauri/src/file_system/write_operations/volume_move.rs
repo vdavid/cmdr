@@ -20,7 +20,7 @@ use super::types::{
     WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
 };
 use super::volume_conflict::resolve_volume_conflict;
-use super::volume_copy::map_volume_error;
+use super::volume_copy::{delete_volume_path_recursive, map_volume_error};
 use super::volume_strategy::copy_single_path;
 use crate::file_system::volume::Volume;
 
@@ -208,10 +208,21 @@ pub async fn move_between_volumes(
                     map_volume_error(&source_path.display().to_string(), e)
                 })?;
 
-                // Delete source. Failures here leave a partial-move state (data at dest,
-                // sources still at origin) — log loudly so the cause is visible in the
-                // file log; without this the FE only sees a generic "io_error".
-                source_volume.delete(source_path).await.map_err(|e| {
+                // Delete source. The Volume trait's `delete` is contractually for files
+                // or *empty* directories (LocalPosix uses `std::fs::remove_dir`, which
+                // fails ENOTEMPTY), so for a directory source we recurse: the cross-
+                // volume copy doesn't touch the source, so its tree is intact and needs
+                // a depth-first sweep. Files take the cheap one-shot path.
+                //
+                // Failures here leave a partial-move state (data at dest, sources still
+                // at origin) — log loudly so the cause is visible in the file log;
+                // without this the FE only sees a generic "io_error".
+                let delete_result = if source_is_dir {
+                    delete_volume_path_recursive(&source_volume, source_path).await
+                } else {
+                    source_volume.delete(source_path).await
+                };
+                delete_result.map_err(|e| {
                     log::warn!(
                         target: "move",
                         "move_between_volumes: source delete failed for {} after successful copy: {}",
@@ -286,11 +297,7 @@ pub async fn move_between_volumes(
                 );
                 let _ = app_for_error.emit(
                     "write-error",
-                    WriteErrorEvent {
-                        operation_id: operation_id_for_cleanup,
-                        operation_type: WriteOperationType::Move,
-                        error: e,
-                    },
+                    WriteErrorEvent::new(operation_id_for_cleanup, WriteOperationType::Move, e),
                 );
             }
         }
@@ -492,11 +499,7 @@ async fn move_within_same_volume(
                 );
                 let _ = app_for_error.emit(
                     "write-error",
-                    WriteErrorEvent {
-                        operation_id: operation_id_for_cleanup,
-                        operation_type: WriteOperationType::Move,
-                        error: e,
-                    },
+                    WriteErrorEvent::new(operation_id_for_cleanup, WriteOperationType::Move, e),
                 );
             }
         }

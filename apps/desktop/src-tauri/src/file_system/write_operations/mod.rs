@@ -149,25 +149,21 @@ where
                 // Handler error (validation, I/O, etc.) — emit write-error as safety net
                 let _ = app_for_error.emit(
                     "write-error",
-                    WriteErrorEvent {
-                        operation_id: operation_id_for_cleanup,
-                        operation_type,
-                        error: e,
-                    },
+                    WriteErrorEvent::new(operation_id_for_cleanup, operation_type, e),
                 );
             }
             Err(join_error) => {
                 // Panic/abort in spawn_blocking
                 let _ = app_for_error.emit(
                     "write-error",
-                    WriteErrorEvent {
-                        operation_id: operation_id_for_cleanup,
+                    WriteErrorEvent::new(
+                        operation_id_for_cleanup,
                         operation_type,
-                        error: WriteOperationError::IoError {
+                        WriteOperationError::IoError {
                             path: String::new(),
                             message: format!("Task failed: {}", join_error),
                         },
-                    },
+                    ),
                 );
             }
         }
@@ -287,14 +283,14 @@ pub async fn delete_files_start(
                     use tauri::Emitter;
                     let _ = app_for_error.emit(
                         "write-error",
-                        WriteErrorEvent {
-                            operation_id: operation_id_for_cleanup.clone(),
-                            operation_type: WriteOperationType::Delete,
-                            error: WriteOperationError::IoError {
+                        WriteErrorEvent::new(
+                            operation_id_for_cleanup.clone(),
+                            WriteOperationType::Delete,
+                            WriteOperationError::IoError {
                                 path: volume_id_str.clone(),
                                 message: format!("Volume '{}' not found", volume_id_str),
                             },
-                        },
+                        ),
                     );
                     if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
                         cache.remove(&operation_id_for_cleanup);
@@ -320,11 +316,7 @@ pub async fn delete_files_start(
                 Err(e) => {
                     let _ = app_for_error.emit(
                         "write-error",
-                        WriteErrorEvent {
-                            operation_id: operation_id_for_cleanup,
-                            operation_type: WriteOperationType::Delete,
-                            error: e,
-                        },
+                        WriteErrorEvent::new(operation_id_for_cleanup, WriteOperationType::Delete, e),
                     );
                 }
             }

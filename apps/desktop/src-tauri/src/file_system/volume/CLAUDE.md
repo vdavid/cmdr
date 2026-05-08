@@ -244,9 +244,14 @@ I/O fallback, end-to-end type-checked, no string parsing.
    without Full Disk Access). The streaming listing path (`file_system/listing/streaming.rs`) checks this after a
    successful empty read at the volume root and emits `listing-error` with the hint instead of `listing-complete`.
    Returns `None` for any other volume / non-root path so genuine empty directories don't get the warning.
+4. **`friendly_from_write_error(err)`** (`friendly_error.rs`) — variant-by-variant mapping from
+   `WriteOperationError` (post-`map_volume_error`) to a `FriendlyError`. Used by `WriteErrorEvent::new` so every
+   `write-error` event the FE receives carries a friendly payload, even on local-FS paths where the original
+   `VolumeError` is no longer in scope. `TransferErrorDialog` renders this directly with category-based styling
+   (mirrors the listing-error path's treatment).
 
-The frontend receives the fully-baked `FriendlyError` struct via the `listing-error` Tauri event and renders it with
-category-based visual styling. The frontend never sees errno codes or does OS-specific logic.
+The frontend receives the fully-baked `FriendlyError` struct via the `listing-error` and `write-error` Tauri events
+and renders it with category-based visual styling. The frontend never sees errno codes or does OS-specific logic.
 
 ### Adding a new error message
 

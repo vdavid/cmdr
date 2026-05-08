@@ -418,11 +418,7 @@ fn move_with_staging(
         remove_dir_all_in_background(staging_dir.clone());
         let _ = app.emit(
             "write-error",
-            WriteErrorEvent {
-                operation_id: operation_id.to_string(),
-                operation_type: WriteOperationType::Move,
-                error: e.clone(),
-            },
+            WriteErrorEvent::new(operation_id.to_string(), WriteOperationType::Move, e.clone()),
         );
         return Err(e);
     }
@@ -495,11 +491,7 @@ fn move_with_staging(
         remove_dir_all_in_background(staging_dir);
         let _ = app.emit(
             "write-error",
-            WriteErrorEvent {
-                operation_id: operation_id.to_string(),
-                operation_type: WriteOperationType::Move,
-                error: e.clone(),
-            },
+            WriteErrorEvent::new(operation_id.to_string(), WriteOperationType::Move, e.clone()),
         );
         return Err(e);
     }

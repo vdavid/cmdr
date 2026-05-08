@@ -326,11 +326,7 @@ pub(super) fn copy_files_with_progress(
 
                 let _ = app.emit(
                     "write-error",
-                    WriteErrorEvent {
-                        operation_id: operation_id.to_string(),
-                        operation_type: WriteOperationType::Copy,
-                        error: e.clone(),
-                    },
+                    WriteErrorEvent::new(operation_id.to_string(), WriteOperationType::Copy, e.clone()),
                 );
             }
             Err(e)

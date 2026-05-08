@@ -2304,8 +2304,8 @@
     onTransferCancelled={(files: number) => {
         dialogs.handleTransferCancelled(files)
     }}
-    onTransferError={(error: WriteOperationError) => {
-        dialogs.handleTransferError(error)
+    onTransferError={(error: WriteOperationError, friendly?: FriendlyError) => {
+        dialogs.handleTransferError(error, friendly)
     }}
     onTransferErrorClose={() => {
         dialogs.handleTransferErrorClose()

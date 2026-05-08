@@ -6,7 +6,14 @@ import { getAppLogger } from '$lib/logging/logger'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
 import type { TransferDialogPropsData } from './transfer-operations'
 import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
-import type { TransferOperationType, SortColumn, SortOrder, ConflictResolution, WriteOperationError } from '../types'
+import type {
+  TransferOperationType,
+  SortColumn,
+  SortOrder,
+  ConflictResolution,
+  WriteOperationError,
+  FriendlyError,
+} from '../types'
 import type { FilePaneAPI } from './types'
 
 const log = getAppLogger('fileExplorer')
@@ -58,6 +65,8 @@ export interface AlertDialogPropsData {
 export interface TransferErrorPropsData {
   operationType: TransferOperationType
   error: WriteOperationError
+  /** Backend-supplied friendly error info; preferred over the FE-derived copy when present. */
+  friendly?: FriendlyError
 }
 
 export interface DeleteDialogPropsData {
@@ -362,7 +371,7 @@ export function createDialogState(deps: DialogStateDeps) {
       deps.onRefocus()
     },
 
-    handleTransferError(error: WriteOperationError) {
+    handleTransferError(error: WriteOperationError, friendly?: FriendlyError) {
       const op = transferProgressProps?.operationType ?? 'copy'
       const opLabel = op === 'copy' ? 'Copy' : op === 'move' ? 'Move' : op === 'trash' ? 'Trash' : 'Delete'
       log.error('{op} failed: {errorType}', {
@@ -378,7 +387,7 @@ export function createDialogState(deps: DialogStateDeps) {
       showTransferProgressDialog = false
       transferProgressProps = null
 
-      transferErrorProps = { operationType: op, error }
+      transferErrorProps = { operationType: op, error, friendly }
       showTransferErrorDialog = true
     },
 

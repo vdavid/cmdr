@@ -201,14 +201,14 @@ pub(super) fn trash_files_with_progress(
             .join("; ");
         let _ = app.emit(
             "write-error",
-            WriteErrorEvent {
-                operation_id: operation_id.to_string(),
-                operation_type: WriteOperationType::Trash,
-                error: WriteOperationError::IoError {
+            WriteErrorEvent::new(
+                operation_id.to_string(),
+                WriteOperationType::Trash,
+                WriteOperationError::IoError {
                     path: String::new(),
                     message: error_summary,
                 },
-            },
+            ),
         );
         return Err(WriteOperationError::IoError {
             path: String::new(),

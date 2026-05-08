@@ -33,6 +33,7 @@
         TransferOperationType,
         WriteOperationPhase,
         WriteOperationError,
+        FriendlyError,
         SortColumn,
         SortOrder,
         ConflictResolution,
@@ -86,7 +87,7 @@
         scanInProgress?: boolean
         onComplete: (filesProcessed: number, bytesProcessed: number) => void
         onCancelled: (filesProcessed: number) => void
-        onError: (error: WriteOperationError) => void
+        onError: (error: WriteOperationError, friendly?: FriendlyError) => void
     }
 
     const {
@@ -343,7 +344,7 @@
 
         operationSettled = true
         cleanup()
-        onError(event.error)
+        onError(event.error, event.friendly)
     }
 
     function handleCancelled(event: WriteCancelledEvent) {

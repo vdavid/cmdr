@@ -110,6 +110,14 @@ actual `copy_files_start` can consume the cache via `preview_id` in `WriteOperat
 **Move strategy.** Same filesystem detected via device ID comparison (`MetadataExt::dev`). Cross-filesystem move uses a
 `.cmdr-staging-<uuid>` dir at the destination root, then atomic `rename` into place, then source deletion.
 
+**Cross-volume move source-delete is recursive.** `move_between_volumes` in `volume_move.rs` deletes the source via
+`delete_volume_path_recursive` (re-exported from `volume_copy.rs` for this purpose) when the source is a directory.
+The `Volume::delete` contract is "file or *empty* directory" — `LocalPosixVolume::delete` calls `std::fs::remove_dir`
+which fails ENOTEMPTY — so deleting a populated source directory after a cross-volume copy must walk the tree.
+Regression coverage: `delete_volume_path_recursive_*` tests in `volume_copy.rs`. The original failure mode (data at
+both source and dest, FE shows generic `io_error`) traced back to this — the SMB collision that surfaced on retry was
+just the second-order symptom.
+
 **Move rollback (same-FS).** `MoveTransaction` in `move_op.rs` tracks `(source, dest)` pairs for each rename. On
 cancellation, renames are reversed in reverse order. Same-FS rename rollback is instant (just another rename), so it
 runs synchronously. Cross-FS move rollback is handled by `CopyTransaction` (deletes the staging directory).
@@ -163,7 +171,7 @@ exits, partial files or staging directories may remain on disk. These use the `.
 | `write-conflict` | Stop mode hit a conflicting destination file |
 | `write-complete` | Operation finished successfully |
 | `write-cancelled` | Operation cancelled (includes `rolled_back` flag) |
-| `write-error` | Operation failed (emitted by handler and/or `start_write_operation` safety net) |
+| `write-error` | Operation failed. Carries `error: WriteOperationError` (typed) plus `friendly: FriendlyError` (rendered title/explanation/suggestion + category) populated by `WriteErrorEvent::new` via `friendly_from_write_error`. The FE renders the `friendly` payload directly in `TransferErrorDialog` and applies category-based colors. |
 | `write-source-item-done` | All files for a top-level source item processed (for gradual deselection) |
 | `dry-run-complete` | `config.dry_run == true` (returns `DryRunResult`) |
 | `scan-preview-progress` | During `start_scan_preview` |

@@ -231,5 +231,11 @@ resilience, and common pitfalls.
 
 - **Always read** [style-guide.md](docs/style-guide.md) before touching code. Especially sentence case!
 - Cover your code with tests until you're confident. Don't go overboard. Test per milestone.
+- **We don't use PRs.** Changes land directly on `main`. The "PR" section in `.claude/rules/git-conventions.md` is for
+  the rare case David explicitly asks for one — default is a regular commit on `main` (or merging a feature branch into
+  `main`). No `gh pr create`, no review-app webhook, none of that.
+- **Never `git push` (or `git push --tags`) without explicit approval.** Even after a clean commit on `main`, pushing is
+  an external action — wait until David says to push. This applies to feature branches and tags too. The user-level rule
+  `~/.claude/rules/no-external-actions.md` already covers this; restating it here so it's impossible to miss.
 
 Happy coding! 🦀✨
