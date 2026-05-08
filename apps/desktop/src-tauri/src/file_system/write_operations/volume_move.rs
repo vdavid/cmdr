@@ -20,15 +20,9 @@ use super::types::{
     WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
 };
 use super::volume_conflict::resolve_volume_conflict;
-use super::volume_copy::{delete_volume_path_recursive, map_volume_error};
+use super::volume_copy::{WriteFailure, delete_volume_path_recursive, map_volume_error, write_error_event_from};
 use super::volume_strategy::copy_single_path;
-use crate::file_system::volume::{Volume, VolumeError};
-
-/// Pairs a `WriteOperationError` with the originating `VolumeError + path`, so
-/// the operation-level emit can build a provider-enriched `FriendlyError` via
-/// `WriteErrorEvent::with_friendly`. The optional payload is `None` for
-/// failures that didn't originate as a `VolumeError` (cancellation, validation).
-type MoveOpFailure = (WriteOperationError, Option<(VolumeError, PathBuf)>);
+use crate::file_system::volume::Volume;
 
 /// Unified move across volume types.
 ///
@@ -99,7 +93,7 @@ pub async fn move_between_volumes(
         let operation_id_for_cleanup = operation_id_for_spawn.clone();
         let app_for_error = app.clone();
 
-        let result: Result<(), MoveOpFailure> = async {
+        let result: Result<(), WriteFailure> = async {
             use tauri::Emitter;
 
             let total_files = source_paths.len();
@@ -114,22 +108,16 @@ pub async fn move_between_volumes(
 
             for source_path in &source_paths {
                 if is_cancelled(&state.intent) {
-                    return Err((
-                        WriteOperationError::Cancelled {
-                            message: "Operation cancelled by user".to_string(),
-                        },
-                        None,
-                    ));
+                    return Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
+                        message: "Operation cancelled by user".to_string(),
+                    }));
                 }
 
                 let file_name = source_path.file_name().ok_or_else(|| {
-                    (
-                        WriteOperationError::IoError {
-                            path: source_path.display().to_string(),
-                            message: "Invalid source path".to_string(),
-                        },
-                        None,
-                    )
+                    WriteFailure::synthetic(WriteOperationError::IoError {
+                        path: source_path.display().to_string(),
+                        message: "Invalid source path".to_string(),
+                    })
                 })?;
 
                 let mut dest_item = dest_path.join(file_name);
@@ -172,7 +160,7 @@ pub async fn move_between_volumes(
                             &mut apply_to_all_resolution,
                         )
                         .await
-                        .map_err(|e| (e, None))?;
+                        .map_err(WriteFailure::synthetic)?;
 
                         match resolved {
                             None => {
@@ -220,8 +208,7 @@ pub async fn move_between_volumes(
                         dest_item.display(),
                         e
                     );
-                    let we = map_volume_error(&source_path.display().to_string(), e.clone());
-                    (we, Some((e, source_path.clone())))
+                    WriteFailure::from_volume(source_path, e)
                 })?;
 
                 // Delete source. The Volume trait's `delete` is contractually for files
@@ -245,8 +232,7 @@ pub async fn move_between_volumes(
                         source_path.display(),
                         e
                     );
-                    let we = map_volume_error(&source_path.display().to_string(), e.clone());
-                    (we, Some((e, source_path.clone())))
+                    WriteFailure::from_volume(source_path, e)
                 })?;
 
                 files_done += 1;
@@ -302,32 +288,20 @@ pub async fn move_between_volumes(
             // Cancellations already emit write-cancelled from inside the handler;
             // don't also emit write-error — the frontend would log a user-initiated
             // cancel as an error.
-            Err((ref e, _)) if matches!(e, WriteOperationError::Cancelled { .. }) => {
+            Err(WriteFailure { ref error, .. }) if matches!(error, WriteOperationError::Cancelled { .. }) => {
                 log::info!("move_between_volumes: operation {} cancelled", operation_id_for_cleanup);
             }
-            Err((e, volume_ctx)) => {
+            Err(failure) => {
                 log::warn!(
                     target: "move",
                     "move operation {} failed: {:?}",
                     operation_id_for_cleanup,
-                    e
+                    failure.error
                 );
-                // When the failure originated as a `VolumeError` we still have the
-                // volume error + path in scope, so build the FriendlyError via the
-                // richer `friendly_error_from_volume_error` + `enrich_with_provider`
-                // pipeline (provider-specific suggestions kick in here). Otherwise
-                // the variant-based `friendly_from_write_error` covers the case.
-                let event = match volume_ctx {
-                    Some((volume_error, path)) => WriteErrorEvent::with_friendly(
-                        operation_id_for_cleanup,
-                        WriteOperationType::Move,
-                        e,
-                        &volume_error,
-                        &path,
-                    ),
-                    None => WriteErrorEvent::new(operation_id_for_cleanup, WriteOperationType::Move, e),
-                };
-                let _ = app_for_error.emit("write-error", event);
+                let _ = app_for_error.emit(
+                    "write-error",
+                    write_error_event_from(operation_id_for_cleanup, WriteOperationType::Move, failure),
+                );
             }
         }
     });

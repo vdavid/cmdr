@@ -2,56 +2,53 @@
 //!
 //! Used by `WriteErrorEvent::new` so every `write-error` event the FE receives
 //! carries a rendered payload, even on local-FS paths where the original
-//! `VolumeError` is no longer in scope. Volume-aware paths that still hold
-//! the originating `VolumeError + path` should prefer
-//! `friendly_error_from_volume_error` + `enrich_with_provider` (this is a
-//! parallel, not a replacement).
+//! `VolumeError` is no longer in scope. Variants that map cleanly back to a
+//! "kind" delegate to the shared `kinds::*` constructors so the user sees
+//! consistent copy regardless of which layer originated the error. Variants
+//! unique to write operations (`InsufficientSpace`, `SymlinkLoop`,
+//! `DestinationInsideSource`, `NameTooLong`, `InvalidName`, …) are handled
+//! inline because they carry kind-specific data the shared constructors don't
+//! take.
+//!
+//! Volume-aware paths (`volume_move`, `volume_copy`) keep the originating
+//! `VolumeError + path` and prefer `friendly_error_from_volume_error` +
+//! `enrich_with_provider` for richer provider-specific suggestions; this
+//! function is the fallback when only the typed write error is in scope.
 
-use super::{ErrorActionKind, ErrorCategory, FriendlyError};
+use super::{ErrorCategory, FriendlyError, kinds};
 
 /// Converts a `WriteOperationError` into a `FriendlyError` for the transfer-error
 /// dialog. Mirrors `friendly_error_from_volume_error` but works downstream of the
 /// `map_volume_error` conversion, so it covers the local-FS error paths too.
-///
-/// For volume-aware paths that still have the original `VolumeError + path`,
-/// prefer `friendly_error_from_volume_error` followed by `enrich_with_provider` —
-/// that route gets the provider-specific suggestions. This function is the
-/// fallback when only the typed write error is in scope.
 pub fn friendly_from_write_error(err: &crate::file_system::write_operations::WriteOperationError) -> FriendlyError {
     use crate::file_system::write_operations::WriteOperationError as W;
 
-    let raw_detail = format!("{err:?}");
+    let raw = format!("{err:?}");
     match err {
-        W::SourceNotFound { path } => FriendlyError {
-            category: ErrorCategory::NeedsAction,
-            title: "Couldn't find that file".into(),
-            explanation: format!(
-                "The file or folder at `{path}` isn't there anymore — it may have been moved or deleted while Cmdr was working."
-            ),
-            suggestion: "Refresh the source folder, then try again with the file you want.".into(),
-            raw_detail,
-            retry_hint: false,
-            action_kind: None,
-        },
-        W::DestinationExists { path } => FriendlyError {
-            category: ErrorCategory::NeedsAction,
-            title: "Name is already taken".into(),
-            explanation: format!("Something already exists at `{path}`."),
-            suggestion: "Pick a different name, or remove the existing item first.".into(),
-            raw_detail,
-            retry_hint: false,
-            action_kind: None,
-        },
-        W::PermissionDenied { path, .. } => FriendlyError {
-            category: ErrorCategory::NeedsAction,
-            title: "Couldn't access this location".into(),
-            explanation: format!("Cmdr doesn't have permission to write to `{path}`."),
-            suggestion: "Check folder permissions, or try a different destination. On macOS, you may need to grant **Full Disk Access** in System Settings > Privacy & Security."
-                .into(),
-            raw_detail,
-            retry_hint: false,
-            action_kind: Some(ErrorActionKind::OpenPrivacySettings),
-        },
+        // Variants that map to a shared kind — same copy as the listing path.
+        W::SourceNotFound { path } | W::SameLocation { path } => {
+            // SameLocation and SourceNotFound both surface as "this file isn't usable" to the user.
+            // Differentiating them here would just be noise; the typed variant is still in `error`
+            // for programmatic FE handling if needed.
+            kinds::not_found(path, raw)
+        }
+        W::DestinationExists { path } => kinds::already_exists(path, raw),
+        W::PermissionDenied { path, .. } => kinds::permission_denied(path, raw),
+        W::Cancelled { .. } => kinds::cancelled(raw),
+        W::DeviceDisconnected { path } => {
+            // Operation context — user can retry the move/copy after reconnecting.
+            let mut friendly = kinds::device_disconnected(path, raw);
+            friendly.retry_hint = true;
+            friendly
+        }
+        W::ConnectionInterrupted { path } => {
+            // ConnectionInterrupted is a transient version of ConnectionTimeout — a network
+            // hiccup rather than a strict timeout. The kind copy is generic enough to fit both.
+            let _ = path;
+            kinds::connection_timeout(raw)
+        }
+
+        // Variants with kind-specific data — inline.
         W::InsufficientSpace {
             required,
             available,
@@ -66,16 +63,7 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
                 available,
             ),
             suggestion: "Free up space at the destination, or pick a different one.".into(),
-            raw_detail,
-            retry_hint: false,
-            action_kind: None,
-        },
-        W::SameLocation { path } => FriendlyError {
-            category: ErrorCategory::NeedsAction,
-            title: "Same source and destination".into(),
-            explanation: format!("`{path}` is both the source and the destination — nothing to do."),
-            suggestion: "Pick a different destination.".into(),
-            raw_detail,
+            raw_detail: raw,
             retry_hint: false,
             action_kind: None,
         },
@@ -84,7 +72,7 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
             title: "Destination is inside the source".into(),
             explanation: format!("Cmdr can't copy `{source}` into `{destination}` — that would loop forever."),
             suggestion: "Pick a destination outside the source folder.".into(),
-            raw_detail,
+            raw_detail: raw,
             retry_hint: false,
             action_kind: None,
         },
@@ -93,26 +81,8 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
             title: "Symlink loop".into(),
             explanation: format!("`{path}` contains symlinks that point back at themselves."),
             suggestion: "Resolve the loop manually before retrying.".into(),
-            raw_detail,
+            raw_detail: raw,
             retry_hint: false,
-            action_kind: None,
-        },
-        W::Cancelled { .. } => FriendlyError {
-            category: ErrorCategory::Transient,
-            title: "Cancelled".into(),
-            explanation: "The operation was cancelled.".into(),
-            suggestion: "Start it again whenever you're ready.".into(),
-            raw_detail,
-            retry_hint: true,
-            action_kind: None,
-        },
-        W::DeviceDisconnected { path } => FriendlyError {
-            category: ErrorCategory::NeedsAction,
-            title: "Device disconnected".into(),
-            explanation: format!("The device holding `{path}` was disconnected during the operation."),
-            suggestion: "Reconnect the device, then try again.".into(),
-            raw_detail,
-            retry_hint: true,
             action_kind: None,
         },
         W::ReadOnlyDevice { path, device_name } => FriendlyError {
@@ -124,7 +94,7 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
                 path,
             ),
             suggestion: "Pick a destination that supports writing.".into(),
-            raw_detail,
+            raw_detail: raw,
             retry_hint: false,
             action_kind: None,
         },
@@ -133,7 +103,7 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
             title: "File is locked".into(),
             explanation: format!("`{path}` is locked and can't be changed."),
             suggestion: "On macOS, unlock it via Finder > Get Info > uncheck Locked. Then try again.".into(),
-            raw_detail,
+            raw_detail: raw,
             retry_hint: false,
             action_kind: None,
         },
@@ -144,43 +114,22 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
                 "`{path}` is on a volume that doesn't have a trash (network shares, FAT-formatted drives, …)."
             ),
             suggestion: "Delete the file directly instead of moving it to trash.".into(),
-            raw_detail,
+            raw_detail: raw,
             retry_hint: false,
             action_kind: None,
         },
-        W::ConnectionInterrupted { path } => FriendlyError {
-            category: ErrorCategory::Transient,
-            title: "Connection interrupted".into(),
-            explanation: format!("The network connection to `{path}` dropped before the operation finished."),
-            suggestion: "Check your connection, then try again.".into(),
-            raw_detail,
-            retry_hint: true,
-            action_kind: None,
-        },
-        W::ReadError { path, message } => FriendlyError {
-            category: ErrorCategory::Serious,
-            title: "Couldn't read the source".into(),
-            explanation: format!("Cmdr ran into a problem reading `{path}`: {message}."),
-            suggestion: "Check that the source is still there and readable, then try again.".into(),
-            raw_detail,
-            retry_hint: true,
-            action_kind: None,
-        },
-        W::WriteError { path, message } => FriendlyError {
-            category: ErrorCategory::Serious,
-            title: "Couldn't write to the destination".into(),
-            explanation: format!("Cmdr ran into a problem writing to `{path}`: {message}."),
-            suggestion: "Check that the destination is still reachable and has space, then try again.".into(),
-            raw_detail,
-            retry_hint: true,
-            action_kind: None,
-        },
+        W::ReadError { path, message } => kinds::io_serious(path, message, raw),
+        W::WriteError { path, message } => {
+            let mut friendly = kinds::io_serious(path, message, raw);
+            friendly.title = "Couldn't write to the destination".into();
+            friendly
+        }
         W::NameTooLong { path } => FriendlyError {
             category: ErrorCategory::NeedsAction,
             title: "Name too long".into(),
             explanation: format!("The filesystem at `{path}` doesn't accept names this long."),
             suggestion: "Rename the file to something shorter and try again.".into(),
-            raw_detail,
+            raw_detail: raw,
             retry_hint: false,
             action_kind: None,
         },
@@ -189,19 +138,10 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
             title: "Invalid file name".into(),
             explanation: format!("The destination at `{path}` won't accept this name: {message}."),
             suggestion: "Rename the file (avoid special characters), then try again.".into(),
-            raw_detail,
+            raw_detail: raw,
             retry_hint: false,
             action_kind: None,
         },
-        W::IoError { path, message } => FriendlyError {
-            category: ErrorCategory::Serious,
-            title: "Something went wrong".into(),
-            explanation: format!("Cmdr ran into an unexpected problem at `{path}`: {message}."),
-            suggestion: "Try again. If it keeps happening, expand **Technical details** below to share the specifics."
-                .into(),
-            raw_detail,
-            retry_hint: true,
-            action_kind: None,
-        },
+        W::IoError { path, message } => kinds::io_serious(path, message, raw),
     }
 }

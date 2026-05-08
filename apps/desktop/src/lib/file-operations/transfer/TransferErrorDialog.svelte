@@ -1,8 +1,8 @@
 <script lang="ts">
     import type { WriteOperationError, TransferOperationType, FriendlyError } from '$lib/file-explorer/types'
     import { getUserFriendlyMessage, getTechnicalDetails } from './transfer-error-messages'
-    import { renderErrorMarkdown } from '$lib/file-explorer/pane/error-pane-utils'
-    import { openExternalUrl, openSystemSettingsUrl } from '$lib/tauri-commands'
+    import FriendlyErrorContent from './FriendlyErrorContent.svelte'
+    import FallbackErrorContent from './FallbackErrorContent.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import IconCircleAlert from '~icons/lucide/circle-alert'
@@ -22,41 +22,25 @@
 
     let showDetails = $state(false)
 
-    /** Variant-derived fallback when the backend didn't attach a `friendly`. */
-    const fallback = $derived(getUserFriendlyMessage(error, operationType))
+    /** Title: backend-supplied friendly title preferred, FE-derived fallback otherwise. */
+    const titleText = $derived(friendlyError?.title ?? getUserFriendlyMessage(error, operationType).title)
 
-    /** What the dialog actually renders — backend friendly preferred, fallback otherwise. */
-    const display = $derived(
-        friendlyError
-            ? {
-                  title: friendlyError.title,
-                  // Markdown for backend-supplied copy.
-                  bodyHtml: renderErrorMarkdown(friendlyError.explanation),
-                  suggestionHtml: renderErrorMarkdown(friendlyError.suggestion),
-                  category: friendlyError.category,
-                  retryHint: friendlyError.retryHint,
-              }
-            : {
-                  title: fallback.title,
-                  bodyHtml: null,
-                  bodyText: fallback.message,
-                  suggestionHtml: null,
-                  suggestionText: fallback.suggestion,
-                  category: 'serious' as const,
-                  retryHint: false,
-              },
-    )
+    /** Category drives icon and container colors. Fallback path is always treated as `serious`. */
+    const category = $derived<FriendlyError['category']>(friendlyError?.category ?? 'serious')
 
-    const technicalDetails = $derived(friendlyError?.rawDetail ?? getTechnicalDetails(error))
+    /** Retry button visibility — transient kinds always offer retry, others gated on explicit retryHint. */
+    const showRetry = $derived(onRetry !== undefined && (category === 'transient' || friendlyError?.retryHint === true))
 
-    /** Container colors per category. NeedsAction is neutral, Transient is warning-yellow, Serious is red. */
+    /** Container styling per category. */
     const containerStyle = $derived(
-        display.category === 'serious'
+        category === 'serious'
             ? 'width: 420px; max-width: 90vw; background: var(--color-error-bg); border-color: var(--color-error-border)'
-            : display.category === 'transient'
+            : category === 'transient'
               ? 'width: 420px; max-width: 90vw; background: var(--color-warning-bg); border-color: var(--color-border-strong)'
               : 'width: 420px; max-width: 90vw; background: var(--color-bg-secondary); border-color: var(--color-border-strong)',
     )
+
+    const technicalDetails = $derived(friendlyError?.rawDetail ?? getTechnicalDetails(error))
 
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
@@ -66,23 +50,6 @@
 
     function toggleDetails() {
         showDetails = !showDetails
-    }
-
-    /**
-     * Backend friendly-error markdown can include `x-apple.systempreferences:` URLs (route through
-     * Rust IPC) or plain http(s) URLs (route through the external opener). Mirrors `ErrorPane`.
-     * Backend-controlled markdown only, so no allowlist needed.
-     */
-    function handleMarkdownLinkClick(e: MouseEvent) {
-        const link = (e.target instanceof Element ? e.target : null)?.closest('a')
-        const href = link?.getAttribute('href')
-        if (!link || !href) return
-        e.preventDefault()
-        if (href.startsWith('x-apple.systempreferences:')) {
-            void openSystemSettingsUrl(href)
-        } else {
-            void openExternalUrl(href)
-        }
     }
 </script>
 
@@ -99,36 +66,28 @@
         <span class="error-title-content">
             <span
                 class="error-icon"
-                class:icon-error={display.category === 'serious'}
-                class:icon-warning={display.category === 'transient'}
-                class:icon-info={display.category === 'needs_action'}
+                class:icon-error={category === 'serious'}
+                class:icon-warning={category === 'transient'}
+                class:icon-info={category === 'needs_action'}
                 aria-hidden="true"
             >
-                {#if display.category === 'serious'}
+                {#if category === 'serious'}
                     <IconCircleAlert width="22" height="22" />
-                {:else if display.category === 'transient'}
+                {:else if category === 'transient'}
                     <IconTriangleAlert width="22" height="22" />
                 {:else}
                     <IconInfo width="22" height="22" />
                 {/if}
             </span>
-            {display.title}
+            {titleText}
         </span>
     {/snippet}
 
-    <!-- Click delegate for anchor tags inside rendered markdown -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="error-content" onclick={handleMarkdownLinkClick}>
-        {#if display.bodyHtml !== null && display.bodyHtml !== undefined}
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Backend-controlled markdown, not user input -->
-            <div id="error-dialog-message" class="message selectable">{@html display.bodyHtml}</div>
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Backend-controlled markdown, not user input -->
-            <div class="suggestion">{@html display.suggestionHtml}</div>
-        {:else}
-            <p id="error-dialog-message" class="message selectable">{display.bodyText}</p>
-            <p class="suggestion">{display.suggestionText}</p>
-        {/if}
-    </div>
+    {#if friendlyError}
+        <FriendlyErrorContent friendly={friendlyError} />
+    {:else}
+        <FallbackErrorContent {error} {operationType} />
+    {/if}
 
     <!-- Technical details (collapsible) -->
     <div class="details-section">
@@ -152,9 +111,8 @@
         {/if}
     </div>
 
-    <!-- Action buttons -->
     <div class="button-row">
-        {#if onRetry && (display.retryHint || display.category === 'transient')}
+        {#if onRetry && showRetry}
             <Button variant="secondary" onclick={onRetry}>Retry</Button>
         {/if}
         <Button variant="primary" onclick={onClose}>Close</Button>
@@ -188,63 +146,6 @@
 
     .error-icon.icon-info {
         color: var(--color-text-secondary);
-    }
-
-    .error-content {
-        padding: 0 var(--spacing-xl) var(--spacing-lg);
-    }
-
-    .message {
-        margin: 0 0 var(--spacing-sm);
-        font-size: var(--font-size-md);
-        color: var(--color-text-secondary);
-        line-height: 1.5;
-    }
-
-    .suggestion {
-        margin: 0;
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-        line-height: 1.5;
-    }
-
-    /* Markdown content inside the message/suggestion blocks */
-    .message :global(p),
-    .suggestion :global(p) {
-        margin: 0 0 var(--spacing-sm);
-    }
-
-    .message :global(p:last-child),
-    .suggestion :global(p:last-child) {
-        margin-bottom: 0;
-    }
-
-    .message :global(ul),
-    .suggestion :global(ul) {
-        margin: var(--spacing-xs) 0 0;
-        padding-left: var(--spacing-lg);
-    }
-
-    .message :global(a),
-    .suggestion :global(a) {
-        color: var(--color-accent-text);
-        text-decoration: underline;
-    }
-
-    .message :global(code),
-    .suggestion :global(code) {
-        font-family: var(--font-mono);
-        font-size: var(--font-size-sm);
-        padding: 0 var(--spacing-xxs);
-        background: var(--color-bg-tertiary);
-        border-radius: var(--radius-sm);
-    }
-
-    /* Make text selectable (override global user-select: none) */
-    .selectable {
-        user-select: text;
-        -webkit-user-select: text;
-        cursor: text;
     }
 
     .details-section {

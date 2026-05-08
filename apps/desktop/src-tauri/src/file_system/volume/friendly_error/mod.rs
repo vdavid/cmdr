@@ -15,6 +15,7 @@
 
 mod empty_root;
 mod errno;
+mod kinds;
 mod volume_error;
 mod write_error;
 

@@ -150,7 +150,7 @@ pub async fn copy_between_volumes(
         let app_for_error = app.clone();
 
         let events = TauriEventSink::new(app);
-        let result: Result<(), WriteOperationError> = copy_volumes_with_progress(
+        let result: Result<(), WriteFailure> = copy_volumes_with_progress(
             &events,
             &operation_id_for_spawn,
             &state,
@@ -174,25 +174,24 @@ pub async fn copy_between_volumes(
             Ok(()) => {
                 // Success - write-complete event already emitted by copy_volumes_with_progress
             }
-            Err(write_err) => {
-                if matches!(write_err, WriteOperationError::Cancelled { .. }) {
-                    // write-cancelled was already emitted by copy_volumes_with_progress,
-                    // so don't also emit write-error — it would make the frontend log
-                    // a user-initiated cancel as an error.
-                    log::info!("copy_between_volumes: operation {} cancelled", operation_id_for_cleanup,);
-                } else {
-                    // Toast-visible failure for cross-volume copy (Local↔SMB↔MTP).
-                    // Routed through `log_error!` so opt-in users get an auto report.
-                    crate::log_error!(
-                        "copy_between_volumes: operation {} failed: {:?}",
-                        operation_id_for_cleanup,
-                        write_err,
-                    );
-                    let _ = app_for_error.emit(
-                        "write-error",
-                        WriteErrorEvent::new(operation_id_for_cleanup, WriteOperationType::Copy, write_err),
-                    );
-                }
+            Err(WriteFailure { ref error, .. }) if matches!(error, WriteOperationError::Cancelled { .. }) => {
+                // write-cancelled was already emitted by copy_volumes_with_progress,
+                // so don't also emit write-error — it would make the frontend log
+                // a user-initiated cancel as an error.
+                log::info!("copy_between_volumes: operation {} cancelled", operation_id_for_cleanup,);
+            }
+            Err(failure) => {
+                // Toast-visible failure for cross-volume copy (Local↔SMB↔MTP).
+                // Routed through `log_error!` so opt-in users get an auto report.
+                crate::log_error!(
+                    "copy_between_volumes: operation {} failed: {:?}",
+                    operation_id_for_cleanup,
+                    failure.error,
+                );
+                let _ = app_for_error.emit(
+                    "write-error",
+                    write_error_event_from(operation_id_for_cleanup, WriteOperationType::Copy, failure),
+                );
             }
         }
     });
@@ -301,7 +300,7 @@ pub(crate) async fn copy_volumes_with_progress(
     dest_volume: Arc<dyn Volume>,
     dest_path: &Path,
     config: &VolumeCopyConfig,
-) -> Result<(), WriteOperationError> {
+) -> Result<(), WriteFailure> {
     log::debug!(
         "copy_volumes_with_progress: starting operation_id={}, {} sources",
         operation_id,
@@ -359,19 +358,20 @@ pub(crate) async fn copy_volumes_with_progress(
         });
 
         if is_cancelled(&state.intent) {
-            return Err(WriteOperationError::Cancelled {
+            return Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
-            });
+            }));
         }
 
         // Single pipelined batch scan. For SMB this fires N stat requests
         // over one session in parallel instead of N sequential RTTs (Fix 4).
         // Default impl loops per-path for backends where per-path I/O is
         // cheap (local FS, in-memory). MTP overrides to group by parent dir.
-        let batch = source_volume
-            .scan_for_copy_batch(source_paths)
-            .await
-            .map_err(|e| map_volume_error("scan_for_copy_batch", e))?;
+        let batch = source_volume.scan_for_copy_batch(source_paths).await.map_err(|e| {
+            // No specific source path here — pick the first one or fall back to the dest.
+            let path = source_paths.first().cloned().unwrap_or_else(|| dest_path.to_path_buf());
+            WriteFailure::from_volume(&path, e)
+        })?;
 
         total_files = batch.aggregate.file_count;
         let total_dirs = batch.aggregate.dir_count;
@@ -407,13 +407,13 @@ pub(crate) async fn copy_volumes_with_progress(
     let dest_space = dest_volume
         .get_space_info()
         .await
-        .map_err(|e| map_volume_error(&dest_path.display().to_string(), e))?;
+        .map_err(|e| WriteFailure::from_volume(dest_path, e))?;
     if dest_space.available_bytes < total_bytes {
-        return Err(WriteOperationError::InsufficientSpace {
+        return Err(WriteFailure::synthetic(WriteOperationError::InsufficientSpace {
             required: total_bytes,
             available: dest_space.available_bytes,
             volume_name: Some(dest_volume.name().to_string()),
-        });
+        }));
     }
 
     // Phase 3: Copy files with progress
@@ -482,7 +482,7 @@ pub(crate) async fn copy_volumes_with_progress(
     // mode keeps the legacy single-slot behavior via a 1-element vec.
     let in_flight_partials: Arc<std::sync::Mutex<Vec<PathBuf>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
     let mut last_dest_path: Option<PathBuf> = None;
-    let mut copy_error: Option<WriteOperationError> = None;
+    let mut copy_error: Option<WriteFailure> = None;
 
     if use_concurrent_path {
         // Concurrent path: FuturesUnordered-driven sliding window sized by
@@ -548,7 +548,8 @@ pub(crate) async fn copy_volumes_with_progress(
                             state,
                             &mut apply_to_all_resolution,
                         )
-                        .await?;
+                        .await
+                        .map_err(WriteFailure::synthetic)?;
                         match resolved {
                             None => {
                                 log::debug!(
@@ -678,7 +679,7 @@ pub(crate) async fn copy_volumes_with_progress(
                     }
                     drop(partials);
                     last_dest_path = Some(failed_dest.clone());
-                    copy_error = Some(map_volume_error(&failed_dest.display().to_string(), e));
+                    copy_error = Some(WriteFailure::from_volume(&failed_dest, e));
                     // Drop remaining in-flight tasks — their streams close,
                     // temp files get cleaned up by the per-backend write
                     // abort + delete path. Partial cleanup is done below.
@@ -738,7 +739,8 @@ pub(crate) async fn copy_volumes_with_progress(
                         state,
                         &mut apply_to_all_resolution,
                     )
-                    .await?;
+                    .await
+                    .map_err(WriteFailure::synthetic)?;
                     match resolved {
                         None => {
                             log::debug!(
@@ -834,7 +836,7 @@ pub(crate) async fn copy_volumes_with_progress(
                 }
                 Err(e) => {
                     bytes_done = atomic_bytes_done.load(Ordering::Relaxed);
-                    copy_error = Some(map_volume_error(&source_path.display().to_string(), e));
+                    copy_error = Some(WriteFailure::from_volume(source_path, e));
                     break;
                 }
             }
@@ -962,9 +964,9 @@ pub(crate) async fn copy_volumes_with_progress(
         return Err(err);
     }
 
-    Err(WriteOperationError::Cancelled {
+    Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
         message: "Operation cancelled by user".to_string(),
-    })
+    }))
 }
 
 // ============================================================================
@@ -1121,6 +1123,69 @@ pub(super) async fn delete_volume_path_recursive(volume: &Arc<dyn Volume>, path:
 
     // Delete the now-empty directory
     volume.delete(path).await
+}
+
+/// A write-operation failure carrying the typed `WriteOperationError` for FE rendering plus,
+/// when available, the originating `(VolumeError, path)` so the outer emit can build a
+/// provider-enriched `FriendlyError` via `WriteErrorEvent::with_friendly`. `volume_ctx` is
+/// `None` for failures that didn't start as a `VolumeError` (cancellation, validation,
+/// synthetic IoError).
+#[derive(Debug, Clone)]
+pub(crate) struct WriteFailure {
+    pub error: WriteOperationError,
+    pub volume_ctx: Option<(VolumeError, PathBuf)>,
+}
+
+impl WriteFailure {
+    /// Construct a `WriteFailure` from an originating `VolumeError + path`. Maps the error
+    /// to a `WriteOperationError` and retains the volume context for friendly rendering.
+    /// One spot to clone, one spot to map — replaces the per-call-site `e.clone()` boilerplate.
+    pub(super) fn from_volume(path: &Path, e: VolumeError) -> Self {
+        let error = map_volume_error(&path.display().to_string(), e.clone());
+        Self {
+            error,
+            volume_ctx: Some((e, path.to_path_buf())),
+        }
+    }
+
+    /// Construct a `WriteFailure` from a synthetic `WriteOperationError` (no volume
+    /// context — used for cancellation, validation errors, etc.).
+    pub(super) fn synthetic(error: WriteOperationError) -> Self {
+        Self {
+            error,
+            volume_ctx: None,
+        }
+    }
+}
+
+/// Convenience: take a captured `(VolumeError, PathBuf)` and build the `WriteFailure` from
+/// it. Used inside loops where we cloned the path for logging and want to surface the
+/// volume context out alongside the typed write error.
+impl From<(VolumeError, PathBuf)> for WriteFailure {
+    fn from(ctx: (VolumeError, PathBuf)) -> Self {
+        let (volume_error, path) = ctx;
+        let error = map_volume_error(&path.display().to_string(), volume_error.clone());
+        Self {
+            error,
+            volume_ctx: Some((volume_error, path)),
+        }
+    }
+}
+
+/// Builds a `WriteErrorEvent` from a `WriteFailure`. When the failure carries the originating
+/// `VolumeError + path`, uses `with_friendly` for provider-enriched suggestions; otherwise
+/// falls back to the variant-derived `new`. Shared by `volume_move` and `volume_copy`.
+pub(super) fn write_error_event_from(
+    operation_id: String,
+    operation_type: WriteOperationType,
+    failure: WriteFailure,
+) -> WriteErrorEvent {
+    match failure.volume_ctx {
+        Some((volume_error, path)) => {
+            WriteErrorEvent::with_friendly(operation_id, operation_type, failure.error, &volume_error, &path)
+        }
+        None => WriteErrorEvent::new(operation_id, operation_type, failure.error),
+    }
 }
 
 /// Maps VolumeError to WriteOperationError, attaching path context where the original error lacks one.
@@ -1560,7 +1625,13 @@ mod tests {
         )
         .await;
 
-        assert!(matches!(result, Err(WriteOperationError::Cancelled { .. })));
+        assert!(matches!(
+            result,
+            Err(WriteFailure {
+                error: WriteOperationError::Cancelled { .. },
+                ..
+            })
+        ));
         // No files should have been copied
         assert!(!dest.exists(Path::new("/a.txt")).await);
         assert!(!dest.exists(Path::new("/b.txt")).await);
@@ -1981,7 +2052,13 @@ mod tests {
 
         // Must return an IoError (the injected one). The in-flight tasks drop
         // cleanly and the outer loop returns the mapped error.
-        assert!(matches!(result, Err(WriteOperationError::IoError { .. })));
+        assert!(matches!(
+            result,
+            Err(WriteFailure {
+                error: WriteOperationError::IoError { .. },
+                ..
+            })
+        ));
 
         // Not all 20 files should be at the dest (some were still in flight
         // or not yet started when the abort fired). The poisoned file itself
@@ -2065,7 +2142,13 @@ mod tests {
         assert!(
             matches!(
                 result,
-                Err(WriteOperationError::Cancelled { .. }) | Err(WriteOperationError::IoError { .. })
+                Err(WriteFailure {
+                    error: WriteOperationError::Cancelled { .. },
+                    ..
+                }) | Err(WriteFailure {
+                    error: WriteOperationError::IoError { .. },
+                    ..
+                })
             ),
             "expected Cancelled or IoError, got {:?}",
             result
