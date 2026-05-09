@@ -50,7 +50,7 @@
         getFileSizeFormat,
     } from '$lib/settings/reactive-settings.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
-    import { onDebouncedScaleChange } from '$lib/text-size.svelte'
+    import { onDebouncedScaleChange, getEffectiveScale } from '$lib/text-size.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import type { RenameState } from '../rename/rename-state.svelte'
@@ -265,6 +265,14 @@
 
         const parentStats = isParentRowVisible ? parentDirStats : null
         if (visible.length === 0 && !parentStats) return
+        // Reading getEffectiveScale() here makes the effect re-run when the
+        // compounded scale changes (system multiplier resolves at startup, OS
+        // accessibility size flips, user releases the slider). The 1s-debounced
+        // `scaleSettleTick` covers the heavy backend font-metrics path; this
+        // direct read is what prevents a startup race where a Full-mode
+        // listing is measured at scale 1 and then never re-measured after the
+        // real scale lands.
+        void getEffectiveScale()
         columnWidths = computeFullListColumnWidths({
             entries: visible,
             parentDirStats: parentStats,

@@ -22,7 +22,7 @@
     import { getDirStatsBatch } from '$lib/tauri-commands'
     import { buildDirSizeTooltip, hasSizeMismatch } from './full-list-utils'
     import { getRowHeight, formatFileSize, getSizeMismatchWarning, getStripedRows } from '$lib/settings/reactive-settings.svelte'
-    import { onDebouncedScaleChange } from '$lib/text-size.svelte'
+    import { onDebouncedScaleChange, getEffectiveScale } from '$lib/text-size.svelte'
     import { getSetting } from '$lib/settings/settings-store'
     import { measureWidestFilename } from './measure-brief-column-widths'
     import { SvelteMap } from 'svelte/reactivity'
@@ -286,8 +286,15 @@
 
     $effect(() => {
         // Re-measure whenever visible columns (or their cached contents) change,
-        // and after a settled scale change (tracked via the tick).
+        // after a settled scale change (tracked via the tick), or when the live
+        // effective scale itself flips. The tick-only path coalesces heavy work
+        // (font-metrics IPC) on the 1 s debounce; reading `getEffectiveScale()`
+        // directly closes the startup race where `effectiveScale` jumps from
+        // its default 1 to the real system × user value after `initTextSize()`
+        // resolves — without it, the columns would stay measured at scale 1
+        // until the next data change.
         void scaleSettleTick
+        void getEffectiveScale()
         const cols = visibleColumns
         const cap = maxFilenameWidth
         for (const col of cols) {

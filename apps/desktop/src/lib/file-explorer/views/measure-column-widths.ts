@@ -62,9 +62,22 @@ const HEADER_CHROME_ACTIVE = 12
  */
 const HEADER_CHROME_INACTIVE = 0
 
-/** Extra px added to the final column width. Zero by design — `Math.ceil` already
- *  rounds up, and the pretext measurement matches the browser's own text layout. */
-const WIDTH_PADDING = 0
+/**
+ * Per-cell measurement safety pad in CSS pixels.
+ *
+ * Pretext measures via canvas, the file list renders via DOM. On macOS
+ * WKWebView the two paths can disagree on glyph advance widths by a fraction
+ * of a pixel even with the same `-apple-system` font and the same integer
+ * pixel size — canvas returns CoreText's typographic advance, the DOM lays
+ * out with end-side antialiasing bleed and inline-block subpixel rounding.
+ * The gap is invisible on most strings but accumulates on certain digit
+ * combinations (a `00:NN` time renders ~1 px wider than pretext measures),
+ * causing the Modified column to ellipsize for one or two rows while every
+ * other entry in the same listing fits perfectly. 2 px covers the worst case
+ * we've seen with the iso `YYYY-MM-DD | HH:mm` format and is small enough
+ * to be invisible in the overall layout.
+ */
+const MEASUREMENT_SAFETY_PAD = 2
 
 /** 12px icon + 2px (--spacing-xxs) left margin = 14px per size-column indicator. */
 const SIZE_ICON_WIDTH = 14
@@ -306,18 +319,36 @@ export function computeFullListColumnWidths(args: {
     }
   }
 
-  // If any row had a split date, fold the two halves into the total. Header
-  // overhead (caret allowance for sortBy='modified') is already baked into
-  // the initial dateMax; we just take the larger of header and split-data.
-  if (date.splitLeft > 0 || date.splitRight > 0) {
-    const splitTotal = date.splitLeft + DATE_PARTS_GAP + date.splitRight
-    if (splitTotal > dateMax) dateMax = splitTotal
-  }
+  const dateOut = finalizeDate(date, dateMax)
 
   return {
-    ext: Math.max(MIN_EXT_WIDTH, Math.ceil(extMax + WIDTH_PADDING)),
-    size: Math.max(MIN_SIZE_WIDTH, Math.ceil(sizeMax + WIDTH_PADDING)),
-    date: Math.max(MIN_DATE_WIDTH, Math.ceil(dateMax + WIDTH_PADDING)),
-    dateLeft: Math.ceil(date.splitLeft),
+    ext: Math.max(MIN_EXT_WIDTH, Math.ceil(extMax + MEASUREMENT_SAFETY_PAD)),
+    size: Math.max(MIN_SIZE_WIDTH, Math.ceil(sizeMax + MEASUREMENT_SAFETY_PAD)),
+    date: dateOut.date,
+    dateLeft: dateOut.dateLeft,
+  }
+}
+
+/**
+ * Picks the final `date` track width and the inline-block `.date-left` width.
+ *
+ * The left half gets `MEASUREMENT_SAFETY_PAD` baked into the splitTotal so the
+ * inline-block `.date-left` has room to absorb canvas-vs-DOM drift before its
+ * own `text-overflow: ellipsis` triggers. The right half's pad falls out of
+ * the final `+ MEASUREMENT_SAFETY_PAD` on `date` (so the natural width of
+ * `.date-right` doesn't overflow `.col-date`'s `overflow: hidden`).
+ *
+ * `dateLeft` stays at 0 when no row produced a split — that's the renderer's
+ * signal to skip the split path.
+ */
+function finalizeDate(date: DateMaxima, dateMax: number): { date: number; dateLeft: number } {
+  let total = dateMax
+  if (date.splitLeft > 0 || date.splitRight > 0) {
+    const splitTotal = date.splitLeft + MEASUREMENT_SAFETY_PAD + DATE_PARTS_GAP + date.splitRight
+    if (splitTotal > total) total = splitTotal
+  }
+  return {
+    date: Math.max(MIN_DATE_WIDTH, Math.ceil(total + MEASUREMENT_SAFETY_PAD)),
+    dateLeft: date.splitLeft > 0 ? Math.ceil(date.splitLeft + MEASUREMENT_SAFETY_PAD) : 0,
   }
 }

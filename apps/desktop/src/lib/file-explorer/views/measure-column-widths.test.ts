@@ -51,8 +51,9 @@ describe('computeFullListColumnWidths', () => {
     const w = computeFullListColumnWidths({ ...baseArgs, entries: [] })
     // With sortBy='name', none of Ext/Size/Modified are active, so each gets
     // HEADER_CHROME_INACTIVE (0 — labels sit flush with column-track edges).
-    // "Ext" = 21 → clamped to MIN_EXT_WIDTH (28); "Size" = 28 → clamped to
-    // MIN_SIZE_WIDTH (40); "Modified" = 56 → clamped to MIN_DATE_WIDTH (70).
+    // "Ext" = 21 + 2 (pad) = 23 → clamped to MIN_EXT_WIDTH (28); "Size" = 30 →
+    // clamped to MIN_SIZE_WIDTH (40); "Modified" = 58 → clamped to
+    // MIN_DATE_WIDTH (70). Floors swallow the pad in the empty-entries case.
     expect(w.ext).toBe(28)
     expect(w.size).toBe(40)
     expect(w.date).toBe(70)
@@ -97,7 +98,8 @@ describe('computeFullListColumnWidths', () => {
       ...baseArgs,
       entries: [entry({ name: `a.${longExt}` })],
     })
-    expect(capped.ext).toBe('extensionxx'.length * 7)
+    // 11 × 7 = 77 measured + 2 px MEASUREMENT_SAFETY_PAD = 79.
+    expect(capped.ext).toBe('extensionxx'.length * 7 + 2)
     // And: the cap doesn't shrink columns below what real shorter extensions deserve.
     const normal = computeFullListColumnWidths({
       ...baseArgs,
@@ -129,9 +131,11 @@ describe('computeFullListColumnWidths', () => {
       entries: [entry({ name: 'a', modifiedAt: 1 })],
     })
     // left "2026-12-31" = 10 × 7 = 70; right "23:59" = 5 × 7 = 35; gap = 4.
-    // Total 70 + 4 + 35 = 109, which beats MIN_DATE_WIDTH (70).
-    expect(w.dateLeft).toBe(70)
-    expect(w.date).toBe(109)
+    // splitTotal = 70 + 2 (left pad) + 4 + 35 = 111. Final date adds another
+    // 2 px pad for the right half: 111 + 2 = 113. Still beats MIN_DATE_WIDTH (70).
+    // dateLeft = 70 + 2 (pad) = 72.
+    expect(w.dateLeft).toBe(72)
+    expect(w.date).toBe(113)
   })
 
   it('uses the widest left half across all rows when splits are uneven', () => {
@@ -148,8 +152,8 @@ describe('computeFullListColumnWidths', () => {
       formatDateTimeParts,
       entries: [entry({ name: 'a', modifiedAt: 1 }), entry({ name: 'b', modifiedAt: 2 })],
     })
-    // dateLeft = max("short" = 35, "2026-01-30" = 70) = 70.
-    expect(w.dateLeft).toBe(70)
+    // dateLeft = max("short" = 35, "2026-01-30" = 70) = 70, then + 2 px pad = 72.
+    expect(w.dateLeft).toBe(72)
   })
 
   it('keeps dateLeft at zero when no row produces a split', () => {
