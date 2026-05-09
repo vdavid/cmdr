@@ -110,6 +110,8 @@ actual `copy_files_start` can consume the cache via `preview_id` in `WriteOperat
 **Move strategy.** Same filesystem detected via device ID comparison (`MetadataExt::dev`). Cross-filesystem move uses a
 `.cmdr-staging-<uuid>` dir at the destination root, then atomic `rename` into place, then source deletion.
 
+**Dir-vs-dir conflicts route through `resolve_volume_conflict` like every other shape.** The `volume_move` and `volume_copy` loops used to short-circuit dir-into-dir as a silent merge, bypassing the user's `conflict_resolution`. That made the merge invisible — even when the user picked "Stop" (= ask), nothing prompted. Now every conflict (file-vs-file, dir-vs-dir, file-vs-dir, dir-vs-file) goes through the resolver. For Overwrite specifically, `apply_volume_conflict_resolution` calls `Volume::delete(dest)` which fails benignly on non-empty dirs (`Volume::delete` is contractually for files or empty dirs); the recursive copy then merges into the existing tree (same-named files overwritten, others kept). Net effect for the user: dir-vs-dir Overwrite is "merge with overwrite-on-file-conflict", not "wholesale replace". That's intentional — wholesale replace would risk data loss of files outside the source tree. See the comment in `volume_conflict.rs::apply_volume_conflict_resolution` for the per-shape walkthrough.
+
 **Cross-volume move source-delete is recursive.** `move_between_volumes` in `volume_move.rs` deletes the source via
 `delete_volume_path_recursive` (re-exported from `volume_copy.rs` for this purpose) when the source is a directory.
 The `Volume::delete` contract is "file or *empty* directory" — `LocalPosixVolume::delete` calls `std::fs::remove_dir`

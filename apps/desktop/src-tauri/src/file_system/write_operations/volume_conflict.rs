@@ -118,15 +118,32 @@ async fn apply_volume_conflict_resolution(
         }
         ConflictResolution::Skip => Ok(None),
         ConflictResolution::Overwrite => {
-            // Delete existing item first, then return the same path
-            // Note: For directories, this will fail if not empty - that's expected behavior
+            // Try to delete the existing item, then return the same path so the caller
+            // writes there.
+            //
+            // - For files: `Volume::delete` removes the dest, the recursive copy lands
+            //   a fresh copy. Net effect: file is replaced.
+            // - For non-empty directories: `Volume::delete` is contractually for files
+            //   or *empty* directories (`std::fs::remove_dir` semantics, see Volume
+            //   trait doc). The call fails with ENOTEMPTY/equivalent — we log debug
+            //   and continue. The recursive copy then merges into the existing tree:
+            //   same-named files inside get overwritten by the streaming writers,
+            //   files in dest that aren't in source remain untouched. Net effect:
+            //   "merge with overwrite-on-file-conflict". This is the desired UX for
+            //   dir-vs-dir Overwrite — wholesale dir replacement would be surprising
+            //   and risk data loss.
+            // - For empty directories: `Volume::delete` succeeds, the recursive copy
+            //   recreates the dir. Net effect: equivalent to merge.
+            //
+            // Demoted to debug because the ENOTEMPTY case is the expected branch for
+            // dir merges, not a real failure.
             if let Err(e) = dest_volume.delete(dest_path).await {
-                log::warn!(
-                    "Failed to delete existing item for overwrite: {} - {}",
+                log::debug!(
+                    "apply_volume_conflict_resolution(Overwrite): delete of {} returned {} \
+                    (expected for non-empty directories — recursive copy will merge)",
                     dest_path.display(),
                     e
                 );
-                // Continue anyway - the copy might succeed if it's a file being overwritten
             }
             Ok(Some(dest_path.to_path_buf()))
         }
