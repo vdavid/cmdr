@@ -72,7 +72,16 @@ export async function executeRenameSave(
   }
 
   if (!validity.valid) {
-    return { type: 'error', message: validity.error?.message ?? 'Invalid filename' }
+    const errMsg = validity.error
+      ? validity.error.kind === 'empty'
+        ? 'Filename cannot be empty'
+        : validity.error.kind === 'disallowedCharacter'
+          ? `Filename contains a disallowed character: "${validity.error.character}"`
+          : validity.error.kind === 'nameTooLong'
+            ? `Filename is too long (${String(validity.error.bytes)} bytes, max ${String(validity.error.max)})`
+            : `Path is too long (${String(validity.error.bytes)} bytes, max ${String(validity.error.max)})`
+      : 'Invalid filename'
+    return { type: 'error', message: errMsg }
   }
 
   // Conflict detected (and not a case-only rename of the same file)

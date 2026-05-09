@@ -23,7 +23,7 @@ use crate::file_system::watcher::start_watching;
 // ============================================================================
 
 /// Status of a streaming directory listing
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", tag = "status")]
 pub enum ListingStatus {
     Loading,
@@ -33,7 +33,7 @@ pub enum ListingStatus {
 }
 
 /// Result of starting a streaming directory listing
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct StreamingListingStartResult {
     pub listing_id: String,

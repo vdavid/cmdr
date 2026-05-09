@@ -14,7 +14,7 @@ use tauri_plugin_store::StoreExt;
 ///
 /// Serialized with `tag = "code"` so the frontend receives `{ code: "badSignature", ... }` and
 /// can switch on the code instead of pattern-matching English error strings.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(tag = "code", rename_all = "camelCase")]
 pub enum LicenseActivationError {
     /// Key doesn't have the expected format (no dot separator, wrong structure).
@@ -63,7 +63,7 @@ const STORE_KEY_LICENSE: &str = "license_key";
 const STORE_KEY_SHORT_CODE: &str = "license_short_code";
 
 /// Information about the current license.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LicenseInfo {
     pub email: String,
@@ -77,7 +77,7 @@ pub struct LicenseInfo {
 
 /// Result of verifying a license key without persisting it.
 /// Kept separate from `LicenseInfo` so the full key doesn't leak to the frontend via `get_license_info`.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VerifyResult {
     pub info: LicenseInfo,

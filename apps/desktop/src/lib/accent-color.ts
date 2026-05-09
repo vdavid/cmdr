@@ -12,8 +12,8 @@
  * so the CSS fallback in app.css takes effect.
  */
 
-import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { commands } from '$lib/ipc/bindings'
 import { getAppLogger } from '$lib/logging/logger'
 import { clearDirectoryIconCache } from '$lib/icon-cache'
 import { getSetting, onSpecificSettingChange } from '$lib/settings'
@@ -49,7 +49,7 @@ function applyAccentForCurrentSetting(): void {
 export async function initAccentColor(): Promise<void> {
   // Load system accent color
   try {
-    const hex = await invoke<string>('get_accent_color')
+    const hex = await commands.getAccentColor()
     applySystemAccentPreview(hex)
     applyAccentForCurrentSetting()
     log.debug('System accent color loaded: {hex}', { hex })

@@ -51,8 +51,13 @@ export type SyncStatus = 'synced' | 'online_only' | 'uploading' | 'downloading' 
 
 /**
  * Status of a streaming directory listing.
+ * Serialized as a tagged object by Rust (e.g. `{ status: "loading" }`).
  */
-export type ListingStatus = 'loading' | 'ready' | 'cancelled' | { error: string }
+export type ListingStatus =
+  | { status: 'loading' }
+  | { status: 'ready' }
+  | { status: 'cancelled' }
+  | { status: 'error'; message: string }
 
 /**
  * Result of starting a streaming directory listing (async).
@@ -92,6 +97,9 @@ export interface ListingCompleteEvent {
   volumeRoot: string
 }
 
+/** Action kind for errors that require a specific user action (mirrors Rust `ErrorActionKind`). */
+export type ErrorActionKind = 'open_privacy_settings'
+
 /** Structured error info for user-facing display (mirrors Rust `FriendlyError`). */
 export interface FriendlyError {
   category: 'transient' | 'needs_action' | 'serious'
@@ -100,6 +108,7 @@ export interface FriendlyError {
   suggestion: string
   rawDetail: string
   retryHint: boolean
+  actionKind?: ErrorActionKind | null
 }
 
 /**
@@ -226,9 +235,9 @@ export const DEFAULT_SORT_BY: SortColumn = 'name'
 /** Result of re-sorting a listing. */
 export interface ResortResult {
   /** New index of the cursor file after re-sorting, if found. */
-  newCursorIndex?: number
+  newCursorIndex: number | null
   /** New indices of previously selected files after re-sorting. */
-  newSelectedIndices?: number[]
+  newSelectedIndices: number[] | null
 }
 
 /** Statistics about a directory listing. */
@@ -242,13 +251,13 @@ export interface ListingStats {
   /** Total physical (on-disk) size in bytes */
   totalPhysicalSize: number
   /** Number of selected files (if selected_indices provided) */
-  selectedFiles?: number
+  selectedFiles: number | null
   /** Number of selected directories (if selected_indices provided) */
-  selectedDirs?: number
+  selectedDirs: number | null
   /** Total logical size of selected entries in bytes (if selected_indices provided) */
-  selectedSize?: number
+  selectedSize: number | null
   /** Total physical size of selected entries in bytes (if selected_indices provided) */
-  selectedPhysicalSize?: number
+  selectedPhysicalSize: number | null
 }
 
 // ============================================================================
@@ -285,7 +294,7 @@ export interface ShareInfo {
   /** Whether this is a disk share (true) or other type like printer/IPC */
   isDisk: boolean
   /** Optional description/comment for the share */
-  comment?: string
+  comment: string | null
 }
 
 /** Authentication mode detected for a host. */
@@ -341,36 +350,8 @@ export interface KnownNetworkShare {
 }
 
 // ============================================================================
-// Keychain types
-// ============================================================================
-
-/** Credentials for SMB authentication. */
-export interface SmbCredentials {
-  /** Username for authentication */
-  username: string
-  /** Password for authentication */
-  password: string
-}
-
-// ============================================================================
 // Mount types
 // ============================================================================
-
-/** Result of connecting to a manually-specified server. */
-export interface ManualConnectResult {
-  /** The injected network host */
-  host: NetworkHost
-  /** Optional share path (when user typed smb://host/share) */
-  sharePath: string | null
-}
-
-/** Result of a successful mount operation. */
-export interface MountResult {
-  /** Path where the share was mounted (like "/Volumes/Documents") */
-  mountPath: string
-  /** Whether the share was already mounted (we didn't mount it ourselves) */
-  alreadyMounted: boolean
-}
 
 /** Error types for mount operations. */
 export type MountError =

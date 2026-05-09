@@ -3,7 +3,7 @@
 use mtp_rs::ptp::ResponseCode;
 
 /// Error types for MTP connection operations.
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum MtpConnectionError {
     DeviceNotFound {

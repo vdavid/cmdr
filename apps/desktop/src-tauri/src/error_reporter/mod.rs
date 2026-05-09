@@ -108,7 +108,7 @@ const SAMPLE_FIRST_LINES: usize = 5;
 const SAMPLE_LAST_LINES: usize = 20;
 
 /// Flavor of the bundle — kept separate so Phase 5's auto-sender can share the same builder.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum BundleKind {
     User,
@@ -118,7 +118,7 @@ pub enum BundleKind {
 /// Whether this bundle was built by a release or a debug build of the desktop app.
 /// Forwarded to the api server in the manifest so triage can tell dev-run reports
 /// (which the api server tags `[DEV]` in Discord) apart from production reports.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum BuildMode {
     Release,
@@ -206,7 +206,7 @@ const MIN_TAIL_LINES_OF_NEWEST_FILE: usize = 50;
 /// Distinct from [`crate::crash_reporter::ActiveSettings`]: that struct is the on-disk
 /// crash-file format and stays in `Option<bool>` shape for backward compatibility with
 /// crash files written by older app versions. Manifests don't have that constraint.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolvedSettings {
     pub indexing_enabled: bool,
@@ -269,7 +269,7 @@ impl ResolvedSettings {
 
 /// Metadata written into `manifest.json` at the root of the bundle.
 /// Mirrors the shape expected by `apps/api-server/src/error-report.ts`'s `ErrorReportMeta`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct BundleManifest {
     pub id: String,
@@ -301,7 +301,7 @@ pub struct BundleManifest {
 /// `module=`, or `Info` if unset). `stdoutCurrent` is the live `AtomicU8` which the
 /// verbose toggle flips. They're usually the same; they differ when the user changed
 /// the toggle after launch.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LogLevelSnapshot {
     pub stdout_default: String,

@@ -20,7 +20,7 @@ use crate::search::{
 use crate::indexing::writer::WRITER_GENERATION;
 use crate::search::ai::{self, query_builder as ai_query_builder};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PrepareResult {
     pub ready: bool,
@@ -30,6 +30,7 @@ pub struct PrepareResult {
 /// Called when the search dialog opens. Starts loading the index in the background.
 /// Returns immediately with `{ ready, entryCount }`.
 #[tauri::command]
+#[specta::specta]
 pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult, String> {
     touch_activity();
     DIALOG_OPEN.store(true, Ordering::Relaxed);
@@ -136,6 +137,7 @@ pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult
 
 /// Search the in-memory index. Returns empty if not loaded yet.
 #[tauri::command]
+#[specta::specta]
 pub async fn search_files(mut query: SearchQuery) -> Result<SearchResult, String> {
     touch_activity();
 
@@ -230,6 +232,7 @@ pub async fn search_files(mut query: SearchQuery) -> Result<SearchResult, String
 /// Called when the search dialog closes. Starts the idle timer and
 /// cancels any in-progress load.
 #[tauri::command]
+#[specta::specta]
 pub async fn release_search_index() -> Result<(), String> {
     DIALOG_OPEN.store(false, Ordering::Relaxed);
     let mut guard = SEARCH_INDEX.lock().map_err(|e| format!("{e}"))?;
@@ -258,6 +261,7 @@ pub async fn release_search_index() -> Result<(), String> {
 
 /// Parse a scope string into structured include/exclude data.
 #[tauri::command]
+#[specta::specta]
 pub fn parse_search_scope(scope: String) -> ParsedScope {
     search::parse_scope(&scope)
 }
@@ -265,6 +269,7 @@ pub fn parse_search_scope(scope: String) -> ParsedScope {
 /// Returns the list of system/build/cache directory names excluded by default,
 /// for display in the UI tooltip.
 #[tauri::command]
+#[specta::specta]
 pub fn get_system_dir_excludes() -> &'static [&'static str] {
     search::SYSTEM_DIR_EXCLUDES
 }
@@ -274,7 +279,7 @@ pub fn get_system_dir_excludes() -> &'static [&'static str] {
 // ============================================================================
 
 /// Human-readable field values returned alongside the structured query.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TranslateResult {
     pub query: TranslatedQuery,
@@ -283,7 +288,7 @@ pub struct TranslateResult {
 }
 
 /// The structured query with unix timestamps, ready for `search_files`.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TranslatedQuery {
     pub name_pattern: Option<String>,
@@ -300,7 +305,7 @@ pub struct TranslatedQuery {
 }
 
 /// Human-readable values so the frontend can populate filter UI.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TranslateDisplay {
     pub name_pattern: Option<String>,
@@ -332,6 +337,7 @@ fn resolve_ai_backend() -> Result<AiBackend, String> {
 /// Single-pass flow: call LLM with classification prompt → parse key-value response →
 /// build deterministic SearchQuery via `ai_query_builder`.
 #[tauri::command]
+#[specta::specta]
 pub async fn translate_search_query(natural_query: String) -> Result<TranslateResult, String> {
     let backend = resolve_ai_backend()?;
     let system_prompt = ai::build_classification_prompt();

@@ -49,7 +49,7 @@ pub use mdns_discovery::start_discovery;
 pub use smb_client::{AuthMode, ShareListError, ShareListResult};
 
 /// Whether a host was discovered via mDNS or added manually by the user.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 #[derive(Default)]
 pub enum HostSource {
@@ -59,7 +59,10 @@ pub enum HostSource {
 }
 
 /// A discovered network host advertising SMB services.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// Only serialized (Rust → frontend); no `Deserialize` to prevent specta from splitting
+/// this type on `skip_serializing_if` fields (which fails `validate_exported_command`).
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkHost {
     /// Derived from service name.
@@ -80,7 +83,7 @@ pub struct NetworkHost {
 }
 
 /// State of network discovery.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum DiscoveryState {
     Idle,

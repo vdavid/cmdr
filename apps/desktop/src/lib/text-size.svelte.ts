@@ -28,7 +28,7 @@
  * Svelte $state both update immediately so the user sees text grow live.
  */
 
-import { invoke } from '@tauri-apps/api/core'
+import { commands } from '$lib/ipc/bindings'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { SvelteSet } from 'svelte/reactivity'
 import { getAppLogger } from '$lib/logging/logger'
@@ -156,7 +156,7 @@ function computeAndApply(triggerRemeasure: boolean): number {
  */
 export async function initTextSize(): Promise<void> {
   try {
-    systemMultiplier = await invoke<number>('get_system_text_size_multiplier')
+    systemMultiplier = await commands.getSystemTextSizeMultiplier()
     log.debug('System text size multiplier: {multiplier}', {
       multiplier: systemMultiplier.toFixed(3),
     })

@@ -27,6 +27,7 @@ const MAX_USER_NOTE_CHARS: usize = 100_000;
 /// Failures are silent — the Rust side falls back to hardcoded defaults if the map
 /// is missing or doesn't include a given key.
 #[tauri::command]
+#[specta::specta]
 pub fn record_settings_defaults(defaults: HashMap<String, serde_json::Value>) {
     error_reporter::settings_defaults::record(defaults);
 }
@@ -38,11 +39,12 @@ pub fn record_settings_defaults(defaults: HashMap<String, serde_json::Value>) {
 /// inside `error_reporter::breadcrumbs::record`. `ctx` is an optional structured
 /// payload.
 #[tauri::command]
+#[specta::specta]
 pub fn record_breadcrumb(kind: String, message: String, ctx: Option<serde_json::Value>) {
     error_reporter::breadcrumbs::record(&kind, &message, ctx);
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PreviewPayload {
     pub id: String,
@@ -53,7 +55,7 @@ pub struct PreviewPayload {
     pub total_redacted_lines: usize,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SendResult {
     pub id: String,
@@ -68,6 +70,7 @@ pub struct SendResult {
 /// for this path (the streaming pipeline already enforces the cap) but stays in case
 /// the manifest grows large enough to push the bundle over by itself.
 #[tauri::command]
+#[specta::specta]
 pub async fn prepare_error_report_preview(
     app: tauri::AppHandle,
     user_note: Option<String>,
@@ -88,6 +91,7 @@ pub async fn prepare_error_report_preview(
 /// Re-build the bundle and upload it. Returns the server-issued ID — display *that* to
 /// the user, not any locally-generated ID from a prior `prepare` call.
 #[tauri::command]
+#[specta::specta]
 pub async fn send_error_report(app: tauri::AppHandle, user_note: Option<String>) -> Result<SendResult, String> {
     let note = validate_user_note(user_note)?;
     let bundle = error_reporter::build_bundle(&app, BundleKind::User, note, BundleScope::flow_a_default())?;
@@ -100,6 +104,7 @@ pub async fn send_error_report(app: tauri::AppHandle, user_note: Option<String>)
 /// Helpful when iterating on the redactor or the manifest format.
 #[cfg(debug_assertions)]
 #[tauri::command]
+#[specta::specta]
 pub async fn save_error_report_to_disk(app: tauri::AppHandle, user_note: Option<String>) -> Result<String, String> {
     let note = validate_user_note(user_note)?;
     let mut bundle = error_reporter::build_bundle(&app, BundleKind::User, note, BundleScope::flow_a_default())?;

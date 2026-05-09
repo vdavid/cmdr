@@ -2,6 +2,8 @@
 
 import { invoke } from '@tauri-apps/api/core'
 import { openPath, openUrl } from '@tauri-apps/plugin-opener'
+import { commands } from '$lib/ipc/bindings'
+import { throwIpcError } from './ipc-types'
 
 /**
  * Opens a file with the system's default application.
@@ -34,6 +36,7 @@ export async function showFileContextMenu(
   isDirectory: boolean,
   paths: string[],
 ): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   await invoke('show_file_context_menu', { path, filename, isDirectory, paths })
 }
 
@@ -42,7 +45,8 @@ export async function showFileContextMenu(
  * File Provider extension responsible for the file (iCloud Drive, Dropbox, GDrive, etc.).
  */
 export async function cloudMakeAvailableOffline(path: string): Promise<void> {
-  await invoke('cloud_make_available_offline', { path })
+  const res = await commands.cloudMakeAvailableOffline(path)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**
@@ -50,7 +54,8 @@ export async function cloudMakeAvailableOffline(path: string): Promise<void> {
  * `cloudMakeAvailableOffline`.
  */
 export async function cloudRemoveDownload(path: string): Promise<void> {
-  await invoke('cloud_remove_download', { path })
+  const res = await commands.cloudRemoveDownload(path)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**
@@ -58,6 +63,7 @@ export async function cloudRemoveDownload(path: string): Promise<void> {
  * @param shortcut - Frontend shortcut string (e.g. "⌃⌘C"), or empty string if no shortcut is configured.
  */
 export async function showBreadcrumbContextMenu(shortcut: string): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   await invoke('show_breadcrumb_context_menu', { shortcut })
 }
 
@@ -67,7 +73,8 @@ export async function showBreadcrumbContextMenu(shortcut: string): Promise<void>
  * @param path - Absolute path to the file.
  */
 export async function showInFinder(path: string): Promise<void> {
-  await invoke('show_in_finder', { path })
+  const res = await commands.showInFinder(path)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**
@@ -75,6 +82,7 @@ export async function showInFinder(path: string): Promise<void> {
  * @param text - Text to copy.
  */
 export async function copyToClipboard(text: string): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   await invoke('copy_to_clipboard', { text })
 }
 
@@ -83,7 +91,8 @@ export async function copyToClipboard(text: string): Promise<void> {
  * @param path - Absolute path to the file.
  */
 export async function quickLook(path: string): Promise<void> {
-  await invoke('quick_look', { path })
+  const res = await commands.quickLook(path)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**
@@ -91,7 +100,8 @@ export async function quickLook(path: string): Promise<void> {
  * @param path - Absolute path to the file.
  */
 export async function getInfo(path: string): Promise<void> {
-  await invoke('get_info', { path })
+  const res = await commands.getInfo(path)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**
@@ -100,5 +110,6 @@ export async function getInfo(path: string): Promise<void> {
  * @param path - Absolute path to the file.
  */
 export async function openInEditor(path: string): Promise<void> {
-  await invoke('open_in_editor', { path })
+  const res = await commands.openInEditor(path)
+  if (res.status === 'error') throwIpcError(res.error)
 }

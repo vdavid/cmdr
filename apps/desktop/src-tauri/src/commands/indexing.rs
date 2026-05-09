@@ -7,6 +7,7 @@ use tauri::AppHandle;
 use crate::indexing::{self, IndexDebugStatusResponse, IndexStatusResponse, store::DirStats};
 
 #[tauri::command]
+#[specta::specta]
 pub async fn start_drive_index(app: AppHandle) -> Result<(), String> {
     if indexing::is_active() {
         // Already running: force a fresh full scan (for example, from the debug "Start scan" button)
@@ -17,38 +18,45 @@ pub async fn start_drive_index(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn stop_drive_index() -> Result<(), String> {
     indexing::stop_scan()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_index_status() -> Result<IndexStatusResponse, String> {
     indexing::get_status()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_dir_stats(path: String) -> Result<Option<DirStats>, String> {
     indexing::get_dir_stats(&path)
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_dir_stats_batch(paths: Vec<String>) -> Result<Vec<Option<DirStats>>, String> {
     indexing::get_dir_stats_batch(&paths)
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn clear_drive_index() -> Result<(), String> {
     indexing::clear_index()
 }
 
 /// Extended debug status for the debug window (dev only).
 #[tauri::command]
+#[specta::specta]
 pub async fn get_index_debug_status() -> Result<IndexDebugStatusResponse, String> {
     indexing::get_debug_status()
 }
 
 /// Toggle drive indexing on/off based on the user's setting.
 #[tauri::command]
+#[specta::specta]
 pub async fn set_indexing_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
     if enabled {
         if !indexing::is_active() {
@@ -70,6 +78,7 @@ pub async fn set_indexing_enabled(app: AppHandle, enabled: bool) -> Result<(), S
 ///
 /// Idempotent: a no-op when indexing is already running or initializing.
 #[tauri::command]
+#[specta::specta]
 pub async fn start_indexing_after_fda_decision(app: AppHandle) -> Result<(), String> {
     if indexing::is_active() {
         return Ok(());

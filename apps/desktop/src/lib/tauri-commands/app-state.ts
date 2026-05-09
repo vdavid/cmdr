@@ -1,6 +1,7 @@
 // App-level state: MCP pane state, dialog tracking, menu context, window lifecycle
 
 import { invoke } from '@tauri-apps/api/core'
+import { commands } from '$lib/ipc/bindings'
 
 // ============================================================================
 // MCP pane state
@@ -37,6 +38,7 @@ export interface PaneState {
  * Update left pane state for MCP context tools.
  */
 export async function updateLeftPaneState(state: PaneState): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
   await invoke('update_left_pane_state', { state })
 }
 
@@ -44,6 +46,7 @@ export async function updateLeftPaneState(state: PaneState): Promise<void> {
  * Update right pane state for MCP context tools.
  */
 export async function updateRightPaneState(state: PaneState): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
   await invoke('update_right_pane_state', { state })
 }
 
@@ -51,7 +54,7 @@ export async function updateRightPaneState(state: PaneState): Promise<void> {
  * Update focused pane for MCP context tools.
  */
 export async function updateFocusedPane(pane: 'left' | 'right'): Promise<void> {
-  await invoke('update_focused_pane', { pane })
+  await commands.updateFocusedPane(pane)
 }
 
 /** Tab info for MCP state sync. */
@@ -66,11 +69,12 @@ export interface McpTabInfo {
  * Update tab list for a pane (for MCP state reporting).
  */
 export async function updatePaneTabs(pane: string, tabs: McpTabInfo[]): Promise<void> {
-  await invoke('update_pane_tabs', { pane, tabs })
+  await commands.updatePaneTabs(pane, tabs)
 }
 
 /** Updates the File menu "Pin tab" / "Unpin tab" label based on active tab state. */
 export async function updatePinTabMenu(isPinned: boolean): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   await invoke('update_pin_tab_menu', { isPinned })
 }
 
@@ -80,17 +84,17 @@ export async function updatePinTabMenu(isPinned: boolean): Promise<void> {
 
 /** Notify backend that a soft (overlay) dialog opened. */
 export async function notifyDialogOpened(dialogType: string): Promise<void> {
-  await invoke('notify_dialog_opened', { dialogType })
+  await commands.notifyDialogOpened(dialogType)
 }
 
 /** Notify backend that a soft (overlay) dialog closed. */
 export async function notifyDialogClosed(dialogType: string): Promise<void> {
-  await invoke('notify_dialog_closed', { dialogType })
+  await commands.notifyDialogClosed(dialogType)
 }
 
 /** Register all known soft dialog types with the backend for the MCP "available dialogs" resource. */
 export async function registerKnownDialogs(dialogs: readonly { id: string; description?: string }[]): Promise<void> {
-  await invoke('register_known_dialogs', { dialogs })
+  await commands.registerKnownDialogs(dialogs.map((d) => ({ id: d.id, description: d.description ?? null })))
 }
 
 // ============================================================================
@@ -103,6 +107,7 @@ export async function registerKnownDialogs(dialogs: readonly { id: string; descr
  * @param filename - Name of the file.
  */
 export async function updateMenuContext(path: string, filename: string): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   await invoke('update_menu_context', { path, filename })
 }
 
@@ -112,6 +117,7 @@ export async function updateMenuContext(path: string, filename: string): Promise
  * Settings or a file viewer window has focus.
  */
 export async function setMenuContext(context: 'explorer' | 'other'): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   await invoke('set_menu_context', { context })
 }
 
@@ -120,6 +126,7 @@ export async function setMenuContext(context: 'explorer' | 'other'): Promise<voi
  * @returns The new state of showHiddenFiles.
  */
 export async function toggleHiddenFiles(): Promise<boolean> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   return invoke<boolean>('toggle_hidden_files')
 }
 
@@ -137,6 +144,7 @@ export async function updateViewModeMenu(
   leftMode: 'full' | 'brief',
   rightMode: 'full' | 'brief',
 ): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   await invoke('update_view_mode_menu', { activePane, leftMode, rightMode })
 }
 
@@ -149,5 +157,6 @@ export async function updateViewModeMenu(
  * Should be called when the frontend is ready to avoid white flash.
  */
 export async function showMainWindow(): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   await invoke('show_main_window')
 }

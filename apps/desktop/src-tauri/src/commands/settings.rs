@@ -15,6 +15,7 @@ use crate::network::mdns_discovery::update_resolve_timeout;
 
 /// Check if a port is available for binding.
 #[tauri::command]
+#[specta::specta]
 pub fn check_port_available(port: u16) -> bool {
     crate::net::is_port_available(port)
 }
@@ -22,6 +23,7 @@ pub fn check_port_available(port: u16) -> bool {
 /// Find an available port starting from the given port.
 /// Scans up to 100 ports from the start port.
 #[tauri::command]
+#[specta::specta]
 pub fn find_available_port(start_port: u16) -> Option<u16> {
     crate::net::find_available_port(start_port)
 }
@@ -29,6 +31,7 @@ pub fn find_available_port(start_port: u16) -> Option<u16> {
 /// Updates the file watcher debounce duration in milliseconds.
 /// This affects newly created watchers; existing watchers keep their original duration.
 #[tauri::command]
+#[specta::specta]
 pub fn update_file_watcher_debounce(debounce_ms: u64) {
     update_debounce_ms(debounce_ms);
 }
@@ -37,6 +40,7 @@ pub fn update_file_watcher_debounce(debounce_ms: u64) {
 /// This affects future service resolutions; ongoing resolutions keep their original timeout.
 #[cfg(target_os = "macos")]
 #[tauri::command]
+#[specta::specta]
 pub fn update_service_resolve_timeout(timeout_ms: u64) {
     update_resolve_timeout(timeout_ms);
 }
@@ -44,6 +48,7 @@ pub fn update_service_resolve_timeout(timeout_ms: u64) {
 /// Stub for non-macOS platforms - network discovery is not supported.
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
+#[specta::specta]
 pub fn update_service_resolve_timeout(_timeout_ms: u64) {
     // No-op on non-macOS platforms
 }
@@ -51,6 +56,7 @@ pub fn update_service_resolve_timeout(_timeout_ms: u64) {
 /// Enable or disable automatic upgrade of SMB mounts to direct smb2 connections.
 /// Pushed live from the frontend whenever `network.directSmbConnection` changes.
 #[tauri::command]
+#[specta::specta]
 pub fn set_direct_smb_connection(enabled: bool) {
     set_direct_smb_enabled(enabled);
 }
@@ -58,6 +64,7 @@ pub fn set_direct_smb_connection(enabled: bool) {
 /// Toggle filtering of macOS safe-save artifacts (`.sb-*` files) in the SMB watcher.
 /// Pushed live from the frontend whenever `advanced.filterSafeSaveArtifacts` changes.
 #[tauri::command]
+#[specta::specta]
 pub fn set_filter_safe_save_artifacts_cmd(enabled: bool) {
     set_filter_safe_save_artifacts(enabled);
 }
@@ -66,6 +73,7 @@ pub fn set_filter_safe_save_artifacts_cmd(enabled: bool) {
 /// Clamped to `1..=32` by `set_smb_concurrency`. Pushed live from the frontend
 /// whenever `network.smbConcurrency` changes.
 #[tauri::command]
+#[specta::specta]
 pub fn set_smb_concurrency_cmd(value: u16) {
     set_smb_concurrency(value as usize);
 }
@@ -80,6 +88,7 @@ pub fn set_smb_concurrency_cmd(value: u16) {
 ///
 /// `value` is in MB. `0` means "log storage disabled".
 #[tauri::command]
+#[specta::specta]
 pub fn set_max_log_storage_mb(value: u64) -> Result<(), String> {
     use crate::logging;
 
@@ -104,6 +113,7 @@ pub fn set_max_log_storage_mb(value: u64) -> Result<(), String> {
 /// Enable or disable the Flow B error-report auto-dispatcher.
 /// Pushed live from the frontend whenever `updates.errorReports` changes.
 #[tauri::command]
+#[specta::specta]
 pub fn set_error_reports_enabled(value: bool) {
     crate::error_reporter::auto_dispatcher::set_enabled(value);
 }
@@ -123,6 +133,7 @@ pub fn set_error_reports_enabled(value: bool) {
 /// there with "there is no reactor running" (see crash report 2026-05-05).
 /// Marking the command `async` puts it on a Tokio worker, where `spawn` works.
 #[tauri::command]
+#[specta::specta]
 pub async fn set_show_virtual_git_portal(enabled: bool) {
     crate::file_system::git::set_virtual_portal_enabled(enabled);
     crate::file_system::git::watcher::refresh_all_virtual_listings_after_toggle();
@@ -131,6 +142,7 @@ pub async fn set_show_virtual_git_portal(enabled: bool) {
 /// Update menu accelerator for a command.
 /// Called from frontend when keyboard shortcuts are changed.
 #[tauri::command]
+#[specta::specta]
 pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str) -> Result<(), String> {
     let menu_state = app.state::<MenuState<tauri::Wry>>();
 

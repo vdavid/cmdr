@@ -53,6 +53,7 @@ pub const DEFAULT_VOLUME_ID: &str = "root";
 
 /// Lists all mounted volumes (Linux stub).
 #[tauri::command]
+#[specta::specta]
 pub fn list_volumes() -> Vec<VolumeInfo> {
     let mut locations = Vec::new();
     let home = dirs::home_dir().unwrap_or_default();
@@ -114,12 +115,14 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
 
 /// Gets the default volume ID (root filesystem).
 #[tauri::command]
+#[specta::specta]
 pub fn get_default_volume_id() -> String {
     DEFAULT_VOLUME_ID.to_string()
 }
 
 /// Gets space information for a volume at the given path.
 #[tauri::command]
+#[specta::specta]
 pub fn get_volume_space(path: String) -> Option<VolumeSpaceInfo> {
     use std::ffi::CString;
 
@@ -149,6 +152,7 @@ pub struct PathVolumeResolution {
 
 /// Resolves a path to its containing volume (stub).
 #[tauri::command]
+#[specta::specta]
 pub fn resolve_path_volume(_path: String) -> PathVolumeResolution {
     PathVolumeResolution {
         volume: None,

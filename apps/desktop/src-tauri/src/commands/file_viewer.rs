@@ -13,6 +13,7 @@ const VIEWER_TIMEOUT: Duration = Duration::from_secs(2);
 /// Opens a viewer session for the given file.
 /// Returns session metadata + initial lines from the start of the file.
 #[tauri::command]
+#[specta::specta]
 pub async fn viewer_open(path: String) -> Result<ViewerOpenResult, IpcError> {
     blocking_result_with_timeout(VIEWER_TIMEOUT, move || {
         file_viewer::open_session(&path).map_err(|e| e.to_string())
@@ -28,6 +29,7 @@ pub async fn viewer_open(path: String) -> Result<ViewerOpenResult, IpcError> {
 /// * `target_value` - The seek value (line number, byte offset, or fraction 0.0-1.0).
 /// * `count` - Number of lines to fetch.
 #[tauri::command]
+#[specta::specta]
 pub async fn viewer_get_lines(
     session_id: String,
     target_type: String,
@@ -70,6 +72,7 @@ pub async fn viewer_get_lines(
 /// Starts a background search in the viewer session.
 /// Poll with `viewer_search_poll` to get results.
 #[tauri::command]
+#[specta::specta]
 pub fn viewer_search_start(session_id: String, query: String) -> Result<(), String> {
     if query.is_empty() {
         return Err("Search query cannot be empty".to_string());
@@ -79,30 +82,35 @@ pub fn viewer_search_start(session_id: String, query: String) -> Result<(), Stri
 
 /// Polls search progress and new matches since `since_index`.
 #[tauri::command]
+#[specta::specta]
 pub fn viewer_search_poll(session_id: String, since_index: usize) -> Result<SearchPollResult, String> {
     file_viewer::search_poll(&session_id, since_index).map_err(|e| e.to_string())
 }
 
 /// Cancels an ongoing search.
 #[tauri::command]
+#[specta::specta]
 pub fn viewer_search_cancel(session_id: String) -> Result<(), String> {
     file_viewer::search_cancel(&session_id).map_err(|e| e.to_string())
 }
 
 /// Gets the current status of a viewer session (backend type, indexing state).
 #[tauri::command]
+#[specta::specta]
 pub fn viewer_get_status(session_id: String) -> Result<ViewerSessionStatus, String> {
     file_viewer::get_session_status(&session_id).map_err(|e| e.to_string())
 }
 
 /// Closes a viewer session and frees resources.
 #[tauri::command]
+#[specta::specta]
 pub fn viewer_close(session_id: String) -> Result<(), String> {
     file_viewer::close_session(&session_id).map_err(|e| e.to_string())
 }
 
 /// Sets up a viewer-specific menu on the given window (adds "Word wrap" to View submenu).
 #[tauri::command]
+#[specta::specta]
 pub fn viewer_setup_menu(app_handle: tauri::AppHandle, label: String) -> Result<(), String> {
     let window = app_handle
         .get_webview_window(&label)
@@ -114,6 +122,7 @@ pub fn viewer_setup_menu(app_handle: tauri::AppHandle, label: String) -> Result<
 
 /// Syncs the viewer menu "Word wrap" check state (called when toggled via keyboard).
 #[tauri::command]
+#[specta::specta]
 pub fn viewer_set_word_wrap(app_handle: tauri::AppHandle, label: String, checked: bool) -> Result<(), String> {
     let window = app_handle
         .get_webview_window(&label)

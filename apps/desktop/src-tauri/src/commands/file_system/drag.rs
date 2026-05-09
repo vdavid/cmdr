@@ -15,6 +15,7 @@ use tauri::Manager;
 /// where the frontend has the path directly (no listing-cache lookup needed).
 #[cfg(target_os = "macos")]
 #[tauri::command]
+#[specta::specta]
 pub fn start_drag_paths(app: tauri::AppHandle, paths: Vec<String>, icon_path: String) -> Result<(), String> {
     let path_bufs: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
     if path_bufs.is_empty() {
@@ -26,6 +27,7 @@ pub fn start_drag_paths(app: tauri::AppHandle, paths: Vec<String>, icon_path: St
 /// Stub for non-macOS platforms. Returns an error since drag is not yet implemented.
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
+#[specta::specta]
 pub fn start_drag_paths(_app: tauri::AppHandle, _paths: Vec<String>, _icon_path: String) -> Result<(), String> {
     Err("Drag operation is not yet supported on this platform".to_string())
 }
@@ -33,6 +35,7 @@ pub fn start_drag_paths(_app: tauri::AppHandle, _paths: Vec<String>, _icon_path:
 /// Initiates native drag from Rust directly, looking up paths from `LISTING_CACHE` (macOS only).
 #[cfg(target_os = "macos")]
 #[tauri::command]
+#[specta::specta]
 pub fn start_selection_drag(
     app: tauri::AppHandle,
     listing_id: String,
@@ -53,6 +56,7 @@ pub fn start_selection_drag(
 /// Stub for non-macOS platforms. Returns an error since drag is not yet implemented.
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
+#[specta::specta]
 pub fn start_selection_drag(
     _app: tauri::AppHandle,
     _listing_id: String,
@@ -90,6 +94,7 @@ fn run_drag_on_main_thread(app: &tauri::AppHandle, paths: Vec<PathBuf>, icon_pat
 /// - Show the rich image outside the window (swap back in `draggingExited:`)
 #[cfg(target_os = "macos")]
 #[tauri::command]
+#[specta::specta]
 pub fn prepare_self_drag_overlay(rich_image_path: String) {
     crate::drag_image_swap::set_self_drag_active(rich_image_path);
 }
@@ -97,11 +102,13 @@ pub fn prepare_self_drag_overlay(rich_image_path: String) {
 /// No-op on non-macOS platforms.
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
+#[specta::specta]
 pub fn prepare_self_drag_overlay(_rich_image_path: String) {}
 
 /// Clears self-drag state after drop or cancellation.
 #[cfg(target_os = "macos")]
 #[tauri::command]
+#[specta::specta]
 pub fn clear_self_drag_overlay() {
     crate::drag_image_swap::clear_self_drag_state();
 }
@@ -109,6 +116,7 @@ pub fn clear_self_drag_overlay() {
 /// No-op on non-macOS platforms.
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
+#[specta::specta]
 pub fn clear_self_drag_overlay() {}
 
 /// Pushes the resolved drop operation for the current self-drag down to the native swizzle.
@@ -117,6 +125,7 @@ pub fn clear_self_drag_overlay() {}
 /// Unknown values are ignored.
 #[cfg(target_os = "macos")]
 #[tauri::command]
+#[specta::specta]
 pub fn set_self_drag_resolved_op(operation: String) {
     use crate::drag_image_swap::SelfDragOp;
     let op = match operation.as_str() {
@@ -130,4 +139,5 @@ pub fn set_self_drag_resolved_op(operation: String) {
 /// No-op on non-macOS platforms.
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
+#[specta::specta]
 pub fn set_self_drag_resolved_op(_operation: String) {}

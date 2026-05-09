@@ -10,7 +10,7 @@ use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
 
 use crate::clipboard;
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ClipboardReadResult {
     paths: Vec<String>,
@@ -21,6 +21,7 @@ pub struct ClipboardReadResult {
 /// Clears any existing cut state (this is a copy, not a cut).
 #[cfg(target_os = "macos")]
 #[tauri::command]
+#[specta::specta]
 pub async fn copy_files_to_clipboard(
     app: tauri::AppHandle,
     listing_id: String,
@@ -58,6 +59,7 @@ pub async fn copy_files_to_clipboard(
 /// On paste, files will be moved instead of copied.
 #[cfg(target_os = "macos")]
 #[tauri::command]
+#[specta::specta]
 pub async fn cut_files_to_clipboard(
     app: tauri::AppHandle,
     listing_id: String,
@@ -98,6 +100,7 @@ pub async fn cut_files_to_clipboard(
 /// something else), the stale cut state is automatically cleared.
 #[cfg(target_os = "macos")]
 #[tauri::command]
+#[specta::specta]
 pub async fn read_clipboard_files(app: tauri::AppHandle) -> Result<ClipboardReadResult, String> {
     // Read from pasteboard on the main thread
     let (tx, rx) = std::sync::mpsc::channel();
@@ -141,6 +144,7 @@ pub async fn read_clipboard_files(app: tauri::AppHandle) -> Result<ClipboardRead
 /// WebKit's `navigator.clipboard.readText()` permission popup.
 #[cfg(target_os = "macos")]
 #[tauri::command]
+#[specta::specta]
 pub async fn read_clipboard_text(app: tauri::AppHandle) -> Result<Option<String>, String> {
     let (tx, rx) = std::sync::mpsc::channel();
     app.run_on_main_thread(move || {
@@ -155,12 +159,14 @@ pub async fn read_clipboard_text(app: tauri::AppHandle) -> Result<Option<String>
 
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
+#[specta::specta]
 pub async fn read_clipboard_text(_app: tauri::AppHandle) -> Result<Option<String>, String> {
     Err("Clipboard operations are not yet supported on this platform".to_string())
 }
 
 /// Clears the in-process cut state without touching the system clipboard.
 #[tauri::command]
+#[specta::specta]
 pub fn clear_clipboard_cut_state() {
     clipboard::clear_cut_state();
 }
@@ -169,6 +175,7 @@ pub fn clear_clipboard_cut_state() {
 
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
+#[specta::specta]
 pub async fn copy_files_to_clipboard(
     _app: tauri::AppHandle,
     _listing_id: String,
@@ -182,6 +189,7 @@ pub async fn copy_files_to_clipboard(
 
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
+#[specta::specta]
 pub async fn cut_files_to_clipboard(
     _app: tauri::AppHandle,
     _listing_id: String,
@@ -195,6 +203,7 @@ pub async fn cut_files_to_clipboard(
 
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
+#[specta::specta]
 pub async fn read_clipboard_files(_app: tauri::AppHandle) -> Result<ClipboardReadResult, String> {
     Err("Clipboard file operations are not yet supported on this platform".to_string())
 }

@@ -14,7 +14,7 @@ use std::sync::RwLock;
 use tauri::{AppHandle, Manager};
 
 /// A dialog type registered by the frontend at startup.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, specta::Type)]
 pub struct KnownDialog {
     pub id: String,
     pub description: Option<String>,
@@ -59,6 +59,7 @@ impl SoftDialogTracker {
 
 /// Tauri command: frontend notifies that a soft dialog opened.
 #[tauri::command]
+#[specta::specta]
 pub fn notify_dialog_opened(app: AppHandle, dialog_type: String) {
     if let Some(tracker) = app.try_state::<SoftDialogTracker>() {
         SoftDialogTracker::open(&tracker, dialog_type);
@@ -67,6 +68,7 @@ pub fn notify_dialog_opened(app: AppHandle, dialog_type: String) {
 
 /// Tauri command: frontend notifies that a soft dialog closed.
 #[tauri::command]
+#[specta::specta]
 pub fn notify_dialog_closed(app: AppHandle, dialog_type: String) {
     if let Some(tracker) = app.try_state::<SoftDialogTracker>() {
         SoftDialogTracker::close(&tracker, &dialog_type);
@@ -75,6 +77,7 @@ pub fn notify_dialog_closed(app: AppHandle, dialog_type: String) {
 
 /// Tauri command: frontend registers all known soft dialog types at startup.
 #[tauri::command]
+#[specta::specta]
 pub fn register_known_dialogs(app: AppHandle, dialogs: Vec<KnownDialog>) {
     if let Some(tracker) = app.try_state::<SoftDialogTracker>() {
         tracker.register_known(dialogs);

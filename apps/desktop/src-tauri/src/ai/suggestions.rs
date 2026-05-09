@@ -27,6 +27,7 @@ const SUGGESTION_SYSTEM_PROMPT: &str = "You are a pattern-matching assistant. Ca
 /// missing key, local server not running) silently returns `Ok(Vec::new())`. UI hides
 /// the feature instead of surfacing an error.
 #[tauri::command]
+#[specta::specta]
 pub async fn get_folder_suggestions(
     listing_id: String,
     current_path: String,

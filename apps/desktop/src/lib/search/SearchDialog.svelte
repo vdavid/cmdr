@@ -336,10 +336,10 @@
             modifiedBefore?: string | null
         }
         query: {
-            includePaths?: string[]
-            excludeDirNames?: string[]
-            caseSensitive?: boolean
-            excludeSystemDirs?: boolean
+            includePaths?: string[] | null
+            excludeDirNames?: string[] | null
+            caseSensitive?: boolean | null
+            excludeSystemDirs?: boolean | null
         }
     }): SvelteSet<string> {
         const changed = new SvelteSet<string>()

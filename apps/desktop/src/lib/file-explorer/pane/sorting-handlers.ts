@@ -21,14 +21,14 @@ export function toFrontendIndices(backendIndices: number[], hasParent: boolean):
 /** Applies re-sort results (new cursor + selection positions) to a pane, adjusting for ".." offset. */
 export function applySortResult(
   paneRef: FilePaneAPI | undefined,
-  result: { newCursorIndex?: number; newSelectedIndices?: number[] },
+  result: { newCursorIndex: number | null; newSelectedIndices: number[] | null },
   hasParent: boolean,
 ) {
-  if (result.newCursorIndex !== undefined) {
+  if (result.newCursorIndex != null) {
     const frontendIndex = hasParent ? result.newCursorIndex + 1 : result.newCursorIndex
     void paneRef?.setCursorIndex(frontendIndex)
   }
-  if (result.newSelectedIndices !== undefined) {
+  if (result.newSelectedIndices != null) {
     const frontendIndices = toFrontendIndices(result.newSelectedIndices, hasParent)
     paneRef?.setSelectedIndices(frontendIndices)
   }

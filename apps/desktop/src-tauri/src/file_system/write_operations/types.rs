@@ -15,7 +15,7 @@ pub use crate::file_system::listing::{SortColumn, SortOrder};
 // ============================================================================
 
 /// Type of write operation.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum WriteOperationType {
     Copy,
@@ -25,7 +25,7 @@ pub enum WriteOperationType {
 }
 
 /// Phase of the operation (for progress reporting).
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum WriteOperationPhase {
     /// Scanning source files to calculate total size
@@ -45,7 +45,7 @@ pub enum WriteOperationPhase {
 // ============================================================================
 
 /// How to handle conflicts when destination files already exist.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ConflictResolution {
     /// Stop operation on first conflict (default behavior)
@@ -188,7 +188,7 @@ pub struct DryRunResult {
 // ============================================================================
 
 /// Current status of an operation for query APIs.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct OperationStatus {
     pub operation_id: String,
@@ -208,7 +208,7 @@ pub struct OperationStatus {
 }
 
 /// Summary of an active operation for list view.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct OperationSummary {
     pub operation_id: String,
@@ -225,7 +225,7 @@ pub struct OperationSummary {
 // ============================================================================
 
 /// Errors that can occur during write operations.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum WriteOperationError {
     SourceNotFound {
@@ -389,7 +389,7 @@ impl From<std::io::Error> for WriteOperationError {
 // ============================================================================
 
 /// Result of starting a write operation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct WriteOperationStartResult {
     pub operation_id: String,
@@ -401,7 +401,7 @@ pub struct WriteOperationStartResult {
 // ============================================================================
 
 /// Configuration for write operations.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct WriteOperationConfig {
     /// Progress update interval in milliseconds (default: 200)
@@ -493,7 +493,7 @@ pub struct ScanPreviewCancelledEvent {
 }
 
 /// Result of starting a scan preview.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ScanPreviewStartResult {
     pub preview_id: String,
@@ -615,7 +615,7 @@ impl OperationEventSink for CollectorEventSink {
 // ============================================================================
 
 /// Copy operation configuration for volume-to-volume copy.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeCopyConfig {
     /// In milliseconds.
@@ -651,7 +651,7 @@ impl From<&WriteOperationConfig> for VolumeCopyConfig {
 }
 
 /// Result of a pre-flight scan for volume copy.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeCopyScanResult {
     pub file_count: usize,

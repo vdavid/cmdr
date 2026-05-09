@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 // ── Query types ──────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchQuery {
     pub name_pattern: Option<String>,
@@ -39,7 +39,7 @@ pub(crate) fn default_limit() -> u32 {
     30
 }
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum PatternType {
     #[default]
@@ -47,14 +47,14 @@ pub enum PatternType {
     Regex,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchResult {
     pub entries: Vec<SearchResultEntry>,
     pub total_count: u32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchResultEntry {
     pub name: String,
@@ -70,7 +70,7 @@ pub struct SearchResultEntry {
 }
 
 /// Parsed search scope: which subtrees to include and which directory names/paths to exclude.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ParsedScope {
     pub include_paths: Vec<String>,

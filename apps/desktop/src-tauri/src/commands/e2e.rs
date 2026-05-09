@@ -4,6 +4,7 @@
 /// The frontend uses this to override startup paths for E2E tests.
 /// Always compiled in — reading an unset env var is a no-op in production.
 #[tauri::command]
+#[specta::specta]
 pub fn get_e2e_start_path() -> Option<String> {
     std::env::var("CMDR_E2E_START_PATH").ok()
 }

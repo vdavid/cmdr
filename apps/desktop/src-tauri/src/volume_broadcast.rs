@@ -71,6 +71,7 @@ pub fn emit_volumes_changed() {
 /// The result arrives via the event, not as a return value.
 /// Used by the frontend retry button when the initial listing timed out.
 #[tauri::command]
+#[specta::specta]
 pub fn refresh_volumes() {
     emit_volumes_changed_now();
 }

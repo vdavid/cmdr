@@ -61,10 +61,12 @@ impl std::error::Error for MtpConnectionError {}
 
 /// Enables or disables MTP support (stub - no-op).
 #[tauri::command]
+#[specta::specta]
 pub async fn set_mtp_enabled(_enabled: bool) {}
 
 /// Lists connected MTP devices (stub - always returns empty).
 #[tauri::command]
+#[specta::specta]
 pub fn list_mtp_devices() -> Vec<MtpDeviceInfo> {
     // MTP is not supported on non-macOS platforms yet
     Vec::new()
@@ -72,6 +74,7 @@ pub fn list_mtp_devices() -> Vec<MtpDeviceInfo> {
 
 /// Connects to an MTP device (stub - returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn connect_mtp_device(_device_id: String) -> Result<ConnectedDeviceInfo, MtpConnectionError> {
     Err(MtpConnectionError::NotSupported {
         message: "MTP is not supported on this platform".to_string(),
@@ -80,6 +83,7 @@ pub async fn connect_mtp_device(_device_id: String) -> Result<ConnectedDeviceInf
 
 /// Disconnects from an MTP device (stub - returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn disconnect_mtp_device(_device_id: String) -> Result<(), MtpConnectionError> {
     Err(MtpConnectionError::NotSupported {
         message: "MTP is not supported on this platform".to_string(),
@@ -88,18 +92,21 @@ pub async fn disconnect_mtp_device(_device_id: String) -> Result<(), MtpConnecti
 
 /// Gets information about a connected MTP device (stub - returns None).
 #[tauri::command]
+#[specta::specta]
 pub fn get_mtp_device_info(_device_id: String) -> Option<ConnectedDeviceInfo> {
     None
 }
 
 /// Gets the ptpcamerad workaround command (stub - returns empty string).
 #[tauri::command]
+#[specta::specta]
 pub fn get_ptpcamerad_workaround_command() -> String {
     String::new()
 }
 
 /// Gets storage information for a connected device (stub - returns empty).
 #[tauri::command]
+#[specta::specta]
 pub fn get_mtp_storages(_device_id: String) -> Vec<MtpStorageInfo> {
     Vec::new()
 }
@@ -128,6 +135,7 @@ pub struct FileEntry {
 
 /// Lists MTP directory contents (stub - returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn list_mtp_directory(
     _device_id: String,
     _storage_id: u32,
@@ -164,6 +172,7 @@ pub struct MtpObjectInfo {
 
 /// Downloads a file from an MTP device (stub - returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn download_mtp_file(
     _device_id: String,
     _storage_id: u32,
@@ -178,6 +187,7 @@ pub async fn download_mtp_file(
 
 /// Uploads a file to an MTP device (stub - returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn upload_to_mtp(
     _device_id: String,
     _storage_id: u32,
@@ -192,6 +202,7 @@ pub async fn upload_to_mtp(
 
 /// Deletes an object from an MTP device (stub - returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn delete_mtp_object(
     _device_id: String,
     _storage_id: u32,
@@ -204,6 +215,7 @@ pub async fn delete_mtp_object(
 
 /// Creates a folder on an MTP device (stub - returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn create_mtp_folder(
     _device_id: String,
     _storage_id: u32,
@@ -217,6 +229,7 @@ pub async fn create_mtp_folder(
 
 /// Renames an object on an MTP device (stub - returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn rename_mtp_object(
     _device_id: String,
     _storage_id: u32,
@@ -230,6 +243,7 @@ pub async fn rename_mtp_object(
 
 /// Moves an object on an MTP device (stub - returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn move_mtp_object(
     _device_id: String,
     _storage_id: u32,
@@ -256,6 +270,7 @@ pub struct MtpScanResult {
 
 /// Scans an MTP path for copy statistics (stub - returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn scan_mtp_for_copy(
     _device_id: String,
     _storage_id: u32,

@@ -5,7 +5,7 @@
 
 /// System memory breakdown returned to frontend for the RAM gauge.
 /// Categories are non-overlapping and sum to `total_bytes`.
-#[derive(Debug, Clone, serde::Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, serde::Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SystemMemoryInfo {
     pub total_bytes: u64,
@@ -20,6 +20,7 @@ pub struct SystemMemoryInfo {
 /// Returns system memory breakdown using macOS `host_statistics64` for accurate,
 /// non-overlapping categories (unlike `sysinfo` where used + available > total).
 #[tauri::command]
+#[specta::specta]
 pub fn get_system_memory_info() -> SystemMemoryInfo {
     get_system_memory_info_inner()
 }

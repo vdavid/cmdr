@@ -4,7 +4,7 @@
 
 import { load, type Store } from '@tauri-apps/plugin-store'
 import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { invoke } from '@tauri-apps/api/core'
+import { invoke } from '@tauri-apps/api/core' // needed for excluded commands
 import type { SettingId, SettingsValues } from './types'
 import { SettingValidationError } from './types'
 import { getDefaultValue, settingsRegistry, validateSettingValue } from './settings-registry'
@@ -141,6 +141,7 @@ async function pushSettingsDefaultsToBackend(): Promise<void> {
     for (const def of settingsRegistry) {
       defaults[def.id] = def.default
     }
+    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
     await invoke('record_settings_defaults', { defaults })
   } catch (err) {
     log.warn('Failed to push settings defaults to backend: {err}', { err })

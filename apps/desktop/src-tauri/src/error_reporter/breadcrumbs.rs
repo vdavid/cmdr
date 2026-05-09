@@ -30,7 +30,7 @@ pub const MAX_MESSAGE_CHARS: usize = 256;
 /// Cap on the kind field. Real kinds are short ("nav", "command", "dialog", ...).
 pub const MAX_KIND_CHARS: usize = 64;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Breadcrumb {
     /// ISO-8601 UTC timestamp.

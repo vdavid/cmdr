@@ -6,7 +6,7 @@
  * `byPath` map indexes them by relative path so `FullList.svelte` can render
  * the cell in O(1).
  */
-import { invoke } from '@tauri-apps/api/core'
+import { commands } from '$lib/ipc/bindings'
 
 export type EntryStatusCode =
   | 'modified'
@@ -18,11 +18,6 @@ export type EntryStatusCode =
   | 'untracked'
   | 'ignored'
   | 'conflicted'
-
-export interface EntryStatus {
-  relativePath: string
-  code: EntryStatusCode
-}
 
 const codeToGlyph: Record<EntryStatusCode, string> = {
   modified: 'M',
@@ -61,10 +56,7 @@ export function labelFor(code: EntryStatusCode): string {
  * Returns `null` if the lookup timed out so callers can render a placeholder.
  */
 export async function fetchStatusMap(repoRoot: string, dir: string): Promise<Map<string, EntryStatusCode> | null> {
-  const result = await invoke<{ data: EntryStatus[]; timedOut: boolean }>('get_git_status_for_paths', {
-    repoRoot,
-    dir,
-  })
+  const result = await commands.getGitStatusForPaths(repoRoot, dir)
   if (result.timedOut) return null
   const map = new Map<string, EntryStatusCode>()
   for (const entry of result.data) {

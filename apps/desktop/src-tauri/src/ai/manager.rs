@@ -112,6 +112,7 @@ pub fn shutdown() {
 
 /// Returns the current AI status.
 #[tauri::command]
+#[specta::specta]
 pub fn get_ai_status() -> AiStatus {
     let manager = MANAGER.lock_ignore_poison();
     match &*manager {
@@ -234,6 +235,7 @@ pub fn cancel_stream(request_id: &str) {
 
 /// Starts the AI download (binary + model).
 #[tauri::command]
+#[specta::specta]
 pub async fn start_ai_download<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
     if !is_local_ai_supported() {
         return Err(String::from("Local AI not supported on this hardware"));
@@ -266,6 +268,7 @@ pub async fn start_ai_download<R: Runtime>(app: AppHandle<R>) -> Result<(), Stri
 
 /// Cancels an in-progress download.
 #[tauri::command]
+#[specta::specta]
 pub fn cancel_ai_download() {
     let mut manager = MANAGER.lock_ignore_poison();
     if let Some(ref mut m) = *manager {
@@ -276,6 +279,7 @@ pub fn cancel_ai_download() {
 /// Uninstalls the AI model and binary, resets state.
 /// Async because file deletion may block briefly.
 #[tauri::command]
+#[specta::specta]
 pub async fn uninstall_ai() {
     tauri::async_runtime::spawn_blocking(uninstall_ai_sync).await.ok();
 }
@@ -304,6 +308,7 @@ fn uninstall_ai_sync() {
 
 /// Dismisses the AI offer notification for 7 days.
 #[tauri::command]
+#[specta::specta]
 pub fn dismiss_ai_offer() {
     let mut manager = MANAGER.lock_ignore_poison();
     if let Some(ref mut m) = *manager {
@@ -320,6 +325,7 @@ pub fn dismiss_ai_offer() {
 /// Can be re-enabled later via settings.
 /// Also cleans up any partial downloads to avoid wasting disk space.
 #[tauri::command]
+#[specta::specta]
 pub fn opt_out_ai() {
     let mut manager = MANAGER.lock_ignore_poison();
     if let Some(ref mut m) = *manager {
@@ -340,6 +346,7 @@ pub fn opt_out_ai() {
 
 /// Re-enables AI features after opting out.
 #[tauri::command]
+#[specta::specta]
 pub fn opt_in_ai() {
     let mut manager = MANAGER.lock_ignore_poison();
     if let Some(ref mut m) = *manager {
@@ -350,13 +357,14 @@ pub fn opt_in_ai() {
 
 /// Returns whether the user has opted out of AI features.
 #[tauri::command]
+#[specta::specta]
 pub fn is_ai_opted_out() -> bool {
     let manager = MANAGER.lock_ignore_poison();
     manager.as_ref().is_some_and(|m| m.state.opted_out)
 }
 
 /// Model info returned to frontend.
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AiModelInfo {
     pub id: String,
@@ -372,6 +380,7 @@ pub struct AiModelInfo {
 
 /// Returns information about the current AI model.
 #[tauri::command]
+#[specta::specta]
 pub fn get_ai_model_info() -> AiModelInfo {
     let model = get_current_model();
     AiModelInfo {
@@ -385,7 +394,7 @@ pub fn get_ai_model_info() -> AiModelInfo {
 }
 
 /// Runtime status of the AI subsystem, returned to frontend.
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AiRuntimeStatus {
     pub server_running: bool,
@@ -404,6 +413,7 @@ pub struct AiRuntimeStatus {
 
 /// Returns the full runtime status of the AI subsystem.
 #[tauri::command]
+#[specta::specta]
 pub fn get_ai_runtime_status() -> AiRuntimeStatus {
     let model = get_current_model();
     let manager = MANAGER.lock_ignore_poison();
@@ -444,6 +454,7 @@ pub fn get_ai_runtime_status() -> AiRuntimeStatus {
 /// in a background task. If provider is NOT `local` and a server is running, stops it.
 /// Returns immediately.
 #[tauri::command]
+#[specta::specta]
 pub fn configure_ai<R: Runtime>(
     app: AppHandle<R>,
     provider: String,
@@ -520,6 +531,7 @@ pub fn configure_ai<R: Runtime>(
 
 /// Stops the local llama-server without uninstalling.
 #[tauri::command]
+#[specta::specta]
 pub fn stop_ai_server() {
     let mut manager = MANAGER.lock_ignore_poison();
     if let Some(ref mut m) = *manager
@@ -536,6 +548,7 @@ pub fn stop_ai_server() {
 /// Starts the local llama-server with the given context size.
 /// Spawns the server in a background task and returns immediately.
 #[tauri::command]
+#[specta::specta]
 pub fn start_ai_server<R: Runtime>(app: AppHandle<R>, ctx_size: u32) -> Result<(), String> {
     if !is_local_ai_supported() {
         return Err(String::from("Local AI not supported on this hardware"));
@@ -591,7 +604,7 @@ pub fn start_ai_server<R: Runtime>(app: AppHandle<R>, ctx_size: u32) -> Result<(
 }
 
 /// Result of checking connectivity to an AI API endpoint.
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AiConnectionCheckResult {
     pub connected: bool,
@@ -603,6 +616,7 @@ pub struct AiConnectionCheckResult {
 /// Checks connectivity to an AI API endpoint by calling GET {base_url}/models.
 /// Returns connection status, auth status, and available model list.
 #[tauri::command]
+#[specta::specta]
 pub async fn check_ai_connection(base_url: String, api_key: String) -> AiConnectionCheckResult {
     let url = format!("{}/models", base_url.trim_end_matches('/'));
 

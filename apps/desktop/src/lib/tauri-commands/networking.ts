@@ -2,17 +2,25 @@
 
 import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { commands } from '$lib/ipc/bindings'
+import type { MountResult, SmbCredentials } from '$lib/ipc/bindings'
+import { throwIpcError } from './ipc-types'
 import type {
   AuthOptions,
   ConnectionMode,
   DiscoveryState,
   KnownNetworkShare,
-  ManualConnectResult,
-  MountResult,
   NetworkHost,
   ShareListResult,
-  SmbCredentials,
 } from '../file-explorer/types'
+
+/** Result of connecting to a manually-specified server. */
+export interface ManualConnectResult {
+  /** The injected network host */
+  host: NetworkHost
+  /** Optional share path (when user typed smb://host/share) */
+  sharePath: string | null
+}
 
 // ============================================================================
 // Network discovery (macOS only)
@@ -25,6 +33,7 @@ import type {
  */
 export async function listNetworkHosts(): Promise<NetworkHost[]> {
   try {
+    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
     return await invoke<NetworkHost[]>('list_network_hosts')
   } catch {
     // Command not available (non-macOS) - return empty array
@@ -39,7 +48,7 @@ export async function listNetworkHosts(): Promise<NetworkHost[]> {
  */
 export async function getNetworkDiscoveryState(): Promise<DiscoveryState> {
   try {
-    return await invoke<DiscoveryState>('get_network_discovery_state')
+    return await commands.getNetworkDiscoveryState()
   } catch {
     // Command not available (non-macOS) - return idle
     return 'idle'
@@ -55,6 +64,7 @@ export async function getNetworkDiscoveryState(): Promise<DiscoveryState> {
  */
 export async function resolveNetworkHost(hostId: string): Promise<NetworkHost | null> {
   try {
+    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
     return await invoke<NetworkHost | null>('resolve_host', { hostId })
   } catch {
     // Command not available (non-macOS) - return null
@@ -86,9 +96,16 @@ export async function listSharesOnHost(
   timeoutMs?: number,
   cacheTtlMs?: number,
 ): Promise<ShareListResult> {
-  // The Rust command returns Result<ShareListResult, ShareListError>
-  // Tauri auto-converts Ok to value and Err to thrown error
-  return invoke<ShareListResult>('list_shares_on_host', { hostId, hostname, ipAddress, port, timeoutMs, cacheTtlMs })
+  const res = await commands.listSharesOnHost(
+    hostId,
+    hostname,
+    ipAddress ?? null,
+    port,
+    timeoutMs ?? null,
+    cacheTtlMs ?? null,
+  )
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -111,7 +128,7 @@ export async function prefetchShares(
   cacheTtlMs?: number,
 ): Promise<void> {
   try {
-    await invoke('prefetch_shares', { hostId, hostname, ipAddress, port, timeoutMs, cacheTtlMs })
+    await commands.prefetchShares(hostId, hostname, ipAddress ?? null, port, timeoutMs ?? null, cacheTtlMs ?? null)
   } catch {
     // Silently ignore prefetch errors
   }
@@ -130,7 +147,7 @@ export async function prefetchShares(
  */
 export async function getKnownShareByName(serverName: string, shareName: string): Promise<KnownNetworkShare | null> {
   try {
-    return await invoke<KnownNetworkShare | null>('get_known_share_by_name', { serverName, shareName })
+    return await commands.getKnownShareByName(serverName, shareName)
   } catch {
     // Command not available (non-macOS) - return null
     return null
@@ -154,13 +171,7 @@ export async function updateKnownShare(
   username: string | null,
 ): Promise<void> {
   try {
-    await invoke('update_known_share', {
-      serverName,
-      shareName,
-      lastConnectionMode,
-      lastKnownAuthOptions,
-      username,
-    })
+    await commands.updateKnownShare(serverName, shareName, lastConnectionMode, lastKnownAuthOptions, username)
   } catch {
     // Command not available (non-macOS) - silently fail
   }
@@ -174,7 +185,7 @@ export async function updateKnownShare(
  */
 export async function getUsernameHints(): Promise<Record<string, string>> {
   try {
-    return await invoke<Record<string, string>>('get_username_hints')
+    return await commands.getUsernameHints()
   } catch {
     // Command not available (non-macOS) - return empty map
     return {}
@@ -199,12 +210,13 @@ export async function saveSmbCredentials(
   username: string,
   password: string,
 ): Promise<void> {
-  await invoke('save_smb_credentials', { server, share, username, password })
+  const res = await commands.saveSmbCredentials(server, share, username, password)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /** Returns whether credential storage is using an encrypted file fallback instead of the system keyring. */
 export async function isUsingCredentialFileFallback(): Promise<boolean> {
-  return invoke<boolean>('is_using_credential_file_fallback')
+  return commands.isUsingCredentialFileFallback()
 }
 
 /**
@@ -215,7 +227,9 @@ export async function isUsingCredentialFileFallback(): Promise<boolean> {
  * @throws KeychainError if credentials not found or access denied
  */
 export async function getSmbCredentials(server: string, share: string | null): Promise<SmbCredentials> {
-  return invoke<SmbCredentials>('get_smb_credentials', { server, share })
+  const res = await commands.getSmbCredentials(server, share)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -224,7 +238,8 @@ export async function getSmbCredentials(server: string, share: string | null): P
  * @param share Optional share name
  */
 export async function deleteSmbCredentials(server: string, share: string | null): Promise<void> {
-  await invoke('delete_smb_credentials', { server, share })
+  const res = await commands.deleteSmbCredentials(server, share)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**
@@ -249,16 +264,18 @@ export async function listSharesWithCredentials(
   timeoutMs?: number,
   cacheTtlMs?: number,
 ): Promise<ShareListResult> {
-  return invoke<ShareListResult>('list_shares_with_credentials', {
+  const res = await commands.listSharesWithCredentials(
     hostId,
     hostname,
-    ipAddress,
+    ipAddress ?? null,
     port,
     username,
     password,
-    timeoutMs,
-    cacheTtlMs,
-  })
+    timeoutMs ?? null,
+    cacheTtlMs ?? null,
+  )
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 // ============================================================================
@@ -285,14 +302,9 @@ export async function mountNetworkShare(
   port?: number,
   timeoutMs?: number,
 ): Promise<MountResult> {
-  return invoke<MountResult>('mount_network_share', {
-    server,
-    share,
-    username,
-    password,
-    port,
-    timeoutMs,
-  })
+  const res = await commands.mountNetworkShare(server, share, username, password, port ?? null, timeoutMs ?? null)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /** Result of an SMB volume upgrade attempt. */
@@ -316,7 +328,10 @@ export type UpgradeResult =
  * should show a login form, or `networkError` for non-auth failures.
  */
 export async function upgradeToSmbVolume(volumeId: string): Promise<UpgradeResult> {
-  return invoke<UpgradeResult>('upgrade_to_smb_volume', { volumeId })
+  const res = await commands.upgradeToSmbVolume(volumeId)
+  if (res.status === 'error') throwIpcError(res.error)
+  // specta rc.24 emits snake_case for these enum fields; actual wire format is camelCase (serde rename_all).
+  return res.data as unknown as UpgradeResult
 }
 
 /**
@@ -328,12 +343,10 @@ export async function upgradeToSmbVolumeWithCredentials(
   password: string | null,
   rememberInKeychain: boolean,
 ): Promise<UpgradeResult> {
-  return invoke<UpgradeResult>('upgrade_to_smb_volume_with_credentials', {
-    volumeId,
-    username,
-    password,
-    rememberInKeychain,
-  })
+  const res = await commands.upgradeToSmbVolumeWithCredentials(volumeId, username, password, rememberInKeychain)
+  if (res.status === 'error') throwIpcError(res.error)
+  // specta rc.24 emits snake_case for these enum fields; actual wire format is camelCase (serde rename_all).
+  return res.data as unknown as UpgradeResult
 }
 
 /**
@@ -344,7 +357,8 @@ export async function upgradeToSmbVolumeWithCredentials(
  * Resolves on success; throws on failure with an `IpcError`-shaped exception.
  */
 export async function reconnectSmbVolume(volumeId: string): Promise<void> {
-  await invoke('reconnect_smb_volume', { volumeId })
+  const res = await commands.reconnectSmbVolume(volumeId)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**
@@ -357,7 +371,8 @@ export async function reconnectSmbVolume(volumeId: string): Promise<void> {
  * still has the volume open).
  */
 export async function disconnectSmbVolume(volumeId: string): Promise<void> {
-  await invoke('disconnect_smb_volume', { volumeId })
+  const res = await commands.disconnectSmbVolume(volumeId)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 // ============================================================================
@@ -372,6 +387,7 @@ export async function disconnectSmbVolume(volumeId: string): Promise<void> {
  * @throws Plain string error on parse failure or unreachable host
  */
 export async function connectToServer(address: string): Promise<ManualConnectResult> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
   return invoke<ManualConnectResult>('connect_to_server', { address })
 }
 
@@ -381,7 +397,8 @@ export async function connectToServer(address: string): Promise<ManualConnectRes
  * @param serverId The manual server's host ID (like "manual-192-168-1-100-445")
  */
 export async function removeManualServer(serverId: string): Promise<void> {
-  await invoke('remove_manual_server', { serverId })
+  const res = await commands.removeManualServer(serverId)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**
@@ -395,7 +412,7 @@ export async function removeManualServer(serverId: string): Promise<void> {
  */
 export async function ensureNetworkDiscoveryStarted(): Promise<void> {
   try {
-    await invoke('ensure_network_discovery_started')
+    await commands.ensureNetworkDiscoveryStarted()
   } catch {
     // Stub on unsupported platforms — silently swallow
   }
@@ -409,7 +426,7 @@ export async function ensureNetworkDiscoveryStarted(): Promise<void> {
  */
 export async function setNetworkEnabled(enabled: boolean): Promise<void> {
   try {
-    await invoke('set_network_enabled', { enabled })
+    await commands.setNetworkEnabled(enabled)
   } catch {
     // Stub on unsupported platforms — silently swallow
   }
@@ -430,7 +447,8 @@ export async function showNetworkHostContextMenu(
   isManual: boolean,
   hasCredentials: boolean,
 ): Promise<void> {
-  await invoke('show_network_host_context_menu', { hostId, hostName, isManual, hasCredentials })
+  const res = await commands.showNetworkHostContextMenu(hostId, hostName, isManual, hasCredentials)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**
@@ -454,5 +472,7 @@ export async function disconnectNetworkHost(
   hostName: string,
   ipAddress: string | undefined,
 ): Promise<string[]> {
-  return invoke<string[]>('disconnect_network_host', { hostId, hostName, ipAddress })
+  const res = await commands.disconnectNetworkHost(hostId, hostName, ipAddress ?? null)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }

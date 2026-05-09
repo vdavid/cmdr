@@ -1,6 +1,7 @@
 // License commands
 
-import { invoke } from '@tauri-apps/api/core'
+import { commands } from '$lib/ipc/bindings'
+import { throwIpcError } from './ipc-types'
 
 /** License types */
 export type LicenseType = 'commercial_subscription' | 'commercial_perpetual'
@@ -92,7 +93,7 @@ export function parseActivationError(e: unknown): LicenseActivationError | null 
  * @returns Current license status (personal, commercial, or expired)
  */
 export async function getLicenseStatus(): Promise<LicenseStatus> {
-  return invoke<LicenseStatus>('get_license_status')
+  return commands.getLicenseStatus()
 }
 
 /**
@@ -100,7 +101,7 @@ export async function getLicenseStatus(): Promise<LicenseStatus> {
  * @returns Window title string (like "Cmdr – Personal use only")
  */
 export async function getWindowTitle(): Promise<string> {
-  return invoke<string>('get_window_title')
+  return commands.getWindowTitle()
 }
 
 /**
@@ -108,17 +109,23 @@ export async function getWindowTitle(): Promise<string> {
  * Kept for backward compatibility — new code should use verifyLicense + commitLicense.
  */
 export async function activateLicense(licenseKey: string): Promise<LicenseInfo> {
-  return invoke<LicenseInfo>('activate_license', { licenseKey })
+  const res = await commands.activateLicense(licenseKey)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /** Verifies a license key offline without writing anything to disk. */
 export async function verifyLicense(licenseKey: string): Promise<VerifyResult> {
-  return invoke<VerifyResult>('verify_license', { licenseKey })
+  const res = await commands.verifyLicense(licenseKey)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /** Persists a verified license key to disk and updates caches. */
 export async function commitLicense(licenseKey: string, shortCode: string | null): Promise<LicenseInfo> {
-  return invoke<LicenseInfo>('commit_license', { licenseKey, shortCode })
+  const res = await commands.commitLicense(licenseKey, shortCode)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -126,28 +133,28 @@ export async function commitLicense(licenseKey: string, shortCode: string | null
  * @returns License info if a valid license is stored, null otherwise
  */
 export async function getLicenseInfo(): Promise<LicenseInfo | null> {
-  return invoke<LicenseInfo | null>('get_license_info')
+  return commands.getLicenseInfo()
 }
 
 /**
  * Marks the expiration modal as shown to prevent showing it again.
  */
 export async function markExpirationModalShown(): Promise<void> {
-  await invoke('mark_expiration_modal_shown')
+  await commands.markExpirationModalShown()
 }
 
 /**
  * Marks the commercial reminder as dismissed (resets the 30-day timer).
  */
 export async function markCommercialReminderDismissed(): Promise<void> {
-  await invoke('mark_commercial_reminder_dismissed')
+  await commands.markCommercialReminderDismissed()
 }
 
 /**
  * Resets all license data (debug builds only).
  */
 export async function resetLicense(): Promise<void> {
-  await invoke('reset_license')
+  await commands.resetLicense()
 }
 
 /**
@@ -156,7 +163,7 @@ export async function resetLicense(): Promise<void> {
  * @returns True if validation is needed (7+ days since last validation)
  */
 export async function needsLicenseValidation(): Promise<boolean> {
-  return invoke<boolean>('needs_license_validation')
+  return commands.needsLicenseValidation()
 }
 
 /**
@@ -164,7 +171,7 @@ export async function needsLicenseValidation(): Promise<boolean> {
  * Returns false if the license was committed locally but never verified with the server.
  */
 export async function hasLicenseBeenValidated(): Promise<boolean> {
-  return invoke<boolean>('has_license_been_validated')
+  return commands.hasLicenseBeenValidated()
 }
 
 /**
@@ -173,5 +180,7 @@ export async function hasLicenseBeenValidated(): Promise<boolean> {
  * If omitted, reads from the stored license (for periodic re-validation).
  */
 export async function validateLicenseWithServer(transactionId?: string): Promise<LicenseStatus> {
-  return invoke<LicenseStatus>('validate_license_with_server', { transactionId: transactionId ?? null })
+  const res = await commands.validateLicenseWithServer(transactionId ?? null)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }

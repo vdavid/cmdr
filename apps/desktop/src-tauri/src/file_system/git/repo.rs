@@ -15,7 +15,7 @@ use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 ///
 /// Computed at portal entry and re-emitted by the watcher on every relevant
 /// `.git/*` change. The frontend never polls.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RepoInfo {
     /// Canonical repo root (the working tree dir, not `.git`).

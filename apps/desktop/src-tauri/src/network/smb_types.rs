@@ -5,7 +5,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Information about a discovered share.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ShareInfo {
     pub name: String,
@@ -15,7 +15,7 @@ pub struct ShareInfo {
 }
 
 /// Authentication mode detected for a host.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum AuthMode {
     GuestAllowed,
@@ -25,7 +25,7 @@ pub enum AuthMode {
 }
 
 /// Result of a share listing operation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ShareListResult {
     /// Already filtered to disk shares only.
@@ -38,7 +38,7 @@ pub struct ShareListResult {
 ///
 /// Uses internally tagged representation so each variant can carry different fields
 /// while keeping a flat JSON shape (`{ "type": "...", "message": "..." }`).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum ShareListError {
     HostUnreachable {

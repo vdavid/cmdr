@@ -10,7 +10,7 @@ use crate::volumes::{self, DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo, Volu
 /// Result of resolving a path to its containing volume.
 /// Unlike `TimedOut<Option<VolumeInfo>>`, `timed_out: true` means "the filesystem
 /// didn't respond, we genuinely don't know" — not "here's a fallback."
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PathVolumeResolution {
     pub volume: Option<VolumeInfo>,
@@ -22,6 +22,7 @@ const VOLUME_TIMEOUT: Duration = Duration::from_secs(2);
 /// Lists all mounted volumes, including connected MTP devices.
 /// Enriches SMB volumes with their connection state from the VolumeManager.
 #[tauri::command]
+#[specta::specta]
 pub async fn list_volumes() -> TimedOut<Vec<VolumeInfo>> {
     let mut result = blocking_with_timeout_flag(VOLUME_TIMEOUT, vec![], volumes::list_mounted_volumes).await;
     append_mtp_volumes(&mut result.data).await;
@@ -53,6 +54,7 @@ fn enrich_smb_connection_state(volumes: &mut [VolumeInfo]) {
 
 /// Gets the default volume ID (root filesystem).
 #[tauri::command]
+#[specta::specta]
 pub fn get_default_volume_id() -> String {
     DEFAULT_VOLUME_ID.to_string()
 }
@@ -61,6 +63,7 @@ pub fn get_default_volume_id() -> String {
 /// Returns total and available bytes for the volume.
 /// For MTP paths (`mtp://`), fetches from the MTP connection manager instead of macOS NSURL.
 #[tauri::command]
+#[specta::specta]
 pub async fn get_volume_space(path: String) -> TimedOut<Option<VolumeSpaceInfo>> {
     if let Some(space) = get_mtp_space_info(&path).await {
         return TimedOut {
@@ -76,6 +79,7 @@ pub async fn get_volume_space(path: String) -> TimedOut<Option<VolumeSpaceInfo>>
 /// dispatch for MTP/SMB paths. Returns `timed_out: true` if the filesystem
 /// didn't respond within 2s.
 #[tauri::command]
+#[specta::specta]
 pub async fn resolve_path_volume(path: String) -> PathVolumeResolution {
     // MTP protocol dispatch
     if path.starts_with("mtp://") {

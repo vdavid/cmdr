@@ -46,7 +46,7 @@ const MTP_TIMEOUT_SECS: u64 = 30;
 // ============================================================================
 
 /// Progress event for MTP file transfers (download/upload).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpTransferProgress {
     /// Unique operation ID.
@@ -64,7 +64,7 @@ pub struct MtpTransferProgress {
 }
 
 /// Type of MTP transfer operation.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum MtpTransferType {
     Download,
@@ -72,7 +72,7 @@ pub enum MtpTransferType {
 }
 
 /// Result of a successful MTP operation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpOperationResult {
     /// Operation ID (for tracking).
@@ -84,7 +84,7 @@ pub struct MtpOperationResult {
 }
 
 /// Information about an object on the device (returned after creation).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpObjectInfo {
     /// Object handle.
@@ -100,7 +100,7 @@ pub struct MtpObjectInfo {
 }
 
 /// Information about a connected device, including its storages.
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ConnectedDeviceInfo {
     /// Device information.

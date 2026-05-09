@@ -24,14 +24,14 @@ pub use super::provider::enrich_with_provider;
 /// Only set when a specific, platform-resolvable action is known. Defaults to `None`
 /// for all other errors. The frontend uses this to render an action button without
 /// substring-matching the title.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ErrorActionKind {
     /// User should grant Full Disk Access in macOS System Settings → Privacy & Security.
     OpenPrivacySettings,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendlyError {
     pub category: ErrorCategory,
@@ -49,7 +49,7 @@ pub struct FriendlyError {
     pub action_kind: Option<ErrorActionKind>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ErrorCategory {
     /// Might work if you retry (timeouts, temporary resource issues).

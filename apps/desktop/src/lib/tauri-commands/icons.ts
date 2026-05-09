@@ -1,7 +1,7 @@
 // Icon fetching and cache management
 
-import { invoke } from '@tauri-apps/api/core'
 import type { TimedOut } from './ipc-types'
+import { commands } from '$lib/ipc/bindings'
 
 /**
  * Gets icon data URLs for the requested icon IDs.
@@ -13,7 +13,7 @@ export async function getIcons(
   iconIds: string[],
   useAppIconsForDocuments: boolean,
 ): Promise<TimedOut<Record<string, string>>> {
-  return invoke<TimedOut<Record<string, string>>>('get_icons', { iconIds, useAppIconsForDocuments })
+  return commands.getIcons(iconIds, useAppIconsForDocuments)
 }
 
 /**
@@ -29,11 +29,7 @@ export async function refreshDirectoryIcons(
   extensions: string[],
   useAppIconsForDocuments: boolean,
 ): Promise<TimedOut<Record<string, string>>> {
-  return invoke<TimedOut<Record<string, string>>>('refresh_directory_icons', {
-    directoryPaths,
-    extensions,
-    useAppIconsForDocuments,
-  })
+  return commands.refreshDirectoryIcons(directoryPaths, extensions, useAppIconsForDocuments)
 }
 
 /**
@@ -41,7 +37,7 @@ export async function refreshDirectoryIcons(
  * Called when the "use app icons for documents" setting changes.
  */
 export async function clearExtensionIconCache(): Promise<void> {
-  await invoke('clear_extension_icon_cache')
+  await commands.clearExtensionIconCache()
 }
 
 /**
@@ -49,5 +45,5 @@ export async function clearExtensionIconCache(): Promise<void> {
  * Called when the system theme or accent color changes.
  */
 export async function clearDirectoryIconCache(): Promise<void> {
-  await invoke('clear_directory_icon_cache')
+  await commands.clearDirectoryIconCache()
 }

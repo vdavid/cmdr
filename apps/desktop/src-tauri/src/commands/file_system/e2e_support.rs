@@ -5,6 +5,7 @@
 /// one use, enabling retry testing.
 #[cfg(feature = "playwright-e2e")]
 #[tauri::command]
+#[specta::specta]
 pub fn inject_listing_error(volume_id: String, error_code: i32) -> Result<(), String> {
     let volume = crate::file_system::get_volume_manager()
         .get(&volume_id)
@@ -19,6 +20,7 @@ pub fn inject_listing_error(volume_id: String, error_code: i32) -> Result<(), St
 /// Optionally enriches with provider-specific suggestions when `provider_path` is set.
 #[cfg(debug_assertions)]
 #[tauri::command]
+#[specta::specta]
 pub fn preview_friendly_error(
     error_code: Option<i32>,
     variant: Option<String>,

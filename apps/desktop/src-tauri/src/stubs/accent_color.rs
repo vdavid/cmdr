@@ -5,6 +5,7 @@
 
 /// Returns the brand fallback accent color on non-macOS platforms.
 #[tauri::command]
+#[specta::specta]
 pub fn get_accent_color() -> String {
     "#d4a006".to_owned()
 }

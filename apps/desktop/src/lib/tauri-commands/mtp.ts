@@ -2,14 +2,16 @@
 
 import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { commands } from '$lib/ipc/bindings'
 import type { ConflictResolution, FileEntry, WriteOperationStartResult } from '../file-explorer/types'
+import { throwIpcError } from './ipc-types'
 
 /**
  * Enables or disables MTP (Android device) support at runtime.
  * When disabled, stops USB device detection and disconnects all MTP devices.
  */
 export async function setMtpEnabled(enabled: boolean): Promise<void> {
-  await invoke('set_mtp_enabled', { enabled })
+  await commands.setMtpEnabled(enabled)
 }
 
 /** Information about a connected MTP device. */
@@ -51,6 +53,7 @@ export function getMtpDeviceDisplayName(device: MtpDeviceInfo): string {
  */
 export async function listMtpDevices(): Promise<MtpDeviceInfo[]> {
   try {
+    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
     return await invoke<MtpDeviceInfo[]>('list_mtp_devices')
   } catch {
     // Command not available (non-macOS) - return empty array
@@ -109,6 +112,7 @@ export function isMtpConnectionError(error: unknown): error is MtpConnectionErro
  * @returns Information about the connected device including storages
  */
 export async function connectMtpDevice(deviceId: string): Promise<ConnectedMtpDeviceInfo> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
   return invoke<ConnectedMtpDeviceInfo>('connect_mtp_device', { deviceId })
 }
 
@@ -118,7 +122,8 @@ export async function connectMtpDevice(deviceId: string): Promise<ConnectedMtpDe
  * @param deviceId - The device ID to disconnect from
  */
 export async function disconnectMtpDevice(deviceId: string): Promise<void> {
-  await invoke('disconnect_mtp_device', { deviceId })
+  const res = await commands.disconnectMtpDevice(deviceId)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**
@@ -128,6 +133,7 @@ export async function disconnectMtpDevice(deviceId: string): Promise<void> {
  */
 export async function getMtpDeviceInfo(deviceId: string): Promise<ConnectedMtpDeviceInfo | null> {
   try {
+    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
     return await invoke<ConnectedMtpDeviceInfo | null>('get_mtp_device_info', { deviceId })
   } catch {
     return null
@@ -140,7 +146,7 @@ export async function getMtpDeviceInfo(deviceId: string): Promise<ConnectedMtpDe
  */
 export async function getPtpcameradWorkaroundCommand(): Promise<string> {
   try {
-    return await invoke<string>('get_ptpcamerad_workaround_command')
+    return await commands.getPtpcameradWorkaroundCommand()
   } catch {
     return ''
   }
@@ -153,6 +159,7 @@ export async function getPtpcameradWorkaroundCommand(): Promise<string> {
  */
 export async function getMtpStorages(deviceId: string): Promise<MtpStorageInfo[]> {
   try {
+    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
     return await invoke<MtpStorageInfo[]>('get_mtp_storages', { deviceId })
   } catch {
     return []
@@ -238,6 +245,7 @@ export async function onMtpDeviceDisconnected(
  * @returns Array of FileEntry objects, sorted with directories first
  */
 export async function listMtpDirectory(deviceId: string, storageId: number, path: string): Promise<FileEntry[]> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
   return invoke<FileEntry[]>('list_mtp_directory', { deviceId, storageId, path })
 }
 
@@ -265,8 +273,8 @@ export interface MtpObjectInfo {
   path: string
   /** Whether it's a directory. */
   isDirectory: boolean
-  /** Size in bytes (undefined for directories). */
-  size?: number
+  /** Size in bytes (null for directories). */
+  size: number | null
 }
 
 /** Progress event for MTP file transfers. */
@@ -301,13 +309,9 @@ export async function downloadMtpFile(
   localDest: string,
   operationId: string,
 ): Promise<MtpOperationResult> {
-  return invoke<MtpOperationResult>('download_mtp_file', {
-    deviceId,
-    storageId,
-    objectPath,
-    localDest,
-    operationId,
-  })
+  const res = await commands.downloadMtpFile(deviceId, storageId, objectPath, localDest, operationId)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -326,13 +330,9 @@ export async function uploadToMtp(
   destFolder: string,
   operationId: string,
 ): Promise<MtpObjectInfo> {
-  return invoke<MtpObjectInfo>('upload_to_mtp', {
-    deviceId,
-    storageId,
-    localPath,
-    destFolder,
-    operationId,
-  })
+  const res = await commands.uploadToMtp(deviceId, storageId, localPath, destFolder, operationId)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -343,7 +343,8 @@ export async function uploadToMtp(
  * @param objectPath - Virtual path on the device
  */
 export async function deleteMtpObject(deviceId: string, storageId: number, objectPath: string): Promise<void> {
-  await invoke('delete_mtp_object', { deviceId, storageId, objectPath })
+  const res = await commands.deleteMtpObject(deviceId, storageId, objectPath)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**
@@ -359,7 +360,9 @@ export async function createMtpFolder(
   parentPath: string,
   folderName: string,
 ): Promise<MtpObjectInfo> {
-  return invoke<MtpObjectInfo>('create_mtp_folder', { deviceId, storageId, parentPath, folderName })
+  const res = await commands.createMtpFolder(deviceId, storageId, parentPath, folderName)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -375,7 +378,9 @@ export async function renameMtpObject(
   objectPath: string,
   newName: string,
 ): Promise<MtpObjectInfo> {
-  return invoke<MtpObjectInfo>('rename_mtp_object', { deviceId, storageId, objectPath, newName })
+  const res = await commands.renameMtpObject(deviceId, storageId, objectPath, newName)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -392,7 +397,9 @@ export async function moveMtpObject(
   objectPath: string,
   newParentPath: string,
 ): Promise<MtpObjectInfo> {
-  return invoke<MtpObjectInfo>('move_mtp_object', { deviceId, storageId, objectPath, newParentPath })
+  const res = await commands.moveMtpObject(deviceId, storageId, objectPath, newParentPath)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -421,7 +428,9 @@ export interface MtpScanResult {
  * @returns Scan result with file/dir counts and total bytes
  */
 export async function scanMtpForCopy(deviceId: string, storageId: number, path: string): Promise<MtpScanResult> {
-  return invoke<MtpScanResult>('scan_mtp_for_copy', { deviceId, storageId, path })
+  const res = await commands.scanMtpForCopy(deviceId, storageId, path)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 // ============================================================================
@@ -456,9 +465,9 @@ export interface VolumeCopyScanResult {
 
 /** Configuration for volume copy operations. */
 export interface VolumeCopyConfig {
-  progressIntervalMs?: number
-  conflictResolution?: ConflictResolution
-  maxConflictsToShow?: number
+  progressIntervalMs: number
+  conflictResolution: ConflictResolution
+  maxConflictsToShow: number
   /** Preview scan ID to reuse cached scan results (from startScanPreview). */
   previewId?: string | null
 }
@@ -491,13 +500,9 @@ export async function copyBetweenVolumes(
   destPath: string,
   config?: VolumeCopyConfig,
 ): Promise<WriteOperationStartResult> {
-  return invoke<WriteOperationStartResult>('copy_between_volumes', {
-    sourceVolumeId,
-    sourcePaths,
-    destVolumeId,
-    destPath,
-    config: config ?? null,
-  })
+  const res = await commands.copyBetweenVolumes(sourceVolumeId, sourcePaths, destVolumeId, destPath, config ?? null)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -514,13 +519,9 @@ export async function moveBetweenVolumes(
   destPath: string,
   config?: VolumeCopyConfig,
 ): Promise<WriteOperationStartResult> {
-  return invoke<WriteOperationStartResult>('move_between_volumes', {
-    sourceVolumeId,
-    sourcePaths,
-    destVolumeId,
-    destPath,
-    config: config ?? null,
-  })
+  const res = await commands.moveBetweenVolumes(sourceVolumeId, sourcePaths, destVolumeId, destPath, config ?? null)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -544,13 +545,15 @@ export async function scanVolumeForCopy(
   destPath: string,
   maxConflicts?: number,
 ): Promise<VolumeCopyScanResult> {
-  return invoke<VolumeCopyScanResult>('scan_volume_for_copy', {
+  const res = await commands.scanVolumeForCopy(
     sourceVolumeId,
     sourcePaths,
     destVolumeId,
     destPath,
-    maxConflicts,
-  })
+    maxConflicts ?? null,
+  )
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -567,9 +570,7 @@ export async function scanVolumeForConflicts(
   sourceItems: SourceItemInput[],
   destPath: string,
 ): Promise<VolumeConflictInfo[]> {
-  return invoke<VolumeConflictInfo[]>('scan_volume_for_conflicts', {
-    volumeId,
-    sourceItems,
-    destPath,
-  })
+  const res = await commands.scanVolumeForConflicts(volumeId, sourceItems, destPath)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }

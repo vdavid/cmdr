@@ -13,12 +13,14 @@ use crate::network::smb_upgrade::{
 
 /// Gets all currently discovered network hosts.
 #[tauri::command]
+#[specta::specta]
 pub fn list_network_hosts() -> Vec<NetworkHost> {
     get_discovered_hosts()
 }
 
 /// Gets the current discovery state.
 #[tauri::command]
+#[specta::specta]
 pub fn get_network_discovery_state() -> DiscoveryState {
     get_discovery_state_value()
 }
@@ -27,6 +29,7 @@ pub fn get_network_discovery_state() -> DiscoveryState {
 /// This is an async command that uses spawn_blocking for the DNS lookup to avoid blocking
 /// the main thread pool. Multiple hosts can resolve in parallel.
 #[tauri::command]
+#[specta::specta]
 pub async fn resolve_host(host_id: String) -> Option<NetworkHost> {
     // Get host info (brief mutex hold)
     let info = get_host_for_resolution(&host_id)?;
@@ -70,6 +73,7 @@ pub async fn resolve_host(host_id: String) -> Option<NetworkHost> {
 /// * `timeout_ms` - Optional timeout in milliseconds (default: 15000)
 /// * `cache_ttl_ms` - Optional cache TTL in milliseconds (default: 30000)
 #[tauri::command]
+#[specta::specta]
 pub async fn list_shares_on_host(
     host_id: String,
     hostname: String,
@@ -94,6 +98,7 @@ pub async fn list_shares_on_host(
 /// Same as list_shares_on_host but designed for prefetching - errors are silently ignored.
 /// Returns immediately if shares are already cached.
 #[tauri::command]
+#[specta::specta]
 pub async fn prefetch_shares(
     host_id: String,
     hostname: String,
@@ -117,6 +122,7 @@ pub async fn prefetch_shares(
 
 /// Gets auth mode detected for a host (from cached share list if available).
 #[tauri::command]
+#[specta::specta]
 pub fn get_host_auth_mode(host_id: String) -> AuthMode {
     // Try to get from cache
     if let Some(cached) = smb_client::get_cached_shares_auth_mode(&host_id) {
@@ -134,18 +140,21 @@ use crate::network::known_shares::{
 
 /// Gets all known network shares (previously connected).
 #[tauri::command]
+#[specta::specta]
 pub fn get_known_shares() -> Vec<KnownNetworkShare> {
     get_all_known_shares()
 }
 
 /// Gets a specific known share by server and share name.
 #[tauri::command]
+#[specta::specta]
 pub fn get_known_share_by_name(server_name: String, share_name: String) -> Option<KnownNetworkShare> {
     get_known_share_inner(&server_name, &share_name)
 }
 
 /// Updates or adds a known network share after successful connection.
 #[tauri::command]
+#[specta::specta]
 pub fn update_known_share(
     app: tauri::AppHandle,
     server_name: String,
@@ -169,6 +178,7 @@ pub fn update_known_share(
 
 /// Gets username hints for servers (last used username per server).
 #[tauri::command]
+#[specta::specta]
 pub fn get_username_hints() -> std::collections::HashMap<String, String> {
     known_shares::get_username_hints()
 }
@@ -180,6 +190,7 @@ use crate::network::keychain::{self, KeychainError, SmbCredentials};
 /// Saves SMB credentials to the Keychain.
 /// Credentials are stored under "Cmdr" service name.
 #[tauri::command]
+#[specta::specta]
 pub fn save_smb_credentials(
     server: String,
     share: Option<String>,
@@ -192,18 +203,21 @@ pub fn save_smb_credentials(
 /// Retrieves SMB credentials from the Keychain.
 /// Returns the stored username and password if found.
 #[tauri::command]
+#[specta::specta]
 pub fn get_smb_credentials(server: String, share: Option<String>) -> Result<SmbCredentials, KeychainError> {
     keychain::get_credentials(&server, share.as_deref())
 }
 
 /// Checks if credentials exist in the Keychain for a server/share.
 #[tauri::command]
+#[specta::specta]
 pub fn has_smb_credentials(server: String, share: Option<String>) -> bool {
     keychain::has_credentials(&server, share.as_deref())
 }
 
 /// Deletes SMB credentials from the Keychain.
 #[tauri::command]
+#[specta::specta]
 pub fn delete_smb_credentials(server: String, share: Option<String>) -> Result<(), KeychainError> {
     keychain::delete_credentials(&server, share.as_deref())
 }
@@ -212,6 +226,7 @@ pub fn delete_smb_credentials(server: String, share: Option<String>) -> Result<(
 /// instead of the system keyring. The frontend can use this to show a one-time
 /// info toast when the user first saves credentials without a system keyring.
 #[tauri::command]
+#[specta::specta]
 pub fn is_using_credential_file_fallback() -> bool {
     crate::secrets::is_file_backed()
 }
@@ -229,6 +244,7 @@ pub fn is_using_credential_file_fallback() -> bool {
 /// * `timeout_ms` - Optional timeout in milliseconds (default: 15000)
 /// * `cache_ttl_ms` - Optional cache TTL in milliseconds (default: 30000)
 #[tauri::command]
+#[specta::specta]
 #[allow(
     clippy::too_many_arguments,
     reason = "Tauri command requires all parameters to be top-level"
@@ -288,6 +304,7 @@ use crate::network::mount::{self, MountError, MountResult};
 /// * `Ok(MountResult)` - Mount successful, with path to mount point
 /// * `Err(MountError)` - Mount failed with specific error type
 #[tauri::command]
+#[specta::specta]
 #[allow(
     clippy::too_many_arguments,
     reason = "Tauri command requires all parameters to be top-level"
@@ -335,6 +352,7 @@ pub async fn mount_network_share(
 ///
 /// Called from the "Connect directly for faster access" UI action.
 #[tauri::command]
+#[specta::specta]
 pub async fn upgrade_to_smb_volume(volume_id: String) -> Result<UpgradeResult, String> {
     use crate::file_system::get_volume_manager;
     #[cfg(target_os = "macos")]
@@ -428,6 +446,7 @@ pub async fn upgrade_to_smb_volume(volume_id: String) -> Result<UpgradeResult, S
 ///
 /// Called after the user fills in the login form shown by `upgrade_to_smb_volume`.
 #[tauri::command]
+#[specta::specta]
 pub async fn upgrade_to_smb_volume_with_credentials(
     volume_id: String,
     username: Option<String>,
@@ -500,6 +519,7 @@ pub async fn upgrade_to_smb_volume_with_credentials(
 /// Uses a 15s timeout because `statfs` on hung mounts can block indefinitely
 /// and `diskutil unmount` may wait for the OS to release the mount.
 #[tauri::command]
+#[specta::specta]
 pub async fn disconnect_network_host(
     _host_id: String,
     host_name: String,
@@ -528,6 +548,7 @@ pub async fn disconnect_network_host(
 /// Calling this on a non-SMB volume yields `IpcError` with `NotSupported` —
 /// the trait default. The FE only ever invokes this for known SMB volumes.
 #[tauri::command]
+#[specta::specta]
 pub async fn reconnect_smb_volume(volume_id: String) -> Result<(), crate::commands::util::IpcError> {
     use crate::commands::util::IpcError;
     use crate::file_system::get_volume_manager;
@@ -558,6 +579,7 @@ pub async fn reconnect_smb_volume(volume_id: String) -> Result<(), crate::comman
 /// `on_unmount` directly. The OS mount stays alive but the user can eject it
 /// from the file manager.
 #[tauri::command]
+#[specta::specta]
 pub async fn disconnect_smb_volume(volume_id: String) -> Result<(), crate::commands::util::IpcError> {
     use crate::commands::util::IpcError;
     use crate::file_system::get_volume_manager;
@@ -630,12 +652,14 @@ use crate::network::manual_servers::{self, ManualConnectResult};
 
 /// Connects to a manually-specified server: parses, checks reachability, persists, and injects.
 #[tauri::command]
+#[specta::specta]
 pub async fn connect_to_server(address: String, app_handle: tauri::AppHandle) -> Result<ManualConnectResult, String> {
     manual_servers::add_manual_server(&address, &app_handle).await
 }
 
 /// Removes a manually-added server by ID.
 #[tauri::command]
+#[specta::specta]
 pub fn remove_manual_server(server_id: String, app_handle: tauri::AppHandle) -> Result<(), String> {
     manual_servers::remove_manual_server(&server_id, &app_handle)
 }
@@ -653,6 +677,7 @@ pub fn remove_manual_server(server_id: String, app_handle: tauri::AppHandle) -> 
 /// Reloads manually-added servers in case discovery was previously stopped (toggle-off path)
 /// and `DISCOVERY_STATE` got cleared.
 #[tauri::command]
+#[specta::specta]
 pub fn ensure_network_discovery_started(app_handle: tauri::AppHandle) {
     crate::network::start_discovery(app_handle.clone());
     manual_servers::load_manual_servers(&app_handle);
@@ -667,6 +692,7 @@ pub fn ensure_network_discovery_started(app_handle: tauri::AppHandle) {
 /// is a no-op — the frontend triggers `ensure_network_discovery_started` separately when the
 /// user takes a network action.
 #[tauri::command]
+#[specta::specta]
 pub fn set_network_enabled(enabled: bool, app_handle: tauri::AppHandle) {
     if !enabled {
         crate::network::mdns_discovery::stop_discovery();

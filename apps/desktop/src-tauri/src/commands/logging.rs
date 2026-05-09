@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
     Debug,
@@ -10,7 +10,7 @@ pub enum LogLevel {
     Error,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, specta::Type)]
 pub struct FrontendLogEntry {
     pub level: LogLevel,
     pub category: String,
@@ -20,6 +20,7 @@ pub struct FrontendLogEntry {
 /// Receives batched log entries from the frontend and re-emits them through the Rust `log` facade.
 /// This ensures frontend logs appear in the terminal and log file alongside Rust logs.
 #[tauri::command]
+#[specta::specta]
 pub fn batch_fe_logs(entries: Vec<FrontendLogEntry>) {
     for entry in &entries {
         let target = format!("FE:{}", entry.category);
@@ -115,6 +116,7 @@ mod tests {
 /// Per-output filtering: this only affects the terminal/stderr chain. The file chain
 /// stays at Debug regardless, so error report bundles always carry useful context.
 #[tauri::command]
+#[specta::specta]
 pub fn set_log_level(level: String) {
     let filter = match level.as_str() {
         "debug" => log::LevelFilter::Debug,

@@ -22,7 +22,7 @@ use super::expand_tilde;
 
 const PATH_EXISTS_TIMEOUT: Duration = Duration::from_secs(2);
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PathLimits {
     pub max_name_bytes: usize,
@@ -30,6 +30,7 @@ pub struct PathLimits {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn get_path_limits() -> PathLimits {
     PathLimits {
         max_name_bytes: MAX_NAME_BYTES,
@@ -42,6 +43,7 @@ pub fn get_path_limits() -> PathLimits {
 /// distinction, the directory-eviction poll in `FilePane.svelte` evicts users from a
 /// network folder on any transient connection blip.
 #[tauri::command]
+#[specta::specta]
 pub async fn path_exists(volume_id: Option<String>, path: String) -> TimedOut<bool> {
     let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
 
@@ -103,6 +105,7 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> TimedOut<bo
 
 /// Synchronous version — prefer `list_directory_start_streaming` for non-blocking operation.
 #[tauri::command]
+#[specta::specta]
 pub async fn list_directory_start(
     path: String,
     include_hidden: bool,
@@ -131,6 +134,7 @@ pub async fn list_directory_start(
 /// Returns immediately; reads in background.
 /// Emits listing-progress, listing-complete, listing-error, listing-cancelled.
 #[tauri::command]
+#[specta::specta]
 #[allow(clippy::too_many_arguments, reason = "Tauri commands require top-level arguments")]
 pub async fn list_directory_start_streaming(
     app: tauri::AppHandle,
@@ -165,12 +169,14 @@ pub async fn list_directory_start_streaming(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn cancel_listing(listing_id: String) {
     ops_cancel_listing(&listing_id);
 }
 
 #[allow(clippy::too_many_arguments, reason = "Tauri commands require top-level arguments")]
 #[tauri::command]
+#[specta::specta]
 pub fn resort_listing(
     listing_id: String,
     sort_by: SortColumn,
@@ -194,6 +200,7 @@ pub fn resort_listing(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn get_file_range(
     listing_id: String,
     start: usize,
@@ -204,22 +211,26 @@ pub fn get_file_range(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn get_total_count(listing_id: String, include_hidden: bool) -> Result<usize, String> {
     ops_get_total_count(&listing_id, include_hidden)
 }
 
 /// Recalculates using font metrics — call after file watcher updates.
 #[tauri::command]
+#[specta::specta]
 pub fn get_max_filename_width(listing_id: String, include_hidden: bool) -> Result<Option<f32>, String> {
     ops_get_max_filename_width(&listing_id, include_hidden)
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn find_file_index(listing_id: String, name: String, include_hidden: bool) -> Result<Option<usize>, String> {
     ops_find_file_index(&listing_id, &name, include_hidden)
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn find_file_indices(
     listing_id: String,
     names: Vec<String>,
@@ -229,6 +240,7 @@ pub fn find_file_indices(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn get_file_at(listing_id: String, index: usize, include_hidden: bool) -> Result<Option<FileEntry>, String> {
     ops_get_file_at(&listing_id, index, include_hidden)
 }
@@ -236,6 +248,7 @@ pub fn get_file_at(listing_id: String, index: usize, include_hidden: bool) -> Re
 /// Gets file paths at specific frontend indices from a cached listing (batch version of path extraction).
 /// Handles the parent ".." offset internally — callers pass frontend indices.
 #[tauri::command]
+#[specta::specta]
 pub fn get_paths_at_indices(
     listing_id: String,
     selected_indices: Vec<usize>,
@@ -249,6 +262,7 @@ pub fn get_paths_at_indices(
 /// Gets full FileEntry objects at specific backend indices from a cached listing.
 /// Callers are responsible for any parent offset adjustment before passing indices.
 #[tauri::command]
+#[specta::specta]
 pub fn get_files_at_indices(
     listing_id: String,
     selected_indices: Vec<usize>,
@@ -258,6 +272,7 @@ pub fn get_files_at_indices(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn list_directory_end(listing_id: String) {
     ops_list_directory_end(&listing_id);
 }
@@ -265,6 +280,7 @@ pub fn list_directory_end(listing_id: String) {
 /// Force a re-read of a watched directory listing, emitting any diff.
 /// Used after write operations (move) when the file watcher may not fire promptly.
 #[tauri::command]
+#[specta::specta]
 pub async fn refresh_listing(listing_id: String) -> TimedOut<()> {
     let timed_out = tokio::time::timeout(Duration::from_secs(2), async {
         crate::file_system::watcher::handle_directory_change(&listing_id).await;
@@ -276,6 +292,7 @@ pub async fn refresh_listing(listing_id: String) -> TimedOut<()> {
 
 /// Returns total file/dir counts and sizes, plus selection stats if `selected_indices` is given.
 #[tauri::command]
+#[specta::specta]
 pub fn get_listing_stats(
     listing_id: String,
     include_hidden: bool,
@@ -286,6 +303,7 @@ pub fn get_listing_stats(
 
 /// Re-enriches cached listing entries with fresh drive index data.
 #[tauri::command]
+#[specta::specta]
 pub fn refresh_listing_index_sizes(listing_id: String) -> Result<(), String> {
     ops_refresh_listing_index_sizes(&listing_id)
 }
@@ -297,6 +315,7 @@ pub fn refresh_listing_index_sizes(listing_id: String) -> Result<(), String> {
 /// Logs a frontend benchmark event to stderr (unified timeline with Rust events).
 /// Only logs if RUSTY_COMMANDER_BENCHMARK=1 is set.
 #[tauri::command]
+#[specta::specta]
 #[allow(
     clippy::print_stderr,
     reason = "Benchmark output intentionally bypasses log framework"

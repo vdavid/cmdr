@@ -51,6 +51,7 @@ fn read_accent_color() -> String {
 
 /// Tauri command: returns the current macOS accent color as a hex string.
 #[tauri::command]
+#[specta::specta]
 pub fn get_accent_color() -> String {
     read_accent_color()
 }

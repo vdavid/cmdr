@@ -13,6 +13,7 @@ use crate::file_system::write_operations::trash::move_to_trash_sync;
 
 /// Moves a file or directory to the macOS Trash via NSFileManager.
 #[tauri::command]
+#[specta::specta]
 pub async fn move_to_trash(path: String) -> Result<(), IpcError> {
     let expanded = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded);
@@ -29,6 +30,7 @@ pub async fn move_to_trash(path: String) -> Result<(), IpcError> {
 
 /// Checks if a file/folder can be renamed (parent writable, not immutable, not SIP-protected, not locked).
 #[tauri::command]
+#[specta::specta]
 pub async fn check_rename_permission(path: String) -> Result<(), IpcError> {
     let expanded = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded);
@@ -44,7 +46,7 @@ pub async fn check_rename_permission(path: String) -> Result<(), IpcError> {
 }
 
 /// Result of a rename validity check.
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RenameValidityResult {
     /// Whether the new name is valid (passes filename validation).
@@ -60,7 +62,7 @@ pub struct RenameValidityResult {
 }
 
 /// Metadata about a conflicting sibling file.
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ConflictFileInfo {
     pub name: String,
@@ -76,6 +78,7 @@ pub struct ConflictFileInfo {
 /// When `volume_id` is provided and not `"root"`, uses the Volume trait for conflict detection
 /// (needed for MTP and other non-local volumes).
 #[tauri::command]
+#[specta::specta]
 pub async fn check_rename_validity(
     dir: String,
     old_name: String,
@@ -99,6 +102,7 @@ pub async fn check_rename_validity(
 /// When `volume_id` is provided and not `"root"`, routes through the Volume trait
 /// (needed for MTP and other non-local volumes). Otherwise uses `std::fs::rename`.
 #[tauri::command]
+#[specta::specta]
 pub async fn rename_file(from: String, to: String, force: bool, volume_id: Option<String>) -> Result<(), IpcError> {
     let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
 

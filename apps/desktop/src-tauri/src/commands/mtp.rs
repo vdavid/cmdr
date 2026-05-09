@@ -11,7 +11,7 @@ use crate::mtp::{
 use tauri::AppHandle;
 
 /// Result of scanning an MTP path for copy operation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpScanResult {
     /// Number of files found.
@@ -28,6 +28,7 @@ pub struct MtpScanResult {
 /// ptpcamerad (macOS). When enabled: resumes auto-connecting and checks for
 /// already-plugged-in devices.
 #[tauri::command]
+#[specta::specta]
 pub async fn set_mtp_enabled(enabled: bool) {
     mtp::set_mtp_enabled(enabled).await;
 }
@@ -41,6 +42,7 @@ pub async fn set_mtp_enabled(enabled: bool) {
 ///
 /// A vector of device info structs. Empty if no devices are connected.
 #[tauri::command]
+#[specta::specta]
 pub fn list_mtp_devices() -> Vec<MtpDeviceInfo> {
     mtp::list_mtp_devices()
 }
@@ -59,6 +61,7 @@ pub fn list_mtp_devices() -> Vec<MtpDeviceInfo> {
 ///
 /// Information about the connected device including available storages.
 #[tauri::command]
+#[specta::specta]
 pub async fn connect_mtp_device(app: AppHandle, device_id: String) -> Result<ConnectedDeviceInfo, MtpConnectionError> {
     mtp::connection_manager().connect(&device_id, Some(&app)).await
 }
@@ -72,6 +75,7 @@ pub async fn connect_mtp_device(app: AppHandle, device_id: String) -> Result<Con
 ///
 /// * `device_id` - The device ID to disconnect from
 #[tauri::command]
+#[specta::specta]
 pub async fn disconnect_mtp_device(app: AppHandle, device_id: String) -> Result<(), MtpConnectionError> {
     mtp::connection_manager().disconnect(&device_id, Some(&app)).await
 }
@@ -85,6 +89,7 @@ pub async fn disconnect_mtp_device(app: AppHandle, device_id: String) -> Result<
 ///
 /// * `device_id` - The device ID to query
 #[tauri::command]
+#[specta::specta]
 pub async fn get_mtp_device_info(device_id: String) -> Option<ConnectedDeviceInfo> {
     mtp::connection_manager().get_device_info(&device_id).await
 }
@@ -94,6 +99,7 @@ pub async fn get_mtp_device_info(device_id: String) -> Option<ConnectedDeviceInf
 /// Returns the Terminal command that users can run to work around
 /// ptpcamerad blocking MTP device access.
 #[tauri::command]
+#[specta::specta]
 pub fn get_ptpcamerad_workaround_command() -> String {
     mtp::PTPCAMERAD_WORKAROUND_COMMAND.to_string()
 }
@@ -108,6 +114,7 @@ pub fn get_ptpcamerad_workaround_command() -> String {
 ///
 /// A vector of storage info, or empty if device is not connected.
 #[tauri::command]
+#[specta::specta]
 pub async fn get_mtp_storages(device_id: String) -> Vec<MtpStorageInfo> {
     mtp::connection_manager()
         .get_device_info(&device_id)
@@ -131,6 +138,7 @@ pub async fn get_mtp_storages(device_id: String) -> Vec<MtpStorageInfo> {
 ///
 /// A vector of FileEntry objects, sorted with directories first.
 #[tauri::command]
+#[specta::specta]
 pub async fn list_mtp_directory(
     device_id: String,
     storage_id: u32,
@@ -166,6 +174,7 @@ pub async fn list_mtp_directory(
 /// * `local_dest` - Local destination path
 /// * `operation_id` - Unique operation ID for progress tracking
 #[tauri::command]
+#[specta::specta]
 pub async fn download_mtp_file(
     app: AppHandle,
     device_id: String,
@@ -199,6 +208,7 @@ pub async fn download_mtp_file(
 /// * `dest_folder` - Destination folder path on device (for example, "/DCIM")
 /// * `operation_id` - Unique operation ID for progress tracking
 #[tauri::command]
+#[specta::specta]
 pub async fn upload_to_mtp(
     app: AppHandle,
     device_id: String,
@@ -224,6 +234,7 @@ pub async fn upload_to_mtp(
 /// * `storage_id` - The storage ID within the device
 /// * `object_path` - Virtual path on the device
 #[tauri::command]
+#[specta::specta]
 pub async fn delete_mtp_object(
     device_id: String,
     storage_id: u32,
@@ -243,6 +254,7 @@ pub async fn delete_mtp_object(
 /// * `parent_path` - Parent folder path (for example, "/DCIM")
 /// * `folder_name` - Name of the new folder
 #[tauri::command]
+#[specta::specta]
 pub async fn create_mtp_folder(
     device_id: String,
     storage_id: u32,
@@ -263,6 +275,7 @@ pub async fn create_mtp_folder(
 /// * `object_path` - Current path of the object
 /// * `new_name` - New name for the object
 #[tauri::command]
+#[specta::specta]
 pub async fn rename_mtp_object(
     device_id: String,
     storage_id: u32,
@@ -285,6 +298,7 @@ pub async fn rename_mtp_object(
 /// * `object_path` - Current path of the object
 /// * `new_parent_path` - New parent folder path
 #[tauri::command]
+#[specta::specta]
 pub async fn move_mtp_object(
     device_id: String,
     storage_id: u32,
@@ -311,6 +325,7 @@ pub async fn move_mtp_object(
 /// * `storage_id` - The storage ID within the device
 /// * `path` - Virtual path on the device to scan
 #[tauri::command]
+#[specta::specta]
 pub async fn scan_mtp_for_copy(
     device_id: String,
     storage_id: u32,
@@ -338,6 +353,7 @@ pub async fn scan_mtp_for_copy(
 /// Only available with `--features virtual-mtp`. Returns (added, removed) counts.
 #[cfg(feature = "virtual-mtp")]
 #[tauri::command]
+#[specta::specta]
 pub async fn rescan_virtual_mtp() -> Result<(usize, usize), String> {
     let result =
         mtp::virtual_device::rescan_virtual_device().ok_or_else(|| "Virtual MTP device not found".to_string())?;
@@ -352,6 +368,7 @@ pub async fn rescan_virtual_mtp() -> Result<(usize, usize), String> {
 /// manipulating backing dir files to prevent stale events from corrupting state.
 #[cfg(feature = "virtual-mtp")]
 #[tauri::command]
+#[specta::specta]
 pub fn pause_virtual_mtp_watcher() -> bool {
     mtp::virtual_device::pause_virtual_watcher()
 }
@@ -359,6 +376,7 @@ pub fn pause_virtual_mtp_watcher() -> bool {
 /// Resumes the virtual device's filesystem watcher after a pause.
 #[cfg(feature = "virtual-mtp")]
 #[tauri::command]
+#[specta::specta]
 pub fn resume_virtual_mtp_watcher() {
     mtp::virtual_device::resume_virtual_watcher();
 }

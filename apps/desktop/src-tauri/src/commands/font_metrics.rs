@@ -10,6 +10,7 @@ use std::collections::HashMap;
 /// * `font_id` - Font identifier (like "system-400-12")
 /// * `widths` - Map of code point → width in pixels
 #[tauri::command]
+#[specta::specta]
 pub fn store_font_metrics<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     font_id: String,
@@ -30,6 +31,7 @@ pub fn store_font_metrics<R: tauri::Runtime>(
 /// # Arguments
 /// * `font_id` - Font identifier to check
 #[tauri::command]
+#[specta::specta]
 pub fn has_font_metrics(font_id: String) -> bool {
     font_metrics::has_metrics(&font_id)
 }

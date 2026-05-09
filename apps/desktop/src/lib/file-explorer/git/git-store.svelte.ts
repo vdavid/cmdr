@@ -5,8 +5,9 @@
  * updates reactively as `git-state-changed` events arrive, and calls
  * `unsubscribe(repoRoot)` on unmount or path-off-repo.
  */
-import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { commands } from '$lib/ipc/bindings'
+import { throwIpcError } from '$lib/tauri-commands/ipc-types'
 
 export interface RepoInfo {
   repoRoot: string
@@ -58,7 +59,9 @@ export async function subscribeToRepo(repoRoot: string): Promise<RepoInfo> {
     return existing.info
   }
 
-  const info = await invoke<RepoInfo>('subscribe_git_state', { repoRoot })
+  const res = await commands.subscribeGitState(repoRoot)
+  if (res.status === 'error') throwIpcError(res.error)
+  const info = res.data
   repos.set(repoRoot, { refcount: 1, info })
   return info
 }
@@ -73,7 +76,7 @@ export async function unsubscribeFromRepo(repoRoot: string): Promise<void> {
   entry.refcount -= 1
   if (entry.refcount <= 0) {
     repos.delete(repoRoot)
-    await invoke('unsubscribe_git_state', { repoRoot })
+    await commands.unsubscribeGitState(repoRoot)
   }
 }
 
@@ -90,6 +93,6 @@ export function getRepoInfo(repoRoot: string): RepoInfo | null {
  * a git repo or the lookup timed out.
  */
 export async function lookupRepoInfo(path: string): Promise<RepoInfo | null> {
-  const result = await invoke<{ data: RepoInfo | null; timedOut: boolean }>('get_git_repo_info', { path })
+  const result = await commands.getGitRepoInfo(path)
   return result.data
 }

@@ -32,7 +32,7 @@ use tokio::sync::mpsc;
 /// Non-SMB volumes return `None` from `Volume::smb_connection_state()` (trait
 /// default). The frontend uses this to distinguish "this isn't an SMB volume"
 /// (no value) from "this is an SMB volume in trouble" (Some(Disconnected)).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum SmbConnectionState {
     /// smb2 session active — fast path (green indicator).
@@ -105,7 +105,7 @@ pub struct BatchScanResult {
 }
 
 /// A conflict detected during pre-copy scanning: a source item that already exists at the destination.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ScanConflict {
     /// Relative to volume root.
@@ -123,7 +123,7 @@ pub struct ScanConflict {
 }
 
 /// Space information for a volume.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SpaceInfo {
     /// In bytes.

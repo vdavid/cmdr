@@ -18,7 +18,7 @@ pub struct PlatformEntry {
 }
 
 /// Update metadata returned to the frontend when a newer version is available.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 pub struct UpdateInfo {
     pub version: String,
     pub url: String,

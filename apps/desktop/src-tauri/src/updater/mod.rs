@@ -69,6 +69,7 @@ impl UpdateState {
 /// - The remote version is not newer than the current version
 /// - The manifest doesn't contain an entry for this platform
 #[tauri::command]
+#[specta::specta]
 pub async fn check_for_update() -> Result<Option<UpdateInfo>, String> {
     if std::env::var("CI").is_ok() {
         log::debug!("Skipping update check in CI");
@@ -105,6 +106,7 @@ pub async fn check_for_update() -> Result<Option<UpdateInfo>, String> {
 ///
 /// On success, stores the tarball path in `UpdateState` for `install_update` to consume.
 #[tauri::command]
+#[specta::specta]
 pub async fn download_update(url: String, signature: String, state: State<'_, UpdateState>) -> Result<(), String> {
     log::info!("Downloading update from {url}");
 
@@ -148,6 +150,7 @@ pub async fn download_update(url: String, signature: String, state: State<'_, Up
 ///
 /// Reads (and clears) the tarball path stored by `download_update`.
 #[tauri::command]
+#[specta::specta]
 pub async fn install_update(state: State<'_, UpdateState>) -> Result<(), String> {
     let tarball_path = {
         let mut guard = state

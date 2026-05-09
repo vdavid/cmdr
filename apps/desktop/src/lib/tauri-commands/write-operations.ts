@@ -1,7 +1,8 @@
 // Copy/move/delete operations + event handlers
 
 import { type Event, listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { invoke } from '@tauri-apps/api/core'
+import { commands } from '$lib/ipc/bindings'
+import { throwIpcError } from './ipc-types'
 import type {
   ConflictInfo,
   ConflictResolution,
@@ -67,22 +68,16 @@ export async function startScanPreview(
   progressIntervalMs?: number,
   sourceVolumeId?: string,
 ): Promise<ScanPreviewStartResult> {
-  return invoke<ScanPreviewStartResult>('start_scan_preview', {
-    sources,
-    sourceVolumeId,
-    sortColumn,
-    sortOrder,
-    progressIntervalMs,
-  })
+  return commands.startScanPreview(sources, sourceVolumeId ?? null, sortColumn, sortOrder, progressIntervalMs ?? null)
 }
 
 export async function cancelScanPreview(previewId: string): Promise<void> {
-  await invoke('cancel_scan_preview', { previewId })
+  await commands.cancelScanPreview(previewId)
 }
 
 /** Checks whether scan preview results are cached (scan completed successfully). */
 export async function checkScanPreviewStatus(previewId: string): Promise<boolean> {
-  return invoke<boolean>('check_scan_preview_status', { previewId })
+  return commands.checkScanPreviewStatus(previewId)
 }
 
 export async function onScanPreviewProgress(callback: (event: ScanPreviewProgressEvent) => void): Promise<UnlistenFn> {
@@ -121,7 +116,9 @@ export async function copyFiles(
   destination: string,
   config?: WriteOperationConfig,
 ): Promise<WriteOperationStartResult> {
-  return invoke<WriteOperationStartResult>('copy_files', { sources, destination, config: config ?? {} })
+  const res = await commands.copyFiles(sources, destination, config ?? null)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /** Uses instant rename for same-filesystem, copy+delete for cross-filesystem. Same events as copyFiles. */
@@ -130,7 +127,9 @@ export async function moveFiles(
   destination: string,
   config?: WriteOperationConfig,
 ): Promise<WriteOperationStartResult> {
-  return invoke<WriteOperationStartResult>('move_files', { sources, destination, config: config ?? {} })
+  const res = await commands.moveFiles(sources, destination, config ?? null)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /** Recursively deletes files and directories. Same events as copyFiles. */
@@ -139,7 +138,9 @@ export async function deleteFiles(
   config?: WriteOperationConfig,
   volumeId?: string,
 ): Promise<WriteOperationStartResult> {
-  return invoke<WriteOperationStartResult>('delete_files', { sources, volumeId, config: config ?? {} })
+  const res = await commands.deleteFiles(sources, volumeId ?? null, config ?? null)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /** Moves files to macOS Trash. Same events as copyFiles but with operationType: trash. */
@@ -148,15 +149,17 @@ export async function trashFiles(
   itemSizes?: number[],
   config?: WriteOperationConfig,
 ): Promise<WriteOperationStartResult> {
-  return invoke<WriteOperationStartResult>('trash_files', { sources, itemSizes, config: config ?? {} })
+  const res = await commands.trashFiles(sources, itemSizes ?? null, config ?? null)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 export async function cancelWriteOperation(operationId: string, rollback: boolean): Promise<void> {
-  await invoke('cancel_write_operation', { operationId, rollback })
+  await commands.cancelWriteOperation(operationId, rollback)
 }
 
 export async function cancelAllWriteOperations(): Promise<void> {
-  await invoke('cancel_all_write_operations')
+  await commands.cancelAllWriteOperations()
 }
 
 /** In Stop mode, the operation pauses on conflict and waits for this call to proceed. */
@@ -165,7 +168,7 @@ export async function resolveWriteConflict(
   resolution: ConflictResolution,
   applyToAll: boolean,
 ): Promise<void> {
-  await invoke('resolve_write_conflict', { operationId, resolution, applyToAll })
+  await commands.resolveWriteConflict(operationId, resolution, applyToAll)
 }
 
 // ============================================================================

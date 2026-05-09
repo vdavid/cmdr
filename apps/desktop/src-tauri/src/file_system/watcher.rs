@@ -45,7 +45,9 @@ pub(crate) static WATCHER_MANAGER: LazyLock<RwLock<WatcherManager>> =
     LazyLock::new(|| RwLock::new(WatcherManager::new()));
 
 /// A single directory diff change
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// Only serialized (Rust → frontend); `FileEntry` has no `Deserialize`, so neither does this.
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiffChange {
     /// `"add"`, `"remove"`, or `"modify"`.
@@ -57,7 +59,9 @@ pub struct DiffChange {
 }
 
 /// Diff event sent to frontend
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// Only serialized (Rust → frontend).
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DirectoryDiff {
     pub listing_id: String,

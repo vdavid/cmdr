@@ -7,11 +7,11 @@
  * 3. Throttling: caps at 200 entries/second, warns on excess
  */
 
-import { invoke } from '@tauri-apps/api/core'
+import { commands, type FrontendLogEntry } from '$lib/ipc/bindings'
 import type { LogRecord, Sink } from '@logtape/logtape'
 
 interface PendingEntry {
-  level: string
+  level: FrontendLogEntry['level']
   category: string
   message: string
   count: number
@@ -40,13 +40,13 @@ function getCategory(record: LogRecord): string {
   return parts.join('.')
 }
 
-function mapLevel(level: string): string {
+function mapLevel(level: string): FrontendLogEntry['level'] {
   // LogTape uses "warning", Rust log uses "warn"
   if (level === 'warning') return 'warn'
-  return level
+  return level as FrontendLogEntry['level']
 }
 
-function addEntry(level: string, category: string, message: string): void {
+function addEntry(level: FrontendLogEntry['level'], category: string, message: string): void {
   // Check throttle
   if (entriesThisSecond >= MAX_ENTRIES_PER_SECOND) {
     droppedCount++
@@ -102,14 +102,14 @@ async function flush(): Promise<void> {
   }
 
   // Format entries for IPC
-  const ipcEntries = entries.map((e) => ({
+  const ipcEntries: FrontendLogEntry[] = entries.map((e) => ({
     level: e.level,
     category: e.category,
     message: e.count > 1 ? `${e.message} (×${String(e.count)}, deduplicated)` : e.message,
   }))
 
   try {
-    await invoke('batch_fe_logs', { entries: ipcEntries })
+    await commands.batchFeLogs(ipcEntries)
   } catch {
     // Backend not available (app shutting down, or early startup) — silently drop
   }

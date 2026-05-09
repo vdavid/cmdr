@@ -29,7 +29,7 @@ const ROOT_PARENT_ID: i64 = 0;
 
 /// Dir stats keyed by path string. Used at the IPC boundary and by
 /// the IPC boundary (frontend expects path-keyed dir stats).
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct DirStats {
     pub path: String,
@@ -169,7 +169,7 @@ impl ScanContext {
     }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexStatus {
     pub schema_version: Option<String>,

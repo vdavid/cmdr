@@ -85,6 +85,7 @@ fn read_system_multiplier() -> f32 {
 
 /// Tauri command: returns the current system text-size multiplier.
 #[tauri::command]
+#[specta::specta]
 pub fn get_system_text_size_multiplier() -> f32 {
     read_system_multiplier()
 }

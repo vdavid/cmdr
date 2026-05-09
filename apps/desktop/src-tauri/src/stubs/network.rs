@@ -191,24 +191,28 @@ pub struct ManualConnectResult {
 
 /// Gets all currently discovered network hosts (stub: returns empty).
 #[tauri::command]
+#[specta::specta]
 pub fn list_network_hosts() -> Vec<NetworkHost> {
     vec![]
 }
 
 /// Gets the current discovery state (stub: always idle).
 #[tauri::command]
+#[specta::specta]
 pub fn get_network_discovery_state() -> DiscoveryState {
     DiscoveryState::Idle
 }
 
 /// Resolves a network host by ID (stub: returns None).
 #[tauri::command]
+#[specta::specta]
 pub async fn resolve_host(_host_id: String) -> Option<NetworkHost> {
     None
 }
 
 /// Lists shares available on a network host (stub: returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn list_shares_on_host(
     _host_id: String,
     hostname: String,
@@ -222,30 +226,35 @@ pub async fn list_shares_on_host(
 
 /// Prefetches shares for a host (stub: no-op).
 #[tauri::command]
+#[specta::specta]
 pub async fn prefetch_shares(_host_id: String, _hostname: String, _ip_address: Option<String>, _port: u16) {
     // No-op
 }
 
 /// Gets auth mode detected for a host (stub: returns Unknown).
 #[tauri::command]
+#[specta::specta]
 pub fn get_host_auth_mode(_host_id: String) -> AuthMode {
     AuthMode::Unknown
 }
 
 /// Gets all known network shares (stub: returns empty).
 #[tauri::command]
+#[specta::specta]
 pub fn get_known_shares() -> Vec<KnownNetworkShare> {
     vec![]
 }
 
 /// Gets a specific known share by server and share name (stub: returns None).
 #[tauri::command]
+#[specta::specta]
 pub fn get_known_share_by_name(_server_name: String, _share_name: String) -> Option<KnownNetworkShare> {
     None
 }
 
 /// Updates or adds a known network share (stub: no-op).
 #[tauri::command]
+#[specta::specta]
 pub fn update_known_share(
     _app: tauri::AppHandle,
     _server_name: String,
@@ -259,12 +268,14 @@ pub fn update_known_share(
 
 /// Gets username hints for servers (stub: returns empty).
 #[tauri::command]
+#[specta::specta]
 pub fn get_username_hints() -> HashMap<String, String> {
     HashMap::new()
 }
 
 /// Saves SMB credentials (stub: returns error).
 #[tauri::command]
+#[specta::specta]
 pub fn save_smb_credentials(
     _server: String,
     _share: Option<String>,
@@ -276,18 +287,21 @@ pub fn save_smb_credentials(
 
 /// Retrieves SMB credentials (stub: returns error).
 #[tauri::command]
+#[specta::specta]
 pub fn get_smb_credentials(_server: String, _share: Option<String>) -> Result<SmbCredentials, KeychainError> {
     Err(KeychainError::NotFound("Keychain not supported on Linux".to_string()))
 }
 
 /// Checks if credentials exist (stub: returns false).
 #[tauri::command]
+#[specta::specta]
 pub fn has_smb_credentials(_server: String, _share: Option<String>) -> bool {
     false
 }
 
 /// Deletes SMB credentials (stub: returns error).
 #[tauri::command]
+#[specta::specta]
 pub fn delete_smb_credentials(_server: String, _share: Option<String>) -> Result<(), KeychainError> {
     Err(KeychainError::NotFound(
         "Credential storage not supported on this platform".to_string(),
@@ -296,12 +310,14 @@ pub fn delete_smb_credentials(_server: String, _share: Option<String>) -> Result
 
 /// Returns whether credential storage is using file fallback (stub: always false).
 #[tauri::command]
+#[specta::specta]
 pub fn is_using_credential_file_fallback() -> bool {
     false
 }
 
 /// Lists shares with credentials (stub: returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn list_shares_with_credentials(
     _host_id: String,
     hostname: String,
@@ -317,6 +333,7 @@ pub async fn list_shares_with_credentials(
 
 /// Mounts an SMB share (stub: returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn mount_network_share(
     server: String,
     share: String,
@@ -337,6 +354,7 @@ pub enum UpgradeResult {
 
 /// Upgrades an SMB volume to use direct smb2 (stub: returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn upgrade_to_smb_volume(_volume_id: String) -> Result<UpgradeResult, String> {
     Ok(UpgradeResult::NetworkError {
         message: "Direct SMB connection not supported on this platform".to_string(),
@@ -345,6 +363,7 @@ pub async fn upgrade_to_smb_volume(_volume_id: String) -> Result<UpgradeResult, 
 
 /// Upgrades an SMB volume with explicit credentials (stub: returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn upgrade_to_smb_volume_with_credentials(
     _volume_id: String,
     _username: Option<String>,
@@ -358,30 +377,35 @@ pub async fn upgrade_to_smb_volume_with_credentials(
 
 /// Reconnects an SMB volume (stub: returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn reconnect_smb_volume(_volume_id: String) -> Result<(), String> {
     Err("Direct SMB connection not supported on this platform".to_string())
 }
 
 /// Disconnects an SMB volume (stub: returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn disconnect_smb_volume(_volume_id: String) -> Result<(), String> {
     Err("Direct SMB connection not supported on this platform".to_string())
 }
 
 /// Connects to a manual server (stub: returns error).
 #[tauri::command]
+#[specta::specta]
 pub async fn connect_to_server(_address: String, _app_handle: tauri::AppHandle) -> Result<ManualConnectResult, String> {
     Err("Manual server connection not supported on this platform".to_string())
 }
 
 /// Removes a manual server (stub: returns error).
 #[tauri::command]
+#[specta::specta]
 pub fn remove_manual_server(_server_id: String, _app_handle: tauri::AppHandle) -> Result<(), String> {
     Err("Manual server removal not supported on this platform".to_string())
 }
 
 /// Unmounts all SMB shares from a host (stub: returns empty).
 #[tauri::command]
+#[specta::specta]
 pub async fn disconnect_network_host(
     _host_id: String,
     _host_name: String,
@@ -392,12 +416,14 @@ pub async fn disconnect_network_host(
 
 /// Lazy-starts network discovery (stub: no-op).
 #[tauri::command]
+#[specta::specta]
 pub fn ensure_network_discovery_started(_app_handle: tauri::AppHandle) {
     // No-op on platforms without network discovery
 }
 
 /// Live-applies the `network.enabled` toggle (stub: no-op).
 #[tauri::command]
+#[specta::specta]
 pub fn set_network_enabled(_enabled: bool, _app_handle: tauri::AppHandle) {
     // No-op on platforms without network discovery
 }

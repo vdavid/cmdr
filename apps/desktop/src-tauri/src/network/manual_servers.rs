@@ -86,7 +86,10 @@ struct ManualServersStore {
 }
 
 /// Result of successfully adding a manual server.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// Only serialized (Rust → frontend); no `Deserialize` needed.
+/// `NetworkHost` has no `Deserialize` either (prevents specta type-split issues).
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ManualConnectResult {
     pub host: NetworkHost,
@@ -834,10 +837,9 @@ mod tests {
         let json = serde_json::to_string(&result).unwrap();
         assert!(json.contains("\"sharePath\""));
         assert!(json.contains("\"docs\""));
-
-        let parsed: ManualConnectResult = serde_json::from_str(&json).unwrap();
-        assert_eq!(parsed.share_path, Some("docs".to_string()));
-        assert_eq!(parsed.host.id, "manual-192-168-1-100-9445");
+        // ManualConnectResult and NetworkHost are output-only (Rust → frontend), no Deserialize.
+        // Verify the expected shape from the JSON string directly.
+        assert!(json.contains("\"manual-192-168-1-100-9445\""));
     }
 
     // -- Concurrency tests for file-backed persistence --

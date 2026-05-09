@@ -6,9 +6,9 @@ use tokio::time::Duration;
 /// Wraps a value with a flag indicating whether the operation timed out.
 /// Used by commands returning collections or Option to let the frontend
 /// distinguish "genuinely empty/none" from "timed out before completing."
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct TimedOut<T: Serialize> {
+pub struct TimedOut<T: Serialize + specta::Type> {
     pub data: T,
     pub timed_out: bool,
 }
@@ -16,7 +16,7 @@ pub struct TimedOut<T: Serialize> {
 /// Structured IPC error with a timeout flag.
 /// Used by commands returning `Result<T, IpcError>` so the frontend can
 /// distinguish timeout errors from real failures without string matching.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct IpcError {
     pub message: String,
@@ -60,7 +60,7 @@ pub async fn blocking_with_timeout<T: Send + 'static>(
 
 /// Like `blocking_with_timeout`, but returns `TimedOut<T>` so the caller
 /// knows whether the fallback was returned due to a timeout.
-pub async fn blocking_with_timeout_flag<T: Send + Serialize + 'static>(
+pub async fn blocking_with_timeout_flag<T: Send + Serialize + specta::Type + 'static>(
     timeout_duration: Duration,
     fallback: T,
     f: impl FnOnce() -> T + Send + 'static,

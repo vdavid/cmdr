@@ -53,7 +53,16 @@ describe('SelectionInfo symlink hint', () => {
       props: {
         viewMode: 'brief',
         entry: makeDir({ recursiveHasSymlinks: true }),
-        stats: { totalFiles: 42, totalDirs: 5, totalSize: 1_000_000, totalPhysicalSize: 1_000_000 },
+        stats: {
+          totalFiles: 42,
+          totalDirs: 5,
+          totalSize: 1_000_000,
+          totalPhysicalSize: 1_000_000,
+          selectedFiles: null,
+          selectedDirs: null,
+          selectedSize: null,
+          selectedPhysicalSize: null,
+        },
         selectedCount: 0,
       },
     })
@@ -71,7 +80,16 @@ describe('SelectionInfo symlink hint', () => {
       props: {
         viewMode: 'brief',
         entry: makeDir({ recursiveHasSymlinks: false }),
-        stats: { totalFiles: 42, totalDirs: 5, totalSize: 1_000_000, totalPhysicalSize: 1_000_000 },
+        stats: {
+          totalFiles: 42,
+          totalDirs: 5,
+          totalSize: 1_000_000,
+          totalPhysicalSize: 1_000_000,
+          selectedFiles: null,
+          selectedDirs: null,
+          selectedSize: null,
+          selectedPhysicalSize: null,
+        },
         selectedCount: 0,
       },
     })
@@ -88,7 +106,16 @@ describe('SelectionInfo symlink hint', () => {
         viewMode: 'brief',
         // Files don't get the flag, but guard against future regressions
         entry: makeDir({ isDirectory: false, size: 1024, recursiveHasSymlinks: true }),
-        stats: { totalFiles: 42, totalDirs: 5, totalSize: 1_000_000, totalPhysicalSize: 1_000_000 },
+        stats: {
+          totalFiles: 42,
+          totalDirs: 5,
+          totalSize: 1_000_000,
+          totalPhysicalSize: 1_000_000,
+          selectedFiles: null,
+          selectedDirs: null,
+          selectedSize: null,
+          selectedPhysicalSize: null,
+        },
         selectedCount: 0,
       },
     })

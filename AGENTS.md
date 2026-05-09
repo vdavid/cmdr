@@ -213,6 +213,12 @@ resilience, and common pitfalls.
     `// allowed-error-string-match: <reason>` on the line above (Rust) or
     `// eslint-disable-next-line cmdr/no-error-string-match -- <reason>` (TS/Svelte). Pair the opt-out with `LC_ALL=C`
     on the subprocess and snapshot tests pinning the matched strings against a tool version.
+- ❌ **Type-safe IPC: no raw `invoke('...')` outside the typed bindings folder.** Tauri command names are duplicated
+  across the Rust `#[tauri::command]` site and every TS call site, with no compile-time link. Renaming the Rust side
+  silently breaks runtime IPC with a generic "not allowed" error. The repo wires `tauri-specta` to generate typed
+  bindings into `apps/desktop/src/lib/ipc/`; call them as `commands.commandName(args)` instead.
+  - **Enforced by**: `cmdr/no-raw-tauri-invoke` (ESLint rule). Bypassed only inside `lib/ipc/` (the bindings),
+    `routes/debug/` (dev-only debug panels), and test files.
 
 ## Workflow
 

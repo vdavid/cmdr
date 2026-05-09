@@ -1,6 +1,6 @@
 // On-demand virtual scrolling API (listing-based), sync status, font metrics
 
-import { invoke } from '@tauri-apps/api/core'
+import { commands } from '$lib/ipc/bindings'
 import type {
   FileEntry,
   ListingStats,
@@ -11,6 +11,7 @@ import type {
   SyncStatus,
 } from '../file-explorer/types'
 import type { TimedOut } from './ipc-types'
+import { throwIpcError } from './ipc-types'
 import type { DirectorySortMode } from '$lib/settings'
 
 /**
@@ -34,15 +35,17 @@ export async function listDirectoryStart(
   listingId: string,
   directorySortMode?: DirectorySortMode,
 ): Promise<StreamingListingStartResult> {
-  return invoke<StreamingListingStartResult>('list_directory_start_streaming', {
+  const res = await commands.listDirectoryStartStreaming(
     volumeId,
     path,
     includeHidden,
     sortBy,
     sortOrder,
+    directorySortMode ?? null,
     listingId,
-    directorySortMode,
-  })
+  )
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -51,7 +54,7 @@ export async function listDirectoryStart(
  * @param listingId - The listing ID to cancel.
  */
 export async function cancelListing(listingId: string): Promise<void> {
-  await invoke('cancel_listing', { listingId })
+  await commands.cancelListing(listingId)
 }
 
 /**
@@ -77,16 +80,18 @@ export async function resortListing(
   allSelected?: boolean,
   directorySortMode?: DirectorySortMode,
 ): Promise<ResortResult> {
-  return invoke<ResortResult>('resort_listing', {
+  const res = await commands.resortListing(
     listingId,
     sortBy,
     sortOrder,
-    cursorFilename,
+    directorySortMode ?? null,
+    cursorFilename ?? null,
     includeHidden,
-    selectedIndices,
-    allSelected,
-    directorySortMode,
-  })
+    selectedIndices ?? null,
+    allSelected ?? null,
+  )
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -102,6 +107,8 @@ export async function getFileRange(
   count: number,
   includeHidden: boolean,
 ): Promise<FileEntry[]> {
+  const { invoke } = await import('@tauri-apps/api/core')
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
   return invoke<FileEntry[]>('get_file_range', { listingId, start, count, includeHidden })
 }
 
@@ -111,7 +118,9 @@ export async function getFileRange(
  * @param includeHidden - Whether to include hidden files in count.
  */
 export async function getTotalCount(listingId: string, includeHidden: boolean): Promise<number> {
-  return invoke<number>('get_total_count', { listingId, includeHidden })
+  const res = await commands.getTotalCount(listingId, includeHidden)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -121,7 +130,9 @@ export async function getTotalCount(listingId: string, includeHidden: boolean): 
  * @param includeHidden - Whether to include hidden files.
  */
 export async function getMaxFilenameWidth(listingId: string, includeHidden: boolean): Promise<number | undefined> {
-  return invoke<number | undefined>('get_max_filename_width', { listingId, includeHidden })
+  const res = await commands.getMaxFilenameWidth(listingId, includeHidden)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data ?? undefined
 }
 
 /**
@@ -131,7 +142,9 @@ export async function getMaxFilenameWidth(listingId: string, includeHidden: bool
  * @param includeHidden - Whether to include hidden files when calculating index.
  */
 export async function findFileIndex(listingId: string, name: string, includeHidden: boolean): Promise<number | null> {
-  return invoke<number | null>('find_file_index', { listingId, name, includeHidden })
+  const res = await commands.findFileIndex(listingId, name, includeHidden)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -143,7 +156,9 @@ export async function findFileIndices(
   names: string[],
   includeHidden: boolean,
 ): Promise<Record<string, number>> {
-  return invoke<Record<string, number>>('find_file_indices', { listingId, names, includeHidden })
+  const res = await commands.findFileIndices(listingId, names, includeHidden)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -153,6 +168,8 @@ export async function findFileIndices(
  * @param includeHidden - Whether to include hidden files when calculating index.
  */
 export async function getFileAt(listingId: string, index: number, includeHidden: boolean): Promise<FileEntry | null> {
+  const { invoke } = await import('@tauri-apps/api/core')
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
   return invoke<FileEntry | null>('get_file_at', { listingId, index, includeHidden })
 }
 
@@ -170,7 +187,9 @@ export async function getPathsAtIndices(
   includeHidden: boolean,
   hasParent: boolean,
 ): Promise<string[]> {
-  return invoke<string[]>('get_paths_at_indices', { listingId, selectedIndices, includeHidden, hasParent })
+  const res = await commands.getPathsAtIndices(listingId, selectedIndices, includeHidden, hasParent)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -185,6 +204,8 @@ export async function getFilesAtIndices(
   selectedIndices: number[],
   includeHidden: boolean,
 ): Promise<FileEntry[]> {
+  const { invoke } = await import('@tauri-apps/api/core')
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
   return invoke<FileEntry[]>('get_files_at_indices', { listingId, selectedIndices, includeHidden })
 }
 
@@ -193,12 +214,12 @@ export async function getFilesAtIndices(
  * @param listingId - The listing ID to clean up.
  */
 export async function listDirectoryEnd(listingId: string): Promise<void> {
-  await invoke('list_directory_end', { listingId })
+  await commands.listDirectoryEnd(listingId)
 }
 
 /** Force a re-read of a watched listing, emitting any diff. */
 export async function refreshListing(listingId: string): Promise<TimedOut<null>> {
-  return invoke<TimedOut<null>>('refresh_listing', { listingId })
+  return commands.refreshListing(listingId)
 }
 
 /**
@@ -211,7 +232,8 @@ export async function refreshListing(listingId: string): Promise<TimedOut<null>>
  */
 /** Re-enriches cached listing entries with fresh drive index data (recursive_size). */
 export async function refreshListingIndexSizes(listingId: string): Promise<void> {
-  await invoke('refresh_listing_index_sizes', { listingId })
+  const res = await commands.refreshListingIndexSizes(listingId)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 export async function getListingStats(
@@ -219,7 +241,9 @@ export async function getListingStats(
   includeHidden: boolean,
   selectedIndices?: number[],
 ): Promise<ListingStats> {
-  return invoke<ListingStats>('get_listing_stats', { listingId, includeHidden, selectedIndices })
+  const res = await commands.getListingStats(listingId, includeHidden, selectedIndices ?? null)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -240,7 +264,8 @@ export async function startSelectionDrag(
   hasParent: boolean,
   iconPath: string,
 ): Promise<void> {
-  await invoke('start_selection_drag', { listingId, selectedIndices, includeHidden, hasParent, iconPath })
+  const res = await commands.startSelectionDrag(listingId, selectedIndices, includeHidden, hasParent, iconPath)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**
@@ -250,7 +275,8 @@ export async function startSelectionDrag(
  * as text. Operation mask is permissive — macOS picks the actual operation.
  */
 export async function startDragPaths(paths: string[], iconPath: string): Promise<void> {
-  await invoke('start_drag_paths', { paths, iconPath })
+  const res = await commands.startDragPaths(paths, iconPath)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**
@@ -260,14 +286,14 @@ export async function startDragPaths(paths: string[], iconPath: string): Promise
  * @param richImagePath - Path to the rich canvas-rendered drag image.
  */
 export async function prepareSelfDragOverlay(richImagePath: string): Promise<void> {
-  await invoke('prepare_self_drag_overlay', { richImagePath })
+  await commands.prepareSelfDragOverlay(richImagePath)
 }
 
 /**
  * Clears self-drag state after drop or cancellation.
  */
 export async function clearSelfDragOverlay(): Promise<void> {
-  await invoke('clear_self_drag_overlay')
+  await commands.clearSelfDragOverlay()
 }
 
 /**
@@ -277,7 +303,7 @@ export async function clearSelfDragOverlay(): Promise<void> {
  * badge always shows "+" even on Move. No-op on non-macOS.
  */
 export async function setSelfDragResolvedOperation(operation: 'move' | 'copy'): Promise<void> {
-  await invoke('set_self_drag_resolved_op', { operation })
+  await commands.setSelfDragResolvedOp(operation)
 }
 
 export interface PathLimits {
@@ -287,7 +313,7 @@ export interface PathLimits {
 
 /** Returns platform-specific filesystem path limits from the backend. */
 export async function getPathLimits(): Promise<PathLimits> {
-  return invoke<PathLimits>('get_path_limits')
+  return commands.getPathLimits()
 }
 
 /**
@@ -297,7 +323,7 @@ export async function getPathLimits(): Promise<PathLimits> {
  * @returns True if the path exists.
  */
 export async function pathExists(path: string, volumeId?: string): Promise<boolean> {
-  const result = await invoke<TimedOut<boolean>>('path_exists', { volumeId, path })
+  const result = await commands.pathExists(volumeId ?? null, path)
   return result.data
 }
 
@@ -308,7 +334,7 @@ export async function pathExists(path: string, volumeId?: string): Promise<boole
  * for example, the directory-eviction poll in `FilePane.svelte`.
  */
 export async function pathExistsChecked(path: string, volumeId?: string): Promise<TimedOut<boolean>> {
-  return invoke<TimedOut<boolean>>('path_exists', { volumeId, path })
+  return commands.pathExists(volumeId ?? null, path)
 }
 
 /**
@@ -319,7 +345,9 @@ export async function pathExistsChecked(path: string, volumeId?: string): Promis
  * @returns The full path of the created directory.
  */
 export async function createDirectory(parentPath: string, name: string, volumeId?: string): Promise<string> {
-  return invoke<string>('create_directory', { volumeId, parentPath, name })
+  const res = await commands.createDirectory(volumeId ?? null, parentPath, name)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -330,7 +358,9 @@ export async function createDirectory(parentPath: string, name: string, volumeId
  * @returns The full path of the created file.
  */
 export async function createFile(parentPath: string, name: string, volumeId?: string): Promise<string> {
-  return invoke<string>('create_file', { volumeId, parentPath, name })
+  const res = await commands.createFile(volumeId ?? null, parentPath, name)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 // ============================================================================
@@ -346,7 +376,7 @@ export async function createFile(parentPath: string, name: string, volumeId?: st
  */
 export async function getSyncStatus(paths: string[]): Promise<TimedOut<Record<string, SyncStatus>>> {
   try {
-    return await invoke<TimedOut<Record<string, SyncStatus>>>('get_sync_status', { paths })
+    return await commands.getSyncStatus(paths)
   } catch {
     // Command not available (non-macOS) - return empty map
     return { data: {}, timedOut: false }
@@ -359,6 +389,8 @@ export async function getSyncStatus(paths: string[]): Promise<TimedOut<Record<st
  * @param widths - Map of code point -> width in pixels
  */
 export async function storeFontMetrics(fontId: string, widths: Record<number, number>): Promise<void> {
+  const { invoke } = await import('@tauri-apps/api/core')
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
   await invoke('store_font_metrics', { fontId, widths })
 }
 
@@ -368,5 +400,5 @@ export async function storeFontMetrics(fontId: string, widths: Record<number, nu
  * @returns True if metrics are cached
  */
 export async function hasFontMetrics(fontId: string): Promise<boolean> {
-  return invoke<boolean>('has_font_metrics', { fontId })
+  return commands.hasFontMetrics(fontId)
 }

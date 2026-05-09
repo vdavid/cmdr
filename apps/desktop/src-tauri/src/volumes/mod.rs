@@ -16,7 +16,7 @@ use std::path::Path;
 pub use crate::file_system::volume::SmbConnectionState;
 
 /// Category of a location item.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum LocationCategory {
     Favorite,
@@ -28,7 +28,11 @@ pub enum LocationCategory {
 }
 
 /// Information about a location (volume, folder, or cloud drive).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// Only serialized (Rust → frontend); never sent from the frontend, so no `Deserialize`.
+/// Omitting `Deserialize` prevents specta from splitting this type on `skip_serializing_if`
+/// fields, which would fail `validate_exported_command` in unified mode.
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LocationInfo {
     pub id: String,
@@ -647,7 +651,7 @@ fn get_u64_resource(url: &objc2_foundation::NSURL, key: &str) -> Option<u64> {
 }
 
 /// Information about volume space.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeSpaceInfo {
     /// In bytes.

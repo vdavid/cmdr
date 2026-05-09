@@ -17,7 +17,7 @@ import { waitForUpdates, useMountTarget } from './integration-test-utils'
 let mockEntry: unknown = null
 
 vi.mock('$lib/tauri-commands', () => ({
-  listDirectoryStart: vi.fn().mockResolvedValue({ listingId: 'mock-listing', status: 'ready' }),
+  listDirectoryStart: vi.fn().mockResolvedValue({ listingId: 'mock-listing', status: { status: 'ready' } }),
   cancelListing: vi.fn().mockResolvedValue(undefined),
   listDirectoryEnd: vi.fn().mockResolvedValue(undefined),
   getFileRange: vi.fn().mockResolvedValue([]),

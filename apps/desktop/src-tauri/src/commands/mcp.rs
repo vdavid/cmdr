@@ -6,6 +6,7 @@ use crate::mcp;
 
 /// Start or stop the MCP server based on the user's setting.
 #[tauri::command]
+#[specta::specta]
 pub async fn set_mcp_enabled<R: Runtime + 'static>(app: AppHandle<R>, enabled: bool, port: u16) -> Result<(), String> {
     if enabled {
         if !mcp::is_mcp_running() {
@@ -20,6 +21,7 @@ pub async fn set_mcp_enabled<R: Runtime + 'static>(app: AppHandle<R>, enabled: b
 
 /// Restart the MCP server on a new port. No-op if the server isn't running.
 #[tauri::command]
+#[specta::specta]
 pub async fn set_mcp_port<R: Runtime + 'static>(app: AppHandle<R>, port: u16) -> Result<(), String> {
     if !mcp::is_mcp_running() {
         return Ok(());
@@ -32,12 +34,14 @@ pub async fn set_mcp_port<R: Runtime + 'static>(app: AppHandle<R>, port: u16) ->
 
 /// Returns whether the MCP server is currently running.
 #[tauri::command]
+#[specta::specta]
 pub fn get_mcp_running() -> bool {
     mcp::is_mcp_running()
 }
 
 /// Returns the port the MCP server is actually listening on, or null if not running.
 #[tauri::command]
+#[specta::specta]
 pub fn get_mcp_port() -> Option<u16> {
     mcp::get_mcp_actual_port()
 }

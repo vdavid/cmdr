@@ -11,6 +11,7 @@ use tauri::{AppHandle, Emitter, Manager, Runtime, Window};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[tauri::command]
+#[specta::specta]
 pub fn update_menu_context<R: Runtime>(app: AppHandle<R>, path: String, filename: String) {
     let state = app.state::<MenuState<R>>();
     let mut context = state.context.lock_ignore_poison();
@@ -19,6 +20,7 @@ pub fn update_menu_context<R: Runtime>(app: AppHandle<R>, path: String, filename
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn show_file_context_menu<R: Runtime>(
     window: Window<R>,
     path: String,
@@ -104,6 +106,7 @@ fn build_file_context_info(primary_path: &str, all_paths: &[String]) -> FileCont
 /// The `shortcut` is the user's configured shortcut in frontend format (e.g. "⌃⌘C"),
 /// or empty string if no shortcut is configured.
 #[tauri::command]
+#[specta::specta]
 pub fn show_breadcrumb_context_menu<R: Runtime>(window: Window<R>, shortcut: String) -> Result<(), String> {
     let app = window.app_handle();
     let accelerator = frontend_shortcut_to_accelerator(&shortcut).unwrap_or_default();
@@ -113,6 +116,7 @@ pub fn show_breadcrumb_context_menu<R: Runtime>(window: Window<R>, shortcut: Str
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn show_main_window<R: Runtime>(window: Window<R>) -> Result<(), String> {
     window.show().map_err(|e| e.to_string())
 }
@@ -120,6 +124,7 @@ pub fn show_main_window<R: Runtime>(window: Window<R>) -> Result<(), String> {
 /// Toggle hidden files visibility - updates menu checkbox and emits event.
 /// This is used by the command palette to sync with menu state.
 #[tauri::command]
+#[specta::specta]
 pub fn toggle_hidden_files<R: Runtime>(app: AppHandle<R>) -> Result<bool, String> {
     let menu_state = app.state::<MenuState<R>>();
     let guard = menu_state.show_hidden_files.lock_ignore_poison();
@@ -146,6 +151,7 @@ pub fn toggle_hidden_files<R: Runtime>(app: AppHandle<R>) -> Result<bool, String
 /// `rebuild_view_mode_items`. Called on initial mount, focus change, swap, and
 /// after any view-mode change (palette, MCP, menu click round-trip).
 #[tauri::command]
+#[specta::specta]
 pub fn update_view_mode_menu<R: Runtime>(
     app: AppHandle<R>,
     active_pane: String,
@@ -190,6 +196,7 @@ pub fn update_view_mode_menu<R: Runtime>(
 
 /// Show a file in Finder (reveal in parent folder)
 #[tauri::command]
+#[specta::specta]
 #[cfg(target_os = "macos")]
 pub fn show_in_finder(path: String) -> Result<(), String> {
     Command::new("open")
@@ -202,6 +209,7 @@ pub fn show_in_finder(path: String) -> Result<(), String> {
 
 /// Show a file in the default file manager (open parent folder via xdg-open)
 #[tauri::command]
+#[specta::specta]
 #[cfg(target_os = "linux")]
 pub fn show_in_finder(path: String) -> Result<(), String> {
     let parent = std::path::Path::new(&path)
@@ -215,6 +223,7 @@ pub fn show_in_finder(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 pub fn show_in_finder(_path: String) -> Result<(), String> {
     Err("Show in file manager is not available on this platform".to_string())
@@ -222,12 +231,14 @@ pub fn show_in_finder(_path: String) -> Result<(), String> {
 
 /// Copy text to clipboard
 #[tauri::command]
+#[specta::specta]
 pub fn copy_to_clipboard<R: Runtime>(app: AppHandle<R>, text: String) -> Result<(), String> {
     app.clipboard().write_text(text).map_err(|e| e.to_string())
 }
 
 /// Quick Look preview (macOS only)
 #[tauri::command]
+#[specta::specta]
 #[cfg(target_os = "macos")]
 pub fn quick_look(path: String) -> Result<(), String> {
     Command::new("qlmanage")
@@ -239,6 +250,7 @@ pub fn quick_look(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 #[cfg(not(target_os = "macos"))]
 pub fn quick_look(_path: String) -> Result<(), String> {
     Ok(())
@@ -246,6 +258,7 @@ pub fn quick_look(_path: String) -> Result<(), String> {
 
 /// Open the Get Info window for a file (macOS only, no-op on other platforms)
 #[tauri::command]
+#[specta::specta]
 #[cfg(target_os = "macos")]
 pub fn get_info(path: String) -> Result<(), String> {
     // Pass the path as a positional argument via `on run argv` to avoid AppleScript injection.
@@ -266,6 +279,7 @@ pub fn get_info(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 #[cfg(not(target_os = "macos"))]
 pub fn get_info(_path: String) -> Result<(), String> {
     Ok(())
@@ -273,6 +287,7 @@ pub fn get_info(_path: String) -> Result<(), String> {
 
 /// Open file in the system's default text editor (macOS only)
 #[tauri::command]
+#[specta::specta]
 #[cfg(target_os = "macos")]
 pub fn open_in_editor(path: String) -> Result<(), String> {
     Command::new("open")
@@ -287,6 +302,7 @@ pub fn open_in_editor(path: String) -> Result<(), String> {
 /// File Provider extension responsible for the file (iCloud Drive, Dropbox, GDrive,
 /// OneDrive, Box, etc.).
 #[tauri::command]
+#[specta::specta]
 pub async fn cloud_make_available_offline(path: String) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
         crate::file_system::cloud_actions::request_download(std::path::Path::new(&path))
@@ -298,6 +314,7 @@ pub async fn cloud_make_available_offline(path: String) -> Result<(), String> {
 /// Evict a cloud-managed file's local copy, leaving a placeholder. Counterpart to
 /// `cloud_make_available_offline`.
 #[tauri::command]
+#[specta::specta]
 pub async fn cloud_remove_download(path: String) -> Result<(), String> {
     tokio::task::spawn_blocking(move || crate::file_system::cloud_actions::evict_item(std::path::Path::new(&path)))
         .await
@@ -305,6 +322,7 @@ pub async fn cloud_remove_download(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 #[cfg(target_os = "linux")]
 pub fn open_in_editor(path: String) -> Result<(), String> {
     Command::new("xdg-open").arg(&path).spawn().map_err(|e| e.to_string())?;
@@ -312,6 +330,7 @@ pub fn open_in_editor(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 pub fn open_in_editor(_path: String) -> Result<(), String> {
     Err("Open in editor is not available on this platform".to_string())
@@ -324,6 +343,7 @@ pub fn open_in_editor(_path: String) -> Result<(), String> {
 /// signal posted during the popup's NSEvent tracking loop gets consumed, so `recv` always
 /// times out.
 #[tauri::command]
+#[specta::specta]
 pub fn show_tab_context_menu(
     window: Window<tauri::Wry>,
     is_pinned: bool,
@@ -343,6 +363,7 @@ pub fn show_tab_context_menu(
 /// The selected action is delivered asynchronously via a `network-host-context-action` Tauri event
 /// from `on_menu_event`.
 #[tauri::command]
+#[specta::specta]
 pub fn show_network_host_context_menu(
     window: Window<tauri::Wry>,
     host_id: String,
@@ -369,6 +390,7 @@ pub fn show_network_host_context_menu(
 
 /// Updates the File menu "Pin tab" / "Unpin tab" label based on the active tab's pin state.
 #[tauri::command]
+#[specta::specta]
 pub fn update_pin_tab_menu<R: Runtime>(app: AppHandle<R>, is_pinned: bool) -> Result<(), String> {
     let menu_state = app.state::<MenuState<R>>();
     let guard = menu_state.pin_tab.lock_ignore_poison();
@@ -384,6 +406,7 @@ pub fn update_pin_tab_menu<R: Runtime>(app: AppHandle<R>, is_pinned: bool) -> Re
 /// - `"other"`: all non-App items disabled except Close tab (⌘W), which doubles as
 ///   "close the focused window" — standard macOS behavior
 #[tauri::command]
+#[specta::specta]
 pub fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Result<(), String> {
     let enabled = context == "explorer";
     let menu_state = app.state::<MenuState<R>>();

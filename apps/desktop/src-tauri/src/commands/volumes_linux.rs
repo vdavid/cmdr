@@ -18,6 +18,7 @@ pub struct PathVolumeResolution {
 
 /// Lists all mounted volumes, including connected MTP devices.
 #[tauri::command]
+#[specta::specta]
 pub async fn list_volumes() -> TimedOut<Vec<VolumeInfo>> {
     let mut data = volumes_linux::list_mounted_volumes();
     append_mtp_volumes(&mut data).await;
@@ -26,6 +27,7 @@ pub async fn list_volumes() -> TimedOut<Vec<VolumeInfo>> {
 
 /// Gets the default volume ID (root filesystem).
 #[tauri::command]
+#[specta::specta]
 pub fn get_default_volume_id() -> String {
     DEFAULT_VOLUME_ID.to_string()
 }
@@ -33,6 +35,7 @@ pub fn get_default_volume_id() -> String {
 /// Gets space information for a volume at the given path.
 /// For MTP paths (`mtp://`), fetches from the MTP connection manager instead of statvfs.
 #[tauri::command]
+#[specta::specta]
 pub async fn get_volume_space(path: String) -> TimedOut<Option<VolumeSpaceInfo>> {
     if let Some(space) = get_mtp_space_info(&path).await {
         return TimedOut {
@@ -50,6 +53,7 @@ pub async fn get_volume_space(path: String) -> TimedOut<Option<VolumeSpaceInfo>>
 /// Parses `/proc/self/mountinfo` for filesystem paths, dispatches on protocol
 /// for MTP/SMB. Uses `spawn_blocking` + timeout (2s).
 #[tauri::command]
+#[specta::specta]
 pub async fn resolve_path_volume(path: String) -> PathVolumeResolution {
     // MTP protocol dispatch
     if path.starts_with("mtp://") {

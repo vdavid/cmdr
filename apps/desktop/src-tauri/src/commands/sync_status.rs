@@ -18,6 +18,7 @@ const SYNC_STATUS_TIMEOUT: Duration = Duration::from_secs(2);
 ///
 /// Returns a map from path to sync status string.
 #[tauri::command]
+#[specta::specta]
 #[cfg(target_os = "macos")]
 pub async fn get_sync_status(paths: Vec<String>) -> TimedOut<HashMap<String, SyncStatus>> {
     blocking_with_timeout_flag(SYNC_STATUS_TIMEOUT, HashMap::new(), move || get_sync_statuses(paths)).await
@@ -25,6 +26,7 @@ pub async fn get_sync_status(paths: Vec<String>) -> TimedOut<HashMap<String, Syn
 
 /// Non-macOS fallback - returns empty map.
 #[tauri::command]
+#[specta::specta]
 #[cfg(not(target_os = "macos"))]
 pub async fn get_sync_status(_paths: Vec<String>) -> TimedOut<HashMap<String, String>> {
     TimedOut {

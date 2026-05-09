@@ -8,7 +8,7 @@
 use crate::network::get_discovered_hosts;
 
 /// Result of an SMB volume upgrade attempt.
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, specta::Type)]
 #[serde(tag = "status", rename_all = "camelCase")]
 pub enum UpgradeResult {
     /// Upgrade succeeded — volume now uses direct smb2.

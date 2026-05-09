@@ -31,7 +31,7 @@ use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::RepoHandle;
 
 /// Single-character status code.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum EntryStatusCode {
     /// Modified in worktree relative to index.
@@ -89,7 +89,7 @@ impl EntryStatusCode {
 }
 
 /// One status entry, surfaced to the frontend as `{ path, code }`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct EntryStatus {
     /// Path relative to the repo's working tree root, with `/` separators.

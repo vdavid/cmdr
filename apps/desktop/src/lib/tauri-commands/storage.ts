@@ -4,6 +4,8 @@ import { invoke } from '@tauri-apps/api/core'
 import type { VolumeInfo } from '../file-explorer/types'
 import type { TimedOut } from './ipc-types'
 import { getAppLogger } from '$lib/logging/logger'
+import { commands } from '$lib/ipc/bindings'
+import { throwIpcError } from './ipc-types'
 
 const log = getAppLogger('storage')
 
@@ -17,6 +19,7 @@ export const DEFAULT_VOLUME_ID = 'root'
  */
 export async function listVolumes(): Promise<TimedOut<VolumeInfo[]>> {
   try {
+    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
     return await invoke<TimedOut<VolumeInfo[]>>('list_volumes')
   } catch {
     // Command not available (non-macOS) - return empty array
@@ -30,7 +33,7 @@ export async function listVolumes(): Promise<TimedOut<VolumeInfo[]>> {
  */
 export async function refreshVolumes(): Promise<void> {
   try {
-    await invoke('refresh_volumes')
+    await commands.refreshVolumes()
   } catch {
     // Command not available — fall back to listVolumes (shouldn't happen)
     log.warn('refresh_volumes command not available')
@@ -43,7 +46,7 @@ export async function refreshVolumes(): Promise<void> {
  */
 export async function getDefaultVolumeId(): Promise<string> {
   try {
-    return await invoke<string>('get_default_volume_id')
+    return await commands.getDefaultVolumeId()
   } catch {
     // Fallback for non-macOS
     return DEFAULT_VOLUME_ID
@@ -64,6 +67,7 @@ export interface PathVolumeResolution {
  */
 export async function resolvePathVolume(path: string): Promise<PathVolumeResolution> {
   try {
+    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
     return await invoke<PathVolumeResolution>('resolve_path_volume', { path })
   } catch {
     // Command not available — return no volume, not timed out
@@ -84,7 +88,7 @@ export interface VolumeSpaceInfo {
  */
 export async function getVolumeSpace(path: string): Promise<TimedOut<VolumeSpaceInfo | null>> {
   try {
-    return await invoke<TimedOut<VolumeSpaceInfo | null>>('get_volume_space', { path })
+    return await commands.getVolumeSpace(path)
   } catch {
     // Command not available (non-macOS) - return null
     return { data: null, timedOut: false }
@@ -104,7 +108,7 @@ export async function getVolumeSpace(path: string): Promise<TimedOut<VolumeSpace
  *   Multiple watchers can watch the same volume independently.
  */
 export async function watchVolumeSpace(watcherId: string, volumeId: string, path: string): Promise<void> {
-  await invoke('watch_volume_space', { watcherId, volumeId, path })
+  await commands.watchVolumeSpace(watcherId, volumeId, path)
 }
 
 /**
@@ -112,14 +116,14 @@ export async function watchVolumeSpace(watcherId: string, volumeId: string, path
  * same volume are unaffected.
  */
 export async function unwatchVolumeSpace(watcherId: string): Promise<void> {
-  await invoke('unwatch_volume_space', { watcherId })
+  await commands.unwatchVolumeSpace(watcherId)
 }
 
 /**
  * Updates the disk space change threshold at runtime (in MB).
  */
 export async function setDiskSpaceThreshold(mb: number): Promise<void> {
-  await invoke('set_disk_space_threshold', { mb: Math.round(mb) })
+  await commands.setDiskSpaceThreshold(Math.round(mb))
 }
 
 // ============================================================================
@@ -133,7 +137,7 @@ export async function setDiskSpaceThreshold(mb: number): Promise<void> {
  */
 export async function checkFullDiskAccess(): Promise<boolean> {
   try {
-    return await invoke<boolean>('check_full_disk_access')
+    return await commands.checkFullDiskAccess()
   } catch {
     // Command not available (non-macOS) - assume we have access
     return true
@@ -146,7 +150,8 @@ export async function checkFullDiskAccess(): Promise<boolean> {
  */
 export async function openPrivacySettings(): Promise<void> {
   try {
-    await invoke('open_privacy_settings')
+    const res = await commands.openPrivacySettings()
+    if (res.status === 'error') throwIpcError(res.error)
   } catch {
     // Command not available (non-macOS) - silently fail
   }
@@ -163,7 +168,8 @@ export async function openPrivacySettings(): Promise<void> {
  */
 export async function openSystemSettingsUrl(url: string): Promise<void> {
   try {
-    await invoke('open_system_settings_url', { url })
+    const res = await commands.openSystemSettingsUrl(url)
+    if (res.status === 'error') throwIpcError(res.error)
   } catch {
     // Command not available (non-macOS) or URL rejected — silently fail
   }
@@ -172,7 +178,8 @@ export async function openSystemSettingsUrl(url: string): Promise<void> {
 /** Opens the system appearance settings. On macOS, opens System Settings > Appearance. On Linux, opens the DE-specific appearance settings. */
 export async function openAppearanceSettings(): Promise<void> {
   try {
-    await invoke('open_appearance_settings')
+    const res = await commands.openAppearanceSettings()
+    if (res.status === 'error') throwIpcError(res.error)
   } catch (error) {
     log.warn('Failed to open appearance settings: {error}', { error })
   }

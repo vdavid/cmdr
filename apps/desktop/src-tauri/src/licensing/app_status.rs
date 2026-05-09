@@ -28,7 +28,7 @@ const STORE_KEY_EXPIRATION_SHOWN: &str = "expiration_modal_shown";
 const STORE_KEY_REMINDER_LAST_DISMISSED: &str = "commercial_reminder_last_dismissed";
 
 /// Type of license.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum LicenseType {
     CommercialSubscription,
@@ -36,7 +36,7 @@ pub enum LicenseType {
 }
 
 /// Current status of the application license.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum AppStatus {
     /// No license - personal use only.

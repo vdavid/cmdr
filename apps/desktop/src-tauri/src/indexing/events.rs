@@ -104,7 +104,7 @@ pub(super) fn emit_rescan_notification(app: &AppHandle, volume_id: &str, reason:
 
 /// What the indexer is currently doing. More granular than `IndexPhase`
 /// (which tracks lifecycle: Disabled/Initializing/Running/ShuttingDown).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ActivityPhase {
     /// Processing FSEvents journal replay on cold start.
@@ -135,7 +135,7 @@ impl std::fmt::Display for ActivityPhase {
 }
 
 /// A completed or in-progress phase in the indexing timeline.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PhaseRecord {
     pub phase: ActivityPhase,
@@ -152,7 +152,7 @@ pub struct PhaseRecord {
 
 // ── Response types ───────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexStatusResponse {
     pub initialized: bool,
@@ -165,7 +165,7 @@ pub struct IndexStatusResponse {
 
 /// Extended debug status for the debug window. Includes live DB counts
 /// and MustScanSubDirs tracking.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexDebugStatusResponse {
     /// Base status (same as `get_index_status`)

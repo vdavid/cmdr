@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { invoke } from '@tauri-apps/api/core'
+    import { commands } from '$lib/ipc/bindings'
     import { onMount } from 'svelte'
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
@@ -28,17 +28,10 @@
     let refreshTimer: ReturnType<typeof setInterval> | undefined
 
     async function refreshDbSize() {
-        try {
-            const status = await invoke<{
-                initialized: boolean
-                scanning: boolean
-                entriesScanned: number
-                dirsFound: number
-                indexStatus: unknown
-                dbFileSize: number | null
-            }>('get_index_status')
-            dbFileSize = status.dbFileSize
-        } catch {
+        const res = await commands.getIndexStatus()
+        if (res.status === 'ok') {
+            dbFileSize = res.data.dbFileSize
+        } else {
             dbFileSize = null
         }
     }
@@ -47,7 +40,8 @@
         clearing = true
         clearError = null
         try {
-            await invoke('clear_drive_index')
+            const res = await commands.clearDriveIndex()
+            if (res.status === 'error') throw new Error(res.error)
             dbFileSize = null
             log.info('Drive index cleared from settings')
         } catch (error: unknown) {

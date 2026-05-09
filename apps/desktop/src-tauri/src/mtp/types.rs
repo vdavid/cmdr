@@ -2,13 +2,16 @@
 //!
 //! These types are serialized to JSON for Tauri commands.
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 /// Information about a connected MTP device.
 ///
 /// This represents a device detected via USB, before opening an MTP session.
 /// Used by the frontend to display available devices in the volume picker.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// Only serialized (Rust → frontend); no `Deserialize` to prevent specta from splitting
+/// this type on `skip_serializing_if` fields (which fails `validate_exported_command`).
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpDeviceInfo {
     /// Format: "mtp-{location_id}".
@@ -29,7 +32,10 @@ pub struct MtpDeviceInfo {
 /// Information about a storage area on an MTP device.
 ///
 /// Android devices typically have one or more storages: "Internal Storage", "SD Card", etc.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// Only serialized (Rust → frontend); no `Deserialize` to prevent specta from splitting
+/// this type on `skip_serializing_if` fields (which fails `validate_exported_command`).
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpStorageInfo {
     /// MTP storage handle.

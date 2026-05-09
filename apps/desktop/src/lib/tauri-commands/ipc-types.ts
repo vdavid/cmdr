@@ -40,6 +40,32 @@ export function getIpcErrorMessage(error: unknown): string {
   return String(error)
 }
 
+/**
+ * Throws a typed IPC error value as an actual Error object, satisfying
+ * `@typescript-eslint/only-throw-error`. When the error value has a `.message`
+ * string property (e.g. IpcError), the Error message is set to that string and
+ * the original properties are copied onto the Error so `isIpcError()` and similar
+ * checks still work. Plain strings become `new Error(string)`. Everything else is
+ * JSON-stringified into the message.
+ *
+ * Use this in typed-bindings error paths:
+ *   if (res.status === 'error') throwIpcError(res.error)
+ */
+export function throwIpcError(error: unknown): never {
+  if (error instanceof Error) throw error
+  if (typeof error === 'string') throw new Error(error)
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as Record<string, unknown>)['message'] === 'string'
+  ) {
+    const msg = (error as Record<string, unknown>)['message'] as string
+    throw Object.assign(new Error(msg), error)
+  }
+  throw new Error(JSON.stringify(error))
+}
+
 // ============================================================================
 // Search types
 // ============================================================================

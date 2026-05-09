@@ -24,7 +24,7 @@ use super::{
 };
 
 /// Which backend strategy is active for a session.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum BackendType {
     FullLoad,
@@ -33,7 +33,7 @@ pub enum BackendType {
 }
 
 /// Result returned when opening a viewer session.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ViewerOpenResult {
     pub session_id: String,
@@ -50,7 +50,7 @@ pub struct ViewerOpenResult {
 }
 
 /// Current status of a viewer session.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ViewerSessionStatus {
     pub backend_type: BackendType,
@@ -59,7 +59,7 @@ pub struct ViewerSessionStatus {
 }
 
 /// Status of an ongoing search.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum SearchStatus {
     Running,
@@ -69,7 +69,7 @@ pub enum SearchStatus {
 }
 
 /// Result from polling search progress.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchPollResult {
     pub status: SearchStatus,

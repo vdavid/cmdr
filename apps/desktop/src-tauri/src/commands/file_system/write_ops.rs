@@ -21,6 +21,7 @@ use crate::commands::util::IpcError;
 use super::expand_tilde;
 
 #[tauri::command]
+#[specta::specta]
 pub async fn create_directory(
     app: tauri::AppHandle,
     volume_id: Option<String>,
@@ -38,6 +39,7 @@ pub async fn create_directory(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn create_file(
     app: tauri::AppHandle,
     volume_id: Option<String>,
@@ -184,6 +186,7 @@ pub(super) async fn create_file_core(
 
 /// Emits write-progress, write-complete, write-error, write-cancelled.
 #[tauri::command]
+#[specta::specta]
 pub async fn copy_files(
     app: tauri::AppHandle,
     sources: Vec<String>,
@@ -200,6 +203,7 @@ pub async fn copy_files(
 /// Uses rename() for same-filesystem (instant), copy+delete for cross-filesystem.
 /// Same events as `copy_files`.
 #[tauri::command]
+#[specta::specta]
 pub async fn move_files(
     app: tauri::AppHandle,
     sources: Vec<String>,
@@ -216,6 +220,7 @@ pub async fn move_files(
 /// Recursively deletes files and directories. Same events as `copy_files`.
 /// When `volume_id` is provided and is not "root", routes through the Volume trait.
 #[tauri::command]
+#[specta::specta]
 pub async fn delete_files(
     app: tauri::AppHandle,
     sources: Vec<String>,
@@ -235,6 +240,7 @@ pub async fn delete_files(
 
 /// Moves files to macOS Trash. Same events as `copy_files` but with `operationType: trash`.
 #[tauri::command]
+#[specta::specta]
 pub async fn trash_files(
     app: tauri::AppHandle,
     sources: Vec<String>,
@@ -248,11 +254,13 @@ pub async fn trash_files(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn cancel_write_operation(operation_id: String, rollback: bool) {
     ops_cancel_write_operation(&operation_id, rollback);
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn cancel_all_write_operations() {
     ops_cancel_all_write_operations();
 }
@@ -267,6 +275,7 @@ pub fn cancel_all_write_operations() {
 /// When `source_volume_id` is provided and is not "root", the scan uses the Volume trait
 /// (enabling MTP and other non-local volumes). Otherwise, uses `std::fs` for local scanning.
 #[tauri::command]
+#[specta::specta]
 pub async fn start_scan_preview(
     app: tauri::AppHandle,
     sources: Vec<String>,
@@ -296,6 +305,7 @@ pub async fn start_scan_preview(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn cancel_scan_preview(preview_id: String) {
     ops_cancel_scan_preview(&preview_id);
 }
@@ -304,22 +314,26 @@ pub fn cancel_scan_preview(preview_id: String) {
 /// Used by TransferProgressDialog to handle the race condition where the scan completes
 /// between TransferDialog closing and TransferProgressDialog mounting.
 #[tauri::command]
+#[specta::specta]
 pub fn check_scan_preview_status(preview_id: String) -> bool {
     ops_is_scan_preview_complete(&preview_id)
 }
 
 /// In Stop mode, the operation pauses on conflict and waits for this call to proceed.
 #[tauri::command]
+#[specta::specta]
 pub fn resolve_write_conflict(operation_id: String, resolution: ConflictResolution, apply_to_all: bool) {
     ops_resolve_write_conflict(&operation_id, resolution, apply_to_all);
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn list_active_operations() -> Vec<OperationSummary> {
     ops_list_active_operations()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn get_operation_status(operation_id: String) -> Option<OperationStatus> {
     ops_get_operation_status(&operation_id)
 }

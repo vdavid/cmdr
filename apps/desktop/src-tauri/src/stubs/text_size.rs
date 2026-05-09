@@ -6,6 +6,7 @@
 
 /// Returns 1.0 on non-macOS platforms.
 #[tauri::command]
+#[specta::specta]
 pub fn get_system_text_size_multiplier() -> f32 {
     1.0
 }

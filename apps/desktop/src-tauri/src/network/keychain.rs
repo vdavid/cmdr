@@ -16,7 +16,7 @@ static CREDENTIAL_CACHE: std::sync::LazyLock<RwLock<HashMap<String, SmbCredentia
     std::sync::LazyLock::new(|| RwLock::new(HashMap::new()));
 
 /// Credentials for SMB authentication.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SmbCredentials {
     /// Username for authentication
@@ -26,7 +26,7 @@ pub struct SmbCredentials {
 }
 
 /// Error types for Keychain operations.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case", tag = "type", content = "message")]
 pub enum KeychainError {
     /// Credentials not found

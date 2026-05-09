@@ -1,6 +1,8 @@
 // Settings commands and AI-related commands
 
 import { Channel, invoke } from '@tauri-apps/api/core'
+import { commands } from '$lib/ipc/bindings'
+import { throwIpcError } from './ipc-types'
 
 // ============================================================================
 // Settings commands
@@ -12,7 +14,7 @@ import { Channel, invoke } from '@tauri-apps/api/core'
  * @returns True if the port is available
  */
 export async function checkPortAvailable(port: number): Promise<boolean> {
-  return invoke<boolean>('check_port_available', { port })
+  return commands.checkPortAvailable(port)
 }
 
 /**
@@ -22,7 +24,7 @@ export async function checkPortAvailable(port: number): Promise<boolean> {
  * @returns Available port number, or null if none found
  */
 export async function findAvailablePort(startPort: number): Promise<number | null> {
-  return invoke<number | null>('find_available_port', { startPort })
+  return commands.findAvailablePort(startPort)
 }
 
 /**
@@ -31,7 +33,7 @@ export async function findAvailablePort(startPort: number): Promise<number | nul
  * @param debounceMs - Debounce duration in milliseconds
  */
 export async function updateFileWatcherDebounce(debounceMs: number): Promise<void> {
-  await invoke('update_file_watcher_debounce', { debounceMs })
+  await commands.updateFileWatcherDebounce(debounceMs)
 }
 
 /**
@@ -40,7 +42,7 @@ export async function updateFileWatcherDebounce(debounceMs: number): Promise<voi
  * @param timeoutMs - Timeout duration in milliseconds
  */
 export async function updateServiceResolveTimeout(timeoutMs: number): Promise<void> {
-  await invoke('update_service_resolve_timeout', { timeoutMs })
+  await commands.updateServiceResolveTimeout(timeoutMs)
 }
 
 /**
@@ -49,7 +51,7 @@ export async function updateServiceResolveTimeout(timeoutMs: number): Promise<vo
  * @param enabled - True to enable direct SMB connections
  */
 export async function setDirectSmbConnection(enabled: boolean): Promise<void> {
-  await invoke('set_direct_smb_connection', { enabled })
+  await commands.setDirectSmbConnection(enabled)
 }
 
 /**
@@ -58,7 +60,7 @@ export async function setDirectSmbConnection(enabled: boolean): Promise<void> {
  * @param enabled - True to filter artifacts
  */
 export async function setFilterSafeSaveArtifacts(enabled: boolean): Promise<void> {
-  await invoke('set_filter_safe_save_artifacts_cmd', { enabled })
+  await commands.setFilterSafeSaveArtifactsCmd(enabled)
 }
 
 /**
@@ -68,7 +70,7 @@ export async function setFilterSafeSaveArtifacts(enabled: boolean): Promise<void
  * @param value - Desired concurrency (will be clamped)
  */
 export async function setSmbConcurrency(value: number): Promise<void> {
-  await invoke('set_smb_concurrency_cmd', { value })
+  await commands.setSmbConcurrencyCmd(value)
 }
 
 /**
@@ -82,7 +84,8 @@ export async function setSmbConcurrency(value: number): Promise<void> {
  * @param value - Cap in MB. `0` disables log storage entirely.
  */
 export async function setMaxLogStorageMb(value: number): Promise<void> {
-  await invoke('set_max_log_storage_mb', { value })
+  const res = await commands.setMaxLogStorageMb(value)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**
@@ -96,7 +99,7 @@ export async function setMaxLogStorageMb(value: number): Promise<void> {
  * @param value - True to enable auto-send.
  */
 export async function setErrorReportsEnabled(value: boolean): Promise<void> {
-  await invoke('set_error_reports_enabled', { value })
+  await commands.setErrorReportsEnabled(value)
 }
 
 /**
@@ -108,7 +111,7 @@ export async function setErrorReportsEnabled(value: boolean): Promise<void> {
  * @param enabled - True to keep the portal active, false to fall back to raw `.git` listings.
  */
 export async function setShowVirtualGitPortal(enabled: boolean): Promise<void> {
-  await invoke('set_show_virtual_git_portal', { enabled })
+  await commands.setShowVirtualGitPortal(enabled)
 }
 
 // ============================================================================
@@ -117,22 +120,24 @@ export async function setShowVirtualGitPortal(enabled: boolean): Promise<void> {
 
 /** Starts or stops the MCP server. Pass the current port so it binds correctly on enable. */
 export async function setMcpEnabled(enabled: boolean, port: number): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   await invoke('set_mcp_enabled', { enabled, port })
 }
 
 /** Restarts the MCP server on a new port. No-op if the server isn't currently running. */
 export async function setMcpPort(port: number): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   await invoke('set_mcp_port', { port })
 }
 
 /** Returns whether the MCP server is currently running. */
 export async function getMcpRunning(): Promise<boolean> {
-  return invoke<boolean>('get_mcp_running')
+  return commands.getMcpRunning()
 }
 
 /** Returns the port the MCP server is actually listening on, or null if not running. */
 export async function getMcpPort(): Promise<number | null> {
-  return invoke<number | null>('get_mcp_port')
+  return commands.getMcpPort()
 }
 
 // ============================================================================
@@ -145,7 +150,8 @@ export async function getMcpPort(): Promise<number | null> {
  * When disabled: stops all scans and watchers; DB stays on disk.
  */
 export async function setIndexingEnabled(enabled: boolean): Promise<void> {
-  await invoke('set_indexing_enabled', { enabled })
+  const res = await commands.setIndexingEnabled(enabled)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**
@@ -163,7 +169,8 @@ export async function setIndexingEnabled(enabled: boolean): Promise<void> {
  * Idempotent: a no-op when indexing is already running or initializing.
  */
 export async function startIndexingAfterFdaDecision(): Promise<void> {
-  await invoke('start_indexing_after_fda_decision')
+  const res = await commands.startIndexingAfterFdaDecision()
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /** Index directory stats returned by the batch lookup. */
@@ -182,7 +189,9 @@ export interface DirStats {
  * Returns one entry per input path (null if the path has no index data yet).
  */
 export async function getDirStatsBatch(paths: string[]): Promise<(DirStats | null)[]> {
-  return invoke<(DirStats | null)[]>('get_dir_stats_batch', { paths })
+  const res = await commands.getDirStatsBatch(paths)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 // ============================================================================
@@ -202,7 +211,7 @@ export interface SystemMemoryInfo {
 
 /** Returns system RAM breakdown for the RAM gauge. */
 export async function getSystemMemoryInfo(): Promise<SystemMemoryInfo> {
-  return invoke<SystemMemoryInfo>('get_system_memory_info')
+  return commands.getSystemMemoryInfo()
 }
 
 // ============================================================================
@@ -249,52 +258,53 @@ export interface AiRuntimeStatus {
 
 /** Returns the current AI subsystem status. */
 export async function getAiStatus(): Promise<AiStatus> {
-  return invoke<AiStatus>('get_ai_status')
+  return commands.getAiStatus()
 }
 
 /** Returns information about the current AI model. */
 export async function getAiModelInfo(): Promise<AiModelInfo> {
-  return invoke<AiModelInfo>('get_ai_model_info')
+  return commands.getAiModelInfo()
 }
 
 /** Starts downloading the AI model and inference runtime. */
 export async function startAiDownload(): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   await invoke('start_ai_download')
 }
 
 /** Cancels an in-progress AI download. */
 export async function cancelAiDownload(): Promise<void> {
-  await invoke('cancel_ai_download')
+  await commands.cancelAiDownload()
 }
 
 /** Dismisses the AI offer notification for 7 days. */
 export async function dismissAiOffer(): Promise<void> {
-  await invoke('dismiss_ai_offer')
+  await commands.dismissAiOffer()
 }
 
 /** Uninstalls the AI model and binary, resets state. */
 export async function uninstallAi(): Promise<void> {
-  await invoke('uninstall_ai')
+  await commands.uninstallAi()
 }
 
 /** Permanently opts out of AI features. Can be re-enabled in settings. */
 export async function optOutAi(): Promise<void> {
-  await invoke('opt_out_ai')
+  await commands.optOutAi()
 }
 
 /** Re-enables AI features after opting out. */
 export async function optInAi(): Promise<void> {
-  await invoke('opt_in_ai')
+  await commands.optInAi()
 }
 
 /** Returns whether the user has opted out of AI features. */
 export async function isAiOptedOut(): Promise<boolean> {
-  return invoke<boolean>('is_ai_opted_out')
+  return commands.isAiOptedOut()
 }
 
 /** Returns the full runtime status of the AI subsystem. */
 export async function getAiRuntimeStatus(): Promise<AiRuntimeStatus> {
-  return invoke<AiRuntimeStatus>('get_ai_runtime_status')
+  return commands.getAiRuntimeStatus()
 }
 
 /** Pushes AI config to the backend. Triggers server start if provider is local + model installed. */
@@ -305,16 +315,18 @@ export async function configureAi(
   cloudBaseUrl: string,
   cloudModel: string,
 ): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   await invoke('configure_ai', { provider, contextSize, cloudApiKey, cloudBaseUrl, cloudModel })
 }
 
 /** Stops the local llama-server without uninstalling. */
 export async function stopAiServer(): Promise<void> {
-  await invoke('stop_ai_server')
+  await commands.stopAiServer()
 }
 
 /** Starts the local llama-server with the given context size. */
 export async function startAiServer(ctxSize: number): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- not in typed bindings; tracked for follow-up
   await invoke('start_ai_server', { ctxSize })
 }
 
@@ -328,7 +340,7 @@ export interface AiConnectionCheckResult {
 
 /** Checks connectivity to an AI API endpoint by calling GET {baseUrl}/models. */
 export async function checkAiConnection(baseUrl: string, apiKey: string): Promise<AiConnectionCheckResult> {
-  return invoke<AiConnectionCheckResult>('check_ai_connection', { baseUrl, apiKey })
+  return commands.checkAiConnection(baseUrl, apiKey)
 }
 
 // ============================================================================
@@ -341,7 +353,7 @@ export async function checkAiConnection(baseUrl: string, apiKey: string): Promis
  */
 export async function getE2eStartPath(): Promise<string | null> {
   try {
-    return await invoke<string | null>('get_e2e_start_path')
+    return await commands.getE2eStartPath()
   } catch {
     return null
   }
@@ -354,7 +366,9 @@ export async function getFolderSuggestions(
   includeHidden: boolean,
 ): Promise<string[]> {
   try {
-    return await invoke<string[]>('get_folder_suggestions', { listingId, currentPath, includeHidden })
+    const res = await commands.getFolderSuggestions(listingId, currentPath, includeHidden)
+    if (res.status === 'error') return []
+    return res.data
   } catch {
     return []
   }
@@ -392,6 +406,7 @@ export function streamFolderSuggestions(
   const requestId = crypto.randomUUID()
   const channel = new Channel<SuggestionStreamEvent>()
   channel.onmessage = onEvent
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- streaming Channel<T> not specta-friendly yet; tracked for follow-up
   const promise = invoke('stream_folder_suggestions', {
     requestId,
     listingId,
@@ -404,6 +419,7 @@ export function streamFolderSuggestions(
   )
   const cancel = async (): Promise<void> => {
     try {
+      // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- streaming Channel<T> not specta-friendly yet; tracked for follow-up
       await invoke('cancel_folder_suggestions', { requestId })
     } catch {
       // Idempotent — entry may already be gone.

@@ -1,4 +1,5 @@
-import { invoke } from '@tauri-apps/api/core'
+import { commands } from '$lib/ipc/bindings'
+import { throwIpcError } from './ipc-types'
 
 export interface ClipboardReadResult {
   paths: string[]
@@ -12,13 +13,9 @@ export async function copyFilesToClipboard(
   hasParent: boolean,
   includeHidden: boolean,
 ): Promise<number> {
-  return invoke<number>('copy_files_to_clipboard', {
-    listingId,
-    selectedIndices,
-    cursorIndex,
-    hasParent,
-    includeHidden,
-  })
+  const res = await commands.copyFilesToClipboard(listingId, selectedIndices, cursorIndex, hasParent, includeHidden)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 export async function cutFilesToClipboard(
@@ -28,23 +25,23 @@ export async function cutFilesToClipboard(
   hasParent: boolean,
   includeHidden: boolean,
 ): Promise<number> {
-  return invoke<number>('cut_files_to_clipboard', {
-    listingId,
-    selectedIndices,
-    cursorIndex,
-    hasParent,
-    includeHidden,
-  })
+  const res = await commands.cutFilesToClipboard(listingId, selectedIndices, cursorIndex, hasParent, includeHidden)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 export async function readClipboardFiles(): Promise<ClipboardReadResult> {
-  return invoke<ClipboardReadResult>('read_clipboard_files')
+  const res = await commands.readClipboardFiles()
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 export async function readClipboardText(): Promise<string | null> {
-  return invoke<string | null>('read_clipboard_text')
+  const res = await commands.readClipboardText()
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 export async function clearClipboardCutState(): Promise<void> {
-  await invoke('clear_clipboard_cut_state')
+  await commands.clearClipboardCutState()
 }

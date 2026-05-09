@@ -16,6 +16,7 @@ export type BreadcrumbCtx = Record<string, unknown>
  * sites so error report bundles carry context for "what led up to this."
  */
 export function recordBreadcrumb(kind: string, message: string, ctx?: BreadcrumbCtx): void {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
   void invoke('record_breadcrumb', { kind, message, ctx: ctx ?? null }).catch(() => {
     // Best-effort: a failing breadcrumb shouldn't break the UI flow.
   })

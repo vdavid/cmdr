@@ -243,17 +243,19 @@ function applyDateQuery(query: SearchQuery): void {
 /** Builds a SearchQuery from the current state. */
 export function buildSearchQuery(): SearchQuery {
   const query: SearchQuery = {
+    namePattern: namePattern.trim() || null,
     patternType,
+    minSize: null,
+    maxSize: null,
+    modifiedAfter: null,
+    modifiedBefore: null,
+    isDirectory: null,
     limit: 30,
   }
 
   // Only include caseSensitive when explicitly set, so Rust uses the platform default (None)
   if (caseSensitive) {
     query.caseSensitive = true
-  }
-
-  if (namePattern.trim()) {
-    query.namePattern = namePattern.trim()
   }
 
   if (!excludeSystemDirs) {

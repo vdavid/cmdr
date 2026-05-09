@@ -10,7 +10,7 @@ use std::ffi::c_void;
 use std::ptr;
 
 /// Result of a successful mount operation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MountResult {
     /// For example, "/Volumes/Documents".
@@ -19,7 +19,7 @@ pub struct MountResult {
 }
 
 /// Errors that can occur during mount operations.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum MountError {
     HostUnreachable {

@@ -3,7 +3,7 @@
  */
 
 import { load, type Store } from '@tauri-apps/plugin-store'
-import { invoke } from '@tauri-apps/api/core'
+import { commands as ipcCommands } from '$lib/ipc/bindings'
 import { commands } from '$lib/commands/command-registry'
 import { getAppLogger } from '$lib/logging/logger'
 import { toPlatformShortcut } from './key-capture'
@@ -383,7 +383,8 @@ async function updateMenuAccelerator(commandId: string): Promise<void> {
     const shortcuts = getEffectiveShortcuts(commandId)
     // Use the first shortcut for the menu accelerator (menus only show one)
     const shortcut = shortcuts[0] ?? ''
-    await invoke('update_menu_accelerator', { commandId, shortcut })
+    const res = await ipcCommands.updateMenuAccelerator(commandId, shortcut)
+    if (res.status === 'error') throw new Error(res.error)
   } catch (error) {
     log.error('Failed to update menu accelerator: {error}', { error })
   }

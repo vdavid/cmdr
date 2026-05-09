@@ -44,7 +44,7 @@ pub fn is_local_ai_supported() -> bool {
 }
 
 /// Current state of the AI subsystem.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum AiStatus {
     Unavailable,

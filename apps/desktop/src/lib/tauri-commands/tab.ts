@@ -1,5 +1,6 @@
-import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { commands } from '$lib/ipc/bindings'
+import { throwIpcError } from './ipc-types'
 
 /** Shows a native context menu for a tab (fire-and-forget). */
 export async function showTabContextMenu(
@@ -7,11 +8,8 @@ export async function showTabContextMenu(
   canClose: boolean,
   hasOtherUnpinnedTabs: boolean,
 ): Promise<void> {
-  await invoke('show_tab_context_menu', {
-    isPinned,
-    canClose,
-    hasOtherUnpinnedTabs,
-  })
+  const res = await commands.showTabContextMenu(isPinned, canClose, hasOtherUnpinnedTabs)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**

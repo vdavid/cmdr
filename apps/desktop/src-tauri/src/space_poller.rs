@@ -106,18 +106,21 @@ pub fn start() {
 
 /// Registers a watcher for live space monitoring.
 #[tauri::command]
+#[specta::specta]
 pub fn watch_volume_space(watcher_id: String, volume_id: String, path: String) {
     watch(watcher_id, volume_id, path);
 }
 
 /// Stops monitoring for this watcher.
 #[tauri::command]
+#[specta::specta]
 pub fn unwatch_volume_space(watcher_id: String) {
     unwatch(&watcher_id);
 }
 
 /// Updates the change threshold at runtime (from settings).
 #[tauri::command]
+#[specta::specta]
 pub fn set_disk_space_threshold(mb: u64) {
     set_threshold_mb(mb);
 }

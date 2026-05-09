@@ -125,6 +125,8 @@ describe('buildTransferPropsFromSelection', () => {
       totalPhysicalSize: 1024,
       selectedFiles: 2,
       selectedDirs: 1,
+      selectedSize: null,
+      selectedPhysicalSize: null,
     })
     vi.mocked(getPathsAtIndices).mockResolvedValueOnce(['/source/file1.txt', '/source/folder'])
 
@@ -153,6 +155,8 @@ describe('buildTransferPropsFromSelection', () => {
       totalPhysicalSize: 512,
       selectedFiles: 1,
       selectedDirs: 0,
+      selectedSize: null,
+      selectedPhysicalSize: null,
     })
     vi.mocked(getPathsAtIndices).mockResolvedValueOnce(['/source/file.txt'])
 

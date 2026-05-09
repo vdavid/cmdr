@@ -119,6 +119,14 @@ gix = "0.81"
 # `0.6.0-beta.20` should be a no-op for us, but pin exact to avoid surprise breakage on
 # `cargo update`. Solo maintainer; MIT/Apache-2.0; ~25k LOC if we ever need to fork.
 genai = "=0.6.0-beta.19"
+# Type-safe IPC: typed Rust↔TS bindings for tauri commands and events.
+# Generated `bindings.ts` lands in `apps/desktop/src/lib/ipc/`; the frontend
+# imports `commands.commandName(args)` instead of `invoke('command_name', ...)`.
+# Pinned at 2.0.0-rc.24 (published 2026-03-30, ~5 weeks old at landing) — the
+# v1 line is for Tauri 1, v2 RC line is the active branch for Tauri 2.
+tauri-specta = { version = "=2.0.0-rc.24", features = ["derive", "typescript"] }
+specta = { version = "=2.0.0-rc.24", features = ["derive", "serde_json"] }
+specta-typescript = "=0.0.11"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

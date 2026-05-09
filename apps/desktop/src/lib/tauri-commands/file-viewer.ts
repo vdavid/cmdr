@@ -1,6 +1,7 @@
 // File viewer session commands (open, seek, search, close)
 
-import { invoke } from '@tauri-apps/api/core'
+import { commands } from '$lib/ipc/bindings'
+import { throwIpcError } from './ipc-types'
 
 /** A chunk of lines returned by the viewer backend. */
 export interface LineChunk {
@@ -65,7 +66,9 @@ export interface SearchPollResult {
 
 /** Opens a viewer session for a file. Returns session metadata + initial lines. */
 export async function viewerOpen(path: string): Promise<ViewerOpenResult> {
-  return invoke<ViewerOpenResult>('viewer_open', { path })
+  const res = await commands.viewerOpen(path)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /** Fetches lines from a viewer session. */
@@ -75,40 +78,51 @@ export async function viewerGetLines(
   targetValue: number,
   count: number,
 ): Promise<LineChunk> {
-  return invoke<LineChunk>('viewer_get_lines', { sessionId, targetType, targetValue, count })
+  const res = await commands.viewerGetLines(sessionId, targetType, targetValue, count)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /** Starts a background search in the viewer session. */
 export async function viewerSearchStart(sessionId: string, query: string): Promise<void> {
-  await invoke('viewer_search_start', { sessionId, query })
+  const res = await commands.viewerSearchStart(sessionId, query)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /** Polls search progress and new matches since `sinceIndex`. */
 export async function viewerSearchPoll(sessionId: string, sinceIndex: number): Promise<SearchPollResult> {
-  return invoke<SearchPollResult>('viewer_search_poll', { sessionId, sinceIndex })
+  const res = await commands.viewerSearchPoll(sessionId, sinceIndex)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /** Cancels an ongoing search. */
 export async function viewerSearchCancel(sessionId: string): Promise<void> {
-  await invoke('viewer_search_cancel', { sessionId })
+  const res = await commands.viewerSearchCancel(sessionId)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /** Gets the current status of a viewer session (backend type, indexing state). */
 export async function viewerGetStatus(sessionId: string): Promise<ViewerSessionStatus> {
-  return invoke<ViewerSessionStatus>('viewer_get_status', { sessionId })
+  const res = await commands.viewerGetStatus(sessionId)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /** Closes a viewer session and frees resources. */
 export async function viewerClose(sessionId: string): Promise<void> {
-  await invoke('viewer_close', { sessionId })
+  const res = await commands.viewerClose(sessionId)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /** Sets up a viewer-specific menu on the given window (adds "Word wrap" to View submenu). */
 export async function viewerSetupMenu(label: string): Promise<void> {
-  await invoke('viewer_setup_menu', { label })
+  const res = await commands.viewerSetupMenu(label)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /** Syncs the viewer menu "Word wrap" check state (called when toggled via keyboard). */
 export async function viewerSetWordWrap(label: string, checked: boolean): Promise<void> {
-  await invoke('viewer_set_word_wrap', { label, checked })
+  const res = await commands.viewerSetWordWrap(label, checked)
+  if (res.status === 'error') throwIpcError(res.error)
 }

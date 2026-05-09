@@ -92,7 +92,7 @@ export type { PaneFileEntry, PaneState, McpTabInfo } from './app-state'
 
 // Shared IPC types (timeout-aware wrappers)
 export type { TimedOut, IpcError } from './ipc-types'
-export { isIpcError, getIpcErrorMessage } from './ipc-types'
+export { isIpcError, getIpcErrorMessage, throwIpcError } from './ipc-types'
 
 // Storage (volumes, space, permissions)
 export {
@@ -170,7 +170,7 @@ export {
 export type { Event, UnlistenFn } from './write-operations'
 
 // Network types
-export type { ManualConnectResult } from '../file-explorer/types'
+export type { ManualConnectResult } from './networking'
 
 // Re-export types from write-operations (originally from file-explorer/types)
 export type {
@@ -359,14 +359,5 @@ export {
   getSystemDirExcludes,
   onSearchIndexReady,
 } from './search'
-export type {
-  PatternType,
-  SearchQuery,
-  SearchResult,
-  SearchResultEntry,
-  PrepareResult,
-  TranslateResult,
-  TranslatedQuery,
-  TranslateDisplay,
-  ParsedScope,
-} from './ipc-types'
+export type { PatternType, SearchResult, SearchResultEntry, PrepareResult, ParsedScope } from './ipc-types'
+export type { SearchQuery, TranslateResult, TranslatedQuery, TranslateDisplay } from '$lib/ipc/bindings'

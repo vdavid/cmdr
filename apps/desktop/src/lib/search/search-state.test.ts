@@ -76,11 +76,11 @@ describe('buildSearchQuery', () => {
     const query = buildSearchQuery()
     expect(query.patternType).toBe('glob')
     expect(query.limit).toBe(30)
-    expect(query.namePattern).toBeUndefined()
-    expect(query.minSize).toBeUndefined()
-    expect(query.maxSize).toBeUndefined()
-    expect(query.modifiedAfter).toBeUndefined()
-    expect(query.modifiedBefore).toBeUndefined()
+    expect(query.namePattern).toBeNull()
+    expect(query.minSize).toBeNull()
+    expect(query.maxSize).toBeNull()
+    expect(query.modifiedAfter).toBeNull()
+    expect(query.modifiedBefore).toBeNull()
   })
 
   it('includes name pattern when set', () => {
@@ -97,7 +97,7 @@ describe('buildSearchQuery', () => {
     setSizeUnit('MB')
     const query = buildSearchQuery()
     expect(query.minSize).toBe(10 * 1024 * 1024)
-    expect(query.maxSize).toBeUndefined()
+    expect(query.maxSize).toBeNull()
   })
 
   it('includes size lte filter', () => {
@@ -107,7 +107,7 @@ describe('buildSearchQuery', () => {
     setSizeUnit('KB')
     const query = buildSearchQuery()
     expect(query.maxSize).toBe(5 * 1024)
-    expect(query.minSize).toBeUndefined()
+    expect(query.minSize).toBeNull()
   })
 
   it('includes size between filter', () => {
@@ -130,8 +130,8 @@ describe('buildSearchQuery', () => {
     setSizeValueMax('0')
     setSizeUnitMax('KB')
     const query = buildSearchQuery()
-    expect(query.minSize).toBeUndefined()
-    expect(query.maxSize).toBeUndefined()
+    expect(query.minSize).toBeNull()
+    expect(query.maxSize).toBeNull()
   })
 
   it('includes date after filter', () => {
@@ -140,7 +140,7 @@ describe('buildSearchQuery', () => {
     setDateValue('2025-01-01')
     const query = buildSearchQuery()
     expect(query.modifiedAfter).toBeTypeOf('number')
-    expect(query.modifiedBefore).toBeUndefined()
+    expect(query.modifiedBefore).toBeNull()
   })
 
   it('includes date between filter', () => {
@@ -161,9 +161,9 @@ describe('resetSearchState', () => {
     setDateFilter('after')
     resetSearchState()
     const query = buildSearchQuery()
-    expect(query.namePattern).toBeUndefined()
-    expect(query.minSize).toBeUndefined()
-    expect(query.modifiedAfter).toBeUndefined()
+    expect(query.namePattern).toBeNull()
+    expect(query.minSize).toBeNull()
+    expect(query.modifiedAfter).toBeNull()
   })
 
   it('uses regex pattern type when set', () => {

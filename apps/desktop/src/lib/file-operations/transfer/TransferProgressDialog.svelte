@@ -422,7 +422,7 @@
                     destVolumeId ?? DEFAULT_VOLUME_ID,
                     destinationPath ?? '',
                     {
-                        conflictResolution,
+                        conflictResolution: conflictResolution ?? 'stop',
                         progressIntervalMs,
                         maxConflictsToShow,
                         previewId,
@@ -446,7 +446,7 @@
             destVolumeId ?? DEFAULT_VOLUME_ID,
             destinationPath ?? '',
             {
-                conflictResolution,
+                conflictResolution: conflictResolution ?? 'stop',
                 progressIntervalMs,
                 maxConflictsToShow,
                 previewId,

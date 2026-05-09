@@ -7,12 +7,14 @@
 
 /// Always returns `true` on Linux (no app sandboxing).
 #[tauri::command]
+#[specta::specta]
 pub fn check_full_disk_access() -> bool {
     true
 }
 
 /// Opens the system privacy/security settings if a desktop environment is available.
 #[tauri::command]
+#[specta::specta]
 pub fn open_privacy_settings() -> Result<(), String> {
     // GNOME: gnome-control-center privacy
     // KDE: systemsettings (no direct privacy section URL)
@@ -22,6 +24,7 @@ pub fn open_privacy_settings() -> Result<(), String> {
 
 /// Stub: `x-apple.systempreferences:` URLs only exist on macOS.
 #[tauri::command]
+#[specta::specta]
 pub fn open_system_settings_url(_url: String) -> Result<(), String> {
     Err("System Settings deep links only exist on macOS.".to_string())
 }
@@ -37,6 +40,7 @@ pub fn open_system_settings_url(_url: String) -> Result<(), String> {
 /// Panel name note: the `background` panel contains style, accent color, and wallpaper
 /// settings on both Ubuntu and vanilla GNOME.
 #[tauri::command]
+#[specta::specta]
 pub fn open_appearance_settings() -> Result<(), String> {
     let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default().to_uppercase();
     log::debug!("open_appearance_settings: XDG_CURRENT_DESKTOP='{desktop}'");

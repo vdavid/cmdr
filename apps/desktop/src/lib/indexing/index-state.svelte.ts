@@ -3,7 +3,7 @@
  * Tracks whether a scan is running and provides progress info.
  */
 
-import { invoke } from '@tauri-apps/api/core'
+import { commands } from '$lib/ipc/bindings'
 import { listen, type UnlistenFn } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
 
@@ -220,18 +220,11 @@ export async function initIndexState(): Promise<void> {
   // while the response was in flight, the event's state is more recent — skip the IPC result.
   const versionBeforeIpc = eventVersion
   try {
-    const status = await invoke<{
-      initialized: boolean
-      scanning: boolean
-      entriesScanned: number
-      dirsFound: number
-      indexStatus: unknown
-      dbFileSize: number | null
-    }>('get_index_status')
-    if (status.scanning && eventVersion === versionBeforeIpc) {
+    const res = await commands.getIndexStatus()
+    if (res.status === 'ok' && res.data.scanning && eventVersion === versionBeforeIpc) {
       scanning = true
-      entriesScanned = status.entriesScanned
-      dirsFound = status.dirsFound
+      entriesScanned = res.data.entriesScanned
+      dirsFound = res.data.dirsFound
     }
   } catch {
     // Indexing not initialized or unavailable — no-op

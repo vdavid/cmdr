@@ -3,6 +3,7 @@
 /// Checks if the app has full disk access by probing ~/Library/Mail.
 /// This is a standard technique used by macOS apps - Mail is always protected.
 #[tauri::command]
+#[specta::specta]
 pub fn check_full_disk_access() -> bool {
     let mail_path = dirs::home_dir().map(|h| h.join("Library/Mail")).unwrap_or_default();
 
@@ -12,6 +13,7 @@ pub fn check_full_disk_access() -> bool {
 
 /// Opens System Settings > Privacy & Security > Privacy.
 #[tauri::command]
+#[specta::specta]
 pub fn open_privacy_settings() -> Result<(), String> {
     std::process::Command::new("open")
         .arg("x-apple.systempreferences:com.apple.preference.security?Privacy")
@@ -22,6 +24,7 @@ pub fn open_privacy_settings() -> Result<(), String> {
 
 /// Opens System Settings > Appearance.
 #[tauri::command]
+#[specta::specta]
 pub fn open_appearance_settings() -> Result<(), String> {
     std::process::Command::new("open")
         .arg("x-apple.systempreferences:com.apple.Appearance-Settings.extension")
@@ -38,6 +41,7 @@ pub fn open_appearance_settings() -> Result<(), String> {
 /// the `x-apple.systempreferences:` scheme silently. Restricting the input to that
 /// scheme keeps the surface tight (no arbitrary URL execution from the webview).
 #[tauri::command]
+#[specta::specta]
 pub fn open_system_settings_url(url: String) -> Result<(), String> {
     if !url.starts_with("x-apple.systempreferences:") {
         return Err(format!(

@@ -52,7 +52,7 @@ pub enum SeekTarget {
 }
 
 /// A chunk of lines returned by a backend.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LineChunk {
     pub lines: Vec<String>,
@@ -65,7 +65,7 @@ pub struct LineChunk {
 }
 
 /// A search match found by a backend.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchMatch {
     /// 0-based.
@@ -81,7 +81,7 @@ pub struct SearchMatch {
 }
 
 /// What a backend can do.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct BackendCapabilities {
     pub supports_line_seek: bool,

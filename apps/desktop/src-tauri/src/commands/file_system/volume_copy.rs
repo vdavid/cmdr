@@ -12,6 +12,7 @@ use crate::commands::util::IpcError;
 
 /// Unified copy across volume types (local, MTP, etc.). Same events as `copy_files`.
 #[tauri::command]
+#[specta::specta]
 pub async fn copy_between_volumes(
     app: tauri::AppHandle,
     source_volume_id: String,
@@ -44,6 +45,7 @@ pub async fn copy_between_volumes(
 /// Unified move across volume types. Same events as `copy_between_volumes`.
 /// Handles same-volume (native rename/move), both-local (native move), and cross-volume (copy+delete).
 #[tauri::command]
+#[specta::specta]
 pub async fn move_between_volumes(
     app: tauri::AppHandle,
     source_volume_id: String,
@@ -75,6 +77,7 @@ pub async fn move_between_volumes(
 
 /// Pre-flight scan: total count/bytes, available space, conflicts. Doesn't copy anything.
 #[tauri::command]
+#[specta::specta]
 pub async fn scan_volume_for_copy(
     source_volume_id: String,
     source_paths: Vec<String>,
@@ -106,6 +109,7 @@ pub async fn scan_volume_for_copy(
 
 /// Checks which source items already exist at the destination. Returns conflict details for UI.
 #[tauri::command]
+#[specta::specta]
 pub async fn scan_volume_for_conflicts(
     volume_id: String,
     source_items: Vec<SourceItemInput>,
@@ -136,7 +140,7 @@ pub async fn scan_volume_for_conflicts(
 }
 
 /// Input type for source item information (used by scan_volume_for_conflicts).
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SourceItemInput {
     /// File/directory name.

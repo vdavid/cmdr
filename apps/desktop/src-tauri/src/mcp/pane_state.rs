@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use tauri::{AppHandle, Manager};
 
 /// Represents a tab in a pane (for MCP state reporting).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TabInfo {
     pub id: String,
@@ -18,7 +18,7 @@ pub struct TabInfo {
 }
 
 /// Represents a file entry in a pane.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FileEntry {
     pub name: String,
@@ -33,7 +33,7 @@ pub struct FileEntry {
 }
 
 /// State of a single pane.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PaneState {
     pub path: String,
@@ -129,6 +129,7 @@ impl PaneStateStore {
 /// Tauri command to update left pane state from frontend.
 /// Preserves `tabs` — those are synced separately via `update_pane_tabs`.
 #[tauri::command]
+#[specta::specta]
 pub fn update_left_pane_state(app: AppHandle, state: PaneState) {
     if let Some(store) = app.try_state::<PaneStateStore>() {
         let tabs = store.left.read().unwrap().tabs.clone();
@@ -141,6 +142,7 @@ pub fn update_left_pane_state(app: AppHandle, state: PaneState) {
 /// Tauri command to update right pane state from frontend.
 /// Preserves `tabs` — those are synced separately via `update_pane_tabs`.
 #[tauri::command]
+#[specta::specta]
 pub fn update_right_pane_state(app: AppHandle, state: PaneState) {
     if let Some(store) = app.try_state::<PaneStateStore>() {
         let tabs = store.right.read().unwrap().tabs.clone();
@@ -152,6 +154,7 @@ pub fn update_right_pane_state(app: AppHandle, state: PaneState) {
 
 /// Tauri command to update focused pane from frontend.
 #[tauri::command]
+#[specta::specta]
 pub fn update_focused_pane(app: AppHandle, pane: String) {
     if let Some(store) = app.try_state::<PaneStateStore>() {
         store.set_focused_pane(pane);
@@ -160,6 +163,7 @@ pub fn update_focused_pane(app: AppHandle, pane: String) {
 
 /// Tauri command to update tab list for a pane from frontend (for MCP state reporting).
 #[tauri::command]
+#[specta::specta]
 pub fn update_pane_tabs(app: AppHandle, pane: String, tabs: Vec<TabInfo>) {
     if let Some(store) = app.try_state::<PaneStateStore>() {
         let pane_state = match pane.as_str() {

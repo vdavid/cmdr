@@ -16,6 +16,7 @@ const ICONS_TIMEOUT: Duration = Duration::from_secs(2);
 /// are fetched from app bundles (showing the app's icon as fallback). When false,
 /// the system's default document icons are used (Finder-style with app badge).
 #[tauri::command]
+#[specta::specta]
 pub async fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool) -> TimedOut<HashMap<String, String>> {
     blocking_with_timeout_flag(ICONS_TIMEOUT, HashMap::new(), move || {
         icons::get_icons(icon_ids, use_app_icons_for_documents)
@@ -30,6 +31,7 @@ pub async fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool)
 /// When `use_app_icons_for_documents` is true, falls back to app icons for files without
 /// document-specific icons. When false, uses Finder-style document icons.
 #[tauri::command]
+#[specta::specta]
 pub async fn refresh_directory_icons(
     directory_paths: Vec<String>,
     extensions: Vec<String>,
@@ -44,6 +46,7 @@ pub async fn refresh_directory_icons(
 /// Clears cached extension icons.
 /// Called when the "use app icons for documents" setting changes.
 #[tauri::command]
+#[specta::specta]
 pub fn clear_extension_icon_cache() {
     icons::clear_extension_icon_cache();
 }
@@ -51,6 +54,7 @@ pub fn clear_extension_icon_cache() {
 /// Clears cached directory icons (`dir`, `symlink-dir`, `path:*`).
 /// Called when the system theme or accent color changes.
 #[tauri::command]
+#[specta::specta]
 pub fn clear_directory_icon_cache() {
     icons::clear_directory_icon_cache();
 }

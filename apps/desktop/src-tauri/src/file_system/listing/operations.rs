@@ -32,7 +32,7 @@ fn visible_entries<'a>(entries: &'a [FileEntry], include_hidden: bool) -> Box<dy
 // ============================================================================
 
 /// Result of starting a new directory listing.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ListingStartResult {
     pub listing_id: String,
@@ -324,7 +324,7 @@ pub fn get_files_at_indices(
 // ============================================================================
 
 /// Result of re-sorting a directory listing.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ResortResult {
     /// New index of the file that was at the cursor position before re-sorting.
@@ -466,7 +466,7 @@ pub(crate) fn get_listings_by_volume_prefix(prefix: &str) -> Vec<(String, String
 // ============================================================================
 
 /// Statistics about a directory listing.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ListingStats {
     /// Not including directories.

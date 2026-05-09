@@ -1,6 +1,8 @@
 // Error reporter commands (Flow A: user-initiated)
 
 import { invoke } from '@tauri-apps/api/core'
+import { commands } from '$lib/ipc/bindings'
+import { throwIpcError } from './ipc-types'
 
 export interface ActiveSettingsSnapshot {
   indexingEnabled: boolean | null
@@ -35,6 +37,7 @@ export interface PreviewPayload {
  * Build the bundle in-memory and return preview metadata. No network.
  */
 export async function prepareErrorReportPreview(userNote?: string): Promise<PreviewPayload> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
   return invoke<PreviewPayload>('prepare_error_report_preview', { userNote })
 }
 
@@ -43,7 +46,9 @@ export async function prepareErrorReportPreview(userNote?: string): Promise<Prev
  * Display the returned `id` to the user, not the one from `prepareErrorReportPreview`.
  */
 export async function sendErrorReport(userNote?: string): Promise<{ id: string }> {
-  return invoke<{ id: string }>('send_error_report', { userNote })
+  const res = await commands.sendErrorReport(userNote ?? null)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**
@@ -51,5 +56,7 @@ export async function sendErrorReport(userNote?: string): Promise<{ id: string }
  * In production the command isn't registered — calling it returns an error.
  */
 export async function saveErrorReportToDisk(userNote?: string): Promise<string> {
-  return invoke<string>('save_error_report_to_disk', { userNote })
+  const res = await commands.saveErrorReportToDisk(userNote ?? null)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }

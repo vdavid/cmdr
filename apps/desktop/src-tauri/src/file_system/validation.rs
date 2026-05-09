@@ -17,7 +17,7 @@ pub const MAX_PATH_BYTES: usize = 4096;
 pub const MAX_PATH_BYTES: usize = 1024;
 
 /// Validation error types for filename and path checks.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase", tag = "kind")]
 pub enum ValidationError {
     /// Name is empty or whitespace-only after trimming.

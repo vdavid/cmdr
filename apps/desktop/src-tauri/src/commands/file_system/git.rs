@@ -32,6 +32,7 @@ const GIT_SUBSCRIBE_TIMEOUT: Duration = Duration::from_secs(2);
 /// The frontend uses this on every navigation to populate the breadcrumb chip
 /// (`subscribe_git_state` is the live channel; this is the one-shot variant).
 #[tauri::command]
+#[specta::specta]
 pub async fn get_git_repo_info(path: String) -> TimedOut<Option<RepoInfo>> {
     blocking_with_timeout_flag(GIT_REPO_INFO_TIMEOUT, None, move || {
         let path_buf = PathBuf::from(&path);
@@ -50,6 +51,7 @@ pub async fn get_git_repo_info(path: String) -> TimedOut<Option<RepoInfo>> {
 /// a hung repo (slow `is_dirty` walk on 50k files, dead NFS mount, etc.).
 /// Without this, IPC could freeze waiting for the watcher to register.
 #[tauri::command]
+#[specta::specta]
 pub async fn subscribe_git_state(app: AppHandle, repo_root: String) -> Result<RepoInfo, IpcError> {
     blocking_result_with_timeout(GIT_SUBSCRIBE_TIMEOUT, move || {
         let path = PathBuf::from(&repo_root);
@@ -70,6 +72,7 @@ fn format_friendly_git_error(err: FriendlyGitError) -> String {
 /// Drops one subscriber for the repo. The watcher itself stays alive until the
 /// last subscriber unsubscribes.
 #[tauri::command]
+#[specta::specta]
 pub async fn unsubscribe_git_state(repo_root: String) {
     let _ = tokio::task::spawn_blocking(move || {
         let path = PathBuf::from(&repo_root);
@@ -83,6 +86,7 @@ pub async fn unsubscribe_git_state(repo_root: String) {
 /// filters, but the parameter is here so M2 can scope properly without an IPC
 /// shape change.
 #[tauri::command]
+#[specta::specta]
 pub async fn get_git_status_for_paths(repo_root: String, dir: String) -> TimedOut<Vec<EntryStatus>> {
     blocking_with_timeout_flag(GIT_STATUS_TIMEOUT, Vec::new(), move || {
         let root = PathBuf::from(&repo_root);

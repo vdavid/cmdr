@@ -25,7 +25,7 @@
 
 import { configure, getConsoleSink, getLogger as getLogTapeLogger, withFilter } from '@logtape/logtape'
 import type { Logger } from '@logtape/logtape'
-import { invoke } from '@tauri-apps/api/core'
+import { commands } from '$lib/ipc/bindings'
 import { load, type Store } from '@tauri-apps/plugin-store'
 import { getTauriBridgeSink, startBridge } from './log-bridge'
 
@@ -166,7 +166,7 @@ export async function setVerboseLogging(enabled: boolean): Promise<void> {
 
   // Also update the Rust-side log level to match
   try {
-    await invoke('set_log_level', { level: enabled ? 'debug' : 'info' })
+    await commands.setLogLevel(enabled ? 'debug' : 'info')
   } catch {
     // Backend may not be ready during early startup — silently ignore
   }

@@ -46,7 +46,16 @@ describe('SelectionInfo a11y', () => {
       props: {
         viewMode: 'full',
         entry: null,
-        stats: { totalFiles: 0, totalDirs: 0, totalSize: 0, totalPhysicalSize: 0 },
+        stats: {
+          totalFiles: 0,
+          totalDirs: 0,
+          totalSize: 0,
+          totalPhysicalSize: 0,
+          selectedFiles: null,
+          selectedDirs: null,
+          selectedSize: null,
+          selectedPhysicalSize: null,
+        },
         selectedCount: 0,
       },
     })
@@ -62,7 +71,16 @@ describe('SelectionInfo a11y', () => {
       props: {
         viewMode: 'full',
         entry: null,
-        stats: { totalFiles: 42, totalDirs: 5, totalSize: 1_000_000, totalPhysicalSize: 1_000_000 },
+        stats: {
+          totalFiles: 42,
+          totalDirs: 5,
+          totalSize: 1_000_000,
+          totalPhysicalSize: 1_000_000,
+          selectedFiles: null,
+          selectedDirs: null,
+          selectedSize: null,
+          selectedPhysicalSize: null,
+        },
         selectedCount: 0,
       },
     })
@@ -78,7 +96,16 @@ describe('SelectionInfo a11y', () => {
       props: {
         viewMode: 'brief',
         entry,
-        stats: { totalFiles: 42, totalDirs: 5, totalSize: 1_000_000, totalPhysicalSize: 1_000_000 },
+        stats: {
+          totalFiles: 42,
+          totalDirs: 5,
+          totalSize: 1_000_000,
+          totalPhysicalSize: 1_000_000,
+          selectedFiles: null,
+          selectedDirs: null,
+          selectedSize: null,
+          selectedPhysicalSize: null,
+        },
         selectedCount: 0,
       },
     })
@@ -94,7 +121,16 @@ describe('SelectionInfo a11y', () => {
       props: {
         viewMode: 'full',
         entry: null,
-        stats: { totalFiles: 42, totalDirs: 5, totalSize: 1_000_000, totalPhysicalSize: 1_000_000 },
+        stats: {
+          totalFiles: 42,
+          totalDirs: 5,
+          totalSize: 1_000_000,
+          totalPhysicalSize: 1_000_000,
+          selectedFiles: null,
+          selectedDirs: null,
+          selectedSize: null,
+          selectedPhysicalSize: null,
+        },
         selectedCount: 3,
       },
     })

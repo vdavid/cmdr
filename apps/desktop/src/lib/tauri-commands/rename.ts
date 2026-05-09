@@ -1,6 +1,7 @@
 // Rename-related Tauri command wrappers
 
-import { invoke } from '@tauri-apps/api/core'
+import { commands, type ValidationError } from '$lib/ipc/bindings'
+import { throwIpcError } from './ipc-types'
 
 export interface RenameConflictFileInfo {
   name: string
@@ -12,29 +13,34 @@ export interface RenameConflictFileInfo {
 
 export interface RenameValidityResult {
   valid: boolean
-  error: { type: string; message: string } | null
+  error: ValidationError | null
   hasConflict: boolean
   isCaseOnlyRename: boolean
   conflict: RenameConflictFileInfo | null
 }
 
-export function checkRenamePermission(path: string): Promise<void> {
-  return invoke('check_rename_permission', { path })
+export async function checkRenamePermission(path: string): Promise<void> {
+  const res = await commands.checkRenamePermission(path)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
-export function checkRenameValidity(
+export async function checkRenameValidity(
   dir: string,
   oldName: string,
   newName: string,
   volumeId?: string,
 ): Promise<RenameValidityResult> {
-  return invoke<RenameValidityResult>('check_rename_validity', { dir, oldName, newName, volumeId })
+  const res = await commands.checkRenameValidity(dir, oldName, newName, volumeId ?? null)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
-export function renameFile(from: string, to: string, force: boolean, volumeId?: string): Promise<void> {
-  return invoke('rename_file', { from, to, force, volumeId })
+export async function renameFile(from: string, to: string, force: boolean, volumeId?: string): Promise<void> {
+  const res = await commands.renameFile(from, to, force, volumeId ?? null)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
-export function moveToTrash(path: string): Promise<void> {
-  return invoke('move_to_trash', { path })
+export async function moveToTrash(path: string): Promise<void> {
+  const res = await commands.moveToTrash(path)
+  if (res.status === 'error') throwIpcError(res.error)
 }
