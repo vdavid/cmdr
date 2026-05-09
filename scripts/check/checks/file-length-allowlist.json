@@ -2,7 +2,6 @@
   "$comment": "Files listed here are exempt from the file-length warning up to the given line count. If a file grows beyond its allowlisted count, it will be reported. Remove entries as you shrink files.",
   "files": {
     "apps/desktop/src-tauri/src/ai/manager.rs": 988,
-    "apps/desktop/src-tauri/src/file_system/volume/friendly_error.rs": 1136,
     "apps/desktop/src-tauri/src/file_system/volume/mtp.rs": 879,
     "apps/desktop/src-tauri/src/file_system/volume/smb.rs": 2670,
     "apps/desktop/src-tauri/src/file_system/write_operations/copy.rs": 825,
