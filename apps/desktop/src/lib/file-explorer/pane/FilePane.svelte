@@ -764,16 +764,19 @@
             const backendIndex = backendStart + i
             if (backendIndex >= totalCount) break
             const entry = await getFileAt(listingId, backendIndex, includeHidden)
-            if (entry) {
-                files.push({
-                    name: entry.name,
-                    path: entry.path,
-                    isDirectory: entry.isDirectory,
-                    size: entry.size,
-                    recursiveSize: entry.recursiveSize,
-                    modified: entry.modifiedAt ? new Date(entry.modifiedAt * 1000).toISOString() : undefined,
-                })
-            }
+            // Null means the listing on the BE has fewer entries than our cached
+            // `totalCount` (a directory-diff is mid-flight). Stop here — keeps the
+            // partial MCP state consistent and avoids trailing out-of-bounds calls
+            // for the rest of the visible range.
+            if (!entry) break
+            files.push({
+                name: entry.name,
+                path: entry.path,
+                isDirectory: entry.isDirectory,
+                size: entry.size,
+                recursiveSize: entry.recursiveSize,
+                modified: entry.modifiedAt ? new Date(entry.modifiedAt * 1000).toISOString() : undefined,
+            })
         }
         return files
     }
