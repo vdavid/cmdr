@@ -138,16 +138,15 @@ async fn apply_volume_conflict_resolution(
             // in the test module — it pins this with a wrapper Volume that violates
             // the contract.
             let is_dir = dest_volume.is_directory(dest_path).await.unwrap_or(false);
-            if !is_dir
-                && let Err(e) = dest_volume.delete(dest_path).await {
-                    log::warn!(
-                        "apply_volume_conflict_resolution(Overwrite): delete of file {} failed: {}",
-                        dest_path.display(),
-                        e
-                    );
-                    // Continue — the streaming writer might still succeed if the failure
-                    // was transient.
-                }
+            if !is_dir && let Err(e) = dest_volume.delete(dest_path).await {
+                log::warn!(
+                    "apply_volume_conflict_resolution(Overwrite): delete of file {} failed: {}",
+                    dest_path.display(),
+                    e
+                );
+                // Continue — the streaming writer might still succeed if the failure
+                // was transient.
+            }
             Ok(Some(dest_path.to_path_buf()))
         }
         ConflictResolution::Rename => {
@@ -241,10 +240,7 @@ mod tests {
             self.inner.is_directory(path)
         }
         /// Recursive delete — contractually wrong, but plausible for some backends.
-        fn delete<'a>(
-            &'a self,
-            path: &'a Path,
-        ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
             Box::pin(async move {
                 if self.inner.is_directory(path).await.unwrap_or(false) {
                     let entries = self.inner.list_directory(path, None).await?;

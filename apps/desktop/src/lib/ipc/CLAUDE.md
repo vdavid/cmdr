@@ -129,12 +129,12 @@ not worth doing for the IPC discipline alone.
 ## Gotchas
 
 **Gotcha**: On the JS side, compare IPC-derived optionals with `!= null` (and use `?? undefined` to coerce when needed),
-not `!== undefined`. **Why**: Because `skip_serializing_if` is banned (see § Type shape constraints), Rust `Option::None`
-crosses the wire as JSON `null`, and `bindings.ts` types these fields as `T | null`. Code that treats only `undefined`
-as "absent" (for example `displaySize !== undefined`, `?? entry.size` chains, or a `String(value)` render path) accepts
-`null` as a real value and surfaces literal `"null"` in the UI. The Group A migration (commit `dc5f0b47`) flipped the
-shape across the board; size and date columns rendered the literal text `"null"` until consumers were switched to
-`!= null` checks.
+not `!== undefined`. **Why**: Because `skip_serializing_if` is banned (see § Type shape constraints), Rust
+`Option::None` crosses the wire as JSON `null`, and `bindings.ts` types these fields as `T | null`. Code that treats
+only `undefined` as "absent" (for example `displaySize !== undefined`, `?? entry.size` chains, or a `String(value)`
+render path) accepts `null` as a real value and surfaces literal `"null"` in the UI. The Group A migration (commit
+`dc5f0b47`) flipped the shape across the board; size and date columns rendered the literal text `"null"` until consumers
+were switched to `!= null` checks.
 
 ## Architecture
 

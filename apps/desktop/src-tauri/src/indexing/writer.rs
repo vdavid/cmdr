@@ -156,6 +156,13 @@ pub struct IndexWriter {
     /// this to get unique IDs, and the writer bumps it after `UpsertEntryV2` inserts
     /// (which let SQLite auto-assign). Reset to 2 on `TruncateData`.
     next_id: Arc<AtomicI64>,
+    /// Per-writer mutation counter, ticked alongside the global `WRITER_GENERATION`
+    /// at every mutating message. Tests use this instead of the global so an
+    /// assertion of "did this writer mutate?" isn't disturbed by other concurrent
+    /// writers (cargo test runs tests as threads in one process). Production code
+    /// should keep using `WRITER_GENERATION`.
+    #[cfg_attr(not(test), allow(dead_code, reason = "test-only observable"))]
+    mutation_counter: Arc<AtomicU64>,
 }
 
 impl IndexWriter {
@@ -173,10 +180,21 @@ impl IndexWriter {
         let expected_total_clone = Arc::clone(&expected_total_entries);
         let next_id = Arc::new(AtomicI64::new(initial_next_id));
         let next_id_clone = Arc::clone(&next_id);
+        let mutation_counter = Arc::new(AtomicU64::new(0));
+        let mutation_counter_clone = Arc::clone(&mutation_counter);
 
         let handle = thread::Builder::new()
             .name("index-writer".into())
-            .spawn(move || writer_loop(conn, receiver, app_handle, expected_total_clone, next_id_clone))
+            .spawn(move || {
+                writer_loop(
+                    conn,
+                    receiver,
+                    app_handle,
+                    expected_total_clone,
+                    next_id_clone,
+                    mutation_counter_clone,
+                )
+            })
             .map_err(IndexStoreError::Io)?;
 
         Ok(Self {
@@ -185,6 +203,7 @@ impl IndexWriter {
             db_path: db_path.to_path_buf(),
             expected_total_entries,
             next_id,
+            mutation_counter,
         })
     }
 
@@ -204,6 +223,15 @@ impl IndexWriter {
     /// reads this to report flushing progress as it drains `InsertEntriesV2`.
     pub fn set_expected_total_entries(&self, total: u64) {
         self.expected_total_entries.store(total, Ordering::Relaxed);
+    }
+
+    /// Per-writer mutation counter. Bumped alongside the global `WRITER_GENERATION`
+    /// every time the writer thread processes a mutating message. Tests rely on
+    /// this to assert "did THIS writer mutate?" without flaking under concurrent
+    /// other-writer activity in the same test binary.
+    #[cfg(test)]
+    pub(crate) fn mutation_count(&self) -> u64 {
+        self.mutation_counter.load(Ordering::Relaxed)
     }
 
     /// Send a message to the writer thread. Blocks if the channel is full
@@ -432,6 +460,7 @@ fn writer_loop(
     app_handle: Option<AppHandle>,
     expected_total_entries: Arc<AtomicU64>,
     next_id: Arc<AtomicI64>,
+    mutation_counter: Arc<AtomicU64>,
 ) {
     log::debug!("Writer: thread started");
     let mut stats = WriterStats::new();
@@ -454,6 +483,7 @@ fn writer_loop(
                 &app_handle,
                 &expected_total_entries,
                 &next_id,
+                &mutation_counter,
             )
         });
         #[cfg(not(target_os = "macos"))]
@@ -465,6 +495,7 @@ fn writer_loop(
             &app_handle,
             &expected_total_entries,
             &next_id,
+            &mutation_counter,
         );
         if should_exit {
             log::debug!("Writer: shutdown after processing {} messages", stats.current.total);
@@ -480,6 +511,7 @@ fn writer_loop(
 }
 
 /// Process a single message. Returns `true` if the thread should exit.
+#[allow(clippy::too_many_arguments, reason = "writer-loop ambient state")]
 fn process_message(
     conn: &rusqlite::Connection,
     msg: WriteMessage,
@@ -488,11 +520,19 @@ fn process_message(
     app_handle: &Option<AppHandle>,
     expected_total_entries: &AtomicU64,
     next_id: &AtomicI64,
+    mutation_counter: &AtomicU64,
 ) -> bool {
     match msg {
         // ── Integer-keyed variants ───────────────────────────────────
         WriteMessage::InsertEntriesV2(entries) => {
-            handle_insert_entries_v2(conn, entries, accumulator, app_handle, expected_total_entries);
+            handle_insert_entries_v2(
+                conn,
+                entries,
+                accumulator,
+                app_handle,
+                expected_total_entries,
+                mutation_counter,
+            );
         }
         WriteMessage::UpsertEntryV2 {
             parent_id,
@@ -517,6 +557,7 @@ fn process_message(
                 inode,
                 nlink,
                 next_id,
+                mutation_counter,
             );
         }
         WriteMessage::MoveEntryV2 {
@@ -524,13 +565,13 @@ fn process_message(
             new_parent_id,
             new_name,
         } => {
-            handle_move_entry_v2(conn, entry_id, new_parent_id, new_name);
+            handle_move_entry_v2(conn, entry_id, new_parent_id, new_name, mutation_counter);
         }
         WriteMessage::DeleteEntryById(entry_id) => {
-            handle_delete_entry_by_id(conn, entry_id);
+            handle_delete_entry_by_id(conn, entry_id, mutation_counter);
         }
         WriteMessage::DeleteSubtreeById(root_id) => {
-            handle_delete_subtree_by_id(conn, root_id);
+            handle_delete_subtree_by_id(conn, root_id, mutation_counter);
         }
         WriteMessage::DeleteDescendantsById(root_id) => {
             // No delta propagation: the subtree will be immediately re-scanned and
@@ -556,7 +597,7 @@ fn process_message(
             );
         }
         WriteMessage::TruncateData => {
-            handle_truncate_data(conn, accumulator, expected_total_entries, next_id);
+            handle_truncate_data(conn, accumulator, expected_total_entries, next_id, mutation_counter);
         }
         WriteMessage::ComputeAllAggregates => {
             handle_compute_all_aggregates(conn, accumulator, app_handle, expected_total_entries);
@@ -619,12 +660,23 @@ fn process_message(
 
 // ── Extracted message handlers ──────────────────────────────────────
 
+/// Tick the global writer-generation counter (used by search to detect a stale
+/// index) AND the per-writer counter (used by tests to assert that THIS writer
+/// did or didn't mutate, without flaking on other concurrent writers in the
+/// same test binary).
+#[inline]
+fn bump_generation(mutation_counter: &AtomicU64) {
+    WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+    mutation_counter.fetch_add(1, Ordering::Relaxed);
+}
+
 fn handle_insert_entries_v2(
     conn: &rusqlite::Connection,
     entries: Vec<EntryRow>,
     accumulator: &mut AccumulatorMaps,
     app_handle: &Option<AppHandle>,
     expected_total_entries: &AtomicU64,
+    mutation_counter: &AtomicU64,
 ) {
     let count = entries.len();
     accumulator.accumulate(&entries);
@@ -636,7 +688,7 @@ fn handle_insert_entries_v2(
     if elapsed > 100 {
         log::debug!("Writer: insert_entries_v2_batch ({count} entries) took {elapsed}ms");
     }
-    WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+    bump_generation(mutation_counter);
     // Emit flushing progress when we know the expected total
     let expected = expected_total_entries.load(Ordering::Relaxed);
     if expected > 0
@@ -669,6 +721,7 @@ fn handle_upsert_entry_v2(
     inode: Option<u64>,
     nlink: Option<u64>,
     next_id: &AtomicI64,
+    mutation_counter: &AtomicU64,
 ) {
     // Hardlink dedup: if this file has nlink > 1, check whether another entry
     // for the same inode already has non-NULL sizes. If so, override sizes to
@@ -694,9 +747,9 @@ fn handle_upsert_entry_v2(
                     old.is_directory
                 );
                 if old.is_directory {
-                    handle_delete_subtree_by_id(conn, existing_id);
+                    handle_delete_subtree_by_id(conn, existing_id, mutation_counter);
                 } else {
-                    handle_delete_entry_by_id(conn, existing_id);
+                    handle_delete_entry_by_id(conn, existing_id, mutation_counter);
                 }
                 upsert_insert_new(
                     conn,
@@ -747,7 +800,7 @@ fn handle_upsert_entry_v2(
             log::warn!("Index writer: resolve_component failed for {name}: {e}");
         }
     }
-    WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+    bump_generation(mutation_counter);
 }
 
 /// Update an existing entry during `UpsertEntryV2`, with hardlink dedup and delta propagation.
@@ -891,7 +944,13 @@ fn upsert_insert_new(
 /// `recursive_has_symlinks` flag is recomputed both ways for cross-parent
 /// moves: the old chain may need to clear it (if this was the last
 /// symlink-bearing branch), the new chain may need to set it.
-fn handle_move_entry_v2(conn: &rusqlite::Connection, entry_id: i64, new_parent_id: i64, new_name: String) {
+fn handle_move_entry_v2(
+    conn: &rusqlite::Connection,
+    entry_id: i64,
+    new_parent_id: i64,
+    new_name: String,
+    mutation_counter: &AtomicU64,
+) {
     use crate::indexing::store::normalize_for_comparison;
 
     let old_entry = match IndexStore::get_entry_by_id(conn, entry_id) {
@@ -939,7 +998,7 @@ fn handle_move_entry_v2(conn: &rusqlite::Connection, entry_id: i64, new_parent_i
 
     // Same-parent rename: ancestor totals unchanged, just the row's name moved.
     if old_entry.parent_id == new_parent_id {
-        WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+        bump_generation(mutation_counter);
         return;
     }
 
@@ -1003,10 +1062,10 @@ fn handle_move_entry_v2(conn: &rusqlite::Connection, entry_id: i64, new_parent_i
         }
     }
 
-    WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+    bump_generation(mutation_counter);
 }
 
-fn handle_delete_entry_by_id(conn: &rusqlite::Connection, entry_id: i64) {
+fn handle_delete_entry_by_id(conn: &rusqlite::Connection, entry_id: i64, mutation_counter: &AtomicU64) {
     // Read old entry before deleting to get accurate delta
     let old_entry = IndexStore::get_entry_by_id(conn, entry_id).ok().flatten();
     if let Err(e) = IndexStore::delete_entry_by_id(conn, entry_id) {
@@ -1038,10 +1097,10 @@ fn handle_delete_entry_by_id(conn: &rusqlite::Connection, entry_id: i64) {
             propagate_recursive_has_symlinks(conn, entry.parent_id);
         }
     }
-    WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+    bump_generation(mutation_counter);
 }
 
-fn handle_delete_subtree_by_id(conn: &rusqlite::Connection, root_id: i64) {
+fn handle_delete_subtree_by_id(conn: &rusqlite::Connection, root_id: i64, mutation_counter: &AtomicU64) {
     // Read subtree totals before deleting to get accurate delta
     let totals = IndexStore::get_subtree_totals_by_id(conn, root_id).ok();
     let parent_id = IndexStore::get_parent_id(conn, root_id).ok().flatten();
@@ -1085,7 +1144,7 @@ fn handle_delete_subtree_by_id(conn: &rusqlite::Connection, root_id: i64) {
             propagate_recursive_has_symlinks(conn, pid);
         }
     }
-    WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+    bump_generation(mutation_counter);
 }
 
 fn handle_truncate_data(
@@ -1093,6 +1152,7 @@ fn handle_truncate_data(
     accumulator: &mut AccumulatorMaps,
     expected_total_entries: &AtomicU64,
     next_id: &AtomicI64,
+    mutation_counter: &AtomicU64,
 ) {
     accumulator.clear();
     expected_total_entries.store(0, Ordering::Relaxed);
@@ -1114,7 +1174,7 @@ fn handle_truncate_data(
         }
         Err(e) => log::warn!("Writer: truncate failed: {e}"),
     }
-    WRITER_GENERATION.fetch_add(1, Ordering::Relaxed);
+    bump_generation(mutation_counter);
 }
 
 fn handle_compute_all_aggregates(
@@ -3115,8 +3175,11 @@ mod tests {
             },
         );
 
-        // Capture the generation before the no-op.
-        let gen_before = WRITER_GENERATION.load(Ordering::Relaxed);
+        // Capture the per-writer mutation count before the no-op. Reading the
+        // global `WRITER_GENERATION` here would flake under concurrent tests,
+        // since `cargo test` runs tests as threads in one process and any other
+        // writer that mutates between `before` and `after` would bump it.
+        let gen_before = writer.mutation_count();
 
         writer
             .send(WriteMessage::MoveEntryV2 {
@@ -3132,9 +3195,13 @@ mod tests {
         assert_eq!(stats.recursive_logical_size, 1024, "no-op preserves stats");
         assert_eq!(stats.recursive_file_count, 3);
 
-        // Generation should not have moved (the no-op short-circuits).
-        let gen_after = WRITER_GENERATION.load(Ordering::Relaxed);
-        assert_eq!(gen_before, gen_after, "no-op should not bump WRITER_GENERATION");
+        // The per-writer counter should not have moved (the no-op short-circuits
+        // before `bump_generation`).
+        let gen_after = writer.mutation_count();
+        assert_eq!(
+            gen_before, gen_after,
+            "no-op should not bump the writer's mutation counter"
+        );
 
         writer.shutdown();
     }
@@ -3231,7 +3298,7 @@ mod tests {
             },
         );
 
-        let before = WRITER_GENERATION.load(Ordering::Relaxed);
+        let before = writer.mutation_count();
         writer
             .send(WriteMessage::MoveEntryV2 {
                 entry_id: 10,
@@ -3240,8 +3307,11 @@ mod tests {
             })
             .unwrap();
         writer.flush_blocking().unwrap();
-        let after = WRITER_GENERATION.load(Ordering::Relaxed);
-        assert!(after > before, "WRITER_GENERATION should bump after a real move");
+        let after = writer.mutation_count();
+        assert!(
+            after > before,
+            "writer's mutation counter should bump after a real move"
+        );
 
         writer.shutdown();
     }
