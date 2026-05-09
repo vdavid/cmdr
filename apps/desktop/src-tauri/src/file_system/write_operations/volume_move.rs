@@ -128,52 +128,47 @@ pub async fn move_between_volumes(
                 // re-statted inside `copy_single_path`.
                 let source_is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
 
-                // Check for conflict: does destination already exist?
+                // Check for conflict: does destination already exist? Route every conflict
+                // (file-vs-file, dir-vs-dir, file-vs-dir, dir-vs-file) through
+                // `resolve_volume_conflict` so the user's chosen `conflict_resolution`
+                // applies. For dir-vs-dir, picking Overwrite merges (the existing
+                // contents stay; same-named files inside get overwritten by the recursive
+                // copy); Skip skips the whole tree; Rename lands the source under a unique
+                // name; Stop emits a `write-conflict` event and awaits the user's pick.
                 if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item).await {
-                    let dest_is_dir = dest_meta.is_directory;
+                    log::debug!(
+                        "move_between_volumes: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
+                        dest_item.display(),
+                        source_is_dir,
+                        dest_meta.is_directory,
+                    );
 
-                    if source_is_dir && dest_is_dir {
-                        // Both are directories — merge, not a conflict
-                        log::debug!(
-                            "move_between_volumes: merging directories {} -> {}",
-                            source_path.display(),
-                            dest_item.display()
-                        );
-                    } else {
-                        log::debug!(
-                            "move_between_volumes: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
-                            dest_item.display(),
-                            source_is_dir,
-                            dest_is_dir
-                        );
+                    let events = TauriEventSink::new(app.clone());
+                    let resolved = resolve_volume_conflict(
+                        &source_volume,
+                        source_path,
+                        &dest_volume,
+                        &dest_item,
+                        &config,
+                        &events,
+                        &operation_id_for_spawn,
+                        &state,
+                        &mut apply_to_all_resolution,
+                    )
+                    .await
+                    .map_err(WriteFailure::synthetic)?;
 
-                        let events = TauriEventSink::new(app.clone());
-                        let resolved = resolve_volume_conflict(
-                            &source_volume,
-                            source_path,
-                            &dest_volume,
-                            &dest_item,
-                            &config,
-                            &events,
-                            &operation_id_for_spawn,
-                            &state,
-                            &mut apply_to_all_resolution,
-                        )
-                        .await
-                        .map_err(WriteFailure::synthetic)?;
-
-                        match resolved {
-                            None => {
-                                // Skip — don't copy and don't delete source
-                                log::debug!(
-                                    "move_between_volumes: skipping {} due to conflict resolution",
-                                    source_path.display()
-                                );
-                                continue;
-                            }
-                            Some(resolved_path) => {
-                                dest_item = resolved_path;
-                            }
+                    match resolved {
+                        None => {
+                            // Skip — don't copy and don't delete source
+                            log::debug!(
+                                "move_between_volumes: skipping {} due to conflict resolution",
+                                source_path.display()
+                            );
+                            continue;
+                        }
+                        Some(resolved_path) => {
+                            dest_item = resolved_path;
                         }
                     }
                 }
@@ -378,49 +373,38 @@ async fn move_within_same_volume(
                 // Check for conflict: does destination already exist?
                 if let Ok(dest_meta) = volume.get_metadata(&dest_item).await {
                     let source_is_dir = volume.is_directory(source_path).await.unwrap_or(false);
-                    let dest_is_dir = dest_meta.is_directory;
+                    log::debug!(
+                        "move_within_same_volume: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
+                        dest_item.display(),
+                        source_is_dir,
+                        dest_meta.is_directory,
+                    );
 
-                    if source_is_dir && dest_is_dir {
-                        // Both are directories — merge, not a conflict
-                        log::debug!(
-                            "move_within_same_volume: merging directories {} -> {}",
-                            source_path.display(),
-                            dest_item.display()
-                        );
-                    } else {
-                        log::debug!(
-                            "move_within_same_volume: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
-                            dest_item.display(),
-                            source_is_dir,
-                            dest_is_dir
-                        );
+                    let events = TauriEventSink::new(app.clone());
+                    let resolved = resolve_volume_conflict(
+                        &volume,
+                        source_path,
+                        &volume,
+                        &dest_item,
+                        &config,
+                        &events,
+                        &operation_id_for_spawn,
+                        &state,
+                        &mut apply_to_all_resolution,
+                    )
+                    .await?;
 
-                        let events = TauriEventSink::new(app.clone());
-                        let resolved = resolve_volume_conflict(
-                            &volume,
-                            source_path,
-                            &volume,
-                            &dest_item,
-                            &config,
-                            &events,
-                            &operation_id_for_spawn,
-                            &state,
-                            &mut apply_to_all_resolution,
-                        )
-                        .await?;
-
-                        match resolved {
-                            None => {
-                                // Skip — don't move this file
-                                log::debug!(
-                                    "move_within_same_volume: skipping {} due to conflict resolution",
-                                    source_path.display()
-                                );
-                                continue;
-                            }
-                            Some(resolved_path) => {
-                                dest_item = resolved_path;
-                            }
+                    match resolved {
+                        None => {
+                            // Skip — don't move this file
+                            log::debug!(
+                                "move_within_same_volume: skipping {} due to conflict resolution",
+                                source_path.display()
+                            );
+                            continue;
+                        }
+                        Some(resolved_path) => {
+                            dest_item = resolved_path;
                         }
                     }
                 }

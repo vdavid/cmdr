@@ -517,49 +517,36 @@ pub(crate) async fn copy_volumes_with_progress(
                     dest_path.to_path_buf()
                 };
                 if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path).await {
-                    // Reuse the per-source hint from the scan instead of
-                    // re-statting. If the hint is missing (e.g., cached preview
-                    // branch that didn't populate it), default to false —
-                    // behaves as if the source is a file (worst case: one extra
-                    // conflict prompt vs. silent merge for dir-over-dir).
+                    // Reuse the per-source hint from the scan instead of re-statting.
                     let source_is_dir = source_hints.get(source_path).map(|h| h.is_directory).unwrap_or(false);
-                    let dest_is_dir = dest_meta.is_directory;
-                    if source_is_dir && dest_is_dir {
-                        log::debug!(
-                            "copy_volumes_with_progress: merging directories {} -> {}",
-                            source_path.display(),
-                            dest_item_path.display()
-                        );
-                    } else {
-                        log::debug!(
-                            "copy_volumes_with_progress: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
-                            dest_item_path.display(),
-                            source_is_dir,
-                            dest_is_dir
-                        );
-                        let resolved = resolve_volume_conflict(
-                            &source_volume,
-                            source_path,
-                            &dest_volume,
-                            &dest_item_path,
-                            config,
-                            events,
-                            operation_id,
-                            state,
-                            &mut apply_to_all_resolution,
-                        )
-                        .await
-                        .map_err(WriteFailure::synthetic)?;
-                        match resolved {
-                            None => {
-                                log::debug!(
-                                    "copy_volumes_with_progress: skipping {} due to conflict resolution",
-                                    source_path.display()
-                                );
-                                continue;
-                            }
-                            Some(p) => dest_item_path = p,
+                    log::debug!(
+                        "copy_volumes_with_progress: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
+                        dest_item_path.display(),
+                        source_is_dir,
+                        dest_meta.is_directory,
+                    );
+                    let resolved = resolve_volume_conflict(
+                        &source_volume,
+                        source_path,
+                        &dest_volume,
+                        &dest_item_path,
+                        config,
+                        events,
+                        operation_id,
+                        state,
+                        &mut apply_to_all_resolution,
+                    )
+                    .await
+                    .map_err(WriteFailure::synthetic)?;
+                    match resolved {
+                        None => {
+                            log::debug!(
+                                "copy_volumes_with_progress: skipping {} due to conflict resolution",
+                                source_path.display()
+                            );
+                            continue;
                         }
+                        Some(p) => dest_item_path = p,
                     }
                 }
 
@@ -711,47 +698,36 @@ pub(crate) async fn copy_volumes_with_progress(
             };
 
             if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path).await {
-                // Reuse the per-source hint from the scan; see note in the
-                // concurrent path for the fallback.
                 let source_is_dir = source_hints.get(source_path).map(|h| h.is_directory).unwrap_or(false);
-                let dest_is_dir = dest_meta.is_directory;
-                if source_is_dir && dest_is_dir {
-                    log::debug!(
-                        "copy_volumes_with_progress: merging directories {} -> {}",
-                        source_path.display(),
-                        dest_item_path.display()
-                    );
-                } else {
-                    log::debug!(
-                        "copy_volumes_with_progress: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
-                        dest_item_path.display(),
-                        source_is_dir,
-                        dest_is_dir
-                    );
-                    let resolved = resolve_volume_conflict(
-                        &source_volume,
-                        source_path,
-                        &dest_volume,
-                        &dest_item_path,
-                        config,
-                        events,
-                        operation_id,
-                        state,
-                        &mut apply_to_all_resolution,
-                    )
-                    .await
-                    .map_err(WriteFailure::synthetic)?;
-                    match resolved {
-                        None => {
-                            log::debug!(
-                                "copy_volumes_with_progress: skipping {} due to conflict resolution",
-                                source_path.display()
-                            );
-                            continue;
-                        }
-                        Some(resolved_path) => {
-                            dest_item_path = resolved_path;
-                        }
+                log::debug!(
+                    "copy_volumes_with_progress: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
+                    dest_item_path.display(),
+                    source_is_dir,
+                    dest_meta.is_directory,
+                );
+                let resolved = resolve_volume_conflict(
+                    &source_volume,
+                    source_path,
+                    &dest_volume,
+                    &dest_item_path,
+                    config,
+                    events,
+                    operation_id,
+                    state,
+                    &mut apply_to_all_resolution,
+                )
+                .await
+                .map_err(WriteFailure::synthetic)?;
+                match resolved {
+                    None => {
+                        log::debug!(
+                            "copy_volumes_with_progress: skipping {} due to conflict resolution",
+                            source_path.display()
+                        );
+                        continue;
+                    }
+                    Some(resolved_path) => {
+                        dest_item_path = resolved_path;
                     }
                 }
             }

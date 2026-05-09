@@ -220,6 +220,16 @@
         unlisteners = []
     }
 
+    /**
+     * Pending conflict check, captured so `handleConfirm` can await it. Without this,
+     * a fast confirm (Enter pressed before the check finishes) sends the operation
+     * with `conflicts: []` even when conflicts exist. The FE never displays the count
+     * + radio policy section, and the backend can't help if the user picked
+     * `overwrite_all` blindly. We resolve this by gating Confirm on the check
+     * completing — see `handleConfirm`.
+     */
+    let conflictCheckPromise: Promise<void> | null = $state(null)
+
     /** Checks for conflicts at the destination. */
     async function checkConflicts() {
         if (destroyed || isCheckingConflicts || conflictCheckComplete) return
@@ -285,7 +295,7 @@
                 isScanning = false
                 scanComplete = true
                 // After source scan completes, check for conflicts
-                void checkConflicts()
+                conflictCheckPromise = checkConflicts()
             }),
         )
         unlisteners.push(
@@ -321,7 +331,7 @@
                 // when the copy starts and reads the cached scan result).
                 isScanning = false
                 scanComplete = true
-                void checkConflicts()
+                conflictCheckPromise = checkConflicts()
             }
         }
     }
@@ -363,6 +373,14 @@
         // with the IPC and leaves the progress dialog with a null previewId that it
         // cannot recover from once scan events have already been emitted.
         await scanStarted
+        // Also wait for the conflict scan if it's still running. Without this, a fast
+        // confirm sends `conflicts: []` to the backend even when conflicts exist —
+        // the user never sees the radio policy section, and the operation runs with
+        // whatever default `conflictPolicy` was set ("stop" by default, so it'd still
+        // prompt per-file via the backend, but only because of the default).
+        if (conflictCheckPromise) {
+            await conflictCheckPromise
+        }
         onConfirm(editedPath, selectedVolumeId, previewId, conflictPolicy, activeOperationType, isScanning)
     }
 
