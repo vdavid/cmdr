@@ -368,7 +368,21 @@ pub trait Volume: Send + Sync {
         Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
-    /// Deletes a file or empty directory.
+    /// Deletes a single file or **empty** directory.
+    ///
+    /// **Strict contract — must NOT recurse.** If `path` is a non-empty directory,
+    /// the implementation must return an error (typically `VolumeError::IoError`
+    /// with errno `ENOTEMPTY` or equivalent), not silently delete the contents.
+    /// The conflict resolver and several callers rely on this: `apply_volume_conflict_resolution`
+    /// uses `is_directory` + skip-delete to enforce "Overwrite means merge for dirs"
+    /// architecturally, but other call sites (rollback, partial-file cleanup) assume
+    /// they only ever delete one node at a time and would over-delete if this contract
+    /// loosened.
+    ///
+    /// For recursive deletes, callers should walk the tree themselves and call
+    /// `delete` per leaf — see `delete_volume_path_recursive` in `volume_copy.rs`.
+    ///
+    /// Default: `NotSupported`.
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let _ = path;
         Box::pin(async { Err(VolumeError::NotSupported) })

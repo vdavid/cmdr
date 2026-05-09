@@ -118,33 +118,36 @@ async fn apply_volume_conflict_resolution(
         }
         ConflictResolution::Skip => Ok(None),
         ConflictResolution::Overwrite => {
-            // Try to delete the existing item, then return the same path so the caller
-            // writes there.
+            // Cmdr's UX promise is "Overwrite means merge for dirs, replace for files":
             //
-            // - For files: `Volume::delete` removes the dest, the recursive copy lands
-            //   a fresh copy. Net effect: file is replaced.
-            // - For non-empty directories: `Volume::delete` is contractually for files
-            //   or *empty* directories (`std::fs::remove_dir` semantics, see Volume
-            //   trait doc). The call fails with ENOTEMPTY/equivalent — we log debug
-            //   and continue. The recursive copy then merges into the existing tree:
-            //   same-named files inside get overwritten by the streaming writers,
-            //   files in dest that aren't in source remain untouched. Net effect:
-            //   "merge with overwrite-on-file-conflict". This is the desired UX for
-            //   dir-vs-dir Overwrite — wholesale dir replacement would be surprising
-            //   and risk data loss.
-            // - For empty directories: `Volume::delete` succeeds, the recursive copy
-            //   recreates the dir. Net effect: equivalent to merge.
+            // - For files: delete the dest first so the streaming writer lands a fresh
+            //   copy. Same-named files in dest get genuinely replaced, byte-for-byte.
+            // - For directories: SKIP the delete entirely. The recursive copy will
+            //   merge into the existing tree — same-named files inside get overwritten
+            //   by the streaming writers, files in dest that aren't in source are
+            //   preserved.
             //
-            // Demoted to debug because the ENOTEMPTY case is the expected branch for
-            // dir merges, not a real failure.
-            if let Err(e) = dest_volume.delete(dest_path).await {
-                log::debug!(
-                    "apply_volume_conflict_resolution(Overwrite): delete of {} returned {} \
-                    (expected for non-empty directories — recursive copy will merge)",
-                    dest_path.display(),
-                    e
-                );
-            }
+            // The dir branch is enforced HERE rather than relying on `Volume::delete`'s
+            // "file or empty directory" trait contract. Today every backend honors
+            // that contract (delete of a non-empty dir fails benignly), but a future
+            // backend with recursive delete semantics — or a refactor that consolidates
+            // delete + delete_recursive — would silently flip the UX from merge to
+            // wholesale replace, deleting files unique to dest. That's a data-loss
+            // footgun. Stat-and-skip makes the merge guarantee architectural, not
+            // emergent. See `dir_overwrite_must_merge_not_replace_even_with_recursive_delete`
+            // in the test module — it pins this with a wrapper Volume that violates
+            // the contract.
+            let is_dir = dest_volume.is_directory(dest_path).await.unwrap_or(false);
+            if !is_dir
+                && let Err(e) = dest_volume.delete(dest_path).await {
+                    log::warn!(
+                        "apply_volume_conflict_resolution(Overwrite): delete of file {} failed: {}",
+                        dest_path.display(),
+                        e
+                    );
+                    // Continue — the streaming writer might still succeed if the failure
+                    // was transient.
+                }
             Ok(Some(dest_path.to_path_buf()))
         }
         ConflictResolution::Rename => {
@@ -185,5 +188,145 @@ async fn find_unique_volume_name(dest_volume: &Arc<dyn Volume>, path: &Path) -> 
             };
             return parent.join(new_name);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::file_system::listing::FileEntry;
+    use crate::file_system::volume::{InMemoryVolume, VolumeError};
+    use std::pin::Pin;
+    use std::sync::Arc;
+
+    /// Wraps an `InMemoryVolume` but makes `delete` recursive — simulates a future
+    /// backend (or refactor) that doesn't honor the trait's "file or empty directory"
+    /// contract.
+    ///
+    /// Used to assert that `apply_volume_conflict_resolution(Overwrite)` produces a
+    /// merge UX even when the underlying delete is recursive. If this volume's
+    /// `delete` ever runs against a non-empty `dest_path`, the test below catches
+    /// it because files unique to the dest tree disappear.
+    struct RecursiveDeleteVolume {
+        inner: Arc<InMemoryVolume>,
+    }
+
+    impl Volume for RecursiveDeleteVolume {
+        fn name(&self) -> &str {
+            self.inner.name()
+        }
+        fn root(&self) -> &Path {
+            self.inner.root()
+        }
+        fn list_directory<'a>(
+            &'a self,
+            path: &'a Path,
+            on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+            self.inner.list_directory(path, on_progress)
+        }
+        fn get_metadata<'a>(
+            &'a self,
+            path: &'a Path,
+        ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+            self.inner.get_metadata(path)
+        }
+        fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+            self.inner.exists(path)
+        }
+        fn is_directory<'a>(
+            &'a self,
+            path: &'a Path,
+        ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+            self.inner.is_directory(path)
+        }
+        /// Recursive delete — contractually wrong, but plausible for some backends.
+        fn delete<'a>(
+            &'a self,
+            path: &'a Path,
+        ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+            Box::pin(async move {
+                if self.inner.is_directory(path).await.unwrap_or(false) {
+                    let entries = self.inner.list_directory(path, None).await?;
+                    for entry in entries {
+                        let child = PathBuf::from(&entry.path);
+                        // Recurse — child might also be a non-empty directory.
+                        Box::pin(self.delete(&child)).await.ok();
+                    }
+                }
+                self.inner.delete(path).await
+            })
+        }
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn dir_overwrite_must_merge_not_replace_even_with_recursive_delete() {
+        // Build a dest dir with two files: one will conflict with the source,
+        // one is unique to dest (`keep-me.jpg`) and MUST survive merge.
+        let inner = Arc::new(InMemoryVolume::new("dest"));
+        inner.create_directory(Path::new("/photos")).await.unwrap();
+        inner
+            .create_file(Path::new("/photos/keep-me.jpg"), b"existing")
+            .await
+            .unwrap();
+        inner
+            .create_file(Path::new("/photos/will-conflict.jpg"), b"old")
+            .await
+            .unwrap();
+
+        // Wrap so `delete` is recursive — the dangerous future-backend scenario.
+        let dest_recursive: Arc<dyn Volume> = Arc::new(RecursiveDeleteVolume {
+            inner: Arc::clone(&inner),
+        });
+
+        // Resolve an Overwrite conflict for `/photos`.
+        let result =
+            apply_volume_conflict_resolution(ConflictResolution::Overwrite, &dest_recursive, Path::new("/photos"))
+                .await
+                .unwrap();
+
+        // The resolver should hand back the same path (caller will write to it).
+        assert_eq!(result, Some(PathBuf::from("/photos")));
+
+        // CRITICAL: files unique to dest must still be there. If this fails, the
+        // resolver wholesale-deleted the dest tree — Cmdr's "Overwrite means merge
+        // for dirs" UX has silently flipped to "Overwrite means replace", and any
+        // file in dest that isn't in source is gone.
+        assert!(
+            inner.exists(Path::new("/photos/keep-me.jpg")).await,
+            "Overwrite resolution must NOT recursively delete the dest directory. \
+             Cmdr's UX promise is merge-not-replace for dirs; if this fails, users \
+             will lose files that exist in dest but not in source."
+        );
+
+        // Also check the dir itself is intact (not a `delete` retry surprise).
+        assert!(
+            inner.exists(Path::new("/photos")).await,
+            "Dest directory itself must remain — the recursive copy needs it as a merge target."
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn file_overwrite_still_deletes_the_existing_file() {
+        // Sanity: for files (not dirs), Overwrite SHOULD delete first so the
+        // recursive writer lands a fresh copy. The dir-merge guarantee must
+        // not regress this case.
+        let dest = Arc::new(InMemoryVolume::new("dest"));
+        dest.create_file(Path::new("/notes.txt"), b"old content").await.unwrap();
+        let dest_dyn: Arc<dyn Volume> = dest.clone();
+
+        let result =
+            apply_volume_conflict_resolution(ConflictResolution::Overwrite, &dest_dyn, Path::new("/notes.txt"))
+                .await
+                .unwrap();
+
+        assert_eq!(result, Some(PathBuf::from("/notes.txt")));
+        // After resolution, before the recursive copy runs, the file should be gone
+        // (so the writer creates a fresh one rather than appending or failing).
+        assert!(
+            !dest.exists(Path::new("/notes.txt")).await,
+            "Overwrite resolution must delete an existing FILE so the writer can \
+             create a fresh copy. Skipping delete only applies to directories."
+        );
     }
 }
