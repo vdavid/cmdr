@@ -619,8 +619,17 @@ impl SmbVolume {
                         op_name, self.share_name, e
                     );
                     self.transition_to_disconnected();
-                } else if matches!(kind, smb2::ErrorKind::NotFound) {
-                    // NotFound is expected for existence checks (rename dest, conflict detection)
+                } else if matches!(
+                    kind,
+                    smb2::ErrorKind::NotFound | smb2::ErrorKind::IsADirectory | smb2::ErrorKind::AlreadyExists
+                ) {
+                    // Expected fall-through cases — the caller is using the typed
+                    // `VolumeError` variant as a signal, not an error:
+                    // - `NotFound` for existence checks (rename dest, conflict detection)
+                    // - `IsADirectory` for `delete()`'s "try delete_file first, fall back to
+                    //   delete_directory" fast-path
+                    // - `AlreadyExists` for `copy_directory_streaming`'s "create_directory
+                    //   is idempotent for merge" path
                     debug!("SmbVolume::{}(share={}): {}", op_name, self.share_name, e);
                 } else {
                     warn!("SmbVolume::{}(share={}): {}", op_name, self.share_name, e);
