@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "ignoreBinaries": ["only-allow", "rustc"],
+  "ignoreBinaries": ["only-allow", "rustc", "oxfmt"],
   "ignore": ["src/lib/tauri-commands/**", "src/lib/ipc/bindings.ts"],
   "ignoreUnresolved": ["~icons/.+"],
   "ignoreDependencies": [

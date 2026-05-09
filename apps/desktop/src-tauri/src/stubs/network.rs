@@ -30,9 +30,7 @@ impl Default for HostSource {
 pub struct NetworkHost {
     pub id: String,
     pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub hostname: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub ip_address: Option<String>,
     pub port: u16,
     #[serde(default)]

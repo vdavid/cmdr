@@ -30,8 +30,8 @@ pub enum LocationCategory {
 /// Information about a location (volume, folder, or cloud drive).
 ///
 /// Only serialized (Rust → frontend); never sent from the frontend, so no `Deserialize`.
-/// Omitting `Deserialize` prevents specta from splitting this type on `skip_serializing_if`
-/// fields, which would fail `validate_exported_command` in unified mode.
+/// Fields serialized as explicit `null` when absent so specta's `validate_exported_command`
+/// accepts the type in Unified mode.
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LocationInfo {
@@ -40,18 +40,15 @@ pub struct LocationInfo {
     pub path: String,
     pub category: LocationCategory,
     /// Base64-encoded WebP.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
     pub is_ejectable: bool,
     /// Filesystem type from `statfs` (for example, "apfs", "hfs", "smbfs").
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub fs_type: Option<String>,
     /// Whether this volume supports macOS trash. Derived from `fs_type`.
     pub supports_trash: bool,
     /// Whether this location is read-only (for example, MTP devices with locked storage).
     pub is_read_only: bool,
     /// SMB connection state indicator. Only set for volumes with an active `SmbVolume`.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub smb_connection_state: Option<SmbConnectionState>,
 }
 

@@ -37,7 +37,7 @@ export interface PreviewPayload {
  * Build the bundle in-memory and return preview metadata. No network.
  */
 export async function prepareErrorReportPreview(userNote?: string): Promise<PreviewPayload> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- BundleManifest contains Breadcrumb.ctx: Option<serde_json::Value>, which specta can't represent; excluded from typed bindings
   return invoke<PreviewPayload>('prepare_error_report_preview', { userNote })
 }
 

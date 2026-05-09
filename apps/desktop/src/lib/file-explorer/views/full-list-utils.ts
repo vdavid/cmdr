@@ -195,8 +195,8 @@ export interface SizeDisplayPick {
  * rows (the renderer falls through to byte formatting).
  */
 export function pickSizeDisplay(entry: FileEntry): SizeDisplayPick {
-  if (entry.displaySize !== undefined) {
-    return { override: entry.displaySize, tooltip: entry.displaySizeTooltip }
+  if (entry.displaySize != null) {
+    return { override: entry.displaySize, tooltip: entry.displaySizeTooltip ?? undefined }
   }
   return {}
 }

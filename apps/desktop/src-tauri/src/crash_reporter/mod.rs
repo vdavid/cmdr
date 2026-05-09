@@ -27,7 +27,7 @@ static APP_START_TIME: OnceLock<Instant> = OnceLock::new();
 static CACHED_SETTINGS: OnceLock<ActiveSettings> = OnceLock::new();
 
 /// Active settings snapshot cached at startup for inclusion in crash reports.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ActiveSettings {
     pub indexing_enabled: Option<bool>,
@@ -37,7 +37,7 @@ pub struct ActiveSettings {
 }
 
 /// The crash report written to disk (JSON).
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct CrashReport {
     pub version: u32,

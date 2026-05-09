@@ -17,18 +17,15 @@ pub struct TabInfo {
     pub active: bool,
 }
 
-/// Represents a file entry in a pane.
+/// Represents a file entry in a pane (simplified subset of the main FileEntry).
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct FileEntry {
+pub struct PaneFileEntry {
     pub name: String,
     pub path: String,
     pub is_directory: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub recursive_size: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub modified: Option<String>,
 }
 
@@ -37,11 +34,9 @@ pub struct FileEntry {
 #[serde(rename_all = "camelCase")]
 pub struct PaneState {
     pub path: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub volume_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub volume_name: Option<String>,
-    pub files: Vec<FileEntry>,
+    pub files: Vec<PaneFileEntry>,
     /// 0-based.
     pub cursor_index: usize,
     pub view_mode: String,
@@ -187,7 +182,7 @@ mod tests {
             path: "/tmp".to_string(),
             volume_id: None,
             volume_name: None,
-            files: vec![FileEntry {
+            files: vec![PaneFileEntry {
                 name: "test.txt".to_string(),
                 path: "/tmp/test.txt".to_string(),
                 is_directory: false,

@@ -25,18 +25,15 @@ pub struct VolumeInfo {
     pub name: String,
     pub path: String,
     pub category: LocationCategory,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
     pub is_ejectable: bool,
     /// Filesystem type (for example, "ext4", "apfs"). Stubs don't detect this.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub fs_type: Option<String>,
     /// Whether this volume supports trash operations.
     pub supports_trash: bool,
     /// Whether this location is read-only.
     pub is_read_only: bool,
     /// SMB connection state indicator. Always `None` on stub platforms.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub smb_connection_state: Option<String>,
 }
 

@@ -107,9 +107,9 @@ export async function getFileRange(
   count: number,
   includeHidden: boolean,
 ): Promise<FileEntry[]> {
-  const { invoke } = await import('@tauri-apps/api/core')
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-  return invoke<FileEntry[]>('get_file_range', { listingId, start, count, includeHidden })
+  const res = await commands.getFileRange(listingId, start, count, includeHidden)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data as FileEntry[]
 }
 
 /**
@@ -168,9 +168,9 @@ export async function findFileIndices(
  * @param includeHidden - Whether to include hidden files when calculating index.
  */
 export async function getFileAt(listingId: string, index: number, includeHidden: boolean): Promise<FileEntry | null> {
-  const { invoke } = await import('@tauri-apps/api/core')
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-  return invoke<FileEntry | null>('get_file_at', { listingId, index, includeHidden })
+  const res = await commands.getFileAt(listingId, index, includeHidden)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data as FileEntry | null
 }
 
 /**
@@ -204,9 +204,9 @@ export async function getFilesAtIndices(
   selectedIndices: number[],
   includeHidden: boolean,
 ): Promise<FileEntry[]> {
-  const { invoke } = await import('@tauri-apps/api/core')
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-  return invoke<FileEntry[]>('get_files_at_indices', { listingId, selectedIndices, includeHidden })
+  const res = await commands.getFilesAtIndices(listingId, selectedIndices, includeHidden)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data as FileEntry[]
 }
 
 /**
@@ -390,7 +390,7 @@ export async function getSyncStatus(paths: string[]): Promise<TimedOut<Record<st
  */
 export async function storeFontMetrics(fontId: string, widths: Record<number, number>): Promise<void> {
   const { invoke } = await import('@tauri-apps/api/core')
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic (<R: tauri::Runtime>); excluded from typed bindings
   await invoke('store_font_metrics', { fontId, widths })
 }
 

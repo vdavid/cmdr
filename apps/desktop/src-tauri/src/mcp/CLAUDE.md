@@ -79,7 +79,7 @@ Directory module split by test category:
 - `tool_category_tests.rs` — tool existence by category, schema checks
 - `security_tests.rs` — shell injection, forbidden tool patterns, input injection
 - `request_response_tests.rs` — McpRequest parsing, McpResponse serialization
-- `pane_state_tests.rs` — PaneStateStore CRUD, edge cases, concurrency, FileEntry serialization
+- `pane_state_tests.rs` — PaneStateStore CRUD, edge cases, concurrency, PaneFileEntry serialization
 - `spec_compliance_tests.rs` — MCP spec 2025-11-25 compliance, origin validation, SSE events
 
 ## Key decisions

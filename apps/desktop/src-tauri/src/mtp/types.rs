@@ -9,8 +9,9 @@ use serde::Serialize;
 /// This represents a device detected via USB, before opening an MTP session.
 /// Used by the frontend to display available devices in the volume picker.
 ///
-/// Only serialized (Rust → frontend); no `Deserialize` to prevent specta from splitting
-/// this type on `skip_serializing_if` fields (which fails `validate_exported_command`).
+/// Only serialized (Rust → frontend); no `Deserialize` needed (return type only).
+/// Fields serialized as explicit `null` when absent so specta's `validate_exported_command`
+/// accepts the type in Unified mode.
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpDeviceInfo {
@@ -21,11 +22,8 @@ pub struct MtpDeviceInfo {
     /// For example, 0x18d1 for Google.
     pub vendor_id: u16,
     pub product_id: u16,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub manufacturer: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub product: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub serial_number: Option<String>,
 }
 
@@ -33,8 +31,9 @@ pub struct MtpDeviceInfo {
 ///
 /// Android devices typically have one or more storages: "Internal Storage", "SD Card", etc.
 ///
-/// Only serialized (Rust → frontend); no `Deserialize` to prevent specta from splitting
-/// this type on `skip_serializing_if` fields (which fails `validate_exported_command`).
+/// Only serialized (Rust → frontend); no `Deserialize` needed (return type only).
+/// Fields serialized as explicit `null` when absent so specta's `validate_exported_command`
+/// accepts the type in Unified mode.
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpStorageInfo {
@@ -47,7 +46,6 @@ pub struct MtpStorageInfo {
     /// In bytes.
     pub available_bytes: u64,
     /// For example, "FixedROM", "RemovableRAM".
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub storage_type: Option<String>,
     pub is_read_only: bool,
 }
@@ -71,8 +69,8 @@ mod tests {
         assert!(json.contains("\"vendorId\":"));
         assert!(json.contains("\"productId\":"));
         assert!(json.contains("\"locationId\":"));
-        // serialNumber should be omitted when None
-        assert!(!json.contains("serialNumber"));
+        // serialNumber serializes as explicit null (no longer omitted)
+        assert!(json.contains("\"serialNumber\":null"));
     }
 
     #[test]

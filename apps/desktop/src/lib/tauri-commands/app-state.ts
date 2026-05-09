@@ -38,16 +38,16 @@ export interface PaneState {
  * Update left pane state for MCP context tools.
  */
 export async function updateLeftPaneState(state: PaneState): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-  await invoke('update_left_pane_state', { state })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await commands.updateLeftPaneState(state as any)
 }
 
 /**
  * Update right pane state for MCP context tools.
  */
 export async function updateRightPaneState(state: PaneState): Promise<void> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-  await invoke('update_right_pane_state', { state })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await commands.updateRightPaneState(state as any)
 }
 
 /**

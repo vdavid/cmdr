@@ -4,11 +4,12 @@
 
 import { load, type Store } from '@tauri-apps/plugin-store'
 import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { invoke } from '@tauri-apps/api/core' // needed for excluded commands
 import type { SettingId, SettingsValues } from './types'
 import { SettingValidationError } from './types'
 import { getDefaultValue, settingsRegistry, validateSettingValue } from './settings-registry'
 import { getAppLogger } from '$lib/logging/logger'
+import { commands } from '$lib/ipc/bindings'
+import type { SettingValue } from '$lib/ipc/bindings'
 
 const log = getAppLogger('settings')
 
@@ -137,12 +138,17 @@ export async function initializeSettings(): Promise<void> {
  */
 async function pushSettingsDefaultsToBackend(): Promise<void> {
   try {
-    const defaults: Record<string, unknown> = {}
+    const defaults: Record<string, SettingValue> = {}
     for (const def of settingsRegistry) {
-      defaults[def.id] = def.default
+      const value = def.default
+      // SettingValue is untagged on the wire: boolean | number | string.
+      // Values of other types (arrays, objects) are silently skipped — the Rust
+      // side has hardcoded fallbacks and the lookup_* helpers only support these three.
+      if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
+        defaults[def.id] = value as SettingValue
+      }
     }
-    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-    await invoke('record_settings_defaults', { defaults })
+    await commands.recordSettingsDefaults(defaults)
   } catch (err) {
     log.warn('Failed to push settings defaults to backend: {err}', { err })
   }

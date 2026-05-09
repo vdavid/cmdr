@@ -1,6 +1,5 @@
 // Network hosts, SMB shares, keychain, and mounting
 
-import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { commands } from '$lib/ipc/bindings'
 import type { MountResult, SmbCredentials } from '$lib/ipc/bindings'
@@ -33,8 +32,7 @@ export interface ManualConnectResult {
  */
 export async function listNetworkHosts(): Promise<NetworkHost[]> {
   try {
-    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-    return await invoke<NetworkHost[]>('list_network_hosts')
+    return (await commands.listNetworkHosts()) as NetworkHost[]
   } catch {
     // Command not available (non-macOS) - return empty array
     return []
@@ -64,8 +62,7 @@ export async function getNetworkDiscoveryState(): Promise<DiscoveryState> {
  */
 export async function resolveNetworkHost(hostId: string): Promise<NetworkHost | null> {
   try {
-    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-    return await invoke<NetworkHost | null>('resolve_host', { hostId })
+    return (await commands.resolveHost(hostId)) as NetworkHost | null
   } catch {
     // Command not available (non-macOS) - return null
     return null
@@ -387,8 +384,9 @@ export async function disconnectSmbVolume(volumeId: string): Promise<void> {
  * @throws Plain string error on parse failure or unreachable host
  */
 export async function connectToServer(address: string): Promise<ManualConnectResult> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-  return invoke<ManualConnectResult>('connect_to_server', { address })
+  const res = await commands.connectToServer(address)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data as ManualConnectResult
 }
 
 /**

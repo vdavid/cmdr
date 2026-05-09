@@ -166,7 +166,7 @@ function sizeTextForEntry(
 ): string {
   // Virtual git entries override the Size cell with a short string
   // (`+12 / -3`, `5 files`, …); measure that instead of the byte format.
-  if (entry.displaySize !== undefined) {
+  if (entry.displaySize != null) {
     return entry.displaySize
   }
   if (entry.isDirectory) {
@@ -211,7 +211,7 @@ function foldDate(
 /** Pixel width of the size-column icons that follow the text for this row. */
 function sizeIconSuffixForEntry(entry: FileEntry, indexing: boolean, showSizeMismatchWarning: boolean): number {
   let suffix = 0
-  if (entry.isDirectory && indexing && entry.recursiveSize !== undefined) suffix += SIZE_ICON_WIDTH
+  if (entry.isDirectory && indexing && entry.recursiveSize != null) suffix += SIZE_ICON_WIDTH
   if (showSizeMismatchWarning) {
     const logical = entry.isDirectory ? entry.recursiveSize : entry.size
     const physical = entry.isDirectory ? entry.recursivePhysicalSize : entry.physicalSize

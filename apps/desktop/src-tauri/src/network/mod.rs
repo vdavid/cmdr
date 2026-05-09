@@ -60,8 +60,9 @@ pub enum HostSource {
 
 /// A discovered network host advertising SMB services.
 ///
-/// Only serialized (Rust → frontend); no `Deserialize` to prevent specta from splitting
-/// this type on `skip_serializing_if` fields (which fails `validate_exported_command`).
+/// Only serialized (Rust → frontend); no `Deserialize` needed (return type only).
+/// Fields serialized as explicit `null` when absent so specta's `validate_exported_command`
+/// accepts the type in Unified mode.
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkHost {
@@ -70,10 +71,8 @@ pub struct NetworkHost {
     /// The advertised service name.
     pub name: String,
     /// For example, "macbook.local". None if not yet resolved.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub hostname: Option<String>,
     /// None if not yet resolved.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub ip_address: Option<String>,
     /// Usually 445.
     pub port: u16,
@@ -381,9 +380,9 @@ mod tests {
         };
 
         let json = serde_json::to_string(&host).unwrap();
-        // hostname and ip_address should be omitted when None
-        assert!(!json.contains("hostname"));
-        assert!(!json.contains("ipAddress"));
+        // hostname and ip_address serialize as explicit null (no longer omitted)
+        assert!(json.contains("\"hostname\":null"));
+        assert!(json.contains("\"ipAddress\":null"));
     }
 
     #[test]

@@ -288,9 +288,7 @@ pub struct BundleManifest {
     /// first. The last entry of `kind: "command"` is the most recent user-driven UI
     /// command. Empty when nothing was recorded (e.g. very early failures, tests).
     /// See `breadcrumbs.rs` for the buffer semantics.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub breadcrumbs: Vec<breadcrumbs::Breadcrumb>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub user_note: Option<String>,
     pub generated_at: String,
 }
@@ -1182,39 +1180,67 @@ pub mod log_level_overrides {
 /// Reads are O(1) hash lookups; the mutex is uncontended in practice (one writer at
 /// FE init, then read-only).
 pub mod settings_defaults {
-    use serde_json::Value;
+    use serde::{Deserialize, Serialize};
     use std::collections::HashMap;
     use std::sync::Mutex;
 
-    static DEFAULTS: Mutex<Option<HashMap<String, Value>>> = Mutex::new(None);
+    /// Settings registry default values pushed from FE. The wire format matches JSON
+    /// primitives via `#[serde(untagged)]` — TS sees `boolean | number | string`.
+    /// Extend with more variants only when settings of the new shape appear; any field
+    /// shape outside this set means the value can't fit in `lookup_*` helpers anyway.
+    #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+    #[serde(untagged)]
+    pub enum SettingValue {
+        Bool(bool),
+        Integer(i64),
+        String(String),
+    }
+
+    static DEFAULTS: Mutex<Option<HashMap<String, SettingValue>>> = Mutex::new(None);
 
     /// Replace the stored defaults map. Called from the `record_settings_defaults`
     /// Tauri command. A `None` entry from a buggy FE caller is treated as "no
     /// default available" — `lookup_*` falls through to the hardcoded fallback.
-    pub fn record(map: HashMap<String, Value>) {
+    pub fn record(map: HashMap<String, SettingValue>) {
         if let Ok(mut guard) = DEFAULTS.lock() {
             *guard = Some(map);
         }
     }
 
-    fn get(key: &str) -> Option<Value> {
+    fn get(key: &str) -> Option<SettingValue> {
         DEFAULTS.lock().ok()?.as_ref()?.get(key).cloned()
     }
 
     pub(super) fn lookup_bool(key: &str) -> Option<bool> {
-        get(key)?.as_bool()
+        if let SettingValue::Bool(b) = get(key)? {
+            Some(b)
+        } else {
+            None
+        }
     }
 
     pub(super) fn lookup_string(key: &str) -> Option<String> {
-        Some(get(key)?.as_str()?.to_string())
+        if let SettingValue::String(s) = get(key)? {
+            Some(s)
+        } else {
+            None
+        }
     }
 
     pub(super) fn lookup_u16(key: &str) -> Option<u16> {
-        u16::try_from(get(key)?.as_u64()?).ok()
+        if let SettingValue::Integer(n) = get(key)? {
+            u16::try_from(n).ok()
+        } else {
+            None
+        }
     }
 
     pub(super) fn lookup_u64(key: &str) -> Option<u64> {
-        get(key)?.as_u64()
+        if let SettingValue::Integer(n) = get(key)? {
+            u64::try_from(n).ok()
+        } else {
+            None
+        }
     }
 
     #[cfg(test)]

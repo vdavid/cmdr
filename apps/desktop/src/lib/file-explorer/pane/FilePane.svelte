@@ -330,7 +330,7 @@
     // even relevant for this pane).
     const currentVolumeInfo = $derived(getStoreVolumes().find((v) => v.id === volumeId) ?? null)
     /** True if this pane is on an SMB share (any state — direct, os_mount, or disconnected). */
-    const isSmbVolume = $derived(currentVolumeInfo?.smbConnectionState !== undefined)
+    const isSmbVolume = $derived(currentVolumeInfo?.smbConnectionState != null)
     /**
      * Reactive: the per-volume reconnect cycle state, or `null` if no cycle is
      * running. The manager is the single source of truth for the view — by the

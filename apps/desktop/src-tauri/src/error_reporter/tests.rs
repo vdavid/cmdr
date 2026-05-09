@@ -500,9 +500,8 @@ fn set_mtime_to_age(path: &Path, age: Duration) {
 /// fields are `None`.
 mod settings_defaults_tests {
     use super::*;
-    use crate::error_reporter::settings_defaults;
+    use crate::error_reporter::settings_defaults::{self, SettingValue};
     use crate::settings::loader::Settings;
-    use serde_json::json;
     use std::collections::HashMap;
     use std::sync::Mutex;
 
@@ -544,9 +543,9 @@ mod settings_defaults_tests {
         // FE registry says indexing is OFF by default (hypothetical — production says
         // true). If `from_settings` ever drifts back to the hardcoded fallback, this
         // test catches it.
-        map.insert("indexing.enabled".to_string(), json!(false));
-        map.insert("developer.mcpPort".to_string(), json!(12345));
-        map.insert("ai.provider".to_string(), json!("cloud"));
+        map.insert("indexing.enabled".to_string(), SettingValue::Bool(false));
+        map.insert("developer.mcpPort".to_string(), SettingValue::Integer(12345));
+        map.insert("ai.provider".to_string(), SettingValue::String("cloud".to_string()));
         settings_defaults::record(map);
 
         // Field with no user override → FE default applies.
@@ -576,8 +575,12 @@ mod settings_defaults_tests {
         settings_defaults::reset_for_test();
 
         let mut map = HashMap::new();
-        map.insert("indexing.enabled".to_string(), json!("not a bool"));
-        map.insert("developer.mcpPort".to_string(), json!(true));
+        // Wrong types for these fields: String instead of Bool, Bool instead of Integer.
+        map.insert(
+            "indexing.enabled".to_string(),
+            SettingValue::String("not a bool".to_string()),
+        );
+        map.insert("developer.mcpPort".to_string(), SettingValue::Bool(true));
         settings_defaults::record(map);
 
         let resolved = ResolvedSettings::from_settings(&Settings::default());

@@ -3,7 +3,7 @@
 //! Thin wrappers for crash file detection, dismissal, and sending.
 
 use crate::config;
-use crate::crash_reporter;
+use crate::crash_reporter::{self, CrashReport};
 
 /// Server URL for crash report ingestion.
 #[cfg(debug_assertions)]
@@ -13,12 +13,11 @@ const CRASH_REPORT_URL: &str = "http://localhost:8787/crash-report";
 const CRASH_REPORT_URL: &str = "https://api.getcmdr.com/crash-report";
 
 /// Checks for a pending crash report from a previous session.
-/// Returns the report as a JSON value, or `null` if none exists.
+/// Returns the report, or `null` if none exists.
 #[tauri::command]
 #[specta::specta]
-pub fn check_pending_crash_report(app: tauri::AppHandle) -> Option<serde_json::Value> {
-    let report = crash_reporter::take_pending_crash_report(&app)?;
-    serde_json::to_value(report).ok()
+pub fn check_pending_crash_report(app: tauri::AppHandle) -> Option<CrashReport> {
+    crash_reporter::take_pending_crash_report(&app)
 }
 
 /// Deletes the crash report file without sending it.
@@ -36,7 +35,7 @@ pub fn dismiss_crash_report(app: tauri::AppHandle) {
 /// Skipped in dev mode and CI to avoid polluting production data.
 #[tauri::command]
 #[specta::specta]
-pub async fn send_crash_report(app: tauri::AppHandle, report: serde_json::Value) -> Result<(), String> {
+pub async fn send_crash_report(app: tauri::AppHandle, report: CrashReport) -> Result<(), String> {
     let should_skip = cfg!(debug_assertions) || std::env::var("CI").is_ok();
 
     if !should_skip {

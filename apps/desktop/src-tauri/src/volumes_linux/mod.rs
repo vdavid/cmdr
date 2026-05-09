@@ -99,16 +99,13 @@ pub struct LocationInfo {
     pub name: String,
     pub path: String,
     pub category: LocationCategory,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
     pub is_ejectable: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub fs_type: Option<String>,
     pub supports_trash: bool,
     /// Whether this location is read-only (for example, MTP devices with locked storage).
     pub is_read_only: bool,
     /// SMB connection state indicator. Always `None` on Linux (no smb2 session tracking yet).
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub smb_connection_state: Option<String>,
 }
 

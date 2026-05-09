@@ -12,11 +12,8 @@ pub struct MtpDeviceInfo {
     pub id: String,
     pub vendor_id: u16,
     pub product_id: u16,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub manufacturer: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub product: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub serial_number: Option<String>,
 }
 
@@ -28,7 +25,6 @@ pub struct MtpStorageInfo {
     pub name: String,
     pub total_bytes: u64,
     pub available_bytes: u64,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub storage_type: Option<String>,
     /// Whether this storage is read-only (for example, PTP cameras).
     pub is_read_only: bool,
@@ -120,7 +116,6 @@ pub struct FileEntry {
     pub is_directory: bool,
     pub is_symlink: bool,
     pub size: Option<u64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub physical_size: Option<u64>,
     pub modified_at: Option<u64>,
     pub created_at: Option<u64>,

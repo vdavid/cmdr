@@ -219,6 +219,13 @@ resilience, and common pitfalls.
   bindings into `apps/desktop/src/lib/ipc/`; call them as `commands.commandName(args)` instead.
   - **Enforced by**: `cmdr/no-raw-tauri-invoke` (ESLint rule). Bypassed only inside `lib/ipc/` (the bindings),
     `routes/debug/` (dev-only debug panels), and test files.
+  - **Regenerate** with `cd apps/desktop && pnpm bindings:regen` after any change to a `#[tauri::command]` surface or a
+    Type-derived DTO. CI's `bindings-fresh` check fails if the committed `bindings.ts` is stale.
+  - **At call sites, prefer named locals over inline primitives.** `commands.renameFile(from, to, force, volumeId)` is
+    fine; `commands.foo(true, null, 5)` isn't — extract `const force = true; const volumeId = null; const retries = 5`
+    first. This is the price specta charges for type safety.
+  - For the rules around adding new commands, type shape constraints (`skip_serializing_if`, `serde_json::Value`), and
+    the current exclusion list, read [`apps/desktop/src/lib/ipc/CLAUDE.md`](apps/desktop/src/lib/ipc/CLAUDE.md).
 
 ## Workflow
 

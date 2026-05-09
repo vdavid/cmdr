@@ -1,4 +1,4 @@
-use crate::mcp::pane_state::FileEntry;
+use crate::mcp::pane_state::PaneFileEntry;
 use crate::mcp::protocol::McpRequest;
 use crate::mcp::tools::get_all_tools;
 
@@ -123,7 +123,7 @@ fn test_request_with_very_long_method() {
 #[test]
 fn test_null_bytes_in_paths() {
     // Null bytes in paths could cause issues
-    let entry = FileEntry {
+    let entry = PaneFileEntry {
         name: "file\x00hidden.txt".to_string(),
         path: "/path/file\x00hidden.txt".to_string(),
         is_directory: false,

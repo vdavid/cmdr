@@ -66,11 +66,9 @@ fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::file_system::cancel_listing,
         crate::commands::file_system::list_directory_end,
         crate::commands::file_system::refresh_listing,
-        // get_file_range, get_file_at, get_files_at_indices return Vec<FileEntry>/Option<FileEntry>.
-        // FileEntry has skip_serializing_if fields; specta-serde rc.24 splits those into
-        // *_Serialize/*_Deserialize pairs and then validate_exported_command rejects them in
-        // Unified mode. They stay in generate_handler![] (runtime IPC works) but are excluded here
-        // until FileEntry's skip_serializing_if fields are replaced with null serialization.
+        crate::commands::file_system::get_file_range,
+        crate::commands::file_system::get_file_at,
+        crate::commands::file_system::get_files_at_indices,
         crate::commands::file_system::get_paths_at_indices,
         crate::commands::file_system::get_total_count,
         crate::commands::file_system::get_max_filename_width,
@@ -139,9 +137,8 @@ fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::ui::open_in_editor,
         crate::commands::ui::cloud_make_available_offline,
         crate::commands::ui::cloud_remove_download,
-        // update_left_pane_state and update_right_pane_state take PaneState which has
-        // skip_serializing_if fields — same specta-serde Unified-mode rejection as FileEntry.
-        // Excluded here; stays in generate_handler![].
+        crate::mcp::pane_state::update_left_pane_state,
+        crate::mcp::pane_state::update_right_pane_state,
         crate::mcp::pane_state::update_focused_pane,
         crate::mcp::pane_state::update_pane_tabs,
         crate::mcp::dialog_state::notify_dialog_opened,
@@ -152,18 +149,14 @@ fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::space_poller::watch_volume_space,
         crate::space_poller::unwatch_volume_space,
         crate::space_poller::set_disk_space_threshold,
-        // check_pending_crash_report returns Option<serde_json::Value> and send_crash_report
-        // takes serde_json::Value: specta rc.24 inlines the recursive Value enum but emits
-        // `Vec<Value>` / `Map<string, Value>` verbatim in the TypeScript output (Rust type
-        // names, not TS). Excluded until specta fixes serde_json::Value inlining.
+        crate::commands::crash_reporter::check_pending_crash_report,
         crate::commands::crash_reporter::dismiss_crash_report,
-        // prepare_error_report_preview returns PreviewPayload containing BundleManifest,
-        // which has skip_serializing_if on `breadcrumbs` and `user_note` — same specta-serde
-        // Unified-mode rejection. Excluded here; stays in generate_handler![].
+        crate::commands::crash_reporter::send_crash_report,
         crate::commands::error_reporter::send_error_report,
-        // record_breadcrumb takes Option<serde_json::Value> and record_settings_defaults takes
-        // HashMap<String, serde_json::Value>: same Vec<Value>/Map<string, Value> TS bug as above.
-        // Excluded; stays in generate_handler![].
+        // prepare_error_report_preview: BundleManifest contains Breadcrumb.ctx: Option<Value>
+        // which specta can't represent. Excluded; stays in generate_handler![].
+        // record_breadcrumb takes Option<serde_json::Value>: excluded; stays in generate_handler![].
+        crate::commands::error_reporter::record_settings_defaults,
         crate::commands::licensing::get_license_status,
         crate::commands::licensing::get_window_title,
         crate::commands::licensing::activate_license,
@@ -245,13 +238,12 @@ fn collect_mtp_types(types: &mut Types) -> Vec<Function> {
     use specta::function::collect_functions;
     collect_functions![
         crate::commands::mtp::set_mtp_enabled,
-        // list_mtp_devices returns Vec<MtpDeviceInfo> — excluded (skip_serializing_if).
-        // connect_mtp_device and get_mtp_device_info return ConnectedDeviceInfo which
-        // contains MtpDeviceInfo and Vec<MtpStorageInfo>, both with skip_serializing_if
-        // fields — same specta-serde Unified-mode rejection. Excluded; stays in generate_handler![].
+        crate::commands::mtp::list_mtp_devices,
+        crate::commands::mtp::connect_mtp_device,
+        crate::commands::mtp::get_mtp_device_info,
         crate::commands::mtp::disconnect_mtp_device,
-        // get_mtp_storages returns Vec<MtpStorageInfo> — excluded (skip_serializing_if).
-        // list_mtp_directory returns Vec<FileEntry> — excluded (skip_serializing_if).
+        crate::commands::mtp::get_mtp_storages,
+        crate::commands::mtp::list_mtp_directory,
         crate::commands::mtp::get_ptpcamerad_workaround_command,
         crate::commands::mtp::download_mtp_file,
         crate::commands::mtp::upload_to_mtp,
@@ -267,9 +259,12 @@ fn collect_mtp_types(types: &mut Types) -> Vec<Function> {
     use specta::function::collect_functions;
     collect_functions![
         crate::stubs::mtp::set_mtp_enabled,
-        // list_mtp_devices, connect_mtp_device, get_mtp_device_info, get_mtp_storages,
-        // list_mtp_directory — excluded, same reason as real variant above.
+        crate::stubs::mtp::list_mtp_devices,
+        crate::stubs::mtp::connect_mtp_device,
+        crate::stubs::mtp::get_mtp_device_info,
         crate::stubs::mtp::disconnect_mtp_device,
+        crate::stubs::mtp::get_mtp_storages,
+        crate::stubs::mtp::list_mtp_directory,
         crate::stubs::mtp::get_ptpcamerad_workaround_command,
         crate::stubs::mtp::download_mtp_file,
         crate::stubs::mtp::upload_to_mtp,
@@ -301,9 +296,8 @@ fn collect_virtual_mtp_types(_types: &mut Types) -> Vec<Function> {
 fn collect_volume_types(types: &mut Types) -> Vec<Function> {
     use specta::function::collect_functions;
     collect_functions![
-        // list_volumes returns Vec<LocationInfo> and resolve_path_volume returns PathVolumeResolution
-        // containing Option<LocationInfo>. LocationInfo has skip_serializing_if fields — same
-        // specta-serde Unified-mode rejection. Excluded here; stays in generate_handler![].
+        crate::commands::volumes::list_volumes,
+        crate::commands::volumes::resolve_path_volume,
         crate::commands::volumes::get_default_volume_id,
         crate::commands::volumes::get_volume_space,
     ](types)
@@ -312,7 +306,8 @@ fn collect_volume_types(types: &mut Types) -> Vec<Function> {
 fn collect_volume_types(types: &mut Types) -> Vec<Function> {
     use specta::function::collect_functions;
     collect_functions![
-        // list_volumes and resolve_path_volume — excluded, same reason as macOS variant above.
+        crate::commands::volumes_linux::list_volumes,
+        crate::commands::volumes_linux::resolve_path_volume,
         crate::commands::volumes_linux::get_default_volume_id,
         crate::commands::volumes_linux::get_volume_space,
     ](types)
@@ -321,7 +316,8 @@ fn collect_volume_types(types: &mut Types) -> Vec<Function> {
 fn collect_volume_types(types: &mut Types) -> Vec<Function> {
     use specta::function::collect_functions;
     collect_functions![
-        // list_volumes and resolve_path_volume — excluded, same reason as macOS variant above.
+        crate::stubs::volumes::list_volumes,
+        crate::stubs::volumes::resolve_path_volume,
         crate::stubs::volumes::get_default_volume_id,
         crate::stubs::volumes::get_volume_space,
     ](types)
@@ -332,10 +328,9 @@ fn collect_volume_types(types: &mut Types) -> Vec<Function> {
 fn collect_network_types(types: &mut Types) -> Vec<Function> {
     use specta::function::collect_functions;
     collect_functions![
-        // list_network_hosts returns Vec<NetworkHost>, resolve_host returns Option<NetworkHost>,
-        // connect_to_server returns ManualConnectResult containing NetworkHost.
-        // NetworkHost has skip_serializing_if fields — same specta-serde Unified-mode rejection.
-        // Excluded here; stays in generate_handler![].
+        crate::commands::network::list_network_hosts,
+        crate::commands::network::resolve_host,
+        crate::commands::network::connect_to_server,
         crate::commands::network::get_network_discovery_state,
         crate::commands::network::list_shares_on_host,
         crate::commands::network::prefetch_shares,
@@ -367,7 +362,9 @@ fn collect_network_types(types: &mut Types) -> Vec<Function> {
     collect_functions![
         crate::stubs::network::ensure_network_discovery_started,
         crate::stubs::network::set_network_enabled,
-        // list_network_hosts, resolve_host, connect_to_server — excluded, same reason as real variant above.
+        crate::stubs::network::list_network_hosts,
+        crate::stubs::network::resolve_host,
+        crate::stubs::network::connect_to_server,
         crate::stubs::network::get_network_discovery_state,
         crate::stubs::network::list_shares_on_host,
         crate::stubs::network::prefetch_shares,
@@ -945,16 +942,21 @@ mod tests {
 
     /// Regenerates `apps/desktop/src/lib/ipc/bindings.ts`.
     ///
-    /// Run with:
-    /// ```
-    /// cd apps/desktop/src-tauri && cargo nextest run ipc::tests::export_bindings_test
-    /// ```
+    /// Marked `#[ignore]` so it doesn't fire on every `cargo nextest run` —
+    /// it has the side effect of writing to disk, which would silently mutate
+    /// the working tree on every test run. The canonical entry point is
+    /// `pnpm bindings:regen` (from the desktop app dir or repo root via the
+    /// dev script), which runs this test and then `oxfmt` on the output so
+    /// the result lands in project format.
+    ///
+    /// CI's `bindings-fresh` check runs the same flow and fails if the
+    /// committed `bindings.ts` differs from a fresh regen.
     #[test]
+    #[ignore = "side-effect: rewrites bindings.ts; run via `pnpm bindings:regen` or with --run-ignored=ignored-only"]
     fn export_bindings_test() {
         let b = builder();
         b.export(
-            Typescript::default()
-                .header("// AUTO-GENERATED — do not edit. Regenerate with `cargo nextest run export_bindings_test`.\n"),
+            Typescript::default().header("// AUTO-GENERATED — do not edit. Regenerate with `pnpm bindings:regen`.\n"),
             "../src/lib/ipc/bindings.ts",
         )
         .expect("Failed to export bindings");

@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 use tauri::{Emitter, Listener, Manager, Runtime, WebviewWindow};
 
 use super::dialog_state::SoftDialogTracker;
-use super::pane_state::{FileEntry, PaneState, PaneStateStore, TabInfo};
+use super::pane_state::{PaneFileEntry, PaneState, PaneStateStore, TabInfo};
 use crate::search::format_size;
 #[cfg(target_os = "macos")]
 use crate::volumes;
@@ -65,7 +65,7 @@ pub fn get_all_resources() -> Vec<Resource> {
 /// Format a file entry in compact format.
 /// Format: `i:INDEX TYPE NAME [SIZE] [DATES] [MARKERS]`
 fn format_file_compact(
-    file: &FileEntry,
+    file: &PaneFileEntry,
     index: usize,
     is_cursor: bool,
     is_selected: bool,
@@ -634,7 +634,7 @@ mod tests {
 
     #[test]
     fn test_format_file_compact() {
-        let file = FileEntry {
+        let file = PaneFileEntry {
             name: "test.txt".to_string(),
             path: "/tmp/test.txt".to_string(),
             is_directory: false,
@@ -660,7 +660,7 @@ mod tests {
         assert_eq!(formatted, "i:0 f test.txt 1 KB 2024-01-15 [cur] [sel]");
 
         // Directory
-        let dir = FileEntry {
+        let dir = PaneFileEntry {
             name: "docs".to_string(),
             path: "/tmp/docs".to_string(),
             is_directory: true,
@@ -672,7 +672,7 @@ mod tests {
         assert_eq!(formatted, "i:1 d docs");
 
         // Directory with recursive size
-        let dir_with_size = FileEntry {
+        let dir_with_size = PaneFileEntry {
             name: "src".to_string(),
             path: "/tmp/src".to_string(),
             is_directory: true,
@@ -691,7 +691,7 @@ mod tests {
             volume_id: Some("root".to_string()),
             volume_name: Some("Macintosh HD".to_string()),
             files: vec![
-                FileEntry {
+                PaneFileEntry {
                     name: "file1.txt".to_string(),
                     path: "/Users/test/file1.txt".to_string(),
                     is_directory: false,
@@ -699,7 +699,7 @@ mod tests {
                     recursive_size: None,
                     modified: Some("2024-01-15".to_string()),
                 },
-                FileEntry {
+                PaneFileEntry {
                     name: "folder".to_string(),
                     path: "/Users/test/folder".to_string(),
                     is_directory: true,

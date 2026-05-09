@@ -1,6 +1,5 @@
 // MTP (Android device) support (macOS and Linux)
 
-import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { commands } from '$lib/ipc/bindings'
 import type { ConflictResolution, FileEntry, WriteOperationStartResult } from '../file-explorer/types'
@@ -53,8 +52,7 @@ export function getMtpDeviceDisplayName(device: MtpDeviceInfo): string {
  */
 export async function listMtpDevices(): Promise<MtpDeviceInfo[]> {
   try {
-    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-    return await invoke<MtpDeviceInfo[]>('list_mtp_devices')
+    return (await commands.listMtpDevices()) as MtpDeviceInfo[]
   } catch {
     // Command not available (non-macOS) - return empty array
     return []
@@ -112,8 +110,9 @@ export function isMtpConnectionError(error: unknown): error is MtpConnectionErro
  * @returns Information about the connected device including storages
  */
 export async function connectMtpDevice(deviceId: string): Promise<ConnectedMtpDeviceInfo> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-  return invoke<ConnectedMtpDeviceInfo>('connect_mtp_device', { deviceId })
+  const res = await commands.connectMtpDevice(deviceId)
+  if (res.status === 'error') throw res.error
+  return res.data as ConnectedMtpDeviceInfo
 }
 
 /**
@@ -133,8 +132,8 @@ export async function disconnectMtpDevice(deviceId: string): Promise<void> {
  */
 export async function getMtpDeviceInfo(deviceId: string): Promise<ConnectedMtpDeviceInfo | null> {
   try {
-    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-    return await invoke<ConnectedMtpDeviceInfo | null>('get_mtp_device_info', { deviceId })
+    const result = await commands.getMtpDeviceInfo(deviceId)
+    return result as ConnectedMtpDeviceInfo | null
   } catch {
     return null
   }
@@ -159,8 +158,8 @@ export async function getPtpcameradWorkaroundCommand(): Promise<string> {
  */
 export async function getMtpStorages(deviceId: string): Promise<MtpStorageInfo[]> {
   try {
-    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-    return await invoke<MtpStorageInfo[]>('get_mtp_storages', { deviceId })
+    const result = await commands.getMtpStorages(deviceId)
+    return result as MtpStorageInfo[]
   } catch {
     return []
   }
@@ -245,8 +244,9 @@ export async function onMtpDeviceDisconnected(
  * @returns Array of FileEntry objects, sorted with directories first
  */
 export async function listMtpDirectory(deviceId: string, storageId: number, path: string): Promise<FileEntry[]> {
-  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-  return invoke<FileEntry[]>('list_mtp_directory', { deviceId, storageId, path })
+  const res = await commands.listMtpDirectory(deviceId, storageId, path)
+  if (res.status === 'error') throw res.error
+  return res.data as FileEntry[]
 }
 
 // ============================================================================

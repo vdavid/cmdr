@@ -1,4 +1,4 @@
-use crate::mcp::pane_state::{FileEntry, PaneState, PaneStateStore};
+use crate::mcp::pane_state::{PaneFileEntry, PaneState, PaneStateStore};
 use crate::mcp::tools::get_all_tools;
 
 // =============================================================================
@@ -20,7 +20,7 @@ fn test_pane_state_store_update_left() {
         path: "/test/path".to_string(),
         volume_id: Some("test-vol".to_string()),
         volume_name: Some("Test Volume".to_string()),
-        files: vec![FileEntry {
+        files: vec![PaneFileEntry {
             name: "file1.txt".to_string(),
             path: "/test/path/file1.txt".to_string(),
             is_directory: false,
@@ -81,7 +81,7 @@ fn test_pane_state_cursor_index_bounds() {
         path: "/test".to_string(),
         volume_id: None,
         volume_name: None,
-        files: vec![FileEntry {
+        files: vec![PaneFileEntry {
             name: "file1.txt".to_string(),
             path: "/test/file1.txt".to_string(),
             is_directory: false,
@@ -114,7 +114,7 @@ fn test_pane_state_cursor_index_bounds() {
 
 #[test]
 fn test_file_entry_serialization() {
-    let entry = FileEntry {
+    let entry = PaneFileEntry {
         name: "test.txt".to_string(),
         path: "/path/to/test.txt".to_string(),
         is_directory: false,
@@ -130,8 +130,8 @@ fn test_file_entry_serialization() {
 }
 
 #[test]
-fn test_file_entry_optional_fields_omitted() {
-    let entry = FileEntry {
+fn test_file_entry_optional_fields_serialize_as_null() {
+    let entry = PaneFileEntry {
         name: "dir".to_string(),
         path: "/path/dir".to_string(),
         is_directory: true,
@@ -141,9 +141,9 @@ fn test_file_entry_optional_fields_omitted() {
     };
 
     let json = serde_json::to_value(&entry).unwrap();
-    // Optional fields with None should be omitted (per skip_serializing_if)
-    assert!(json.get("size").is_none());
-    assert!(json.get("modified").is_none());
+    // Optional fields with None serialize as JSON null (no skip_serializing_if).
+    assert_eq!(json.get("size").unwrap(), &serde_json::Value::Null);
+    assert_eq!(json.get("modified").unwrap(), &serde_json::Value::Null);
 }
 
 // =============================================================================
@@ -165,7 +165,7 @@ fn test_tool_names_are_case_sensitive() {
 #[test]
 fn test_unicode_in_file_entries() {
     // The store should handle Unicode filenames correctly
-    let entry = FileEntry {
+    let entry = PaneFileEntry {
         name: "文件.txt".to_string(),
         path: "/path/文件.txt".to_string(),
         is_directory: false,
@@ -182,7 +182,7 @@ fn test_unicode_in_file_entries() {
 fn test_special_chars_in_file_paths() {
     // Paths can contain special characters
     let entries = vec![
-        FileEntry {
+        PaneFileEntry {
             name: "file with spaces.txt".to_string(),
             path: "/path/file with spaces.txt".to_string(),
             is_directory: false,
@@ -190,7 +190,7 @@ fn test_special_chars_in_file_paths() {
             recursive_size: None,
             modified: None,
         },
-        FileEntry {
+        PaneFileEntry {
             name: "file'with'quotes.txt".to_string(),
             path: "/path/file'with'quotes.txt".to_string(),
             is_directory: false,
@@ -198,7 +198,7 @@ fn test_special_chars_in_file_paths() {
             recursive_size: None,
             modified: None,
         },
-        FileEntry {
+        PaneFileEntry {
             name: "file\"doublequotes\".txt".to_string(),
             path: "/path/file\"doublequotes\".txt".to_string(),
             is_directory: false,
@@ -241,8 +241,8 @@ fn test_empty_file_list() {
 #[test]
 fn test_large_file_count() {
     // Simulate a directory with many files
-    let files: Vec<FileEntry> = (0..1000)
-        .map(|i| FileEntry {
+    let files: Vec<PaneFileEntry> = (0..1000)
+        .map(|i| PaneFileEntry {
             name: format!("file{i:04}.txt"),
             path: format!("/test/file{i:04}.txt"),
             is_directory: false,

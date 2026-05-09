@@ -108,6 +108,16 @@ var AllChecks = []CheckDefinition{
 		Run:               RunErrorStringMatch,
 	},
 	{
+		ID:                "desktop-bindings-fresh",
+		Nickname:          "bindings-fresh",
+		DisplayName:       "bindings-fresh",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: true, // runs `cargo nextest` to regen
+		DependsOn:         nil,
+		Run:               RunDesktopBindingsFresh,
+	},
+	{
 		ID:                "desktop-rust-tests",
 		Nickname:          "rust-tests",
 		DisplayName:       "tests",

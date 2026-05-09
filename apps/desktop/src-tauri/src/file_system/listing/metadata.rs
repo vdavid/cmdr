@@ -68,8 +68,8 @@ pub(crate) fn get_icon_id(is_dir: bool, is_symlink: bool, name: &str) -> String 
 /// Represents a file or directory entry with extended metadata.
 ///
 /// Only serialized (Rust → frontend); never sent from the frontend, so no `Deserialize`.
-/// The `Deserialize`-less derive prevents specta from splitting the type on
-/// `skip_serializing_if` fields, which would fail `validate_exported_command`.
+/// Fields that were previously omitted when `None`/empty now serialize as explicit `null`
+/// so specta's `validate_exported_command` accepts the type in Unified mode.
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FileEntry {
@@ -79,8 +79,6 @@ pub struct FileEntry {
     pub is_symlink: bool,
     pub size: Option<u64>,
     /// Physical size on disk in bytes (st_blocks * 512 on Unix, same as size on other platforms)
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[specta(optional)]
     pub physical_size: Option<u64>,
     pub modified_at: Option<u64>,
     pub created_at: Option<u64>,
@@ -96,26 +94,16 @@ pub struct FileEntry {
     /// Always true for legacy list_directory(), false for list_directory_core()
     pub extended_metadata_loaded: bool,
     /// Recursive size in bytes (from drive index, None if not indexed)
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[specta(optional)]
     pub recursive_size: Option<u64>,
     /// Recursive physical size on disk in bytes (from drive index, None if not indexed)
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[specta(optional)]
     pub recursive_physical_size: Option<u64>,
     /// Recursive file count (from drive index, None if not indexed)
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[specta(optional)]
     pub recursive_file_count: Option<u64>,
     /// Recursive dir count (from drive index, None if not indexed)
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[specta(optional)]
     pub recursive_dir_count: Option<u64>,
     /// True when the subtree contains symlinks (whose content is omitted from the
     /// recursive size). Drives the "size omits symlinked content" hint in the UI.
     /// `None` when the directory isn't indexed yet.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[specta(optional)]
     pub recursive_has_symlinks: Option<bool>,
     /// When set on a virtual entry, the frontend navigates to this path
     /// instead of treating the entry as a normal directory listing.
@@ -123,8 +111,6 @@ pub struct FileEntry {
     /// the schema from M1 so M3 doesn't have to ripple a change through every
     /// consumer (frontend list views, MCP `cmdr://state`, drag-drop, copy
     /// preview, Brief/Full renderers).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[specta(optional)]
     pub redirect_to_path: Option<String>,
     /// Loose Size-column override for virtual git entries: rendered verbatim
     /// in the Full mode Size column instead of formatted bytes from `size`.
@@ -133,14 +119,10 @@ pub struct FileEntry {
     /// branches, files-changed for commits, item count for category roots).
     /// Cross-category Size sorting is meaningless and that's an honest
     /// tradeoff — each cell is self-explaining via tooltip + aria-label.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[specta(optional)]
     pub display_size: Option<String>,
     /// Optional rich tooltip string for the Size cell, used when
     /// `display_size` is set. Example: "12 commits ahead, 3 commits behind
     /// `origin/main`". Doubles as the aria-label for screen readers.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[specta(optional)]
     pub display_size_tooltip: Option<String>,
 }
 

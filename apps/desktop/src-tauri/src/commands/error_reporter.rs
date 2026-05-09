@@ -3,7 +3,9 @@
 //! Two preview/send commands plus a debug-only save-to-disk command. Business logic lives
 //! in `crate::error_reporter` — these wrappers just shape inputs/outputs for the IPC layer.
 
-use crate::error_reporter::{self, BundleKind, BundleManifest, BundleScope, FLOW_A_BUNDLE_CAP_MB};
+use crate::error_reporter::{
+    self, BundleKind, BundleManifest, BundleScope, FLOW_A_BUNDLE_CAP_MB, settings_defaults::SettingValue,
+};
 use serde::Serialize;
 use std::collections::HashMap;
 
@@ -28,7 +30,7 @@ const MAX_USER_NOTE_CHARS: usize = 100_000;
 /// is missing or doesn't include a given key.
 #[tauri::command]
 #[specta::specta]
-pub fn record_settings_defaults(defaults: HashMap<String, serde_json::Value>) {
+pub fn record_settings_defaults(defaults: HashMap<String, SettingValue>) {
     error_reporter::settings_defaults::record(defaults);
 }
 

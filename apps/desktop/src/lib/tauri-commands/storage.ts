@@ -1,6 +1,5 @@
 // Volume management, space, and permissions
 
-import { invoke } from '@tauri-apps/api/core'
 import type { VolumeInfo } from '../file-explorer/types'
 import type { TimedOut } from './ipc-types'
 import { getAppLogger } from '$lib/logging/logger'
@@ -19,8 +18,7 @@ export const DEFAULT_VOLUME_ID = 'root'
  */
 export async function listVolumes(): Promise<TimedOut<VolumeInfo[]>> {
   try {
-    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-    return await invoke<TimedOut<VolumeInfo[]>>('list_volumes')
+    return (await commands.listVolumes()) as TimedOut<VolumeInfo[]>
   } catch {
     // Command not available (non-macOS) - return empty array
     return { data: [], timedOut: false }
@@ -67,8 +65,7 @@ export interface PathVolumeResolution {
  */
 export async function resolvePathVolume(path: string): Promise<PathVolumeResolution> {
   try {
-    // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- excluded from typed bindings (see ipc/CLAUDE.md); tracked for follow-up when specta supports skip_serializing_if
-    return await invoke<PathVolumeResolution>('resolve_path_volume', { path })
+    return (await commands.resolvePathVolume(path)) as PathVolumeResolution
   } catch {
     // Command not available — return no volume, not timed out
     return { volume: null, timedOut: false }
