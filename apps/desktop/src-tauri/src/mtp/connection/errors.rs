@@ -222,7 +222,9 @@ mod tests {
             device_id: "mtp-1-5".to_string(),
             path: "/DCIM/photo.jpg".to_string(),
         };
+        // allowed-error-string-match: testing Display impl of MtpConnectionError::ObjectNotFound
         assert!(err.to_string().contains("Object not found"));
+        // allowed-error-string-match: testing Display impl of MtpConnectionError::ObjectNotFound
         assert!(err.to_string().contains("/DCIM/photo.jpg"));
     }
 
@@ -339,6 +341,7 @@ mod tests {
         let err = MtpConnectionError::Timeout {
             device_id: "mtp-1-5".to_string(),
         };
+        // allowed-error-string-match: testing Display impl of MtpConnectionError::Timeout
         assert!(err.to_string().contains("timed out"));
     }
 
@@ -347,6 +350,7 @@ mod tests {
         let err = MtpConnectionError::Disconnected {
             device_id: "mtp-1-5".to_string(),
         };
+        // allowed-error-string-match: testing Display impl of MtpConnectionError::Disconnected
         assert!(err.to_string().contains("disconnected"));
     }
 
@@ -355,6 +359,7 @@ mod tests {
         let err = MtpConnectionError::PermissionDenied {
             device_id: "mtp-1-5".to_string(),
         };
+        // allowed-error-string-match: testing Display impl of MtpConnectionError::PermissionDenied
         assert!(err.to_string().contains("Permission denied"));
 
         let json = serde_json::to_string(&err).unwrap();
@@ -367,6 +372,7 @@ mod tests {
             device_id: "mtp-1-5".to_string(),
             message: "Custom error message".to_string(),
         };
+        // allowed-error-string-match: testing Display impl of MtpConnectionError::Other
         assert!(err.to_string().contains("Custom error message"));
     }
 }

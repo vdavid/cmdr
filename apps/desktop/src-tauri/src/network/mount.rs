@@ -441,7 +441,9 @@ mod tests {
         let err = error_from_code(ENOENT, "Share1", "Server1");
         match err {
             MountError::ShareNotFound { message } => {
+                // allowed-error-string-match: testing Display content of MountError::ShareNotFound message field
                 assert!(message.contains("Share1"));
+                // allowed-error-string-match: testing Display content of MountError::ShareNotFound message field
                 assert!(message.contains("Server1"));
             }
             _ => panic!("Expected ShareNotFound error"),

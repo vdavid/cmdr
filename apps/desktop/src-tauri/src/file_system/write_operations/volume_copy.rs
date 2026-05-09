@@ -1166,6 +1166,10 @@ pub(super) fn map_volume_error(context_path: &str, e: VolumeError) -> WriteOpera
             path: context_path.to_string(),
             message: git_err.to_string(),
         },
+        VolumeError::IsADirectory(path) => WriteOperationError::IoError {
+            path,
+            message: "Is a directory".to_string(),
+        },
     }
 }
 
@@ -1322,6 +1326,7 @@ mod tests {
     fn test_map_volume_error_not_supported() {
         let err = map_volume_error("/ctx", VolumeError::NotSupported);
         assert!(
+            // allowed-error-string-match: testing Display impl of WriteOperationError; no typed sub-variant for "not supported"
             matches!(err, WriteOperationError::IoError { path, message } if message.contains("not supported") && path == "/ctx")
         );
     }

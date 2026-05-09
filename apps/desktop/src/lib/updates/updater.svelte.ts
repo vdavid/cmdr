@@ -6,6 +6,7 @@ import UpdateToastContent from './UpdateToastContent.svelte'
 import UpdateCheckToastContent from './UpdateCheckToastContent.svelte'
 import { addToast, dismissToast } from '$lib/ui/toast'
 import { loadSettings, saveSettings } from '$lib/settings-store'
+import { isMacOS } from '$lib/shortcuts/key-capture'
 // `updateState` lives in its own module to avoid an import cycle: toast components read it directly,
 // and this module also imports those toast components. Re-exported here so existing consumers
 // (Settings section, command-dispatch, tests) keep using the old import path.
@@ -14,8 +15,6 @@ export { updateState }
 export type { UpdateInfo, UpdateState }
 
 const log = getAppLogger('updater')
-
-const isMacOS = navigator.userAgent.includes('Macintosh')
 
 /** Gets the update check interval from settings (in milliseconds) */
 function getCheckIntervalMs(): number {
@@ -90,7 +89,7 @@ export async function checkForUpdates(): Promise<void> {
   // Platform branches diverge significantly: macOS runs three custom commands (split download +
   // install phases, preserves TCC), non-macOS uses the Tauri plugin's fused `downloadAndInstall`.
   // The two-phase error handling (warn on check, error on download/install) lives inside each.
-  if (isMacOS) {
+  if (isMacOS()) {
     await runMacUpdateFlow(currentVersion)
   } else {
     await runPluginUpdateFlow(currentVersion)

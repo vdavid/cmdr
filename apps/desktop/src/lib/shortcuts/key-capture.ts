@@ -6,6 +6,7 @@
 /** Check if running on macOS */
 export function isMacOS(): boolean {
   if (typeof navigator === 'undefined') return false
+  // eslint-disable-next-line cmdr/no-error-string-match -- canonical isMacOS() implementation; no platform API available
   return navigator.userAgent.toLowerCase().includes('mac')
 }
 

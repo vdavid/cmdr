@@ -129,9 +129,20 @@ fn fs_info_to_space_info(info: &smb2::client::tree::FsInfo) -> SpaceInfo {
     }
 }
 
+/// Returns true if an `smb2::Error`'s display string indicates STATUS_FILE_IS_A_DIRECTORY.
+///
+/// smb2 0.7.x doesn't expose NT_STATUS as a typed enum yet — string match is the only option.
+fn is_file_is_a_directory_error(err: &smb2::Error) -> bool {
+    // allowed-error-string-match: smb2 0.7.x doesn't expose NT_STATUS as a typed enum yet
+    err.to_string().contains("FILE_IS_A_DIRECTORY")
+}
+
 /// Converts an `smb2::Error` to `VolumeError`.
 fn map_smb_error(err: smb2::Error) -> VolumeError {
     use smb2::ErrorKind;
+    if is_file_is_a_directory_error(&err) {
+        return VolumeError::IsADirectory(err.to_string());
+    }
     match err.kind() {
         ErrorKind::NotFound => VolumeError::NotFound(err.to_string()),
         ErrorKind::AccessDenied | ErrorKind::AuthRequired | ErrorKind::SigningRequired => {
@@ -1279,7 +1290,7 @@ impl Volume for SmbVolume {
 
             match file_result {
                 Ok(()) => {} // File deleted successfully
-                Err(VolumeError::IoError { ref message, .. }) if message.contains("FILE_IS_A_DIRECTORY") => {
+                Err(VolumeError::IsADirectory(_)) => {
                     // It's a directory — try delete_directory
                     let (tree, mut conn) = self.clone_session().await?;
                     let r = tree.delete_directory(&mut conn, &smb_path).await;
@@ -2027,6 +2038,31 @@ mod tests {
         // IO errors (callback errors, etc.) are not connection losses — they map to IoError.
         // Real connection losses come through Error::Disconnected → ConnectionLost.
         assert!(matches!(ve, VolumeError::IoError { .. }));
+    }
+
+    #[test]
+    fn map_smb_error_file_is_a_directory() {
+        // STATUS_FILE_IS_A_DIRECTORY is returned by the server when delete_file is called on a dir.
+        // smb2 0.7.x surfaces this in the Display string, not as a typed ErrorKind variant.
+        let err = smb2::Error::Protocol {
+            status: smb2::types::status::NtStatus::FILE_IS_A_DIRECTORY,
+            command: smb2::types::Command::Create,
+        };
+        // Verify the helper correctly identifies the error.
+        assert!(is_file_is_a_directory_error(&err));
+        // Verify map_smb_error returns the typed variant.
+        let ve = map_smb_error(err);
+        assert!(matches!(ve, VolumeError::IsADirectory(_)));
+    }
+
+    #[test]
+    fn is_file_is_a_directory_error_negative() {
+        // Non-directory errors must not be misclassified.
+        let err = smb2::Error::Protocol {
+            status: smb2::types::status::NtStatus::ACCESS_DENIED,
+            command: smb2::types::Command::Create,
+        };
+        assert!(!is_file_is_a_directory_error(&err));
     }
 
     // ── Connection state tests ──────────────────────────────────────

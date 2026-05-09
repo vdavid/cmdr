@@ -12,6 +12,7 @@ if (import.meta.hot) {
   const DEBOUNCE_MS = 3000
 
   window.addEventListener('unhandledrejection', (event) => {
+    // eslint-disable-next-line cmdr/no-error-string-match -- workaround for sveltejs/kit#15287; remove when upstream fix lands
     if (event.reason instanceof ReferenceError && event.reason.message.includes('component')) {
       event.preventDefault()
 

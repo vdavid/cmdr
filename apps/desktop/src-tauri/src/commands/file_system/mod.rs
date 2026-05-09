@@ -85,6 +85,7 @@ mod tests {
         fs::create_dir(tmp.join("existing")).unwrap();
         let result = create_directory_core(None, &parent, "existing").await;
         assert!(result.is_err());
+        // allowed-error-string-match: IpcError is a flat struct with no typed variants — message content is the only signal
         assert!(result.unwrap_err().message.contains("already exists"));
         cleanup_test_dir(&tmp);
     }
@@ -95,6 +96,7 @@ mod tests {
         let parent = tmp.to_string_lossy().to_string();
         let result = create_directory_core(None, &parent, "").await;
         assert!(result.is_err());
+        // allowed-error-string-match: IpcError is a flat struct with no typed variants — message content is the only signal
         assert!(result.unwrap_err().message.contains("cannot be empty"));
         cleanup_test_dir(&tmp);
     }
@@ -105,10 +107,12 @@ mod tests {
         let parent = tmp.to_string_lossy().to_string();
         let result = create_directory_core(None, &parent, "foo/bar").await;
         assert!(result.is_err());
+        // allowed-error-string-match: IpcError is a flat struct with no typed variants — message content is the only signal
         assert!(result.unwrap_err().message.contains("invalid characters"));
 
         let result = create_directory_core(None, &parent, "foo\0bar").await;
         assert!(result.is_err());
+        // allowed-error-string-match: IpcError is a flat struct with no typed variants — message content is the only signal
         assert!(result.unwrap_err().message.contains("invalid characters"));
         cleanup_test_dir(&tmp);
     }
@@ -139,6 +143,7 @@ mod tests {
         fs::write(tmp.join("existing.txt"), b"hello").unwrap();
         let result = create_file_core(None, &parent, "existing.txt").await;
         assert!(result.is_err());
+        // allowed-error-string-match: IpcError is a flat struct with no typed variants — message content is the only signal
         assert!(result.unwrap_err().message.contains("already exists"));
         cleanup_test_dir(&tmp);
     }
@@ -149,6 +154,7 @@ mod tests {
         let parent = tmp.to_string_lossy().to_string();
         let result = create_file_core(None, &parent, "").await;
         assert!(result.is_err());
+        // allowed-error-string-match: IpcError is a flat struct with no typed variants — message content is the only signal
         assert!(result.unwrap_err().message.contains("cannot be empty"));
         cleanup_test_dir(&tmp);
     }
@@ -159,10 +165,12 @@ mod tests {
         let parent = tmp.to_string_lossy().to_string();
         let result = create_file_core(None, &parent, "foo/bar.txt").await;
         assert!(result.is_err());
+        // allowed-error-string-match: IpcError is a flat struct with no typed variants — message content is the only signal
         assert!(result.unwrap_err().message.contains("invalid characters"));
 
         let result = create_file_core(None, &parent, "foo\0bar.txt").await;
         assert!(result.is_err());
+        // allowed-error-string-match: IpcError is a flat struct with no typed variants — message content is the only signal
         assert!(result.unwrap_err().message.contains("invalid characters"));
         cleanup_test_dir(&tmp);
     }

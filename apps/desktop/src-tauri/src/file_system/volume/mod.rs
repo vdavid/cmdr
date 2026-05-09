@@ -164,6 +164,8 @@ pub enum VolumeError {
     ConnectionTimeout(String),
     /// Operation was cancelled by the user (progress callback returned Break).
     Cancelled(String),
+    /// The path is a directory, not a file (for example, SMB STATUS_FILE_IS_A_DIRECTORY).
+    IsADirectory(String),
     IoError {
         message: String,
         raw_os_error: Option<i32>,
@@ -191,6 +193,7 @@ impl std::fmt::Display for VolumeError {
             Self::StorageFull { message } => write!(f, "Storage full: {}", message),
             Self::ConnectionTimeout(msg) => write!(f, "Connection timed out: {}", msg),
             Self::Cancelled(msg) => write!(f, "Cancelled: {}", msg),
+            Self::IsADirectory(path) => write!(f, "Is a directory: {}", path),
             Self::IoError { message, .. } => write!(f, "I/O error: {}", message),
             Self::FriendlyGit(err) => write!(f, "git: {}", err),
         }

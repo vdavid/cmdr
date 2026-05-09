@@ -201,6 +201,18 @@ resilience, and common pitfalls.
   — skipping it breaks the app. For E2E builds:
   `node scripts/tauri-wrapper.js build --no-bundle --target $(rustc -vV | grep host | cut -d' ' -f2) -- --features playwright-e2e,virtual-mtp,smb-e2e`.
   The binary lands in `<repo>/target/<triple>/release/Cmdr`.
+- ❌ **No string-matching error or state classification.** Don't classify errors, app state, or control flow by checking
+  substrings of a message, stderr, error title, or any other free-form text. Use a typed enum variant, an errno code, or
+  an explicit flag on the struct that crosses the IPC boundary. The wording is for the user to read — code that branches
+  on it breaks silently when copy changes, when the OS localizes, or when an upstream library reformats its messages.
+  - **Tests too**: prefer `assert!(matches!(err, VolumeError::AlreadyExists(_)))` over `err.message.contains("...")`.
+    The variant is the contract; the message is documentation.
+  - **Enforced by**: `error-string-match` (Rust check, scans `apps/desktop/src-tauri/src/`) and
+    `cmdr/no-error-string-match` (ESLint rule, scans `apps/desktop/src/`).
+  - **Opt out only when there's no other option** (third-party CLI with no exit-code differentiation, etc.). Add
+    `// allowed-error-string-match: <reason>` on the line above (Rust) or
+    `// eslint-disable-next-line cmdr/no-error-string-match -- <reason>` (TS/Svelte). Pair the opt-out with `LC_ALL=C`
+    on the subprocess and snapshot tests pinning the matched strings against a tool version.
 
 ## Workflow
 

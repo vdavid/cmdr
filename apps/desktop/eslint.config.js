@@ -28,6 +28,7 @@ import svelte from 'eslint-plugin-svelte'
 import svelteParser from 'svelte-eslint-parser'
 import globals from 'globals'
 import noIsolatedTests from './eslint-plugins/no-isolated-tests.js'
+import noErrorStringMatch from './eslint-plugins/no-error-string-match.js'
 
 /* global process */
 const noTypecheck = process.env.ESLINT_NO_TYPECHECK === '1'
@@ -209,6 +210,22 @@ export default tseslint.config(
     },
     rules: {
       'custom/no-isolated-tests': 'error',
+    },
+  },
+  {
+    // String-matching error/state values is fragile (couples to wording that's
+    // free to change). Push toward typed flags from the backend struct. Mirrors
+    // the Rust-side `error-string-match` check in `scripts/check/checks/`.
+    files: ['src/**/*.{ts,svelte.ts,svelte}', 'src/**/*.test.ts'],
+    plugins: {
+      cmdr: {
+        rules: {
+          'no-error-string-match': noErrorStringMatch,
+        },
+      },
+    },
+    rules: {
+      'cmdr/no-error-string-match': 'error',
     },
   },
 )

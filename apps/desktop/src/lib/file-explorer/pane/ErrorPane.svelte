@@ -64,9 +64,7 @@
         return `${String(hours)}h ago`
     }
 
-    const isPermissionDenied = $derived(
-        friendly.category === 'needs_action' && friendly.title.toLowerCase().includes('no permission'),
-    )
+    const isPermissionDenied = $derived(friendly.actionKind === 'open_privacy_settings')
 
     const showRetryButton = $derived(friendly.category === 'transient' && friendly.retryHint)
 

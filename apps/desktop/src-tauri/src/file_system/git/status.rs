@@ -1,13 +1,15 @@
 //! Per-entry git status for a working-tree directory.
 //!
-//! v1 shells out to `git status --porcelain=v2 --untracked-files=normal`
-//! because gix's `Repository::status()` iterator missed staged additions in
-//! our fixture-driven tests against a single-commit repo. The shell-out has
-//! a 5 s timeout via the IPC layer and gives us identical semantics to the
-//! command line. See `CLAUDE.md` § "gix vs shell-out outcome" for details.
+//! Uses `gix::Repository::status()` to enumerate both staged changes (HEAD vs
+//! index) and worktree changes (index vs working tree) in one pass. The
+//! iterator yields `TreeIndex` items for staged changes and `IndexWorktree`
+//! items for worktree changes; we merge by path, giving staged changes
+//! priority (matching git's XY column precedence).
 //!
-//! The `git` binary is part of the project's system requirements; no new
-//! external dependency is taken on.
+//! An earlier attempt (gix < 0.72) missed staged additions in fixture-driven
+//! tests against a single-commit repo. gix 0.81 ships the `TreeIndex` leg of
+//! the iterator via `into_iter()`, which handles this correctly. See
+//! `CLAUDE.md` § Decisions for the full history.
 //!
 //! ## Caching
 //!
@@ -20,7 +22,6 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 use std::sync::{OnceLock, RwLock};
 use std::time::SystemTime;
 
@@ -102,7 +103,7 @@ struct CachedStatus {
     /// the index file didn't exist (unborn repo). The cache still keys on
     /// this so a later `git add` (which creates the index) invalidates.
     index_mtime: Option<SystemTime>,
-    /// All entries from a full-repo `git status --porcelain=v2 -z`.
+    /// All entries from a full-repo gix status walk.
     /// Keyed by relative path (forward-slashed) for quick prefix slicing.
     entries: Vec<EntryStatus>,
 }
@@ -149,9 +150,9 @@ fn index_mtime(index_path: &Path) -> Option<SystemTime> {
 /// Lists the per-entry status for the worktree.
 ///
 /// Caches the full-repo result keyed by `.git/index` mtime and slices by
-/// `dir_in_worktree` on the way out. Cache misses run a full
-/// `git status --porcelain=v2 -z --untracked-files=normal` (no pathspec)
-/// so any pane on the same repo benefits from the warm cache afterwards.
+/// `dir_in_worktree` on the way out. Cache misses run a full gix status walk
+/// (no pathspec) so any pane on the same repo benefits from the warm cache
+/// afterwards.
 ///
 /// `dir_in_worktree` scopes the *result* to a subtree. An empty / repo-root
 /// scope returns the whole worktree.
@@ -175,7 +176,7 @@ pub fn list_status(repo: &RepoHandle, dir_in_worktree: &Path) -> Result<Vec<Entr
     }
 
     // Cache miss or stale: run a full-repo walk.
-    let entries = run_full_repo_status(&work_dir)?;
+    let entries = run_full_repo_status(repo)?;
     let sliced = slice_entries(&entries, &work_dir, dir_in_worktree);
 
     if let Ok(mut guard) = status_cache().write() {
@@ -191,32 +192,133 @@ pub fn list_status(repo: &RepoHandle, dir_in_worktree: &Path) -> Result<Vec<Entr
     Ok(sliced)
 }
 
-/// Runs `git status --porcelain=v2 -z` over the whole worktree and parses it.
-fn run_full_repo_status(work_dir: &Path) -> Result<Vec<EntryStatus>, FriendlyGitError> {
-    let output = Command::new("git")
-        .arg("-C")
-        .arg(work_dir)
-        .args(["status", "--porcelain=v2", "--untracked-files=normal", "-z"])
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
+/// Runs a full-repo status walk via gix and returns one [`EntryStatus`] per
+/// changed path.
+///
+/// Uses `gix::Repository::status()` which runs both a HEAD-vs-index diff
+/// (`TreeIndex` items, for staged changes) and an index-vs-worktree walk
+/// (`IndexWorktree` items, for unstaged changes) in parallel. Items are merged
+/// by path; staged changes take precedence over worktree changes, matching
+/// git's XY column precedence in `--porcelain=v2` output.
+///
+/// Error mapping is typed: no string parsing of stderr is performed.
+fn run_full_repo_status(repo: &RepoHandle) -> Result<Vec<EntryStatus>, FriendlyGitError> {
+    let local = repo.to_thread_local();
+    let work_dir = local
+        .workdir()
+        .ok_or_else(|| FriendlyGitError::new(FriendlyGitErrorKind::BareRepo, ""))?;
+
+    let platform = local
+        .status(gix::progress::Discard)
+        .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?
+        .untracked_files(gix::status::UntrackedFiles::Files);
+
+    let iter = platform
+        .into_iter(std::iter::empty::<gix::bstr::BString>())
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let kind = if stderr.contains("index.lock") || stderr.contains("Unable to create") {
-            FriendlyGitErrorKind::IndexLocked
-        } else {
-            FriendlyGitErrorKind::CorruptRepo
-        };
-        return Err(FriendlyGitError {
-            kind,
-            path: work_dir.display().to_string(),
-            raw: Some(stderr.into_owned()),
-        });
+    // Collect items. TreeIndex items (staged changes) and IndexWorktree items
+    // (worktree changes) can both reference the same path; we give TreeIndex
+    // priority by inserting it last.
+    let mut by_path: HashMap<String, EntryStatusCode> = HashMap::new();
+
+    for item_result in iter {
+        let item = item_result
+            .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
+
+        match item {
+            gix::status::Item::IndexWorktree(iw_item) => {
+                if let Some((path, code)) = index_worktree_to_entry(&iw_item, work_dir) {
+                    // Only insert if no TreeIndex entry already claimed this path.
+                    by_path.entry(path).or_insert(code);
+                }
+            }
+            gix::status::Item::TreeIndex(ref ti_change) => {
+                if let Some((path, code)) = tree_index_to_entry(ti_change) {
+                    // TreeIndex (staged) takes priority: overwrite any worktree entry.
+                    by_path.insert(path, code);
+                }
+            }
+        }
     }
 
-    Ok(parse_porcelain_v2(&output.stdout))
+    let mut entries: Vec<EntryStatus> = by_path
+        .into_iter()
+        .map(|(relative_path, code)| EntryStatus { relative_path, code })
+        .collect();
+    entries.sort_by(|a, b| a.relative_path.cmp(&b.relative_path));
+    Ok(entries)
+}
+
+/// Maps a `TreeIndex` change (HEAD vs index, staged) to an entry.
+fn tree_index_to_entry(change: &gix::diff::index::Change) -> Option<(String, EntryStatusCode)> {
+    use gix::bstr::ByteSlice as _;
+    use gix::diff::index::ChangeRef;
+    let (location, code) = match change {
+        ChangeRef::Addition { location, .. } => (location, EntryStatusCode::Added),
+        ChangeRef::Deletion { location, .. } => (location, EntryStatusCode::Deleted),
+        ChangeRef::Modification { location, .. } => (location, EntryStatusCode::Modified),
+        ChangeRef::Rewrite { location, copy, .. } => {
+            if *copy {
+                (location, EntryStatusCode::Copied)
+            } else {
+                (location, EntryStatusCode::Renamed)
+            }
+        }
+    };
+    let path = location.to_str_lossy().replace('\\', "/");
+    Some((path, code))
+}
+
+/// Maps an `IndexWorktree` item (index vs worktree — i.e., unstaged) to an
+/// `EntryStatus`. Returns `None` for items that don't represent a user-visible
+/// change (for example, stat-refresh-only updates).
+fn index_worktree_to_entry(
+    item: &gix::status::index_worktree::Item,
+    work_dir: &Path,
+) -> Option<(String, EntryStatusCode)> {
+    use gix::bstr::ByteSlice as _;
+    use gix::dir::entry::Status as DirStatus;
+    use gix::status::index_worktree::Item as IwItem;
+    use gix::status::plumbing::index_as_worktree::{Change, EntryStatus as GixEntryStatus};
+
+    match item {
+        IwItem::Modification { rela_path, status, .. } => {
+            let code = match status {
+                GixEntryStatus::Change(Change::Removed) => EntryStatusCode::Deleted,
+                GixEntryStatus::Change(Change::Modification { .. }) => EntryStatusCode::Modified,
+                GixEntryStatus::Change(Change::Type { .. }) => EntryStatusCode::TypeChange,
+                GixEntryStatus::Change(Change::SubmoduleModification(_)) => EntryStatusCode::Modified,
+                GixEntryStatus::Conflict { .. } => EntryStatusCode::Conflicted,
+                // NeedsUpdate and IntentToAdd are not user-visible changes.
+                GixEntryStatus::NeedsUpdate(_) | GixEntryStatus::IntentToAdd => return None,
+            };
+            let path = rela_path.to_str_lossy().replace('\\', "/");
+            Some((path, code))
+        }
+        IwItem::DirectoryContents { entry, .. } => {
+            let code = match entry.status {
+                DirStatus::Untracked => EntryStatusCode::Untracked,
+                DirStatus::Ignored(_) => EntryStatusCode::Ignored,
+                DirStatus::Tracked | DirStatus::Pruned => return None,
+            };
+            // The dirwalk entry path is relative to work_dir; no strip needed.
+            let _ = work_dir;
+            let path = entry.rela_path.to_str_lossy().replace('\\', "/");
+            Some((path, code))
+        }
+        IwItem::Rewrite {
+            dirwalk_entry, copy, ..
+        } => {
+            let code = if *copy {
+                EntryStatusCode::Copied
+            } else {
+                EntryStatusCode::Renamed
+            };
+            let path = dirwalk_entry.rela_path.to_str_lossy().replace('\\', "/");
+            Some((path, code))
+        }
+    }
 }
 
 /// Returns the entries that fall under `dir_in_worktree`. Repo-root scope
@@ -234,139 +336,6 @@ fn slice_entries(entries: &[EntryStatus], work_dir: &Path, dir_in_worktree: &Pat
         .filter(|e| e.relative_path.starts_with(&prefix) || e.relative_path == rel)
         .cloned()
         .collect()
-}
-
-/// Parses git's `--porcelain=v2 -z` NUL-separated output.
-///
-/// Each record is one of:
-/// - `1 XY ...` ordinary changed entries (one path)
-/// - `2 XY ...` renamed/copied entries (NUL-separated `<path>\0<orig>`)
-/// - `u XY ...` unmerged entries (one path)
-/// - `? <path>` untracked
-/// - `! <path>` ignored
-fn parse_porcelain_v2(stdout: &[u8]) -> Vec<EntryStatus> {
-    let mut out = Vec::new();
-    let mut iter = stdout.split(|b| *b == 0).peekable();
-    while let Some(record) = iter.next() {
-        if record.is_empty() {
-            continue;
-        }
-        let rec = String::from_utf8_lossy(record).into_owned();
-        let mut chars = rec.chars();
-        match chars.next() {
-            Some('?') => {
-                if let Some(path) = rec.get(2..) {
-                    out.push(EntryStatus {
-                        relative_path: path.to_string(),
-                        code: EntryStatusCode::Untracked,
-                    });
-                }
-            }
-            Some('!') => {
-                if let Some(path) = rec.get(2..) {
-                    out.push(EntryStatus {
-                        relative_path: path.to_string(),
-                        code: EntryStatusCode::Ignored,
-                    });
-                }
-            }
-            Some('1') => {
-                // `1 XY <sub> <mode_h> <mode_i> <mode_w> <h_h> <h_i> <path>`
-                let parts: Vec<&str> = rec.splitn(9, ' ').collect();
-                if parts.len() >= 9 {
-                    let xy = parts[1];
-                    let path = parts[8];
-                    if let Some(code) = code_from_xy(xy) {
-                        out.push(EntryStatus {
-                            relative_path: path.to_string(),
-                            code,
-                        });
-                    }
-                }
-            }
-            Some('2') => {
-                // Rename/copy: header followed by NUL `<orig>` field.
-                let parts: Vec<&str> = rec.splitn(10, ' ').collect();
-                if parts.len() >= 10 {
-                    let xy = parts[1];
-                    let path = parts[9];
-                    let _orig = iter.next();
-                    let code = if xy.starts_with('C') || xy.contains('C') {
-                        EntryStatusCode::Copied
-                    } else {
-                        EntryStatusCode::Renamed
-                    };
-                    out.push(EntryStatus {
-                        relative_path: path.to_string(),
-                        code,
-                    });
-                }
-            }
-            Some('u') => {
-                // Unmerged: `u XY <sub> <m1> <m2> <m3> <mw> <h1> <h2> <h3> <path>`
-                let parts: Vec<&str> = rec.splitn(11, ' ').collect();
-                if parts.len() >= 11 {
-                    out.push(EntryStatus {
-                        relative_path: parts[10].to_string(),
-                        code: EntryStatusCode::Conflicted,
-                    });
-                }
-            }
-            _ => {}
-        }
-    }
-    out
-}
-
-/// Maps the `XY` columns from porcelain v2 to a single status code.
-/// `X` is the index-vs-HEAD column, `Y` is the worktree-vs-index column.
-/// We pick the more "user-meaningful" one: a staged add with a worktree
-/// modification still shows as Added in the column.
-fn code_from_xy(xy: &str) -> Option<EntryStatusCode> {
-    let mut chars = xy.chars();
-    let x = chars.next()?;
-    let y = chars.next()?;
-    // Index changes (X) take precedence – they reflect what's about to land.
-    let from = |c: char| -> Option<EntryStatusCode> {
-        match c {
-            'M' => Some(EntryStatusCode::Modified),
-            'A' => Some(EntryStatusCode::Added),
-            'D' => Some(EntryStatusCode::Deleted),
-            'R' => Some(EntryStatusCode::Renamed),
-            'C' => Some(EntryStatusCode::Copied),
-            'T' => Some(EntryStatusCode::TypeChange),
-            'U' => Some(EntryStatusCode::Conflicted),
-            '.' | ' ' => None,
-            _ => None,
-        }
-    };
-    from(x).or_else(|| from(y))
-}
-
-#[cfg(test)]
-mod parse_tests {
-    use super::*;
-
-    #[test]
-    fn parses_untracked_and_modified_and_added() {
-        // Hand-crafted -z output mimicking the CLI we shell out to.
-        let stdout = b"1 .M N... 100644 100644 100644 deadbeef deadbeef README.md\0\
-1 A. N... 000000 100644 100644 0000000000000000000000000000000000000000 f2ad README.added.txt\0\
-? untracked.txt\0\
-! ignored.log\0";
-        let entries = parse_porcelain_v2(stdout);
-        let codes: Vec<EntryStatusCode> = entries.iter().map(|e| e.code).collect();
-        assert!(codes.contains(&EntryStatusCode::Modified));
-        assert!(codes.contains(&EntryStatusCode::Added));
-        assert!(codes.contains(&EntryStatusCode::Untracked));
-        assert!(codes.contains(&EntryStatusCode::Ignored));
-    }
-
-    #[test]
-    fn empty_input_parses_to_empty() {
-        let entries = parse_porcelain_v2(b"");
-        assert!(entries.is_empty());
-    }
 }
 
 #[cfg(test)]
@@ -430,8 +399,9 @@ mod slice_tests {
 #[cfg(test)]
 mod cache_tests {
     //! Cache hit / miss / mtime invalidation tests. These build a tiny real
-    //! repo so we exercise the actual `git status` shell-out path, not just
-    //! the parser. Total runtime ~200 ms each.
+    //! repo so we exercise the gix status walk path. Total runtime ~200 ms each.
+    use std::process::{Command, Stdio};
+
     use super::super::repo::discover_repo;
     use super::*;
 

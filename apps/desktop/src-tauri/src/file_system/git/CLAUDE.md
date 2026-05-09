@@ -33,7 +33,7 @@ old `raw/` escape hatch is gone.**
 | `tree.rs` | `list_tree`, `get_tree_entry`, `lookup_blob_id`, `read_blob` – gix tree walks. Permissions reflect `EntryKind::BlobExecutable` so cross-volume copy preserves the executable bit. `list_tree` calls `snapshot_dates::decode_per_file_dates` for per-file Modified dates, falling back to the snapshot date |
 | `snapshot_dates.rs` | `decode_per_file_dates(commit, dir_path)` walks commits backwards from `commit`, diffs each against its first parent, and attributes the committer time to any pending top-level entry the diff touches. Capped at `MAX_COMMITS_PER_WALK` (1000). FIFO-bounded process-global cache keyed on `(commit_id, dir_path)` — cache is content-addressable so it never goes stale |
 | `read_blob.rs` | `GitBlobReadStream` – owns the full `Vec<u8>` and yields 256 KB chunks. See *Honest blob streaming* below |
-| `status.rs` | `list_status(repo, dir)` runs a full-repo `git status --porcelain=v2 -z` once per `.git/index` mtime, caches the result in a process-global `RwLock<HashMap<RepoRoot, CachedStatus>>`, and slices it by `dir`. The watcher invalidates the snapshot whenever `.git/*` changes. Parses porcelain v2 in `parse_porcelain_v2`. |
+| `status.rs` | `list_status(repo, dir)` runs a full-repo gix status walk once per `.git/index` mtime, caches the result in a process-global `RwLock<HashMap<RepoRoot, CachedStatus>>`, and slices it by `dir`. Uses `gix::Repository::status().into_iter()` which emits `TreeIndex` items (staged changes) and `IndexWorktree` items (worktree changes). The watcher invalidates the snapshot whenever `.git/*` changes. |
 | `watcher.rs` | `GitWatcherRegistry` – per-repo notify-rs debouncer. `subscribe(app, root)` returns the current `RepoInfo` synchronously and emits `git-state-changed` on relevant `.git/*` mutations. 200 ms debounce. M2: also calls `notify_directory_changed(.., FullRefresh)` for any cached `.git/{branches,tags}/` listings on the local volume |
 | `friendly.rs` | `FriendlyGitError`, `FriendlyGitErrorKind` – ten variants (M1's six, `BlobTooLarge` from M2, plus M4's `ShallowBoundary`, `MissingObject`, `GitDirPermissionDenied`). Active-voice copy, no "error" / "failed". `to_friendly_error()` builds a `volume::FriendlyError` for `ErrorPane`. The volume hooks wrap a `FriendlyGitError` directly inside the typed `VolumeError::FriendlyGit` variant so the streaming pipeline carries the structured payload end-to-end without string parsing |
 | `column_meta.rs` | Per-row column-population helpers shared across `virtual_listing`, `log`, `tree`, etc. — `pluralize`, `ahead_behind_for_branch`, `commit_meta`, `files_changed_count`, `recursive_tree_size`, plus newest-of-set helpers for category-level Modified dates |
@@ -286,16 +286,8 @@ refs, commits resolve a SHA prefix, stash expands `stash@{n}`, but the
 *tree-walking* code path is identical. The new method name describes
 the contract. The dispatch lives in `mod.rs::resolve_commit_for_cat`.
 
-**Decision**: Shell out to `git status --porcelain=v2 -z` for `list_status`
-rather than driving `gix::Repository::status()` directly
-**Why**: gix's status iterator missed staged additions in our fixture-driven
-tests against a single-commit repo (we kept getting "Modified" and
-"Untracked" but no "Added" – the tree-vs-index thread didn't fire). The
-shell-out matches `git status` semantics 1:1, fits inside the 100 ms budget
-even for 50k-file repos, and avoids carrying a partial reimplementation of
-porcelain v2 for the few remaining shapes. The `git` binary is part of the
-project's system requirements anyway. If gix fixes the iter coverage in a
-future release, swap back behind a feature flag.
+**Decision (2026-05-09, M4 follow-up second attempt)**: Switched from `git status --porcelain=v2 -z` to `gix::Repository::status()` for `list_status`
+**Why**: The M4 original implementation shelled out to `git status --porcelain=v2 -z` because an earlier gix attempt missed staged additions in our fixture-driven tests against a single-commit repo (the tree-vs-index thread never fired). In gix 0.81, `Repository::status().into_iter()` runs both a `TreeIndex` leg (HEAD vs index, for staged changes) and an `IndexWorktree` leg (index vs worktree, for unstaged changes) in parallel. The `TreeIndex` leg is the one that surfaces staged additions, and it works correctly in 0.81. All 90 git module tests pass, including `slice_returns_only_subtree_entries_from_cached_walk` (the staged-add test that previously broke) and `index_mtime_change_invalidates_cache`. The gix approach is fully typed — no string parsing of stderr — which drops the `stderr.contains(...)` error classification that violated the no-error-string-match rule. Error mapping is now entirely through typed enum variants. The shell-out and its `parse_porcelain_v2` / `code_from_xy` helpers are removed.
 
 **Decision**: `discover_repo` rejects bare repos via `BareRepo`
 **Why**: The whole UX (chip, status column, future portal) is anchored on

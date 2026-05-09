@@ -584,6 +584,7 @@ mod tests {
                 suggestion: "placeholder".into(),
                 raw_detail: "test".into(),
                 retry_hint: false,
+                action_kind: None,
             };
             let suggestion = provider_suggestion(&Provider::MacFuse, &error);
             assert!(
@@ -610,6 +611,7 @@ mod tests {
                 suggestion: "placeholder".into(),
                 raw_detail: "test".into(),
                 retry_hint: false,
+                action_kind: None,
             };
             let suggestion = provider_suggestion(&Provider::PCloudFuse, &error);
             assert!(
@@ -639,6 +641,7 @@ mod tests {
                     suggestion: "placeholder".into(),
                     raw_detail: "test".into(),
                     retry_hint: false,
+                    action_kind: None,
                 };
                 let suggestion = provider_suggestion(provider, &error);
                 let lower = suggestion.to_lowercase();
@@ -663,6 +666,7 @@ mod tests {
             suggestion: "placeholder".into(),
             raw_detail: "test".into(),
             retry_hint: false,
+            action_kind: None,
         };
         let suggestion = provider_suggestion(&Provider::MacFuse, &error);
         assert!(
@@ -681,6 +685,7 @@ mod tests {
             suggestion: "placeholder".into(),
             raw_detail: "test".into(),
             retry_hint: false,
+            action_kind: None,
         };
         let suggestion = provider_suggestion(&Provider::PCloudFuse, &error);
         assert!(

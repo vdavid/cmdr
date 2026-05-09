@@ -239,6 +239,37 @@ pub fn build_smbutil_url(
     }
 }
 
+/// Outcome of classifying smbutil's stderr output.
+#[cfg_attr(
+    not(target_os = "macos"),
+    allow(dead_code, reason = "Used by macOS smbutil path and tests")
+)]
+#[derive(Debug, PartialEq, Eq)]
+enum SmbutilOutcome {
+    /// Authentication error — smbutil explicitly reported credentials were rejected.
+    AuthRequired,
+    /// Any other failure — include the stderr message as context.
+    ProtocolError(String),
+}
+
+/// Classifies smbutil's stderr text into a typed outcome.
+///
+/// smbutil has no structured error output; string matching is unavoidable here.
+/// LC_ALL=C / LANG=C is forced in `run_smbutil_view` so these strings are always
+/// in English regardless of the user's locale.
+#[cfg_attr(
+    not(target_os = "macos"),
+    allow(dead_code, reason = "Used by macOS smbutil path and tests")
+)]
+fn classify_smbutil_stderr(stderr: &str) -> SmbutilOutcome {
+    // allowed-error-string-match: smbutil CLI has no structured error output — LC_ALL=C forces English strings
+    if stderr.contains("Authentication error") || stderr.contains("rejected the authentication") {
+        SmbutilOutcome::AuthRequired
+    } else {
+        SmbutilOutcome::ProtocolError(stderr.trim().to_string())
+    }
+}
+
 /// Runs smbutil view command and returns parsed shares.
 /// `use_guest` controls whether to use -G flag (guest access).
 #[cfg(target_os = "macos")]
@@ -248,6 +279,9 @@ async fn run_smbutil_view(url: &str, use_guest: bool) -> Result<Vec<ShareInfo>, 
     let url_owned = url.to_string();
     let output = tokio::task::spawn_blocking(move || {
         let mut cmd = Command::new("smbutil");
+        // Force English output so classify_smbutil_stderr always matches English strings,
+        // regardless of the user's system locale.
+        cmd.env("LC_ALL", "C").env("LANG", "C");
         cmd.arg("view").arg("-N");
         if use_guest {
             cmd.arg("-G");
@@ -272,14 +306,14 @@ async fn run_smbutil_view(url: &str, use_guest: bool) -> Result<Vec<ShareInfo>, 
             stdout
         );
 
-        if stderr.contains("Authentication error") || stderr.contains("rejected the authentication") {
-            return Err(ShareListError::AuthRequired {
+        return match classify_smbutil_stderr(&stderr) {
+            SmbutilOutcome::AuthRequired => Err(ShareListError::AuthRequired {
                 message: "smbutil: Authentication required".to_string(),
-            });
-        }
-        return Err(ShareListError::ProtocolError {
-            message: format!("smbutil failed: {}", stderr.trim()),
-        });
+            }),
+            SmbutilOutcome::ProtocolError(msg) => Err(ShareListError::ProtocolError {
+                message: format!("smbutil failed: {}", msg),
+            }),
+        };
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -613,5 +647,31 @@ Documents                                       Disk
         let shares = parse_smbutil_output(output);
         assert_eq!(shares.len(), 1);
         assert_eq!(shares[0].name, "Documents");
+    }
+
+    // ── classify_smbutil_stderr tests ──────────────────────────────────
+
+    #[test]
+    fn classify_authentication_error_phrase() {
+        assert_eq!(
+            classify_smbutil_stderr("Authentication error\n"),
+            SmbutilOutcome::AuthRequired
+        );
+    }
+
+    #[test]
+    fn classify_rejected_the_authentication_phrase() {
+        assert_eq!(
+            classify_smbutil_stderr("server rejected the authentication\n"),
+            SmbutilOutcome::AuthRequired
+        );
+    }
+
+    #[test]
+    fn classify_protocol_error_for_unknown_stderr() {
+        assert_eq!(
+            classify_smbutil_stderr("  connection refused  "),
+            SmbutilOutcome::ProtocolError("connection refused".to_string())
+        );
     }
 }

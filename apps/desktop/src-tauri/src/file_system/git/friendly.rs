@@ -238,6 +238,7 @@ impl FriendlyGitError {
             suggestion: self.kind.suggestion().to_string(),
             raw_detail,
             retry_hint: matches!(self.kind.category(), ErrorCategory::Transient),
+            action_kind: None,
         }
     }
 }

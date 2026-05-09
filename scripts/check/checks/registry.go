@@ -98,6 +98,16 @@ var AllChecks = []CheckDefinition{
 		Run:               RunLogErrorMacro,
 	},
 	{
+		ID:                "desktop-rust-error-string-match",
+		Nickname:          "error-string-match",
+		DisplayName:       "error-string-match",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		Run:               RunErrorStringMatch,
+	},
+	{
 		ID:                "desktop-rust-tests",
 		Nickname:          "rust-tests",
 		DisplayName:       "tests",

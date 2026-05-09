@@ -19,6 +19,18 @@ pub use super::provider::enrich_with_provider;
 // Data model
 // ============================================================================
 
+/// Typed action the frontend should offer alongside the error message.
+///
+/// Only set when a specific, platform-resolvable action is known. Defaults to `None`
+/// for all other errors. The frontend uses this to render an action button without
+/// substring-matching the title.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ErrorActionKind {
+    /// User should grant Full Disk Access in macOS System Settings → Privacy & Security.
+    OpenPrivacySettings,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FriendlyError {
@@ -32,6 +44,9 @@ pub struct FriendlyError {
     pub raw_detail: String,
     /// FE shows a "Try again" button when true.
     pub retry_hint: bool,
+    /// Typed action the frontend should offer. Drives the "Open System Settings" button
+    /// without substring-matching the title.
+    pub action_kind: Option<ErrorActionKind>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -80,6 +95,7 @@ pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> Frien
                 .into(),
             raw_detail: err.to_string(),
             retry_hint: false,
+            action_kind: None,
         },
 
         VolumeError::PermissionDenied(_) => FriendlyError {
@@ -99,6 +115,7 @@ pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> Frien
                 .into(),
             raw_detail: err.to_string(),
             retry_hint: false,
+            action_kind: Some(ErrorActionKind::OpenPrivacySettings),
         },
 
         VolumeError::AlreadyExists(_) => FriendlyError {
@@ -111,6 +128,7 @@ pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> Frien
             suggestion: "Rename the existing item or choose a different name for the new one.".into(),
             raw_detail: err.to_string(),
             retry_hint: false,
+            action_kind: None,
         },
 
         VolumeError::NotSupported => FriendlyError {
@@ -122,6 +140,7 @@ pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> Frien
             suggestion: "Try a different approach, or use Finder for this operation.".into(),
             raw_detail: err.to_string(),
             retry_hint: false,
+            action_kind: None,
         },
 
         VolumeError::DeviceDisconnected(_) => FriendlyError {
@@ -138,6 +157,7 @@ pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> Frien
                 .into(),
             raw_detail: err.to_string(),
             retry_hint: false,
+            action_kind: None,
         },
 
         VolumeError::ReadOnly(_) => FriendlyError {
@@ -154,6 +174,7 @@ pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> Frien
                 .into(),
             raw_detail: err.to_string(),
             retry_hint: false,
+            action_kind: None,
         },
 
         VolumeError::StorageFull { .. } => FriendlyError {
@@ -167,6 +188,7 @@ pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> Frien
                 .into(),
             raw_detail: err.to_string(),
             retry_hint: false,
+            action_kind: None,
         },
 
         VolumeError::ConnectionTimeout(_) => FriendlyError {
@@ -184,6 +206,7 @@ pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> Frien
                 .into(),
             raw_detail: err.to_string(),
             retry_hint: true,
+            action_kind: None,
         },
 
         VolumeError::Cancelled(_) => FriendlyError {
@@ -193,6 +216,17 @@ pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> Frien
             suggestion: "Navigate here again whenever you're ready to retry.".into(),
             raw_detail: err.to_string(),
             retry_hint: true,
+            action_kind: None,
+        },
+
+        VolumeError::IsADirectory(_) => FriendlyError {
+            category: ErrorCategory::NeedsAction,
+            title: "This is a folder, not a file".into(),
+            explanation: format!("Cmdr tried to open `{}` as a file, but it's a folder.", path_display),
+            suggestion: "Navigate into the folder instead of opening it as a file.".into(),
+            raw_detail: err.to_string(),
+            retry_hint: false,
+            action_kind: None,
         },
 
         VolumeError::IoError {
@@ -218,6 +252,7 @@ pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> Frien
                 .into(),
             raw_detail: err.to_string(),
             retry_hint: true,
+            action_kind: None,
         },
     }
 }
@@ -258,6 +293,7 @@ pub fn friendly_error_for_restricted_empty_root(volume_id: &str, path: &Path) ->
                 .into(),
             raw_detail: format!("volume={volume_id}, path={}, entries=0", path.display()),
             retry_hint: true,
+            action_kind: Some(ErrorActionKind::OpenPrivacySettings),
         })
     } else {
         None
@@ -289,6 +325,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
         // ENOMEM: Not enough memory
         12 => FriendlyError {
@@ -306,6 +343,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
         // EBUSY: Resource busy
         16 => FriendlyError {
@@ -322,6 +360,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
         // EAGAIN: Resource temporarily unavailable
         35 => FriendlyError {
@@ -336,6 +375,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
         // ENETDOWN: Network is down
         50 => FriendlyError {
@@ -353,6 +393,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
         // ENETRESET: Network dropped connection on reset
         52 => FriendlyError {
@@ -369,6 +410,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
         // ECONNABORTED: Connection aborted
         53 => FriendlyError {
@@ -384,6 +426,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
         // ECONNRESET: Connection reset by peer
         54 => FriendlyError {
@@ -399,6 +442,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
         // ETIMEDOUT: Operation timed out
         60 => FriendlyError {
@@ -416,6 +460,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
         // EHOSTDOWN: Host is down
         64 => FriendlyError {
@@ -432,6 +477,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
         // ESTALE: Stale NFS file handle
         70 => FriendlyError {
@@ -450,6 +496,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
         // ENOLCK: No locks available
         77 => FriendlyError {
@@ -469,6 +516,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
         // ECANCELED: Operation canceled
         89 => FriendlyError {
@@ -478,6 +526,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
             suggestion: "Navigate here again whenever you're ready to retry.".into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
 
         // ── NeedsAction ─────────────────────────────────────────────────
@@ -500,6 +549,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: Some(ErrorActionKind::OpenPrivacySettings),
         },
         // ENOENT: No such file or directory
         2 => FriendlyError {
@@ -519,6 +569,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // EACCES: Permission denied
         13 => FriendlyError {
@@ -539,6 +590,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: Some(ErrorActionKind::OpenPrivacySettings),
         },
         // EEXIST: File exists
         17 => FriendlyError {
@@ -551,6 +603,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
             suggestion: "Rename the existing item or choose a different name for the new one.".into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // EXDEV: Cross-device link
         18 => FriendlyError {
@@ -565,6 +618,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // ENOTDIR: Not a directory
         20 => FriendlyError {
@@ -578,6 +632,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
             suggestion: "Check the path and make sure it points to a folder, not a file.".into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // EISDIR: Is a directory
         21 => FriendlyError {
@@ -591,6 +646,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
             suggestion: "Check the path and make sure it points to a file, not a folder.".into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // ENOSPC: No space left on device
         28 => FriendlyError {
@@ -606,6 +662,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // EROFS: Read-only file system
         30 => FriendlyError {
@@ -623,6 +680,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // ENOTSUP: Operation not supported
         45 => FriendlyError {
@@ -638,6 +696,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // ENETUNREACH: Network is unreachable
         51 => FriendlyError {
@@ -654,6 +713,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // ECONNREFUSED: Connection refused
         61 => FriendlyError {
@@ -671,6 +731,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // ELOOP: Too many levels of symbolic links
         62 => FriendlyError {
@@ -690,6 +751,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // ENAMETOOLONG: File name too long
         63 => FriendlyError {
@@ -705,6 +767,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // EHOSTUNREACH: No route to host
         65 => FriendlyError {
@@ -722,6 +785,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // ENOTEMPTY: Directory not empty
         66 => FriendlyError {
@@ -737,6 +801,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // EDQUOT: Disk quota exceeded
         69 => FriendlyError {
@@ -753,6 +818,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // EAUTH: Authentication error
         80 => FriendlyError {
@@ -768,6 +834,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // ENEEDAUTH: Need authenticator
         81 => FriendlyError {
@@ -783,6 +850,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // EPWROFF: Device power is off
         82 => FriendlyError {
@@ -796,6 +864,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
         // ENOATTR: Attribute not found
         93 => FriendlyError {
@@ -811,6 +880,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: false,
+            action_kind: None,
         },
 
         // ── Serious ─────────────────────────────────────────────────────
@@ -833,6 +903,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
         // EINVAL: Invalid argument
         22 => FriendlyError {
@@ -849,6 +920,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
         // EDEVERR: Device error
         83 => FriendlyError {
@@ -866,6 +938,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
 
         // ── Unknown errno ───────────────────────────────────────────────
@@ -886,6 +959,7 @@ fn friendly_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> Fri
                 .into(),
             raw_detail,
             retry_hint: true,
+            action_kind: None,
         },
     }
 }
@@ -909,6 +983,7 @@ fn friendly_error_from_errno(_errno: i32, path: &Path, err: &VolumeError) -> Fri
             .into(),
         raw_detail: err.to_string(),
         retry_hint: true,
+        action_kind: None,
     }
 }
 
@@ -1226,6 +1301,68 @@ mod tests {
                 !suggestion_lower.contains("error") && !suggestion_lower.contains("failed"),
                 "Suggestion {:?} for {:?} contains 'error' or 'failed'",
                 friendly.suggestion,
+                err
+            );
+        }
+    }
+
+    // ── action_kind tests ───────────────────────────────────────────────
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn permission_denied_volume_error_has_open_privacy_settings() {
+        let path = Path::new("/test/path");
+        let err = VolumeError::PermissionDenied("denied".into());
+        let friendly = friendly_error_from_volume_error(&err, path);
+        assert_eq!(
+            friendly.action_kind,
+            Some(ErrorActionKind::OpenPrivacySettings),
+            "PermissionDenied should set action_kind = OpenPrivacySettings"
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn eperm_errno_has_open_privacy_settings() {
+        let path = Path::new("/test/path");
+        let err = make_io_error(1); // EPERM
+        let friendly = friendly_error_from_volume_error(&err, path);
+        assert_eq!(
+            friendly.action_kind,
+            Some(ErrorActionKind::OpenPrivacySettings),
+            "EPERM (errno 1) should set action_kind = OpenPrivacySettings"
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn eacces_errno_has_open_privacy_settings() {
+        let path = Path::new("/test/path");
+        let err = make_io_error(13); // EACCES
+        let friendly = friendly_error_from_volume_error(&err, path);
+        assert_eq!(
+            friendly.action_kind,
+            Some(ErrorActionKind::OpenPrivacySettings),
+            "EACCES (errno 13) should set action_kind = OpenPrivacySettings"
+        );
+    }
+
+    #[test]
+    fn non_permission_errors_have_no_action_kind() {
+        let path = Path::new("/test/path");
+        let cases = vec![
+            VolumeError::NotFound("x".into()),
+            VolumeError::ConnectionTimeout("x".into()),
+            VolumeError::IoError {
+                message: "x".into(),
+                raw_os_error: None,
+            },
+        ];
+        for err in &cases {
+            let friendly = friendly_error_from_volume_error(err, path);
+            assert_eq!(
+                friendly.action_kind, None,
+                "VolumeError {:?} should have no action_kind",
                 err
             );
         }
