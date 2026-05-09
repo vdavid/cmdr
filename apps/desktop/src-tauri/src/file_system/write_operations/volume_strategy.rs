@@ -106,22 +106,20 @@ async fn copy_directory_streaming(
     on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
     on_file_complete: &(dyn Fn() + Sync),
 ) -> Result<u64, VolumeError> {
-    // Ensure the destination directory exists. The create_directory call is
-    // idempotent for in-memory/SMB/MTP (they treat "already exists" as a
-    // merge), but we catch `AlreadyExists` just in case for LocalPosix.
+    // Ensure the destination directory exists. Every backend is expected to
+    // surface "already exists" as `VolumeError::AlreadyExists`; we swallow it
+    // because that's the merge-into-existing-directory signal, not a failure.
+    // (SMB needed smb2 ≥ 0.8.0 to typed-classify STATUS_OBJECT_NAME_COLLISION;
+    // older versions leaked it as IoError and the merge path blew up.)
     match dest_volume.create_directory(dest_path).await {
         Ok(()) => {}
         Err(VolumeError::AlreadyExists(_)) => {}
-        Err(e) => {
-            // LocalPosix uses std::fs::create_dir which fails if the parent
-            // doesn't exist; retry with create_dir_all semantics via the
-            // default trait — but most backends implement this fine. Treat
-            // NotSupported as a signal to skip the explicit mkdir and hope
-            // write_from_stream creates parents as needed.
-            if !matches!(e, VolumeError::NotSupported) {
-                return Err(e);
-            }
+        Err(VolumeError::NotSupported) => {
+            // Backend can't create directories at all; assume `write_from_stream`
+            // will materialize parents on demand (LocalPosix does this via the
+            // default `create_dir_all` semantics).
         }
+        Err(e) => return Err(e),
     }
 
     let entries = source_volume.list_directory(source_path, None).await?;

@@ -294,12 +294,34 @@ impl Volume for LocalPosixVolume {
         }
         Box::pin(async move {
             spawn_blocking(move || {
-                let metadata = std::fs::symlink_metadata(&abs_path)?;
-                if metadata.is_dir() {
-                    std::fs::remove_dir(&abs_path)?;
+                let metadata = std::fs::symlink_metadata(&abs_path).map_err(|e| {
+                    log::warn!(
+                        target: "local_posix",
+                        "delete: stat failed for {}: {} (kind={:?}, errno={:?})",
+                        abs_path.display(),
+                        e,
+                        e.kind(),
+                        e.raw_os_error()
+                    );
+                    e
+                })?;
+                let result = if metadata.is_dir() {
+                    std::fs::remove_dir(&abs_path)
                 } else {
-                    std::fs::remove_file(&abs_path)?;
-                }
+                    std::fs::remove_file(&abs_path)
+                };
+                result.map_err(|e| {
+                    log::warn!(
+                        target: "local_posix",
+                        "delete: {} {} failed: {} (kind={:?}, errno={:?})",
+                        if metadata.is_dir() { "remove_dir" } else { "remove_file" },
+                        abs_path.display(),
+                        e,
+                        e.kind(),
+                        e.raw_os_error()
+                    );
+                    e
+                })?;
                 Ok(())
             })
             .await

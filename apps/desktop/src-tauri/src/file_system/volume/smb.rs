@@ -129,22 +129,13 @@ fn fs_info_to_space_info(info: &smb2::client::tree::FsInfo) -> SpaceInfo {
     }
 }
 
-/// Returns true if an `smb2::Error`'s display string indicates STATUS_FILE_IS_A_DIRECTORY.
-///
-/// smb2 0.7.x doesn't expose NT_STATUS as a typed enum yet — string match is the only option.
-fn is_file_is_a_directory_error(err: &smb2::Error) -> bool {
-    // allowed-error-string-match: smb2 0.7.x doesn't expose NT_STATUS as a typed enum yet
-    err.to_string().contains("FILE_IS_A_DIRECTORY")
-}
-
 /// Converts an `smb2::Error` to `VolumeError`.
 fn map_smb_error(err: smb2::Error) -> VolumeError {
     use smb2::ErrorKind;
-    if is_file_is_a_directory_error(&err) {
-        return VolumeError::IsADirectory(err.to_string());
-    }
     match err.kind() {
         ErrorKind::NotFound => VolumeError::NotFound(err.to_string()),
+        ErrorKind::AlreadyExists => VolumeError::AlreadyExists(err.to_string()),
+        ErrorKind::IsADirectory => VolumeError::IsADirectory(err.to_string()),
         ErrorKind::AccessDenied | ErrorKind::AuthRequired | ErrorKind::SigningRequired => {
             VolumeError::PermissionDenied(err.to_string())
         }
@@ -1291,7 +1282,7 @@ impl Volume for SmbVolume {
             match file_result {
                 Ok(()) => {} // File deleted successfully
                 Err(VolumeError::IsADirectory(_)) => {
-                    // It's a directory — try delete_directory
+                    // Expected fall-through: path is a directory, retry with delete_directory.
                     let (tree, mut conn) = self.clone_session().await?;
                     let r = tree.delete_directory(&mut conn, &smb_path).await;
                     self.handle_smb_result("delete_directory", r)?;
@@ -1335,16 +1326,26 @@ impl Volume for SmbVolume {
                 };
 
                 if dest_exists {
-                    // Try file delete first; if that fails (it's a dir), try directory delete
+                    // Try file delete first; if it fails specifically because the path is a
+                    // directory, try directory delete. Any other error (PermissionDenied,
+                    // SharingViolation, …) propagates immediately instead of being masked
+                    // by a second futile delete.
                     let file_result = {
                         let (tree, mut conn) = self.clone_session().await?;
                         let r = tree.delete_file(&mut conn, &smb_to).await;
                         self.handle_smb_result("rename(delete_dest_file)", r)
                     };
-                    if file_result.is_err() {
-                        let (tree, mut conn) = self.clone_session().await?;
-                        let r = tree.delete_directory(&mut conn, &smb_to).await;
-                        self.handle_smb_result("rename(delete_dest_dir)", r)?;
+                    match file_result {
+                        Ok(()) => {}
+                        Err(VolumeError::IsADirectory(_)) => {
+                            // Expected fall-through: dest is a directory, retry with delete_directory.
+                            // Any other error (PermissionDenied, SharingViolation, …) propagates immediately
+                            // instead of being masked by a second futile delete.
+                            let (tree, mut conn) = self.clone_session().await?;
+                            let r = tree.delete_directory(&mut conn, &smb_to).await;
+                            self.handle_smb_result("rename(delete_dest_dir)", r)?;
+                        }
+                        Err(e) => return Err(e),
                     }
                 }
             } else {
@@ -2041,28 +2042,41 @@ mod tests {
     }
 
     #[test]
+    fn map_smb_error_already_exists() {
+        // STATUS_OBJECT_NAME_COLLISION (returned by Create when the name exists) must
+        // surface as AlreadyExists so the volume_strategy merge-directory path can
+        // swallow it instead of bubbling a generic IO error to the user.
+        let err = smb2::Error::Protocol {
+            status: smb2::types::status::NtStatus::OBJECT_NAME_COLLISION,
+            command: smb2::types::Command::Create,
+        };
+        let ve = map_smb_error(err);
+        assert!(matches!(ve, VolumeError::AlreadyExists(_)));
+    }
+
+    #[test]
     fn map_smb_error_file_is_a_directory() {
-        // STATUS_FILE_IS_A_DIRECTORY is returned by the server when delete_file is called on a dir.
-        // smb2 0.7.x surfaces this in the Display string, not as a typed ErrorKind variant.
+        // STATUS_FILE_IS_A_DIRECTORY is returned when delete_file is called on a dir.
+        // smb2 0.8.0 exposes this as the typed `ErrorKind::IsADirectory` variant, so
+        // `map_smb_error` surfaces it as `VolumeError::IsADirectory` — the delete
+        // fast-path matches on that to decide whether to retry with delete_directory.
         let err = smb2::Error::Protocol {
             status: smb2::types::status::NtStatus::FILE_IS_A_DIRECTORY,
             command: smb2::types::Command::Create,
         };
-        // Verify the helper correctly identifies the error.
-        assert!(is_file_is_a_directory_error(&err));
-        // Verify map_smb_error returns the typed variant.
         let ve = map_smb_error(err);
         assert!(matches!(ve, VolumeError::IsADirectory(_)));
     }
 
     #[test]
-    fn is_file_is_a_directory_error_negative() {
-        // Non-directory errors must not be misclassified.
+    fn map_smb_error_access_denied_is_not_misclassified() {
+        // Non-directory errors must not be classified as IsADirectory.
         let err = smb2::Error::Protocol {
             status: smb2::types::status::NtStatus::ACCESS_DENIED,
             command: smb2::types::Command::Create,
         };
-        assert!(!is_file_is_a_directory_error(&err));
+        let ve = map_smb_error(err);
+        assert!(matches!(ve, VolumeError::PermissionDenied(_)));
     }
 
     // ── Connection state tests ──────────────────────────────────────

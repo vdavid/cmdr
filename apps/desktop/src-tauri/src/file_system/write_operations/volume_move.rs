@@ -197,13 +197,29 @@ pub async fn move_between_volumes(
                     &|| {},
                 )
                 .await
-                .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
+                .map_err(|e| {
+                    log::warn!(
+                        target: "move",
+                        "move_between_volumes: copy phase failed for {} -> {}: {}",
+                        source_path.display(),
+                        dest_item.display(),
+                        e
+                    );
+                    map_volume_error(&source_path.display().to_string(), e)
+                })?;
 
-                // Delete source
-                source_volume
-                    .delete(source_path)
-                    .await
-                    .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
+                // Delete source. Failures here leave a partial-move state (data at dest,
+                // sources still at origin) — log loudly so the cause is visible in the
+                // file log; without this the FE only sees a generic "io_error".
+                source_volume.delete(source_path).await.map_err(|e| {
+                    log::warn!(
+                        target: "move",
+                        "move_between_volumes: source delete failed for {} after successful copy: {}",
+                        source_path.display(),
+                        e
+                    );
+                    map_volume_error(&source_path.display().to_string(), e)
+                })?;
 
                 files_done += 1;
                 bytes_done += bytes;
@@ -262,6 +278,12 @@ pub async fn move_between_volumes(
                 log::info!("move_between_volumes: operation {} cancelled", operation_id_for_cleanup);
             }
             Err(e) => {
+                log::warn!(
+                    target: "move",
+                    "move operation {} failed: {:?}",
+                    operation_id_for_cleanup,
+                    e
+                );
                 let _ = app_for_error.emit(
                     "write-error",
                     WriteErrorEvent {
@@ -462,6 +484,12 @@ async fn move_within_same_volume(
                 log::info!("move_between_volumes: operation {} cancelled", operation_id_for_cleanup);
             }
             Err(e) => {
+                log::warn!(
+                    target: "move",
+                    "move operation {} failed: {:?}",
+                    operation_id_for_cleanup,
+                    e
+                );
                 let _ = app_for_error.emit(
                     "write-error",
                     WriteErrorEvent {
