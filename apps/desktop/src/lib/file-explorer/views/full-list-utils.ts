@@ -205,18 +205,28 @@ export function pickSizeDisplay(entry: FileEntry): SizeDisplayPick {
 // Size Display Mode Helpers
 // ============================================================================
 
-/** Picks the display size based on the user's size display preference. */
+/**
+ * Picks the display size based on the user's size display preference.
+ *
+ * Accepts both `null` and `undefined` for missing values. The wire format from
+ * the Rust backend serializes Optional fields as `null` after the typed-IPC
+ * migration (Group A: `skip_serializing_if` was removed so specta accepts the
+ * types in Unified mode), but legacy callers and tests still pass `undefined`.
+ * Internal checks use `!= null` to handle both cleanly.
+ */
 export function getDisplaySize(
-  logical: number | undefined,
-  physical: number | undefined,
+  logical: number | null | undefined,
+  physical: number | null | undefined,
   mode: 'smart' | 'logical' | 'physical',
 ): number | undefined {
-  if (mode === 'logical') return logical
+  // Coerce null → undefined at the boundary so the return type matches what
+  // downstream consumers (`!= null` in render guards) expect.
+  if (mode === 'logical') return logical ?? undefined
   // Fall back to logical when physical is unavailable — a visible size is better than blank.
-  if (mode === 'physical') return physical ?? logical
+  if (mode === 'physical') return physical ?? logical ?? undefined
   // smart: min of available values, but show logical for cloud/dataless files (physical=0, logical>0)
-  if (logical !== undefined && physical !== undefined) return physical > 0 ? Math.min(logical, physical) : logical
-  return logical ?? physical
+  if (logical != null && physical != null) return physical > 0 ? Math.min(logical, physical) : logical
+  return logical ?? physical ?? undefined
 }
 
 /**
@@ -304,8 +314,13 @@ export type DirSizeDisplayState = 'dir' | 'scanning' | 'size' | 'size-stale'
  *
  * "Indexing active" means scanning OR aggregating — sizes aren't ready until aggregation finishes.
  */
-export function getDirSizeDisplayState(recursiveSize: number | undefined, indexing: boolean): DirSizeDisplayState {
-  if (recursiveSize !== undefined) {
+export function getDirSizeDisplayState(
+  recursiveSize: number | null | undefined,
+  indexing: boolean,
+): DirSizeDisplayState {
+  // `!= null` covers both `null` (post-Group-A wire format) and `undefined`
+  // (legacy/tests). See `getDisplaySize` for the migration context.
+  if (recursiveSize != null) {
     return indexing ? 'size-stale' : 'size'
   }
   return indexing ? 'scanning' : 'dir'
@@ -324,8 +339,8 @@ export function getDirSizeDisplayState(recursiveSize: number | undefined, indexi
  * @param plural - Function to pick singular/plural form.
  */
 export function buildDirSizeTooltip(
-  recursiveSize: number | undefined,
-  recursivePhysicalSize: number | undefined,
+  recursiveSize: number | null | undefined,
+  recursivePhysicalSize: number | null | undefined,
   recursiveFileCount: number,
   recursiveDirCount: number,
   scanning: boolean,
@@ -333,11 +348,11 @@ export function buildDirSizeTooltip(
   formatNum: (n: number) => string,
   plural: (count: number, singular: string, pluralForm: string) => string,
 ): string | { html: string } {
-  if (recursiveSize !== undefined) {
+  if (recursiveSize != null) {
     const lines: string[] = []
 
     // Size lines with colored byte triads
-    if (recursivePhysicalSize !== undefined) {
+    if (recursivePhysicalSize != null) {
       lines.push(sizeLineHtml('Content', recursiveSize, formatSize))
       lines.push(sizeLineHtml('On disk', recursivePhysicalSize, formatSize))
     } else {

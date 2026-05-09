@@ -748,7 +748,7 @@
                             {#if sizeOverride.override !== undefined}
                                 <span class="size-text">{sizeOverride.override}</span>
                             {:else if file.isDirectory}
-                                {#if dirDisplaySize !== undefined}
+                                {#if dirDisplaySize != null}
                                     <span class="size-text"
                                         >{#each formatSizeForDisplay(dirDisplaySize, sizeFormatOpts) as triad, i (i)}<span
                                                 class={triad.tierClass}>{triad.value}</span
@@ -788,7 +788,7 @@
                                 {:else}
                                     <span class="size-dir">&lt;dir&gt;</span>
                                 {/if}
-                            {:else if fileDisplaySize !== undefined}
+                            {:else if fileDisplaySize != null}
                                 <span class="size-text"
                                     >{#each formatSizeForDisplay(fileDisplaySize, sizeFormatOpts) as triad, i (i)}<span
                                             class={triad.tierClass}>{triad.value}</span

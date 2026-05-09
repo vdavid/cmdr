@@ -123,6 +123,9 @@
                 name: share.comment ? `${share.name}  comment="${share.comment}"` : share.name,
                 path: `smb://${host.ipAddress ?? host.name}/${share.name}`,
                 isDirectory: true,
+                size: null,
+                recursiveSize: null,
+                modified: null,
             }))
 
             const state: PaneState = {

@@ -755,7 +755,7 @@
         // Include ".." entry if it's in the visible range
         if (hasParent && visibleRangeStart === 0) {
             const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/')) || '/'
-            files.push({ name: '..', path: parentPath, isDirectory: true })
+            files.push({ name: '..', path: parentPath, isDirectory: true, size: null, recursiveSize: null, modified: null })
         }
 
         // Limit to 100 files max for performance
@@ -773,9 +773,11 @@
                 name: entry.name,
                 path: entry.path,
                 isDirectory: entry.isDirectory,
-                size: entry.size,
-                recursiveSize: entry.recursiveSize,
-                modified: entry.modifiedAt ? new Date(entry.modifiedAt * 1000).toISOString() : undefined,
+                // PaneFileEntry uses `null` for absent fields (post-Group-A wire format).
+                // FileEntry uses `undefined`, so coerce. `?? null` handles both.
+                size: entry.size ?? null,
+                recursiveSize: entry.recursiveSize ?? null,
+                modified: entry.modifiedAt != null ? new Date(entry.modifiedAt * 1000).toISOString() : null,
             })
         }
         return files
@@ -795,7 +797,9 @@
             const state: PaneState = {
                 path: currentPath,
                 volumeId,
-                volumeName,
+                // PaneState (typed binding) wants `string | null`; the local var is
+                // `string | undefined`. Coerce to satisfy the IPC contract.
+                volumeName: volumeName ?? null,
                 files,
                 cursorIndex,
                 viewMode,

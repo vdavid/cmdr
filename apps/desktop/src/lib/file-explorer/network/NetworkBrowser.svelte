@@ -130,6 +130,9 @@
                     name: `${host.name}  ip=${ip}  hostname=${hostname}  source=${host.source ?? 'discovered'}  shares=${shares}  status="${status}"`,
                     path: `smb://${host.ipAddress ?? host.name}`,
                     isDirectory: true,
+                    size: null,
+                    recursiveSize: null,
+                    modified: null,
                 }
             })
 
@@ -138,6 +141,9 @@
                 name: '+ Connect to server...',
                 path: 'smb://connect',
                 isDirectory: false,
+                size: null,
+                recursiveSize: null,
+                modified: null,
             })
 
             const state: PaneState = {

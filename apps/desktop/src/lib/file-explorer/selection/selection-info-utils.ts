@@ -107,9 +107,11 @@ export function getSizeDisplay(
 ): { value: string; tierClass: string }[] | 'DIR' | null {
   if (!entry || isBrokenSymlink || isPermissionDenied) return null
   const opts = formatOpts ?? { humanFriendly: false, format: 'binary' as const }
-  if (entry.isDirectory) return displaySize !== undefined ? formatSizeForDisplay(displaySize, opts) : 'DIR'
+  // `!= null` because the Rust wire format serializes Optional fields as `null`
+  // (see Group A migration in `getDisplaySize` doc).
+  if (entry.isDirectory) return displaySize != null ? formatSizeForDisplay(displaySize, opts) : 'DIR'
   const size = displaySize ?? entry.size
-  if (size === undefined) return null
+  if (size == null) return null
   return formatSizeForDisplay(size, opts)
 }
 
