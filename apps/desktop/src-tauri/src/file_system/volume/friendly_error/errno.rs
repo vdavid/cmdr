@@ -8,7 +8,9 @@
 
 use std::path::Path;
 
-use super::{ErrorActionKind, ErrorCategory, FriendlyError};
+#[cfg(target_os = "macos")]
+use super::ErrorActionKind;
+use super::{ErrorCategory, FriendlyError};
 use crate::file_system::volume::VolumeError;
 
 /// Maps a raw macOS errno to a `FriendlyError`.

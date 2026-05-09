@@ -11,8 +11,8 @@ import { mount, tick } from 'svelte'
 import FriendlyErrorContent from './FriendlyErrorContent.svelte'
 import type { FriendlyError } from '$lib/file-explorer/types'
 
-const openExternalUrl = vi.fn((_url: string) => Promise.resolve())
-const openSystemSettingsUrl = vi.fn((_url: string) => Promise.resolve())
+const openExternalUrl = vi.fn<(url: string) => Promise<void>>(() => Promise.resolve())
+const openSystemSettingsUrl = vi.fn<(url: string) => Promise<void>>(() => Promise.resolve())
 
 vi.mock('$lib/tauri-commands', () => ({
   openExternalUrl: (url: string) => openExternalUrl(url),
@@ -48,9 +48,7 @@ describe('FriendlyErrorContent', () => {
   })
 
   it('renders **bold** as <strong>', async () => {
-    const target = mountContent(
-      makeFriendly({ explanation: 'A **bold** thing.', suggestion: 'Plain.' }),
-    )
+    const target = mountContent(makeFriendly({ explanation: 'A **bold** thing.', suggestion: 'Plain.' }))
     await tick()
 
     const strong = target.querySelector('strong')
@@ -58,9 +56,7 @@ describe('FriendlyErrorContent', () => {
   })
 
   it('renders bullet lists as <ul><li>', async () => {
-    const target = mountContent(
-      makeFriendly({ explanation: 'Plain.', suggestion: '- one\n- two\n- three' }),
-    )
+    const target = mountContent(makeFriendly({ explanation: 'Plain.', suggestion: '- one\n- two\n- three' }))
     await tick()
 
     const items = target.querySelectorAll('li')
@@ -75,8 +71,7 @@ describe('FriendlyErrorContent', () => {
 
     const target = mountContent(
       makeFriendly({
-        suggestion:
-          '[Open settings](x-apple.systempreferences:com.apple.preference.security?Privacy)',
+        suggestion: '[Open settings](x-apple.systempreferences:com.apple.preference.security?Privacy)',
       }),
     )
     await tick()
