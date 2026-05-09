@@ -9,7 +9,7 @@ use crate::volumes_linux::{self, DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo
 const VOLUME_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Result of resolving a path to its containing volume.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PathVolumeResolution {
     pub volume: Option<VolumeInfo>,

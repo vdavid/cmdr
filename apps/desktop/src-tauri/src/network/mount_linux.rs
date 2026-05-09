@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::process::Command;
 
 /// Result of a successful mount operation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MountResult {
     /// Path to the mounted share (for example, "/run/user/1000/gvfs/smb-share:...").
@@ -18,7 +18,7 @@ pub struct MountResult {
 }
 
 /// Errors that can occur during mount operations.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum MountError {
     HostUnreachable { message: String },

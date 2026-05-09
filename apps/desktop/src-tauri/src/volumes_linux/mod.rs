@@ -80,7 +80,7 @@ fn parse_smb_mount_source(source: &str) -> Option<SmbMountInfo> {
 }
 
 /// Category of a location item.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum LocationCategory {
     Favorite,
@@ -92,7 +92,7 @@ pub enum LocationCategory {
 }
 
 /// Information about a location (volume, folder, or cloud drive).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LocationInfo {
     pub id: String,
@@ -110,7 +110,7 @@ pub struct LocationInfo {
 }
 
 /// Information about volume space.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeSpaceInfo {
     pub total_bytes: u64,

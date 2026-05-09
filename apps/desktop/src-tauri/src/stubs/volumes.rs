@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Category of a location item.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum LocationCategory {
     Favorite,
@@ -18,7 +18,7 @@ pub enum LocationCategory {
 }
 
 /// Information about a location (volume, folder, or cloud drive).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeInfo {
     pub id: String,
@@ -38,7 +38,7 @@ pub struct VolumeInfo {
 }
 
 /// Information about volume space.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeSpaceInfo {
     pub total_bytes: u64,
@@ -140,7 +140,7 @@ pub fn get_volume_space(path: String) -> Option<VolumeSpaceInfo> {
 }
 
 /// Result of resolving a path to its containing volume.
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PathVolumeResolution {
     pub volume: Option<VolumeInfo>,

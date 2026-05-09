@@ -116,7 +116,7 @@ describe('TransferErrorDialog — friendlyError prop', () => {
     })
     await tick()
 
-    const buttons = Array.from(target.querySelectorAll('button')).map((b) => b.textContent?.trim())
+    const buttons = Array.from(target.querySelectorAll('button')).map((b) => b.textContent.trim())
     expect(buttons).toContain('Retry')
   })
 
@@ -127,7 +127,7 @@ describe('TransferErrorDialog — friendlyError prop', () => {
     })
     await tick()
 
-    const buttons = Array.from(target.querySelectorAll('button')).map((b) => b.textContent?.trim())
+    const buttons = Array.from(target.querySelectorAll('button')).map((b) => b.textContent.trim())
     expect(buttons).toContain('Retry')
   })
 
@@ -138,7 +138,7 @@ describe('TransferErrorDialog — friendlyError prop', () => {
     })
     await tick()
 
-    const buttons = Array.from(target.querySelectorAll('button')).map((b) => b.textContent?.trim())
+    const buttons = Array.from(target.querySelectorAll('button')).map((b) => b.textContent.trim())
     expect(buttons).not.toContain('Retry')
   })
 

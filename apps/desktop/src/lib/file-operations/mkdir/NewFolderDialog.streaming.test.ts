@@ -85,7 +85,7 @@ async function waitForActiveStream(): Promise<FakeStream> {
 }
 
 function chipTexts(target: HTMLElement): string[] {
-  return Array.from(target.querySelectorAll('button.suggestion-item')).map((el) => (el.textContent ?? '').trim())
+  return Array.from(target.querySelectorAll('button.suggestion-item')).map((el) => el.textContent.trim())
 }
 
 function pulsingChipPresent(target: HTMLElement): boolean {
@@ -152,7 +152,7 @@ describe('NewFolderDialog streaming', () => {
     const { component } = mountDialog()
     const stream = await waitForActiveStream()
 
-    unmount(component)
+    void unmount(component)
     await tick()
 
     expect(stream.cancel).toHaveBeenCalled()

@@ -145,7 +145,7 @@ async function pushSettingsDefaultsToBackend(): Promise<void> {
       // Values of other types (arrays, objects) are silently skipped — the Rust
       // side has hardcoded fallbacks and the lookup_* helpers only support these three.
       if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
-        defaults[def.id] = value as SettingValue
+        defaults[def.id] = value
       }
     }
     await commands.recordSettingsDefaults(defaults)

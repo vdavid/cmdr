@@ -11,7 +11,7 @@ use std::collections::HashMap;
 // ============================================================================
 
 /// Whether a host was discovered via mDNS or added manually.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum HostSource {
     Discovered,
@@ -25,7 +25,7 @@ impl Default for HostSource {
 }
 
 /// A discovered network host.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkHost {
     pub id: String,
@@ -38,7 +38,7 @@ pub struct NetworkHost {
 }
 
 /// State of network discovery.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum DiscoveryState {
     Idle,
@@ -47,7 +47,7 @@ pub enum DiscoveryState {
 }
 
 /// Authentication mode detected for a host.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum AuthMode {
     GuestAllowed,
@@ -56,7 +56,7 @@ pub enum AuthMode {
 }
 
 /// Information about a discovered share.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ShareInfo {
     pub name: String,
@@ -65,7 +65,7 @@ pub struct ShareInfo {
 }
 
 /// Result of a share listing operation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ShareListResult {
     pub shares: Vec<ShareInfo>,
@@ -74,7 +74,7 @@ pub struct ShareListResult {
 }
 
 /// Error types for share listing operations.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum ShareListError {
     HostUnreachable {
@@ -106,7 +106,7 @@ pub enum ShareListError {
 }
 
 /// Connection mode used for the last successful connection.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ConnectionMode {
     Guest,
@@ -114,7 +114,7 @@ pub enum ConnectionMode {
 }
 
 /// Authentication options available for a share.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum AuthOptions {
     GuestOnly,
@@ -123,7 +123,7 @@ pub enum AuthOptions {
 }
 
 /// Information about a known network share.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct KnownNetworkShare {
     pub server_name: String,
@@ -136,7 +136,7 @@ pub struct KnownNetworkShare {
 }
 
 /// Credentials for SMB authentication.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SmbCredentials {
     pub username: String,
@@ -144,7 +144,7 @@ pub struct SmbCredentials {
 }
 
 /// Error types for Keychain operations.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case", tag = "type", content = "message")]
 pub enum KeychainError {
     NotFound(String),
@@ -153,7 +153,7 @@ pub enum KeychainError {
 }
 
 /// Result of a successful mount operation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MountResult {
     pub mount_path: String,
@@ -161,7 +161,7 @@ pub struct MountResult {
 }
 
 /// Errors that can occur during mount operations.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum MountError {
     HostUnreachable { message: String },
@@ -176,7 +176,7 @@ pub enum MountError {
 }
 
 /// Result of connecting to a manual server.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ManualConnectResult {
     pub host: NetworkHost,
@@ -344,7 +344,7 @@ pub async fn mount_network_share(
 }
 
 /// Result of an SMB volume upgrade attempt (stub version mirrors real type).
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, specta::Type)]
 #[serde(tag = "status", rename_all = "camelCase")]
 pub enum UpgradeResult {
     NetworkError { message: String },

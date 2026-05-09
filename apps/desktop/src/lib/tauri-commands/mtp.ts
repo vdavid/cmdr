@@ -111,7 +111,12 @@ export function isMtpConnectionError(error: unknown): error is MtpConnectionErro
  */
 export async function connectMtpDevice(deviceId: string): Promise<ConnectedMtpDeviceInfo> {
   const res = await commands.connectMtpDevice(deviceId)
-  if (res.status === 'error') throw res.error
+  if (res.status === 'error') {
+    // The error is a tagged-union MtpConnectionError, not an Error object — callers use
+    // `isMtpConnectionError()` to discriminate. Lint can't see that pattern.
+    // eslint-disable-next-line @typescript-eslint/only-throw-error -- tagged-union error consumed via isMtpConnectionError() guard
+    throw res.error
+  }
   return res.data as ConnectedMtpDeviceInfo
 }
 
@@ -245,7 +250,10 @@ export async function onMtpDeviceDisconnected(
  */
 export async function listMtpDirectory(deviceId: string, storageId: number, path: string): Promise<FileEntry[]> {
   const res = await commands.listMtpDirectory(deviceId, storageId, path)
-  if (res.status === 'error') throw res.error
+  if (res.status === 'error') {
+    // eslint-disable-next-line @typescript-eslint/only-throw-error -- tagged-union error consumed via isMtpConnectionError() guard
+    throw res.error
+  }
   return res.data as FileEntry[]
 }
 

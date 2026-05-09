@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Information about a connected MTP device (stub version).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpDeviceInfo {
     pub id: String,
@@ -18,7 +18,7 @@ pub struct MtpDeviceInfo {
 }
 
 /// Information about a storage area on an MTP device (stub version).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpStorageInfo {
     pub id: u32,
@@ -31,7 +31,7 @@ pub struct MtpStorageInfo {
 }
 
 /// Information about a connected device (stub version).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ConnectedDeviceInfo {
     pub device: MtpDeviceInfo,
@@ -39,7 +39,7 @@ pub struct ConnectedDeviceInfo {
 }
 
 /// Error types for MTP connection operations (stub version).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum MtpConnectionError {
     NotSupported { message: String },
@@ -108,7 +108,7 @@ pub fn get_mtp_storages(_device_id: String) -> Vec<MtpStorageInfo> {
 }
 
 /// File entry stub matching the real FileEntry type.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FileEntry {
     pub name: String,
@@ -146,7 +146,7 @@ pub async fn list_mtp_directory(
 // ============================================================================
 
 /// Result of a successful MTP operation (stub version).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpOperationResult {
     pub operation_id: String,
@@ -155,7 +155,7 @@ pub struct MtpOperationResult {
 }
 
 /// Information about an object on the device (stub version).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpObjectInfo {
     pub handle: u32,
@@ -255,7 +255,7 @@ pub async fn move_mtp_object(
 // ============================================================================
 
 /// Result of scanning an MTP path for copy operation (stub version).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpScanResult {
     pub file_count: usize,

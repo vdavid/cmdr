@@ -1,53 +1,26 @@
 // App-level state: MCP pane state, dialog tracking, menu context, window lifecycle
 
 import { invoke } from '@tauri-apps/api/core'
-import { commands } from '$lib/ipc/bindings'
+import { commands, type PaneFileEntry, type PaneState } from '$lib/ipc/bindings'
+
+export type { PaneFileEntry, PaneState }
 
 // ============================================================================
 // MCP pane state
 // ============================================================================
 
-/** File entry for pane state updates. */
-export interface PaneFileEntry {
-  name: string
-  path: string
-  isDirectory: boolean
-  size?: number
-  recursiveSize?: number
-  modified?: string
-}
-
-/** State of a single pane. */
-export interface PaneState {
-  path: string
-  volumeId?: string
-  volumeName?: string
-  files: PaneFileEntry[]
-  cursorIndex: number
-  viewMode: string
-  selectedIndices: number[]
-  sortField?: string
-  sortOrder?: string
-  totalFiles?: number
-  loadedStart?: number
-  loadedEnd?: number
-  showHidden?: boolean
-}
-
 /**
  * Update left pane state for MCP context tools.
  */
 export async function updateLeftPaneState(state: PaneState): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await commands.updateLeftPaneState(state as any)
+  await commands.updateLeftPaneState(state)
 }
 
 /**
  * Update right pane state for MCP context tools.
  */
 export async function updateRightPaneState(state: PaneState): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await commands.updateRightPaneState(state as any)
+  await commands.updateRightPaneState(state)
 }
 
 /**
