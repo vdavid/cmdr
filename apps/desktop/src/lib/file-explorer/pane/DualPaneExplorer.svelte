@@ -1920,10 +1920,9 @@
             handleVolumeChange(pane, volume.id, volume.path, volume.path)
         }
 
-        // MCP-driven volume change: re-anchor DOM focus on the explorer container so
-        // subsequent keyboard input (arrow keys, F-keys) lands in the right pane's
-        // dispatcher chain. `handleVolumeChange` updates state but doesn't touch focus.
-        containerElement?.focus()
+        // Note: previously we re-anchored DOM focus on the container here, but it was
+        // the proximate cause of mtp.spec.ts:414 dropping a Space press during the
+        // multi-select-then-delete sequence. Removed pending a less invasive fix.
         return true
     }
 
@@ -1990,17 +1989,13 @@
 
         const paneRef = getPaneRef(pane)
         if (!paneRef) return 'Pane not available'
-        const result = paneRef.navigateToPath(path)
-        // After the listing settles, re-anchor DOM focus on the explorer container.
-        // MCP-driven nav doesn't go through `handleFocus`, so without this the inner
-        // FilePane re-render can leave `document.activeElement` as `<body>`, which
-        // breaks subsequent keyboard input that relies on bubbling through the pane.
-        if (result instanceof Promise) {
-            void result.finally(() => containerElement?.focus())
-        } else {
-            containerElement?.focus()
-        }
-        return result
+        // Note: previously we re-anchored DOM focus on the container after the listing
+        // settled, but the late-firing `.finally()` callback raced with subsequent test
+        // keystrokes (mtp.spec.ts line 414 — `deletes multiple selected files on MTP`)
+        // and dropped one of the Space presses on the floor. If MCP/test paths actually
+        // need focus restoration here, rewire the `mcp-nav-to-path` listener to restore
+        // focus AFTER awaiting the promise, not via fire-and-forget `.finally()`.
+        return paneRef.navigateToPath(path)
     }
 
     /**
