@@ -1,9 +1,11 @@
 packages:
   - apps/*
 
-ignoredBuiltDependencies:
-  - esbuild
+# Don't prompt before wiping node_modules when pnpm decides it's stale —
+# our checker runs pnpm non-interactively and there's no human to answer.
+confirmModulesPurge: false
 
-onlyBuiltDependencies:
-  - sharp
-  - workerd
+allowBuilds:
+  esbuild: false
+  sharp: true
+  workerd: true
