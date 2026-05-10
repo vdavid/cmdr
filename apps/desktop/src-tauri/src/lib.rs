@@ -24,13 +24,6 @@ use env_logger as _;
 //noinspection RsUnusedImport
 use mimalloc as _;
 //noinspection RsUnusedImport
-// `specta_typescript` is used by `ipc::export_bindings` (cfg-gated to debug
-// or test builds). The dummy import here is unconditional so the crate stays
-// referenced in release builds too — otherwise `unused_crate_dependencies`
-// fires. The crate compiles cheaply, so the cost of keeping it linked in
-// release is negligible.
-use specta_typescript as _;
-//noinspection RsUnusedImport
 use notify as _;
 //noinspection ALL
 // smb2 crate is used in network/smb_client module (macOS + Linux)
@@ -183,11 +176,14 @@ fn send_native_clipboard_action(menu_id: &str) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Type-safe IPC: collect every command and event into a tauri-specta Builder.
-    // The same Builder is attached to `tauri::Builder::default()` below and (in
-    // debug) regenerates `apps/desktop/src/lib/ipc/bindings.ts`.
+    // The same Builder is attached to `tauri::Builder::default()` below.
+    // `bindings.ts` is regenerated explicitly via `pnpm bindings:regen` (which
+    // invokes the ignored `ipc::tests::export_bindings_test` and post-processes
+    // with oxfmt); CI's `bindings-fresh` check fails when it drifts. Don't
+    // re-export at runtime — without the test's header + oxfmt postprocess, that
+    // path silently overwrites the committed file with raw specta output on
+    // every dev launch.
     let specta_builder = ipc::builder();
-    #[cfg(debug_assertions)]
-    ipc::export_bindings(&specta_builder);
     let builder = tauri::Builder::default();
 
     // Window state plugin is only available on desktop platforms

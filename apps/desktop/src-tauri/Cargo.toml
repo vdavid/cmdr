@@ -126,7 +126,6 @@ genai = "=0.6.0-beta.19"
 # v1 line is for Tauri 1, v2 RC line is the active branch for Tauri 2.
 tauri-specta = { version = "=2.0.0-rc.24", features = ["derive", "typescript"] }
 specta = { version = "=2.0.0-rc.24", features = ["derive", "serde_json"] }
-specta-typescript = "=0.0.11"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
@@ -202,6 +201,10 @@ semver = "1"
 # (a 20 MB diff isn't actionable). Pinned about a month old (published
 # 2026-01-08) to avoid 0-day vulns in the freshest release.
 blake3 = "1.8.3"
+# Used only by the `#[ignore]`'d `ipc::tests::export_bindings_test`, invoked
+# via `pnpm bindings:regen` to write `apps/desktop/src/lib/ipc/bindings.ts`.
+# Not needed by release builds.
+specta-typescript = "=0.0.11"
 criterion = { version = "0.8.1", features = ["html_reports"] }
 # Dev-only env-driven logger. Tests don't use `tauri-plugin-log` (it requires
 # a Tauri runtime), so this gives us `RUST_LOG`-controlled logs for wire

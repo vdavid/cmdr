@@ -157,8 +157,11 @@ The Rust side splits into:
   - One `collect_*_types(types: &mut Types) -> Vec<Function>` per platform group (specta types collection).
   - A combined function that walks all the per-platform collectors.
 - `lib.rs::run()` calls `ipc::builder()`, passes `.invoke_handler(builder.invoke_handler())` to
-  `tauri::Builder::default()`.
-- `ipc::export_bindings()` is called from `run()` in debug builds to keep `bindings.ts` warm during dev.
+  `tauri::Builder::default()`. The runtime never writes `bindings.ts` itself — regeneration is explicit, via
+  `pnpm bindings:regen` (which runs the `#[ignore]`'d `ipc::tests::export_bindings_test` and then `oxfmt`). Earlier
+  versions had a debug-only `ipc::export_bindings()` call here that auto-rewrote the file on every `pnpm dev` startup,
+  but it skipped both the AUTO-GENERATED header and the oxfmt postprocess, so it silently overwrote the committed
+  formatted file with raw specta output every launch. Removed.
 
 Why two parallel command lists? `specta::function::collect_functions![]` doesn't accept `#[cfg(...)]` inline attributes
 (it only takes path expressions). The `tauri::generate_handler![]` macro does. So we use `generate_handler![]` for

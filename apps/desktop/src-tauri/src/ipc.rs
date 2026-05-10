@@ -39,7 +39,7 @@
 
 use specta::Types;
 use specta::datatype::Function;
-#[cfg(any(debug_assertions, test))]
+#[cfg(test)]
 use specta_typescript::Typescript;
 use tauri_specta::Builder;
 
@@ -921,19 +921,6 @@ pub fn builder() -> Builder<tauri::Wry> {
     // `internal::command` takes the handler fn and the type-collector fn pointer.
     let combined_commands = tauri_specta::internal::command(runtime_handler, collect_all_types);
     Builder::<tauri::Wry>::new().commands(combined_commands)
-}
-
-/// Writes the generated TypeScript bindings to
-/// `apps/desktop/src/lib/ipc/bindings.ts`. Debug-only — release builds ship
-/// the bindings file as-is. Errors are logged and swallowed: a stale
-/// `bindings.ts` is annoying but shouldn't crash the app.
-#[cfg(debug_assertions)]
-pub fn export_bindings(builder: &Builder<tauri::Wry>) {
-    // The path is relative to `apps/desktop/src-tauri/`, where this crate lives.
-    let target = "../src/lib/ipc/bindings.ts";
-    if let Err(e) = builder.export(Typescript::default(), target) {
-        log::warn!(target: "ipc", "Failed to export specta bindings to {target}: {e}");
-    }
 }
 
 #[cfg(test)]
