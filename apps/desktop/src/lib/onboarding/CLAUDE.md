@@ -99,6 +99,17 @@ apps (VS Code, iTerm2) do.
   `com.apple.preference.security`. Both anchor on `Privacy_AllFiles`. `open_privacy_settings` picks the right one via
   `get_macos_major_version`. The same version informs the modal copy: macOS 12 and older append new FDA entries at the
   end of the list (instead of alphabetical), so the "find Cmdr" instruction adjusts.
+- **macOS 26 (Tahoe) FDA auto-add is broken.** Even with a notarized Developer ID build at `/Applications/Cmdr.app`, the
+  kernel/sandbox can short-circuit `read()` denials on TCC-protected paths without ever consulting `tccd` — meaning Cmdr
+  never enters the Full Disk Access list automatically. We mitigate by firing `mmap`, `NSData dataWithContentsOfFile:`,
+  and `read_dir` of the parent in addition to `read()` on a denial (one of them may thread the needle on some Tahoe
+  minor versions), but on `macOS 26.1+` even the `+`-button manual add has been reported broken for some users. The
+  modal's "Tip" substep guides the user to the `+` workflow as the user-side fallback. Don't spend hours
+  re-investigating: this is a documented OS regression, not an app bug. References:
+  [Apple Developer Forums #809549](https://developer.apple.com/forums/thread/809549) (Tahoe 26.1 FDA),
+  [Backrest issue #986](https://github.com/garethgeorge/backrest/issues/986) (FDA broken on Tahoe 26.1),
+  [Apple Developer Forums #757768](https://developer.apple.com/forums/thread/757768) (Quinn confirms `open()` is the
+  trigger pre-Tahoe).
 
 ## Dependencies
 

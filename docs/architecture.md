@@ -134,7 +134,12 @@ Rules that cut across many modules. All existing commands follow these — apply
 
 ### macOS specifics
 
-- **Full Disk Access**: checked via `~/Library/Mail` readability (<5ms). Prompt on first launch.
+- **Full Disk Access**: checked by trying to read 1 byte from a list of TCC-protected files
+  (`~/Library/Safari/History.db`, `~/Library/Mail/V10/MailData/Envelope Index`, etc.) until one returns either `Ok` (FDA
+  granted) or `PermissionDenied` (denied; bundle gets registered with TCC). On denial, also fires `mmap` +
+  `NSData dataWithContentsOfFile:` + `read_dir` of the parent — multi-trigger fallback because macOS 26 (Tahoe) can
+  short-circuit `read()` denials without consulting tccd. Prompt on first launch. See
+  `apps/desktop/src/lib/onboarding/CLAUDE.md`.
 - **Keychain**: stores network credentials and trial state. Uses `security-framework` crate.
 - **copyfile(3)**: preserves xattrs, ACLs, resource forks. `COPYFILE_CLONE` for instant APFS clones.
 - **ptpcamerad**: auto-claims USB devices. MTP shows workaround dialog with Terminal command.
