@@ -9,18 +9,23 @@
     <key>CFBundleIconName</key>
     <string>Sequoia</string>
 
-    <!-- Privacy usage descriptions shown in macOS TCC prompts -->
-    <key>NSNetworkVolumesUsageDescription</key>
-    <string>Cmdr needs access to network volumes to browse and manage files on your NAS and other network drives.</string>
-    <key>NSRemovableVolumesUsageDescription</key>
-    <string>Cmdr needs access to removable volumes to browse and manage files on USB drives and external disks.</string>
-    <key>NSDesktopFolderUsageDescription</key>
-    <string>Cmdr needs access to your Desktop folder to browse and manage files there.</string>
-    <key>NSDocumentsFolderUsageDescription</key>
-    <string>Cmdr needs access to your Documents folder to browse and manage files there.</string>
+    <!-- Privacy usage descriptions shown in macOS TCC prompts. Value-first copy with the
+         "grant FDA for fewer popups" hint where it applies. Keep each string ≤200 chars. -->
     <key>NSDownloadsFolderUsageDescription</key>
-    <string>Cmdr needs access to your Downloads folder to browse and manage files there.</string>
+    <string>Cmdr needs this access to let you browse your downloads. If you want fewer popups, grant Cmdr "Full Disk Access" in System Settings → Privacy &amp; Security.</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>Cmdr needs this access to let you browse your docs. If you want fewer popups, grant Cmdr "Full Disk Access" in System Settings → Privacy &amp; Security.</string>
+    <key>NSDesktopFolderUsageDescription</key>
+    <string>Cmdr needs this access to let you browse your Desktop. If you want fewer popups, grant Cmdr "Full Disk Access" in System Settings → Privacy &amp; Security.</string>
     <key>NSLocalNetworkUsageDescription</key>
-    <string>Cmdr uses your local network to discover SMB file servers like NAS devices and connect to them for browsing and transferring files.</string>
+    <string>Cmdr needs Local Network access to let you connect to SMB servers (NAS, file shares) super fast! Cmdr's connection is 4–30x faster than macOS's built-in mount.</string>
+    <key>NSNetworkVolumesUsageDescription</key>
+    <string>Cmdr needs this access to let you browse your network shares/drives. If you want fewer popups, grant Cmdr "Full Disk Access" in System Settings.</string>
+    <key>NSRemovableVolumesUsageDescription</key>
+    <string>Cmdr needs this access to let you browse the USB drives, SD cards, and external disks you connect. If you Don't Allow, macOS won't let Cmdr access those devices.</string>
+    <key>NSAppleMusicUsageDescription</key>
+    <string>Cmdr reads music file metadata to render file icons matching Apple Music. Cmdr doesn't read your library. If you want fewer popups, grant Cmdr "Full Disk Access" in System Settings.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Cmdr reads image file metadata to render thumbnails for your photos. We don't read your library or upload anything. If you want fewer popups, grant Cmdr "Full Disk Access" in System Settings.</string>
 </dict>
 </plist>

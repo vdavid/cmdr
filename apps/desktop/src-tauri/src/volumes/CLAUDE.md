@@ -41,6 +41,12 @@ OBSERVER_INSTALLED: OnceLock<()>         // idempotency gate
 
 `get_volume_space(path)` uses `NSURLVolumeTotalCapacityKey` and `NSURLVolumeAvailableCapacityForImportantUsageKey` (falls back to `NSURLVolumeAvailableCapacityKey`). Returns `None` for non-existent paths.
 
+## FDA gate
+
+The local `get_icon_for_path()` wrapper short-circuits to `None` while `crate::fda_gate::is_fda_pending_runtime()` is `true`. `get_cloud_drives()` returns an empty `Vec` under the same condition because enumerating `~/Library/CloudStorage` is FDA-gated. Both fire only at first launch — after the user clicks Allow or Deny on the in-app FDA modal, the gate clears and `volumes-changed` re-emits with full data.
+
+**Don't add new launch-time `NSWorkspace` icon/LaunchServices lookups, or `read_dir`/metadata calls on TCC-protected paths, without checking the gate.** It's the difference between zero TCC prompts during onboarding and a stack of five-to-ten popups (MediaLibrary, AppData, Desktop, Documents, Downloads, ...). See [`src-tauri/src/fda_gate.rs`](../fda_gate.rs) for the helpers and [`src/lib/onboarding/CLAUDE.md`](../../../src/lib/onboarding/CLAUDE.md) § "FDA gate" for the user-side flow.
+
 ## Cloud provider detection
 
 `parse_cloud_provider_name(dir_name)` maps `~/Library/CloudStorage/` directory names to friendly labels:
@@ -65,6 +71,9 @@ OBSERVER_INSTALLED: OnceLock<()>         // idempotency gate
 **Why**: `commands/volumes.rs::enrich_smb_connection_state` (for `list_volumes` IPC calls) and `volume_broadcast.rs::enrich_smb_connection_state` (for `volumes-changed` push events). Both must stay in sync. The pattern is: build the base `LocationInfo` from OS APIs, then cross-reference `VolumeManager` to add runtime state (`smb_connection_state`). If new enrichment fields are added, update both call sites.
 
 ## Key decisions
+
+**Decision**: Gate launch-time icon fetches on the FDA decision (`crate::fda_gate::is_fda_pending_runtime()`)
+**Why**: `NSWorkspace.iconForFile:` resolution touches LaunchServices and several adjacent TCC services beyond the input path itself. On a fresh prod install with FDA off, calling it for `/Applications`, `~/Desktop`, `~/Documents`, `~/Downloads`, the iCloud root, and per-provider cloud-storage paths stacked **5–10 macOS native permission popups** (MediaLibrary, AppData, Desktop, Documents, Downloads, ...) on top of the in-app FDA modal — exactly the onboarding-flood UX the modal is supposed to replace. Returning `icon: None` from `get_icon_for_path()` while the gate is pending eliminates the entire class. The frontend already falls back to a generic folder icon when `icon` is missing, so the sidebar still shows favorite/volume entries during onboarding; they just look generic for the few seconds before the user clicks Allow or Deny. See `commands/indexing.rs::start_indexing_after_fda_decision` for the gate-clear + re-emit on the deny path; the allow path requires a restart, so re-entering `setup()` sets the gate to `false` via the OS probe.
 
 **Decision**: Use `NSWorkspace` notifications (`NSWorkspaceDidMountNotification` / `NSWorkspaceDidUnmountNotification`) instead of an FSEvents watcher on `/Volumes`
 **Why**: FSEvents fires when the kernel writes a directory entry under `/Volumes`, which races the mount: `statfs` on the new mount point still returns the root filesystem's `fsid` until the OS finishes mounting. The previous implementation papered over this with a `spawn_mount_settle_watcher` that polled `fsid` for up to 10 s, but slow drives behind USB-C/Thunderbolt docks can take longer; if the poll timed out, `get_attached_volumes` filtered the volume out and only an app restart surfaced it. `NSWorkspace` notifications are posted by `diskarbitrationd` *after* the mount is fully settled and `NSFileManager` metadata is ready, so there's no race to paper over and the volume always shows up. They also carry the volume URL directly in `userInfo[NSWorkspaceVolumeURLKey]` — no diffing or polling needed. DiskArbitration would also work but requires a CFRunLoop scheduled separately from Tokio; `NSWorkspace` rides on the AppKit runloop Tauri already runs.

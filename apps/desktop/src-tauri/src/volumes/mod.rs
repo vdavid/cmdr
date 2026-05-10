@@ -332,17 +332,31 @@ fn get_favorites() -> Vec<LocationInfo> {
     let desktop_str = desktop.to_string_lossy();
     let documents_str = documents.to_string_lossy();
     let downloads_str = downloads.to_string_lossy();
+    // (path, name, is_protected). When `is_protected` is true and the FDA gate
+    // is pending, we MUST skip stat on this path — even `Path::exists()` trips
+    // TCC for the protected-folder service once `permissions::check_full_disk_access`
+    // has registered the bundle with tccd. We assume protected favorites exist
+    // (~/Desktop, ~/Documents, ~/Downloads are present on essentially every
+    // macOS account); if one really doesn't, navigation will surface a normal
+    // listing error.
     let favorites_paths = [
-        ("/Applications", "Applications"),
-        (desktop_str.as_ref(), "Desktop"),
-        (documents_str.as_ref(), "Documents"),
-        (downloads_str.as_ref(), "Downloads"),
+        ("/Applications", "Applications", false),
+        (desktop_str.as_ref(), "Desktop", true),
+        (documents_str.as_ref(), "Documents", true),
+        (downloads_str.as_ref(), "Downloads", true),
     ];
+
+    let fda_pending = crate::fda_gate::is_fda_pending_runtime();
 
     favorites_paths
         .into_iter()
-        .filter(|(path, _)| Path::new(*path).exists())
-        .map(|(path, name)| {
+        .filter(|(path, _, is_protected)| {
+            // Skip the existence check for protected paths while FDA is pending —
+            // see comment on `favorites_paths`. Non-protected paths are still
+            // checked because `/Applications` can be absent on slim systems.
+            (fda_pending && *is_protected) || Path::new(*path).exists()
+        })
+        .map(|(path, name, _)| {
             // Favorites are folders on the boot volume, not mount points.
             // statfs still works — it reports the underlying volume's fs type.
             let fs_type = get_fs_type(path);
@@ -487,6 +501,13 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
 
 /// Get cloud drives (Dropbox, iCloud, Google Drive, etc.).
 pub fn get_cloud_drives() -> Vec<LocationInfo> {
+    // Skip during FDA-pending onboarding: enumerating `~/Library/CloudStorage`
+    // touches an FDA-gated path. The list re-emits via `volumes-changed`
+    // once the gate clears (see `start_indexing_after_fda_decision`).
+    if crate::fda_gate::is_fda_pending_runtime() {
+        return Vec::new();
+    }
+
     let mut drives = Vec::new();
     let home = dirs::home_dir().unwrap_or_default();
 
@@ -603,7 +624,19 @@ fn get_volume_name(url: &objc2_foundation::NSURL, path: &str) -> String {
 pub(crate) use crate::file_system::volume::path_to_id;
 
 /// Get icon for a path as base64-encoded WebP.
+///
+/// Returns `None` while the FDA decision is pending. NSWorkspace icon
+/// resolution touches several TCC-gated services (MediaLibrary, AppData,
+/// Desktop/Documents/Downloads/Pictures/Movies/Music) even when the input
+/// path itself isn't on those lists, so during onboarding we skip the
+/// fetch and let the frontend fall back to a generic folder/volume icon.
+/// `start_indexing_after_fda_decision` (deny path) and a fresh launch with
+/// FDA granted (allow path) both clear the gate and re-emit
+/// `volumes-changed`, populating icons.
 fn get_icon_for_path(path: &str) -> Option<String> {
+    if crate::fda_gate::is_fda_pending_runtime() {
+        return None;
+    }
     crate::icons::get_icon_for_path(path)
 }
 

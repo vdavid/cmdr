@@ -177,6 +177,15 @@ resilience, and common pitfalls.
 - When adding a new user-facing action, add it to `command-registry.ts` and `handleCommandExecute` in
   `routes/(main)/command-dispatch.ts`.
 - If you added a new Tauri command touching the filesystem, check `docs/architecture.md` § Platform constraints.
+- ❌ **Don't read TCC-protected paths or call NSWorkspace icon/LaunchServices APIs at app launch without the FDA gate.**
+  `~/Downloads`, `~/Documents`, `~/Desktop`, `~/Pictures`, `~/Movies`, `~/Music`, `~/Library/CloudStorage`, and any
+  `NSWorkspace.iconForFile:` call (even on `/Applications` or the iCloud root) can trigger macOS TCC popups during
+  onboarding. We had **5–10 popups stacked on top of the in-app FDA modal** before this gate landed. Use
+  `crate::fda_gate::is_fda_pending_runtime()` for launch-time call sites, or
+  `crate::fda_gate::is_fda_pending(fda_choice, os_fda_granted)` for pure logic and tests. After Allow + restart, or Deny
+  in-session via `start_indexing_after_fda_decision`, the gate clears and the same call sites run normally. See
+  [`apps/desktop/src-tauri/src/fda_gate.rs`](apps/desktop/src-tauri/src/fda_gate.rs) and
+  [`apps/desktop/src/lib/onboarding/CLAUDE.md`](apps/desktop/src/lib/onboarding/CLAUDE.md) § "FDA gate".
 - ❌ **Tauri APIs fail silently without permissions.** Whenever you call a new Tauri API from a window — `setMinSize`,
   `setTitle`, `show`, plugin commands, anything new — add the matching permission to that window's capability file in
   `src-tauri/capabilities/{default,settings,viewer}.json`. Without it, the call rejects with a generic "not allowed"

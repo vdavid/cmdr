@@ -81,6 +81,7 @@ mod drag_image_detection;
 #[cfg(target_os = "macos")]
 mod drag_image_swap;
 mod error_reporter;
+mod fda_gate;
 mod file_system;
 pub(crate) mod file_viewer;
 mod font_metrics;
@@ -365,6 +366,23 @@ pub fn run() {
             // Load persisted settings early so MTP enabled flag is set before the watcher starts
             let saved_settings = settings::load_settings(app.handle());
 
+            // Set the FDA gate before the first `emit_volumes_changed_now()` below.
+            // The gate suppresses path-based icon fetches in `volumes::list_locations`
+            // while the user hasn't decided about FDA — without it, NSWorkspace icon
+            // resolution stacks several TCC prompts (MediaLibrary, AppData, Desktop,
+            // Documents, Downloads, ...) on top of our in-app onboarding modal.
+            // See `crate::fda_gate` and `volumes/CLAUDE.md` § "FDA gate".
+            #[cfg(target_os = "macos")]
+            let os_fda_granted_for_gate = permissions::check_full_disk_access();
+            #[cfg(target_os = "linux")]
+            let os_fda_granted_for_gate = permissions_linux::check_full_disk_access();
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+            let os_fda_granted_for_gate = stubs::permissions::check_full_disk_access();
+            fda_gate::set_fda_pending(fda_gate::is_fda_pending(
+                saved_settings.full_disk_access_choice,
+                os_fda_granted_for_gate,
+            ));
+
             // Apply the Flow B opt-in flag *before* any user-visible error path can fire.
             // Default off (opt-in by design — Flow B sends data without per-event consent).
             error_reporter::auto_dispatcher::set_enabled(saved_settings.error_reports_enabled.unwrap_or(false));
@@ -373,10 +391,17 @@ pub fn run() {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             mtp::set_mtp_enabled_flag(saved_settings.mtp_enabled.unwrap_or(true));
 
-            // Start MTP device hotplug watcher (Android device support)
-            // This also auto-connects any devices already plugged in at startup
+            // Start MTP device hotplug watcher (Android device support).
+            // This also auto-connects any devices already plugged in at startup,
+            // which probes the USB bus and trips the MacDroid File Provider TCC
+            // prompt on macOS systems where MacDroid is installed. Skip while the
+            // FDA gate is pending; `start_indexing_after_fda_decision` (deny path)
+            // and a fresh launch with the FDA decision already made (allow path)
+            // both call `start_mtp_watcher` after the gate has cleared.
             #[cfg(any(target_os = "macos", target_os = "linux"))]
-            mtp::start_mtp_watcher(app.handle());
+            if !fda_gate::is_fda_pending_runtime() {
+                mtp::start_mtp_watcher(app.handle());
+            }
 
             // Emit initial volume list (after watchers start so MTP devices can connect)
             volume_broadcast::emit_volumes_changed_now();
@@ -528,16 +553,12 @@ pub fn run() {
             // Initialize indexing state (does not start scanning until explicitly started)
             indexing::init();
 
-            // Auto-start indexing unless user disabled it in settings, or unless
-            // the FDA gate blocks (first launch with no Full Disk Access decision
-            // yet — starting the recursive scan from `/` would trigger macOS native
-            // permission popups before the in-app FDA modal mounts).
-            #[cfg(target_os = "macos")]
-            let os_fda_granted = permissions::check_full_disk_access();
-            #[cfg(target_os = "linux")]
-            let os_fda_granted = permissions_linux::check_full_disk_access();
-            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-            let os_fda_granted = stubs::permissions::check_full_disk_access();
+            // Reuse the OS FDA result already captured for the gate above; this
+            // call is on `/Library/Mail` which is cheap, but a fresh probe here
+            // would race the user's decision in System Settings between the two
+            // probes (allow path: granted at probe-1, still gating-pending at
+            // probe-2 → indexer skips even though it shouldn't).
+            let os_fda_granted = os_fda_granted_for_gate;
 
             if indexing::should_auto_start_indexing(
                 saved_settings.indexing_enabled,

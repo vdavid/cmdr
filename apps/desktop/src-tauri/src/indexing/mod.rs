@@ -97,26 +97,20 @@ pub fn should_auto_start(indexing_enabled: Option<bool>) -> bool {
 ///
 /// Auto-start when ALL of the following hold:
 /// - The user has not disabled indexing (`indexing_enabled != Some(false)`).
-/// - Either the user has already made an FDA choice (Allow or Deny), OR the OS
-///   reports FDA is currently granted. When the choice is `NotAskedYet` AND the
-///   OS check returns `false`, we skip auto-start until the user decides.
+/// - The FDA gate isn't pending (see `crate::fda_gate::is_fda_pending`). The
+///   gate is pending only when `fda_choice == NotAskedYet` AND the OS reports
+///   FDA isn't granted — i.e., we're still showing the in-app onboarding
+///   modal. Once the user picks Deny (same session via
+///   `start_indexing_after_fda_decision`) or Allow (which restarts the app),
+///   the indexer auto-starts. After Deny, the scan triggers per-folder TCC
+///   prompts as it walks protected paths — that's the "individual Allow/Deny
+///   prompts" contract the user opted into by denying FDA.
 pub fn should_auto_start_indexing(
     indexing_enabled: Option<bool>,
     fda_choice: FullDiskAccessChoice,
     os_fda_granted: bool,
 ) -> bool {
-    if !should_auto_start(indexing_enabled) {
-        return false;
-    }
-
-    // FDA gate: only block when the user hasn't decided AND the OS confirms FDA
-    // is not currently granted. If the OS check returns true, we know we won't
-    // trigger native permission popups, so it's safe to start.
-    if fda_choice == FullDiskAccessChoice::NotAskedYet && !os_fda_granted {
-        return false;
-    }
-
-    true
+    should_auto_start(indexing_enabled) && !crate::fda_gate::is_fda_pending(fda_choice, os_fda_granted)
 }
 
 /// Trigger background verification of a directory against the index DB.
@@ -1095,9 +1089,9 @@ mod tests {
 
     // ── should_auto_start_indexing (FDA gate) ────────────────────────
 
-    /// First launch with no FDA grant: indexer must NOT auto-start.
-    /// Otherwise the recursive scan from `/` triggers macOS native permission
-    /// popups (iCloud, Photos, etc.) before the in-app FDA modal mounts.
+    /// First launch with no FDA decision and OS reports no FDA: indexer
+    /// must NOT auto-start. Otherwise the recursive scan from `/` would
+    /// trigger native TCC popups behind the in-app FDA modal.
     #[test]
     fn should_auto_start_indexing_blocked_when_not_asked_and_os_fda_false() {
         assert!(!should_auto_start_indexing(
@@ -1112,8 +1106,8 @@ mod tests {
         ));
     }
 
-    /// `NotAskedYet` but OS already grants FDA (user enabled it externally,
-    /// or stale persisted state): safe to auto-start.
+    /// `NotAskedYet` but OS already grants FDA (e.g., granted externally
+    /// before our modal ever ran): safe to auto-start, no popups will fire.
     #[test]
     fn should_auto_start_indexing_allowed_when_os_fda_true_overrides_not_asked() {
         assert!(should_auto_start_indexing(
@@ -1128,21 +1122,21 @@ mod tests {
         ));
     }
 
-    /// User picked Allow (typically restarts the app after granting in System
-    /// Settings): auto-start regardless of OS check (it should also be true,
-    /// but we trust the persisted choice).
+    /// User picked Allow: auto-start (after restart the OS probe is true,
+    /// no popups; if FDA was revoked between sessions the revoked-prompt
+    /// flow re-asks while the indexer waits for the gate to clear again).
     #[test]
     fn should_auto_start_indexing_allowed_when_user_choice_is_allow() {
         assert!(should_auto_start_indexing(None, FullDiskAccessChoice::Allow, true));
-        // Even if the OS check returns false (FDA was revoked), the Allow
-        // branch still passes the gate — the +page.svelte revoked-prompt path
-        // handles re-asking the user. The indexer just won't be able to read
-        // protected dirs, which is fine; it skips them.
+        // Allow + OS-false: predicate passes the gate. The indexer attempts
+        // to scan; per-folder TCC popups fire as it walks protected paths,
+        // and the revoked-prompt UI guides the user back into System Settings.
         assert!(should_auto_start_indexing(None, FullDiskAccessChoice::Allow, false));
     }
 
-    /// User picked Deny: indexer auto-starts (we respect the choice not to ask
-    /// again, and indexing without FDA still works for accessible paths).
+    /// User picked Deny: auto-start. Per the onboarding contract, Cmdr
+    /// proceeds in limited mode and the user gets individual TCC popups for
+    /// each protected folder the indexer touches — they accept or deny each.
     #[test]
     fn should_auto_start_indexing_allowed_when_user_choice_is_deny() {
         assert!(should_auto_start_indexing(None, FullDiskAccessChoice::Deny, false));
@@ -1153,8 +1147,8 @@ mod tests {
         ));
     }
 
-    /// Indexing disabled in settings always wins: never auto-start regardless
-    /// of FDA state.
+    /// Indexing disabled in settings always wins: never auto-start
+    /// regardless of FDA state.
     #[test]
     fn should_auto_start_indexing_blocked_when_indexing_disabled() {
         assert!(!should_auto_start_indexing(

@@ -21,22 +21,34 @@ Two actions are available:
 - **Deny** — saves `fullDiskAccessChoice: 'deny'` to settings, calls `startIndexingAfterFdaDecision()` so the indexer
   starts within this session, then calls `onComplete()` to dismiss.
 
-## Indexer FDA gate
+## FDA gate
 
-At app launch, the backend defers starting the drive indexer until the user has decided about Full Disk Access. The
-recursive scan from `/` would otherwise trigger macOS native permission popups (iCloud, Photos, etc.) that stack on top
-of this in-app FDA modal.
+Two things are gated on the FDA decision at app launch:
 
-The gate fires when `fullDiskAccessChoice === 'notAskedYet'` AND the OS-level FDA check returns false. After the user
-decides:
+1. **Drive indexer** — recursive scan from `/` would touch iCloud, Photos, and other TCC-protected paths.
+2. **Path-based icon fetches** in `volumes::list_locations` — `NSWorkspace.iconForFile:` resolution for `/Applications`,
+   `~/Desktop`, `~/Documents`, `~/Downloads`, the iCloud root, and other cloud-storage paths reaches into adjacent TCC
+   services. On a fresh launch with FDA off, this stacks 5–10 macOS native popups (MediaLibrary, AppData, Desktop,
+   Documents, Downloads, ...) on top of this in-app FDA modal.
 
-- **Deny** path: `FullDiskAccessPrompt.svelte` calls `startIndexingAfterFdaDecision()` so the indexer starts in the
-  current session.
+Both gates use the same predicate, exposed by `crate::fda_gate::is_fda_pending(fda_choice, os_fda_granted)`: pending iff
+`fullDiskAccessChoice === 'notAskedYet'` AND the OS-level FDA check returns false. The runtime side reads a global atom
+via `is_fda_pending_runtime()` so background-thread callers don't reload settings.
+
+After the user decides:
+
+- **Deny** path: `FullDiskAccessPrompt.svelte` calls `startIndexingAfterFdaDecision()`. The Tauri command clears the
+  runtime gate, starts the MTP hotplug watcher, and starts the drive indexer. As the scan walks protected paths
+  (`~/Downloads`, `~/Documents`, `~/Desktop`, ...), macOS fires one TCC popup per folder — those are the "individual
+  Allow/Deny prompts" the user opted into by denying FDA. Folders the user denies stay unindexed; their size shows as
+  `<dir>`. The command does NOT re-emit `volumes-changed`: that would refire per-folder prompts via NSWorkspace icon
+  resolution on top of the scan's prompts, doubling the dialog count. Sidebar favorites stay icon-less until the next
+  listing-driven refresh.
 - **Allow** path: the user grants FDA in System Settings, then restarts the app. On next launch the OS check returns
-  true, the gate passes, and the indexer auto-starts.
+  true, the gate is open, and both the indexer and the icon fetches run normally with no popups.
 
-The Tauri command is idempotent — calling it when indexing is already running is a no-op. See
-`src-tauri/src/indexing/CLAUDE.md` for the backend side.
+The Tauri command is idempotent. See `src-tauri/src/fda_gate.rs` for the gate, `src-tauri/src/volumes/CLAUDE.md` § "FDA
+gate" for the icon-side rules, and `src-tauri/src/indexing/CLAUDE.md` § "Defer indexer auto-start" for the indexer side.
 
 The `wasRevoked` prop switches the copy from "first ask" to "revoked" framing.
 

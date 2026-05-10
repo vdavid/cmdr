@@ -573,6 +573,13 @@ export const commands = {
    *  When `use_app_icons_for_documents` is true and on macOS, extension-based icons
    *  are fetched from app bundles (showing the app's icon as fallback). When false,
    *  the system's default document icons are used (Finder-style with app badge).
+   *
+   *  Returns an empty map while `crate::fda_gate::is_fda_pending_runtime()` is true.
+   *  `fetch_fresh_extension_icon` walks UTType / LaunchServices, which on macOS
+   *  touches MediaLibrary, AppData, FileProvider, and Apple Events TCC services
+   *  for media/app/cloud-storage/scriptable extensions — exactly the popups we
+   *  must not stack on top of the in-app FDA modal. Frontend re-requests after
+   *  the gate clears.
    */
   getIcons: (iconIds: string[], useAppIconsForDocuments: boolean) =>
     __TAURI_INVOKE<TimedOut<{ [key in string]: string }>>('get_icons', { iconIds, useAppIconsForDocuments }),
@@ -583,6 +590,9 @@ export const commands = {
    *
    *  When `use_app_icons_for_documents` is true, falls back to app icons for files without
    *  document-specific icons. When false, uses Finder-style document icons.
+   *
+   *  Returns an empty map while the FDA gate is pending — same reason as
+   *  `get_icons`. See `crate::fda_gate`.
    */
   refreshDirectoryIcons: (directoryPaths: string[], extensions: string[], useAppIconsForDocuments: boolean) =>
     __TAURI_INVOKE<TimedOut<{ [key in string]: string }>>('refresh_directory_icons', {
@@ -947,13 +957,35 @@ export const commands = {
   setIndexingEnabled: (enabled: boolean) =>
     typedError<null, string>(__TAURI_INVOKE('set_indexing_enabled', { enabled })),
   /**
-   *  Start the indexer once the user has decided about Full Disk Access.
+   *  Apply the user's FDA decision: clear the gate, start the MTP watcher
+   *  (deferred at launch to avoid the MacDroid File Provider prompt during
+   *  onboarding), and start the indexer.
    *
-   *  At app launch, indexing is skipped when the FDA choice is `NotAskedYet` AND
-   *  the OS reports FDA as not granted (see `should_auto_start_indexing`). The
-   *  frontend calls this command after the user clicks "Deny" so the indexer
-   *  starts within the same session. The "Allow" path needs no call: the user
-   *  restarts the app, and the launch-time gate passes via the OS check.
+   *  Three things happen at the gate boundary:
+   *  1. Clear the FDA-pending atomic (`crate::fda_gate::set_fda_pending(false)`)
+   *     so subsequent code paths can run normally. The deny path runs in the
+   *     same process; the allow path restarts the app, which re-enters
+   *     `setup()` and sets the atomic via the OS probe.
+   *  2. Start the MTP hotplug watcher. MTP is opt-in per device — the
+   *     watcher itself doesn't trigger TCC.
+   *  3. Start the drive indexer. On the Deny path this is what surfaces the
+   *     "individual Allow/Deny prompts" the user signed up for by denying
+   *     FDA: the scan walks protected folders, macOS fires one TCC popup per
+   *     folder, the user grants or denies each. Folders that get denied stay
+   *     unindexed (size shows as `<dir>`); the rest get indexed normally.
+   *
+   *  **No proactive `volumes-changed` re-emission.** Emitting here would
+   *  refire every per-folder TCC prompt at once via NSWorkspace icon
+   *  resolution, on TOP of the per-folder prompts the indexer is already
+   *  generating. The sidebar keeps the icon-less favorites it got during
+   *  onboarding; the next listing-driven flow refreshes them naturally.
+   *
+   *  At app launch, indexing is skipped when the FDA choice is `NotAskedYet`
+   *  AND the OS reports FDA as not granted (see `should_auto_start_indexing`).
+   *  The frontend calls this command after the user clicks "Deny" so the
+   *  indexer starts within the same session. The "Allow" path needs no call:
+   *  the user restarts the app, and the launch-time gate passes via the OS
+   *  check.
    *
    *  Idempotent: a no-op when indexing is already running or initializing.
    */
@@ -1559,7 +1591,12 @@ export const commands = {
    *  Checks if the app has full disk access by probing TCC-protected files.
    *
    *  Probing is also how the bundle gets registered with TCC, which is what
-   *  makes Cmdr show up in the Full Disk Access list in System Settings.
+   *  makes Cmdr show up in the Full Disk Access list in System Settings. On
+   *  macOS 26 (Tahoe), the kernel/sandbox can short-circuit `read()` denials
+   *  without consulting tccd, leaving the bundle out of the FDA list. To
+   *  maximize the chance one of the access paths threads the needle, on a
+   *  denial we fire all three: raw `read`, `mmap`, `NSData`, plus a
+   *  `read_dir` of the parent directory.
    */
   checkFullDiskAccess: () => __TAURI_INVOKE<boolean>('check_full_disk_access'),
   /**

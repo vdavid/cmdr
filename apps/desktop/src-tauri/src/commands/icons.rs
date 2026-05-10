@@ -15,9 +15,22 @@ const ICONS_TIMEOUT: Duration = Duration::from_secs(2);
 /// When `use_app_icons_for_documents` is true and on macOS, extension-based icons
 /// are fetched from app bundles (showing the app's icon as fallback). When false,
 /// the system's default document icons are used (Finder-style with app badge).
+///
+/// Returns an empty map while `crate::fda_gate::is_fda_pending_runtime()` is true.
+/// `fetch_fresh_extension_icon` walks UTType / LaunchServices, which on macOS
+/// touches MediaLibrary, AppData, FileProvider, and Apple Events TCC services
+/// for media/app/cloud-storage/scriptable extensions — exactly the popups we
+/// must not stack on top of the in-app FDA modal. Frontend re-requests after
+/// the gate clears.
 #[tauri::command]
 #[specta::specta]
 pub async fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool) -> TimedOut<HashMap<String, String>> {
+    if crate::fda_gate::is_fda_pending_runtime() {
+        return TimedOut {
+            data: HashMap::new(),
+            timed_out: false,
+        };
+    }
     blocking_with_timeout_flag(ICONS_TIMEOUT, HashMap::new(), move || {
         icons::get_icons(icon_ids, use_app_icons_for_documents)
     })
@@ -30,6 +43,9 @@ pub async fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool)
 ///
 /// When `use_app_icons_for_documents` is true, falls back to app icons for files without
 /// document-specific icons. When false, uses Finder-style document icons.
+///
+/// Returns an empty map while the FDA gate is pending — same reason as
+/// `get_icons`. See `crate::fda_gate`.
 #[tauri::command]
 #[specta::specta]
 pub async fn refresh_directory_icons(
@@ -37,6 +53,12 @@ pub async fn refresh_directory_icons(
     extensions: Vec<String>,
     use_app_icons_for_documents: bool,
 ) -> TimedOut<HashMap<String, String>> {
+    if crate::fda_gate::is_fda_pending_runtime() {
+        return TimedOut {
+            data: HashMap::new(),
+            timed_out: false,
+        };
+    }
     blocking_with_timeout_flag(ICONS_TIMEOUT, HashMap::new(), move || {
         icons::refresh_icons_for_directory(directory_paths, extensions, use_app_icons_for_documents)
     })

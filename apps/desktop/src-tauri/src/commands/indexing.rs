@@ -68,18 +68,45 @@ pub async fn set_indexing_enabled(app: AppHandle, enabled: bool) -> Result<(), S
     Ok(())
 }
 
-/// Start the indexer once the user has decided about Full Disk Access.
+/// Apply the user's FDA decision: clear the gate, start the MTP watcher
+/// (deferred at launch to avoid the MacDroid File Provider prompt during
+/// onboarding), and start the indexer.
 ///
-/// At app launch, indexing is skipped when the FDA choice is `NotAskedYet` AND
-/// the OS reports FDA as not granted (see `should_auto_start_indexing`). The
-/// frontend calls this command after the user clicks "Deny" so the indexer
-/// starts within the same session. The "Allow" path needs no call: the user
-/// restarts the app, and the launch-time gate passes via the OS check.
+/// Three things happen at the gate boundary:
+/// 1. Clear the FDA-pending atomic (`crate::fda_gate::set_fda_pending(false)`)
+///    so subsequent code paths can run normally. The deny path runs in the
+///    same process; the allow path restarts the app, which re-enters
+///    `setup()` and sets the atomic via the OS probe.
+/// 2. Start the MTP hotplug watcher. MTP is opt-in per device — the
+///    watcher itself doesn't trigger TCC.
+/// 3. Start the drive indexer. On the Deny path this is what surfaces the
+///    "individual Allow/Deny prompts" the user signed up for by denying
+///    FDA: the scan walks protected folders, macOS fires one TCC popup per
+///    folder, the user grants or denies each. Folders that get denied stay
+///    unindexed (size shows as `<dir>`); the rest get indexed normally.
+///
+/// **No proactive `volumes-changed` re-emission.** Emitting here would
+/// refire every per-folder TCC prompt at once via NSWorkspace icon
+/// resolution, on TOP of the per-folder prompts the indexer is already
+/// generating. The sidebar keeps the icon-less favorites it got during
+/// onboarding; the next listing-driven flow refreshes them naturally.
+///
+/// At app launch, indexing is skipped when the FDA choice is `NotAskedYet`
+/// AND the OS reports FDA as not granted (see `should_auto_start_indexing`).
+/// The frontend calls this command after the user clicks "Deny" so the
+/// indexer starts within the same session. The "Allow" path needs no call:
+/// the user restarts the app, and the launch-time gate passes via the OS
+/// check.
 ///
 /// Idempotent: a no-op when indexing is already running or initializing.
 #[tauri::command]
 #[specta::specta]
 pub async fn start_indexing_after_fda_decision(app: AppHandle) -> Result<(), String> {
+    crate::fda_gate::set_fda_pending(false);
+
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    crate::mtp::start_mtp_watcher(&app);
+
     if indexing::is_active() {
         return Ok(());
     }
