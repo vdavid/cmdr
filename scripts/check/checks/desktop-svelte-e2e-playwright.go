@@ -155,6 +155,18 @@ func startTauriApp(binaryPath, dataDir, fixtureDir, logFile string) (*exec.Cmd, 
 		return nil, nil, fmt.Errorf("failed to create log file %s: %w", logFile, err)
 	}
 
+	// Record the RUST_LOG the app will see, so log readers can tell at a glance
+	// whether trace-level output was requested. RUST_LOG itself is inherited via
+	// os.Environ() below — to debug a specific test run, prefix the checker
+	// invocation, for example:
+	//   RUST_LOG=cmdr_lib::file_system::volume::mtp=trace ./scripts/check.sh \
+	//     --check desktop-e2e-playwright
+	if rustLog := os.Getenv("RUST_LOG"); rustLog != "" {
+		fmt.Fprintf(lf, "=== RUST_LOG=%s ===\n", rustLog)
+	} else {
+		fmt.Fprintln(lf, "=== RUST_LOG unset (default warn level) ===")
+	}
+
 	cmd := exec.Command(binaryPath)
 	cmd.Env = append(os.Environ(),
 		"CMDR_DATA_DIR="+dataDir,

@@ -118,6 +118,15 @@ counted as failed. Dependencies not in the selected run set are treated as satis
 app, run tests, cleanup). The app runs in an isolated `CMDR_DATA_DIR` with MCP on port 9429. Stale processes are killed
 before starting. Logs go to `/tmp/cmdr-e2e-playwright-<timestamp>.log`.
 
+`RUST_LOG` is forwarded to the app (via inherited `os.Environ()`), so trace-level output is one shell-prefix away:
+
+```bash
+RUST_LOG=cmdr_lib::file_system::volume::mtp=trace ./scripts/check.sh --check desktop-e2e-playwright
+```
+
+The chosen `RUST_LOG` value is echoed at the top of the timestamped log so it's obvious from a glance which level was
+captured. When unset, the log starts with `=== RUST_LOG unset (default warn level) ===`.
+
 **Go tool auto-install:** `EnsureGoTool(name, installPath)` checks PATH first, then runs `go install` and returns the
 full binary path. Used for staticcheck, nilaway, etc.
 

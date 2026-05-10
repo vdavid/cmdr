@@ -28,6 +28,13 @@ startup, test execution, and cleanup:
 Logs go to `/tmp/cmdr-e2e-playwright-<timestamp>.log`. The app runs in an isolated data dir (`CMDR_DATA_DIR`) and uses
 MCP port 9429. Stale processes on that port are killed before starting.
 
+`RUST_LOG` is forwarded to the app, so trace-level output is one shell-prefix away. The chosen value is echoed at the
+top of the log so it's visible at a glance:
+
+```bash
+RUST_LOG=cmdr_lib::file_system::volume::mtp=trace ./scripts/check.sh --check desktop-e2e-playwright
+```
+
 **Manually (for debugging):**
 
 ```bash
