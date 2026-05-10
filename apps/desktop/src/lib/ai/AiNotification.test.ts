@@ -169,7 +169,7 @@ describe('AiToastContent', () => {
     expect(title?.textContent).toBe('Setting up AI...')
 
     const description = target.querySelector('.ai-description')
-    expect(description?.textContent).toBe('Starting inference server')
+    expect(description?.textContent).toBe('Starting server')
 
     // No buttons in installing state
     expect(target.querySelectorAll('.ai-actions button')).toHaveLength(0)

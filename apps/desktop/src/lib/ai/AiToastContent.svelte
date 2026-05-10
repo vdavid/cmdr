@@ -50,7 +50,7 @@
 {:else if aiState.notificationState === 'installing'}
     <div class="ai-content">
         <span class="ai-title">Setting up AI...</span>
-        <span class="ai-description">Starting inference server</span>
+        <span class="ai-description">Starting server</span>
     </div>
 {:else if aiState.notificationState === 'ready'}
     <div class="ai-content">
