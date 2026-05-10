@@ -1,9 +1,14 @@
 # Replace WebDriverIO + CrabNebula with tauri-playwright
 
+> **Status (post-implementation)**: Shipped using upstream `tauri-plugin-playwright` (crates.io) and
+> `@srsholmes/tauri-playwright` (npm), both at `0.2.2` — no fork was needed. References below to a `vdavid/tauri-playwright`
+> fork describe the original plan; in practice the architectural improvements landed without one. This doc is kept as a
+> historical record of the migration.
+
 ## Goal
 
 Replace the current dual E2E setup (WebDriverIO + tauri-driver on Linux, WebDriverIO + CrabNebula on macOS) with a
-single Playwright-based test suite using a forked and improved `tauri-playwright` plugin. This eliminates the CrabNebula
+single Playwright-based test suite using an improved `tauri-playwright` plugin. This eliminates the CrabNebula
 dependency, removes platform-specific WebDriver quirks, and enables running the same tests on both macOS and Linux.
 
 ## Why

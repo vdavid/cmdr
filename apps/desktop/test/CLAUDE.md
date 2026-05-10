@@ -6,9 +6,9 @@
 | ---------------------------------- | ------------------------- | --------------------------------- | ---------------------------------------------------------------------- |
 | **Playwright** (`e2e-playwright/`) | Playwright + tauri-plugin | macOS (native) and Linux (Docker) | Full app: dialogs, keyboard nav, file ops, settings, viewer, a11y, MTP |
 
-**Playwright suite** uses `tauri-plugin-playwright` (fork at `vdavid/tauri-playwright`) which injects JS directly into
-the Tauri webview via `webview.eval()` and receives results via Tauri IPC. Same tests work on both macOS and Linux.
-Gated behind the `playwright-e2e` Cargo feature.
+**Playwright suite** uses upstream `tauri-plugin-playwright` (Rust, crates.io) and `@srsholmes/tauri-playwright` (npm),
+which inject JS directly into the Tauri webview via `webview.eval()` and receive results via Tauri IPC. Same tests work
+on both macOS and Linux. Gated behind the `playwright-e2e` Cargo feature.
 
 **Linux Docker infrastructure** lives in `e2e-linux/docker/` (Dockerfile + entrypoint). The `e2e-linux.sh` script builds
 the Tauri binary with `--features playwright-e2e,virtual-mtp` inside Docker, launches it, and runs the Playwright tests.
