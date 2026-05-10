@@ -15,7 +15,12 @@ vi.mock('$lib/tauri-commands', async () => {
   }
 })
 
+vi.mock('$lib/settings-store', () => ({
+  loadSettings: vi.fn(),
+}))
+
 import { getAiStatus, getAiModelInfo, startAiDownload, cancelAiDownload, dismissAiOffer } from '$lib/tauri-commands'
+import { loadSettings } from '$lib/settings-store'
 import {
   getAiState,
   initAiState,
@@ -23,6 +28,7 @@ import {
   handleCancel,
   handleDismiss,
   handleGotIt,
+  notifyAiOnboardingComplete,
   resetForTesting,
 } from './ai-state.svelte'
 
@@ -35,10 +41,24 @@ const mockModelInfo = {
   baseOverheadBytes: 3500000000,
 }
 
+const ONBOARDED = {
+  showHiddenFiles: true,
+  fullDiskAccessChoice: 'allow' as const,
+  isOnboarded: true,
+}
+
+const NOT_ONBOARDED = {
+  showHiddenFiles: true,
+  fullDiskAccessChoice: 'notAskedYet' as const,
+  isOnboarded: false,
+}
+
 describe('ai-state', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     resetForTesting()
+    // Default: existing tests assume the user is past onboarding so the offer surfaces.
+    vi.mocked(loadSettings).mockResolvedValue(ONBOARDED)
   })
 
   describe('getAiState', () => {
@@ -264,6 +284,142 @@ describe('ai-state', () => {
       const state = getAiState()
       expect(state.notificationState).toBe('ready')
       expect(state.downloadProgress).toBeNull()
+    })
+  })
+
+  describe('onboarding gate', () => {
+    it('suppresses Offer when isOnboarded is false', async () => {
+      vi.mocked(loadSettings).mockResolvedValue(NOT_ONBOARDED)
+      vi.mocked(getAiStatus).mockResolvedValue('offer')
+      vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
+
+      await initAiState()
+
+      const state = getAiState()
+      expect(state.notificationState).toBe('hidden')
+      expect(state.pendingOffer).toBe(true)
+      expect(state.onboarded).toBe(false)
+    })
+
+    it('surfaces Offer immediately when isOnboarded is true at init', async () => {
+      vi.mocked(loadSettings).mockResolvedValue(ONBOARDED)
+      vi.mocked(getAiStatus).mockResolvedValue('offer')
+      vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
+
+      await initAiState()
+
+      const state = getAiState()
+      expect(state.notificationState).toBe('offer')
+      expect(state.pendingOffer).toBe(false)
+      expect(state.onboarded).toBe(true)
+    })
+
+    it('surfaces a deferred Offer when notifyAiOnboardingComplete is called', async () => {
+      vi.mocked(loadSettings).mockResolvedValue(NOT_ONBOARDED)
+      vi.mocked(getAiStatus).mockResolvedValue('offer')
+      vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
+
+      await initAiState()
+      expect(getAiState().notificationState).toBe('hidden')
+
+      notifyAiOnboardingComplete()
+
+      const state = getAiState()
+      expect(state.notificationState).toBe('offer')
+      expect(state.pendingOffer).toBe(false)
+      expect(state.onboarded).toBe(true)
+    })
+
+    it('does not flip state to Offer when there is no pending offer', async () => {
+      // Backend says Available — model already installed, no offer to surface.
+      vi.mocked(loadSettings).mockResolvedValue(NOT_ONBOARDED)
+      vi.mocked(getAiStatus).mockResolvedValue('available')
+      vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
+
+      await initAiState()
+      expect(getAiState().notificationState).toBe('hidden')
+
+      notifyAiOnboardingComplete()
+
+      const state = getAiState()
+      expect(state.notificationState).toBe('hidden')
+      expect(state.onboarded).toBe(true)
+    })
+
+    it('is idempotent — second call does not re-trigger the offer', async () => {
+      vi.mocked(loadSettings).mockResolvedValue(NOT_ONBOARDED)
+      vi.mocked(getAiStatus).mockResolvedValue('offer')
+      vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
+
+      await initAiState()
+      notifyAiOnboardingComplete()
+      // User dismisses the offer.
+      vi.mocked(dismissAiOffer).mockResolvedValue(undefined)
+      await handleDismiss()
+      expect(getAiState().notificationState).toBe('hidden')
+
+      // A second onboarding-complete signal must NOT resurrect the dismissed offer.
+      notifyAiOnboardingComplete()
+
+      expect(getAiState().notificationState).toBe('hidden')
+    })
+
+    it('does not regress onboarded=true if notifyAiOnboardingComplete fires while loadSettings is in flight', async () => {
+      // Race: legacy fallback paths in `+page.svelte` (hasFda + !isOnboarded, deny + !isOnboarded)
+      // call `notifyAiOnboardingComplete()` without any user gate. If `initAiState` is still
+      // awaiting `loadSettings()` when that hook fires — and disk hasn't synced the
+      // `notifyOnboardingComplete()` save yet — a plain assignment in initAiState would clobber
+      // the hook's `onboarded = true` back to a stale `false`, leaving the offer permanently gated.
+      let resolveSettings: ((value: typeof NOT_ONBOARDED) => void) | undefined
+      vi.mocked(loadSettings).mockImplementation(
+        () =>
+          new Promise<typeof NOT_ONBOARDED>((resolve) => {
+            resolveSettings = resolve
+          }),
+      )
+      vi.mocked(getAiStatus).mockResolvedValue('offer')
+      vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
+
+      const initPromise = initAiState()
+
+      // Simulate the legacy fallback firing the hook before loadSettings resolves.
+      notifyAiOnboardingComplete()
+      expect(getAiState().onboarded).toBe(true)
+
+      // Now resolve loadSettings with stale `isOnboarded: false` (disk not yet synced).
+      resolveSettings?.(NOT_ONBOARDED)
+      await initPromise
+
+      const state = getAiState()
+      expect(state.onboarded).toBe(true)
+      // Status is `offer` and onboarded is sticky-true, so the offer surfaces directly.
+      expect(state.notificationState).toBe('offer')
+      expect(state.pendingOffer).toBe(false)
+    })
+
+    it('does not gate downloading state — install events flow through even when not onboarded', async () => {
+      // Edge case: user starts onboarding, app keeps running, backend somehow emits installing/ready.
+      // The gate only suppresses the initial Offer, not in-flight install signals (which can only
+      // arise after the user accepted the offer somewhere).
+      vi.mocked(loadSettings).mockResolvedValue(NOT_ONBOARDED)
+      vi.mocked(getAiStatus).mockResolvedValue('offer')
+      vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
+      let installingCallback: (() => void) | undefined
+      let completeCallback: (() => void) | undefined
+      vi.mocked(listen).mockImplementation((event, callback) => {
+        if (event === 'ai-installing') installingCallback = callback as () => void
+        if (event === 'ai-install-complete') completeCallback = callback as () => void
+        return Promise.resolve(() => {})
+      })
+
+      await initAiState()
+      expect(getAiState().notificationState).toBe('hidden')
+
+      installingCallback?.()
+      expect(getAiState().notificationState).toBe('installing')
+
+      completeCallback?.()
+      expect(getAiState().notificationState).toBe('ready')
     })
   })
 })

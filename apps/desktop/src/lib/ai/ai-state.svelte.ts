@@ -13,6 +13,7 @@ import {
   type AiStatus,
 } from '$lib/tauri-commands'
 import { getSetting, setSetting } from '$lib/settings'
+import { loadSettings } from '$lib/settings-store'
 
 type AiNotificationState = 'hidden' | 'offer' | 'downloading' | 'installing' | 'ready' | 'starting'
 
@@ -27,6 +28,19 @@ interface AiStateData {
    * flag resets whenever a new download run starts (on transition into `'downloading'`).
    */
   downloadToastUserDismissed: boolean
+  /**
+   * True once first-launch onboarding (FDA prompt) has finished. While false, an `Offer` status
+   * from the backend is suppressed so the AI toast doesn't pile on top of the FDA modal. Seeded
+   * from `loadSettings().isOnboarded` in `initAiState`; flipped by `notifyAiOnboardingComplete`.
+   */
+  onboarded: boolean
+  /**
+   * True when the backend reported `Offer` but the toast was suppressed because onboarding wasn't
+   * complete. `notifyAiOnboardingComplete` reads this to surface the offer once the gate opens.
+   * Cleared by user-driven exits from the offer (`dismiss`, `optOut`, `download`) so the gate
+   * doesn't resurrect a decision the user has already made.
+   */
+  pendingOffer: boolean
 }
 
 const aiState = $state<AiStateData>({
@@ -35,6 +49,8 @@ const aiState = $state<AiStateData>({
   progressText: '',
   modelInfo: null,
   downloadToastUserDismissed: false,
+  onboarded: false,
+  pendingOffer: false,
 })
 
 export function getAiState(): AiStateData {
@@ -48,6 +64,8 @@ export function resetForTesting(): void {
   aiState.progressText = ''
   aiState.modelInfo = null
   aiState.downloadToastUserDismissed = false
+  aiState.onboarded = false
+  aiState.pendingOffer = false
 }
 
 /** Marks the downloading toast as user-dismissed for the current download run. */
@@ -61,6 +79,17 @@ export async function initAiState(): Promise<() => void> {
   if (aiProvider === 'off' || aiProvider === 'cloud') {
     return () => {}
   }
+
+  // Seed the onboarded gate from persisted settings. While `false`, an Offer status stays
+  // hidden — the FDA modal owns the screen during first launch. Returning users (isOnboarded
+  // already true) skip the gate entirely.
+  //
+  // Sticky merge instead of plain assignment: `+page.svelte` may have already called
+  // `notifyAiOnboardingComplete()` while `loadSettings()` was in flight (legacy fallback paths
+  // run no user input gate). A plain assignment would overwrite the hook's `true` back to a
+  // stale `false` if disk hadn't synced yet.
+  const settings = await loadSettings()
+  aiState.onboarded = aiState.onboarded || settings.isOnboarded
 
   // Fetch model info and status in parallel
   const [status, modelInfo] = await Promise.all([getAiStatus(), getAiModelInfo()])
@@ -143,10 +172,34 @@ function updateNotificationFromStatus(status: AiStatus): void {
       aiState.notificationState = 'hidden' // Already installed, don't show anything
       break
     case 'offer':
-      aiState.notificationState = 'offer'
+      // Suppress the offer until first-launch onboarding is done. The pending flag lets
+      // `notifyAiOnboardingComplete` surface it the moment the gate opens.
+      if (aiState.onboarded) {
+        aiState.notificationState = 'offer'
+        aiState.pendingOffer = false
+      } else {
+        aiState.notificationState = 'hidden'
+        aiState.pendingOffer = true
+      }
       break
     default:
       aiState.notificationState = 'hidden'
+  }
+}
+
+/**
+ * Marks first-launch onboarding as complete so a deferred AI offer can finally surface.
+ * Called from `routes/(main)/+page.svelte` once the FDA prompt closes (Allow or Deny path).
+ *
+ * The Allow path lands on `isOnboarded: true` via `notifyOnboardingComplete()`, so the next
+ * launch reads onboarded=true and skips the gate entirely. The Deny path needs this hook to
+ * reveal the offer in the same session.
+ */
+export function notifyAiOnboardingComplete(): void {
+  aiState.onboarded = true
+  if (aiState.pendingOffer) {
+    aiState.notificationState = 'offer'
+    aiState.pendingOffer = false
   }
 }
 

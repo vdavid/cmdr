@@ -28,6 +28,7 @@
     import { SOFT_DIALOG_REGISTRY } from '$lib/ui/dialog-registry'
     import { loadSettings, saveSettings } from '$lib/settings-store'
     import { notifyOnboardingComplete, setFdaPromptShowing } from '$lib/updates/updater.svelte'
+    import { notifyAiOnboardingComplete } from '$lib/ai/ai-state.svelte'
     import { openSettingsWindow } from '$lib/settings/settings-window'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import {
@@ -401,6 +402,7 @@
             // not yet flagged as onboarded, mark them so now (and unblock the update toast).
             if (!settings.isOnboarded) {
                 await notifyOnboardingComplete()
+                notifyAiOnboardingComplete()
             }
             showApp = true
         } else if (settings.fullDiskAccessChoice === 'notAskedYet') {
@@ -413,7 +415,13 @@
             fdaWasRevoked = true
             setFdaPromptShowing(true)
         } else {
-            // User explicitly denied - proceed without prompting
+            // User explicitly denied - proceed without prompting. Cover legacy users who denied
+            // before the `isOnboarded` flag existed so the AI offer (and update toast) aren't
+            // permanently gated.
+            if (!settings.isOnboarded) {
+                await notifyOnboardingComplete()
+                notifyAiOnboardingComplete()
+            }
             showApp = true
         }
 
@@ -488,6 +496,9 @@
         // Mark onboarding as complete and (if an update is already ready) trigger the deferred toast.
         // notifyOnboardingComplete persists `isOnboarded: true` itself — no double-save needed.
         void notifyOnboardingComplete()
+        // Surface a deferred AI offer too. Same gate, same opening event — without this, the offer
+        // would only show on next launch, even on the Deny path where the user stays in the session.
+        notifyAiOnboardingComplete()
     }
 
     function handleExpirationModalClose() {

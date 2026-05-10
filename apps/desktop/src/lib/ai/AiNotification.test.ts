@@ -28,6 +28,8 @@ let mockState = {
     baseOverheadBytes: 3500000000,
   },
   downloadToastUserDismissed: false,
+  onboarded: true,
+  pendingOffer: false,
 }
 
 function mountToast() {
@@ -52,6 +54,8 @@ describe('AiToastContent', () => {
         baseOverheadBytes: 3500000000,
       },
       downloadToastUserDismissed: false,
+      onboarded: true,
+      pendingOffer: false,
     }
     vi.mocked(getAiState).mockReturnValue(mockState)
   })

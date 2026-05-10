@@ -31,6 +31,21 @@ Settings `ai.provider`, `ai.openaiApiKey`, `ai.openaiBaseUrl`, `ai.openaiModel`,
 `settings-registry.ts`. The main layout calls `configureAi(...)` after `initSettingsApplier()` to push config to
 backend.
 
+### Onboarding gate suppresses the offer toast
+
+While first-launch onboarding (the FDA prompt) is on screen, the AI offer toast is suppressed so it doesn't pile on top
+of the modal. `initAiState()` seeds `aiState.onboarded` from `loadSettings().isOnboarded`. When the backend reports
+`Offer` and `onboarded === false`, `updateNotificationFromStatus()` keeps `notificationState = 'hidden'` and sets
+`aiState.pendingOffer = true`.
+
+`notifyAiOnboardingComplete()` is called from `routes/(main)/+page.svelte` whenever the FDA prompt closes (Allow or Deny
+path) or for legacy users who never saw the prompt. It flips `onboarded` and, if `pendingOffer` is true, surfaces the
+offer right then. The Allow path also restarts the app — on next launch `isOnboarded` is already true so the gate
+doesn't engage at all.
+
+This mirrors the updater module's pattern in `$lib/updates/updater.svelte.ts` (`onboarded` + `notifyOnboardingComplete`)
+— same gate, same opening event, two independent toasts.
+
 ### 7-day dismissal, permanent opt-out
 
 "Not now" hides offer for 7 days (`dismissedUntil` timestamp in state). "I don't want AI" sets `opted_out: true`
