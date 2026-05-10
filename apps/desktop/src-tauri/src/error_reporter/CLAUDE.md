@@ -24,8 +24,11 @@ logs/<next-filename>   # ...
 
 Manifest fields (`BundleManifest`):
 
-- `id`: short ID (`ERR-XXXXX`) generated client-side. **Server may regenerate** — UI
-  always shows the server's response ID, never the local one.
+- `id`: short ID (`ERR-XXXXX`) generated client-side via [`crate::short_id::generate`]
+  (kept as a thin wrapper in `error_reporter::generate_short_id`). The api server
+  validates the shape and uses this id as-is — the trailing UUID in the R2 key
+  guarantees object uniqueness, so there's no server-side regeneration. The UI shows
+  the same id everywhere (dialog preview, toast, server response).
 - `kind`: `"user"` or `"auto"` (Phase 5).
 - `buildMode`: `"release"` or `"debug"`. Resolved at compile time from
   `cfg!(debug_assertions)` via `BuildMode::current()`. Forwarded to the api server so the
@@ -77,7 +80,7 @@ SMB URIs, and UNC paths. See the redact module for the full pattern table.
 
 | File                       | Purpose                                                                                                       |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `mod.rs`                   | `build_bundle` (dispatches by scope), `build_bundle_streaming` (Flow A streaming pipeline), `CountingCursor`, `build_zip`, `generate_short_id`, `upload`, `cap_bundle_to_mb`, `save_bundle_to_disk` (debug); also exports the `log_error!` macro |
+| `mod.rs`                   | `build_bundle` (dispatches by scope), `build_bundle_streaming` (Flow A streaming pipeline), `CountingCursor`, `build_zip`, `generate_short_id` (thin wrapper over `crate::short_id::generate("ERR")`), `upload`, `cap_bundle_to_mb`, `save_bundle_to_disk` (debug); also exports the `log_error!` macro |
 | `tail_walker.rs`           | Reads a log file from the END backward in 64 KB chunks, yields lines newest-first, stops at the timestamp cutoff. Handles long lines that span multiple chunks, lines without leading timestamps (panic continuations), and CRLF defensively. |
 | `tests.rs`                 | Unit tests: zip structure, redaction, ID format/uniqueness, capping, streaming pipeline                       |
 | `auto_dispatcher.rs`       | Flow B: opt-in auto-send on user-visible errors (60 s ± 10 s debounce, 1 MB tail, no retry on failure)        |
@@ -324,8 +327,10 @@ because breadcrumbs are best-effort instrumentation, not a feature.
 - Per-entry mtimes are set explicitly (manifest = `now`, logs = source-file mtime).
   Without this, the `zip` crate's `SimpleFileOptions::default()` writes 1980-01-01 for
   every entry — extracted bundles look like ancient archives.
-- Server-side ID generation may differ from the client's local ID. Always trust the
-  `id` field in the upload response — that's the one the user reports back to us.
+- The server uses the client-supplied `id` verbatim — the upload response echoes it.
+  Earlier versions regenerated server-side; that was removed because the trailing UUID
+  in the R2 key already guarantees uniqueness, and it was confusing to show one id in
+  the preview dialog and a different one in the toast.
 - The line-timestamp filter (Flow A's tail walker AND Flow B's per-line filter) relies
   on the file chain's ISO-8601 stamp format
   (`YYYY-MM-DDTHH:MM:SS.mmm±HH:MM`, see `logging::dispatch::file_timestamp`). Lines

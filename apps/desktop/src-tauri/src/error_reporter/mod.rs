@@ -96,10 +96,8 @@ macro_rules! log_error {
     }};
 }
 
-/// Same unambiguous alphabet the server uses for license short codes and error report IDs.
-/// Kept in sync with `apps/api-server/src/license.ts` — avoids `0`/`O`, `1`/`I`/`L`.
-const SHORT_ID_ALPHABET: &[u8] = b"23456789ABCDEFGHJKMNPQRSTUVWXYZ";
-const SHORT_ID_LEN: usize = 5;
+/// Short ID prefix for error reports. The alphabet, length, and generation routine
+/// live in [`crate::short_id`] so the crash reporter can reuse them.
 const SHORT_ID_PREFIX: &str = "ERR";
 
 /// Max lines in the first-lines preview sample shown in the dialog.
@@ -834,24 +832,11 @@ fn build_zip(
     Ok(buf)
 }
 
-/// Generate a short ID like `ERR-8F3A2` using rejection sampling (no modulo bias).
+/// Generate a short ID like `ERR-8F3A2`. Thin wrapper around [`crate::short_id::generate`]
+/// kept for the existing public surface; new code should call `crate::short_id::generate`
+/// directly with the prefix it wants.
 pub fn generate_short_id() -> String {
-    let mut rng = rand::rng();
-    let alphabet_len = SHORT_ID_ALPHABET.len(); // 31
-    // 256 - (256 % 31) = 232 — bytes at or above this would skew the distribution.
-    let max_unbiased = 256 - (256 % alphabet_len);
-    let mut out = String::with_capacity(SHORT_ID_PREFIX.len() + 1 + SHORT_ID_LEN);
-    out.push_str(SHORT_ID_PREFIX);
-    out.push('-');
-    let mut remaining = SHORT_ID_LEN;
-    while remaining > 0 {
-        let byte: u8 = rng.random();
-        if (byte as usize) < max_unbiased {
-            out.push(SHORT_ID_ALPHABET[(byte as usize) % alphabet_len] as char);
-            remaining -= 1;
-        }
-    }
-    out
+    crate::short_id::generate(SHORT_ID_PREFIX)
 }
 
 /// POST the bundle to the ingestion server. In CI this skips the network call and

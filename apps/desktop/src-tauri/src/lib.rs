@@ -111,6 +111,7 @@ mod redact;
 pub mod search;
 mod secrets;
 mod settings;
+mod short_id;
 mod space_poller;
 mod system_memory;
 #[cfg(target_os = "macos")]
