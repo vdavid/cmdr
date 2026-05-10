@@ -69,14 +69,12 @@
             <p>It looks like you accepted full disk access before but then revoked it.</p>
             <p><strong>The app currently has no full disk access.</strong></p>
             <p>If that was intentional, click "Deny" and the app won't bother you again.</p>
-            <p>If it <em>wasn't</em> intentional, consider allowing full disk access again.</p>
-            <p>Here are the pros and cons:</p>
+            <p>If it <em>wasn't</em> intentional, consider allowing full disk access again. Here are the pros and cons:</p>
         {:else}
-            <p>Would you like to give this app full disk access?</p>
-            <p>Here's what that means:</p>
+            <p>Would you like to give this app full disk access? Here's what that means:</p>
         {/if}
 
-        <ul class="pros-cons">
+        <ul class="bullets">
             <li>
                 <strong>Pro:</strong> The app will access your entire disk without nagging you for permissions to each folder
                 like Downloads, Documents, and Desktop.
@@ -89,25 +87,19 @@
 
         <p>If you decide to allow:</p>
 
-        <ol>
+        <ol class="steps">
             <li>Click <strong>Open System Settings</strong> below</li>
-            {#if isVenturaOrNewer}
-                <li>
+            <li>
+                {#if isVenturaOrNewer}
                     Find <strong>Cmdr</strong> in the list and toggle it on
-                    <p class="step-tip">
-                        Tip: Is Cmdr not in the list? Click the "+" button at the bottom, and choose
-                        <strong>Cmdr</strong> from your <strong>Applications</strong> folder.
-                    </p>
-                </li>
-            {:else}
-                <li>
+                {:else}
                     Find <strong>Cmdr</strong> at the end of the list and toggle it on
-                    <p class="step-tip">
-                        Tip: Is Cmdr not in the list? Click the "+" button at the bottom, and choose
-                        <strong>Cmdr</strong> from your <strong>Applications</strong> folder.
-                    </p>
-                </li>
-            {/if}
+                {/if}
+                <p class="step-tip">
+                    Tip: Is Cmdr not in the list? Click the "+" button at the bottom, and choose
+                    <strong>Cmdr</strong> from your <strong>Applications</strong> folder.
+                </p>
+            </li>
             <li>Confirm and click <strong>Quit & Reopen</strong></li>
         </ol>
 
@@ -116,8 +108,10 @@
             <Button variant="danger" onclick={handleDeny}>Deny</Button>
         </div>
         {#if hasClickedOpenSettings}
-            <p class="post-allow-instructions">Great! Make sure to restart the app after you've enabled the access.</p>
-            <p>If you change your mind, you can still click "Deny" above.</p>
+            <div class="post-action">
+                <p>Make sure to restart the app after you've enabled the access.</p>
+                <p>If you change your mind, you can still click "Deny" above.</p>
+            </div>
         {/if}
     </div>
 </ModalDialog>
@@ -127,35 +121,49 @@
         padding: 0 var(--spacing-xl) var(--spacing-xl);
         font-size: var(--font-size-md);
         color: var(--color-text-primary);
-        line-height: 1.6;
+        line-height: 1.5;
     }
 
     .fda-body p {
         margin: 0 0 var(--spacing-md) 0;
     }
 
-    .post-allow-instructions {
-        font-weight: 500;
+    .fda-body p:last-child {
+        margin-bottom: 0;
+    }
+
+    .bullets,
+    .steps {
+        margin: 0 0 var(--spacing-lg) 0;
+        padding-left: var(--spacing-xl);
+    }
+
+    .bullets li,
+    .steps li {
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .bullets li:last-child,
+    .steps li:last-child {
+        margin-bottom: 0;
     }
 
     .step-tip {
         margin: var(--spacing-xs) 0 0 0;
         color: var(--color-text-secondary);
-        font-size: var(--font-size-sm);
-    }
-
-    .pros-cons {
-        margin: var(--spacing-lg) 0;
-    }
-
-    .pros-cons li {
-        margin-bottom: var(--spacing-md);
     }
 
     .buttons {
         display: flex;
         gap: var(--spacing-md);
         justify-content: center;
-        margin: var(--spacing-xl) 0;
+        margin-top: var(--spacing-lg);
+    }
+
+    .post-action {
+        margin-top: var(--spacing-lg);
+        padding-top: var(--spacing-lg);
+        border-top: 1px solid var(--color-border-subtle);
+        color: var(--color-text-secondary);
     }
 </style>
