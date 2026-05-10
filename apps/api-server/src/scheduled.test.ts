@@ -77,7 +77,7 @@ beforeEach(() => {
 })
 
 describe('handleCrashNotifications', () => {
-  it('sends email for un-notified crash reports', async () => {
+  it('sends one row per un-notified crash report', async () => {
     const responses = new Map<string, unknown>([
       [
         'SELECT id',
@@ -91,6 +91,8 @@ describe('handleCrashNotifications', () => {
               signal: 'SIGSEGV',
               top_function: 'cmdr::sync::run',
               created_at: '2026-03-23T10:00:00Z',
+              build_mode: 'release',
+              short_id: 'CRASH-A2345',
             },
             {
               id: 2,
@@ -100,6 +102,8 @@ describe('handleCrashNotifications', () => {
               signal: 'SIGSEGV',
               top_function: 'cmdr::sync::run',
               created_at: '2026-03-23T11:00:00Z',
+              build_mode: 'debug',
+              short_id: 'CRASH-B6789',
             },
             {
               id: 3,
@@ -109,6 +113,8 @@ describe('handleCrashNotifications', () => {
               signal: 'SIGABRT',
               top_function: 'cmdr_lib::indexer::build',
               created_at: '2026-03-23T12:00:00Z',
+              build_mode: null,
+              short_id: null,
             },
           ],
         },
@@ -125,8 +131,17 @@ describe('handleCrashNotifications', () => {
     expect(emailCall.subject).toBe('Cmdr: 3 new crash reports')
     expect(emailCall.to).toBe('test@example.com')
     expect(emailCall.from).toBe('Cmdr Crash Alerts <noreply@getcmdr.com>')
+    // Per-row rendering — each crash shows up with its top_function and short id.
     expect(emailCall.html).toContain('cmdr::sync::run')
     expect(emailCall.html).toContain('cmdr_lib::indexer::build')
+    expect(emailCall.html).toContain('CRASH-A2345')
+    expect(emailCall.html).toContain('CRASH-B6789')
+    // Env column shows friendly labels.
+    expect(emailCall.html).toContain('>prod<')
+    expect(emailCall.html).toContain('>dev<')
+    // Row 3 has neither build_mode nor short_id — both render as `?`.
+    const questionMarkCells = emailCall.html.match(/>\?</g)?.length ?? 0
+    expect(questionMarkCells).toBeGreaterThanOrEqual(2)
 
     // Verify rows were marked as notified (UPDATE query was called)
     const updateCall = calls.find((c) => c.sql.includes('UPDATE crash_reports'))
@@ -153,6 +168,8 @@ describe('handleCrashNotifications', () => {
               signal: 'SIGSEGV',
               top_function: 'cmdr::sync::run',
               created_at: '2026-03-23T10:00:00Z',
+              build_mode: 'release',
+              short_id: 'CRASH-A2345',
             },
           ],
         },

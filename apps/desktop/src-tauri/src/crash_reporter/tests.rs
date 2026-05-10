@@ -27,6 +27,8 @@ fn crash_report_roundtrip() {
             verbose_logging: None,
         },
         possible_crash_loop: false,
+        build_mode: Some("release".to_string()),
+        short_id: Some("CRASH-A2345".to_string()),
     };
 
     write_crash_report(&path, &report).unwrap();
@@ -48,6 +50,8 @@ fn crash_report_roundtrip() {
     assert_eq!(loaded.active_settings.mcp_enabled, Some(false));
     assert_eq!(loaded.active_settings.verbose_logging, None);
     assert!(!loaded.possible_crash_loop);
+    assert_eq!(loaded.build_mode.as_deref(), Some("release"));
+    assert_eq!(loaded.short_id.as_deref(), Some("CRASH-A2345"));
 }
 
 #[test]
@@ -305,5 +309,7 @@ fn make_test_report() -> CrashReport {
         uptime_secs: 0.0,
         active_settings: ActiveSettings::default(),
         possible_crash_loop: false,
+        build_mode: Some("debug".to_string()),
+        short_id: Some(crate::short_id::generate(CRASH_SHORT_ID_PREFIX)),
     }
 }

@@ -78,6 +78,13 @@
             data.
         </p>
 
+        {#if report.shortId}
+            <p class="description short-id-line">
+                Report ID: <code class="short-id">{report.shortId}</code>
+                <span class="short-id-help">Mention this if you reach out about the issue.</span>
+            </p>
+        {/if}
+
         <!-- Expandable details -->
         <button class="details-toggle" onclick={() => (detailsExpanded = !detailsExpanded)}>
             <span class="toggle-arrow" class:expanded={detailsExpanded}>&#x25B8;</span>
@@ -122,7 +129,26 @@
     }
 
     .privacy-note {
+        margin-bottom: var(--spacing-md);
+    }
+
+    .short-id-line {
         margin-bottom: var(--spacing-lg);
+    }
+
+    .short-id {
+        font-family: var(--font-mono);
+        background: var(--color-bg-secondary);
+        padding: 0 var(--spacing-xs);
+        border-radius: var(--radius-sm);
+        user-select: text;
+    }
+
+    .short-id-help {
+        display: block;
+        margin-top: var(--spacing-xs);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
     }
 
     .details-toggle {

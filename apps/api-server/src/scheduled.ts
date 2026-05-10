@@ -1,16 +1,26 @@
-import { sendCrashNotificationEmail, sendDbSizeAlert, type CrashSummaryEntry } from './email'
+import { sendCrashNotificationEmail, sendDbSizeAlert, type CrashEmailRow } from './email'
 import type { Bindings } from './types'
 import { recomputeTotal, tryEvict, EVICTION_HIGH_WATERMARK } from './error-report-eviction'
 import { postEvictionNotification } from './discord'
 
 const dbSizeThresholdBytes = 100 * 1024 * 1024 // 100 MB
 
+/** Map the DB `build_mode` column to the friendly `prod`/`dev` label users see. */
+function buildModeToEnv(buildMode: string | null | undefined): 'prod' | 'dev' | '?' {
+  if (buildMode === 'release') return 'prod'
+  if (buildMode === 'debug') return 'dev'
+  return '?'
+}
+
 async function handleCrashNotifications(env: Bindings): Promise<void> {
   if (!env.CRASH_NOTIFICATION_EMAIL || !env.RESEND_API_KEY) return
 
+  // One row per crash, newest first. No grouping — the email shows every report.
   const { results } = await env.TELEMETRY_DB.prepare(
-    `SELECT id, app_version, os_version, arch, signal, top_function, created_at
-         FROM crash_reports WHERE notified_at IS NULL`,
+    `SELECT id, app_version, os_version, arch, signal, top_function, created_at, build_mode, short_id
+         FROM crash_reports
+         WHERE notified_at IS NULL
+         ORDER BY created_at DESC`,
   ).all<{
     id: number
     app_version: string
@@ -19,32 +29,19 @@ async function handleCrashNotifications(env: Bindings): Promise<void> {
     signal: string
     top_function: string
     created_at: string
+    build_mode: string | null
+    short_id: string | null
   }>()
 
   if (results.length === 0) return
 
-  // Group by top_function
-  const grouped = new Map<string, { count: number; versions: Set<string>; mostRecent: string }>()
-  for (const row of results) {
-    const existing = grouped.get(row.top_function)
-    if (existing) {
-      existing.count++
-      existing.versions.add(row.app_version)
-      if (row.created_at > existing.mostRecent) existing.mostRecent = row.created_at
-    } else {
-      grouped.set(row.top_function, {
-        count: 1,
-        versions: new Set([row.app_version]),
-        mostRecent: row.created_at,
-      })
-    }
-  }
-
-  const crashes: CrashSummaryEntry[] = [...grouped.entries()].map(([topFunction, data]) => ({
-    topFunction,
-    count: data.count,
-    versions: [...data.versions],
-    mostRecent: data.mostRecent,
+  const crashes: CrashEmailRow[] = results.map((row) => ({
+    when: row.created_at,
+    env: buildModeToEnv(row.build_mode),
+    id: row.short_id ?? '?',
+    site: row.top_function,
+    signal: row.signal,
+    version: row.app_version,
   }))
 
   const ids = results.map((r) => r.id)

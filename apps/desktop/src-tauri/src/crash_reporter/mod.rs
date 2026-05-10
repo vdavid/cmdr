@@ -22,6 +22,16 @@ const RAW_CRASH_FILE_NAME: &str = "crash-report.raw";
 const CRASH_FILE_VERSION: u32 = 1;
 /// If the crash file is less than this many seconds old, it's a potential crash loop.
 const CRASH_LOOP_THRESHOLD_SECS: u64 = 5;
+/// Short-ID prefix used in `CRASH-XXXXX`. The alphabet lives in [`crate::short_id`]
+/// and is shared with error reports.
+const CRASH_SHORT_ID_PREFIX: &str = "CRASH";
+
+/// `"release"` or `"debug"` resolved at compile time. Same shape the error reporter
+/// already ships in its manifest, so the api server can store both report types
+/// with a single column.
+fn current_build_mode() -> &'static str {
+    if cfg!(debug_assertions) { "debug" } else { "release" }
+}
 
 static APP_START_TIME: OnceLock<Instant> = OnceLock::new();
 static CACHED_SETTINGS: OnceLock<ActiveSettings> = OnceLock::new();
@@ -56,6 +66,17 @@ pub struct CrashReport {
     /// (potential crash loop). The frontend uses this to suppress auto-send.
     #[serde(default)]
     pub possible_crash_loop: bool,
+    /// `"release"` or `"debug"`, resolved at compile time from `cfg!(debug_assertions)`.
+    /// `None` only when read from a crash file written by an older app version that
+    /// didn't carry this field; new reports always set it.
+    #[serde(default)]
+    pub build_mode: Option<String>,
+    /// User-visible short ID (`CRASH-XXXXX`) generated at write time. Surfaced in
+    /// the next-launch dialog so the user can reference the report. `None` only when
+    /// read from a crash file written by an older app version; new reports always
+    /// set it.
+    #[serde(default)]
+    pub short_id: Option<String>,
 }
 
 /// Initializes the crash reporter: panic hook, signal handlers, and settings cache.
@@ -138,6 +159,8 @@ fn build_panic_report(info: &std::panic::PanicHookInfo<'_>) -> CrashReport {
         uptime_secs: uptime_secs(),
         active_settings: CACHED_SETTINGS.get().cloned().unwrap_or_default(),
         possible_crash_loop: false,
+        build_mode: Some(current_build_mode().to_string()),
+        short_id: Some(crate::short_id::generate(CRASH_SHORT_ID_PREFIX)),
     }
 }
 
@@ -440,6 +463,8 @@ fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
                 uptime_secs: 0.0, // Unknown for signal crashes from previous session
                 active_settings: CACHED_SETTINGS.get().cloned().unwrap_or_default(),
                 possible_crash_loop: false,
+                build_mode: Some(current_build_mode().to_string()),
+                short_id: Some(crate::short_id::generate(CRASH_SHORT_ID_PREFIX)),
             };
 
             if let Err(e) = write_crash_report(crash_json_path, &report) {

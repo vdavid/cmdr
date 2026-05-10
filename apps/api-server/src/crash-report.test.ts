@@ -76,13 +76,48 @@ describe('POST /crash-report', () => {
     expect(prepareCall).toContain('INSERT INTO crash_reports')
 
     const bindArgs = bindMock.mock.calls[0]
-    // bindArgs: [hashedIp, appVersion, osVersion, arch, signal, topFunction, backtraceTruncated]
+    // bindArgs: [hashedIp, appVersion, osVersion, arch, signal, topFunction, backtraceTruncated, buildMode, shortId]
     expect(bindArgs[0]).toMatch(/^[0-9a-f]{64}$/) // SHA-256 hex
     expect(bindArgs[1]).toBe('1.2.3') // appVersion
     expect(bindArgs[2]).toBe('15.3.1') // osVersion
     expect(bindArgs[3]).toBe('arm64') // arch
     expect(bindArgs[4]).toBe('SIGSEGV') // signal
     expect(bindArgs[5]).toBe('cmdr::sync_status::get_ubiquitous_bool') // topFunction
+    expect(bindArgs[7]).toBeNull() // buildMode (not supplied by validCrashReport)
+    expect(bindArgs[8]).toBeNull() // shortId (not supplied by validCrashReport)
+  })
+
+  it('stores buildMode and shortId when supplied', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const report = { ...validCrashReport, buildMode: 'debug', shortId: 'CRASH-A2345' }
+
+    await postCrashReport(report, bindings)
+
+    const bindArgs = bindMock.mock.calls[0]
+    expect(bindArgs[7]).toBe('debug')
+    expect(bindArgs[8]).toBe('CRASH-A2345')
+  })
+
+  it('returns 400 for invalid buildMode', async () => {
+    const bindings = createBindings()
+    const report = { ...validCrashReport, buildMode: 'staging' }
+
+    const res = await postCrashReport(report, bindings)
+    expect(res.status).toBe(400)
+    const body = await res.json<{ error: string }>()
+    expect(body.error).toBe('Invalid buildMode')
+  })
+
+  it('returns 400 for malformed shortId', async () => {
+    const bindings = createBindings()
+    const report = { ...validCrashReport, shortId: 'CRASH-lowercase' }
+
+    const res = await postCrashReport(report, bindings)
+    expect(res.status).toBe(400)
+    const body = await res.json<{ error: string }>()
+    expect(body.error).toBe('Invalid shortId')
   })
 
   it('extracts the first cmdr frame as topFunction', async () => {

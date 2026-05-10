@@ -712,6 +712,19 @@ export const commands = {
        *  (potential crash loop). The frontend uses this to suppress auto-send.
        */
       possibleCrashLoop?: boolean
+      /**
+       *  `"release"` or `"debug"`, resolved at compile time from `cfg!(debug_assertions)`.
+       *  `None` only when read from a crash file written by an older app version that
+       *  didn't carry this field; new reports always set it.
+       */
+      buildMode?: string | null
+      /**
+       *  User-visible short ID (`CRASH-XXXXX`) generated at write time. Surfaced in
+       *  the next-launch dialog so the user can reference the report. `None` only when
+       *  read from a crash file written by an older app version; new reports always
+       *  set it.
+       */
+      shortId?: string | null
     } | null>('check_pending_crash_report'),
   // Deletes the crash report file without sending it.
   dismissCrashReport: () => __TAURI_INVOKE<void>('dismiss_crash_report'),
@@ -1840,6 +1853,19 @@ export type CrashReport = {
    *  (potential crash loop). The frontend uses this to suppress auto-send.
    */
   possibleCrashLoop?: boolean
+  /**
+   *  `"release"` or `"debug"`, resolved at compile time from `cfg!(debug_assertions)`.
+   *  `None` only when read from a crash file written by an older app version that
+   *  didn't carry this field; new reports always set it.
+   */
+  buildMode?: string | null
+  /**
+   *  User-visible short ID (`CRASH-XXXXX`) generated at write time. Surfaced in
+   *  the next-launch dialog so the user can reference the report. `None` only when
+   *  read from a crash file written by an older app version; new reports always
+   *  set it.
+   */
+  shortId?: string | null
 }
 
 /**

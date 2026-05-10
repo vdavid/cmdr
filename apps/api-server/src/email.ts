@@ -1,15 +1,26 @@
 import { Resend } from 'resend'
 import type { LicenseType } from './license'
 
-export interface CrashSummaryEntry {
-  topFunction: string
-  count: number
-  versions: string[]
-  mostRecent: string
+/**
+ * One row in the crash notification email. The email lists every crash report (no
+ * grouping by `top_function` like the previous incarnation) so each row maps to a
+ * single D1 row, with the short id letting the user trace it back.
+ */
+export interface CrashEmailRow {
+  /** `created_at` in ISO 8601. */
+  when: string
+  /** Friendly env (`'prod'` for release, `'dev'` for debug, `'?'` for unknown). */
+  env: 'prod' | 'dev' | '?'
+  /** `CRASH-XXXXX`, or `'?'` for rows from older clients. */
+  id: string
+  /** `top_function`. */
+  site: string
+  signal: string
+  version: string
 }
 
 interface CrashNotificationParams {
-  crashes: CrashSummaryEntry[]
+  crashes: CrashEmailRow[]
   totalCount: number
   to: string
   resendApiKey: string
@@ -23,10 +34,12 @@ export async function sendCrashNotificationEmail(params: CrashNotificationParams
     .map(
       (entry) => `
         <tr>
-            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-family: monospace; font-size: 13px;">${escapeHtml(entry.topFunction)}</td>
-            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: center;">${String(entry.count)}</td>
-            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(entry.versions.join(', '))}</td>
-            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(entry.mostRecent)}</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px; white-space: nowrap;">${escapeHtml(entry.when)}</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px; text-align: center;">${escapeHtml(entry.env)}</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-family: monospace; font-size: 13px;">${escapeHtml(entry.id)}</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-family: monospace; font-size: 13px;">${escapeHtml(entry.site)}</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(entry.signal)}</td>
+            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(entry.version)}</td>
         </tr>`,
     )
     .join('\n')
@@ -41,16 +54,18 @@ export async function sendCrashNotificationEmail(params: CrashNotificationParams
 <head>
     <meta charset="utf-8">
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 720px; margin: 0 auto; padding: 20px;">
     <h2 style="color: #dc2626;">${escapeHtml(subject)}</h2>
 
     <table style="border-collapse: collapse; width: 100%; margin: 16px 0;">
         <thead>
             <tr>
-                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Crash site</th>
-                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: center; background: #f9fafb;">Count</th>
-                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Versions</th>
-                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Most recent</th>
+                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">When</th>
+                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: center; background: #f9fafb;">Env</th>
+                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">ID</th>
+                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Site</th>
+                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Signal</th>
+                <th style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: left; background: #f9fafb;">Version</th>
             </tr>
         </thead>
         <tbody>
