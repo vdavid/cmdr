@@ -14,20 +14,6 @@
     "deploy:api-server": "pnpm --filter @cmdr/api-server deploy",
     "check": "./scripts/check.sh"
   },
-  "pnpm": {
-    "overrides": {
-      "serialize-javascript": ">=7.0.3",
-      "lodash": ">=4.17.23",
-      "cookie": ">=0.7.0",
-      "tmp": ">=0.2.4"
-    },
-    "onlyBuiltDependencies": [
-      "edgedriver",
-      "geckodriver",
-      "sharp",
-      "workerd"
-    ]
-  },
   "devDependencies": {
     "oxfmt": "^0.46.0"
   }

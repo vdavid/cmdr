@@ -5,6 +5,15 @@ packages:
 # our checker runs pnpm non-interactively and there's no human to answer.
 confirmModulesPurge: false
 
+# Pin transitive deps to fix CVEs in older indirect ranges.
+overrides:
+  serialize-javascript: '>=7.0.3'
+  lodash: '>=4.17.23'
+  cookie: '>=0.7.0'
+  tmp: '>=0.2.4'
+
+# pnpm 11 requires explicit per-package build-script approval. The legacy
+# `pnpm.onlyBuiltDependencies` field in package.json is ignored.
 allowBuilds:
   esbuild: false
   sharp: true
