@@ -11,7 +11,11 @@ import type { Bindings } from './types'
  * - `total_bytes` — running byte total across all bundles. Approximate, drift-prone.
  * - `eviction_in_progress` — short-lived (60 s TTL) lock to prevent concurrent eviction.
  *
- * The R2 key shape is `error-reports/{yyyy-mm-dd}/{ERR-XXXXX}-{uuid}.zip`.
+ * The R2 key shape is `error-reports/{prod|dev}/{yyyy-mm-dd}/{ERR-XXXXX}-{uuid}.zip`.
+ *
+ * Legacy shape (still present in the bucket; aged out via the 90-day R2 lifecycle):
+ * `error-reports/{yyyy-mm-dd}/{ERR-XXXXX}-{uuid}.zip`. Eviction sorts oldest-first
+ * via {@link extractDateSegment}, which handles both shapes.
  */
 
 /** Eviction starts when total bytes exceed this. */
@@ -70,6 +74,25 @@ interface ListedObject {
   uploaded: Date
 }
 
+/**
+ * Pull the `yyyy-mm-dd` date segment out of an R2 key. Handles both shapes:
+ * - new: `error-reports/{prod|dev}/yyyy-mm-dd/{id}-{uuid}.zip`
+ * - legacy: `error-reports/yyyy-mm-dd/{id}-{uuid}.zip`
+ *
+ * Returns the empty string when the key matches neither shape — that pushes
+ * unrecognized keys to the front of an ascending sort, so they get evicted first.
+ */
+export function extractDateSegment(key: string): string {
+  if (!key.startsWith(ERROR_REPORT_PREFIX)) return ''
+  const rest = key.slice(ERROR_REPORT_PREFIX.length)
+  const segments = rest.split('/')
+  // Pick the first segment that looks like a date. Both shapes have exactly one.
+  for (const segment of segments) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(segment)) return segment
+  }
+  return ''
+}
+
 /** Fetch every object under the prefix into memory. R2 list page = 1000 objects max. */
 async function listAllObjects(bucket: R2Bucket): Promise<ListedObject[]> {
   const out: ListedObject[] = []
@@ -109,11 +132,15 @@ export async function tryEvict(
   let freedBytes = 0
   try {
     const all = await listAllObjects(env.ERROR_REPORTS_BUCKET)
-    // Sort oldest first. Date prefix in the key is the primary signal (yyyy-mm-dd
-    // sorts lexically); R2 `uploaded` breaks ties for same-day uploads.
+    // Sort oldest first. The date segment inside the key is the primary signal
+    // (yyyy-mm-dd sorts lexically) — extracted via `extractDateSegment` so the
+    // sort works across both the new `{env}/{date}` layout and the legacy
+    // `{date}` layout. R2 `uploaded` breaks ties for same-day uploads.
     all.sort((a, b) => {
-      if (a.key < b.key) return -1
-      if (a.key > b.key) return 1
+      const da = extractDateSegment(a.key)
+      const db = extractDateSegment(b.key)
+      if (da < db) return -1
+      if (da > db) return 1
       return a.uploaded.getTime() - b.uploaded.getTime()
     })
 

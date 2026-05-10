@@ -192,6 +192,43 @@ describe('tryEvict', () => {
     expect(result.newTotal).toBe(3 * GB)
   })
 
+  it('sorts both legacy and new key shapes by the embedded date', async () => {
+    // Mixed shapes: legacy (no env segment) vs new (`prod/`). The legacy 2026-01-01
+    // entry should evict before the newer `prod/2026-03-01` entry, even though the
+    // raw key strings compare differently.
+    const objs: StubObj[] = [
+      {
+        key: `${ERROR_REPORT_PREFIX}prod/2026-03-01/ERR-NEWER-u.zip`,
+        size: 2 * GB,
+        uploaded: new Date('2026-03-01'),
+      },
+      {
+        key: `${ERROR_REPORT_PREFIX}2026-01-01/ERR-OLDER-u.zip`,
+        size: 2 * GB,
+        uploaded: new Date('2026-01-01'),
+      },
+      {
+        key: `${ERROR_REPORT_PREFIX}dev/2026-04-01/ERR-EVEN-NEWER-u.zip`,
+        size: 1 * GB,
+        uploaded: new Date('2026-04-01'),
+      },
+    ]
+    const bucket = createR2(objs)
+    const kv = createKv({ [TOTAL_BYTES_KEY]: String(5 * GB) })
+
+    await tryEvict(
+      { ERROR_REPORTS_BUCKET: bucket, ERROR_REPORT_META: kv },
+      { highWatermark: 4 * GB, lowWatermark: 3 * GB },
+    )
+
+    const remaining = await bucket.list({ prefix: ERROR_REPORT_PREFIX })
+    // Oldest by embedded date (2026-01-01) should be the one gone.
+    expect(remaining.objects.map((o) => o.key).sort()).toEqual([
+      `${ERROR_REPORT_PREFIX}dev/2026-04-01/ERR-EVEN-NEWER-u.zip`,
+      `${ERROR_REPORT_PREFIX}prod/2026-03-01/ERR-NEWER-u.zip`,
+    ])
+  })
+
   it('evicts oldest by key date prefix, then upload time for ties', async () => {
     const objs: StubObj[] = [
       // Same day — two uploads with different upload times

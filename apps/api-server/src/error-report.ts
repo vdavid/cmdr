@@ -1,7 +1,6 @@
 import { Hono } from 'hono'
 import { AwsClient } from 'aws4fetch'
 import type { Bindings } from './types'
-import { generateShortId } from './license'
 import {
   ERROR_REPORT_PREFIX,
   incrementTotalBytes,
@@ -14,13 +13,23 @@ import { postErrorReportNotification, postEvictionNotification } from './discord
 const errorReport = new Hono<{ Bindings: Bindings }>()
 
 const MAX_BUNDLE_BYTES = 10 * 1024 * 1024 // 10 MB hard cap on the multipart payload
-const SHORT_ID_LEN = 5
-const SHORT_ID_PREFIX = 'ERR'
-const COLLISION_RETRY_LIMIT = 3
 const PRESIGN_TTL_SECONDS = 7 * 24 * 60 * 60 // R2 max for presigned URLs
 const DEFAULT_BUCKET_NAME = 'cmdr-error-reports'
 
+/**
+ * Matches the client-side `ERR-XXXXX` short ID produced by
+ * `error_reporter::generate_short_id` (alphabet kept in sync in
+ * `apps/desktop/src-tauri/src/short_id.rs`).
+ */
+const SHORT_ID_PATTERN = /^ERR-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{5}$/
+
 export interface ErrorReportMeta {
+  /**
+   * Client-generated `ERR-XXXXX` shown in the UI before upload. The server uses this
+   * id as-is — the trailing UUID in the R2 key guarantees object uniqueness, so we
+   * never regenerate. The server validates the shape and rejects malformed ids.
+   */
+  id: string
   kind: 'user' | 'auto'
   /**
    * Set by the desktop client from `cfg!(debug_assertions)`. `'debug'` reports
@@ -40,6 +49,7 @@ export interface ErrorReportMeta {
 function isValidMeta(value: unknown): value is ErrorReportMeta {
   if (!value || typeof value !== 'object') return false
   const v = value as Record<string, unknown>
+  if (typeof v['id'] !== 'string' || !SHORT_ID_PATTERN.test(v['id'])) return false
   if (v['kind'] !== 'user' && v['kind'] !== 'auto') return false
   for (const k of ['appVersion', 'osVersion', 'arch', 'generatedAt']) {
     const val = v[k]
@@ -54,19 +64,18 @@ function todayDatePrefix(): string {
   return new Date().toISOString().slice(0, 10) // YYYY-MM-DD
 }
 
-/** Pick a fresh `ERR-XXXXX` short ID, retrying on R2 HEAD collision (rare). */
-async function generateUniqueId(bucket: R2Bucket, datePrefix: string): Promise<string | null> {
-  for (let i = 0; i < COLLISION_RETRY_LIMIT; i++) {
-    const id = generateShortId(SHORT_ID_PREFIX, SHORT_ID_LEN)
-    // Check anything already starting with this ID under today's prefix.
-    const list = await bucket.list({ prefix: `${ERROR_REPORT_PREFIX}${datePrefix}/${id}-`, limit: 1 })
-    if (list.objects.length === 0) return id
-  }
-  return null
+/** `'prod'` for release builds, `'dev'` for debug. Friendlier than `release`/`debug` for ops. */
+function envSegment(buildMode: 'release' | 'debug' | undefined): 'prod' | 'dev' {
+  return buildMode === 'debug' ? 'dev' : 'prod'
 }
 
-function buildR2Key(datePrefix: string, id: string, uuid: string): string {
-  return `${ERROR_REPORT_PREFIX}${datePrefix}/${id}-${uuid}.zip`
+/**
+ * R2 key shape: `error-reports/{prod|dev}/yyyy-mm-dd/{ERR-XXXXX}-{uuid}.zip`.
+ * Env first so dev and prod sort into separate sub-prefixes (eviction by oldest still
+ * works within each environment because the date segment sorts lexically).
+ */
+function buildR2Key(env: 'prod' | 'dev', datePrefix: string, id: string, uuid: string): string {
+  return `${ERROR_REPORT_PREFIX}${env}/${datePrefix}/${id}-${uuid}.zip`
 }
 
 /**
@@ -194,14 +203,18 @@ errorReport.post('/error-report', async (c) => {
     return c.json({ error: 'Invalid meta shape' }, 400)
   }
 
+  const id = meta.id
   const datePrefix = todayDatePrefix()
-  const id = await generateUniqueId(c.env.ERROR_REPORTS_BUCKET, datePrefix)
-  if (!id) {
-    return c.json({ error: 'Could not allocate ID' }, 503)
+  const env = envSegment(meta.buildMode)
+  // The trailing UUID guarantees object uniqueness on its own. On the astronomically
+  // rare (id, date, uuid) collision, retry with a fresh UUID — never a fresh id, so
+  // the user-visible id the dialog showed stays stable.
+  let key = buildR2Key(env, datePrefix, id, crypto.randomUUID())
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const existing = await c.env.ERROR_REPORTS_BUCKET.head(key)
+    if (!existing) break
+    key = buildR2Key(env, datePrefix, id, crypto.randomUUID())
   }
-
-  const uuid = crypto.randomUUID()
-  const key = buildR2Key(datePrefix, id, uuid)
   const sizeBytes = bundle.size
   const uploadedUnixSeconds = Math.floor(Date.now() / 1000)
 

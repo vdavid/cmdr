@@ -73,7 +73,7 @@ describe('buildErrorReportPayload', () => {
                 "value": "[Download bundle](https://example.com/bundle.zip?sig=abc) (link valid 7 days)",
               },
             ],
-            "title": "Error report ERR-A2345",
+            "title": "[PROD] Error report ERR-A2345",
           },
         ],
       }
@@ -106,9 +106,9 @@ describe('buildErrorReportPayload', () => {
     expect(payload.embeds[0].title).toBe('[DEV] Error report ERR-A2345')
   })
 
-  it('does not prefix the title when buildMode is release', () => {
+  it('prefixes the title with [PROD] when buildMode is release', () => {
     const payload = buildErrorReportPayload(baseNotification) as { embeds: { title: string }[] }
-    expect(payload.embeds[0].title).toBe('Error report ERR-A2345')
+    expect(payload.embeds[0].title).toBe('[PROD] Error report ERR-A2345')
   })
 })
 

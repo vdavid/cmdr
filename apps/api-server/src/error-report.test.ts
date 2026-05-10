@@ -13,6 +13,7 @@ function createR2(): R2Bucket & { _store: Map<string, StoredObj> } {
   const store = new Map<string, StoredObj>()
   return {
     _store: store,
+    head: (key: string) => Promise.resolve(store.has(key) ? ({ key } as unknown as R2Object) : null),
     put: async (
       key: string,
       value: ReadableStream | ArrayBuffer | Uint8Array | string,
@@ -121,6 +122,7 @@ function buildMultipart(bundleBytes: Uint8Array, meta: unknown, bundleName = 'bu
 }
 
 const validMeta = {
+  id: 'ERR-A2345',
   kind: 'user' as const,
   appVersion: '0.13.0',
   osVersion: '15.3.1',
@@ -138,7 +140,7 @@ afterEach(() => {
 })
 
 describe('POST /error-report', () => {
-  it('returns 200 with an ERR-XXXXX id on a valid upload', async () => {
+  it('returns 200 echoing the client-supplied id on a valid upload', async () => {
     const bindings = createBindings()
     const fd = buildMultipart(new Uint8Array([1, 2, 3, 4]), validMeta)
 
@@ -146,10 +148,10 @@ describe('POST /error-report', () => {
 
     expect(res.status).toBe(200)
     const body = await res.json<{ id: string }>()
-    expect(body.id).toMatch(/^ERR-[23456789A-HJ-NP-Z]{5}$/)
+    expect(body.id).toBe(validMeta.id)
   })
 
-  it('writes the bundle to R2 with the expected key shape and metadata', async () => {
+  it('writes the bundle to R2 with the new env/date key shape and metadata', async () => {
     const bucket = createR2()
     const bindings = createBindings({ ERROR_REPORTS_BUCKET: bucket })
     const fd = buildMultipart(new Uint8Array([9, 9, 9]), validMeta)
@@ -158,7 +160,8 @@ describe('POST /error-report', () => {
     const { id } = await res.json<{ id: string }>()
 
     const [[key, obj]] = [...bucket._store.entries()]
-    expect(key).toMatch(new RegExp(`^error-reports/\\d{4}-\\d{2}-\\d{2}/${id}-[0-9a-f-]{36}\\.zip$`))
+    // Default `validMeta` has no `buildMode`, which is treated as `'release'` → `prod`.
+    expect(key).toMatch(new RegExp(`^error-reports/prod/\\d{4}-\\d{2}-\\d{2}/${id}-[0-9a-f-]{36}\\.zip$`))
     expect(obj.customMetadata).toMatchObject({
       id,
       kind: 'user',
@@ -168,6 +171,41 @@ describe('POST /error-report', () => {
       generatedAt: '2026-04-23T10:00:00Z',
     })
     expect(obj.size).toBe(3)
+  })
+
+  it('places debug-build uploads under the `dev/` env prefix', async () => {
+    const bucket = createR2()
+    const bindings = createBindings({ ERROR_REPORTS_BUCKET: bucket })
+    const fd = buildMultipart(new Uint8Array([1, 2, 3]), { ...validMeta, buildMode: 'debug' })
+
+    await app.request('/error-report', { method: 'POST', body: fd }, bindings)
+
+    const [[key]] = [...bucket._store.entries()]
+    expect(key).toMatch(new RegExp(`^error-reports/dev/\\d{4}-\\d{2}-\\d{2}/${validMeta.id}-[0-9a-f-]{36}\\.zip$`))
+  })
+
+  it('returns 400 when the meta id is missing', async () => {
+    const bindings = createBindings()
+    const { id: _id, ...rest } = validMeta
+    void _id
+    const fd = buildMultipart(new Uint8Array([1]), rest)
+
+    const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
+
+    expect(res.status).toBe(400)
+    const body = await res.json<{ error: string }>()
+    expect(body.error).toBe('Invalid meta shape')
+  })
+
+  it('returns 400 when the meta id is malformed', async () => {
+    const bindings = createBindings()
+    const fd = buildMultipart(new Uint8Array([1]), { ...validMeta, id: 'ERR-LOWER' })
+
+    const res = await app.request('/error-report', { method: 'POST', body: fd }, bindings)
+
+    expect(res.status).toBe(400)
+    const body = await res.json<{ error: string }>()
+    expect(body.error).toBe('Invalid meta shape')
   })
 
   it('returns 413 for a bundle over 10 MB', async () => {

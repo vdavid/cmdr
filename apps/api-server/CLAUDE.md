@@ -190,9 +190,11 @@ Cron (every 12h): scheduled handler runs three jobs:
 A single `scheduled` handler runs every 12 hours (`0 */12 * * *`). It runs three independent jobs, each in its own
 try-catch so one failure doesn't block the others:
 
-1. **Crash notifications** (every invocation): queries `crash_reports WHERE notified_at IS NULL`, groups by
-   `top_function`, marks rows as notified, then sends a summary email via Resend. Marks before sending to prefer missed
-   notifications over duplicates. Requires `CRASH_NOTIFICATION_EMAIL` and `RESEND_API_KEY`.
+1. **Crash notifications** (every invocation): queries `crash_reports WHERE notified_at IS NULL`, sorted newest-first,
+   marks rows as notified, then sends an email via Resend with one row per crash report (When, Env, ID, Site, Signal,
+   Version). Marks before sending to prefer missed notifications over duplicates. Pre-fix-\* this grouped by
+   `top_function`; the per-row layout is easier to scan and includes the user-visible `CRASH-XXXXX` id. Requires
+   `CRASH_NOTIFICATION_EMAIL` and `RESEND_API_KEY`.
 
 2. **Daily aggregation** (00:00 UTC only): aggregates yesterday's `update_checks` into `daily_active_users` via
    `INSERT OR IGNORE ... GROUP BY`, then prunes raw update checks older than 7 days. Idempotent via existence check.
@@ -253,9 +255,10 @@ SHA-256 + daily salt for deduplication without storing PII. D1 write is fire-and
 
 **Crash report tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `crash_reports`). Receives crash reports from the
 desktop app via `POST /crash-report`. Columns: hashed_ip, app_version, os_version, arch, signal, top_function,
-backtrace. IP is hashed with SHA-256 + daily salt (same pattern as update checks). Validates payload size (max 64 KB)
-and required fields before writing. D1 write is fire-and-forget via `waitUntil` + `.catch(() => {})`. No authentication
-required.
+backtrace, build_mode (`'release'` / `'debug'`, nullable for legacy rows), short_id (`CRASH-XXXXX`, nullable for legacy
+rows). IP is hashed with SHA-256 + daily salt (same pattern as update checks). Validates payload size (max 64 KB),
+required fields, and the shape of optional fields before writing. D1 write is fire-and-forget via `waitUntil` +
+`.catch(() => {})`. No authentication required.
 
 **Device tracking (fair use):** On each `/validate` call with a `deviceId`, the server tracks the device in KV
 (`devices:{seatTransactionId}`) and logs to Analytics Engine (binding: `DEVICE_COUNTS`, dataset: `cmdr_device_counts`).
@@ -269,12 +272,18 @@ and its own 6-device allowance.
 licensed). Without this, there's no signal for how many people actually run the app — Umami only tracks website visitors
 and download tracking only captures installs.
 
+**Error report R2 key shape:** `error-reports/{prod|dev}/{yyyy-mm-dd}/{ERR-XXXXX}-{uuid}.zip`. The env segment (`prod`
+for release builds, `dev` for debug builds, inferred from `meta.buildMode`) keeps dev-run reports out of the production
+sort order. Legacy keys (`error-reports/{yyyy-mm-dd}/...` — pre-env-prefix) still exist; eviction reads the date segment
+via `extractDateSegment` which handles both shapes. The 90-day R2 lifecycle drains the legacy shape naturally — there's
+no migration.
+
 **Error report eviction (8/6 GB watermarks + lifecycle):** Three layers keep the bucket bounded.
 
 1. **On-upload eviction**: every `POST /error-report` schedules `tryEvict` in `waitUntil(...)`. If `total_bytes` (KV) >
    8 GB and `eviction_in_progress` (KV, 60-s TTL lock) isn't set, lists R2 objects under `error-reports/`, sorts
-   oldest-first by date prefix in the key (`yyyy-mm-dd`) then by `uploaded`, deletes until ≤ 6 GB, then resets the
-   counter to the recomputed ground truth.
+   oldest-first by the embedded `yyyy-mm-dd` segment (via `extractDateSegment`, which handles both new and legacy key
+   shapes) then by `uploaded`, deletes until ≤ 6 GB, then resets the counter to the recomputed ground truth.
 2. **Daily cron sweep**: corrects KV drift by recomputing from R2 and re-running `tryEvict`.
 3. **R2 lifecycle rule**: 90-day expiration applied at provisioning time via `scripts/setup-cf-infra.sh`.
 
@@ -289,7 +298,10 @@ for presigned URLs. Convenience of click-to-download outweighs leak risk because
 
 **Short ID generation:** `generateShortId(prefix, len)` in `license.ts` produces IDs like `ERR-A2345` from the same
 unambiguous alphabet (`23456789ABCDEFGHJKMNPQRSTUVWXYZ`) as license short codes. Rejection sampling avoids modulo bias.
-The error report route retries up to 3 times on R2 HEAD collision.
+The error report route does NOT regenerate the id server-side — it validates the client-supplied `meta.id` against the
+shape `^ERR-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{5}$` and uses it as-is. On the astronomically rare R2 key collision (same
+id + same date + UUID clash), the route retries with a fresh UUID — never a fresh id — so the user-visible id from the
+preview dialog stays stable through to the toast.
 
 ## Local development
 
