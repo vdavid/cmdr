@@ -86,6 +86,7 @@ Core structure:
   - `architecture.md` - Map of all subsystems with links to their `CLAUDE.md` files
   - `style-guide.md` - Writing, code, and design style rules
   - `security.md` - Security policies
+  - `maintenance.md` - Recurring maintenance tasks (dep bumps, allowlist trims, doc sweeps) and a log of past runs
 - Feature-level docs live in **colocated `CLAUDE.md` files** next to the code (for example,
   `src/lib/settings/CLAUDE.md`). Claude Code auto-discovers these. See `docs/architecture.md` for the full map.
 
