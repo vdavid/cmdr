@@ -46,6 +46,32 @@ export function mapKey(key: string): string {
 }
 
 /**
+ * Triggers a registry command directly via the `execute-command` Tauri event,
+ * bypassing the keyboard-simulation path. Mimics what the OS native menu
+ * accelerator does in prod (menu click → `on_menu_event` → `execute-command`).
+ *
+ * Use this for menu-bound shortcuts (F2/F7/F8, ⌘C/X/V, etc.) when the test
+ * cares about the dialog/handler behavior rather than keyboard plumbing.
+ * Synthesized DOM keystrokes don't trigger native menu accelerators and may
+ * miss `handleGlobalKeyDown` if focus drifts after async MCP nav. The Tauri
+ * event path is the direct equivalent and is unaffected by DOM focus state.
+ *
+ * For non-menu shortcuts (arrow keys, Space, Tab), keep using `pressKey()` /
+ * `tauriPage.keyboard.press()` — there's no Tauri-event equivalent.
+ *
+ * @example
+ * await dispatchMenuCommand(tauriPage, 'file.rename') // F2-equivalent
+ * await dispatchMenuCommand(tauriPage, 'edit.copy')   // Cmd+C-equivalent
+ */
+export async function dispatchMenuCommand(tauriPage: PageLike, commandId: string): Promise<void> {
+  const id = JSON.stringify(commandId)
+  await tauriPage.evaluate(`(function(){
+        var invoke = window.__TAURI_INTERNALS__.invoke;
+        invoke('plugin:event|emit', { event: 'execute-command', payload: { commandId: ${id} } });
+    })()`)
+}
+
+/**
  * Dispatches a keyboard event with the correct DOM key value.
  * Use this instead of tauriPage.keyboard.press() for keys that need mapping.
  */

@@ -24,6 +24,13 @@ use env_logger as _;
 //noinspection RsUnusedImport
 use mimalloc as _;
 //noinspection RsUnusedImport
+// `specta_typescript` is used by `ipc::export_bindings` (cfg-gated to debug
+// or test builds). The dummy import here is unconditional so the crate stays
+// referenced in release builds too — otherwise `unused_crate_dependencies`
+// fires. The crate compiles cheaply, so the cost of keeping it linked in
+// release is negligible.
+use specta_typescript as _;
+//noinspection RsUnusedImport
 use notify as _;
 //noinspection ALL
 // smb2 crate is used in network/smb_client module (macOS + Linux)

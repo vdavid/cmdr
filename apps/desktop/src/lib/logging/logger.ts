@@ -42,7 +42,11 @@ const isDev = import.meta.env.DEV
  * Example: ['fileExplorer', 'dragDrop'] enables debug for those features.
  */
 const debugCategories: string[] = [
-  // 'fileExplorer',
+  // Always-on so error-report bundles capture pane-level diagnostics — most
+  // notably the "dialog didn't open" warn lines in `DualPaneExplorer` (rare,
+  // one entry per blocked F2/F7/F8/etc. attempt) plus the existing pane-state
+  // debug lines. Volume is low under normal use; tap through if needed.
+  'fileExplorer',
   // 'dragDrop',
   // 'licensing',
   // 'copyProgress', // Enable to debug copy operation progress events
@@ -51,6 +55,11 @@ const debugCategories: string[] = [
   'reactive-settings', // Enable to debug reactive settings updates
   'shortcuts', // Enable to debug keyboard shortcut persistence
   'mtp', // Enable to debug MTP device operations
+  // Always-on so error-report bundles capture the user's recent shortcut/menu
+  // activity (`FE:user-action edit.copy`, etc.). Volume is small (~one entry per
+  // user keystroke) and the breadcrumb-style trail is invaluable when triaging
+  // why a shortcut "did nothing." See `routes/(main)/command-dispatch.ts`.
+  'user-action',
 ]
 
 // Track if verbose logging is enabled for reconfiguration

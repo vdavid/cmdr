@@ -1249,8 +1249,20 @@
         const path = getPanePath(focusedPane)
         const volumeIdForPane = getPaneVolumeId(focusedPane)
 
+        // Read-only volumes (MTP SD cards in some configurations, etc.) can't accept
+        // new folders. Surface that as an alert up front rather than letting the user
+        // type a name and then hit a backend error. Mirrors `startRename`.
+        const volumeInfo = getDestinationVolumeInfo(volumeIdForPane, volumes)
+        if (volumeInfo?.isReadOnly) {
+            dialogs.showAlert('Read-only volume', "This is a read-only volume. Creating folders isn't possible here.")
+            return
+        }
+
         const paneListingId = paneRef?.getListingId()
-        if (!paneListingId) return
+        if (!paneListingId) {
+            log.warn('openNewFolderDialog: no listingId, bailing')
+            return
+        }
 
         const initialName = await getInitialFolderName(paneRef, paneListingId, showHiddenFiles, getFileAt)
 
@@ -1269,8 +1281,17 @@
         const path = getPanePath(focusedPane)
         const volumeIdForPane = getPaneVolumeId(focusedPane)
 
+        const volumeInfo = getDestinationVolumeInfo(volumeIdForPane, volumes)
+        if (volumeInfo?.isReadOnly) {
+            dialogs.showAlert('Read-only volume', "This is a read-only volume. Creating files isn't possible here.")
+            return
+        }
+
         const paneListingId = paneRef?.getListingId()
-        if (!paneListingId) return
+        if (!paneListingId) {
+            log.warn('openNewFileDialog: no listingId, bailing')
+            return
+        }
 
         const initialName = await getInitialFileName(paneRef, paneListingId, showHiddenFiles, getFileAt)
 
@@ -1511,10 +1532,23 @@
     }
 
     /** Opens the delete confirmation dialog for the current selection or cursor item. */
+    // eslint-disable-next-line complexity -- Guard chain: each early-return is an independent precondition; splitting wouldn't add clarity.
     export async function openDeleteDialog(permanent: boolean, autoConfirm?: boolean) {
         const sourcePaneRef = getPaneRef(focusedPane)
         const listingId = sourcePaneRef?.getListingId()
-        if (!listingId) return
+        if (!listingId) {
+            log.warn('openDeleteDialog: no listingId, bailing')
+            return
+        }
+
+        // Read-only volumes can't accept deletes. Surface as an alert before any
+        // dialog opens. Mirrors `startRename` and `openNewFolderDialog`.
+        const sourceVolumeIdForCheck = getPaneVolumeId(focusedPane)
+        const sourceVolumeInfo = getDestinationVolumeInfo(sourceVolumeIdForCheck, volumes)
+        if (sourceVolumeInfo?.isReadOnly) {
+            dialogs.showAlert('Read-only volume', "This is a read-only volume. Deleting files isn't possible here.")
+            return
+        }
 
         const hasParent = sourcePaneRef?.hasParentEntry()
         const selectedIndices = sourcePaneRef?.getSelectedIndices()
@@ -1527,12 +1561,41 @@
                   const idx = toBackendCursorIndex(cursorIndex ?? -1, hasParent ?? false)
                   return idx !== null ? [idx] : []
               })()
-        if (backendIndices.length === 0) return
+        if (backendIndices.length === 0) {
+            log.warn(
+                'openDeleteDialog: no backendIndices (hasSelection={hasSelection}, cursorIndex={cursorIndex}, hasParent={hasParent}), bailing',
+                {
+                    hasSelection,
+                    cursorIndex: sourcePaneRef?.getCursorIndex() ?? -1,
+                    hasParent: hasParent ?? false,
+                },
+            )
+            return
+        }
 
         // Fetch full FileEntry data in a single batch IPC call
-        const entries = await getFilesAtIndices(listingId, backendIndices, showHiddenFiles)
+        let entries
+        try {
+            entries = await getFilesAtIndices(listingId, backendIndices, showHiddenFiles)
+        } catch (error) {
+            log.warn('openDeleteDialog: getFilesAtIndices threw, bailing. error={error}, indices={indices}', {
+                error: error instanceof Error ? error.message : String(error),
+                indices: backendIndices.join(','),
+            })
+            return
+        }
         const validEntries = entries.filter((e) => e.name !== '..')
-        if (validEntries.length === 0) return
+        if (validEntries.length === 0) {
+            log.warn(
+                'openDeleteDialog: no validEntries after getFilesAtIndices (got {count} entries, all filtered as ".." parent), bailing. backendIndices={indices}',
+                { count: entries.length, indices: backendIndices.join(',') },
+            )
+            return
+        }
+        log.debug(
+            'openDeleteDialog: opening delete confirmation. {count} valid entries, sourceVolId={volId}',
+            { count: validEntries.length, volId: getPaneVolumeId(focusedPane) },
+        )
 
         const sourceItems: DeleteSourceItem[] = validEntries.map((e) => ({
             name: e.name,
@@ -1857,6 +1920,10 @@
             handleVolumeChange(pane, volume.id, volume.path, volume.path)
         }
 
+        // MCP-driven volume change: re-anchor DOM focus on the explorer container so
+        // subsequent keyboard input (arrow keys, F-keys) lands in the right pane's
+        // dispatcher chain. `handleVolumeChange` updates state but doesn't touch focus.
+        containerElement?.focus()
         return true
     }
 
@@ -1923,7 +1990,17 @@
 
         const paneRef = getPaneRef(pane)
         if (!paneRef) return 'Pane not available'
-        return paneRef.navigateToPath(path)
+        const result = paneRef.navigateToPath(path)
+        // After the listing settles, re-anchor DOM focus on the explorer container.
+        // MCP-driven nav doesn't go through `handleFocus`, so without this the inner
+        // FilePane re-render can leave `document.activeElement` as `<body>`, which
+        // breaks subsequent keyboard input that relies on bubbling through the pane.
+        if (result instanceof Promise) {
+            void result.finally(() => containerElement?.focus())
+        } else {
+            containerElement?.focus()
+        }
+        return result
     }
 
     /**
@@ -1936,10 +2013,16 @@
         if (!paneRef) return
 
         if (typeof to === 'number') {
-            void paneRef.setCursorIndex(to)
+            await paneRef.setCursorIndex(to)
         } else {
             await moveCursorByName(paneRef, to)
         }
+        // MCP-driven cursor placement: re-anchor DOM focus on the explorer container
+        // so the next keystroke (the agent often follows move_cursor with a shortcut)
+        // lands in the right dispatcher chain. Also makes the awaited completion
+        // genuine — `void` swallowed the cursor-set promise and let MCP report `OK`
+        // before the cursor was observably positioned.
+        containerElement?.focus()
     }
 
     async function moveCursorByName(paneRef: NonNullable<ReturnType<typeof getPaneRef>>, name: string) {
@@ -1948,7 +2031,7 @@
             // Network views handle name lookup locally
             const idx: number = paneRef.findNetworkItemIndex(name)
             if (idx >= 0) {
-                void paneRef.setCursorIndex(idx)
+                await paneRef.setCursorIndex(idx)
             }
         } else {
             await moveCursorByNameInFileListing(paneRef, name)
@@ -1965,7 +2048,7 @@
         // Backend index doesn't include ".." entry, but frontend does
         const hasParent: boolean = paneRef.hasParentEntry()
         const frontendIndex = hasParent ? backendIndex + 1 : backendIndex
-        void paneRef.setCursorIndex(frontendIndex)
+        await paneRef.setCursorIndex(frontendIndex)
     }
 
     /**
