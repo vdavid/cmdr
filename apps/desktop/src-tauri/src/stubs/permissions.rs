@@ -13,6 +13,13 @@ pub fn check_full_disk_access() -> bool {
     true
 }
 
+/// Stub: macOS version is meaningless on this platform. Returns `0`.
+#[tauri::command]
+#[specta::specta]
+pub fn get_macos_major_version() -> u32 {
+    0
+}
+
 /// Opens privacy settings (stub: no-op, returns error).
 ///
 /// There's no equivalent to macOS System Settings > Privacy on Linux.

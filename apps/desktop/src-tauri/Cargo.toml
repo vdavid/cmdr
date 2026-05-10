@@ -176,7 +176,7 @@ urlencoding = "2.1.3"
 objc2 = { version = "0.6", features = ["std", "exception"] }
 objc2-foundation = { version = "0.3", features = [
     "NSURL", "NSString", "NSDictionary", "NSDate", "NSArray", "NSValue", "NSError",
-    "NSFileManager", "NSNotification", "NSBundle", "NSDistributedNotificationCenter", "NSUserDefaults",
+    "NSData", "NSFileManager", "NSNotification", "NSBundle", "NSDistributedNotificationCenter", "NSUserDefaults",
 ] }
 objc2-app-kit = { version = "0.3", features = [
     "NSDragging", "NSDraggingItem", "NSImage", "NSColor", "NSColorSpace",

@@ -106,6 +106,7 @@ export {
   unwatchVolumeSpace,
   setDiskSpaceThreshold,
   checkFullDiskAccess,
+  getMacosMajorVersion,
   openPrivacySettings,
   openSystemSettingsUrl,
   openAppearanceSettings,

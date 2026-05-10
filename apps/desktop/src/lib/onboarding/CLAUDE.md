@@ -15,7 +15,9 @@ Access in macOS System Settings.
 
 Two actions are available:
 
-- **Open System Settings** — calls `openPrivacySettings()` via IPC, then shows a follow-up hint to restart the app.
+- **Open System Settings** — re-runs `checkFullDiskAccess()` (so TCC has a fresh registration of the bundle and the Cmdr
+  row appears in the FDA list), then calls `openPrivacySettings()` via IPC, then shows a follow-up hint to restart the
+  app. The IPC deep-links straight to the Full Disk Access pane (not the Privacy category list).
 - **Deny** — saves `fullDiskAccessChoice: 'deny'` to settings, calls `startIndexingAfterFdaDecision()` so the indexer
   starts within this session, then calls `onComplete()` to dismiss.
 
@@ -86,9 +88,20 @@ apps (VS Code, iTerm2) do.
 - Tauri provides no callback for when the user finishes in System Preferences. The app cannot detect the grant
   automatically. The post-click hint tells the user to restart manually.
 - Uses `dialogId="full-disk-access"` on `ModalDialog`, so MCP dialog tracking is automatic.
+- **TCC's registration hook fires on `open()`, not `opendir()`.** A `read_dir` against a protected directory may be
+  silently denied without ever adding the bundle to the Full Disk Access list — leaving the user with no row to toggle
+  on. The probe in `permissions.rs` opens specific protected _files_ (`~/Library/Safari/Bookmarks.plist`,
+  `~/Library/Mail/V10/MailData/Envelope Index`, `~/Library/Messages/chat.db`, etc.) and walks them in order until one
+  returns either `Ok` or `PermissionDenied`. `NotFound` doesn't trigger TCC, so we keep walking. The component re-runs
+  `checkFullDiskAccess()` right before `openPrivacySettings()` so the registration is fresh when the Settings pane
+  loads.
+- **Deep-link host changed in Ventura.** macOS 13+ uses `com.apple.settings.PrivacySecurity.extension`; older macOS uses
+  `com.apple.preference.security`. Both anchor on `Privacy_AllFiles`. `open_privacy_settings` picks the right one via
+  `get_macos_major_version`. The same version informs the modal copy: macOS 12 and older append new FDA entries at the
+  end of the list (instead of alphabetical), so the "find Cmdr" instruction adjusts.
 
 ## Dependencies
 
-- `$lib/tauri-commands` — `openPrivacySettings`
+- `$lib/tauri-commands` — `checkFullDiskAccess`, `getMacosMajorVersion`, `openPrivacySettings`
 - `$lib/settings-store` — `saveSettings`
 - `$lib/ui` — `ModalDialog`, `Button`

@@ -142,6 +142,18 @@ export async function checkFullDiskAccess(): Promise<boolean> {
 }
 
 /**
+ * Returns the macOS major version (e.g. 14 for Sonoma). Returns 0 on non-macOS
+ * platforms or if the command is unavailable.
+ */
+export async function getMacosMajorVersion(): Promise<number> {
+  try {
+    return await commands.getMacosMajorVersion()
+  } catch {
+    return 0
+  }
+}
+
+/**
  * Opens the system privacy settings.
  * On macOS, opens System Settings > Privacy & Security. Not applicable on Linux.
  */

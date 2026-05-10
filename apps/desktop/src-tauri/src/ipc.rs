@@ -424,6 +424,7 @@ fn collect_permission_types(types: &mut Types) -> Vec<Function> {
     use specta::function::collect_functions;
     collect_functions![
         crate::permissions::check_full_disk_access,
+        crate::permissions::get_macos_major_version,
         crate::permissions::open_privacy_settings,
         crate::permissions::open_appearance_settings,
         crate::permissions::open_system_settings_url,
@@ -434,6 +435,7 @@ fn collect_permission_types(types: &mut Types) -> Vec<Function> {
     use specta::function::collect_functions;
     collect_functions![
         crate::permissions_linux::check_full_disk_access,
+        crate::permissions_linux::get_macos_major_version,
         crate::permissions_linux::open_privacy_settings,
         crate::permissions_linux::open_appearance_settings,
         crate::permissions_linux::open_system_settings_url,
@@ -444,6 +446,7 @@ fn collect_permission_types(types: &mut Types) -> Vec<Function> {
     use specta::function::collect_functions;
     collect_functions![
         crate::stubs::permissions::check_full_disk_access,
+        crate::stubs::permissions::get_macos_major_version,
         crate::stubs::permissions::open_privacy_settings,
         crate::stubs::permissions::open_appearance_settings,
         crate::stubs::permissions::open_system_settings_url,
@@ -805,6 +808,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         #[cfg(target_os = "macos")]
         crate::permissions::check_full_disk_access,
         #[cfg(target_os = "macos")]
+        crate::permissions::get_macos_major_version,
+        #[cfg(target_os = "macos")]
         crate::permissions::open_privacy_settings,
         #[cfg(target_os = "macos")]
         crate::permissions::open_appearance_settings,
@@ -813,6 +818,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         #[cfg(target_os = "linux")]
         crate::permissions_linux::check_full_disk_access,
         #[cfg(target_os = "linux")]
+        crate::permissions_linux::get_macos_major_version,
+        #[cfg(target_os = "linux")]
         crate::permissions_linux::open_privacy_settings,
         #[cfg(target_os = "linux")]
         crate::permissions_linux::open_appearance_settings,
@@ -820,6 +827,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::permissions_linux::open_system_settings_url,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         crate::stubs::permissions::check_full_disk_access,
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        crate::stubs::permissions::get_macos_major_version,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         crate::stubs::permissions::open_privacy_settings,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]

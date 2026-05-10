@@ -1,5 +1,11 @@
 <script lang="ts">
-    import { openPrivacySettings, startIndexingAfterFdaDecision } from '$lib/tauri-commands'
+    import { onMount } from 'svelte'
+    import {
+        checkFullDiskAccess,
+        getMacosMajorVersion,
+        openPrivacySettings,
+        startIndexingAfterFdaDecision,
+    } from '$lib/tauri-commands'
     import { saveSettings } from '$lib/settings-store'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -15,9 +21,29 @@
     const { onComplete, wasRevoked = false }: Props = $props()
 
     let hasClickedOpenSettings = $state(false)
+    // Default to Ventura+ copy. Updated on mount once the backend reports the
+    // actual macOS version. macOS 13+ shows the FDA list alphabetically;
+    // macOS 12 and older append new entries at the end.
+    let isVenturaOrNewer = $state(true)
+
+    onMount(async () => {
+        const major = await getMacosMajorVersion()
+        if (major > 0) {
+            isVenturaOrNewer = major >= 13
+        }
+    })
 
     async function handleOpenSettings() {
         hasClickedOpenSettings = true
+        // Re-probe right before opening Settings so the bundle is freshly
+        // registered with TCC. Without this, the Cmdr row may not appear in
+        // the Full Disk Access list — TCC only adds apps that have recently
+        // attempted to read a protected path.
+        try {
+            await checkFullDiskAccess()
+        } catch (error) {
+            log.warn('FDA re-probe before opening Settings failed: {error}', { error })
+        }
         await openPrivacySettings()
     }
 
@@ -65,9 +91,24 @@
 
         <ol>
             <li>Click <strong>Open System Settings</strong> below</li>
-            <li>Click <strong>Full Disk Access</strong> in the list</li>
-            <li>Find <strong>Cmdr</strong> in the list and toggle it on</li>
-            <li>Confirm it and click <strong>Quit & Reopen</strong></li>
+            {#if isVenturaOrNewer}
+                <li>
+                    Find <strong>Cmdr</strong> in the list and toggle it on
+                    <p class="step-tip">
+                        Tip: Is Cmdr not in the list? Click the "+" button at the bottom, and choose
+                        <strong>Cmdr</strong> from your <strong>Applications</strong> folder.
+                    </p>
+                </li>
+            {:else}
+                <li>
+                    Find <strong>Cmdr</strong> at the end of the list and toggle it on
+                    <p class="step-tip">
+                        Tip: Is Cmdr not in the list? Click the "+" button at the bottom, and choose
+                        <strong>Cmdr</strong> from your <strong>Applications</strong> folder.
+                    </p>
+                </li>
+            {/if}
+            <li>Confirm and click <strong>Quit & Reopen</strong></li>
         </ol>
 
         <div class="buttons">
@@ -95,6 +136,12 @@
 
     .post-allow-instructions {
         font-weight: 500;
+    }
+
+    .step-tip {
+        margin: var(--spacing-xs) 0 0 0;
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
     }
 
     .pros-cons {

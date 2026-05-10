@@ -1556,11 +1556,29 @@ export const commands = {
   // Tauri command: returns the current system text-size multiplier.
   getSystemTextSizeMultiplier: () => __TAURI_INVOKE<number>('get_system_text_size_multiplier'),
   /**
-   *  Checks if the app has full disk access by probing ~/Library/Mail.
-   *  This is a standard technique used by macOS apps - Mail is always protected.
+   *  Checks if the app has full disk access by probing TCC-protected files.
+   *
+   *  Probing is also how the bundle gets registered with TCC, which is what
+   *  makes Cmdr show up in the Full Disk Access list in System Settings.
    */
   checkFullDiskAccess: () => __TAURI_INVOKE<boolean>('check_full_disk_access'),
-  // Opens System Settings > Privacy & Security > Privacy.
+  /**
+   *  Returns the macOS major version (e.g. `13` for Ventura, `14` for Sonoma).
+   *
+   *  Used by the onboarding modal to tailor copy + the deep-link host:
+   *  Ventura+ has the new System Settings app with the
+   *  `PrivacySecurity.extension` URL host and an alphabetical FDA list; older
+   *  macOS uses the legacy System Preferences `preference.security` host with
+   *  new entries appended at the end.
+   */
+  getMacosMajorVersion: () => __TAURI_INVOKE<number>('get_macos_major_version'),
+  /**
+   *  Opens System Settings directly on the Full Disk Access pane.
+   *
+   *  Picks the deep-link host based on macOS version: Ventura+ uses the new
+   *  `PrivacySecurity.extension`, older macOS uses the legacy
+   *  `preference.security` host. Both anchor on `Privacy_AllFiles`.
+   */
   openPrivacySettings: () => typedError<null, string>(__TAURI_INVOKE('open_privacy_settings')),
   // Opens System Settings > Appearance.
   openAppearanceSettings: () => typedError<null, string>(__TAURI_INVOKE('open_appearance_settings')),

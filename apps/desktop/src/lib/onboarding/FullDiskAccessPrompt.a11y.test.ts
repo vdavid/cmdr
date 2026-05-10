@@ -12,6 +12,8 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
+  checkFullDiskAccess: vi.fn(() => Promise.resolve(false)),
+  getMacosMajorVersion: vi.fn(() => Promise.resolve(14)),
   openPrivacySettings: vi.fn(() => Promise.resolve()),
 }))
 

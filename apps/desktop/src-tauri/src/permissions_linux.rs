@@ -12,6 +12,13 @@ pub fn check_full_disk_access() -> bool {
     true
 }
 
+/// Stub: macOS version is meaningless on Linux. Returns `0`.
+#[tauri::command]
+#[specta::specta]
+pub fn get_macos_major_version() -> u32 {
+    0
+}
+
 /// Opens the system privacy/security settings if a desktop environment is available.
 #[tauri::command]
 #[specta::specta]
