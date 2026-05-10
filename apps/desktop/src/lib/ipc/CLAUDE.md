@@ -138,15 +138,15 @@ were switched to `!= null` checks.
 
 **The non-obvious failure mode (lost a day to it):** when the bad `=== undefined` check is inside a Svelte 5 `$effect`
 or `$derived` and the downstream code throws on `null` (`formatDateTimeParts(null)`, `null.toLocaleString()`,
-`Number(null) + something` ending up `NaN`-poisoning a guard, etc.), the throw doesn't surface as an error in the UI
-or the console — it silently corrupts the reactive graph for *sibling* effects on the same component. The classic
+`Number(null) + something` ending up `NaN`-poisoning a guard, etc.), the throw doesn't surface as an error in the UI or
+the console — it silently corrupts the reactive graph for _sibling_ effects on the same component. The classic
 signature: a `$state` write happens (you can see the new value if you read the variable synchronously after assigning)
-but a separate `$effect` that should re-run on that change *doesn't* re-run, and any `{#if state}` block that depends
-on it stays stuck on its previous truth value. We hit this on F8 (delete dialog) after a volume switch: the listing
-effect threw on a `null` `modifiedAt` from an SMB/MTP entry, poisoned the graph, and then `showDeleteDialog = true`
-silently failed to mount the dialog. The fix is always the same — find the `=== undefined` site that throws on `null`
-and switch it to `== null`. Suspect every site that calls a typed function (`Intl.*`, `(n: number) => …`) with an
-optional field as input.
+but a separate `$effect` that should re-run on that change _doesn't_ re-run, and any `{#if state}` block that depends on
+it stays stuck on its previous truth value. We hit this on F8 (delete dialog) after a volume switch: the listing effect
+threw on a `null` `modifiedAt` from an SMB/MTP entry, poisoned the graph, and then `showDeleteDialog = true` silently
+failed to mount the dialog. The fix is always the same — find the `=== undefined` site that throws on `null` and switch
+it to `== null`. Suspect every site that calls a typed function (`Intl.*`, `(n: number) => …`) with an optional field as
+input.
 
 ## Architecture
 

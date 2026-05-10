@@ -1,9 +1,9 @@
 # Replace WebDriverIO + CrabNebula with tauri-playwright
 
 > **Status (post-implementation)**: Shipped using upstream `tauri-plugin-playwright` (crates.io) and
-> `@srsholmes/tauri-playwright` (npm), both at `0.2.2` — no fork was needed. References below to a `vdavid/tauri-playwright`
-> fork describe the original plan; in practice the architectural improvements landed without one. This doc is kept as a
-> historical record of the migration.
+> `@srsholmes/tauri-playwright` (npm), both at `0.2.2` — no fork was needed. References below to a
+> `vdavid/tauri-playwright` fork describe the original plan; in practice the architectural improvements landed without
+> one. This doc is kept as a historical record of the migration.
 
 ## Goal
 
