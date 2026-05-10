@@ -3,14 +3,16 @@
  * Pure functions — no Svelte reactivity, no side effects.
  */
 
-/** Minimal item info needed by DeleteDialog for display. */
+/** Minimal item info needed by DeleteDialog for display.
+ *  Group A wire-format: IPC sends `null` for absent FileEntry fields, not `undefined`.
+ *  Accept both so the constructed item shape matches whatever the caller passes through. */
 export interface DeleteSourceItem {
   name: string
-  size?: number
+  size?: number | null
   isDirectory: boolean
   isSymlink: boolean
-  recursiveSize?: number
-  recursiveFileCount?: number
+  recursiveSize?: number | null
+  recursiveFileCount?: number | null
 }
 
 /**

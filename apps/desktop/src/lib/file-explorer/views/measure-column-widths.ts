@@ -286,7 +286,11 @@ export function computeFullListColumnWidths(args: {
     if (rowSize > sizeMax) sizeMax = rowSize
     if (iconSuffix > sizeIconSuffixMax) sizeIconSuffixMax = iconSuffix
 
-    if (entry.modifiedAt !== undefined) {
+    // `!= null` (not `!== undefined`): IPC payloads serialize `Option::None` as
+    // explicit `null`, and `formatDateTimeParts(null)` throws inside this `$effect`,
+    // which corrupts Svelte's reactive graph for sibling effects on the same
+    // component (this was the F8-after-volume-switch killer).
+    if (entry.modifiedAt != null) {
       date = foldDate(date, formatDateTimeParts(entry.modifiedAt), measure)
     }
   }

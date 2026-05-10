@@ -14,9 +14,10 @@
 
     const { renamedFile, existingFile, onResolve }: Props = $props()
 
+    // Group A wire-format: IPC may send `null` for modifiedAt; accept both null and undefined.
     const renamedIsNewer = $derived(
-        renamedFile.modifiedAt !== undefined &&
-            existingFile.modifiedAt !== undefined &&
+        renamedFile.modifiedAt != null &&
+            existingFile.modifiedAt != null &&
             renamedFile.modifiedAt > existingFile.modifiedAt,
     )
     const renamedIsLarger = $derived(renamedFile.size > existingFile.size)
@@ -76,7 +77,7 @@
                         class="meta-value"
                         class:newer={!renamedIsNewer &&
                             renamedFile.modifiedAt !== existingFile.modifiedAt &&
-                            existingFile.modifiedAt !== undefined}>{formatDateTime(existingFile.modifiedAt)}</span
+                            existingFile.modifiedAt != null}>{formatDateTime(existingFile.modifiedAt)}</span
                     >
                 </div>
             </div>

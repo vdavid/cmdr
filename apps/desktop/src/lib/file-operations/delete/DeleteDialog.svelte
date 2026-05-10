@@ -179,17 +179,18 @@
      *  Always uses logical (content) sizes — not worth plumbing the display mode setting
      *  through the delete dialog infrastructure for a transient confirmation dialog. */
     function formatItemSize(item: DeleteSourceItem): string {
+        // Group A wire-format: IPC sends `null` for absent fields, not `undefined`.
         if (item.isDirectory) {
             const size = item.recursiveSize
             const fileCount = item.recursiveFileCount
             const parts: string[] = []
-            if (size !== undefined) parts.push(formatFileSize(size))
-            if (fileCount !== undefined) {
+            if (size != null) parts.push(formatFileSize(size))
+            if (fileCount != null) {
                 parts.push(`${formatNumber(fileCount)} ${fileCount === 1 ? 'file' : 'files'}`)
             }
             return parts.length > 0 ? parts.join('   ') : ''
         }
-        return item.size !== undefined ? formatFileSize(item.size) : ''
+        return item.size != null ? formatFileSize(item.size) : ''
     }
 </script>
 

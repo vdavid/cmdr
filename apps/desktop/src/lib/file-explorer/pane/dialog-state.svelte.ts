@@ -308,10 +308,11 @@ export function createDialogState(deps: DialogStateDeps) {
 
       const opType: TransferOperationType = isPermanent ? 'delete' : 'trash'
 
-      // Collect per-item sizes for trash progress if available
+      // Collect per-item sizes for trash progress if available.
+      // Group A wire-format: IPC sends `null` for absent sizes, so reject both null and undefined.
       const sizes = deleteDialogProps.sourceItems
         .map((item) => (item.isDirectory ? item.recursiveSize : item.size))
-        .filter((s): s is number => s !== undefined)
+        .filter((s): s is number => s != null)
       const itemSizes = sizes.length === deleteDialogProps.sourceItems.length ? sizes : undefined
 
       transferProgressProps = {

@@ -233,8 +233,10 @@ export function getDisplaySize(
  * Whether content and on-disk sizes differ enough to warrant a warning icon.
  * Both conditions must be true: ≥50% relative difference AND ≥200 MB absolute difference.
  */
-export function hasSizeMismatch(logical: number | undefined, physical: number | undefined): boolean {
-  if (logical === undefined || physical === undefined) return false
+// Group A wire-format: callers pass IPC-derived `number | null` values directly.
+// Use `== null` so both `null` and `undefined` count as "no value".
+export function hasSizeMismatch(logical: number | null | undefined, physical: number | null | undefined): boolean {
+  if (logical == null || physical == null) return false
   if (logical === 0 || physical === 0) return false
   const diff = Math.abs(logical - physical)
   const smaller = Math.min(logical, physical)
@@ -258,18 +260,19 @@ function sizeLineHtml(label: string, bytes: number, formatSize: (b: number) => s
  * Always shows both lines when both sizes are available. Falls back to a single line otherwise.
  */
 export function buildFileSizeTooltip(
-  logical: number | undefined,
-  physical: number | undefined,
+  logical: number | null | undefined,
+  physical: number | null | undefined,
   formatSize: (bytes: number) => string,
 ): string | { html: string } {
-  if (logical === undefined && physical === undefined) return ''
-  if (logical !== undefined && physical !== undefined) {
+  // Group A wire-format: IPC sends `null`, not `undefined`. Use `!= null` to handle both.
+  if (logical == null && physical == null) return ''
+  if (logical != null && physical != null) {
     return {
       html: `${sizeLineHtml('Content', logical, formatSize)}<br>${sizeLineHtml('On disk', physical, formatSize)}`,
     }
   }
   const size = logical ?? physical
-  if (size === undefined) return ''
+  if (size == null) return ''
   return { html: `${formatSize(size)} (${formatBytesHtml(size)} bytes)` }
 }
 

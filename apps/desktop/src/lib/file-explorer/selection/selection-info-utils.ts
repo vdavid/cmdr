@@ -74,8 +74,8 @@ export function formatSizeForDisplay(
 }
 
 /** Formats timestamp as YYYY-MM-DD hh:mm:ss */
-export function formatDate(timestamp: number | undefined): string {
-  if (timestamp === undefined) return ''
+export function formatDate(timestamp: number | null | undefined): string {
+  if (timestamp == null) return ''
   const date = new Date(timestamp * 1000)
   const pad = (n: number) => String(n).padStart(2, '0')
   const year = date.getFullYear()
@@ -90,10 +90,11 @@ export function formatDate(timestamp: number | undefined): string {
 /** Builds date tooltip content */
 export function buildDateTooltip(e: FileEntry): string {
   const lines: string[] = []
-  if (e.createdAt !== undefined) lines.push(`Created: ${formatDate(e.createdAt)}`)
-  if (e.openedAt !== undefined) lines.push(`Last opened: ${formatDate(e.openedAt)}`)
-  if (e.addedAt !== undefined) lines.push(`Last moved ("added"): ${formatDate(e.addedAt)}`)
-  if (e.modifiedAt !== undefined) lines.push(`Last modified: ${formatDate(e.modifiedAt)}`)
+  // `!= null` because IPC payloads serialize `Option::None` as JSON `null`.
+  if (e.createdAt != null) lines.push(`Created: ${formatDate(e.createdAt)}`)
+  if (e.openedAt != null) lines.push(`Last opened: ${formatDate(e.openedAt)}`)
+  if (e.addedAt != null) lines.push(`Last moved ("added"): ${formatDate(e.addedAt)}`)
+  if (e.modifiedAt != null) lines.push(`Last modified: ${formatDate(e.modifiedAt)}`)
   return lines.join('\n')
 }
 
@@ -137,7 +138,7 @@ export function isBrokenSymlink(entry: FileEntry | null): boolean {
 
 /** Checks if entry has permission denied */
 export function isPermissionDenied(entry: FileEntry | null): boolean {
-  return entry !== null && !entry.isSymlink && entry.permissions === 0 && entry.size === undefined
+  return entry !== null && !entry.isSymlink && entry.permissions === 0 && entry.size == null
 }
 
 // ============================================================================

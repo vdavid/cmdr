@@ -9,8 +9,8 @@ import { extensionsDifferMeaningfully, getExtension } from '$lib/utils/filename-
 export interface ConflictFileInfo {
   name: string
   size: number
-  /** Unix timestamp in seconds, or undefined if unavailable */
-  modifiedAt: number | undefined
+  /** Unix timestamp in seconds, or null/undefined if unavailable. Group A wire-format: IPC sends `null`. */
+  modifiedAt: number | null | undefined
 }
 
 export type RenameConflictResolution = 'overwrite-trash' | 'overwrite-delete' | 'cancel' | 'continue'
