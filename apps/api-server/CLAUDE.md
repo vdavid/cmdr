@@ -424,6 +424,14 @@ the Intel DMG `Cmdr_<ver>_x64.dmg`, but the rest of the codebase (URL path, D1 t
 target triple, `uname -m`) consistently uses `x86_64`. Mapping at the boundary keeps everything else canonical. Same
 convention is already used in `.github/workflows/release.yml` when reading DMG sizes for `latest.json`.
 
+**Gotcha**: Validators for optional fields posted from the Rust desktop client must tolerate **both `null` and
+`undefined`**, not just `undefined`. **Why**: serde `Option::None` serializes as JSON `null`, not as an absent key.
+`#[serde(skip_serializing_if = "Option::is_none")]` would omit the key but is rejected by `specta`'s unified mode (the
+struct is part of a Tauri command surface). An old crash file read by a new client surfaces missing fields as `None`,
+the client posts `"buildMode": null`, and a `!== undefined`-only check rejects it — losing exactly the upgrade-window
+reports we want to keep. Pattern: `value !== undefined && value !== null && <shape check>`. See `telemetry.ts`
+`validateCrashReportShape` for the canonical form.
+
 ## Dependencies
 
 Runtime: `hono`, `@noble/ed25519`, `resend` Dev: `wrangler`, `vitest`, `typescript`, `eslint`, `prettier`

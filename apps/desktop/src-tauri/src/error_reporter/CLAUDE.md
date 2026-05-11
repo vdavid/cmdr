@@ -197,7 +197,7 @@ per-event consent, so the consent has to be up front). When enabled:
    window only bump the counter — the first-call metadata is kept verbatim.
 3. When the timer fires: build a bundle (`BundleKind::Auto`, user note carries the count
    + first-error preview), trim to a 1 MB tail via `cap_bundle_to_mb`, upload, emit
-   `error-report-auto-sent` with the server-issued ID. The frontend listens for that
+   `error-report-auto-sent` with the ID (the same `ERR-XXXXX` the manifest carried — the server validates the shape and echoes it back, never regenerates). The frontend listens for that
    event and shows a confirmation toast (see `apps/desktop/src/lib/error-reporter/`).
 
 ### Why jitter?
