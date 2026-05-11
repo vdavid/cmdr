@@ -89,6 +89,7 @@
         cleanupVolumeStore,
         requestVolumeRefresh,
     } from '$lib/stores/volume-store.svelte'
+    import { initRestrictedPathsStore } from '$lib/stores/restricted-paths-store.svelte'
     import { initialize as initMtpStore } from '$lib/mtp'
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
@@ -973,7 +974,12 @@
         // and MTP store (subscribes to device connection events). Also wire up
         // the SMB reconnect manager — it listens for `smb-connection-changed`
         // and runs the per-volume backoff cycle that drives `SmbReconnectingView`.
-        await Promise.all([initVolumeStore(), initMtpStore(), smbReconnectManager.init()])
+        await Promise.all([
+            initVolumeStore(),
+            initMtpStore(),
+            smbReconnectManager.init(),
+            initRestrictedPathsStore(),
+        ])
 
         // Load persisted state, resolve volumes, and create tab managers
         const persistedState = await loadPersistedState()

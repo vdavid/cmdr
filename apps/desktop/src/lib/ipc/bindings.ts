@@ -520,6 +520,8 @@ export const commands = {
     typedError<null, IpcError>(__TAURI_INVOKE('rename_file', { from, to, force, volumeId })),
   // Moves a file or directory to the macOS Trash via NSFileManager.
   moveToTrash: (path: string) => typedError<null, IpcError>(__TAURI_INVOKE('move_to_trash', { path })),
+  // Returns the current restricted-paths snapshot (sorted, absolute paths).
+  getRestrictedPaths: () => __TAURI_INVOKE<string[]>('get_restricted_paths'),
   /**
    *  Opens a viewer session for the given file.
    *  Returns session metadata + initial lines from the start of the file.

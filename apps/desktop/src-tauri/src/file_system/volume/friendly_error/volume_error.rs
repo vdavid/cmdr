@@ -29,7 +29,19 @@ pub fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> Frien
     match err {
         VolumeError::FriendlyGit(git_err) => git_err.to_friendly_error(),
         VolumeError::NotFound(_) => kinds::not_found(&path_display, raw),
-        VolumeError::PermissionDenied(_) => kinds::permission_denied(&path_display, raw),
+        VolumeError::PermissionDenied(_) => {
+            // If this is a known TCC-restricted path (Downloads/Documents/Desktop/...
+            // or a network volume), surface the dedicated copy that points to both
+            // Full Disk Access AND the per-folder Files & Folders pane. Otherwise
+            // fall through to the generic permission-denied copy.
+            if crate::restricted_paths::tcc_paths::is_potentially_tcc_restricted(path)
+                || crate::restricted_paths::tcc_paths::is_network_volume_path(path)
+            {
+                kinds::tcc_restricted(&path_display, raw)
+            } else {
+                kinds::permission_denied(&path_display, raw)
+            }
+        }
         VolumeError::AlreadyExists(_) => kinds::already_exists(&path_display, raw),
         VolumeError::NotSupported => kinds::not_supported(raw),
         VolumeError::DeviceDisconnected(_) => kinds::device_disconnected(&path_display, raw),

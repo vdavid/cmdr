@@ -12,7 +12,12 @@
     import { openSettingsWindow } from '$lib/settings/settings-window'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getCachedIcon, iconCacheVersion, prefetchIcons } from '$lib/icon-cache'
+    import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
+    import InfoIcon from '~icons/lucide/info'
     import type { VolumeInfo, SmbConnectionState } from '../types'
+
+    const RESTRICTED_FOLDER_TOOLTIP =
+        'Access to this folder is limited. Grant Cmdr Full Disk Access in System Settings → Privacy & Security → Full Disk Access to remove all such limits. Or grant per-folder access in System Settings → Privacy & Security → Files & Folders → Cmdr.'
     import {
         getVolumes,
         getVolumesTimedOut,
@@ -547,7 +552,9 @@
                         class="volume-item"
                         class:is-under-cursor={shouldShowCheckmark(volume)}
                         class:is-focused-and-under-cursor={allVolumes.indexOf(volume) === highlightedIndex && !submenuVolumeId}
+                        class:is-restricted={isRestricted(volume.path)}
                         data-index={allVolumes.indexOf(volume)}
+                        use:tooltip={isRestricted(volume.path) ? RESTRICTED_FOLDER_TOOLTIP : ''}
                         onclick={() => {
                             void handleVolumeSelect(volume)
                         }}
@@ -579,6 +586,11 @@
                             <span class="volume-icon-placeholder">📁</span>
                         {/if}
                         <span class="volume-label">{volume.name}</span>
+                        {#if isRestricted(volume.path)}
+                            <span class="restricted-indicator" aria-hidden="true">
+                                <InfoIcon />
+                            </span>
+                        {/if}
                         {#if volume.isReadOnly}
                             <span class="read-only-indicator" use:tooltip={'Read-only'}>🔒</span>
                         {/if}
@@ -830,6 +842,21 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    /* TCC-restricted entries: faded text + (i) icon. The tooltip explains the
+       restriction and points to System Settings. See `restricted-paths-store`. */
+    .volume-item.is-restricted .volume-label {
+        font-style: italic;
+        opacity: 0.6;
+    }
+
+    .restricted-indicator {
+        display: inline-flex;
+        align-items: center;
+        opacity: 0.6;
+        font-size: var(--font-size-sm);
+        flex-shrink: 0;
     }
 
     .checkmark {

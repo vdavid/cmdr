@@ -305,6 +305,16 @@ fn run_scan(
         let entry = match entry_result {
             Ok(e) => e,
             Err(e) => {
+                // Surface TCC-restricted paths to the frontend store so the
+                // sidebar can show the "this folder is limited by macOS"
+                // styling. `record_denial` filters internally to known
+                // TCC-restricted prefixes — USB drives etc. are ignored.
+                if let Some(io_err) = e.io_error()
+                    && io_err.kind() == std::io::ErrorKind::PermissionDenied
+                    && let Some(p) = e.path()
+                {
+                    crate::restricted_paths::record_denial(p);
+                }
                 log::debug!("Scanner: skipping errored entry: {e}");
                 continue;
             }

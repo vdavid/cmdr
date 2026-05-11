@@ -142,6 +142,15 @@ export async function checkFullDiskAccess(): Promise<boolean> {
 }
 
 /**
+ * Returns the current set of TCC-restricted paths (sorted, absolute). Used by
+ * `$lib/stores/restricted-paths-store.svelte.ts` to hydrate the in-memory set
+ * before the first `restricted-paths-changed` event arrives.
+ */
+export async function getRestrictedPaths(): Promise<string[]> {
+  return commands.getRestrictedPaths()
+}
+
+/**
  * Returns the macOS major version (e.g. 14 for Sonoma). Returns 0 on non-macOS
  * platforms or if the command is unavailable.
  */

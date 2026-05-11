@@ -347,10 +347,16 @@ pub async fn list_directory_start_streaming(
                 // Function returned an error (volume not found, permission denied, I/O, etc.)
                 let mut friendly = friendly_error_from_volume_error(&e, &path_for_error);
                 enrich_with_provider(&mut friendly, &path_for_error);
+                if matches!(&e, VolumeError::PermissionDenied(_)) {
+                    crate::restricted_paths::record_denial(&path_for_error);
+                }
                 events_for_error.emit_error(&listing_id_for_cleanup, e.to_string(), Some(friendly));
             }
             Ok(()) => {
-                // Success - read_directory_with_progress already emitted listing-complete
+                // Success — listing-complete already emitted. If this path was
+                // previously recorded as TCC-restricted, drop it: the user
+                // must have granted access (per-folder TCC popup or FDA toggle).
+                crate::restricted_paths::clear_path(&path_for_error);
             }
         }
     });

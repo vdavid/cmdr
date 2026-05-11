@@ -108,6 +108,7 @@ mod permissions;
 #[cfg(target_os = "linux")]
 mod permissions_linux;
 mod redact;
+mod restricted_paths;
 pub mod search;
 mod secrets;
 mod settings;
@@ -347,6 +348,12 @@ pub fn run() {
 
             // Initialize volume broadcast (must be before watchers so they can emit)
             volume_broadcast::init(app.handle());
+
+            // Restricted-paths tracker (TCC-gated paths the user has been
+            // denied access to). Installs an NSApplicationDidBecomeActive
+            // observer that re-probes the set when the user returns from
+            // System Settings. See `crate::restricted_paths`.
+            restricted_paths::init(app.handle());
 
             // Start volume mount/unmount watcher
             #[cfg(target_os = "macos")]

@@ -39,6 +39,32 @@ pub(super) fn not_found(path_display: &str, raw_detail: String) -> FriendlyError
     }
 }
 
+/// Permission-denied on a path that macOS guards via TCC (Downloads, Documents,
+/// Desktop, Pictures, Movies, Music, iCloud Drive, FileProvider domains, network
+/// volumes, etc. — see `crate::restricted_paths::tcc_paths`). The user has two
+/// distinct escape hatches (Full Disk Access for everything, or per-folder
+/// Files & Folders for just this one) — the generic permission-denied copy only
+/// mentions the per-folder pane, so we override it here.
+pub(super) fn tcc_restricted(path_display: &str, raw_detail: String) -> FriendlyError {
+    FriendlyError {
+        category: ErrorCategory::NeedsAction,
+        title: "This folder is restricted by macOS".into(),
+        explanation: format!(
+            "Cmdr can't read `{}` because macOS hasn't granted access to this folder yet. \
+            This is a privacy gate, not a Cmdr bug.",
+            path_display
+        ),
+        suggestion: "Two ways to fix:\n\
+            - Grant Cmdr **Full Disk Access** in **System Settings → Privacy & Security → Full Disk Access** — \
+            removes all such limits at once.\n\
+            - Or grant per-folder access for just this folder in **System Settings → Privacy & Security → Files and Folders → Cmdr**."
+            .into(),
+        raw_detail,
+        retry_hint: false,
+        action_kind: Some(ErrorActionKind::OpenPrivacySettings),
+    }
+}
+
 pub(super) fn permission_denied(path_display: &str, raw_detail: String) -> FriendlyError {
     FriendlyError {
         category: ErrorCategory::NeedsAction,

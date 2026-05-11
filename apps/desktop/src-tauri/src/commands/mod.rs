@@ -17,6 +17,7 @@ pub mod mtp;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod network;
 pub mod rename;
+pub mod restricted_paths;
 pub mod search;
 pub mod settings;
 pub mod sync_status; // Has both macOS and non-macOS implementations
