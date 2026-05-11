@@ -134,6 +134,18 @@ For the full module map, decisions, and gotchas, see `git/CLAUDE.md`.
 - **adjust-selection-indices.ts** — Pure function that maps selected indices from an old listing to their positions in a
   new listing, given removed and added indices. Also used for cursor index adjustment on structural diffs.
 
+## TCC-restricted treatment
+
+Sidebar entries (`VolumeBreadcrumb.svelte`) AND file-list rows (`views/FullList.svelte`, `views/BriefList.svelte`) flag
+paths in the runtime "TCC-restricted" set with italic + opacity-0.6 styling, a Lucide `info` icon, and a tooltip
+pointing the user at System Settings → Privacy & Security → Full Disk Access (or per-folder Files & Folders → Cmdr).
+The file-list Size column shows `<no perms>` for these rows instead of the misleading `0` the indexer recorded after a
+denied scan. `pickSizeDisplay(entry, isRestricted)` in `views/full-list-utils.ts` is the single source of truth for
+that override; `measure-column-widths.ts::computeFullListColumnWidths` accepts an optional `isRestricted` fn so the
+Size column tracks the `<no perms>` text width during pre-DOM measurement. The state lives in
+`$lib/stores/restricted-paths-store.svelte` (`isRestricted(path)`); see `navigation/CLAUDE.md` § "Restricted-folder
+indicator (TCC)" and `apps/desktop/src-tauri/src/restricted_paths/` for the backend.
+
 ## Rename (`rename/`)
 
 Inline rename with validation, conflict resolution, and an extension change confirmation dialog.

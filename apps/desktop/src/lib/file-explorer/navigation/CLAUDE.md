@@ -37,6 +37,16 @@ reference equality to skip re-renders.
 Entries carry full `volumeId` — navigating back can cross volume boundaries (e.g. from an external drive back to
 `root`).
 
+### Gotcha: history is pushed on both listing success AND listing failure
+
+`FilePane.svelte`'s `onPathChange?.(loadPath)` callback is the canonical place where a navigation lands in history. It
+fires from two branches: `handleListingComplete` (success) AND the `listing-error` handler when the path still exists
+(error pane will render). Without the second branch, navigating to a folder that fails to list (TCC-restricted, mode
+0700, etc.) would show the `ErrorPane` while leaving the path absent from history — `Cmd+[` would then visually jump
+back two steps because the current pane state isn't in the stack. The `listing-error` handler with the auto-fallback
+(path deleted → navigate to parent) doesn't push via this callback; it relies on the fallback navigation's own
+`applyPathChange` push.
+
 ## `path-navigation.ts`
 
 `determineNavigationPath(volumeId, volumePath, targetPath, otherPane)` — picks best initial path when switching volumes.
