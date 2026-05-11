@@ -13,9 +13,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
               { text: '2025', ageClass: 'age-fresh' as const },
               { text: '-03-14', ageClass: null },
             ],
-            right: [
-              { text: '10:30', ageClass: null },
-            ],
+            right: [{ text: '10:30', ageClass: null }],
           },
         }
       : { text: '', parts: { left: [], right: null } },
