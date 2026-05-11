@@ -35,6 +35,12 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
      (`write_operations/eta.rs`) on every `WriteProgressEvent` — the dialog renders the numbers and applies a tiny
      display low-pass to the ETA to prevent flicker. No FE-side math.
    - Dynamic stage indicator: "Scanning" → "Copying" (+ "Cleaning up" for cross-FS move)
+   - **Scanning-phase UI** (both `waitingForScan` and `phase === 'scanning'` paths): rendered via the local
+     `scanPhaseBody` snippet. Shows source path, running tallies (`bytesFound / filesFound / dirsFound`), FE-computed
+     throughput from `ScanThroughput` (`scan-throughput.ts`), and — when the backend supplies `expectedFilesTotal` /
+     `expectedBytesTotal` from the drive index — a `ProgressBar` capped at 100% with "X% of estimated" text. Current
+     directory (`event.currentDir`) renders above the filename so the user sees where in the tree the walker is. Title
+     is reframed per operation: "Verifying before copy…", "Counting items to delete…", etc.
    - Conflict resolution inline (if using `Stop` mode instead of dry-run)
    - Cancel button → rollback transaction (user chooses keep/rollback)
 
@@ -47,7 +53,14 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
    - "Retry" button shows when `category === 'transient'` or the friendly's `retryHint` is true.
    - Same shape as the listing-error path's `ErrorPane.svelte`, just adapted to a modal dialog.
 
-### Shared utilities (`transfer/`)
+### Shared utilities
+
+- **scan-throughput.ts**: `ScanThroughput` — tiny rolling-window estimator (default 2s window) that turns scan-event
+  tally deltas into `filesPerSecond` / `bytesPerSecond`. Used by `DeleteDialog` and `TransferProgressDialog` to show
+  throughput during the scan phase, since `EtaEstimator` (backend) only covers write phases. Returns nulls until two
+  samples land, clamps negative deltas to zero, and resets cleanly between scans. Pure module, no Svelte/Tauri coupling.
+
+### Transfer utilities (`transfer/`)
 
 - **transfer/transfer-dialog-utils.ts**: `generateTitle(operationType, files, folders)` → "Copy 3 files and 1 folder",
   `toBackendIndices()` / `toBackendCursorIndex()` for ".." offset handling, `toVolumeRelativePath(fullPath, volumePath)`

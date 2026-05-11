@@ -96,6 +96,14 @@ fn run_scan_preview(
     let mut total_bytes = 0u64;
     let mut last_progress_time = Instant::now();
     let mut visited = HashSet::new();
+    // Shared across sources so hardlinks crossing source roots count once,
+    // matching `indexing/scanner.rs`'s dir_stats aggregation policy.
+    let mut seen_inodes: HashSet<u64> = HashSet::new();
+
+    // Index-derived expected totals: lets the UI render a real progress bar
+    // from the first scan event instead of an indeterminate spinner. `None`
+    // when any source isn't covered by the index.
+    let expected = crate::indexing::expected_totals::expected_totals_for_sources(&sources);
 
     let result: Result<(), String> = (|| {
         let ctx = WalkContext {
@@ -104,7 +112,7 @@ fn run_scan_preview(
             on_io_error: &|_, e| e.to_string(),
             on_cancelled: &|| "Cancelled".to_string(),
             on_symlink_loop: &|path| format!("Symlink loop detected: {}", path.display()),
-            on_progress: &|files_found, dirs_found, bytes_found, current_path| {
+            on_progress: &|files_found, dirs_found, bytes_found, current_path, current_dir| {
                 let _ = app.emit(
                     "scan-preview-progress",
                     ScanPreviewProgressEvent {
@@ -113,6 +121,9 @@ fn run_scan_preview(
                         dirs_found,
                         bytes_found,
                         current_path,
+                        current_dir,
+                        expected_files_total: expected.map(|e| e.files),
+                        expected_bytes_total: expected.map(|e| e.bytes),
                     },
                 );
             },
@@ -127,6 +138,7 @@ fn run_scan_preview(
                 &mut total_bytes,
                 &mut last_progress_time,
                 &mut visited,
+                &mut seen_inodes,
                 &ctx,
             )?;
         }

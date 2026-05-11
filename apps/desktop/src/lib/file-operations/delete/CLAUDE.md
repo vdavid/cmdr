@@ -45,7 +45,10 @@ dialog before acting. Reuses `TransferProgressDialog` for progress display.
   dialog forces permanent delete mode with a warning banner.
 - **Scan preview integration**: The confirmation dialog starts a scan preview for deep file/dir/byte counts. For trash,
   the scan is cancelled on confirm (trashItemAtURL is atomic per top-level item, no need to wait). For permanent delete,
-  the scan must complete first (the progress dialog shows scanning phase if needed).
+  the scan must complete first (the progress dialog shows scanning phase if needed). The scan-preview events carry
+  index-derived `expectedFilesTotal` / `expectedBytesTotal` (when the source paths are covered by the drive index) plus
+  `currentDir`, so the confirmation dialog renders a real progress bar capped at 100%, a throughput readout from
+  `ScanThroughput` (`../scan-throughput.ts`), and the current scanning directory above the running tallies.
 - **400ms minimum display**: Progress dialog stays visible for at least 400ms to prevent jarring flashes on fast
   operations.
 - **Cursor positioning**: After delete, cursor stays at the same position index (not same file). Fixed in

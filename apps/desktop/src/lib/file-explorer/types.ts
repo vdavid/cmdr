@@ -416,6 +416,8 @@ export interface WriteProgressEvent {
   phase: WriteOperationPhase
   /** Current file being processed (filename only, not full path) */
   currentFile: string | null
+  /** Absolute parent directory currently being scanned (Scanning phase only). */
+  currentDir?: string | null
   /** Number of files processed */
   filesDone: number
   /** Total number of files */
@@ -431,6 +433,10 @@ export interface WriteProgressEvent {
   /** Seconds remaining, combining both axes via max(ETA_bytes, ETA_files).
    * Null during warm-up or when both rates are zero (operation stalled). */
   etaSeconds: number | null
+  /** Index-derived expected file total for the scanning phase. */
+  expectedFilesTotal?: number | null
+  /** Index-derived expected byte total. Pairs with `expectedFilesTotal`. */
+  expectedBytesTotal?: number | null
 }
 
 /** Completion event payload for write operations. */
@@ -608,6 +614,12 @@ export interface ScanPreviewProgressEvent {
   dirsFound: number
   bytesFound: number
   currentPath: string | null
+  /** Absolute parent directory currently being scanned, for the "in: …" line. */
+  currentDir?: string | null
+  /** Index-derived expected file total. Use as the progress-bar denominator. */
+  expectedFilesTotal?: number | null
+  /** Index-derived expected byte total. Pairs with `expectedFilesTotal`. */
+  expectedBytesTotal?: number | null
 }
 
 /** Completion event for scan preview. */

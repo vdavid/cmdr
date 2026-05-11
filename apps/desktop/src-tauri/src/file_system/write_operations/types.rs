@@ -77,6 +77,11 @@ pub struct WriteProgressEvent {
     pub phase: WriteOperationPhase,
     /// Filename only, not full path.
     pub current_file: Option<String>,
+    /// Absolute parent directory currently being scanned (Scanning phase only).
+    /// Lets the UI show "in directory: …" alongside the filename so users
+    /// get a sense of where in the tree the walker is.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub current_dir: Option<String>,
     pub files_done: usize,
     pub files_total: usize,
     pub bytes_done: u64,
@@ -91,15 +96,24 @@ pub struct WriteProgressEvent {
     /// `None` during warm-up or when both rates are zero (operation stalled).
     #[serde(default)]
     pub eta_seconds: Option<u32>,
+    /// Index-derived expected file count, for rendering a progress bar during
+    /// the scanning phase before the foolproof re-scan finishes. `None` when
+    /// the index doesn't cover all sources, or outside the scanning phase.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expected_files_total: Option<u64>,
+    /// Pairs with `expected_files_total`. See its doc.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expected_bytes_total: Option<u64>,
 }
 
 impl WriteProgressEvent {
-    /// Construct an event with the 8 core counter fields. The three rate/ETA
-    /// fields are seeded to `None` — they're filled in by
-    /// `WriteOperationState::enrich_progress` right before the event is emitted.
-    /// Always go through this constructor at emit sites instead of using a
-    /// struct literal, so the rate fields don't leak into call sites as visual
-    /// noise.
+    /// Construct an event with the 8 core counter fields. Rate/ETA fields are
+    /// filled in by `WriteOperationState::enrich_progress` right before the
+    /// event is emitted. The scanning-only metadata (`current_dir`,
+    /// `expected_files_total`, `expected_bytes_total`) defaults to `None` and
+    /// is populated by the scan emit sites via `with_scan_meta`. Always go
+    /// through this constructor at emit sites so the extra fields stay out of
+    /// call sites as visual noise.
     #[allow(
         clippy::too_many_arguments,
         reason = "These are the natural fields of a progress event. Bundling into a struct adds ceremony without cleaning anything up."
@@ -119,6 +133,7 @@ impl WriteProgressEvent {
             operation_type,
             phase,
             current_file,
+            current_dir: None,
             files_done,
             files_total,
             bytes_done,
@@ -126,7 +141,26 @@ impl WriteProgressEvent {
             bytes_per_second: None,
             files_per_second: None,
             eta_seconds: None,
+            expected_files_total: None,
+            expected_bytes_total: None,
         }
+    }
+
+    /// Attach scanning-phase metadata (current directory + index-derived
+    /// expected totals) to an event. Only emit sites in the scanning phase
+    /// call this; everywhere else leaves the fields at their `None` default.
+    #[must_use]
+    pub fn with_scan_meta(
+        mut self,
+        current_dir: Option<String>,
+        expected: Option<crate::indexing::expected_totals::ExpectedTotals>,
+    ) -> Self {
+        self.current_dir = current_dir;
+        if let Some(e) = expected {
+            self.expected_files_total = Some(e.files);
+            self.expected_bytes_total = Some(e.bytes);
+        }
+        self
     }
 }
 
@@ -572,6 +606,18 @@ pub struct ScanPreviewProgressEvent {
     pub bytes_found: u64,
     /// For activity indication.
     pub current_path: Option<String>,
+    /// Absolute parent directory currently being scanned. Lets the UI show
+    /// "in directory: …" alongside the filename.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub current_dir: Option<String>,
+    /// Index-derived expected file count, sampled once at scan start. Lets
+    /// the FE render a real progress bar from second one of the scan.
+    /// `None` when the index doesn't cover all sources.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expected_files_total: Option<u64>,
+    /// Pairs with `expected_files_total`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expected_bytes_total: Option<u64>,
 }
 
 /// Completion event for scan preview.

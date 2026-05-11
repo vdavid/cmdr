@@ -49,6 +49,7 @@
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
     import { getAppLogger } from '$lib/logging/logger'
+    import { ScanThroughput } from '../scan-throughput'
 
     /** Returns CSS class for size coloring based on bytes (kb/mb/gb/tb) */
     function getSizeColorClass(bytes: number): string {
@@ -126,6 +127,16 @@
     const isDeleteOrTrash = $derived(operationType === 'delete' || operationType === 'trash')
     const isCopy = $derived(operationType === 'copy')
     const isMove = $derived(operationType === 'move')
+
+    /** Title for the scanning phase — names the upcoming action so the user
+     *  knows why we're walking the tree, not just "scanning for fun". */
+    const scanTitleMap: Record<TransferOperationType, string> = {
+        copy: 'Verifying before copy...',
+        move: 'Verifying before move...',
+        delete: 'Counting items to delete...',
+        trash: 'Counting items to trash...',
+    }
+    const scanTitle = $derived(scanTitleMap[operationType])
     const volumes = $derived(getVolumes())
     const destUsesNativeSmb = $derived(
         volumes.find((v) => v.id === destVolumeId)?.smbConnectionState === 'os_mount',
@@ -144,7 +155,27 @@
     let scanFilesFound = $state(0)
     let scanDirsFound = $state(0)
     let scanBytesFound = $state(0)
+    let scanCurrentDir = $state<string | null>(null)
+    /** Index-derived expected totals for the in-flight scan. Used as the progress-bar denominator. */
+    let scanExpectedFiles = $state<number | null>(null)
+    let scanExpectedBytes = $state<number | null>(null)
     let scanUnlisteners: UnlistenFn[] = []
+    const scanThroughput = new ScanThroughput()
+    let scanFilesPerSec = $state<number | null>(null)
+    let scanBytesPerSec = $state<number | null>(null)
+
+    /** Fraction (0..1) for the scan-phase progress bar. Returns `null` when no
+     *  expected total is available (the FE falls back to running tallies only).
+     *  Picks whichever axis has the higher fraction — if the index estimate is
+     *  off (files added since the last index pass), the bar still tracks toward
+     *  100% via whichever axis advances faster. Capped at 1.0 visually. */
+    const scanProgressFraction = $derived.by<number | null>(() => {
+        const byFiles = scanExpectedFiles && scanExpectedFiles > 0 ? scanFilesFound / scanExpectedFiles : null
+        const byBytes = scanExpectedBytes && scanExpectedBytes > 0 ? scanBytesFound / scanExpectedBytes : null
+        if (byFiles === null && byBytes === null) return null
+        const best = Math.max(byFiles ?? 0, byBytes ?? 0)
+        return Math.min(1, best)
+    })
 
     // Operation state
     let operationId = $state<string | null>(null)
@@ -273,6 +304,13 @@
         // resets, so the FE display number should re-warm with it.
         if (event.phase !== phase) {
             etaSecondsDisplay = null
+            // Drop the scan throughput history when leaving the scanning phase
+            // so a stale sample can't leak into the active phase readout.
+            if (phase === 'scanning' && event.phase !== 'scanning') {
+                scanThroughput.reset()
+                scanFilesPerSec = null
+                scanBytesPerSec = null
+            }
         }
 
         // When entering rolling_back phase, set isRollingBack from the backend event
@@ -290,6 +328,24 @@
         filesPerSecond = event.filesPerSecond
         etaSecondsRaw = event.etaSeconds
         updateDisplayEta(etaSecondsRaw)
+
+        // Scanning-phase metadata (current dir, index-derived expected totals,
+        // FE-computed throughput). Mirrors the waitingForScan path so the same
+        // scan-phase UI surfaces during the backend's foolproof re-scan.
+        if (event.phase === 'scanning') {
+            scanFilesFound = event.filesDone
+            scanBytesFound = event.bytesDone
+            scanCurrentDir = event.currentDir ?? null
+            if (event.expectedFilesTotal != null) scanExpectedFiles = event.expectedFilesTotal
+            if (event.expectedBytesTotal != null) scanExpectedBytes = event.expectedBytesTotal
+            const r = scanThroughput.push({
+                timestampMs: Date.now(),
+                files: event.filesDone,
+                bytes: event.bytesDone,
+            })
+            scanFilesPerSec = r.filesPerSecond
+            scanBytesPerSec = r.bytesPerSecond
+        }
     }
 
     function handleComplete(event: WriteCompleteEvent) {
@@ -646,6 +702,16 @@
                 scanFilesFound = event.filesFound
                 scanDirsFound = event.dirsFound
                 scanBytesFound = event.bytesFound
+                scanCurrentDir = event.currentDir ?? null
+                if (event.expectedFilesTotal != null) scanExpectedFiles = event.expectedFilesTotal
+                if (event.expectedBytesTotal != null) scanExpectedBytes = event.expectedBytesTotal
+                const r = scanThroughput.push({
+                    timestampMs: Date.now(),
+                    files: event.filesFound,
+                    bytes: event.bytesFound,
+                })
+                scanFilesPerSec = r.filesPerSecond
+                scanBytesPerSec = r.bytesPerSecond
             }),
         )
 
@@ -730,6 +796,61 @@
     })
 </script>
 
+{#snippet scanPhaseBody()}
+    <!-- Source path -->
+    <div class="source-path">
+        <span class="source-path-label">From:</span>
+        <span class="source-path-value" use:useShortenMiddle={{ text: sourceFolderPath, preferBreakAt: '/' }}></span>
+    </div>
+
+    <!-- Running tallies -->
+    <div class="scan-wait-stats">
+        <div class="scan-stat">
+            <span class="scan-value"><Size bytes={scanBytesFound} /></span>
+        </div>
+        <span class="scan-divider">/</span>
+        <div class="scan-stat">
+            <span class="scan-value">{formatNumber(scanFilesFound)}</span>
+            <span class="scan-label">{scanFilesFound === 1 ? 'file' : 'files'}</span>
+        </div>
+        <span class="scan-divider">/</span>
+        <div class="scan-stat">
+            <span class="scan-value">{formatNumber(scanDirsFound)}</span>
+            <span class="scan-label">{scanDirsFound === 1 ? 'dir' : 'dirs'}</span>
+        </div>
+        {#if scanExpectedFiles === null}
+            <span class="scan-spinner"></span>
+        {/if}
+    </div>
+
+    <!-- Progress bar against index-derived expected totals (if available) -->
+    {#if scanProgressFraction !== null}
+        <div class="scan-progress-bar">
+            <ProgressBar value={scanProgressFraction} ariaLabel="Scan progress (estimated)" />
+            <span class="scan-progress-detail">{Math.round(scanProgressFraction * 100)}% of estimated</span>
+        </div>
+    {/if}
+
+    <!-- Throughput -->
+    {#if scanFilesPerSec !== null && scanFilesPerSec > 0}
+        <div class="scan-throughput">
+            <span class="scan-throughput-value">{formatNumber(Math.round(scanFilesPerSec))} files/s</span>
+            {#if scanBytesPerSec !== null && scanBytesPerSec > 0}
+                <span class="scan-throughput-sep">·</span>
+                <span class="scan-throughput-value"><Size bytes={scanBytesPerSec} />/s</span>
+            {/if}
+        </div>
+    {/if}
+
+    <!-- Current directory + filename -->
+    {#if scanCurrentDir}
+        <div class="scan-current-dir" use:useShortenMiddle={{ text: scanCurrentDir, preferBreakAt: '/' }}></div>
+    {/if}
+    {#if currentFile}
+        <div class="current-file" use:useShortenMiddle={{ text: currentFile, preferBreakAt: '/' }}></div>
+    {/if}
+{/snippet}
+
 <ModalDialog
     titleId="progress-dialog-title"
     onkeydown={handleKeydown}
@@ -739,7 +860,7 @@
 >
     {#snippet title()}
         {#if waitingForScan}
-            Scanning...
+            {scanTitle}
         {:else if isRollingBack}
             Rolling back...
         {:else if conflictEvent}
@@ -756,22 +877,7 @@
         {/if}
 
         <div class="scan-wait-section">
-            <div class="scan-wait-stats">
-                <div class="scan-stat">
-                    <span class="scan-value"><Size bytes={scanBytesFound} /></span>
-                </div>
-                <span class="scan-divider">/</span>
-                <div class="scan-stat">
-                    <span class="scan-value">{formatNumber(scanFilesFound)}</span>
-                    <span class="scan-label">{scanFilesFound === 1 ? 'file' : 'files'}</span>
-                </div>
-                <span class="scan-divider">/</span>
-                <div class="scan-stat">
-                    <span class="scan-value">{formatNumber(scanDirsFound)}</span>
-                    <span class="scan-label">{scanDirsFound === 1 ? 'dir' : 'dirs'}</span>
-                </div>
-                <span class="scan-spinner"></span>
-            </div>
+            {@render scanPhaseBody()}
         </div>
 
         <div class="button-row">
@@ -918,8 +1024,13 @@
             {/each}
         </div>
 
-        <!-- Dual progress bars (hidden during scanning, bars have no data yet) -->
-        {#if phase !== 'scanning'}
+        {#if phase === 'scanning'}
+            <!-- Scanning phase: tallies, throughput, optional progress bar, current dir/file. -->
+            <div class="scan-wait-section">
+                {@render scanPhaseBody()}
+            </div>
+        {:else}
+            <!-- Dual progress bars (size + count) for the active phase. -->
             <div class="progress-grid">
                 {#if bytesTotal > 0}
                     <span class="progress-label">Size</span>
@@ -947,12 +1058,12 @@
                     {/if}
                 </div>
             </div>
-        {/if}
 
-        <!-- Current file -->
-        {#if currentFile}
-            <div class="current-file" use:useShortenMiddle={{ text: currentFile, preferBreakAt: '/' }}>
-            </div>
+            <!-- Current file (active phase only — scanning shows it inside scanPhaseBody) -->
+            {#if currentFile}
+                <div class="current-file" use:useShortenMiddle={{ text: currentFile, preferBreakAt: '/' }}>
+                </div>
+            {/if}
         {/if}
 
         {#if destUsesNativeSmb}
@@ -983,6 +1094,30 @@
     /* Scan wait section (waiting for scan preview from TransferDialog) */
     .scan-wait-section {
         padding: var(--spacing-md) var(--spacing-xl) var(--spacing-lg);
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .source-path {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: var(--spacing-xs);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        overflow: hidden;
+    }
+
+    .source-path-label {
+        flex-shrink: 0;
+    }
+
+    .source-path-value {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
     }
 
     .scan-wait-stats {
@@ -991,6 +1126,46 @@
         justify-content: center;
         gap: var(--spacing-sm);
         font-size: var(--font-size-sm);
+    }
+
+    .scan-progress-bar {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        padding: 0 var(--spacing-md);
+    }
+
+    .scan-progress-detail {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .scan-throughput {
+        display: flex;
+        justify-content: center;
+        gap: var(--spacing-xs);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+    }
+
+    .scan-throughput-value {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .scan-throughput-sep {
+        opacity: 0.6;
+    }
+
+    .scan-current-dir {
+        padding: var(--spacing-xs) var(--spacing-md);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        overflow: hidden;
+        white-space: nowrap;
+        background: var(--color-bg-tertiary);
+        border-radius: var(--radius-sm);
     }
 
     .scan-stat {

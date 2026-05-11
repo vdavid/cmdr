@@ -8,6 +8,7 @@ pub mod aggregator;
 mod enrichment;
 mod event_loop;
 mod events;
+pub mod expected_totals;
 pub mod firmlinks;
 mod manager;
 pub mod store;

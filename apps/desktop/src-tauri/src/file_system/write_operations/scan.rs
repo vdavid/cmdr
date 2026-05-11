@@ -17,19 +17,33 @@ use super::types::{
 use crate::file_system::listing::{SortColumn, SortOrder};
 
 /// Callbacks for customizing `walk_dir_recursive` behavior per caller.
+///
+/// `on_progress` is called as `(files_done, dirs_done, bytes_done, current_file, current_dir)`:
+/// - `current_file` is just the filename component of the entry being processed
+/// - `current_dir` is the absolute parent directory path, surfaced to the UI so
+///   the user sees "in directory: …" alongside the filename
 pub(super) struct WalkContext<'a, E> {
     pub(super) progress_interval: Duration,
     pub(super) is_cancelled: &'a dyn Fn() -> bool,
     pub(super) on_io_error: &'a dyn Fn(&Path, std::io::Error) -> E,
     pub(super) on_cancelled: &'a dyn Fn() -> E,
     pub(super) on_symlink_loop: &'a dyn Fn(&Path) -> E,
-    pub(super) on_progress: &'a dyn Fn(usize, usize, u64, Option<String>),
+    pub(super) on_progress: &'a dyn Fn(usize, usize, u64, Option<String>, Option<String>),
 }
 
 /// Recursively walks a directory tree, collecting files and directories.
 ///
 /// Shared walker used by both scan preview and write operation scanning.
 /// Behavior is customized via `WalkContext` callbacks for error handling and progress reporting.
+///
+/// **Hardlink dedup**: `total_bytes` counts each inode at most once. Cargo's
+/// `target/` (and similar trees: snapshots, sccache caches, deduplicated
+/// backups) hardlinks files heavily, so a naïve `metadata.len()` per direntry
+/// over-counts the bytes that would actually be freed. The indexer
+/// (`indexing/scanner.rs`) already dedupes by inode for `dir_stats`, so
+/// matching that policy here keeps the FE's "X% of estimated" progress bar
+/// converging to ~100% on indexed sources. Unix-only — non-Unix has no
+/// `nlink()` in `std::fs::Metadata`, so it falls back to the old behavior.
 #[allow(
     clippy::too_many_arguments,
     reason = "Recursive fn requires passing state through multiple levels"
@@ -42,6 +56,7 @@ pub(super) fn walk_dir_recursive<E>(
     total_bytes: &mut u64,
     last_progress_time: &mut Instant,
     visited: &mut HashSet<PathBuf>,
+    seen_inodes: &mut HashSet<u64>,
     ctx: &WalkContext<'_, E>,
 ) -> Result<(), E> {
     if (ctx.is_cancelled)() {
@@ -50,8 +65,15 @@ pub(super) fn walk_dir_recursive<E>(
 
     let metadata = fs::symlink_metadata(path).map_err(|e| (ctx.on_io_error)(path, e))?;
 
-    if metadata.is_symlink() || metadata.is_file() {
+    if metadata.is_symlink() {
+        // Symlinks contribute their own (tiny) target-string length, never
+        // the target's bytes. No hardlink dedup: symlinks have distinct inodes.
         *total_bytes += metadata.len();
+        files.push(FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata));
+    } else if metadata.is_file() {
+        if file_bytes_count_toward_total(&metadata, seen_inodes) {
+            *total_bytes += metadata.len();
+        }
         files.push(FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata));
     } else if metadata.is_dir() {
         if is_symlink_loop(path, visited) {
@@ -74,6 +96,7 @@ pub(super) fn walk_dir_recursive<E>(
                 total_bytes,
                 last_progress_time,
                 visited,
+                seen_inodes,
                 ctx,
             )?;
         }
@@ -82,16 +105,35 @@ pub(super) fn walk_dir_recursive<E>(
     }
 
     if last_progress_time.elapsed() >= ctx.progress_interval {
-        (ctx.on_progress)(
-            files.len(),
-            dirs.len(),
-            *total_bytes,
-            path.file_name().map(|n| n.to_string_lossy().to_string()),
-        );
+        let current_file = path.file_name().map(|n| n.to_string_lossy().to_string());
+        let current_dir = path.parent().map(|p| p.display().to_string());
+        (ctx.on_progress)(files.len(), dirs.len(), *total_bytes, current_file, current_dir);
         *last_progress_time = Instant::now();
     }
 
     Ok(())
+}
+
+/// Returns `true` if this file's bytes should count toward the running scan
+/// total. On Unix, dedupes hardlinks via inode: a file with `nlink > 1` only
+/// contributes bytes the first time its inode is seen; subsequent occurrences
+/// of the same inode skip the addition. Files with `nlink == 1` (the vast
+/// majority) skip the `HashSet` check entirely. On non-Unix, always returns
+/// `true` — `std::fs::Metadata` has no `nlink` accessor there.
+fn file_bytes_count_toward_total(metadata: &fs::Metadata, seen_inodes: &mut HashSet<u64>) -> bool {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        if metadata.nlink() <= 1 {
+            return true;
+        }
+        seen_inodes.insert(metadata.ino())
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = (metadata, seen_inodes);
+        true
+    }
 }
 
 /// Builds a map from top-level source path to the number of files it contains in the scan result.
@@ -247,6 +289,22 @@ fn scan_sources_internal(
     let mut total_bytes = 0u64;
     let mut last_progress_time = Instant::now();
     let mut visited = HashSet::new();
+    // Shared across all sources in this scan so a file hardlinked between
+    // separate source roots still only contributes its bytes once — matching
+    // what the indexer does for dir_stats aggregation.
+    let mut seen_inodes: HashSet<u64> = HashSet::new();
+
+    // Index-derived expected totals — the denominator the FE renders the
+    // scan-phase progress bar against while the foolproof scan runs. `None`
+    // when any source isn't in the index; the FE falls back to tallies only.
+    let expected = crate::indexing::expected_totals::expected_totals_for_sources(sources);
+    log::debug!(
+        "scan: op={} index expected={}",
+        operation_id,
+        expected
+            .map(|e| format!("{} files / {} bytes", e.files, e.bytes))
+            .unwrap_or_else(|| "(not available)".to_string())
+    );
 
     let ctx = WalkContext {
         progress_interval,
@@ -261,7 +319,7 @@ fn scan_sources_internal(
         on_symlink_loop: &|path| WriteOperationError::SymlinkLoop {
             path: path.display().to_string(),
         },
-        on_progress: &|files_done, _, bytes_done, current_file| {
+        on_progress: &|files_done, _, bytes_done, current_file, current_dir| {
             log::debug!(
                 "scan: emitting write-progress op={} phase=scanning files_found={} bytes_found={}",
                 operation_id,
@@ -279,7 +337,8 @@ fn scan_sources_internal(
                     0,
                     bytes_done,
                     0,
-                ),
+                )
+                .with_scan_meta(current_dir, expected),
             );
             update_operation_status(
                 operation_id,
@@ -303,6 +362,7 @@ fn scan_sources_internal(
             &mut total_bytes,
             &mut last_progress_time,
             &mut visited,
+            &mut seen_inodes,
             &ctx,
         )?;
     }
@@ -328,7 +388,8 @@ fn scan_sources_internal(
             files.len(),
             total_bytes,
             total_bytes,
-        ),
+        )
+        .with_scan_meta(None, expected),
     );
 
     Ok(ScanResult {
@@ -668,5 +729,217 @@ mod tests {
         let counts = build_source_file_counts(&files);
         assert_eq!(counts.len(), 1);
         assert_eq!(counts[&PathBuf::from("/tmp/a.txt")], 1);
+    }
+
+    // ── Walker integration tests ─────────────────────────────────────────
+
+    /// Result bundle from `run_walker` / `run_walker_with_sources`. Named
+    /// fields avoid `clippy::type_complexity` on the helper's return type.
+    struct WalkOutcome {
+        files: Vec<FileInfo>,
+        bytes: u64,
+        /// Captured `(current_file, current_dir)` pairs from each `on_progress` call.
+        progress: Vec<(Option<String>, Option<String>)>,
+    }
+
+    /// Run the walker over `root`, with `progress_interval = 0` so the
+    /// callback fires on every entry. Captures progress payloads for assertions.
+    fn run_walker(root: &Path) -> WalkOutcome {
+        run_walker_with_sources(&[root.to_path_buf()])
+    }
+
+    fn run_walker_with_sources(sources: &[PathBuf]) -> WalkOutcome {
+        let mut files = Vec::new();
+        let mut dirs = Vec::new();
+        let mut total_bytes = 0u64;
+        let mut last_progress = Instant::now() - Duration::from_secs(60);
+        let mut visited = HashSet::new();
+        let mut seen_inodes = HashSet::new();
+        let captured = std::cell::RefCell::new(Vec::new());
+        let ctx = WalkContext::<'_, String> {
+            progress_interval: Duration::from_millis(0),
+            is_cancelled: &|| false,
+            on_io_error: &|p, e| format!("io: {} {}", p.display(), e),
+            on_cancelled: &|| "cancelled".to_string(),
+            on_symlink_loop: &|p| format!("loop: {}", p.display()),
+            on_progress: &|_, _, _, cur_file, cur_dir| {
+                captured.borrow_mut().push((cur_file, cur_dir));
+            },
+        };
+        for source in sources {
+            let source_root = source.parent().unwrap_or(source);
+            walk_dir_recursive(
+                source,
+                source_root,
+                &mut files,
+                &mut dirs,
+                &mut total_bytes,
+                &mut last_progress,
+                &mut visited,
+                &mut seen_inodes,
+                &ctx,
+            )
+            .expect("walk should succeed");
+        }
+        WalkOutcome {
+            files,
+            bytes: total_bytes,
+            progress: captured.into_inner(),
+        }
+    }
+
+    #[test]
+    fn walker_emits_current_dir_for_files() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        let subdir = root.join("inner");
+        fs::create_dir(&subdir).unwrap();
+        fs::write(subdir.join("a.txt"), b"hello").unwrap();
+
+        let outcome = run_walker(root);
+
+        // Find the progress event for a.txt. Its parent dir should be `inner`.
+        let a_event = outcome
+            .progress
+            .iter()
+            .find(|(f, _)| f.as_deref() == Some("a.txt"))
+            .expect("walker should have emitted progress for a.txt");
+        let dir = a_event.1.as_deref().expect("current_dir should be set for a file");
+        assert!(dir.ends_with("inner"), "expected dir to end with 'inner', got: {dir}");
+    }
+
+    #[test]
+    fn walker_sums_bytes_for_unique_files() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        fs::write(root.join("a.bin"), vec![0u8; 1000]).unwrap();
+        fs::write(root.join("b.bin"), vec![0u8; 2000]).unwrap();
+
+        let outcome = run_walker(root);
+        assert_eq!(outcome.files.len(), 2);
+        assert_eq!(outcome.bytes, 3000);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn walker_dedupes_hardlinks_by_inode() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        let original = root.join("original.bin");
+        let link = root.join("link.bin");
+        fs::write(&original, vec![0u8; 1000]).unwrap();
+        fs::hard_link(&original, &link).unwrap();
+
+        let outcome = run_walker(root);
+        // Both directory entries are visited (the delete/copy op must unlink both)…
+        assert_eq!(outcome.files.len(), 2, "both hardlinked entries should be enumerated");
+        // …but the bytes are counted once (per inode), matching the indexer.
+        assert_eq!(
+            outcome.bytes, 1000,
+            "hardlinked file's bytes should count once, not twice"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn walker_dedupes_hardlinks_across_separate_sources() {
+        // A file hardlinked into two different source roots in one scan
+        // should still contribute its bytes exactly once.
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        let dir_a = root.join("a");
+        let dir_b = root.join("b");
+        fs::create_dir(&dir_a).unwrap();
+        fs::create_dir(&dir_b).unwrap();
+        let original = dir_a.join("file.bin");
+        fs::write(&original, vec![0u8; 5000]).unwrap();
+        fs::hard_link(&original, dir_b.join("file.bin")).unwrap();
+
+        let outcome = run_walker_with_sources(&[dir_a.clone(), dir_b.clone()]);
+        assert_eq!(outcome.files.len(), 2);
+        assert_eq!(
+            outcome.bytes, 5000,
+            "hardlink across source roots should still count once"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn walker_does_not_dedupe_distinct_inodes_with_same_size() {
+        // Sanity: two unrelated 1000-byte files (distinct inodes) should
+        // sum to 2000, not 1000.
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        fs::write(root.join("a.bin"), vec![0u8; 1000]).unwrap();
+        fs::write(root.join("b.bin"), vec![1u8; 1000]).unwrap();
+
+        let outcome = run_walker(root);
+        assert_eq!(outcome.bytes, 2000);
+    }
+
+    // ── WriteProgressEvent constructor / builder tests ───────────────────
+
+    #[test]
+    fn write_progress_new_defaults_scan_meta_to_none() {
+        use super::super::types::{WriteOperationPhase, WriteOperationType, WriteProgressEvent};
+        let event = WriteProgressEvent::new(
+            "op-1".to_string(),
+            WriteOperationType::Delete,
+            WriteOperationPhase::Scanning,
+            Some("foo.txt".to_string()),
+            10,
+            0,
+            1234,
+            0,
+        );
+        assert_eq!(event.current_dir, None);
+        assert_eq!(event.expected_files_total, None);
+        assert_eq!(event.expected_bytes_total, None);
+    }
+
+    #[test]
+    fn with_scan_meta_populates_all_three_fields() {
+        use super::super::types::{WriteOperationPhase, WriteOperationType, WriteProgressEvent};
+        use crate::indexing::expected_totals::ExpectedTotals;
+        let event = WriteProgressEvent::new(
+            "op-1".to_string(),
+            WriteOperationType::Copy,
+            WriteOperationPhase::Scanning,
+            Some("foo.txt".to_string()),
+            10,
+            0,
+            500,
+            0,
+        )
+        .with_scan_meta(
+            Some("/some/dir".to_string()),
+            Some(ExpectedTotals {
+                files: 100,
+                bytes: 5000,
+            }),
+        );
+        assert_eq!(event.current_dir.as_deref(), Some("/some/dir"));
+        assert_eq!(event.expected_files_total, Some(100));
+        assert_eq!(event.expected_bytes_total, Some(5000));
+    }
+
+    #[test]
+    fn with_scan_meta_handles_missing_expected_totals() {
+        use super::super::types::{WriteOperationPhase, WriteOperationType, WriteProgressEvent};
+        let event = WriteProgressEvent::new(
+            "op-1".to_string(),
+            WriteOperationType::Copy,
+            WriteOperationPhase::Scanning,
+            None,
+            0,
+            0,
+            0,
+            0,
+        )
+        .with_scan_meta(Some("/x".to_string()), None);
+        assert_eq!(event.current_dir.as_deref(), Some("/x"));
+        // No expected totals → fields stay None so the FE falls back to tallies-only.
+        assert_eq!(event.expected_files_total, None);
+        assert_eq!(event.expected_bytes_total, None);
     }
 }
