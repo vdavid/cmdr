@@ -25,6 +25,11 @@
     import { getDirStatsBatch } from '$lib/tauri-commands'
     import { formatSizeForDisplay, formatNumber, pluralize } from '../selection/selection-info-utils'
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
+    import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
+    import InfoIcon from '~icons/lucide/info'
+
+    const RESTRICTED_FOLDER_TOOLTIP =
+        'Access to this folder is limited. Grant Cmdr Full Disk Access in System Settings → Privacy & Security → Full Disk Access to remove all such limits. Or grant per-folder access in System Settings → Privacy & Security → Files & Folders → Cmdr.'
     import {
         getVisibleItemsCount as getVisibleItemsCountUtil,
         getVirtualizationBufferRows,
@@ -282,6 +287,7 @@
             showSizeMismatchWarning,
             sortBy,
             sizeFormatOpts,
+            isRestricted,
         })
     })
 
@@ -664,7 +670,8 @@
                     {@const fileDisplaySize = !file.isDirectory
                         ? getDisplaySize(file.size, file.physicalSize, sizeDisplayMode)
                         : undefined}
-                    {@const sizeOverride = pickSizeDisplay(file)}
+                    {@const fileIsRestricted = isRestricted(file.path)}
+                    {@const sizeOverride = pickSizeDisplay(file, fileIsRestricted)}
                     {@const dateParts = formatDateTimeParts(file.modifiedAt)}
                     <!-- svelte-ignore a11y_interactive_supports_focus -->
                     <div
@@ -674,6 +681,7 @@
                         class:is-selected={selectedIndices.has(globalIndex)}
                         class:is-striped={stripedRows && globalIndex % 2 === 1}
                         class:no-transition={skipTransition}
+                        class:is-restricted={fileIsRestricted}
                         data-filename={file.name}
                         data-drop-target-path={file.isDirectory ? file.path : undefined}
                         style="height: {rowHeight}px; grid-template-columns: {gridTemplate};"
@@ -715,7 +723,11 @@
                                     text: file.redirectToPath ? `Opens ${file.redirectToPath}` : file.name,
                                     overflowOnly: !file.redirectToPath,
                                 }}
-                            >{getDisplayName(file.name, file.isDirectory)}</span>
+                            >{getDisplayName(file.name, file.isDirectory)}{#if fileIsRestricted}<span
+                                    class="restricted-indicator"
+                                    aria-hidden="true"
+                                    use:tooltip={RESTRICTED_FOLDER_TOOLTIP}
+                                ><InfoIcon /></span>{/if}</span>
                             {#if gitColumnVisible}
                                 {@const status = gitStatusFor(file)}
                                 <span
@@ -877,6 +889,24 @@
         /* Guarantee one visual line per row regardless of cell content length */
         white-space: nowrap;
         transition: grid-template-columns 300ms ease;
+    }
+
+    /* TCC-restricted rows: italic + opacity to match the sidebar treatment.
+       The (i) icon next to the name carries the tooltip pointing at System Settings. */
+    .file-entry.is-restricted .col-name,
+    .file-entry.is-restricted .col-size,
+    .file-entry.is-restricted .col-date {
+        font-style: italic;
+        opacity: 0.6;
+    }
+
+    .restricted-indicator {
+        display: inline-flex;
+        align-items: center;
+        margin-left: var(--spacing-xxs);
+        opacity: 0.7;
+        font-size: var(--font-size-sm);
+        vertical-align: text-bottom;
     }
 
     .header-row.no-transition,

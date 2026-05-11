@@ -28,6 +28,11 @@
     import { SvelteMap } from 'svelte/reactivity'
     import { formatNumber, pluralize } from '../selection/selection-info-utils'
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
+    import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
+    import InfoIcon from '~icons/lucide/info'
+
+    const RESTRICTED_FOLDER_TOOLTIP =
+        'Access to this folder is limited. Grant Cmdr Full Disk Access in System Settings → Privacy & Security → Full Disk Access to remove all such limits. Or grant per-folder access in System Settings → Privacy & Security → Files & Folders → Cmdr.'
     import { iconCacheCleared } from '$lib/icon-cache'
     import { escapeHtml, tooltip } from '$lib/tooltip/tooltip'
     import type { RenameState } from '../rename/rename-state.svelte'
@@ -658,6 +663,7 @@
                     >
                         {#each column.files as { file, globalIndex } (file.path)}
                             {@const syncIcon = getSyncIconPath(syncStatusMap[file.path])}
+                            {@const fileIsRestricted = isRestricted(file.path)}
                             <!-- svelte-ignore a11y_click_events_have_key_events,a11y_interactive_supports_focus -->
                             <div
                                 id={`file-${String(globalIndex)}`}
@@ -665,6 +671,7 @@
                                 class:is-under-cursor={globalIndex === cursorIndex}
                                 class:is-selected={selectedIndices.has(globalIndex)}
                                 class:is-striped={stripedRows && globalIndex % 2 === 1}
+                                class:is-restricted={fileIsRestricted}
                                 data-filename={file.name}
                                 data-drop-target-path={file.isDirectory ? file.path : undefined}
                                 use:tooltip={buildDirTooltip(file)}
@@ -702,7 +709,12 @@
                                         onShakeEnd={() => onRenameShakeEnd?.()}
                                     />
                                 {:else}
-                                    <span class="name" use:tooltip={buildNameTooltip(file)}>{file.name}</span>
+                                    <span class="name" use:tooltip={buildNameTooltip(file)}
+                                        >{file.name}{#if fileIsRestricted}<span
+                                                class="restricted-indicator"
+                                                aria-hidden="true"
+                                                use:tooltip={RESTRICTED_FOLDER_TOOLTIP}
+                                            ><InfoIcon /></span>{/if}</span>
                                 {/if}
                             </div>
                         {/each}
@@ -789,6 +801,22 @@
         align-items: center;
         white-space: nowrap;
         overflow: hidden;
+    }
+
+    /* TCC-restricted rows: italic + opacity to match the sidebar treatment.
+       The (i) icon next to the name carries the tooltip pointing at System Settings. */
+    .file-entry.is-restricted .name {
+        font-style: italic;
+        opacity: 0.6;
+    }
+
+    .restricted-indicator {
+        display: inline-flex;
+        align-items: center;
+        margin-left: var(--spacing-xxs);
+        opacity: 0.7;
+        font-size: var(--font-size-sm);
+        vertical-align: text-bottom;
     }
 
     .file-entry.is-striped {

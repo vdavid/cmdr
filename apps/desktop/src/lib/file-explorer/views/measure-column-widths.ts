@@ -176,7 +176,13 @@ function sizeTextForEntry(
   sizeDisplayMode: 'smart' | 'logical' | 'physical',
   indexing: boolean,
   sizeFormatOpts: SizeFormatOpts,
+  isRestricted: boolean,
 ): string {
+  // TCC-restricted entries render `<no perms>` instead of the misleading `0`
+  // the indexer recorded after a denied scan. Keep this BEFORE the
+  // `entry.displaySize` check — restricted state takes priority over virtual
+  // git display strings (which wouldn't apply to favorites anyway).
+  if (isRestricted) return '<no perms>'
   // Virtual git entries override the Size cell with a short string
   // (`+12 / -3`, `5 files`, …); measure that instead of the byte format.
   if (entry.displaySize != null) {
@@ -247,6 +253,9 @@ export function computeFullListColumnWidths(args: {
   showSizeMismatchWarning: boolean
   sortBy: SortColumn
   sizeFormatOpts: SizeFormatOpts
+  /** Returns `true` for paths in the TCC-restricted set so the size cell
+   * widths account for the `<no perms>` override. Defaults to never-restricted. */
+  isRestricted?: (path: string) => boolean
 }): ColumnWidths {
   const {
     entries,
@@ -257,6 +266,7 @@ export function computeFullListColumnWidths(args: {
     showSizeMismatchWarning,
     sortBy,
     sizeFormatOpts,
+    isRestricted,
   } = args
 
   const measure = getMeasure()
@@ -293,7 +303,13 @@ export function computeFullListColumnWidths(args: {
       if (w > extMax) extMax = w
     }
 
-    const sizeText = sizeTextForEntry(entry, sizeDisplayMode, indexing, sizeFormatOpts)
+    const sizeText = sizeTextForEntry(
+      entry,
+      sizeDisplayMode,
+      indexing,
+      sizeFormatOpts,
+      isRestricted?.(entry.path) ?? false,
+    )
     const iconSuffix = sizeIconSuffixForEntry(entry, indexing, showSizeMismatchWarning)
     const rowSize = (sizeText ? measure(sizeText) : 0) + iconSuffix
     if (rowSize > sizeMax) sizeMax = rowSize

@@ -193,8 +193,19 @@ export interface SizeDisplayPick {
 /**
  * Picks the Size-column override for `entry`. Returns `{}` for normal
  * rows (the renderer falls through to byte formatting).
+ *
+ * When `isRestricted` is true, the entry is in the runtime TCC-restricted
+ * set (see `$lib/stores/restricted-paths-store`). We override the size
+ * column with `<no perms>` because the indexer recorded `recursiveSize=0`
+ * for the folder (couldn't read its contents), and rendering literal `0`
+ * misleads the user into thinking the folder is empty. The override takes
+ * priority over `entry.displaySize` since restricted state is the more
+ * actionable signal.
  */
-export function pickSizeDisplay(entry: FileEntry): SizeDisplayPick {
+export function pickSizeDisplay(entry: FileEntry, isRestricted = false): SizeDisplayPick {
+  if (isRestricted) {
+    return { override: '<no perms>', tooltip: 'Cmdr lacks permission to read this folder' }
+  }
   if (entry.displaySize != null) {
     return { override: entry.displaySize, tooltip: entry.displaySizeTooltip ?? undefined }
   }
