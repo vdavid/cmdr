@@ -100,6 +100,23 @@ describe('POST /crash-report', () => {
     expect(bindArgs[8]).toBe('CRASH-A2345')
   })
 
+  it('accepts explicit nulls for buildMode and shortId (upgrade-window compat)', async () => {
+    // Rust clients serialize `Option::None` as `null` because specta's unified mode
+    // rejects `skip_serializing_if`. Old crash files read by a new client surface as
+    // `None` and would hit this path. Reject would lose the report.
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const report = { ...validCrashReport, buildMode: null, shortId: null }
+
+    const res = await postCrashReport(report, bindings)
+    expect(res.status).toBe(204)
+
+    const bindArgs = bindMock.mock.calls[0]
+    expect(bindArgs[7]).toBeNull()
+    expect(bindArgs[8]).toBeNull()
+  })
+
   it('returns 400 for invalid buildMode', async () => {
     const bindings = createBindings()
     const report = { ...validCrashReport, buildMode: 'staging' }
