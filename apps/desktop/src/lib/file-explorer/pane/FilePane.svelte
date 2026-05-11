@@ -1030,6 +1030,12 @@
                             } else {
                                 // Path exists, or we couldn't tell — show the original listing error
                                 resetLoadingState(event.payload.message, false, event.payload.friendly)
+                                // Record the failed path in history so Cmd+[ goes back one step,
+                                // not two. The success path pushes via the `onPathChange` call in
+                                // `handleListingComplete`; without this call, an error pane would
+                                // be visually displayed but absent from history, so Back would
+                                // skip over it. `pushPath` deduplicates same-path retries.
+                                onPathChange?.(loadPath)
                             }
                         })
                     }

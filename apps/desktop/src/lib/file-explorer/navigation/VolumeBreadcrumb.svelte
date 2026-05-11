@@ -483,7 +483,11 @@
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <span class="volume-name" class:is-open={isOpen} onclick={handleToggle}>
-        {#if currentVolumeIcon}
+        {#if currentVolume && isRestricted(currentVolume.path) && dirIconFallback}
+            <!-- TCC-denied paths: `NSWorkspace.iconForFile` returns a confusing "no
+                 access" placeholder. Use the generic Aqua folder icon instead. -->
+            <img class="icon" src={dirIconFallback} alt="" />
+        {:else if currentVolumeIcon}
             <img class="icon" src={currentVolumeIcon} alt="" />
         {:else if volumeId === 'network'}
             <span class="icon-emoji">🌐</span>
@@ -579,6 +583,10 @@
                             <img class="volume-icon" src="/icons/mobile-device.svg" alt="" />
                         {:else if volume.category === 'network'}
                             <span class="volume-icon-placeholder">🌐</span>
+                        {:else if isRestricted(volume.path) && dirIconFallback}
+                            <!-- TCC-denied paths: `NSWorkspace.iconForFile` returns a confusing "no
+                                 access" placeholder. Use the generic Aqua folder icon instead. -->
+                            <img class="volume-icon" src={dirIconFallback} alt="" />
                         {:else if volume.icon}
                             <img class="volume-icon" src={volume.icon} alt="" />
                         {:else if dirIconFallback}
