@@ -5,6 +5,102 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-05-12
+
+### Added
+
+- Suppress the 5–10 native macOS TCC popups that stacked behind the FDA onboarding prompt, deep-link to the Full Disk
+  Access pane, version-aware copy, Tahoe `+`-button tip, and a multi-trigger probe that catches kernel short-circuits
+  ([3c708d35](https://github.com/vdavid/cmdr/commit/3c708d35),
+  [16918218](https://github.com/vdavid/cmdr/commit/16918218),
+  [f32dfc55](https://github.com/vdavid/cmdr/commit/f32dfc55),
+  [791edff0](https://github.com/vdavid/cmdr/commit/791edff0))
+- Flag TCC-restricted folders live in the sidebar and file list: italic + (i) icon, `<no perms>` Size, generic folder
+  icon for FDA-gated favorites, failed listings stay in nav history
+  ([7baa9317](https://github.com/vdavid/cmdr/commit/7baa9317),
+  [6581f5ad](https://github.com/vdavid/cmdr/commit/6581f5ad),
+  [df6cd794](https://github.com/vdavid/cmdr/commit/df6cd794),
+  [762d7b9a](https://github.com/vdavid/cmdr/commit/762d7b9a))
+- Defer the AI offer toast until onboarding ends so it stops piling on the FDA prompt
+  ([265c72d9](https://github.com/vdavid/cmdr/commit/265c72d9))
+- Color modified dates by age with per-segment tiers (year, month, day, time each get their own color); App palette is
+  now the default ([c73fcf54](https://github.com/vdavid/cmdr/commit/c73fcf54),
+  [d98459b6](https://github.com/vdavid/cmdr/commit/d98459b6),
+  [be2333c2](https://github.com/vdavid/cmdr/commit/be2333c2))
+- Color sizes at every previously-plain site (tooltips, breadcrumb, transfer/delete dialogs, viewer footer, AI progress,
+  search results); light-mode palette retuned to clear WCAG AA against every background
+  ([265c5a0e](https://github.com/vdavid/cmdr/commit/265c5a0e),
+  [31128012](https://github.com/vdavid/cmdr/commit/31128012))
+- Show real scan progress in copy/delete dialogs with running tallies, throughput, current directory, and a real
+  progress bar; hardlinks deduped by inode so totals match the indexer
+  ([03215d25](https://github.com/vdavid/cmdr/commit/03215d25))
+- Honest ETA when files outnumber bytes: tracks both axes, picks the slower; no more "~0 s remaining" while the
+  small-file tail drains ([16b49a04](https://github.com/vdavid/cmdr/commit/16b49a04))
+- Stream folder-name suggestions in the New folder dialog: first option in under 500 ms instead of after the full reply
+  ([d681c8de](https://github.com/vdavid/cmdr/commit/d681c8de))
+- Add multi-provider AI via the `genai` crate (GPT-5, o-series, Anthropic, Gemini, xAI, Groq, DeepSeek, OpenRouter,
+  Ollama); fixes GPT-5 400 on `temperature` and `*-pro`/`*-codex` 404 on chat completions
+  ([0c45a469](https://github.com/vdavid/cmdr/commit/0c45a469))
+- Cap updater hangs at 30 s and surface the real cause (DNS error, TCP deadline) instead of generic "error sending
+  request" ([e5be1467](https://github.com/vdavid/cmdr/commit/e5be1467))
+- Per-row crash email with build mode and short ID, schema migrations, newest-first sort
+  ([e89a63a3](https://github.com/vdavid/cmdr/commit/e89a63a3))
+- Stable client-side ID for error reports across dialog, toast, and Discord; env-prefixed R2 keys; `[DEV]`/`[PROD]`
+  Discord prefix ([77260827](https://github.com/vdavid/cmdr/commit/77260827),
+  [e1810361](https://github.com/vdavid/cmdr/commit/e1810361))
+- Guard read-only volumes up front for F7/F8/F2 so MTP read-only SD cards warn before you type anything
+  ([d9212b83](https://github.com/vdavid/cmdr/commit/d9212b83))
+- Provider-enriched friendly errors on the write path: MacDroid folders get "Managed by **MacDroid**…" on move failures;
+  dialog renders markdown + category icon, retry shown only when meaningful
+  ([e9452032](https://github.com/vdavid/cmdr/commit/e9452032),
+  [51dff4c1](https://github.com/vdavid/cmdr/commit/51dff4c1),
+  [5bcacfef](https://github.com/vdavid/cmdr/commit/5bcacfef))
+- Route every dir-into-dir cross-volume conflict through the resolver so Stop/Skip/Overwrite/Rename works for folders
+  too; pin Overwrite-means-merge as an architectural guarantee
+  ([7ecf9d37](https://github.com/vdavid/cmdr/commit/7ecf9d37),
+  [2f4e377d](https://github.com/vdavid/cmdr/commit/2f4e377d))
+- Bump smb2 to 0.8.0 with typed `STATUS_OBJECT_NAME_COLLISION` and `FILE_IS_A_DIRECTORY` so merging into an existing SMB
+  directory works after a partial copy; fast-path WARNs demoted to debug
+  ([7dd9cfc8](https://github.com/vdavid/cmdr/commit/7dd9cfc8),
+  [623f8c17](https://github.com/vdavid/cmdr/commit/623f8c17))
+- Move MCP defaults to ports 19224 (prod) and 19225 (dev) so a dev build no longer collides with the installed app
+  ([c9fad17e](https://github.com/vdavid/cmdr/commit/c9fad17e))
+- Polish getcmdr.com hero: "Download for macOS" button, viewport-responsive illustration mask, muted link style,
+  tightened copy ([606c724e](https://github.com/vdavid/cmdr/commit/606c724e))
+
+### Fixed
+
+- Fix F8 (and other dialogs) dying after a volume switch: Option fields started serializing as JSON `null` instead of
+  being omitted after the typed-IPC migration; swept `=== undefined` checks across 11 sites
+  ([f2019aff](https://github.com/vdavid/cmdr/commit/f2019aff),
+  [46bd6d0e](https://github.com/vdavid/cmdr/commit/46bd6d0e),
+  [eef042d3](https://github.com/vdavid/cmdr/commit/eef042d3))
+- Fix one or two rows ellipsizing the Modified column under non-100% text size (sub-pixel glyph-advance drift)
+  ([a7a7915e](https://github.com/vdavid/cmdr/commit/a7a7915e))
+- Fix light/dark theme briefly flipping at startup when the persisted choice differed from the system preference
+  ([f689da01](https://github.com/vdavid/cmdr/commit/f689da01))
+- Stop the dev runtime silently overwriting committed `bindings.ts` on every `pnpm dev` launch
+  ([6e39d68d](https://github.com/vdavid/cmdr/commit/6e39d68d))
+- Silence the `get_file_at` FE/BE drift warning that fired legitimately during async listing refreshes
+  ([0b51a331](https://github.com/vdavid/cmdr/commit/0b51a331))
+- Accept `null` for optional crash-report fields so reports written by older app versions still upload after upgrade
+  ([3c12ff2f](https://github.com/vdavid/cmdr/commit/3c12ff2f))
+- Stop re-anchoring focus inside `selectVolumeByIndex`/`navigateToPath`, which dropped keystrokes mid-sequence in fast
+  multi-select ([6074cd21](https://github.com/vdavid/cmdr/commit/6074cd21))
+
+### Non-app
+
+- Migrate the full IPC surface to typed bindings via tauri-specta; an ESLint rule and a Go check block raw `invoke()`
+  and lockfile drift ([f1e58011](https://github.com/vdavid/cmdr/commit/f1e58011),
+  [dc5f0b47](https://github.com/vdavid/cmdr/commit/dc5f0b47))
+- Ban classifying errors by string-matching `message`/`stderr`/`title` with a Go check and ESLint rule; sweep across
+  SMB, git, friendly errors, and updater ([c764962a](https://github.com/vdavid/cmdr/commit/c764962a))
+- Pin pnpm 11.0.9 in `mise.toml` and move overrides to `pnpm-workspace.yaml`; unblocks CI's E2E-Linux
+  ([cee0aa08](https://github.com/vdavid/cmdr/commit/cee0aa08),
+  [c41d2e0d](https://github.com/vdavid/cmdr/commit/c41d2e0d))
+- Track recurring upkeep in `docs/maintenance.md` with a log going back to 2025-12-25
+  ([49a119bd](https://github.com/vdavid/cmdr/commit/49a119bd))
+
 ## [0.17.0] - 2026-05-06
 
 ### Added
