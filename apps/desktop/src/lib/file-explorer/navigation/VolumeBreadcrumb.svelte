@@ -4,9 +4,14 @@
     import { triggerNetworkDiscovery } from '../network/lazy-trigger'
     import { addToast, dismissToast } from '$lib/ui/toast'
     import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
-    import { formatFileSize, getNetworkEnabled } from '$lib/settings/reactive-settings.svelte'
+    import {
+        formatFileSize,
+        getNetworkEnabled,
+        getUseAppIconsForDocuments,
+    } from '$lib/settings/reactive-settings.svelte'
     import { openSettingsWindow } from '$lib/settings/settings-window'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { getCachedIcon, iconCacheVersion, prefetchIcons } from '$lib/icon-cache'
     import type { VolumeInfo, SmbConnectionState } from '../types'
     import {
         getVolumes,
@@ -76,6 +81,15 @@
     )
     const currentVolumeName = $derived(currentVolume?.name ?? 'Volume')
     const currentVolumeIcon = $derived(getIconForVolume(currentVolume))
+
+    // Generic macOS folder icon used as fallback when a volume has no icon (for example,
+    // FDA-gated favorites whose icons aren't fetched yet to avoid TCC popups). The `dir`
+    // icon is sampled from `~`, which isn't TCC-protected, so prefetching is always safe.
+    // Reading `$iconCacheVersion` re-evaluates the derived value once the icon lands.
+    const dirIconFallback = $derived.by(() => {
+        void $iconCacheVersion
+        return getCachedIcon('dir')
+    })
 
     // Group volumes by category for display. The grouping helper renames the synthetic
     // "Network" entry to "Network (disabled)" when networking is off; the click handler
@@ -346,6 +360,11 @@
     onMount(() => {
         void updateContainingVolume(currentPath)
 
+        // Make sure the generic dir icon is cached for the fallback below.
+        if (!getCachedIcon('dir')) {
+            void prefetchIcons(['dir'], getUseAppIconsForDocuments())
+        }
+
         // Close on click outside
         document.addEventListener('click', handleClickOutside)
         document.addEventListener('click', handleBreadcrumbPopupClickOutside)
@@ -462,6 +481,8 @@
             <img class="icon" src={currentVolumeIcon} alt="" />
         {:else if volumeId === 'network'}
             <span class="icon-emoji">🌐</span>
+        {:else if dirIconFallback}
+            <img class="icon" src={dirIconFallback} alt="" />
         {/if}
         {currentVolumeName}
         {#if currentVolume?.isReadOnly}
@@ -552,6 +573,8 @@
                             <span class="volume-icon-placeholder">🌐</span>
                         {:else if volume.icon}
                             <img class="volume-icon" src={volume.icon} alt="" />
+                        {:else if dirIconFallback}
+                            <img class="volume-icon" src={dirIconFallback} alt="" />
                         {:else}
                             <span class="volume-icon-placeholder">📁</span>
                         {/if}
