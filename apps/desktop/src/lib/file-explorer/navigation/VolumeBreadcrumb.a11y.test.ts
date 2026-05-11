@@ -36,7 +36,20 @@ vi.mock('$lib/ui/toast', () => ({
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   formatFileSize: (n: number) => `${String(n)} B`,
   getNetworkEnabled: () => true,
+  // VolumeBreadcrumb's `onMount` prefetches the generic folder icon with this flag.
+  getUseAppIconsForDocuments: () => false,
 }))
+
+// Stub the icon cache so the `onMount` prefetch doesn't reach into `$lib/tauri-commands`
+// for a `getIcons` call. Same shape as `pane/volume-breadcrumb.test.ts`.
+vi.mock('$lib/icon-cache', async () => {
+  const { writable } = await import('svelte/store')
+  return {
+    getCachedIcon: vi.fn().mockReturnValue('/icons/dir.png'),
+    iconCacheVersion: writable(0),
+    prefetchIcons: vi.fn().mockResolvedValue(undefined),
+  }
+})
 
 describe('VolumeBreadcrumb a11y', () => {
   it('closed breadcrumb (local volume) has no a11y violations', async () => {
