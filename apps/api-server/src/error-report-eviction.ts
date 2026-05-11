@@ -81,6 +81,11 @@ interface ListedObject {
  *
  * Returns the empty string when the key matches neither shape — that pushes
  * unrecognized keys to the front of an ascending sort, so they get evicted first.
+ *
+ * REMOVE-AFTER 2026-08-20: by then the 90-day R2 lifecycle has drained every
+ * pre-env-prefix key (the last legacy upload happened at deploy time, 2026-05-11).
+ * Once that date passes, simplify this helper to assume the new shape only and
+ * drop the legacy test in `error-report-eviction.test.ts`.
  */
 export function extractDateSegment(key: string): string {
   if (!key.startsWith(ERROR_REPORT_PREFIX)) return ''
