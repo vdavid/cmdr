@@ -106,8 +106,9 @@
     import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
     import { requestVolumeRefresh, getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
     import type { UnreachableState } from '../tabs/tab-types'
-    import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
-    import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import { getDiskUsageLevel, getUsedPercent, formatBarTooltipHtml } from '../disk-space-utils'
+    import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
+    import { formatSizeHtmlColored } from '../selection/selection-info-utils'
 
     interface Props {
         initialPath: string
@@ -2175,7 +2176,9 @@
         <!--suppress HtmlWrongAttributeValue -- We know this is not a valid ARIA role, it's fine -->
         <div
             class="disk-usage-bar-wrapper"
-            use:tooltip={volumeSpace ? formatBarTooltip(volumeSpace, formatFileSize) : ''}
+            use:tooltip={volumeSpace
+                ? { html: formatBarTooltipHtml(volumeSpace, (b) => formatSizeHtmlColored(b, getFileSizeFormat())) }
+                : ''}
         >
             <div
                 class="disk-usage-bar"

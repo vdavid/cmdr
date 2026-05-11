@@ -19,7 +19,6 @@
         onScanPreviewComplete,
         onScanPreviewError,
         onScanPreviewCancelled,
-        formatBytes,
         formatDuration,
         DEFAULT_VOLUME_ID,
         type WriteProgressEvent,
@@ -41,6 +40,7 @@
     import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { formatDate, formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import Size from '$lib/ui/Size.svelte'
     import { getSetting } from '$lib/settings'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
@@ -758,7 +758,7 @@
         <div class="scan-wait-section">
             <div class="scan-wait-stats">
                 <div class="scan-stat">
-                    <span class="scan-value">{formatBytes(scanBytesFound)}</span>
+                    <span class="scan-value"><Size bytes={scanBytesFound} /></span>
                 </div>
                 <span class="scan-divider">/</span>
                 <div class="scan-stat">
@@ -925,7 +925,7 @@
                     <span class="progress-label">Size</span>
                     <ProgressBar value={bytesDone / bytesTotal} ariaLabel="Size progress" />
                     <span class="progress-detail">
-                        {formatBytes(bytesDone)} / {formatBytes(bytesTotal)}
+                        <Size bytes={bytesDone} /> / <Size bytes={bytesTotal} />
                         ({Math.round((bytesDone / bytesTotal) * 100)}%)
                     </span>
                 {/if}
@@ -936,7 +936,7 @@
                 <div class="progress-meta">
                     <span class="progress-speeds">
                         {#if bytesPerSecond !== null && bytesPerSecond > 0}
-                            <span class="progress-speed">{formatBytes(bytesPerSecond)}/s</span>
+                            <span class="progress-speed"><Size bytes={bytesPerSecond} />/s</span>
                         {/if}
                         {#if filesPerSecond !== null && filesPerSecond > 0}
                             <span class="progress-speed">{formatNumber(Math.round(filesPerSecond))} files/s</span>

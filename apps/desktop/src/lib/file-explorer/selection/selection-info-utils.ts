@@ -73,6 +73,17 @@ export function formatSizeForDisplay(
   return [{ value: formatted, tierClass: tierClassForUnit(unit) }]
 }
 
+/**
+ * Renders a byte count as a colored HTML span string (e.g. `<span class="size-mb">1.02 MB</span>`).
+ * For embedding inside HTML strings — tooltips, error messages, etc. Use the `<Size>` component
+ * for inline rendering in Svelte templates.
+ */
+export function formatSizeHtmlColored(bytes: number, format: FileSizeFormat): string {
+  return formatSizeForDisplay(bytes, { humanFriendly: true, format })
+    .map((p) => `<span class="${p.tierClass}">${p.value}</span>`)
+    .join('')
+}
+
 /** Formats timestamp as YYYY-MM-DD hh:mm:ss */
 export function formatDate(timestamp: number | null | undefined): string {
   if (timestamp == null) return ''

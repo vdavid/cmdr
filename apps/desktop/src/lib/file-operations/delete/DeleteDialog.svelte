@@ -1,7 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
     import {
-        formatBytes,
         startScanPreview,
         cancelScanPreview,
         onScanPreviewProgress,
@@ -21,8 +20,8 @@
         MAX_VISIBLE_ITEMS,
         type DeleteSourceItem,
     } from './delete-dialog-utils'
-    import { formatFileSize } from '$lib/settings/reactive-settings.svelte'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
+    import Size from '$lib/ui/Size.svelte'
     import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('deleteDialog')
@@ -178,19 +177,16 @@
     /** Formats item size for display. Folders show recursive info when available.
      *  Always uses logical (content) sizes — not worth plumbing the display mode setting
      *  through the delete dialog infrastructure for a transient confirmation dialog. */
-    function formatItemSize(item: DeleteSourceItem): string {
+    function itemSizeBytes(item: DeleteSourceItem): number | null {
         // Group A wire-format: IPC sends `null` for absent fields, not `undefined`.
-        if (item.isDirectory) {
-            const size = item.recursiveSize
-            const fileCount = item.recursiveFileCount
-            const parts: string[] = []
-            if (size != null) parts.push(formatFileSize(size))
-            if (fileCount != null) {
-                parts.push(`${formatNumber(fileCount)} ${fileCount === 1 ? 'file' : 'files'}`)
-            }
-            return parts.length > 0 ? parts.join('   ') : ''
-        }
-        return item.size != null ? formatFileSize(item.size) : ''
+        return item.isDirectory ? (item.recursiveSize ?? null) : (item.size ?? null)
+    }
+
+    function itemFileCountLabel(item: DeleteSourceItem): string {
+        if (!item.isDirectory) return ''
+        const fileCount = item.recursiveFileCount
+        if (fileCount == null) return ''
+        return `${formatNumber(fileCount)} ${fileCount === 1 ? 'file' : 'files'}`
     }
 </script>
 
@@ -257,7 +253,10 @@
                 <div class="file-list-item" role="listitem">
                     <span class="item-icon" aria-hidden="true">{item.isDirectory ? '\u25B8' : ''}</span>
                     <span class="item-name">{item.name}</span>
-                    <span class="item-size">{formatItemSize(item)}</span>
+                    <span class="item-size">
+                        {#if itemSizeBytes(item) != null}<Size bytes={itemSizeBytes(item)} />{/if}
+                        {#if itemFileCountLabel(item)}{#if itemSizeBytes(item) != null}&nbsp;&nbsp;&nbsp;{/if}{itemFileCountLabel(item)}{/if}
+                    </span>
                 </div>
             {/each}
             {#if overflowCount > 0}
@@ -293,7 +292,7 @@
     <!-- Scan stats (live counting) -->
     <div class="scan-stats">
         <div class="scan-stat">
-            <span class="scan-value">{formatBytes(bytesFound)}</span>
+            <span class="scan-value"><Size bytes={bytesFound} /></span>
         </div>
         <span class="scan-divider">/</span>
         <div class="scan-stat">

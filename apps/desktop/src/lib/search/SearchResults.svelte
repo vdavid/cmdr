@@ -7,8 +7,8 @@
      */
     import { tick } from 'svelte'
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
-    import { formatBytes } from '$lib/tauri-commands'
     import type { SearchResultEntry } from '$lib/tauri-commands'
+    import Size from '$lib/ui/Size.svelte'
 
     interface Props {
         results: SearchResultEntry[]
@@ -63,11 +63,6 @@
         void _iconVersion
         void _iconVersionProp
         return getCachedIcon(iconId)
-    }
-
-    function formatSize(bytes: number | null | undefined): string {
-        if (bytes == null) return ''
-        return formatBytes(bytes)
     }
 
     /** Formats a unix timestamp (seconds) as YYYY-MM-DD. */
@@ -223,7 +218,7 @@
                     {entry.parentPath}
                 </span>
                 <span class="result-size">
-                    {formatSize(entry.size)}
+                    <Size bytes={entry.size} />
                 </span>
                 <span class="result-modified">
                     {formatDate(entry.modifiedAt)}

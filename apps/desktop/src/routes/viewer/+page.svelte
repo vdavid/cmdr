@@ -1,11 +1,4 @@
 <script lang="ts" module>
-    function formatSize(bytes: number): string {
-        if (bytes < 1024) return `${String(bytes)} B`
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-        if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-        return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
-    }
-
     // Must match INDEXING_TIMEOUT_SECS in src-tauri/src/file_viewer/session.rs
     const INDEXING_TIMEOUT_SECS = 5
 </script>
@@ -30,6 +23,7 @@
     import { getAppLogger } from '$lib/logging/logger'
     import { createViewerSearch } from './viewer-search.svelte'
     import { createViewerScroll } from './viewer-scroll.svelte'
+    import Size from '$lib/ui/Size.svelte'
 
     const log = getAppLogger('viewer')
 
@@ -665,7 +659,7 @@
         {#if totalLines !== null}
             <span>{totalLines} {totalLines === 1 ? 'line' : 'lines'}</span>
         {/if}
-        <span>{formatSize(totalBytes)}</span>
+        <span><Size bytes={totalBytes} /></span>
         {#if currentMode === 'fullLoad'}
             <span
                 class="backend-badge"

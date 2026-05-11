@@ -10,6 +10,15 @@
 import type { WriteOperationError, TransferOperationType } from '$lib/file-explorer/types'
 import { formatBytes } from '$lib/tauri-commands'
 import { isMacOS } from '$lib/shortcuts/key-capture'
+import { tierClassForUnit } from '$lib/file-explorer/selection/selection-info-utils'
+import { escapeHtml } from '$lib/tooltip/tooltip'
+
+/** Wraps a formatted size string (e.g. "1.0 GB") in a colored span for HTML embedding. */
+function colorSize(text: string): string {
+  const spaceIndex = text.lastIndexOf(' ')
+  const unit = spaceIndex >= 0 ? text.slice(spaceIndex + 1) : ''
+  return `<span class="${tierClassForUnit(unit)}">${text}</span>`
+}
 
 export interface FriendlyErrorMessage {
   /** Short title for the error */
@@ -141,14 +150,14 @@ export function getUserFriendlyMessage(
     case 'insufficient_space':
       return {
         title: 'Not enough space',
-        message: `The destination needs ${formatBytes(error.required)} but only has ${formatBytes(error.available)} available.`,
+        message: `The destination needs ${colorSize(formatBytes(error.required))} but only has ${colorSize(formatBytes(error.available))} available.`,
         suggestion:
           'Free up some space on the destination by deleting unnecessary files, or choose a different location.',
       }
     case 'read_only_device':
       return {
         title: 'Read-only device',
-        message: `${error.deviceName ?? 'The target device'} is read-only. You can copy files from it, but not to it.`,
+        message: `${escapeHtml(error.deviceName ?? 'The target device')} is read-only. You can copy files from it, but not to it.`,
         suggestion: 'Choose a different destination that supports writing.',
       }
     case 'file_locked':

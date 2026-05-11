@@ -77,6 +77,12 @@ func main() {
 		allFindings = append(allFindings, analyzer.AnalyzeFile(pf)...)
 	}
 
+	// Size tier utility classes (`.size-bytes` .. `.size-tb`) declare only a
+	// `color:` and inherit the background of their container — the rule
+	// walker never pairs them with a bg. Cover every (tier × known bg × mode)
+	// combo explicitly. See `size_tiers.go` for the context list.
+	allFindings = append(allFindings, analyzer.AnalyzeSizeTiers()...)
+
 	violations := FilterViolations(allFindings)
 	warnings := append([]string{}, analyzer.Warnings...)
 	for _, f := range allFindings {

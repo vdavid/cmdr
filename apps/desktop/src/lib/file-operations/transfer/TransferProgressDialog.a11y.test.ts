@@ -44,6 +44,8 @@ vi.mock('$lib/settings', () => ({
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   formatFileSize: vi.fn((n: number) => `${String(n)} B`),
+  getFileSizeFormat: vi.fn(() => 'binary'),
+  getHumanFriendlySizeUnits: vi.fn(() => false),
 }))
 
 vi.mock('$lib/stores/volume-store.svelte', () => ({

@@ -2,7 +2,6 @@
     import { onMount, onDestroy, tick } from 'svelte'
     import {
         getVolumeSpace,
-        formatBytes,
         startScanPreview,
         cancelScanPreview,
         checkScanPreviewStatus,
@@ -29,7 +28,9 @@
     import Button from '$lib/ui/Button.svelte'
     import { generateTitle, toVolumeRelativePath } from './transfer-dialog-utils'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
-    import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
+    import { formatNumber, formatSizeHtmlColored } from '$lib/file-explorer/selection/selection-info-utils'
+    import Size from '$lib/ui/Size.svelte'
+    import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
     import { getAppLogger } from '$lib/logging/logger'
 
     const log = getAppLogger('transferDialog')
@@ -178,10 +179,13 @@
         return getPathValidationError(sourcePaths, editedPath)
     })
 
-    // Format space info for display
-    function formatSpaceInfo(space: VolumeSpaceInfo | null): string {
+    // Format space info for display (returns colored HTML)
+    function formatSpaceInfoHtml(space: VolumeSpaceInfo | null): string {
         if (!space) return ''
-        return `${formatBytes(space.availableBytes)} free of ${formatBytes(space.totalBytes)}`
+        const format = getFileSizeFormat()
+        const free = formatSizeHtmlColored(space.availableBytes, format)
+        const total = formatSizeHtmlColored(space.totalBytes, format)
+        return `${free} free of ${total}`
     }
 
     // Load volume space when volume changes
@@ -442,7 +446,8 @@
             {/each}
         </select>
         {#if volumeSpace}
-            <span class="space-info">{formatSpaceInfo(volumeSpace)}</span>
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Markup built from typed space info + tier classes; no user input. -->
+            <span class="space-info">{@html formatSpaceInfoHtml(volumeSpace)}</span>
         {/if}
     </div>
 
@@ -476,7 +481,7 @@
     <!-- Scan stats (live counting) -->
     <div class="scan-stats">
         <div class="scan-stat">
-            <span class="scan-value">{formatBytes(bytesFound)}</span>
+            <span class="scan-value"><Size bytes={bytesFound} /></span>
         </div>
         <span class="scan-divider">/</span>
         <div class="scan-stat">

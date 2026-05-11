@@ -3,12 +3,13 @@
     import { resolvePathVolume, upgradeToSmbVolume, type UpgradeResult } from '$lib/tauri-commands'
     import { triggerNetworkDiscovery } from '../network/lazy-trigger'
     import { addToast, dismissToast } from '$lib/ui/toast'
-    import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
+    import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShortHtml } from '../disk-space-utils'
     import {
-        formatFileSize,
+        getFileSizeFormat,
         getNetworkEnabled,
         getUseAppIconsForDocuments,
     } from '$lib/settings/reactive-settings.svelte'
+    import { formatSizeHtmlColored } from '../selection/selection-info-utils'
     import { openSettingsWindow } from '$lib/settings/settings-window'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getCachedIcon, iconCacheVersion, prefetchIcons } from '$lib/icon-cache'
@@ -622,7 +623,8 @@
                                         style:background-color="var({getDiskUsageLevel(getUsedPercent(space)).cssVar})"
                                     ></div>
                                 </div>
-                                <span class="volume-space-text">{formatDiskSpaceShort(space, formatFileSize)}</span>
+                                <!-- eslint-disable-next-line svelte/no-at-html-tags -- Markup built from typed disk space + tier classes; no user input. -->
+                                <span class="volume-space-text">{@html formatDiskSpaceShortHtml(space, (b) => formatSizeHtmlColored(b, getFileSizeFormat()))}</span>
                             </div>
                         {/if}
                     {:else if spaceRetryingSet.has(volume.id)}

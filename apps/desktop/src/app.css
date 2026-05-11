@@ -126,12 +126,18 @@
      * Three palettes selectable via the `appearance.sizeColors` setting,
      * applied as a `data-size-colors` attribute on `<html>` by the settings
      * applier. The default block here is the Rainbow palette so first paint
-     * matches the default setting value. */
-  --color-size-bytes: color-mix(in srgb, var(--color-text-secondary) 70%, #44bb44);
-  --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 70%, #f0c000);
-  --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff8c00);
-  --color-size-gb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff4444);
-  --color-size-tb: color-mix(in srgb, var(--color-text-secondary) 70%, #aa44ff);
+     * matches the default setting value.
+     *
+     * Light mode uses saturated dark hues (no gray mix) so tiers stay visually
+     * distinct against white surfaces. Every value clears WCAG AA against the
+     * lightest background we render sizes on (`--color-bg-tertiary`). Dark
+     * mode keeps the legacy bright-hue formula — see the `@media
+     * (prefers-color-scheme: dark)` override below. */
+  --color-size-bytes: #097309;
+  --color-size-kb: #806300;
+  --color-size-mb: #9a4800;
+  --color-size-gb: #c01e1e;
+  --color-size-tb: #7a30b0;
 
   /* === Size tier colors — selected state (gold depth progression) === */
   --color-size-bytes-selected: color-mix(in srgb, var(--color-text-secondary) 40%, var(--color-selection-fg));
@@ -313,6 +319,17 @@
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
     --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+
+    /* === Size tier colors — dark mode rainbow ===
+       Brighter hues than light mode so the 70% mix with the lighter
+       `--color-text-secondary` clears WCAG AA against every dark surface
+       (incl. the brownish composited `--color-warning-bg`, which is why tb
+       uses a brighter violet than the legacy `#aa44ff`). */
+    --color-size-bytes: color-mix(in srgb, var(--color-text-secondary) 70%, #44bb44);
+    --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 70%, #f0c000);
+    --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff8c00);
+    --color-size-gb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff4444);
+    --color-size-tb: color-mix(in srgb, var(--color-text-secondary) 70%, #c060ff);
   }
 }
 

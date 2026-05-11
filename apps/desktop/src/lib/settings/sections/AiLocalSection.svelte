@@ -22,6 +22,14 @@
     } from '$lib/tauri-commands'
     import { computeGaugeSegments } from './ram-gauge-utils'
     import { getAppLogger } from '$lib/logging/logger'
+    import { tierClassForUnit } from '$lib/file-explorer/selection/selection-info-utils'
+
+    /** Wraps a formatted size string (e.g. "1.0 GB") in a colored span for HTML embedding. */
+    function colorSize(text: string): string {
+        const spaceIndex = text.lastIndexOf(' ')
+        const unit = spaceIndex >= 0 ? text.slice(spaceIndex + 1) : ''
+        return `<span class="${tierClassForUnit(unit)}">${text}</span>`
+    }
 
     interface Props {
         searchQuery: string
@@ -291,9 +299,9 @@
     const downloadProgressText = $derived.by(() => {
         if (!downloadProgress) return ''
         if (downloadProgress.totalBytes === 0) return 'Starting download...'
-        const downloaded = formatBytes(downloadProgress.bytesDownloaded)
-        const total = formatBytes(downloadProgress.totalBytes)
-        const speed = formatBytes(downloadProgress.speed)
+        const downloaded = colorSize(formatBytes(downloadProgress.bytesDownloaded))
+        const total = colorSize(formatBytes(downloadProgress.totalBytes))
+        const speed = colorSize(formatBytes(downloadProgress.speed))
         const eta = formatEta(downloadProgress.etaSeconds)
         const parts = [`${String(downloadPercent)}%`, `${downloaded} / ${total}`, `${speed}/s`]
         if (eta) parts.push(eta)
@@ -345,7 +353,8 @@
             <div class="progress-bar-container">
                 <div class="progress-bar-fill" style="width: {String(downloadPercent)}%"></div>
             </div>
-            <span class="progress-text">{downloadProgressText}</span>
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -- Markup built from formatBytes + tier classes; no user input. -->
+            <span class="progress-text">{@html downloadProgressText}</span>
         {/if}
     {:else if modelInstalled}
         <div class="status-row">

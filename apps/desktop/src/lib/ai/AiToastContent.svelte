@@ -39,7 +39,8 @@
                     )}%"
                 ></div>
             </div>
-            <span class="ai-progress-text">{aiState.progressText}</span>
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -- progressText is built from typed numbers via formatBytes + tier classes; no user input. -->
+            <span class="ai-progress-text">{@html aiState.progressText}</span>
         {:else}
             <span class="ai-progress-text">Starting download...</span>
         {/if}

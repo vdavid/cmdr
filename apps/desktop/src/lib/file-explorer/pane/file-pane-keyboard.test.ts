@@ -107,6 +107,8 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   formatDateTime: vi.fn().mockReturnValue('2025-01-01 00:00'),
   formatDateTimeParts: vi.fn().mockReturnValue({ left: '2025-01-01', right: '00:00' }),
   formatFileSize: vi.fn().mockReturnValue('1.0 KB'),
+  getFileSizeFormat: vi.fn().mockReturnValue('binary'),
+  getHumanFriendlySizeUnits: vi.fn().mockReturnValue(false),
   getUseAppIconsForDocuments: vi.fn().mockReturnValue(true),
   getSizeDisplayMode: vi.fn().mockReturnValue('smart'),
   getNetworkEnabled: vi.fn().mockReturnValue(true),

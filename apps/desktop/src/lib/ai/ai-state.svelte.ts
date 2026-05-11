@@ -14,6 +14,14 @@ import {
 } from '$lib/tauri-commands'
 import { getSetting, setSetting } from '$lib/settings'
 import { loadSettings } from '$lib/settings-store'
+import { tierClassForUnit } from '$lib/file-explorer/selection/selection-info-utils'
+
+/** Wraps a formatted size string (e.g. "1.0 GB") in a colored span for HTML embedding. */
+function colorSize(text: string): string {
+  const spaceIndex = text.lastIndexOf(' ')
+  const unit = spaceIndex >= 0 ? text.slice(spaceIndex + 1) : ''
+  return `<span class="${tierClassForUnit(unit)}">${text}</span>`
+}
 
 type AiNotificationState = 'hidden' | 'offer' | 'downloading' | 'installing' | 'ready' | 'starting'
 
@@ -206,9 +214,9 @@ export function notifyAiOnboardingComplete(): void {
 function formatProgressText(progress: AiDownloadProgress): string {
   if (progress.totalBytes === 0) return 'Starting download...'
   const percent = Math.round((progress.bytesDownloaded / progress.totalBytes) * 100)
-  const downloaded = formatBytes(progress.bytesDownloaded)
-  const total = formatBytes(progress.totalBytes)
-  const speed = formatBytes(progress.speed)
+  const downloaded = colorSize(formatBytes(progress.bytesDownloaded))
+  const total = colorSize(formatBytes(progress.totalBytes))
+  const speed = colorSize(formatBytes(progress.speed))
   const eta = progress.etaSeconds > 0 ? formatDuration(progress.etaSeconds) : ''
   const etaPart = eta ? ` — ${eta} remaining` : ''
   return `${String(percent)}% — ${downloaded} / ${total} — ${speed}/s${etaPart}`

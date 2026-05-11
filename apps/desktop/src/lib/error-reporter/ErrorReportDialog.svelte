@@ -9,6 +9,7 @@
      */
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Size from '$lib/ui/Size.svelte'
     import { addToast } from '$lib/ui/toast'
     import {
         prepareErrorReportPreview,
@@ -141,11 +142,6 @@
         }
     }
 
-    function formatBytes(bytes: number): string {
-        if (bytes < 1024) return `${String(bytes)} B`
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-        return `${(bytes / 1024 / 1024).toFixed(2)} MB`
-    }
 </script>
 
 <ModalDialog
@@ -206,7 +202,7 @@
             <span class="toggle-arrow" class:expanded={detailsExpanded}>&#x25B8;</span>
             What's about to be sent
             {#if preview}
-                <span class="size-hint">({formatBytes(preview.sizeBytes)})</span>
+                <span class="size-hint">(<Size bytes={preview.sizeBytes} />)</span>
             {/if}
         </button>
 
