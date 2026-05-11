@@ -5,8 +5,7 @@
 
 import type { FileEntry } from '../types'
 import type { FileSizeFormat } from '$lib/settings/types'
-import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
-import { tierClassForAge } from './age-tier-utils'
+import { formatFileSizeWithFormat, type DateSegment, type FormattedDate } from '$lib/settings/format-utils'
 
 // Size tier colors for digit triads (indexed: 0=bytes, 1=kB, 2=MB, 3=GB, 4=TB+)
 export const sizeTierClasses = ['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb']
@@ -110,18 +109,41 @@ export function formatDate(timestamp: number | null | undefined): string {
   return `${String(year)}-${month}-${day} ${hours}:${mins}:${secs}`
 }
 
+/** Escape `&`, `<`, `>` so segment text is safe inside the `{ html }` tooltip. */
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+/** Render an ordered segment list to HTML, wrapping colored segments in their age-tier span. */
+function renderSegments(segments: DateSegment[]): string {
+  let out = ''
+  for (const seg of segments) {
+    const text = escapeHtml(seg.text)
+    out += seg.ageClass ? `<span class="${seg.ageClass}">${text}</span>` : text
+  }
+  return out
+}
+
 /**
- * Builds date tooltip content as HTML. Each timestamp is wrapped in its
- * age-tier span so the date portion picks up the active `data-date-colors`
- * palette. Returns `{ html }` for the tooltip action; an empty `html` means
- * no timestamps were available.
+ * Builds date tooltip content as HTML, with each colored segment wrapped in
+ * its age-tier span so the active `data-date-colors` palette colors year,
+ * month, day, and time independently. Takes a `formatter` callback so the
+ * util stays pure — the caller passes `formattedDate` from
+ * `reactive-settings.svelte.ts` to inherit the user's date format setting, or
+ * a stub from tests.
+ *
+ * Returns `{ html }` for the `tooltip` action. An empty `html` means no
+ * timestamps were available on the entry.
  */
-export function buildDateTooltip(e: FileEntry, nowMs: number = Date.now()): { html: string } {
+export function buildDateTooltip(
+  e: FileEntry,
+  formatter: (ts: number | null | undefined) => FormattedDate,
+): { html: string } {
   const lines: string[] = []
   const line = (label: string, ts: number) => {
-    const tier = tierClassForAge(ts, nowMs)
-    const span = tier ? `<span class="${tier}">${formatDate(ts)}</span>` : formatDate(ts)
-    lines.push(`${label}: ${span}`)
+    const d = formatter(ts)
+    const right = d.parts.right === null ? '' : ` ${renderSegments(d.parts.right)}`
+    lines.push(`${label}: ${renderSegments(d.parts.left)}${right}`)
   }
   // `!= null` because IPC payloads serialize `Option::None` as JSON `null`.
   if (e.createdAt != null) line('Created', e.createdAt)

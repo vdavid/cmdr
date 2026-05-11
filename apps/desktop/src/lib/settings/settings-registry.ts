@@ -120,7 +120,7 @@ export const settingsRegistry: SettingDefinition[] = [
       'Color modified dates in the file list by age. App fades older dates toward the default text color. Wilting goes green for fresh files, yellow for aging, and brown for old.',
     keywords: ['date', 'color', 'age', 'modified', 'wilting', 'app', 'fresh', 'old'],
     type: 'enum',
-    default: 'wilting',
+    default: 'app',
     component: 'toggle-group',
     constraints: {
       options: [

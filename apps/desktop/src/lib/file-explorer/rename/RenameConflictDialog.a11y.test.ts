@@ -19,6 +19,27 @@ vi.mock('$lib/tauri-commands', () => ({
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   formatDateTime: vi.fn((d: number | undefined) => (d ? '2025-03-14 10:30' : '')),
   formatFileSize: vi.fn((n: number) => `${String(n)} B`),
+  formattedDate: vi.fn((d: number | undefined) =>
+    d
+      ? {
+          text: '2025-03-14 10:30',
+          parts: {
+            left: [
+              { text: '2025', ageClass: 'age-fresh' as const },
+              { text: '-', ageClass: null },
+              { text: '03', ageClass: null },
+              { text: '-', ageClass: null },
+              { text: '14', ageClass: null },
+            ],
+            right: [
+              { text: '10', ageClass: null },
+              { text: ':', ageClass: null },
+              { text: '30', ageClass: null },
+            ],
+          },
+        }
+      : { text: '', parts: { left: [], right: null } },
+  ),
 }))
 
 describe('RenameConflictDialog a11y', () => {

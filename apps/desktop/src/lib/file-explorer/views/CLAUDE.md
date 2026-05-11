@@ -99,10 +99,13 @@ with no "visible set" to measure from.
 
 **Decision**: Date column may split into two aligned sub-columns via a `|` in the format string **Why**: Time digits
 across rows zigzag horizontally when date widths vary (e.g., locale formats, custom strings). The split makes the right
-halves line up. The contract: `formatDateTimePartsWithFormat` (in `lib/settings/format-utils.ts`) returns
-`{ left, right | null }`; `computeFullListColumnWidths` measures the two halves separately and exposes a `dateLeft`
-width; `FullList` renders `.date-left` (inline-block, fixed width, right-aligned) followed by `.date-right`
-(`margin-left: var(--spacing-xs)`). Tooltips/MCP/status bar still see joined strings via `formatDateTimeWithFormat`.
+halves line up. The contract: `formatDateForDisplay` (in `lib/settings/format-utils.ts`) returns a `FormattedDate` whose
+`parts: { left: DateSegment[], right: DateSegment[] | null }` carries both halves as ordered segment lists;
+`computeFullListColumnWidths` measures each half separately (via `joinSegments`) and exposes a `dateLeft` width;
+`FullList` walks each half's segments — wrapping any with a non-null `ageClass` in an age-tier span and emitting the
+rest as plain text — into `.date-left` (inline-block, fixed width, right-aligned) followed by `.date-right`
+(`margin-left: var(--spacing-xs)`). Tooltips/MCP/status bar still see joined strings via `FormattedDate.text` (exposed
+as the `formatDateTime` shortcut).
 
 **Decision**: Column-width measurers (canvas in `full-list-utils.ts`, pretext in `measure-column-widths.ts` and
 `measure-brief-column-widths.ts`) cache their measurer/context per text scale and rebuild on the **debounced** "settled"

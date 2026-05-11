@@ -9,7 +9,7 @@
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
     import type { SearchResultEntry } from '$lib/tauri-commands'
     import Size from '$lib/ui/Size.svelte'
-    import { tierClassForAge } from '$lib/file-explorer/selection/age-tier-utils'
+    import DateLabel from '$lib/ui/DateLabel.svelte'
 
     interface Props {
         results: SearchResultEntry[]
@@ -66,16 +66,6 @@
         return getCachedIcon(iconId)
     }
 
-    /** Formats a unix timestamp (seconds) as YYYY-MM-DD. */
-    function formatDate(timestamp: number | null | undefined): string {
-        if (timestamp == null) return ''
-
-        const d = new Date(timestamp * 1000)
-        const year = d.getFullYear()
-        const month = String(d.getMonth() + 1).padStart(2, '0')
-        const day = String(d.getDate()).padStart(2, '0')
-        return `${String(year)}-${month}-${day}`
-    }
 
     function formatEntryCount(count: number): string {
         if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
@@ -221,9 +211,7 @@
                 <span class="result-size">
                     <Size bytes={entry.size} />
                 </span>
-                <span class="result-modified {tierClassForAge(entry.modifiedAt) ?? ''}">
-                    {formatDate(entry.modifiedAt)}
-                </span>
+                <span class="result-modified"><DateLabel modifiedAt={entry.modifiedAt} /></span>
             </div>
         {/each}
     {/if}
@@ -387,24 +375,6 @@
         color: var(--color-text-tertiary);
         white-space: nowrap;
         text-align: right;
-    }
-
-    /* Age tier overrides: same reason as `FullList`'s `.col-date.age-*` rules
-       — scoped specificity beats the global utilities, so we re-apply. */
-    .result-modified.age-fresh {
-        color: var(--color-age-fresh);
-    }
-    .result-modified.age-recent {
-        color: var(--color-age-recent);
-    }
-    .result-modified.age-aging {
-        color: var(--color-age-aging);
-    }
-    .result-modified.age-old {
-        color: var(--color-age-old);
-    }
-    .result-modified.age-ancient {
-        color: var(--color-age-ancient);
     }
 
     /* Status bar */

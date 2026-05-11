@@ -12,7 +12,7 @@ import * as pretext from '@chenglou/pretext'
 import { formatSizeForDisplay } from '../selection/selection-info-utils'
 import type { FileEntry, SortColumn } from '../types'
 import type { FileSizeFormat } from '$lib/settings/types'
-import type { DateTimeParts } from '$lib/settings/format-utils'
+import { joinSegments, type FormattedDate } from '$lib/settings/format-utils'
 import { createPretextMeasure } from '$lib/utils/shorten-middle'
 import { getEffectiveScale, onDebouncedScaleChange } from '$lib/text-size.svelte'
 
@@ -209,17 +209,14 @@ interface DateMaxima {
   splitRight: number
 }
 
-function foldDate(
-  current: DateMaxima,
-  parts: { left: string; right: string | null },
-  measure: (text: string) => number,
-): DateMaxima {
-  if (parts.right === null) {
-    const w = measure(parts.left)
+function foldDate(current: DateMaxima, formatted: FormattedDate, measure: (text: string) => number): DateMaxima {
+  const { left, right } = formatted.parts
+  if (right === null) {
+    const w = measure(joinSegments(left))
     return w > current.total ? { ...current, total: w } : current
   }
-  const lw = measure(parts.left)
-  const rw = measure(parts.right)
+  const lw = measure(joinSegments(left))
+  const rw = measure(joinSegments(right))
   return {
     total: current.total,
     splitLeft: lw > current.splitLeft ? lw : current.splitLeft,
@@ -247,7 +244,7 @@ function sizeIconSuffixForEntry(entry: FileEntry, indexing: boolean, showSizeMis
 export function computeFullListColumnWidths(args: {
   entries: FileEntry[]
   parentDirStats?: DirStats | null
-  formatDateTimeParts: (timestamp: number) => DateTimeParts
+  formattedDate: (timestamp: number) => FormattedDate
   sizeDisplayMode: 'smart' | 'logical' | 'physical'
   indexing: boolean
   showSizeMismatchWarning: boolean
@@ -260,7 +257,7 @@ export function computeFullListColumnWidths(args: {
   const {
     entries,
     parentDirStats,
-    formatDateTimeParts,
+    formattedDate,
     sizeDisplayMode,
     indexing,
     showSizeMismatchWarning,
@@ -316,11 +313,11 @@ export function computeFullListColumnWidths(args: {
     if (iconSuffix > sizeIconSuffixMax) sizeIconSuffixMax = iconSuffix
 
     // `!= null` (not `!== undefined`): IPC payloads serialize `Option::None` as
-    // explicit `null`, and `formatDateTimeParts(null)` throws inside this `$effect`,
-    // which corrupts Svelte's reactive graph for sibling effects on the same
-    // component (this was the F8-after-volume-switch killer).
+    // explicit `null`, and `formattedDate(null)` returns an empty record but the
+    // upstream call sites used to throw on this case; keep the guard to match
+    // the historical safety net (this was the F8-after-volume-switch killer).
     if (entry.modifiedAt != null) {
-      date = foldDate(date, formatDateTimeParts(entry.modifiedAt), measure)
+      date = foldDate(date, formattedDate(entry.modifiedAt), measure)
     }
   }
   dateMax = date.total

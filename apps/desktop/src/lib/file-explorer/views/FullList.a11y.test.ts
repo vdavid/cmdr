@@ -39,8 +39,26 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getIsCompactDensity: () => false,
   getUseAppIconsForDocuments: () => true,
   formatDateTime: (t: number | undefined) => (t ? '2025-03-14 10:30' : ''),
-  formatDateTimeParts: (t: number | undefined) =>
-    t ? { left: '2025-03-14', right: '10:30' } : { left: '', right: null },
+  formattedDate: (t: number | undefined) =>
+    t
+      ? {
+          text: '2025-03-14 10:30',
+          parts: {
+            left: [
+              { text: '2025', ageClass: 'age-fresh' as const },
+              { text: '-', ageClass: null },
+              { text: '03', ageClass: null },
+              { text: '-', ageClass: null },
+              { text: '14', ageClass: null },
+            ],
+            right: [
+              { text: '10', ageClass: null },
+              { text: ':', ageClass: null },
+              { text: '30', ageClass: null },
+            ],
+          },
+        }
+      : { text: '', parts: { left: [], right: null } },
   formatFileSize: (n: number) => `${String(n)} B`,
   getSizeDisplayMode: () => 'smart',
   getSizeMismatchWarning: () => false,

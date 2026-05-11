@@ -105,7 +105,23 @@ vi.mock('$lib/icon-cache', async () => {
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getRowHeight: vi.fn().mockReturnValue(24),
   formatDateTime: vi.fn().mockReturnValue('2025-01-01 00:00'),
-  formatDateTimeParts: vi.fn().mockReturnValue({ left: '2025-01-01', right: '00:00' }),
+  formattedDate: vi.fn().mockReturnValue({
+    text: '2025-01-01 00:00',
+    parts: {
+      left: [
+        { text: '2025', ageClass: 'age-fresh' as const },
+        { text: '-', ageClass: null },
+        { text: '01', ageClass: null },
+        { text: '-', ageClass: null },
+        { text: '01', ageClass: null },
+      ],
+      right: [
+        { text: '00', ageClass: null },
+        { text: ':', ageClass: null },
+        { text: '00', ageClass: null },
+      ],
+    },
+  }),
   formatFileSize: vi.fn().mockReturnValue('1.0 KB'),
   getFileSizeFormat: vi.fn().mockReturnValue('binary'),
   getHumanFriendlySizeUnits: vi.fn().mockReturnValue(false),

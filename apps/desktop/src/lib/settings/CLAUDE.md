@@ -46,13 +46,42 @@ typography; `applyDensity()` in `settings-applier.ts` multiplies row-height/icon
 `--font-scale` so layout grows with text. After each scale change, `text-size.ts` re-triggers
 `ensureFontMetricsLoaded()` on a 1 s debounce so Rust gets fresh Brief-mode width data for the new font ID.
 
+### Date display (one source of truth)
+
+Every site that shows a modified date in the UI flows through one entry point:
+
+- **`formatDateForDisplay(ts, format, customFormat, nowMs?)`** in `format-utils.ts` — pure. Returns a `FormattedDate`
+  with the joined `text` and structured `parts` (an ordered list of `DateSegment`s per half). Each segment carries a
+  `text` and an optional `ageClass` covering one of four per-component tiers (year, month, day, time). Handles all four
+  format modes — token-based (`iso`, `short`, `custom`, default) via `applyTokens`, and `system` via
+  `Intl.DateTimeFormat#formatToParts` (component type comes from `part.type`, not from string-parsing locale output).
+- Per-component coloring rules live in `age-tier-utils.ts`: `tierForYear` colors every year (current → `age-fresh`, last
+  → `age-recent`, two back → `age-aging`, three or more back → `age-old`). `tierForMonth` only colors when the year
+  matches now (same scale). `tierForDay` only colors when the year and month both match (today / yesterday / two days /
+  three+ days). `tierForTime` only colors when the file's date equals today, distance in full hours. Future timestamps
+  in any component clamp to the freshest tier. Segments outside their coloring window carry `ageClass: null`, and the
+  renderer leaves them in default text color.
+- **`formattedDate(ts)`** in `reactive-settings.svelte.ts` — reactive wrapper that reads the current setting values.
+  This is the canonical entry point for the rest of the app.
+- **`<DateLabel modifiedAt={ts} />`** in `$lib/ui/DateLabel.svelte` — the render-side equivalent. Use it anywhere a
+  modified date appears in the UI and you don't have special layout needs (status bar, dialogs, search results, etc.).
+  It walks `parts.left` / `parts.right` and wraps each segment with a non-null `ageClass` in `<span class={ageClass}>`.
+- `FullList.svelte` is the one consumer that opts out of `<DateLabel>` because its column-alignment story needs the two
+  halves rendered into specific elements (`.date-left` / `.date-right`). It uses the same `formattedDate(...)` data; do
+  the same if you add another consumer with bespoke layout.
+- `buildDateTooltip` in `selection-info-utils.ts` mirrors the renderer for HTML tooltips: it walks segments and wraps
+  the colored ones into `<span class="age-…">` directly.
+- The plain-string shortcut `formatDateTime(ts)` is `formattedDate(ts).text`. Use it for tooltips, MCP responses,
+  clipboard copies — anywhere you need a one-line label.
+
 ### Color palettes (size + date)
 
-`appearance.sizeColors` (default `rainbow`) and `appearance.dateColors` (default `wilting`) each pick a five-tier color
-palette applied via `data-size-colors` / `data-date-colors` attributes on `<html>`. Settings applier wires both. CSS
-tokens (`--color-size-*`, `--color-age-*`) live in `app.css`. Date thresholds (1 month / 1 year / 2 years / 3 years)
-live in `lib/file-explorer/selection/age-tier-utils.ts`. The setting value `app` (renamed from the older `accent`)
-refers to the user-facing "app color" — internally the underlying CSS token is still `--color-accent`.
+`appearance.sizeColors` (default `rainbow`) and `appearance.dateColors` (default `wilting`) each pick a color palette
+applied via `data-size-colors` / `data-date-colors` attributes on `<html>`. Settings applier wires both. CSS tokens
+(`--color-size-*`, `--color-age-*`) live in `app.css`. Date coloring uses four tiers (`age-fresh`, `age-recent`,
+`age-aging`, `age-old`) applied per-component (year, month, day, time) by the helpers in
+`lib/settings/age-tier-utils.ts`. The setting value `app` (renamed from the older `accent`) refers to the user-facing
+"app color" — internally the underlying CSS token is still `--color-accent`.
 
 ### Reactive state (`reactive-settings.svelte.ts`)
 

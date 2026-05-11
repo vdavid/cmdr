@@ -18,6 +18,26 @@ vi.mock('$lib/indexing/index-state.svelte', () => ({
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   formatFileSize: (n: number) => `${String(n)} B`,
   formatDateTime: (t: number | undefined) => (t ? '2025-03-14 10:30' : ''),
+  formattedDate: (t: number | undefined) =>
+    t
+      ? {
+          text: '2025-03-14 10:30',
+          parts: {
+            left: [
+              { text: '2025', ageClass: 'age-fresh' as const },
+              { text: '-', ageClass: null },
+              { text: '03', ageClass: null },
+              { text: '-', ageClass: null },
+              { text: '14', ageClass: null },
+            ],
+            right: [
+              { text: '10', ageClass: null },
+              { text: ':', ageClass: null },
+              { text: '30', ageClass: null },
+            ],
+          },
+        }
+      : { text: '', parts: { left: [], right: null } },
   getSizeDisplayMode: () => 'smart',
   getHumanFriendlySizeUnits: () => false,
   getFileSizeFormat: () => 'binary',

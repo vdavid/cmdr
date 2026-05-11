@@ -5,16 +5,20 @@ lives in `FilePane.svelte` as a `Set<number>`.
 
 ## Key files
 
-| File                           | Purpose                                                                                  |
-| ------------------------------ | ---------------------------------------------------------------------------------------- |
-| `selection-info-utils.ts`      | Pure utilities — no DOM deps, fully tested                                               |
-| `age-tier-utils.ts`            | Maps a file's `modifiedAt` to one of five age tier classes (`age-fresh` → `age-ancient`) |
-| `SelectionInfo.svelte`         | Status bar below each pane                                                               |
-| `FileIcon.svelte`              | 16x16 icon with emoji fallback and overlay badges                                        |
-| `SortableHeader.svelte`        | Clickable column header with sort direction triangle                                     |
-| `selection-info-utils.test.ts` | Unit tests for all util functions                                                        |
-| `age-tier-utils.test.ts`       | Unit tests for the age-tier function (boundaries, clamp, null)                           |
-| `components.test.ts`           | Component render tests                                                                   |
+| File                           | Purpose                                              |
+| ------------------------------ | ---------------------------------------------------- |
+| `selection-info-utils.ts`      | Pure utilities — no DOM deps, fully tested           |
+| `SelectionInfo.svelte`         | Status bar below each pane                           |
+| `FileIcon.svelte`              | 16x16 icon with emoji fallback and overlay badges    |
+| `SortableHeader.svelte`        | Clickable column header with sort direction triangle |
+| `selection-info-utils.test.ts` | Unit tests for all util functions                    |
+| `components.test.ts`           | Component render tests                               |
+
+Per-component age-tier mapping (`tierForYear` / `tierForMonth` / `tierForDay` / `tierForTime`) and the
+`appearance.dateColors` palette live in [`$lib/settings/age-tier-utils.ts`](../../settings/age-tier-utils.ts) — they
+belong with the setting, not the selection components. The renderer side is in
+[`$lib/ui/DateLabel.svelte`](../../ui/DateLabel.svelte). See `$lib/settings/CLAUDE.md` § "Date display" for the full
+pipeline.
 
 ## `selection-info-utils.ts`
 
@@ -40,12 +44,6 @@ Exported functions:
 
 `sizeTierClasses` export: `['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb']`. CSS rules for these classes must
 exist in the consuming view, not here.
-
-`age-tier-utils.ts` exposes `tierClassForAge(modifiedAtSeconds, nowMs?)` returning one of `age-fresh`, `age-recent`,
-`age-aging`, `age-old`, `age-ancient` (or `null` when the timestamp is missing). Thresholds: 1 month / 1 year / 2 years
-/ 3 years. Tokens (`--color-age-*`) and global `.age-*` classes live in `app.css`; scoped views (FullList,
-SelectionInfo, RenameConflictDialog, SearchResults) re-apply the same colors at scoped specificity since Svelte's
-scope-class boost would otherwise let the local date-cell rule win over the global utility.
 
 ## `SelectionInfo.svelte`
 
@@ -135,10 +133,10 @@ The utility file is pure TypeScript with no DOM or style dependencies. The CSS c
 for numeric grouping and look jarring in a compact status bar. Thin space matches typographic convention for digit
 grouping and renders consistently across platforms.
 
-**Gotcha**: `buildDateTooltip` returns `{ html }`, not a plain string **Why**: Each timestamp is wrapped in an age-tier
-`<span>` so the modified-date tooltip picks up the active date palette. The `tooltip` action accepts either `text` or
-`html`; this one passes `html`. Caller-side change: previous plain-text usage broke when we switched the return type —
-the function is consumed only by `SelectionInfo.svelte` and the unit tests today.
+**Gotcha**: `buildDateTooltip(entry, formatter)` returns `{ html }` and takes a `formatter` callback **Why**: Each
+timestamp is rendered via `formatter` (the caller passes `formattedDate` from `reactive-settings.svelte.ts`), then the
+year portion of each line is wrapped in an age-tier `<span>` so the tooltip picks up the active date palette. The
+formatter callback keeps the util pure (no reactive imports here); the `tooltip` action accepts `{ html }` directly.
 
 ## Dependencies
 

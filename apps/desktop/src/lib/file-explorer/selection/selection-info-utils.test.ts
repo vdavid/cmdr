@@ -17,6 +17,7 @@ import {
   formatNumber,
   calculatePercentage,
 } from './selection-info-utils'
+import { formatDateForDisplay } from '$lib/settings/format-utils'
 import type { FileEntry } from '../types'
 
 // Helper to create a basic file entry
@@ -145,50 +146,40 @@ describe('formatDate', () => {
 })
 
 describe('buildDateTooltip', () => {
+  // Stub formatter for tests: ISO with a year prefix so the year span is detectable,
+  // a deterministic "now" so age tiers are predictable.
+  const NOW_MS = Date.parse('2026-05-11T12:00:00Z')
+  const fmt = (ts: number | null | undefined) => formatDateForDisplay(ts, 'iso', 'YYYY-MM-DD | HH:mm', NOW_MS)
+
   it('returns empty html when no dates are set', () => {
     const entry = createFileEntry()
-    expect(buildDateTooltip(entry).html).toBe('')
+    expect(buildDateTooltip(entry, fmt).html).toBe('')
   })
 
-  it('includes created date', () => {
-    const entry = createFileEntry({ createdAt: 1705322445 })
-    expect(buildDateTooltip(entry).html).toContain('Created:')
-  })
-
-  it('includes opened date', () => {
-    const entry = createFileEntry({ openedAt: 1705322445 })
-    expect(buildDateTooltip(entry).html).toContain('Last opened:')
-  })
-
-  it('includes added date', () => {
-    const entry = createFileEntry({ addedAt: 1705322445 })
-    expect(buildDateTooltip(entry).html).toContain('Last moved ("added"):')
-  })
-
-  it('includes modified date', () => {
-    const entry = createFileEntry({ modifiedAt: 1705322445 })
-    expect(buildDateTooltip(entry).html).toContain('Last modified:')
-  })
-
-  it('separates multiple dates with <br>', () => {
+  it('includes labeled lines for each known date', () => {
     const entry = createFileEntry({
       createdAt: 1705322445,
-      modifiedAt: 1705408845,
+      openedAt: 1705322445,
+      addedAt: 1705322445,
+      modifiedAt: 1705322445,
     })
-    const result = buildDateTooltip(entry).html
-    expect(result).toContain('Created:')
-    expect(result).toContain('Last modified:')
-    expect(result).toContain('<br>')
+    const html = buildDateTooltip(entry, fmt).html
+    expect(html).toContain('Created:')
+    expect(html).toContain('Last opened:')
+    expect(html).toContain('Last moved ("added"):')
+    expect(html).toContain('Last modified:')
+    expect(html).toContain('<br>')
   })
 
-  it('wraps each date in its age-tier span', () => {
-    const nowMs = Date.parse('2026-05-11T12:00:00Z')
-    const fresh = nowMs / 1000 - 7 * 24 * 60 * 60 // 1 week ago
-    const ancient = nowMs / 1000 - 5 * 365 * 24 * 60 * 60 // 5 years ago
-    const entry = createFileEntry({ createdAt: ancient, modifiedAt: fresh })
-    const result = buildDateTooltip(entry, nowMs).html
-    expect(result).toContain('class="age-ancient"')
-    expect(result).toContain('class="age-fresh"')
+  it('wraps colored segments in their age-tier spans', () => {
+    // Today (same year/month/day as NOW_MS) — year/month/day all fresh.
+    const sameDay = Date.parse('2026-05-11T08:00:00Z') / 1000
+    // Five years ago — year tier is age-old, no month/day/time coloring.
+    const old = Date.parse('2021-05-11T08:00:00Z') / 1000
+    const entry = createFileEntry({ createdAt: old, modifiedAt: sameDay })
+    const html = buildDateTooltip(entry, fmt).html
+    expect(html).toContain('class="age-old"')
+    expect(html).toContain('class="age-fresh"')
   })
 })
 

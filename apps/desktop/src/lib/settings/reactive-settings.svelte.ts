@@ -15,12 +15,7 @@ import {
   type AppColor,
   densityMappings,
 } from '$lib/settings'
-import {
-  formatDateTimeWithFormat,
-  formatDateTimePartsWithFormat,
-  formatFileSizeWithFormat,
-  type DateTimeParts,
-} from './format-utils'
+import { formatDateForDisplay, formatFileSizeWithFormat, type FormattedDate } from './format-utils'
 import { getAppLogger } from '$lib/logging/logger'
 import { clearExtensionIconCache } from '$lib/icon-cache'
 import { getEffectiveScale } from '$lib/text-size.svelte'
@@ -216,21 +211,28 @@ export function getNetworkEnabled(): boolean {
 // ============================================================================
 
 /**
- * Format a timestamp according to current settings.
+ * The single reactive entry point for everything the UI shows about a date.
+ * Returns the joined `text`, structured `parts` (with the year extracted for
+ * coloring), and the `ageClass`. New date-touching components should call
+ * this rather than reaching for `Date#toLocaleString` or building their own
+ * formatters — keep date display consistent across the app.
+ *
+ * For the plain string form, use the `formatDateTime` shortcut below.
+ *
  * @param timestamp Unix timestamp in seconds
  */
-export function formatDateTime(timestamp: number | null | undefined): string {
-  return formatDateTimeWithFormat(timestamp, dateTimeFormat, customDateTimeFormat)
+export function formattedDate(timestamp: number | null | undefined): FormattedDate {
+  return formatDateForDisplay(timestamp, dateTimeFormat, customDateTimeFormat)
 }
 
 /**
- * Format a timestamp into its two halves (left + optional right) according to
- * current settings. The file list uses this so the right halves (typically
- * the time digits) can line up across rows even when the date width varies.
- * @param timestamp Unix timestamp in seconds
+ * Shortcut for `formattedDate(ts).text` — the joined plain string. Use for
+ * tooltips, MCP responses, clipboard copies, and anywhere a one-line label is
+ * wanted. UI rendering should prefer the `<DateLabel>` component or destructure
+ * `formattedDate(ts).parts` directly.
  */
-export function formatDateTimeParts(timestamp: number | null | undefined): DateTimeParts {
-  return formatDateTimePartsWithFormat(timestamp, dateTimeFormat, customDateTimeFormat)
+export function formatDateTime(timestamp: number | null | undefined): string {
+  return formattedDate(timestamp).text
 }
 
 /**

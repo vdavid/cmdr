@@ -24,7 +24,6 @@
     } from './file-list-utils'
     import { getDirStatsBatch } from '$lib/tauri-commands'
     import { formatSizeForDisplay, formatNumber, pluralize } from '../selection/selection-info-utils'
-    import { tierClassForAge } from '../selection/age-tier-utils'
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import InfoIcon from '~icons/lucide/info'
@@ -47,7 +46,7 @@
         getRowHeight,
         getIconSize,
         getIsCompactDensity,
-        formatDateTimeParts,
+        formattedDate,
         formatFileSize,
         getSizeDisplayMode,
         getSizeMismatchWarning,
@@ -282,7 +281,7 @@
         columnWidths = computeFullListColumnWidths({
             entries: visible,
             parentDirStats: parentStats,
-            formatDateTimeParts,
+            formattedDate,
             sizeDisplayMode,
             indexing,
             showSizeMismatchWarning,
@@ -673,8 +672,7 @@
                         : undefined}
                     {@const fileIsRestricted = isRestricted(file.path)}
                     {@const sizeOverride = pickSizeDisplay(file, fileIsRestricted)}
-                    {@const dateParts = formatDateTimeParts(file.modifiedAt)}
-                    {@const ageClass = tierClassForAge(file.modifiedAt)}
+                    {@const date = formattedDate(file.modifiedAt)}
                     <!-- svelte-ignore a11y_interactive_supports_focus -->
                     <div
                         id={`file-${String(globalIndex)}`}
@@ -818,13 +816,21 @@
                                 >
                             {/if}
                         </span>
-                        <span class="col-date {ageClass ?? ''}">
-                            {#if dateParts.right !== null && columnWidths.dateLeft > 0}
+                        <span class="col-date">
+                            {#if date.parts.right !== null && columnWidths.dateLeft > 0}
                                 <span class="date-left" style="width: {columnWidths.dateLeft}px"
-                                    >{dateParts.left}</span
-                                ><span class="date-right">{dateParts.right}</span>
+                                    >{#each date.parts.left as seg, i (i)}{#if seg.ageClass}<span
+                                                class={seg.ageClass}>{seg.text}</span
+                                            >{:else}{seg.text}{/if}{/each}</span
+                                ><span class="date-right"
+                                    >{#each date.parts.right as seg, i (i)}{#if seg.ageClass}<span
+                                                class={seg.ageClass}>{seg.text}</span
+                                            >{:else}{seg.text}{/if}{/each}</span
+                                >
                             {:else}
-                                {dateParts.left}
+                                {#each date.parts.left as seg, i (i)}{#if seg.ageClass}<span class={seg.ageClass}
+                                            >{seg.text}</span
+                                        >{:else}{seg.text}{/if}{/each}
                             {/if}
                         </span>
                     </div>
@@ -1068,23 +1074,29 @@
         white-space: nowrap;
     }
 
-    /* Age tier overrides: scoped `.col-date` would otherwise beat the global
-       `.age-*` utilities by Svelte's scope-class boost. Re-applying the age
-       coloring at scoped specificity puts wilting/app palettes back on top. */
-    .col-date.age-fresh {
-        color: var(--color-age-fresh);
+    /* The age class lives on child spans. On selected or cursor-active rows,
+       neutralize them so the gold / default-text rule on the parent cell
+       isn't overridden by colored segments. Order matters here: the
+       cursor-only rule and the selected+cursor rule have the same specificity
+       count (both are .full-list-container.is-focused .file-entry.is-* …),
+       so selected+cursor must come last to win when both conditions hold. */
+    .file-entry.is-selected .col-date :global(.age-fresh),
+    .file-entry.is-selected .col-date :global(.age-recent),
+    .file-entry.is-selected .col-date :global(.age-aging),
+    .file-entry.is-selected .col-date :global(.age-old) {
+        color: var(--color-selection-fg);
     }
-    .col-date.age-recent {
-        color: var(--color-age-recent);
+    .full-list-container.is-focused .file-entry.is-under-cursor .col-date :global(.age-fresh),
+    .full-list-container.is-focused .file-entry.is-under-cursor .col-date :global(.age-recent),
+    .full-list-container.is-focused .file-entry.is-under-cursor .col-date :global(.age-aging),
+    .full-list-container.is-focused .file-entry.is-under-cursor .col-date :global(.age-old) {
+        color: var(--color-text-primary);
     }
-    .col-date.age-aging {
-        color: var(--color-age-aging);
-    }
-    .col-date.age-old {
-        color: var(--color-age-old);
-    }
-    .col-date.age-ancient {
-        color: var(--color-age-ancient);
+    .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-date :global(.age-fresh),
+    .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-date :global(.age-recent),
+    .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-date :global(.age-aging),
+    .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-date :global(.age-old) {
+        color: var(--color-selection-fg);
     }
 
     /* Split date cells: `.date-left` is fixed-width (set inline from the

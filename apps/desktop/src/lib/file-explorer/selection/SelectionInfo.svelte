@@ -13,15 +13,16 @@
         formatNumber,
         calculatePercentage,
     } from './selection-info-utils'
-    import { tierClassForAge } from './age-tier-utils'
     import { measureDateColumnWidth } from '../views/full-list-utils'
     import {
         formatFileSize,
         formatDateTime,
+        formattedDate,
         getSizeDisplayMode,
         getHumanFriendlySizeUnits,
         getFileSizeFormat,
     } from '$lib/settings/reactive-settings.svelte'
+    import DateLabel from '$lib/ui/DateLabel.svelte'
     import {
         getDisplaySize,
         buildFileSizeTooltip,
@@ -126,21 +127,22 @@
                 : buildFileSizeTooltip(entry.size, entry.physicalSize, formatFileSize)
             : undefined,
     )
-    // Use formatDateTime from reactive-settings for consistent date formatting with Full mode
-    const dateDisplay = $derived.by(() => {
+    /**
+     * `placeholder` is a string for the special states (broken/permission) and
+     * `null` when we should render the actual timestamp via `<DateLabel>`.
+     * `dateTimestamp` carries the value for that case (the parent dir's
+     * modifiedAt covers the `..` row).
+     */
+    const datePlaceholder = $derived.by(() => {
         if (!entry) return ''
         if (isBrokenSymlink) return '(broken symlink)'
         if (isPermissionDenied) return '(permission denied)'
-        // For ".." entry, use the current directory's modified time
-        const timestamp = entry.name === '..' ? currentDirModifiedAt : entry.modifiedAt
-        return formatDateTime(timestamp)
+        return null
     })
-    const dateTooltip = $derived(entry && !isBrokenSymlink && !isPermissionDenied ? buildDateTooltip(entry) : undefined)
-    const dateAgeClass = $derived.by(() => {
-        if (!entry || isBrokenSymlink || isPermissionDenied) return null
-        const ts = entry.name === '..' ? currentDirModifiedAt : entry.modifiedAt
-        return tierClassForAge(ts)
-    })
+    const dateTimestamp = $derived(entry?.name === '..' ? currentDirModifiedAt : entry?.modifiedAt)
+    const dateTooltip = $derived(
+        entry && !isBrokenSymlink && !isPermissionDenied ? buildDateTooltip(entry, formattedDate) : undefined,
+    )
     // Show an info hint next to a directory's size when its subtree contains
     // symlinks: their content is intentionally excluded from the recursive
     // size (matching `du`/Finder), but that can be surprising for folders that
@@ -241,9 +243,9 @@
                 </span>
             {/if}
         </span>
-        <span class="date {dateAgeClass ?? ''}" style="width: {dateColumnWidth}px;" use:tooltip={dateTooltip}
-            >{dateDisplay}</span
-        >
+        <span class="date" style="width: {dateColumnWidth}px;" use:tooltip={dateTooltip}>
+            {#if datePlaceholder !== null}{datePlaceholder}{:else}<DateLabel modifiedAt={dateTimestamp} />{/if}
+        </span>
         {#if volumeSpace}
             <!-- eslint-disable-next-line svelte/no-at-html-tags -- Markup built from typed disk space + tier classes; no user input. -->
             <span class="disk-space-text">{@html diskSpaceStatusHtml(volumeSpace)}</span>
@@ -325,24 +327,6 @@
         /* width is set via inline style based on formatted date length */
         text-align: right;
         font-size: calc(var(--font-size-sm) * 0.9);
-    }
-
-    /* Age tier overrides: same reason as `FullList`'s `.col-date.age-*` rules
-       — scoped specificity beats the global utilities, so we re-apply. */
-    .date.age-fresh {
-        color: var(--color-age-fresh);
-    }
-    .date.age-recent {
-        color: var(--color-age-recent);
-    }
-    .date.age-aging {
-        color: var(--color-age-aging);
-    }
-    .date.age-old {
-        color: var(--color-age-old);
-    }
-    .date.age-ancient {
-        color: var(--color-age-ancient);
     }
 
     .summary-text {

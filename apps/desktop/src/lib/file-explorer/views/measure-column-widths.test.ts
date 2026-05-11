@@ -28,12 +28,24 @@ function entry(overrides: Partial<FileEntry>): FileEntry {
   }
 }
 
+/**
+ * Build a stub `FormattedDate` for tests that don't care about per-component
+ * coloring — each half is a single literal segment so `joinSegments`
+ * reproduces it as the full string.
+ */
+function stubDate(left: string, right: string | null = null) {
+  return {
+    text: right === null ? left : `${left} ${right}`,
+    parts: {
+      left: [{ text: left, ageClass: null }],
+      right: right === null ? null : [{ text: right, ageClass: null }],
+    },
+  }
+}
+
 const baseArgs = {
   parentDirStats: null,
-  formatDateTimeParts: (t: number) => ({
-    left: new Date(t * 1000).toISOString().slice(0, 19).replace('T', ' '),
-    right: null,
-  }),
+  formattedDate: (t: number) => stubDate(new Date(t * 1000).toISOString().slice(0, 19).replace('T', ' ')),
   sizeDisplayMode: 'smart' as const,
   indexing: false,
   showSizeMismatchWarning: false,
@@ -112,12 +124,12 @@ describe('computeFullListColumnWidths', () => {
     _setMeasureForTests(fakeMeasure)
     const short = computeFullListColumnWidths({
       ...baseArgs,
-      formatDateTimeParts: () => ({ left: 'today', right: null }),
+      formattedDate: () => stubDate('today'),
       entries: [entry({ name: 'a', modifiedAt: 1 })],
     })
     const long = computeFullListColumnWidths({
       ...baseArgs,
-      formatDateTimeParts: () => ({ left: '2026-12-31 23:59:59', right: null }),
+      formattedDate: () => stubDate('2026-12-31 23:59:59'),
       entries: [entry({ name: 'a', modifiedAt: 1 })],
     })
     expect(long.date).toBeGreaterThan(short.date)
@@ -127,7 +139,7 @@ describe('computeFullListColumnWidths', () => {
     _setMeasureForTests(fakeMeasure)
     const w = computeFullListColumnWidths({
       ...baseArgs,
-      formatDateTimeParts: () => ({ left: '2026-12-31', right: '23:59' }),
+      formattedDate: () => stubDate('2026-12-31', '23:59'),
       entries: [entry({ name: 'a', modifiedAt: 1 })],
     })
     // left "2026-12-31" = 10 × 7 = 70; right "23:59" = 5 × 7 = 35; gap = 4.
@@ -141,15 +153,15 @@ describe('computeFullListColumnWidths', () => {
   it('uses the widest left half across all rows when splits are uneven', () => {
     _setMeasureForTests(fakeMeasure)
     let i = 0
-    const formatDateTimeParts = () => {
+    const formattedDate = () => {
       const lefts = ['short', '2026-01-30']
       const left = lefts[i % 2]
       i++
-      return { left, right: '14:30' }
+      return stubDate(left, '14:30')
     }
     const w = computeFullListColumnWidths({
       ...baseArgs,
-      formatDateTimeParts,
+      formattedDate,
       entries: [entry({ name: 'a', modifiedAt: 1 }), entry({ name: 'b', modifiedAt: 2 })],
     })
     // dateLeft = max("short" = 35, "2026-01-30" = 70) = 70, then + 2 px pad = 72.
@@ -160,7 +172,7 @@ describe('computeFullListColumnWidths', () => {
     _setMeasureForTests(fakeMeasure)
     const w = computeFullListColumnWidths({
       ...baseArgs,
-      formatDateTimeParts: () => ({ left: '2026-12-31 23:59', right: null }),
+      formattedDate: () => stubDate('2026-12-31 23:59'),
       entries: [entry({ name: 'a', modifiedAt: 1 })],
     })
     expect(w.dateLeft).toBe(0)
