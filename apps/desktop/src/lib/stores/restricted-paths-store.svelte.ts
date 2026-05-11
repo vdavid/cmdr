@@ -16,7 +16,7 @@
  * is the helper components import.
  */
 
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { listen } from '@tauri-apps/api/event'
 import { SvelteSet } from 'svelte/reactivity'
 import { getRestrictedPaths } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
@@ -29,16 +29,10 @@ interface RestrictedPathsChangedPayload {
 
 const paths = new SvelteSet<string>()
 let initialized = false
-let unlisten: UnlistenFn | undefined
 
 /** Reactive check: is this exact path currently TCC-restricted? */
 export function isRestricted(path: string): boolean {
   return paths.has(path)
-}
-
-/** Reactive: number of restricted paths in the set. */
-export function getRestrictedCount(): number {
-  return paths.size
 }
 
 /**
@@ -48,7 +42,7 @@ export function getRestrictedCount(): number {
 export async function initRestrictedPathsStore(): Promise<void> {
   if (initialized) return
 
-  unlisten = await listen<RestrictedPathsChangedPayload>('restricted-paths-changed', (event) => {
+  await listen<RestrictedPathsChangedPayload>('restricted-paths-changed', (event) => {
     paths.clear()
     for (const p of event.payload.paths) paths.add(p)
     logger.debug('restricted-paths-changed: {count} paths', { count: event.payload.paths.length })
@@ -61,12 +55,4 @@ export async function initRestrictedPathsStore(): Promise<void> {
   }
   initialized = true
   logger.debug('Restricted-paths store initialized ({count} paths)', { count: paths.size })
-}
-
-/** Tear down the listener. Call on app shutdown / hot-reload. */
-export function cleanupRestrictedPathsStore(): void {
-  unlisten?.()
-  unlisten = undefined
-  paths.clear()
-  initialized = false
 }
