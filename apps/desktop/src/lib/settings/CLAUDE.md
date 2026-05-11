@@ -180,11 +180,11 @@ row intentionally spans the full width.
   paths: (a) new-window — JSON-encoded array on the URL as `?section=...` (JSON because section names can contain `/`,
   e.g. "SMB/Network shares"); (b) already-open window — emits a `navigate-to-section` Tauri event the settings page
   listens for. The settings page also reads the URL param at mount, so reloads or fresh-opens land on the same section.
-- **format-utils.ts** — Shared formatters used in settings UI (e.g., duration, file-size display strings). Date/time
-  formats may include a single optional `|` that splits each formatted cell into a left half (typically the date) and a
-  right half (typically the time). `formatDateTimePartsWithFormat` returns `{ left, right | null }` for the file-list
-  renderer; `formatDateTimeWithFormat` joins parts with a space for tooltips, MCP, and the status bar. Built-in `iso`
-  and `short` formats include `|` internally; custom format default is `YYYY-MM-DD | HH:mm`.
+- **format-utils.ts** — Shared formatters used in settings UI (e.g., duration, file-size display strings). Date/time is
+  covered in detail under § "Date display" above — `formatDateForDisplay` is the canonical entry point. Built-in `iso`
+  and `short` formats include a `|` internally so the file-list renderer can split the date and time halves into two
+  aligned columns; custom format default is `YYYY-MM-DD | HH:mm`. The `'system'` formatter is memoized at module scope
+  (constructing `Intl.DateTimeFormat` per call shows up in virtualized scroll profiles).
 - **mcp-main-bridge.ts** — MCP bridge for settings; handles `mcp-get-all-settings` and `mcp-set-setting` round-trip
   events in the main window (always alive), enabling AI agents to query and modify settings without the settings window
   open

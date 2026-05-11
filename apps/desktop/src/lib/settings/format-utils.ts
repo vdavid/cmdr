@@ -232,9 +232,24 @@ function ageClassForIntlPart(type: Intl.DateTimeFormatPartTypes, tiers: Componen
   }
 }
 
+/**
+ * Lazily constructed `Intl.DateTimeFormat` for the `'system'` format. The
+ * instance depends only on the runtime locale + options, both of which are
+ * stable for the life of the page, so one formatter serves every call.
+ * Constructing one per call is ~10× the cost of `formatToParts` itself, which
+ * adds up across virtualized file-list re-renders.
+ */
+let systemLocaleFormatter: Intl.DateTimeFormat | null = null
+
+function getSystemLocaleFormatter(): Intl.DateTimeFormat {
+  if (systemLocaleFormatter === null) {
+    systemLocaleFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'medium' })
+  }
+  return systemLocaleFormatter
+}
+
 function systemLocaleParts(date: Date, tiers: ComponentTiers): FormattedDate['parts'] {
-  const intl = new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'medium' })
-  const parts = intl.formatToParts(date)
+  const parts = getSystemLocaleFormatter().formatToParts(date)
   const segments: DateSegment[] = []
   for (const p of parts) {
     segments.push({ text: p.value, ageClass: ageClassForIntlPart(p.type, tiers) })
