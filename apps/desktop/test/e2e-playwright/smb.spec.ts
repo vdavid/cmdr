@@ -97,13 +97,23 @@ test.beforeEach(async ({ tauriPage }) => {
         invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: '${LOCAL_VOLUME_NAME}' } });
         invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
     })()`)
-  await sleep(2000)
+  // Wait for both panes to show the local volume in cmdr://state.
+  await pollUntil(
+    tauriPage,
+    async () => {
+      const state = await mcpReadResource('cmdr://state')
+      const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) =>
+        line.replace(/^\n {2}volume: /, ''),
+      )
+      return volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
+    },
+    5000,
+  )
 
   // Dismiss any lingering dialogs
   await tauriPage.keyboard.press('Escape')
-  await sleep(200)
   await tauriPage.keyboard.press('Escape')
-  await sleep(200)
+  await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
 })
 
 // ── Helper ───────────────────────────────────────────────────────────────────

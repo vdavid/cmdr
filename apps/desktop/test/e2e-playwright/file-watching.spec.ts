@@ -201,8 +201,19 @@ test.describe('File watching', () => {
     fs.rmSync(tempDir, { recursive: true, force: true })
     extraPaths.length = 0 // Already removed
 
-    // Give the app time to react
-    await sleep(3000)
+    // Give the app time to react. We don't have a strict UI signal for "the
+    // watcher noticed the parent went away", so poll until the file-pane stops
+    // listing the temp file (which proves the listing was refreshed) or until
+    // the timeout — then the subsequent assertions cover the "app still works"
+    // contract regardless.
+    await pollUntil(
+      tauriPage,
+      async () => {
+        const stillThere = await fileExistsInPane(tauriPage, 'temp-file.txt', 1)
+        return !stillThere
+      },
+      5000,
+    )
 
     // The app should still be functional — left pane unaffected
     expect(await fileExistsInPane(tauriPage, 'file-a.txt', 0)).toBe(true)

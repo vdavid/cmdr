@@ -23,7 +23,7 @@ import {
   mcpAwaitItem,
   mcpSwitchPane,
 } from '../e2e-shared/mcp-client.js'
-import { ensureAppReady, getFixtureRoot, sleep, TRANSFER_DIALOG } from './helpers.js'
+import { ensureAppReady, getFixtureRoot, pollUntil, sleep, TRANSFER_DIALOG } from './helpers.js'
 import {
   waitForConflictPolicy,
   selectConflictPolicy,
@@ -33,6 +33,30 @@ import {
 
 const INTERNAL_STORAGE = 'Virtual Pixel 9 - Internal Storage'
 const LOCAL_VOLUME_NAME = os.platform() === 'linux' ? 'Root' : 'Macintosh HD'
+
+/** True when both panes show the local volume in cmdr://state. */
+async function bothPanesOnLocalVolume(): Promise<boolean> {
+  const state = await mcpReadResource('cmdr://state')
+  const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) => line.replace(/^\n {2}volume: /, ''))
+  return volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
+}
+
+/**
+ * Polls a sync filesystem predicate until it returns true or timeout is reached.
+ * Used to wait for MTP / cross-volume operations to settle on disk.
+ */
+async function pollFs(
+  tauriPage: Parameters<typeof pollUntil>[0],
+  predicate: () => boolean,
+  timeoutMs = 15000,
+): Promise<boolean> {
+  return pollUntil(
+    tauriPage,
+    // eslint-disable-next-line @typescript-eslint/require-await -- pollUntil expects a Promise<boolean>
+    async () => predicate(),
+    timeoutMs,
+  )
+}
 
 /** Discovers the mtp:// path prefix for a named MTP storage from cmdr://state. */
 async function getMtpVolumePath(storageName: string): Promise<string> {
@@ -67,11 +91,10 @@ test.beforeEach(async ({ tauriPage }) => {
     invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: '${LOCAL_VOLUME_NAME}' } });
     invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
   })()`)
-  await sleep(2000)
+  await pollUntil(tauriPage, async () => bothPanesOnLocalVolume(), 5000)
   await tauriPage.keyboard.press('Escape')
-  await sleep(200)
   await tauriPage.keyboard.press('Escape')
-  await sleep(200)
+  await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
 })
 
 // ── Cross-volume move conflicts (MTP ↔ local) ──────────────────────────────
@@ -100,15 +123,25 @@ test.describe('MTP cross-volume move conflicts', () => {
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage, 30000)
 
-    // Wait for MTP operation
-    await sleep(3000)
+    // Wait for the MTP operation to settle on disk: dest contains MTP content AND source removed.
+    const destPath = path.join(fixtureRoot, 'right', 'report.txt')
+    const srcPath = path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt')
+    await pollFs(
+      tauriPage,
+      () => {
+        if (fs.existsSync(srcPath)) return false
+        if (!fs.existsSync(destPath)) return false
+        return fs.readFileSync(destPath, 'utf-8').includes('Quarterly report')
+      },
+      15000,
+    )
 
     // Dest should have MTP content (overwritten)
-    const destContent = fs.readFileSync(path.join(fixtureRoot, 'right', 'report.txt'), 'utf-8')
+    const destContent = fs.readFileSync(destPath, 'utf-8')
     expect(destContent).toContain('Quarterly report')
 
     // Source should be deleted from MTP
-    expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(false)
+    expect(fs.existsSync(srcPath)).toBe(false)
   })
 
   test('MTP-to-local move with skip preserves both files', async ({ tauriPage }) => {
@@ -131,8 +164,6 @@ test.describe('MTP cross-volume move conflicts', () => {
     await selectConflictPolicy(tauriPage, 'skip')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage, 30000)
-
-    await sleep(3000)
 
     // Dest unchanged (skip)
     const destContent = fs.readFileSync(path.join(fixtureRoot, 'right', 'report.txt'), 'utf-8')
@@ -164,15 +195,27 @@ test.describe('MTP cross-volume move conflicts', () => {
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage, 30000)
 
-    await sleep(3000)
+    // Wait for the move to settle on disk: MTP file has overwritten content AND source removed.
+    const mtpDest = path.join(MTP_FIXTURE_ROOT, 'internal', 'file-a.txt')
+    const localSrc = path.join(fixtureRoot, 'left', 'file-a.txt')
+    const expectedContent = 'A'.repeat(1024)
+    await pollFs(
+      tauriPage,
+      () => {
+        if (fs.existsSync(localSrc)) return false
+        if (!fs.existsSync(mtpDest)) return false
+        return fs.readFileSync(mtpDest, 'utf-8') === expectedContent
+      },
+      15000,
+    )
     await mcpCall('refresh', {})
 
     // MTP file should have local content (overwritten) — local fixture is 1024 'A' chars
-    const mtpContent = fs.readFileSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'file-a.txt'), 'utf-8')
-    expect(mtpContent).toBe('A'.repeat(1024))
+    const mtpContent = fs.readFileSync(mtpDest, 'utf-8')
+    expect(mtpContent).toBe(expectedContent)
 
     // Local source should be gone (moved)
-    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))).toBe(false)
+    expect(fs.existsSync(localSrc)).toBe(false)
   })
 })
 
@@ -212,15 +255,26 @@ test.describe('MTP same-volume move conflicts', () => {
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage, 30000)
 
-    await sleep(3000)
+    // Wait for the same-volume MTP move to settle on disk.
+    const rootPath = path.join(MTP_FIXTURE_ROOT, 'internal', 'report.txt')
+    const docsSrc = path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt')
+    await pollFs(
+      tauriPage,
+      () => {
+        if (fs.existsSync(docsSrc)) return false
+        if (!fs.existsSync(rootPath)) return false
+        return fs.readFileSync(rootPath, 'utf-8').includes('Quarterly report')
+      },
+      15000,
+    )
     await mcpCall('refresh', {})
 
     // Root report.txt should have Documents content (overwritten)
-    const rootContent = fs.readFileSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'report.txt'), 'utf-8')
+    const rootContent = fs.readFileSync(rootPath, 'utf-8')
     expect(rootContent).toContain('Quarterly report')
 
     // Source should be gone from Documents
-    expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(false)
+    expect(fs.existsSync(docsSrc)).toBe(false)
   })
 
   test('same-volume MTP move with skip preserves both files', async ({ tauriPage }) => {
@@ -252,8 +306,6 @@ test.describe('MTP same-volume move conflicts', () => {
     await selectConflictPolicy(tauriPage, 'skip')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage, 30000)
-
-    await sleep(3000)
 
     // Root file unchanged (skip)
     const rootContent = fs.readFileSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'report.txt'), 'utf-8')

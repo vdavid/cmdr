@@ -7,7 +7,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   workers: 1, // Single worker — one Tauri app instance
-  reporter: [['html', { open: 'never' }], ['list']],
+  reporter: [['html', { open: 'never' }], ['list'], ['json', { outputFile: '/tmp/cmdr-e2e-report.json' }]],
   timeout: 30000,
 
   globalSetup: './global-setup.ts',

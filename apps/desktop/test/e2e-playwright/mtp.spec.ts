@@ -70,6 +70,25 @@ const SD_CARD = 'Virtual Pixel 9 - SD Card'
 // Local volume name differs by platform (macOS: "Macintosh HD", Linux: "Root")
 const LOCAL_VOLUME_NAME = os.platform() === 'linux' ? 'Root' : 'Macintosh HD'
 
+/** Returns the size of a file, or -1 if it doesn't exist / can't be statted. */
+function safeFileSize(p: string): number {
+  try {
+    return fs.statSync(p).size
+  } catch {
+    return -1
+  }
+}
+
+/**
+ * Reads cmdr://state and returns true when both panes show the local volume.
+ * The state YAML has `left:` and `right:` blocks each containing a `  volume: NAME` line.
+ */
+async function bothPanesOnLocalVolume(): Promise<boolean> {
+  const state = await mcpReadResource('cmdr://state')
+  const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) => line.replace(/^\n {2}volume: /, ''))
+  return volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
+}
+
 /**
  * Discovers the mtp:// path prefix for a named MTP storage from cmdr://state.
  * The device ID is assigned at runtime, so tests must discover it dynamically.
@@ -114,13 +133,13 @@ test.beforeEach(async ({ tauriPage }) => {
         invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: '${LOCAL_VOLUME_NAME}' } });
         invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
     })()`)
-  await sleep(2000) // Wait for volume switches to complete
+  // Wait for both panes to show the local volume.
+  await pollUntil(tauriPage, async () => bothPanesOnLocalVolume(), 5000)
 
   // Dismiss any lingering dialogs/overlays from previous tests
   await tauriPage.keyboard.press('Escape')
-  await sleep(200)
   await tauriPage.keyboard.press('Escape')
-  await sleep(200)
+  await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
 })
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -932,14 +951,21 @@ test.describe('MTP large file transfer', () => {
     await mcpCall('move_cursor', { pane: 'left', filename: 'large-test.dat' })
     await mcpCall('copy', { autoConfirm: true })
 
-    // Large file transfer through MTP protocol stack takes longer
-    await sleep(10000)
+    // Poll until the destination file reaches the expected size (50 MB).
+    const expectedSize = 50 * 1024 * 1024
+    const destPath = path.join(MTP_FIXTURE_ROOT, 'internal', 'large-test.dat')
+    const transferred = await pollUntil(
+      tauriPage,
+      () => Promise.resolve(safeFileSize(destPath) === expectedSize),
+      30000,
+    )
+    expect(transferred).toBe(true)
     await mcpCall('refresh', {})
     await mcpAwaitItem('right', 'large-test.dat', 60)
 
     // Verify file size in MTP backing dir
-    const stat = fs.statSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'large-test.dat'))
-    expect(stat.size).toBe(50 * 1024 * 1024)
+    const stat = fs.statSync(destPath)
+    expect(stat.size).toBe(expectedSize)
   })
 
   test('copies 50 MB file from MTP to local', async ({ tauriPage }) => {
@@ -965,12 +991,20 @@ test.describe('MTP large file transfer', () => {
     await mcpCall('move_cursor', { pane: 'left', filename: 'large-mtp.dat' })
     await mcpCall('copy', { autoConfirm: true })
 
-    await sleep(10000)
+    // Poll until the destination file reaches the expected size (50 MB).
+    const expectedSize = 50 * 1024 * 1024
+    const destPath = path.join(fixtureRoot, 'right', 'large-mtp.dat')
+    const transferred = await pollUntil(
+      tauriPage,
+      () => Promise.resolve(safeFileSize(destPath) === expectedSize),
+      30000,
+    )
+    expect(transferred).toBe(true)
     await mcpCall('refresh', {})
     await mcpAwaitItem('right', 'large-mtp.dat', 60)
 
     // Verify file size on local disk
-    const stat = fs.statSync(path.join(fixtureRoot, 'right', 'large-mtp.dat'))
-    expect(stat.size).toBe(50 * 1024 * 1024)
+    const stat = fs.statSync(destPath)
+    expect(stat.size).toBe(expectedSize)
   })
 })

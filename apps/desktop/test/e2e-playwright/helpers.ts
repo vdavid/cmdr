@@ -114,7 +114,6 @@ export async function ensureAppReady(
   // Navigate to the main route to ensure we're on the file explorer page.
   // This does NOT reset the directory — just ensures we're on the right route.
   await navigateToRoute(tauriPage, '/')
-  await sleep(500)
 
   // Wait for file entries to be visible (confirms app is fully loaded)
   await tauriPage.waitForSelector('.file-entry', 15000)
@@ -159,7 +158,8 @@ export async function ensureAppReady(
             payload: { pane: 'right', path: ${JSON.stringify(rightPanePath)} }
         });
     })()`)
-  await sleep(300)
+
+  // The leftExpected file poll below covers the wait for navigation to land.
 
   // Wait for the left pane to show the expected fixture files
   const leftExpected = expectedFiles?.leftPane ?? ['file-a.txt', 'sub-dir']
@@ -399,6 +399,13 @@ export async function countEntriesWithPrefix(tauriPage: PageLike, prefix: string
 // ── Utility ─────────────────────────────────────────────────────────────────
 
 export function sleep(ms: number): Promise<void> {
+  if (process.env.SLEEP_LOG === '1') {
+    const stack = new Error().stack ?? ''
+    const lines = stack.split('\n')
+    // index 0 = "Error", 1 = sleep itself, 2 = caller
+    const frame = (lines[2] ?? '').trim().slice(0, 200)
+    process.stdout.write(`[sleep] +${String(ms)}ms @ ${frame}\n`)
+  }
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
@@ -410,7 +417,7 @@ export async function pollUntil(
   _page: PageLike,
   condition: () => Promise<boolean>,
   timeout: number,
-  interval = 100,
+  interval = 50,
 ): Promise<boolean> {
   const deadline = Date.now() + timeout
   while (Date.now() < deadline) {

@@ -181,12 +181,11 @@ async function setTheme(tauriPage: PageLike, mode: 'dark' | 'light'): Promise<vo
     5000,
   )
 
-  // Force a synchronous reflow so WKWebView invalidates cached computed styles,
-  // then sleep to give the browser time to propagate to all descendant elements.
-  // 2s is generous but WKWebView's style cache invalidation can lag significantly
-  // under load (the first theme switch after app launch is the worst case).
+  // Force a synchronous reflow so WKWebView invalidates cached computed styles.
+  // Historically a 2 s sleep followed this to wait for descendant style cache
+  // flushing, but that mattered only for color-contrast auditing — which is
+  // disabled in this suite. The :root pollUntil above is enough.
   await tauriPage.evaluate(`document.documentElement.offsetHeight`)
-  await sleep(2000)
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -343,7 +342,6 @@ for (const mode of ['light', 'dark'] as const) {
                 }
             }
         })()`)
-        await sleep(500)
 
         // Wait for the section to be visible
         const sectionSelector = `[data-section-id="${section.sectionId}"]`
@@ -354,9 +352,11 @@ for (const mode of ['light', 'dark'] as const) {
           continue
         }
 
-        // Extra settle time for sections with async data (for example, Drive indexing
+        // Brief settle for sections with async data (for example, Drive indexing
         // loads dbFileSize which controls the "Clear index" button's disabled state).
-        await sleep(500)
+        // The pollUntil above already gated on section visibility — this just lets
+        // any reactive child updates land before axe inspects the DOM.
+        await sleep(150)
 
         const { all } = await runAxeAudit(tauriPage, `Settings: ${section.name} (${mode})`)
         if (all.length > 0) {

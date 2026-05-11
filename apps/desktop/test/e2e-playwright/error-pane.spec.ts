@@ -59,7 +59,9 @@ async function injectAndNavigateIntoSubDir(tauriPage: PageLike, errorCode: numbe
             payload: { pane: 'left', path: ${JSON.stringify(subDirPath)} }
         });
     })()`)
-  await sleep(2000)
+  // Wait for the error pane to render (the injected error fires during the
+  // background listing kicked off by the navigation above).
+  await pollUntil(tauriPage, async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`), 10000)
 }
 
 /** Navigates the focused pane back to the fixture root's left/ directory. */

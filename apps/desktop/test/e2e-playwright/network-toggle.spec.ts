@@ -19,6 +19,7 @@
 import os from 'node:os'
 import { test, expect } from './fixtures.js'
 import { ensureAppReady, pollUntil, sleep } from './helpers.js'
+import { initMcpClient, mcpReadResource } from '../e2e-shared/mcp-client.js'
 
 // Volume name for "Macintosh HD" on macOS / "Root" on Linux. We force both panes back to
 // this volume in `beforeEach` so the spec runs cleanly even when a prior MTP test left a
@@ -87,7 +88,19 @@ test.describe('Network toggle in volume picker', () => {
       invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: '${LOCAL_VOLUME_NAME}' } });
       invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
     })()`)
-    await sleep(2000)
+    // Wait for both panes to actually be on the local volume before asserting picker UX.
+    await initMcpClient(tauriPage)
+    await pollUntil(
+      tauriPage,
+      async () => {
+        const state = await mcpReadResource('cmdr://state')
+        const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) =>
+          line.replace(/^\n {2}volume: /, ''),
+        )
+        return volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
+      },
+      5000,
+    )
 
     await ensureAppReady(tauriPage)
 
