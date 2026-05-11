@@ -15,6 +15,7 @@ Reusable UI components used across the entire desktop app.
 | `AlertDialog.svelte`     | Single-action confirmation dialog built on `ModalDialog`                                       |
 | `ProgressBar.svelte`     | Reusable progress bar (just the bar, no labels or layout)                                      |
 | `ProgressOverlay.svelte` | Floating top-right progress indicator: spinner, progress bar, ETA                              |
+| `Size.svelte`            | Canonical inline byte-count renderer — human-friendly + rainbow tier color                     |
 | `toast/`                 | Centralized toast notification system — store, container, item                                 |
 
 ## ModalDialog
@@ -179,6 +180,25 @@ Call `dismissTransientToasts()` on pane navigation to clear stale feedback.
 `CommandBox.svelte` — monospace terminal command with a one-click Copy button and 2-second "Copied!" feedback. Takes a
 single `command` string prop. Handles clipboard internally (`copyToClipboard` with `navigator.clipboard` fallback).
 Parent controls spacing via its own wrapper. Used in `PtpcameradDialog`, `MtpPermissionDialog`, and `ShareBrowser`.
+
+## Size
+
+`Size.svelte` — canonical inline byte-count renderer. Takes `bytes: number | null | undefined` and optional `fallback`
+(default `''`). Always human-friendly (`"1.02 MB"`), always colored with the active rainbow tier class
+(`size-bytes`/`size-kb`/`size-mb`/`size-gb`/`size-tb`). Respects the `appearance.fileSizeFormat` setting (binary vs.
+decimal) and follows palette swaps via the `data-size-colors` attribute on `<html>` automatically.
+
+Use this in Svelte templates: `<Size bytes={entry.size} />`. For HTML string contexts (tooltips, error messages, prose
+that goes through `{@html}`), use one of two helpers from `$lib/file-explorer/selection/selection-info-utils.ts`:
+
+- `formatSizeHtmlColored(bytes, format)` — full pipeline: byte count → formatted string → colored span.
+- `colorizeSizeString(text)` — when you already have a formatted size string (e.g. from the legacy `formatBytes` in
+  `$lib/tauri-commands`) and just need to wrap it in the right tier span.
+
+The `<Size>` component does NOT cover the raw-bytes triad mode used by the file-list size column (which is gated by
+`listing.humanFriendlySizeUnits`). That column renders `formatSizeForDisplay` directly because it also needs the
+mismatch-warning + cursor-row neutralization treatment. Outside the size column, the human-friendly form is always
+correct — David tested every site and confirmed the simplification.
 
 ## Ark UI
 

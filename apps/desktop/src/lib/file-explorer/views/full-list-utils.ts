@@ -6,7 +6,7 @@
 import { getSetting } from '$lib/settings/settings-store'
 import { getEffectiveScale, onDebouncedScaleChange } from '$lib/text-size.svelte'
 import type { FileEntry } from '../types'
-import { formatSizeTriads, tierClassForUnit } from '../selection/selection-info-utils'
+import { colorizeSizeString, formatSizeTriads } from '../selection/selection-info-utils'
 
 /** Layout constants for Full mode */
 export const FULL_LIST_ROW_HEIGHT = 20
@@ -250,16 +250,9 @@ function formatBytesHtml(bytes: number): string {
     .join('')
 }
 
-/** Wraps a human-friendly size string (e.g. "1.02 MB") in a colored span based on its unit suffix. */
-function colorizeFormattedSize(text: string): string {
-  const spaceIndex = text.lastIndexOf(' ')
-  const unit = spaceIndex >= 0 ? text.slice(spaceIndex + 1) : ''
-  return `<span class="${tierClassForUnit(unit)}">${text}</span>`
-}
-
 /** Formats a single size line: "Label: 1.23 GB (1 234 567 890 bytes)" with colored triads and a colored unit-tagged value. */
 function sizeLineHtml(label: string, bytes: number, formatSize: (b: number) => string): string {
-  return `${label}: ${colorizeFormattedSize(formatSize(bytes))} (${formatBytesHtml(bytes)} bytes)`
+  return `${label}: ${colorizeSizeString(formatSize(bytes))} (${formatBytesHtml(bytes)} bytes)`
 }
 
 /**
@@ -280,7 +273,7 @@ export function buildFileSizeTooltip(
   }
   const size = logical ?? physical
   if (size == null) return ''
-  return { html: `${colorizeFormattedSize(formatSize(size))} (${formatBytesHtml(size)} bytes)` }
+  return { html: `${colorizeSizeString(formatSize(size))} (${formatBytesHtml(size)} bytes)` }
 }
 
 /**
@@ -297,7 +290,7 @@ export function buildSelectionSizeTooltip(
   if (totalLogical <= 0) return undefined
 
   const selLine = (label: string, bytes: number) =>
-    `${label}: ${colorizeFormattedSize(formatSize(bytes))} (${formatBytesHtml(bytes)} bytes)`
+    `${label}: ${colorizeSizeString(formatSize(bytes))} (${formatBytesHtml(bytes)} bytes)`
   const lines: string[] = [selLine('Selected', selectedLogical), selLine('Of total', totalLogical)]
 
   if (totalPhysical > 0) {
@@ -367,7 +360,7 @@ export function buildDirSizeTooltip(
       lines.push(sizeLineHtml('Content', recursiveSize, formatSize))
       lines.push(sizeLineHtml('On disk', recursivePhysicalSize, formatSize))
     } else {
-      lines.push(`${colorizeFormattedSize(formatSize(recursiveSize))} (${formatBytesHtml(recursiveSize)} bytes)`)
+      lines.push(`${colorizeSizeString(formatSize(recursiveSize))} (${formatBytesHtml(recursiveSize)} bytes)`)
     }
 
     // File/folder counts with "no" for zero

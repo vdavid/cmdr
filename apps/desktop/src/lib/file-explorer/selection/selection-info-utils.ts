@@ -84,6 +84,17 @@ export function formatSizeHtmlColored(bytes: number, format: FileSizeFormat): st
     .join('')
 }
 
+/**
+ * Wraps an already-formatted size string (e.g. `"1.02 MB"`, `"512 bytes"`) in a colored span
+ * based on its unit suffix. Use when the value comes from a foreign formatter (like the legacy
+ * `formatBytes` in `tauri-commands`) and you just need tier coloring on top, without re-formatting.
+ */
+export function colorizeSizeString(text: string): string {
+  const spaceIndex = text.lastIndexOf(' ')
+  const unit = spaceIndex >= 0 ? text.slice(spaceIndex + 1) : ''
+  return `<span class="${tierClassForUnit(unit)}">${text}</span>`
+}
+
 /** Formats timestamp as YYYY-MM-DD hh:mm:ss */
 export function formatDate(timestamp: number | null | undefined): string {
   if (timestamp == null) return ''
