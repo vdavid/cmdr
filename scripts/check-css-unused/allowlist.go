@@ -12,6 +12,13 @@ var allowedUnusedClasses = map[string]bool{
 	"size-mb":    true,
 	"size-gb":    true,
 	"size-tb":    true,
+	// Date age tier classes - applied dynamically via tierClassForAge() in FullList, SelectionInfo,
+	// RenameConflictDialog, and SearchResults
+	"age-fresh":   true,
+	"age-recent":  true,
+	"age-aging":   true,
+	"age-old":     true,
+	"age-ancient": true,
 	// SettingSelect.svelte - classes used with :global() for Ark UI Select component styling
 	"custom-highlighted": true,
 	"select-content":     true,

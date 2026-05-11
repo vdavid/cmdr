@@ -146,6 +146,23 @@
   --color-size-gb-selected: color-mix(in srgb, var(--color-text-secondary) 5%, var(--color-selection-fg));
   --color-size-tb-selected: var(--color-selection-fg);
 
+  /* === Date age tier colors ===
+     * Three palettes selectable via the `appearance.dateColors` setting,
+     * applied as a `data-date-colors` attribute on `<html>` by the settings
+     * applier. The default block here is the Wilting palette so first paint
+     * matches the default setting value. Five buckets: <1mo (fresh) → <1yr
+     * (recent) → <2yr (aging) → <3yr (old) → older (ancient). Hex bases are
+     * tuned for ≥ AA 4.5:1 against `--color-bg-primary`; verified by
+     * `scripts/check-a11y-contrast`. */
+  --color-age-fresh: #1f7a1f;
+  --color-age-recent: #3f6b1f;
+  --color-age-aging: #6e5a14;
+  --color-age-old: #8a541d;
+  --color-age-ancient: #6b4a2a;
+  /* No per-tier selection token: selected rows route through the existing
+     `.is-selected .col-date` (and equivalent) rules in each view, which
+     collapse the whole cell to `--color-selection-fg`. */
+
   /* === Spacing === */
   --spacing-xxs: 2px;
   --spacing-xs: 4px;
@@ -215,10 +232,10 @@
   --z-tooltip: 500;
 }
 
-/* === Size tier palette: Accent ===
-   Depth progression based on the active accent color, so the gradient tracks
-   whatever the user's system / Cmdr-gold accent resolves to. */
-:root[data-size-colors='accent'] {
+/* === Size tier palette: App ===
+   Depth progression based on the active app color, so the gradient tracks
+   whatever the user's system / Cmdr-gold app color resolves to. */
+:root[data-size-colors='app'] {
   --color-size-bytes: color-mix(in srgb, var(--color-text-secondary) 85%, var(--color-accent));
   --color-size-kb: color-mix(in srgb, var(--color-text-secondary) 70%, var(--color-accent));
   --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 55%, var(--color-accent));
@@ -234,6 +251,27 @@
   --color-size-mb: var(--color-text-secondary);
   --color-size-gb: var(--color-text-secondary);
   --color-size-tb: var(--color-text-secondary);
+}
+
+/* === Date age palette: App ===
+   Newer files use the active app color, fading toward the secondary text
+   color as files age. */
+:root[data-date-colors='app'] {
+  --color-age-fresh: var(--color-accent);
+  --color-age-recent: color-mix(in srgb, var(--color-text-secondary) 25%, var(--color-accent));
+  --color-age-aging: color-mix(in srgb, var(--color-text-secondary) 50%, var(--color-accent));
+  --color-age-old: color-mix(in srgb, var(--color-text-secondary) 70%, var(--color-accent));
+  --color-age-ancient: color-mix(in srgb, var(--color-text-secondary) 85%, var(--color-accent));
+}
+
+/* === Date age palette: Off ===
+   All tiers fall back to the secondary text color — no coloring. */
+:root[data-date-colors='off'] {
+  --color-age-fresh: var(--color-text-secondary);
+  --color-age-recent: var(--color-text-secondary);
+  --color-age-aging: var(--color-text-secondary);
+  --color-age-old: var(--color-text-secondary);
+  --color-age-ancient: var(--color-text-secondary);
 }
 
 /* Dark Mode - automatically applied when user's system prefers dark mode */
@@ -330,6 +368,15 @@
     --color-size-mb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff8c00);
     --color-size-gb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff4444);
     --color-size-tb: color-mix(in srgb, var(--color-text-secondary) 70%, #c060ff);
+
+    /* === Date age tier colors — dark mode ===
+       * Brighter values for legibility against `#1e1e1e`. Tuned for ≥ AA
+       * 4.5:1; verified by `scripts/check-a11y-contrast`. */
+    --color-age-fresh: #5fd16a;
+    --color-age-recent: #a8d040;
+    --color-age-aging: #dcc24a;
+    --color-age-old: #d49858;
+    --color-age-ancient: #b08960;
   }
 }
 
@@ -631,6 +678,30 @@ body {
 
 .size-tb {
   color: var(--color-size-tb);
+}
+
+/* =============================================================================
+   Date age tier color utility classes (used dynamically via class bindings)
+   ============================================================================= */
+
+.age-fresh {
+  color: var(--color-age-fresh);
+}
+
+.age-recent {
+  color: var(--color-age-recent);
+}
+
+.age-aging {
+  color: var(--color-age-aging);
+}
+
+.age-old {
+  color: var(--color-age-old);
+}
+
+.age-ancient {
+  color: var(--color-age-ancient);
 }
 
 /* =============================================================================

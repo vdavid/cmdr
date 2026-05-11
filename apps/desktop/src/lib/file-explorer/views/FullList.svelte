@@ -24,6 +24,7 @@
     } from './file-list-utils'
     import { getDirStatsBatch } from '$lib/tauri-commands'
     import { formatSizeForDisplay, formatNumber, pluralize } from '../selection/selection-info-utils'
+    import { tierClassForAge } from '../selection/age-tier-utils'
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import InfoIcon from '~icons/lucide/info'
@@ -673,6 +674,7 @@
                     {@const fileIsRestricted = isRestricted(file.path)}
                     {@const sizeOverride = pickSizeDisplay(file, fileIsRestricted)}
                     {@const dateParts = formatDateTimeParts(file.modifiedAt)}
+                    {@const ageClass = tierClassForAge(file.modifiedAt)}
                     <!-- svelte-ignore a11y_interactive_supports_focus -->
                     <div
                         id={`file-${String(globalIndex)}`}
@@ -816,7 +818,7 @@
                                 >
                             {/if}
                         </span>
-                        <span class="col-date">
+                        <span class="col-date {ageClass ?? ''}">
                             {#if dateParts.right !== null && columnWidths.dateLeft > 0}
                                 <span class="date-left" style="width: {columnWidths.dateLeft}px"
                                     >{dateParts.left}</span
@@ -1066,6 +1068,25 @@
         white-space: nowrap;
     }
 
+    /* Age tier overrides: scoped `.col-date` would otherwise beat the global
+       `.age-*` utilities by Svelte's scope-class boost. Re-applying the age
+       coloring at scoped specificity puts wilting/app palettes back on top. */
+    .col-date.age-fresh {
+        color: var(--color-age-fresh);
+    }
+    .col-date.age-recent {
+        color: var(--color-age-recent);
+    }
+    .col-date.age-aging {
+        color: var(--color-age-aging);
+    }
+    .col-date.age-old {
+        color: var(--color-age-old);
+    }
+    .col-date.age-ancient {
+        color: var(--color-age-ancient);
+    }
+
     /* Split date cells: `.date-left` is fixed-width (set inline from the
        column-widths measurer) so the right halves align across rows. The 4px
        margin on `.date-right` is mirrored as `DATE_PARTS_GAP` in
@@ -1131,6 +1152,14 @@
 
     .full-list-container.is-focused .file-entry.is-under-cursor.is-selected .col-date {
         color: var(--color-selection-fg);
+    }
+
+    /* The cursor highlight is app-colored, so wilting greens and browns sit
+       awkwardly against it. Neutralize the date age coloring to the default
+       text color while the row is under the focused cursor. The selected
+       case above keeps winning by additional specificity. */
+    .full-list-container.is-focused .file-entry.is-under-cursor .col-date {
+        color: var(--color-text-primary);
     }
 
     .empty-folder-message {

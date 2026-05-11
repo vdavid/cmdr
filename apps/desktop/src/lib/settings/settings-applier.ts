@@ -3,7 +3,14 @@
  * Updates CSS variables, DOM properties, and syncs backend configurations when settings change.
  */
 
-import { getSetting, onSettingChange, initializeSettings, type UiDensity, type SizeColorsPalette } from '$lib/settings'
+import {
+  getSetting,
+  onSettingChange,
+  initializeSettings,
+  type UiDensity,
+  type SizeColorsPalette,
+  type DateColorsPalette,
+} from '$lib/settings'
 import { getAppLogger, setVerboseLogging } from '$lib/logging/logger'
 import {
   updateFileWatcherDebounce,
@@ -40,6 +47,15 @@ let lastMaxLogStorageMb: number | undefined
 function applySizeColors(palette: SizeColorsPalette): void {
   document.documentElement.dataset.sizeColors = palette
   log.debug('Applied size colors palette: {palette}', { palette })
+}
+
+/**
+ * Applies the modified-date age color palette by setting `data-date-colors`
+ * on the root element. App.css scopes alternative palettes to this attribute.
+ */
+function applyDateColors(palette: DateColorsPalette): void {
+  document.documentElement.dataset.dateColors = palette
+  log.debug('Applied date colors palette: {palette}', { palette })
 }
 
 /**
@@ -93,6 +109,9 @@ function applyAllSettings(): void {
   // Size-tier color palette
   applySizeColors(getSetting('appearance.sizeColors'))
 
+  // Date age color palette
+  applyDateColors(getSetting('appearance.dateColors'))
+
   // Backend settings (async, fire-and-forget for startup)
   void applyBackendSettings()
 
@@ -137,6 +156,10 @@ function handleSettingChange(id: string, value: unknown): void {
   }
   if (id === 'appearance.sizeColors') {
     applySizeColors(value as SizeColorsPalette)
+    return
+  }
+  if (id === 'appearance.dateColors') {
+    applyDateColors(value as DateColorsPalette)
     return
   }
   if (id === 'advanced.maxLogStorageMb') {

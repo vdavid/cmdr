@@ -23,6 +23,7 @@ export type {
   SettingsValues,
   SettingType,
   SizeColorsPalette,
+  DateColorsPalette,
   ThemeMode,
   UiDensity,
 } from './types'

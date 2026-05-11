@@ -145,44 +145,50 @@ describe('formatDate', () => {
 })
 
 describe('buildDateTooltip', () => {
-  it('returns empty string when no dates are set', () => {
+  it('returns empty html when no dates are set', () => {
     const entry = createFileEntry()
-    expect(buildDateTooltip(entry)).toBe('')
+    expect(buildDateTooltip(entry).html).toBe('')
   })
 
   it('includes created date', () => {
     const entry = createFileEntry({ createdAt: 1705322445 })
-    const result = buildDateTooltip(entry)
-    expect(result).toContain('Created:')
+    expect(buildDateTooltip(entry).html).toContain('Created:')
   })
 
   it('includes opened date', () => {
     const entry = createFileEntry({ openedAt: 1705322445 })
-    const result = buildDateTooltip(entry)
-    expect(result).toContain('Last opened:')
+    expect(buildDateTooltip(entry).html).toContain('Last opened:')
   })
 
   it('includes added date', () => {
     const entry = createFileEntry({ addedAt: 1705322445 })
-    const result = buildDateTooltip(entry)
-    expect(result).toContain('Last moved ("added"):')
+    expect(buildDateTooltip(entry).html).toContain('Last moved ("added"):')
   })
 
   it('includes modified date', () => {
     const entry = createFileEntry({ modifiedAt: 1705322445 })
-    const result = buildDateTooltip(entry)
-    expect(result).toContain('Last modified:')
+    expect(buildDateTooltip(entry).html).toContain('Last modified:')
   })
 
-  it('includes multiple dates separated by newlines', () => {
+  it('separates multiple dates with <br>', () => {
     const entry = createFileEntry({
       createdAt: 1705322445,
       modifiedAt: 1705408845,
     })
-    const result = buildDateTooltip(entry)
+    const result = buildDateTooltip(entry).html
     expect(result).toContain('Created:')
     expect(result).toContain('Last modified:')
-    expect(result).toContain('\n')
+    expect(result).toContain('<br>')
+  })
+
+  it('wraps each date in its age-tier span', () => {
+    const nowMs = Date.parse('2026-05-11T12:00:00Z')
+    const fresh = nowMs / 1000 - 7 * 24 * 60 * 60 // 1 week ago
+    const ancient = nowMs / 1000 - 5 * 365 * 24 * 60 * 60 // 5 years ago
+    const entry = createFileEntry({ createdAt: ancient, modifiedAt: fresh })
+    const result = buildDateTooltip(entry, nowMs).html
+    expect(result).toContain('class="age-ancient"')
+    expect(result).toContain('class="age-fresh"')
   })
 })
 

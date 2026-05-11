@@ -99,16 +99,34 @@ export const settingsRegistry: SettingDefinition[] = [
     section: ['General', 'Appearance'],
     label: 'Size colors',
     description:
-      'Color file sizes in the file list by tier. Rainbow uses green/yellow/orange/red/purple. Accent uses shades of the app accent color.',
-    keywords: ['size', 'color', 'tier', 'rainbow', 'accent', 'highlight', 'kb', 'mb', 'gb', 'tb'],
+      'Color file sizes in the file list by tier. Rainbow uses green/yellow/orange/red/purple. App uses shades of the app color.',
+    keywords: ['size', 'color', 'tier', 'rainbow', 'app', 'highlight', 'kb', 'mb', 'gb', 'tb'],
     type: 'enum',
     default: 'rainbow',
     component: 'toggle-group',
     constraints: {
       options: [
         { value: 'none', label: 'None' },
-        { value: 'accent', label: 'Accent' },
+        { value: 'app', label: 'App' },
         { value: 'rainbow', label: 'Rainbow' },
+      ],
+    },
+  },
+  {
+    id: 'appearance.dateColors',
+    section: ['General', 'Appearance'],
+    label: 'Date colors',
+    description:
+      'Color modified dates in the file list by age. App fades older dates toward the default text color. Wilting goes green for fresh files, yellow for aging, and brown for old.',
+    keywords: ['date', 'color', 'age', 'modified', 'wilting', 'app', 'fresh', 'old'],
+    type: 'enum',
+    default: 'wilting',
+    component: 'toggle-group',
+    constraints: {
+      options: [
+        { value: 'off', label: 'Off' },
+        { value: 'app', label: 'App' },
+        { value: 'wilting', label: 'Wilting' },
       ],
     },
   },

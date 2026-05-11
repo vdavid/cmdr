@@ -46,6 +46,14 @@ typography; `applyDensity()` in `settings-applier.ts` multiplies row-height/icon
 `--font-scale` so layout grows with text. After each scale change, `text-size.ts` re-triggers
 `ensureFontMetricsLoaded()` on a 1 s debounce so Rust gets fresh Brief-mode width data for the new font ID.
 
+### Color palettes (size + date)
+
+`appearance.sizeColors` (default `rainbow`) and `appearance.dateColors` (default `wilting`) each pick a five-tier color
+palette applied via `data-size-colors` / `data-date-colors` attributes on `<html>`. Settings applier wires both. CSS
+tokens (`--color-size-*`, `--color-age-*`) live in `app.css`. Date thresholds (1 month / 1 year / 2 years / 3 years)
+live in `lib/file-explorer/selection/age-tier-utils.ts`. The setting value `app` (renamed from the older `accent`)
+refers to the user-facing "app color" — internally the underlying CSS token is still `--color-accent`.
+
 ### Reactive state (`reactive-settings.svelte.ts`)
 
 - Svelte 5 `$state` for settings that affect UI rendering (density, date format, file size format, directory sort mode)

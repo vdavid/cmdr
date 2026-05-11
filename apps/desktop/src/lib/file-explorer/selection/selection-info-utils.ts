@@ -6,6 +6,7 @@
 import type { FileEntry } from '../types'
 import type { FileSizeFormat } from '$lib/settings/types'
 import { formatFileSizeWithFormat } from '$lib/settings/format-utils'
+import { tierClassForAge } from './age-tier-utils'
 
 // Size tier colors for digit triads (indexed: 0=bytes, 1=kB, 2=MB, 3=GB, 4=TB+)
 export const sizeTierClasses = ['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb']
@@ -109,15 +110,25 @@ export function formatDate(timestamp: number | null | undefined): string {
   return `${String(year)}-${month}-${day} ${hours}:${mins}:${secs}`
 }
 
-/** Builds date tooltip content */
-export function buildDateTooltip(e: FileEntry): string {
+/**
+ * Builds date tooltip content as HTML. Each timestamp is wrapped in its
+ * age-tier span so the date portion picks up the active `data-date-colors`
+ * palette. Returns `{ html }` for the tooltip action; an empty `html` means
+ * no timestamps were available.
+ */
+export function buildDateTooltip(e: FileEntry, nowMs: number = Date.now()): { html: string } {
   const lines: string[] = []
+  const line = (label: string, ts: number) => {
+    const tier = tierClassForAge(ts, nowMs)
+    const span = tier ? `<span class="${tier}">${formatDate(ts)}</span>` : formatDate(ts)
+    lines.push(`${label}: ${span}`)
+  }
   // `!= null` because IPC payloads serialize `Option::None` as JSON `null`.
-  if (e.createdAt != null) lines.push(`Created: ${formatDate(e.createdAt)}`)
-  if (e.openedAt != null) lines.push(`Last opened: ${formatDate(e.openedAt)}`)
-  if (e.addedAt != null) lines.push(`Last moved ("added"): ${formatDate(e.addedAt)}`)
-  if (e.modifiedAt != null) lines.push(`Last modified: ${formatDate(e.modifiedAt)}`)
-  return lines.join('\n')
+  if (e.createdAt != null) line('Created', e.createdAt)
+  if (e.openedAt != null) line('Last opened', e.openedAt)
+  if (e.addedAt != null) line('Last moved ("added")', e.addedAt)
+  if (e.modifiedAt != null) line('Last modified', e.modifiedAt)
+  return { html: lines.join('<br>') }
 }
 
 /** Determines size display for an entry, using the display size based on the mode */

@@ -13,6 +13,7 @@
         formatNumber,
         calculatePercentage,
     } from './selection-info-utils'
+    import { tierClassForAge } from './age-tier-utils'
     import { measureDateColumnWidth } from '../views/full-list-utils'
     import {
         formatFileSize,
@@ -135,6 +136,11 @@
         return formatDateTime(timestamp)
     })
     const dateTooltip = $derived(entry && !isBrokenSymlink && !isPermissionDenied ? buildDateTooltip(entry) : undefined)
+    const dateAgeClass = $derived.by(() => {
+        if (!entry || isBrokenSymlink || isPermissionDenied) return null
+        const ts = entry.name === '..' ? currentDirModifiedAt : entry.modifiedAt
+        return tierClassForAge(ts)
+    })
     // Show an info hint next to a directory's size when its subtree contains
     // symlinks: their content is intentionally excluded from the recursive
     // size (matching `du`/Finder), but that can be surprising for folders that
@@ -235,7 +241,9 @@
                 </span>
             {/if}
         </span>
-        <span class="date" style="width: {dateColumnWidth}px;" use:tooltip={dateTooltip}>{dateDisplay}</span>
+        <span class="date {dateAgeClass ?? ''}" style="width: {dateColumnWidth}px;" use:tooltip={dateTooltip}
+            >{dateDisplay}</span
+        >
         {#if volumeSpace}
             <!-- eslint-disable-next-line svelte/no-at-html-tags -- Markup built from typed disk space + tier classes; no user input. -->
             <span class="disk-space-text">{@html diskSpaceStatusHtml(volumeSpace)}</span>
@@ -317,6 +325,24 @@
         /* width is set via inline style based on formatted date length */
         text-align: right;
         font-size: calc(var(--font-size-sm) * 0.9);
+    }
+
+    /* Age tier overrides: same reason as `FullList`'s `.col-date.age-*` rules
+       — scoped specificity beats the global utilities, so we re-apply. */
+    .date.age-fresh {
+        color: var(--color-age-fresh);
+    }
+    .date.age-recent {
+        color: var(--color-age-recent);
+    }
+    .date.age-aging {
+        color: var(--color-age-aging);
+    }
+    .date.age-old {
+        color: var(--color-age-old);
+    }
+    .date.age-ancient {
+        color: var(--color-age-ancient);
     }
 
     .summary-text {

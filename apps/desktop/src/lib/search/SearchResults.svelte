@@ -9,6 +9,7 @@
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
     import type { SearchResultEntry } from '$lib/tauri-commands'
     import Size from '$lib/ui/Size.svelte'
+    import { tierClassForAge } from '$lib/file-explorer/selection/age-tier-utils'
 
     interface Props {
         results: SearchResultEntry[]
@@ -220,7 +221,7 @@
                 <span class="result-size">
                     <Size bytes={entry.size} />
                 </span>
-                <span class="result-modified">
+                <span class="result-modified {tierClassForAge(entry.modifiedAt) ?? ''}">
                     {formatDate(entry.modifiedAt)}
                 </span>
             </div>
@@ -386,6 +387,24 @@
         color: var(--color-text-tertiary);
         white-space: nowrap;
         text-align: right;
+    }
+
+    /* Age tier overrides: same reason as `FullList`'s `.col-date.age-*` rules
+       — scoped specificity beats the global utilities, so we re-apply. */
+    .result-modified.age-fresh {
+        color: var(--color-age-fresh);
+    }
+    .result-modified.age-recent {
+        color: var(--color-age-recent);
+    }
+    .result-modified.age-aging {
+        color: var(--color-age-aging);
+    }
+    .result-modified.age-old {
+        color: var(--color-age-old);
+    }
+    .result-modified.age-ancient {
+        color: var(--color-age-ancient);
     }
 
     /* Status bar */

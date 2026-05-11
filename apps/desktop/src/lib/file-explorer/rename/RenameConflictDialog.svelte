@@ -2,6 +2,7 @@
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { formatDateTime, formatFileSize } from '$lib/settings/reactive-settings.svelte'
+    import { tierClassForAge } from '../selection/age-tier-utils'
     import type { ConflictFileInfo, RenameConflictResolution } from './rename-operations'
 
     interface Props {
@@ -57,7 +58,9 @@
                 </div>
                 <div class="file-meta">
                     <span class="meta-label">Modified</span>
-                    <span class="meta-value" class:newer={renamedIsNewer}>{formatDateTime(renamedFile.modifiedAt)}</span
+                    <span
+                        class="meta-value {tierClassForAge(renamedFile.modifiedAt) ?? ''}"
+                        class:newer={renamedIsNewer}>{formatDateTime(renamedFile.modifiedAt)}</span
                     >
                 </div>
             </div>
@@ -74,7 +77,7 @@
                 <div class="file-meta">
                     <span class="meta-label">Modified</span>
                     <span
-                        class="meta-value"
+                        class="meta-value {tierClassForAge(existingFile.modifiedAt) ?? ''}"
                         class:newer={!renamedIsNewer &&
                             renamedFile.modifiedAt !== existingFile.modifiedAt &&
                             existingFile.modifiedAt != null}>{formatDateTime(existingFile.modifiedAt)}</span
@@ -169,6 +172,25 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-primary);
         font-variant-numeric: tabular-nums;
+    }
+
+    /* Age tier overrides for the Modified row. Declared before `.newer` so
+       the semantic "this is the newer file" green wins on the highlighted
+       side (same specificity, later wins). */
+    .meta-value.age-fresh {
+        color: var(--color-age-fresh);
+    }
+    .meta-value.age-recent {
+        color: var(--color-age-recent);
+    }
+    .meta-value.age-aging {
+        color: var(--color-age-aging);
+    }
+    .meta-value.age-old {
+        color: var(--color-age-old);
+    }
+    .meta-value.age-ancient {
+        color: var(--color-age-ancient);
     }
 
     .meta-value.newer {

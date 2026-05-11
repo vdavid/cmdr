@@ -28,6 +28,7 @@
     const appIconsDef = getSettingDefinition('appearance.useAppIconsForDocuments') ?? { label: '', description: '' }
     const fileSizeDef = getSettingDefinition('appearance.fileSizeFormat') ?? { label: '', description: '' }
     const sizeColorsDef = getSettingDefinition('appearance.sizeColors') ?? { label: '', description: '' }
+    const dateColorsDef = getSettingDefinition('appearance.dateColors') ?? { label: '', description: '' }
     const dateTimeDef = getSettingDefinition('appearance.dateTimeFormat') ?? { label: '', description: '' }
 
     // App color state
@@ -162,6 +163,17 @@
             {searchQuery}
         >
             <SettingToggleGroup id="appearance.sizeColors" />
+        </SettingRow>
+    {/if}
+
+    {#if shouldShow('appearance.dateColors')}
+        <SettingRow
+            id="appearance.dateColors"
+            label={dateColorsDef.label}
+            description={dateColorsDef.description}
+            {searchQuery}
+        >
+            <SettingToggleGroup id="appearance.dateColors" />
         </SettingRow>
     {/if}
 
