@@ -270,20 +270,16 @@ fn scan_sources_internal(
             );
             state.emit_progress_via_app(
                 app,
-                WriteProgressEvent {
-                    operation_id: operation_id.to_string(),
+                WriteProgressEvent::new(
+                    operation_id.to_string(),
                     operation_type,
-                    phase: WriteOperationPhase::Scanning,
-                    current_file: current_file.clone(),
+                    WriteOperationPhase::Scanning,
+                    current_file.clone(),
                     files_done,
-                    files_total: 0,
+                    0,
                     bytes_done,
-                    bytes_total: 0,
-
-                    bytes_per_second: None,
-                    files_per_second: None,
-                    eta_seconds: None,
-                },
+                    0,
+                ),
             );
             update_operation_status(
                 operation_id,
@@ -323,20 +319,16 @@ fn scan_sources_internal(
     );
     state.emit_progress_via_app(
         app,
-        WriteProgressEvent {
-            operation_id: operation_id.to_string(),
+        WriteProgressEvent::new(
+            operation_id.to_string(),
             operation_type,
-            phase: WriteOperationPhase::Scanning,
-            current_file: None,
-            files_done: files.len(),
-            files_total: files.len(),
-            bytes_done: total_bytes,
-            bytes_total: total_bytes,
-
-            bytes_per_second: None,
-            files_per_second: None,
-            eta_seconds: None,
-        },
+            WriteOperationPhase::Scanning,
+            None,
+            files.len(),
+            files.len(),
+            total_bytes,
+            total_bytes,
+        ),
     );
 
     Ok(ScanResult {

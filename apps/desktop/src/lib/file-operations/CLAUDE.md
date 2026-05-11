@@ -31,7 +31,9 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
    - Subscribes via `onWriteProgress`, `onWriteComplete`, `onWriteError`, `onWriteCancelled`, `onWriteConflict` callback
      wrappers (which internally listen to Tauri events). Uses a `BufferedEvent` discriminated union
      (`{ type: 'progress'; event: WriteProgressEvent }`, etc.) to buffer events until the `operationId` is known.
-   - Dual progress bars (size + file count) with speed, ETA, current file
+   - Dual progress bars (size + file count). Speed (both bytes/s and files/s) and ETA come pre-computed from the backend
+     (`write_operations/eta.rs`) on every `WriteProgressEvent` — the dialog renders the numbers and applies a tiny
+     display low-pass to the ETA to prevent flicker. No FE-side math.
    - Dynamic stage indicator: "Scanning" → "Copying" (+ "Cleaning up" for cross-FS move)
    - Conflict resolution inline (if using `Stop` mode instead of dry-run)
    - Cancel button → rollback transaction (user chooses keep/rollback)

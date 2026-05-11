@@ -233,20 +233,16 @@ pub async fn move_between_volumes(
                 if last_progress_time.elapsed() >= progress_interval {
                     state.emit_progress_via_app(
                         &app,
-                        WriteProgressEvent {
-                            operation_id: operation_id_for_spawn.clone(),
-                            operation_type: WriteOperationType::Move,
-                            phase: WriteOperationPhase::Copying,
-                            current_file: Some(file_name.to_string_lossy().to_string()),
+                        WriteProgressEvent::new(
+                            operation_id_for_spawn.clone(),
+                            WriteOperationType::Move,
+                            WriteOperationPhase::Copying,
+                            Some(file_name.to_string_lossy().to_string()),
                             files_done,
-                            files_total: total_files,
+                            total_files,
                             bytes_done,
-                            bytes_total: 0,
-
-                            bytes_per_second: None,
-                            files_per_second: None,
-                            eta_seconds: None,
-                        },
+                            0,
+                        ),
                     );
                     last_progress_time = Instant::now();
                 }
@@ -424,19 +420,16 @@ async fn move_within_same_volume(
                 if last_progress_time.elapsed() >= progress_interval {
                     state.emit_progress_via_app(
                         &app,
-                        WriteProgressEvent {
-                            operation_id: operation_id_for_spawn.clone(),
-                            operation_type: WriteOperationType::Move,
-                            phase: WriteOperationPhase::Copying,
-                            current_file: Some(file_name.to_string_lossy().to_string()),
-                            files_done: files_moved,
-                            files_total: total_files,
-                            bytes_done: bytes_moved,
-                            bytes_total: 0, // Not known upfront for rename-based moves
-                            bytes_per_second: None,
-                            files_per_second: None,
-                            eta_seconds: None,
-                        },
+                        WriteProgressEvent::new(
+                            operation_id_for_spawn.clone(),
+                            WriteOperationType::Move,
+                            WriteOperationPhase::Copying,
+                            Some(file_name.to_string_lossy().to_string()),
+                            files_moved,
+                            total_files,
+                            bytes_moved,
+                            0,
+                        ),
                     );
                     last_progress_time = Instant::now();
                 }

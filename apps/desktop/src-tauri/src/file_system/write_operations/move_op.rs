@@ -343,20 +343,16 @@ fn move_with_staging(
     // Emit initial copying phase event
     state.emit_progress_via_app(
         app,
-        WriteProgressEvent {
-            operation_id: operation_id.to_string(),
-            operation_type: WriteOperationType::Move,
-            phase: WriteOperationPhase::Copying,
-            current_file: None,
-            files_done: 0,
-            files_total: scan_result.file_count,
-            bytes_done: 0,
-            bytes_total: scan_result.total_bytes,
-
-            bytes_per_second: None,
-            files_per_second: None,
-            eta_seconds: None,
-        },
+        WriteProgressEvent::new(
+            operation_id.to_string(),
+            WriteOperationType::Move,
+            WriteOperationPhase::Copying,
+            None,
+            0,
+            scan_result.file_count,
+            0,
+            scan_result.total_bytes,
+        ),
     );
     update_operation_status(
         operation_id,

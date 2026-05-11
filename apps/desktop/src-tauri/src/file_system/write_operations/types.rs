@@ -93,6 +93,43 @@ pub struct WriteProgressEvent {
     pub eta_seconds: Option<u32>,
 }
 
+impl WriteProgressEvent {
+    /// Construct an event with the 8 core counter fields. The three rate/ETA
+    /// fields are seeded to `None` — they're filled in by
+    /// `WriteOperationState::enrich_progress` right before the event is emitted.
+    /// Always go through this constructor at emit sites instead of using a
+    /// struct literal, so the rate fields don't leak into call sites as visual
+    /// noise.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "These are the natural fields of a progress event. Bundling into a struct adds ceremony without cleaning anything up."
+    )]
+    pub fn new(
+        operation_id: String,
+        operation_type: WriteOperationType,
+        phase: WriteOperationPhase,
+        current_file: Option<String>,
+        files_done: usize,
+        files_total: usize,
+        bytes_done: u64,
+        bytes_total: u64,
+    ) -> Self {
+        Self {
+            operation_id,
+            operation_type,
+            phase,
+            current_file,
+            files_done,
+            files_total,
+            bytes_done,
+            bytes_total,
+            bytes_per_second: None,
+            files_per_second: None,
+            eta_seconds: None,
+        }
+    }
+}
+
 /// Completion event payload.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

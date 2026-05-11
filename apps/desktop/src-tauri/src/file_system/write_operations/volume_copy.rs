@@ -346,20 +346,16 @@ pub(crate) async fn copy_volumes_with_progress(
 
         state.emit_progress_via_sink(
             events,
-            WriteProgressEvent {
-                operation_id: operation_id.to_string(),
-                operation_type: WriteOperationType::Copy,
-                phase: WriteOperationPhase::Scanning,
-                current_file: None,
-                files_done: 0,
-                files_total: 0,
-                bytes_done: 0,
-                bytes_total: 0,
-
-                bytes_per_second: None,
-                files_per_second: None,
-                eta_seconds: None,
-            },
+            WriteProgressEvent::new(
+                operation_id.to_string(),
+                WriteOperationType::Copy,
+                WriteOperationPhase::Scanning,
+                None,
+                0,
+                0,
+                0,
+                0,
+            ),
         );
 
         if is_cancelled(&state.intent) {
@@ -457,20 +453,16 @@ pub(crate) async fn copy_volumes_with_progress(
     // Emit initial copying phase event
     state.emit_progress_via_sink(
         events,
-        WriteProgressEvent {
-            operation_id: operation_id.to_string(),
-            operation_type: WriteOperationType::Copy,
-            phase: WriteOperationPhase::Copying,
-            current_file: None,
-            files_done: 0,
-            files_total: total_files,
-            bytes_done: 0,
-            bytes_total: total_bytes,
-
-            bytes_per_second: None,
-            files_per_second: None,
-            eta_seconds: None,
-        },
+        WriteProgressEvent::new(
+            operation_id.to_string(),
+            WriteOperationType::Copy,
+            WriteOperationPhase::Copying,
+            None,
+            0,
+            total_files,
+            0,
+            total_bytes,
+        ),
     );
     update_operation_status(
         operation_id,
@@ -603,20 +595,19 @@ pub(crate) async fn copy_volumes_with_progress(
                         let last = *last_prog_a.lock().unwrap();
                         if last.elapsed() >= progress_interval {
                             *last_prog_a.lock().unwrap() = Instant::now();
-                            events_ref.emit_progress(WriteProgressEvent {
-                                operation_id: op_id.to_string(),
-                                operation_type: WriteOperationType::Copy,
-                                phase: WriteOperationPhase::Copying,
-                                current_file: file_name_owned.clone(),
-                                files_done: current_files_done,
-                                files_total: total_files,
-                                bytes_done: current_total,
-                                bytes_total: total_bytes,
-
-                                bytes_per_second: None,
-                                files_per_second: None,
-                                eta_seconds: None,
-                            });
+                            state_clone.emit_progress_via_sink(
+                                events_ref,
+                                WriteProgressEvent::new(
+                                    op_id.to_string(),
+                                    WriteOperationType::Copy,
+                                    WriteOperationPhase::Copying,
+                                    file_name_owned.clone(),
+                                    current_files_done,
+                                    total_files,
+                                    current_total,
+                                    total_bytes,
+                                ),
+                            );
                             update_operation_status(
                                 op_id,
                                 WriteOperationPhase::Copying,
@@ -773,20 +764,16 @@ pub(crate) async fn copy_volumes_with_progress(
                     *last_prog_a.lock().unwrap() = Instant::now();
                     state.emit_progress_via_sink(
                         events,
-                        WriteProgressEvent {
-                            operation_id: operation_id.to_string(),
-                            operation_type: WriteOperationType::Copy,
-                            phase: WriteOperationPhase::Copying,
-                            current_file: file_name_for_cb.clone(),
-                            files_done: current_files_done,
-                            files_total: total_files,
-                            bytes_done: current_total,
-                            bytes_total: total_bytes,
-
-                            bytes_per_second: None,
-                            files_per_second: None,
-                            eta_seconds: None,
-                        },
+                        WriteProgressEvent::new(
+                            operation_id.to_string(),
+                            WriteOperationType::Copy,
+                            WriteOperationPhase::Copying,
+                            file_name_for_cb.clone(),
+                            current_files_done,
+                            total_files,
+                            current_total,
+                            total_bytes,
+                        ),
                     );
                     update_operation_status(
                         operation_id,
@@ -999,20 +986,16 @@ async fn volume_rollback_with_progress(
     // Emit initial rollback phase event
     state.emit_progress_via_sink(
         events,
-        WriteProgressEvent {
-            operation_id: operation_id.to_string(),
-            operation_type: WriteOperationType::Copy,
-            phase: WriteOperationPhase::RollingBack,
-            current_file: None,
-            files_done: files_at_cancel,
+        WriteProgressEvent::new(
+            operation_id.to_string(),
+            WriteOperationType::Copy,
+            WriteOperationPhase::RollingBack,
+            None,
+            files_at_cancel,
             files_total,
-            bytes_done: bytes_at_cancel,
+            bytes_at_cancel,
             bytes_total,
-
-            bytes_per_second: None,
-            files_per_second: None,
-            eta_seconds: None,
-        },
+        ),
     );
     update_operation_status(
         operation_id,
@@ -1061,20 +1044,16 @@ async fn volume_rollback_with_progress(
                 .unwrap_or_default();
             state.emit_progress_via_sink(
                 events,
-                WriteProgressEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Copy,
-                    phase: WriteOperationPhase::RollingBack,
-                    current_file: Some(current_file_name.clone()),
-                    files_done: remaining_files,
+                WriteProgressEvent::new(
+                    operation_id.to_string(),
+                    WriteOperationType::Copy,
+                    WriteOperationPhase::RollingBack,
+                    Some(current_file_name.clone()),
+                    remaining_files,
                     files_total,
-                    bytes_done: remaining_bytes,
+                    remaining_bytes,
                     bytes_total,
-
-                    bytes_per_second: None,
-                    files_per_second: None,
-                    eta_seconds: None,
-                },
+                ),
             );
             update_operation_status(
                 operation_id,

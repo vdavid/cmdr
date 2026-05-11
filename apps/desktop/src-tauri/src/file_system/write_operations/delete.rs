@@ -103,20 +103,16 @@ pub(super) fn delete_files_with_progress(
             let current_file = file_info.path.file_name().map(|n| n.to_string_lossy().to_string());
             state.emit_progress_via_app(
                 app,
-                WriteProgressEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Delete,
-                    phase: WriteOperationPhase::Deleting,
-                    current_file: current_file.clone(),
+                WriteProgressEvent::new(
+                    operation_id.to_string(),
+                    WriteOperationType::Delete,
+                    WriteOperationPhase::Deleting,
+                    current_file.clone(),
                     files_done,
-                    files_total: scan_result.file_count,
+                    scan_result.file_count,
                     bytes_done,
-                    bytes_total: scan_result.total_bytes,
-
-                    bytes_per_second: None,
-                    files_per_second: None,
-                    eta_seconds: None,
-                },
+                    scan_result.total_bytes,
+                ),
             );
             update_operation_status(
                 operation_id,
@@ -265,20 +261,16 @@ async fn scan_volume_recursive(
         let current_file = path.file_name().map(|n| n.to_string_lossy().to_string());
         state.emit_progress_via_app(
             app,
-            WriteProgressEvent {
-                operation_id: operation_id.to_string(),
-                operation_type: WriteOperationType::Delete,
-                phase: WriteOperationPhase::Scanning,
-                current_file: current_file.clone(),
-                files_done: file_count,
-                files_total: 0,
-                bytes_done: *total_bytes,
-                bytes_total: 0,
-
-                bytes_per_second: None,
-                files_per_second: None,
-                eta_seconds: None,
-            },
+            WriteProgressEvent::new(
+                operation_id.to_string(),
+                WriteOperationType::Delete,
+                WriteOperationPhase::Scanning,
+                current_file.clone(),
+                file_count,
+                0,
+                *total_bytes,
+                0,
+            ),
         );
         update_operation_status(
             operation_id,
@@ -352,20 +344,16 @@ pub(super) async fn delete_volume_files_with_progress(
     // Emit final scan progress
     state.emit_progress_via_app(
         app,
-        WriteProgressEvent {
-            operation_id: operation_id.to_string(),
-            operation_type: WriteOperationType::Delete,
-            phase: WriteOperationPhase::Scanning,
-            current_file: None,
-            files_done: file_count,
-            files_total: file_count,
-            bytes_done: total_bytes,
-            bytes_total: total_bytes,
-
-            bytes_per_second: None,
-            files_per_second: None,
-            eta_seconds: None,
-        },
+        WriteProgressEvent::new(
+            operation_id.to_string(),
+            WriteOperationType::Delete,
+            WriteOperationPhase::Scanning,
+            None,
+            file_count,
+            file_count,
+            total_bytes,
+            total_bytes,
+        ),
     );
 
     // Handle dry-run mode
@@ -420,20 +408,16 @@ pub(super) async fn delete_volume_files_with_progress(
             let current_file = entry.path.file_name().map(|n| n.to_string_lossy().to_string());
             state.emit_progress_via_app(
                 app,
-                WriteProgressEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Delete,
-                    phase: WriteOperationPhase::Deleting,
-                    current_file: current_file.clone(),
+                WriteProgressEvent::new(
+                    operation_id.to_string(),
+                    WriteOperationType::Delete,
+                    WriteOperationPhase::Deleting,
+                    current_file.clone(),
                     files_done,
-                    files_total: file_count,
+                    file_count,
                     bytes_done,
-                    bytes_total: total_bytes,
-
-                    bytes_per_second: None,
-                    files_per_second: None,
-                    eta_seconds: None,
-                },
+                    total_bytes,
+                ),
             );
             update_operation_status(
                 operation_id,

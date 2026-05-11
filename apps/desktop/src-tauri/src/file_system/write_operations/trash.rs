@@ -165,20 +165,16 @@ pub(super) fn trash_files_with_progress(
             let current_file = source.file_name().map(|n| n.to_string_lossy().to_string());
             state.emit_progress_via_app(
                 app,
-                WriteProgressEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Trash,
-                    phase: WriteOperationPhase::Trashing,
-                    current_file: current_file.clone(),
-                    files_done: items_done,
-                    files_total: items_total,
+                WriteProgressEvent::new(
+                    operation_id.to_string(),
+                    WriteOperationType::Trash,
+                    WriteOperationPhase::Trashing,
+                    current_file.clone(),
+                    items_done,
+                    items_total,
                     bytes_done,
                     bytes_total,
-
-                    bytes_per_second: None,
-                    files_per_second: None,
-                    eta_seconds: None,
-                },
+                ),
             );
             update_operation_status(
                 operation_id,

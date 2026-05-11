@@ -158,20 +158,16 @@ pub(super) fn copy_files_with_progress(
     // Emit initial copying phase event (important when reusing cached scan - no scanning events were emitted)
     state.emit_progress_via_app(
         app,
-        WriteProgressEvent {
-            operation_id: operation_id.to_string(),
-            operation_type: WriteOperationType::Copy,
-            phase: WriteOperationPhase::Copying,
-            current_file: None,
-            files_done: 0,
-            files_total: scan_result.file_count,
-            bytes_done: 0,
-            bytes_total: scan_result.total_bytes,
-
-            bytes_per_second: None,
-            files_per_second: None,
-            eta_seconds: None,
-        },
+        WriteProgressEvent::new(
+            operation_id.to_string(),
+            WriteOperationType::Copy,
+            WriteOperationPhase::Copying,
+            None,
+            0,
+            scan_result.file_count,
+            0,
+            scan_result.total_bytes,
+        ),
     );
     update_operation_status(
         operation_id,
@@ -624,20 +620,16 @@ pub(super) fn copy_single_item(
                 );
                 state.emit_progress_via_app(
                     app,
-                    WriteProgressEvent {
-                        operation_id: operation_id.to_string(),
+                    WriteProgressEvent::new(
+                        operation_id.to_string(),
                         operation_type,
-                        phase: WriteOperationPhase::Copying,
-                        current_file: Some(current_file_name.clone()),
-                        files_done: *files_done,
+                        WriteOperationPhase::Copying,
+                        Some(current_file_name.clone()),
+                        *files_done,
                         files_total,
-                        bytes_done: effective_bytes_done,
+                        effective_bytes_done,
                         bytes_total,
-
-                        bytes_per_second: None,
-                        files_per_second: None,
-                        eta_seconds: None,
-                    },
+                    ),
                 );
                 update_operation_status(
                     operation_id,
@@ -677,20 +669,16 @@ pub(super) fn copy_single_item(
             );
             state.emit_progress_via_app(
                 app,
-                WriteProgressEvent {
-                    operation_id: operation_id.to_string(),
+                WriteProgressEvent::new(
+                    operation_id.to_string(),
                     operation_type,
-                    phase: WriteOperationPhase::Copying,
-                    current_file: Some(current_file_name.clone()),
-                    files_done: *files_done,
+                    WriteOperationPhase::Copying,
+                    Some(current_file_name.clone()),
+                    *files_done,
                     files_total,
-                    bytes_done: *bytes_done,
+                    *bytes_done,
                     bytes_total,
-
-                    bytes_per_second: None,
-                    files_per_second: None,
-                    eta_seconds: None,
-                },
+                ),
             );
             update_operation_status(
                 operation_id,
@@ -744,20 +732,16 @@ fn rollback_with_progress(
     // Emit initial rollback phase event (same values as cancellation point)
     state.emit_progress_via_app(
         app,
-        WriteProgressEvent {
-            operation_id: operation_id.to_string(),
+        WriteProgressEvent::new(
+            operation_id.to_string(),
             operation_type,
-            phase: WriteOperationPhase::RollingBack,
-            current_file: None,
-            files_done: files_at_cancel,
+            WriteOperationPhase::RollingBack,
+            None,
+            files_at_cancel,
             files_total,
-            bytes_done: bytes_at_cancel,
+            bytes_at_cancel,
             bytes_total,
-
-            bytes_per_second: None,
-            files_per_second: None,
-            eta_seconds: None,
-        },
+        ),
     );
     update_operation_status(
         operation_id,
@@ -802,20 +786,16 @@ fn rollback_with_progress(
                 .unwrap_or_default();
             state.emit_progress_via_app(
                 app,
-                WriteProgressEvent {
-                    operation_id: operation_id.to_string(),
+                WriteProgressEvent::new(
+                    operation_id.to_string(),
                     operation_type,
-                    phase: WriteOperationPhase::RollingBack,
-                    current_file: Some(current_file_name.clone()),
-                    files_done: remaining_files,
+                    WriteOperationPhase::RollingBack,
+                    Some(current_file_name.clone()),
+                    remaining_files,
                     files_total,
-                    bytes_done: remaining_bytes,
+                    remaining_bytes,
                     bytes_total,
-
-                    bytes_per_second: None,
-                    files_per_second: None,
-                    eta_seconds: None,
-                },
+                ),
             );
             update_operation_status(
                 operation_id,
