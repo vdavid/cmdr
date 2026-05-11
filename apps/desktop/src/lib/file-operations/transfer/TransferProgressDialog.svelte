@@ -855,7 +855,9 @@
     titleId="progress-dialog-title"
     onkeydown={handleKeydown}
     dialogId="transfer-progress"
-    onclose={() => void handleCancel(false)}
+    onclose={() => {
+        void handleCancel(false)
+    }}
     containerStyle="width: 500px"
 >
     {#snippet title()}
@@ -877,11 +879,17 @@
         {/if}
 
         <div class="scan-wait-section">
+<!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -- Svelte {@render} syntax -->
             {@render scanPhaseBody()}
         </div>
 
         <div class="button-row">
-            <Button variant="secondary" onclick={() => void handleCancel(false)}>Cancel</Button>
+            <Button
+                variant="secondary"
+                onclick={() => {
+                    void handleCancel(false)
+                }}>Cancel</Button
+            >
         </div>
     {:else if !isDeleteOrTrash && conflictEvent}
         <!-- Conflict resolution (copy/move only) -->
@@ -1027,7 +1035,8 @@
         {#if phase === 'scanning'}
             <!-- Scanning phase: tallies, throughput, optional progress bar, current dir/file. -->
             <div class="scan-wait-section">
-                {@render scanPhaseBody()}
+    <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -- Svelte {@render} syntax -->
+            {@render scanPhaseBody()}
             </div>
         {:else}
             <!-- Dual progress bars (size + count) for the active phase. -->

@@ -109,6 +109,13 @@ pub fn snapshot() -> Vec<String> {
 /// Re-probe every path in the restricted set with a cheap `read_dir`. Any
 /// path that now opens successfully is cleared. Runs on a blocking task —
 /// safe to call from the main thread (the observer block does so).
+///
+/// macOS-only because the only caller — the `NSApplicationDidBecomeActive`
+/// observer in `install_did_become_active_observer` below — is itself macOS
+/// only. Other platforms have no equivalent re-probe trigger today, so the
+/// function would just be dead code there (and `#![deny(unused)]` would fail
+/// the Linux build).
+#[cfg(target_os = "macos")]
 pub fn reprobe_all_async() {
     let paths_to_probe = {
         let guard = state().read().expect("restricted_paths state poisoned");

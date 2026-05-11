@@ -10,6 +10,7 @@ import {
   type UiDensity,
   type SizeColorsPalette,
   type DateColorsPalette,
+  type ThemeMode,
 } from '$lib/settings'
 import { getAppLogger, setVerboseLogging } from '$lib/logging/logger'
 import {
@@ -99,6 +100,24 @@ async function applyBackendSettings(): Promise<void> {
 }
 
 /**
+ * Applies the persisted `theme.mode` setting via Tauri's per-app theme API.
+ * Loaded dynamically so we don't pay the import cost on every startup of
+ * non-Tauri contexts (tests, SSR) where the API isn't available.
+ *
+ * `'system'` is signaled by passing `null`, which tells Tauri to follow the
+ * OS appearance.
+ */
+async function applyTheme(mode: ThemeMode): Promise<void> {
+  try {
+    const { setTheme } = await import('@tauri-apps/api/app')
+    await setTheme(mode === 'system' ? null : mode)
+    log.debug('Applied theme: {mode}', { mode })
+  } catch (error) {
+    log.error('Failed to apply theme: {error}', { error })
+  }
+}
+
+/**
  * Applies all settings that affect the UI.
  */
 function applyAllSettings(): void {
@@ -111,6 +130,10 @@ function applyAllSettings(): void {
 
   // Date age color palette
   applyDateColors(getSetting('appearance.dateColors'))
+
+  // Theme (light / dark / system). Must run at startup or windows that open
+  // before the user touches Settings will flash the wrong theme.
+  void applyTheme(getSetting('theme.mode'))
 
   // Backend settings (async, fire-and-forget for startup)
   void applyBackendSettings()
@@ -160,6 +183,10 @@ function handleSettingChange(id: string, value: unknown): void {
   }
   if (id === 'appearance.dateColors') {
     applyDateColors(value as DateColorsPalette)
+    return
+  }
+  if (id === 'theme.mode') {
+    void applyTheme(value as ThemeMode)
     return
   }
   if (id === 'advanced.maxLogStorageMb') {
