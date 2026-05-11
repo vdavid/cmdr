@@ -424,6 +424,13 @@ export interface WriteProgressEvent {
   bytesDone: number
   /** Total bytes to process */
   bytesTotal: number
+  /** Smoothed bytes per second toward the phase target. Null during warm-up. */
+  bytesPerSecond: number | null
+  /** Smoothed files per second toward the phase target. Null during warm-up. */
+  filesPerSecond: number | null
+  /** Seconds remaining, combining both axes via max(ETA_bytes, ETA_files).
+   * Null during warm-up or when both rates are zero (operation stalled). */
+  etaSeconds: number | null
 }
 
 /** Completion event payload for write operations. */

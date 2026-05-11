@@ -20,6 +20,7 @@ mod chunked_copy;
 mod copy;
 mod copy_strategy;
 mod delete;
+mod eta;
 mod helpers;
 #[cfg(target_os = "linux")]
 mod linux_copy;
@@ -38,7 +39,6 @@ mod volume_strategy;
 
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::atomic::AtomicU8;
 use std::time::Duration;
 use uuid::Uuid;
 
@@ -115,11 +115,7 @@ where
     F: FnOnce(tauri::AppHandle, String, Arc<WriteOperationState>) -> Result<(), WriteOperationError> + Send + 'static,
 {
     let operation_id = Uuid::new_v4().to_string();
-    let state = Arc::new(WriteOperationState {
-        intent: Arc::new(AtomicU8::new(0)),
-        progress_interval: Duration::from_millis(progress_interval_ms),
-        conflict_resolution_tx: std::sync::Mutex::new(None),
-    });
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(progress_interval_ms)));
 
     if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
         cache.insert(operation_id.clone(), Arc::clone(&state));
@@ -261,11 +257,9 @@ pub async fn delete_files_start(
     if volume_id_str != "root" {
         // Volume-aware delete (async) — bypass start_write_operation since the handler is async
         let operation_id = Uuid::new_v4().to_string();
-        let state = Arc::new(WriteOperationState {
-            intent: Arc::new(AtomicU8::new(0)),
-            progress_interval: Duration::from_millis(config.progress_interval_ms),
-            conflict_resolution_tx: std::sync::Mutex::new(None),
-        });
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(
+            config.progress_interval_ms,
+        )));
 
         if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
             cache.insert(operation_id.clone(), Arc::clone(&state));

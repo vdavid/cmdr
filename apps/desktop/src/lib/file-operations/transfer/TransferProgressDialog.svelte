@@ -155,8 +155,6 @@
     let bytesDone = $state(0)
     let bytesTotal = $state(0)
     let startTime = $state(0)
-    /** When the active phase (copying/deleting) started, for accurate speed calculation. */
-    let activePhaseStartTime = 0
     let isCancelling = $state(false)
     let isRollingBack = $state(false)
     let destroyed = false
@@ -212,47 +210,33 @@
     let conflictEvent = $state<WriteConflictEvent | null>(null)
     let isResolvingConflict = $state(false)
 
-    // Sliding window speed samples for blended ETA calculation
-    let progressSamples: { timestamp: number; bytesDone: number }[] = []
+    // Rates + ETA come from the backend (`EtaEstimator` in
+    // `write_operations/eta.rs`). The FE just renders them. Null until the
+    // backend's warm-up window is over (≈800 ms after a phase change).
+    let bytesPerSecond = $state<number | null>(null)
+    let filesPerSecond = $state<number | null>(null)
+    /** Raw ETA from the backend (`max(ETA_bytes, ETA_files)`). */
+    let etaSecondsRaw = $state<number | null>(null)
+    /** Display-smoothed ETA — slow EWMA over the raw value to kill flicker on
+     *  the "Ns remaining" readout. The estimator itself stays responsive. */
+    let etaSecondsDisplay = $state<number | null>(null)
 
-    const SPEED_WINDOW_MS = 10_000
-
-    /** Blended speed: 90% recent (10s window) + 10% overall average. */
-    function getBlendedSpeed(): number {
-        if (activePhaseStartTime === 0) return 0
-
-        const now = Date.now()
-        const elapsedSeconds = (now - activePhaseStartTime) / 1000
-        const overallSpeed = elapsedSeconds > 0 ? bytesDone / elapsedSeconds : 0
-
-        // Discard samples older than the window
-        const cutoff = now - SPEED_WINDOW_MS
-        progressSamples = progressSamples.filter((s) => s.timestamp >= cutoff)
-
-        if (progressSamples.length < 2) return overallSpeed
-
-        const oldest = progressSamples[0]
-        const newest = progressSamples[progressSamples.length - 1]
-        const windowSeconds = (newest.timestamp - oldest.timestamp) / 1000
-        if (windowSeconds <= 0) return overallSpeed
-
-        const recentSpeed = (newest.bytesDone - oldest.bytesDone) / windowSeconds
-        return 0.9 * recentSpeed + 0.1 * overallSpeed
-    }
-
-    // Speed and ETA calculation (both use the same blended speed).
-    // During rollback, values decrease so the raw speed is negative — take absolute
-    // value and calculate ETA as time to reach 0 (not time to reach bytesTotal).
-    const stats = $derived.by(() => {
-        if (startTime === 0) {
-            return { bytesPerSecond: 0, estimatedSecondsRemaining: null }
+    /** Smooth the displayed ETA toward the latest backend value. Display-only —
+     *  the underlying estimator is unsmoothed and reacts to real changes. */
+    function updateDisplayEta(raw: number | null) {
+        if (raw === null) {
+            etaSecondsDisplay = null
+            return
         }
-        const rawSpeed = getBlendedSpeed()
-        const speed = Math.abs(rawSpeed)
-        const remaining = phase === 'rolling_back' ? bytesDone : bytesTotal - bytesDone
-        const estimatedSecondsRemaining = speed > 0 ? remaining / speed : null
-        return { bytesPerSecond: speed, estimatedSecondsRemaining }
-    })
+        if (etaSecondsDisplay === null) {
+            etaSecondsDisplay = raw
+            return
+        }
+        // Cap the change per tick at 25% of the gap. Real changes still
+        // propagate quickly (4 ticks ≈ 80 ms × 4 = under a second), while
+        // single-tick jitter is dampened.
+        etaSecondsDisplay = etaSecondsDisplay + 0.25 * (raw - etaSecondsDisplay)
+    }
 
     // Progress stages for visualization — the active phase label adapts to operation type.
     const activePhaseId = $derived<WriteOperationPhase>(
@@ -285,11 +269,10 @@
             bytesTotal: event.bytesTotal,
         })
 
-        // Reset speed samples on phase transition (scanning → copying resets bytesDone to 0,
-        // which would create negative speed if old scanning samples remain in the window)
+        // Drop the smoothed ETA on phase transitions — the backend estimator
+        // resets, so the FE display number should re-warm with it.
         if (event.phase !== phase) {
-            progressSamples = []
-            activePhaseStartTime = Date.now()
+            etaSecondsDisplay = null
         }
 
         // When entering rolling_back phase, set isRollingBack from the backend event
@@ -303,11 +286,10 @@
         filesTotal = event.filesTotal
         bytesDone = event.bytesDone
         bytesTotal = event.bytesTotal
-
-        // Collect speed samples during active phases (not scanning)
-        if (event.phase !== 'scanning') {
-            progressSamples.push({ timestamp: Date.now(), bytesDone: event.bytesDone })
-        }
+        bytesPerSecond = event.bytesPerSecond
+        filesPerSecond = event.filesPerSecond
+        etaSecondsRaw = event.etaSeconds
+        updateDisplayEta(etaSecondsRaw)
     }
 
     function handleComplete(event: WriteCompleteEvent) {
@@ -952,11 +934,16 @@
                 <ProgressBar value={filesTotal > 0 ? filesDone / filesTotal : 0} ariaLabel="File progress" />
                 <span class="progress-detail">{formatNumber(filesDone)} / {formatNumber(filesTotal)}</span>
                 <div class="progress-meta">
-                    {#if stats.bytesPerSecond > 0}
-                        <span class="progress-speed">{formatBytes(stats.bytesPerSecond)}/s</span>
-                    {/if}
-                    {#if stats.estimatedSecondsRemaining !== null}
-                        <span class="progress-eta">~{formatDuration(stats.estimatedSecondsRemaining)} remaining</span>
+                    <span class="progress-speeds">
+                        {#if bytesPerSecond !== null && bytesPerSecond > 0}
+                            <span class="progress-speed">{formatBytes(bytesPerSecond)}/s</span>
+                        {/if}
+                        {#if filesPerSecond !== null && filesPerSecond > 0}
+                            <span class="progress-speed">{formatNumber(Math.round(filesPerSecond))} files/s</span>
+                        {/if}
+                    </span>
+                    {#if etaSecondsDisplay !== null}
+                        <span class="progress-eta">~{formatDuration(etaSecondsDisplay)} remaining</span>
                     {/if}
                 </div>
             </div>
@@ -1125,6 +1112,11 @@
         display: flex;
         justify-content: space-between;
         font-size: var(--font-size-sm);
+    }
+
+    .progress-speeds {
+        display: inline-flex;
+        gap: var(--spacing-sm);
     }
 
     .progress-speed {

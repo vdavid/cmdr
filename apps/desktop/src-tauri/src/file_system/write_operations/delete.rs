@@ -101,8 +101,8 @@ pub(super) fn delete_files_with_progress(
         // Emit progress
         if last_progress_time.elapsed() >= state.progress_interval {
             let current_file = file_info.path.file_name().map(|n| n.to_string_lossy().to_string());
-            let _ = app.emit(
-                "write-progress",
+            state.emit_progress_via_app(
+                app,
                 WriteProgressEvent {
                     operation_id: operation_id.to_string(),
                     operation_type: WriteOperationType::Delete,
@@ -112,6 +112,10 @@ pub(super) fn delete_files_with_progress(
                     files_total: scan_result.file_count,
                     bytes_done,
                     bytes_total: scan_result.total_bytes,
+
+                    bytes_per_second: None,
+                    files_per_second: None,
+                    eta_seconds: None,
                 },
             );
             update_operation_status(
@@ -194,8 +198,6 @@ async fn scan_volume_recursive(
     operation_id: &str,
     last_progress_time: &mut Instant,
 ) -> Result<(), WriteOperationError> {
-    use tauri::Emitter;
-
     if super::state::is_cancelled(&state.intent) {
         return Err(WriteOperationError::Cancelled {
             message: "Operation cancelled by user".to_string(),
@@ -261,8 +263,8 @@ async fn scan_volume_recursive(
     if last_progress_time.elapsed() >= state.progress_interval {
         let file_count = entries.iter().filter(|e| !e.is_dir).count();
         let current_file = path.file_name().map(|n| n.to_string_lossy().to_string());
-        let _ = app.emit(
-            "write-progress",
+        state.emit_progress_via_app(
+            app,
             WriteProgressEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Delete,
@@ -272,6 +274,10 @@ async fn scan_volume_recursive(
                 files_total: 0,
                 bytes_done: *total_bytes,
                 bytes_total: 0,
+
+                bytes_per_second: None,
+                files_per_second: None,
+                eta_seconds: None,
             },
         );
         update_operation_status(
@@ -344,8 +350,8 @@ pub(super) async fn delete_volume_files_with_progress(
     let file_count = entries.iter().filter(|e| !e.is_dir).count();
 
     // Emit final scan progress
-    let _ = app.emit(
-        "write-progress",
+    state.emit_progress_via_app(
+        app,
         WriteProgressEvent {
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Delete,
@@ -355,6 +361,10 @@ pub(super) async fn delete_volume_files_with_progress(
             files_total: file_count,
             bytes_done: total_bytes,
             bytes_total: total_bytes,
+
+            bytes_per_second: None,
+            files_per_second: None,
+            eta_seconds: None,
         },
     );
 
@@ -408,8 +418,8 @@ pub(super) async fn delete_volume_files_with_progress(
 
         if last_progress_time.elapsed() >= state.progress_interval {
             let current_file = entry.path.file_name().map(|n| n.to_string_lossy().to_string());
-            let _ = app.emit(
-                "write-progress",
+            state.emit_progress_via_app(
+                app,
                 WriteProgressEvent {
                     operation_id: operation_id.to_string(),
                     operation_type: WriteOperationType::Delete,
@@ -419,6 +429,10 @@ pub(super) async fn delete_volume_files_with_progress(
                     files_total: file_count,
                     bytes_done,
                     bytes_total: total_bytes,
+
+                    bytes_per_second: None,
+                    files_per_second: None,
+                    eta_seconds: None,
                 },
             );
             update_operation_status(

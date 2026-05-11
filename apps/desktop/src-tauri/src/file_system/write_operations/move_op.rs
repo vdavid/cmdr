@@ -341,8 +341,8 @@ fn move_with_staging(
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
 
     // Emit initial copying phase event
-    let _ = app.emit(
-        "write-progress",
+    state.emit_progress_via_app(
+        app,
         WriteProgressEvent {
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Move,
@@ -352,6 +352,10 @@ fn move_with_staging(
             files_total: scan_result.file_count,
             bytes_done: 0,
             bytes_total: scan_result.total_bytes,
+
+            bytes_per_second: None,
+            files_per_second: None,
+            eta_seconds: None,
         },
     );
     update_operation_status(

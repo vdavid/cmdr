@@ -8,7 +8,6 @@
 use std::ops::ControlFlow;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::atomic::AtomicU8;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
@@ -78,11 +77,9 @@ pub async fn move_between_volumes(
     let operation_id = Uuid::new_v4().to_string();
     let operation_id_for_spawn = operation_id.clone();
 
-    let state = Arc::new(WriteOperationState {
-        intent: Arc::new(AtomicU8::new(0)),
-        progress_interval: Duration::from_millis(config.progress_interval_ms),
-        conflict_resolution_tx: std::sync::Mutex::new(None),
-    });
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(
+        config.progress_interval_ms,
+    )));
 
     if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
         cache.insert(operation_id.clone(), Arc::clone(&state));
@@ -234,8 +231,8 @@ pub async fn move_between_volumes(
                 bytes_done += bytes;
 
                 if last_progress_time.elapsed() >= progress_interval {
-                    let _ = app.emit(
-                        "write-progress",
+                    state.emit_progress_via_app(
+                        &app,
                         WriteProgressEvent {
                             operation_id: operation_id_for_spawn.clone(),
                             operation_type: WriteOperationType::Move,
@@ -245,6 +242,10 @@ pub async fn move_between_volumes(
                             files_total: total_files,
                             bytes_done,
                             bytes_total: 0,
+
+                            bytes_per_second: None,
+                            files_per_second: None,
+                            eta_seconds: None,
                         },
                     );
                     last_progress_time = Instant::now();
@@ -331,11 +332,7 @@ async fn move_within_same_volume(
 
     let progress_interval_ms = config.progress_interval_ms;
 
-    let state = Arc::new(WriteOperationState {
-        intent: Arc::new(AtomicU8::new(0)),
-        progress_interval: Duration::from_millis(progress_interval_ms),
-        conflict_resolution_tx: std::sync::Mutex::new(None),
-    });
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(progress_interval_ms)));
 
     if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
         cache.insert(operation_id.clone(), Arc::clone(&state));
@@ -425,8 +422,8 @@ async fn move_within_same_volume(
                 bytes_moved += size;
 
                 if last_progress_time.elapsed() >= progress_interval {
-                    let _ = app.emit(
-                        "write-progress",
+                    state.emit_progress_via_app(
+                        &app,
                         WriteProgressEvent {
                             operation_id: operation_id_for_spawn.clone(),
                             operation_type: WriteOperationType::Move,
@@ -436,6 +433,9 @@ async fn move_within_same_volume(
                             files_total: total_files,
                             bytes_done: bytes_moved,
                             bytes_total: 0, // Not known upfront for rename-based moves
+                            bytes_per_second: None,
+                            files_per_second: None,
+                            eta_seconds: None,
                         },
                     );
                     last_progress_time = Instant::now();

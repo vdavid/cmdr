@@ -7,7 +7,7 @@ use super::*;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 /// Creates a temporary test directory with a unique name.
@@ -29,11 +29,7 @@ fn cleanup_temp_dir(path: &PathBuf) {
 
 #[test]
 fn test_cancel_sets_intent() {
-    let state = Arc::new(WriteOperationState {
-        intent: Arc::new(AtomicU8::new(0)),
-        progress_interval: Duration::from_millis(200),
-        conflict_resolution_tx: std::sync::Mutex::new(None),
-    });
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
 
     assert!(!is_cancelled(&state.intent));
     assert_eq!(load_intent(&state.intent), OperationIntent::Running);
@@ -243,11 +239,7 @@ fn test_copy_transaction_rollback_handles_already_deleted_files() {
 
 #[test]
 fn test_operation_intent_transitions() {
-    let state = Arc::new(WriteOperationState {
-        intent: Arc::new(AtomicU8::new(0)),
-        progress_interval: Duration::from_millis(200),
-        conflict_resolution_tx: std::sync::Mutex::new(None),
-    });
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
 
     // Running → RollingBack
     assert_eq!(load_intent(&state.intent), OperationIntent::Running);
@@ -284,11 +276,7 @@ fn test_cancel_flag_stops_delete_loop() {
         files.push(file);
     }
 
-    let state = Arc::new(WriteOperationState {
-        intent: Arc::new(AtomicU8::new(0)),
-        progress_interval: Duration::from_millis(200),
-        conflict_resolution_tx: std::sync::Mutex::new(None),
-    });
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
 
     // Simulate the delete loop from delete.rs, setting cancelled after 2 files
     let mut files_done = 0;
@@ -319,11 +307,7 @@ fn test_cancel_flag_stops_delete_loop() {
 
 #[test]
 fn test_cancel_during_directory_deletion_phase() {
-    let state = Arc::new(WriteOperationState {
-        intent: Arc::new(AtomicU8::new(0)),
-        progress_interval: Duration::from_millis(200),
-        conflict_resolution_tx: std::sync::Mutex::new(None),
-    });
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
 
     // Set cancellation before directory phase
     state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);

@@ -20,7 +20,7 @@ use std::future::Future;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU8, AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
@@ -128,11 +128,9 @@ pub async fn copy_between_volumes(
         dest_path.display()
     );
 
-    let state = Arc::new(WriteOperationState {
-        intent: Arc::new(AtomicU8::new(0)),
-        progress_interval: Duration::from_millis(config.progress_interval_ms),
-        conflict_resolution_tx: std::sync::Mutex::new(None),
-    });
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(
+        config.progress_interval_ms,
+    )));
 
     // Store state for cancellation
     if let Ok(mut cache) = WRITE_OPERATION_STATE.write() {
@@ -346,16 +344,23 @@ pub(crate) async fn copy_volumes_with_progress(
             operation_id
         );
 
-        events.emit_progress(WriteProgressEvent {
-            operation_id: operation_id.to_string(),
-            operation_type: WriteOperationType::Copy,
-            phase: WriteOperationPhase::Scanning,
-            current_file: None,
-            files_done: 0,
-            files_total: 0,
-            bytes_done: 0,
-            bytes_total: 0,
-        });
+        state.emit_progress_via_sink(
+            events,
+            WriteProgressEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Copy,
+                phase: WriteOperationPhase::Scanning,
+                current_file: None,
+                files_done: 0,
+                files_total: 0,
+                bytes_done: 0,
+                bytes_total: 0,
+
+                bytes_per_second: None,
+                files_per_second: None,
+                eta_seconds: None,
+            },
+        );
 
         if is_cancelled(&state.intent) {
             return Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
@@ -450,16 +455,23 @@ pub(crate) async fn copy_volumes_with_progress(
     );
 
     // Emit initial copying phase event
-    events.emit_progress(WriteProgressEvent {
-        operation_id: operation_id.to_string(),
-        operation_type: WriteOperationType::Copy,
-        phase: WriteOperationPhase::Copying,
-        current_file: None,
-        files_done: 0,
-        files_total: total_files,
-        bytes_done: 0,
-        bytes_total: total_bytes,
-    });
+    state.emit_progress_via_sink(
+        events,
+        WriteProgressEvent {
+            operation_id: operation_id.to_string(),
+            operation_type: WriteOperationType::Copy,
+            phase: WriteOperationPhase::Copying,
+            current_file: None,
+            files_done: 0,
+            files_total: total_files,
+            bytes_done: 0,
+            bytes_total: total_bytes,
+
+            bytes_per_second: None,
+            files_per_second: None,
+            eta_seconds: None,
+        },
+    );
     update_operation_status(
         operation_id,
         WriteOperationPhase::Copying,
@@ -600,6 +612,10 @@ pub(crate) async fn copy_volumes_with_progress(
                                 files_total: total_files,
                                 bytes_done: current_total,
                                 bytes_total: total_bytes,
+
+                                bytes_per_second: None,
+                                files_per_second: None,
+                                eta_seconds: None,
                             });
                             update_operation_status(
                                 op_id,
@@ -755,16 +771,23 @@ pub(crate) async fn copy_volumes_with_progress(
                 let last = *last_prog_a.lock().unwrap();
                 if last.elapsed() >= progress_interval {
                     *last_prog_a.lock().unwrap() = Instant::now();
-                    events.emit_progress(WriteProgressEvent {
-                        operation_id: operation_id.to_string(),
-                        operation_type: WriteOperationType::Copy,
-                        phase: WriteOperationPhase::Copying,
-                        current_file: file_name_for_cb.clone(),
-                        files_done: current_files_done,
-                        files_total: total_files,
-                        bytes_done: current_total,
-                        bytes_total: total_bytes,
-                    });
+                    state.emit_progress_via_sink(
+                        events,
+                        WriteProgressEvent {
+                            operation_id: operation_id.to_string(),
+                            operation_type: WriteOperationType::Copy,
+                            phase: WriteOperationPhase::Copying,
+                            current_file: file_name_for_cb.clone(),
+                            files_done: current_files_done,
+                            files_total: total_files,
+                            bytes_done: current_total,
+                            bytes_total: total_bytes,
+
+                            bytes_per_second: None,
+                            files_per_second: None,
+                            eta_seconds: None,
+                        },
+                    );
                     update_operation_status(
                         operation_id,
                         WriteOperationPhase::Copying,
@@ -974,16 +997,23 @@ async fn volume_rollback_with_progress(
     let mut last_progress_time = Instant::now();
 
     // Emit initial rollback phase event
-    events.emit_progress(WriteProgressEvent {
-        operation_id: operation_id.to_string(),
-        operation_type: WriteOperationType::Copy,
-        phase: WriteOperationPhase::RollingBack,
-        current_file: None,
-        files_done: files_at_cancel,
-        files_total,
-        bytes_done: bytes_at_cancel,
-        bytes_total,
-    });
+    state.emit_progress_via_sink(
+        events,
+        WriteProgressEvent {
+            operation_id: operation_id.to_string(),
+            operation_type: WriteOperationType::Copy,
+            phase: WriteOperationPhase::RollingBack,
+            current_file: None,
+            files_done: files_at_cancel,
+            files_total,
+            bytes_done: bytes_at_cancel,
+            bytes_total,
+
+            bytes_per_second: None,
+            files_per_second: None,
+            eta_seconds: None,
+        },
+    );
     update_operation_status(
         operation_id,
         WriteOperationPhase::RollingBack,
@@ -1029,16 +1059,23 @@ async fn volume_rollback_with_progress(
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_default();
-            events.emit_progress(WriteProgressEvent {
-                operation_id: operation_id.to_string(),
-                operation_type: WriteOperationType::Copy,
-                phase: WriteOperationPhase::RollingBack,
-                current_file: Some(current_file_name.clone()),
-                files_done: remaining_files,
-                files_total,
-                bytes_done: remaining_bytes,
-                bytes_total,
-            });
+            state.emit_progress_via_sink(
+                events,
+                WriteProgressEvent {
+                    operation_id: operation_id.to_string(),
+                    operation_type: WriteOperationType::Copy,
+                    phase: WriteOperationPhase::RollingBack,
+                    current_file: Some(current_file_name.clone()),
+                    files_done: remaining_files,
+                    files_total,
+                    bytes_done: remaining_bytes,
+                    bytes_total,
+
+                    bytes_per_second: None,
+                    files_per_second: None,
+                    eta_seconds: None,
+                },
+            );
             update_operation_status(
                 operation_id,
                 WriteOperationPhase::RollingBack,
@@ -1217,6 +1254,7 @@ mod tests {
     use crate::file_system::write_operations::types::{
         CollectorEventSink, WriteConflictEvent, WriteSourceItemDoneEvent,
     };
+    use std::sync::atomic::AtomicU8;
 
     #[test]
     fn test_volume_copy_config_default() {
@@ -1480,11 +1518,7 @@ mod tests {
     // ========================================================================
 
     fn make_state() -> Arc<WriteOperationState> {
-        Arc::new(WriteOperationState {
-            intent: Arc::new(AtomicU8::new(0)),
-            progress_interval: Duration::from_millis(50),
-            conflict_resolution_tx: std::sync::Mutex::new(None),
-        })
+        Arc::new(WriteOperationState::new(Duration::from_millis(50)))
     }
 
     fn make_volumes() -> (Arc<dyn Volume>, Arc<dyn Volume>) {
@@ -2206,11 +2240,7 @@ mod tests {
             .collect();
 
         // ── Run the copy through the real pipeline ────────────────────
-        let state = Arc::new(WriteOperationState {
-            intent: Arc::new(AtomicU8::new(0)),
-            progress_interval: Duration::from_millis(200),
-            conflict_resolution_tx: std::sync::Mutex::new(None),
-        });
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
         let events = CollectorEventSink::new();
         let config = VolumeCopyConfig {
             progress_interval_ms: 200,

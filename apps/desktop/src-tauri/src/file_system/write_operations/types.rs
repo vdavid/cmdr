@@ -64,6 +64,11 @@ pub enum ConflictResolution {
 // ============================================================================
 
 /// Progress event payload for write operations.
+///
+/// `bytes_per_second`, `files_per_second`, and `eta_seconds` are populated by
+/// `eta::EtaEstimator` from `enrich_progress_event`. They're optional because
+/// the estimator returns `None` for both rates and ETA during the warm-up
+/// window (first ~800 ms of a phase or before the second sample lands).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WriteProgressEvent {
@@ -76,6 +81,16 @@ pub struct WriteProgressEvent {
     pub files_total: usize,
     pub bytes_done: u64,
     pub bytes_total: u64,
+    /// Smoothed bytes/second toward the phase target. `None` during warm-up.
+    #[serde(default)]
+    pub bytes_per_second: Option<u64>,
+    /// Smoothed files/second toward the phase target. `None` during warm-up.
+    #[serde(default)]
+    pub files_per_second: Option<f32>,
+    /// Seconds remaining, combining both axes via `max(ETA_bytes, ETA_files)`.
+    /// `None` during warm-up or when both rates are zero (operation stalled).
+    #[serde(default)]
+    pub eta_seconds: Option<u32>,
 }
 
 /// Completion event payload.

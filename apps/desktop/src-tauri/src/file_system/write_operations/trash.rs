@@ -163,8 +163,8 @@ pub(super) fn trash_files_with_progress(
         // Emit throttled progress
         if last_progress_time.elapsed() >= state.progress_interval {
             let current_file = source.file_name().map(|n| n.to_string_lossy().to_string());
-            let _ = app.emit(
-                "write-progress",
+            state.emit_progress_via_app(
+                app,
                 WriteProgressEvent {
                     operation_id: operation_id.to_string(),
                     operation_type: WriteOperationType::Trash,
@@ -174,6 +174,10 @@ pub(super) fn trash_files_with_progress(
                     files_total: items_total,
                     bytes_done,
                     bytes_total,
+
+                    bytes_per_second: None,
+                    files_per_second: None,
+                    eta_seconds: None,
                 },
             );
             update_operation_status(
@@ -258,7 +262,6 @@ pub(super) fn trash_files_with_progress(
 mod tests {
     use super::*;
     use std::sync::Arc;
-    use std::sync::atomic::AtomicU8;
     use std::time::Duration;
 
     #[cfg(target_os = "macos")]
@@ -358,11 +361,7 @@ mod tests {
 
     #[test]
     fn test_cancellation_flag_checked_by_state() {
-        let state = Arc::new(WriteOperationState {
-            intent: Arc::new(AtomicU8::new(0)),
-            progress_interval: Duration::from_millis(200),
-            conflict_resolution_tx: std::sync::Mutex::new(None),
-        });
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
 
         assert!(!crate::file_system::write_operations::is_cancelled(&state.intent));
         state.intent.store(2u8, std::sync::atomic::Ordering::Relaxed);

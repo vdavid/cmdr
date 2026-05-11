@@ -156,8 +156,8 @@ pub(super) fn copy_files_with_progress(
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
 
     // Emit initial copying phase event (important when reusing cached scan - no scanning events were emitted)
-    let _ = app.emit(
-        "write-progress",
+    state.emit_progress_via_app(
+        app,
         WriteProgressEvent {
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Copy,
@@ -167,6 +167,10 @@ pub(super) fn copy_files_with_progress(
             files_total: scan_result.file_count,
             bytes_done: 0,
             bytes_total: scan_result.total_bytes,
+
+            bytes_per_second: None,
+            files_per_second: None,
+            eta_seconds: None,
         },
     );
     update_operation_status(
@@ -365,8 +369,6 @@ pub(super) fn copy_single_item(
     apply_to_all_resolution: &mut Option<ConflictResolution>,
     created_dirs: &mut HashSet<PathBuf>,
 ) -> Result<(), WriteOperationError> {
-    use tauri::Emitter;
-
     // Check cancellation
     if is_cancelled(&state.intent) {
         log::debug!(
@@ -620,8 +622,8 @@ pub(super) fn copy_single_item(
                     effective_bytes_done,
                     bytes_total
                 );
-                let _ = app.emit(
-                    "write-progress",
+                state.emit_progress_via_app(
+                    app,
                     WriteProgressEvent {
                         operation_id: operation_id.to_string(),
                         operation_type,
@@ -631,6 +633,10 @@ pub(super) fn copy_single_item(
                         files_total,
                         bytes_done: effective_bytes_done,
                         bytes_total,
+
+                        bytes_per_second: None,
+                        files_per_second: None,
+                        eta_seconds: None,
                     },
                 );
                 update_operation_status(
@@ -669,8 +675,8 @@ pub(super) fn copy_single_item(
                 *bytes_done,
                 bytes_total
             );
-            let _ = app.emit(
-                "write-progress",
+            state.emit_progress_via_app(
+                app,
                 WriteProgressEvent {
                     operation_id: operation_id.to_string(),
                     operation_type,
@@ -680,6 +686,10 @@ pub(super) fn copy_single_item(
                     files_total,
                     bytes_done: *bytes_done,
                     bytes_total,
+
+                    bytes_per_second: None,
+                    files_per_second: None,
+                    eta_seconds: None,
                 },
             );
             update_operation_status(
@@ -727,15 +737,13 @@ fn rollback_with_progress(
     files_total: usize,
     bytes_total: u64,
 ) -> bool {
-    use tauri::Emitter;
-
     let files_to_delete = transaction.created_files.len();
     let mut files_deleted = 0usize;
     let mut last_progress_time = Instant::now();
 
     // Emit initial rollback phase event (same values as cancellation point)
-    let _ = app.emit(
-        "write-progress",
+    state.emit_progress_via_app(
+        app,
         WriteProgressEvent {
             operation_id: operation_id.to_string(),
             operation_type,
@@ -745,6 +753,10 @@ fn rollback_with_progress(
             files_total,
             bytes_done: bytes_at_cancel,
             bytes_total,
+
+            bytes_per_second: None,
+            files_per_second: None,
+            eta_seconds: None,
         },
     );
     update_operation_status(
@@ -788,8 +800,8 @@ fn rollback_with_progress(
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_default();
-            let _ = app.emit(
-                "write-progress",
+            state.emit_progress_via_app(
+                app,
                 WriteProgressEvent {
                     operation_id: operation_id.to_string(),
                     operation_type,
@@ -799,6 +811,10 @@ fn rollback_with_progress(
                     files_total,
                     bytes_done: remaining_bytes,
                     bytes_total,
+
+                    bytes_per_second: None,
+                    files_per_second: None,
+                    eta_seconds: None,
                 },
             );
             update_operation_status(

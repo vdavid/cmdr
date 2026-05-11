@@ -242,8 +242,6 @@ fn scan_sources_internal(
     sort_order: SortOrder,
     progress_interval: Duration,
 ) -> Result<ScanResult, WriteOperationError> {
-    use tauri::Emitter;
-
     let mut files = Vec::new();
     let mut dirs = Vec::new();
     let mut total_bytes = 0u64;
@@ -270,8 +268,8 @@ fn scan_sources_internal(
                 files_done,
                 bytes_done
             );
-            let _ = app.emit(
-                "write-progress",
+            state.emit_progress_via_app(
+                app,
                 WriteProgressEvent {
                     operation_id: operation_id.to_string(),
                     operation_type,
@@ -281,6 +279,10 @@ fn scan_sources_internal(
                     files_total: 0,
                     bytes_done,
                     bytes_total: 0,
+
+                    bytes_per_second: None,
+                    files_per_second: None,
+                    eta_seconds: None,
                 },
             );
             update_operation_status(
@@ -319,8 +321,8 @@ fn scan_sources_internal(
         files.len(),
         total_bytes
     );
-    let _ = app.emit(
-        "write-progress",
+    state.emit_progress_via_app(
+        app,
         WriteProgressEvent {
             operation_id: operation_id.to_string(),
             operation_type,
@@ -330,6 +332,10 @@ fn scan_sources_internal(
             files_total: files.len(),
             bytes_done: total_bytes,
             bytes_total: total_bytes,
+
+            bytes_per_second: None,
+            files_per_second: None,
+            eta_seconds: None,
         },
     );
 

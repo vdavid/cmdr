@@ -8,7 +8,11 @@ use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, LazyLock, RwLock};
 use std::time::Duration;
 
-use super::types::{ConflictResolution, OperationStatus, OperationSummary, WriteOperationPhase, WriteOperationType};
+use super::eta::EtaEstimator;
+use super::types::{
+    ConflictResolution, OperationEventSink, OperationStatus, OperationSummary, WriteOperationPhase, WriteOperationType,
+    WriteProgressEvent,
+};
 
 // ============================================================================
 // Operation intent (state machine for cancellation)
@@ -66,6 +70,65 @@ pub struct WriteOperationState {
     /// the sender and sends the resolution. Dropping the sender unblocks the receiver
     /// with an error, which the waiting code interprets as cancellation.
     pub conflict_resolution_tx: std::sync::Mutex<Option<tokio::sync::oneshot::Sender<ConflictResolutionResponse>>>,
+    /// Per-operation ETA + throughput estimator. Fed by `enrich_progress_event`
+    /// at every `write-progress` emit site, so every emitter (local copy/delete,
+    /// volume copy/move, MTP, SMB) reports rates and ETA uniformly.
+    pub estimator: std::sync::Mutex<EtaEstimator>,
+}
+
+impl WriteOperationState {
+    /// Construct a fresh state for a new operation. Use this from every
+    /// `*_files_start` entry point — keeps the field list out of every call
+    /// site so adding new state members (like the estimator) is one-line.
+    pub fn new(progress_interval: Duration) -> Self {
+        Self {
+            intent: Arc::new(AtomicU8::new(OperationIntent::Running as u8)),
+            progress_interval,
+            conflict_resolution_tx: std::sync::Mutex::new(None),
+            estimator: std::sync::Mutex::new(EtaEstimator::new()),
+        }
+    }
+
+    /// Populate `bytes_per_second`, `files_per_second`, and `eta_seconds` on a
+    /// `WriteProgressEvent` before it's emitted. Call this from every
+    /// `write-progress` emit site — local copy, local delete, trash, volume
+    /// copy, volume move, MTP, SMB — so the FE sees uniform rates and ETA
+    /// regardless of which backend produced the event.
+    pub fn enrich_progress(&self, event: &mut WriteProgressEvent) {
+        let stats = match self.estimator.lock() {
+            Ok(mut est) => est.update(
+                std::time::Instant::now(),
+                event.phase,
+                event.bytes_done,
+                event.bytes_total,
+                event.files_done,
+                event.files_total,
+            ),
+            // Poisoned mutex (another thread panicked). Skip the enrichment
+            // rather than propagating the panic — progress events are advisory.
+            Err(_) => return,
+        };
+        event.bytes_per_second = Some(stats.bytes_per_second);
+        event.files_per_second = Some(stats.files_per_second);
+        event.eta_seconds = stats.eta_seconds;
+    }
+
+    /// Enrich and emit a `WriteProgressEvent` via a Tauri `AppHandle`. The
+    /// canonical emit path for local copy/delete/trash, which don't go through
+    /// the `OperationEventSink` indirection.
+    pub fn emit_progress_via_app(&self, app: &tauri::AppHandle, mut event: WriteProgressEvent) {
+        use tauri::Emitter;
+        self.enrich_progress(&mut event);
+        let _ = app.emit("write-progress", &event);
+    }
+
+    /// Enrich and emit a `WriteProgressEvent` via an `OperationEventSink`. The
+    /// volume-copy/move pipeline uses this for testability — the test sink
+    /// stores events in a `Vec` instead of calling `app.emit`.
+    pub fn emit_progress_via_sink(&self, sink: &dyn OperationEventSink, mut event: WriteProgressEvent) {
+        self.enrich_progress(&mut event);
+        sink.emit_progress(event);
+    }
 }
 
 /// Response to a conflict resolution request.

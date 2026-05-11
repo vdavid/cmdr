@@ -164,10 +164,11 @@ async fn copy_directory_streaming(
 
 #[cfg(test)]
 mod tests {
+    use super::super::state::OperationIntent;
     use super::*;
     use std::path::Path;
     use std::sync::Arc;
-    use std::sync::atomic::AtomicU8;
+    use std::sync::atomic::Ordering;
     use std::time::Duration;
 
     use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
@@ -188,11 +189,7 @@ mod tests {
         let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Source", src_dir.to_str().unwrap()));
         let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
-        let state = Arc::new(WriteOperationState {
-            intent: Arc::new(AtomicU8::new(0)),
-            progress_interval: Duration::from_millis(200),
-            conflict_resolution_tx: std::sync::Mutex::new(None),
-        });
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
 
         let bytes = copy_single_path(
             &source,
@@ -231,11 +228,8 @@ mod tests {
         let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Source", src_dir.to_str().unwrap()));
         let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
-        let state = Arc::new(WriteOperationState {
-            intent: Arc::new(AtomicU8::new(2)), // Already cancelled (Stopped)
-            progress_interval: Duration::from_millis(200),
-            conflict_resolution_tx: std::sync::Mutex::new(None),
-        });
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
+        state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
 
         let result = copy_single_path(
             &source,
@@ -262,14 +256,10 @@ mod tests {
     // ========================================================================
 
     use crate::file_system::volume::InMemoryVolume;
-    use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+    use std::sync::atomic::{AtomicU64, AtomicUsize};
 
     fn make_state() -> Arc<WriteOperationState> {
-        Arc::new(WriteOperationState {
-            intent: Arc::new(AtomicU8::new(0)),
-            progress_interval: Duration::from_millis(200),
-            conflict_resolution_tx: std::sync::Mutex::new(None),
-        })
+        Arc::new(WriteOperationState::new(Duration::from_millis(200)))
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

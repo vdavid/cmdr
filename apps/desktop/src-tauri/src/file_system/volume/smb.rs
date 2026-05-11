@@ -3502,7 +3502,6 @@ mod tests {
         use crate::file_system::write_operations::{
             CollectorEventSink, VolumeCopyConfig, WriteOperationState, copy_volumes_with_progress,
         };
-        use std::sync::atomic::AtomicU8;
         use std::time::{Duration, Instant};
 
         // Content scheme: `blake3(b"cmdr-fix8-" || index_le) .as_bytes() repeated 320 times`
@@ -3564,11 +3563,7 @@ mod tests {
             local_dir.path().to_path_buf(),
         ));
 
-        let state = Arc::new(WriteOperationState {
-            intent: Arc::new(AtomicU8::new(0)),
-            progress_interval: Duration::from_millis(200),
-            conflict_resolution_tx: std::sync::Mutex::new(None),
-        });
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
         let events = CollectorEventSink::new();
         let config = VolumeCopyConfig::default();
 
@@ -3777,7 +3772,6 @@ mod tests {
         use crate::file_system::write_operations::{
             CollectorEventSink, VolumeCopyConfig, WriteOperationState, copy_volumes_with_progress,
         };
-        use std::sync::atomic::AtomicU8;
         use std::time::{Duration, Instant};
 
         let _ = env_logger::try_init();
@@ -3889,11 +3883,7 @@ mod tests {
                 "dest",
                 local_dir.path().to_path_buf(),
             ));
-            let state = Arc::new(WriteOperationState {
-                intent: Arc::new(AtomicU8::new(0)),
-                progress_interval: Duration::from_millis(200),
-                conflict_resolution_tx: std::sync::Mutex::new(None),
-            });
+            let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
             let events = CollectorEventSink::new();
             let config = VolumeCopyConfig::default();
 
