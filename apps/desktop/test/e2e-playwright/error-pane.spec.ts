@@ -245,3 +245,57 @@ test.describe('Error pane: Accessibility', () => {
     await navigateBackToLeft(tauriPage)
   })
 })
+
+test.describe('Error pane: UI affordances', () => {
+  test('shows the offending folder path and a collapsed technical details disclosure', async ({ tauriPage }) => {
+    // Covers two behaviors the friendly error pane promises but no existing
+    // test asserts: (1) the folder path the user tried to enter is displayed
+    // so the message is actually contextualized, and (2) the technical details
+    // <details> element starts collapsed and expands on click.
+    await ensureAppReady(tauriPage)
+
+    await injectAndNavigateIntoSubDir(tauriPage, 60)
+
+    await pollUntil(
+      tauriPage,
+      async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`),
+      15000,
+    )
+
+    // The displayed folder path must end with the path we navigated into.
+    const folderPath = await tauriPage.evaluate<string>(
+      `(document.querySelector('.error-pane .folder-path')?.textContent || '').trim()`,
+    )
+    expect(folderPath.endsWith('/left/sub-dir')).toBe(true)
+
+    // Disclosure starts collapsed.
+    const startsCollapsed = await tauriPage.evaluate<boolean>(
+      `!document.querySelector('.error-pane .technical-details')?.hasAttribute('open')`,
+    )
+    expect(startsCollapsed).toBe(true)
+
+    // Clicking the <summary> expands it.
+    await tauriPage.evaluate(`(function() {
+            var summary = document.querySelector('.error-pane .technical-details summary');
+            if (summary) summary.click();
+        })()`)
+    const opens = await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(
+          `document.querySelector('.error-pane .technical-details')?.hasAttribute('open') || false`,
+        ),
+      3000,
+    )
+    expect(opens).toBe(true)
+
+    // The raw-detail block under the expanded disclosure should hold a non-empty string.
+    const rawDetail = await tauriPage.evaluate<string>(
+      `(document.querySelector('.error-pane .raw-detail')?.textContent || '').trim()`,
+    )
+    expect(rawDetail.length).toBeGreaterThan(0)
+
+    // Clean up
+    await navigateBackToLeft(tauriPage)
+  })
+})
