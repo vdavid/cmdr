@@ -190,8 +190,11 @@
     let isRollingBack = $state(false)
     let destroyed = false
     /** Set when the operation reaches a terminal state (complete, error, cancel, rollback).
-     *  Prevents onDestroy's safety-net cancel from interfering with an already-handled outcome. */
-    let operationSettled = false
+     *  Prevents onDestroy's safety-net cancel from interfering with an already-handled outcome.
+     *  Reactive ($state) so the Cancel/Rollback buttons can disable themselves during the
+     *  MIN_DISPLAY_MS hold-open window after write-complete — clicking them then would be a
+     *  no-op since the backend state is already gone. */
+    let operationSettled = $state(false)
 
     // Events that arrived before we know our operationId (from the command response).
     // Without buffering, a stale event from a previous operation could claim the ID slot first.
@@ -1082,15 +1085,25 @@
         {/if}
 
         <!-- Action buttons -->
+        <!-- Once `operationSettled` is true (write-complete / write-cancelled / write-error
+             arrived) the backend state is gone, so a Rollback click can't be honored — disable
+             both buttons during the MIN_DISPLAY_MS hold-open window. Without this, the user can
+             click Rollback after the copy completed and silently get nothing. -->
         <div class="button-row">
-            <Button variant="secondary" onclick={() => handleCancel(false)} disabled={isCancelling}>Cancel</Button>
+            <Button
+                variant="secondary"
+                onclick={() => handleCancel(false)}
+                disabled={isCancelling || operationSettled}>Cancel</Button
+            >
             {#if isCopy || isMove}
                 {#if isRollingBack}
                     <Button variant="danger" disabled>Rolling back...</Button>
                 {:else}
                     <span use:tooltip={'Cancel and delete any partial target files created'}>
-                        <Button variant="danger" onclick={() => handleCancel(true)} disabled={isCancelling}
-                            >Rollback</Button
+                        <Button
+                            variant="danger"
+                            onclick={() => handleCancel(true)}
+                            disabled={isCancelling || operationSettled}>Rollback</Button
                         >
                     </span>
                 {/if}

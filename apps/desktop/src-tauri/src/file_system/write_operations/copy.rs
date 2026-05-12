@@ -229,6 +229,44 @@ pub(super) fn copy_files_with_progress(
 
     match result {
         Ok(()) => {
+            // The loop succeeded — but the user may have clicked Rollback between the last
+            // file's `is_cancelled` check and the loop's exit (or, with APFS clonefile, the
+            // whole 170 MB / 23 file copy can finish in <100 ms so the click lands after the
+            // loop completes but before this match arm runs). Honor the rollback intent
+            // before emitting write-complete: if we don't, the user explicitly requested
+            // "delete what was copied" and got "everything's still there" instead.
+            let intent = load_intent(&state.intent);
+            if intent == OperationIntent::RollingBack {
+                log::info!(
+                    "copy_files_with_progress: rollback requested after loop completion op={}, {} files",
+                    operation_id,
+                    transaction.created_files.len()
+                );
+                let rollback_completed = rollback_with_progress(
+                    &transaction,
+                    app,
+                    operation_id,
+                    state,
+                    WriteOperationType::Copy,
+                    files_done,
+                    bytes_done,
+                    scan_result.file_count,
+                    scan_result.total_bytes,
+                );
+                transaction.commit();
+
+                let _ = app.emit(
+                    "write-cancelled",
+                    WriteCancelledEvent {
+                        operation_id: operation_id.to_string(),
+                        operation_type: WriteOperationType::Copy,
+                        files_processed: files_done,
+                        rolled_back: rollback_completed,
+                    },
+                );
+                return Ok(());
+            }
+
             // Success - commit transaction (don't rollback)
             transaction.commit();
 

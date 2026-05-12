@@ -783,3 +783,95 @@ The MTP shard added ~750 ms of settle time per test (600 + 150 ms across the two
 ~20 s of new fixed cost. The retry was worth ~5-10 s when it fired, ~0 when it didn't, so the net change is roughly even
 on a green run. The big win is eliminating the 1-in-3 retry cost _and_ the false-confidence the retry masked. Pass 2
 came in at **3m 20s** total (warm-cache, matches Step 6's 2m 47s baseline within build-noise).
+
+## After Step 6d (Cancel-copy rollback bug fix)
+
+- Date: 2026-05-12
+- Machine: macOS, native, three Tauri instances
+- Branch: `e2e-speedup` (worktree)
+
+### Hypothesis
+
+The Step 1 baseline flagged `Cancel copy mid-operation rolls back partial files` (`conflict-edge-cases.spec.ts:32`) as
+both the slowest test (32.7 s) and a long-standing flake. The test copies the 23-file / 170 MB `bulk/` fixture, polls
+for the Rollback button up to 10 s, clicks it, then expects either zero files remaining (rollback worked) or all 23
+(escape hatch for "fast filesystem completed before rollback could land"). The 3-to-22-files window means the test
+asserts `expect(remaining.length).toBeLessThan(3)` and fails — that's the flake.
+
+Working theory before reading the code: the Rust copy loop has a race where the user's Rollback intent arrives between
+the last per-file `is_cancelled` check and the loop's exit, so the loop returns `Ok(())`, the match arm goes to the
+success path, `transaction.commit()` happens, files stay. The frontend dialog also keeps the Rollback button alive for
+`MIN_DISPLAY_MS = 400 ms` after `write-complete` arrives, so a click during that window hits a backend whose state has
+already been removed from `WRITE_OPERATION_STATE` — silent no-op.
+
+### What I found
+
+Two real bugs, both real, both reachable on APFS (`/tmp` is APFS, `copyfile(3)` with `COPYFILE_CLONE` finishes 170 MB
+across 23 files in < 100 ms):
+
+1. **Lost-rollback on `Ok(())` (Rust, `copy.rs::copy_files_with_progress`):** the success arm did not check
+   `state.intent`. When the user clicked Rollback _during_ the loop but the loop happened to finish before the next
+   `is_cancelled()` poll (clonefile is essentially atomic per file — < 1 µs between record and next check), the result
+   was `Ok(())`, we emitted `write-complete`, and the user's "delete what was copied" request evaporated.
+2. **Click-after-settle window (Svelte, `TransferProgressDialog.svelte`):** the dialog stays open for the remainder of
+   `MIN_DISPLAY_MS` after `write-complete` arrives so the final "100%" frame doesn't flash. The Rollback button was
+   still enabled during that hold-open. By the time the user clicked, the backend had already removed the operation from
+   `WRITE_OPERATION_STATE`, so `cancel_write_operation` was a no-op. UI showed "Rolling back…" briefly (because
+   `isRollingBack = true` was set optimistically), then the dialog closed via the original `write-complete` timer.
+   Nothing rolled back.
+
+Both bugs are in the same family — "user wants the rollback, system says nothing happened" — and either one alone is
+enough to make the test land in the 3-to-22-files window when only some files have been committed but the loop already
+exited. The variability between runs comes from FS timing: how many files made it into `transaction.created_files`
+before the loop's final lap.
+
+### Fix
+
+1. **Rust:** in `copy.rs::copy_files_with_progress`, the `Ok(())` arm now loads `OperationIntent` first. If it's
+   `RollingBack`, we call `rollback_with_progress` (same path the `Err(Cancelled)` arm takes), commit the transaction,
+   and emit `write-cancelled` instead of `write-complete`. The user's intent wins even when it arrived late.
+2. **Svelte:** `operationSettled` is now `$state(false)` (it was a plain `let`), and the Cancel/Rollback buttons
+   `disabled={isCancelling || operationSettled}`. Once the terminal event has arrived (complete / error / cancelled),
+   clicking either is a no-op anyway — better to disable them so the user gets honest feedback that the operation is
+   over.
+
+The `Stopped`-during-rollback semantics are unchanged: cancelling an in-progress rollback still keeps whatever hasn't
+been deleted yet.
+
+### Files touched
+
+- `apps/desktop/src-tauri/src/file_system/write_operations/copy.rs`: `Ok(())` arm honors late `RollingBack` intent.
+- `apps/desktop/src/lib/file-operations/transfer/TransferProgressDialog.svelte`: reactive `operationSettled` + button
+  disable.
+- `scripts/check/checks/file-length-allowlist.json`: `copy.rs` 825 → 857 (32 lines of rollback handling + a code comment
+  explaining the late-intent case).
+
+### Validation
+
+Two back-to-back full-suite runs (`./scripts/check.sh --check desktop-e2e-playwright`, parallel shards, native macOS):
+
+| Run    | Cancel-copy test duration | Result | Total runtime |
+| ------ | ------------------------- | ------ | ------------- |
+| Pass 1 | 742 ms (clean rollback)   | ✓      | 3m 26s        |
+| Pass 2 | 31.2 s (escape-hatch)     | ✓      | 3m 12s        |
+
+- **Cancel-copy: passes in both passes.** Pass 1 was the happy path — the Rollback click landed mid-loop, the new
+  `Ok(())` check fired, rollback ran cleanly in well under a second, dialog closed immediately, test finished in 742 ms.
+  That's a 44× speedup over the Step 1 baseline (32.7 s) for this specific test in the green case.
+- **Pass 2 hit the escape-hatch path** (all 23 files remain, log "Rollback clicked but copy already completed"), used
+  the full 30 s modal-close wait, but still passed. With the button-disable fix, this case is now honest: the click
+  registered visually as disabled, the dialog stayed open for the `MIN_DISPLAY_MS` hold, then closed via the original
+  `write-complete` timer. Files were never expected to roll back here — copy genuinely finished first.
+- **Non-cancel flakes during validation:** all Step 6a-deferred keystroke-dispatch family (out of scope per Step 6d
+  prompt). Pass 1 saw 8 of them (4 in `accessibility.spec.ts` dark-mode dialogs, 2 in `app.spec.ts` Transfer dialogs
+  F5/F6, 1 in `indexing.spec.ts`, 2 in MTP — `mtp.spec.ts:657` cross-storage move and `mtp.spec.ts:906` external add via
+  the `activeElement.closest('.dual-pane-explorer')` focus check). Pass 2 was fully clean — confirms these are
+  parallel-load variance, not a regression. Tracked in Step 6a backlog.
+
+`./scripts/check.sh` full sweep: **all 45 checks green** in 2m 33s.
+
+### Wall-clock impact
+
+The fix shifts the Cancel-copy test from a flaky 32.7 s outlier to either ~750 ms (rollback ran) or ~31 s (escape
+hatch). The escape-hatch duration is bounded by the test's own 30 s modal-close wait, not by anything we control here.
+Tightening that timeout would be a Step 7 candidate — the rollback path itself completes in milliseconds.
