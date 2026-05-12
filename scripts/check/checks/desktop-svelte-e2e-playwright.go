@@ -135,7 +135,7 @@ func allocateShardFixtures(desktopDir string, shards []shardSpec) (func(), error
 	for i := range shards {
 		fixtureDir, err := createE2EFixtures(desktopDir)
 		if err != nil {
-			for j := 0; j < i; j++ {
+			for j := range i {
 				os.RemoveAll(shards[j].fixtureDir)
 			}
 			return func() {}, err
