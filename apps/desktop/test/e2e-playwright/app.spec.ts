@@ -506,4 +506,63 @@ test.describe('Transfer dialogs', () => {
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
     expect(await tauriPage.isVisible('.modal-overlay')).toBe(false)
   })
+
+  test('Cancel button closes the new folder dialog without creating anything', async ({ tauriPage }) => {
+    // F7 + Cancel covers the negative case: the dialog must close cleanly and
+    // the listing must stay unchanged. This was previously covered only via
+    // Escape, missing the explicit-Cancel-button path through ModalDialog.
+    await ensureAppReady(tauriPage)
+
+    const initialCount = await tauriPage.evaluate<number>(
+      `document.querySelectorAll('.file-pane.is-focused .file-entry').length`,
+    )
+
+    await tauriPage.keyboard.press('F7')
+    await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
+
+    await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, 'unused-cancel-folder')
+    await sleep(150)
+
+    // Click the secondary (Cancel) button rather than pressing Escape.
+    await tauriPage.click(`${MKDIR_DIALOG} .btn-secondary`)
+
+    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
+    expect(await tauriPage.isVisible('.modal-overlay')).toBe(false)
+
+    // File listing must not have grown — Cancel must not create the folder.
+    const finalCount = await tauriPage.evaluate<number>(
+      `document.querySelectorAll('.file-pane.is-focused .file-entry').length`,
+    )
+    expect(finalCount).toBe(initialCount)
+  })
+})
+
+test.describe('Delete dialog', () => {
+  test('opens the delete confirmation dialog with F8', async ({ tauriPage }) => {
+    // F8 must open the recycle-style "Delete" confirmation, not the permanent
+    // variant (which is ⇧F8). Closing with Escape must leave the file in place.
+    await ensureAppReady(tauriPage)
+    await skipParentEntry(tauriPage)
+
+    const cursorName = await tauriPage.evaluate<string>(
+      `document.querySelector('.file-pane.is-focused .file-entry.is-under-cursor')?.getAttribute('data-filename') || ''`,
+    )
+    expect(cursorName).not.toBe('')
+
+    await tauriPage.keyboard.press('F8')
+    await tauriPage.waitForSelector('[data-dialog-id="delete-confirmation"]', 5000)
+
+    const titleText = await tauriPage.textContent('[data-dialog-id="delete-confirmation"] h2')
+    expect(titleText).toContain('Delete')
+
+    // Close the dialog without confirming.
+    await tauriPage.keyboard.press('Escape')
+    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
+
+    // The file must still be in the listing after Escape.
+    const stillThere = await tauriPage.evaluate<boolean>(
+      `!!document.querySelector('.file-pane.is-focused [data-filename=' + JSON.stringify(${JSON.stringify(cursorName)}) + ']')`,
+    )
+    expect(stillThere).toBe(true)
+  })
 })
