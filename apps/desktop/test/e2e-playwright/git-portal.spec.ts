@@ -121,6 +121,46 @@ test.describe('Git portal', () => {
     expect(await paneHasFile(tauriPage, 0, 'scripts')).toBe(true)
   })
 
+  test('navigates tags/v1.0.0 and sees the tree at the tagged commit', async ({ tauriPage }) => {
+    // The portal listing parses the tag name greedily, including the dots in
+    // `v1.0.0`. Verifying the tag content reaches the same tree as `branches/main`
+    // also covers the annotated-tag-peel path in `resolve_ref_commit`.
+    await ensureAppReady(tauriPage)
+    await navigateLeftPaneTo(tauriPage, path.join(repoPath(), '.git/tags'))
+    expect(await paneHasFile(tauriPage, 0, 'v1.0.0')).toBe(true)
+
+    await navigateLeftPaneTo(tauriPage, path.join(repoPath(), '.git/tags/v1.0.0'))
+    expect(await paneHasFile(tauriPage, 0, 'README.md')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'scripts')).toBe(true)
+  })
+
+  test('navigates commits/ and shows the single HEAD commit by short SHA', async ({ tauriPage }) => {
+    // commits/ lists each reachable commit as a virtual directory whose display
+    // name is `<short-sha> <subject>` (matches `git log --oneline`). The fixture
+    // commits exactly once, so we expect at least one such entry. We don't pin
+    // the SHA itself — `git init` results aren't reproducible across versions.
+    await ensureAppReady(tauriPage)
+    await navigateLeftPaneTo(tauriPage, path.join(repoPath(), '.git/commits'))
+
+    const found = await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(`(function() {
+          var pane = document.querySelectorAll('.file-pane')[0];
+          if (!pane) return false;
+          var entries = pane.querySelectorAll('.file-entry');
+          for (var i = 0; i < entries.length; i++) {
+            var name = entries[i].getAttribute('data-filename') || '';
+            // <short-sha> <subject> — e.g. "abc1234 Add fixture content"
+            if (/^[0-9a-f]{7,} /.test(name)) return true;
+          }
+          return false;
+        })()`),
+      5000,
+    )
+    expect(found).toBe(true)
+  })
+
   // Cross-volume copy + executable-bit preservation is covered honestly by
   // the Rust integration test
   // `file_system::git::m2_tests::cross_volume_copy_preserves_executable_bit`.
