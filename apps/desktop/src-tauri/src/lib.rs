@@ -197,9 +197,17 @@ pub fn run() {
     #[cfg(debug_assertions)]
     let builder = builder.plugin(tauri_plugin_mcp_bridge::init());
 
-    // Playwright E2E testing plugin — socket bridge for direct webview injection
+    // Playwright E2E testing plugin — socket bridge for direct webview injection.
+    // Socket path is overridable via CMDR_PLAYWRIGHT_SOCKET so parallel E2E shards
+    // can each spawn their own Tauri instance bound to a distinct socket.
     #[cfg(feature = "playwright-e2e")]
-    let builder = builder.plugin(tauri_plugin_playwright::init());
+    let builder = {
+        let mut pw_config = tauri_plugin_playwright::PluginConfig::new();
+        if let Ok(socket_path) = std::env::var("CMDR_PLAYWRIGHT_SOCKET") {
+            pw_config = pw_config.socket_path(socket_path);
+        }
+        builder.plugin(tauri_plugin_playwright::init_with_config(pw_config))
+    };
 
     // Skip Tauri updater plugin on macOS (custom updater preserves TCC permissions)
     // and in CI (avoids network dependency and latency during E2E tests)
@@ -362,9 +370,14 @@ pub fn run() {
             #[cfg(target_os = "linux")]
             volumes_linux::watcher::start_volume_watcher(app.handle());
 
-            // Register virtual MTP device for E2E testing (before watcher so it's in the initial snapshot)
+            // Register virtual MTP device for E2E testing (before watcher so it's in the initial snapshot).
+            // Under parallel E2E sharding the MTP backing dir is shared across Tauri instances, so
+            // non-MTP shards opt out via CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP to avoid the startup
+            // wipe-and-recreate race on the shared dir.
             #[cfg(feature = "virtual-mtp")]
-            mtp::virtual_device::setup_virtual_mtp_device();
+            if std::env::var("CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP").is_err() {
+                mtp::virtual_device::setup_virtual_mtp_device();
+            }
 
             // Ensure ptpcamerad is re-enabled in case a previous session crashed
             // while it was suppressed. No-op if it was already enabled.

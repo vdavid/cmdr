@@ -114,9 +114,12 @@ counted as failed. Dependencies not in the selected run set are treated as satis
 `desktop-e2e-playwright`). Named `--check` invocations implicitly include slow checks
 (`includeSlow = len(checkNames) > 0`).
 
-**Self-contained E2E checks:** `desktop-e2e-playwright` manages the full lifecycle (build binary, create fixtures, start
-app, run tests, cleanup). The app runs in an isolated `CMDR_DATA_DIR` with MCP on port 9429. Stale processes are killed
-before starting. Logs go to `/tmp/cmdr-e2e-playwright-<timestamp>.log`.
+**Self-contained E2E checks:** `desktop-e2e-playwright` manages the full lifecycle (build binary once, create per-shard
+fixtures, start N Tauri instances, run N Playwright processes in parallel, cleanup). Each shard runs in its own isolated
+`CMDR_DATA_DIR` with its own Unix socket and MCP port (9429 + shard offset). One shard is dedicated to MTP specs
+(serialized — the virtual MTP backing dir at `/tmp/cmdr-mtp-e2e-fixtures` is shared by every Tauri instance). Stale
+processes on each port are killed before starting. Per-shard logs go to
+`/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`.
 
 `RUST_LOG` is forwarded to the app (via inherited `os.Environ()`), so trace-level output is one shell-prefix away:
 

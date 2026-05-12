@@ -9,19 +9,59 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
 
+// Parallel sharding: one Tauri instance per shard, plus a sequential MTP shard.
+// Each shard owns its own Unix socket, MCP port, data dir, and fixture dir so
+// the instances don't clobber each other. The MTP shard runs alone because
+// the virtual MTP backing dir (/tmp/cmdr-mtp-e2e-fixtures) is shared by every
+// Tauri instance — running MTP tests in two shards at once would corrupt it.
 const (
-	playwrightMCPPort    = "9429"
-	playwrightSocketPath = "/tmp/tauri-playwright.sock"
-	socketTimeout        = 60 * time.Second
-	processKillGrace     = 3 * time.Second
+	socketTimeout    = 60 * time.Second
+	processKillGrace = 3 * time.Second
+
+	// Two non-MTP shards plus one MTP shard. Three Tauri instances total.
+	// Bumping this further pays diminishing returns: MTP stays single-shard
+	// and the non-MTP file durations (file-watching ~78s, accessibility ~66s)
+	// already balance well across two shards.
+	nonMtpShards = 2
+
+	mcpPortBase = 9429
 )
 
+type shardSpec struct {
+	name       string
+	kind       string // "mtp" or "non-mtp"
+	socketPath string
+	mcpPort    int
+	dataDir    string
+	fixtureDir string
+	logFile    string
+	jsonReport string
+	// For non-mtp shards, Playwright's --shard arg ("1/2", "2/2"). Empty for mtp.
+	playwrightShard string
+}
+
+type appHandle struct {
+	cmd    *exec.Cmd
+	exited <-chan struct{}
+}
+
+type shardResult struct {
+	shard   shardSpec
+	output  string
+	passed  int
+	failed  int
+	skipped int
+	err     error
+}
+
 // RunDesktopE2EPlaywright runs Playwright E2E tests against the real Tauri app.
-// Self-contained lifecycle: build binary → start app → run tests → cleanup.
+// Self-contained lifecycle: build binary → start N Tauri apps → run N Playwright
+// processes in parallel → cleanup.
 func RunDesktopE2EPlaywright(ctx *CheckContext) (CheckResult, error) {
 	if runtime.GOOS != "darwin" {
 		return Skipped("macOS only (use desktop-e2e-linux for Linux)"), nil
@@ -29,76 +69,250 @@ func RunDesktopE2EPlaywright(ctx *CheckContext) (CheckResult, error) {
 
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
 	timestamp := time.Now().Unix()
-	logFile := fmt.Sprintf("/tmp/cmdr-e2e-playwright-%d.log", timestamp)
-	dataDir := fmt.Sprintf("/tmp/cmdr-e2e-data-%d", os.Getpid())
+	pid := os.Getpid()
 
-	// ── Step 1: Build the Tauri binary ──────────────────────────────────
+	binaryPath, err := buildTauriBinary(ctx, desktopDir, timestamp)
+	if err != nil {
+		return CheckResult{}, err
+	}
+
+	shards := planShards(desktopDir, timestamp, pid)
+
+	cleanupFixtures, err := allocateShardFixtures(desktopDir, shards)
+	if err != nil {
+		return CheckResult{}, err
+	}
+	defer cleanupFixtures()
+
+	for _, s := range shards {
+		os.Remove(s.socketPath)
+		stopProcessOnPort(strconv.Itoa(s.mcpPort))
+	}
+
+	apps, cleanupApps, err := startShardApps(binaryPath, shards)
+	defer cleanupApps()
+	if err != nil {
+		return CheckResult{}, err
+	}
+
+	for i, s := range shards {
+		if err := waitForPlaywrightSocket(s.socketPath, apps[i].exited, s.logFile); err != nil {
+			return CheckResult{}, fmt.Errorf("[%s] %w", s.name, err)
+		}
+	}
+
+	results := runShardsInParallel(desktopDir, shards)
+	return aggregateShardResults(results, len(shards))
+}
+
+// buildTauriBinary compiles the Tauri binary with the playwright-e2e feature
+// flag, returns the path to the built binary, and code-signs it for Keychain
+// access on macOS. Errors include the build log path for post-mortem.
+func buildTauriBinary(ctx *CheckContext, desktopDir string, timestamp int64) (string, error) {
 	buildCmd := exec.Command("pnpm", "test:e2e:playwright:build")
 	buildCmd.Dir = desktopDir
 	buildOutput, err := RunCommand(buildCmd, true)
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("tauri build failed (log: %s)\n%s", logFile, indentOutput(buildOutput))
+		buildLog := fmt.Sprintf("/tmp/cmdr-e2e-playwright-build-%d.log", timestamp)
+		appendToLogFile(buildLog, buildOutput)
+		return "", fmt.Errorf("tauri build failed (log: %s)\n%s", buildLog, indentOutput(buildOutput))
 	}
 
-	// ── Step 2: Find the built binary ───────────────────────────────────
 	binaryPath, err := findTauriBinary(ctx.RootDir)
 	if err != nil {
-		return CheckResult{}, err
+		return "", err
 	}
-
-	// ── Step 2.5: Code-sign for Keychain access ────────────────────────
 	if err := codesignDevBinary(binaryPath); err != nil {
-		return CheckResult{}, err
+		return "", err
 	}
+	return binaryPath, nil
+}
 
-	// ── Step 3: Create fixture directory ────────────────────────────────
-	fixtureDir, err := createE2EFixtures(desktopDir)
-	if err != nil {
-		return CheckResult{}, err
+// allocateShardFixtures creates one fixture directory per shard and returns a
+// cleanup function that removes them all. On error, any fixtures created so
+// far are removed before returning.
+func allocateShardFixtures(desktopDir string, shards []shardSpec) (func(), error) {
+	for i := range shards {
+		fixtureDir, err := createE2EFixtures(desktopDir)
+		if err != nil {
+			for j := 0; j < i; j++ {
+				os.RemoveAll(shards[j].fixtureDir)
+			}
+			return func() {}, err
+		}
+		shards[i].fixtureDir = fixtureDir
 	}
-	defer os.RemoveAll(fixtureDir)
-
-	// ── Step 4: Clean stale state ───────────────────────────────────────
-	os.Remove(playwrightSocketPath)
-	stopProcessOnPort(playwrightMCPPort)
-
-	// ── Step 5: Start the app ───────────────────────────────────────────
-	appCmd, appExited, err := startTauriApp(binaryPath, dataDir, fixtureDir, logFile)
-	if err != nil {
-		return CheckResult{}, fmt.Errorf("failed to start app: %w", err)
+	cleanup := func() {
+		for _, s := range shards {
+			os.RemoveAll(s.fixtureDir)
+		}
 	}
-	defer cleanupTauriApp(appCmd, appExited, dataDir)
+	return cleanup, nil
+}
 
-	// ── Step 6: Wait for the socket ─────────────────────────────────────
-	if err := waitForPlaywrightSocket(appExited, logFile); err != nil {
-		return CheckResult{}, err
+// startShardApps launches one Tauri instance per shard. Returns the handles, a
+// cleanup function that gracefully stops every app that managed to start, and
+// any start error. The cleanup function is always safe to call.
+func startShardApps(binaryPath string, shards []shardSpec) ([]*appHandle, func(), error) {
+	apps := make([]*appHandle, 0, len(shards))
+	cleanup := func() {
+		for i, app := range apps {
+			cleanupTauriApp(app.cmd, app.exited, shards[i].dataDir, shards[i].socketPath)
+		}
 	}
+	for _, s := range shards {
+		app, startErr := startTauriApp(binaryPath, s)
+		if startErr != nil {
+			return apps, cleanup, fmt.Errorf("failed to start app for %s: %w", s.name, startErr)
+		}
+		apps = append(apps, app)
+	}
+	return apps, cleanup, nil
+}
 
-	// ── Step 7: Run the tests ───────────────────────────────────────────
-	testCmd := exec.Command("pnpm", "test:e2e:playwright")
-	testCmd.Dir = desktopDir
-	testCmd.Env = append(os.Environ(),
-		"CMDR_E2E_START_PATH="+fixtureDir,
-		"CMDR_MCP_PORT="+playwrightMCPPort,
+// aggregateShardResults sums per-shard test counts, persists each shard's
+// output to its log file, and turns any per-shard failures into a single
+// summary error.
+func aggregateShardResults(results []shardResult, totalShards int) (CheckResult, error) {
+	var (
+		totalPassed int
+		failed      []shardResult
 	)
-	testOutput, testErr := RunCommand(testCmd, true)
-
-	// Append test output to the log file for post-mortem debugging
-	appendToLogFile(logFile, "\n\n=== Playwright test output ===\n"+testOutput)
-
-	if testErr != nil {
-		summary := extractE2ETestOutput(testOutput)
-		return CheckResult{}, fmt.Errorf("playwright E2E tests failed (full log: %s)\n%s", logFile, indentOutput(summary))
+	for _, r := range results {
+		totalPassed += r.passed
+		appendToLogFile(r.shard.logFile, "\n\n=== Playwright test output ===\n"+r.output)
+		if r.err != nil {
+			failed = append(failed, r)
+		}
 	}
 
-	// ── Step 8: Parse results ───────────────────────────────────────────
-	re := regexp.MustCompile(`(\d+) passed`)
-	matches := re.FindStringSubmatch(testOutput)
-	if len(matches) > 1 {
-		count, _ := strconv.Atoi(matches[1])
-		return Success(fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests"))), nil
+	if len(failed) > 0 {
+		var msg strings.Builder
+		for _, r := range failed {
+			summary := extractE2ETestOutput(r.output)
+			fmt.Fprintf(&msg, "[%s] failed (full log: %s)\n%s\n", r.shard.name, r.shard.logFile, indentOutput(summary))
+		}
+		return CheckResult{}, fmt.Errorf("playwright E2E tests failed across %d %s\n%s",
+			len(failed), Pluralize(len(failed), "shard", "shards"), msg.String())
+	}
+
+	if totalPassed > 0 {
+		return Success(fmt.Sprintf("%d %s passed across %d %s",
+			totalPassed, Pluralize(totalPassed, "test", "tests"),
+			totalShards, Pluralize(totalShards, "shard", "shards"))), nil
 	}
 	return Success("All Playwright E2E tests passed"), nil
+}
+
+// planShards builds the per-shard plan. Shard 0 is the MTP lane; shards
+// 1..N are the non-MTP lanes, split by Playwright's --shard X/N.
+func planShards(_ string, timestamp int64, pid int) []shardSpec {
+	shards := make([]shardSpec, 0, nonMtpShards+1)
+
+	mkLog := func(name string) string {
+		return fmt.Sprintf("/tmp/cmdr-e2e-playwright-%s-%d.log", name, timestamp)
+	}
+	mkJSON := func(name string) string {
+		return fmt.Sprintf("/tmp/cmdr-e2e-report-%s.json", name)
+	}
+
+	// MTP shard (sequential lane)
+	shards = append(shards, shardSpec{
+		name:       "mtp",
+		kind:       "mtp",
+		socketPath: fmt.Sprintf("/tmp/tauri-playwright-mtp-%d.sock", pid),
+		mcpPort:    mcpPortBase,
+		dataDir:    fmt.Sprintf("/tmp/cmdr-e2e-data-mtp-%d", pid),
+		logFile:    mkLog("mtp"),
+		jsonReport: mkJSON("mtp"),
+	})
+
+	// Non-MTP shards
+	for i := 1; i <= nonMtpShards; i++ {
+		shards = append(shards, shardSpec{
+			name:            fmt.Sprintf("non-mtp-%d", i),
+			kind:            "non-mtp",
+			socketPath:      fmt.Sprintf("/tmp/tauri-playwright-nonmtp%d-%d.sock", i, pid),
+			mcpPort:         mcpPortBase + i,
+			dataDir:         fmt.Sprintf("/tmp/cmdr-e2e-data-nonmtp%d-%d", i, pid),
+			logFile:         mkLog(fmt.Sprintf("nonmtp%d", i)),
+			jsonReport:      mkJSON(fmt.Sprintf("nonmtp%d", i)),
+			playwrightShard: fmt.Sprintf("%d/%d", i, nonMtpShards),
+		})
+	}
+	return shards
+}
+
+// runShardsInParallel launches one Playwright process per shard and waits for
+// all to finish.
+func runShardsInParallel(desktopDir string, shards []shardSpec) []shardResult {
+	results := make([]shardResult, len(shards))
+	var wg sync.WaitGroup
+	for i, s := range shards {
+		wg.Add(1)
+		go func(idx int, shard shardSpec) {
+			defer wg.Done()
+			results[idx] = runShard(desktopDir, shard)
+		}(i, s)
+	}
+	wg.Wait()
+	return results
+}
+
+// runShard executes one Playwright process for a single shard.
+func runShard(desktopDir string, s shardSpec) shardResult {
+	args := []string{
+		"exec", "playwright", "test",
+		"--config", "test/e2e-playwright/playwright.config.ts",
+		"--project", "tauri",
+	}
+	if s.playwrightShard != "" {
+		args = append(args, "--shard", s.playwrightShard)
+	}
+	cmd := exec.Command("pnpm", args...)
+	cmd.Dir = desktopDir
+	cmd.Env = append(os.Environ(),
+		"CMDR_E2E_START_PATH="+s.fixtureDir,
+		"CMDR_MCP_PORT="+strconv.Itoa(s.mcpPort),
+		"CMDR_PLAYWRIGHT_SOCKET="+s.socketPath,
+		"CMDR_E2E_SHARD_KIND="+s.kind,
+		"CMDR_E2E_JSON_REPORT="+s.jsonReport,
+		"CMDR_E2E_OUTPUT_DIR="+fmt.Sprintf("/tmp/cmdr-e2e-results-%s", s.name),
+	)
+	// Only the MTP shard is allowed to wipe the shared virtual MTP backing
+	// directory in globalSetup. The non-MTP shards must skip it to avoid
+	// stomping on the MTP shard's mid-run state.
+	if s.kind != "mtp" {
+		cmd.Env = append(cmd.Env, "CMDR_E2E_SKIP_MTP_FIXTURES=1")
+	}
+	output, err := RunCommand(cmd, true)
+	passed, failed, skipped := parsePlaywrightTotals(output)
+	return shardResult{
+		shard:   s,
+		output:  output,
+		passed:  passed,
+		failed:  failed,
+		skipped: skipped,
+		err:     err,
+	}
+}
+
+// parsePlaywrightTotals extracts "N passed", "N failed", "N skipped" counts
+// from Playwright's tail summary. Missing counters are zero.
+func parsePlaywrightTotals(output string) (passed, failed, skipped int) {
+	rePassed := regexp.MustCompile(`(\d+) passed`)
+	reFailed := regexp.MustCompile(`(\d+) failed`)
+	reSkipped := regexp.MustCompile(`(\d+) skipped`)
+	if m := rePassed.FindStringSubmatch(output); len(m) > 1 {
+		passed, _ = strconv.Atoi(m[1])
+	}
+	if m := reFailed.FindStringSubmatch(output); len(m) > 1 {
+		failed, _ = strconv.Atoi(m[1])
+	}
+	if m := reSkipped.FindStringSubmatch(output); len(m) > 1 {
+		skipped, _ = strconv.Atoi(m[1])
+	}
+	return passed, failed, skipped
 }
 
 // findTauriBinary locates the built Cmdr binary by querying rustc for the host triple.
@@ -128,7 +342,8 @@ func findTauriBinary(rootDir string) (string, error) {
 }
 
 // createE2EFixtures creates the E2E fixture directory tree (~170 MB) via the shared
-// Node.js helper. Returns the fixture directory path.
+// Node.js helper. Returns the fixture directory path. Each call generates a
+// unique timestamped path so multiple shards do not collide.
 func createE2EFixtures(desktopDir string) (string, error) {
 	script := `import { createFixtures } from "./test/e2e-shared/fixtures.js"; console.log(createFixtures())`
 	cmd := exec.Command("npx", "tsx", "-e", script)
@@ -147,20 +362,17 @@ func createE2EFixtures(desktopDir string) (string, error) {
 	return "", fmt.Errorf("could not parse fixture path from output:\n%s", indentOutput(output))
 }
 
-// startTauriApp launches the Tauri binary in the background. Returns the exec.Cmd,
-// a channel that closes when the process exits, and any start error.
-func startTauriApp(binaryPath, dataDir, fixtureDir, logFile string) (*exec.Cmd, <-chan struct{}, error) {
-	lf, err := os.Create(logFile)
+// startTauriApp launches the Tauri binary in the background for one shard.
+// Returns the appHandle (cmd + an exited channel that closes on process exit).
+func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
+	lf, err := os.Create(s.logFile)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create log file %s: %w", logFile, err)
+		return nil, fmt.Errorf("failed to create log file %s: %w", s.logFile, err)
 	}
 
 	// Record the RUST_LOG the app will see, so log readers can tell at a glance
-	// whether trace-level output was requested. RUST_LOG itself is inherited via
-	// os.Environ() below — to debug a specific test run, prefix the checker
-	// invocation, for example:
-	//   RUST_LOG=cmdr_lib::file_system::volume::mtp=trace ./scripts/check.sh \
-	//     --check desktop-e2e-playwright
+	// whether trace-level output was requested.
+	fmt.Fprintf(lf, "=== shard=%s socket=%s mcp_port=%d ===\n", s.name, s.socketPath, s.mcpPort)
 	if rustLog := os.Getenv("RUST_LOG"); rustLog != "" {
 		fmt.Fprintf(lf, "=== RUST_LOG=%s ===\n", rustLog)
 	} else {
@@ -169,33 +381,40 @@ func startTauriApp(binaryPath, dataDir, fixtureDir, logFile string) (*exec.Cmd, 
 
 	cmd := exec.Command(binaryPath)
 	cmd.Env = append(os.Environ(),
-		"CMDR_DATA_DIR="+dataDir,
-		"CMDR_MCP_PORT="+playwrightMCPPort,
+		"CMDR_DATA_DIR="+s.dataDir,
+		"CMDR_MCP_PORT="+strconv.Itoa(s.mcpPort),
 		"CMDR_MCP_ENABLED=true",
-		"CMDR_E2E_START_PATH="+fixtureDir,
+		"CMDR_E2E_START_PATH="+s.fixtureDir,
+		"CMDR_PLAYWRIGHT_SOCKET="+s.socketPath,
 	)
+	// Only the MTP shard registers the virtual MTP device. Non-MTP shards skip
+	// the startup wipe-and-recreate of the shared backing dir
+	// (/tmp/cmdr-mtp-e2e-fixtures), which would otherwise race with the MTP
+	// shard's setup and corrupt its in-memory device state.
+	if s.kind != "mtp" {
+		cmd.Env = append(cmd.Env, "CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP=1")
+	}
 	cmd.Stdout = lf
 	cmd.Stderr = lf
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	if err := cmd.Start(); err != nil {
 		lf.Close()
-		return nil, nil, err
+		return nil, err
 	}
 	lf.Close()
 
-	// Monitor the process in a goroutine so waitForPlaywrightSocket can detect early exits.
 	exited := make(chan struct{})
 	go func() {
 		cmd.Wait()
 		close(exited)
 	}()
 
-	return cmd, exited, nil
+	return &appHandle{cmd: cmd, exited: exited}, nil
 }
 
-// waitForPlaywrightSocket polls for the Unix socket to appear, with a timeout.
-func waitForPlaywrightSocket(appExited <-chan struct{}, logFile string) error {
+// waitForPlaywrightSocket polls for the named Unix socket to appear, with a timeout.
+func waitForPlaywrightSocket(socketPath string, appExited <-chan struct{}, logFile string) error {
 	deadline := time.Now().Add(socketTimeout)
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
@@ -206,28 +425,26 @@ func waitForPlaywrightSocket(appExited <-chan struct{}, logFile string) error {
 			logContent := readLogTail(logFile, 50)
 			return fmt.Errorf("app exited before socket appeared (log: %s)\n%s", logFile, indentOutput(logContent))
 		case <-ticker.C:
-			if fi, err := os.Stat(playwrightSocketPath); err == nil && fi.Mode()&os.ModeSocket != 0 {
+			if fi, err := os.Stat(socketPath); err == nil && fi.Mode()&os.ModeSocket != 0 {
 				return nil
 			}
 			if time.Now().After(deadline) {
 				logContent := readLogTail(logFile, 50)
-				return fmt.Errorf("socket did not appear within %s (log: %s)\n%s", socketTimeout, logFile, indentOutput(logContent))
+				return fmt.Errorf("socket %s did not appear within %s (log: %s)\n%s",
+					socketPath, socketTimeout, logFile, indentOutput(logContent))
 			}
 		}
 	}
 }
 
 // cleanupTauriApp kills the app process group, removes the socket, and cleans up the data dir.
-// The exited channel is the one returned by startTauriApp — it closes when cmd.Wait() completes.
-func cleanupTauriApp(cmd *exec.Cmd, exited <-chan struct{}, dataDir string) {
+func cleanupTauriApp(cmd *exec.Cmd, exited <-chan struct{}, dataDir, socketPath string) {
 	if cmd == nil || cmd.Process == nil {
 		return
 	}
 
-	// SIGTERM the process group (negative PID kills the group)
 	_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM)
 
-	// Wait briefly for graceful shutdown, then force kill
 	select {
 	case <-exited:
 	case <-time.After(processKillGrace):
@@ -235,7 +452,7 @@ func cleanupTauriApp(cmd *exec.Cmd, exited <-chan struct{}, dataDir string) {
 		<-exited
 	}
 
-	os.Remove(playwrightSocketPath)
+	os.Remove(socketPath)
 	os.RemoveAll(dataDir)
 }
 
@@ -294,14 +511,11 @@ func codesignDevBinary(binaryPath string) error {
 		return nil
 	}
 
-	// Allow CI to override the identity name (for example, "Cmdr Dev CI").
 	identity := os.Getenv("CMDR_DEV_SIGNING_IDENTITY")
 	if identity == "" {
 		identity = "Cmdr Dev"
 	}
 
-	// Check if the identity exists in the keychain. If not, skip silently —
-	// signing is optional (the app works without it, just with Keychain prompts).
 	checkCmd := exec.Command("security", "find-identity", "-v", "-p", "codesigning")
 	checkOutput, err := RunCommand(checkCmd, true)
 	if err != nil || !strings.Contains(checkOutput, "\""+identity+"\"") {

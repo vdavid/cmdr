@@ -25,8 +25,15 @@ startup, test execution, and cleanup:
 ./scripts/check.sh --check desktop-e2e-playwright
 ```
 
-Logs go to `/tmp/cmdr-e2e-playwright-<timestamp>.log`. The app runs in an isolated data dir (`CMDR_DATA_DIR`) and uses
-MCP port 9429. Stale processes on that port are killed before starting.
+The checker runs the suite as **N parallel shards**: one dedicated MTP lane (sequential, `mtp.spec.ts` +
+`mtp-conflicts.spec.ts`) plus 2 non-MTP lanes split by Playwright's `--shard X/2`. Each shard gets its own Tauri
+instance with a distinct `CMDR_DATA_DIR`, MCP port (9429 + offset), and Unix socket path. The MTP shard runs alone
+because the virtual MTP backing dir (`/tmp/cmdr-mtp-e2e-fixtures`) is shared by every Tauri instance — running MTP specs
+from two shards at once would corrupt it. Per-shard logs go to `/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`.
+
+The socket path is overridable via the `CMDR_PLAYWRIGHT_SOCKET` env var (read in `src-tauri/src/lib.rs` and passed to
+`tauri_plugin_playwright::init_with_config`). When unset, the plugin falls back to `/tmp/tauri-playwright.sock` so
+manual / Linux-Docker runs keep working unchanged.
 
 `RUST_LOG` is forwarded to the app, so trace-level output is one shell-prefix away. The chosen value is echoed at the
 top of the log so it's visible at a glance:

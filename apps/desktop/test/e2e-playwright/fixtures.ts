@@ -13,6 +13,10 @@
 
 import { createTauriTest } from '@srsholmes/tauri-playwright'
 
+// Each parallel E2E shard spawns its own Tauri instance bound to a distinct
+// Unix socket. The Go check runner sets CMDR_PLAYWRIGHT_SOCKET per shard.
+const socketPath = process.env.CMDR_PLAYWRIGHT_SOCKET ?? '/tmp/tauri-playwright.sock'
+
 export const { test, expect } = createTauriTest({
   // No devUrl — in Tauri mode, the app is already running with its built
   // frontend. Setting devUrl would redirect the webview to a nonexistent
@@ -20,5 +24,5 @@ export const { test, expect } = createTauriTest({
   devUrl: '',
 
   // Tauri mode config
-  mcpSocket: '/tmp/tauri-playwright.sock',
+  mcpSocket: socketPath,
 })

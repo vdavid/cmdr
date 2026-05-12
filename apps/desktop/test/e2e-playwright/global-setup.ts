@@ -24,6 +24,12 @@ export default function globalSetup(): void {
     globalThis.__PLAYWRIGHT_CREATED_FIXTURES = true
   }
 
-  // Ensure clean MTP virtual device state (independent of local fixtures)
-  recreateMtpFixtures()
+  // Ensure clean MTP virtual device state (independent of local fixtures).
+  // Under parallel sharding the MTP-backing dir is shared across all Tauri
+  // instances, so only the dedicated MTP shard (or a non-sharded run) is
+  // allowed to recreate it. Other shards skip this step.
+  const skipMtp = process.env.CMDR_E2E_SKIP_MTP_FIXTURES === '1'
+  if (!skipMtp) {
+    recreateMtpFixtures()
+  }
 }

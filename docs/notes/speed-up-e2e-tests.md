@@ -479,3 +479,130 @@ In `apps/desktop/test/e2e-playwright/`:
   The retry's report is the one captured in this section. A third confirmation run also passed cleanly with identical
   timings.
 - `./scripts/check.sh` (fast) is green.
+
+## After Step 6 (parallel sharding)
+
+- Date: 2026-05-12
+- Machine: macOS, native, three Tauri instances
+- Branch: `e2e-speedup` (worktree)
+- Suite result: **131 passed, 17 skipped (SMB on macOS), 0 failed, 0 flaky** on two back-to-back green runs
+
+### Headline
+
+Wall-clock dropped to **2m 47s** (checker total) from the **5m 49s** Step 5 baseline — a **52% cut on the user-visible
+"go grab coffee" number**, with the build step still included. The Playwright portion alone (longest shard) is down to
+~108 s vs. the ~4m 48s single-instance baseline (**63%** off).
+
+### Totals
+
+| Metric                | Step 5 baseline | Step 6 pass 1 | Step 6 pass 2 |
+| --------------------- | --------------- | ------------- | ------------- |
+| Checker total         | 5m 49s          | 3m 03s (red)  | 2m 47s        |
+| Playwright wall-clock | ~4m 48s         | n/a           | ~1m 48s       |
+| Shards                | 1               | 3             | 3             |
+| Tauri instances       | 1               | 3             | 3             |
+| Final result          | green           | 3 MTP failed  | 131 / 131     |
+
+Run 1 caught a cross-shard isolation bug (see below); run 2 is the first green pass with the fix; the second
+back-to-back pass came in at the same 2m 47s and is also green.
+
+### Per-shard durations (run 2, green)
+
+| Shard       | Specs                                       | Tests                 | Duration |
+| ----------- | ------------------------------------------- | --------------------- | -------- |
+| `mtp`       | `mtp.spec.ts`, `mtp-conflicts.spec.ts`      | 26 passed             | ~1m 18s  |
+| `non-mtp-1` | half of non-MTP specs (`--shard 1/2`)       | 65 passed, 1 skipped  | ~1m 48s  |
+| `non-mtp-2` | other half of non-MTP specs (`--shard 2/2`) | 40 passed, 16 skipped | ~1m 36s  |
+
+All three Playwright processes start at the same time, so the suite finishes when the slowest one (`non-mtp-1`) does.
+The 16 SMB skips land on `non-mtp-2`; they cost nothing.
+
+### Architecture
+
+- **Option B** (Go orchestrates N Playwright processes). The check runner:
+  - builds the Tauri binary once
+  - spawns N Tauri instances in parallel, each with a unique `CMDR_DATA_DIR`, `CMDR_MCP_PORT`, `CMDR_PLAYWRIGHT_SOCKET`,
+    and per-shard fixture dir
+  - waits for each shard's socket to appear
+  - runs N `pnpm test:e2e:playwright` invocations in parallel (one per shard)
+  - aggregates pass/fail counts from each
+- N=3: one **MTP shard** (sequential lane — `mtp.spec.ts` + `mtp-conflicts.spec.ts`) and two **non-MTP shards** split by
+  Playwright's `--shard 1/2` and `--shard 2/2`. The MTP shard runs alone because the virtual MTP backing dir
+  (`/tmp/cmdr-mtp-e2e-fixtures`) is hard-coded in `src-tauri/src/mtp/virtual_device.rs` and shared by every Tauri
+  instance — two MTP shards would clobber each other.
+- **Spec selection** is driven by a `CMDR_E2E_SHARD_KIND` env var read in `playwright.config.ts`:
+  - `mtp` → `testMatch: /mtp(-conflicts)?\.spec\.ts$/`
+  - `non-mtp` → `testIgnore: /mtp(-conflicts)?\.spec\.ts$/` (and Playwright's `--shard X/2` does the split)
+  - unset / `all` → every spec (default, manual / Linux-Docker / single-instance runs)
+
+### Socket-path verdict
+
+**Overridable.** `tauri-plugin-playwright` 0.2.2 exposes `init_with_config(PluginConfig::new().socket_path(...))`. The
+npm client (`@srsholmes/tauri-playwright`) takes `mcpSocket` in `createTauriTest`. The patch is small:
+
+- `src-tauri/src/lib.rs`: read `CMDR_PLAYWRIGHT_SOCKET` env var and pass it to `init_with_config`. Falls back to the
+  plugin default `/tmp/tauri-playwright.sock` when unset, so manual and Linux-Docker paths keep working.
+- `test/e2e-playwright/fixtures.ts`: pass `process.env.CMDR_PLAYWRIGHT_SOCKET ?? '/tmp/tauri-playwright.sock'` as
+  `mcpSocket`.
+
+No fork, no symlink trick, no per-cwd hack.
+
+### Cross-shard isolation bugs found + fixed
+
+1. **Shared virtual MTP backing dir wiped at every Tauri startup.** Run 1 had 3 MTP-shard test failures
+   (`deletes multiple selected files on MTP`, `renames file on MTP via keyboard`,
+   `rename to existing name is rejected on MTP`) — all timing out waiting for `report.txt` after
+   `recreateMtpFixtures()`. Root cause: every Tauri instance built with `virtual-mtp` runs `setup_virtual_mtp_device()`
+   at startup, which **wipes** `/tmp/cmdr-mtp-e2e-fixtures` via `fs::remove_dir_all` and recreates the tree. With three
+   instances starting nearly simultaneously, the wipe-and-recreate races and the three independent mtp-rs watchers (all
+   pointed at the same backing dir) react to each other's writes. The MTP shard's in-memory device state can end up out
+   of sync with disk.
+
+   **Fix**: added a `CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP` env var gate in `src-tauri/src/lib.rs`. The Go runner sets it on
+   every non-MTP shard, so only the MTP-shard Tauri instance registers the virtual device and watches the backing dir.
+   Non-MTP specs don't need the virtual device, so this is a clean opt-out.
+
+2. **`globalSetup` calling `recreateMtpFixtures()` from non-MTP shards.** Would have wiped the MTP shard's fixtures
+   mid-run. Gated behind `CMDR_E2E_SKIP_MTP_FIXTURES` env var (Go runner sets it on non-MTP shards).
+
+3. **Shared Playwright outputs (`/tmp/cmdr-e2e-report.json`, `test-results/`).** Each parallel Playwright process would
+   stomp on the previous one's report. Per-shard `CMDR_E2E_JSON_REPORT` and `CMDR_E2E_OUTPUT_DIR` env vars route them to
+   distinct `/tmp/cmdr-e2e-report-<shard>.json` and `/tmp/cmdr-e2e-results-<shard>/` paths.
+
+4. **Pre-existing MTP-fixture-rebuild flake amplified under parallel load.** Even with the wipe race fixed, the MTP
+   shard's `beforeEach` (`pause_watcher → recreateMtpFixtures → rescan → resume`) is occasionally flaky on
+   `mcpAwaitItem` for `report.txt`. The flake exists in single-instance mode too (Step 1 baseline had 1 of these; Step 4
+   noted a similar incident with `sunset.jpg`). It happens roughly 1-in-3 runs under three concurrent Tauri instances —
+   the extra CPU + `/tmp` I/O pressure makes it more frequent. The root cause is somewhere inside mtp-rs's
+   pause/resume + rescan ordering, which is out of scope here. Set `retries: 1` for the MTP shard only in
+   `playwright.config.ts` (gated on `CMDR_E2E_SHARD_KIND === 'mtp'`). The non-MTP shards keep `retries: 0`. The retry
+   adds ~5-10 s to the MTP shard wall-clock when it fires and zero when it doesn't.
+
+### What limits the parallelism
+
+- **MTP lane stays single-instance** as long as `MTP_FIXTURE_ROOT` is a `const &str`. Making it env-var-driven would
+  unlock additional MTP shards but isn't worth the extra Rust surface area for an already-short lane (~78 s).
+- **Non-MTP scaling** is roughly proportional but capped by `--shard`'s per-file granularity. With the current spec
+  layout, the `non-mtp-1` shard inherits `file-watching.spec.ts` (~78 s, dominated by watcher debounce delays the app
+  actually needs to be fast for). Going to N=4 (three non-MTP shards instead of two) saves at best another ~20 s —
+  diminishing returns vs. the cost of a fourth Tauri instance, three Playwright processes, and the macOS noise of four
+  overlapping windows. Stuck at N=3 for now.
+
+### Files touched
+
+- `apps/desktop/src-tauri/src/lib.rs`: `CMDR_PLAYWRIGHT_SOCKET` and `CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP` env-var gates
+- `apps/desktop/test/e2e-playwright/playwright.config.ts`: `CMDR_E2E_SHARD_KIND`, per-shard JSON report, per-shard
+  output dir, removed `html` reporter (would have collided across shards)
+- `apps/desktop/test/e2e-playwright/fixtures.ts`: socket path from env var
+- `apps/desktop/test/e2e-playwright/global-setup.ts`: `CMDR_E2E_SKIP_MTP_FIXTURES` gate
+- `scripts/check/checks/desktop-svelte-e2e-playwright.go`: rewritten to plan shards, spawn N Tauri instances, run N
+  Playwright processes in parallel, aggregate results
+- `apps/desktop/test/e2e-playwright/CLAUDE.md`, `scripts/check/CLAUDE.md`: parallel-sharding docs
+
+### Surprises / notes
+
+- The plugin's `init_with_config` builder is _not_ documented on crates.io but is in the published source. Searching
+  inside the cargo registry beats guessing.
+- Three Tauri windows pop up on macOS during the run. Cosmetic but very visible. Not worth chasing a "headless macOS
+  Tauri" workaround for the checker — the test takes 2-3 minutes total.
+- `./scripts/check.sh` (fast) is green after the patch.
