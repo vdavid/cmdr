@@ -166,7 +166,6 @@ test.describe('File viewer search', () => {
   })
 })
 
-
 test.describe('File viewer error handling', () => {
   test('shows error for missing file path', async ({ tauriPage }) => {
     await navigateToViewer(tauriPage)

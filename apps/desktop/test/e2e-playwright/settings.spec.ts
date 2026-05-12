@@ -154,11 +154,7 @@ test.describe('Settings page', () => {
     await tauriPage.fill('.search-input', 'zzzyyyxxxnomatch')
 
     // Sidebar updates on a 200 ms debounce — wait for all sections to vanish.
-    const empty = await pollUntil(
-      tauriPage,
-      async () => (await tauriPage.count('.section-item')) === 0,
-      3000,
-    )
+    const empty = await pollUntil(tauriPage, async () => (await tauriPage.count('.section-item')) === 0, 3000)
     expect(empty).toBe(true)
 
     // The clear button still shows up so the user can recover from a dead-end query.
@@ -169,11 +165,7 @@ test.describe('Settings page', () => {
             var btn = document.querySelector('.search-clear');
             if (btn) btn.click();
         })()`)
-    await pollUntil(
-      tauriPage,
-      async () => (await tauriPage.count('.section-item')) > 0,
-      3000,
-    )
+    await pollUntil(tauriPage, async () => (await tauriPage.count('.section-item')) > 0, 3000)
   })
 
   test('Arrow Down in the search box moves section selection forward', async ({ tauriPage }) => {
@@ -187,11 +179,7 @@ test.describe('Settings page', () => {
             else input.value = '';
             input.dispatchEvent(new Event('input', { bubbles: true }));
         })()`)
-    await pollUntil(
-      tauriPage,
-      async () => (await tauriPage.count('.section-item')) > 2,
-      3000,
-    )
+    await pollUntil(tauriPage, async () => (await tauriPage.count('.section-item')) > 2, 3000)
 
     await tauriPage.waitForSelector('.section-item.selected', 5000)
     const startSelected = await tauriPage.evaluate<string>(
