@@ -23,7 +23,15 @@ import {
   mcpAwaitItem,
   mcpSwitchPane,
 } from '../e2e-shared/mcp-client.js'
-import { ensureAppReady, getFixtureRoot, pollUntil, sleep, isStateClean, TRANSFER_DIALOG } from './helpers.js'
+import {
+  dispatchMenuCommand,
+  ensureAppReady,
+  getFixtureRoot,
+  pollUntil,
+  sleep,
+  isStateClean,
+  TRANSFER_DIALOG,
+} from './helpers.js'
 import {
   waitForConflictPolicy,
   selectConflictPolicy,
@@ -118,7 +126,7 @@ test.describe('MTP cross-volume move conflicts', () => {
 
     // Move report.txt to local right/ (which already has report.txt)
     await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
-    await tauriPage.keyboard.press('F6')
+    await dispatchMenuCommand(tauriPage, 'file.move')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 10000)
     await waitForConflictPolicy(tauriPage)
@@ -160,7 +168,7 @@ test.describe('MTP cross-volume move conflicts', () => {
     await mcpAwaitItem('left', 'report.txt')
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
-    await tauriPage.keyboard.press('F6')
+    await dispatchMenuCommand(tauriPage, 'file.move')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 10000)
     await waitForConflictPolicy(tauriPage)
@@ -190,7 +198,7 @@ test.describe('MTP cross-volume move conflicts', () => {
     await mcpAwaitItem('right', 'file-a.txt', 15)
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'file-a.txt' })
-    await tauriPage.keyboard.press('F6')
+    await dispatchMenuCommand(tauriPage, 'file.move')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 10000)
     await waitForConflictPolicy(tauriPage)
@@ -250,7 +258,7 @@ test.describe('MTP same-volume move conflicts', () => {
     await sleep(200)
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
-    await tauriPage.keyboard.press('F6')
+    await dispatchMenuCommand(tauriPage, 'file.move')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 10000)
     await waitForConflictPolicy(tauriPage)
@@ -302,7 +310,7 @@ test.describe('MTP same-volume move conflicts', () => {
     await sleep(200)
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
-    await tauriPage.keyboard.press('F6')
+    await dispatchMenuCommand(tauriPage, 'file.move')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 10000)
     await waitForConflictPolicy(tauriPage)

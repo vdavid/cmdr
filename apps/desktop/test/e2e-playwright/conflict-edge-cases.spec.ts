@@ -9,7 +9,15 @@ import fs from 'fs'
 import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureAppReady, getFixtureRoot, moveCursorToFile, pollUntil, sleep, TRANSFER_DIALOG } from './helpers.js'
+import {
+  dispatchMenuCommand,
+  ensureAppReady,
+  getFixtureRoot,
+  moveCursorToFile,
+  pollUntil,
+  sleep,
+  TRANSFER_DIALOG,
+} from './helpers.js'
 import {
   createSymlinkFixture,
   createTypeMismatchFixture,
@@ -40,7 +48,7 @@ test.describe('Cancel and rollback', () => {
     const found = await moveCursorToFile(tauriPage, 'bulk')
     expect(found).toBe(true)
 
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await clickTransferStart(tauriPage)
 
@@ -118,7 +126,7 @@ test.describe('Edge cases', () => {
 
     // First copy: file-a.txt from left to right (no conflict)
     await moveCursorToFile(tauriPage, 'file-a.txt')
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
@@ -127,7 +135,7 @@ test.describe('Edge cases', () => {
 
     // Second copy: same file again (now there IS a conflict)
     await moveCursorToFile(tauriPage, 'file-a.txt')
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
     await selectConflictPolicy(tauriPage, 'overwrite')
@@ -147,7 +155,7 @@ test.describe('Edge cases', () => {
     await ensureAppReady(tauriPage)
 
     await moveCursorToFile(tauriPage, 'file-a.txt')
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
@@ -169,7 +177,7 @@ test.describe('Symlink conflicts', () => {
     await ensureAppReady(tauriPage, { leftPane: ['link-target.txt'] })
 
     await selectAll(tauriPage)
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
@@ -203,7 +211,7 @@ test.describe('Symlink conflicts', () => {
     await ensureAppReady(tauriPage, { leftPane: ['link-target.txt'] })
 
     await selectAll(tauriPage)
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
@@ -229,7 +237,7 @@ test.describe('Type mismatch conflicts', () => {
     await ensureAppReady(tauriPage, { leftPane: ['reports.txt'] })
 
     await selectAll(tauriPage)
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
@@ -294,7 +302,7 @@ test.describe('Type mismatch conflicts', () => {
     await tauriPage.waitForSelector('.file-pane .file-entry.is-under-cursor', 3000)
 
     await selectAll(tauriPage)
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
 

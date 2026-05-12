@@ -16,6 +16,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { test, expect } from './fixtures.js'
 import {
+  dispatchMenuCommand,
   ensureAppReady,
   navigateToRoute,
   executeViaCommandPalette,
@@ -147,9 +148,7 @@ async function openCommandPalette(tauriPage: PageLike): Promise<void> {
 
 /** Open the search dialog overlay. */
 async function openSearchDialog(tauriPage: PageLike): Promise<void> {
-  await tauriPage.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', {
-        key: 'f', ctrlKey: ${String(CTRL_OR_META === 'Control')}, metaKey: ${String(CTRL_OR_META === 'Meta')}, bubbles: true
-    }))`)
+  await dispatchMenuCommand(tauriPage, 'search.open')
   await tauriPage.waitForSelector('.search-overlay', 5000)
 }
 
@@ -209,7 +208,7 @@ for (const mode of ['light', 'dark'] as const) {
       await ensureAppReady(tauriPage)
       await moveCursorToFile(tauriPage, 'file-a.txt')
 
-      await tauriPage.keyboard.press('F5')
+      await dispatchMenuCommand(tauriPage, 'file.copy')
       await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
 
       const { all } = await runAxeAudit(tauriPage, `Copy dialog (${mode})`, TRANSFER_DIALOG)
@@ -222,7 +221,7 @@ for (const mode of ['light', 'dark'] as const) {
       await ensureAppReady(tauriPage)
       await moveCursorToFile(tauriPage, 'file-a.txt')
 
-      await tauriPage.keyboard.press('F8')
+      await dispatchMenuCommand(tauriPage, 'file.delete')
       const deleteDialog = '[data-dialog-id="delete-confirmation"]'
       await tauriPage.waitForSelector(deleteDialog, 5000)
 
@@ -236,7 +235,7 @@ for (const mode of ['light', 'dark'] as const) {
       await ensureAppReady(tauriPage)
       await moveCursorToFile(tauriPage, 'file-a.txt')
 
-      await tauriPage.keyboard.press('F6')
+      await dispatchMenuCommand(tauriPage, 'file.move')
       await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
 
       const { all } = await runAxeAudit(tauriPage, `Move dialog (${mode})`, TRANSFER_DIALOG)

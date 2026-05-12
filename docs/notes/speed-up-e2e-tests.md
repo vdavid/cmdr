@@ -875,3 +875,67 @@ Two back-to-back full-suite runs (`./scripts/check.sh --check desktop-e2e-playwr
 The fix shifts the Cancel-copy test from a flaky 32.7 s outlier to either ~750 ms (rollback ran) or ~31 s (escape
 hatch). The escape-hatch duration is bounded by the test's own 30 s modal-close wait, not by anything we control here.
 Tightening that timeout would be a Step 7 candidate — the rollback path itself completes in milliseconds.
+
+## After Step 6e (F-key tests via dispatchMenuCommand)
+
+### Goal
+
+Eliminate the residual "synthesized KeyboardEvent doesn't always reach its handler under parallel-shard load" flake
+observed in Steps 6a/6b/6d (0-1-2-5-10 flakes across runs, all clustered on `wait_for_selector` timeouts after an F-key
+dispatch).
+
+### Approach
+
+Replace `tauriPage.keyboard.press('F5')`-style synthesized keystrokes with `dispatchMenuCommand(tauriPage, 'file.copy')`
+— the helper in `helpers.ts` that emits the `execute-command` Tauri event directly, mimicking what the OS native menu
+accelerator does in prod. The Tauri-event path is unaffected by DOM focus state and parallel-load timing.
+
+Rule of thumb: convert when the test cares about the resulting dialog / file state, keep keyboard when the test's title
+or comments mark it as exercising the keyboard pathway itself (e.g. `app.spec.ts` "opens copy dialog with F5",
+`file-operations.spec.ts` "...via F5", MTP read-only enforcement tests, MTP "renames file...via keyboard").
+
+### What changed
+
+**Converted to `dispatchMenuCommand` (28 dispatches across 16 tests):**
+
+- `conflict-copy.spec.ts`: 7 × F5 → `file.copy`
+- `conflict-move.spec.ts`: 3 × F6 → `file.move`
+- `conflict-edge-cases.spec.ts`: 8 × F5 → `file.copy`
+- `mtp-conflicts.spec.ts`: 5 × F6 → `file.move`
+- `accessibility.spec.ts`: F5 → `file.copy`, F6 → `file.move`, F8 → `file.delete`, plus the ⌘F dispatch in
+  `openSearchDialog()` → `search.open`
+- `file-watching.spec.ts`: 1 × F5 → `file.copy` (the "in-app copy without duplicates" test)
+
+**Kept on keyboard pathway (15 dispatches across 15 tests):**
+
+- `app.spec.ts` (6): "opens new folder dialog with F7" ×2, "opens copy dialog with F5", "opens move dialog with F6",
+  "Cancel button closes the new folder dialog" (uses F7), "opens the delete confirmation dialog with F8"
+- `file-operations.spec.ts` (4): "...via F5", "...via F6", "...via F2", "...via F7" — round-trip tests with explicit
+  F-key intent in their titles
+- `mtp.spec.ts` (5): F8 in "deletes file on MTP with 'Delete permanently' dialog" (comment marks it as full-keyboard
+  flow), F2 ×2 in "renames file on MTP via keyboard" and "rename to existing name is rejected on MTP", F7 and F2 in
+  "read-only storage rejects write operations" (test verifies the read-only pre-check fires from the keyboard path)
+
+### Validation
+
+Three back-to-back `./scripts/check.sh --check desktop-e2e-playwright` runs on native macOS with parallel shards:
+
+| Run    | Result | Total | Per shard            | Flakes |
+| ------ | ------ | ----- | -------------------- | ------ |
+| Pass 1 | ✓      | 3m13s | 131 passed, 0 failed | 0      |
+| Pass 2 | ✓      | 3m11s | 131 passed, 0 failed | 0      |
+| Pass 3 | ✓      | 3m10s | 131 passed, 0 failed | 0      |
+
+**The keystroke-dispatch flake is gone.** All three runs match the 0/0/0 target. No new flake categories surfaced.
+`./scripts/check.sh` (full sweep) is green.
+
+### Files touched
+
+- `apps/desktop/test/e2e-playwright/conflict-copy.spec.ts`
+- `apps/desktop/test/e2e-playwright/conflict-move.spec.ts`
+- `apps/desktop/test/e2e-playwright/conflict-edge-cases.spec.ts`
+- `apps/desktop/test/e2e-playwright/mtp-conflicts.spec.ts`
+- `apps/desktop/test/e2e-playwright/accessibility.spec.ts`
+- `apps/desktop/test/e2e-playwright/file-watching.spec.ts`
+
+No app source changes — test files only, per Step 6e constraints.

@@ -14,6 +14,7 @@ import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
+  dispatchMenuCommand,
   ensureAppReady,
   getFixtureRoot,
   fileExistsInFocusedPane,
@@ -262,7 +263,7 @@ test.describe('File watching', () => {
     const found = await moveCursorToFile(tauriPage, 'file-a.txt')
     expect(found).toBe(true)
 
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
     await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)

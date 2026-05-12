@@ -7,7 +7,15 @@
 
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureAppReady, getFixtureRoot, moveCursorToFile, pollUntil, sleep, TRANSFER_DIALOG } from './helpers.js'
+import {
+  dispatchMenuCommand,
+  ensureAppReady,
+  getFixtureRoot,
+  moveCursorToFile,
+  pollUntil,
+  sleep,
+  TRANSFER_DIALOG,
+} from './helpers.js'
 import {
   createConflictFixturesA,
   createConflictFixturesB,
@@ -32,7 +40,7 @@ test.describe('Copy with conflict policies (Layout A)', () => {
     await ensureAppReady(tauriPage, { leftPane: ['readme.txt'] })
 
     await selectAll(tauriPage)
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
@@ -60,7 +68,7 @@ test.describe('Copy with conflict policies (Layout A)', () => {
     await ensureAppReady(tauriPage, { leftPane: ['readme.txt'] })
 
     await selectAll(tauriPage)
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
@@ -89,7 +97,7 @@ test.describe('Copy multi-item merge (Layout B)', () => {
     await ensureAppReady(tauriPage, { leftPane: ['alpha'] })
 
     await selectAll(tauriPage)
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
@@ -119,7 +127,7 @@ test.describe('Copy multi-item merge (Layout B)', () => {
     await ensureAppReady(tauriPage, { leftPane: ['alpha'] })
 
     await selectAll(tauriPage)
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
@@ -149,7 +157,7 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
     await ensureAppReady(tauriPage, { leftPane: ['readme.txt'] })
 
     await selectAll(tauriPage)
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
@@ -217,7 +225,7 @@ test.describe('Rename conflict resolution', () => {
     await ensureAppReady(tauriPage)
 
     await moveCursorToFile(tauriPage, 'file-a.txt')
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
@@ -254,7 +262,7 @@ test.describe('Rename conflict resolution', () => {
     await ensureAppReady(tauriPage, { leftPane: ['readme.txt'] })
 
     await selectAll(tauriPage)
-    await tauriPage.keyboard.press('F5')
+    await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)

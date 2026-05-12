@@ -7,7 +7,7 @@
 
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureAppReady, getFixtureRoot, pollUntil, TRANSFER_DIALOG } from './helpers.js'
+import { dispatchMenuCommand, ensureAppReady, getFixtureRoot, pollUntil, TRANSFER_DIALOG } from './helpers.js'
 import {
   createConflictFixturesB,
   readFile,
@@ -30,7 +30,7 @@ test.describe('Move multi-item merge (Layout B)', () => {
     await ensureAppReady(tauriPage, { leftPane: ['alpha'] })
 
     await selectAll(tauriPage)
-    await tauriPage.keyboard.press('F6')
+    await dispatchMenuCommand(tauriPage, 'file.move')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
@@ -63,7 +63,7 @@ test.describe('Move multi-item merge (Layout B)', () => {
     await ensureAppReady(tauriPage, { leftPane: ['alpha'] })
 
     await selectAll(tauriPage)
-    await tauriPage.keyboard.press('F6')
+    await dispatchMenuCommand(tauriPage, 'file.move')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
@@ -99,7 +99,7 @@ test.describe('Move rollback', () => {
     await ensureAppReady(tauriPage, { leftPane: ['alpha'] })
 
     await selectAll(tauriPage)
-    await tauriPage.keyboard.press('F6')
+    await dispatchMenuCommand(tauriPage, 'file.move')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
