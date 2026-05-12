@@ -243,6 +243,22 @@ In `apps/desktop/test/e2e-playwright/`:
   debounce delays, not test-side waits. Out of scope for Step 2.
 - No new flakes introduced. Suite went 122/122 expected pass on first try.
 
+### Follow-up: back-to-back-run flake
+
+The validation pass uncovered a regression on back-to-back runs (first run green, second run within the same machine
+session had 15 dialog-driven failures — F5/F6/F8/Delete keypresses didn't open their dialogs). Root cause: dropping the
+`sleep(500)` after `navigateToRoute` and `sleep(300)` after `mcp-nav-to-path` let `ensureAppReady` return before
+`+page.svelte`'s `onMount` had finished wiring `document.addEventListener('keydown', handleGlobalKeyDown)`. On a cold
+first run, the `mcp-nav-to-path` listener also lived inside that same `onMount` chain, so the `leftExpected`-files poll
+implicitly gated on it. On a warm second run the panes were already on `left/` from a prior test, so the poll resolved
+instantly — before the global keydown listener was attached. F-key presses then fired into a void.
+
+Fix in `helpers.ts` `ensureAppReady`: after the existing `.file-entry.is-under-cursor` wait, add
+`waitForFunction("document.activeElement.closest('.dual-pane-explorer') !== null")` plus `sleep(100)`. The condition
+proves the explorer is focused (so the container-level handler is live); the 100 ms margin absorbs the asynchronous
+attach of the document-level shortcut dispatch. Net cost: ~100 ms vs the dropped 800 ms (~88% still saved). Suite is
+green twice back-to-back after the fix.
+
 ## After Step 3 (slim beforeEach in mtp/smb/network)
 
 _To be filled in._

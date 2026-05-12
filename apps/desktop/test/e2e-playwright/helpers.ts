@@ -202,6 +202,19 @@ export async function ensureAppReady(
 
   // Wait until a file entry has the cursor (focus confirmed)
   await tauriPage.waitForSelector('.file-pane .file-entry.is-under-cursor', 3000)
+
+  // Confirm focus actually landed inside the explorer so keydown handlers
+  // (both the container-level handler and the document-level shortcut dispatch
+  // attached in +page.svelte's onMount) reach our F-keys. On back-to-back runs
+  // the file-entry cursor can render before +page.svelte's onMount finishes
+  // wiring `document.addEventListener('keydown', ...)`, leading to F5/F6/F8/Delete
+  // being dropped. Poll for activeElement inside the explorer, then a tiny
+  // margin to absorb the async listener attach.
+  await tauriPage.waitForFunction(
+    "document.activeElement && document.activeElement.closest('.dual-pane-explorer') !== null",
+    3000,
+  )
+  await sleep(100)
 }
 
 // ── DOM query helpers ────────────────────────────────────────────────────────
