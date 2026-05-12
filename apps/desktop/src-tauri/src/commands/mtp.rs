@@ -380,3 +380,55 @@ pub fn pause_virtual_mtp_watcher() -> bool {
 pub fn resume_virtual_mtp_watcher() {
     mtp::virtual_device::resume_virtual_watcher();
 }
+
+/// Resyncs the virtual MTP device after the test recreated the backing-dir
+/// fixtures, then resumes the filesystem watcher.
+///
+/// Solves the race where macOS FSEvents / Linux inotify deliver events from
+/// the delete + recreate sequence ~200-500 ms after the disk writes. If the
+/// watcher is resumed before those late events drain, stale REMOVE events
+/// arrive after the rescan and incorrectly remove the freshly re-added
+/// objects (the path is reused, so the new handle is what gets removed).
+///
+/// Expected caller flow:
+///
+/// ```ignore
+/// invoke('pause_virtual_mtp_watcher')        // existing
+/// recreateMtpFixtures()                      // disk I/O (TS side)
+/// invoke('resync_virtual_mtp_after_disk_change')  // settle + rescan + resume
+/// ```
+///
+/// The settle windows below are sized for macOS FSEvents' worst-case latency
+/// plus a safety margin. With the watcher paused, late events that arrive
+/// during these sleeps are silently dropped (see
+/// `mtp_rs::transport::virtual_device::watcher::handle_notify_event`).
+#[cfg(feature = "virtual-mtp")]
+#[tauri::command]
+#[specta::specta]
+pub async fn resync_virtual_mtp_after_disk_change() -> Result<(usize, usize), String> {
+    use tokio::time::{Duration, sleep};
+
+    // Phase 1: drain pending FSEvents from the recreate-fixtures disk I/O.
+    // macOS FSEvents latency: ~200-500 ms in practice. 600 ms gives margin
+    // even under parallel-shard CPU/IO pressure.
+    sleep(Duration::from_millis(600)).await;
+
+    // Phase 2: sync the in-memory object tree to the on-disk state.
+    let result =
+        mtp::virtual_device::rescan_virtual_device().ok_or_else(|| "Virtual MTP device not found".to_string())?;
+    mtp::connection_manager().clear_all_listing_caches().await;
+
+    // Phase 3: brief secondary drain to absorb any straggler events the OS
+    // emitted between phase 1 and the rescan. Watcher is still paused.
+    sleep(Duration::from_millis(150)).await;
+
+    // Phase 4: resync once more in case any rescan-window writes landed.
+    // Cheap (just a directory diff against the in-memory tree).
+    let _ = mtp::virtual_device::rescan_virtual_device();
+    mtp::connection_manager().clear_all_listing_caches().await;
+
+    // Phase 5: resume — past this point the watcher is live again.
+    mtp::virtual_device::resume_virtual_watcher();
+
+    Ok(result)
+}

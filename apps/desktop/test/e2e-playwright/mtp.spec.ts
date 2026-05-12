@@ -121,9 +121,11 @@ test.beforeEach(async ({ tauriPage }) => {
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('pause_virtual_mtp_watcher')`)
   recreateMtpFixtures() // MTP backing dir
 
-  // Rescan to sync state with disk, then resume the watcher.
-  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('rescan_virtual_mtp')`)
-  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('resume_virtual_mtp_watcher')`)
+  // Settle FSEvents, rescan, settle again, rescan, then resume — all in one
+  // IPC call. See `resync_virtual_mtp_after_disk_change` in commands/mtp.rs
+  // for the rationale (FSEvents has ~200-500 ms latency on macOS, so a naive
+  // rescan + resume races with late events).
+  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('resync_virtual_mtp_after_disk_change')`)
 
   // Force both panes back to a local volume. Previous tests may have left a pane
   // on MTP, and ensureAppReady's mcp-nav-to-path events get rejected by

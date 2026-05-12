@@ -79,11 +79,12 @@ test.beforeEach(async ({ tauriPage }) => {
   recreateFixtures(getFixtureRoot())
   await initMcpClient(tauriPage)
 
-  // Pause watcher → recreate fixtures → rescan → resume to prevent stale events
+  // Pause watcher → recreate fixtures → settle + rescan + resume (atomic).
+  // The combined IPC drains late FSEvents while still paused; see
+  // `resync_virtual_mtp_after_disk_change` in commands/mtp.rs.
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('pause_virtual_mtp_watcher')`)
   recreateMtpFixtures()
-  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('rescan_virtual_mtp')`)
-  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('resume_virtual_mtp_watcher')`)
+  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('resync_virtual_mtp_after_disk_change')`)
 
   // Reset both panes to local volume — short-circuit when already clean.
   if (!(await isStateClean(tauriPage, LOCAL_VOLUME_NAME))) {

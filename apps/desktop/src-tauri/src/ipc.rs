@@ -285,6 +285,7 @@ fn collect_virtual_mtp_types(types: &mut Types) -> Vec<Function> {
         crate::commands::mtp::rescan_virtual_mtp,
         crate::commands::mtp::pause_virtual_mtp_watcher,
         crate::commands::mtp::resume_virtual_mtp_watcher,
+        crate::commands::mtp::resync_virtual_mtp_after_disk_change,
     ](types)
 }
 #[cfg(not(all(feature = "virtual-mtp", any(target_os = "macos", target_os = "linux"))))]
@@ -635,6 +636,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::mtp::pause_virtual_mtp_watcher,
         #[cfg(all(feature = "virtual-mtp", any(target_os = "macos", target_os = "linux")))]
         crate::commands::mtp::resume_virtual_mtp_watcher,
+        #[cfg(all(feature = "virtual-mtp", any(target_os = "macos", target_os = "linux")))]
+        crate::commands::mtp::resync_virtual_mtp_after_disk_change,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         crate::stubs::mtp::set_mtp_enabled,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]

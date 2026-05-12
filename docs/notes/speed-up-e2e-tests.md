@@ -674,3 +674,112 @@ These are deferred — diminishing returns vs. the speedup work. Tracking here f
 
 Clean run: **3m 48s** checker total (up from Step 6's 2m 48s on a fully warm cache). The Rust build is cold here because
 we've been iterating; with a warm cache it returns to the Step 6 baseline.
+
+## After Step 6b (MTP watcher race fix)
+
+- Date: 2026-05-12
+- Machine: macOS, native, three Tauri instances
+- Branch: `e2e-speedup` (worktree)
+
+### The race
+
+The MTP shard's `beforeEach` used to do:
+
+```
+pause_virtual_mtp_watcher   (Rust IPC)
+recreateMtpFixtures()       (TS — wipe + recreate /tmp/cmdr-mtp-e2e-fixtures)
+rescan_virtual_mtp          (Rust IPC)
+resume_virtual_mtp_watcher  (Rust IPC)
+```
+
+`pause_watcher` sets `state.watcher_paused = true` synchronously, and `mtp-rs`'s notify callback correctly checks the
+flag at processing time, so events arriving _while_ paused are dropped. The problem is what happens _after_ resume:
+macOS FSEvents has ~200-500 ms delivery latency, so the events from the delete-and-recreate disk I/O can arrive
+**after** `resume_virtual_mtp_watcher` has cleared the flag. The fixture-recreate reuses the same `rel_path`s
+(`Documents/report.txt`, `readonly/photos/sunset.jpg`, etc), so the watcher's stale REMOVE events find the freshly
+re-added handles and remove them — the in-memory MTP tree ends up missing the very files the test was about to exercise.
+
+Symptoms in the wild:
+
+- Step 4: a `sunset.jpg` timeout after 15 s (`has_item = 'sunset.jpg'` on left pane, `files (first 10): []`).
+- Step 1 baseline: same family, one `report.txt` timeout under single-instance load.
+- Step 6: ~1-in-3 under parallel-shard load; the MTP shard needed `retries: 1` as a band-aid.
+
+### Fix
+
+New IPC command `resync_virtual_mtp_after_disk_change` in `apps/desktop/src-tauri/src/commands/mtp.rs` does the whole
+"settle + rescan + resume" dance atomically:
+
+1. Sleep 600 ms — drains the FSEvents queue while the watcher is still paused (events are silently dropped).
+2. Rescan + clear listing caches — syncs the in-memory tree to disk.
+3. Sleep 150 ms — catches any straggler events from between phase 1 and the rescan.
+4. Rescan once more — cheap, absorbs any rescan-window writes.
+5. Resume watcher — clears the paused flag.
+
+The TS-side `beforeEach` (both `mtp.spec.ts` and `mtp-conflicts.spec.ts`) now calls `pause_virtual_mtp_watcher` →
+`recreateMtpFixtures()` → `resync_virtual_mtp_after_disk_change` instead of the four-step dance. Standalone
+`rescan_virtual_mtp` callers in `mtp-conflicts.spec.ts` (single-file writes with the watcher live) are unchanged — those
+don't have the recreate-races-rescan problem since dedup via `already_known` handles them.
+
+`retries: 1` on the MTP shard in `playwright.config.ts` is now dropped — all shards run at `retries: 0`.
+
+### Validation
+
+Two back-to-back full-suite runs (`./scripts/check.sh --check desktop-e2e-playwright`, parallel shards, native macOS):
+
+| Run    | MTP shard           | non-mtp-1                               | non-mtp-2 | Total runtime |
+| ------ | ------------------- | --------------------------------------- | --------- | ------------- |
+| Pass 1 | 25 passed, 1 flake  | 55 passed, 10 failed (keystroke flakes) | green     | 8m 22s (cold) |
+| Pass 2 | 26 passed, 0 failed | 64 passed, 1 failed (search-overlay)    | green     | 3m 20s        |
+
+- **MTP shard: zero races on both passes.** No `sunset.jpg`/`report.txt`/`has_item` timeouts. The single pass 1 failure
+  (`MTP file watching › detects externally added file in MTP backing dir`) was the Step 6a-deferred
+  `activeElement.closest('.dual-pane-explorer')` focus flake — unrelated to the watcher race, and the test passed in
+  pass 2.
+- **`sunset.jpg` specifically: PASSED on both passes.** The `read-only storage rejects write operations` test
+  (`mtp.spec.ts:810`) ran clean.
+- **`retries: 1` successfully dropped.** MTP shard now zero-retry, no flakes from the race.
+
+### Non-MTP flakes (out of scope, deferred per Step 6a)
+
+These all reproduce the Step 6a-documented "Cmd+F / F-key / F2 keystroke handlers occasionally miss" family:
+
+Pass 1 (10 failures, all in non-mtp-1):
+
+- `conflict-edge-cases.spec.ts › Edge cases › Sequential copy triggers conflict on second attempt`
+- `conflict-edge-cases.spec.ts › Edge cases › Copy with Overwrite All handles single-file conflict`
+- `conflict-edge-cases.spec.ts › Symlink conflicts › Copy with Overwrite All replaces regular file with symlink`
+- `conflict-edge-cases.spec.ts › Type mismatch conflicts › Copy with Overwrite All handles file-over-directory`
+- `conflict-edge-cases.spec.ts › Type mismatch conflicts › Copy with Overwrite All handles directory-over-file`
+- `conflict-move.spec.ts › Move multi-item merge (Layout B) › Move multi-item with Overwrite All merges and removes source`
+- `conflict-move.spec.ts › Move multi-item merge (Layout B) › Move multi-item with Skip preserves source of skipped files`
+- `conflict-move.spec.ts › Move rollback › Move rollback button is available and cancels operation`
+- `file-operations.spec.ts › Copy round-trip › copies file-a.txt from left pane to right pane via F5`
+- `file-operations.spec.ts › Move round-trip › moves file-b.txt from left pane to right pane via F6`
+
+All failed at `waitForDialogsToClose` (modal-overlay never closes), meaning the F5/F6 dispatch landed but the dialog
+flow stalled — or the dialog never opened in the first place. Pass 1 was a cold-build run on a hot machine; pass 2 (warm
+cache, lighter machine state) shaved it down to 1 single failure in the same family. Variance is consistent with Step
+6a's note that "different tests fail on each run, confirming this is parallel-load-induced variance, not a deterministic
+regression."
+
+Pass 2 (1 failure, non-mtp-1): `accessibility.spec.ts › light mode › Search dialog` (`.search-overlay` selector timeout
+— same Cmd+F deferred flake).
+
+None of these touch MTP code or the Step 6b fix. Documented here for completeness and to confirm the Step 6a backlog
+remains the next thing to chase.
+
+### Files touched
+
+- `apps/desktop/src-tauri/src/commands/mtp.rs`: new `resync_virtual_mtp_after_disk_change` IPC command
+- `apps/desktop/src-tauri/src/ipc.rs`: registered the new command (specta types + invoke handler)
+- `apps/desktop/test/e2e-playwright/mtp.spec.ts`: `beforeEach` uses the combined IPC
+- `apps/desktop/test/e2e-playwright/mtp-conflicts.spec.ts`: same
+- `apps/desktop/test/e2e-playwright/playwright.config.ts`: dropped `retries: 1` on the MTP shard
+
+### Wall-clock delta
+
+The MTP shard added ~750 ms of settle time per test (600 + 150 ms across the two sleeps), spread over the 26 MTP tests =
+~20 s of new fixed cost. The retry was worth ~5-10 s when it fired, ~0 when it didn't, so the net change is roughly even
+on a green run. The big win is eliminating the 1-in-3 retry cost _and_ the false-confidence the retry masked. Pass 2
+came in at **3m 20s** total (warm-cache, matches Step 6's 2m 47s baseline within build-noise).

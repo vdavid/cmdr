@@ -20,13 +20,11 @@ const jsonReport = process.env.CMDR_E2E_JSON_REPORT ?? '/tmp/cmdr-e2e-report.jso
 // legacy single-run path.
 const outputDir = process.env.CMDR_E2E_OUTPUT_DIR ?? './test-results'
 
-// MTP specs share a single virtual device whose backing dir is hard-coded.
-// Under three parallel Tauri instances the wipe+rescan+resume sequence in
-// `beforeEach` is occasionally flaky (the watcher's resume window can race
-// with the rescan even in single-instance runs — see Step 4 notes). One retry
-// catches genuine flakes without masking a real regression; the MTP shard is
-// the only one that needs it.
-const retries = shardKind === 'mtp' ? 1 : 0
+// Step 6b: the MTP shard used to need `retries: 1` because the watcher's
+// resume window raced with delayed FSEvents from `recreateMtpFixtures`.
+// `resync_virtual_mtp_after_disk_change` (commands/mtp.rs) now drains those
+// events while the watcher is still paused, so all shards run at zero retries.
+const retries = 0
 
 export default defineConfig({
   testDir: '.',
