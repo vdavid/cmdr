@@ -12,6 +12,7 @@
  */
 
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
+import { mcpReadResource } from '../e2e-shared/mcp-client.js'
 
 /** Union type for tauriPage — works in both Tauri and browser mode. */
 type PageLike = TauriPage | BrowserPageAdapter
@@ -407,6 +408,41 @@ export async function countEntriesWithPrefix(tauriPage: PageLike, prefix: string
         }
         return c;
     })()`)
+}
+
+// ── beforeEach state-cleanliness check ──────────────────────────────────────
+
+/**
+ * Returns true when the running app is in a "clean" pre-test state:
+ *
+ *   1. Both panes are on the named local volume (so subsequent
+ *      `mcp-nav-to-path` events won't be rejected by a non-local pane).
+ *   2. No modal-overlay element is visible in the DOM.
+ *
+ * Used by specs that touch volumes (mtp, mtp-conflicts, smb, network-toggle)
+ * to short-circuit the per-test volume reset + Escape sequence when the
+ * previous test already left things in a clean state. The full reset is
+ * still needed when this returns false, and on the first test of each spec
+ * (where a prior spec may have left a pane elsewhere).
+ *
+ * Reads `cmdr://state` over MCP. Caller must have already called
+ * `initMcpClient(tauriPage)`. Returns false on any error rather than
+ * throwing — when in doubt, the caller should do the full reset.
+ */
+export async function isStateClean(tauriPage: PageLike, localVolumeName: string): Promise<boolean> {
+  try {
+    const state = await mcpReadResource('cmdr://state')
+    const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) =>
+      line.replace(/^\n {2}volume: /, ''),
+    )
+    if (volumeLines.length < 2 || volumeLines[0] !== localVolumeName || volumeLines[1] !== localVolumeName) {
+      return false
+    }
+    if (await tauriPage.isVisible('.modal-overlay')) return false
+    return true
+  } catch {
+    return false
+  }
 }
 
 // ── Utility ─────────────────────────────────────────────────────────────────

@@ -33,6 +33,7 @@ import {
   moveCursorToFile,
   pressKey,
   fileExistsInPane,
+  isStateClean,
   MKDIR_DIALOG,
   CTRL_OR_META,
 } from './helpers.js'
@@ -128,18 +129,24 @@ test.beforeEach(async ({ tauriPage }) => {
   // on MTP, and ensureAppReady's mcp-nav-to-path events get rejected by
   // navigateToPath when the pane is on an MTP volume (it requires select_volume first).
   // Volume name differs by platform: "Macintosh HD" on macOS, "Root" on Linux.
-  await tauriPage.evaluate(`(function() {
-        var invoke = window.__TAURI_INTERNALS__.invoke;
-        invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: '${LOCAL_VOLUME_NAME}' } });
-        invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
-    })()`)
-  // Wait for both panes to show the local volume.
-  await pollUntil(tauriPage, async () => bothPanesOnLocalVolume(), 5000)
+  //
+  // Short-circuit: if both panes are already on the local volume AND no modal
+  // overlay is lingering, skip the volume-select + Escape sequence. This is the
+  // common case for non-first tests in the spec.
+  if (!(await isStateClean(tauriPage, LOCAL_VOLUME_NAME))) {
+    await tauriPage.evaluate(`(function() {
+          var invoke = window.__TAURI_INTERNALS__.invoke;
+          invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: '${LOCAL_VOLUME_NAME}' } });
+          invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
+      })()`)
+    // Wait for both panes to show the local volume.
+    await pollUntil(tauriPage, async () => bothPanesOnLocalVolume(), 5000)
 
-  // Dismiss any lingering dialogs/overlays from previous tests
-  await tauriPage.keyboard.press('Escape')
-  await tauriPage.keyboard.press('Escape')
-  await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
+    // Dismiss any lingering dialogs/overlays from previous tests
+    await tauriPage.keyboard.press('Escape')
+    await tauriPage.keyboard.press('Escape')
+    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
+  }
 })
 
 // ── Tests ────────────────────────────────────────────────────────────────────

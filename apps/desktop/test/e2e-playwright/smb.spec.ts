@@ -42,7 +42,7 @@ import {
   mcpAwaitItem,
   mcpAwaitPath,
 } from '../e2e-shared/mcp-client.js'
-import { ensureAppReady, getFixtureRoot, pollUntil, sleep } from './helpers.js'
+import { ensureAppReady, getFixtureRoot, pollUntil, sleep, isStateClean } from './helpers.js'
 
 import os from 'os'
 
@@ -92,28 +92,33 @@ test.beforeEach(async ({ tauriPage }) => {
   // Force both panes back to a local volume. Previous tests may have left a pane
   // on Network or MTP. ensureAppReady's mcp-nav-to-path events get rejected by
   // navigateToPath when the pane is on a non-local volume, so we switch volumes first.
-  await tauriPage.evaluate(`(function() {
-        var invoke = window.__TAURI_INTERNALS__.invoke;
-        invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: '${LOCAL_VOLUME_NAME}' } });
-        invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
-    })()`)
-  // Wait for both panes to show the local volume in cmdr://state.
-  await pollUntil(
-    tauriPage,
-    async () => {
-      const state = await mcpReadResource('cmdr://state')
-      const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) =>
-        line.replace(/^\n {2}volume: /, ''),
-      )
-      return volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
-    },
-    5000,
-  )
+  //
+  // Short-circuit: skip the volume-select + Escape sequence when both panes are
+  // already on the local volume and no modal overlay is lingering.
+  if (!(await isStateClean(tauriPage, LOCAL_VOLUME_NAME))) {
+    await tauriPage.evaluate(`(function() {
+          var invoke = window.__TAURI_INTERNALS__.invoke;
+          invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: '${LOCAL_VOLUME_NAME}' } });
+          invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
+      })()`)
+    // Wait for both panes to show the local volume in cmdr://state.
+    await pollUntil(
+      tauriPage,
+      async () => {
+        const state = await mcpReadResource('cmdr://state')
+        const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) =>
+          line.replace(/^\n {2}volume: /, ''),
+        )
+        return volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
+      },
+      5000,
+    )
 
-  // Dismiss any lingering dialogs
-  await tauriPage.keyboard.press('Escape')
-  await tauriPage.keyboard.press('Escape')
-  await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
+    // Dismiss any lingering dialogs
+    await tauriPage.keyboard.press('Escape')
+    await tauriPage.keyboard.press('Escape')
+    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
+  }
 })
 
 // ── Helper ───────────────────────────────────────────────────────────────────

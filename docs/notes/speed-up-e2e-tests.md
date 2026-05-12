@@ -261,7 +261,112 @@ green twice back-to-back after the fix.
 
 ## After Step 3 (slim beforeEach in mtp/smb/network)
 
-_To be filled in._
+- Date: 2026-05-12
+- Machine: macOS, native, single worker
+- Branch: `e2e-speedup` (worktree)
+- Suite result: **122 passed, 17 skipped (SMB on macOS), 0 failed, 0 flaky** on two back-to-back runs
+
+### Totals
+
+| Metric                       | Step 2 | Step 3 pass 1 | Step 3 pass 2 | Δ from Step 2 |
+| ---------------------------- | ------ | ------------- | ------------- | ------------- |
+| Playwright wall-clock        | 305.6s | 296.7s        | 296.5s        | −8.9s (−2.9%) |
+| Checker total                | 6m 25s | 5m 56s        | 5m 55s        | −29s (−7.5%)  |
+| Sum of per-test durations    | 303.0s | 294.9s        | 295.1s        | −8.0s         |
+| Total fixed-sleep budget     | 172.3s | 217.8s        | 218.1s        | +45.6s        |
+| Total fixed-sleep call count | 3197   | 3436          | 3442          | +245          |
+
+The fixed-sleep budget went _up_ because more tests now skip the volume-select branch entirely, which means fewer
+"expensive single-poll-then-exit" calls and more "polls that drain their full 50ms interval before the condition flips."
+That's also why this step is mostly visible in the checker total (build + cleanup overhead is what dropped, plus a few
+seconds of saved per-test overhead) rather than Playwright's `stats.duration`.
+
+### Per-file durations (s)
+
+| File                        | Step 2 | Step 3 pass 1 | Δ    |
+| --------------------------- | ------ | ------------- | ---- |
+| mtp.spec.ts                 | 66.8   | 64.9          | −1.9 |
+| accessibility.spec.ts       | 68.0   | 68.9          | +0.9 |
+| file-watching.spec.ts       | 85.1   | 78.6          | −6.5 |
+| mtp-conflicts.spec.ts       | 13.2   | 12.5          | −0.7 |
+| conflict-edge-cases.spec.ts | 10.3   | 10.4          | +0.1 |
+| app.spec.ts                 | 20.9   | 21.6          | +0.7 |
+| network-toggle.spec.ts      | 5.6    | 5.9           | +0.3 |
+| error-pane.spec.ts          | 4.2    | 4.4           | +0.2 |
+| conflict-copy.spec.ts       | 8.8    | 9.3           | +0.5 |
+| file-operations.spec.ts     | 9.7    | 8.2           | −1.5 |
+| conflict-move.spec.ts       | 3.4    | 3.5           | +0.1 |
+| indexing.spec.ts            | 2.1    | 2.1           | 0    |
+| git-portal.spec.ts          | 1.0    | 1.0           | 0    |
+| viewer.spec.ts              | 2.7    | 2.6           | −0.1 |
+| settings.spec.ts            | 1.2    | 1.0           | −0.2 |
+
+The MTP wins are real if small; `file-watching` dropped 6.5s but that's run-to-run variance (no test-side changes in
+this step). Most per-file deltas here are noise — Step 3's savings live in checker overhead (build cache + faster
+shutdown when there's less hanging state), not test wall-clock.
+
+### Top sleep call sites (Step 3 pass 1)
+
+| Total ms | Calls | Frame                                                               |
+| -------- | ----- | ------------------------------------------------------------------- |
+| 154,650  | 3093  | `pollUntil` (helpers.ts:478) — 50 ms interval × every poll          |
+| 10,700   | 107   | `ensureAppReady` (helpers.ts:218) — the 100 ms focus-attach margin  |
+| 4,200    | 28    | `accessibility.spec.ts:359` — `sleep(150)` post-visibility          |
+| 3,600    | 12    | `setSettingViaBridge` (network-toggle.spec.ts:65) — `sleep(300)`    |
+| 3,400    | 68    | `moveCursorToFile` (helpers.ts:316) — `sleep(50)` per keystroke     |
+| 3,000    | 1     | `mtp.spec.ts:490` — single `sleep(3000)` after MTP fixture mutation |
+| 2,400    | 12    | `selectAll` (conflict-helpers.ts:147)                               |
+| 2,100    | 21    | `moveCursorToFile` (helpers.ts:318)                                 |
+| 2,100    | 21    | `moveCursorToFile` (helpers.ts:313)                                 |
+| 2,000    | 4     | `navigateBackToLeft` (error-pane.spec.ts:76)                        |
+| 2,000    | 2     | `toggleHidden` (file-operations.spec.ts:246)                        |
+
+The volume-reset `cmdr://state` poll (Step 2's "wait for both panes on local volume", 5s budget) no longer appears as a
+top frame — it now resolves immediately on most tests via the `isStateClean()` short-circuit and falls back to the full
+sequence only when a previous test legitimately left a pane on MTP/Network. That's the structural win this step is
+after.
+
+### Top 10 slowest tests (Step 3 pass 1)
+
+| #   | Test                                                            | File                  | Duration (s) |
+| --- | --------------------------------------------------------------- | --------------------- | ------------ |
+| 1   | navigates to parent with Backspace                              | app.spec.ts           | 11.2         |
+| 2   | detects batch creation of 25 files                              | file-watching.spec.ts | 10.7         |
+| 3   | updates both panes when both watch the same directory           | file-watching.spec.ts | 9.1          |
+| 4   | detects an externally renamed file                              | file-watching.spec.ts | 8.8          |
+| 5   | detects an externally created file                              | file-watching.spec.ts | 8.7          |
+| 6   | respects hidden file visibility for externally created dotfiles | file-watching.spec.ts | 8.7          |
+| 7   | detects an externally created directory                         | file-watching.spec.ts | 8.7          |
+| 8   | detects an externally deleted file                              | file-watching.spec.ts | 8.7          |
+| 9   | updates displayed size when a file is modified externally       | file-watching.spec.ts | 8.6          |
+| 10  | Settings: all sections                                          | accessibility.spec.ts | 8.4          |
+
+### Changes applied
+
+In `apps/desktop/test/e2e-playwright/`:
+
+1. **`helpers.ts`**: added `isStateClean(tauriPage, localVolumeName)` — reads `cmdr://state` over MCP and returns true
+   when both panes are on the named local volume AND no `.modal-overlay` is visible. Returns false on any error (caller
+   should fall back to the full reset). Imports `mcpReadResource` from `e2e-shared/mcp-client.js`.
+2. **`mtp.spec.ts`**: wrapped the `mcp-volume-select` + `cmdr://state` poll + double-Escape + modal-overlay poll inside
+   `if (!(await isStateClean(tauriPage, LOCAL_VOLUME_NAME)))`. The MTP fixture reset (pause watcher → recreate → rescan
+   → resume) still runs every test, as it must.
+3. **`mtp-conflicts.spec.ts`**: same short-circuit pattern for the volume reset block. MTP fixture rebuild stays
+   unconditional.
+4. **`smb.spec.ts`**: same short-circuit pattern. The MCP-health diagnostic, `recreateFixtures()`, `sleep(1000)` watcher
+   settle, route-nav-back-to-`/`, and `initMcpClient()` all still run every test — only the volume-select block is
+   guarded.
+5. **`network-toggle.spec.ts`**: same. `initMcpClient()` is moved to before the short-circuit check (it's needed by
+   `isStateClean` regardless of which branch runs); `ensureAppReady()` still runs after.
+
+### Surprises / notes
+
+- The "top sleep frames" table looks worse on absolute numbers because `pollUntil`'s 50 ms-interval ticks dominate now
+  that nothing else is heavy. That's the cost of having converted everything else from blocking sleeps to polls; it's
+  fine.
+- The first test in each of `mtp`/`mtp-conflicts`/`smb`/`network-toggle` still does the full reset (state from the prior
+  spec is unknown), which is the safety net we wanted. No new flakes across two back-to-back passes.
+- `./scripts/check.sh` (fast) is green.
 
 ## After Step 4 (replace keyboard cursor nav with mcpCall move_cursor)
 

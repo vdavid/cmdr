@@ -23,7 +23,7 @@ import {
   mcpAwaitItem,
   mcpSwitchPane,
 } from '../e2e-shared/mcp-client.js'
-import { ensureAppReady, getFixtureRoot, pollUntil, sleep, TRANSFER_DIALOG } from './helpers.js'
+import { ensureAppReady, getFixtureRoot, pollUntil, sleep, isStateClean, TRANSFER_DIALOG } from './helpers.js'
 import {
   waitForConflictPolicy,
   selectConflictPolicy,
@@ -85,16 +85,18 @@ test.beforeEach(async ({ tauriPage }) => {
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('rescan_virtual_mtp')`)
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('resume_virtual_mtp_watcher')`)
 
-  // Reset both panes to local volume
-  await tauriPage.evaluate(`(function() {
-    var invoke = window.__TAURI_INTERNALS__.invoke;
-    invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: '${LOCAL_VOLUME_NAME}' } });
-    invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
-  })()`)
-  await pollUntil(tauriPage, async () => bothPanesOnLocalVolume(), 5000)
-  await tauriPage.keyboard.press('Escape')
-  await tauriPage.keyboard.press('Escape')
-  await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
+  // Reset both panes to local volume — short-circuit when already clean.
+  if (!(await isStateClean(tauriPage, LOCAL_VOLUME_NAME))) {
+    await tauriPage.evaluate(`(function() {
+      var invoke = window.__TAURI_INTERNALS__.invoke;
+      invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: '${LOCAL_VOLUME_NAME}' } });
+      invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: '${LOCAL_VOLUME_NAME}' } });
+    })()`)
+    await pollUntil(tauriPage, async () => bothPanesOnLocalVolume(), 5000)
+    await tauriPage.keyboard.press('Escape')
+    await tauriPage.keyboard.press('Escape')
+    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
+  }
 })
 
 // ── Cross-volume move conflicts (MTP ↔ local) ──────────────────────────────
