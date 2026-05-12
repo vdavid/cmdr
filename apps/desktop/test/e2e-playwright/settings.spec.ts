@@ -110,4 +110,116 @@ test.describe('Settings page', () => {
     )
     expect(classAttr).toContain('selected')
   })
+
+  test('search narrows the visible sidebar sections and clearing restores them', async ({ tauriPage }) => {
+    // Capture the baseline section count with no filter applied.
+    await tauriPage.waitForSelector('.section-item', 5000)
+    const baselineCount = await tauriPage.count('.section-item')
+    expect(baselineCount).toBeGreaterThan(2)
+
+    // Filter to a narrow query (only Appearance-tied options should match).
+    await tauriPage.fill('.search-input', 'accent')
+
+    // Sidebar updates on a 200 ms debounce — wait for the count to drop.
+    const narrowed = await pollUntil(
+      tauriPage,
+      async () => {
+        const count = await tauriPage.count('.section-item')
+        return count > 0 && count < baselineCount
+      },
+      3000,
+    )
+    expect(narrowed).toBe(true)
+
+    // Clear button must reset both the input and the visible section list.
+    await tauriPage.evaluate(`(function() {
+            var btn = document.querySelector('.search-clear');
+            if (btn) btn.click();
+        })()`)
+
+    const restored = await pollUntil(
+      tauriPage,
+      async () => {
+        const count = await tauriPage.count('.section-item')
+        const value = await tauriPage.inputValue('.search-input')
+        return count === baselineCount && value === ''
+      },
+      3000,
+    )
+    expect(restored).toBe(true)
+  })
+
+  test('search shows an empty sidebar for queries with no matches', async ({ tauriPage }) => {
+    await tauriPage.waitForSelector('.section-item', 5000)
+    await tauriPage.fill('.search-input', 'zzzyyyxxxnomatch')
+
+    // Sidebar updates on a 200 ms debounce — wait for all sections to vanish.
+    const empty = await pollUntil(
+      tauriPage,
+      async () => (await tauriPage.count('.section-item')) === 0,
+      3000,
+    )
+    expect(empty).toBe(true)
+
+    // The clear button still shows up so the user can recover from a dead-end query.
+    expect(await tauriPage.isVisible('.search-clear')).toBe(true)
+
+    // Reset state for the next test in the file.
+    await tauriPage.evaluate(`(function() {
+            var btn = document.querySelector('.search-clear');
+            if (btn) btn.click();
+        })()`)
+    await pollUntil(
+      tauriPage,
+      async () => (await tauriPage.count('.section-item')) > 0,
+      3000,
+    )
+  })
+
+  test('Arrow Down in the search box moves section selection forward', async ({ tauriPage }) => {
+    // Reset any leftover search state from prior tests so the full sidebar is
+    // rendered and the currently selected section is visible.
+    await tauriPage.evaluate(`(function() {
+            var input = document.querySelector('.search-input');
+            if (!input) return;
+            var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+            if (desc && desc.set) desc.set.call(input, '');
+            else input.value = '';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        })()`)
+    await pollUntil(
+      tauriPage,
+      async () => (await tauriPage.count('.section-item')) > 2,
+      3000,
+    )
+
+    await tauriPage.waitForSelector('.section-item.selected', 5000)
+    const startSelected = await tauriPage.evaluate<string>(
+      `document.querySelector('.section-item.selected')?.textContent?.trim() || ''`,
+    )
+
+    // Focus the search input then press Arrow Down — handler must forward to
+    // the section list and advance the selection (no separate focus state).
+    await tauriPage.evaluate(`(function() {
+            var input = document.querySelector('.search-input');
+            if (input) input.focus();
+        })()`)
+
+    await tauriPage.evaluate(`(function() {
+            var input = document.querySelector('.search-input');
+            input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
+        })()`)
+
+    const advanced = await pollUntil(
+      tauriPage,
+      async () => {
+        const now = await tauriPage.evaluate<string>(
+          `document.querySelector('.section-item.selected')?.textContent?.trim() || ''`,
+        )
+        return now !== startSelected && now !== ''
+      },
+      3000,
+    )
+    expect(advanced).toBe(true)
+  })
 })
