@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte'
+    import { onMount, onDestroy, tick } from 'svelte'
     import DualPaneExplorer from '$lib/file-explorer/pane/DualPaneExplorer.svelte'
     import FunctionKeyBar from '$lib/file-explorer/pane/FunctionKeyBar.svelte'
     import FullDiskAccessPrompt from '$lib/onboarding/FullDiskAccessPrompt.svelte'
@@ -442,6 +442,25 @@
 
         // Set up Tauri event listeners (extracted to reduce complexity)
         await setupTauriEventListeners()
+
+        // Wait for Svelte to flush any pending DOM updates so DualPaneExplorer
+        // (which renders when `showApp=true`) is in the DOM before we look for
+        // it. Without this, the query below would miss the element on first
+        // mount, and on remounts (e.g. navigating back from /settings) we'd
+        // race the new render.
+        await tick()
+
+        // Mark the explorer as ready for E2E tests. This is a deterministic
+        // signal that replaces the previous static 100 ms cushion in
+        // `ensureAppReady`. By the time we set this, both the document-level
+        // `keydown` listener and all MCP / dialog listeners are wired up, so
+        // F-keys dispatched immediately after will reach their handlers.
+        // The element is absent when showApp=false (FDA prompt path), but
+        // E2E fixtures always grant FDA, so it will be there in tests.
+        const explorer = document.querySelector('.dual-pane-explorer')
+        if (explorer instanceof HTMLElement) {
+            explorer.dataset.appReady = 'true'
+        }
     })
 
     /**

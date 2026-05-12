@@ -606,3 +606,71 @@ No fork, no symlink trick, no per-cwd hack.
 - Three Tauri windows pop up on macOS during the run. Cosmetic but very visible. Not worth chasing a "headless macOS
   Tauri" workaround for the checker — the test takes 2-3 minutes total.
 - `./scripts/check.sh` (fast) is green after the patch.
+
+## After Step 6a (data-app-ready signal + Go fixture-parse robustness)
+
+Step 6's parallel sharding amplified two pre-existing weaknesses:
+
+1. **`ensureAppReady` focus race.** The static `sleep(100)` cushion after focus-attach in `ensureAppReady` was a margin
+   to absorb the async `document.addEventListener('keydown', ...)` attach inside `+page.svelte`'s `onMount`. Under
+   parallel load, 100 ms is occasionally insufficient — F-key dispatches lose the handler.
+2. **Go fixture-parse fragility.** `createE2EFixtures` parsed the fixture directory path from the last line of
+   `npx tsx -e ...`'s stdout. npm's "new version available" notice gets appended after our `console.log` output and
+   broke the parser, failing 100% of subsequent runs until npm finished its check.
+
+### Fixes applied
+
+**App-side (`+page.svelte`, `DualPaneExplorer.svelte`)**:
+
+- `.dual-pane-explorer` now carries a `data-app-ready` attribute. Initial value: `"false"`.
+- At the end of `+page.svelte`'s `onMount`, after `setupTauriEventListeners()` finishes and Svelte has flushed pending
+  DOM updates (`await tick()`), set `data-app-ready="true"`. This is the deterministic signal that all keydown listeners
+  and MCP / dialog listeners are wired.
+- The element is absent when `showApp=false` (FDA prompt path), but E2E fixtures always grant FDA so the element will be
+  present in tests.
+
+**Test helpers (`helpers.ts`)**:
+
+- In `ensureAppReady`, added a `waitForFunction("...?.dataset.appReady === 'true'", 10000)` _before_ the click+focus
+  block. This GATES all subsequent focus/cursor work on onMount having fully completed.
+- The static `sleep(100)` after the activeElement check is gone.
+- The remaining `waitForFunction` on `activeElement.closest('.dual-pane-explorer')` stays — it confirms the click+focus
+  landed.
+
+**Go check runner (`scripts/check/checks/desktop-svelte-e2e-playwright.go`)**:
+
+- `createE2EFixtures` now scans every line of the tsx output for one starting with `/tmp/cmdr-e2e-` instead of taking
+  the last line blindly. npm notices and similar tail-end noise no longer break the parse.
+
+### Result
+
+- Before Step 6a: with the 100 ms cushion, the suite was on a thin margin under parallel sharding load — 13 failures on
+  a back-to-back validation, with cascading ECONNREFUSED after a mid-suite Tauri crash.
+- After Step 6a: **4 failures** on a clean run, all in the same family — a few `waitForSelector`/`waitForFunction`
+  timeouts on keystroke-driven dialogs (Cmd+F search, F2 rename, F-key transfer) and a couple of `activeElement` checks
+  in `file-watching` / `indexing` specs. Different tests fail on each run, confirming this is parallel-load-induced
+  variance, not a deterministic regression.
+- Strict improvement over the pre-Step-6a state, but not yet zero-flakes.
+
+### Remaining flakes (deferred)
+
+Under parallel-shard load:
+
+- **Keystroke dispatches occasionally miss their handler** — Cmd+F (search overlay), F2 (rename input), F5/F6/F7/F8
+  (transfer/delete/mkdir dialogs). After `data-app-ready` is `true`, onMount is fully done, so the keydown listener
+  exists. Most likely the dispatched `KeyboardEvent` runs before Svelte has reattached the corresponding handler
+  bindings after a route change (e.g., back from `/settings`), or focus has drifted to an element whose `keydown`
+  handler stops the dispatch with `preventDefault`. Worth chasing in a follow-up — candidates:
+  - Have `data-app-ready` also flip back to `"false"` on route change so we wait for the new mount cleanly.
+  - Replace synthesized `KeyboardEvent`s with `dispatchMenuCommand()` (already a helper) where the test only cares about
+    the resulting dialog, not the keyboard pathway.
+- **`activeElement.closest('.dual-pane-explorer')` occasional timeout** — happens when the click+focus evaluate runs
+  while a late-mounting child (toast, AI notification) steals focus. Could be fixed by re-issuing the focus after
+  waitForSelector lands, or by polling `activeElement` over a slightly larger window.
+
+These are deferred — diminishing returns vs. the speedup work. Tracking here for post-Step-6 follow-up.
+
+### Wall-clock
+
+Clean run: **3m 48s** checker total (up from Step 6's 2m 48s on a fully warm cache). The Rust build is cold here because
+we've been iterating; with a warm cache it returns to the Step 6 baseline.

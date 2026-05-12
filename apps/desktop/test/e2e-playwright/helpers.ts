@@ -192,6 +192,13 @@ export async function ensureAppReady(
     )
   }
 
+  // Wait for the deterministic `data-app-ready` signal set at the end of
+  // `+page.svelte`'s onMount (after the keydown listener and all MCP / dialog
+  // listeners are wired). This is the GATE — once it's true, onMount has
+  // finished and the subsequent click+focus won't race against handler
+  // attachment or focus theft from late-mounting components.
+  await tauriPage.waitForFunction("document.querySelector('.dual-pane-explorer')?.dataset.appReady === 'true'", 10000)
+
   // Click on a file entry in the left pane to ensure focus, then focus the
   // explorer container so keyboard events reach the handler.
   await tauriPage.evaluate(`(function() {
@@ -204,18 +211,13 @@ export async function ensureAppReady(
   // Wait until a file entry has the cursor (focus confirmed)
   await tauriPage.waitForSelector('.file-pane .file-entry.is-under-cursor', 3000)
 
-  // Confirm focus actually landed inside the explorer so keydown handlers
-  // (both the container-level handler and the document-level shortcut dispatch
-  // attached in +page.svelte's onMount) reach our F-keys. On back-to-back runs
-  // the file-entry cursor can render before +page.svelte's onMount finishes
-  // wiring `document.addEventListener('keydown', ...)`, leading to F5/F6/F8/Delete
-  // being dropped. Poll for activeElement inside the explorer, then a tiny
-  // margin to absorb the async listener attach.
+  // Confirm focus actually landed inside the explorer so the container-level
+  // keydown handler reaches keys like Tab and ArrowDown. (Document-level F-key
+  // dispatch doesn't depend on focus, but cursor-driven tests do.)
   await tauriPage.waitForFunction(
     "document.activeElement && document.activeElement.closest('.dual-pane-explorer') !== null",
     3000,
   )
-  await sleep(100)
 }
 
 // ── DOM query helpers ────────────────────────────────────────────────────────

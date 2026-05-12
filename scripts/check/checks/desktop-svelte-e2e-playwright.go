@@ -353,11 +353,14 @@ func createE2EFixtures(desktopDir string) (string, error) {
 		return "", fmt.Errorf("failed to create fixtures: %w\n%s", err, indentOutput(output))
 	}
 
-	// The script is `console.log(createFixtures())` so the path is the last line.
-	lines := strings.Split(strings.TrimSpace(output), "\n")
-	lastLine := strings.TrimSpace(lines[len(lines)-1])
-	if strings.HasPrefix(lastLine, "/") {
-		return lastLine, nil
+	// The script is `console.log(createFixtures())` so the path is on its own
+	// line. Scan all lines for one starting with "/" — npm may inject update
+	// notices after our output.
+	for line := range strings.SplitSeq(strings.TrimSpace(output), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "/tmp/cmdr-e2e-") {
+			return trimmed, nil
+		}
 	}
 	return "", fmt.Errorf("could not parse fixture path from output:\n%s", indentOutput(output))
 }

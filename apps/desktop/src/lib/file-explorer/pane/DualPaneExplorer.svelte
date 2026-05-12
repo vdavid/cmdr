@@ -2342,6 +2342,7 @@
     tabindex="0"
     role="application"
     aria-label="File explorer"
+    data-app-ready="false"
 >
     {#if initialized}
         <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -- Svelte {@render} syntax -->
