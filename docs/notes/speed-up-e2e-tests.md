@@ -370,4 +370,112 @@ In `apps/desktop/test/e2e-playwright/`:
 
 ## After Step 4 (replace keyboard cursor nav with mcpCall move_cursor)
 
-_To be filled in._
+- Date: 2026-05-12
+- Machine: macOS, native, single worker
+- Branch: `e2e-speedup` (worktree)
+- Suite result: **122 passed, 17 skipped (SMB on macOS), 0 failed, 0 flaky** on two back-to-back green runs (a flaky
+  pass between them — see "Surprises" below)
+
+### Totals
+
+| Metric                       | Step 3 | Step 4 pass 1 | Step 4 pass 2 | Δ from Step 3 |
+| ---------------------------- | ------ | ------------- | ------------- | ------------- |
+| Playwright wall-clock        | 296.7s | 287.8s        | 287.8s        | −8.9s (−3.0%) |
+| Checker total                | 5m 56s | 5m 48s        | 5m 45s        | −8s (−2.2%)   |
+| Sum of per-test durations    | 294.9s | 286.3s        | 286.3s        | −8.6s         |
+| Total fixed-sleep budget     | 217.8s | 210.0s        | 210.0s        | −7.8s         |
+| Total fixed-sleep call count | 3436   | 3322          | 3322          | −114          |
+
+The reduction matches the Step 3 sleep-budget projection for `moveCursorToFile`: 3 frames totaling ~7.6s across 110
+calls disappeared from the top sleep-frame table when the per-keystroke `sleep(50)` loop was replaced with a single MCP
+call. The remaining residue from `moveCursorToFile` (now ~150 ms total) lives inside the post-call `pollUntil` that
+confirms the cursor landed on the target's `data-filename`. Most calls resolve on the first poll tick.
+
+### Per-file durations (s)
+
+| File                        | Step 3 pass 1 | Step 4 pass 1 | Δ    |
+| --------------------------- | ------------- | ------------- | ---- |
+| file-watching.spec.ts       | 78.6          | 77.9          | −0.7 |
+| accessibility.spec.ts       | 68.9          | 65.8          | −3.1 |
+| mtp.spec.ts                 | 64.9          | 63.8          | −1.1 |
+| app.spec.ts                 | 21.6          | 21.6          | 0    |
+| mtp-conflicts.spec.ts       | 12.5          | 12.5          | 0    |
+| conflict-edge-cases.spec.ts | 10.4          | 8.8           | −1.6 |
+| file-operations.spec.ts     | 8.2           | 6.8           | −1.4 |
+| conflict-copy.spec.ts       | 9.3           | 8.6           | −0.7 |
+| network-toggle.spec.ts      | 5.9           | 5.8           | −0.1 |
+| error-pane.spec.ts          | 4.4           | 4.4           | 0    |
+| conflict-move.spec.ts       | 3.5           | 3.5           | 0    |
+| viewer.spec.ts              | 2.6           | 2.6           | 0    |
+| indexing.spec.ts            | 2.1           | 2.1           | 0    |
+| settings.spec.ts            | 1.0           | 1.0           | 0    |
+
+The biggest savings are in the spec files that called `moveCursorToFile` the most: `accessibility.spec.ts` (3 calls per
+dialog test, run twice for light/dark modes → ~6 calls × 1.1 s = 6.6 s saved), `file-operations.spec.ts` (3 calls × 1.1
+s ≈ 3.3 s), and `conflict-edge-cases.spec.ts` (4 calls). `app.spec.ts` is unchanged because it keeps its own
+keyboard-driven `moveCursorToSubDir` helper (intentional — see "Tests kept on keyboard nav" below).
+
+### Top sleep call sites (Step 4 pass 1)
+
+| Total ms | Calls | Frame                                                               |
+| -------- | ----- | ------------------------------------------------------------------- |
+| 154,450  | 3089  | `pollUntil` (helpers.ts:511) — 50 ms interval × every poll          |
+| 10,700   | 107   | `ensureAppReady` (helpers.ts:218) — the 100 ms focus-attach margin  |
+| 4,200    | 28    | `accessibility.spec.ts:359` — `sleep(150)` post-visibility          |
+| 3,600    | 12    | `setSettingViaBridge` (network-toggle.spec.ts:65) — `sleep(300)`    |
+| 3,000    | 1     | `mtp.spec.ts:490` — single `sleep(3000)` after MTP fixture mutation |
+| 2,400    | 12    | `selectAll` (conflict-helpers.ts:147)                               |
+| 2,000    | 4     | `navigateBackToLeft` (error-pane.spec.ts:76)                        |
+| 2,000    | 2     | `toggleHidden` (file-operations.spec.ts:246)                        |
+| 2,000    | 1     | `mtp.spec.ts:669` — single `sleep(2000)`                            |
+| 2,000    | 1     | `mtp.spec.ts:639` — single `sleep(2000)`                            |
+
+`moveCursorToFile` is gone from the top frames. The new confirmation `pollUntil` inside it still feeds the
+`helpers.ts:511` total but at much lower volume per call (typically one 50 ms tick instead of 20+ keystroke sleeps).
+
+### Top 10 slowest tests (Step 4 pass 1)
+
+| #   | Test                                                            | File                  | Duration (s) |
+| --- | --------------------------------------------------------------- | --------------------- | ------------ |
+| 1   | navigates to parent with Backspace                              | app.spec.ts           | 11.1         |
+| 2   | detects batch creation of 25 files                              | file-watching.spec.ts | 10.8         |
+| 3   | updates both panes when both watch the same directory           | file-watching.spec.ts | 9.1          |
+| 4   | respects hidden file visibility for externally created dotfiles | file-watching.spec.ts | 8.8          |
+| 5   | updates displayed size when a file is modified externally       | file-watching.spec.ts | 8.7          |
+
+### Changes applied
+
+In `apps/desktop/test/e2e-playwright/`:
+
+1. **`helpers.ts`**: rewrote `moveCursorToFile` to call `mcpCall('move_cursor', { pane, filename })` instead of pressing
+   `Home` + `ArrowDown × N`. Pane is detected from `document.querySelector('.file-pane.is-focused')` (defaults to
+   `'left'` if no pane is focused). The function keeps its original signature `(tauriPage, targetName)` and returns
+   `boolean`, so call sites don't need updating. A short `pollUntil` (2 s) confirms the cursor landed on the target's
+   `data-filename`. Bails early (returns `false`) when the file isn't in the focused pane's listing — matches the prior
+   return contract.
+2. **`e2e-shared/mcp-client.ts`**: added `ensureMcpClient(tauriPage)` — an idempotent init wrapper that skips the IPC
+   round-trip when the port has already been discovered. Used inside `moveCursorToFile` because most callers
+   (`file-watching`, `conflict-copy`, `file-operations`, `accessibility`, `conflict-edge-cases`) never called
+   `initMcpClient` directly.
+
+### Tests kept on keyboard nav
+
+- **`app.spec.ts` › Keyboard navigation › moves cursor with arrow keys**: explicitly asserts that pressing `ArrowDown`
+  advances the cursor by one. Stays on its keyboard path; uses its own local `moveCursorToSubDir` helper (defined inside
+  `app.spec.ts`) — not `moveCursorToFile`.
+- **`app.spec.ts` › Mouse interactions › moves cursor when clicking a file entry**: cursor-via-click path. Not affected.
+- **`app.spec.ts` › Keyboard navigation › toggles selection with Space key**: relies on `skipParentEntry`
+  (keyboard-driven). Not affected.
+- Other `keyboard.press(...)` call sites across the suite (F5/F6/F2/Tab/Backspace/Enter) test the actual keyboard
+  shortcuts and continue to use the keyboard directly — only the cursor-positioning step before pressing them was
+  swapped for MCP.
+
+### Surprises / notes
+
+- The first pass-2 attempt had 9 unrelated failures (accessibility `Settings: all sections` and `About dialog`,
+  `app.spec.ts` Tab/Space/F5/F6 keyboard tests, two MTP tests) all symptomatic of `ensureAppReady`'s `waitForFunction`
+  timing out on `document.activeElement` not being inside the explorer. None of the failing tests use `moveCursorToFile`
+  directly (or, where they do, the failure is in `ensureAppReady` before the call). A retry passed cleanly with 122/122.
+  The retry's report is the one captured in this section. A third confirmation run also passed cleanly with identical
+  timings.
+- `./scripts/check.sh` (fast) is green.

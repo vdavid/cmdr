@@ -19,6 +19,12 @@ export async function initMcpClient(tauriPage: PageLike): Promise<void> {
   if (!mcpPort) throw new Error('MCP server not running — enable it in Settings > Developer')
 }
 
+/** Idempotent init: calls `initMcpClient` only if the port hasn't been discovered yet. */
+export async function ensureMcpClient(tauriPage: PageLike): Promise<void> {
+  if (mcpPort) return
+  await initMcpClient(tauriPage)
+}
+
 // ── Core JSON-RPC helpers ───────────────────────────────────────────────────
 
 export async function mcpCall(tool: string, args: Record<string, unknown>): Promise<string> {

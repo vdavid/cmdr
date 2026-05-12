@@ -12,7 +12,7 @@
  */
 
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
-import { mcpReadResource } from '../e2e-shared/mcp-client.js'
+import { ensureMcpClient, mcpCall, mcpReadResource } from '../e2e-shared/mcp-client.js'
 
 /** Union type for tauriPage — works in both Tauri and browser mode. */
 type PageLike = TauriPage | BrowserPageAdapter
@@ -303,20 +303,53 @@ export async function skipParentEntry(tauriPage: PageLike): Promise<void> {
 
 /**
  * Moves the cursor to a specific file by name in the focused pane.
- * Uses findFileIndex() for DOM reading, then navigates with keyboard.
+ *
+ * Uses the MCP `move_cursor` tool, which jumps directly to the target file
+ * instead of pressing ArrowDown N times. Falls back to `false` if the file
+ * isn't in the focused pane's listing (matching the prior behavior).
+ *
+ * The focused-pane detection reads `.file-pane.is-focused` from the DOM, so
+ * the signature stays compatible with the old keyboard-based version. Tests
+ * that explicitly exercise arrow-key cursor movement (`app.spec.ts`) keep
+ * their own keyboard-driven helper and don't use this function.
  */
 export async function moveCursorToFile(tauriPage: PageLike, targetName: string): Promise<boolean> {
+  // Bail early when the file isn't in the focused pane's listing. This matches
+  // the previous behavior (returns false) so callers that assert `found === true`
+  // still get the right signal.
   const info = await findFileIndex(tauriPage, targetName)
   if ('error' in info || info.targetIndex < 0) return false
 
-  await tauriPage.keyboard.press('Home')
-  await sleep(100)
-  for (let i = 0; i < info.targetIndex; i++) {
-    await tauriPage.keyboard.press('ArrowDown')
-    await sleep(50)
-  }
-  await sleep(100)
-  return true
+  // Determine which pane is focused so we can target the right one via MCP.
+  const focusedPane = await tauriPage.evaluate<'left' | 'right' | null>(`(function() {
+        var panes = document.querySelectorAll('.file-pane');
+        for (var i = 0; i < panes.length; i++) {
+            if (panes[i].classList.contains('is-focused')) {
+                return i === 0 ? 'left' : 'right';
+            }
+        }
+        return null;
+    })()`)
+  const pane: 'left' | 'right' = focusedPane ?? 'left'
+
+  await ensureMcpClient(tauriPage)
+  await mcpCall('move_cursor', { pane, filename: targetName })
+
+  // Confirm the cursor landed on the target file. Short timeout — `move_cursor`
+  // is synchronous on the backend, this only covers the render tick.
+  return pollUntil(
+    tauriPage,
+    async () => {
+      return tauriPage.evaluate<boolean>(`(function() {
+                var pane = document.querySelector('.file-pane.is-focused');
+                if (!pane) return false;
+                var entry = pane.querySelector('.file-entry.is-under-cursor');
+                if (!entry) return false;
+                return entry.getAttribute('data-filename') === ${JSON.stringify(targetName)};
+            })()`)
+    },
+    2000,
+  )
 }
 
 // ── Navigation helpers ──────────────────────────────────────────────────────
