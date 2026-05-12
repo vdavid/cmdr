@@ -285,3 +285,115 @@ toasts, 50 MB transfer in both directions, external add detection, MTP-to-local 
 
 **Tests added**: 0. **Reason**: 26 tests cover the user-observable surface end-to-end. Adding marginal cases would test
 virtual-device internals rather than user flows.
+
+## Step 7: mutation testing
+
+One-off investigation: ran [`cargo-mutants`](https://mutants.rs/) (Rust) and
+[`stryker-mutator`](https://stryker-mutator.io/) (TypeScript) on two focused slices to find under-tested code paths in
+already-unit-tested files. Both tools worked; neither is wired into CI. Total: 5 unit tests added (3 vitest, 2 nextest).
+
+### Tools status
+
+- **cargo-mutants v27.0.0**: works out of the box after `cargo install --locked cargo-mutants`. Gotcha: the default test
+  command runs the full crate's nextest suite, and four `indexing::reconciler` tests fail when run from cargo-mutants's
+  reflinked tmp directory (they create tempdirs in CWD to avoid `/private/tmp/` matching `EXCLUDED_PREFIXES`, but
+  `/var/folders/...cargo-mutants-...tmp/` also matches). Workaround: scope tests to the slice via positional args, e.g.
+  `cargo mutants --file '**/eta.rs' --timeout 60 --no-shuffle --test-tool nextest -- --lib file_system::write_operations::eta`.
+- **stryker-mutator v9.6.1** (`@stryker-mutator/core`, `@stryker-mutator/vitest-runner`): worked after three config
+  tweaks. Required `plugins: ["@stryker-mutator/vitest-runner"]` to load the runner; `inPlace: true` to avoid `oxc`
+  transformer failing on the sandbox copy ("Tsconfig not found" for unrelated `.a11y.test.ts` files); and leaving the
+  vitest config alone (no `dir`, no `related: false`) — `perTest` coverage analysis picks the right test files
+  automatically. Took ~12 s total for one mutated file (45 mutants, 4 workers).
+
+### Slices and results
+
+**Rust slice**: `apps/desktop/src-tauri/src/file_system/write_operations/eta.rs` (EWMA-based ETA estimator for write
+operations, already had 10 unit tests).
+
+| Metric   | Count |
+| -------- | ----- |
+| Total    | 58    |
+| Caught   | 34    |
+| Missed   | 19    |
+| Unviable | 5     |
+| Timeout  | 0     |
+
+Mutation score: 34 / (34 + 19) ≈ 64 %. Full run took ~9 min (after the 73 s baseline build), ~7–8 s per mutant.
+
+**TypeScript slice**: `apps/desktop/src/lib/file-operations/scan-throughput.ts` (front-end rate calculator for the
+scan-preview UI, 6 unit tests).
+
+| Metric         | Count |
+| -------------- | ----- |
+| Total          | 45    |
+| Killed         | 31    |
+| Survived       | 13    |
+| Timeout        | 1     |
+| Compile errors | 0     |
+
+Mutation score: 31 / 45 ≈ 69 %. Whole run took ~12 s.
+
+### Tests added (5 total)
+
+All passed first clean run and again after `./scripts/check.sh`.
+
+**`scan-throughput.test.ts`** (vitest), targeting stryker survivors in `dropStale`:
+
+1. `keeps the right window of samples when many arrive over a long span`. Four samples with non-linear progression;
+   kills `cutoff = nowMs + windowMs` mutant (line 68) and the `length > 2 → length >= 2 / <= 2` boundary mutants on line
+   70 that the previous 3-sample window test couldn't differentiate (algebraically equal rates).
+2. `always keeps at least two samples even after a long pause`. Pushes one sample 60 s after a small starting pair;
+   kills `while (true && ts < cutoff)` and `length <= 2 && ts < cutoff` mutants that would empty the buffer and return
+   null.
+3. `treats the cutoff timestamp as inclusive (strict less-than)`. Sample exactly on the cutoff boundary; kills
+   `< cutoff → <= cutoff / >= cutoff` mutants on line 70.
+
+**`eta.rs` `mod tests`** (nextest), targeting cargo-mutants survivors in `EtaEstimator::update`:
+
+4. `rate_division_uses_dt_not_a_constant`. Drives the estimator with `dt = 2.0 s` so `delta / dt` and `delta * dt`
+   differ by 4×; existing tests all used 1 s steps where the two are numerically identical. Kills `/ → *` and `/ → %` on
+   lines 152, 153.
+5. `first_post_seed_sample_initializes_rate_directly`. Asserts exact rate after exactly two `update()` calls — the
+   `samples == 0` branch sets the rate directly to the instantaneous rate; existing 3-sample tests masked the mutant
+   `samples != 0` because the EWMA caught up. Kills the `== 0 → != 0` mutant on line 159 and the
+   `1.0 - (-dt / TAU).exp()` alpha arithmetic mutants on line 157 (those changes throw `alpha` off by a large factor,
+   which shows up immediately after one post-seed sample).
+
+### Surviving mutants worth a follow-up
+
+Stopped well short of the 10-test budget. The rest of the surviving cargo-mutants survivors land in `eta_from_axes` (a
+saturating two-axis ETA selector). High-value follow-ups, in order:
+
+1. `eta.rs:223 > → ==/</>=` in `eta_from_axes` (3 mutants) — `bytes_remaining > 0` guard.
+2. `eta.rs:224 / → %`, `eta.rs:231 / → %` — axis-rate ÷ axis-remaining divisions.
+3. `eta.rs:225, 232 == → !=` — short-circuit early-return checks on rates.
+4. `eta.rs:230 > → >=` — files axis boundary check.
+5. `eta.rs:247 > → ==/</>=` (3 mutants), `eta.rs:247:64 > → >=` — final-pick comparison.
+6. `eta.rs:190 && → ||` in `compute_stats` — guard combining the two axes.
+7. Stryker survivors that the new tests do not kill, e.g. `scan-throughput.ts:31 constructor body → {}` (windowMs never
+   read — easy fix: a test that constructs with two different `windowMs` and asserts different drop behavior).
+
+The `> 0 ? fps : 0` mutants on `scan-throughput.ts:62, 63` (turning `>` into `>=`) are **equivalent mutants** — when
+`fps == 0`, both branches return `0`, so no test can differentiate them. Skip.
+
+### Verdict on long-term CI integration
+
+**Don't wire either tool into the main `./scripts/check.sh` pipeline.** Both are too slow and too noisy for a per-commit
+gate. Concretely:
+
+- cargo-mutants: ~9 min for **one 600-line file** with the cmdr workspace's deps. Running the full `src-tauri/` crate
+  (~150 source files) would be hours, and many modules would need per-slice test filters to dodge the CWD-sensitive
+  reconciler tests. Worth keeping the binary install in dev's mise toolchain and running ad-hoc on hot spots when adding
+  non-trivial numeric / state-machine code (eta, write-op state machines, conflict resolution, indexing, etc.).
+- stryker: ~12 s per file is fast, but the config has sharp edges (`oxc` sandbox issues, plugin discovery) and there's
+  no obvious gain from a CI-blocking gate. Same recommendation as cargo-mutants — ad-hoc on numeric / branching FE
+  utilities (`scan-throughput`, eventually `font-metrics`, `accent-color`, etc.).
+
+Concrete next steps if pushing this further:
+
+1. `cargo mutants --in-diff` (only mutate lines changed by a PR) as an optional GitHub Actions workflow that runs on
+   labelled PRs, not as a check. Output stays advisory.
+2. Skip the workspace-setup churn by committing a `.cargo/mutants.toml` with
+   `additional_cargo_test_args = ["--lib", "file_system::write_operations::eta"]`-style slice-scoped configs per hot
+   module.
+3. Don't add stryker config to the repo. The 3-tweak setup is small enough to redo when needed.

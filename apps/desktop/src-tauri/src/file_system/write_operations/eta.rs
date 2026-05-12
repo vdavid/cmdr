@@ -588,4 +588,66 @@ mod tests {
         // produce NaN.
         assert!(b.bytes_per_second >= a.bytes_per_second.saturating_sub(1));
     }
+
+    /// `cargo-mutants` survivor target: the rate formula `delta / dt` is
+    /// numerically indistinguishable from `delta * dt` whenever dt is exactly
+    /// 1.0 s — every other test uses 1 s steps. This drives the estimator
+    /// with `dt = 2.0 s` so `delta / 2` and `delta * 2` differ by 4x, then
+    /// asserts the rate tightly enough to catch `* dt` and `% dt` mutants
+    /// on the `inst_bytes_rate` / `inst_files_rate` lines.
+    #[test]
+    fn rate_division_uses_dt_not_a_constant() {
+        // Two 2-second steps at 100 MB/s and 50 files/s. After seed + 1 EWMA
+        // step, the rate should be very close to the instantaneous rate of
+        // 100 MB/s and 50 files/s (the EWMA combines the post-seed direct-set
+        // 100 MB/s with another 100 MB/s sample — no drift).
+        let stats = run(
+            WriteOperationPhase::Copying,
+            10_000_000_000,
+            10_000,
+            &[(0, 0, 0), (2000, 200_000_000, 100), (4000, 400_000_000, 200)],
+        );
+        let bps = stats.bytes_per_second;
+        let fps = stats.files_per_second;
+        // Tight bounds: 100 MB/s ± 1%, 50 files/s ± 1%. `* dt` would give
+        // 400 MB/s (4x), `% dt` would give 0 (since deltas are exact integer
+        // multiples of 2.0).
+        assert!(
+            (99_000_000..=101_000_000).contains(&bps),
+            "bytes_per_second = {bps} expected ~100 MB/s (within 1%)",
+        );
+        assert!((49.5..=50.5).contains(&fps), "files_per_second = {fps} expected ~50",);
+    }
+
+    /// `cargo-mutants` survivor target: the `samples == 0` branch (line 159)
+    /// directly seeds the EWMA with the first post-seed sample, instead of
+    /// blending it against the initial 0 rate. Existing 3-sample tests mask
+    /// this because by the 3rd sample the EWMA has caught up. With only one
+    /// post-seed sample, the mutant `!= 0` would give the EWMA-blended
+    /// `alpha * inst_rate` instead of the full `inst_rate`.
+    #[test]
+    fn first_post_seed_sample_initializes_rate_directly() {
+        // 1 second delta, 100 MB/s, 100 files/s. After exactly 2 updates
+        // (seed + one post-seed), the rate should be the full instantaneous
+        // rate, not the EWMA-blended value of ~alpha * inst_rate (alpha at
+        // dt=1, tau=3 is ~0.283, so blended would be ~28.3 MB/s vs the
+        // correct ~100 MB/s).
+        let stats = run(
+            WriteOperationPhase::Copying,
+            10_000_000_000,
+            10_000,
+            &[(0, 0, 0), (1000, 100_000_000, 100)],
+        );
+        let bps = stats.bytes_per_second;
+        let fps = stats.files_per_second;
+        assert!(
+            (99_000_000..=101_000_000).contains(&bps),
+            "bytes_per_second after first post-seed sample = {bps}, expected ~100 MB/s \
+             (mutant `samples != 0` would give ~28 MB/s from EWMA-from-zero)",
+        );
+        assert!(
+            (99.0..=101.0).contains(&fps),
+            "files_per_second after first post-seed sample = {fps}, expected ~100",
+        );
+    }
 }
