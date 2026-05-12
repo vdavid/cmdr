@@ -137,7 +137,35 @@ test.describe('File viewer search', () => {
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.search-bar')), 3000)
     expect(await tauriPage.isVisible('.search-bar')).toBe(false)
   })
+
+  test('shows "No matches" status for a query with no hits', async ({ tauriPage }) => {
+    // Reopen the search bar — the previous test closed it with Escape.
+    if (!(await tauriPage.isVisible('.search-bar'))) {
+      await tauriPage.keyboard.press('Control+f')
+      await tauriPage.waitForSelector('.search-bar', 5000)
+    }
+
+    await tauriPage.waitForSelector('.search-input', 5000)
+    await tauriPage.fill('.search-input', 'Z'.repeat(40))
+
+    // file-a.txt is 1024 'A' chars, so 'Z' x 40 cannot match. Wait for the
+    // search to settle in the No-matches state. The match-count span lives
+    // inside `.search-bar` and is `aria-live="polite"`.
+    const settled = await pollUntil(
+      tauriPage,
+      async () => {
+        const text = (await tauriPage.textContent('.match-count')) ?? ''
+        return text.includes('No matches')
+      },
+      5000,
+    )
+    expect(settled).toBe(true)
+
+    // Cleanup: clear the query so the next test starts at a sensible state.
+    await tauriPage.fill('.search-input', '')
+  })
 })
+
 
 test.describe('File viewer error handling', () => {
   test('shows error for missing file path', async ({ tauriPage }) => {
