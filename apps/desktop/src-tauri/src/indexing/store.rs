@@ -2219,7 +2219,7 @@ mod tests {
     fn platform_case_compare_is_binary_off_macos() {
         // Linux ext4/btrfs: exact byte comparison, NOT case-folded.
         assert_eq!(platform_case_compare("a", "a"), std::cmp::Ordering::Equal);
-        assert_eq!(platform_case_compare("Users", "users"), std::cmp::Ordering::Greater);
+        assert_eq!(platform_case_compare("Users", "users"), std::cmp::Ordering::Less);
         // ('U' = 0x55, 'u' = 0x75 → 'U' < 'u' in ASCII, so "Users" < "users".)
     }
 
