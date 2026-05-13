@@ -397,3 +397,30 @@ Concrete next steps if pushing this further:
    `additional_cargo_test_args = ["--lib", "file_system::write_operations::eta"]`-style slice-scoped configs per hot
    module.
 3. Don't add stryker config to the repo. The 3-tweak setup is small enough to redo when needed.
+
+## Property-based testing fit (investigation)
+
+`proptest` and `quickcheck` aren't in use anywhere in `apps/desktop/src-tauri/`. The full
+investigation lives at `/tmp/cmdr-property-testing-report.md`; this section is the short
+takeaway.
+
+The most algorithmic, pure spots in the crate are already covered by tight example tests:
+`eta::EtaEstimator` (12 tests, two named mutant-survivor targets), `listing::sorting` (32
+tests), `validation` (13 tests). Adding proptest there gives diminishing returns.
+
+The clear net-positive proptest targets, in order:
+
+1. **`indexing::aggregator::topological_sort_bottom_up`** — 1 example test for a function with
+   non-trivial tree invariants. Cycle and duplicate-ID behavior isn't asserted today.
+2. **`search::query::glob_to_regex`** — 4 example tests; infinite input space; output feeds a
+   regex engine that panics on malformed input. "Output is always valid regex" is a one-line
+   property and a real safety net.
+3. **`search::query::split_scope_segments`** — 10 example tests for a parser with nested
+   escape/quote rules. Round-trip and segment-count properties are cheap.
+4. **`indexing::store::platform_case_compare`** (macOS) — comparator-law properties
+   (reflexivity, antisymmetry, transitivity) plus NFC≡NFD equivalence. Highest user impact
+   because miscompare corrupts the search index.
+
+Verdict: worth adding `proptest` as a dev-dependency for these four targets specifically,
+~half a day of work. Not worth a project-wide convention. Don't introduce it for ETA, sorting,
+or validation — example tests already cover the interesting cases.
