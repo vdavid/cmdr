@@ -24,7 +24,6 @@ import {
   moveCursorToFile,
   executeViaCommandPalette,
   pollUntil,
-  sleep,
   MKDIR_DIALOG,
   TRANSFER_DIALOG,
   CTRL_OR_META,
@@ -152,11 +151,19 @@ test.describe('Rename round-trip', () => {
             else input.value = '';
             input.dispatchEvent(new Event('input', { bubbles: true }));
         })()`)
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(100)
+    // Wait for Svelte to flush the reactive update that mirrors the cleared input.
+    await pollUntil(
+      tauriPage,
+      async () => tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === ''`),
+      2000,
+    )
     await tauriPage.type('.rename-input', 'renamed-file.txt')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(200)
+    // Wait until the typed value is fully reflected in the input before Enter.
+    await pollUntil(
+      tauriPage,
+      async () => tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === 'renamed-file.txt'`),
+      3000,
+    )
     await tauriPage.press('.rename-input', 'Enter')
 
     // Wait for rename input to disappear
@@ -186,10 +193,9 @@ test.describe('Create folder round-trip', () => {
 
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
     await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, folderName)
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(200)
+    // Wait for the OK button to enable in response to the typed name
+    await pollUntil(tauriPage, async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), 2000)
 
-    await tauriPage.waitForSelector(`${MKDIR_DIALOG} .btn-primary`, 3000)
     await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
 
     // Wait for dialog to close
@@ -236,18 +242,15 @@ test.describe('Hidden files toggle', () => {
     // Synthetic dispatchEvent() fires with isTrusted:false and may not reach the
     // handler depending on event target (document vs window).
     //
-    // The sleep here is intentional: tauriPage.keyboard dispatches events async
-    // over the IPC socket, and we've seen cases where a second `keyboard.press`
-    // races with the prior event's debounce / virtual-scroll refresh. 1s
-    // covers the slow-path CI runner; polls below still do the real waiting.
+    // Each call site polls for the resulting hidden-file visibility change, so
+    // we don't need a fixed-duration settle here — the outer polls cover the
+    // IPC dispatch + virtual-scroll refresh.
     const toggleHidden = async () => {
       await tauriPage.keyboard.down(CTRL_OR_META)
       await tauriPage.keyboard.down('Shift')
       await tauriPage.keyboard.press('.')
       await tauriPage.keyboard.up('Shift')
       await tauriPage.keyboard.up(CTRL_OR_META)
-      // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-      await sleep(1000)
     }
 
     // Ensure hidden files are visible first. On macOS the default state
