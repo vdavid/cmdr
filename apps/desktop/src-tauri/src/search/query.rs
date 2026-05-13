@@ -678,4 +678,70 @@ mod tests {
         assert_eq!(scope.include_paths, vec![format!("{home}/projects")]);
         assert_eq!(scope.exclude_patterns, vec!["node_modules"]);
     }
+
+    // ── split_scope_segments + parse_scope (property-based) ──────────
+    //
+    // The scope parser has nested escape/quote rules. Property tests probe
+    // the round-trip and count invariants that don't require asserting a
+    // specific canonical form.
+
+    mod scope_proptests {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            /// `split_scope_segments` always returns at least one segment
+            /// and never panics on arbitrary input.
+            #[test]
+            fn always_at_least_one_segment(input in ".*") {
+                let segments = split_scope_segments(&input);
+                prop_assert!(
+                    !segments.is_empty(),
+                    "split_scope_segments({:?}) returned empty vec",
+                    input
+                );
+            }
+
+            /// For inputs containing no special characters (no comma, no
+            /// quotes, no backslash), the result is exactly `[input]` and
+            /// the round-trip `segments.join(",") == input` holds.
+            #[test]
+            fn plain_input_round_trips(input in "[^,\"'\\\\]*") {
+                let segments = split_scope_segments(&input);
+                prop_assert_eq!(segments.len(), 1, "no commas → exactly 1 segment");
+                prop_assert_eq!(&segments[0], &input, "the only segment must equal input");
+                prop_assert_eq!(segments.join(","), input.clone(), "round-trip via join must match");
+            }
+
+            /// For inputs containing only safe characters and unquoted commas
+            /// (no quotes, no backslashes), the segment count equals the
+            /// comma count + 1.
+            #[test]
+            fn comma_count_matches_segment_count(input in "[^\"'\\\\]*") {
+                let segments = split_scope_segments(&input);
+                let comma_count = input.chars().filter(|&c| c == ',').count();
+                prop_assert_eq!(
+                    segments.len(),
+                    comma_count + 1,
+                    "expected {} segments for input {:?}, got {:?}",
+                    comma_count + 1, input, segments
+                );
+                // And the join round-trips for this character class.
+                prop_assert_eq!(segments.join(","), input);
+            }
+
+            /// `parse_scope` never panics, and the count of resolved
+            /// include/exclude entries is bounded by the segment count.
+            #[test]
+            fn parse_scope_never_overcounts(input in ".*") {
+                let scope = parse_scope(&input);
+                let segments = split_scope_segments(&input);
+                prop_assert!(
+                    scope.include_paths.len() + scope.exclude_patterns.len() <= segments.len(),
+                    "parse_scope produced more entries than segments: input={:?}, scope={:?}, segments={:?}",
+                    input, scope, segments
+                );
+            }
+        }
+    }
 }
