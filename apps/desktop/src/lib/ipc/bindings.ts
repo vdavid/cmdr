@@ -159,6 +159,15 @@ export const commands = {
     typedError<{ [key in string]: number }, string>(
       __TAURI_INVOKE('find_file_indices', { listingId, names, includeHidden }),
     ),
+  /**
+   *  Returns the backend index of the highest-scoring fuzzy match for `query` in
+   *  the cached listing, or `None` when nothing matches. Powers the type-to-jump
+   *  feature in `FilePane.svelte`. Hidden entries are skipped when `include_hidden`
+   *  is false. The frontend adjusts for the synthetic `..` parent offset before
+   *  setting the cursor (the parent entry is never in `LISTING_CACHE`).
+   */
+  findFirstFuzzyMatch: (listingId: string, query: string, includeHidden: boolean) =>
+    typedError<number | null, IpcError>(__TAURI_INVOKE('find_first_fuzzy_match', { listingId, query, includeHidden })),
   resortListing: (
     listingId: string,
     sortBy: SortColumn,
@@ -2470,6 +2479,17 @@ export type PaneState = {
   loadedEnd?: number
   showHidden?: boolean
   tabs?: TabInfo[]
+  /**
+   *  Type-to-jump state mirror. `None` when no buffer is active; populated
+   *  while the user is typing for in-directory navigation. Lets MCP-driven
+   *  E2E tests drive and assert the feature without poking at the DOM.
+   *
+   *  Note: cannot use `skip_serializing_if` here — specta's unified-phase
+   *  serde validator rejects conditional omission. The field is always
+   *  present in the wire format (as `null` when inactive); the YAML
+   *  resource layer suppresses the section when it's `None`.
+   */
+  typeToJump?: TypeToJumpInfo | null
 }
 
 // Parsed search scope: which subtrees to include and which directory names/paths to exclude.
@@ -2856,6 +2876,34 @@ export type TranslatedQuery = {
   excludeDirNames: string[] | null
   caseSensitive: boolean | null
   excludeSystemDirs: boolean | null
+}
+
+/**
+ *  Snapshot of a pane's type-to-jump state for MCP exposure.
+ *
+ *  `bufferActive` and `indicatorVisible` track the asymmetric timeout model
+ *  (buffer resets at 1 s by default, indicator stays visible until 5 s) so
+ *  agents can distinguish "actively typing" from "still on screen but stale".
+ */
+export type TypeToJumpInfo = {
+  /**
+   *  Current buffer the user has typed. Empty string once the 1 s reset
+   *  fires while the indicator is still visible (stale).
+   */
+  buffer: string
+  // Indicator chip is visible (in either active or stale state).
+  indicatorVisible: boolean
+  /**
+   *  Indicator is in the dimmed "stale" state — buffer cleared but the
+   *  chip hasn't hidden yet. Next keystroke starts fresh.
+   */
+  indicatorStale: boolean
+  /**
+   *  Name of the file the last successful match landed on, if any. Lets
+   *  tests assert where the cursor jumped to without re-deriving it from
+   *  `cursor_index` + `files`.
+   */
+  lastMatchedName?: string | null
 }
 
 // Update metadata returned to the frontend when a newer version is available.

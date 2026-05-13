@@ -5,10 +5,11 @@ use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
 use crate::file_system::{
     DirectorySortMode, FileEntry, ListingStartResult, ListingStats, ResortResult, SortColumn, SortOrder,
     StreamingListingStartResult, cancel_listing as ops_cancel_listing, find_file_index as ops_find_file_index,
-    find_file_indices as ops_find_file_indices, get_file_at as ops_get_file_at, get_file_range as ops_get_file_range,
-    get_listing_stats as ops_get_listing_stats, get_max_filename_width as ops_get_max_filename_width,
-    get_total_count as ops_get_total_count, get_volume_manager, list_directory_end as ops_list_directory_end,
-    list_directory_start_streaming as ops_list_directory_start_streaming,
+    find_file_indices as ops_find_file_indices,
+    fuzzy_find_first_match_in_listing as ops_fuzzy_find_first_match_in_listing, get_file_at as ops_get_file_at,
+    get_file_range as ops_get_file_range, get_listing_stats as ops_get_listing_stats,
+    get_max_filename_width as ops_get_max_filename_width, get_total_count as ops_get_total_count, get_volume_manager,
+    list_directory_end as ops_list_directory_end, list_directory_start_streaming as ops_list_directory_start_streaming,
     list_directory_start_with_volume as ops_list_directory_start_with_volume,
     refresh_listing_index_sizes as ops_refresh_listing_index_sizes, resort_listing as ops_resort_listing,
 };
@@ -237,6 +238,21 @@ pub fn find_file_indices(
     include_hidden: bool,
 ) -> Result<std::collections::HashMap<String, usize>, String> {
     ops_find_file_indices(&listing_id, &names, include_hidden)
+}
+
+/// Returns the backend index of the highest-scoring fuzzy match for `query` in
+/// the cached listing, or `None` when nothing matches. Powers the type-to-jump
+/// feature in `FilePane.svelte`. Hidden entries are skipped when `include_hidden`
+/// is false. The frontend adjusts for the synthetic `..` parent offset before
+/// setting the cursor (the parent entry is never in `LISTING_CACHE`).
+#[tauri::command]
+#[specta::specta]
+pub async fn find_first_fuzzy_match(
+    listing_id: String,
+    query: String,
+    include_hidden: bool,
+) -> Result<Option<usize>, IpcError> {
+    ops_fuzzy_find_first_match_in_listing(&listing_id, &query, include_hidden).map_err(IpcError::from_err)
 }
 
 #[tauri::command]

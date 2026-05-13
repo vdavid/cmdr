@@ -35,6 +35,7 @@ let humanFriendlySizeUnits = $state<boolean>(true)
 let sizeMismatchWarning = $state<boolean>(true)
 let stripedRows = $state<boolean>(false)
 let networkEnabled = $state<boolean>(true)
+let typeToJumpResetDelay = $state<number>(1000)
 
 let initialized = false
 let unsubscribe: (() => void) | undefined
@@ -63,6 +64,7 @@ export async function initReactiveSettings(): Promise<void> {
     sizeMismatchWarning = getSetting('listing.sizeMismatchWarning')
     stripedRows = getSetting('listing.stripedRows')
     networkEnabled = getSetting('network.enabled')
+    typeToJumpResetDelay = getSetting('fileExplorer.typeToJump.resetDelay')
 
     // Subscribe to changes (including cross-window changes)
     unsubscribe = onSettingChange((id, value) => {
@@ -106,6 +108,9 @@ export async function initReactiveSettings(): Promise<void> {
           break
         case 'network.enabled':
           networkEnabled = value as boolean
+          break
+        case 'fileExplorer.typeToJump.resetDelay':
+          typeToJumpResetDelay = value as number
           break
       }
     })
@@ -204,6 +209,17 @@ export function getStripedRows(): boolean {
 /** Get whether networking (SMB discovery + connections) is enabled. */
 export function getNetworkEnabled(): boolean {
   return networkEnabled
+}
+
+/**
+ * Get the type-to-jump buffer reset delay in milliseconds.
+ *
+ * The factory in `file-explorer/pane/type-to-jump-state.svelte.ts` reads this
+ * via its `getResetMs` callback on every keystroke, so changes in the Advanced
+ * settings section take effect on the next keystroke without app restart.
+ */
+export function getTypeToJumpResetDelay(): number {
+  return typeToJumpResetDelay
 }
 
 // ============================================================================

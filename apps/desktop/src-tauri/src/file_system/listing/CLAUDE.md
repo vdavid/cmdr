@@ -13,6 +13,7 @@ Backend directory reading, caching, sorting, and streaming for the file explorer
 - **caching.rs** – `LISTING_CACHE` global state, `CachedListing` struct, cache helpers for incremental updates
 - **sorting.rs** – `SortColumn`, `SortOrder`, `sort_entries()`
 - **metadata.rs** – `FileEntry` struct, macOS extended metadata. `FileEntry` has `physical_size: Option<u64>` (populated from `st_blocks * 512`) and `recursive_physical_size: Option<u64>` (populated from drive index)
+- **fuzzy_jump.rs** – `find_first_match()` pure function powering the in-directory type-to-jump feature (Tauri command `find_first_fuzzy_match` in `commands/file_system/listing.rs`). Uses `nucleo-matcher` for smart-case fuzzy scoring; ties resolve to the lower index. The `..` parent entry is not in the cache (frontend prepends it), so no special-casing. Returns a **visible-space** index — counted over the same `visible_entries(...)` sequence as `get_file_at` / `get_file_range`, so the frontend can use the result as a cursor index directly (plus the `+1` parent-entry offset when `hasParent`). Logs each call to `target: "type_to_jump"`.
 
 ### Data flow
 

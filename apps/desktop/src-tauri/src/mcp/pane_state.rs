@@ -56,6 +56,39 @@ pub struct PaneState {
     pub show_hidden: bool,
     #[serde(default)]
     pub tabs: Vec<TabInfo>,
+    /// Type-to-jump state mirror. `None` when no buffer is active; populated
+    /// while the user is typing for in-directory navigation. Lets MCP-driven
+    /// E2E tests drive and assert the feature without poking at the DOM.
+    ///
+    /// Note: cannot use `skip_serializing_if` here — specta's unified-phase
+    /// serde validator rejects conditional omission. The field is always
+    /// present in the wire format (as `null` when inactive); the YAML
+    /// resource layer suppresses the section when it's `None`.
+    #[serde(default)]
+    pub type_to_jump: Option<TypeToJumpInfo>,
+}
+
+/// Snapshot of a pane's type-to-jump state for MCP exposure.
+///
+/// `bufferActive` and `indicatorVisible` track the asymmetric timeout model
+/// (buffer resets at 1 s by default, indicator stays visible until 5 s) so
+/// agents can distinguish "actively typing" from "still on screen but stale".
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct TypeToJumpInfo {
+    /// Current buffer the user has typed. Empty string once the 1 s reset
+    /// fires while the indicator is still visible (stale).
+    pub buffer: String,
+    /// Indicator chip is visible (in either active or stale state).
+    pub indicator_visible: bool,
+    /// Indicator is in the dimmed "stale" state — buffer cleared but the
+    /// chip hasn't hidden yet. Next keystroke starts fresh.
+    pub indicator_stale: bool,
+    /// Name of the file the last successful match landed on, if any. Lets
+    /// tests assert where the cursor jumped to without re-deriving it from
+    /// `cursor_index` + `files`.
+    #[serde(default)]
+    pub last_matched_name: Option<String>,
 }
 
 /// Shared state for both panes.
@@ -200,6 +233,7 @@ mod tests {
             loaded_end: 1,
             show_hidden: false,
             tabs: vec![],
+            type_to_jump: None,
         };
 
         store.set_left(state.clone());

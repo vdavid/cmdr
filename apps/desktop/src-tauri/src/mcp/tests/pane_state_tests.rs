@@ -38,6 +38,7 @@ fn test_pane_state_store_update_left() {
         loaded_end: 1,
         show_hidden: false,
         tabs: vec![],
+        type_to_jump: None,
     };
 
     store.set_left(state.clone());
@@ -99,6 +100,7 @@ fn test_pane_state_cursor_index_bounds() {
         loaded_end: 1,
         show_hidden: false,
         tabs: vec![],
+        type_to_jump: None,
     };
 
     store.set_left(state);
@@ -232,6 +234,7 @@ fn test_empty_file_list() {
         loaded_end: 0,
         show_hidden: false,
         tabs: vec![],
+        type_to_jump: None,
     };
 
     let json = serde_json::to_value(&state).unwrap();
@@ -267,6 +270,7 @@ fn test_large_file_count() {
         loaded_end: 1000,
         show_hidden: false,
         tabs: vec![],
+        type_to_jump: None,
     };
 
     // Should serialize reasonably fast

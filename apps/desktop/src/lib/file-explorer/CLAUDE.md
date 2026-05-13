@@ -186,6 +186,43 @@ Core explorer UI components:
   `handleTransferError(error, friendly?)` accepts both and stores them so the rendered dialog (see
   `file-operations/CLAUDE.md`) can prefer the backend copy.
 - **rename-flow.svelte.ts** — Rename flow logic (validation, conflict/extension dialogs) extracted from FilePane
+- **type-to-jump-state.svelte.ts** / **TypeToJumpIndicator.svelte** — Type-to-jump factory + the "Jump: …" chip. See
+  [Type-to-jump](#type-to-jump) below.
+
+### Type-to-jump
+
+Per-pane in-directory navigation. The user types letters/digits in a focused pane → the cursor jumps to the
+highest-scoring fuzzy match. A bottom-right "Jump: tes" chip shows the live buffer. Backend match runs in
+`apps/desktop/src-tauri/src/file_system/listing/fuzzy_jump.rs` via the `find_first_fuzzy_match` IPC.
+
+**State** (one factory instance per pane, in `FilePane.svelte`):
+
+- `buffer` — chars typed since the last reset (lowercased).
+- `indicatorVisible` / `indicatorStale` — asymmetric timeouts (see below).
+- `generation` — monotonic counter bumped per keystroke. The async match callback discards responses where
+  `generation !== state.generation` — same race-protection pattern as `adjust-selection-indices.ts`'s `diffGeneration`.
+
+**Two timers**:
+
+- **Buffer reset** (configurable, default 1000 ms via `fileExplorer.typeToJump.resetDelay`): empties `buffer` but keeps
+  the indicator visible in a "stale" (italic + dim) state. The cue tells the user the next keystroke starts fresh.
+- **Indicator hide** (hardcoded 5000 ms): removes the chip entirely.
+
+**Reset triggers** (call `clearJumpState()`): ESC, arrows / Page / Home / End / Enter / Tab / Backspace (handled in
+`DualPaneExplorer.svelte`'s key intercept), rename-mode entry, context-menu open, drag start, pane switch, tab switch,
+directory change, re-sort, and listing replace.
+
+**Parent offset gotcha**: the IPC returns a backend index (no `..`). The frontend prepends `..` when `hasParent`, so the
+cursor index is `backendIndex + 1` when `hasParent` is true. Forget that and the cursor lands one row off on every
+match.
+
+**Streaming listings**: a single keystroke = exactly one match against the cache as it stands at that moment. We don't
+auto-jump on subsequent `listing-progress` events — that would move the cursor under the user without input, violating
+top-5 principle 3 ("the user is always in control").
+
+**MCP surface**: when the buffer or indicator is live, `FilePane` mirrors
+`{ buffer, indicatorVisible, indicatorStale, lastMatchedName }` into the synced `PaneState.typeToJump`, so MCP-driven
+E2E tests can assert the feature without poking at the DOM. See `src-tauri/src/mcp/CLAUDE.md` § State stores.
 
 ### Live disk space
 

@@ -165,6 +165,18 @@ fn build_pane_yaml(state: &PaneState, indent: &str) -> String {
     // Selected count
     lines.push(format!("{}selected: {}", indent, state.selected_indices.len()));
 
+    // Type-to-jump state — only emitted while a buffer or visible indicator
+    // exists, so the YAML stays clean during the common case.
+    if let Some(ref ttj) = state.type_to_jump {
+        lines.push(format!("{}typeToJump:", indent));
+        lines.push(format!("{}  buffer: {:?}", indent, ttj.buffer));
+        lines.push(format!("{}  indicatorVisible: {}", indent, ttj.indicator_visible));
+        lines.push(format!("{}  indicatorStale: {}", indent, ttj.indicator_stale));
+        if let Some(ref name) = ttj.last_matched_name {
+            lines.push(format!("{}  lastMatchedName: {}", indent, name));
+        }
+    }
+
     // Files list
     lines.push(format!("{}files:", indent));
 
@@ -731,6 +743,7 @@ mod tests {
                     active: false,
                 },
             ],
+            type_to_jump: None,
         };
 
         let yaml = build_pane_yaml(&state, "  ");

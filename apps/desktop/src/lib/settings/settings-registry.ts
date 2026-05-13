@@ -846,6 +846,23 @@ export const settingsRegistry: SettingDefinition[] = [
     },
   },
   {
+    id: 'fileExplorer.typeToJump.resetDelay',
+    section: ['Advanced'],
+    label: 'Type-to-jump reset delay',
+    description:
+      'How long the type-to-jump buffer stays alive after the last keystroke. Lower values reset faster between searches; higher values are more forgiving for slow typists.',
+    keywords: ['type', 'jump', 'reset', 'delay', 'fuzzy', 'search', 'navigation', 'keystroke', 'buffer'],
+    type: 'number',
+    default: 1000,
+    component: 'number-input',
+    showInAdvanced: true,
+    constraints: {
+      min: 300,
+      max: 3000,
+      step: 100,
+    },
+  },
+  {
     id: 'advanced.diskSpaceChangeThreshold',
     section: ['Advanced'],
     label: 'Disk space change threshold (MB)',

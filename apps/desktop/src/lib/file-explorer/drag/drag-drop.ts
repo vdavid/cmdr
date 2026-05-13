@@ -76,6 +76,13 @@ interface DragCallbacks {
   onDragStart?: () => void
   /** Called when drag is cancelled (ESC key or mouseup before threshold) */
   onDragCancel?: () => void
+  /**
+   * Called when the drag actually initiates (threshold crossed), for BOTH single-file and
+   * selection contexts. Use this for side-effects that should run on every drag start,
+   * regardless of whether the drag promoted a selection or used an existing one. Type-to-jump
+   * uses this to clear its buffer — typing a query then dragging means the user moved on.
+   */
+  onDragInitiate?: () => void
 }
 
 /** Tracks whether the current native drag originated from this app (pane-to-pane or self-drop). */
@@ -291,6 +298,10 @@ export function startSelectionDragTracking(
 
       // Stop any pending click-to-rename timer so it doesn't fire mid-drag.
       cancelClickToRename()
+
+      // Fire onDragInitiate for both contexts — anything that wants to react
+      // to "a drag is starting" (type-to-jump buffer clear, etc.) hooks in here.
+      cbs.onDragInitiate?.()
 
       // For single-file drag, call onDragStart to select the file first
       if (ctx.type === 'single') {

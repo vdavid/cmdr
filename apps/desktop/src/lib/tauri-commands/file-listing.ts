@@ -162,6 +162,25 @@ export async function findFileIndices(
 }
 
 /**
+ * Returns the backend index of the highest-scoring fuzzy match for `query`,
+ * or `null` if nothing matches or the listing is empty. Powers the type-to-jump
+ * feature. The result is a BACKEND index — the caller must add 1 when the
+ * listing has a synthetic ".." parent.
+ * @param listingId - The listing ID from listDirectoryStart.
+ * @param query - The buffer the user has typed. Lowercased before scoring.
+ * @param includeHidden - Whether dotfiles count as candidates.
+ */
+export async function findFirstFuzzyMatch(
+  listingId: string,
+  query: string,
+  includeHidden: boolean,
+): Promise<number | null> {
+  const res = await commands.findFirstFuzzyMatch(listingId, query, includeHidden)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
  * Gets a single file at the given index.
  * @param listingId - The listing ID from listDirectoryStart.
  * @param index - Index of the file to get.

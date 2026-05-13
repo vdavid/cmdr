@@ -100,6 +100,8 @@
         onRenameShakeEnd?: () => void
         /** Called when click-to-rename timer fires (user held click on cursor entry) */
         onStartRename?: () => void
+        /** Called when a drag actually initiates (threshold crossed) from this view. */
+        onDragInitiate?: () => void
     }
 
     const {
@@ -130,6 +132,7 @@
         onRenameCancel,
         onRenameShakeEnd,
         onStartRename,
+        onDragInitiate,
     }: Props = $props()
 
     // ==== Cached entries (prefetch buffer) ====
@@ -428,6 +431,7 @@
                         // Just do a normal select on cancel (mouseup without drag)
                         onSelect(index, event.shiftKey)
                     },
+                    onDragInitiate,
                 },
             )
         } else {
@@ -458,7 +462,7 @@
                     iconId,
                     fileInfos,
                 },
-                {},
+                { onDragInitiate },
             )
         }
     }

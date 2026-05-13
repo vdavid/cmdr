@@ -1,6 +1,7 @@
 //! Directory listing module - reading, operations, caching, metadata, sorting, streaming.
 
 pub(crate) mod caching;
+pub(crate) mod fuzzy_jump;
 pub(crate) mod metadata;
 pub(crate) mod operations;
 pub(crate) mod reading;
@@ -9,6 +10,7 @@ pub(crate) mod streaming;
 
 // Re-export types for backwards compatibility (they were originally defined in operations.rs)
 // These re-exports make the types available both externally and locally in this module
+pub use fuzzy_jump::fuzzy_find_first_match_in_listing;
 pub use metadata::{ExtendedMetadata, FileEntry};
 pub use operations::{
     ListingStartResult, ListingStats, ResortResult, find_file_index, find_file_indices, get_file_at, get_file_range,

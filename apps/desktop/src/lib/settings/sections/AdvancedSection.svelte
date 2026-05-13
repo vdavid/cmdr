@@ -167,7 +167,9 @@
                                       ? 'items'
                                       : setting.id.endsWith('Mb') || setting.id.includes('DiskSpace')
                                         ? 'MB'
-                                        : ''}
+                                        : setting.id === 'fileExplorer.typeToJump.resetDelay'
+                                          ? 'ms'
+                                          : ''}
                             </span>
                         {/if}
                     {/if}

@@ -61,6 +61,11 @@ export interface FilePaneAPI {
   handleKeyDown(e: KeyboardEvent): void
   handleKeyUp(e: KeyboardEvent): void
 
+  /** Type-to-jump: route one printable keystroke into the pane's buffer. */
+  handleJumpKeystroke(char: string): void
+  /** Type-to-jump: clear the buffer + hide the indicator immediately. */
+  clearJumpState(): void
+
   /** Debug only: inject a FriendlyError into this pane's error state. */
   injectError(friendly: FriendlyError): void
 }

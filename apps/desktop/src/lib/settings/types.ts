@@ -114,6 +114,9 @@ export interface SettingsValues {
   'fileExplorer.git.showStatusColumn': boolean
   'fileExplorer.git.showVirtualGitPortal': boolean
 
+  // Type-to-jump
+  'fileExplorer.typeToJump.resetDelay': number
+
   // File operations
   'fileOperations.mtpEnabled': boolean
   'fileOperations.mtpConnectionWarning': boolean

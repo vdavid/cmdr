@@ -126,6 +126,11 @@ genai = "=0.6.0-beta.19"
 # v1 line is for Tauri 1, v2 RC line is the active branch for Tauri 2.
 tauri-specta = { version = "=2.0.0-rc.24", features = ["derive", "typescript"] }
 specta = { version = "=2.0.0-rc.24", features = ["derive", "serde_json"] }
+# Fuzzy matcher for the in-directory "type to jump" feature. Helix's matcher, also used
+# by Zellij and several TUI projects — fast (microseconds per match), smart-case, good
+# scoring. Pinned at 0.3.1 (published 2024-02-20, well over a month old). MPL-2.0;
+# already in the `deny.toml` allowlist. See `file_system/listing/fuzzy_jump.rs` for usage.
+nucleo-matcher = "0.3.1"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

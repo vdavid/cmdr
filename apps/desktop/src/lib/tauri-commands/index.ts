@@ -11,6 +11,7 @@ export {
   getMaxFilenameWidth,
   findFileIndex,
   findFileIndices,
+  findFirstFuzzyMatch,
   getFileAt,
   getPathsAtIndices,
   getFilesAtIndices,

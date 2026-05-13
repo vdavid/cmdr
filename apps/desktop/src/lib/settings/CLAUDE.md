@@ -105,6 +105,11 @@ storage entirely (the `Folder` target is dropped from the plugin builder, no err
 `0` and any non-zero value, or raising the cap beyond its baked-in value, requires an app restart — the in-RAM cap
 updates live but the rotation strategy doesn't.
 
+`AdvancedSection` also includes `fileExplorer.typeToJump.resetDelay` — number, default 1000 ms, range 300–3000, step
+100, ms suffix. Reactive getter: `getTypeToJumpResetDelay()`. The type-to-jump factory in
+`file-explorer/pane/type-to-jump-state.svelte.ts` reads this via its `getResetMs` callback on every keystroke, so slider
+changes take effect on the next keystroke without restart.
+
 `UpdatesSection` includes `updates.errorReports` — boolean, default false, switch. Opt-in for Flow B (auto-send error
 reports when a user-visible error fires). Flow A (the **Help > Send error report…** menu item and the toast button) is
 always available regardless of this setting — clicking is the consent.

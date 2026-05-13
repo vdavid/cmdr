@@ -457,6 +457,9 @@
     async function handleSortChange(pane: 'left' | 'right', newColumn: SortColumn) {
         // Cancel any active rename on the affected pane (sort invalidates indices)
         getPaneRef(pane)?.cancelRename()
+        // Re-sort changes the listing's index space — any in-flight type-to-jump
+        // match would land on the wrong row.
+        getPaneRef(pane)?.clearJumpState()
 
         const paneRef = getPaneRef(pane)
         const listingId = paneRef?.getListingId()
@@ -605,6 +608,10 @@
 
     function handleFocus(pane: 'left' | 'right') {
         if (focusedPane !== pane) {
+            // Clear the type-to-jump buffer on whichever pane is losing focus —
+            // a buffer that the user can no longer see (because they switched panes)
+            // shouldn't keep matching.
+            getPaneRef(focusedPane)?.clearJumpState()
             focusedPane = pane
             saveAppStatus({ focusedPane: pane })
             void updateFocusedPane(pane)
@@ -769,9 +776,66 @@
             return
         }
 
-        // Forward arrow keys and Enter to the focused pane
+        // Type-to-jump intercept: route printable letters/digits into the
+        // active pane's buffer before any other shortcut sees them. Reset keys
+        // (arrows, page nav, enter, tab, backspace, esc) clear an active buffer
+        // and then fall through to their existing handlers.
         const activePaneRef = getPaneRef(focusedPane)
+        if (activePaneRef && !isTypingInInput(e) && !activePaneRef.isRenaming()) {
+            if (isTypeToJumpChar(e)) {
+                activePaneRef.handleJumpKeystroke(e.key)
+                e.preventDefault()
+                e.stopPropagation()
+                return
+            }
+            if (isTypeToJumpResetKey(e)) {
+                activePaneRef.clearJumpState()
+                // Fall through — Enter/arrows/Backspace/ESC keep their existing meaning.
+            }
+        }
+
+        // Forward arrow keys and Enter to the focused pane
         activePaneRef?.handleKeyDown(e)
+    }
+
+    /** True if a printable letter or digit with no command-modifier and not a fn key. */
+    function isTypeToJumpChar(e: KeyboardEvent): boolean {
+        if (e.metaKey || e.ctrlKey || e.altKey) return false
+        if (e.key.length !== 1) return false
+        return /^[a-zA-Z0-9]$/.test(e.key)
+    }
+
+    /** Keys that should clear an in-flight type-to-jump buffer (then fall through). */
+    function isTypeToJumpResetKey(e: KeyboardEvent): boolean {
+        switch (e.key) {
+            case 'Escape':
+            case 'Enter':
+            case 'Tab':
+            case 'Backspace':
+            case 'ArrowUp':
+            case 'ArrowDown':
+            case 'ArrowLeft':
+            case 'ArrowRight':
+            case 'PageUp':
+            case 'PageDown':
+            case 'Home':
+            case 'End':
+                return true
+            default:
+                return false
+        }
+    }
+
+    /** True if focus is in any text-entry control (rename, search dialog, login form, etc.). */
+    function isTypingInInput(e: KeyboardEvent): boolean {
+        const target = e.target as HTMLElement | null
+        if (!target) return false
+        return (
+            target instanceof HTMLInputElement ||
+            target instanceof HTMLTextAreaElement ||
+            target instanceof HTMLSelectElement ||
+            target.isContentEditable
+        )
     }
 
     function handleKeyUp(e: KeyboardEvent) {

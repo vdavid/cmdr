@@ -21,6 +21,7 @@
         cancelListing,
         findFileIndex,
         findFileIndices,
+        findFirstFuzzyMatch,
         pathExistsChecked,
         getFileAt,
         getListingStats,
@@ -42,6 +43,8 @@
         type PaneState,
         type PaneFileEntry,
     } from '$lib/tauri-commands'
+    import { createTypeToJumpState } from './type-to-jump-state.svelte'
+    import TypeToJumpIndicator from './TypeToJumpIndicator.svelte'
     import type { ViewMode } from '$lib/app-status-store'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { adjustSelectionIndices } from '../operations/adjust-selection-indices'
@@ -107,7 +110,7 @@
     import { requestVolumeRefresh, getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
     import type { UnreachableState } from '../tabs/tab-types'
     import { getDiskUsageLevel, getUsedPercent, formatBarTooltipHtml } from '../disk-space-utils'
-    import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
+    import { getFileSizeFormat, getTypeToJumpResetDelay } from '$lib/settings/reactive-settings.svelte'
     import { formatSizeHtmlColored } from '../selection/selection-info-utils'
 
     interface Props {
@@ -199,6 +202,28 @@
     // so the diff handler can adjust selection as files disappear.
     let operationSelectedNames = $state<string[] | 'all' | null>(null)
     let diffGeneration = 0 // NOT $state — only used in async callbacks, never for rendering
+
+    // Type-to-jump: per-pane buffer + indicator. The reset delay is read live
+    // from Settings > Advanced on each keystroke via the reactive getter, so
+    // moving the slider takes effect on the next keystroke without restart.
+    const typeToJump = createTypeToJumpState({
+        getResetMs: () => getTypeToJumpResetDelay(),
+        onMatch: (buffer, generation) => {
+            void runJumpMatch(buffer, generation)
+        },
+        onIndicatorHide: () => {
+            // Stale match info is meaningless once the indicator is gone.
+            lastJumpMatchedName = null
+            debouncedSyncMcp.call()
+        },
+    })
+
+    // Name of the file the most recent successful type-to-jump match landed
+    // on. Mirrored to the MCP `PaneState.typeToJump.lastMatchedName` field so
+    // MCP-driven tests can assert where the cursor jumped to without
+    // re-deriving from `cursor_index` + `files`. Cleared when the indicator
+    // hides or `clearJumpState()` runs.
+    let lastJumpMatchedName = $state<string | null>(null)
 
     // Rename state (inline rename editor)
     const rename = createRenameState()
@@ -460,6 +485,67 @@
         return cursorIndex
     }
 
+    /**
+     * Handles one keystroke for the type-to-jump feature. Appends to the buffer,
+     * fires the IPC match, and (on the response) moves the cursor.
+     *
+     * Streaming listings: per the plan, we do NOT auto-jump on
+     * `listing-progress` — each keystroke = exactly one match against the
+     * cache as it stands at that moment.
+     */
+    export function handleJumpKeystroke(char: string): void {
+        if (!listingId || loading || isNetworkView || isMtpDeviceOnly) return
+        typeToJump.appendChar(char)
+        // Surface the buffer change to MCP — `runJumpMatch` syncs again on
+        // success, but a no-match keystroke would otherwise leave MCP stale.
+        debouncedSyncMcp.call()
+    }
+
+    /** Clears the type-to-jump buffer + indicator + timers. Safe to call repeatedly. */
+    export function clearJumpState(): void {
+        typeToJump.clear()
+        // Clearing the buffer invalidates whatever the last match landed on.
+        if (lastJumpMatchedName !== null) {
+            lastJumpMatchedName = null
+            debouncedSyncMcp.call()
+        }
+    }
+
+    /**
+     * Runs the IPC fuzzy match and applies the result if it's still fresh.
+     * The generation tag guards against out-of-order responses (slow keystroke 1
+     * resolving after fast keystroke 2 — same pattern as `diffGeneration`).
+     */
+    async function runJumpMatch(buffer: string, generation: number): Promise<void> {
+        if (!listingId || buffer === '') return
+        const capturedListingId = listingId
+        try {
+            const backendIndex = await findFirstFuzzyMatch(capturedListingId, buffer, includeHidden)
+            // Discard stale responses (newer keystroke fired) or responses
+            // arriving after a buffer clear / listing swap.
+            if (generation !== typeToJump.generation) return
+            if (typeToJump.buffer === '') return
+            if (capturedListingId !== listingId) return
+            if (backendIndex === null) return
+            const frontendIndex = hasParent ? backendIndex + 1 : backendIndex
+            void setCursorIndex(frontendIndex)
+            // Remember where the match landed so MCP can surface it. Use
+            // the entry from the cache rather than the visible-range slice
+            // (the matched index may be off-screen until the scroll catches up).
+            try {
+                const entry = await getFileAt(capturedListingId, backendIndex, includeHidden)
+                if (entry && generation === typeToJump.generation) {
+                    lastJumpMatchedName = entry.name
+                    debouncedSyncMcp.call()
+                }
+            } catch {
+                // Cache lookup failure is non-fatal — MCP just lacks the name.
+            }
+        } catch (e) {
+            log.warn('type-to-jump match failed: {error}', { error: getIpcErrorMessage(e) })
+        }
+    }
+
     /** Find an item by name in network views. Returns index or -1. */
     export function findNetworkItemIndex(name: string): number {
         return networkMountViewRef?.findItemIndex(name) ?? -1
@@ -568,6 +654,8 @@
     }
 
     export function startRename(): void {
+        // Type-to-jump must not linger over the inline rename editor.
+        typeToJump.clear()
         renameFlow.startRename()
     }
 
@@ -795,6 +883,19 @@
             // Use actual visible range, clamped to valid bounds
             const loadedStart = Math.max(0, visibleRangeStart)
             const loadedEnd = Math.min(effectiveTotal, visibleRangeEnd)
+            // Surface type-to-jump state so MCP-driven tests can assert it.
+            // Only populated while a buffer or visible indicator exists —
+            // keeps the YAML clean in the common case (no jump active).
+            const typeToJumpInfo =
+                typeToJump.indicatorVisible || typeToJump.buffer !== ''
+                    ? {
+                          buffer: typeToJump.buffer,
+                          indicatorVisible: typeToJump.indicatorVisible,
+                          indicatorStale: typeToJump.indicatorStale,
+                          lastMatchedName: lastJumpMatchedName,
+                      }
+                    : null
+
             const state: PaneState = {
                 path: currentPath,
                 volumeId,
@@ -811,6 +912,7 @@
                 loadedStart,
                 loadedEnd,
                 showHidden: showHiddenFiles,
+                typeToJump: typeToJumpInfo,
             }
 
             const updateFn = paneId === 'left' ? updateLeftPaneState : updateRightPaneState
@@ -908,6 +1010,8 @@
         rename.cancel()
         cancelClickToRename()
         dismissTransientToasts()
+        // Directory change invalidates in-flight type-to-jump buffer (per plan § 6).
+        typeToJump.clear()
 
         // Reset benchmark epoch for this navigation
         benchmark.resetEpoch()
@@ -1252,6 +1356,8 @@
 
     async function handleContextMenu(entry: FileEntry) {
         if (entry.name === '..') return // No context menu for parent entry
+        // Spec: opening a context menu cancels in-flight type-to-jump.
+        typeToJump.clear()
         // Match Finder: if the right-clicked entry is part of the current selection,
         // actions apply to the whole selection. Otherwise they apply to just this entry.
         let paths = [entry.path]
@@ -2007,6 +2113,9 @@
         throttledFetchStats.cancel()
         debouncedMenuContext.cancel()
         debouncedSyncMcp.cancel()
+        // Stop type-to-jump timers so they can't fire after the FilePane is gone
+        // (otherwise orphan setTimeouts mutate $state slots on the dead instance).
+        typeToJump.dispose()
         unlistenOpening?.()
         unlistenProgress?.()
         unlistenReadComplete?.()
@@ -2047,6 +2156,11 @@
         {/if}
     </div>
     <div class="content">
+        <TypeToJumpIndicator
+            buffer={typeToJump.buffer}
+            visible={typeToJump.indicatorVisible}
+            stale={typeToJump.indicatorStale}
+        />
         {#if unreachable}
             <VolumeUnreachableBanner
                 originalPath={unreachable.originalPath}
@@ -2131,6 +2245,7 @@
                 onRenameCancel={handleRenameCancel}
                 onRenameShakeEnd={handleRenameShakeEnd}
                 onStartRename={startRename}
+                onDragInitiate={clearJumpState}
             />
         {:else}
             <FullList
@@ -2166,6 +2281,7 @@
                       }
                     : undefined}
                 onVisibleRangeChange={handleVisibleRangeChange}
+                onDragInitiate={clearJumpState}
             />
         {/if}
     </div>
@@ -2289,6 +2405,8 @@
         overflow: hidden;
         display: flex;
         flex-direction: column;
+        /* Anchor for the type-to-jump indicator (absolutely positioned, bottom-right). */
+        position: relative;
     }
 
     .error-message {
