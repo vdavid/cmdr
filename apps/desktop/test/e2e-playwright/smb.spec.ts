@@ -74,8 +74,13 @@ test.beforeEach(async ({ tauriPage }) => {
   }
 
   recreateFixtures(getFixtureRoot())
-  // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-  await sleep(1000) // Let file watcher settle after fixture recreation
+  // After recreating the fixture tree, give the OS file watcher time to coalesce
+  // its initial-scan events before we navigate into the directories. There's no
+  // UI-side "watcher armed" signal to poll for — events fire into the backend
+  // and are debounced there, so a fixed pre-nav settle is what actually keeps
+  // SMB tests from racing the watcher's first burst.
+  // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- watcher initial-scan coalescing window; no UI-side signal — backend debounces watcher events with no observable "armed" marker
+  await sleep(1000)
 
   // Navigate to the main route first — volume-select event listeners
   // only exist on the file explorer page, not on /settings.
@@ -160,8 +165,6 @@ describeSmb('SMB host discovery', () => {
 
     // Switch left pane to Network
     await mcpSelectVolume('left', 'Network')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
 
     // Wait for virtual hosts to appear (injected by smb-e2e feature)
     await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), 15000)
@@ -176,8 +179,6 @@ describeSmb('SMB host discovery', () => {
     await ensureAppReady(tauriPage)
 
     await mcpSelectVolume('left', 'Network')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
 
     // Wait for the guest host to appear and its shares to be prefetched
     await pollUntil(
@@ -197,8 +198,6 @@ describeSmb('SMB share browsing', () => {
 
     // Switch to Network, wait for hosts
     await mcpSelectVolume('left', 'Network')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
     await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), 15000)
 
     // Move cursor to guest host and open it
@@ -222,8 +221,6 @@ describeSmb('SMB mounting and file browsing', () => {
 
     // Switch to Network → open guest host → select share
     await mcpSelectVolume('left', 'Network')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
     await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), 15000)
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'SMB Test (Guest)' })
@@ -252,8 +249,6 @@ describeSmb('SMB mounting and file browsing', () => {
     }
 
     await mcpNavToPath('left', SMB_GUEST_MOUNT)
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
 
     // The Docker guest container creates files in /share.
     // Verify we can read the directory (even if empty, the navigation should succeed).
@@ -275,8 +270,6 @@ describeSmb('SMB cross-storage copy', () => {
     // Left pane: local fixtures (already set by ensureAppReady)
     // Right pane: mounted SMB share
     await mcpNavToPath('right', SMB_GUEST_MOUNT)
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
 
     // Copy file-a.txt from left to right
     await mcpCall('move_cursor', { pane: 'left', filename: 'file-a.txt' })
@@ -315,8 +308,6 @@ describeSmb('SMB cross-storage copy', () => {
 
     // Left pane: SMB share, Right pane: local fixtures right/
     await mcpNavToPath('left', SMB_GUEST_MOUNT)
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
     await mcpAwaitItem('left', 'smb-test-file.txt', 15)
 
     // Copy from SMB to local
@@ -348,8 +339,6 @@ describeSmb('SMB authentication', () => {
     await ensureAppReady(tauriPage)
 
     await mcpSelectVolume('left', 'Network')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
 
     // Wait for the auth host to appear and its shares to be prefetched
     await pollUntil(
@@ -417,8 +406,6 @@ describeSmb('SMB 50-share server', () => {
     await ensureAppReady(tauriPage)
 
     await mcpSelectVolume('left', 'Network')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
 
     // Wait for the 50-shares host to appear and prefetch shares
     await pollUntil(
@@ -463,8 +450,6 @@ describeSmb('SMB unicode server', () => {
 
     // Switch to Network, open unicode host
     await mcpSelectVolume('left', 'Network')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
     await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Unicode)'), 15000)
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'SMB Test (Unicode)' })
