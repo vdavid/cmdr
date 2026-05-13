@@ -213,6 +213,11 @@ env_logger = "0.11.10"
 # For test-only cryptographic key generation (compatible with ed25519-dalek's rand_core 0.6)
 rand_core = { version = "0.6", features = ["getrandom"] }
 tempfile = "3"
+# Property-based testing. Used for algorithmic functions where the input space
+# is too large for example tests to cover meaningfully (parser, glob→regex,
+# topological sort, Unicode collation). Pinned at 1.11.0 (published 2026-03-24,
+# ~7 weeks old at landing). MIT OR Apache-2.0.
+proptest = "1.11.0"
 # HTTP mock server for AI client integration tests. Verifies request shape (temperature
 # present on chat/completions, omitted on /v1/responses) and parsing without burning
 # real API quota. Pinned at 0.6.5 (latest stable, published 2025-08-24).
