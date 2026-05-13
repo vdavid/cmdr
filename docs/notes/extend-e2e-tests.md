@@ -566,3 +566,33 @@ Honest verdict per machine:
 - **Impossible without a Tauri runtime**: `start_indexing`'s `Disabled → Initializing → Running` happy path — needs an
   `AppHandle` to spawn the writer and the verifier. The post-scan decision was extracted to a pure helper so the
   state-machine fragment that matters (the race) is at least testable.
+
+### IPC contract test layer (follow-up commits)
+
+A vitest `mockIPC` harness (`apps/desktop/src/lib/ipc/test-helpers.ts`) plus 23 contract tests for the three
+highest-priority command groups:
+
+- **Write operations** (9 tests) — `copy_files`, `move_files`, `delete_files`, `trash_files`, `cancel_write_operation`.
+  Pins the payload shape (including the optional config object and the `volumeId` / `itemSizes` shapes) and one typed
+  `WriteOperationError` variant on the error branch.
+- **File viewer** (8 tests) — `viewer_open`, `viewer_get_lines`, `viewer_search_start`/`_poll`/`_cancel`,
+  `viewer_close`. Coverage report flagged this group as 9/9 untested at the IPC layer.
+- **SMB connection** (6 tests) — `connect_to_server`, `list_shares_on_host`, `mount_network_share`. The mount path has 6
+  positional args and AGENTS.md specifically calls out positional-soup as fragile.
+
+What the harness catches: argument coercion, snake-case command name typos, payload-key shape drift, and the typed-error
+discriminator round-tripping. What it doesn't catch: the real Tauri permission gate (mockIPC patches
+`__TAURI_INTERNALS__.invoke` _before_ the gate), business logic in `*_core` helpers (Rust unit tests own that), or
+end-to-end behaviour (Playwright owns that).
+
+Honest verdict: **modest value, mostly mechanical**. The coverage report already concluded that the `bindings-fresh`
+check + `cmdr/no-raw-tauri-invoke` ESLint rule cover most of the realistic drift surface. This layer adds a thin runtime
+check on top: it verifies that the FE actually drives the binding (not just that the binding compiles), and it documents
+the wire format in a way that survives a refactor. Worth doing for the write-side, viewer, and SMB groups because those
+are the ones where a renamed Rust function or a flipped payload key would surface as a generic runtime failure with no
+obvious cause. Not worth expanding to all 193 commands — diminishing returns kick in fast once the binding shapes are
+pinned for the destructive / cross-window surfaces.
+
+No bugs surfaced during this pass. Side effect of writing the tests: confirmed that the typed-error discriminator shapes
+(`type` for `WriteOperationError` / `MountError` / `ShareListError`, `code` for `LicenseActivationError`) are consistent
+on the wire — the FE branching on `error.type` / `error.code` will see the values the bindings declare.
