@@ -13,6 +13,7 @@ export type {
   EnumOption,
   DirectorySortMode,
   SizeDisplayMode,
+  BriefColumnWidthMode,
   ExtensionChangePolicy,
   FileSizeFormat,
   NetworkTimeoutMode,

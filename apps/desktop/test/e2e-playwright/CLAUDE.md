@@ -62,9 +62,9 @@ pointing to a fixture directory created by `e2e-shared/fixtures.ts`.
 
 ## Running a single spec
 
-When iterating on one spec, **run only that spec**. The full suite takes ~10 minutes and produces noisy cascade
-failures when the broken test takes the app down with it (subsequent specs fail with connection errors). Save the
-full run for the final CI-green check.
+When iterating on one spec, **run only that spec**. The full suite takes ~10 minutes and produces noisy cascade failures
+when the broken test takes the app down with it (subsequent specs fail with connection errors). Save the full run for
+the final CI-green check.
 
 With the app already running (see "Manually" above), filter by file or by name:
 
@@ -78,8 +78,8 @@ CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright test/e2e-pla
 CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright --grep "cursor stays in view"
 ```
 
-The checker invocation (`./scripts/check.sh --check desktop-e2e-playwright`) doesn't support filtering — it always
-runs the whole suite. So during iteration, prefer the manual flow.
+The checker invocation (`./scripts/check.sh --check desktop-e2e-playwright`) doesn't support filtering — it always runs
+the whole suite. So during iteration, prefer the manual flow.
 
 ## Running on Linux (Docker)
 

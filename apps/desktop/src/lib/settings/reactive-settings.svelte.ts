@@ -12,6 +12,7 @@ import {
   type FileSizeFormat,
   type DirectorySortMode,
   type SizeDisplayMode,
+  type BriefColumnWidthMode,
   type AppColor,
   densityMappings,
 } from '$lib/settings'
@@ -34,6 +35,8 @@ let sizeDisplay = $state<SizeDisplayMode>('smart')
 let humanFriendlySizeUnits = $state<boolean>(true)
 let sizeMismatchWarning = $state<boolean>(true)
 let stripedRows = $state<boolean>(false)
+let briefColumnWidthMode = $state<BriefColumnWidthMode>('paneWidth')
+let briefColumnWidthMaxPx = $state<number>(400)
 let networkEnabled = $state<boolean>(true)
 let typeToJumpResetDelay = $state<number>(1000)
 
@@ -63,6 +66,8 @@ export async function initReactiveSettings(): Promise<void> {
     humanFriendlySizeUnits = getSetting('listing.humanFriendlySizeUnits')
     sizeMismatchWarning = getSetting('listing.sizeMismatchWarning')
     stripedRows = getSetting('listing.stripedRows')
+    briefColumnWidthMode = getSetting('listing.briefColumnWidthMode')
+    briefColumnWidthMaxPx = getSetting('listing.briefColumnWidthMaxPx')
     networkEnabled = getSetting('network.enabled')
     typeToJumpResetDelay = getSetting('fileExplorer.typeToJump.resetDelay')
 
@@ -105,6 +110,12 @@ export async function initReactiveSettings(): Promise<void> {
           break
         case 'listing.stripedRows':
           stripedRows = value as boolean
+          break
+        case 'listing.briefColumnWidthMode':
+          briefColumnWidthMode = value as BriefColumnWidthMode
+          break
+        case 'listing.briefColumnWidthMaxPx':
+          briefColumnWidthMaxPx = value as number
           break
         case 'network.enabled':
           networkEnabled = value as boolean
@@ -204,6 +215,16 @@ export function getFileSizeFormat(): FileSizeFormat {
 /** Get whether striped rows are enabled */
 export function getStripedRows(): boolean {
   return stripedRows
+}
+
+/** Get the Brief mode column-width mode: 'paneWidth' lets columns fill the pane; 'limited' caps them at `getBriefColumnWidthMaxPx`. */
+export function getBriefColumnWidthMode(): BriefColumnWidthMode {
+  return briefColumnWidthMode
+}
+
+/** Get the Brief mode column-width pixel limit (applies only when mode is 'limited'). */
+export function getBriefColumnWidthMaxPx(): number {
+  return briefColumnWidthMaxPx
 }
 
 /** Get whether networking (SMB discovery + connections) is enabled. */

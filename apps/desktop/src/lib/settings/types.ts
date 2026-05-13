@@ -84,6 +84,7 @@ export type ThemeMode = 'light' | 'dark' | 'system'
 export type ExtensionChangePolicy = 'yes' | 'no' | 'ask'
 export type DirectorySortMode = 'likeFiles' | 'alwaysByName'
 export type SizeDisplayMode = 'smart' | 'logical' | 'physical'
+export type BriefColumnWidthMode = 'paneWidth' | 'limited'
 export type AppColor = 'system' | 'cmdr-gold'
 export type SizeColorsPalette = 'none' | 'app' | 'rainbow'
 export type DateColorsPalette = 'off' | 'app' | 'wilting'
@@ -108,6 +109,8 @@ export interface SettingsValues {
   'listing.humanFriendlySizeUnits': boolean
   'listing.sizeMismatchWarning': boolean
   'listing.stripedRows': boolean
+  'listing.briefColumnWidthMode': BriefColumnWidthMode
+  'listing.briefColumnWidthMaxPx': number
 
   // Git
   'fileExplorer.git.showRepoChip': boolean

@@ -233,6 +233,40 @@ export const settingsRegistry: SettingDefinition[] = [
     component: 'switch',
   },
 
+  {
+    id: 'listing.briefColumnWidthMode',
+    section: ['General', 'Listing'],
+    label: 'Maximum column width in Brief mode',
+    description:
+      'Limits how wide Brief mode columns can grow to fit long filenames. Columns are always capped at the pane width regardless — the chosen limit only kicks in when it would be smaller than the pane.',
+    keywords: ['brief', 'column', 'width', 'max', 'maximum', 'limit', 'pane', 'shrink-wrap'],
+    type: 'enum',
+    default: 'paneWidth',
+    component: 'radio',
+    constraints: {
+      options: [
+        { value: 'paneWidth', label: 'Pane width (no limit)' },
+        { value: 'limited', label: 'Limit to' },
+      ],
+    },
+  },
+  {
+    id: 'listing.briefColumnWidthMaxPx',
+    section: ['General', 'Listing'],
+    label: 'Brief column width limit',
+    description: '',
+    keywords: ['brief', 'column', 'width', 'max', 'maximum', 'limit', 'pixel', 'slider'],
+    type: 'number',
+    default: 400,
+    component: 'slider',
+    constraints: {
+      min: 250,
+      max: 1000,
+      step: 25,
+      sliderStops: [250, 400, 600, 800, 1000],
+    },
+  },
+
   // ========================================================================
   // General › Git
   // ========================================================================

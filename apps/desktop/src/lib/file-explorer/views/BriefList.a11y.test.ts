@@ -44,6 +44,8 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getStripedRows: () => false,
   getHumanFriendlySizeUnits: () => false,
   getFileSizeFormat: () => 'binary',
+  getBriefColumnWidthMode: () => 'paneWidth',
+  getBriefColumnWidthMaxPx: () => 400,
 }))
 
 vi.mock('$lib/settings/settings-store', () => ({

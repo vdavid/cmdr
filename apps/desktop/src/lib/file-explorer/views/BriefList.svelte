@@ -23,7 +23,14 @@
     import { ensureFontMetricsLoaded, getCurrentFontId } from '$lib/font-metrics'
     import { getDirStatsBatch } from '$lib/tauri-commands'
     import { buildDirSizeTooltip, hasSizeMismatch } from './full-list-utils'
-    import { getRowHeight, formatFileSize, getSizeMismatchWarning, getStripedRows } from '$lib/settings/reactive-settings.svelte'
+    import {
+        getRowHeight,
+        formatFileSize,
+        getSizeMismatchWarning,
+        getStripedRows,
+        getBriefColumnWidthMode,
+        getBriefColumnWidthMaxPx,
+    } from '$lib/settings/reactive-settings.svelte'
     import { onDebouncedScaleChange } from '$lib/text-size.svelte'
     import { getSetting } from '$lib/settings/settings-store'
     import { formatNumber, pluralize } from '../selection/selection-info-utils'
@@ -119,8 +126,6 @@
     // Buffer columns is reactive based on settings
     const bufferColumns = $derived(getSetting('advanced.virtualizationBufferColumns'))
     const MIN_COLUMN_WIDTH = 100
-    /** Hard cap for any single Brief column. Container width may further clamp this. */
-    const MAX_BRIEF_COLUMN_WIDTH = 300
     // Add space for: icon (16px) + gap (8px) + left padding (8px) + right padding (8px) + rounding buffer (2px)
     // The 2px buffer accounts for sub-pixel rendering differences between calculated and actual widths.
     const COLUMN_PADDING = 16 + 8 + 8 + 8 + 2
@@ -147,13 +152,18 @@
     const totalColumns = $derived(Math.ceil(totalCount / itemsPerColumn))
 
     /**
-     * Cap applied to each column AFTER chrome is added. Tracks live container size,
-     * with a hard ceiling at `MAX_BRIEF_COLUMN_WIDTH` so absurdly wide panes still
-     * cap a column at a readable width.
+     * Cap applied to each column AFTER chrome is added.
+     *
+     * - 'paneWidth' mode (default): columns can grow to fill the pane.
+     * - 'limited' mode: columns also can't exceed the user-chosen pixel cap.
+     *
+     * `containerWidth` is always the outer ceiling — a column wider than the pane has no value.
      */
-    const capPx = $derived(
-        containerWidth > 0 ? Math.min(containerWidth, MAX_BRIEF_COLUMN_WIDTH) : MAX_BRIEF_COLUMN_WIDTH,
-    )
+    const capPx = $derived.by(() => {
+        const userCap = getBriefColumnWidthMode() === 'limited' ? getBriefColumnWidthMaxPx() : Number.POSITIVE_INFINITY
+        if (containerWidth <= 0) return Math.min(userCap, 1000)
+        return Math.min(containerWidth, userCap)
+    })
 
     /**
      * Running cumulative width totals: `prefixSums[i] = sum(widths[0..i))`.

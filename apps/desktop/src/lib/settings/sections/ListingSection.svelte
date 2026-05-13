@@ -3,8 +3,11 @@
     import SettingRow from '../components/SettingRow.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
+    import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
+    import SettingSlider from '../components/SettingSlider.svelte'
     import { getSettingDefinition } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
+    import { getBriefColumnWidthMode } from '$lib/settings/reactive-settings.svelte'
 
     interface Props {
         searchQuery: string
@@ -22,6 +25,9 @@
     }
     const sizeMismatchDef = getSettingDefinition('listing.sizeMismatchWarning') ?? { label: '', description: '' }
     const stripedRowsDef = getSettingDefinition('listing.stripedRows') ?? { label: '', description: '' }
+    const briefWidthModeDef = getSettingDefinition('listing.briefColumnWidthMode') ?? { label: '', description: '' }
+
+    const sliderDisabled = $derived(getBriefColumnWidthMode() !== 'limited')
 </script>
 
 <SettingsSection title="Listing">
@@ -75,4 +81,37 @@
             <SettingSwitch id="listing.stripedRows" />
         </SettingRow>
     {/if}
+    {#if shouldShow('listing.briefColumnWidthMode')}
+        <SettingRow
+            id="listing.briefColumnWidthMode"
+            label={briefWidthModeDef.label}
+            description={briefWidthModeDef.description}
+            {searchQuery}
+        >
+            <div class="brief-width-control">
+                <SettingRadioGroup id="listing.briefColumnWidthMode" />
+                <div class="slider-row" class:is-disabled={sliderDisabled}>
+                    <SettingSlider id="listing.briefColumnWidthMaxPx" unit="px" disabled={sliderDisabled} />
+                </div>
+            </div>
+        </SettingRow>
+    {/if}
 </SettingsSection>
+
+<style>
+    .brief-width-control {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        width: 100%;
+    }
+
+    .slider-row {
+        /* Visually nests the slider under the radio choices. */
+        padding-left: var(--spacing-xl);
+    }
+
+    .slider-row.is-disabled {
+        opacity: 0.5;
+    }
+</style>
