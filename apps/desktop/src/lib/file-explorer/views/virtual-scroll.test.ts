@@ -2,7 +2,23 @@
  * Tests for virtual-scroll.ts
  */
 import { describe, it, expect } from 'vitest'
-import { calculateVirtualWindow, getScrollToPosition, type VirtualScrollConfig } from './virtual-scroll'
+import {
+  calculateVirtualWindow,
+  calculateVirtualWindowVariable,
+  getScrollToPosition,
+  getScrollToPositionVariable,
+  type VirtualScrollConfig,
+} from './virtual-scroll'
+
+/** Helper: build a prefix-sum array from per-item widths. */
+function prefixSumsFrom(widths: number[]): number[] {
+  const sums = new Array<number>(widths.length + 1)
+  sums[0] = 0
+  for (let i = 0; i < widths.length; i++) {
+    sums[i + 1] = sums[i] + widths[i]
+  }
+  return sums
+}
 
 describe('calculateVirtualWindow', () => {
   const baseConfig: VirtualScrollConfig = {
@@ -270,6 +286,231 @@ describe('getScrollToPosition', () => {
       const result = getScrollToPosition(30, itemSize, 199, containerSize)
       // Item 30 bottom is 620, scroll = 620 - 400 = 220
       expect(result).toBe(220)
+    })
+  })
+})
+
+describe('calculateVirtualWindowVariable', () => {
+  describe('basic calculations', () => {
+    it('returns all zeros for empty widths', () => {
+      const result = calculateVirtualWindowVariable([0], 5, 600, 0, 0)
+      expect(result.startIndex).toBe(0)
+      expect(result.endIndex).toBe(0)
+      expect(result.visibleCount).toBe(0)
+      expect(result.totalSize).toBe(0)
+      expect(result.offset).toBe(0)
+    })
+
+    it('handles a single column wider than the container', () => {
+      // One column 800px wide in a 600px viewport, scrolled to 0.
+      const widths = [800]
+      const prefixSums = prefixSumsFrom(widths) // [0, 800]
+      const result = calculateVirtualWindowVariable(prefixSums, 0, 600, 0, widths.length)
+      expect(result.startIndex).toBe(0)
+      expect(result.endIndex).toBe(1)
+      expect(result.visibleCount).toBe(1)
+      expect(result.totalSize).toBe(800)
+      expect(result.offset).toBe(0)
+    })
+
+    it('handles a single column wider than the container, scrolled mid-column', () => {
+      const widths = [800]
+      const prefixSums = prefixSumsFrom(widths)
+      // Scrolled to 200 — the (only) column still starts at 0 (off-left), so it's the first visible.
+      const result = calculateVirtualWindowVariable(prefixSums, 0, 600, 200, widths.length)
+      expect(result.startIndex).toBe(0)
+      expect(result.endIndex).toBe(1)
+      expect(result.offset).toBe(0)
+    })
+
+    it('finds the correct range for many small columns scrolled to the middle', () => {
+      // 20 columns of 100px each. Container 300px, scrolled to 1000 (column 10 starts at 1000).
+      const widths = new Array<number>(20).fill(100)
+      const prefixSums = prefixSumsFrom(widths)
+      const result = calculateVirtualWindowVariable(prefixSums, 0, 300, 1000, widths.length)
+      expect(result.startIndex).toBe(10)
+      expect(result.endIndex).toBe(13) // 1000 + 300 = 1300; column 13 starts at 1300
+      expect(result.totalSize).toBe(2000)
+      expect(result.offset).toBe(prefixSums[result.startIndex])
+    })
+
+    it('worked example from plan review round 3', () => {
+      // prefixSums=[0,100,200,350,500,700], scrollLeft=150, containerWidth=300, buffer=0
+      // → startIndex=1 (col 1 starts at 100), endIndex=4 (col 3 ends at 500, intersects 150..450).
+      const prefixSums = [0, 100, 200, 350, 500, 700]
+      const result = calculateVirtualWindowVariable(prefixSums, 0, 300, 150, 5)
+      expect(result.startIndex).toBe(1)
+      expect(result.endIndex).toBe(4)
+      expect(result.visibleCount).toBe(3)
+      expect(result.totalSize).toBe(700)
+      expect(result.offset).toBe(100)
+    })
+  })
+
+  describe('boundaries', () => {
+    it('treats an item whose right edge exactly equals viewport right as fully visible', () => {
+      // 4 columns × 100px in a 200px viewport, scrolled to 100. prefixSums = [0,100,200,300,400].
+      // viewportEnd = 300 = prefixSums[3]. The loop stops at j=3 because prefixSums[3] >= 300.
+      // So columns 1 and 2 are visible (endIndex=3), not column 3.
+      const widths = [100, 100, 100, 100]
+      const prefixSums = prefixSumsFrom(widths)
+      const result = calculateVirtualWindowVariable(prefixSums, 0, 200, 100, widths.length)
+      expect(result.startIndex).toBe(1)
+      expect(result.endIndex).toBe(3)
+      expect(result.offset).toBe(100)
+    })
+
+    it('treats an item whose left edge exactly equals viewport left as the first visible', () => {
+      // Scroll to 200, the boundary aligns with column 2's left edge. Column 2 is the first visible.
+      const widths = [100, 100, 100, 100]
+      const prefixSums = prefixSumsFrom(widths) // [0,100,200,300,400]
+      const result = calculateVirtualWindowVariable(prefixSums, 0, 200, 200, widths.length)
+      expect(result.startIndex).toBe(2)
+      expect(result.endIndex).toBe(4)
+      expect(result.offset).toBe(200)
+    })
+
+    it('handles totalSize correctly when scrolled to the far right', () => {
+      const widths = [100, 100, 100, 100, 100]
+      const prefixSums = prefixSumsFrom(widths) // total 500
+      const result = calculateVirtualWindowVariable(prefixSums, 0, 200, 300, widths.length)
+      // viewport 300..500 → first visible is column 3, walk to end of list
+      expect(result.startIndex).toBe(3)
+      expect(result.endIndex).toBe(5)
+      expect(result.totalSize).toBe(500)
+    })
+  })
+
+  describe('buffer', () => {
+    it('applies buffer symmetrically in the middle of the list', () => {
+      // 20 columns × 100px, container 300px, scrolled to 1000 (column 10 start), buffer 2.
+      // Without buffer: start=10, end=13. With buffer 2: start=8, end=15.
+      const widths = new Array<number>(20).fill(100)
+      const prefixSums = prefixSumsFrom(widths)
+      const result = calculateVirtualWindowVariable(prefixSums, 2, 300, 1000, widths.length)
+      expect(result.startIndex).toBe(8)
+      expect(result.endIndex).toBe(15)
+      expect(result.visibleCount).toBe(7)
+    })
+
+    it("doesn't shrink the right buffer when the left buffer clamps at 0 (off-by-buffer guard)", () => {
+      // 20 columns × 100px, container 300px, scrolled to 0, buffer 5.
+      // Without the guard, a naive `endIndex = startIndex + visibleCount + 2 * bufferSize` style
+      // would lose the 5 left-buffer slots and end at firstVisible + viewportColumns + 5 = 3 + 5 = 8.
+      // With the correct math, startIndex = max(0, 0 - 5) = 0, but endIndex still gets the full
+      // bufferSize=5 on the right: lastVisibleEnd=3 (300/100), endIndex = min(20, 3 + 5) = 8.
+      // (Note: in this case the visible end happens to match — the bug only shows up when
+      // the naive formula tries to "compensate" or when bufferSize is large enough that the
+      // *right* edge gets clipped because the left clamp ate the buffer. See next test.)
+      const widths = new Array<number>(20).fill(100)
+      const prefixSums = prefixSumsFrom(widths)
+      const result = calculateVirtualWindowVariable(prefixSums, 5, 300, 0, widths.length)
+      expect(result.startIndex).toBe(0)
+      expect(result.endIndex).toBe(8) // lastVisibleEnd=3, +5 buffer
+    })
+
+    it("doesn't shrink the left buffer when the right buffer clamps at totalItems (off-by-buffer guard, mirrored)", () => {
+      // 20 columns × 100px, container 300px, scrolled to 1700 (last 3 columns visible), buffer 5.
+      // firstVisibleIndex = 17, lastVisibleEnd = 20 (clamped by totalItems).
+      // startIndex = max(0, 17 - 5) = 12, endIndex = min(20, 20 + 5) = 20.
+      // A naive formula tying end-buffer to start-buffer would shrink one when the other clamps.
+      const widths = new Array<number>(20).fill(100)
+      const prefixSums = prefixSumsFrom(widths)
+      const result = calculateVirtualWindowVariable(prefixSums, 5, 300, 1700, widths.length)
+      expect(result.startIndex).toBe(12)
+      expect(result.endIndex).toBe(20)
+      expect(result.visibleCount).toBe(8)
+    })
+
+    it('buffer larger than available room clamps both ends independently', () => {
+      // 5 columns × 100px, container 200px, scrolled to 0, buffer 100.
+      // startIndex = max(0, 0 - 100) = 0
+      // lastVisibleEnd = 2, endIndex = min(5, 2 + 100) = 5
+      const widths = [100, 100, 100, 100, 100]
+      const prefixSums = prefixSumsFrom(widths)
+      const result = calculateVirtualWindowVariable(prefixSums, 100, 200, 0, widths.length)
+      expect(result.startIndex).toBe(0)
+      expect(result.endIndex).toBe(5)
+      expect(result.visibleCount).toBe(5)
+    })
+  })
+
+  describe('invariants', () => {
+    it('throws when prefixSums length does not match totalItems + 1', () => {
+      expect(() => calculateVirtualWindowVariable([0, 100, 200], 0, 100, 0, 5)).toThrow(/prefixSums.length/)
+    })
+
+    it('accepts the empty case (totalItems=0, prefixSums=[0])', () => {
+      // Mirror of the empty test above, but explicit about the invariant boundary.
+      expect(() => calculateVirtualWindowVariable([0], 0, 100, 0, 0)).not.toThrow()
+    })
+  })
+})
+
+describe('getScrollToPositionVariable', () => {
+  const widths = [100, 150, 200, 50, 100] // total 600
+  const prefixSums = prefixSumsFrom(widths) // [0, 100, 250, 450, 500, 600]
+  const containerSize = 300
+
+  describe('item is visible', () => {
+    it('returns undefined when item is fully inside the viewport', () => {
+      // Viewport 100..400. Item 1 spans 100..250 — fully visible.
+      const result = getScrollToPositionVariable(prefixSums, 1, 100, containerSize)
+      expect(result).toBeUndefined()
+    })
+
+    it('returns undefined when item left edge exactly equals viewport left edge', () => {
+      // Viewport 100..400. Item 1 starts at 100.
+      const result = getScrollToPositionVariable(prefixSums, 1, 100, containerSize)
+      expect(result).toBeUndefined()
+    })
+
+    it('returns undefined when item right edge exactly equals viewport right edge', () => {
+      // Item 2 ends at 450. Viewport ending at 450 = scrollOffset 150.
+      const result = getScrollToPositionVariable(prefixSums, 2, 150, containerSize)
+      expect(result).toBeUndefined()
+    })
+  })
+
+  describe('item is off-left', () => {
+    it("returns the item's left edge X when off-left", () => {
+      // Viewport 200..500. Item 0 spans 0..100 — off-left. Want to scroll to 0.
+      const result = getScrollToPositionVariable(prefixSums, 0, 200, containerSize)
+      expect(result).toBe(0)
+    })
+
+    it('returns prefixSums[index] when item starts before scrollOffset', () => {
+      // Viewport 300..600. Item 1 starts at 100, off-left. Scroll target = 100.
+      const result = getScrollToPositionVariable(prefixSums, 1, 300, containerSize)
+      expect(result).toBe(100)
+    })
+  })
+
+  describe('item is off-right', () => {
+    it('returns right − containerSize when item is off-right', () => {
+      // Viewport 0..300. Item 3 spans 450..500 — off-right. Scroll target = 500 - 300 = 200.
+      const result = getScrollToPositionVariable(prefixSums, 3, 0, containerSize)
+      expect(result).toBe(200)
+    })
+
+    it('scrolls to fit the last item at the right edge', () => {
+      // Viewport 0..300. Item 4 spans 500..600. Scroll = 600 - 300 = 300.
+      const result = getScrollToPositionVariable(prefixSums, 4, 0, containerSize)
+      expect(result).toBe(300)
+    })
+  })
+
+  describe('invariants', () => {
+    it('throws on negative index', () => {
+      expect(() => getScrollToPositionVariable(prefixSums, -1, 0, containerSize)).toThrow(/out of range/)
+    })
+
+    it('throws when index equals totalItems', () => {
+      expect(() => getScrollToPositionVariable(prefixSums, 5, 0, containerSize)).toThrow(/out of range/)
+    })
+
+    it('throws when index exceeds totalItems', () => {
+      expect(() => getScrollToPositionVariable(prefixSums, 100, 0, containerSize)).toThrow(/out of range/)
     })
   })
 })
