@@ -11,6 +11,10 @@ Backend directory reading, caching, sorting, and streaming for the file explorer
 - **streaming.rs** – Async streaming with progress events, cancellation. Uses `ListingEventSink` trait (same pattern as `OperationEventSink` in write_operations) to decouple from Tauri. `TauriListingEventSink` for production, `CollectorListingEventSink` for tests
 - **operations.rs** – Synchronous frontend-facing API (lifecycle, cache accessors). `ListingStats` includes `total_physical_size` and `selected_physical_size` for dual-size display
 - **caching.rs** – `LISTING_CACHE` global state, `CachedListing` struct, cache helpers for incremental updates
+- **brief_columns.rs** – `compute_brief_column_text_widths()`: per-column widest-filename text widths for Brief mode.
+  Pure logic over `LISTING_CACHE` entries + `font_metrics::calculate_max_width`. Returns `Vec<f32>` (finite values
+  only); FE adds chrome, clamps, and builds prefix sums. Errors: `FontMetricsNotReady`, `InvalidItemsPerColumn`,
+  `ListingNotFound`. Wrapped by the `get_brief_column_text_widths` IPC command in `commands/file_system/listing.rs`.
 - **sorting.rs** – `SortColumn`, `SortOrder`, `sort_entries()`
 - **metadata.rs** – `FileEntry` struct, macOS extended metadata. `FileEntry` has `physical_size: Option<u64>` (populated from `st_blocks * 512`) and `recursive_physical_size: Option<u64>` (populated from drive index)
 - **fuzzy_jump.rs** – `find_first_match()` pure function powering the in-directory type-to-jump feature (Tauri command `find_first_fuzzy_match` in `commands/file_system/listing.rs`). Uses `nucleo-matcher` for smart-case fuzzy scoring; ties resolve to the lower index. The `..` parent entry is not in the cache (frontend prepends it), so no special-casing. Returns a **visible-space** index — counted over the same `visible_entries(...)` sequence as `get_file_at` / `get_file_range`, so the frontend can use the result as a cursor index directly (plus the `+1` parent-entry offset when `hasParent`). Logs each call to `target: "type_to_jump"`.
@@ -36,7 +40,6 @@ Frontend                          Backend
    |                                   |
    |<--- listing-complete event -------| (ready for use)
    |     { listingId, totalCount,      |
-   |       maxFilenameWidth,           |
    |       volumeRoot }               |
    |                                   |
    |-- getFileRange(listingId, ...) -->| (on-demand fetching)
@@ -86,7 +89,10 @@ Frontend                          Backend
 **Why**: Cannot know visible count until all files read. APIs accept `include_hidden: bool`, filter during `get_file_range()` iteration.
 
 **Decision**: Font metrics in Rust binary cache, not frontend canvas measurement
-**Why**: Measuring 50k filenames in JS is slow. Rust precomputes metrics for system fonts, stores in `.bin` cache. `calculate_max_width()` is a hash lookup.
+**Why**: Measuring 50k filenames in JS is slow. The frontend measures each code point's width once via Canvas and ships
+the table to Rust; subsequent text-width queries are hash lookups in the cached `.bin` table. `calculate_max_width()`
+is the entry point, used by `brief_columns::compute_brief_column_text_widths` to size each Brief-mode column to its
+widest filename.
 
 **Decision**: Sequence counter lives on `CachedListing`, not on `WatchedDirectory`
 **Why**: SMB and MTP volumes don't use FSEvents (`supports_watching() == false`), so they never get a `WatchedDirectory` entry. With the sequence on the watcher, `increment_sequence` returned `None` and `directory-diff` events were never emitted for those volumes. Moving the `AtomicU64` to `CachedListing` makes it work for all volume types. The FSEvents watcher path also uses this same counter now.

@@ -316,6 +316,12 @@ finished importing during the rebuild. This is a SvelteKit bug (sveltejs/kit#152
 crash and forces a clean page reload. The recovery listener is imported from `+layout.ts` (a stable module that survives
 layout component re-evaluation). If sveltejs/kit#15287 gets fixed, the workaround can be removed.
 
+## Views (`views/`)
+
+`BriefList` and `FullList` virtual-scrolling components. Brief-mode column widths come from the
+`get_brief_column_text_widths` IPC (backend computes the widest filename's text width per column from the listing's
+cached entries + font metrics); the FE adds chrome and clamps. See `views/CLAUDE.md`.
+
 ## Tabs (`tabs/`)
 
 Each pane has an independent tab bar. Tabs use `{#key}` for clean FilePane recreation on switch (cold load, no warm

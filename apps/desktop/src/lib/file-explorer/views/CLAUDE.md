@@ -7,9 +7,13 @@ without DOM performance issues.
 
 ### Components
 
-- **BriefList.svelte** – Horizontal columns, per-column shrink-wrapped widths (capped), horizontal scrolling
+- **BriefList.svelte** – Horizontal columns, per-column shrink-wrapped widths (capped), horizontal scrolling. Column
+  text widths come from the backend (`get_brief_column_text_widths` IPC); the component adds chrome, clamps, and builds
+  prefix sums for variable-width virtual-scroll math.
 - **FullList.svelte** – Vertical rows, full metadata display, vertical scrolling
-- **virtual-scroll.ts** – Pure math functions for calculating visible windows
+- **virtual-scroll.ts** – Pure math functions for calculating visible windows. Two flavors: uniform
+  (`calculateVirtualWindow` / `getScrollToPosition` for FullList) and variable (`calculateVirtualWindowVariable` /
+  `getScrollToPositionVariable` for BriefList, driven by a prefix-sum array).
 - **file-list-utils.ts** – Shared helpers: entry caching, icon prefetching, sync status
 - **brief-list-utils.ts** / **full-list-utils.ts** – Mode-specific rendering logic. `full-list-utils.ts` includes
   dual-size display helpers: `getDisplaySize()` (picks logical/physical/smart), `hasSizeMismatch()`,
@@ -17,8 +21,6 @@ without DOM performance issues.
 - **measure-column-widths.ts** – `computeFullListColumnWidths()`: pixel-accurate widths for the Ext / Size / Modified
   columns based on the currently loaded entries. Uses `@chenglou/pretext` for canvas-based measurement (no DOM reflow).
   FullList transitions `grid-template-columns` over 300ms so widths refine smoothly as more entries stream in.
-- **measure-brief-column-widths.ts** – `measureWidestFilename()`: widest filename's pixel width in a Brief column,
-  measured via pretext. Caller adds icon/gap/padding chrome and clamps to the min/max column-width range.
 - **FullList.svelte** – Reads `listing.sizeDisplay` (via `getSizeDisplayMode()`), `listing.sizeMismatchWarning` (via
   `getSizeMismatchWarning()`), and `listing.humanFriendlySizeUnits` (via `getHumanFriendlySizeUnits()`, paired with
   `getFileSizeFormat()`) settings. Size cells are rendered through `formatSizeForDisplay` from
@@ -80,13 +82,27 @@ window requires fresh data. Parent bumps `cacheGeneration`, triggering re-fetch.
 **Decision**: Icon prefetching only for visible entries **Why**: With 50k files, prefetching all icons = 50k IPC calls.
 Virtual scrolling renders only ~50 items, so prefetch only visible. Re-fetch on scroll.
 
-**Decision**: Brief columns shrink-wrap to the widest filename in each column (capped at the existing
-`maxFilenameWidth`, floored at `MIN_COLUMN_WIDTH`) **Why**: Long filenames deserve their full width while short ones let
-the user scan more columns at once. Widths are measured per visible column via pretext and cached in a
-`SvelteMap<columnIndex, width>`; uncached columns fall back to the cap. `transition: width 300ms ease` animates width
-changes. **Tradeoff**: the virtual-scroll math stays on the cap width (so the scrollbar still computes
-`totalColumns × cap`). When real columns are narrower than the cap, the scrollbar slightly overestimates the total —
-users can scroll a few pixels past the last visible column. Considered acceptable for the visual payoff.
+**Decision**: Brief columns shrink-wrap to the widest filename in each column, with the backend measuring widths and the
+frontend rendering to those measurements **Why**: Long filenames deserve their full width while short ones let the user
+scan more columns at once. The Rust backend owns the text data and the font metrics cache, so it computes the widest
+filename's text width per column in one IPC call
+(`get_brief_column_text_widths(listingId, itemsPerColumn, hasParent, fontId, includeHidden)`). The FE adds CSS chrome
+(icon + gaps + padding), clamps to `[MIN_COLUMN_WIDTH, capPx]` where
+`capPx = min(containerWidth, MAX_BRIEF_COLUMN_WIDTH)`, and stores the result as `columnWidths: number[]`. A `prefixSums`
+array (`$derived`) drives all virtual-scroll math: `totalSize` is the final prefix sum, `calculateVirtualWindowVariable`
+binary-searches `prefixSums` for the visible range, and `getScrollToPositionVariable` looks up exact column edges.
+Scrollbar size and cursor visibility now agree with what's actually rendered. `transition: width 300ms ease` still
+animates width changes within a directory; nav resets snap via the `skipTransition` 2-rAF trick. While widths are in
+flight (first paint, after `FontMetricsNotReady`), every column renders at `capPx` as a fallback.
+
+**Decision**: A single `$effect` keeps the cursor in view, depending on `cursorIndex`, `containerWidth`,
+`containerHeight`, and `columnWidths.length` **Why**: With exact prefix-sum math, every input that could move the
+cursor's column out of view is a state read, so one consolidated effect replaces the old height-only effect plus the
+implicit width-resize gap. It re-runs naturally after `columnWidths` arrives (the reassignment retriggers the
+dependency), so a fast resize-drag → fetch → widths-arrive sequence ends with `scrollToIndex(cursorIndex)` settling the
+view exactly once. PageUp/PageDown step distance is content-dependent — derived from `prefixSums` directly, not from the
+container width — so a "page" of skinny columns moves more files than a page of wide ones. Intentional UX: the step
+matches what's visible.
 
 **Decision**: Shrink-wrap Ext / Size / Modified columns from the rows **currently on screen**, not the prefetch buffer
 or the full directory **Why**: The name column should keep every spare pixel, so columns track live content. Pretext's
@@ -107,13 +123,15 @@ rest as plain text — into `.date-left` (inline-block, fixed width, right-align
 (`margin-left: var(--spacing-xs)`). Tooltips/MCP/status bar still see joined strings via `FormattedDate.text` (exposed
 as the `formatDateTime` shortcut).
 
-**Decision**: Column-width measurers (canvas in `full-list-utils.ts`, pretext in `measure-column-widths.ts` and
-`measure-brief-column-widths.ts`) cache their measurer/context per text scale and rebuild on the **debounced** "settled"
-scale event from `lib/text-size.svelte::onDebouncedScaleChange`, not on every reactive read. **Why**: the CSS layer
-reflows immediately via `--font-scale`, so users see text grow live. Recomputing per-column widths on every slider step
-would thrash pretext rebuilds. Coalescing to the same 1 s + idle window the font-metrics IPC uses keeps the UI smooth
-during drag and snaps to correct widths once the user releases. `FullList` and `BriefList` track the settle event via a
-local `scaleSettleTick` `$state` they bump from the subscription, then read inside the column-width `$effect`.
+**Decision**: Column-width measurers (canvas in `full-list-utils.ts`, pretext in `measure-column-widths.ts`) cache their
+measurer/context per text scale and rebuild on the **debounced** "settled" scale event from
+`lib/text-size.svelte::onDebouncedScaleChange`, not on every reactive read. **Why**: the CSS layer reflows immediately
+via `--font-scale`, so users see text grow live. Recomputing per-column widths on every slider step would thrash pretext
+rebuilds. Coalescing to the same 1 s + idle window the font-metrics IPC uses keeps the UI smooth during drag and snaps
+to correct widths once the user releases. `FullList` tracks the settle event via a local `scaleSettleTick` `$state` it
+bumps from the subscription, then reads inside the column-width `$effect`. `BriefList`'s Brief-column widths come from
+the backend `get_brief_column_text_widths` IPC, which uses the live font ID — the same `onDebouncedScaleChange` callback
+triggers a refetch.
 
 ## Gotchas
 
@@ -159,6 +177,13 @@ two `requestAnimationFrame` ticks (one to paint with `transition: none`, one mor
 holds widths while `cachedEntries` is empty so the brief post-nav gap doesn't collapse to header-only floors. Combined,
 nav = snap; within-dir scroll/resize/stream-in = animated.
 
-**Gotcha**: BriefList's `columnWidthsMap` is keyed by `columnIndex`, which depends on `itemsPerColumn` **Why**: A height
-resize changes how many files fit in a column, which reshuffles which file lands in which column index. Stale widths
-would stick to the wrong columns. A dedicated `$effect` clears the map when `itemsPerColumn` changes — don't remove it.
+**Gotcha**: CJK / complex-script filenames may be slightly mis-measured **Why**: The frontend canvas measurer
+(`$lib/font-metrics/measure.ts`) iterates explicit Unicode ranges covering Latin, BMP-printable characters, and common
+emoji (U+1F300–U+1FAFF). The backend stores those widths per code point and falls back to the cached `average_width` for
+anything outside the measured set — so column widths for CJK, Arabic, and rare-symbol filenames are approximate. Emoji
+is fine (measured). Latin is fine (measured). Expanding the measured set is a follow-up.
+
+**Gotcha**: Index-size refresh (`refresh_listing_index_sizes`) triggers a column-width refetch through the existing
+cache-reset path, not a separate trigger **Why**: When `recursive_size` enrichment lands, the listing may re-sort; the
+existing `cacheGeneration` bump propagates into BriefList's reset-cache effect, which clears `columnWidths`, bumps
+`widthsGeneration`, and kicks off `fetchColumnWidths()`. Don't add a separate trigger — it would double-fetch.

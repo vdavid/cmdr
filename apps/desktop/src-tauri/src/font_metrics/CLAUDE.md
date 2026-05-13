@@ -2,6 +2,10 @@
 
 Binary font metrics cache and text width calculation for Brief mode column sizing. Rust cannot directly access system fonts, so the frontend measures character widths via the Canvas API and ships them to Rust over IPC.
 
+`calculate_max_width` is the basis for per-column text widths in Brief mode via the
+`file_system::listing::brief_columns` module (which powers the `get_brief_column_text_widths` IPC). Each column's
+widest filename is measured here, then the FE adds chrome and clamps.
+
 ## Key file
 
 `mod.rs` — the entire module is one file (plus `mod_test.rs` for tests).
@@ -46,12 +50,22 @@ METRICS_CACHE: LazyLock<RwLock<HashMap<String, FontMetrics>>>
 **Why**: `calculate_max_width` is called on every Brief mode render for every visible column. Multiple Tauri command threads may need to read metrics concurrently. `RwLock` allows unlimited parallel reads; a `Mutex` would serialize all column width calculations, adding latency to directory listing renders.
 
 **Decision**: Average-width fallback for unmeasured code points instead of returning an error or zero.
-**Why**: The frontend only measures a known character set (typically Latin + common symbols). Filenames can contain any Unicode — emoji, CJK, Arabic. Returning zero would collapse unknown characters to invisible width, breaking column alignment. The average width is a reasonable approximation that keeps columns roughly sized even for scripts the frontend didn't explicitly measure.
+**Why**: The frontend only measures a known character set: Latin, BMP-printable characters, and common emoji
+(U+1F300–U+1FAFF). Filenames can contain any Unicode — CJK, Arabic, complex scripts, rare symbols. Returning zero would
+collapse unknown characters to invisible width, breaking column alignment. The average width keeps Brief-mode columns
+roughly sized even for scripts the frontend didn't explicitly measure — at the cost of slight visual mis-measurement
+for CJK / complex-script filenames. Emoji and Latin are pixel-accurate; everything else is approximate. Expanding the
+measured set is a follow-up.
 
 ## Gotchas
 
 **Gotcha**: If the frontend's `getCurrentFontId()` format changes, `calculate_max_width` silently returns `None`.
-**Why**: The cache key is a string like `"system-400-12"` that must match exactly between frontend and backend. There's no validation — a mismatch just means the key isn't found in the cache. The frontend handles the `None` by falling back to its own width estimation.
+**Why**: The cache key is a string like `"system-400-12"` that must match exactly between frontend and backend. There's
+no validation — a mismatch just means the key isn't found in the cache. The Brief-column path surfaces this via
+`BriefColumnsError::FontMetricsNotReady`, which the IPC wrapper maps to `IpcError { message: "font_metrics_not_ready" }`.
+The frontend catches that specific error, calls `ensureFontMetricsLoaded()`, and retries once. Until widths arrive,
+columns render at `MAX_BRIEF_COLUMN_WIDTH` as a fallback. Same race fires on a scale flip — the new font ID isn't
+cached for ~100–300 ms while metrics get re-measured.
 
 ## Dependencies
 
