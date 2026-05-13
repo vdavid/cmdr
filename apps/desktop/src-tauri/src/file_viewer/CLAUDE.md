@@ -63,6 +63,12 @@ if file_size < 1MB {
 - **SESSIONS is unbounded** — grows with each `viewer_open`. Must call `viewer_close` when window closes (not automatic).
 - **LineIndex build is async** — `ViewerSession` upgrades backend when ready. Frontend sees backend type change via status query.
 - **Search state per session** — only one search can run per session. Starting a new search cancels the previous one.
+- **`search_cancel` must not null `session.search`** — the cancel sets the cancel flag; the spawned search thread sees
+  it and writes `SearchStatus::Cancelled` into the same `SearchState`. If `search_cancel` nulled `session.search` first,
+  the thread's write would land in a dropped state and `search_poll` would return `Idle` instead of `Cancelled` — the FE
+  would never see the cancellation. The next `search_start` atomically replaces the `SearchState`, so `Cancelled` is
+  cleared naturally when a new search begins. See `session.rs::search_cancel` and its test
+  `tests::test_search_cancel_surfaces_cancelled_status`.
 - **UTF-16 offsets for JS compatibility** — `SearchMatch.column` and `.length` are in UTF-16 code units, matching JS `String.substring()`.
 - **ByteSeek backward scan limit** — 8KB max. If newline not found, line starts at scan boundary (truncated).
 - **LineIndex memory** — O(total_lines / 256) for checkpoints. For a 100M line file: ~390K checkpoints × 8 bytes = ~3MB.

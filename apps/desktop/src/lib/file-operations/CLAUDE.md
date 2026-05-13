@@ -146,6 +146,12 @@ When directory has parent entry shown at index 0, frontend indices are offset by
   Handle by checking operation status on mount and showing toast if already done.
 - **Source pane refresh**: Move operations must refresh **both** panes post-completion (source files disappeared). Copy
   only refreshes destination.
+- **Rollback / Cancel buttons disable during settle window**: `TransferProgressDialog` holds open for `MIN_DISPLAY_MS = 400 ms`
+  after `write-complete` so the user can read the final state. During that window, both Cancel and Rollback buttons must
+  be disabled (`disabled={isCancelling || operationSettled}`) — a click here hits a backend whose operation state was
+  already removed, so it's a no-op but briefly flashes "Rolling back..." giving false feedback. `operationSettled` is a
+  `$state(false)` that flips when the operation reaches a terminal state. See `TransferProgressDialog.svelte` and the
+  Cancel-copy investigation in `docs/notes/speed-up-e2e-tests.md`.
 - **Scan preview reuse**: TransferDialog starts a scan preview on mount. If the user confirms before the scan finishes,
   the scan keeps running (TransferDialog sets `confirmed = true` and skips cancellation in `onDestroy`).
   TransferProgressDialog picks up listening to the same scan events via `scanInProgress` prop. `waitForScanThenStart`
