@@ -670,6 +670,34 @@ Under parallel-shard load:
 
 These are deferred — diminishing returns vs. the speedup work. Tracking here for post-Step-6 follow-up.
 
+### Residual focus-flake fix (poll-and-recover)
+
+The `activeElement.closest('.dual-pane-explorer')` flake fired ~1% under parallel-shard load. Root cause: any
+`ModalDialog`-based dialog (CrashReportDialog from `(main)/+layout.svelte`, PtpcameradDialog, MtpPermissionDialog,
+ExpirationModal, CommercialReminderModal, ErrorReportDialog) calls `overlayElement?.focus()` in its `onMount` after a
+`tick()`. The `+layout.svelte` onMount chain (settings init → AI config → crash-report check → updater → AI state) runs
+in parallel with `+page.svelte`'s onMount, so a pending crash report or an error-report flow could mount its
+`.modal-overlay` _after_ `data-app-ready === 'true'` and grab focus from `.dual-pane-explorer`. The explorer's own
+`onfocusin` focus-guard can't reclaim focus from an out-of-tree overlay (the overlay sits at the document body, not
+inside the explorer), so the activeElement assertion timed out.
+
+**Fix**: replaced the one-shot `waitForFunction("...closest('.dual-pane-explorer') !== null", 3000)` in `ensureAppReady`
+(`apps/desktop/test/e2e-playwright/helpers.ts`) with a `pollUntil(...)` that, on every iteration:
+
+1. Dismisses any `.modal-overlay` via a synthetic Escape (idempotent — most overlays handle Escape and close
+   themselves).
+2. If `document.activeElement` is missing or outside the explorer, re-issues `explorer.focus()`.
+3. Returns true once `activeElement.closest('.dual-pane-explorer') !== null`.
+
+The poll runs over the same 3 s budget. Either focus already landed on the first iteration (the 99 % path, identical
+cost), or we recover from the thief on a subsequent iteration. The fix is robust to _any_ late-mounting modal that
+focuses itself — we don't need to identify a specific thief, we just keep re-asserting our invariant. On timeout, the
+helper now throws with a snapshot of `activeElement` and any visible overlays, so future regressions name the culprit.
+
+No app-source change is needed: the contract that the explorer should hold focus at the start of every test is owned by
+the test helper, and the recovery loop is the canonical pattern for "external state may briefly violate this invariant."
+Documented in `apps/desktop/test/e2e-playwright/CLAUDE.md` § "ensureAppReady focus contract".
+
 ### Wall-clock
 
 Clean run: **3m 48s** checker total (up from Step 6's 2m 48s on a fully warm cache). The Rust build is cold here because

@@ -151,3 +151,26 @@ directories are persistent app state. So `ensureAppReady()` also emits `mcp-nav-
 **Gotcha**: File-operation tests need fixture recreation. **Why**: Tests that copy, move, rename, or create files mutate
 the shared fixture directory. Without cleanup, later tests see stale artifacts. `recreateFixtures()` runs in
 `test.beforeEach` in `file-operations.spec.ts` to reset text files and directories (bulk .dat files persist).
+
+## `ensureAppReady` focus contract
+
+By the time `ensureAppReady` returns, `document.activeElement` is inside `.dual-pane-explorer`. Tests that rely on
+container-level keyboard handlers (Tab, ArrowDown, etc., as opposed to document-level F-key dispatch) can rely on this
+invariant.
+
+The helper enforces it with a poll-and-recover loop instead of a one-shot `waitForFunction`. Any `ModalDialog`-based
+component (`CrashReportDialog`, `PtpcameradDialog`, `MtpPermissionDialog`, `ExpirationModal`, `CommercialReminderModal`,
+`ErrorReportDialog`) calls `overlayElement?.focus()` in its `onMount`. The `(main)/+layout.svelte` onMount chain
+(settings init → AI config → crash-report check → updater → AI state) runs in parallel with `(main)/+page.svelte` and
+can mount one of these overlays _after_ `data-app-ready === 'true'`, stealing focus from the explorer. The explorer's
+own `onfocusin` focus-guard can't reclaim it: the overlay sits outside `.dual-pane-explorer`, so the bubbling event
+never reaches the guard.
+
+On each poll iteration the helper dismisses any visible `.modal-overlay` via synthetic Escape, re-issues
+`explorer.focus()`, then re-checks. The 99 % path costs one extra `evaluate()` over the old one-shot wait. On timeout
+the helper throws with a snapshot of `activeElement` plus visible overlays so a future regression names the culprit
+directly.
+
+**If you add a new auto-mounted modal** in `(main)/+layout.svelte` or anywhere that can flip a render to a `ModalDialog`
+after onboarding finishes, the recovery loop covers you — but consider whether the dialog should be gated on a user
+gesture in production too, so it doesn't fight focus with the explorer in real use.

@@ -214,10 +214,50 @@ export async function ensureAppReady(
   // Confirm focus actually landed inside the explorer so the container-level
   // keydown handler reaches keys like Tab and ArrowDown. (Document-level F-key
   // dispatch doesn't depend on focus, but cursor-driven tests do.)
-  await tauriPage.waitForFunction(
-    "document.activeElement && document.activeElement.closest('.dual-pane-explorer') !== null",
+  //
+  // Poll-and-recover instead of a one-shot waitForFunction: a late-mounting
+  // ModalDialog (CrashReportDialog from `+layout.svelte`, PtpcameradDialog,
+  // ExpirationModal, etc.) calls `overlayElement?.focus()` on mount, which
+  // can steal focus from `.dual-pane-explorer` in the small window between
+  // our `explorer.focus()` above and the assertion below. The explorer's
+  // `onfocusin` guard cannot reclaim focus from an out-of-tree overlay.
+  //
+  // On every iteration we dismiss any new modal overlay (Escape), re-focus
+  // the explorer, then check. Either focus already landed, or we recovered.
+  const focusOk = await pollUntil(
+    tauriPage,
+    async () => {
+      return tauriPage.evaluate<boolean>(`(function() {
+                var overlay = document.querySelector('.modal-overlay');
+                if (overlay) {
+                    overlay.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+                }
+                var ae = document.activeElement;
+                if (!ae || !ae.closest || ae.closest('.dual-pane-explorer') === null) {
+                    var explorer = document.querySelector('.dual-pane-explorer');
+                    if (explorer) explorer.focus();
+                    ae = document.activeElement;
+                }
+                return !!(ae && ae.closest && ae.closest('.dual-pane-explorer') !== null);
+            })()`)
+    },
     3000,
   )
+  if (!focusOk) {
+    const diag = await tauriPage.evaluate<string>(`(function() {
+            var ae = document.activeElement;
+            if (!ae) return 'null';
+            return JSON.stringify({
+                tag: ae.tagName, id: ae.id,
+                cls: ae.className && ae.className.toString ? ae.className.toString() : '',
+                isBody: ae === document.body,
+                explorerExists: !!document.querySelector('.dual-pane-explorer'),
+                appReady: document.querySelector('.dual-pane-explorer') ? document.querySelector('.dual-pane-explorer').dataset.appReady : 'no-explorer',
+                overlays: Array.from(document.querySelectorAll('.modal-overlay, [role="dialog"], [role="alertdialog"]')).map(function(e){return {cls: e.className.toString(), id: e.id, dialogId: e.dataset && e.dataset.dialogId, visible: !!e.offsetParent};})
+            });
+        })()`)
+    throw new Error(`ensureAppReady: focus did not land inside .dual-pane-explorer after 3s. State: ${diag}`)
+  }
 }
 
 // ── DOM query helpers ────────────────────────────────────────────────────────
