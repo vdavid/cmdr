@@ -190,7 +190,6 @@ fn diff_includes_add_modify_and_remove_in_one_pass() {
     assert_eq!(remove.index, 1, "remove uses OLD index");
 }
 
-
 // ============================================================================
 // handle_directory_change integration tests
 // ============================================================================

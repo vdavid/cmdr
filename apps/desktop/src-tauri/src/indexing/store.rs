@@ -2163,6 +2163,88 @@ mod tests {
         assert!(IndexStore::has_sized_entry_for_inode(&conn, 100, None).unwrap());
     }
 
+    // ====================================================================
+    // platform_case_compare / normalize_for_comparison
+    //
+    // The collation function backs SQLite's `platform_case` collation, which
+    // every path-resolution query relies on. cargo-mutants showed the
+    // structural mutants `platform_case_compare -> Default::default()` and
+    // `normalize_for_comparison -> String::new() / "xyzzy".into()` survive
+    // when the only test exercises one direction of equality.
+    // ====================================================================
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn platform_case_compare_distinguishes_distinct_names() {
+        // Kills: replace platform_case_compare -> Default::default() (which is
+        // Ordering::Equal, so every comparison would say "equal" — sort order
+        // and SQLite's collation-driven uniqueness would collapse).
+        assert_eq!(platform_case_compare("a", "a"), std::cmp::Ordering::Equal);
+        assert_eq!(platform_case_compare("a", "b"), std::cmp::Ordering::Less);
+        assert_eq!(platform_case_compare("b", "a"), std::cmp::Ordering::Greater);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn platform_case_compare_case_insensitive_on_macos() {
+        // APFS is case-preserving but case-insensitive by default. The
+        // collation must report equality across case variants for path
+        // resolution to work.
+        assert_eq!(platform_case_compare("Users", "users"), std::cmp::Ordering::Equal);
+        assert_eq!(
+            platform_case_compare("README.MD", "readme.md"),
+            std::cmp::Ordering::Equal
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn platform_case_compare_normalizes_unicode_nfc_to_nfd() {
+        // "é" can be one codepoint (NFC, U+00E9) or two (NFD, U+0065 U+0301).
+        // APFS stores NFD; the collation must treat the two representations
+        // as equal so a user typing NFC resolves NFD-stored entries.
+        let nfc = "café"; // typically NFC in Rust source
+        let nfd = "cafe\u{0301}"; // 'e' + combining acute
+        // Make sure they're actually different byte sequences (sanity check).
+        assert_ne!(nfc.as_bytes(), nfd.as_bytes());
+        assert_eq!(
+            platform_case_compare(nfc, nfd),
+            std::cmp::Ordering::Equal,
+            "NFC and NFD forms of 'café' must compare equal on APFS"
+        );
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    #[test]
+    fn platform_case_compare_is_binary_off_macos() {
+        // Linux ext4/btrfs: exact byte comparison, NOT case-folded.
+        assert_eq!(platform_case_compare("a", "a"), std::cmp::Ordering::Equal);
+        assert_eq!(platform_case_compare("Users", "users"), std::cmp::Ordering::Greater);
+        // ('U' = 0x55, 'u' = 0x75 → 'U' < 'u' in ASCII, so "Users" < "users".)
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn normalize_for_comparison_lowercases_and_nfd_normalizes() {
+        // Kills: replace normalize_for_comparison -> String::new() / "xyzzy".
+        assert_eq!(normalize_for_comparison("Users"), "users");
+        let nfc = "café";
+        let nfd = "cafe\u{0301}";
+        // After normalization, both should be NFD-lowercased and equal.
+        assert_eq!(normalize_for_comparison(nfc), normalize_for_comparison(nfd));
+        assert!(
+            !normalize_for_comparison("hello").is_empty(),
+            "normalize_for_comparison must not return an empty string for non-empty input"
+        );
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    #[test]
+    fn normalize_for_comparison_is_identity_off_macos() {
+        assert_eq!(normalize_for_comparison("Users"), "Users");
+        assert_eq!(normalize_for_comparison("hello"), "hello");
+    }
+
     #[test]
     fn has_sized_entry_for_inode_multiple_entries_one_has_sizes() {
         let (_store, dir) = open_temp_store();
