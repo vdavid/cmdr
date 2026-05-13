@@ -424,3 +424,33 @@ The clear net-positive proptest targets, in order:
 Verdict: worth adding `proptest` as a dev-dependency for these four targets specifically,
 ~half a day of work. Not worth a project-wide convention. Don't introduce it for ETA, sorting,
 or validation — example tests already cover the interesting cases.
+
+## IPC contract coverage (investigation)
+
+How well are the 193 `#[tauri::command]` entry points (visible via `bindings.ts`) tested
+*at the IPC layer* — i.e., a test actually calls the command function or mocks/invokes it
+by name? Full report: `/tmp/cmdr-ipc-coverage-report.md`.
+
+Counts (commit `742939e9`):
+
+- **Well covered** (happy + error path): **16 / 193** (8%)
+- **Happy path only**: **11 / 193** (6%)
+- **Untested at the IPC layer**: **166 / 193** (86%)
+- Score `(well + happy/2) / total`: **0.11**
+
+Caveat that softens the headline: most commands are thin pass-throughs to `*_core` /
+`ops_*` helpers (AGENTS.md: "Tauri commands are pass-throughs"), and the helpers ARE
+broadly tested. The 86% measures the *contract* boundary, not business logic. The
+`bindings-fresh` CI check and the `no-raw-tauri-invoke` ESLint rule mitigate most
+parameter-shape drift; what they don't catch is permission-config drift or silent rename
+mismatches at runtime.
+
+Biggest gaps by feature: viewer (9 commands, 0 IPC tests), MTP (~10 commands, 0 IPC
+tests), licensing (~10 commands, 0 IPC tests), settings/UI mutators (most untested). The
+write_ops surface (`create_directory`, `create_file`, `rename_file`, `move_to_trash`)
+accounts for most of the "well covered" bucket because those `_core` tests happen to call
+the command itself.
+
+Verdict: **weak at the IPC surface, strong underneath**. If we want to raise contract
+coverage meaningfully, the productive move is a vitest `mockIPC` layer that asserts each
+`commands.foo(...)` call returns a typed shape — not Rust-side per-command tests.
