@@ -30,6 +30,7 @@ import globals from 'globals'
 import noIsolatedTests from './eslint-plugins/no-isolated-tests.js'
 import noErrorStringMatch from './eslint-plugins/no-error-string-match.js'
 import noRawTauriInvoke from './eslint-plugins/no-raw-tauri-invoke.js'
+import noArbitrarySleepInE2E from './eslint-plugins/no-arbitrary-sleep-in-e2e.js'
 
 /* global process */
 const noTypecheck = process.env.ESLINT_NO_TYPECHECK === '1'
@@ -233,6 +234,24 @@ export default tseslint.config(
     rules: {
       'cmdr/no-error-string-match': 'error',
       'cmdr/no-raw-tauri-invoke': 'error',
+    },
+  },
+  {
+    // E2E specs must not use `await sleep(N)` — fixed sleeps are either too
+    // tight (flake) or too loose (slow). Use `pollUntil` / `waitForSelector`
+    // instead. Helper files (helpers.ts, conflict-helpers.ts, mcp-client.ts)
+    // are excluded because `pollUntil` itself calls `sleep(interval)` between
+    // iterations. See `docs/testing.md` § "❌ `await sleep(N)` in E2E specs".
+    files: ['test/e2e-playwright/**/*.spec.ts'],
+    plugins: {
+      cmdr: {
+        rules: {
+          'no-arbitrary-sleep-in-e2e': noArbitrarySleepInE2E,
+        },
+      },
+    },
+    rules: {
+      'cmdr/no-arbitrary-sleep-in-e2e': 'error',
     },
   },
 )
