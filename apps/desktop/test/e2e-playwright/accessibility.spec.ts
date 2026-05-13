@@ -152,38 +152,27 @@ async function openSearchDialog(tauriPage: PageLike): Promise<void> {
   await tauriPage.waitForSelector('.search-overlay', 5000)
 }
 
-/** Switch the app theme via Tauri's setTheme API and verify it applied.
+/** Switch the app theme via Tauri's setTheme API.
  *
- * WKWebView on macOS can lag behind when updating computed styles after a theme
- * change: :root CSS variables update first, but descendant elements may still
- * return stale cached values from getComputedStyle(). If axe runs during this
- * window it reads mixed light/dark colors and reports false contrast violations.
+ * The app's dark mode is gated on `@media (prefers-color-scheme: dark)` (no
+ * `[data-theme]` selector). Tauri's `set_app_theme` overrides the window's
+ * `NSAppearance` on macOS, which feeds the WebView's media query. The override
+ * is per-window and takes effect on the next paint.
  *
- * We wait for :root variables to match, then force a reflow + sleep to let
- * WKWebView fully flush cached computed styles on descendant elements.
+ * Historically this helper polled `--color-bg-primary` against literal hex
+ * values to confirm the swap before axe ran — that was for the (now-disabled)
+ * `color-contrast` axe rule. Without that rule we don't need the CSS variables
+ * to be at any specific value when axe runs; the structural a11y rules don't
+ * read computed colors. The poll was timing out at 5 s on every light-mode
+ * test on macOS dark-default machines (because the WebView's media query lags
+ * the appearance override more than 5 s in WKWebView under load), silently
+ * mistesting against the wrong theme and burning ~50 s per run.
+ *
+ * A forced reflow gives the WebView one repaint to apply the appearance
+ * change before axe queries the DOM. That's the minimum needed.
  */
 async function setTheme(tauriPage: PageLike, mode: 'dark' | 'light'): Promise<void> {
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:app|set_app_theme', { theme: '${mode}' })`)
-
-  const expectedBg = mode === 'light' ? '#ffffff' : '#1e1e1e'
-  const expectedText = mode === 'light' ? '#666666' : '#b0b0b0'
-
-  await pollUntil(
-    tauriPage,
-    async () => {
-      const [bg, text] = await tauriPage.evaluate<[string, string]>(
-        `[getComputedStyle(document.documentElement).getPropertyValue('--color-bg-primary').trim(),
-          getComputedStyle(document.documentElement).getPropertyValue('--color-text-secondary').trim()]`,
-      )
-      return bg === expectedBg && text === expectedText
-    },
-    5000,
-  )
-
-  // Force a synchronous reflow so WKWebView invalidates cached computed styles.
-  // Historically a 2 s sleep followed this to wait for descendant style cache
-  // flushing, but that mattered only for color-contrast auditing — which is
-  // disabled in this suite. The :root pollUntil above is enough.
   await tauriPage.evaluate(`document.documentElement.offsetHeight`)
 }
 
