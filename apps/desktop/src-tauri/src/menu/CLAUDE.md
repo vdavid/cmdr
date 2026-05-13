@@ -34,7 +34,11 @@ Exceptions that do NOT use `"execute-command"`:
   double-toggle, so these emit `"settings-changed"` / `"view-mode-changed"` directly
 - **Close tab** (⌘W): checks if a non-main window has focus and closes it instead of emitting
   `tab.close`
-- **Sort items**: emit `"menu-sort"` with field/direction payload
+- **Sort items**: emit `"menu-sort"` with field/direction payload. The four shortcut-bound columns
+  (`SORT_BY_{NAME,EXTENSION,MODIFIED,SIZE}_ID`) are *also* listed in `menu_id_to_command` and
+  registered in the items HashMap — purely so user-customized accelerators flow through the
+  generic update path. The on_menu_event special-case fires first, so the generic dispatch is
+  never reached at click time.
 - **Tab context menu**: emits specific tab action events with tab index payload
 - **Open with** (macOS): items have dynamic IDs like `open-with:com.apple.Xcode` that can't be
   enumerated in `menu_id_to_command`. `on_menu_event` prefix-matches `open-with:` and calls
