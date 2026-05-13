@@ -400,36 +400,32 @@ Concrete next steps if pushing this further:
 
 ## Property-based testing fit (investigation)
 
-`proptest` and `quickcheck` aren't in use anywhere in `apps/desktop/src-tauri/`. The full
-investigation lives at `/tmp/cmdr-property-testing-report.md`; this section is the short
-takeaway.
+`proptest` and `quickcheck` aren't in use anywhere in `apps/desktop/src-tauri/`. The full investigation lives at
+`/tmp/cmdr-property-testing-report.md`; this section is the short takeaway.
 
-The most algorithmic, pure spots in the crate are already covered by tight example tests:
-`eta::EtaEstimator` (12 tests, two named mutant-survivor targets), `listing::sorting` (32
-tests), `validation` (13 tests). Adding proptest there gives diminishing returns.
+The most algorithmic, pure spots in the crate are already covered by tight example tests: `eta::EtaEstimator` (12 tests,
+two named mutant-survivor targets), `listing::sorting` (32 tests), `validation` (13 tests). Adding proptest there gives
+diminishing returns.
 
 The clear net-positive proptest targets, in order:
 
-1. **`indexing::aggregator::topological_sort_bottom_up`** — 1 example test for a function with
-   non-trivial tree invariants. Cycle and duplicate-ID behavior isn't asserted today.
-2. **`search::query::glob_to_regex`** — 4 example tests; infinite input space; output feeds a
-   regex engine that panics on malformed input. "Output is always valid regex" is a one-line
-   property and a real safety net.
-3. **`search::query::split_scope_segments`** — 10 example tests for a parser with nested
-   escape/quote rules. Round-trip and segment-count properties are cheap.
-4. **`indexing::store::platform_case_compare`** (macOS) — comparator-law properties
-   (reflexivity, antisymmetry, transitivity) plus NFC≡NFD equivalence. Highest user impact
-   because miscompare corrupts the search index.
+1. **`indexing::aggregator::topological_sort_bottom_up`** — 1 example test for a function with non-trivial tree
+   invariants. Cycle and duplicate-ID behavior isn't asserted today.
+2. **`search::query::glob_to_regex`** — 4 example tests; infinite input space; output feeds a regex engine that panics
+   on malformed input. "Output is always valid regex" is a one-line property and a real safety net.
+3. **`search::query::split_scope_segments`** — 10 example tests for a parser with nested escape/quote rules. Round-trip
+   and segment-count properties are cheap.
+4. **`indexing::store::platform_case_compare`** (macOS) — comparator-law properties (reflexivity, antisymmetry,
+   transitivity) plus NFC≡NFD equivalence. Highest user impact because miscompare corrupts the search index.
 
-Verdict: worth adding `proptest` as a dev-dependency for these four targets specifically,
-~half a day of work. Not worth a project-wide convention. Don't introduce it for ETA, sorting,
-or validation — example tests already cover the interesting cases.
+Verdict: worth adding `proptest` as a dev-dependency for these four targets specifically, ~half a day of work. Not worth
+a project-wide convention. Don't introduce it for ETA, sorting, or validation — example tests already cover the
+interesting cases.
 
 ## IPC contract coverage (investigation)
 
-How well are the 193 `#[tauri::command]` entry points (visible via `bindings.ts`) tested
-*at the IPC layer* — i.e., a test actually calls the command function or mocks/invokes it
-by name? Full report: `/tmp/cmdr-ipc-coverage-report.md`.
+How well are the 193 `#[tauri::command]` entry points (visible via `bindings.ts`) tested _at the IPC layer_ — i.e., a
+test actually calls the command function or mocks/invokes it by name? Full report: `/tmp/cmdr-ipc-coverage-report.md`.
 
 Counts (commit `742939e9`):
 
@@ -438,19 +434,52 @@ Counts (commit `742939e9`):
 - **Untested at the IPC layer**: **166 / 193** (86%)
 - Score `(well + happy/2) / total`: **0.11**
 
-Caveat that softens the headline: most commands are thin pass-throughs to `*_core` /
-`ops_*` helpers (AGENTS.md: "Tauri commands are pass-throughs"), and the helpers ARE
-broadly tested. The 86% measures the *contract* boundary, not business logic. The
-`bindings-fresh` CI check and the `no-raw-tauri-invoke` ESLint rule mitigate most
-parameter-shape drift; what they don't catch is permission-config drift or silent rename
-mismatches at runtime.
+Caveat that softens the headline: most commands are thin pass-throughs to `*_core` / `ops_*` helpers (AGENTS.md: "Tauri
+commands are pass-throughs"), and the helpers ARE broadly tested. The 86% measures the _contract_ boundary, not business
+logic. The `bindings-fresh` CI check and the `no-raw-tauri-invoke` ESLint rule mitigate most parameter-shape drift; what
+they don't catch is permission-config drift or silent rename mismatches at runtime.
 
-Biggest gaps by feature: viewer (9 commands, 0 IPC tests), MTP (~10 commands, 0 IPC
-tests), licensing (~10 commands, 0 IPC tests), settings/UI mutators (most untested). The
-write_ops surface (`create_directory`, `create_file`, `rename_file`, `move_to_trash`)
-accounts for most of the "well covered" bucket because those `_core` tests happen to call
-the command itself.
+Biggest gaps by feature: viewer (9 commands, 0 IPC tests), MTP (~10 commands, 0 IPC tests), licensing (~10 commands, 0
+IPC tests), settings/UI mutators (most untested). The write_ops surface (`create_directory`, `create_file`,
+`rename_file`, `move_to_trash`) accounts for most of the "well covered" bucket because those `_core` tests happen to
+call the command itself.
 
-Verdict: **weak at the IPC surface, strong underneath**. If we want to raise contract
-coverage meaningfully, the productive move is a vitest `mockIPC` layer that asserts each
-`commands.foo(...)` call returns a typed shape — not Rust-side per-command tests.
+Verdict: **weak at the IPC surface, strong underneath**. If we want to raise contract coverage meaningfully, the
+productive move is a vitest `mockIPC` layer that asserts each `commands.foo(...)` call returns a typed shape — not
+Rust-side per-command tests.
+
+## State-machine coverage (investigation)
+
+Full report: `/tmp/cmdr-state-machine-report.md` (read-only scan, branch `e2e-speedup` @ `742939e9`).
+
+Surveyed 13 genuine state machines (backend + frontend; excludes derived / progress-only enums). About 60 transitions
+total, roughly 35 untested (~58%).
+
+Coverage is uneven:
+
+- **Strong**: `SmbVolume::ConnectionState` (Direct ⇄ Disconnected, idempotency, single-flight reconnect),
+  `OperationIntent` (atomic level), `SmbReconnectManager` FE, AI notification FE, MTP FE, updater FE, error-reporter
+  `auto_dispatcher` debounce.
+- **Weak**: `IndexPhase` (Disabled/Initializing/Running/ShuttingDown — no direct test of any transition or the
+  start/stop race), `ActivityPhase` (six-state telemetry pipeline, no test), `DiscoveryState` (network mDNS — three
+  transitions, no test), `network-store` `ShareState` + `CredentialStatus` FE (a11y tests only), `ConnectToServerDialog`
+  FE.
+- **Tested at wrong layer**: `cancel_write_operation`'s validation guard (state.rs:306) is bypassed by all tests, which
+  set the atomic directly. The `RollingBack → Stopped` valid-transition assertion and the rejection of terminal-state
+  writes are not exercised through the public API.
+
+Top untested transitions worth adding tests for:
+
+1. `cancel_write_operation` public function (validation guard + `conflict_resolution_tx` drop).
+2. `IndexPhase::Initializing → Disabled` race when stop runs during `resume_or_scan`.
+3. `IndexPhase::Initializing → Running` happy path.
+4. `OperationIntent::RollingBack → Stopped` through public cancel (not just direct atomic store).
+5. `SearchStatus::Running → Cancelled` in file viewer.
+6. `DiscoveryState` transitions (Idle → Searching → Active → Idle).
+
+Side finding: `SmbVolume::ConnectionState::OsMount` is a defined variant that is never written to the atomic. The smb2
+hot-path branch handling `OsMount` (smb.rs:658, smb.rs:449) is dead code on the current implementation. Either wire the
+transition or drop the variant.
+
+Overall verdict: **medium-strong**. The transition-aware machines that matter for data safety are tested; the
+orchestration-level lifecycles (`IndexPhase`, `ActivityPhase`, `DiscoveryState`) are not.
