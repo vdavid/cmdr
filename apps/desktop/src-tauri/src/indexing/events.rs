@@ -351,7 +351,11 @@ mod tests {
 
     fn last_phase(stats: &DebugStats) -> ActivityPhase {
         let history = stats.phase_history.lock().expect("phase_history poisoned");
-        history.last().expect("phase_history must always have an entry").phase.clone()
+        history
+            .last()
+            .expect("phase_history must always have an entry")
+            .phase
+            .clone()
     }
 
     fn nth_phase(stats: &DebugStats, n: usize) -> ActivityPhase {

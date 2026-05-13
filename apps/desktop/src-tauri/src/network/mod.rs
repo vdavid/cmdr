@@ -474,10 +474,7 @@ mod tests {
             DiscoveryState::Idle,
             "drain must reset state to Idle so the FE store can clear without daemon teardown events"
         );
-        assert!(
-            get_discovered_hosts().is_empty(),
-            "drain must empty the host cache"
-        );
+        assert!(get_discovered_hosts().is_empty(), "drain must empty the host cache");
     }
 
     #[test]

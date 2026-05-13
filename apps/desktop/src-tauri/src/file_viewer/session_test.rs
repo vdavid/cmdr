@@ -228,10 +228,7 @@ fn search_poll_after_cancel_surfaces_cancelled_then_idle_after_new_start() {
     session::search_start(sid, "world".to_string()).unwrap();
     let poll_after_restart = session::search_poll(sid, 0).unwrap();
     assert!(
-        matches!(
-            poll_after_restart.status,
-            SearchStatus::Running | SearchStatus::Done
-        ),
+        matches!(poll_after_restart.status, SearchStatus::Running | SearchStatus::Done),
         "fresh search_start must clear the Cancelled state; got {:?}",
         poll_after_restart.status
     );

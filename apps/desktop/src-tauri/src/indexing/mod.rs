@@ -1219,8 +1219,7 @@ mod tests {
     #[test]
     fn is_initializing_phase_matches_only_initializing_variant() {
         let dir = tempfile::tempdir().expect("temp dir");
-        let store =
-            store::IndexStore::open(&dir.path().join("classifier.db")).expect("open store");
+        let store = store::IndexStore::open(&dir.path().join("classifier.db")).expect("open store");
         // Disabled / ShuttingDown / Running classified as not-initializing.
         assert!(!is_initializing_phase(&IndexPhase::Disabled));
         assert!(!is_initializing_phase(&IndexPhase::ShuttingDown));
