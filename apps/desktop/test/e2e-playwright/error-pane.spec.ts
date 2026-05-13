@@ -11,7 +11,7 @@
 import os from 'os'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureAppReady, pollUntil, sleep, getFixtureRoot } from './helpers.js'
+import { ensureAppReady, pollUntil, getFixtureRoot } from './helpers.js'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 
 type PageLike = TauriPage | BrowserPageAdapter
@@ -73,9 +73,16 @@ async function navigateBackToLeft(tauriPage: PageLike): Promise<void> {
             payload: { pane: 'left', path: ${JSON.stringify(fixtureRoot + '/left')} }
         });
     })()`)
-  // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-  await sleep(500)
-  await tauriPage.waitForSelector('.file-entry', 5000)
+  // Wait for the error pane (if any) to be gone and file entries to appear,
+  // which together prove the navigation landed.
+  await pollUntil(
+    tauriPage,
+    async () =>
+      tauriPage.evaluate<boolean>(
+        `!document.querySelector('.error-pane') && document.querySelectorAll('.file-pane.is-focused .file-entry').length > 0`,
+      ),
+    5000,
+  )
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -156,8 +163,6 @@ test.describe('Error pane: Transient errors (ETIMEDOUT)', () => {
                 }
             }
         })()`)
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(500)
 
     // The error pane should disappear and file entries should appear
     const recovered = await pollUntil(
