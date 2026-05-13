@@ -211,6 +211,9 @@ resilience, and common pitfalls.
   — skipping it breaks the app. For E2E builds:
   `node scripts/tauri-wrapper.js build --no-bundle --target $(rustc -vV | grep host | cut -d' ' -f2) -- --features playwright-e2e,virtual-mtp,smb-e2e`.
   The binary lands in `<repo>/target/<triple>/release/Cmdr`.
+  - **Don't add your own build-cache layer.** `pnpm tauri build` already caches internally — Cargo's incremental
+    compilation, Vite/SvelteKit's frontend build cache, and the `beforeBuildCommand`'s own short-circuits all kick in on
+    warm runs. A "skip build if hash matches" check on top of that is redundant and risks shipping a stale binary.
 - ❌ **No string-matching error or state classification.** Don't classify errors, app state, or control flow by checking
   substrings of a message, stderr, error title, or any other free-form text. Use a typed enum variant, an errno code, or
   an explicit flag on the struct that crosses the IPC boundary. The wording is for the user to read — code that branches
