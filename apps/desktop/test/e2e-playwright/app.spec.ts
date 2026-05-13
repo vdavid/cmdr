@@ -10,10 +10,10 @@ import { test, expect } from './fixtures.js'
 import {
   ensureAppReady,
   findFileIndex,
+  moveCursorToFile,
   skipParentEntry,
   pollUntil,
   pressKey,
-  sleep,
   MKDIR_DIALOG,
   TRANSFER_DIALOG,
 } from './helpers.js'
@@ -24,23 +24,19 @@ type PageLike = TauriPage | BrowserPageAdapter
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /**
- * Moves the cursor to "sub-dir" using keyboard commands.
+ * Moves the cursor to "sub-dir". Uses the MCP `move_cursor` tool (via
+ * `moveCursorToFile`) which jumps directly to the target file and waits for
+ * the render to land — synchronous on the backend, ~1 evaluate() worth of
+ * UI overhead. The previous keyboard-driven implementation pressed Home then
+ * ArrowDown N times with fixed-duration sleeps between each press, which was
+ * slow and prone to flakes when the press cadence outran the cursor render.
+ * The tests that call this care about *navigation* (Enter, Backspace) after
+ * the cursor lands, not about the keyboard pathway used to get there.
  */
 async function moveCursorToSubDir(tauriPage: PageLike): Promise<boolean> {
   const info = await findFileIndex(tauriPage, 'sub-dir')
   if ('error' in info || info.targetIndex < 0) return false
-
-  await tauriPage.keyboard.press('Home')
-  // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-  await sleep(100)
-  for (let i = 0; i < info.targetIndex; i++) {
-    await tauriPage.keyboard.press('ArrowDown')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(50)
-  }
-  // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-  await sleep(100)
-  return true
+  return moveCursorToFile(tauriPage, 'sub-dir')
 }
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
@@ -447,8 +443,8 @@ test.describe('New folder dialog', () => {
     const folderName = `test-folder-${String(Date.now())}`
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
     await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, folderName)
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(200)
+    // Wait for the OK button to enable in response to the typed name
+    await pollUntil(tauriPage, async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), 2000)
 
     // Verify OK button is enabled
     expect(await tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`)).toBe(true)
@@ -525,10 +521,8 @@ test.describe('Transfer dialogs', () => {
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
 
     await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, 'unused-cancel-folder')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(150)
 
-    // Click the secondary (Cancel) button rather than pressing Escape.
+    // Cancel is always enabled — click directly. No fixed wait needed.
     await tauriPage.click(`${MKDIR_DIALOG} .btn-secondary`)
 
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
