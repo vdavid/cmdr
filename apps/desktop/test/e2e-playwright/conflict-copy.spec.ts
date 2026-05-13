@@ -13,7 +13,6 @@ import {
   getFixtureRoot,
   moveCursorToFile,
   pollUntil,
-  sleep,
   TRANSFER_DIALOG,
 } from './helpers.js'
 import {
@@ -172,6 +171,13 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
     const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 15000)
     expect(conflictAppeared).toBe(true)
 
+    // Capture the first conflict's filename so we can poll for the next one
+    // (the `.conflict-section` stays mounted between conflicts; only its
+    // `.conflict-filename` content changes).
+    const firstConflictName = await tauriPage.evaluate<string>(
+      `(document.querySelector('.conflict-section .conflict-filename')?.textContent || '').trim()`,
+    )
+
     // First conflict: click "Overwrite" (single file, not "Overwrite all")
     await tauriPage.evaluate(`(function(){
       var btns = document.querySelectorAll('.conflict-buttons-row button');
@@ -180,13 +186,26 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
       }
     })()`)
 
-    // Wait for next conflict or brief re-render
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(500)
-
-    // Second conflict: click "Skip all" (applies to all remaining)
-    const nextConflict = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 10000)
-    if (nextConflict) {
+    // Wait for the next conflict (different filename) or for the conflict UI
+    // to disappear (no more conflicts).
+    const firstNameJson = JSON.stringify(firstConflictName)
+    const nextConflict = await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(
+          `(function(){
+            var el = document.querySelector('.conflict-section .conflict-filename');
+            if (!el) return true;
+            var name = (el.textContent || '').trim();
+            return name !== ${firstNameJson};
+          })()`,
+        ),
+      10000,
+    )
+    // After the wait, `.conflict-section` might still be visible (next conflict)
+    // or gone (no more conflicts) — we proceed if there's a new conflict to act on.
+    const stillVisible = await tauriPage.isVisible('.conflict-section')
+    if (nextConflict && stillVisible) {
       await tauriPage.evaluate(`(function(){
         var btns = document.querySelectorAll('.conflict-buttons-row button');
         for (var i=0; i<btns.length; i++) {
