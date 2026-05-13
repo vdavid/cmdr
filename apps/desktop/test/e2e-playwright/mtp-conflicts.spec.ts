@@ -28,7 +28,6 @@ import {
   ensureAppReady,
   getFixtureRoot,
   pollUntil,
-  sleep,
   isStateClean,
   TRANSFER_DIALOG,
 } from './helpers.js'
@@ -251,13 +250,18 @@ test.describe('MTP same-volume move conflicts', () => {
     await mcpSelectVolume('right', INTERNAL_STORAGE)
     await mcpAwaitItem('right', 'report.txt')
 
-    // Ensure left pane is focused
+    // Ensure left pane is focused: toggle twice and poll for the visual focus
+    // class to land on the left pane.
     await mcpSwitchPane()
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(200)
     await mcpSwitchPane()
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(200)
+    await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(
+          `document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') === true`,
+        ),
+      3000,
+    )
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
     await dispatchMenuCommand(tauriPage, 'file.move')
@@ -306,12 +310,17 @@ test.describe('MTP same-volume move conflicts', () => {
     await mcpSelectVolume('right', INTERNAL_STORAGE)
     await mcpAwaitItem('right', 'report.txt')
 
+    // Toggle twice and poll for the visual focus class to land on the left pane.
     await mcpSwitchPane()
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(200)
     await mcpSwitchPane()
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(200)
+    await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(
+          `document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') === true`,
+        ),
+      3000,
+    )
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
     await dispatchMenuCommand(tauriPage, 'file.move')
