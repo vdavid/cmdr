@@ -529,3 +529,469 @@ impl Drop for CopyTransaction {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    //! Targeted unit tests covering survivors from `cargo mutants` on this
+    //! module (state machine transitions, status-cache CRUD, FileInfo
+    //! sort-key derivation, and CopyTransaction commit/rollback/Drop).
+    //!
+    //! Tests that touch the global `WRITE_OPERATION_STATE` /
+    //! `OPERATION_STATUS_CACHE` caches use unique operation IDs so they don't
+    //! collide with concurrent test runs in the same process.
+    use super::*;
+    use crate::file_system::write_operations::types::{ConflictResolution, WriteOperationType};
+    use std::path::Path;
+    use std::sync::atomic::Ordering;
+
+    fn unique_id(label: &str) -> String {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static N: AtomicU64 = AtomicU64::new(0);
+        let n = N.fetch_add(1, Ordering::Relaxed);
+        format!("test-state-{label}-{n}-{:?}", std::thread::current().id())
+    }
+
+    // ---- OperationIntent::from_u8 ----
+
+    #[test]
+    fn from_u8_maps_each_known_variant() {
+        // Kills: replace from_u8 → Default::default(), delete match arm 1, delete match arm 2.
+        assert_eq!(OperationIntent::from_u8(0), OperationIntent::Running);
+        assert_eq!(OperationIntent::from_u8(1), OperationIntent::RollingBack);
+        assert_eq!(OperationIntent::from_u8(2), OperationIntent::Stopped);
+    }
+
+    #[test]
+    fn from_u8_unknown_values_fall_back_to_running() {
+        // Pins the catch-all arm. If a future variant is added, this should fail.
+        assert_eq!(OperationIntent::from_u8(3), OperationIntent::Running);
+        assert_eq!(OperationIntent::from_u8(255), OperationIntent::Running);
+    }
+
+    // ---- load_intent / is_cancelled ----
+
+    #[test]
+    fn load_intent_reflects_atomic_value() {
+        let atom = AtomicU8::new(OperationIntent::RollingBack as u8);
+        assert_eq!(load_intent(&atom), OperationIntent::RollingBack);
+        atom.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
+        assert_eq!(load_intent(&atom), OperationIntent::Stopped);
+        atom.store(OperationIntent::Running as u8, Ordering::Relaxed);
+        assert_eq!(load_intent(&atom), OperationIntent::Running);
+    }
+
+    #[test]
+    fn is_cancelled_is_true_for_any_non_running_value() {
+        // Kills: replace is_cancelled → true / → false, replace != with ==.
+        let running = AtomicU8::new(OperationIntent::Running as u8);
+        assert!(!is_cancelled(&running), "Running must not be reported as cancelled");
+
+        let rolling = AtomicU8::new(OperationIntent::RollingBack as u8);
+        assert!(is_cancelled(&rolling), "RollingBack must be reported as cancelled");
+
+        let stopped = AtomicU8::new(OperationIntent::Stopped as u8);
+        assert!(is_cancelled(&stopped), "Stopped must be reported as cancelled");
+    }
+
+    // ---- cancel_write_operation state-machine transitions ----
+    //
+    // Helper: install a fresh state into the global cache under `op_id`, run
+    // the cancellation, then read back the resulting intent. Cleans up after
+    // itself so the global cache isn't polluted.
+
+    fn install_state(op_id: &str, initial: OperationIntent) -> Arc<WriteOperationState> {
+        let state = Arc::new(WriteOperationState::new(Duration::from_millis(50)));
+        state.intent.store(initial as u8, Ordering::Relaxed);
+        WRITE_OPERATION_STATE
+            .write()
+            .unwrap()
+            .insert(op_id.to_string(), Arc::clone(&state));
+        state
+    }
+
+    fn uninstall_state(op_id: &str) {
+        WRITE_OPERATION_STATE.write().unwrap().remove(op_id);
+    }
+
+    #[test]
+    fn cancel_running_with_rollback_goes_to_rolling_back() {
+        let id = unique_id("cancel-running-rollback");
+        let state = install_state(&id, OperationIntent::Running);
+        cancel_write_operation(&id, true);
+        assert_eq!(load_intent(&state.intent), OperationIntent::RollingBack);
+        uninstall_state(&id);
+    }
+
+    #[test]
+    fn cancel_running_without_rollback_goes_to_stopped() {
+        let id = unique_id("cancel-running-stop");
+        let state = install_state(&id, OperationIntent::Running);
+        cancel_write_operation(&id, false);
+        assert_eq!(load_intent(&state.intent), OperationIntent::Stopped);
+        uninstall_state(&id);
+    }
+
+    #[test]
+    fn cancel_rolling_back_with_rollback_is_a_noop() {
+        // Only RollingBack → Stopped is valid; RollingBack → RollingBack is a no-op.
+        let id = unique_id("cancel-rb-rb");
+        let state = install_state(&id, OperationIntent::RollingBack);
+        cancel_write_operation(&id, true);
+        assert_eq!(
+            load_intent(&state.intent),
+            OperationIntent::RollingBack,
+            "RollingBack → RollingBack is not a valid transition; intent must not change"
+        );
+        uninstall_state(&id);
+    }
+
+    #[test]
+    fn cancel_rolling_back_without_rollback_goes_to_stopped() {
+        let id = unique_id("cancel-rb-stop");
+        let state = install_state(&id, OperationIntent::RollingBack);
+        cancel_write_operation(&id, false);
+        assert_eq!(load_intent(&state.intent), OperationIntent::Stopped);
+        uninstall_state(&id);
+    }
+
+    #[test]
+    fn cancel_stopped_is_terminal_for_any_target() {
+        // Stopped is terminal — no transition is valid from it.
+        let id = unique_id("cancel-stopped");
+        let state = install_state(&id, OperationIntent::Stopped);
+        cancel_write_operation(&id, true);
+        assert_eq!(load_intent(&state.intent), OperationIntent::Stopped);
+        cancel_write_operation(&id, false);
+        assert_eq!(load_intent(&state.intent), OperationIntent::Stopped);
+        uninstall_state(&id);
+    }
+
+    #[test]
+    fn cancel_drops_the_conflict_resolution_sender() {
+        // After cancel, any pending receiver should observe a closed channel.
+        let id = unique_id("cancel-drops-tx");
+        let state = install_state(&id, OperationIntent::Running);
+        let (tx, mut rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
+        *state.conflict_resolution_tx.lock().unwrap() = Some(tx);
+        cancel_write_operation(&id, false);
+        // The receiver should now be closed (sender dropped).
+        match rx.try_recv() {
+            Err(tokio::sync::oneshot::error::TryRecvError::Closed) => {} // good
+            other => panic!("expected sender to be dropped, got {other:?}"),
+        }
+        uninstall_state(&id);
+    }
+
+    #[test]
+    fn cancel_unknown_operation_is_a_silent_noop() {
+        // No installed state — must not panic, must not affect anything.
+        cancel_write_operation("does-not-exist-xyzzy", true);
+        cancel_write_operation("does-not-exist-xyzzy", false);
+    }
+
+    // ---- cancel_all_write_operations ----
+
+    #[test]
+    fn cancel_all_stops_running_but_does_not_re_stop_already_stopped() {
+        // Pins the `current != OperationIntent::Stopped` guard. If the guard
+        // flips to `==`, running operations would NOT be stopped — they'd
+        // remain running.
+        let running_id = unique_id("cancel-all-running");
+        let stopped_id = unique_id("cancel-all-stopped");
+        let rb_id = unique_id("cancel-all-rb");
+
+        let running = install_state(&running_id, OperationIntent::Running);
+        let stopped = install_state(&stopped_id, OperationIntent::Stopped);
+        let rb = install_state(&rb_id, OperationIntent::RollingBack);
+
+        cancel_all_write_operations();
+
+        assert_eq!(load_intent(&running.intent), OperationIntent::Stopped);
+        assert_eq!(load_intent(&stopped.intent), OperationIntent::Stopped);
+        assert_eq!(
+            load_intent(&rb.intent),
+            OperationIntent::Stopped,
+            "RollingBack should also be force-stopped on teardown"
+        );
+
+        uninstall_state(&running_id);
+        uninstall_state(&stopped_id);
+        uninstall_state(&rb_id);
+    }
+
+    // ---- resolve_write_conflict ----
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn resolve_write_conflict_delivers_response_to_waiter() {
+        let id = unique_id("resolve-conflict");
+        let state = install_state(&id, OperationIntent::Running);
+
+        let (tx, rx) = tokio::sync::oneshot::channel::<ConflictResolutionResponse>();
+        *state.conflict_resolution_tx.lock().unwrap() = Some(tx);
+
+        resolve_write_conflict(&id, ConflictResolution::Overwrite, true);
+
+        let resp = rx.await.expect("sender should have delivered the response");
+        assert_eq!(resp.resolution, ConflictResolution::Overwrite);
+        assert!(resp.apply_to_all);
+
+        uninstall_state(&id);
+    }
+
+    #[test]
+    fn resolve_write_conflict_without_pending_sender_is_a_noop() {
+        let id = unique_id("resolve-no-tx");
+        let _state = install_state(&id, OperationIntent::Running);
+        // No sender stashed — must not panic.
+        resolve_write_conflict(&id, ConflictResolution::Skip, false);
+        uninstall_state(&id);
+    }
+
+    // ---- register / update / unregister + list / get ----
+
+    #[test]
+    fn register_then_get_status_roundtrip() {
+        let id = unique_id("reg-get");
+        register_operation_status(&id, WriteOperationType::Copy);
+        let _state = install_state(&id, OperationIntent::Running);
+
+        let status = get_operation_status(&id).expect("operation should be in cache");
+        assert_eq!(status.operation_id, id);
+        assert_eq!(status.operation_type, WriteOperationType::Copy);
+        assert_eq!(status.phase, WriteOperationPhase::Scanning);
+        assert!(
+            status.is_running,
+            "is_running must reflect WRITE_OPERATION_STATE presence"
+        );
+        assert_eq!(status.files_done, 0);
+        assert_eq!(status.files_total, 0);
+        assert_eq!(status.bytes_done, 0);
+        assert_eq!(status.bytes_total, 0);
+
+        // is_running flips when WRITE_OPERATION_STATE entry is removed.
+        uninstall_state(&id);
+        let status = get_operation_status(&id).expect("status cache still has it");
+        assert!(!status.is_running);
+
+        unregister_operation_status(&id);
+        assert!(get_operation_status(&id).is_none());
+    }
+
+    #[test]
+    fn update_operation_status_overwrites_fields() {
+        let id = unique_id("update");
+        register_operation_status(&id, WriteOperationType::Move);
+        update_operation_status(
+            &id,
+            WriteOperationPhase::Copying,
+            Some("a.txt".into()),
+            3,
+            10,
+            500,
+            1000,
+        );
+        let status = get_operation_status(&id).unwrap();
+        assert_eq!(status.phase, WriteOperationPhase::Copying);
+        assert_eq!(status.current_file.as_deref(), Some("a.txt"));
+        assert_eq!(status.files_done, 3);
+        assert_eq!(status.files_total, 10);
+        assert_eq!(status.bytes_done, 500);
+        assert_eq!(status.bytes_total, 1000);
+        unregister_operation_status(&id);
+    }
+
+    #[test]
+    fn update_unknown_id_is_a_silent_noop() {
+        // Pins the `&& get_mut` short-circuit. If `&&` becomes `||`, this would
+        // dereference a None and panic.
+        update_operation_status("no-such-op-xyzzy", WriteOperationPhase::Copying, None, 0, 0, 0, 0);
+    }
+
+    #[test]
+    fn list_active_operations_percent_uses_bytes_when_available() {
+        // bytes_total > 0 → percent comes from bytes axis, not files.
+        let id = unique_id("list-bytes");
+        register_operation_status(&id, WriteOperationType::Copy);
+        update_operation_status(
+            &id,
+            WriteOperationPhase::Copying,
+            None,
+            1,    // files_done
+            100,  // files_total (would give 1% if used)
+            500,  // bytes_done
+            1000, // bytes_total → 50%
+        );
+        let summary = list_active_operations()
+            .into_iter()
+            .find(|s| s.operation_id == id)
+            .expect("operation present in summary");
+        assert_eq!(
+            summary.percent_complete, 50,
+            "percent must be derived from bytes axis when bytes_total > 0"
+        );
+        unregister_operation_status(&id);
+    }
+
+    #[test]
+    fn list_active_operations_percent_falls_back_to_files() {
+        // bytes_total == 0, files_total > 0 → use files axis.
+        let id = unique_id("list-files");
+        register_operation_status(&id, WriteOperationType::Delete);
+        update_operation_status(&id, WriteOperationPhase::Deleting, None, 3, 4, 0, 0);
+        let summary = list_active_operations()
+            .into_iter()
+            .find(|s| s.operation_id == id)
+            .unwrap();
+        assert_eq!(summary.percent_complete, 75);
+        unregister_operation_status(&id);
+    }
+
+    #[test]
+    fn list_active_operations_percent_is_zero_when_nothing_known() {
+        // Both totals == 0 → percent_complete == 0 (not the files-axis path).
+        let id = unique_id("list-zero");
+        register_operation_status(&id, WriteOperationType::Copy);
+        let summary = list_active_operations()
+            .into_iter()
+            .find(|s| s.operation_id == id)
+            .unwrap();
+        assert_eq!(summary.percent_complete, 0);
+        unregister_operation_status(&id);
+    }
+
+    #[test]
+    fn list_active_operations_percent_clamps_to_100() {
+        // Pin the `.min(100.0)` clamp. If bytes_done > bytes_total (which can
+        // happen in flight due to over-counting), the UI must never see > 100.
+        let id = unique_id("list-clamp");
+        register_operation_status(&id, WriteOperationType::Copy);
+        update_operation_status(&id, WriteOperationPhase::Copying, None, 0, 0, 1500, 1000);
+        let summary = list_active_operations()
+            .into_iter()
+            .find(|s| s.operation_id == id)
+            .unwrap();
+        assert_eq!(summary.percent_complete, 100);
+        unregister_operation_status(&id);
+    }
+
+    // ---- FileInfo derived sort keys ----
+
+    fn make_file_info(path: &str, source_root: &str) -> FileInfo {
+        FileInfo {
+            path: PathBuf::from(path),
+            source_root: PathBuf::from(source_root),
+            size: 0,
+            modified: 0,
+            created: 0,
+            is_symlink: false,
+        }
+    }
+
+    #[test]
+    fn extension_is_lowercased() {
+        // Kills: replace extension → String::new() / → "xyzzy".
+        assert_eq!(make_file_info("/x/Photo.JPG", "/x").extension(), "jpg");
+        assert_eq!(make_file_info("/x/archive.TAR.GZ", "/x").extension(), "gz");
+    }
+
+    #[test]
+    fn extension_is_empty_for_no_extension() {
+        assert_eq!(make_file_info("/x/README", "/x").extension(), "");
+    }
+
+    #[test]
+    fn name_lower_is_lowercased_filename_only() {
+        // Kills: replace name_lower → String::new() / → "xyzzy".
+        assert_eq!(make_file_info("/x/y/Foo.Bar", "/x").name_lower(), "foo.bar");
+    }
+
+    #[test]
+    fn dest_path_preserves_relative_layout_under_destination_root() {
+        // Kills: replace dest_path → Default::default().
+        let info = make_file_info("/src/dir/sub/leaf.txt", "/src");
+        assert_eq!(
+            info.dest_path(Path::new("/dst")),
+            PathBuf::from("/dst/dir/sub/leaf.txt")
+        );
+    }
+
+    #[test]
+    fn dest_path_falls_back_to_filename_when_prefix_does_not_match() {
+        // The fallback branch: when strip_prefix fails, just place the file
+        // by name at the destination root.
+        let info = make_file_info("/elsewhere/file.bin", "/different-root");
+        assert_eq!(info.dest_path(Path::new("/dst")), PathBuf::from("/dst/file.bin"));
+    }
+
+    // ---- CopyTransaction ----
+
+    #[test]
+    fn copy_transaction_rollback_deletes_files_and_dirs_in_reverse() {
+        // Build a real on-disk transaction: nested dirs + a file, then roll
+        // back. Both removals must happen. The rollback must walk dirs in
+        // reverse-creation order so the leaf is removed before its parent.
+        let tmp = tempfile::tempdir().unwrap();
+        let outer = tmp.path().join("outer");
+        let inner = outer.join("inner");
+        std::fs::create_dir(&outer).unwrap();
+        std::fs::create_dir(&inner).unwrap();
+        let file = inner.join("data.bin");
+        std::fs::write(&file, b"hello").unwrap();
+
+        let mut tx = CopyTransaction::new();
+        tx.record_dir(outer.clone());
+        tx.record_dir(inner.clone());
+        tx.record_file(file.clone());
+
+        tx.rollback();
+
+        assert!(!file.exists(), "file must be removed on rollback");
+        assert!(!inner.exists(), "inner dir must be removed (leaf-first)");
+        assert!(!outer.exists(), "outer dir must be removed");
+    }
+
+    #[test]
+    fn copy_transaction_commit_prevents_drop_rollback() {
+        // Kills: replace CopyTransaction::commit with (), and the `!self.committed`
+        // guard in Drop. After commit(), files must survive Drop.
+        let tmp = tempfile::tempdir().unwrap();
+        let file = tmp.path().join("kept.txt");
+        std::fs::write(&file, b"persist").unwrap();
+
+        {
+            let mut tx = CopyTransaction::new();
+            tx.record_file(file.clone());
+            tx.commit();
+        } // Drop runs here.
+
+        assert!(file.exists(), "commit() must prevent the Drop-based rollback");
+    }
+
+    #[test]
+    fn copy_transaction_drop_rolls_back_when_not_committed() {
+        // Kills: replace <impl Drop>::drop with (), and `delete !` in Drop.
+        let tmp = tempfile::tempdir().unwrap();
+        let file = tmp.path().join("ephemeral.txt");
+        std::fs::write(&file, b"will be gone").unwrap();
+
+        {
+            let mut tx = CopyTransaction::new();
+            tx.record_file(file.clone());
+            // No commit — Drop should roll back.
+        }
+
+        assert!(!file.exists(), "Drop-on-uncommitted must remove recorded files");
+    }
+
+    #[test]
+    fn copy_transaction_record_methods_push_in_order() {
+        // Kills: replace record_file/record_dir with ().
+        let mut tx = CopyTransaction::new();
+        tx.record_file(PathBuf::from("/a"));
+        tx.record_file(PathBuf::from("/b"));
+        tx.record_dir(PathBuf::from("/d1"));
+        assert_eq!(tx.created_files, vec![PathBuf::from("/a"), PathBuf::from("/b")]);
+        assert_eq!(tx.created_dirs, vec![PathBuf::from("/d1")]);
+        tx.commit(); // suppress Drop rollback (paths don't exist anyway, but be tidy)
+    }
+}
