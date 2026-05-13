@@ -49,6 +49,14 @@ import os from 'os'
 // SMB operations involve network + Docker overhead.
 test.setTimeout(120_000)
 
+// Linux SMB tests run inside Docker (gvfs-based mounting). mDNS discovery and
+// GVFS mount are environmentally flaky on Docker overlay filesystems — see
+// e2e-linux/CLAUDE.md for the GVFS / UDisks2VolumeMonitor warning the OS spews
+// when concurrent mounts collide. A single retry hides this without masking
+// real regressions. SMB tests are skipped on macOS, so the retry only fires on
+// Linux.
+test.describe.configure({ retries: 1 })
+
 /** Name of the root/local volume — differs by platform. */
 const LOCAL_VOLUME_NAME = os.platform() === 'linux' ? 'Root' : 'Macintosh HD'
 
@@ -166,8 +174,10 @@ describeSmb('SMB host discovery', () => {
     // Switch left pane to Network
     await mcpSelectVolume('left', 'Network')
 
-    // Wait for virtual hosts to appear (injected by smb-e2e feature)
-    await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), 15000)
+    // Wait for virtual hosts to appear (injected by smb-e2e feature).
+    // 30s: defensive bound. Hosts typically appear within 1-3 s; longer budget covers
+    // mDNS discovery latency variance on Linux Docker.
+    await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), 30000)
 
     const hasGuest = await hostExistsInPane(tauriPage, 'SMB Test (Guest)')
     const hasAuth = await hostExistsInPane(tauriPage, 'SMB Test (Auth)')

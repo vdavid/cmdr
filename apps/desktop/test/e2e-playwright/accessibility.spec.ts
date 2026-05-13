@@ -143,13 +143,17 @@ async function openCommandPalette(tauriPage: PageLike): Promise<void> {
   await tauriPage.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', {
         key: 'p', ctrlKey: ${String(CTRL_OR_META === 'Control')}, metaKey: ${String(CTRL_OR_META === 'Meta')}, shiftKey: true, bubbles: true
     }))`)
-  await tauriPage.waitForSelector('.palette-overlay', 5000)
+  // 15s: defensive bound. Selector resolves in <100 ms on the happy path; only matters under
+  // CPU contention (CI under load, parallel runs, slow Linux Docker).
+  await tauriPage.waitForSelector('.palette-overlay', 15000)
 }
 
 /** Open the search dialog overlay. */
 async function openSearchDialog(tauriPage: PageLike): Promise<void> {
   await dispatchMenuCommand(tauriPage, 'search.open')
-  await tauriPage.waitForSelector('.search-overlay', 5000)
+  // 15s: defensive bound. Selector resolves in <100 ms on the happy path; only matters under
+  // CPU contention.
+  await tauriPage.waitForSelector('.search-overlay', 15000)
 }
 
 /** Switch the app theme via Tauri's setTheme API.
@@ -249,7 +253,9 @@ for (const mode of ['light', 'dark'] as const) {
       await ensureAppReady(tauriPage)
 
       await executeViaCommandPalette(tauriPage, 'license')
-      await tauriPage.waitForSelector('[data-dialog-id="license"]', 5000)
+      // 15s: defensive bound. License dialog opens in <100 ms on the happy path; only matters
+      // under CPU contention.
+      await tauriPage.waitForSelector('[data-dialog-id="license"]', 15000)
 
       const { all } = await runAxeAudit(tauriPage, `License dialog (${mode})`, '[data-dialog-id="license"]')
       await dismissDialog(tauriPage)
