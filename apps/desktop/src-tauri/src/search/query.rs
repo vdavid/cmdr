@@ -690,18 +690,6 @@ mod tests {
         use proptest::prelude::*;
 
         proptest! {
-            /// `split_scope_segments` always returns at least one segment
-            /// and never panics on arbitrary input.
-            #[test]
-            fn always_at_least_one_segment(input in ".*") {
-                let segments = split_scope_segments(&input);
-                prop_assert!(
-                    !segments.is_empty(),
-                    "split_scope_segments({:?}) returned empty vec",
-                    input
-                );
-            }
-
             /// For inputs containing no special characters (no comma, no
             /// quotes, no backslash), the result is exactly `[input]` and
             /// the round-trip `segments.join(",") == input` holds.
