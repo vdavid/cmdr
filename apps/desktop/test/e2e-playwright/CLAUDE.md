@@ -60,6 +60,27 @@ CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright
 When running manually, the test suite does NOT launch the app. The app must be started with `CMDR_E2E_START_PATH`
 pointing to a fixture directory created by `e2e-shared/fixtures.ts`.
 
+## Running a single spec
+
+When iterating on one spec, **run only that spec**. The full suite takes ~10 minutes and produces noisy cascade
+failures when the broken test takes the app down with it (subsequent specs fail with connection errors). Save the
+full run for the final CI-green check.
+
+With the app already running (see "Manually" above), filter by file or by name:
+
+```bash
+cd apps/desktop
+
+# By file path (relative to apps/desktop/)
+CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright test/e2e-playwright/brief-cursor-visibility.spec.ts
+
+# By test-name substring (matches `test('...')` titles)
+CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright --grep "cursor stays in view"
+```
+
+The checker invocation (`./scripts/check.sh --check desktop-e2e-playwright`) doesn't support filtering — it always
+runs the whole suite. So during iteration, prefer the manual flow.
+
 ## Running on Linux (Docker)
 
 ```bash

@@ -111,6 +111,11 @@ Always use the checker script for compilation, linting, formatting, and tests. I
 - Specific tests by name (the one exception where direct commands are fine):
   - Rust: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`
   - Svelte: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
+  - Playwright: see `apps/desktop/test/e2e-playwright/CLAUDE.md` § "Running a single spec"
+- **When iterating on one test, run only that test.** The full suite is for confirming CI-green before declaring done,
+  not for each tweak. Running the whole Playwright suite for one new spec wastes ~10 minutes per cycle and produces
+  noisy "cascade" failures when the broken test takes the app down with it (subsequent specs fail with connection
+  errors). Same principle at smaller scales for Rust and Vitest.
 - E2E (Playwright): See `apps/desktop/test/e2e-playwright/CLAUDE.md` — build with `playwright-e2e` feature, start app,
   run tests
 - Ubuntu test VM: See `apps/desktop/test/e2e-linux/CLAUDE.md` § "Ubuntu test VM"
