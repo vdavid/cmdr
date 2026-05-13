@@ -75,6 +75,7 @@ test.describe('Cancel and rollback', () => {
         return false;
       })()`)
       if (clickedRollback) break
+      // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
       await sleep(100)
     }
 
@@ -278,6 +279,7 @@ test.describe('Type mismatch conflicts', () => {
         payload: { pane: 'right', path: ${JSON.stringify(rightPath)} }
       });
     })()`)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(300)
 
     const ready = await pollUntil(
@@ -308,6 +310,7 @@ test.describe('Type mismatch conflicts', () => {
 
     // This might or might not show conflict policy depending on how the dry-run
     // detects the type mismatch. Wait briefly then check.
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(1000)
     const hasConflict = await tauriPage.isVisible(`${TRANSFER_DIALOG} .conflict-policy`)
     if (hasConflict) {

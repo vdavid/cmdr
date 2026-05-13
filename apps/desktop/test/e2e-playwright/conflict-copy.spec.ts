@@ -181,6 +181,7 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
     })()`)
 
     // Wait for next conflict or brief re-render
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(500)
 
     // Second conflict: click "Skip all" (applies to all remaining)

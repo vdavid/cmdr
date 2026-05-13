@@ -73,6 +73,7 @@ async function navigateBackToLeft(tauriPage: PageLike): Promise<void> {
             payload: { pane: 'left', path: ${JSON.stringify(fixtureRoot + '/left')} }
         });
     })()`)
+  // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
   await sleep(500)
   await tauriPage.waitForSelector('.file-entry', 5000)
 }
@@ -155,6 +156,7 @@ test.describe('Error pane: Transient errors (ETIMEDOUT)', () => {
                 }
             }
         })()`)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(500)
 
     // The error pane should disappear and file entries should appear

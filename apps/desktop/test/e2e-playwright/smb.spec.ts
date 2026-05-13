@@ -74,6 +74,7 @@ test.beforeEach(async ({ tauriPage }) => {
   }
 
   recreateFixtures(getFixtureRoot())
+  // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
   await sleep(1000) // Let file watcher settle after fixture recreation
 
   // Navigate to the main route first — volume-select event listeners
@@ -159,6 +160,7 @@ describeSmb('SMB host discovery', () => {
 
     // Switch left pane to Network
     await mcpSelectVolume('left', 'Network')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
 
     // Wait for virtual hosts to appear (injected by smb-e2e feature)
@@ -174,6 +176,7 @@ describeSmb('SMB host discovery', () => {
     await ensureAppReady(tauriPage)
 
     await mcpSelectVolume('left', 'Network')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
 
     // Wait for the guest host to appear and its shares to be prefetched
@@ -194,6 +197,7 @@ describeSmb('SMB share browsing', () => {
 
     // Switch to Network, wait for hosts
     await mcpSelectVolume('left', 'Network')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
     await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), 15000)
 
@@ -218,6 +222,7 @@ describeSmb('SMB mounting and file browsing', () => {
 
     // Switch to Network → open guest host → select share
     await mcpSelectVolume('left', 'Network')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
     await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), 15000)
 
@@ -247,6 +252,7 @@ describeSmb('SMB mounting and file browsing', () => {
     }
 
     await mcpNavToPath('left', SMB_GUEST_MOUNT)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
 
     // The Docker guest container creates files in /share.
@@ -269,6 +275,7 @@ describeSmb('SMB cross-storage copy', () => {
     // Left pane: local fixtures (already set by ensureAppReady)
     // Right pane: mounted SMB share
     await mcpNavToPath('right', SMB_GUEST_MOUNT)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
 
     // Copy file-a.txt from left to right
@@ -308,6 +315,7 @@ describeSmb('SMB cross-storage copy', () => {
 
     // Left pane: SMB share, Right pane: local fixtures right/
     await mcpNavToPath('left', SMB_GUEST_MOUNT)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
     await mcpAwaitItem('left', 'smb-test-file.txt', 15)
 
@@ -340,6 +348,7 @@ describeSmb('SMB authentication', () => {
     await ensureAppReady(tauriPage)
 
     await mcpSelectVolume('left', 'Network')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
 
     // Wait for the auth host to appear and its shares to be prefetched
@@ -408,6 +417,7 @@ describeSmb('SMB 50-share server', () => {
     await ensureAppReady(tauriPage)
 
     await mcpSelectVolume('left', 'Network')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
 
     // Wait for the 50-shares host to appear and prefetch shares
@@ -453,6 +463,7 @@ describeSmb('SMB unicode server', () => {
 
     // Switch to Network, open unicode host
     await mcpSelectVolume('left', 'Network')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
     await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Unicode)'), 15000)
 

@@ -59,6 +59,7 @@ async function pollUntilValue(
     } catch {
       // Element might not exist yet
     }
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(interval)
   }
   return ''
@@ -324,6 +325,7 @@ test.describe('MTP file operations', () => {
     await mcpCall('copy', { autoConfirm: true })
 
     // MTP listings don't auto-refresh after upload — wait for transfer, then force refresh
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
     await mcpCall('refresh', {})
 
@@ -351,8 +353,10 @@ test.describe('MTP file operations', () => {
 
     // Ensure left pane is focused
     await mcpSwitchPane()
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(200)
     await mcpSwitchPane()
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(200)
 
     // Ensure we're focused on left pane (Documents)
@@ -364,6 +368,7 @@ test.describe('MTP file operations', () => {
     await mcpCall('move', { autoConfirm: true })
 
     // MTP listings don't auto-refresh after move — wait for operation, then force refresh
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
     await mcpCall('refresh', {})
 
@@ -429,6 +434,7 @@ test.describe('MTP file operations', () => {
     )
 
     // Wait for operation, then force refresh
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
     await mcpCall('refresh', {})
 
@@ -452,15 +458,18 @@ test.describe('MTP file operations', () => {
     // Select both files: move to report.txt, Space to select, move to notes.txt, Space to select
     await moveCursorToFile(tauriPage, 'report.txt')
     await pressKey(tauriPage, 'Space')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(200)
     await moveCursorToFile(tauriPage, 'notes.txt')
     await pressKey(tauriPage, 'Space')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(200)
 
     // Delete via MCP with autoConfirm
     await mcpCall('delete', { autoConfirm: true })
 
     // Wait for operation, then force refresh
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
     await mcpCall('refresh', {})
 
@@ -489,6 +498,7 @@ test.describe('MTP file operations', () => {
     await mcpCall('delete', { autoConfirm: true })
 
     // Wait for operation, then force refresh
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(3000)
     await mcpCall('refresh', {})
 
@@ -511,6 +521,7 @@ test.describe('MTP file operations', () => {
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
     await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, 'NewFolder')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(200)
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} .btn-primary`, 3000)
     await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
@@ -519,6 +530,7 @@ test.describe('MTP file operations', () => {
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
 
     // MTP listings may not auto-refresh — force refresh after mkdir
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(1000)
     await mcpCall('refresh', {})
 
@@ -560,8 +572,10 @@ test.describe('MTP rename', () => {
             else input.value = '';
             input.dispatchEvent(new Event('input', { bubbles: true }));
         })()`)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(100)
     await tauriPage.type('.rename-input', 'renamed-report.txt')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(200)
     await tauriPage.press('.rename-input', 'Enter')
 
@@ -599,8 +613,10 @@ test.describe('MTP rename', () => {
             else input.value = '';
             input.dispatchEvent(new Event('input', { bubbles: true }));
         })()`)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(100)
     await tauriPage.type('.rename-input', 'notes.txt')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(500)
     await tauriPage.press('.rename-input', 'Enter')
 
@@ -613,6 +629,7 @@ test.describe('MTP rename', () => {
 
     // Cancel the dialog — both files should remain unchanged
     await tauriPage.keyboard.press('Escape')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(500)
 
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(true)
@@ -638,6 +655,7 @@ test.describe('MTP cross-storage move', () => {
     await mcpCall('move', { autoConfirm: true })
 
     // Wait for file to appear in right pane (local)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
     await mcpCall('refresh', {})
     await mcpAwaitItem('right', 'report.txt', 30)
@@ -668,6 +686,7 @@ test.describe('MTP cross-storage move', () => {
     await mcpCall('move', { autoConfirm: true })
 
     // Wait for operation, then force refresh
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
     await mcpCall('refresh', {})
 
@@ -696,10 +715,12 @@ test.describe('MTP clipboard rejection', () => {
 
     // Focus the left pane and move cursor to Documents
     await mcpCall('move_cursor', { pane: 'left', filename: 'Documents' })
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(300)
 
     // Press Cmd+C (copy to clipboard)
     await pressKey(tauriPage, `${CTRL_OR_META}+c`)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(500)
 
     // Verify toast appears with MTP clipboard message
@@ -739,10 +760,12 @@ test.describe('MTP clipboard rejection', () => {
 
     // Focus and move cursor
     await mcpCall('move_cursor', { pane: 'left', filename: 'Documents' })
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(300)
 
     // Press Cmd+X (cut to clipboard)
     await pressKey(tauriPage, `${CTRL_OR_META}+x`)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(500)
 
     // Verify toast with F6 message
@@ -777,6 +800,7 @@ test.describe('MTP clipboard rejection', () => {
                 if (entry) entry.click();
             }
         })()`)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(500)
 
     // Verify right pane is focused (has MTP volume)
@@ -790,6 +814,7 @@ test.describe('MTP clipboard rejection', () => {
     await tauriPage.keyboard.down(CTRL_OR_META)
     await tauriPage.keyboard.press('v')
     await tauriPage.keyboard.up(CTRL_OR_META)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(500)
 
     // Verify toast with F5 message about copying TO MTP.
@@ -826,6 +851,7 @@ test.describe('MTP read-only enforcement', () => {
     // Try F7 (create folder) — should trigger an error or show the dialog which
     // will fail on confirm. Press F7 and check what happens.
     await pressKey(tauriPage, 'F7')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(500)
 
     // Check if an alert dialog appeared (read-only volumes may show an alert
@@ -851,6 +877,7 @@ test.describe('MTP read-only enforcement', () => {
       // Dialog opened — type a name and confirm, expect backend error
       await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
       await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, 'TestFolder')
+      // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
       await sleep(200)
       await tauriPage.waitForSelector(`${MKDIR_DIALOG} .btn-primary`, 3000)
       await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
@@ -881,6 +908,7 @@ test.describe('MTP read-only enforcement', () => {
     // Also test rename on read-only: cursor on sunset.jpg, press F2
     await moveCursorToFile(tauriPage, 'sunset.jpg')
     await tauriPage.keyboard.press('F2')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(500)
 
     // Rename should be blocked with an alert (DualPaneExplorer.startRename checks isReadOnly)

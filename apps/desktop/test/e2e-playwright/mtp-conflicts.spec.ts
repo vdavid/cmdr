@@ -253,8 +253,10 @@ test.describe('MTP same-volume move conflicts', () => {
 
     // Ensure left pane is focused
     await mcpSwitchPane()
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(200)
     await mcpSwitchPane()
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(200)
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
@@ -305,8 +307,10 @@ test.describe('MTP same-volume move conflicts', () => {
     await mcpAwaitItem('right', 'report.txt')
 
     await mcpSwitchPane()
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(200)
     await mcpSwitchPane()
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(200)
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })

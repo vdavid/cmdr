@@ -31,11 +31,14 @@ async function moveCursorToSubDir(tauriPage: PageLike): Promise<boolean> {
   if ('error' in info || info.targetIndex < 0) return false
 
   await tauriPage.keyboard.press('Home')
+  // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
   await sleep(100)
   for (let i = 0; i < info.targetIndex; i++) {
     await tauriPage.keyboard.press('ArrowDown')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(50)
   }
+  // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
   await sleep(100)
   return true
 }
@@ -444,6 +447,7 @@ test.describe('New folder dialog', () => {
     const folderName = `test-folder-${String(Date.now())}`
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
     await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, folderName)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(200)
 
     // Verify OK button is enabled
@@ -521,6 +525,7 @@ test.describe('Transfer dialogs', () => {
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
 
     await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, 'unused-cancel-folder')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(150)
 
     // Click the secondary (Cancel) button rather than pressing Escape.

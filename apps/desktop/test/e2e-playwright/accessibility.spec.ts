@@ -355,6 +355,7 @@ for (const mode of ['light', 'dark'] as const) {
         // loads dbFileSize which controls the "Clear index" button's disabled state).
         // The pollUntil above already gated on section visibility — this just lets
         // any reactive child updates land before axe inspects the DOM.
+        // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
         await sleep(150)
 
         const { all } = await runAxeAudit(tauriPage, `Settings: ${section.name} (${mode})`)

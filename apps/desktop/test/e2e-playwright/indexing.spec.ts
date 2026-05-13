@@ -60,6 +60,7 @@ async function waitForIndexData(tauriPage: PageLike, dirPath: string, timeoutMs 
   while (Date.now() < deadline) {
     const stats = await getDirStats(tauriPage, dirPath)
     if (stats && stats.recursiveFileCount > 0) return stats
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(2000)
   }
   return null
@@ -79,6 +80,7 @@ async function waitForExactSize(
   while (Date.now() < deadline) {
     const stats = await getDirStats(tauriPage, dirPath)
     if (stats && stats.recursiveSize === expectedSize) return stats
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(500)
   }
   return await getDirStats(tauriPage, dirPath)

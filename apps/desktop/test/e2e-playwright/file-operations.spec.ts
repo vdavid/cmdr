@@ -152,8 +152,10 @@ test.describe('Rename round-trip', () => {
             else input.value = '';
             input.dispatchEvent(new Event('input', { bubbles: true }));
         })()`)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(100)
     await tauriPage.type('.rename-input', 'renamed-file.txt')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(200)
     await tauriPage.press('.rename-input', 'Enter')
 
@@ -184,6 +186,7 @@ test.describe('Create folder round-trip', () => {
 
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
     await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, folderName)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(200)
 
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} .btn-primary`, 3000)
@@ -243,6 +246,7 @@ test.describe('Hidden files toggle', () => {
       await tauriPage.keyboard.press('.')
       await tauriPage.keyboard.up('Shift')
       await tauriPage.keyboard.up(CTRL_OR_META)
+      // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
       await sleep(1000)
     }
 

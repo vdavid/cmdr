@@ -195,6 +195,7 @@ test.describe('File watching', () => {
             event: 'mcp-nav-to-path',
             payload: { pane: 'right', path: ${JSON.stringify(tempDir)} }
         })`)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(500)
     await pollUntil(tauriPage, async () => fileExistsInPane(tauriPage, 'temp-file.txt', 1), 8000)
 
@@ -221,8 +222,10 @@ test.describe('File watching', () => {
 
     // Keyboard still works (no crash)
     await tauriPage.keyboard.press('Tab')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(300)
     await tauriPage.keyboard.press('Tab')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(300)
     expect(await fileExistsInPane(tauriPage, 'file-a.txt', 0)).toBe(true)
   })
@@ -237,6 +240,7 @@ test.describe('File watching', () => {
             event: 'mcp-nav-to-path',
             payload: { pane: 'right', path: ${JSON.stringify(leftDir)} }
         })`)
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
     await sleep(500)
     await pollUntil(tauriPage, async () => fileExistsInPane(tauriPage, 'file-a.txt', 1), 8000)
 
