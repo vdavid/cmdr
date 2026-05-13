@@ -5,9 +5,9 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
     import SettingSlider from '../components/SettingSlider.svelte'
-    import { getSettingDefinition } from '$lib/settings'
+    import { getSetting, getSettingDefinition, onSpecificSettingChange, type BriefColumnWidthMode } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
-    import { getBriefColumnWidthMode } from '$lib/settings/reactive-settings.svelte'
+    import { onMount } from 'svelte'
 
     interface Props {
         searchQuery: string
@@ -27,7 +27,16 @@
     const stripedRowsDef = getSettingDefinition('listing.stripedRows') ?? { label: '', description: '' }
     const briefWidthModeDef = getSettingDefinition('listing.briefColumnWidthMode') ?? { label: '', description: '' }
 
-    const sliderDisabled = $derived(getBriefColumnWidthMode() !== 'limited')
+    // Read the setting directly and subscribe in-window. `reactive-settings.svelte.ts` is only
+    // initialised in the main window — the settings window has its own JS context where that
+    // module-scope state never updates, so we can't rely on its getter here.
+    let briefWidthMode = $state<BriefColumnWidthMode>(getSetting('listing.briefColumnWidthMode'))
+    onMount(() =>
+        onSpecificSettingChange('listing.briefColumnWidthMode', (_id, value) => {
+            briefWidthMode = value as BriefColumnWidthMode
+        }),
+    )
+    const sliderDisabled = $derived(briefWidthMode !== 'limited')
 </script>
 
 <SettingsSection title="Listing">
