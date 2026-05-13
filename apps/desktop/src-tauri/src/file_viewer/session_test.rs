@@ -164,12 +164,27 @@ fn search_cancel_works() {
 
     session::search_start(sid, "hello".to_string()).unwrap();
 
-    // Cancel immediately
+    // Cancel immediately. The cancel flag is set synchronously; the search
+    // thread will see it on its next iteration and exit, writing the final
+    // `SearchStatus::Cancelled` to the shared status mutex.
     session::search_cancel(sid).unwrap();
 
-    // Poll should show cancelled or idle (since we removed the search state)
-    let poll = session::search_poll(sid, 0).unwrap();
-    assert!(matches!(poll.status, SearchStatus::Idle));
+    // Poll until the thread observes the cancel and transitions to Cancelled.
+    let mut saw_cancelled = false;
+    for _ in 0..200 {
+        let poll = session::search_poll(sid, 0).unwrap();
+        if matches!(poll.status, SearchStatus::Cancelled) {
+            saw_cancelled = true;
+            break;
+        }
+        assert!(
+            matches!(poll.status, SearchStatus::Running),
+            "expected Running or Cancelled while cancellation propagates, got {:?}",
+            poll.status
+        );
+        thread::sleep(Duration::from_millis(10));
+    }
+    assert!(saw_cancelled, "search did not transition to Cancelled in time");
 
     session::close_session(sid).unwrap();
     cleanup(&dir);

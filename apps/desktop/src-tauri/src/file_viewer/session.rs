@@ -391,6 +391,12 @@ pub fn search_poll(session_id: &str, since_index: usize) -> Result<SearchPollRes
 }
 
 /// Cancels an ongoing search.
+///
+/// Sets the cancel flag and leaves the `SearchState` in place so the spawned
+/// search thread can write the final `SearchStatus::Cancelled` and so
+/// subsequent `search_poll` calls surface that transition to the FE. The
+/// `SearchState` is replaced atomically the next time `search_start` is called
+/// (which itself begins by calling this function, then installs a fresh state).
 pub fn search_cancel(session_id: &str) -> Result<(), ViewerError> {
     let mut sessions = SESSIONS.lock_ignore_poison();
     let session = sessions
@@ -400,7 +406,6 @@ pub fn search_cancel(session_id: &str) -> Result<(), ViewerError> {
     if let Some(search) = &session.search {
         search.cancel.store(true, Ordering::Relaxed);
     }
-    session.search = None;
 
     Ok(())
 }
