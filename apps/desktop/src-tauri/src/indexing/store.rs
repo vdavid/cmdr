@@ -2245,6 +2245,97 @@ mod tests {
         assert_eq!(normalize_for_comparison("hello"), "hello");
     }
 
+    // ── platform_case_compare (property-based) ───────────────────────
+    //
+    // The collation is used on every `entries.name` comparison in the
+    // SQLite index. A bug in the comparator would corrupt the index's
+    // sort order and, worse, cause `resolve_path` to fail to find
+    // entries the user typed in a different case or Unicode form.
+    // These properties pin the comparator algebra (reflexivity,
+    // antisymmetry, transitivity) plus the platform-specific normalization
+    // semantics (NFC≡NFD on macOS, byte-equal off macOS).
+
+    mod platform_case_proptests {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            /// Reflexivity: `cmp(a, a) == Equal` for any string.
+            #[test]
+            fn reflexivity(s in ".*") {
+                prop_assert_eq!(platform_case_compare(&s, &s), std::cmp::Ordering::Equal);
+            }
+
+            /// Antisymmetry: `cmp(a, b)` and `cmp(b, a)` must be reverses
+            /// of each other.
+            #[test]
+            fn antisymmetry(a in ".*", b in ".*") {
+                let ab = platform_case_compare(&a, &b);
+                let ba = platform_case_compare(&b, &a);
+                prop_assert_eq!(
+                    ab,
+                    ba.reverse(),
+                    "cmp({:?}, {:?}) = {:?} but cmp({:?}, {:?}) = {:?} should be its reverse",
+                    a, b, ab, b, a, ba
+                );
+            }
+
+            /// Transitivity: if `cmp(a, b) <= 0` and `cmp(b, c) <= 0`,
+            /// then `cmp(a, c) <= 0`. We also check the strict-less and
+            /// equal flavors.
+            #[test]
+            fn transitivity(a in ".*", b in ".*", c in ".*") {
+                use std::cmp::Ordering::*;
+                let ab = platform_case_compare(&a, &b);
+                let bc = platform_case_compare(&b, &c);
+                let ac = platform_case_compare(&a, &c);
+                if ab != Greater && bc != Greater {
+                    prop_assert!(
+                        ac != Greater,
+                        "transitivity violated: cmp(a,b)={:?} cmp(b,c)={:?} cmp(a,c)={:?} for a={:?} b={:?} c={:?}",
+                        ab, bc, ac, a, b, c
+                    );
+                }
+                if ab != Less && bc != Less {
+                    prop_assert!(
+                        ac != Less,
+                        "transitivity violated (>=): cmp(a,b)={:?} cmp(b,c)={:?} cmp(a,c)={:?}",
+                        ab, bc, ac
+                    );
+                }
+            }
+        }
+
+        // On macOS, NFC and NFD forms of the same logical string must
+        // compare equal: APFS stores NFD, but users may type NFC, and
+        // `resolve_path` must find the stored entry either way.
+        #[cfg(target_os = "macos")]
+        proptest! {
+            #[test]
+            fn nfc_equals_nfd_on_macos(s in ".*") {
+                use unicode_normalization::UnicodeNormalization;
+                let nfc: String = s.nfc().collect();
+                let nfd: String = s.nfd().collect();
+                prop_assert_eq!(
+                    platform_case_compare(&nfc, &nfd),
+                    std::cmp::Ordering::Equal,
+                    "NFC {:?} and NFD {:?} of {:?} must compare equal on APFS",
+                    nfc, nfd, s
+                );
+            }
+        }
+
+        // Off macOS, the comparator is exact byte comparison. We pin
+        // this by checking that the result matches `str::cmp`.
+        #[cfg(not(target_os = "macos"))]
+        proptest! {
+            #[test]
+            fn matches_byte_cmp_off_macos(a in ".*", b in ".*") {
+                prop_assert_eq!(platform_case_compare(&a, &b), a.cmp(&b));
+            }
+        }
+    }
+
     #[test]
     fn has_sized_entry_for_inode_multiple_entries_one_has_sizes() {
         let (_store, dir) = open_temp_store();
