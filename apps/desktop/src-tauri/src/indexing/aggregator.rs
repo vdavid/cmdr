@@ -985,4 +985,109 @@ mod tests {
         assert!(pos_3 < pos_2);
         assert!(pos_2 < pos_1);
     }
+
+    // ── Property-based tests ─────────────────────────────────────────
+    //
+    // The function takes a slice of `(id, parent_id)` pairs and returns a
+    // bottom-up ordering. The properties we pin here are the ones the callers
+    // (`compute_all_aggregates`, the incremental aggregator paths) rely on:
+    // each id appears at most once, descendants come before ancestors, and
+    // pathological inputs (cycles, duplicates, large random forests) don't
+    // panic or hang.
+
+    mod proptests {
+        use super::*;
+        use proptest::prelude::*;
+        use std::collections::HashSet;
+
+        /// Generate an acyclic forest of `n` nodes where every node's parent
+        /// is either `0` (forest root, treated as "out of set") or one of
+        /// the already-emitted nodes. Returns `Vec<(id, parent_id)>` with
+        /// ids in `1..=n`.
+        fn forest_strategy(max_nodes: usize) -> impl Strategy<Value = Vec<(i64, i64)>> {
+            (1usize..=max_nodes).prop_flat_map(|n| {
+                // For each node i (1-indexed), pick a parent index in 0..i.
+                // Index 0 maps to parent_id 0 (sentinel for "no parent in set").
+                let parent_picks: Vec<_> = (0..n).map(|i| 0usize..=i).collect();
+                parent_picks.prop_map(move |picks| {
+                    picks
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, pick)| {
+                            let id = (i as i64) + 1;
+                            let parent_id = pick as i64; // 0 means "no parent in set"
+                            (id, parent_id)
+                        })
+                        .collect::<Vec<_>>()
+                })
+            })
+        }
+
+        proptest! {
+            /// For any acyclic forest, the sort emits each node exactly once
+            /// and places every descendant before its ancestor.
+            #[test]
+            fn forest_descendant_before_ancestor(entries in forest_strategy(40)) {
+                let sorted = topological_sort_bottom_up(&entries);
+
+                // Every id appears exactly once.
+                let unique_ids: HashSet<i64> = entries.iter().map(|&(id, _)| id).collect();
+                prop_assert_eq!(sorted.len(), unique_ids.len(), "output length must match unique input ids");
+                let sorted_set: HashSet<i64> = sorted.iter().copied().collect();
+                prop_assert_eq!(&sorted_set, &unique_ids, "output must be a permutation of the input ids");
+
+                // Build position map and parent map.
+                let pos: HashMap<i64, usize> =
+                    sorted.iter().enumerate().map(|(i, &id)| (id, i)).collect();
+                let parent_of: HashMap<i64, i64> =
+                    entries.iter().copied().collect();
+
+                // For every (child, parent_in_set) pair, child must come first.
+                for &(id, pid) in &entries {
+                    if pid != 0 && unique_ids.contains(&pid) {
+                        let cp = pos[&id];
+                        let pp = pos[&pid];
+                        prop_assert!(
+                            cp < pp,
+                            "descendant {} at pos {} must come before ancestor {} at pos {}",
+                            id, cp, pid, pp
+                        );
+                    }
+                    // Transitively the same must hold for any ancestor — but
+                    // chain through `parent_of` to be sure.
+                    let mut cursor = pid;
+                    let mut hops = 0;
+                    while cursor != 0 && unique_ids.contains(&cursor) && hops < entries.len() + 1 {
+                        prop_assert!(
+                            pos[&id] < pos[&cursor],
+                            "descendant {} must come before transitive ancestor {}",
+                            id, cursor
+                        );
+                        cursor = *parent_of.get(&cursor).unwrap_or(&0);
+                        hops += 1;
+                    }
+                }
+            }
+
+            /// Robustness: the function must not panic and must produce a
+            /// subset of unique input ids, even on arbitrary (possibly
+            /// cyclic, duplicate, or detached) (id, parent_id) lists.
+            #[test]
+            fn arbitrary_input_is_panic_free_and_subset(
+                entries in proptest::collection::vec((-50i64..50i64, -50i64..50i64), 0..30)
+            ) {
+                let sorted = topological_sort_bottom_up(&entries);
+                let unique_ids: HashSet<i64> = entries.iter().map(|&(id, _)| id).collect();
+
+                // No duplicates in output.
+                let sorted_set: HashSet<i64> = sorted.iter().copied().collect();
+                prop_assert_eq!(sorted.len(), sorted_set.len(), "output must have no duplicate ids");
+
+                // Output is a subset of unique input ids.
+                for id in &sorted_set {
+                    prop_assert!(unique_ids.contains(id), "output id {} must come from input", id);
+                }
+            }
+        }
+    }
 }
