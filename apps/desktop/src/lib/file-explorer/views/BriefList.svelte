@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { untrack } from 'svelte'
     import type { FileEntry, SortColumn, SortOrder, SyncStatus } from '../types'
     import { calculateVirtualWindowVariable, getScrollToPositionVariable } from './virtual-scroll'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
@@ -618,6 +619,12 @@
      * the implicit reliance on FilePane calling `scrollToIndex` on cursor moves —
      * width resize (drag pane resizer, window narrow) now also retriggers naturally.
      * Reads `columnWidths.length` to depend on the widths-arrival reassignment.
+     *
+     * `scrollToIndex` is wrapped in `untrack` because its body reads `scrollLeft` (and
+     * other reactive state) which would otherwise turn user-initiated scrollbar drags
+     * into a 60 Hz tug-of-war: the drag would move `scrollLeft`, refire this effect,
+     * which would snap back to the cursor, repeat. Only the explicit `void X`
+     * dependencies above should trigger this effect.
      */
     $effect(() => {
         void cursorIndex
@@ -625,7 +632,9 @@
         void containerHeight
         void columnWidths.length
         if (containerHeight > 0 && containerWidth > 0) {
-            scrollToIndex(cursorIndex)
+            untrack(() => {
+                scrollToIndex(cursorIndex)
+            })
         }
     })
 
