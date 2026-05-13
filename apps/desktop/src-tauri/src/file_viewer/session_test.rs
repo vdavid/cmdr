@@ -170,6 +170,7 @@ fn search_cancel_works() {
     session::search_cancel(sid).unwrap();
 
     // Poll until the thread observes the cancel and transitions to Cancelled.
+    // We accept Running (thread still in flight) along the way.
     let mut saw_cancelled = false;
     for _ in 0..200 {
         let poll = session::search_poll(sid, 0).unwrap();
@@ -185,6 +186,55 @@ fn search_cancel_works() {
         thread::sleep(Duration::from_millis(10));
     }
     assert!(saw_cancelled, "search did not transition to Cancelled in time");
+
+    session::close_session(sid).unwrap();
+    cleanup(&dir);
+}
+
+#[test]
+fn search_poll_after_cancel_surfaces_cancelled_then_idle_after_new_start() {
+    // Pins the full `Running → Cancelled` transition contract:
+    // 1. Cancelling a running search must surface as `Cancelled` on poll
+    //    (not silently flip to Idle, which would erase the user-visible
+    //    "search was cancelled" signal).
+    // 2. Starting a fresh search after a cancel resets the observable
+    //    status — the new search either reports `Running` while in flight
+    //    or `Done` if it finishes between calls.
+    let dir = create_test_dir("search_cancel_transition");
+    // Large enough to keep the thread busy long enough for the cancel to
+    // race the loop body (the inner loop checks the flag per chunk).
+    let content = "hello world\n".repeat(200_000);
+    let file = write_test_file(&dir, "test.txt", &content);
+
+    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let sid = &open_result.session_id;
+
+    session::search_start(sid, "hello".to_string()).unwrap();
+    session::search_cancel(sid).unwrap();
+
+    // Wait for the Cancelled transition.
+    let mut saw_cancelled = false;
+    for _ in 0..200 {
+        let poll = session::search_poll(sid, 0).unwrap();
+        if matches!(poll.status, SearchStatus::Cancelled) {
+            saw_cancelled = true;
+            break;
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+    assert!(saw_cancelled, "Cancelled was never observed by poll");
+
+    // Starting a fresh search must reset the observable status.
+    session::search_start(sid, "world".to_string()).unwrap();
+    let poll_after_restart = session::search_poll(sid, 0).unwrap();
+    assert!(
+        matches!(
+            poll_after_restart.status,
+            SearchStatus::Running | SearchStatus::Done
+        ),
+        "fresh search_start must clear the Cancelled state; got {:?}",
+        poll_after_restart.status
+    );
 
     session::close_session(sid).unwrap();
     cleanup(&dir);
