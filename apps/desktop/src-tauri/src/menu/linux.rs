@@ -11,10 +11,11 @@ use super::{
     ENTER_LICENSE_KEY_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID,
     FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, HELP_SEND_ERROR_REPORT_ID, MenuItems,
     NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, SEARCH_FILES_ID,
-    SELECT_ALL_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SWAP_PANES_ID, SWITCH_PANE_ID,
-    VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode,
-    brief_view_label, build_sort_submenu, build_zoom_submenu, copy_path_accelerator, full_view_label, register_item,
-    show_in_file_manager_accelerator, show_in_file_manager_label,
+    SELECT_ALL_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID,
+    SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
+    VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode, brief_view_label, build_sort_submenu,
+    build_zoom_submenu, copy_path_accelerator, full_view_label, register_item, show_in_file_manager_accelerator,
+    show_in_file_manager_label,
 };
 
 /// Linux menu: builds all menus from scratch, matching the macOS menu structure.
@@ -192,7 +193,18 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         show_hidden_files,
         Some("Cmd+Shift+."),
     )?;
-    let sort_submenu = build_sort_submenu(app, "&Sort by")?;
+    // GTK intercepts F-row keys at the toolkit level, but Cmd+digit chords (which
+    // map to Ctrl+digit on Linux) come through fine. ⌘F3-⌘F6 alts go through JS
+    // dispatch only on Linux.
+    let sort_items = build_sort_submenu(
+        app,
+        "&Sort by",
+        Some("Cmd+3"),
+        Some("Cmd+4"),
+        Some("Cmd+5"),
+        Some("Cmd+6"),
+    )?;
+    let sort_submenu = sort_items.submenu.clone();
     // GTK intercepts Cmd+Plus / Cmd+Minus at the toolkit level, so we don't
     // register them as native accelerators on Linux. The keyboard shortcuts
     // still work via the JS centralized dispatch path.
@@ -342,6 +354,25 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     register_item(&mut items, SWITCH_PANE_ID, &switch_pane_item, &view_submenu, 7);
     register_item(&mut items, SWAP_PANES_ID, &swap_panes_item, &view_submenu, 8);
     register_item(&mut items, COMMAND_PALETTE_ID, &command_palette_item, &view_submenu, 10);
+
+    // Sort by submenu positions: name(0), extension(1), modified(2), size(3), created(4),
+    // sep(5), ascending(6), descending(7).
+    register_item(&mut items, SORT_BY_NAME_ID, &sort_items.by_name, &sort_submenu, 0);
+    register_item(
+        &mut items,
+        SORT_BY_EXTENSION_ID,
+        &sort_items.by_extension,
+        &sort_submenu,
+        1,
+    );
+    register_item(
+        &mut items,
+        SORT_BY_MODIFIED_ID,
+        &sort_items.by_modified,
+        &sort_submenu,
+        2,
+    );
+    register_item(&mut items, SORT_BY_SIZE_ID, &sort_items.by_size, &sort_submenu, 3);
 
     // Go menu positions: back(0), forward(1), sep(2), parent(3)
     register_item(&mut items, GO_BACK_ID, &go_back_item, &go_menu, 0);

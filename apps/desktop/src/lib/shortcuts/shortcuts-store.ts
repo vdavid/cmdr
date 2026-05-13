@@ -129,6 +129,11 @@ const menuCommands = [
   'pane.swap',
   // Search
   'search.open',
+  // Sort
+  'sort.byName',
+  'sort.byExtension',
+  'sort.byModified',
+  'sort.bySize',
   // Navigation
   'nav.back',
   'nav.forward',

@@ -175,9 +175,19 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         VIEW_ZOOM_IN_ID => Some(("view.zoom.in", CommandScope::App)),
         VIEW_ZOOM_OUT_ID => Some(("view.zoom.out", CommandScope::App)),
 
+        // Sort items: mapped so user-customized accelerators can flow into the menu via the
+        // generic update path. At runtime, `on_menu_event` intercepts these IDs *before* this
+        // lookup and emits `menu-sort` instead of `execute-command` — so this mapping never
+        // routes a click. It exists purely as the source of truth for the reverse map.
+        SORT_BY_NAME_ID => Some(("sort.byName", CommandScope::FileScoped)),
+        SORT_BY_EXTENSION_ID => Some(("sort.byExtension", CommandScope::FileScoped)),
+        SORT_BY_MODIFIED_ID => Some(("sort.byModified", CommandScope::FileScoped)),
+        SORT_BY_SIZE_ID => Some(("sort.bySize", CommandScope::FileScoped)),
+
         // Not mapped: CheckMenuItems (show_hidden_files, view modes), close-tab (special logic),
-        // viewer word wrap, tab context menu actions, sort items, "open-with:*" (prefix-routed
-        // before this lookup in `lib.rs::on_menu_event`).
+        // viewer word wrap, tab context menu actions, sort order items (ascending/descending/
+        // date-created), "open-with:*" (prefix-routed before this lookup in
+        // `lib.rs::on_menu_event`).
         _ => None,
     }
 }
@@ -232,6 +242,10 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "edit.pasteAsMove" => Some(EDIT_PASTE_MOVE_ID),
         "cloud.makeOffline" => Some(CLOUD_MAKE_OFFLINE_ID),
         "cloud.removeDownload" => Some(CLOUD_REMOVE_DOWNLOAD_ID),
+        "sort.byName" => Some(SORT_BY_NAME_ID),
+        "sort.byExtension" => Some(SORT_BY_EXTENSION_ID),
+        "sort.byModified" => Some(SORT_BY_MODIFIED_ID),
+        "sort.bySize" => Some(SORT_BY_SIZE_ID),
         _ => None,
     }
 }
@@ -471,31 +485,59 @@ pub fn set_macos_menu_icons() {
     macos::set_macos_menu_icons();
 }
 
+/// Items returned from `build_sort_submenu` so callers can register the sort items
+/// in the items HashMap for accelerator updates.
+pub(crate) struct SortSubmenuItems<R: Runtime> {
+    pub submenu: Submenu<R>,
+    pub by_name: MenuItem<R>,
+    pub by_extension: MenuItem<R>,
+    pub by_modified: MenuItem<R>,
+    pub by_size: MenuItem<R>,
+}
+
 /// Builds the Sort by submenu (shared between macOS and Linux).
-fn build_sort_submenu<R: Runtime>(app: &AppHandle<R>, label: &str) -> tauri::Result<Submenu<R>> {
-    let sort_by_name = MenuItem::with_id(app, SORT_BY_NAME_ID, "Name", true, None::<&str>)?;
-    let sort_by_ext = MenuItem::with_id(app, SORT_BY_EXTENSION_ID, "Extension", true, None::<&str>)?;
-    let sort_by_size = MenuItem::with_id(app, SORT_BY_SIZE_ID, "Size", true, None::<&str>)?;
-    let sort_by_modified = MenuItem::with_id(app, SORT_BY_MODIFIED_ID, "Date modified", true, None::<&str>)?;
+///
+/// Accelerators for Name/Extension/Date modified/Size are caller-provided so each
+/// platform can pass `None` where the toolkit can't deliver the chord.
+fn build_sort_submenu<R: Runtime>(
+    app: &AppHandle<R>,
+    label: &str,
+    accel_name: Option<&str>,
+    accel_extension: Option<&str>,
+    accel_modified: Option<&str>,
+    accel_size: Option<&str>,
+) -> tauri::Result<SortSubmenuItems<R>> {
+    let sort_by_name = MenuItem::with_id(app, SORT_BY_NAME_ID, "Name", true, accel_name)?;
+    let sort_by_ext = MenuItem::with_id(app, SORT_BY_EXTENSION_ID, "Extension", true, accel_extension)?;
+    let sort_by_modified = MenuItem::with_id(app, SORT_BY_MODIFIED_ID, "Date modified", true, accel_modified)?;
+    let sort_by_size = MenuItem::with_id(app, SORT_BY_SIZE_ID, "Size", true, accel_size)?;
     let sort_by_created = MenuItem::with_id(app, SORT_BY_CREATED_ID, "Date created", true, None::<&str>)?;
     let sort_asc = MenuItem::with_id(app, SORT_ASCENDING_ID, "Ascending", true, None::<&str>)?;
     let sort_desc = MenuItem::with_id(app, SORT_DESCENDING_ID, "Descending", true, None::<&str>)?;
 
-    Submenu::with_items(
+    let submenu = Submenu::with_items(
         app,
         label,
         true,
         &[
             &sort_by_name,
             &sort_by_ext,
-            &sort_by_size,
             &sort_by_modified,
+            &sort_by_size,
             &sort_by_created,
             &PredefinedMenuItem::separator(app)?,
             &sort_asc,
             &sort_desc,
         ],
-    )
+    )?;
+
+    Ok(SortSubmenuItems {
+        submenu,
+        by_name: sort_by_name,
+        by_extension: sort_by_ext,
+        by_modified: sort_by_modified,
+        by_size: sort_by_size,
+    })
 }
 
 /// Builds the View > Zoom submenu (shared between macOS and Linux).
@@ -1299,7 +1341,11 @@ mod tests {
         assert_eq!(menu_id_to_command(VIEW_MODE_FULL_RIGHT_ID), None);
         assert_eq!(menu_id_to_command(VIEW_MODE_BRIEF_RIGHT_ID), None);
         assert_eq!(menu_id_to_command(VIEWER_WORD_WRAP_ID), None);
-        assert_eq!(menu_id_to_command(SORT_BY_NAME_ID), None);
+        // Sort order items (ascending/descending) and date-created use the menu-sort
+        // event path and are not mapped — only the four shortcut-bound columns are.
+        assert_eq!(menu_id_to_command(SORT_ASCENDING_ID), None);
+        assert_eq!(menu_id_to_command(SORT_DESCENDING_ID), None);
+        assert_eq!(menu_id_to_command(SORT_BY_CREATED_ID), None);
         assert_eq!(menu_id_to_command("unknown_id"), None);
     }
 
@@ -1342,6 +1388,10 @@ mod tests {
             "app.checkForUpdates",
             "cloud.makeOffline",
             "cloud.removeDownload",
+            "sort.byName",
+            "sort.byExtension",
+            "sort.byModified",
+            "sort.bySize",
         ];
 
         for command_id in &command_ids {

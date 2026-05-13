@@ -112,10 +112,22 @@ export const commands: Command[] = [
   // ============================================================================
   // Main window - Sort commands (also accessible via menu)
   // ============================================================================
-  { id: 'sort.byName', name: 'Sort by name', scope: 'Main window', showInPalette: true, shortcuts: [] },
-  { id: 'sort.byExtension', name: 'Sort by extension', scope: 'Main window', showInPalette: true, shortcuts: [] },
-  { id: 'sort.bySize', name: 'Sort by size', scope: 'Main window', showInPalette: true, shortcuts: [] },
-  { id: 'sort.byModified', name: 'Sort by date modified', scope: 'Main window', showInPalette: true, shortcuts: [] },
+  { id: 'sort.byName', name: 'Sort by name', scope: 'Main window', showInPalette: true, shortcuts: ['⌘3', '⌘F3'] },
+  {
+    id: 'sort.byExtension',
+    name: 'Sort by extension',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘4', '⌘F4'],
+  },
+  {
+    id: 'sort.byModified',
+    name: 'Sort by date modified',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘5', '⌘F5'],
+  },
+  { id: 'sort.bySize', name: 'Sort by size', scope: 'Main window', showInPalette: true, shortcuts: ['⌘6', '⌘F6'] },
   { id: 'sort.byCreated', name: 'Sort by date created', scope: 'Main window', showInPalette: true, shortcuts: [] },
   { id: 'sort.ascending', name: 'Sort ascending', scope: 'Main window', showInPalette: true, shortcuts: [] },
   { id: 'sort.descending', name: 'Sort descending', scope: 'Main window', showInPalette: true, shortcuts: [] },
