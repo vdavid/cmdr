@@ -351,6 +351,88 @@ mod tests {
         assert_eq!(glob_to_regex("readme"), "^readme$");
     }
 
+    // ── glob_to_regex (property-based) ───────────────────────────────
+    //
+    // The output of `glob_to_regex` is fed directly into `regex::Regex::new`
+    // by the search engine. A glob that escapes incorrectly would either
+    // panic the regex parser or silently match more than the user intended.
+    // These properties pin (a) the output is always a syntactically valid
+    // regex and (b) it matches the user's literal intent when no glob
+    // metacharacters are present.
+
+    mod glob_proptests {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            /// For any glob string, the produced regex compiles successfully
+            /// and is anchored end-to-end.
+            #[test]
+            fn output_is_valid_anchored_regex(glob in ".*") {
+                let pattern = glob_to_regex(&glob);
+                prop_assert!(pattern.starts_with('^'), "regex must start with ^: {}", pattern);
+                prop_assert!(pattern.ends_with('$'), "regex must end with $: {}", pattern);
+                let compiled = regex::Regex::new(&pattern);
+                prop_assert!(
+                    compiled.is_ok(),
+                    "regex must compile, got error for glob {:?}: {:?}",
+                    glob,
+                    compiled.err()
+                );
+            }
+
+            /// For globs with no `*` or `?` (after the regex metachar set is
+            /// taken into account), the compiled regex matches the original
+            /// string literally and nothing else of different content.
+            #[test]
+            fn literal_globs_match_themselves(
+                glob in "[A-Za-z0-9 ._+(){}\\[\\]^$|\\\\]{0,30}"
+                    .prop_filter("no glob metacharacters", |s: &String| {
+                        !s.contains('*') && !s.contains('?')
+                    })
+            ) {
+                let pattern = glob_to_regex(&glob);
+                let compiled = regex::Regex::new(&pattern).expect("must compile");
+                prop_assert!(
+                    compiled.is_match(&glob),
+                    "regex {:?} must match its own literal glob {:?}",
+                    pattern, glob
+                );
+                // It must not match a string with a different last character.
+                // Skip strings ending in `]` or other edge codepoints because
+                // appending arbitrary content might collide with grapheme
+                // clusters in surprising ways — instead, prepend.
+                let modified = format!("X{glob}Y");
+                prop_assert!(
+                    !compiled.is_match(&modified) || modified == glob,
+                    "regex for literal glob {:?} must not match longer {:?}",
+                    glob, modified
+                );
+            }
+
+            /// For globs containing only `*` wildcards interleaved with
+            /// literal segments, the compiled regex matches any string
+            /// produced by replacing each `*` with the empty string OR an
+            /// arbitrary literal segment.
+            #[test]
+            fn star_matches_arbitrary_content(
+                prefix in "[A-Za-z0-9_]{0,5}",
+                middle in "[A-Za-z0-9_]{0,10}",
+                suffix in "[A-Za-z0-9_]{0,5}"
+            ) {
+                let glob = format!("{prefix}*{suffix}");
+                let pattern = glob_to_regex(&glob);
+                let compiled = regex::Regex::new(&pattern).expect("must compile");
+                let candidate = format!("{prefix}{middle}{suffix}");
+                prop_assert!(
+                    compiled.is_match(&candidate),
+                    "regex {:?} for glob {:?} must match {:?}",
+                    pattern, glob, candidate
+                );
+            }
+        }
+    }
+
     // ── summarize_query ──────────────────────────────────────────────
 
     fn make_query(
