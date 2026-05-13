@@ -114,7 +114,7 @@ export function calculateVirtualWindowVariable(
 ): VirtualWindow {
   if (prefixSums.length !== totalItems + 1) {
     throw new Error(
-      `calculateVirtualWindowVariable: prefixSums.length (${prefixSums.length}) must equal totalItems + 1 (${totalItems + 1})`,
+      `calculateVirtualWindowVariable: prefixSums.length (${String(prefixSums.length)}) must equal totalItems + 1 (${String(totalItems + 1)})`,
     )
   }
 
@@ -185,7 +185,9 @@ export function getScrollToPositionVariable(
   containerSize: number,
 ): number | undefined {
   if (index < 0 || index >= prefixSums.length - 1) {
-    throw new Error(`getScrollToPositionVariable: index ${index} out of range [0, ${prefixSums.length - 1})`)
+    throw new Error(
+      `getScrollToPositionVariable: index ${String(index)} out of range [0, ${String(prefixSums.length - 1)})`,
+    )
   }
 
   const itemLeft = prefixSums[index]

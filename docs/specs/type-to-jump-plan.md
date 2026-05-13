@@ -1,8 +1,8 @@
 # Type-to-jump plan
 
-Quick navigation inside the current directory by typing. User types characters in a focused file pane → the cursor
-jumps to the best-matching file. A small "Jump: tes" indicator sits at the bottom-right of the pane while it's active.
-Idle for 1 s and the buffer resets; idle for 5 s and the indicator vanishes.
+Quick navigation inside the current directory by typing. User types characters in a focused file pane → the cursor jumps
+to the best-matching file. A small "Jump: tes" indicator sits at the bottom-right of the pane while it's active. Idle
+for 1 s and the buffer resets; idle for 5 s and the indicator vanishes.
 
 ## Why
 
@@ -14,15 +14,15 @@ This is not whole-drive search (that's `command-palette/` and `search/`). It's s
 currently displayed listing.
 
 **Indicator label**: the original spec used "Search: " but that collides with the actual Search feature in
-`command-palette/` and `search/`. "Jump: " is unambiguous and shorter. (Final wording is David's call — flagged below
-in § Open questions.)
+`command-palette/` and `search/`. "Jump: " is unambiguous and shorter. (Final wording is David's call — flagged below in
+§ Open questions.)
 
 ## Key decisions (and why)
 
 ### 1. Match algorithm: fuzzy, top-scoring wins
 
-David picked fuzzy over prefix or substring. Fuzzy is more forgiving — typing "tjs" lands on `tests.js`, "rdme" lands
-on `README.md`. The top-scoring match wins; sort order is the tiebreaker (lower index wins on a tie).
+David picked fuzzy over prefix or substring. Fuzzy is more forgiving — typing "tjs" lands on `tests.js`, "rdme" lands on
+`README.md`. The top-scoring match wins; sort order is the tiebreaker (lower index wins on a tie).
 
 **Why this matters for UX**: Fuzzy is less predictable than prefix. If the user types "te" and the highest-scored match
 is `Templates/` even though `tests/` exists, the cursor jumps to `Templates/`. That's OK — they keep typing ("tes") and
@@ -44,8 +44,8 @@ serialized, churns IPC, and re-introduces the very Svelte-reactivity bloat that 
 avoids.
 
 Note: this is "display logic on data only the backend has," not the usual "business logic in Rust" call. The
-command-palette is fully frontend-side because it operates on the ~60 in-memory commands; it would be the wrong model
-to copy here.
+command-palette is fully frontend-side because it operates on the ~60 in-memory commands; it would be the wrong model to
+copy here.
 
 A single IPC call per keystroke, returning one `usize` (the matched index), is the right shape. Latency: IPC round-trip
 ~1–5 ms + match time. For ≤10k entries, total <10 ms. For 100k entries, target <30 ms with rayon-parallelized scoring
@@ -63,18 +63,18 @@ cycling. Predictable and matches the original spec.
   (rename editor, search dialog, breadcrumb edit, settings, command palette). Skip space, dot, dash, underscore — they
   often collide with other behaviors (space toggles selection) and the fuzzy matcher tolerates their absence.
 - **Active pane only**: type-to-jump fires for whichever pane has focus. Switching panes clears the other pane's buffer
-  + indicator.
+  - indicator.
 
 ### 5. Timeouts: only buffer-reset is user-configurable
 
-- **Buffer reset**: default 1000 ms, adjustable in **Settings > Advanced** as
-  `fileExplorer.typeToJump.resetDelay`. Range: 300–3000 ms, step 100 ms. Slider component.
+- **Buffer reset**: default 1000 ms, adjustable in **Settings > Advanced** as `fileExplorer.typeToJump.resetDelay`.
+  Range: 300–3000 ms, step 100 ms. Slider component.
 - **Indicator hide**: hardcoded 5000 ms from last keystroke. Cosmetic detail — making it adjustable adds setting bloat
   for no real-world payoff.
 
 **Indicator lives longer than the buffer — with a visual cue for the gap.** After the 1 s buffer reset, the indicator
-shifts into a "stale" visual state (italic + reduced opacity, label prefixed with a subtle "·") so the user can see at
-a glance that the next keystroke will start fresh, not append to the displayed buffer. Without this cue, the spec's
+shifts into a "stale" visual state (italic + reduced opacity, label prefixed with a subtle "·") so the user can see at a
+glance that the next keystroke will start fresh, not append to the displayed buffer. Without this cue, the spec's
 asymmetric timeouts cause a confusing one-frame contradiction: indicator says `Jump: tes`, user types `f`, indicator
 flips to `Jump: f`. The stale style makes the reset visible and the transition unambiguous. The 5 s indicator hide
 applies to the stale state too. (Radical transparency principle.)
@@ -98,10 +98,10 @@ applies to the stale state too. (Radical transparency principle.)
 set. Wiping a 3-char buffer the user is mid-typing because they pressed Cmd+Shift+. would be hostile.
 
 **Backspace caveat**: Backspace is listed in the reset triggers because it already maps to "navigate to parent" in the
-file explorer (see `file-explorer/CLAUDE.md` § "Back/forward navigation"). Users mid-type may expect Backspace to
-delete the last char from the buffer. Choosing to keep navigation behavior because (a) reassigning Backspace is a
-bigger keymap discussion, (b) the buffer is short-lived anyway, (c) ESC is the discoverable "abort" key. If this
-surfaces as a real user complaint post-launch, revisit.
+file explorer (see `file-explorer/CLAUDE.md` § "Back/forward navigation"). Users mid-type may expect Backspace to delete
+the last char from the buffer. Choosing to keep navigation behavior because (a) reassigning Backspace is a bigger keymap
+discussion, (b) the buffer is short-lived anyway, (c) ESC is the discoverable "abort" key. If this surfaces as a real
+user complaint post-launch, revisit.
 
 ### 7. State per pane
 
@@ -118,9 +118,9 @@ Content: `Jump: tes` with the buffer rendered verbatim (no escaping needed — l
 label per the style guide.
 
 **Placement gotcha — verify visually**: `FunctionKeyBar.svelte` sits at the bottom of the window, and each pane has a
-status bar/usage bar below the listing. The indicator must sit above both, anchored to the pane's content area (not
-the window). Concretely: absolutely position inside the pane's file-list container, with bottom offset equal to the
-status bar's height + small gap. Mock this in M2 and adjust before locking in.
+status bar/usage bar below the listing. The indicator must sit above both, anchored to the pane's content area (not the
+window). Concretely: absolutely position inside the pane's file-list container, with bottom offset equal to the status
+bar's height + small gap. Mock this in M2 and adjust before locking in.
 
 ### 9. Accessibility
 
@@ -130,9 +130,8 @@ status bar's height + small gap. Mock this in M2 and adjust before locking in.
 - The visual fade between active and stale states respects `prefers-reduced-motion` — no animated opacity transition
   when the user prefers reduced motion (replace with an instant flip). Top-5 design principle.
 - The indicator does not steal focus (`pointer-events: none`, no `tabindex`). Keyboard focus stays on the file list.
-- Visual styling uses existing design tokens (`--color-overlay-bg`, `--radius-sm`, `--shadow-elevated`,
-  `--z-overlay`) — no raw px for `font-size`, `border-radius`, `font-family`, or `z-index ≥ 10`. Stylelint enforces
-  this.
+- Visual styling uses existing design tokens (`--color-overlay-bg`, `--radius-sm`, `--shadow-elevated`, `--z-overlay`) —
+  no raw px for `font-size`, `border-radius`, `font-family`, or `z-index ≥ 10`. Stylelint enforces this.
 
 ## Architecture
 
@@ -150,8 +149,8 @@ pub async fn find_first_fuzzy_match(
 ) -> Result<Option<usize>, IpcError> { … }
 ```
 
-Returns the backend index of the highest-scored fuzzy match, or `None`. The frontend translates this to a frontend
-index by accounting for the `..` parent offset (see § Gotchas).
+Returns the backend index of the highest-scored fuzzy match, or `None`. The frontend translates this to a frontend index
+by accounting for the `..` parent offset (see § Gotchas).
 
 **Logic** lives in a new module `apps/desktop/src-tauri/src/file_system/listing/fuzzy_jump.rs`:
 
@@ -166,6 +165,7 @@ pin). Pros: ~µs per match, smart-case (lowercase query = case-insensitive), goo
 verification on the latest version and license compatibility — defer to `cargo deny check`.
 
 **Skip rules during scoring**:
+
 - Skip hidden files when `include_hidden == false`.
 - Match the filename only — not extension separately, not the full path. Whole filename including extension goes into
   the matcher, since fuzzy already weighs prefix matches highly.
@@ -173,8 +173,8 @@ verification on the latest version and license compatibility — defer to `cargo
   frontend only. The parent-offset adjustment on the frontend is the single source of truth here. See
   `apps/desktop/src/lib/file-explorer/views/CLAUDE.md` Gotcha: "Index 0 is `..` parent entry (not in backend cache).")
 
-**Performance**: For ≤10k entries, single-threaded scan is fine. For larger listings, use rayon's `par_iter` to score
-in parallel and reduce to argmax. Benchmark to confirm; document the threshold in `notes/`.
+**Performance**: For ≤10k entries, single-threaded scan is fine. For larger listings, use rayon's `par_iter` to score in
+parallel and reduce to argmax. Benchmark to confirm; document the threshold in `notes/`.
 
 **No new state**: the `LISTING_CACHE` already holds sorted entries. The matcher is rebuilt per call (it's stateless and
 cheap). No per-listing fuzzy index needed.
@@ -186,9 +186,9 @@ snake_case convention used elsewhere (`open_with`, `fda_gate`, etc.) and is filt
 `RUST_LOG="cmdr_lib::file_system::listing::fuzzy_jump=debug"` for the conventional module-path style. Per the logging
 rule, never `println!`/`eprintln!` (see `apps/desktop/src-tauri/src/logging/CLAUDE.md`).
 
-**Threading**: the command is `async` like the rest of the listing commands. The match itself is CPU-bound but
-small — wrap in `tokio::task::spawn_blocking` only if benchmarks show it stalling the runtime on large dirs. Default
-to inline first, instrument with the debug log, decide.
+**Threading**: the command is `async` like the rest of the listing commands. The match itself is CPU-bound but small —
+wrap in `tokio::task::spawn_blocking` only if benchmarks show it stalling the runtime on large dirs. Default to inline
+first, instrument with the debug log, decide.
 
 ### Frontend
 
@@ -217,8 +217,8 @@ timers.
 
 **Settings integration**: Add `fileExplorer.typeToJump.resetDelay` to `settings-registry.ts` following the
 `appearance.textSize` slider pattern. Default 1000 (ms), range 300–3000, step 100. Reactive getter
-`getTypeToJumpResetDelay()` in `reactive-settings.svelte.ts`. Live-apply: the next debounce uses the new value
-naturally — no special applier code needed. Final section path in § Open questions.
+`getTypeToJumpResetDelay()` in `reactive-settings.svelte.ts`. Live-apply: the next debounce uses the new value naturally
+— no special applier code needed. Final section path in § Open questions.
 
 **New component**: `apps/desktop/src/lib/file-explorer/pane/TypeToJumpIndicator.svelte`. Pure presentational, receives
 `buffer: string` and `visible: boolean` as props. Rendered inside `FilePane.svelte`'s root.
@@ -232,17 +232,17 @@ naturally — no special applier code needed. Final section path in § Open ques
   index = backend index + 1. The IPC returns a backend index; the frontend must add 1 when `hasParent` before setting
   `cursorIndex`.
 - **Streaming listings (MTP, SMB, large local dirs)**: A pane may receive a listing that's still being read in the
-  background (`list_directory_start_streaming`). Calling `find_first_fuzzy_match` during streaming matches whatever's
-  in `LISTING_CACHE` at that moment — a 60k-file MTP folder can arrive over several seconds, and the user typing "AGE"
-  early can land on a partial match that gets superseded later when `AGENTS.md` arrives. **Decision: do NOT auto-jump
-  on streaming progress.** The cursor moving under the user without a keystroke violates "the user is always in
-  control" (top-5 principle 3). Behavior instead: a match lands once per keystroke, full stop. If the user types again
-  after more entries have streamed in, the next IPC call evaluates against the fuller cache. Document this clearly in
-  the indicator's `aria-label` (or a tooltip on the indicator) so power users understand: "Jump uses entries loaded so
-  far — type again to refresh as more arrive."
+  background (`list_directory_start_streaming`). Calling `find_first_fuzzy_match` during streaming matches whatever's in
+  `LISTING_CACHE` at that moment — a 60k-file MTP folder can arrive over several seconds, and the user typing "AGE"
+  early can land on a partial match that gets superseded later when `AGENTS.md` arrives. **Decision: do NOT auto-jump on
+  streaming progress.** The cursor moving under the user without a keystroke violates "the user is always in control"
+  (top-5 principle 3). Behavior instead: a match lands once per keystroke, full stop. If the user types again after more
+  entries have streamed in, the next IPC call evaluates against the fuller cache. Document this clearly in the
+  indicator's `aria-label` (or a tooltip on the indicator) so power users understand: "Jump uses entries loaded so far —
+  type again to refresh as more arrive."
 - **Sort changes mid-search**: If the user re-sorts while a buffer is active, the cursor's new position may diverge from
-  the matched entry (since sort changes indices). Acceptable: re-sort is a rare interrupting action; we clear the
-  buffer on re-sort as a safety net (treat re-sort like navigation).
+  the matched entry (since sort changes indices). Acceptable: re-sort is a rare interrupting action; we clear the buffer
+  on re-sort as a safety net (treat re-sort like navigation).
 - **Empty listings**: Return `Ok(None)`, frontend does nothing.
 - **Frontend racing the backend**: User types fast. Keystrokes 1, 2, 3 fire three IPC calls. Response order may be 1,
   3, 2. Tag each call with a monotonic counter (a generation number); apply the response only if its generation is the
@@ -262,6 +262,7 @@ naturally — no special applier code needed. Final section path in § Open ques
 ### Unit (Rust)
 
 `apps/desktop/src-tauri/src/file_system/listing/fuzzy_jump.rs` `#[cfg(test)] mod tests`:
+
 - Empty listing → `None`.
 - No matches → `None`.
 - Single match → that index.
@@ -277,6 +278,7 @@ naturally — no special applier code needed. Final section path in § Open ques
 `apps/desktop/test/lib/file-explorer/pane/type-to-jump-state.svelte.test.ts` (the factory lives in
 `type-to-jump-state.svelte.ts` because it holds `$state` runes for buffer + indicator visibility). Factory shape:
 `createTypeToJumpState({ getResetMs, onMatch, onIndicatorHide })`:
+
 - Initial state: buffer empty, indicator hidden.
 - `appendChar('t')` → buffer 'T'→'t', indicator visible.
 - `clear()` → empty + hidden, timers cleared.
@@ -288,6 +290,7 @@ naturally — no special applier code needed. Final section path in § Open ques
 
 `apps/desktop/test/lib/file-explorer/pane/TypeToJumpIndicator.a11y.test.ts` (follow the pattern from
 `FullList.a11y.test.ts`, `ErrorPane.a11y.test.ts`):
+
 - Renders with `role="status"` and `aria-live="polite"`.
 - Visible buffer text appears in the accessible name.
 - Hidden state has `aria-hidden="true"` or is removed from the DOM.
@@ -297,12 +300,13 @@ naturally — no special applier code needed. Final section path in § Open ques
 ### Integration (Playwright E2E)
 
 `apps/desktop/test/e2e-playwright/tests/type-to-jump.spec.ts`:
+
 - Open a known fixture directory (e.g., the test repo's `apps/desktop/src/lib/`), type "fil" → cursor lands on
   `file-explorer/` (or first fuzzy hit).
 - Indicator appears, shows "Jump: fil".
 - Press ESC → indicator gone, cursor unchanged.
-- Type "co", wait 1.2 s → indicator shifts to stale state. Type "se" → buffer is "se", not "cose"; indicator returns
-  to active.
+- Type "co", wait 1.2 s → indicator shifts to stale state. Type "se" → buffer is "se", not "cose"; indicator returns to
+  active.
 - Press Cmd+T → no buffer added (modifier skip), command palette opens.
 - Type when search dialog is open → no jump fires (input focus guard).
 - Type "abc" in pane A, click pane B → indicator gone in pane A.
@@ -338,8 +342,8 @@ Files: `file_system/listing/fuzzy_jump.rs` (new), `commands/file_system/listing.
   `~/.claude/rules/use-latest-dep-versions.md`).
 - Run `cargo deny check licenses` for the new dep.
 - Write `fuzzy_jump::find_first_match`. Unit-test it.
-- Add the Tauri command wrapping it. Pattern: thin pass-through, timeout-protected (this hits in-memory state, not
-  the filesystem, so 1 s timeout is plenty).
+- Add the Tauri command wrapping it. Pattern: thin pass-through, timeout-protected (this hits in-memory state, not the
+  filesystem, so 1 s timeout is plenty).
 - `pnpm bindings:regen` (from `apps/desktop/`) to surface `commands.findFirstFuzzyMatch`.
 - Checks: `./scripts/check.sh --rust && ./scripts/check.sh --check oxfmt`.
 
@@ -359,8 +363,7 @@ Files: `file-explorer/pane/type-to-jump-state.svelte.ts` (new factory), `TypeToJ
   callback to the parent dispatcher.
 - In `DualPaneExplorer.svelte`'s keydown handler, before falling through to command dispatch / nav shortcuts, check the
   keystroke: printable letter/digit, no modifiers, no input focus, file list scope active. If yes, route to the active
-  pane's `handleJumpKeystroke`. If a nav/edit key (arrow, enter, esc, etc.), call `clearJumpState()` on the active
-  pane.
+  pane's `handleJumpKeystroke`. If a nav/edit key (arrow, enter, esc, etc.), call `clearJumpState()` on the active pane.
 - Wire reset triggers: pane focus change, directory change, sort change, listing replace.
 - Add the race-protection generation counter.
 - Checks: `./scripts/check.sh --svelte && ./scripts/check.sh --check oxfmt`.
@@ -369,16 +372,16 @@ Files: `file-explorer/pane/type-to-jump-state.svelte.ts` (new factory), `TypeToJ
 
 ### M3 — Settings integration
 
-Files: `settings/settings-registry.ts`, `settings/reactive-settings.svelte.ts`, `settings/settings-applier.ts`
-(if needed), the **Advanced** section component.
+Files: `settings/settings-registry.ts`, `settings/reactive-settings.svelte.ts`, `settings/settings-applier.ts` (if
+needed), the **Advanced** section component.
 
-- Add `fileExplorer.typeToJump.resetDelay` to the registry under section path **Advanced**. Default 1000 (ms),
-  min 300, max 3000, step 100. Slider component.
+- Add `fileExplorer.typeToJump.resetDelay` to the registry under section path **Advanced**. Default 1000 (ms), min 300,
+  max 3000, step 100. Slider component.
 - Add reactive getter `getTypeToJumpResetDelay()`.
 - Verify the slider renders in the Advanced settings section. Read `settings/sections/` first to confirm the exact
   filename and the section path string used by other Advanced entries.
-- Update the type-to-jump state factory to read the setting via the getter on each timer reset (so live changes apply
-  on the next keystroke).
+- Update the type-to-jump state factory to read the setting via the getter on each timer reset (so live changes apply on
+  the next keystroke).
 - Checks: `./scripts/check.sh --svelte && ./scripts/check.sh --check oxfmt`.
 
 **Done when**: Manually changing the slider in Settings live-applies without restart.
@@ -389,8 +392,8 @@ Files: `settings/settings-registry.ts`, `settings/reactive-settings.svelte.ts`, 
 - Write the a11y Vitest test for `TypeToJumpIndicator.a11y.test.ts`.
 - Write the Playwright E2E spec covering golden paths.
 - **MCP surface**: `DualPaneExplorer.svelte` already exposes pane state to the cmdr MCP server (port 9224). Add the
-  type-to-jump buffer + indicator visibility + last matched filename to that surface so agents can drive and assert
-  this feature in tests. See `src-tauri/src/mcp/CLAUDE.md` for the resource conventions.
+  type-to-jump buffer + indicator visibility + last matched filename to that surface so agents can drive and assert this
+  feature in tests. See `src-tauri/src/mcp/CLAUDE.md` for the resource conventions.
 - Update CLAUDE.md files noted in § Docs updates.
 - Run `./scripts/check.sh` (full suite). Fix any warnings (file-length allowlist: leave warnings as warnings per
   `~/projects-git/vdavid/cmdr/.claude/rules/file-length-allowlist.md`).
@@ -402,9 +405,9 @@ Files: `settings/settings-registry.ts`, `settings/reactive-settings.svelte.ts`, 
 ## Decisions confirmed by David
 
 1. **Indicator label**: "Jump: tes" (not "Search: tes").
-2. **Settings location**: **Settings > Advanced** (the top-level Advanced section — NOT File explorer > Advanced).
-   The Advanced section exists today (see `settings/sections/AdvancedSection.svelte` or similar — verify the exact
-   filename in M3).
+2. **Settings location**: **Settings > Advanced** (the top-level Advanced section — NOT File explorer > Advanced). The
+   Advanced section exists today (see `settings/sections/AdvancedSection.svelte` or similar — verify the exact filename
+   in M3).
 
 ## Decisions deferred to the implementer (pick during M1/M2 and document)
 

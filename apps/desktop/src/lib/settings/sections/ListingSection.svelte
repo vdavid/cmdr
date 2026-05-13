@@ -33,7 +33,7 @@
     let briefWidthMode = $state<BriefColumnWidthMode>(getSetting('listing.briefColumnWidthMode'))
     onMount(() =>
         onSpecificSettingChange('listing.briefColumnWidthMode', (_id, value) => {
-            briefWidthMode = value as BriefColumnWidthMode
+            briefWidthMode = value
         }),
     )
     const sliderDisabled = $derived(briefWidthMode !== 'limited')

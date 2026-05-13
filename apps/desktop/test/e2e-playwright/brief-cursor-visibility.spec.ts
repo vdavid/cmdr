@@ -248,7 +248,10 @@ test.describe('Brief view cursor visibility', () => {
       },
       3000,
     )
-    // Settle the scroll position before measuring.
+    // Settle the scroll position before measuring. `expectCursorInView` itself does a two-sample
+    // rect-stability poll, but the End-key path can fire its scroll on the next frame; this
+    // 50 ms margin avoids racing the first sample against an in-flight scroll.
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- scroll-frame settle margin; expectCursorInView already polls rects below
     await sleep(50)
     await expectCursorInView(tauriPage, 'after End')
 
@@ -288,6 +291,7 @@ test.describe('Brief view cursor visibility', () => {
     // Park the cursor near the middle of the list before resizing, then drag
     // the resizer about 200 px to the left and assert the cursor stays in view.
     await tauriPage.keyboard.press('Home')
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- let Home settle before the rapid ArrowRight burst; no polling target without re-querying the cursor name each time
     await sleep(100)
     for (let i = 0; i < 25; i++) {
       await tauriPage.keyboard.press('ArrowRight')
@@ -328,6 +332,7 @@ test.describe('Brief view cursor visibility', () => {
 
     // Allow one debounce cycle (50 ms in BriefList's fetchColumnWidths) plus a
     // little headroom for the IPC round-trip and the cursor-visibility effect.
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- fixed wait for FE debounce + IPC + scroll effect after pane resize; no observable end-state to poll on
     await sleep(300)
 
     await expectCursorInView(tauriPage, 'after pane resize')
