@@ -532,3 +532,37 @@ transition or drop the variant.
 
 Overall verdict: **medium-strong**. The transition-aware machines that matter for data safety are tested; the
 orchestration-level lifecycles (`IndexPhase`, `ActivityPhase`, `DiscoveryState`) are not.
+
+### Coverage fill-in (follow-up commits)
+
+17 state-transition tests added (and one bug fix surfaced while writing them):
+
+- **`SmbVolume::ConnectionState`** — dropped the dead `OsMount` variant. The internal state machine is now exactly the
+  binary shape it was already operating as (`Direct ⇄ Disconnected`). The outer `SmbConnectionState::OsMount` (attached
+  by `enrich_smb_connection_state` for SMB shares with an OS mount but no Cmdr smb2 session) is unchanged.
+- **`SearchStatus`** — fix + transition test. `search_cancel` was clearing `session.search`, which made the `Cancelled`
+  status (set by the search thread on cancel) unobservable: poll returned `Idle`. Stopped nulling the state on cancel;
+  the thread now writes `Cancelled` and poll surfaces it. New test pins `Running → Cancelled` and the reset-on-new-start
+  contract.
+- **`DiscoveryState`** — three transition tests (`Idle → Searching → Active → Idle`, `Searching → Idle` via drain, drain
+  side effects). Factored `set_discovery_state` and `drain_discovered_hosts` out of the event-emitting public paths so
+  the state machine fragment is testable without standing up a Tauri runtime.
+- **`ActivityPhase`** — nine tests covering the full scan pipeline (`Idle → Replaying → Live`,
+  `Scanning → Aggregating → Reconciling → Live`), the shutdown path (`* → Idle`), the duration-closing branch the
+  timeline UX depends on, the 20-entry ring-buffer cap, `reset`, and `close_phase_with_stats` attaching to the current
+  entry.
+- **`IndexPhase`** — four tests: `Initializing → Disabled` via the public `stop_indexing` race path, the two catch-all
+  no-op arms (`stop_indexing` from `Disabled`, `clear_index` from non-`Running`), and the pure `is_initializing_phase`
+  classifier the post-`resume_or_scan` decision now goes through. `start_indexing`'s full happy path needs an
+  `AppHandle` and `IndexManager` and remains untested at unit-test level — the stress tests cover the writer-layer
+  machinery underneath.
+
+Honest verdict per machine:
+
+- **Easy**: `SmbVolume::ConnectionState` (already well-tested, just cleanup), `ActivityPhase` (pure journal, fresh
+  instance per test), `DiscoveryState` (already had a global cell, only needed an emit/state split).
+- **Awkward**: `IndexPhase` (carries owned non-`Clone` data, transitions split across `start_indexing`/`stop_indexing`/
+  `clear_index`, and the race fragment we cared about needs a real `IndexStore`).
+- **Impossible without a Tauri runtime**: `start_indexing`'s `Disabled → Initializing → Running` happy path — needs an
+  `AppHandle` to spawn the writer and the verifier. The post-scan decision was extracted to a pure helper so the
+  state-machine fragment that matters (the race) is at least testable.
