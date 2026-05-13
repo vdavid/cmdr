@@ -354,8 +354,10 @@ for (const mode of ['light', 'dark'] as const) {
         // Brief settle for sections with async data (for example, Drive indexing
         // loads dbFileSize which controls the "Clear index" button's disabled state).
         // The pollUntil above already gated on section visibility — this just lets
-        // any reactive child updates land before axe inspects the DOM.
-        // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
+        // any reactive child updates land before axe inspects the DOM. No specific
+        // selector to poll on: each section loads different async data (index size,
+        // licensing, AI config, etc.) with no shared "settled" signal.
+        // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- async section data settle; no shared "settled" signal across the heterogeneous settings sections (index size, license, AI config, etc.) and axe needs a stable DOM
         await sleep(150)
 
         const { all } = await runAxeAudit(tauriPage, `Settings: ${section.name} (${mode})`)
