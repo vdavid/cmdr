@@ -249,6 +249,79 @@ mod tests {
         cleanup_temp_dir(&temp_dir);
     }
 
+    // ----------------------------------------------------------------------
+    // is_apfs / is_same_apfs_volume — mutation-driven survivors.
+    //
+    // Both helpers were previously only covered indirectly via
+    // copy_file_with_strategy. cargo-mutants showed survivors for
+    // `is_apfs → true / → false` and the != → == device-id mutant in
+    // is_same_apfs_volume. These tests pin the behavior directly.
+    // ----------------------------------------------------------------------
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn is_apfs_returns_true_for_typical_macos_paths() {
+        // System root and the test's tmp dir are both on APFS in any modern
+        // macOS dev / CI box. If both came back as not-APFS, the `== "apfs"`
+        // → `!= "apfs"` mutant would survive.
+        let temp_dir = create_temp_dir("is-apfs-true");
+        assert!(
+            is_apfs(&temp_dir),
+            "tempfs path on macOS dev box should be APFS — if this fails on a non-APFS bot, gate the test on a precheck"
+        );
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn is_apfs_returns_false_for_nonexistent_path() {
+        // Kills: replace is_apfs → true. statfs fails → early return false.
+        assert!(!is_apfs(Path::new("/nonexistent-volume-xyzzy-12345/file")));
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn is_same_apfs_volume_true_for_same_apfs_dir_pair() {
+        // Source exists, dest doesn't (typical copy precondition): the function
+        // falls back to checking the dest's parent. Both should resolve to the
+        // same st_dev on APFS, returning true. Kills the != → == mutant on the
+        // dev-id comparison.
+        let temp_dir = create_temp_dir("same-apfs-pair");
+        let src = temp_dir.join("a.txt");
+        fs::write(&src, "x").unwrap();
+        let dst = temp_dir.join("b.txt"); // doesn't exist
+        assert!(
+            is_same_apfs_volume(&src, &dst),
+            "two paths in the same tmp dir should be on the same APFS volume"
+        );
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn is_same_apfs_volume_false_when_source_missing() {
+        // Kills: replace is_same_apfs_volume → true.
+        let temp_dir = create_temp_dir("missing-source");
+        let src = temp_dir.join("does-not-exist.txt");
+        let dst = temp_dir.join("dest.txt");
+        assert!(!is_same_apfs_volume(&src, &dst));
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn is_same_apfs_volume_false_when_dest_parent_missing() {
+        // Pins the `Some(p) if p.exists() → false` fallback. If the match
+        // guard is mutated to `true`, the function would attempt to stat a
+        // nonexistent parent.
+        let temp_dir = create_temp_dir("missing-parent");
+        let src = temp_dir.join("src.txt");
+        fs::write(&src, "x").unwrap();
+        let dst = Path::new("/nonexistent-parent-xyzzy/child.txt");
+        assert!(!is_same_apfs_volume(&src, dst));
+        cleanup_temp_dir(&temp_dir);
+    }
+
     #[test]
     fn test_copy_file_with_strategy_empty_file() {
         let temp_dir = create_temp_dir("empty");
