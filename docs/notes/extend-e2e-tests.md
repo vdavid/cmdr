@@ -398,6 +398,55 @@ Concrete next steps if pushing this further:
    module.
 3. Don't add stryker config to the repo. The 3-tweak setup is small enough to redo when needed.
 
+### Step 7 follow-up: deep mutation-testing pass
+
+A second pass walked five more hot-spot modules. cargo-mutants `--list` is fast (no build), so I used it to enumerate
+mutants per file, then read each module and added tests targeting the structurally surviving ones — skipping a full
+`cargo mutants` run because the baseline build alone is ~10–15 min per file. Trade-off: the new tests aren't proven
+mutation-killers in the strict sense, but they directly cover the mutated lines and behavior, which is what the killer
+tests in Step 7 ended up doing anyway.
+
+Total: 50 new unit tests across 5 modules, ~0.15 s combined runtime. All 1 699 lib tests still pass.
+
+- `file_system/write_operations/state.rs` (50 mutants, **+30 tests**): from zero existing tests. Covered the
+  `OperationIntent` state machine (`from_u8`, `load_intent`, `is_cancelled`), `cancel_write_operation` transitions
+  (Running→{RollingBack,Stopped}, RollingBack→Stopped, Stopped terminal, conflict-sender drop),
+  `cancel_all_write_operations`, `resolve_write_conflict`, status-cache CRUD
+  (`register`/`update`/`unregister`/`list_active_operations`/`get_operation_status`, including the bytes-vs-files
+  percent axis and the `.min(100.0)` clamp), `FileInfo` sort keys, and `CopyTransaction` commit / rollback / Drop.
+  Highest-leverage module of the pass — the state machine and status cache back every cancel click and every progress
+  query, with zero coverage before.
+- `file_system/write_operations/copy_strategy.rs` (16 mutants, **+5 tests**): the `is_apfs` and `is_same_apfs_volume`
+  helpers were only covered indirectly through `copy_file_with_strategy`. Direct positive/negative tests on macOS now
+  pin the device-id comparison, the parent-fallback when the destination doesn't exist, and the `f_fstypename == "apfs"`
+  check.
+- `file_system/watcher.rs` (35 mutants, **+6 tests**): `is_entry_modified` watches five axes (size, mtime, perms,
+  is_directory, is_symlink); the existing tests only varied size, so every `||` chain mutant survived. New axis-by-axis
+  tests plus one negative anchor (owner/group changes must NOT trigger a modify diff) and one structural pin for
+  `compute_diff`'s index semantics (remove uses OLD index; add/modify use NEW).
+- `file_system/write_operations/chunked_copy.rs` (16 mutants, **+3 tests**): existing tests covered byte fidelity and
+  basic permissions but never checked the metadata-preservation side effects. New tests stamp a fixed mtime via
+  `filetime` and roundtrip a user xattr (macOS) — kills `copy_timestamps → Ok(())`, `copy_xattrs → Ok(())`,
+  `copy_metadata → Ok(())`. Plus a multi-chunk byte-total assertion that kills the `total_bytes += bytes_read`
+  arithmetic mutants the existing progress test couldn't differentiate.
+- `indexing/store.rs` (~150 mutants overall, **+6 tests** on `platform_case_compare` / `normalize_for_comparison`): the
+  SQLite collation backing path resolution. Only test before was a single macOS happy-path that couldn't catch the
+  `→ Ordering::Equal` mutant (since happy-path comparisons are equal anyway). New tests pin distinct ordering for
+  distinct names, case-insensitivity, NFC↔NFD normalization equivalence on macOS, and binary comparison off macOS.
+
+Modules examined but skipped:
+
+- `file_viewer/{line_index,session,byte_seek,full_load}.rs`: already 50+ tests including UTF-16 column tracking,
+  cancellation, sparse-index checkpoints, multi-byte content. The 240+ mutants here are mostly inside private session
+  state and search-pos accounting where additional tests would duplicate existing-test logical coverage.
+- `file_system/write_operations/{delete,trash,helpers}.rs`: top-level `*_with_progress` functions depend on
+  `tauri::AppHandle` for event emission; meaningful tests would require a mock-emitter refactor that exceeds the
+  "minimal refactor for testability" budget. `move_to_trash_sync` (the pure-Rust core) is already covered.
+
+No bugs surfaced in this pass — every survivor was a real coverage gap, not buggy live code. The state-machine guard in
+`cancel_write_operation` is correct: Running→{RollingBack,Stopped}, RollingBack→Stopped, Stopped terminal, exactly as
+the doc-comment promises.
+
 ## Property-based testing fit (investigation)
 
 `proptest` and `quickcheck` aren't in use anywhere in `apps/desktop/src-tauri/`. The full investigation lives at
