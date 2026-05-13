@@ -333,3 +333,163 @@ impl DebugStats {
 }
 
 pub(crate) static DEBUG_STATS: LazyLock<DebugStats> = LazyLock::new(DebugStats::new);
+
+#[cfg(test)]
+mod tests {
+    //! ActivityPhase transition tests.
+    //!
+    //! `DebugStats` is the journal the debug window reads. Transitions are
+    //! one-way appends (each `set_phase` closes the previous entry and pushes
+    //! a new one) — this isn't a strict state machine, but it does encode a
+    //! pipeline order (`Replaying -> Live`, `Scanning -> Aggregating ->
+    //! Reconciling -> Live`) that the UI relies on for the timeline strip.
+    //!
+    //! We construct a fresh `DebugStats` per test (not the global) so tests
+    //! don't fight over the singleton.
+    use super::*;
+    use std::time::Duration;
+
+    fn last_phase(stats: &DebugStats) -> ActivityPhase {
+        let history = stats.phase_history.lock().expect("phase_history poisoned");
+        history.last().expect("phase_history must always have an entry").phase.clone()
+    }
+
+    fn nth_phase(stats: &DebugStats, n: usize) -> ActivityPhase {
+        let history = stats.phase_history.lock().expect("phase_history poisoned");
+        history.get(n).expect("phase_history index out of bounds").phase.clone()
+    }
+
+    fn history_len(stats: &DebugStats) -> usize {
+        stats.phase_history.lock().expect("phase_history poisoned").len()
+    }
+
+    #[test]
+    fn debug_stats_initial_phase_is_idle() {
+        let stats = DebugStats::new();
+        assert!(matches!(last_phase(&stats), ActivityPhase::Idle));
+    }
+
+    #[test]
+    fn set_phase_idle_to_replaying_transition() {
+        // Pins `manager.rs:184`: app launch with pending FSEvents.
+        let stats = DebugStats::new();
+        stats.set_phase(ActivityPhase::Replaying, "app launch, pending FSEvents");
+        assert!(matches!(last_phase(&stats), ActivityPhase::Replaying));
+    }
+
+    #[test]
+    fn set_phase_replaying_to_live_transition() {
+        // Pins `event_loop.rs:769`: post-replay handoff to live event processing.
+        let stats = DebugStats::new();
+        stats.set_phase(ActivityPhase::Replaying, "replay start");
+        stats.set_phase(ActivityPhase::Live, "replay complete");
+        assert!(matches!(last_phase(&stats), ActivityPhase::Live));
+    }
+
+    #[test]
+    fn set_phase_full_scan_pipeline_transitions() {
+        // Pins the documented scan pipeline order:
+        // Idle -> Scanning -> Aggregating -> Reconciling -> Live.
+        // The UI's timeline strip depends on this exact sequence.
+        let stats = DebugStats::new();
+        stats.set_phase(ActivityPhase::Scanning, "user-initiated scan");
+        stats.set_phase(ActivityPhase::Aggregating, "scan complete");
+        stats.set_phase(ActivityPhase::Reconciling, "aggregation complete");
+        stats.set_phase(ActivityPhase::Live, "reconciliation complete");
+
+        // Initial Idle + 4 transitions = 5 history entries.
+        assert_eq!(history_len(&stats), 5);
+        assert!(matches!(nth_phase(&stats, 0), ActivityPhase::Idle));
+        assert!(matches!(nth_phase(&stats, 1), ActivityPhase::Scanning));
+        assert!(matches!(nth_phase(&stats, 2), ActivityPhase::Aggregating));
+        assert!(matches!(nth_phase(&stats, 3), ActivityPhase::Reconciling));
+        assert!(matches!(nth_phase(&stats, 4), ActivityPhase::Live));
+    }
+
+    #[test]
+    fn set_phase_to_idle_on_shutdown_transition() {
+        // Pins `manager.rs:621,746`: any phase can be closed out to Idle
+        // when the indexer is stopped or shut down.
+        let stats = DebugStats::new();
+        stats.set_phase(ActivityPhase::Scanning, "user scan");
+        stats.set_phase(ActivityPhase::Idle, "shutdown");
+        assert!(matches!(last_phase(&stats), ActivityPhase::Idle));
+    }
+
+    #[test]
+    fn set_phase_closes_previous_entry_with_duration() {
+        // Pins the "close last entry's duration_ms before appending the new
+        // one" branch (events.rs:296–303). If this regresses, the timeline
+        // strip would show only the latest phase without elapsed times.
+        let stats = DebugStats::new();
+        stats.set_phase(ActivityPhase::Scanning, "scan");
+        // Sleep a tiny bit so the next set_phase computes a non-zero duration
+        // for the Scanning entry it just closed.
+        std::thread::sleep(Duration::from_millis(2));
+        stats.set_phase(ActivityPhase::Live, "live");
+
+        let history = stats.phase_history.lock().unwrap();
+        // Entry index 1 is Scanning; it should be closed (duration_ms = Some).
+        assert!(matches!(history[1].phase, ActivityPhase::Scanning));
+        assert!(
+            history[1].duration_ms.is_some(),
+            "previous phase must be closed with a duration when a new phase begins"
+        );
+        // The newest entry (Live) is still in progress.
+        assert!(history[2].duration_ms.is_none());
+    }
+
+    #[test]
+    fn set_phase_caps_history_at_20_entries() {
+        // Pins the ring-buffer cap (events.rs:315–318). 30 transitions in
+        // and we keep only the most recent 20, oldest dropped first.
+        let stats = DebugStats::new();
+        // The Idle initial entry counts toward the cap, so 30 more pushes
+        // means the cap drains the oldest entries (the initial Idle + early
+        // Scanning entries).
+        for i in 0..30 {
+            let phase = if i % 2 == 0 {
+                ActivityPhase::Scanning
+            } else {
+                ActivityPhase::Live
+            };
+            stats.set_phase(phase, "stress");
+        }
+        assert_eq!(history_len(&stats), 20);
+        // The newest entry (index 19) must be the last one pushed.
+        // i=29 is odd -> Live.
+        assert!(matches!(nth_phase(&stats, 19), ActivityPhase::Live));
+    }
+
+    #[test]
+    fn reset_collapses_history_to_a_single_idle_entry() {
+        // Pins `reset()` (events.rs:266): after a stop+restart, the timeline
+        // should start from a fresh Idle, not from the residual phases.
+        let stats = DebugStats::new();
+        stats.set_phase(ActivityPhase::Scanning, "scan");
+        stats.set_phase(ActivityPhase::Aggregating, "aggregate");
+        stats.reset();
+
+        assert_eq!(history_len(&stats), 1, "reset must collapse history");
+        assert!(matches!(last_phase(&stats), ActivityPhase::Idle));
+        // Counters must also be cleared.
+        assert_eq!(stats.must_scan_sub_dirs_count.load(Ordering::Relaxed), 0);
+        assert_eq!(stats.live_event_count.load(Ordering::Relaxed), 0);
+        assert!(!stats.watcher_active.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn close_phase_with_stats_attaches_to_current_phase_only() {
+        // Pins `close_phase_with_stats`: attaches to the LAST entry, not to
+        // a closed historical one. If this regresses, scan-completion stats
+        // would land on the wrong phase or on no phase at all.
+        let stats = DebugStats::new();
+        stats.set_phase(ActivityPhase::Scanning, "scan");
+        stats.close_phase_with_stats(vec![("entries", "1234".to_string())]);
+
+        let history = stats.phase_history.lock().unwrap();
+        // index 0 = Idle (no stats), index 1 = Scanning (with stats).
+        assert!(history[0].stats.is_empty());
+        assert_eq!(history[1].stats, vec![("entries".to_string(), "1234".to_string())]);
+    }
+}
