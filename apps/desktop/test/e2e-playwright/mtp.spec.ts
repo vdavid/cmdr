@@ -29,7 +29,6 @@ import {
   ensureAppReady,
   getFixtureRoot,
   pollUntil,
-  sleep,
   moveCursorToFile,
   pressKey,
   fileExistsInPane,
@@ -46,23 +45,30 @@ type PageLike = TauriPage | BrowserPageAdapter
  * Useful for waiting for toast messages or dynamic text to appear.
  */
 async function pollUntilValue(
-  _page: PageLike,
+  page: PageLike,
   getValue: () => Promise<string>,
   timeout: number,
   interval = 200,
 ): Promise<string> {
-  const deadline = Date.now() + timeout
-  while (Date.now() < deadline) {
-    try {
-      const val = await getValue()
-      if (val.length > 0) return val
-    } catch {
-      // Element might not exist yet
-    }
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(interval)
-  }
-  return ''
+  const captured = { value: '' }
+  await pollUntil(
+    page,
+    async () => {
+      try {
+        const val = await getValue()
+        if (val.length > 0) {
+          captured.value = val
+          return true
+        }
+      } catch {
+        // Element might not exist yet
+      }
+      return false
+    },
+    timeout,
+    interval,
+  )
+  return captured.value
 }
 
 // Volume names (verified from manual testing against the virtual device)
@@ -79,6 +85,19 @@ function safeFileSize(p: string): number {
   } catch {
     return -1
   }
+}
+
+/**
+ * Polls the filesystem-side MTP backing dir until `predicate()` returns true.
+ *
+ * MTP write operations (copy/move/delete/mkdir/rename) are fire-and-forget on
+ * the IPC side — the MCP `copy`/`move`/`delete`/`mkdir` tools emit an event
+ * and return immediately, while the actual work happens on a background task.
+ * Polling the backing directory is the most direct signal we have: once the
+ * file is on disk, an MTP `refresh` + `mcpAwaitItem` will see it.
+ */
+async function pollFs(page: PageLike, predicate: () => boolean, timeout: number, interval = 100): Promise<boolean> {
+  return pollUntil(page, () => Promise.resolve(predicate()), timeout, interval)
 }
 
 /**
@@ -324,9 +343,9 @@ test.describe('MTP file operations', () => {
     await mcpCall('move_cursor', { pane: 'left', filename: 'file-a.txt' })
     await mcpCall('copy', { autoConfirm: true })
 
-    // MTP listings don't auto-refresh after upload — wait for transfer, then force refresh
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
+    // MTP transfer is fire-and-forget — poll the backing dir until the file
+    // lands, then force a refresh so the pane re-lists.
+    await pollFs(tauriPage, () => fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'file-a.txt')), 30000)
     await mcpCall('refresh', {})
 
     // Wait for file to appear in right pane (MTP root)
@@ -351,25 +370,34 @@ test.describe('MTP file operations', () => {
     await mcpAwaitItem('right', 'Documents')
     await mcpNavToPath('right', `${mtpPath}/Music`)
 
-    // Ensure left pane is focused
+    // Toggle twice and poll for the visual focus class to land on the left pane.
     await mcpSwitchPane()
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(200)
     await mcpSwitchPane()
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(200)
+    await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(
+          `document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') === true`,
+        ),
+      3000,
+    )
 
-    // Ensure we're focused on left pane (Documents)
-    // Use mcpAwaitItem to confirm left pane is showing Documents content
+    // Confirm left pane is still showing Documents content after the toggle.
     await mcpAwaitItem('left', 'notes.txt')
 
     // Move cursor to notes.txt and move it
     await mcpCall('move_cursor', { pane: 'left', filename: 'notes.txt' })
     await mcpCall('move', { autoConfirm: true })
 
-    // MTP listings don't auto-refresh after move — wait for operation, then force refresh
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
+    // MTP move is fire-and-forget — poll for the backing-dir state (source gone,
+    // dest present) before triggering the refresh that drives the pane re-listing.
+    await pollFs(
+      tauriPage,
+      () =>
+        !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt')) &&
+        fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Music', 'notes.txt')),
+      30000,
+    )
     await mcpCall('refresh', {})
 
     // Wait for notes.txt to disappear from Documents (left pane)
@@ -433,9 +461,12 @@ test.describe('MTP file operations', () => {
       10000,
     )
 
-    // Wait for operation, then force refresh
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
+    // MTP delete is fire-and-forget — poll the backing dir until the file is gone.
+    await pollFs(
+      tauriPage,
+      () => !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt')),
+      30000,
+    )
     await mcpCall('refresh', {})
 
     // Wait for report.txt to disappear from the UI listing
@@ -455,22 +486,40 @@ test.describe('MTP file operations', () => {
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'report.txt')
 
-    // Select both files: move to report.txt, Space to select, move to notes.txt, Space to select
+    // Select both files: move to report.txt, Space to select, move to notes.txt, Space to select.
+    // Poll for `.is-selected` after each Space so we don't race the next cursor move.
     await moveCursorToFile(tauriPage, 'report.txt')
     await pressKey(tauriPage, 'Space')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(200)
+    await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(
+          `!!document.querySelector('.file-pane.is-focused .file-entry[data-filename="report.txt"].is-selected')`,
+        ),
+      2000,
+    )
     await moveCursorToFile(tauriPage, 'notes.txt')
     await pressKey(tauriPage, 'Space')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(200)
+    await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(
+          `!!document.querySelector('.file-pane.is-focused .file-entry[data-filename="notes.txt"].is-selected')`,
+        ),
+      2000,
+    )
 
     // Delete via MCP with autoConfirm
     await mcpCall('delete', { autoConfirm: true })
 
-    // Wait for operation, then force refresh
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
+    // MTP multi-delete is fire-and-forget — poll the backing dir.
+    await pollFs(
+      tauriPage,
+      () =>
+        !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt')) &&
+        !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt')),
+      30000,
+    )
     await mcpCall('refresh', {})
 
     // Wait for both files to disappear
@@ -497,9 +546,8 @@ test.describe('MTP file operations', () => {
     await mcpCall('move_cursor', { pane: 'left', filename: 'DCIM' })
     await mcpCall('delete', { autoConfirm: true })
 
-    // Wait for operation, then force refresh
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(3000)
+    // MTP recursive delete is fire-and-forget — poll the backing dir.
+    await pollFs(tauriPage, () => !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'DCIM')), 45000)
     await mcpCall('refresh', {})
 
     // Wait for DCIM to disappear from listing
@@ -521,17 +569,15 @@ test.describe('MTP file operations', () => {
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
     await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, 'NewFolder')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(200)
-    await tauriPage.waitForSelector(`${MKDIR_DIALOG} .btn-primary`, 3000)
+    // Wait for the OK button to enable in response to the typed name.
+    await pollUntil(tauriPage, async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), 2000)
     await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
 
     // Wait for dialog to close
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
 
-    // MTP listings may not auto-refresh — force refresh after mkdir
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(1000)
+    // MTP mkdir is fire-and-forget — poll the backing dir for the folder.
+    await pollFs(tauriPage, () => fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'NewFolder')), 15000)
     await mcpCall('refresh', {})
 
     // Wait for the folder to appear
@@ -572,11 +618,20 @@ test.describe('MTP rename', () => {
             else input.value = '';
             input.dispatchEvent(new Event('input', { bubbles: true }));
         })()`)
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(100)
+    // Wait for Svelte to flush the cleared input value.
+    await pollUntil(
+      tauriPage,
+      async () => tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === ''`),
+      2000,
+    )
     await tauriPage.type('.rename-input', 'renamed-report.txt')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(200)
+    // Wait until the typed value is reflected in the input.
+    await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === 'renamed-report.txt'`),
+      3000,
+    )
     await tauriPage.press('.rename-input', 'Enter')
 
     // Wait for rename input to disappear
@@ -613,11 +668,17 @@ test.describe('MTP rename', () => {
             else input.value = '';
             input.dispatchEvent(new Event('input', { bubbles: true }));
         })()`)
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(100)
+    await pollUntil(
+      tauriPage,
+      async () => tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === ''`),
+      2000,
+    )
     await tauriPage.type('.rename-input', 'notes.txt')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(500)
+    await pollUntil(
+      tauriPage,
+      async () => tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === 'notes.txt'`),
+      3000,
+    )
     await tauriPage.press('.rename-input', 'Enter')
 
     // Conflict dialog should appear since notes.txt already exists
@@ -629,8 +690,7 @@ test.describe('MTP rename', () => {
 
     // Cancel the dialog — both files should remain unchanged
     await tauriPage.keyboard.press('Escape')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(500)
+    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
 
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(true)
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt'))).toBe(true)
@@ -654,9 +714,9 @@ test.describe('MTP cross-storage move', () => {
     await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
     await mcpCall('move', { autoConfirm: true })
 
-    // Wait for file to appear in right pane (local)
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
+    // Wait for the move to land on the local destination, then refresh the
+    // pane so mcpAwaitItem sees the file.
+    await pollFs(tauriPage, () => fs.existsSync(path.join(fixtureRoot, 'right', 'report.txt')), 30000)
     await mcpCall('refresh', {})
     await mcpAwaitItem('right', 'report.txt', 30)
 
@@ -685,9 +745,9 @@ test.describe('MTP cross-storage move', () => {
     await mcpCall('move_cursor', { pane: 'left', filename: 'file-a.txt' })
     await mcpCall('move', { autoConfirm: true })
 
-    // Wait for operation, then force refresh
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
+    // Wait for the move to land on the MTP backing dir, then refresh so the
+    // pane re-lists.
+    await pollFs(tauriPage, () => fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'file-a.txt')), 30000)
     await mcpCall('refresh', {})
 
     // Wait for file to appear in right pane (MTP root)
@@ -715,13 +775,17 @@ test.describe('MTP clipboard rejection', () => {
 
     // Focus the left pane and move cursor to Documents
     await mcpCall('move_cursor', { pane: 'left', filename: 'Documents' })
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(300)
+    await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(
+          `document.querySelector('.file-pane.is-focused .file-entry.is-under-cursor')?.getAttribute('data-filename') === 'Documents'`,
+        ),
+      2000,
+    )
 
-    // Press Cmd+C (copy to clipboard)
+    // Press Cmd+C (copy to clipboard) — toast appears asynchronously.
     await pressKey(tauriPage, `${CTRL_OR_META}+c`)
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(500)
 
     // Verify toast appears with MTP clipboard message
     const toastText = await pollUntil(
@@ -760,13 +824,18 @@ test.describe('MTP clipboard rejection', () => {
 
     // Focus and move cursor
     await mcpCall('move_cursor', { pane: 'left', filename: 'Documents' })
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(300)
+    await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(
+          `document.querySelector('.file-pane.is-focused .file-entry.is-under-cursor')?.getAttribute('data-filename') === 'Documents'`,
+        ),
+      2000,
+    )
 
-    // Press Cmd+X (cut to clipboard)
+    // Press Cmd+X (cut to clipboard) — toast appears asynchronously and the
+    // pollUntilValue below handles waiting for it.
     await pressKey(tauriPage, `${CTRL_OR_META}+x`)
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(500)
 
     // Verify toast with F6 message
     const message = await pollUntilValue(
@@ -800,8 +869,15 @@ test.describe('MTP clipboard rejection', () => {
                 if (entry) entry.click();
             }
         })()`)
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(500)
+    // Wait for the right pane to be the focused pane.
+    await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(
+          `document.querySelectorAll('.file-pane')[1]?.classList.contains('is-focused') === true`,
+        ),
+      3000,
+    )
 
     // Verify right pane is focused (has MTP volume)
     const rightFocused = await tauriPage.evaluate<boolean>(`(function(){
@@ -811,11 +887,10 @@ test.describe('MTP clipboard rejection', () => {
     expect(rightFocused).toBe(true)
 
     // Dispatch Cmd+V (macOS) / Ctrl+V (Linux) via trusted keyboard events.
+    // pollUntilValue below waits for the toast to appear, so no fixed delay here.
     await tauriPage.keyboard.down(CTRL_OR_META)
     await tauriPage.keyboard.press('v')
     await tauriPage.keyboard.up(CTRL_OR_META)
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(500)
 
     // Verify toast with F5 message about copying TO MTP.
     // Check for ANY toast first to diagnose what's happening.
@@ -849,12 +924,16 @@ test.describe('MTP read-only enforcement', () => {
     expect(hasSunset).toBe(true)
 
     // Try F7 (create folder) — should trigger an error or show the dialog which
-    // will fail on confirm. Press F7 and check what happens.
+    // will fail on confirm. Press F7 and wait until either the read-only alert
+    // OR the mkdir dialog has appeared.
     await pressKey(tauriPage, 'F7')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(500)
+    await pollUntil(
+      tauriPage,
+      async () => (await tauriPage.isVisible('[data-dialog-id="alert"]')) || (await tauriPage.isVisible(MKDIR_DIALOG)),
+      5000,
+    )
 
-    // Check if an alert dialog appeared (read-only volumes may show an alert
+    // Check which dialog appeared (read-only volumes may show an alert
     // instead of the mkdir dialog)
     const hasAlert = await tauriPage.isVisible('[data-dialog-id="alert"]')
     const hasMkdir = await tauriPage.isVisible(MKDIR_DIALOG)
@@ -877,9 +956,7 @@ test.describe('MTP read-only enforcement', () => {
       // Dialog opened — type a name and confirm, expect backend error
       await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
       await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, 'TestFolder')
-      // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-      await sleep(200)
-      await tauriPage.waitForSelector(`${MKDIR_DIALOG} .btn-primary`, 3000)
+      await pollUntil(tauriPage, async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), 2000)
       await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
 
       // Wait for an error message to appear in the dialog
@@ -908,8 +985,8 @@ test.describe('MTP read-only enforcement', () => {
     // Also test rename on read-only: cursor on sunset.jpg, press F2
     await moveCursorToFile(tauriPage, 'sunset.jpg')
     await tauriPage.keyboard.press('F2')
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(500)
+    // Wait for the read-only alert dialog to appear.
+    await pollUntil(tauriPage, async () => tauriPage.isVisible('[data-dialog-id="alert"]'), 5000)
 
     // Rename should be blocked with an alert (DualPaneExplorer.startRename checks isReadOnly)
     const hasRenameAlert = await tauriPage.isVisible('[data-dialog-id="alert"]')
