@@ -167,3 +167,38 @@ Why two parallel command lists? `specta::function::collect_functions![]` doesn't
 (it only takes path expressions). The `tauri::generate_handler![]` macro does. So we use `generate_handler![]` for
 runtime dispatch (handles platform gating cleanly) and `collect_functions![]` for type collection (split by platform
 into separate fns). They're kept in sync by convention.
+
+## IPC contract testing
+
+For destructive / cross-window / multi-positional-arg commands, write a vitest IPC contract test that pins the wire
+shape. The harness is `installIpcMock()` in `test-helpers.ts`:
+
+```ts
+import { installIpcMock } from './test-helpers'
+import { commands } from './bindings'
+
+const ipc = installIpcMock()
+ipc.mock('copy_files', () => null)
+await commands.copyFiles({ sources, destination, volumeId, itemSizes, config })
+const call = ipc.lastCall('copy_files')
+expect(call?.payload).toMatchObject({ sources, destination /* ... */ })
+```
+
+What IPC tests catch:
+
+- Serde-shape drift between Rust and the typed bindings (renamed field in the Rust struct)
+- Multi-positional-arg ordering bugs (`mount_network_share` has 6 positional args — easy to swap two by accident)
+- Typed-error discriminator shape (`{ type: 'auth_required' }` vs `{ code: 'auth_required' }` etc.)
+- Whether the FE actually calls the binding (TS compiles ≠ runtime invokes)
+
+What IPC tests do **not** catch:
+
+- The Tauri permission gate (mockIPC patches `__TAURI_INTERNALS__.invoke` upstream of the gate)
+- Business-logic bugs in `*_core` / `ops_*` helpers (those should have Rust unit tests)
+- UI integration (Playwright E2E covers those)
+
+When to skip an IPC test: thin getters (`get_default_volume_id`, `has_font_metrics`) — their shape is trivial and
+already enforced by the TS bindings. **Don't write IPC tests for every command** — focus on destructive, cross-window,
+and many-arg surfaces.
+
+See `docs/testing.md` § "Decision table" for the broader picture.

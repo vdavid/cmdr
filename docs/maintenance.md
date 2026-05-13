@@ -66,6 +66,23 @@ automate it, and survives `oxfmt` (which collapses whitespace in regular markdow
 - **Pin GitHub Actions to commit SHAs**: Re-pin Actions to fresh commit SHAs when their tagged versions move.
   Supply-chain safety. Frequency: every 6 months alongside the Actions version bump.
 
+### Test-suite health
+
+- **Quarterly: mutation-testing sweep on hot-spot modules**. Run `cargo mutants` on each module listed in
+  `docs/testing.md` § "Hot spots" (write_operations, indexing, file_viewer, file_system/index/store). Triage survivors.
+  If mutation score drops below 80% on any of them, add tests to bring it back. The pass is slow (~10–15 min per file on
+  this hardware) — budget half a day. Document the run + score in the log below.
+- **Per release: E2E suite health check**. Three back-to-back `./scripts/check.sh --check desktop-e2e-playwright` runs.
+  All three must be green (no flakes). Look at the slowest 5 tests — if any have crept back to `sleep()`-based waits
+  (the lint catches new ones, but existing `eslint-disable` annotations may need re-triaging), replace with `pollUntil`.
+  Document the run + flake rate + slowest tests in the log.
+- **Per release: scan for new fixed sleeps in E2E specs**. Run
+  `grep -rE "await sleep\(" apps/desktop/test/e2e-playwright/*.spec.ts | grep -v "eslint-disable"` — should return
+  empty. If not, the new sleeps got past the lint somehow and need attention.
+- **As needed: surviving `eslint-disable cmdr/no-arbitrary-sleep-in-e2e` annotations**. ~66 of these were added during
+  the Step 6 speedup as a legacy migration tool. Each is a candidate for replacement with `pollUntil`. Picking off a few
+  per quarter shrinks the technical-debt surface without forcing a single huge cleanup.
+
 ## Log
 
 Newest-first. Tab-separated columns: `date`, `hash(es)`, `task`, `comment`.

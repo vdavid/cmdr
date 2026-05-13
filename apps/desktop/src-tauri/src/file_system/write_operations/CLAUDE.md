@@ -255,3 +255,20 @@ and `statfs.f_fstypename` for APFS. See `copy_strategy.rs` for the implementatio
 - `crate::file_system::volume` — `Volume` trait, `SpaceInfo`, `ScanConflict` (used by `volume_copy`)
 - `crate::ignore_poison` — `IgnorePoison` extension for `RwLock`/`Mutex` to not panic on poisoned locks
 - External: `tauri` (emit, AppHandle), `uuid` (operation IDs, temp names), `libc` (access, statvfs, sync), `xattr`, `exacl`, `filetime` (metadata preservation in `chunked_copy`)
+
+## Testing bar
+
+This module's state machine (`state.rs`) is the spine of the cancel UX. Past investigations found one real production
+bug here ([commit `1de4255d`](../../../../../../docs/notes/speed-up-e2e-tests.md) — lost-rollback on `Ok(())` arm) plus
+30+ mutation-testing gaps that have since been pinned. New transitions or new cancel paths must:
+
+1. **Drive the state machine through the public interface in tests.** Direct `state.intent.store(...)` mutation bypasses
+   the validation guard and effectively dead-tests it. Pattern to copy: `state.rs::tests::test_cancel_via_public_path`.
+2. **Cover both the happy path and the cancel-during-X race** for any new write-side operation. The Cancel-copy bug
+   was specifically the `Ok(())` arm of the loop not re-checking intent.
+3. **Add at least one E2E test** for user-visible flows (transfer dialogs, conflict policies) — use
+   `dispatchMenuCommand` for keyboard-shortcut triggers, see `docs/testing.md` § "❌ Synthesized F-key dispatches".
+4. **Run `cargo mutants --file src/file_system/write_operations/<file>.rs`** after substantial changes — this module has
+   ~85-90% mutation score per file and shouldn't regress. See `docs/testing.md` § "Process".
+
+See also: [docs/testing.md](../../../../../../docs/testing.md) for the project-wide testing playbook.

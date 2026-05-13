@@ -124,6 +124,25 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 - stress_tests_lifecycle.rs: lifecycle stress tests — start/stop/restart under load, clean lifecycle, double-start guard, early shutdown, rapid cycles, mixed queued work shutdown
 - stress_test_helpers.rs: shared helpers for stress tests — `setup_writer`, `build_synthetic_tree`, `check_db_consistency`, `make_file_entry`
 
+### Testing bar — state machine + IndexPhase lifecycle
+
+The `IndexPhase` lifecycle (`Disabled → Initializing → Running`, plus the `Initializing → Disabled` race during cancel)
+is the trickiest backend state machine to test cleanly. Three rules for tests in this area:
+
+1. **Tests must serialize on a dedicated mutex.** `INDEXING` is a global; concurrent tests will corrupt each other.
+   Pattern in `mod.rs::tests`: dedicated mutex + `IndexStore` fixtured via `tempdir`.
+2. **`Initializing { store: IndexStore }` carries non-`Clone` owned state.** Building fixtures is verbose. Where you'd
+   like to test a pure transition without the owned data, extract a pure classifier (e.g. `is_initializing_phase`) and
+   test that in isolation. Don't pretend to mock `IndexStore`.
+3. **`start_indexing`'s `Disabled → Initializing → Running` happy path needs `tauri::AppHandle`** — currently not
+   feasible in unit tests without enabling the `tauri/test` feature (meaningful compile cost). The classifier-extraction
+   approach covers the race-decision logic; the rest stays under integration / E2E coverage.
+
+For `platform_case_compare` in `store.rs`: proptests cover the comparator algebra (reflexive / antisymmetric /
+transitive) and NFC≡NFD equivalence on macOS. Don't regress those — see `store.rs::tests` for the property statements.
+
+See also: [docs/testing.md](../../../../../../docs/testing.md) for the project-wide testing playbook.
+
 ## Key decisions
 
 **Defer indexer auto-start until the user decides about Full Disk Access**: At first launch on macOS, recursively

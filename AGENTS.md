@@ -92,6 +92,10 @@ Core structure:
 
 ## Testing and checking
 
+**Before adding or modifying tests**, read [docs/testing.md](docs/testing.md) — the testing playbook (decision table,
+anti-patterns, per-feature checklist). The companion file [docs/tooling/testing.md](docs/tooling/testing.md) is the
+tools inventory.
+
 Always use the checker script for compilation, linting, formatting, and tests. Its output is concise and focused — no
 `2>&1`, `head`, or `tail` needed. Don't run raw `cargo check`, `cargo clippy`, `cargo fmt`, `cargo nextest run`, etc.
 

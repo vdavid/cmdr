@@ -603,14 +603,14 @@ Branch `e2e-speedup`, 47 commits, ready for fast-forward to `main`.
 
 ### Tests added across the push
 
-| Category                       | Tests | Bugs surfaced                                                            |
-| ------------------------------ | ----- | ------------------------------------------------------------------------ |
-| E2E coverage extension         | 9     | 1 — Cancel-copy rollback (Rust `Ok(())` arm + Svelte settle-window race) |
-| Mutation testing (Rust+Svelte) | 55    | 0                                                                        |
-| State-machine transitions      | 17    | 1 — `file_viewer` `SearchStatus::Cancelled` unobservable to FE           |
-| Property-based (proptest)      | 12    | 0                                                                        |
-| IPC contract (mockIPC)         | 23    | 0                                                                        |
-| **Total new unit / IPC tests** | **107**   |                                                                      |
+| Category                       | Tests   | Bugs surfaced                                                            |
+| ------------------------------ | ------- | ------------------------------------------------------------------------ |
+| E2E coverage extension         | 9       | 1 — Cancel-copy rollback (Rust `Ok(())` arm + Svelte settle-window race) |
+| Mutation testing (Rust+Svelte) | 55      | 0                                                                        |
+| State-machine transitions      | 17      | 1 — `file_viewer` `SearchStatus::Cancelled` unobservable to FE           |
+| Property-based (proptest)      | 12      | 0                                                                        |
+| IPC contract (mockIPC)         | 23      | 0                                                                        |
+| **Total new unit / IPC tests** | **107** |                                                                          |
 
 Plus dead code removal: `SmbVolume::ConnectionState::OsMount` variant dropped (state machine collapsed to its real
 binary `Direct ⇄ Disconnected` shape).
@@ -625,40 +625,41 @@ binary `Direct ⇄ Disconnected` shape).
 
 - **E2E checker total**: 13m 12s baseline → **4m 18s** in the final slow pass (−67%).
 - **E2E Playwright wall-clock**: 10m 12s baseline → ~1m 48s longest shard (−82%).
-- **Fast checker total**: ~2m 30s baseline → **3m 13s** (+43s) — the regression is the new IPC contract tests
-  (+30s of Svelte vitest) and the +79 Rust tests (+1s). Net cost is well below what an equivalent E2E spec would add.
+- **Fast checker total**: ~2m 30s baseline → **3m 13s** (+43s) — the regression is the new IPC contract tests (+30s of
+  Svelte vitest) and the +79 Rust tests (+1s). Net cost is well below what an equivalent E2E spec would add.
 
 ### Real bugs fixed
 
-1. **file_viewer search-cancel was unobservable to the FE.** `search_cancel` nulled `session.search` immediately,
-   so the spawned thread's `SearchStatus::Cancelled` write was clobbered before the FE could see it. The FE
-   couldn't distinguish "search completed naturally with zero matches" from "search was cancelled mid-flight."
-   Fix: stop nulling on cancel; let the thread write `Cancelled` and the next `search_start` replaces it.
+1. **file_viewer search-cancel was unobservable to the FE.** `search_cancel` nulled `session.search` immediately, so the
+   spawned thread's `SearchStatus::Cancelled` write was clobbered before the FE could see it. The FE couldn't
+   distinguish "search completed naturally with zero matches" from "search was cancelled mid-flight." Fix: stop nulling
+   on cancel; let the thread write `Cancelled` and the next `search_start` replaces it.
 2. **Cancel-copy mid-operation rollback was lost on fast filesystems.** The Rust `Ok(())` arm in
-   `copy_files_with_progress` didn't check `OperationIntent` before committing the transaction, so a click during
-   the < 1 µs window between the last `is_cancelled` poll and loop exit landed as a no-op. Plus the Svelte
-   `TransferProgressDialog` left the Rollback button enabled during the `MIN_DISPLAY_MS = 400 ms` settle window
-   after `write-complete`, so clicks during settle were silent no-ops. Both fixed in Step 6d.
+   `copy_files_with_progress` didn't check `OperationIntent` before committing the transaction, so a click during the <
+   1 µs window between the last `is_cancelled` poll and loop exit landed as a no-op. Plus the Svelte
+   `TransferProgressDialog` left the Rollback button enabled during the `MIN_DISPLAY_MS = 400 ms` settle window after
+   `write-complete`, so clicks during settle were silent no-ops. Both fixed in Step 6d.
 
 ### Dead code removed
 
-- `SmbVolume::ConnectionState::OsMount` variant — never written to the atomic, two unreachable `match` arms gone.
-  The OS-mount fallback the UI renders lives at the outer `SmbConnectionState` enriched by `enrich_smb_connection_state`
-  in `commands/volumes.rs`, not on this internal atomic.
+- `SmbVolume::ConnectionState::OsMount` variant — never written to the atomic, two unreachable `match` arms gone. The
+  OS-mount fallback the UI renders lives at the outer `SmbConnectionState` enriched by `enrich_smb_connection_state` in
+  `commands/volumes.rs`, not on this internal atomic.
 
 ### Honest verdict per technique
 
-- **Mutation testing (cargo-mutants + stryker)**: zero bugs, 55 tests added. Tools work but are too slow / noisy for
-  CI gating. Worth ad-hoc runs on numeric / state-machine modules. Don't wire into `check.sh`.
-- **State-machine coverage**: 17 tests, 1 real bug (file_viewer search-cancel). Highest signal-to-noise of the test-quality push — the bug was a real silent UX failure, surfaced by writing the transition test.
+- **Mutation testing (cargo-mutants + stryker)**: zero bugs, 55 tests added. Tools work but are too slow / noisy for CI
+  gating. Worth ad-hoc runs on numeric / state-machine modules. Don't wire into `check.sh`.
+- **State-machine coverage**: 17 tests, 1 real bug (file_viewer search-cancel). Highest signal-to-noise of the
+  test-quality push — the bug was a real silent UX failure, surfaced by writing the transition test.
 - **Property-based (proptest)**: 12 tests, 0 bugs. `proptest` added as a dev-dep, scoped to four targets
-  (`topological_sort_bottom_up`, `glob_to_regex`, `split_scope_segments`, `platform_case_compare`). Worth keeping
-  for those specific algorithmic spots; not worth a project-wide convention.
+  (`topological_sort_bottom_up`, `glob_to_regex`, `split_scope_segments`, `platform_case_compare`). Worth keeping for
+  those specific algorithmic spots; not worth a project-wide convention.
 - **IPC contract tests (vitest mockIPC)**: 23 tests, 0 bugs. Modest value — `bindings-fresh` + `no-raw-tauri-invoke`
   already cover most drift. Worth doing for destructive / cross-window surfaces (write ops, viewer, SMB); diminishing
   returns past that.
-- **E2E coverage extension**: 9 tests, 1 real bug (cancel-copy rollback). Surfaced by walking the slowest test
-  (32.7 s) in the post-Step-1 report.
+- **E2E coverage extension**: 9 tests, 1 real bug (cancel-copy rollback). Surfaced by walking the slowest test (32.7 s)
+  in the post-Step-1 report.
 
 ### Outstanding items
 
@@ -666,11 +667,11 @@ binary `Direct ⇄ Disconnected` shape).
   GVFS race in Docker. Pre-existing, David is aware. Not addressed in this branch.
 - **Step 6a parallel-load keystroke-dispatch flakes**: rarely surface on warm runs; Step 6e converted the worst
   offenders to `dispatchMenuCommand`. Three remaining keyboard-pathway tests can flake under heavy parallel load
-  (~1-in-N runs). The Step 6a fix-suggestions list (data-app-ready route-change reset, focus re-issue after click)
-  is a candidate for a follow-up but wasn't load-bearing here.
+  (~1-in-N runs). The Step 6a fix-suggestions list (data-app-ready route-change reset, focus re-issue after click) is a
+  candidate for a follow-up but wasn't load-bearing here.
 
 ### Final validation
 
 - `./scripts/check.sh` (fast pass): **green in 3m 13s**, 1728 Rust + 1812 Svelte tests pass.
-- `./scripts/check.sh --only-slow`: **green except the two pre-existing Linux SMB flakes**. E2E Playwright
-  131/131 in 4m 18s across 3 shards; rust-tests-linux 1699/1699; eslint-typecheck 453/453.
+- `./scripts/check.sh --only-slow`: **green except the two pre-existing Linux SMB flakes**. E2E Playwright 131/131 in 4m
+  18s across 3 shards; rust-tests-linux 1699/1699; eslint-typecheck 453/453.
