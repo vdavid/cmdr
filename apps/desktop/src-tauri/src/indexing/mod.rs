@@ -167,6 +167,18 @@ pub fn stop_indexing() -> Result<(), String> {
     Ok(())
 }
 
+/// Phase classifier used by `start_indexing`'s post-`resume_or_scan` branch.
+/// Returns true only while the phase carries the temporary init store. If
+/// `stop_indexing` swapped the state out from under us during `resume_or_scan`,
+/// the phase is `Disabled` (or briefly `ShuttingDown`) and this returns false
+/// — the caller treats that as "phase changed, shut the manager down".
+///
+/// Extracted as a pure helper so the state-machine race fragment is testable
+/// without standing up an `AppHandle` / `IndexManager`.
+pub(crate) fn is_initializing_phase(phase: &IndexPhase) -> bool {
+    matches!(phase, IndexPhase::Initializing { .. })
+}
+
 /// Create the IndexManager for the root volume and auto-start indexing
 /// (resume from existing index or fresh scan).
 ///
@@ -200,11 +212,11 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
     let writer_for_vacuum = manager.writer.clone();
 
     // Re-lock and check: if someone called stop_indexing() while we were
-    // inside resume_or_scan(), the phase is now Disabled. Respect that —
-    // shut down the manager instead of overwriting with Running.
+    // inside resume_or_scan(), the phase is no longer Initializing.
+    // Respect that — shut down the manager instead of overwriting.
     let mut guard = INDEXING.lock().map_err(|e| format!("Failed to lock state: {e}"))?;
-    match (&*guard, scan_result) {
-        (IndexPhase::Initializing { .. }, Ok(())) => {
+    match (is_initializing_phase(&guard), scan_result) {
+        (true, Ok(())) => {
             *guard = IndexPhase::Running(Box::new(manager));
             log::info!("start_indexing: done — IndexManager is Running");
 
@@ -219,19 +231,19 @@ pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
                 }
             });
         }
-        (IndexPhase::Initializing { .. }, Err(e)) => {
+        (true, Err(e)) => {
             *guard = IndexPhase::Disabled;
             if let Some(pool) = READ_POOL.lock().unwrap().take() {
                 pool.invalidate();
             }
             return Err(e);
         }
-        (_, Ok(())) => {
+        (false, Ok(())) => {
             // Phase changed (e.g. stop_indexing set Disabled). Don't override.
             log::info!("start_indexing: phase changed during init, shutting down manager");
             manager.shutdown();
         }
-        (_, Err(e)) => {
+        (false, Err(e)) => {
             log::warn!("start_indexing: resume_or_scan failed and phase changed: {e}");
             manager.shutdown();
         }
@@ -1167,6 +1179,109 @@ mod tests {
             FullDiskAccessChoice::NotAskedYet,
             true
         ));
+    }
+
+    // ── IndexPhase transitions ─────────────────────────────────────────
+    //
+    // The global INDEXING cell is shared with the running app (and with the
+    // verifier::trigger_verification path), so these tests serialize via a
+    // dedicated mutex and always restore the cell to Disabled before
+    // returning. They never call `start_indexing` (needs an AppHandle) —
+    // instead they install an `Initializing { store }` phase by hand and
+    // drive the transitions whose Rust-side state machine is reachable
+    // without a Tauri runtime: stop_indexing's Initializing -> Disabled
+    // arm, and clear_index's no-op arm when not Running.
+
+    static INDEXING_TEST_GUARD: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    /// Replace INDEXING with `Disabled` and clear READ_POOL. Used at the
+    /// start of each IndexPhase test so transient state from earlier tests
+    /// (or the running app, if these tests are run inside a debug build
+    /// with the app warmed up) doesn't bleed in.
+    fn reset_indexing_for_test() {
+        let mut guard = INDEXING.lock().expect("INDEXING lock poisoned");
+        *guard = IndexPhase::Disabled;
+        drop(guard);
+        // The stop/clear paths invalidate READ_POOL; mirror that so we
+        // don't carry a stale pool from a prior test.
+        *READ_POOL.lock().unwrap() = None;
+    }
+
+    fn install_initializing_phase() -> tempfile::TempDir {
+        let dir = tempfile::tempdir().expect("temp dir for init store");
+        let db_path = dir.path().join("init-phase-test.db");
+        let store = store::IndexStore::open(&db_path).expect("open init store");
+        let mut guard = INDEXING.lock().expect("INDEXING lock poisoned");
+        *guard = IndexPhase::Initializing { store };
+        dir
+    }
+
+    #[test]
+    fn is_initializing_phase_matches_only_initializing_variant() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let store =
+            store::IndexStore::open(&dir.path().join("classifier.db")).expect("open store");
+        // Disabled / ShuttingDown / Running classified as not-initializing.
+        assert!(!is_initializing_phase(&IndexPhase::Disabled));
+        assert!(!is_initializing_phase(&IndexPhase::ShuttingDown));
+        // Initializing classified as initializing.
+        assert!(is_initializing_phase(&IndexPhase::Initializing { store }));
+    }
+
+    #[test]
+    fn stop_indexing_during_initialization_transitions_to_disabled() {
+        // Pins the Initializing -> Disabled race arm in stop_indexing
+        // (mod.rs:158). If `stop_indexing` runs while `start_indexing` is
+        // inside `resume_or_scan`, the phase must be cleared to Disabled
+        // so the post-scan re-lock observes the change and shuts the
+        // half-built manager down.
+        let _guard = INDEXING_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+        reset_indexing_for_test();
+
+        let _tmp = install_initializing_phase();
+        stop_indexing().expect("stop_indexing must succeed from Initializing");
+
+        let phase_guard = INDEXING.lock().expect("INDEXING lock poisoned");
+        assert!(
+            matches!(*phase_guard, IndexPhase::Disabled),
+            "stop_indexing must collapse Initializing to Disabled"
+        );
+        drop(phase_guard);
+        reset_indexing_for_test();
+    }
+
+    #[test]
+    fn stop_indexing_when_disabled_is_a_noop() {
+        // Pins the catch-all arm in stop_indexing (mod.rs:162): if the
+        // phase isn't Running or Initializing, the original phase must be
+        // restored (not silently replaced with Disabled).
+        let _guard = INDEXING_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+        reset_indexing_for_test();
+
+        // Already Disabled; stop_indexing should remain Disabled (no-op).
+        stop_indexing().expect("stop_indexing from Disabled must succeed");
+        let phase_guard = INDEXING.lock().expect("INDEXING lock poisoned");
+        assert!(matches!(*phase_guard, IndexPhase::Disabled));
+        drop(phase_guard);
+    }
+
+    #[test]
+    fn clear_index_when_not_running_is_a_noop() {
+        // Pins the catch-all arm in clear_index (mod.rs:274): clear must
+        // not touch the DB or change phase unless Running. Initializing
+        // is preserved so an in-flight start_indexing can keep walking.
+        let _guard = INDEXING_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+        reset_indexing_for_test();
+
+        let _tmp = install_initializing_phase();
+        clear_index().expect("clear_index from Initializing must succeed");
+        let phase_guard = INDEXING.lock().expect("INDEXING lock poisoned");
+        assert!(
+            matches!(*phase_guard, IndexPhase::Initializing { .. }),
+            "clear_index must preserve a non-Running phase"
+        );
+        drop(phase_guard);
+        reset_indexing_for_test();
     }
 
     /// After clearing READ_POOL, `enrich_entries_with_index` returns early
