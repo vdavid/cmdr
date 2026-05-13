@@ -74,6 +74,124 @@ fn test_compute_diff_no_change() {
 }
 
 // ============================================================================
+// is_entry_modified axis coverage (cargo-mutants survivors)
+// ============================================================================
+//
+// is_entry_modified returns true when ANY of: size, modified_at, permissions,
+// is_directory, is_symlink differ. The existing tests only varied size, so
+// the `||` chain mutants (each → `&&`) and the per-field `!= → ==` mutants
+// all survived. These tests pin each axis individually.
+//
+// is_entry_modified is private; we exercise it via compute_diff, which marks
+// the entry as "modify" only when is_entry_modified returns true.
+
+#[test]
+fn diff_marks_entry_modified_when_modified_at_differs() {
+    let mut old_entry = make_entry("a.txt", Some(100));
+    let mut new_entry = make_entry("a.txt", Some(100));
+    old_entry.modified_at = Some(1000);
+    new_entry.modified_at = Some(2000);
+    let diff = compute_diff(&[old_entry], &[new_entry]);
+    assert_eq!(diff.len(), 1, "modified_at change should produce a modify diff");
+    assert_eq!(diff[0].change_type, "modify");
+}
+
+#[test]
+fn diff_marks_entry_modified_when_permissions_differ() {
+    let mut old_entry = make_entry("a.txt", Some(100));
+    let mut new_entry = make_entry("a.txt", Some(100));
+    old_entry.permissions = 0o644;
+    new_entry.permissions = 0o755;
+    let diff = compute_diff(&[old_entry], &[new_entry]);
+    assert_eq!(diff.len(), 1, "permissions change should produce a modify diff");
+    assert_eq!(diff[0].change_type, "modify");
+}
+
+#[test]
+fn diff_marks_entry_modified_when_is_directory_flips() {
+    // Same path/name but the entry transitioned from file → directory
+    // (atomic-replace of a file with a dir of the same name). The watcher
+    // should report this as a modify so the UI rerenders the icon and clears
+    // the size column. Kills the `is_directory != → ==` mutant and the
+    // `|| → &&` mutant on its line.
+    let old_entry = FileEntry {
+        is_directory: false,
+        ..make_entry("thing", Some(100))
+    };
+    let new_entry = FileEntry {
+        is_directory: true,
+        size: Some(100),
+        ..make_entry("thing", Some(100))
+    };
+    let diff = compute_diff(&[old_entry], &[new_entry]);
+    assert_eq!(diff.len(), 1, "is_directory flip should produce a modify diff");
+    assert_eq!(diff[0].change_type, "modify");
+}
+
+#[test]
+fn diff_marks_entry_modified_when_is_symlink_flips() {
+    let old_entry = FileEntry {
+        is_symlink: false,
+        ..make_entry("thing", Some(100))
+    };
+    let new_entry = FileEntry {
+        is_symlink: true,
+        ..make_entry("thing", Some(100))
+    };
+    let diff = compute_diff(&[old_entry], &[new_entry]);
+    assert_eq!(diff.len(), 1, "is_symlink flip should produce a modify diff");
+    assert_eq!(diff[0].change_type, "modify");
+}
+
+#[test]
+fn diff_does_not_mark_modified_when_only_owner_or_group_change() {
+    // Negative case for the `|| → &&` mutants on every axis: if any of those
+    // flipped, this test (which only changes a field is_entry_modified
+    // doesn't watch) would suddenly start producing a modify diff.
+    let mut old_entry = make_entry("a.txt", Some(100));
+    let mut new_entry = make_entry("a.txt", Some(100));
+    old_entry.owner = "alice".to_string();
+    new_entry.owner = "bob".to_string();
+    new_entry.group = "wheel".to_string();
+    let diff = compute_diff(&[old_entry], &[new_entry]);
+    assert!(
+        diff.is_empty(),
+        "owner/group changes alone must NOT trigger a modify diff (is_entry_modified watches only size, mtime, perms, kind, symlink)"
+    );
+}
+
+// ============================================================================
+// compute_diff structural pins (mixed adds + removes + modifies)
+// ============================================================================
+
+#[test]
+fn diff_includes_add_modify_and_remove_in_one_pass() {
+    // Old: a.txt (size 100), b.txt (size 200)
+    // New: a.txt (size 300 — modified), c.txt (size 50 — added)
+    // → 3 changes: remove b, modify a, add c.
+    // Also pins the index semantics: removes use the OLD index, adds/modifies use the NEW index.
+    let old = vec![make_entry("a.txt", Some(100)), make_entry("b.txt", Some(200))];
+    let new = vec![make_entry("a.txt", Some(300)), make_entry("c.txt", Some(50))];
+
+    let diff = compute_diff(&old, &new);
+    assert_eq!(diff.len(), 3, "expected add + modify + remove");
+
+    let by_type: std::collections::HashMap<&str, &super::watcher::DiffChange> =
+        diff.iter().map(|c| (c.change_type.as_str(), c)).collect();
+    let modify = by_type.get("modify").expect("modify present");
+    let add = by_type.get("add").expect("add present");
+    let remove = by_type.get("remove").expect("remove present");
+
+    assert_eq!(modify.entry.name, "a.txt");
+    assert_eq!(modify.index, 0, "modify uses NEW index");
+    assert_eq!(add.entry.name, "c.txt");
+    assert_eq!(add.index, 1, "add uses NEW index");
+    assert_eq!(remove.entry.name, "b.txt");
+    assert_eq!(remove.index, 1, "remove uses OLD index");
+}
+
+
+// ============================================================================
 // handle_directory_change integration tests
 // ============================================================================
 
