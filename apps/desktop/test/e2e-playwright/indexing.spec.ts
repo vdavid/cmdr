@@ -16,7 +16,7 @@ import path from 'path'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureAppReady, getFixtureRoot, executeViaCommandPalette, getSizeText, pollUntil, sleep } from './helpers.js'
+import { ensureAppReady, getFixtureRoot, executeViaCommandPalette, getSizeText, pollUntil } from './helpers.js'
 
 /** Union type for tauriPage — works in both Tauri and browser mode. */
 type PageLike = TauriPage | BrowserPageAdapter
@@ -56,14 +56,21 @@ async function getDirStats(tauriPage: PageLike, dirPath: string): Promise<DirSta
  * Returns the stats if available, null otherwise.
  */
 async function waitForIndexData(tauriPage: PageLike, dirPath: string, timeoutMs = 500_000): Promise<DirStats | null> {
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    const stats = await getDirStats(tauriPage, dirPath)
-    if (stats && stats.recursiveFileCount > 0) return stats
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(2000)
-  }
-  return null
+  const result: { stats: DirStats | null } = { stats: null }
+  await pollUntil(
+    tauriPage,
+    async () => {
+      const stats = await getDirStats(tauriPage, dirPath)
+      if (stats && stats.recursiveFileCount > 0) {
+        result.stats = stats
+        return true
+      }
+      return false
+    },
+    timeoutMs,
+    2000,
+  )
+  return result.stats
 }
 
 /**
@@ -76,14 +83,21 @@ async function waitForExactSize(
   expectedSize: number,
   timeoutMs = 30_000,
 ): Promise<DirStats | null> {
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    const stats = await getDirStats(tauriPage, dirPath)
-    if (stats && stats.recursiveSize === expectedSize) return stats
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(500)
-  }
-  return await getDirStats(tauriPage, dirPath)
+  const result: { stats: DirStats | null } = { stats: null }
+  await pollUntil(
+    tauriPage,
+    async () => {
+      const stats = await getDirStats(tauriPage, dirPath)
+      if (stats && stats.recursiveSize === expectedSize) {
+        result.stats = stats
+        return true
+      }
+      return false
+    },
+    timeoutMs,
+    500,
+  )
+  return result.stats ?? (await getDirStats(tauriPage, dirPath))
 }
 
 /** Switches to Full view mode (needed to see the size column). */
