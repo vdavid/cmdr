@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { FileEntry, SortColumn, SortOrder, SyncStatus } from '../types'
-    import { calculateVirtualWindow, getScrollToPosition } from './virtual-scroll'
+    import { calculateVirtualWindowVariable, getScrollToPositionVariable } from './virtual-scroll'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { startSelectionDragTracking, type DragFileInfo } from '../drag/drag-drop'
     import { startClickToRename, cancelClickToRename } from '../rename/rename-activation'
@@ -19,13 +19,13 @@
         updateIndexSizesInPlace,
         type DirStats,
     } from './file-list-utils'
+    import { commands } from '$lib/ipc/bindings'
+    import { ensureFontMetricsLoaded, getCurrentFontId } from '$lib/font-metrics'
     import { getDirStatsBatch } from '$lib/tauri-commands'
     import { buildDirSizeTooltip, hasSizeMismatch } from './full-list-utils'
     import { getRowHeight, formatFileSize, getSizeMismatchWarning, getStripedRows } from '$lib/settings/reactive-settings.svelte'
-    import { onDebouncedScaleChange, getEffectiveScale } from '$lib/text-size.svelte'
+    import { onDebouncedScaleChange } from '$lib/text-size.svelte'
     import { getSetting } from '$lib/settings/settings-store'
-    import { measureWidestFilename } from './measure-brief-column-widths'
-    import { SvelteMap } from 'svelte/reactivity'
     import { formatNumber, pluralize } from '../selection/selection-info-utils'
     import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
@@ -50,7 +50,6 @@
         parentPath: string
         /** Path of the directory currently being listed — used to show its total on the ".." row. */
         currentPath: string
-        maxFilenameWidth?: number // From backend font metrics, if available
         sortBy: SortColumn
         sortOrder: SortOrder
         /** Rename state for inline editing */
@@ -87,7 +86,6 @@
         hasParent,
         parentPath,
         currentPath,
-        maxFilenameWidth: backendMaxWidth,
         sortBy,
         sortOrder,
         renameState = null,
@@ -121,7 +119,11 @@
     // Buffer columns is reactive based on settings
     const bufferColumns = $derived(getSetting('advanced.virtualizationBufferColumns'))
     const MIN_COLUMN_WIDTH = 100
-    // const COLUMN_PADDING = 8 // horizontal padding inside each column (unused for now)
+    /** Hard cap for any single Brief column. Container width may further clamp this. */
+    const MAX_BRIEF_COLUMN_WIDTH = 300
+    // Add space for: icon (16px) + gap (8px) + left padding (8px) + right padding (8px) + rounding buffer (2px)
+    // The 2px buffer accounts for sub-pixel rendering differences between calculated and actual widths.
+    const COLUMN_PADDING = 16 + 8 + 8 + 8 + 2
 
     // ==== Container state ====
     let scrollContainer: HTMLDivElement | undefined = $state()
@@ -133,32 +135,45 @@
     // Number of items that fit in one column
     const itemsPerColumn = $derived(Math.max(1, Math.floor(containerHeight / rowHeight)))
 
-    // For column width: use backend-calculated width if available, otherwise estimate
-    // Backend calculation is based on actual font metrics and considers all filenames
-    // Add space for: icon (16px) + gap (8px) + left padding (8px) + right padding (8px) + rounding buffer (2px)
-    // The 2px buffer accounts for sub-pixel rendering differences between calculated and actual widths
-    const COLUMN_PADDING = 16 + 8 + 8 + 8 + 2 // icon + gap + left padding + right padding + rounding buffer
-    const calculatedColumnWidth = $derived(
-        (backendMaxWidth ?? Math.min(200, Math.max(MIN_COLUMN_WIDTH, containerWidth / 3))) + COLUMN_PADDING,
-    )
-    // Cap column width to container width - columns should never be wider than the pane
-    const maxFilenameWidth = $derived(
-        containerWidth > 0 ? Math.min(calculatedColumnWidth, containerWidth) : calculatedColumnWidth,
+    /** Per-column widths, chrome-inclusive and clamped, returned by the backend + FE chrome/clamp pass. */
+    let columnWidths = $state<number[]>([])
+    /**
+     * Snap the column-width CSS transition for one paint when columns appear from `[]`
+     * (initial load) or the listing is reset. Matches the same trick used in `shouldResetCache`.
+     */
+    let skipTransition = $state(false)
+
+    // Total number of columns needed (FE-derived; backend uses the same formula).
+    const totalColumns = $derived(Math.ceil(totalCount / itemsPerColumn))
+
+    /**
+     * Cap applied to each column AFTER chrome is added. Tracks live container size,
+     * with a hard ceiling at `MAX_BRIEF_COLUMN_WIDTH` so absurdly wide panes still
+     * cap a column at a readable width.
+     */
+    const capPx = $derived(
+        containerWidth > 0 ? Math.min(containerWidth, MAX_BRIEF_COLUMN_WIDTH) : MAX_BRIEF_COLUMN_WIDTH,
     )
 
-    // Total number of columns needed
-    const totalColumns = $derived(Math.ceil(totalCount / itemsPerColumn))
+    /**
+     * Running cumulative width totals: `prefixSums[i] = sum(widths[0..i))`.
+     * Length is `totalColumns + 1`. Columns beyond `columnWidths.length` (in-flight or
+     * post-FontMetricsNotReady fallback) use the live `capPx` so the scrollbar and
+     * virtual window stay roughly accurate during the brief widths-loading window.
+     */
+    const prefixSums = $derived.by(() => {
+        const sums = new Array<number>(totalColumns + 1)
+        sums[0] = 0
+        for (let i = 0; i < totalColumns; i++) {
+            const w = columnWidths[i] ?? capPx
+            sums[i + 1] = sums[i] + w
+        }
+        return sums
+    })
 
     // ==== Virtual scrolling (horizontal) ====
     const virtualWindow = $derived(
-        calculateVirtualWindow({
-            direction: 'horizontal',
-            itemSize: maxFilenameWidth,
-            bufferSize: bufferColumns,
-            containerSize: containerWidth,
-            scrollOffset: scrollLeft,
-            totalItems: totalColumns,
-        }),
+        calculateVirtualWindowVariable(prefixSums, bufferColumns, containerWidth, scrollLeft, totalColumns),
     )
 
     // Get entry at global index (handling ".." entry)
@@ -257,67 +272,125 @@
         return columns
     })
 
-    // ==== Per-column shrink-wrap widths ====
-    // Each Brief column sizes to its widest visible filename, capped at `maxFilenameWidth`
-    // and floored at `MIN_COLUMN_WIDTH`. Virtual-scroll math stays on the cap (so the
-    // scrollbar math doesn't need to know variable widths), while each rendered column
-    // gets its own measured width — `transition: width 300ms ease` smooths the change.
+    // ==== Per-column widths (backend-driven) ====
     //
-    // Reset on nav/listing change (via the cache-reset effect) and when `itemsPerColumn`
-    // changes (height resize reshuffles which files are in which column).
-    const columnWidthsMap = new SvelteMap<number, number>()
-    let skipTransition = $state(false)
+    // The backend computes the text-only pixel width of the widest filename in every
+    // column for the current `(listingId, itemsPerColumn, hasParent, fontId, includeHidden)`.
+    // The FE adds chrome + clamps to `[MIN_COLUMN_WIDTH, capPx]` and stores the resulting
+    // chrome-inclusive widths in `columnWidths`. Prefix sums of `columnWidths` drive both
+    // the virtual-scroll math and `scrollToIndex`.
+    //
+    // Race guard: every fetch captures `(listingId, generation)` and ignores stale responses.
+    // Generation bumps only inside the debounced fire — not per `fetchColumnWidths()` call —
+    // so a burst of triggers in 50 ms produces one IPC and one generation bump.
+    let widthsGeneration = 0
     let prevItemsPerColumn = 0
+    let prevCapPx = 0
+    let pendingFetchTimer: ReturnType<typeof setTimeout> | null = null
 
-    /**
-     * Bumped by `onDebouncedScaleChange` after the user releases the
-     * text-size slider. The pretext measurer in `measure-brief-column-widths`
-     * is invalidated by the same event, so re-running this effect produces
-     * widths that match the new font size.
-     */
-    let scaleSettleTick = $state(0)
-    $effect(() => {
-        const unsub = onDebouncedScaleChange(() => {
-            columnWidthsMap.clear()
-            scaleSettleTick++
-        })
-        return unsub
-    })
+    function cancelPendingFetch() {
+        if (pendingFetchTimer !== null) {
+            clearTimeout(pendingFetchTimer)
+            pendingFetchTimer = null
+        }
+    }
 
+    async function doFetchColumnWidths(retry: boolean): Promise<void> {
+        widthsGeneration++
+        const capturedListingId = listingId
+        const capturedGeneration = widthsGeneration
+        const fontId = getCurrentFontId()
+        const fetchItemsPerColumn = Math.max(1, itemsPerColumn)
+        try {
+            const result = await commands.getBriefColumnTextWidths(
+                capturedListingId,
+                fetchItemsPerColumn,
+                hasParent,
+                fontId,
+                includeHidden,
+            )
+            if (capturedListingId !== listingId || capturedGeneration !== widthsGeneration) return
+            if (result.status === 'error') {
+                if (result.error.message === 'font_metrics_not_ready' && !retry) {
+                    await ensureFontMetricsLoaded()
+                    if (capturedListingId !== listingId || capturedGeneration !== widthsGeneration) return
+                    await doFetchColumnWidths(true)
+                    return
+                }
+                // Bail: leave `columnWidths` untouched. Fallback (`capPx`) covers rendering
+                // until the next trigger arrives.
+                return
+            }
+            const textWidths = result.data
+            const clamped = new Array<number>(textWidths.length)
+            const wasEmpty = columnWidths.length === 0
+            for (let i = 0; i < textWidths.length; i++) {
+                const chromeInclusive = textWidths[i] + COLUMN_PADDING
+                clamped[i] = Math.max(MIN_COLUMN_WIDTH, Math.min(capPx, chromeInclusive))
+            }
+            // First arrival ([] → non-empty): snap the CSS width transition so the columns
+            // don't visibly slide from the `capPx` fallback to their measured widths.
+            if (wasEmpty && clamped.length > 0) {
+                skipTransition = true
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        skipTransition = false
+                    })
+                })
+            }
+            columnWidths = clamped
+        } catch {
+            // IPC threw outside the typed-error path (timeout, missing handler). Leave widths.
+        }
+    }
+
+    function fetchColumnWidths() {
+        if (!listingId || itemsPerColumn <= 0) return
+        cancelPendingFetch()
+        pendingFetchTimer = setTimeout(() => {
+            pendingFetchTimer = null
+            void doFetchColumnWidths(false)
+        }, 50)
+    }
+
+    /** Imperative refetch, exposed to `FilePane` for the post-diff path. */
+    export function refetchColumnWidths(): void {
+        fetchColumnWidths()
+    }
+
+    /** Re-fetch on `itemsPerColumn` change (height resize reshuffles which files land in which column). */
     $effect(() => {
-        // Reset when column index semantics change.
         if (itemsPerColumn !== prevItemsPerColumn) {
-            columnWidthsMap.clear()
             prevItemsPerColumn = itemsPerColumn
+            fetchColumnWidths()
         }
     })
 
+    /** Re-fetch on `capPx` change with 4 px hysteresis (avoids scrollbar-gutter flicker). */
     $effect(() => {
-        // Re-measure whenever visible columns (or their cached contents) change,
-        // after a settled scale change (tracked via the tick), or when the live
-        // effective scale itself flips. The tick-only path coalesces heavy work
-        // (font-metrics IPC) on the 1 s debounce; reading `getEffectiveScale()`
-        // directly closes the startup race where `effectiveScale` jumps from
-        // its default 1 to the real system × user value after `initTextSize()`
-        // resolves — without it, the columns would stay measured at scale 1
-        // until the next data change.
-        void scaleSettleTick
-        void getEffectiveScale()
-        const cols = visibleColumns
-        const cap = maxFilenameWidth
-        for (const col of cols) {
-            const files = col.files.map((f) => f.file)
-            const widest = measureWidestFilename(files)
-            if (widest === 0) continue // measurer unavailable (SSR/jsdom)
-            const width = Math.min(cap, Math.max(MIN_COLUMN_WIDTH, widest + COLUMN_PADDING))
-            if (columnWidthsMap.get(col.columnIndex) !== width) {
-                columnWidthsMap.set(col.columnIndex, width)
-            }
+        const cap = capPx
+        if (Math.abs(cap - prevCapPx) >= 4) {
+            prevCapPx = cap
+            fetchColumnWidths()
+        }
+    })
+
+    /** Re-fetch when the text scale settles (font ID changed, font metrics re-measured). */
+    $effect(() => {
+        return onDebouncedScaleChange(() => {
+            fetchColumnWidths()
+        })
+    })
+
+    /** Cancel any pending widths fetch when the component unmounts. */
+    $effect(() => {
+        return () => {
+            cancelPendingFetch()
         }
     })
 
     function getColumnWidth(colIndex: number): number {
-        return columnWidthsMap.get(colIndex) ?? maxFilenameWidth
+        return columnWidths[colIndex] ?? capPx
     }
 
     // Fetch on scroll
@@ -436,7 +509,8 @@
     export function scrollToIndex(index: number) {
         if (!scrollContainer) return
         const columnIndex = Math.floor(index / itemsPerColumn)
-        const position = getScrollToPosition(columnIndex, maxFilenameWidth, scrollLeft, containerWidth)
+        if (columnIndex < 0 || columnIndex >= totalColumns) return
+        const position = getScrollToPositionVariable(prefixSums, columnIndex, scrollLeft, containerWidth)
         if (position !== undefined) {
             scrollContainer.scrollLeft = position
             // Also update state directly to trigger reactive chain immediately
@@ -447,12 +521,29 @@
         }
     }
 
+    /**
+     * Count of columns at least partially visible in the current scroll window.
+     * Used as the PageUp/PageDown step size — content-dependent (a "page" of skinny
+     * columns moves more files than a "page" of wide ones), which matches user intent.
+     */
+    function countVisibleColumns(): number {
+        if (totalColumns === 0) return 1
+        const left = scrollLeft
+        const right = scrollLeft + containerWidth
+        let count = 0
+        for (let c = 0; c < totalColumns; c++) {
+            if (prefixSums[c] < right && prefixSums[c + 1] > left) {
+                count++
+            }
+        }
+        return Math.max(1, count)
+    }
+
     // Handle keyboard navigation
     export function handleKeyNavigation(key: string, event?: KeyboardEvent): number | undefined {
         // Try navigation shortcuts first (Home/End/PageUp/PageDown)
         if (event) {
-            // Calculate number of visible columns for PageUp/PageDown
-            const visibleColumns = Math.ceil(containerWidth / maxFilenameWidth)
+            const visibleColumns = countVisibleColumns()
             const result = handleNavigationShortcut(event, {
                 currentIndex: cursorIndex,
                 totalCount,
@@ -495,32 +586,37 @@
             cachedEntries = []
             cachedRange = { start: 0, end: 0 }
             prevCacheProps = currentProps
-            // Drop measured widths so the new listing starts fresh, and snap the
-            // animation for one paint so the persistent header/columns don't slide.
-            columnWidthsMap.clear()
+            // Drop measured widths so the new listing starts fresh. Bumping `widthsGeneration`
+            // BEFORE the refetch ensures any in-flight response for the previous listing
+            // is discarded by the `(listingId, generation)` guard.
+            widthsGeneration++
+            columnWidths = []
             skipTransition = true
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     skipTransition = false
                 })
             })
+            fetchColumnWidths()
         }
 
         void fetchVisibleRange()
     })
 
-    // Track previous container height to detect resizes
-    let prevContainerHeight = 0
-
-    // Scroll to cursor index when container height changes (for example, window resize)
+    /**
+     * Single "keep cursor in view" effect. Replaces the older height-only effect and
+     * the implicit reliance on FilePane calling `scrollToIndex` on cursor moves —
+     * width resize (drag pane resizer, window narrow) now also retriggers naturally.
+     * Reads `columnWidths.length` to depend on the widths-arrival reassignment.
+     */
     $effect(() => {
-        const height = containerHeight
-        // Only react to meaningful height changes (not initial 0)
-        if (height > 0 && prevContainerHeight > 0 && height !== prevContainerHeight) {
-            // Container height changed - scroll to keep cursor visible
+        void cursorIndex
+        void containerWidth
+        void containerHeight
+        void columnWidths.length
+        if (containerHeight > 0 && containerWidth > 0) {
             scrollToIndex(cursorIndex)
         }
-        prevContainerHeight = height
     })
 
     // Re-fetch icons when the icon cache is cleared (settings or theme change)

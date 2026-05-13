@@ -25,7 +25,6 @@
         pathExistsChecked,
         getFileAt,
         getListingStats,
-        getMaxFilenameWidth,
         getPathsAtIndices,
         getSyncStatus,
         getTotalCount,
@@ -56,7 +55,6 @@
         currentPath: string
         listingId: string
         totalCount: number
-        maxFilenameWidth: number | undefined
         cursorIndex: number
         selectedIndices: number[]
         lastSequence: number
@@ -172,7 +170,6 @@
     // New architecture: store listingId and totalCount, not files
     let listingId = $state('')
     let totalCount = $state(0)
-    let maxFilenameWidth = $state<number | undefined>(undefined)
     let loading = $state(true)
     let error = $state<string | null>(null)
     let friendlyError = $state<FriendlyError | null>(null)
@@ -691,7 +688,6 @@
             currentPath,
             listingId,
             totalCount,
-            maxFilenameWidth,
             cursorIndex,
             selectedIndices: selection.getSelectedIndices(),
             lastSequence,
@@ -708,7 +704,6 @@
         // Adopt the listing identity
         listingId = state.listingId
         totalCount = state.totalCount
-        maxFilenameWidth = state.maxFilenameWidth
         lastSequence = state.lastSequence
 
         // Restore cursor and selection
@@ -1192,7 +1187,6 @@
     ) {
         benchmark.logEventValue('listing-complete received, totalCount', payload.totalCount)
         totalCount = payload.totalCount
-        maxFilenameWidth = payload.maxFilenameWidth
         volumeRootFromEvent = payload.volumeRoot
 
         // Determine initial cursor position
@@ -1808,16 +1802,16 @@
                 }
             }
 
-            // Refetch total count and max filename width, then force the List
-            // components to re-fetch their visible range. We always bump
-            // cacheGeneration because renames don't change totalCount.
-            void Promise.all([
-                getTotalCount(listingId, includeHidden),
-                getMaxFilenameWidth(listingId, includeHidden),
-            ]).then(async ([count, newMaxWidth]) => {
+            // Refetch total count and then force the List components to re-fetch
+            // their visible range. We always bump cacheGeneration because renames
+            // don't change totalCount. Brief mode also refetches its per-column
+            // widths since the filename set may have changed (rename / add / remove).
+            void getTotalCount(listingId, includeHidden).then(async (count) => {
                 totalCount = count
-                maxFilenameWidth = newMaxWidth
                 cacheGeneration++
+                if (viewMode === 'brief') {
+                    briefListRef?.refetchColumnWidths?.()
+                }
 
                 // Post-rename cursor tracking: move cursor to the renamed file
                 const nameToFind = renameFlow.pendingCursorName
@@ -2224,7 +2218,6 @@
                 {syncStatusMap}
                 selectedIndices={selection.selectedIndices}
                 {hasParent}
-                {maxFilenameWidth}
                 {sortBy}
                 {sortOrder}
                 renameState={rename.active ? rename : null}

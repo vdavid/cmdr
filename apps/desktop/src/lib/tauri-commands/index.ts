@@ -8,7 +8,6 @@ export {
   resortListing,
   getFileRange,
   getTotalCount,
-  getMaxFilenameWidth,
   findFileIndex,
   findFileIndices,
   findFirstFuzzyMatch,

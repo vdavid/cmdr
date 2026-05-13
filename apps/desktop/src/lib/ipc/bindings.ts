@@ -150,9 +150,6 @@ export const commands = {
     ),
   getTotalCount: (listingId: string, includeHidden: boolean) =>
     typedError<number, string>(__TAURI_INVOKE('get_total_count', { listingId, includeHidden })),
-  // Recalculates using font metrics — call after file watcher updates.
-  getMaxFilenameWidth: (listingId: string, includeHidden: boolean) =>
-    typedError<number | null, string>(__TAURI_INVOKE('get_max_filename_width', { listingId, includeHidden })),
   /**
    *  Returns the widest filename's text-only width (in px) per Brief-mode column.
    *
@@ -2230,8 +2227,6 @@ export type LineChunk = {
 export type ListingStartResult = {
   listingId: string
   totalCount: number
-  // In pixels, for Brief mode columns. None if font metrics are not available.
-  maxFilenameWidth: number | null
 }
 
 // Statistics about a directory listing.

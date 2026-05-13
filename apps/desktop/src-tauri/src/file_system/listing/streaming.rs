@@ -55,7 +55,6 @@ pub struct ListingProgressEvent {
 pub struct ListingCompleteEvent {
     pub listing_id: String,
     pub total_count: usize,
-    pub max_filename_width: Option<f32>,
     /// Root path of the volume this listing belongs to
     pub volume_root: String,
 }
@@ -115,7 +114,7 @@ pub(crate) trait ListingEventSink: Send + Sync {
     fn emit_opening(&self, listing_id: &str);
     fn emit_progress(&self, listing_id: &str, loaded_count: usize);
     fn emit_read_complete(&self, listing_id: &str, total_count: usize);
-    fn emit_complete(&self, listing_id: &str, total_count: usize, max_filename_width: Option<f32>, volume_root: String);
+    fn emit_complete(&self, listing_id: &str, total_count: usize, volume_root: String);
     fn emit_error(&self, listing_id: &str, message: String, friendly: Option<FriendlyError>);
     fn emit_cancelled(&self, listing_id: &str);
 }
@@ -164,20 +163,13 @@ impl ListingEventSink for TauriListingEventSink {
         );
     }
 
-    fn emit_complete(
-        &self,
-        listing_id: &str,
-        total_count: usize,
-        max_filename_width: Option<f32>,
-        volume_root: String,
-    ) {
+    fn emit_complete(&self, listing_id: &str, total_count: usize, volume_root: String) {
         use tauri::Emitter;
         let _ = self.app.emit(
             "listing-complete",
             ListingCompleteEvent {
                 listing_id: listing_id.to_string(),
                 total_count,
-                max_filename_width,
                 volume_root,
             },
         );
@@ -251,13 +243,7 @@ impl ListingEventSink for CollectorListingEventSink {
             .push((listing_id.to_string(), total_count));
     }
 
-    fn emit_complete(
-        &self,
-        listing_id: &str,
-        total_count: usize,
-        _max_filename_width: Option<f32>,
-        _volume_root: String,
-    ) {
+    fn emit_complete(&self, listing_id: &str, total_count: usize, _volume_root: String) {
         self.complete
             .lock()
             .unwrap()
@@ -475,13 +461,6 @@ pub(crate) async fn read_directory_with_progress(
         entries.iter().filter(|e| !e.name.starts_with('.')).count()
     };
 
-    // Calculate max filename width if font metrics are available
-    let max_filename_width = {
-        let font_id = "system-400-12"; // Default font (must match list_directory_start_with_volume)
-        let filenames: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
-        crate::font_metrics::calculate_max_width(&filenames, font_id)
-    };
-
     // Cache the completed listing, with atomic cancellation check.
     // We check cancellation WHILE holding the cache lock to avoid a race condition:
     // without this, a cancel arriving between a check and insert would leave a stale
@@ -546,7 +525,7 @@ pub(crate) async fn read_directory_with_progress(
     }
 
     // Emit completion event
-    events.emit_complete(listing_id, total_count, max_filename_width, volume_root);
+    events.emit_complete(listing_id, total_count, volume_root);
 
     benchmark::log_event_value(
         "read_directory_with_progress COMPLETE, read_dir_time_ms",

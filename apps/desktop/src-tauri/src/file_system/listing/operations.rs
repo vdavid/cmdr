@@ -37,8 +37,6 @@ fn visible_entries<'a>(entries: &'a [FileEntry], include_hidden: bool) -> Box<dy
 pub struct ListingStartResult {
     pub listing_id: String,
     pub total_count: usize,
-    /// In pixels, for Brief mode columns. None if font metrics are not available.
-    pub max_filename_width: Option<f32>,
 }
 
 /// Starts a new directory listing using a specific volume.
@@ -111,18 +109,10 @@ pub async fn list_directory_start_with_volume(
         // Continue anyway - watcher is optional enhancement
     }
 
-    // Calculate max filename width if font metrics are available
-    let max_filename_width = {
-        let font_id = "system-400-12"; // Default font for now
-        let filenames: Vec<&str> = all_entries.iter().map(|e| e.name.as_str()).collect();
-        crate::font_metrics::calculate_max_width(&filenames, font_id)
-    };
-
     benchmark::log_event("list_directory_start RETURNING");
     Ok(ListingStartResult {
         listing_id,
         total_count,
-        max_filename_width,
     })
 }
 
@@ -172,27 +162,6 @@ pub fn get_total_count(listing_id: &str, include_hidden: bool) -> Result<usize, 
         .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
 
     Ok(visible_entries(&listing.entries, include_hidden).count())
-}
-
-/// Gets the maximum filename width for a cached listing.
-///
-/// Recalculates the width based on current entries using font metrics.
-/// Useful after files are added/removed by the file watcher.
-pub fn get_max_filename_width(listing_id: &str, include_hidden: bool) -> Result<Option<f32>, String> {
-    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
-
-    let listing = cache
-        .get(listing_id)
-        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
-
-    let font_id = "system-400-12"; // Default font (must match list_directory_start_with_volume)
-
-    let filenames: Vec<&str> = visible_entries(&listing.entries, include_hidden)
-        .map(|e| e.name.as_str())
-        .collect();
-    let max_width = crate::font_metrics::calculate_max_width(&filenames, font_id);
-
-    Ok(max_width)
 }
 
 /// Finds the index of a file by name in a cached listing.

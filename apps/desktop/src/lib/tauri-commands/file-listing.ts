@@ -124,18 +124,6 @@ export async function getTotalCount(listingId: string, includeHidden: boolean): 
 }
 
 /**
- * Gets the maximum filename width for a cached listing.
- * Recalculates based on current entries, useful after file watcher updates.
- * @param listingId - The listing ID from listDirectoryStart.
- * @param includeHidden - Whether to include hidden files.
- */
-export async function getMaxFilenameWidth(listingId: string, includeHidden: boolean): Promise<number | undefined> {
-  const res = await commands.getMaxFilenameWidth(listingId, includeHidden)
-  if (res.status === 'error') throwIpcError(res.error)
-  return res.data ?? undefined
-}
-
-/**
  * Finds the index of a file by name in a cached listing.
  * @param listingId - The listing ID from listDirectoryStart.
  * @param name - File name to find.

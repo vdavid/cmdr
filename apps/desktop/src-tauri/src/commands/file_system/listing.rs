@@ -9,8 +9,8 @@ use crate::file_system::{
     find_file_indices as ops_find_file_indices,
     fuzzy_find_first_match_in_listing as ops_fuzzy_find_first_match_in_listing, get_file_at as ops_get_file_at,
     get_file_range as ops_get_file_range, get_listing_stats as ops_get_listing_stats,
-    get_max_filename_width as ops_get_max_filename_width, get_total_count as ops_get_total_count, get_volume_manager,
-    list_directory_end as ops_list_directory_end, list_directory_start_streaming as ops_list_directory_start_streaming,
+    get_total_count as ops_get_total_count, get_volume_manager, list_directory_end as ops_list_directory_end,
+    list_directory_start_streaming as ops_list_directory_start_streaming,
     list_directory_start_with_volume as ops_list_directory_start_with_volume,
     refresh_listing_index_sizes as ops_refresh_listing_index_sizes, resort_listing as ops_resort_listing,
 };
@@ -216,13 +216,6 @@ pub fn get_file_range(
 #[specta::specta]
 pub fn get_total_count(listing_id: String, include_hidden: bool) -> Result<usize, String> {
     ops_get_total_count(&listing_id, include_hidden)
-}
-
-/// Recalculates using font metrics — call after file watcher updates.
-#[tauri::command]
-#[specta::specta]
-pub fn get_max_filename_width(listing_id: String, include_hidden: bool) -> Result<Option<f32>, String> {
-    ops_get_max_filename_width(&listing_id, include_hidden)
 }
 
 /// Returns the widest filename's text-only width (in px) per Brief-mode column.
