@@ -58,26 +58,28 @@ test.describe('Cancel and rollback', () => {
     // Try to click Rollback. On fast filesystems (Docker overlay), the copy may
     // complete before we can click. Poll for the Rollback button, clicking it as
     // soon as it appears. If the dialog closes before we find it, the copy finished.
-    let clickedRollback = false
-    const deadline = Date.now() + 10000
-    while (Date.now() < deadline) {
-      const dialogVisible = await tauriPage.isVisible('[data-dialog-id="transfer-progress"]')
-      if (!dialogVisible) break // Dialog closed — copy already completed
-
-      clickedRollback = await tauriPage.evaluate<boolean>(`(function(){
-        var btns = document.querySelectorAll('[data-dialog-id="transfer-progress"] button');
-        for (var i=0; i<btns.length; i++) {
-          if (btns[i].textContent.trim().toLowerCase() === 'rollback') {
-            btns[i].click();
-            return true;
+    const result: { clicked: boolean } = { clicked: false }
+    await pollUntil(
+      tauriPage,
+      async () => {
+        const dialogVisible = await tauriPage.isVisible('[data-dialog-id="transfer-progress"]')
+        if (!dialogVisible) return true // Dialog closed — copy already completed
+        result.clicked = await tauriPage.evaluate<boolean>(`(function(){
+          var btns = document.querySelectorAll('[data-dialog-id="transfer-progress"] button');
+          for (var i=0; i<btns.length; i++) {
+            if (btns[i].textContent.trim().toLowerCase() === 'rollback') {
+              btns[i].click();
+              return true;
+            }
           }
-        }
-        return false;
-      })()`)
-      if (clickedRollback) break
-      // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-      await sleep(100)
-    }
+          return false;
+        })()`)
+        return result.clicked
+      },
+      10000,
+      100,
+    )
+    const clickedRollback = result.clicked
 
     if (!clickedRollback) {
       // Copy completed too fast to cancel — this is expected on fast filesystems.
@@ -279,8 +281,6 @@ test.describe('Type mismatch conflicts', () => {
         payload: { pane: 'right', path: ${JSON.stringify(rightPath)} }
       });
     })()`)
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-    await sleep(300)
 
     const ready = await pollUntil(
       tauriPage,
@@ -309,8 +309,11 @@ test.describe('Type mismatch conflicts', () => {
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
 
     // This might or might not show conflict policy depending on how the dry-run
-    // detects the type mismatch. Wait briefly then check.
-    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
+    // detects the type mismatch. Wait long enough for the dry-run to settle, then
+    // peek — we explicitly want to accept BOTH outcomes (visible vs. not visible),
+    // so there's no observable signal to poll for: polling for `.conflict-policy`
+    // to appear would mask the legitimate "no conflict UI" case.
+    // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- dry-run-completion peek; intentionally tolerates both "conflict UI shown" and "no conflict UI" outcomes, so polling for a specific selector would mask the second case
     await sleep(1000)
     const hasConflict = await tauriPage.isVisible(`${TRANSFER_DIALOG} .conflict-policy`)
     if (hasConflict) {
