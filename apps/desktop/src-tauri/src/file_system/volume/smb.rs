@@ -46,8 +46,9 @@ fn get_app_handle() -> Option<AppHandle> {
 #[serde(rename_all = "camelCase")]
 struct SmbConnectionChangedPayload {
     volume_id: String,
-    /// `"direct"` or `"disconnected"`. `OsMount` is intentionally not surfaced —
-    /// the reconnect UX is direct-SMB only.
+    /// `"direct"` or `"disconnected"`. The internal state machine is binary —
+    /// the OS-mount fallback only exists at the outer `SmbConnectionState` layer
+    /// (driven by `enrich_smb_connection_state`), not on the smb2 hot path.
     state: &'static str,
 }
 
@@ -69,15 +70,17 @@ fn emit_state_change(volume_id: &str, state: &'static str) {
 
 /// Connection health states for an SmbVolume.
 ///
-/// Stored as `AtomicU8` for lock-free reads from any thread.
+/// Stored as `AtomicU8` for lock-free reads from any thread. The internal state
+/// machine is binary (`Direct ⇄ Disconnected`). The "OS mount" fallback the
+/// frontend shows lives at the outer `SmbConnectionState` layer (see
+/// `enrich_smb_connection_state` in `commands/volumes.rs`) and never reaches
+/// this atomic on the smb2 hot path.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum ConnectionState {
     /// smb2 session is active. All ops go through smb2 (fast path).
     Direct = 0,
-    /// smb2 is down but the OS mount is alive. Ops fall through to filesystem calls.
-    OsMount = 1,
-    /// Both smb2 and OS mount are down. Return errors immediately.
+    /// smb2 session is down. Return errors immediately.
     Disconnected = 2,
 }
 
@@ -85,7 +88,6 @@ impl ConnectionState {
     fn from_u8(val: u8) -> Self {
         match val {
             0 => Self::Direct,
-            1 => Self::OsMount,
             2 => Self::Disconnected,
             _ => Self::Disconnected,
         }
@@ -441,12 +443,11 @@ impl SmbVolume {
 
     // ── Connection helpers ──────────────────────────────────────────────
 
-    /// Checks that the connection is in `Direct` state. Returns an error
-    /// for `Disconnected` or `OsMount`.
+    /// Checks that the connection is in `Direct` state. Returns
+    /// `DeviceDisconnected` for `Disconnected`.
     fn check_connection(&self) -> Result<(), VolumeError> {
         match self.connection_state() {
             ConnectionState::Direct => Ok(()),
-            ConnectionState::OsMount => Err(VolumeError::NotSupported),
             ConnectionState::Disconnected => Err(VolumeError::DeviceDisconnected(
                 "SMB connection is disconnected".to_string(),
             )),
@@ -648,15 +649,10 @@ impl SmbVolume {
     where
         F: FnOnce(&mut SmbClient, &Tree) -> Result<T, smb2::Error>,
     {
-        let state = self.connection_state();
-        if state == ConnectionState::Disconnected {
+        if self.connection_state() == ConnectionState::Disconnected {
             return Err(VolumeError::DeviceDisconnected(
                 "SMB connection is disconnected".to_string(),
             ));
-        }
-
-        if state == ConnectionState::OsMount {
-            return Err(VolumeError::NotSupported);
         }
 
         let tree_arc = {
@@ -1820,9 +1816,11 @@ impl Volume for SmbVolume {
         // SmbVolume always returns `Some` so the frontend can distinguish
         // "not an SMB volume" (None) from "SMB volume in trouble"
         // (Some(Disconnected)). The reconnect manager keys off the latter.
+        // The internal state machine is binary — the outer `OsMount` variant
+        // is only attached by `enrich_smb_connection_state` for SMB shares
+        // that have an OS mount but no Cmdr smb2 session at all.
         Some(match self.connection_state() {
             ConnectionState::Direct => SmbConnectionState::Direct,
-            ConnectionState::OsMount => SmbConnectionState::OsMount,
             ConnectionState::Disconnected => SmbConnectionState::Disconnected,
         })
     }
@@ -2092,17 +2090,17 @@ mod tests {
 
     #[test]
     fn connection_state_round_trip() {
-        for state in [
-            ConnectionState::Direct,
-            ConnectionState::OsMount,
-            ConnectionState::Disconnected,
-        ] {
+        for state in [ConnectionState::Direct, ConnectionState::Disconnected] {
             assert_eq!(ConnectionState::from_u8(state as u8), state);
         }
     }
 
     #[test]
     fn connection_state_unknown_value_defaults_to_disconnected() {
+        // The internal state machine is binary — `1` (the old `OsMount`
+        // discriminant) and any other unknown byte must decode as
+        // `Disconnected`, the safe / "stop using smb2" state.
+        assert_eq!(ConnectionState::from_u8(1), ConnectionState::Disconnected);
         assert_eq!(ConnectionState::from_u8(255), ConnectionState::Disconnected);
     }
 
