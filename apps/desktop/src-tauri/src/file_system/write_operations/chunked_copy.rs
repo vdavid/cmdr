@@ -386,6 +386,110 @@ mod tests {
         cleanup_temp_dir(&temp_dir);
     }
 
+    // ------------------------------------------------------------------
+    // Metadata-preservation pins (cargo-mutants survivors)
+    //
+    // copy_metadata is the orchestrator for xattrs + ACLs + timestamps +
+    // permissions. cargo-mutants showed survivors for each of those sub-
+    // functions and for `copy_metadata` itself — replacing any of them
+    // with `Ok(())` is undetectable from the existing tests because we
+    // never check that those side effects actually happen. The
+    // permissions axis is already covered by
+    // test_chunked_copy_preserves_permissions; below we add timestamps
+    // and xattrs.
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn chunked_copy_preserves_mtime() {
+        // Kills: replace copy_timestamps → Ok(()), and replace copy_metadata → Ok(()).
+        // If either is stubbed out, the destination's mtime will be its
+        // creation time (now) rather than the source's stamped mtime.
+        let temp_dir = create_temp_dir("mtime");
+        let src = temp_dir.join("source.txt");
+        let dst = temp_dir.join("dest.txt");
+        fs::write(&src, "stamped").unwrap();
+
+        // Stamp source with a clearly-in-the-past mtime.
+        let target_mtime = filetime::FileTime::from_unix_time(1_600_000_000, 0); // 2020-09-13
+        filetime::set_file_mtime(&src, target_mtime).unwrap();
+
+        let cancelled = Arc::new(AtomicU8::new(0));
+        chunked_copy_with_metadata(&src, &dst, &cancelled, None).unwrap();
+
+        let dst_meta = fs::metadata(&dst).unwrap();
+        let dst_mtime = filetime::FileTime::from_last_modification_time(&dst_meta);
+        // Allow nanosecond drift but require the seconds to round-trip exactly.
+        assert_eq!(
+            dst_mtime.unix_seconds(),
+            target_mtime.unix_seconds(),
+            "chunked copy must preserve source mtime (copy_timestamps was stubbed out?)"
+        );
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn chunked_copy_preserves_user_xattrs() {
+        // Kills: replace copy_xattrs → Ok(()), and replace copy_metadata → Ok(()).
+        // On macOS, user-namespace xattrs roundtrip on APFS tmpdirs.
+        let temp_dir = create_temp_dir("xattr");
+        let src = temp_dir.join("source.txt");
+        let dst = temp_dir.join("dest.txt");
+        fs::write(&src, "with-xattr").unwrap();
+
+        let key = "user.cmdr_test_xattr";
+        let val = b"sentinel-value-12345";
+        if let Err(e) = xattr::set(&src, key, val) {
+            // Some CI / encrypted-disk setups disallow user xattrs. Skip in
+            // that case rather than failing — the test is opportunistic.
+            log::warn!("chunked_copy_preserves_user_xattrs: setting xattr failed: {e}; skipping");
+            cleanup_temp_dir(&temp_dir);
+            return;
+        }
+
+        let cancelled = Arc::new(AtomicU8::new(0));
+        chunked_copy_with_metadata(&src, &dst, &cancelled, None).unwrap();
+
+        let roundtripped = xattr::get(&dst, key).unwrap();
+        assert_eq!(
+            roundtripped.as_deref(),
+            Some(val.as_slice()),
+            "chunked copy must preserve user xattrs (copy_xattrs was stubbed out?)"
+        );
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn chunked_copy_byte_total_equals_source_size_for_multi_chunk_input() {
+        // Pins the `total_bytes += bytes_read` accumulator against `-=` and
+        // `*=` mutants. Existing basic test only copies 20 bytes (single
+        // chunk); the multi-chunk progress test asserts callback bytes but
+        // also tolerates a `*=` mutant when bytes_read == bytes_read. By
+        // checking the final return value against the file size for >1MB
+        // input, we kill both `+=` mutants definitively.
+        let temp_dir = create_temp_dir("total-bytes");
+        let src = temp_dir.join("source.bin");
+        let dst = temp_dir.join("dest.bin");
+
+        // 3.5 MB → 4 chunks of varying sizes. Picking a non-power-of-two
+        // total avoids `*= total` collapsing on chance.
+        let payload = vec![0xAB_u8; CHUNK_SIZE * 3 + 12345];
+        let expected = payload.len() as u64;
+        fs::write(&src, &payload).unwrap();
+
+        let cancelled = Arc::new(AtomicU8::new(0));
+        let result = chunked_copy_with_metadata(&src, &dst, &cancelled, None).unwrap();
+        assert_eq!(
+            result, expected,
+            "returned byte count must equal source length over multiple chunks"
+        );
+        assert_eq!(fs::metadata(&dst).unwrap().len(), expected);
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
     #[test]
     fn test_chunked_copy_progress_callback() {
         use std::sync::atomic::AtomicU64;
