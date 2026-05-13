@@ -125,17 +125,22 @@ pub fn get_discovery_state_value() -> DiscoveryState {
     state.state
 }
 
+/// Drains the cached host map and resets discovery state to `Idle`. Pure
+/// mutation — returns the IDs of hosts that were removed so the caller can
+/// emit `network-host-lost` for each. Testable without a Tauri runtime.
+pub(crate) fn drain_discovered_hosts() -> Vec<String> {
+    let mut state = get_discovery_state().lock_ignore_poison();
+    let ids: Vec<String> = state.hosts.keys().cloned().collect();
+    state.hosts.clear();
+    state.state = DiscoveryState::Idle;
+    ids
+}
+
 /// Clears all discovered hosts and resets discovery state to `Idle`.
 /// Called when networking is disabled via the user toggle so the frontend store empties
 /// without waiting for `network-host-lost` events from a stopped daemon.
 pub fn clear_discovered_hosts<R: tauri::Runtime>(app_handle: &impl Emitter<R>) {
-    let removed_ids: Vec<String> = {
-        let mut state = get_discovery_state().lock_ignore_poison();
-        let ids: Vec<String> = state.hosts.keys().cloned().collect();
-        state.hosts.clear();
-        state.state = DiscoveryState::Idle;
-        ids
-    };
+    let removed_ids = drain_discovered_hosts();
     for id in removed_ids {
         let _ = app_handle.emit("network-host-lost", serde_json::json!({ "id": id }));
     }
@@ -180,10 +185,17 @@ pub(crate) fn on_host_lost<R: tauri::Runtime>(host_id: &str, app_handle: &impl E
     }
 }
 
-/// Called when discovery state changes.
-pub(crate) fn on_discovery_state_changed(new_state: DiscoveryState, app_handle: &AppHandle) {
+/// Updates the cached discovery state without emitting. Pure mutation —
+/// testable in isolation from a Tauri runtime. The public
+/// `on_discovery_state_changed` calls this and then emits the FE event.
+pub(crate) fn set_discovery_state(new_state: DiscoveryState) {
     let mut state = get_discovery_state().lock_ignore_poison();
     state.state = new_state;
+}
+
+/// Called when discovery state changes.
+pub(crate) fn on_discovery_state_changed(new_state: DiscoveryState, app_handle: &AppHandle) {
+    set_discovery_state(new_state);
 
     // Emit event to frontend
     let _ = app_handle.emit(
@@ -383,6 +395,89 @@ mod tests {
         // hostname and ip_address serialize as explicit null (no longer omitted)
         assert!(json.contains("\"hostname\":null"));
         assert!(json.contains("\"ipAddress\":null"));
+    }
+
+    // ── DiscoveryState transitions ─────────────────────────────────────
+    //
+    // The global `DISCOVERY_STATE` cell is shared across tests and across
+    // the rest of the process. To keep these tests deterministic when run
+    // in parallel with each other, they share a serializing mutex so only
+    // one DiscoveryState test runs at a time.
+
+    static DISCOVERY_TEST_GUARD: Mutex<()> = Mutex::new(());
+
+    #[test]
+    fn discovery_state_idle_to_searching_to_active_to_idle_transitions() {
+        // Drives the full mDNS-lifecycle path through the public setter:
+        // - `Idle → Searching` (daemon start)
+        // - `Searching → Active` (initial burst complete)
+        // - `Active → Idle` (daemon stop)
+        // The setter is the same one `on_discovery_state_changed` calls
+        // before emitting the FE event.
+        let _guard = DISCOVERY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+
+        set_discovery_state(DiscoveryState::Idle);
+        assert_eq!(get_discovery_state_value(), DiscoveryState::Idle);
+
+        set_discovery_state(DiscoveryState::Searching);
+        assert_eq!(get_discovery_state_value(), DiscoveryState::Searching);
+
+        set_discovery_state(DiscoveryState::Active);
+        assert_eq!(get_discovery_state_value(), DiscoveryState::Active);
+
+        set_discovery_state(DiscoveryState::Idle);
+        assert_eq!(get_discovery_state_value(), DiscoveryState::Idle);
+    }
+
+    #[test]
+    fn discovery_state_searching_to_idle_via_drain() {
+        // The "clear all discovered hosts" path that the user-facing
+        // network-toggle invokes. Drain must reset state to Idle even
+        // from Searching (mid-discovery toggle off), not only from Active.
+        let _guard = DISCOVERY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+
+        set_discovery_state(DiscoveryState::Searching);
+        let _removed = drain_discovered_hosts();
+        assert_eq!(get_discovery_state_value(), DiscoveryState::Idle);
+    }
+
+    #[test]
+    fn drain_discovered_hosts_clears_state_and_returns_removed_ids() {
+        // Pre-populate the global host map. We bypass `on_host_found` (which
+        // takes an Emitter) and write the map directly — the point of this
+        // test is the drain side effect on the cache, not the event emit.
+        let _guard = DISCOVERY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+
+        {
+            let mut state = get_discovery_state().lock_ignore_poison();
+            state.hosts.clear();
+            state.state = DiscoveryState::Active;
+            let host = NetworkHost {
+                id: "host-drain-test-1".to_string(),
+                name: "Drain test host".to_string(),
+                hostname: None,
+                ip_address: None,
+                port: 445,
+                source: HostSource::Discovered,
+            };
+            state.hosts.insert(host.id.clone(), host);
+        }
+
+        let removed = drain_discovered_hosts();
+
+        assert!(
+            removed.contains(&"host-drain-test-1".to_string()),
+            "drain must return removed host IDs so the caller can emit per-host events; got {removed:?}"
+        );
+        assert_eq!(
+            get_discovery_state_value(),
+            DiscoveryState::Idle,
+            "drain must reset state to Idle so the FE store can clear without daemon teardown events"
+        );
+        assert!(
+            get_discovered_hosts().is_empty(),
+            "drain must empty the host cache"
+        );
     }
 
     #[test]
