@@ -3,8 +3,9 @@
 use crate::file_system::get_files_at_indices as ops_get_files_at_indices;
 use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
 use crate::file_system::{
-    DirectorySortMode, FileEntry, ListingStartResult, ListingStats, ResortResult, SortColumn, SortOrder,
-    StreamingListingStartResult, cancel_listing as ops_cancel_listing, find_file_index as ops_find_file_index,
+    BriefColumnsError, DirectorySortMode, FileEntry, ListingStartResult, ListingStats, ResortResult, SortColumn,
+    SortOrder, StreamingListingStartResult, cancel_listing as ops_cancel_listing,
+    compute_brief_column_text_widths as ops_compute_brief_column_text_widths, find_file_index as ops_find_file_index,
     find_file_indices as ops_find_file_indices,
     fuzzy_find_first_match_in_listing as ops_fuzzy_find_first_match_in_listing, get_file_at as ops_get_file_at,
     get_file_range as ops_get_file_range, get_listing_stats as ops_get_listing_stats,
@@ -16,7 +17,7 @@ use crate::file_system::{
 use std::path::{Path, PathBuf};
 use tokio::time::Duration;
 
-use crate::commands::util::{IpcError, TimedOut};
+use crate::commands::util::{IpcError, TimedOut, blocking_result_with_timeout};
 use crate::file_system::validation::{MAX_NAME_BYTES, MAX_PATH_BYTES};
 
 use super::expand_tilde;
@@ -222,6 +223,39 @@ pub fn get_total_count(listing_id: String, include_hidden: bool) -> Result<usize
 #[specta::specta]
 pub fn get_max_filename_width(listing_id: String, include_hidden: bool) -> Result<Option<f32>, String> {
     ops_get_max_filename_width(&listing_id, include_hidden)
+}
+
+/// Returns the widest filename's text-only width (in px) per Brief-mode column.
+///
+/// Pure read path: takes a snapshot of `LISTING_CACHE` for `listing_id` and
+/// measures each column's widest filename with `font_metrics::calculate_max_width`.
+/// The FE applies chrome + clamp on top.
+///
+/// Error mapping (consumed by the FE):
+/// - `font_metrics_not_ready` — at least one column had no measurable filename
+///   in the font cache. FE retries after `ensureFontMetricsLoaded` resolves.
+/// - `invalid_items_per_column` — caller sent 0; FE clamps to >= 1 normally.
+/// - `listing_not_found:{id}` — listing already ended (or never started).
+/// - Anything else is a pass-through (cache-lock poisoning etc.).
+#[tauri::command]
+#[specta::specta]
+pub async fn get_brief_column_text_widths(
+    listing_id: String,
+    items_per_column: usize,
+    has_parent: bool,
+    font_id: String,
+    include_hidden: bool,
+) -> Result<Vec<f32>, IpcError> {
+    blocking_result_with_timeout(Duration::from_secs(2), move || {
+        ops_compute_brief_column_text_widths(&listing_id, items_per_column, has_parent, &font_id, include_hidden)
+            .map_err(|e| match e {
+                BriefColumnsError::FontMetricsNotReady => "font_metrics_not_ready".to_string(),
+                BriefColumnsError::InvalidItemsPerColumn => "invalid_items_per_column".to_string(),
+                BriefColumnsError::ListingNotFound(id) => format!("listing_not_found:{}", id),
+                BriefColumnsError::Other(msg) => msg,
+            })
+    })
+    .await
 }
 
 #[tauri::command]

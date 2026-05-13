@@ -1,5 +1,6 @@
 //! Directory listing module - reading, operations, caching, metadata, sorting, streaming.
 
+pub(crate) mod brief_columns;
 pub(crate) mod caching;
 pub(crate) mod fuzzy_jump;
 pub(crate) mod metadata;
@@ -10,6 +11,7 @@ pub(crate) mod streaming;
 
 // Re-export types for backwards compatibility (they were originally defined in operations.rs)
 // These re-exports make the types available both externally and locally in this module
+pub use brief_columns::{BriefColumnsError, compute_brief_column_text_widths};
 pub use fuzzy_jump::fuzzy_find_first_match_in_listing;
 pub use metadata::{ExtendedMetadata, FileEntry};
 pub use operations::{
@@ -34,6 +36,8 @@ pub(crate) use caching::{
 pub(crate) use operations::get_listings_by_volume_prefix;
 pub(crate) use operations::{get_listing_entries, update_listing_entries};
 
+#[cfg(test)]
+mod brief_columns_test;
 #[cfg(test)]
 mod caching_test;
 #[cfg(test)]

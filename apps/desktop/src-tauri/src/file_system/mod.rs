@@ -29,10 +29,11 @@ use std::sync::{Arc, LazyLock};
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use listing::ExtendedMetadata;
 pub use listing::{
-    DirectorySortMode, FileEntry, ListingStartResult, ListingStats, ResortResult, SortColumn, SortOrder,
-    StreamingListingStartResult, cancel_listing, find_file_index, find_file_indices, fuzzy_find_first_match_in_listing,
-    get_file_at, get_file_range, get_listing_stats, get_max_filename_width, get_total_count, list_directory_end,
-    list_directory_start_streaming, list_directory_start_with_volume, refresh_listing_index_sizes, resort_listing,
+    BriefColumnsError, DirectorySortMode, FileEntry, ListingStartResult, ListingStats, ResortResult, SortColumn,
+    SortOrder, StreamingListingStartResult, cancel_listing, compute_brief_column_text_widths, find_file_index,
+    find_file_indices, fuzzy_find_first_match_in_listing, get_file_at, get_file_range, get_listing_stats,
+    get_max_filename_width, get_total_count, list_directory_end, list_directory_start_streaming,
+    list_directory_start_with_volume, refresh_listing_index_sizes, resort_listing,
 };
 // Batch accessors (used by drag, clipboard, and transfer dialogs)
 pub use listing::{get_files_at_indices, get_paths_at_indices};

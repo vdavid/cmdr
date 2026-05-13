@@ -153,6 +153,30 @@ export const commands = {
   // Recalculates using font metrics — call after file watcher updates.
   getMaxFilenameWidth: (listingId: string, includeHidden: boolean) =>
     typedError<number | null, string>(__TAURI_INVOKE('get_max_filename_width', { listingId, includeHidden })),
+  /**
+   *  Returns the widest filename's text-only width (in px) per Brief-mode column.
+   *
+   *  Pure read path: takes a snapshot of `LISTING_CACHE` for `listing_id` and
+   *  measures each column's widest filename with `font_metrics::calculate_max_width`.
+   *  The FE applies chrome + clamp on top.
+   *
+   *  Error mapping (consumed by the FE):
+   *  - `font_metrics_not_ready` — at least one column had no measurable filename
+   *    in the font cache. FE retries after `ensureFontMetricsLoaded` resolves.
+   *  - `invalid_items_per_column` — caller sent 0; FE clamps to >= 1 normally.
+   *  - `listing_not_found:{id}` — listing already ended (or never started).
+   *  - Anything else is a pass-through (cache-lock poisoning etc.).
+   */
+  getBriefColumnTextWidths: (
+    listingId: string,
+    itemsPerColumn: number,
+    hasParent: boolean,
+    fontId: string,
+    includeHidden: boolean,
+  ) =>
+    typedError<number[], IpcError>(
+      __TAURI_INVOKE('get_brief_column_text_widths', { listingId, itemsPerColumn, hasParent, fontId, includeHidden }),
+    ),
   findFileIndex: (listingId: string, name: string, includeHidden: boolean) =>
     typedError<number | null, string>(__TAURI_INVOKE('find_file_index', { listingId, name, includeHidden })),
   findFileIndices: (listingId: string, names: string[], includeHidden: boolean) =>
