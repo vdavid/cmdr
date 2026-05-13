@@ -18,8 +18,8 @@
 
 import os from 'node:os'
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, isStateClean, pollUntil, sleep } from './helpers.js'
-import { initMcpClient, mcpReadResource } from '../e2e-shared/mcp-client.js'
+import { ensureAppReady, isStateClean, pollUntil } from './helpers.js'
+import { initMcpClient, mcpCall, mcpReadResource } from '../e2e-shared/mcp-client.js'
 
 // Volume name for "Macintosh HD" on macOS / "Root" on Linux. We force both panes back to
 // this volume in `beforeEach` so the spec runs cleanly even when a prior MTP test left a
@@ -46,24 +46,14 @@ async function readNetworkLabel(tauriPage: Parameters<typeof pollUntil>[0]): Pro
 
 /** Sets a setting through the MCP bridge — same code path the UI uses. */
 async function setSettingViaBridge(
-  tauriPage: Parameters<typeof pollUntil>[0],
+  _tauriPage: Parameters<typeof pollUntil>[0],
   settingId: string,
   value: unknown,
 ): Promise<void> {
-  const requestId = `e2e-${String(Date.now())}-${Math.random().toString(36).slice(2)}`
-  const settingIdJson = JSON.stringify(settingId)
-  const valueJson = JSON.stringify(value)
-  const requestIdJson = JSON.stringify(requestId)
-  await tauriPage.evaluate(`(function() {
-    var invoke = window.__TAURI_INTERNALS__.invoke;
-    invoke('plugin:event|emit', {
-      event: 'mcp-set-setting',
-      payload: { requestId: ${requestIdJson}, settingId: ${settingIdJson}, value: ${valueJson} }
-    });
-  })()`)
-  // Allow the bridge handler + cross-window emit + reactive update to settle.
-  // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- legacy fixed wait; replace with pollUntil if it causes a flake
-  await sleep(300)
+  // The `set_setting` MCP tool uses `mcp_round_trip` and only returns after the
+  // frontend handler has acknowledged the change. This replaces the prior
+  // emit-and-sleep dance — no fixed-duration wait needed.
+  await mcpCall('set_setting', { id: settingId, value })
 }
 
 async function openVolumePicker(tauriPage: Parameters<typeof pollUntil>[0]): Promise<void> {
