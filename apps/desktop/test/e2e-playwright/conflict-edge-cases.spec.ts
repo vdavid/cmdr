@@ -38,85 +38,77 @@ test.beforeEach(() => {
 
 test.describe('Cancel and rollback', () => {
   test('Cancel copy mid-operation rolls back partial files', async ({ tauriPage }) => {
-    test.setTimeout(120_000) // Rollback requires waiting for scan preview → copy start
+    // Use a small in-test fixture (5 × ~1 KB files) and a per-file throttle
+    // via the `set_test_throttle` IPC. This gives us a deterministic ~1 s
+    // window in which to click Rollback — orders of magnitude cheaper than
+    // staging the 170 MB `bulk/` directory just to slow the copy down.
     const fixtureRoot = getFixtureRoot()
-    // Use standard fixtures with bulk/ dir (~170 MB)
     recreateFixtures(fixtureRoot)
+    const partialLeft = path.join(fixtureRoot, 'left', 'partial')
+    fs.mkdirSync(partialLeft, { recursive: true })
+    for (let i = 0; i < 5; i++) {
+      fs.writeFileSync(path.join(partialLeft, `file-${String(i)}.txt`), 'x'.repeat(1024))
+    }
+
     await ensureAppReady(tauriPage)
 
-    // Select the bulk/ directory (don't navigate into it) and copy it
-    const found = await moveCursorToFile(tauriPage, 'bulk')
-    expect(found).toBe(true)
-
-    await dispatchMenuCommand(tauriPage, 'file.copy')
-    await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
-    await clickTransferStart(tauriPage)
-
-    // Wait for progress dialog to appear
-    await pollUntil(tauriPage, async () => tauriPage.isVisible('[data-dialog-id="transfer-progress"]'), 10000)
-
-    // Try to click Rollback. On fast filesystems (Docker overlay), the copy may
-    // complete before we can click. Poll for the Rollback button, clicking it as
-    // soon as it appears. If the dialog closes before we find it, the copy finished.
-    const result: { clicked: boolean } = { clicked: false }
-    await pollUntil(
-      tauriPage,
-      async () => {
-        const dialogVisible = await tauriPage.isVisible('[data-dialog-id="transfer-progress"]')
-        if (!dialogVisible) return true // Dialog closed — copy already completed
-        result.clicked = await tauriPage.evaluate<boolean>(`(function(){
-          var btns = document.querySelectorAll('[data-dialog-id="transfer-progress"] button');
-          for (var i=0; i<btns.length; i++) {
-            if (btns[i].textContent.trim().toLowerCase() === 'rollback') {
-              btns[i].click();
-              return true;
-            }
-          }
-          return false;
-        })()`)
-        return result.clicked
-      },
-      10000,
-      100,
+    // Per-file throttle: 200 ms × 5 files ≈ 1 s of copy time, plenty of room
+    // to click Rollback after file 0 is committed.
+    await tauriPage.evaluate(
+      `window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: 200 })`,
     )
-    const clickedRollback = result.clicked
 
-    if (!clickedRollback) {
-      // Copy completed too fast to cancel — this is expected on fast filesystems.
-      // Verify the copy completed successfully and dismiss any remaining dialogs.
+    try {
+      const found = await moveCursorToFile(tauriPage, 'partial')
+      expect(found).toBe(true)
+
+      await dispatchMenuCommand(tauriPage, 'file.copy')
+      await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
+      await clickTransferStart(tauriPage)
+
+      // Wait until the first file is committed AND later files don't exist yet.
+      // This is the deterministic "we're mid-copy" signal — no sleeps, no races.
+      const rightPartial = path.join(fixtureRoot, 'right', 'partial')
+      const midCopy = await pollUntil(
+        tauriPage,
+        async () => {
+          return (
+            fs.existsSync(path.join(rightPartial, 'file-0.txt')) &&
+            !fs.existsSync(path.join(rightPartial, 'file-3.txt'))
+          )
+        },
+        5000,
+        50,
+      )
+      expect(midCopy).toBe(true)
+
+      // Click Rollback on the progress dialog.
+      const clicked = await tauriPage.evaluate<boolean>(`(function(){
+        var btns = document.querySelectorAll('[data-dialog-id="transfer-progress"] button');
+        for (var i=0; i<btns.length; i++) {
+          if (btns[i].textContent.trim().toLowerCase() === 'rollback') {
+            btns[i].click();
+            return true;
+          }
+        }
+        return false;
+      })()`)
+      expect(clicked).toBe(true)
+
+      // Wait for rollback to finish and dialogs to close.
       await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
-      const rightBulk = path.join(fixtureRoot, 'right', 'bulk')
-      expect(fs.existsSync(rightBulk)).toBe(true)
-      // eslint-disable-next-line no-console
-      console.log('Copy completed before Rollback could be clicked — skipping rollback verification')
-      return
-    }
 
-    // Wait for the rollback to complete and dialogs to close
-    const closed = await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 30000)
-    if (!closed) {
-      await tauriPage.keyboard.press('Escape')
-      await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
-    }
-
-    // After rollback, right/bulk/ should not exist or have minimal remnants.
-    // On very fast filesystems (Docker overlay), the copy may have completed
-    // before the rollback took effect despite clicking the button — the copy
-    // finished between the button appearing and our click registering.
-    const rightBulk = path.join(fixtureRoot, 'right', 'bulk')
-    if (fs.existsSync(rightBulk)) {
-      const remaining = fs.readdirSync(rightBulk)
-      if (remaining.length >= 23) {
-        // All files present — copy completed before rollback took effect.
-        // This is expected on fast filesystems where 170MB copies in <1s.
-        // eslint-disable-next-line no-console
-        console.log(
-          `Rollback clicked but copy already completed (${String(remaining.length)} files remain) — fast filesystem race`,
-        )
-      } else {
-        // Partial rollback — some files were cleaned up
-        expect(remaining.length).toBeLessThan(3)
+      // Rollback must remove the partial files — and the directory we created
+      // for them. Either right/partial/ doesn't exist, or it's empty.
+      const exists = fs.existsSync(rightPartial)
+      if (exists) {
+        const remaining = fs.readdirSync(rightPartial)
+        expect(remaining.length).toBe(0)
       }
+    } finally {
+      await tauriPage.evaluate(
+        `window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null })`,
+      )
     }
   })
 })
