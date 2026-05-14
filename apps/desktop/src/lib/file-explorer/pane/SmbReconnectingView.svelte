@@ -111,7 +111,7 @@
                     Retry now
                 </Button>
             </span>
-            <span use:tooltip={'Stop trying for now. The connection stays available — switch back to retry.'}>
+            <span use:tooltip={'Stop trying for now. The connection stays available. Switch back to retry.'}>
                 <Button variant="secondary" size="mini" onclick={onCancel}>Cancel</Button>
             </span>
             <span use:tooltip={'Stop trying and disconnect from the server.'}>

@@ -127,7 +127,7 @@ pub async fn chat_completion(
             // gets fully consumed by reasoning before any `output_text` is emitted.
             // The HTTP call succeeded; there's just no visible answer to return.
             AiError::ParseError(String::from(
-                "AI returned no text — likely max_tokens fully consumed by reasoning. Increase max_tokens.",
+                "AI returned no text. Likely max_tokens fully consumed by reasoning. Increase max_tokens.",
             ))
         })?
         .to_owned();

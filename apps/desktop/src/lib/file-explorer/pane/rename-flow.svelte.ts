@@ -254,7 +254,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
             .catch((e: unknown) => {
               if (isIpcError(e) && e.timedOut) {
                 addToast(
-                  "Couldn't confirm the file was moved to Trash. The volume may be slow — the file may still have been moved.",
+                  "Couldn't confirm the file was moved to Trash. The volume may be slow, but the file may still have been moved. Please check your Trash to be sure.",
                   { level: 'warn', dismissal: 'persistent' },
                 )
                 void refreshListing(deps.getListingId())

@@ -39,7 +39,7 @@
         <p class="banner-detail">
             {#if smbGaveUp}
                 Cmdr tried reconnecting several times but the server didn't come back. The connection stays available
-                for now — try again, or disconnect to drop it.
+                for now. Try again, or disconnect to drop it.
             {:else}
                 The volume for this path didn't respond in time. It may be a network drive that's currently unavailable.
             {/if}

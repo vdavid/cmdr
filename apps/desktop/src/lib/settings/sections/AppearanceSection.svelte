@@ -209,12 +209,12 @@
                                     <div class="format-help">
                                         <h4>Format placeholders</h4>
                                         <ul>
-                                            <li><code>YYYY</code> — 4-digit year (2025)</li>
-                                            <li><code>MM</code> — 2-digit month (01-12)</li>
-                                            <li><code>DD</code> — 2-digit day (01-31)</li>
-                                            <li><code>HH</code> — 2-digit hour (00-23)</li>
-                                            <li><code>mm</code> — 2-digit minute (00-59)</li>
-                                            <li><code>ss</code> — 2-digit second (00-59)</li>
+                                            <li><code>YYYY</code>: 4-digit year (2025)</li>
+                                            <li><code>MM</code>: 2-digit month (01-12)</li>
+                                            <li><code>DD</code>: 2-digit day (01-31)</li>
+                                            <li><code>HH</code>: 2-digit hour (00-23)</li>
+                                            <li><code>mm</code>: 2-digit minute (00-59)</li>
+                                            <li><code>ss</code>: 2-digit second (00-59)</li>
                                         </ul>
                                     </div>
                                 {/if}

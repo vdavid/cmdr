@@ -70,7 +70,7 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
         W::DestinationInsideSource { source, destination } => FriendlyError {
             category: ErrorCategory::NeedsAction,
             title: "Destination is inside the source".into(),
-            explanation: format!("Cmdr can't copy `{source}` into `{destination}` — that would loop forever."),
+            explanation: format!("Cmdr can't copy `{source}` into `{destination}`. That would loop forever."),
             suggestion: "Pick a destination outside the source folder.".into(),
             raw_detail: raw,
             retry_hint: false,

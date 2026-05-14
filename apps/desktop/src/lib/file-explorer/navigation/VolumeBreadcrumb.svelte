@@ -574,7 +574,7 @@
                 <div class="timeout-warning-row" class:retry-failed={volumeRetryFailed}>
                     <span class="timeout-warning-text"
                         >{volumeRetryFailed
-                            ? 'Still unreachable — try again later'
+                            ? 'Still unreachable. Try again later'
                             : 'Some volumes may be missing'}</span
                     >
                     <button

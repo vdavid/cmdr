@@ -205,7 +205,7 @@ pub(crate) fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchR
     let has_dir_filter = query.is_directory.is_some();
     if !has_name && !has_size && !has_dir_filter && !has_date && index.entries.len() > 100_000 {
         return Err(
-            "Query too broad — add a filename pattern, size, date, or type filter to narrow results.".to_string(),
+            "Query too broad. Add a filename pattern, size, date, or type filter to narrow results.".to_string(),
         );
     }
 

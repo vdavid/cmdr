@@ -74,7 +74,7 @@
             Cmdr quit unexpectedly last time. Here's a crash report with details that can help fix this.
         </p>
         <p class="description privacy-note">
-            It includes the app version, macOS version, and which part of the code crashed — no file names or personal
+            It includes the app version, macOS version, and which part of the code crashed. No file names or personal
             data.
         </p>
 

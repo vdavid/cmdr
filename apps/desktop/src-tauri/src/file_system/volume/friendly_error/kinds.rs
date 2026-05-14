@@ -55,8 +55,8 @@ pub(super) fn tcc_restricted(path_display: &str, raw_detail: String) -> Friendly
             path_display
         ),
         suggestion: "Two ways to fix:\n\
-            - Grant Cmdr **Full Disk Access** in **System Settings → Privacy & Security → Full Disk Access** — \
-            removes all such limits at once.\n\
+            - Grant Cmdr **Full Disk Access** in **System Settings → Privacy & Security → Full Disk Access** \
+            to remove all such limits at once.\n\
             - Or grant per-folder access for just this folder in **System Settings → Privacy & Security → Files and Folders → Cmdr**."
             .into(),
         raw_detail,

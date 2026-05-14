@@ -35,7 +35,7 @@
 
 <div class="content">
     <span class="message">
-        Error report sent — your reference ID:
+        Error report sent. Your reference ID is
         <span class="id-badge">{lastSentReportId}</span>
     </span>
     <div class="actions">

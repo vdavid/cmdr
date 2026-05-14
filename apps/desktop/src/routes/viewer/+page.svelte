@@ -77,7 +77,7 @@
         getEstimatedLines: () => estimatedLines,
         getBackendType: () => backendType,
         onTimeoutError: () => {
-            error = "Couldn't load the file — the volume may be slow or unresponsive."
+            error = "Couldn't load the file. The volume may be slow or unresponsive."
             errorIsTimeout = true
         },
         getAllLines: () => {
@@ -339,7 +339,7 @@
             await openViewerSession(filePath)
         } catch (e) {
             if (isIpcError(e) && e.timedOut) {
-                error = "Couldn't load the file — the volume may be slow or unresponsive."
+                error = "Couldn't load the file. The volume may be slow or unresponsive."
                 errorIsTimeout = true
             } else {
                 error = typeof e === 'string' ? e : isIpcError(e) ? e.message : 'Failed to read file'
@@ -394,7 +394,7 @@
             await openViewerSession(pathParam)
         } catch (e) {
             if (isIpcError(e) && e.timedOut) {
-                error = "Couldn't load the file — the volume may be slow or unresponsive."
+                error = "Couldn't load the file. The volume may be slow or unresponsive."
                 errorIsTimeout = true
             } else {
                 error = typeof e === 'string' ? e : isIpcError(e) ? e.message : 'Failed to read file'

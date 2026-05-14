@@ -590,7 +590,7 @@ pub async fn disconnect_smb_volume(volume_id: String) -> Result<(), crate::comma
 
     if volume.smb_connection_state().is_none() {
         return Err(IpcError::from_err(format!(
-            "Volume {} isn't an SMB volume — can't disconnect",
+            "Volume {} isn't an SMB volume; can't disconnect",
             volume_id
         )));
     }

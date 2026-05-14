@@ -353,7 +353,7 @@ export async function initialize(): Promise<void> {
       connectionState: 'error',
       storages: [],
       displayName: existing?.displayName ?? getMtpDeviceDisplayName(device),
-      error: 'USB permission denied — install udev rules and reconnect',
+      error: 'USB permission denied. Install udev rules and reconnect',
     })
   })
 

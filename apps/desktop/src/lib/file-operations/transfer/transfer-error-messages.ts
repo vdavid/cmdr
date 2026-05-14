@@ -135,8 +135,8 @@ export function getUserFriendlyMessage(
         message: `You don't have permission to ${verb} files here.`,
         suggestion: isDeleteOp
           ? isMacOS()
-            ? 'Check that you have write access to the parent folder. The file may be locked — unlock it in Finder (Get Info > uncheck Locked) and try again.'
-            : 'Check that you have write access to the parent folder. The file may be protected — check its permissions (e.g. via chmod or your file manager) and try again.'
+            ? 'Check that you have write access to the parent folder. The file may be locked. Unlock it in Finder (Get Info > uncheck Locked) and try again.'
+            : 'Check that you have write access to the parent folder. The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.'
           : 'Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.',
       }
     }
@@ -159,7 +159,7 @@ export function getUserFriendlyMessage(
         message: "The file is locked and can't be deleted.",
         suggestion: isMacOS()
           ? 'Unlock it in Finder (Get Info > uncheck Locked) and try again.'
-          : 'The file may be protected — check its permissions (e.g. via chmod or your file manager) and try again.',
+          : 'The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.',
       }
     default:
       return {

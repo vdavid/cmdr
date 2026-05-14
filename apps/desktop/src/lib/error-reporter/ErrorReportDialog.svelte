@@ -158,7 +158,7 @@
     <div class="body">
         <p id="error-report-body" class="description">
             This sends Cmdr's recent log files to the team so we can fix what went wrong. The logs
-            are redacted client-side — file paths, hostnames, IPs, and emails are scrubbed before
+            are redacted client-side: file paths, hostnames, IPs, and emails are all scrubbed before
             sending.
         </p>
 

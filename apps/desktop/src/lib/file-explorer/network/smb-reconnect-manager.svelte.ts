@@ -344,7 +344,7 @@ export function reconnectProgressMessage(attemptIndex: number): string | null {
   // Attempts AFTER it = TOTAL_ATTEMPTS - 1 - attemptIndex.
   const remaining = TOTAL_ATTEMPTS - 1 - attemptIndex
   if (remaining <= 0) {
-    return `Retried ${retried}, this is the final attempt — will drop the connection if it fails.`
+    return `Retried ${retried}, this is the final attempt. Connection drops if it fails.`
   }
   return `Retried ${retried}, will try it ${ordinalCount(remaining)} more after this.`
 }

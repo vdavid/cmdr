@@ -65,7 +65,7 @@ export function describeSecretError(e: unknown, operation: 'save' | 'read'): Sec
         body:
           operation === 'save'
             ? 'Open Keychain Access and check the "Cmdr" entry, or delete it and try saving again.'
-            : 'Open Keychain Access, find the "Cmdr" entry, and grant access — or delete it and re-enter your key.',
+            : 'Open Keychain Access, find the "Cmdr" entry, grant access, or delete it and re-enter your key.',
         detail: message,
         level: 'error',
       }

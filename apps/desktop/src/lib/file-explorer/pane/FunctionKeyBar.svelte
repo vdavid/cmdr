@@ -52,22 +52,22 @@
         }}
     >
         {#if shiftHeld}
-            <button disabled tabindex={-1} aria-label="F2 — no shift action">
+            <button disabled tabindex={-1} aria-label="F2 (no shift action)">
                 <kbd>F2</kbd>
             </button>
-            <button disabled tabindex={-1} aria-label="F3 — no shift action">
+            <button disabled tabindex={-1} aria-label="F3 (no shift action)">
                 <kbd>F3</kbd>
             </button>
             <button onclick={onNewFile} tabindex={-1} aria-label="Create new file (Shift+F4)">
                 <kbd>⇧F4</kbd><span>New file</span>
             </button>
-            <button disabled tabindex={-1} aria-label="F5 — no shift action">
+            <button disabled tabindex={-1} aria-label="F5 (no shift action)">
                 <kbd>F5</kbd>
             </button>
             <button onclick={onRename} tabindex={-1} aria-label="Rename (Shift+F6)">
                 <kbd>⇧F6</kbd><span>Rename</span>
             </button>
-            <button disabled tabindex={-1} aria-label="F7 — no shift action">
+            <button disabled tabindex={-1} aria-label="F7 (no shift action)">
                 <kbd>F7</kbd>
             </button>
             <button onclick={onDeletePermanently} tabindex={-1} aria-label="Delete permanently (Shift+F8)">

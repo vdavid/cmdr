@@ -310,7 +310,7 @@ export async function sendLicenseEmail(params: EmailParams): Promise<void> {
     <p>${licenseDescriptionHtml}</p>
 
     <div class="note">
-        <strong>Multiple machines?</strong> Each license lets you run ${params.productName} on multiple machines — like a laptop and desktop for remote debugging — as long as you're the only one using that license.
+        <strong>Multiple machines?</strong> Each license lets you run ${params.productName} on multiple machines (like a laptop and desktop for remote debugging) as long as you're the only one using that license.
     </div>
 
     <div class="footer">
@@ -337,7 +337,7 @@ How to activate:
 
 ${licenseDescriptionText}
 
-Multiple machines? Each license lets you run ${params.productName} on multiple machines — like a laptop and desktop for remote debugging — as long as you're the one using that license.
+Multiple machines? Each license lets you run ${params.productName} on multiple machines (like a laptop and desktop for remote debugging) as long as you're the one using that license.
 
 Questions? Contact ${params.supportEmail}
 

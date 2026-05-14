@@ -101,7 +101,7 @@ function resetReplay() {
 
 const rescanReasonToMessage: Record<string, string> = {
   stale_index:
-    "Your drive index is outdated — it looks like the app hasn't run for a while. Running a fresh scan to catch up.",
+    "Your drive index is outdated. It looks like the app hasn't run for a while. Running a fresh scan to catch up.",
   journal_gap: "The system's file change log doesn't go back far enough. Running a fresh scan to rebuild the index.",
   replay_overflow:
     'A lot of file changes happened since last run. Running a fresh scan instead of replaying them one by one.',

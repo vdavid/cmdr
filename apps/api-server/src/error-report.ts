@@ -152,7 +152,7 @@ async function postUploadWork(
       arch: args.meta.arch,
       sizeBytes: args.sizeBytes,
       uploadedUnixSeconds: args.uploadedUnixSeconds,
-      downloadUrl: downloadUrl ?? '(presign unavailable — fetch via admin)',
+      downloadUrl: downloadUrl ?? '(presign unavailable; fetch via admin)',
       userNote: args.meta.userNote,
     })
 

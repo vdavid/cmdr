@@ -117,7 +117,7 @@ pub(crate) async fn try_smb_upgrade(
                     e
                 );
                 Err(UpgradeError::Network(format!(
-                    "Can't connect to {} — check that it's reachable on your network",
+                    "Can't connect to {}. Check that it's reachable on your network.",
                     display
                 )))
             }

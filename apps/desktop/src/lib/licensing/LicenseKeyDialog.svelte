@@ -150,8 +150,8 @@
     function showActivationToast(info: LicenseInfo): void {
         const name = info.organizationName
         const message = name
-            ? `Welcome aboard, ${name}! Thanks for your support.`
-            : 'License activated — thanks for your support!'
+            ? `Welcome aboard, ${name}! Thanks for your support. ❤️`
+            : 'License activated. Thanks for your support! ❤️'
         addToast(message, { level: 'success' })
     }
 
@@ -417,7 +417,7 @@
                 {/if}
                 <p class="help-text">
                     {#if isServerInvalidError && serverInvalidRetryCount >= 3}
-                        We've tried {serverInvalidRetryCount} times and it didn't work. We're sorry for the trouble — please
+                        We've tried {serverInvalidRetryCount} times and it didn't work. We're sorry for the trouble. Please
                         drop us a message at
                         <LinkButton href="mailto:{SUPPORT_EMAIL}" onclick={handleEmailClick}
                             >{SUPPORT_EMAIL}</LinkButton
