@@ -4,7 +4,7 @@ import { invoke } from '@tauri-apps/api/core'
 export type BreadcrumbCtx = Record<string, unknown>
 
 /**
- * Record a triage breadcrumb. Fire-and-forget — failures (e.g. backend not ready
+ * Record a triage breadcrumb. Fire-and-forget. Failures (e.g. backend not ready
  * during early startup) are silently swallowed.
  *
  * Convention:

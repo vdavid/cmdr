@@ -4,7 +4,7 @@
 //! mounts a volume (USB drive, disk image, SMB share, etc.), `diskarbitrationd`
 //! posts `NSWorkspaceDidMountNotification` on the shared workspace's
 //! notification center. By the time our observer fires, the volume is fully
-//! mounted and `NSFileManager` metadata is ready — no fsid settle dance needed.
+//! mounted and `NSFileManager` metadata is ready. No fsid settle dance needed.
 //!
 //! See `apps/desktop/src-tauri/src/volumes/CLAUDE.md` for the rationale on
 //! choosing NSWorkspace over FSEvents and DiskArbitration.
@@ -23,7 +23,7 @@ use tauri::{AppHandle, Emitter};
 /// Global app handle for emitting events from the observer.
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 
-/// Marker — set after the NSWorkspace observer has been installed.
+/// Marker: set after the NSWorkspace observer has been installed.
 /// Idempotency gate so repeat calls to `start_volume_watcher` don't double-subscribe.
 static OBSERVER_INSTALLED: OnceLock<()> = OnceLock::new();
 
@@ -100,20 +100,20 @@ fn install_observers() {
 /// `userInfo` dictionary.
 ///
 /// `NSWorkspaceVolumeURLKey` carries the file URL of the (un)mounted volume.
-/// Returns `None` if `userInfo` is missing the key — defensive: AppKit always
+/// Returns `None` if `userInfo` is missing the key (defensive: AppKit always
 /// includes it for these notifications, but synthetic posts (e.g. tests) might
-/// not.
+/// not).
 pub(crate) fn volume_path_from_notification(notification: &NSNotification) -> Option<String> {
     let user_info = notification.userInfo()?;
 
     // The notification's userInfo is `NSDictionary<NSString *, id>` per Apple
     // docs. We narrow the value type to `NSURL` so `objectForKey` returns the
-    // URL directly — every observed mount/unmount notification carries an
+    // URL directly. Every observed mount/unmount notification carries an
     // `NSURL` under this key.
     let typed: Retained<NSDictionary<NSString, NSURL>> = unsafe { Retained::cast_unchecked(user_info) };
 
     // `NSWorkspaceVolumeURLKey` is a `&'static NSString` constant from AppKit
-    // (`extern "C"` static — accessing it requires `unsafe`).
+    // (`extern "C"` static, accessing it requires `unsafe`).
     let key: &NSString = unsafe { NSWorkspaceVolumeURLKey };
     let url = typed.objectForKey(key)?;
 
@@ -293,7 +293,7 @@ mod tests {
 
     #[test]
     fn extracts_volume_path_with_unicode_name() {
-        // Cyrillic and CJK characters in a single code point each — these
+        // Cyrillic and CJK characters in a single code point each. These
         // aren't decomposable, so they round-trip through `NSURL` cleanly.
         // Latin diacritics like "Útikönyv" do *not* round-trip: macOS file
         // URLs canonicalize to NFD (e.g. "Ú" → "U" + combining acute), which
@@ -307,7 +307,7 @@ mod tests {
     #[test]
     fn returns_none_when_user_info_missing() {
         let name = unsafe { NSWorkspaceDidMountNotification };
-        // Notification with no userInfo — defensive against malformed posts.
+        // Notification with no userInfo. Defensive against malformed posts.
         let notification = unsafe { NSNotification::notificationWithName_object_userInfo(name, None, None) };
         assert!(volume_path_from_notification(&notification).is_none());
     }
@@ -407,7 +407,7 @@ mod tests {
     fn end_to_end_post_notification_runs_handler() {
         use crate::file_system::get_volume_manager;
 
-        // Ensure the observer is wired up. Idempotent — safe to call from
+        // Ensure the observer is wired up. Idempotent, safe to call from
         // multiple tests; only the first call actually installs.
         install_observers();
 
@@ -419,7 +419,7 @@ mod tests {
         assert!(get_volume_manager().get(&volume_id).is_none());
 
         // Build and post the notification on the actual NSWorkspace center
-        // — same channel real mount events arrive on.
+        // (same channel real mount events arrive on).
         let notification = synthetic_volume_notification(volume_path);
         let workspace = NSWorkspace::sharedWorkspace();
         let center = workspace.notificationCenter();

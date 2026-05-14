@@ -105,7 +105,7 @@ fn eager_prune_handles_zero() {
     touch_log(&dir, "cmdr.log", 0);
 
     let deleted = eager_prune(&dir, 0).expect("prune");
-    // Everything is wiped — the plugin recreates the live file on the next write.
+    // Everything is wiped: the plugin recreates the live file on the next write.
     assert_eq!(deleted, 4);
     assert_eq!(list_recent_log_files(&dir).len(), 0);
 

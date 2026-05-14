@@ -2,23 +2,23 @@
 //!
 //! ## File layout
 //!
-//! - `mod.rs` (this file) — shared types (`MenuState`, `MenuItems`, `MenuItemEntry`,
+//! - `mod.rs` (this file): shared types (`MenuState`, `MenuItems`, `MenuItemEntry`,
 //!   `MenuContext`, `NetworkHostMenuContext`, `CommandScope`, `ViewMode`), all menu
 //!   item ID constants, and the ID ↔ command-registry mapping (`menu_id_to_command`
 //!   and `command_id_to_menu_id`).
-//! - `menu_items.rs` — menu item builder helpers and submenu factories (sort,
+//! - `menu_items.rs`: menu item builder helpers and submenu factories (sort,
 //!   zoom), accelerator/label platform-aware helpers, `register_item`, and
 //!   `truncate_for_menu_label`.
-//! - `menu_structure.rs` — hierarchical assembly: `build_menu` dispatcher,
+//! - `menu_structure.rs`: hierarchical assembly: `build_menu` dispatcher,
 //!   context menus (file, breadcrumb, tab, network host), viewer menu, plus
 //!   `FileContextInfo` / `ContextMenuResult`.
-//! - `menu_handlers.rs` — event handlers and live-update helpers:
+//! - `menu_handlers.rs`: event handlers and live-update helpers:
 //!   `rebuild_view_mode_items`, `sync_view_mode_check_states`,
 //!   `update_menu_item_accelerator`, `frontend_shortcut_to_accelerator`, and
 //!   the macOS post-construction helpers (`cleanup_macos_menus`,
 //!   `set_macos_menu_icons`).
-//! - `macos.rs` / `linux.rs` — platform-specific menu bar shape.
-//! - `open_with.rs` (macOS) — "Open with" submenu builder.
+//! - `macos.rs` / `linux.rs`: platform-specific menu bar shape.
+//! - `open_with.rs` (macOS): "Open with" submenu builder.
 
 #[cfg(not(target_os = "macos"))]
 mod linux;
@@ -53,7 +53,7 @@ pub use menu_structure::{
 
 /// Menu item IDs for file actions.
 pub const SHOW_HIDDEN_FILES_ID: &str = "show_hidden_files";
-/// View mode CheckMenuItems — one pair per pane, nested under per-pane submenus
+/// View mode CheckMenuItems, one pair per pane, nested under per-pane submenus
 /// (View > Left pane > Full view / Brief view, and the same for Right pane).
 /// The keyboard shortcut (⌘1/⌘2 by default) only attaches to the items belonging
 /// to the active pane, and "moves" to the other pane on focus change.
@@ -211,7 +211,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         PIN_TAB_MENU_ID => Some(("tab.togglePin", CommandScope::FileScoped)),
         CLOSE_OTHER_TABS_ID => Some(("tab.closeOthers", CommandScope::FileScoped)),
 
-        // Clipboard operations — cut/copy/paste are handled specially in on_menu_event
+        // Clipboard operations: cut/copy/paste are handled specially in on_menu_event
         // (native responder chain for non-main windows, execute-command for main window).
         // They're still listed here for command_id_to_menu_id reverse lookups.
         EDIT_CUT_ID => Some(("edit.cut", CommandScope::App)),
@@ -242,7 +242,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         CLOUD_MAKE_OFFLINE_ID => Some(("cloud.makeOffline", CommandScope::FileScoped)),
         CLOUD_REMOVE_DOWNLOAD_ID => Some(("cloud.removeDownload", CommandScope::FileScoped)),
 
-        // Zoom (text size) — App scope so ⌘0/⌘+/⌘- work in any focused window.
+        // Zoom (text size): App scope so ⌘0/⌘+/⌘- work in any focused window.
         VIEW_ZOOM_75_ID => Some(("view.zoom.set75", CommandScope::App)),
         VIEW_ZOOM_100_ID => Some(("view.zoom.set100", CommandScope::App)),
         VIEW_ZOOM_125_ID => Some(("view.zoom.set125", CommandScope::App)),
@@ -252,7 +252,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
 
         // Sort items: mapped so user-customized accelerators can flow into the menu via the
         // generic update path. At runtime, `on_menu_event` intercepts these IDs *before* this
-        // lookup and emits `menu-sort` instead of `execute-command` — so this mapping never
+        // lookup and emits `menu-sort` instead of `execute-command`, so this mapping never
         // routes a click. It exists purely as the source of truth for the reverse map.
         SORT_BY_NAME_ID => Some(("sort.byName", CommandScope::FileScoped)),
         SORT_BY_EXTENSION_ID => Some(("sort.byExtension", CommandScope::FileScoped)),
@@ -434,7 +434,7 @@ pub struct MenuItems<R: Runtime> {
     pub view_mode_brief_left: CheckMenuItem<R>,
     pub view_mode_full_right: CheckMenuItem<R>,
     pub view_mode_brief_right: CheckMenuItem<R>,
-    /// Per-pane submenus (Full at position 0, Brief at position 1) — used by
+    /// Per-pane submenus (Full at position 0, Brief at position 1), used by
     /// `rebuild_view_mode_items` to reinsert items after accelerator changes.
     pub view_left_pane_submenu: Submenu<R>,
     pub view_right_pane_submenu: Submenu<R>,
@@ -464,7 +464,7 @@ mod tests {
             menu_id_to_command(ENTER_LICENSE_KEY_ID),
             Some(("app.licenseKey", CommandScope::App))
         );
-        // Command palette is FileScoped — disabled when Settings/viewer has focus
+        // Command palette is FileScoped: disabled when Settings/viewer has focus
         assert_eq!(
             menu_id_to_command(COMMAND_PALETTE_ID),
             Some(("app.commandPalette", CommandScope::FileScoped))
@@ -531,7 +531,7 @@ mod tests {
         assert_eq!(menu_id_to_command(VIEW_MODE_BRIEF_RIGHT_ID), None);
         assert_eq!(menu_id_to_command(VIEWER_WORD_WRAP_ID), None);
         // Sort order items (ascending/descending) and date-created use the menu-sort
-        // event path and are not mapped — only the four shortcut-bound columns are.
+        // event path and are not mapped. Only the four shortcut-bound columns are.
         assert_eq!(menu_id_to_command(SORT_ASCENDING_ID), None);
         assert_eq!(menu_id_to_command(SORT_DESCENDING_ID), None);
         assert_eq!(menu_id_to_command(SORT_BY_CREATED_ID), None);

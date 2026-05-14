@@ -1,4 +1,4 @@
-//! Volume list broadcast — cross-platform.
+//! Volume list broadcast, cross-platform.
 //!
 //! Provides a single `emit_volumes_changed()` function that computes the full
 //! volume list (local + MTP) and emits a `volumes-changed` Tauri event.
@@ -22,7 +22,7 @@ static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 /// This ensures late-arriving triggers always produce an emission with fresh data.
 static GENERATION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
-/// Debounce window — events within this window are coalesced into one emission.
+/// Debounce window: events within this window are coalesced into one emission.
 const DEBOUNCE_MS: u64 = 150;
 
 /// Timeout for listing local volumes. If `list_locations()` takes longer
@@ -48,7 +48,7 @@ pub fn init(app: &AppHandle) {
 ///
 /// Can be called from any thread. Multiple rapid calls within the debounce
 /// window result in a single emission after the window expires. The last
-/// call always wins — a late trigger re-bumps the generation so the pending
+/// call always wins: a late trigger re-bumps the generation so the pending
 /// task emits fresh data.
 pub fn emit_volumes_changed() {
     use std::sync::atomic::Ordering;

@@ -39,4 +39,4 @@ EXIF/media metadata, PDF metadata, audio/video metadata.
 **Deferred (Tier 3-4)**: Added/opened dates (Spotlight-dependent, unreliable), locked/stationery flags (rarely used),
 kind (can derive from extension on frontend), EXIF and media metadata (on-demand only).
 
-**Future work**: Cloud sync status (iCloud, Dropbox, GDrive) — valuable, requires xattr reads.
+**Future work**: Cloud sync status (iCloud, Dropbox, GDrive). Valuable, but requires xattr reads.

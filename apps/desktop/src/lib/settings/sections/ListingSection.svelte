@@ -28,7 +28,7 @@
     const briefWidthModeDef = getSettingDefinition('listing.briefColumnWidthMode') ?? { label: '', description: '' }
 
     // Read the setting directly and subscribe in-window. `reactive-settings.svelte.ts` is only
-    // initialised in the main window — the settings window has its own JS context where that
+    // initialised in the main window. The settings window has its own JS context where that
     // module-scope state never updates, so we can't rely on its getter here.
     let briefWidthMode = $state<BriefColumnWidthMode>(getSetting('listing.briefColumnWidthMode'))
     onMount(() =>

@@ -3,7 +3,7 @@
 This file tracks the recurring maintenance work for the Cmdr monorepo: what tasks repeat, on what cadence, and a log of
 past runs.
 
-The goal isn't to be a calendar — it's to make the repeat work explicit so nothing quietly slips, and to give us a paper
+The goal isn't to be a calendar: it's to make the repeat work explicit so nothing quietly slips, and to give us a paper
 trail when we wonder "when did we last bump Rust crates?". Later, we'll likely turn this into a Go script that emails
 reminders or wakes up an agent.
 
@@ -35,7 +35,7 @@ automate it, and survives `oxfmt` (which collapses whitespace in regular markdow
 - **Split files that grew too big**: Walk the file-length warnings, pick the worst offenders, and split them into
   focused modules. Frequency: quarterly, or whenever the warning list gets noisy.
 - **Cut back the file-length allowlist**: Remove entries for files that no longer exist, and lower entries when the
-  underlying file shrank. Both tighten the contract — never loosen it. Frequency: quarterly.
+  underlying file shrank. Both tighten the contract (never loosen it). Frequency: quarterly.
 - **Cut back other allowlists**: Coverage allowlist, a11y-coverage allowlist, ESLint disable comments, Clippy `#[allow]`
   attributes, knip ignores. The principle is the same: shrink the escape hatch. Frequency: quarterly.
 - **Dead code sweep**: Hunt for un-wired features, stale `#[allow(dead_code)]`, unused exports, tautological tests,
@@ -71,14 +71,14 @@ automate it, and survives `oxfmt` (which collapses whitespace in regular markdow
 - **Quarterly: mutation-testing sweep on hot-spot modules**. Run `cargo mutants` on each module listed in
   `docs/testing.md` § "Hot spots" (write_operations, indexing, file_viewer, file_system/index/store). Triage survivors.
   If mutation score drops below 80% on any of them, add tests to bring it back. The pass is slow (~10–15 min per file on
-  this hardware) — budget half a day. Document the run + score in the log below.
+  this hardware); budget half a day. Document the run + score in the log below.
 - **Per release: E2E suite health check**. Three back-to-back `./scripts/check.sh --check desktop-e2e-playwright` runs.
-  All three must be green (no flakes). Look at the slowest 5 tests — if any have crept back to `sleep()`-based waits
+  All three must be green (no flakes). Look at the slowest 5 tests; if any have crept back to `sleep()`-based waits
   (the lint catches new ones, but existing `eslint-disable` annotations may need re-triaging), replace with `pollUntil`.
   Document the run + flake rate + slowest tests in the log.
 - **Per release: scan for new fixed sleeps in E2E specs**. Run
-  `grep -rE "await sleep\(" apps/desktop/test/e2e-playwright/*.spec.ts | grep -v "eslint-disable"` — should return
-  empty. If not, the new sleeps got past the lint somehow and need attention.
+  `grep -rE "await sleep\(" apps/desktop/test/e2e-playwright/*.spec.ts | grep -v "eslint-disable"` (should return
+  empty). If not, the new sleeps got past the lint somehow and need attention.
 - **As needed: surviving `eslint-disable cmdr/no-arbitrary-sleep-in-e2e` annotations**. ~66 of these were added during
   the Step 6 speedup as a legacy migration tool. Each is a candidate for replacement with `pollUntil`. Picking off a few
   per quarter shrinks the technical-debt surface without forcing a single huge cleanup.
@@ -91,7 +91,7 @@ Newest-first. Tab-separated columns: `date`, `hash(es)`, `task`, `comment`.
 2026-05-10	cee0aa08	Bump pinned tool versions in .mise.toml	Pinned pnpm 11.0.9 in .mise.toml and regenerated lockfile after CI lockfile drift; migrated allowBuilds config for pnpm 11.
 2026-05-09	51dff4c1	Split files that grew too big	Split friendly_error.rs (1410 lines) into a 5-file module directory.
 2026-05-09	64eb64dc	Cut back the file-length allowlist	Dropped stale friendly_error.rs entry (file became a directory after the split); clarified the allowlist rule in .claude/rules/.
-2026-05-08	c002c7ef	Bump pinned tool versions in .mise.toml	Dropped redundant packageManager field from package.json — .mise.toml is now sole source of truth for the pnpm version.
+2026-05-08	c002c7ef	Bump pinned tool versions in .mise.toml	Dropped redundant packageManager field from package.json; .mise.toml is now sole source of truth for the pnpm version.
 2026-05-06	2f02fa7e	Bump GitHub Actions	actions/cache v4→v5.0.4 and dorny/paths-filter v3→v4.0.1 to Node 24 runtimes ahead of GitHub's 2026-06-02 Node 20 deprecation deadline.
 2026-05-06	a6b4613a	Dead code sweep	Removed un-wired and stale #[allow(dead_code)] items across 22 files; deleted 355 lines: 4 stale rationales corrected, 3 un-wired features deleted, 14 genuinely dead utilities.
 2026-04-27	7bb7972a	Bump Rust crates	Major Rust deps: sha2 0.10→0.11, rand 0.9→0.10, zip 4.6→8.6 (each required a small migration); bundled astro 5→6 in the same commit.
@@ -104,7 +104,7 @@ Newest-first. Tab-separated columns: `date`, `hash(es)`, `task`, `comment`.
 2026-04-14	315609a3	Split files that grew too big	Split four large files: friendly_error.rs (1805) → provider.rs; ai/manager.rs → system_memory.rs; AiSection.svelte (1582) → AiCloud/AiLocal; +page.svelte (1222→750) → command-dispatch + mcp-listeners + explorer-api.
 2026-04-14	2939bfee	Split files that grew too big	Split eight more files into sub-800-line modules: volume_copy.rs, scan.rs, smb.rs, stress_tests.rs, mcp/tests.rs, search/ai/mappings.rs, integration.test.ts, debug/+page.svelte.
 2026-04-14	4514a832	Split files that grew too big	Split four large files: mcp/executor.rs (1718), commands/file_system.rs (1196), api-server/src/index.ts (1099), write_operations/integration_test.rs (1564).
-2026-04-14	7514cb4e	Cut back the file-length allowlist	Initial baseline — seeded 31 entries when the file-length check was first added.
+2026-04-14	7514cb4e	Cut back the file-length allowlist	Initial baseline: seeded 31 entries when the file-length check was first added.
 2026-04-08	e5820bb1	Bump GitHub Actions	actions/checkout v4→v6, jdx/mise-action v2→v4 (Node 20→24); cleared deprecation warnings.
 2026-03-31	995f8c8e	Tighten linter rules	Replaced prettier with oxfmt across the entire repo (10–20× faster).
 2026-03-31	6a45aa48	Tighten linter rules	Enabled oxfmt for the whole repo and reformatted Markdown, YAML, JSON, and analytics dashboard.
@@ -133,13 +133,13 @@ Newest-first. Tab-separated columns: `date`, `hash(es)`, `task`, `comment`.
 2026-03-06	2f7bff1a	Refresh CLAUDE.md files	Split monolithic infrastructure.md into 6 per-service files; merged checker and E2E docs into colocated CLAUDE.md files.
 2026-03-05	0cd62e57	Bump npm packages	"Upgrade NPM packages to get rid of security vulns." Cleared known vulns.
 2026-03-05	00880a0c	Tighten linter rules	Added Renovate for automated dep updates; removed govulncheck (covered by Renovate).
-2026-03-03	347ae9bd	Refresh CLAUDE.md files	"Enrich CLAUDE.md files with intent" — upgraded 25 CLAUDE.md files from structural inventories to intent-capturing docs.
+2026-03-03	347ae9bd	Refresh CLAUDE.md files	"Enrich CLAUDE.md files with intent": upgraded 25 CLAUDE.md files from structural inventories to intent-capturing docs.
 2026-03-03	7ae7cd17	Refresh CLAUDE.md files	13 CLAUDE.md files fixed; 30 verified up to date.
 2026-03-03	1d2fd4f6	Dead code sweep	Removed two unused type guards (isKeychainError, isMountError).
 2026-02-26	337f6207	Split files that grew too big	Split the two biggest frontend files; tab-operations.ts (363) and rename-flow.svelte.ts (274) extracted; DualPaneExplorer 2514→2284, FilePane 1887→1667.
 2026-02-26	cfae0db4	Split files that grew too big	Extracted dialog state from DualPaneExplorer (10 dialog state vars moved; 2289→2124 lines).
 2026-02-25	ba86d874	Split files that grew too big	Split tauri-commands/file-viewer.ts into viewer-only + file-actions.ts + icons.ts + app-state.ts.
-2026-02-25	35a42394	AI-smell / inelegance review	Deduplicated Settings CSS — removed duplicated class patterns across 11 sections.
+2026-02-25	35a42394	AI-smell / inelegance review	Deduplicated Settings CSS; removed duplicated class patterns across 11 sections.
 2026-02-23	ab87bc5d	Refresh CLAUDE.md files	Added missing CLAUDE.md files and updated existing ones.
 2026-02-22	79703a91	Bump Rust crates	Bumped Tauri npm packages to align with Tauri crate 2.10.x.
 2026-02-21	d280cba0	Bump npm packages	Audit-driven: Svelte 5.49→5.53, Hono 4.11→4.12, fast-xml-parser 5.3.3→5.3.7.
@@ -149,18 +149,18 @@ Newest-first. Tab-separated columns: `date`, `hash(es)`, `task`, `comment`.
 2026-02-14	eac9e618	Purge old specs	Large doc overhaul: deleted old specs and notes (retained in git history); created CLAUDE.md files throughout the repo and added the architecture.md map.
 2026-02-14	a7758f9b	Dead code sweep	Removed a few ESLint disables that were no longer needed.
 2026-02-11	a05a2a24	Dead code sweep	Removed 5 unused objc2-app-kit features and 2 dummy imports.
-2026-02-08	c0d8cc31	Pin GitHub Actions to commit SHAs	Pinned all GitHub Actions to commit SHAs — supply-chain safety sweep.
+2026-02-08	c0d8cc31	Pin GitHub Actions to commit SHAs	Pinned all GitHub Actions to commit SHAs (supply-chain safety sweep).
 2026-02-08	50f705d1	Bump pinned tool versions in .mise.toml	Bumped Go to 1.25.7 in CI for crypto/tls vulnerability GO-2026-4337.
 2026-02-08	8ee2dca7	Purge old specs	Deleted completed specs from docs/specs/.
 2026-02-08	fe0bebca	AI-smell / inelegance review	Stripped tautological doc comments from Rust structs (20 files cleaned).
 2026-02-08	a2073698	Dead code sweep	Removed dead code across the license server, Go scripts, frontend, and MTP.
-2026-02-08	0d1c48ee	AI-smell / inelegance review	Replaced latinisms in code comments — "e.g." → "for example/like/such as" across ~50 instances.
+2026-02-08	0d1c48ee	AI-smell / inelegance review	Replaced latinisms in code comments: "e.g." → "for example/like/such as" across ~50 instances.
 2026-02-08	1ee4dfab	Dead code sweep	Deleted mock-only infrastructure tests (saveColumnSortOrder, resortListing).
 2026-02-07	0a543395	Dead code sweep	Deleted 37 inline-reimplementation tests in streaming-loading.test.ts and integration.test.ts.
 2026-02-07	b3afd0b7	Dead code sweep	Deleted tautological Rust tests (matching enums against themselves).
 2026-02-07	cdab4448	Dead code sweep	Deleted 8 type-shape tests + 1 signature test from streaming-loading.test.ts.
 2026-02-07	b45d4fd0	Dead code sweep	Rewrote licensing tests to test actual logic; replaced 329 lines of mock-the-mock tests.
-2026-02-07	f3c60425	AI-smell / inelegance review	Removed verbose name-restating doc comments — ~50 JSDoc/Rust doc comments stripped across 4 files.
+2026-02-07	f3c60425	AI-smell / inelegance review	Removed verbose name-restating doc comments; ~50 JSDoc/Rust doc comments stripped across 4 files.
 2026-02-06	2da8e6dd	Split files that grew too big	Split volume_copy.rs.
 2026-02-06	c0bd500b	Split files that grew too big	Split listing/operations.rs.
 2026-02-06	707a96a9	Split files that grew too big	Split connection.rs.
@@ -178,12 +178,12 @@ Newest-first. Tab-separated columns: `date`, `hash(es)`, `task`, `comment`.
 2026-01-18	c8e365a3	AI-smell / inelegance review	Deduplicated BriefList and FullList Svelte components.
 2026-01-18	165a19d7	AI-smell / inelegance review	Deduplicated Rust code across modules.
 2026-01-18	7cbf6357	Dead code sweep	Removed unused CSS classes.
-2026-01-18	ae142521	Security advisory sweep	Patched a vulnerable npm dep in the license-server app — earliest security-driven dep bump on record.
+2026-01-18	ae142521	Security advisory sweep	Patched a vulnerable npm dep in the license-server app (earliest security-driven dep bump on record).
 2026-01-13	df3c162a	Replace AI-generated content with handcrafted	Replaced AI-generated privacy policy with a handcrafted one.
-2026-01-13	34bc38de	Purge old specs	Moved old specs into a new /specs folder — first spec reorganization event.
+2026-01-13	34bc38de	Purge old specs	Moved old specs into a new /specs folder (first spec reorganization event).
 2026-01-13	eb47a916	Review file structure	Restructured the /docs folder.
 2026-01-13	7d0d78fe	Refresh AGENTS.md	Cleaned up AGENTS.md.
-2026-01-10	62421f48	Tighten linter rules	Made Clippy more thorough — added new deny-level lints.
+2026-01-10	62421f48	Tighten linter rules	Made Clippy more thorough; added new deny-level lints.
 2026-01-08	c0e764a7	Review file structure	Moved the app from repo root into apps/desktop/ to support a monorepo alongside the website; one-time structural reorganization.
 2026-01-05	b338bf4b	Bump pinned tool versions in .mise.toml	Updated code to be compatible with Rust 1.92.0 (toolchain pin changed).
 2026-01-04	a778dccd	Tighten linter rules	First introduction of Stylelint; fixed all existing CSS violations in one pass.

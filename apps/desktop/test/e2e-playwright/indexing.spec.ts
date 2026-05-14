@@ -18,7 +18,7 @@ import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { ensureAppReady, getFixtureRoot, executeViaCommandPalette, getSizeText, pollUntil } from './helpers.js'
 
-/** Union type for tauriPage — works in both Tauri and browser mode. */
+/** Union type for tauriPage (works in both Tauri and browser mode). */
 type PageLike = TauriPage | BrowserPageAdapter
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -196,7 +196,7 @@ test.describe('Drive indexing', () => {
   })
 
   test('decreases directory size by exact byte count after file deletion', async ({ tauriPage }, testInfo) => {
-    // Docker indexing can be slower — allow enough time for both convergence phases
+    // Docker indexing can be slower, allow enough time for both convergence phases
     testInfo.setTimeout(240_000)
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()

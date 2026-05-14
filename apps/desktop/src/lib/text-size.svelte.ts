@@ -20,7 +20,7 @@
  *      math, canvas-based column-width measurement, font-metrics ID).
  *
  * Both paths must agree, so anything else that needs the scale reads
- * `getEffectiveScale()` (or the CSS var) — never recomputes from inputs.
+ * `getEffectiveScale()` (or the CSS var), never recomputing from inputs.
  *
  * The slider re-measurement (font metrics IPC + column re-flow) is debounced
  * 1 s after the last change and dispatched via `requestIdleCallback` so the
@@ -56,7 +56,7 @@ let remeasureTimer: number | undefined
 let scaleChangeListeners = new SvelteSet<(scale: number) => void>()
 
 /**
- * Pure compounding function — the single point where system + user inputs
+ * Pure compounding function: the single point where system + user inputs
  * become the effective scale. Kept stateless so tests can pin behavior at
  * boundary values without mocking Tauri or DOM.
  *
@@ -80,12 +80,12 @@ export function getEffectiveScale(): number {
 }
 
 /**
- * Subscribes a non-Svelte listener to "settled" scale changes — fires after
+ * Subscribes a non-Svelte listener to "settled" scale changes. Fires after
  * the 1 s debounce + idle-callback used to coalesce expensive re-flows.
  * Returns an unsubscribe function.
  *
  * Inside `.svelte` / `.svelte.ts` modules, prefer
- * `$effect(() => getEffectiveScale())` — that path runs immediately on every
+ * `$effect(() => getEffectiveScale())`, which runs immediately on every
  * change. This API is for plain `.ts` consumers (column-width measurement
  * caches, etc.) that want to invalidate only after the user stops dragging.
  */
@@ -165,7 +165,7 @@ export async function initTextSize(): Promise<void> {
     systemMultiplier = 1
   }
 
-  // Apply once at startup. No re-measure — DualPaneExplorer's own
+  // Apply once at startup. No re-measure: DualPaneExplorer's own
   // `ensureFontMetricsLoaded` call covers the initial measurement.
   computeAndApply(false)
 

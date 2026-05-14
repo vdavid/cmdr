@@ -3,7 +3,7 @@
 ## Goal
 
 Add E2E tests for Cmdr's MTP feature using mtp-rs 0.5.1's virtual device, so we can test device discovery, browsing,
-file operations, free space display, read-only storage, and file watching — all without a real phone.
+file operations, free space display, read-only storage, and file watching (all without a real phone).
 
 ## Design approach
 
@@ -13,18 +13,18 @@ Two design principles work together:
    auto-connect → Volume registration flow handles everything. No test-only Tauri commands, no event bypasses.
 
 2. **MCP-driven tests where possible**: Use the MCP server for navigation and file operations (cleaner, more robust than
-   DOM manipulation). Use DOM queries only for visual assertions. This also closes a real gap — MCP currently can't
+   DOM manipulation). Use DOM queries only for visual assertions. This also closes a real gap: MCP currently can't
    interact with MTP volumes at all.
 
 ### How it works
 
 1. On startup (feature-gated), Rust code creates a backing directory with test files and calls
    `mtp_rs::register_virtual_device()`.
-2. `start_mtp_watcher()` snapshots current devices — virtual device is included.
+2. `start_mtp_watcher()` snapshots current devices (virtual device is included).
 3. Frontend's `mtp-store.initialize()` calls `scanDevices()` → `listMtpDevices()` → finds virtual device →
    auto-connects.
-4. `MtpConnectionManager::connect()` calls `open_by_location()` — mtp-rs finds the registered virtual device.
-5. Write probe, Volume registration, event loop — all run normally against the virtual device.
+4. `MtpConnectionManager::connect()` calls `open_by_location()`, and mtp-rs finds the registered virtual device.
+5. Write probe, Volume registration, and event loop all run normally against the virtual device.
 6. Tests use MCP tools (`select_volume`, `nav_to_path`, `copy`, `move`, etc.) to navigate and operate on the MTP volume,
    and DOM queries to verify visual state.
 
@@ -66,12 +66,12 @@ New file: `apps/desktop/src-tauri/src/mtp/virtual_device.rs`
 Gated behind `#[cfg(feature = "virtual-mtp")]`. On call:
 
 1. Create a backing directory at `/tmp/cmdr-mtp-e2e-fixtures/` with two subdirectories (one per storage):
-   - `internal/` — writable storage, pre-populated with test files
-   - `readonly/` — read-only storage, pre-populated with a few files
+   - `internal/`: writable storage, pre-populated with test files
+   - `readonly/`: read-only storage, pre-populated with a few files
 2. Pre-populate `internal/` with:
    - `Documents/report.txt` (small text file)
    - `Documents/notes.txt` (small text file)
-   - `DCIM/photo-001.jpg` (small dummy file — content doesn't matter, just needs to exist)
+   - `DCIM/photo-001.jpg` (small dummy file; content doesn't matter, just needs to exist)
    - `Music/` (empty directory)
 3. Pre-populate `readonly/` with:
    - `photos/sunset.jpg` (small dummy file)
@@ -80,11 +80,11 @@ Gated behind `#[cfg(feature = "virtual-mtp")]`. On call:
    - Two storages: "Internal Storage" (writable, 64 GB capacity) and "SD Card" (read-only, 16 GB capacity)
    - `event_poll_interval: Duration::from_millis(100)` (fast enough for tests, not instant)
 5. Return the registered device info (location_id) for potential cleanup.
-6. Export the backing dir path as a constant: `pub const MTP_FIXTURE_ROOT: &str = "/tmp/cmdr-mtp-e2e-fixtures"` — the
+6. Export the backing dir path as a constant: `pub const MTP_FIXTURE_ROOT: &str = "/tmp/cmdr-mtp-e2e-fixtures"`. The
    TypeScript fixture helper references this same path. A comment in both files points to the other.
 
 **Why two storages**: Tests the multi-storage UI (each storage as a separate volume in the picker) and the read-only
-behavior path. This is a realistic setup — many Android devices report two storages.
+behavior path. This is a realistic setup, as many Android devices report two storages.
 
 **Why pre-populated files**: The tests need something to browse, copy, move, and delete. Creating the files at startup
 (not in TypeScript fixtures) is necessary because mtp-rs's virtual device serves them via the MTP protocol from the
@@ -119,13 +119,13 @@ Run a manual test: build with `--features playwright-e2e,virtual-mtp`, start the
 
 1. Virtual device appears in the volume picker under "Mobile".
 2. Both storages show as separate entries (for example "Virtual Pixel 9 - Internal Storage" and "Virtual Pixel 9 - SD
-   Card"). **Note the exact text** — the MCP `select_volume` will need it.
+   Card"). **Note the exact text**: the MCP `select_volume` will need it.
 3. Browsing the writable storage shows the pre-populated files.
-4. The read-only storage (SD Card) is actually detected as read-only — check the log for `access_capability=ReadOnly`
+4. The read-only storage (SD Card) is actually detected as read-only. Check the log for `access_capability=ReadOnly`
    and `is_read_only=true` on the SD Card storage (lines 608-611 of `connection/mod.rs`). Note: if mtp-rs reports the
    `AccessCapability` as read-only, the write probe is skipped entirely (the `storage_reports_read_only` branch at line
    588-591). So the expected log is the storage info line, not the probe line.
-5. **Check the device ID** in the volume picker DOM or logs — virtual devices get location IDs in the
+5. **Check the device ID** in the volume picker DOM or logs: virtual devices get location IDs in the
    `0xFFFF_0000_0000_0000+` range. The decimal representation exceeds JavaScript's `Number.MAX_SAFE_INTEGER`. Verify the
    ID is handled as a string everywhere and never parsed as a number.
 6. Note the exact volume names and DOM structure for Milestone 2's MCP work.
@@ -134,9 +134,9 @@ Run a manual test: build with `--features playwright-e2e,virtual-mtp`, start the
 
 ## Milestone 2: MCP support for MTP volumes
 
-Currently, the MCP server can't interact with MTP volumes at all — `select_volume` rejects them, `nav_to_path` fails on
+Currently, the MCP server can't interact with MTP volumes at all: `select_volume` rejects them, `nav_to_path` fails on
 `mtp://` paths, and `cmdr://state` doesn't list them. This milestone fixes that. These are genuine improvements, not
-test scaffolding — agents need MTP access.
+test scaffolding: agents need MTP access.
 
 ### Current state (what's broken)
 
@@ -168,7 +168,7 @@ currently on.
   (from `mtp::connection_manager().get_device_info()` or similar), accept it. On Linux, the validation block doesn't
   exist, so MTP names pass through automatically.
 
-**Frontend** (`DualPaneExplorer.selectVolumeByName()` ~line 2026) — **must be extended** (not optional). Currently it
+**Frontend** (`DualPaneExplorer.selectVolumeByName()` ~line 2026): **must be extended** (not optional). Currently it
 only searches the `volumes` array (local volumes). Without this change, `select_volume` will pass Rust validation, emit
 the `mcp-volume-select` event, the frontend will call `selectVolumeByName`, fail to find the MTP volume, return `false`,
 the path won't change, and the Rust side will time out after 30s. The fix: also search `getMtpVolumes()` for a matching
@@ -184,17 +184,17 @@ name, and if found, call `handleVolumeChange` with the MTP volume's ID and path.
 **Frontend** (`DualPaneExplorer.navigateToPath()` ~line 1960-1968):
 
 - **Remove the MTP rejection** (`if (volumeId.startsWith('mtp-'))` returns an error string). This check was added when
-  MCP didn't support MTP, but now it should work — the pane can navigate to MTP paths via the Volume trait.
+  MCP didn't support MTP, but now it should work: the pane can navigate to MTP paths via the Volume trait.
 - **Require `select_volume` first**: If the pane is not currently on the matching MTP volume, return a clear error like
-  "Pane is not on this MTP volume — call select_volume first". This is simpler than auto-switching and matches how the
+  "Pane is not on this MTP volume, call select_volume first". This is simpler than auto-switching and matches how the
   tests are structured (they always call `select_volume` then `nav_to_path`). The `mtp://` path contains the
   device/storage ID, so the check is: parse the volume ID from the path, compare with the pane's current `volumeId`.
 
 ### 2d. Verify `copy`/`move`/`delete`/`mkdir` work on MTP panes
 
-These are fire-and-forget — they emit events and the frontend handles them. The frontend dialogs operate on whatever is
+These are fire-and-forget: they emit events and the frontend handles them. The frontend dialogs operate on whatever is
 in the current pane. If the pane is showing MTP files, operations go through the Volume trait. **Just verify this works
-during manual testing** — no code changes expected.
+during manual testing** (no code changes expected).
 
 ### After this milestone
 
@@ -203,7 +203,7 @@ Run `./scripts/check.sh --check clippy --check rustfmt`.
 Manual test with the MCP via curl or `mcp-call.sh`:
 
 ```bash
-# Read state — verify MTP volumes appear
+# Read state (verify MTP volumes appear)
 ./scripts/mcp-call.sh --read-resource 'cmdr://state'
 
 # Select MTP volume
@@ -226,11 +226,11 @@ New file: `apps/desktop/test/e2e-shared/mtp-fixtures.ts`
 
 Functions:
 
-- `recreateMtpFixtures()` — recreates the file structure in `/tmp/cmdr-mtp-e2e-fixtures/internal/` and `readonly/`.
-  Deletes ALL contents of both directories (not just known files — tests like F7 mkdir create artifacts), preserves the
+- `recreateMtpFixtures()`: recreates the file structure in `/tmp/cmdr-mtp-e2e-fixtures/internal/` and `readonly/`.
+  Deletes ALL contents of both directories (not just known files; tests like F7 mkdir create artifacts), preserves the
   root directories themselves (to keep the virtual device's backing dir inodes stable), then recreates the fixture file
   tree.
-- `MTP_FIXTURE_ROOT` constant — `/tmp/cmdr-mtp-e2e-fixtures`. A comment points to the Rust constant at
+- `MTP_FIXTURE_ROOT` constant: `/tmp/cmdr-mtp-e2e-fixtures`. A comment points to the Rust constant at
   `src-tauri/src/mtp/virtual_device.rs::MTP_FIXTURE_ROOT`.
 - Self-test block at the bottom (like `fixtures.ts` has) for standalone verification.
 
@@ -276,7 +276,7 @@ The port is discovered at test initialization via the `get_mcp_port` Tauri comma
 
 ### 3c. Update global setup
 
-Modify `apps/desktop/test/e2e-playwright/global-setup.ts` to also call `recreateMtpFixtures()` — ensures clean MTP state
+Modify `apps/desktop/test/e2e-playwright/global-setup.ts` to also call `recreateMtpFixtures()` to ensure clean MTP state
 at the start of the test run.
 
 ### After this milestone
@@ -306,11 +306,11 @@ test.beforeEach(async () => {
 
 Most tests follow this pattern:
 
-1. `ensureAppReady(tauriPage)` — route, loading screen, focus (navigates both panes to local fixtures).
-2. MCP `select_volume` + `nav_to_path` — navigate pane(s) to MTP volumes/directories.
-3. MCP `copy`/`move`/`delete`/`mkdir` with `autoConfirm` — perform file operations.
-4. MCP `await` — wait for expected state (file appears, path changes).
-5. DOM queries — verify visual elements (volume picker rendering, breadcrumb text, error dialogs).
+1. `ensureAppReady(tauriPage)`: route, loading screen, focus (navigates both panes to local fixtures).
+2. MCP `select_volume` + `nav_to_path`: navigate pane(s) to MTP volumes/directories.
+3. MCP `copy`/`move`/`delete`/`mkdir` with `autoConfirm`: perform file operations.
+4. MCP `await`: wait for expected state (file appears, path changes).
+5. DOM queries: verify visual elements (volume picker rendering, breadcrumb text, error dialogs).
 
 A few tests use keyboard + DOM instead of MCP, to verify the full keyboard→MTP flow works.
 
@@ -332,7 +332,7 @@ Needed because the device ID is assigned at runtime. Tests call this once and re
 3. Assert a "Mobile" group exists in the DOM.
 4. Assert both storages are listed ("Virtual Pixel 9 - Internal Storage", "Virtual Pixel 9 - SD Card" or similar).
 
-**Why DOM, not MCP**: This tests the visual rendering of MTP devices in the volume picker — a UI concern.
+**Why DOM, not MCP**: This tests the visual rendering of MTP devices in the volume picker, which is a UI concern.
 
 #### Test: browse MTP device files and navigate back (MCP + DOM)
 
@@ -363,7 +363,7 @@ Needed because the device ID is assigned at runtime. Tests call this once and re
 4. MCP: `copy({ autoConfirm: true })`.
 5. MCP: `await({ pane: 'right', has_item: 'report.txt' })`.
 6. Node.js: Assert `report.txt` exists on disk at `{fixtureRoot}/right/report.txt`.
-7. MCP: `switch_pane()`, `await({ pane: 'left', has_item: 'report.txt' })` — still exists (copy, not move).
+7. MCP: `switch_pane()`, `await({ pane: 'left', has_item: 'report.txt' })`. The file still exists (copy, not move).
 
 **Why**: Tests MTP download through the Volume trait.
 
@@ -385,7 +385,7 @@ Needed because the device ID is assigned at runtime. Tests call this once and re
 3. MCP: `switch_pane()` to ensure left pane is focused.
 4. MCP: `move_cursor({ pane: '...', filename: 'notes.txt' })`.
 5. MCP: `move({ autoConfirm: true })`.
-6. MCP: `await({ pane: 'left', ... })` — wait for `notes.txt` to disappear from `Documents/`.
+6. MCP: `await({ pane: 'left', ... })` to wait for `notes.txt` to disappear from `Documents/`.
 7. MCP: `await({ pane: 'right', has_item: 'notes.txt' })`.
 
 **Why**: Tests MTP move_object. Both directories must be listed first to populate `PathHandleCache`.
@@ -395,7 +395,7 @@ Needed because the device ID is assigned at runtime. Tests call this once and re
 1. MCP: Navigate to MTP Internal Storage → `Documents/`.
 2. MCP: `move_cursor({ pane: '...', filename: 'report.txt' })`.
 3. MCP: `delete({ autoConfirm: true })`.
-4. MCP: `await` — wait for `report.txt` to disappear.
+4. MCP: `await` to wait for `report.txt` to disappear.
 5. Node.js: Assert file gone from backing dir.
 
 **Why**: Tests MTP delete (permanent, no Trash).
@@ -422,15 +422,14 @@ Needed because the device ID is assigned at runtime. Tests call this once and re
 
 1. MCP: Navigate to MTP SD Card (read-only storage), then into `photos/`.
 2. DOM: Verify `sunset.jpg` is visible.
-3. Keyboard: F7 (create folder) — expect an error dialog or disabled action.
+3. Keyboard: F7 (create folder); expect an error dialog or disabled action.
 4. DOM: Assert error state.
-5. Keyboard: Cursor on `sunset.jpg`, attempt delete — expect an error dialog or disabled action.
+5. Keyboard: Cursor on `sunset.jpg`, attempt delete; expect an error dialog or disabled action.
 
 **Why**: Tests that `is_read_only` propagates from the write probe through to UI behavior. Uses keyboard because we want
 to test the user-facing error path.
 
-**Note**: The exact UI behavior (error dialog, disabled buttons, etc.) depends on how Cmdr handles read-only volumes —
-verify during Milestone 1 manual testing and make assertions specific.
+**Note**: The exact UI behavior (error dialog, disabled buttons, etc.) depends on how Cmdr handles read-only volumes. Verify during Milestone 1 manual testing and make assertions specific.
 
 #### Test: file watching / external change detection (MCP + Node.js)
 
@@ -438,7 +437,7 @@ verify during Milestone 1 manual testing and make assertions specific.
 2. Node.js: `fs.writeFileSync('/tmp/cmdr-mtp-e2e-fixtures/internal/Documents/new-file.txt', 'hello')`.
 3. MCP: `await({ pane: ..., has_item: 'new-file.txt' })` with generous 10s timeout.
 
-**Why**: Tests the virtual device's event loop — it watches the backing dir and emits `ObjectAdded` events, which Cmdr's
+**Why**: Tests the virtual device's event loop: it watches the backing dir and emits `ObjectAdded` events, which Cmdr's
 event loop picks up and sends as `directory-diff` to the frontend.
 
 ### After this milestone
@@ -480,13 +479,13 @@ All MTP E2E tests pass on both macOS (native) and Linux (Docker).
 
 ### 6a. Update CLAUDE.md files
 
-- `apps/desktop/src-tauri/src/mtp/CLAUDE.md` — add virtual device module to file map, note the `virtual-mtp` feature
+- `apps/desktop/src-tauri/src/mtp/CLAUDE.md`: add virtual device module to file map, note the `virtual-mtp` feature
   flag
-- `apps/desktop/src-tauri/src/mcp/CLAUDE.md` — document MTP volume support in `select_volume`, `nav_to_path`, and
+- `apps/desktop/src-tauri/src/mcp/CLAUDE.md`: document MTP volume support in `select_volume`, `nav_to_path`, and
   `cmdr://state`
-- `apps/desktop/test/CLAUDE.md` — mention MTP E2E tests and the virtual device approach
-- `apps/desktop/test/e2e-playwright/CLAUDE.md` — add `mtp.spec.ts` to the file table, note MCP client helper
-- `apps/desktop/test/e2e-linux/CLAUDE.md` — update feature flags in architecture diagram
+- `apps/desktop/test/CLAUDE.md`: mention MTP E2E tests and the virtual device approach
+- `apps/desktop/test/e2e-playwright/CLAUDE.md`: add `mtp.spec.ts` to the file table, note MCP client helper
+- `apps/desktop/test/e2e-linux/CLAUDE.md`: update feature flags in architecture diagram
 
 ### 6b. Update build instructions
 
@@ -498,7 +497,7 @@ If the Playwright build instructions reference `--features playwright-e2e`, note
 ## What we're NOT testing (and why)
 
 - **USB hotplug detection**: Virtual device is registered before the watcher starts. Hotplug is nusb-level; testing it
-  requires USB gadget support (kernel-level, not available in Docker). Hotplug is a thin layer (`watcher.rs`) — the real
+  requires USB gadget support (kernel-level, not available in Docker). Hotplug is a thin layer (`watcher.rs`); the real
   complexity is in discovery → connect → Volume → UI, which we DO test.
 - **ptpcamerad / udev permission dialogs**: Platform-specific error paths triggered by real USB errors. Covered by
   frontend unit tests (`mtp-store.test.ts`).
@@ -506,16 +505,16 @@ If the Playwright build instructions reference `--features playwright-e2e`, note
   tests.
 - **Multi-device scenarios**: One virtual device validates the full pipeline. Multi-device adds complexity without
   testing different code paths.
-- **File viewer (F3) on MTP files**: Can be added as a follow-up — tests viewer integration, not the core MTP pipeline.
+- **File viewer (F3) on MTP files**: Can be added as a follow-up; it tests viewer integration, not the core MTP pipeline.
 - **Cross-storage copy**: SD Card is read-only, so Internal→SD is impossible. SD→Internal is a download, same code path
   as MTP-to-local.
-- **Eject/disconnect**: Cmdr doesn't have an eject feature currently — out of scope.
+- **Eject/disconnect**: Cmdr doesn't have an eject feature currently. Out of scope.
 
 ## Risks and mitigations
 
 - **JavaScript number precision for device IDs**: Virtual device location IDs (`0xFFFF_0000_0000_0000+` range) exceed
   `Number.MAX_SAFE_INTEGER`. The string `id` field (`"mtp-{location_id}"`) is safe, but `MtpDeviceInfo.location_id` is
-  `u64` in Rust and `number` in TypeScript — serde serializes it as a JSON number that JavaScript will silently
+  `u64` in Rust and `number` in TypeScript: serde serializes it as a JSON number that JavaScript will silently
   truncate. **Fix required**: either change `location_id` to serialize as a string (add
   `#[serde(serialize_with = "...")]` on the Rust side and update the TS type to `string`), or accept the truncation
   since `location_id` is only used for display/logging, never for device lookup (the string `id` is used for that).

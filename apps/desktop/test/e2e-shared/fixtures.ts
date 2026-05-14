@@ -78,7 +78,7 @@ export function cleanupFixtures(rootPath: string): void {
 /**
  * Lightweight per-test fixture recreation.
  *
- * Only recreates the small text files and directory structure — NOT the ~170 MB
+ * Only recreates the small text files and directory structure, not the ~170 MB
  * bulk .dat files. Those are created once in `createFixtures()` (called from
  * `onPrepare`) and persist across tests.
  *
@@ -103,7 +103,7 @@ export function recreateFixtures(rootPath: string): void {
   }
 
   // Clean up right/ contents (tests may have copied/moved files into it).
-  // Preserve the directory itself to keep the app's inotify watch intact —
+  // Preserve the directory itself to keep the app's inotify watch intact;
   // deleting and recreating would invalidate the watch (new inode).
   const rightDir = path.join(rootPath, 'right')
   if (fs.existsSync(rightDir)) {
@@ -124,7 +124,7 @@ export function recreateFixtures(rootPath: string): void {
     fs.writeFileSync(filePath, file.content)
   }
 
-  // Bulk .dat files are NOT recreated — they persist from createFixtures()
+  // Bulk .dat files are NOT recreated; they persist from createFixtures()
 }
 
 // Allow running directly for testing: npx tsx apps/desktop/test/e2e-shared/fixtures.ts

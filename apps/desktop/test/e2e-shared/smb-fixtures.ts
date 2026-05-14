@@ -112,7 +112,7 @@ export function preMountGuestShare(): void {
 
   try {
     if (IS_LINUX) {
-      // Use gio mount so GVFS manages the mount — Cmdr's mount_linux.rs checks
+      // Use gio mount so GVFS manages the mount. Cmdr's mount_linux.rs checks
       // `gio mount -l` for existing mounts and derives paths from GVFS.
       const smbUrl = `smb://${SMB_GUEST_HOST}/${SMB_GUEST_SHARE}`
       execSync(`gio mount --anonymous '${smbUrl}'`, { encoding: 'utf-8', timeout: 30_000 })
@@ -192,7 +192,7 @@ export function setupSmb(): void {
   }
   // On Linux in Docker, we use gio mount (GVFS) so paths match what Cmdr expects.
   // On macOS, mount_smbfs may fail if /Volumes/public can't be created
-  // (requires sudo). In that case, skip pre-mount — the app handles it
+  // (requires sudo). In that case, skip pre-mount. The app handles it
   // via NetFSMountURLSync (which creates the mount point itself).
   try {
     preMountGuestShare()
@@ -216,7 +216,7 @@ export function teardownSmb(): void {
  * GVFS has a caching layer, so files written through the GVFS mount path
  * (`fs.writeFileSync` to `/run/user/.../gvfs/...`) may not be immediately
  * visible when the app reads the same path. Writing via `smbclient` puts the
- * file on the server directly — GVFS discovers it naturally on the next browse.
+ * file on the server directly, and GVFS discovers it naturally on the next browse.
  */
 export function smbWriteFile(host: string, port: number, share: string, remoteName: string, content: string): void {
   const tmpFile = path.join(os.tmpdir(), `smb-upload-${String(Date.now())}-${remoteName}`)

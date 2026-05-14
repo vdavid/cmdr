@@ -95,7 +95,7 @@ pub fn set_max_log_storage_mb(value: u64) -> Result<(), String> {
     let new_keep = if value == 0 { 0 } else { value.div_ceil(50) as usize };
     logging::set_keep_count(new_keep);
 
-    // Eager-prune is purely cosmetic — files would also vanish on the next rotation, but
+    // Eager-prune is purely cosmetic: files would also vanish on the next rotation, but
     // the user just changed a setting, so we should show the effect now.
     if let Some(dir) = logging::log_dir() {
         match logging::eager_prune(dir, new_keep) {
@@ -129,7 +129,7 @@ pub fn set_error_reports_enabled(value: bool) {
 /// `.git/` so the change is visible immediately.
 /// `async` is load-bearing here: the body fans out to `notify_directory_changed`
 /// which calls `tokio::spawn` to emit cache-refresh events. Sync Tauri commands
-/// run on the IPC main thread, which has no Tokio reactor — `spawn` panicked
+/// run on the IPC main thread, which has no Tokio reactor: `spawn` panicked
 /// there with "there is no reactor running" (see crash report 2026-05-05).
 /// Marking the command `async` puts it on a Tokio worker, where `spawn` works.
 #[tauri::command]
@@ -151,7 +151,7 @@ pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str)
 
     match command_id {
         // View mode CheckMenuItems are per-pane and the accelerator only attaches to the
-        // active pane's pair. Cache the new accel in MenuState and rebuild — the rebuild
+        // active pane's pair. Cache the new accel in MenuState and rebuild: the rebuild
         // re-reads cached accels and active-pane state in one shot.
         "view.fullMode" => {
             *menu_state.view_mode_full_accel.lock_ignore_poison() = accelerator;
@@ -192,7 +192,7 @@ mod tests {
     }
 
     /// Covers the three live-apply commands in one test because they share
-    /// process-global atomics — running them as separate `#[test]` fns would
+    /// process-global atomics: running them as separate `#[test]` fns would
     /// race under the default parallel test runner.
     #[test]
     fn test_live_apply_commands() {

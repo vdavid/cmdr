@@ -1,6 +1,6 @@
 <script lang="ts">
     /**
-     * SearchResults — Column headers + results list + all states + status bar.
+     * SearchResults: Column headers + results list + all states + status bar.
      *
      * Displays search results with resizable columns, handles all result states
      * (unavailable, loading, searching, empty, populated), and shows a status bar.
@@ -89,7 +89,7 @@
             if (totalCount === 0) return 'No results'
             return `${String(results.length)} of ${totalCount.toLocaleString()} results`
         }
-        // Index loading — only show status if user has triggered a search
+        // Index loading: only show status if user has triggered a search
         if (hasSearched) return 'Loading index...'
         return ''
     }

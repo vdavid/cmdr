@@ -217,7 +217,7 @@
             // Store credentials in memory for mounting later
             authenticatedCredentials = { username: creds.username, password: creds.password }
             await connectWithCredentials(creds.username, creds.password, false)
-            // connectWithCredentials never throws — it sets loginError on failure.
+            // connectWithCredentials never throws. It sets loginError on failure.
             // Only return true if shares were actually loaded.
             return shares.length > 0
         } catch {

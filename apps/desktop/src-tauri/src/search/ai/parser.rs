@@ -7,7 +7,7 @@
 /// Parsed output from the LLM classification prompt.
 ///
 /// Each field corresponds to one line in the LLM response. Missing or invalid
-/// lines produce `None` for that field — no filter is applied for that dimension.
+/// lines produce `None` for that field (no filter is applied for that dimension).
 #[derive(Debug, Default, PartialEq)]
 pub struct ParsedLlmResponse {
     pub keywords: Option<String>,
@@ -36,8 +36,8 @@ impl ParsedLlmResponse {
 
 /// Parse a key-value line LLM response into a `ParsedLlmResponse`.
 ///
-/// Each line is split on the first `:` only — values may contain colons
-/// (for example, scope paths). Empty values and unknown keys are skipped.
+/// Each line is split on the first `:` only (values may contain colons,
+/// for example scope paths). Empty values and unknown keys are skipped.
 /// Enum fields (`type`, `time`, `size`, `folders`) are validated; unknown
 /// values are discarded.
 pub fn parse_llm_response(response: &str) -> ParsedLlmResponse {

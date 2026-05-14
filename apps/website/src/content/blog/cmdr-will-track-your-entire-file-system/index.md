@@ -6,7 +6,7 @@ description:
   search, live dir sizes, treemaps, all built-in.
 ---
 
-Last night around 1 am—as you do—I was thinking about displaying dir sizes.
+Last night around 1 am (as you do), I was thinking about displaying dir sizes.
 
 First I thought I'd just do what all file managers do and only measure one at a time, and only on request.
 
@@ -34,7 +34,7 @@ some keys or right-click and wait a bunch.
 
 But then, it's 2026! Can we do better? Turns out we can!
 
-You only need to scan once and watch—the OS provides all the tools. It doesn't even take that long: a few minutes of
+You only need to scan once and watch: the OS provides all the tools. It doesn't even take that long: a few minutes of
 scanning, once. The app works during the scan. It even prioritizes your current dir and your selections, while running
 the full scan in the background. It's fast, takes almost no CPU, next to no battery, and I'll use a small DB, so it
 won't even take up much RAM.

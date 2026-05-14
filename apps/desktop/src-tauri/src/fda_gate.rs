@@ -7,12 +7,12 @@
 //! icon/LaunchServices APIs on those paths must skip work while the FDA
 //! decision is pending. Otherwise macOS stacks several native permission
 //! popups (MediaLibrary, AppData, Desktop, Documents, Downloads, ...) on
-//! top of our in-app modal — exactly the onboarding-flood UX we want to
+//! top of our in-app modal. That's exactly the onboarding-flood UX we want to
 //! avoid.
 //!
 //! The gate has two pieces:
 //!
-//! 1. `is_fda_pending(fda_choice, os_fda_granted)` — pure decision used at
+//! 1. `is_fda_pending(fda_choice, os_fda_granted)`: pure decision used at
 //!    startup and by tests. Pending iff the user hasn't decided AND the OS
 //!    reports FDA isn't granted.
 //! 2. A process-global `AtomicBool` set once at startup (and cleared when
@@ -42,7 +42,7 @@ pub fn is_fda_pending(fda_choice: FullDiskAccessChoice, os_fda_granted: bool) ->
 
 /// Set the runtime gate. Call once at startup with the result of
 /// `is_fda_pending(...)`, and again with `false` after the user makes a
-/// choice in-session (deny path — the allow path requires a restart and
+/// choice in-session (deny path; the allow path requires a restart and
 /// re-enters startup).
 pub fn set_fda_pending(pending: bool) {
     FDA_PENDING
@@ -51,7 +51,7 @@ pub fn set_fda_pending(pending: bool) {
 }
 
 /// Read the runtime gate. Returns `false` until `set_fda_pending` has been
-/// called — safe default for tests and any non-macOS build that never sets
+/// called. Safe default for tests and any non-macOS build that never sets
 /// it.
 pub fn is_fda_pending_runtime() -> bool {
     FDA_PENDING.get().is_some_and(|f| f.load(Ordering::Acquire))

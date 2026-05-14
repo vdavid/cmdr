@@ -70,7 +70,7 @@ pub async fn list_shares_smbutil_authenticated_from_keychain(
     })
 }
 
-/// Linux fallback: no Keychain equivalent — return AuthRequired so the user gets a login prompt.
+/// Linux fallback: no Keychain equivalent; return AuthRequired so the user gets a login prompt.
 #[cfg(target_os = "linux")]
 pub async fn list_shares_smbutil_authenticated_from_keychain(
     _hostname: &str,
@@ -246,9 +246,9 @@ pub fn build_smbutil_url(
 )]
 #[derive(Debug, PartialEq, Eq)]
 enum SmbutilOutcome {
-    /// Authentication error — smbutil explicitly reported credentials were rejected.
+    /// Authentication error: smbutil explicitly reported credentials were rejected.
     AuthRequired,
-    /// Any other failure — include the stderr message as context.
+    /// Any other failure: include the stderr message as context.
     ProtocolError(String),
 }
 
@@ -262,7 +262,7 @@ enum SmbutilOutcome {
     allow(dead_code, reason = "Used by macOS smbutil path and tests")
 )]
 fn classify_smbutil_stderr(stderr: &str) -> SmbutilOutcome {
-    // allowed-error-string-match: smbutil CLI has no structured error output — LC_ALL=C forces English strings
+    // allowed-error-string-match: smbutil CLI has no structured error output; LC_ALL=C forces English strings
     if stderr.contains("Authentication error") || stderr.contains("rejected the authentication") {
         SmbutilOutcome::AuthRequired
     } else {
@@ -387,7 +387,7 @@ pub fn parse_smbutil_output(output: &str) -> Vec<ShareInfo> {
             };
             (name, found_type_keyword.to_lowercase(), cmt)
         } else {
-            // No known type keyword found — skip this line
+            // No known type keyword found; skip this line
             continue;
         };
 

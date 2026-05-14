@@ -202,7 +202,7 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
       3000,
     )
     // After the wait, `.conflict-section` might still be visible (next conflict)
-    // or gone (no more conflicts) — we proceed if there's a new conflict to act on.
+    // or gone (no more conflicts). We proceed if there's a new conflict to act on.
     const stillVisible = await tauriPage.isVisible('.conflict-section')
     if (nextConflict && stillVisible) {
       await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Skip all')
@@ -252,7 +252,7 @@ test.describe('Rename conflict resolution', () => {
     const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 3000)
     expect(conflictAppeared).toBe(true)
 
-    // Click "Rename" — keeps both files, incoming gets " (1)" suffix
+    // Click "Rename": keeps both files, incoming gets " (1)" suffix
     await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Rename')
 
     await waitForDialogsToClose(tauriPage)

@@ -32,7 +32,7 @@
   --color-accent-glow: rgba(255, 194, 6, 0.4);
   --color-accent-contrast: #14130f;
 
-  /* Resting underline color for body links — change here, not in every component */
+  /* Resting underline color for body links (change here, not in every component) */
   --color-link-underline: var(--color-border);
 
   /* Semantic colors */
@@ -77,7 +77,7 @@ body {
 }
 
 /* Body link with a faint resting underline that brightens to the accent on hover.
-   Color is inherited from the surrounding text — set text color separately if needed. */
+   Color is inherited from the surrounding text; set text color separately if needed. */
 .link-muted {
   text-decoration-line: underline;
   text-decoration-color: var(--color-link-underline);
@@ -211,7 +211,7 @@ body {
   animation-delay: 400ms;
 }
 
-/* Light mode tokens — system preference fallback (no explicit theme set) */
+/* Light mode tokens: system preference fallback (no explicit theme set) */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme='dark']) {
     --color-background: #fafaf8;
@@ -234,7 +234,7 @@ body {
   }
 }
 
-/* Light mode tokens — explicit toggle override */
+/* Light mode tokens: explicit toggle override */
 :root[data-theme='light'] {
   --color-background: #fafaf8;
   --color-surface: #f3f1ea;

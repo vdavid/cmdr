@@ -3,8 +3,8 @@
  *
  * The backend exposes seven categories under `.git/`: `branches`, `tags`,
  * `commits`, `stash`, `worktrees`, `submodules`, and `raw`. Subpaths that
- * route through any of these are virtual — they don't exist on disk in the
- * shape Cmdr presents them. The `.git` directory itself (and other real
+ * route through any of these are virtual (they don't exist on disk in the
+ * shape Cmdr presents them). The `.git` directory itself (and other real
  * `.git/` internals like `HEAD` or `refs/heads/main`) stay real.
  *
  * The frontend uses this to skip filesystem-bound bookkeeping (the

@@ -33,7 +33,7 @@ const maskedPlaceholder = '********'
 
 /** Returns true for settings that contain secrets (API keys, tokens, etc.). AI provider API keys
  *  live in the OS secret store now, so `ai.cloudProviderConfigs` no longer needs special-case
- *  redaction — it only holds model and base URL. */
+ *  redaction: it only holds model and base URL. */
 function isSensitive(def: SettingDefinition): boolean {
   return def.component === 'password-input'
 }

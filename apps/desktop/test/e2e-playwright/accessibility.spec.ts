@@ -80,8 +80,8 @@ async function runAxeAudit(
 }> {
   await injectAxe(tauriPage)
 
-  // axe.run(context, options) — context controls WHAT to scan, options controls HOW.
-  // Exclude disabled elements from scanning — WCAG exempts inactive UI components from contrast.
+  // axe.run(context, options): context controls WHAT to scan, options controls HOW.
+  // Exclude disabled elements from scanning: WCAG exempts inactive UI components from contrast.
   // Note: axe-core's color-contrast rule has built-in disabled detection, but it relies on
   // the element being natively disabled AND having an opacity < 1. When opacity-based disabled
   // styling is applied, axe may still flag the element if it doesn't recognize the pattern.
@@ -166,7 +166,7 @@ async function openSearchDialog(tauriPage: PageLike): Promise<void> {
  * is per-window and takes effect on the next paint.
  *
  * Historically this helper polled `--color-bg-primary` against literal hex
- * values to confirm the swap before axe ran — that was for the (now-disabled)
+ * values to confirm the swap before axe ran. That was for the (now-disabled)
  * `color-contrast` axe rule. Without that rule we don't need the CSS variables
  * to be at any specific value when axe runs; the structural a11y rules don't
  * read computed colors. The poll was timing out at 5 s on every light-mode
@@ -296,7 +296,7 @@ for (const mode of ['light', 'dark'] as const) {
 
       // Open settings via the production trigger and scope this audit to the
       // dedicated settings window. The settings UI no longer renders into the
-      // main window's `/settings` route — it's a separate WebviewWindow.
+      // main window's `/settings` route: it's a separate WebviewWindow.
       const settings = await openSettingsWindowViaProd(tauriPage as TauriPage)
       try {
         // This test legitimately overrides the default 8 s budget (see
@@ -353,7 +353,7 @@ for (const mode of ['light', 'dark'] as const) {
 
           // Brief settle for sections with async data (for example, Drive indexing
           // loads dbFileSize which controls the "Clear index" button's disabled state).
-          // The pollUntil above already gated on section visibility — this just lets
+          // The pollUntil above already gated on section visibility: this just lets
           // any reactive child updates land before axe inspects the DOM. No specific
           // selector to poll on: each section loads different async data (index size,
           // licensing, AI config, etc.) with no shared "settled" signal.

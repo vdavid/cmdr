@@ -131,7 +131,7 @@ export function calculateVirtualWindowVariable(
   const totalSize = prefixSums[totalItems]
 
   // Binary search for the largest i in [0, totalItems) such that prefixSums[i] <= scrollOffset.
-  // That's the first column whose left edge is at or before the viewport's left edge — i.e. the
+  // That's the first column whose left edge is at or before the viewport's left edge, i.e. the
   // first visible column (it may extend right into the viewport even if it starts before it).
   let lo = 0
   let hi = totalItems
@@ -154,7 +154,7 @@ export function calculateVirtualWindowVariable(
     lastVisibleEnd++
   }
 
-  // Apply buffer on both sides — clamp independently so the right-edge buffer expansion is not
+  // Apply buffer on both sides: clamp independently so the right-edge buffer expansion is not
   // limited by the (possibly clamped) left-edge buffer. This is the off-by-buffer bug guard:
   // computing end as `startIndex + visibleCount + 2 * bufferSize` would underestimate the right
   // edge whenever `firstVisibleIndex - bufferSize` clamps to 0, because the "lost" left buffer

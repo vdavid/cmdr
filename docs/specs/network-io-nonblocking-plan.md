@@ -2,15 +2,15 @@
 
 Fix two related bugs where slow network filesystem I/O (SMB, NFS, AFP) blocks the UI.
 
-**Bug 1 — UI freeze on cancel.** Cancelling a chunked copy deletes the partial file synchronously inside
+**Bug 1: UI freeze on cancel.** Cancelling a chunked copy deletes the partial file synchronously inside
 `copy_data_chunked`. On SMB, `remove_file` blocks for 30–60 seconds while the mount drains. SMB serializes all
 operations on the same connection, so every other I/O to that mount (directory listings, watcher reconciliation) also
 stalls. Result: rainbow spinner, entire app unresponsive.
 
-**Bug 2 — Un-cancellable dialog on slow start.** `copy_files_start` (and `move_files_start`, `delete_files_start`,
+**Bug 2: Un-cancellable dialog on slow start.** `copy_files_start` (and `move_files_start`, `delete_files_start`,
 `trash_files_start`) run validation (`validate_sources`, `validate_destination`, `validate_destination_writable`,
 `validate_destination_not_inside_source`) **before** calling `start_write_operation`. These validators call `stat()`,
-`exists()`, `canonicalize()`, and `libc::access()` — all blocking syscalls. On a stalled mount, the Tauri IPC handler
+`exists()`, `canonicalize()`, and `libc::access()`, all blocking syscalls. On a stalled mount, the Tauri IPC handler
 blocks for minutes, never returning the `operationId` the frontend needs to cancel.
 
 ## Design principle alignment
@@ -24,7 +24,7 @@ blocks for minutes, never returning the `operationId` the frontend needs to canc
 Two independent parts, same principle: **never do potentially-slow filesystem I/O on the path between the user's action
 and the UI's response.**
 
-### Part A — Move validation into the background task
+### Part A: Move validation into the background task
 
 **Intention:** The frontend must always get an `operationId` back immediately, regardless of how slow the filesystem is.
 This makes every operation cancellable from the instant the dialog opens.
@@ -34,7 +34,7 @@ This makes every operation cancellable from the instant the dialog opens.
 will run on the blocking thread pool instead of the async executor.
 
 **Prerequisite: fix `start_write_operation` error handling.** Currently (mod.rs line 132), `start_write_operation` only
-emits `write-error` for panics (`JoinError`). A handler returning `Err(validation_error)` is silently dropped — the
+emits `write-error` for panics (`JoinError`). A handler returning `Err(validation_error)` is silently dropped; the
 `spawn_blocking` result is `Result<Result<(), WriteOperationError>, JoinError>`, and only the outer `Err` is handled.
 This must be fixed to handle `Ok(Err(...))` too:
 
@@ -45,7 +45,7 @@ match result {
         // Handler already emitted write-cancelled
     }
     Ok(Err(e)) => {
-        // Handler error — emit write-error as safety net
+        // Handler error: emit write-error as safety net
         let _ = app_for_error.emit("write-error", WriteErrorEvent {
             operation_id: operation_id_for_cleanup,
             operation_type,
@@ -107,7 +107,7 @@ Same pattern for `move_files_start`, `delete_files_start`, `trash_files_start`. 
 change, the dialog briefly shows "Scanning..." before the error event arrives and transitions to the error dialog. On
 local FS this is a fraction of a second; on a stalled network FS, "Scanning..." is more honest than a frozen state.
 
-### Part B — Non-blocking cancellation cleanup
+### Part B: Non-blocking cancellation cleanup
 
 **Intention:** When the user cancels, the UI must respond immediately. Background cleanup (deleting partial files) can
 take arbitrarily long on network mounts and should never block the cancellation response.
@@ -134,7 +134,7 @@ pub(super) fn remove_dir_all_in_background(path: PathBuf) {
 }
 ```
 
-**Change 1: `chunked_copy.rs` — partial file cleanup on cancel.**
+**Change 1: `chunked_copy.rs`: partial file cleanup on cancel.**
 
 ```rust
 // Current (blocks on SMB for 30-60s):
@@ -146,7 +146,7 @@ drop(dst_file);
 remove_file_in_background(dest.to_path_buf());
 ```
 
-Note: the cancelled file is NOT in `CopyTransaction.created_files` — `record_file` is called after successful copy
+Note: the cancelled file is NOT in `CopyTransaction.created_files`; `record_file` is called after successful copy
 (copy.rs line 532), and the cancelled file's copy failed. So `remove_file_in_background` and `rollback_in_background`
 (below) target disjoint file sets. No double-delete coordination needed.
 
@@ -180,7 +180,7 @@ pub fn rollback_in_background(mut self) {
 `committed = true` is the safety mechanism preventing `Drop` from synchronous rollback. `mem::take` moves ownership into
 the thread. Both are needed. The synchronous `rollback()` stays for non-cancellation error paths.
 
-**Change 3: `copy.rs` — use `rollback_in_background` on cancel.**
+**Change 3: `copy.rs`: use `rollback_in_background` on cancel.**
 
 ```rust
 if skip_rollback {
@@ -190,14 +190,14 @@ if skip_rollback {
 }
 ```
 
-**Change 4: `move_op.rs` — non-blocking staging cleanup on failure.**
+**Change 4: `move_op.rs`: non-blocking staging cleanup on failure.**
 
 Two `remove_dir_all` calls on the staging directory block on network destinations:
 
 - **Line 279** (copy phase fails): change to `remove_dir_all_in_background(staging_dir.clone())`.
 - **Line 354** (rename phase fails): change to `remove_dir_all_in_background(staging_dir)`.
 
-Line 370 (success path, empty staging dir) stays synchronous — empty dir removal is near-instant.
+Line 370 (success path, empty staging dir) stays synchronous; empty dir removal is near-instant.
 
 **Change 5: Fix `test_chunked_copy_cancellation` test.**
 
@@ -216,7 +216,7 @@ operation. The cancellation flag is checked between sources, so the user can can
 
 ## Milestones
 
-### Milestone 1 — Part A: validation in background
+### Milestone 1: Part A: validation in background
 
 1. Fix `start_write_operation` in `mod.rs` to emit `write-error` for `Ok(Err(non-cancelled))` handler results.
 2. Move validation into handler closures for all four `*_files_start` functions. For `delete_files_start`, also move
@@ -225,7 +225,7 @@ operation. The cancellation flag is checked between sources, so the user can can
 4. Run tests: `cd apps/desktop/src-tauri && cargo nextest run`.
 5. Manual test: copy with invalid destination → dialog opens briefly, error dialog appears via event.
 
-### Milestone 2 — Part B: non-blocking cancel cleanup
+### Milestone 2: Part B: non-blocking cancel cleanup
 
 1. Add `remove_file_in_background` and `remove_dir_all_in_background` to `helpers.rs`.
 2. Add `rollback_in_background` to `CopyTransaction` in `state.rs`.
@@ -236,7 +236,7 @@ operation. The cancellation flag is checked between sources, so the user can can
 7. Run `./scripts/check.sh --check clippy --check rustfmt`.
 8. Run tests: `cd apps/desktop/src-tauri && cargo nextest run`.
 
-### Milestone 3 — Docs and final checks
+### Milestone 3: Docs and final checks
 
 1. Update `write_operations/CLAUDE.md`:
    - Document async rollback pattern (`rollback_in_background` vs `rollback`).

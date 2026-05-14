@@ -20,7 +20,7 @@ pub struct SearchQuery {
     #[serde(default)]
     pub exclude_dir_names: Option<Vec<String>>,
     /// Pre-resolved entry IDs for `include_paths`. Populated server-side
-    /// before calling `search()` — not sent from the frontend/MCP.
+    /// before calling `search()`. Not sent from the frontend/MCP.
     #[serde(skip)]
     pub include_path_ids: Option<Vec<i64>>,
     #[serde(default = "default_limit")]
@@ -134,7 +134,7 @@ mod tests {
         assert!(json.contains("modifiedAt"));
         assert!(json.contains("iconId"));
         assert!(json.contains("parentPath"));
-        // entry_id is #[serde(skip)] — must not appear in JSON
+        // entry_id is #[serde(skip)]: must not appear in JSON
         assert!(!json.contains("entryId"));
 
         let deserialized: SearchResult = serde_json::from_str(&json).unwrap();

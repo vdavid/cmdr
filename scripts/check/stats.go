@@ -64,7 +64,7 @@ func logCheckStats(state *CheckState) {
 		message = "dependency failed"
 	}
 
-	// First line only — error messages include verbose output after a newline
+	// First line only; error messages include verbose output after a newline
 	if i := strings.IndexByte(message, '\n'); i >= 0 {
 		message = message[:i]
 	}

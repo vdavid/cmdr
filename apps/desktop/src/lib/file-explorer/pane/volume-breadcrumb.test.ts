@@ -7,7 +7,7 @@ import VolumeBreadcrumb from '../navigation/VolumeBreadcrumb.svelte'
 import { waitForUpdates, useMountTarget } from './integration-test-utils'
 
 // ============================================================================
-// Mock setup (must be in each test file — Vitest hoists vi.mock calls)
+// Mock setup (must be in each test file: Vitest hoists vi.mock calls)
 // ============================================================================
 
 let mockEntry: unknown = null
@@ -490,7 +490,7 @@ describe('VolumeBreadcrumb', () => {
 
       await tick()
 
-      // Move up from first — should wrap to last
+      // Move up from first: should wrap to last
       const handleKeyDown = (component as unknown as { handleKeyDown: (e: KeyboardEvent) => boolean }).handleKeyDown
       const event = new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true })
       handleKeyDown(event)

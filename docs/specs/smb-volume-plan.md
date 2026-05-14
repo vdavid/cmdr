@@ -2,7 +2,7 @@
 
 Replace OS-level filesystem calls with direct `smb2` protocol operations for mounted SMB shares. The share remains
 OS-mounted (for Finder/Terminal/drag-drop compatibility), but all Cmdr file operations go through `smb2`'s pipelined I/O
-for ~4x faster performance. **macOS first** — Linux (`gio mount`, `/run/user/<uid>/gvfs/`) follows with the same pattern
+for ~4x faster performance. **macOS first**; Linux (`gio mount`, `/run/user/<uid>/gvfs/`) follows with the same pattern
 but different mount paths and watcher.
 
 ## Why
@@ -66,7 +66,7 @@ When the user unmounts externally (Finder eject, `umount` CLI, network loss):
 3. Currently, it calls `unregister_volume_from_manager()` → removes the `LocalPosixVolume`.
 4. **New behavior**: Before unregistering, check if the volume needs cleanup. Add `fn on_unmount(&self)` to the `Volume`
    trait (default no-op). `SmbVolume` implements it to disconnect the smb2 session and transition to `Disconnected`.
-5. The frontend receives `volume-unmounted` and navigates away — same as today.
+5. The frontend receives `volume-unmounted` and navigates away, same as today.
 
 **Why `on_unmount` trait method instead of downcast**: Avoids `Any` downcasting, extensible for future volume types (S3,
 FTP might also need cleanup), consistent with the trait's design of optional methods with default no-ops.
@@ -94,7 +94,7 @@ SmbVolume {
 }
 ```
 
-**Why `Mutex`, not `RwLock`**: Every `SmbClient` method takes `&mut self` — there is no read-only access path. An
+**Why `Mutex`, not `RwLock`**: Every `SmbClient` method takes `&mut self`, so there is no read-only access path. An
 `RwLock` where you only ever take write locks is strictly worse than a `Mutex` (higher overhead due to writer starvation
 prevention). `Mutex` is the correct choice.
 
@@ -102,9 +102,9 @@ prevention). `Mutex` is the correct choice.
 all `SmbClient` methods. It doesn't need its own lock. Storing client and tree together avoids lock-ordering concerns
 and simplifies the code.
 
-**Why `Option`**: Allows graceful cleanup on disconnect — set to `None` when the connection is dropped.
+**Why `Option`**: Allows graceful cleanup on disconnect; set to `None` when the connection is dropped.
 
-**Threading model**: Same as MtpVolume — `Volume` trait methods are synchronous, called from `spawn_blocking` contexts.
+**Threading model**: Same as MtpVolume; `Volume` trait methods are synchronous, called from `spawn_blocking` contexts.
 Use `Handle::block_on` to bridge to smb2's async API. This is safe because `spawn_blocking` runs on a separate OS thread
 pool.
 
@@ -116,21 +116,21 @@ Implement `Volume` trait:
   `smb2::DirectoryEntry` to `FileEntry`.
 - `list_directory_with_progress(path, on_progress)` → same, but call `on_progress` with entry count after the call
   completes. (smb2's `list_directory` returns all entries at once, so progress is reported as a batch, not
-  incrementally. Fine for now — still faster than the OS path.)
+  incrementally. Fine for now, as it's still faster than the OS path.)
 - `get_metadata(path)` → `client.stat(&tree, path)` via `block_on`, map to `FileEntry`.
 - `exists(path)` → `client.stat()`, return `true` on success, `false` on `NotFound` error.
 - `is_directory(path)` → `client.stat()`, check `is_directory` field.
 - `local_path()` → **`None`**. See copy strategy discussion below. OS integration features (Quick Look, "Reveal in
-  Finder", drag & drop) don't use `local_path()` — they construct full paths from `root()`, which returns the mount
+  Finder", drag & drop) don't use `local_path()`; they construct full paths from `root()`, which returns the mount
   path. So returning `None` from `local_path()` only affects the copy fast-path, which is the desired behavior.
 - `supports_watching()` → `false` initially. Use the existing FSEvents watcher on the mount path (which already works
   for mounted SMB shares). Add smb2-native watching later.
 - `get_space_info()` → `client.fs_info(&tree)` via `block_on`, map to `SpaceInfo`.
 
 **Why `local_path()` returns `None`**: `local_path()` is checked in `volume_copy.rs` to decide whether to use native OS
-copy APIs (`copyfile(3)`). If `SmbVolume` returned `Some(mount_path)`, copies would go through the slow OS mount —
+copy APIs (`copyfile(3)`). If `SmbVolume` returned `Some(mount_path)`, copies would go through the slow OS mount;
 exactly what we're trying to avoid. By returning `None`, the copy system uses `export_to_local`/`import_from_local`
-(streaming through smb2). No new trait method is needed — `root()` already returns the mount path, and OS integration
+(streaming through smb2). No new trait method is needed; `root()` already returns the mount path, and OS integration
 features (Quick Look, Finder reveal, drag & drop) construct paths from `root()`, not `local_path()`.
 
 **Fallback behavior**: Every smb2 operation should be wrapped in a helper that catches `smb2::Error::Disconnected` /
@@ -162,7 +162,7 @@ fn list_directory(&self, path) {
 - `name` → `name`
 - `size` → `size` (u64)
 - `is_directory` → `entry_type` (File vs Directory)
-- `modified` → `modified` (convert `smb2::FileTime` to `SystemTime` — FileTime is Windows FILETIME format, 100ns
+- `modified` → `modified` (convert `smb2::FileTime` to `SystemTime`; FileTime is Windows FILETIME format, 100ns
   intervals since 1601-01-01. smb2 may provide a conversion method; if not, implement carefully to avoid epoch offset
   bugs)
 - `created` → `created`
@@ -190,7 +190,7 @@ New flow:
 2. **Before** the FSEvents watcher fires, connect smb2 to the same server/share.
 3. Create `SmbVolume` with the mount path, smb2 client, and tree.
 4. Register it in `VolumeManager` with the same volume ID that the watcher would use.
-5. When the FSEvents watcher fires, it calls `register_volume_with_manager()` — this should **skip** registration if the
+5. When the FSEvents watcher fires, it calls `register_volume_with_manager()`, which should **skip** registration if the
    volume ID already exists (it's already an `SmbVolume`).
 
 **Why register before the watcher**: Race condition prevention. If we let the watcher register a `LocalPosixVolume`
@@ -202,12 +202,12 @@ already exists. The watcher calls this instead of `register` for mount events. T
 overwrites) is kept for explicit re-registration (like `SmbVolume` replacing itself on reconnect).
 
 **Modification to `volumes/watcher.rs`**: `register_volume_with_manager()` calls `register_if_absent` instead of
-`register`. This is a safe, backwards-compatible change — the only scenario where a volume is pre-registered is our
+`register`. This is a safe, backwards-compatible change; the only scenario where a volume is pre-registered is our
 explicit `SmbVolume` registration.
 
 **Race window note**: If the FSEvents watcher fires before the smb2 connection completes (step 2), the watcher would
 register a `LocalPosixVolume` via `register_if_absent`. Then when smb2 connects, the `SmbVolume` registration uses
-`register` (overwrite) to replace it. This is the correct behavior — the `SmbVolume` always wins. The brief window where
+`register` (overwrite) to replace it. This is the correct behavior: the `SmbVolume` always wins. The brief window where
 a `LocalPosixVolume` exists is harmless (it works, just slower).
 
 #### 4. Handle external unmount
@@ -250,12 +250,12 @@ Then `unregister_volume_from_manager()` removes it from the registry as normal.
 - `scan_for_conflicts(source_items, dest_path)` → smb2 `stat` each item at dest.
 
 **Copy strategy interaction**: Since `local_path()` returns `None` for `SmbVolume`, the copy strategy in
-`volume_copy.rs` won't take the "both local" fast path. It will use `export_to_local`/`import_from_local` — the
+`volume_copy.rs` won't take the "both local" fast path. It will use `export_to_local`/`import_from_local`, which is the
 volume-aware copy path that streams through smb2. This is the desired behavior.
 
 #### 6. File watching
 
-**Start with FSEvents on the mount path** — it already works for mounted SMB shares. The existing listing watcher in
+**Start with FSEvents on the mount path**: it already works for mounted SMB shares. The existing listing watcher in
 `streaming.rs` uses `Volume::supports_watching()` to decide whether to set up a watcher. Since we start with `false`,
 the listing will rely on manual refresh and the FSEvents watcher that the OS mount provides.
 
@@ -269,11 +269,11 @@ notifications (direct from the server vs the OS mount's FSEvents delay).
 Add a `connection_quality` field to the volume info that the frontend already receives via `list_volumes` / volume
 events. Three states:
 
-- `"direct"` — full smb2 connection (green indicator)
-- `"os_mount"` — degraded, using OS mount (yellow indicator)
-- `"disconnected"` — nothing works (red indicator, but this state is brief before the volume is unregistered)
+- `"direct"`: full smb2 connection (green indicator)
+- `"os_mount"`: degraded, using OS mount (yellow indicator)
+- `"disconnected"`: nothing works (red indicator, but this state is brief before the volume is unregistered)
 
-**FE changes**: Minimal — add an optional indicator dot/icon next to network volume names in the sidebar and breadcrumb.
+**FE changes**: Minimal. Add an optional indicator dot/icon next to network volume names in the sidebar and breadcrumb.
 Only shown for SMB volumes (local volumes don't have this field). This is the only FE change needed.
 
 **Why expose this**: Radical transparency (design principle). The user should understand what's happening. If they see
@@ -328,8 +328,8 @@ resources and could overwhelm the server.
 
 #### 13. Run full checks
 
-- `./scripts/check.sh` — all checks must pass.
-- `cargo nextest run` — all tests.
+- `./scripts/check.sh`: all checks must pass.
+- `cargo nextest run`: all tests.
 
 ## Risks
 

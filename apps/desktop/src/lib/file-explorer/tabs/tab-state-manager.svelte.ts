@@ -77,7 +77,7 @@ export function addTab(mgr: TabManager, beforeTabId: TabId, tabState: TabState):
     mgr.tabs.splice(beforeIndex, 0, tabState)
   }
 
-  // Don't change activeTabId — the clone trick relies on this:
+  // Don't change activeTabId; the clone trick relies on this:
   // the clone is inserted to the LEFT, the original tab stays active
   return true
 }

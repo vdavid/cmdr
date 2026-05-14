@@ -4,25 +4,25 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 
 ## Architecture
 
-- **Discovery**: `mdns_discovery.rs` — Pure Rust mDNS using `mdns-sd` crate. Cross-platform.
-- **Manual servers**: `manual_servers.rs` — User-added servers via "Connect to server..." dialog. Parses addresses, checks TCP reachability, persists to `manual-servers.json`, and injects synthetic `NetworkHost` entries with `source: Manual` into `DISCOVERY_STATE`. Loaded at startup.
-- **E2E testing**: `virtual_smb_hosts.rs` — Injects 14 synthetic `NetworkHost` entries for smb2's consumer Docker containers. Hosts come from `SMB_E2E_{SVC}_HOST` (default `localhost`). Ports come from `SMB_E2E_{SVC}_PORT` when set, else `smb2::testing::*_port()` (which reads `SMB_CONSUMER_*_PORT`, default 10480+). `SMB_E2E_*_PORT` is the test-suite contract — same var the frontend fixture reads — so backend and fixture agree on which port to connect to. This matters inside Docker where containers listen on `:445` internally but `SMB_CONSUMER_*_PORT` would point at the host-side mapping. Gated behind `smb-e2e` Cargo feature. Never enabled in production.
+- **Discovery**: `mdns_discovery.rs`: Pure Rust mDNS using `mdns-sd` crate. Cross-platform.
+- **Manual servers**: `manual_servers.rs`: User-added servers via "Connect to server..." dialog. Parses addresses, checks TCP reachability, persists to `manual-servers.json`, and injects synthetic `NetworkHost` entries with `source: Manual` into `DISCOVERY_STATE`. Loaded at startup.
+- **E2E testing**: `virtual_smb_hosts.rs`: Injects 14 synthetic `NetworkHost` entries for smb2's consumer Docker containers. Hosts come from `SMB_E2E_{SVC}_HOST` (default `localhost`). Ports come from `SMB_E2E_{SVC}_PORT` when set, else `smb2::testing::*_port()` (which reads `SMB_CONSUMER_*_PORT`, default 10480+). `SMB_E2E_*_PORT` is the test-suite contract (same var the frontend fixture reads), so backend and fixture agree on which port to connect to. This matters inside Docker where containers listen on `:445` internally but `SMB_CONSUMER_*_PORT` would point at the host-side mapping. Gated behind `smb-e2e` Cargo feature. Never enabled in production.
 - **Share listing**: Split across multiple files:
-  - `smb_client.rs` — Top-level share-listing entry point; orchestrates guest -> keychain -> prompt auth flow; tries smb2 first, falls back to smbutil (macOS only)
-  - `smb_connection.rs` — TCP connection establishment and share listing via `smb2::SmbClient`
-  - `smb_cache.rs` — 30-second in-memory cache for share lists, keyed by server address
-  - `smb_smbutil.rs` — `smbutil view -G` fallback for older Samba/NAS servers (macOS); on Linux delegates to `smb_smbclient`
-  - `smb_smbclient.rs` — `smbclient -L` fallback for Linux (requires `samba-client` package)
-  - `linux_distro.rs` — Thin wrapper calling `crate::linux_distro::LinuxDistro` for smbclient install hints; `cfg(target_os = "linux")` gated
-  - `smb_types.rs` — Shared types (`ShareInfo`, `AuthMode`, `ShareListError`, etc.)
-  - `smb_util.rs` — Helpers: error classification (`classify_error`, `is_auth_error`) and `convert_shares` (maps `smb2::ShareInfo` to Cmdr's `ShareInfo`)
-  - `smb_upgrade.rs` — Upgrade OS-mounted SMB volumes to direct smb2 connections. Shared by three upgrade paths (startup, mount-time watcher, manual "Connect directly"). Contains `register_smb_volume`, `try_smb_upgrade`, `UpgradeResult`/`UpgradeError` types, address resolution (`resolve_server_address`, `resolve_ip_to_hostname`, `friendly_server_name`), and `get_keychain_password`.
+  - `smb_client.rs`: Top-level share-listing entry point; orchestrates guest -> keychain -> prompt auth flow; tries smb2 first, falls back to smbutil (macOS only)
+  - `smb_connection.rs`: TCP connection establishment and share listing via `smb2::SmbClient`
+  - `smb_cache.rs`: 30-second in-memory cache for share lists, keyed by server address
+  - `smb_smbutil.rs`: `smbutil view -G` fallback for older Samba/NAS servers (macOS); on Linux delegates to `smb_smbclient`
+  - `smb_smbclient.rs`: `smbclient -L` fallback for Linux (requires `samba-client` package)
+  - `linux_distro.rs`: Thin wrapper calling `crate::linux_distro::LinuxDistro` for smbclient install hints; `cfg(target_os = "linux")` gated
+  - `smb_types.rs`: Shared types (`ShareInfo`, `AuthMode`, `ShareListError`, etc.)
+  - `smb_util.rs`: Helpers: error classification (`classify_error`, `is_auth_error`) and `convert_shares` (maps `smb2::ShareInfo` to Cmdr's `ShareInfo`)
+  - `smb_upgrade.rs`: Upgrade OS-mounted SMB volumes to direct smb2 connections. Shared by three upgrade paths (startup, mount-time watcher, manual "Connect directly"). Contains `register_smb_volume`, `try_smb_upgrade`, `UpgradeResult`/`UpgradeError` types, address resolution (`resolve_server_address`, `resolve_ip_to_hostname`, `friendly_server_name`), and `get_keychain_password`.
 - **Mounting** (platform-specific via `#[path]` in `mod.rs`):
-  - `mount.rs` — macOS `NetFSMountURLSync` for native `/Volumes/` mounts; also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
-  - `mount_linux.rs` — Linux `gio mount` for GVFS-based user-space mounts
+  - `mount.rs`: macOS `NetFSMountURLSync` for native `/Volumes/` mounts; also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
+  - `mount_linux.rs`: Linux `gio mount` for GVFS-based user-space mounts
 - **Auth** (platform-agnostic):
-  - `keychain.rs` — SMB credential management. Delegates storage to `crate::secrets::store()` (see `secrets/CLAUDE.md` for backend details)
-- **State**: `known_shares.rs` — Connection history in `known-shares.json` (usernames, last auth mode, timestamps).
+  - `keychain.rs`: SMB credential management. Delegates storage to `crate::secrets::store()` (see `secrets/CLAUDE.md` for backend details)
+- **State**: `known_shares.rs`: Connection history in `known-shares.json` (usernames, last auth mode, timestamps).
 
 ## Platform strategy
 
@@ -41,22 +41,22 @@ Discover, browse, and mount SMB network shares. Works on macOS and Linux.
 `network::start_discovery()` no longer fires unconditionally in `lib.rs::setup`. Instead, two settings drive the
 lifecycle:
 
-- **`network.enabled`** (boolean, default `true`) — top-level user toggle in `Settings > Network > SMB/Network shares`.
+- **`network.enabled`** (boolean, default `true`): top-level user toggle in `Settings > Network > SMB/Network shares`.
   When `false`, the picker shows "Network (disabled)", no mDNS daemon runs, and no proactive smb2 upgrades happen.
-- **`network.firstTriggerDone`** (boolean, default `false`, hidden) — tracks whether we've already performed a gated
+- **`network.firstTriggerDone`** (boolean, default `false`, hidden): tracks whether we've already performed a gated
   network action. Persisted across launches.
 
 At startup, mDNS starts only if `network.enabled && (firstTriggerDone || smb-e2e feature)`. On a fresh install,
 `firstTriggerDone == false` so we stay quiet and the macOS "Cmdr wants to find devices on local networks" prompt
 doesn't fire at app launch.
 
-The frontend calls `ensure_network_discovery_started` (idempotent) when the user takes a network action — clicking
+The frontend calls `ensure_network_discovery_started` (idempotent) when the user takes a network action: clicking
 "Network" in the picker, opening "Connect to server…", or hitting the OS-mount → direct-smb2 upgrade indicator. That
 first call is what triggers the OS prompt. We also flip `firstTriggerDone = true` so subsequent launches start mDNS
 eagerly without surprising the user.
 
 `set_network_enabled(false)` stops the daemon and clears `DISCOVERY_STATE.hosts`, emitting `network-host-lost` events
-so the frontend store empties. `set_network_enabled(true)` is a no-op — the user must take a network action to
+so the frontend store empties. `set_network_enabled(true)` is a no-op; the user must take a network action to
 re-trigger discovery.
 
 The E2E build feature (`smb-e2e`) bypasses both gates so virtual SMB hosts are populated before tests run.
@@ -78,7 +78,7 @@ guest/credentials toggle. `keychain.rs` delegates to `crate::secrets::store()` f
 
 MIT license (compatible with BSL, allows dual-licensing for enterprise), pure Rust (no C dependencies), async-native
 (built on tokio), cross-platform, and typed errors (`smb2::Error` variants vs string pattern matching). David's own
-crate — single dependency replaces the old `smb` + `smb-rpc` pair. `smb2::list_shares()` returns pre-filtered disk
+crate, a single dependency replacing the old `smb` + `smb-rpc` pair. `smb2::list_shares()` returns pre-filtered disk
 shares with clean `String` fields (no NDR parsing needed). Fallback to `smbutil`/`smbclient` is available for older
 Samba servers where smb2's RPC fails.
 
@@ -93,7 +93,7 @@ available. If IP unavailable, use derived hostname with `.local` stripped.
 1. Try anonymous/guest access first
 2. On auth error → check stored credentials
 3. If no stored creds → prompt user
-4. Never assume "guest only" — always offer "Sign in for more access" when guest succeeds (can't distinguish guest-only from guest-or-creds at probe time)
+4. Never assume "guest only"; always offer "Sign in for more access" when guest succeeds (can't distinguish guest-only from guest-or-creds at probe time)
 
 ### smbutil / smbclient fallback
 

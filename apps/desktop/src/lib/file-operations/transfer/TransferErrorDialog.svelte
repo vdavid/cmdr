@@ -28,7 +28,7 @@
     /** Category drives icon and container colors. Fallback path is always treated as `serious`. */
     const category = $derived<FriendlyError['category']>(friendlyError?.category ?? 'serious')
 
-    /** Retry button visibility — transient kinds always offer retry, others gated on explicit retryHint. */
+    /** Retry button visibility: transient kinds always offer retry, others gated on explicit retryHint. */
     const showRetry = $derived(onRetry !== undefined && (category === 'transient' || friendlyError?.retryHint === true))
 
     /** Container styling per category. */

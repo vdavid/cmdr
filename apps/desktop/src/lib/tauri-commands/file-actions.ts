@@ -41,7 +41,7 @@ export async function showFileContextMenu(
 }
 
 /**
- * Make a cloud-managed file available offline (download it). macOS only — talks to the
+ * Make a cloud-managed file available offline (download it). macOS only. Talks to the
  * File Provider extension responsible for the file (iCloud Drive, Dropbox, GDrive, etc.).
  */
 export async function cloudMakeAvailableOffline(path: string): Promise<void> {

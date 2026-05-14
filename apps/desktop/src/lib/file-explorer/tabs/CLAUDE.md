@@ -4,29 +4,29 @@ Per-pane tab system for the dual-pane file explorer. Each pane side (left/right)
 
 ## Architecture
 
-- `tab-types.ts` — Type definitions: `TabId`, `TabState`, `PersistedTab`, `PersistedPaneTabs`, `UnreachableState`
-- `tab-state-manager.svelte.ts` — Reactive state manager using `$state()`. All tab operations (add, close, switch,
+- `tab-types.ts`: Type definitions: `TabId`, `TabState`, `PersistedTab`, `PersistedPaneTabs`, `UnreachableState`
+- `tab-state-manager.svelte.ts`: Reactive state manager using `$state()`. All tab operations (add, close, switch,
   cycle, pin). Max 10 tabs per pane.
-- `TabBar.svelte` — Tab bar UI component. Always visible, Chrome-style shrinking tabs, pin icons, close buttons, context
+- `TabBar.svelte`: Tab bar UI component. Always visible, Chrome-style shrinking tabs, pin icons, close buttons, context
   menu.
-- `tab-state-manager.test.ts` — Unit tests for state manager
+- `tab-state-manager.test.ts`: Unit tests for state manager
 
 ## Key decisions
 
 **Decision**: Tabs fill the entire bar height (`.tab { height: var(--spacing-tab-bar-height) }`) and the bar carries a
 non-scaled `padding-top: 3px` to push the colored top of the active tab below the (fixed-height) window title-bar.
-**Why**: tab and bar heights both scale with `--font-scale`, so any constant gap between them would scale too — making
+**Why**: tab and bar heights both scale with `--font-scale`, so any constant gap between them would scale too, making
 the colored top edge drift visibly across text sizes. Locking the tab to bar height eliminates the proportional gap; the
 3 px padding gives the static breathing room between title-bar and tab top, hidden inside the bar's own `bg-secondary`
 so it reads as a continuous strip. The active tab is `bar-height + 1px` with `margin-bottom: -1px` to cover the bar's
 bottom border (unchanged from the historical pattern).
 
-**Decision**: Cold load on tab switch via `{#key activeTabId}` — destroys and recreates FilePane, no warm cache **Why**:
+**Decision**: Cold load on tab switch via `{#key activeTabId}`: destroys and recreates FilePane, no warm cache **Why**:
 Keeping inactive tabs alive would mean multiple FilePanes with active file watchers, listing caches, and scroll state in
 memory. For 10 tabs per pane (20 total), that is untenable. Cold load with cursor-by-filename restoration is fast enough
 that the simplicity wins.
 
-**Decision**: Clone trick for new tab — `addTab` inserts to the LEFT without changing `activeTabId` **Why**: Since
+**Decision**: Clone trick for new tab. `addTab` inserts to the LEFT without changing `activeTabId` **Why**: Since
 `{#key activeTabId}` drives FilePane recreation, not changing the active tab ID means no remount happens. The user sees
 the new tab appear in the tab bar instantly while staying on their current tab. Switching to the new tab is a separate
 explicit action.
@@ -58,7 +58,7 @@ at the tab cap (10) to avoid blocking the user.
 When a tab's `resolvePathVolume` call times out during startup restoration, the tab enters an "unreachable" state
 (`TabState.unreachable: UnreachableState`). Instead of silently falling back to the default volume, the tab shows an
 inline banner (`VolumeUnreachableBanner.svelte`) with the original path, a "Retry" button, and an "Open home folder"
-button. The tab bar shows a small warning icon on affected tabs. This is runtime-only state (not persisted) — on next
+button. The tab bar shows a small warning icon on affected tabs. This is runtime-only state (not persisted). On next
 startup, volume resolution is re-attempted.
 
 ## Context menu
@@ -86,7 +86,7 @@ load.
 
 ## Closed-tab history (Cmd+Shift+T)
 
-Per-pane in-memory LIFO stack of recently closed tabs (`closedStack: ClosedTab[]` on `TabManager`). Session-only — not
+Per-pane in-memory LIFO stack of recently closed tabs (`closedStack: ClosedTab[]` on `TabManager`). Session-only, not
 persisted to disk. Capped by `fileExplorer.tabs.closedTabHistorySize` (default 10, range 1–50, set in Advanced
 settings). When the cap shrinks, both panes' stacks are trimmed live (oldest first). When the cap is reached on close,
 the oldest entry is dropped; the close itself never refuses.
@@ -107,7 +107,7 @@ reopen at the tab cap shows "Tab limit reached" and leaves the stack untouched.
 ## Double-click empty tab bar to open a new tab
 
 `TabBar.svelte`'s `ondblclick` handler routes to `onNewTab` when the target isn't inside `.tab`, `.close-btn`, or
-`.new-tab-btn` — so the bar's padding strip, the trailing flex space of `.tab-list`, and the 3px top spacer all count as
+`.new-tab-btn`, so the bar's padding strip, the trailing flex space of `.tab-list`, and the 3px top spacer all count as
 "new tab" surfaces.
 
 ## MCP
@@ -119,6 +119,6 @@ reopen at the tab cap shows "Tab limit reached" and leaves the stack untouched.
 - `close` skips the pinned-tab confirmation dialog (agents know what they're doing)
 - `set_pinned` is idempotent
 - `reopen` is a no-op when the stack is empty or the pane is at the tab cap; the frontend surfaces both as toasts. The
-  backend emits the action regardless — agents get the "OK" fire-and-forget reply.
+  backend emits the action regardless. Agents get the "OK" fire-and-forget reply.
 - Tab list shown in `cmdr://state` YAML resource
 - Frontend syncs tab state to backend via debounced `updatePaneTabs` IPC

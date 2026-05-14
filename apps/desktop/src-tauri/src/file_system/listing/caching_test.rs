@@ -151,7 +151,7 @@ fn test_insert_entry_sorted_name_asc() {
         ],
     );
 
-    // Insert "beta.txt" — should land between alpha and gamma
+    // Insert "beta.txt", should land between alpha and gamma
     let index = insert_entry_sorted("insert_name_asc", make_entry("beta.txt", false, Some(100)));
     assert_eq!(index, Some(1));
 
@@ -182,7 +182,7 @@ fn test_insert_entry_sorted_size_desc_dirs_first() {
         ],
     );
 
-    // Insert a directory with medium recursive size — should go between big_dir and small_dir
+    // Insert a directory with medium recursive size, should go between big_dir and small_dir
     let index = insert_entry_sorted("insert_size_desc", make_dir_entry("mid_dir", Some(5000)));
     assert_eq!(index, Some(1));
 
@@ -486,17 +486,17 @@ fn test_find_listings_for_path_on_volume_filters_by_volume() {
         vec![],
     );
 
-    // Filter by "root" — only id1
+    // Filter by "root": only id1
     let results = find_listings_for_path_on_volume(Some("root"), &PathBuf::from("/shared/dir/vol_filter"));
     assert_eq!(results.len(), 1);
     assert_eq!(results[0].0, "vol_filter_root");
 
-    // Filter by "smb-nas" — only id2
+    // Filter by "smb-nas": only id2
     let results = find_listings_for_path_on_volume(Some("smb-nas"), &PathBuf::from("/shared/dir/vol_filter"));
     assert_eq!(results.len(), 1);
     assert_eq!(results[0].0, "vol_filter_smb");
 
-    // No filter — both
+    // No filter: both
     let results = find_listings_for_path_on_volume(None, &PathBuf::from("/shared/dir/vol_filter"));
     assert_eq!(results.len(), 2);
 
@@ -558,7 +558,7 @@ fn test_find_listings_on_volume_returns_all_volume_listings() {
         DirectorySortMode::AlwaysByName,
         vec![],
     );
-    // Different volume — should not be returned
+    // Different volume: should not be returned
     let id3 = insert_test_listing_on_volume(
         "flov_other",
         "different-vol",

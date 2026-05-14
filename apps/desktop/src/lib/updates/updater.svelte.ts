@@ -22,7 +22,7 @@ function getCheckIntervalMs(): number {
 }
 
 // Module-level gating flags. The toast for "update ready, restart now" must NOT show during onboarding
-// (the user just downloaded the app — they'd be confused) nor while the FDA-revoked re-prompt is on screen.
+// (the user just downloaded the app, so they'd be confused) nor while the FDA-revoked re-prompt is on screen.
 let onboarded = $state(false)
 let fdaPromptShowing = $state(false)
 
@@ -41,7 +41,7 @@ export function shouldShowUpdateToast(args: {
 /**
  * Show the update-ready toast, but only if gating allows. Called from the download-complete branches
  * and from the onboarding/FDA hooks below. When suppressed, we leave `updateState.status === 'ready'`
- * so the download stays applied — the toast just doesn't render until the gate opens.
+ * so the download stays applied; the toast just doesn't render until the gate opens.
  */
 function showUpdateToast(): void {
   if (!shouldShowUpdateToast({ onboarded, fdaPromptShowing, status: updateState.status })) {
@@ -184,9 +184,9 @@ function finishCheckWithNoUpdate(currentVersion: string): void {
  * Reset state and log the failure at the right level for the phase.
  *
  * - `'check'` failures (network, DNS, bad manifest) are transient and expected on the periodic
- *   background tick — log at warn so they don't trip the auto error reporter on a momentary blip.
+ *   background tick; log at warn so they don't trip the auto error reporter on a momentary blip.
  * - `'download-install'` failures (signature mismatch, FS errors, partial writes) reach a code
- *   path the user already opted into — log at error so they DO trip auto-report. The Settings
+ *   path the user already opted into, so log at error so they DO trip auto-report. The Settings
  *   UI surfaces both via `updateState.error` regardless of log level.
  *
  * See `apps/desktop/src-tauri/src/error_reporter/CLAUDE.md` § convention.

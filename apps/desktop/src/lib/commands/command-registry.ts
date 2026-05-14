@@ -17,7 +17,7 @@ export const commands: Command[] = [
   // ============================================================================
   // Native-only: handled by PredefinedMenuItems via macOS selectors (hide:, hideOtherApplications:,
   // unhideAllApplications:, terminate:). showInPalette: false keeps them out of the JS shortcut
-  // dispatch map — the native menu accelerators handle the keyboard shortcuts directly.
+  // dispatch map; the native menu accelerators handle the keyboard shortcuts directly.
   { id: 'app.quit', name: 'Quit Cmdr', scope: 'App', showInPalette: false, shortcuts: ['⌘Q'] },
   { id: 'app.hide', name: 'Hide Cmdr', scope: 'App', showInPalette: false, shortcuts: ['⌘H'] },
   { id: 'app.hideOthers', name: 'Hide others', scope: 'App', showInPalette: false, shortcuts: ['⌥⌘H'] },

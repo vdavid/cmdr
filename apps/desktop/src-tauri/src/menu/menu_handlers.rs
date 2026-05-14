@@ -26,7 +26,7 @@ use super::{
 /// macOS AppKit automatically injects "Writing Tools", "AutoFill", "Start Dictation...",
 /// and "Emoji & Symbols" into any menu named "Edit". It also only shows the Help menu
 /// search field when a menu is registered via `NSApplication.setHelpMenu:`. Both of these
-/// happen at the AppKit level regardless of how the menu is constructed — so we fix them
+/// happen at the AppKit level regardless of how the menu is constructed, so we fix them
 /// post-construction via native API calls.
 #[cfg(target_os = "macos")]
 pub fn cleanup_macos_menus() {

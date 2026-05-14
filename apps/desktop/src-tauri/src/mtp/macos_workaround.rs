@@ -17,7 +17,7 @@ static SUPPRESSED: AtomicBool = AtomicBool::new(false);
 
 /// Returns the current user's UID for launchctl commands.
 fn current_uid() -> u32 {
-    // SAFETY: getuid() is always safe — no arguments, no side effects.
+    // SAFETY: getuid() is always safe, no arguments, no side effects.
     unsafe { libc::getuid() }
 }
 
@@ -50,7 +50,7 @@ pub fn suppress_ptpcamerad() -> Result<bool, String> {
 
     info!("Disabled {} via launchctl", SERVICE_LABEL);
 
-    // Kill any running instance (ignore errors — it may not be running)
+    // Kill any running instance (ignore errors; it may not be running)
     let _ = Command::new("pkill").args(["-9", "ptpcamerad"]).output();
 
     Ok(true)

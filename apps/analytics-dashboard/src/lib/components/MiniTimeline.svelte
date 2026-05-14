@@ -13,7 +13,7 @@
         xMin?: number | null
         /** Shared zoom X-axis max (unix seconds). null = auto. */
         xMax?: number | null
-        /** Cursor sync key — charts with the same key sync crosshairs. */
+        /** Cursor sync key: charts with the same key sync crosshairs. */
         syncKey?: string
         /** Fires when the cursor hovers a data point (index into data[0]) or leaves (null). */
         onhover?: (idx: number | null) => void

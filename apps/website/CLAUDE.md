@@ -4,10 +4,10 @@ Marketing site and blog for Cmdr. Astro + Tailwind v4, statically built, deploye
 
 ## Stack
 
-- **Astro** — static site generator with content collections
-- **Tailwind v4** — CSS-first config in `src/styles/global.css`
-- **Playwright** — E2E tests in `e2e/`
-- **Docker + Caddy** — production deployment (see `docs/guides/deploy-website.md`)
+- **Astro**: static site generator with content collections
+- **Tailwind v4**: CSS-first config in `src/styles/global.css`
+- **Playwright**: E2E tests in `e2e/`
+- **Docker + Caddy**: production deployment (see `docs/guides/deploy-website.md`)
 
 ## Blog
 
@@ -20,7 +20,7 @@ Blog posts live in `src/content/blog/{slug}/index.md` with colocated images.
 | `src/content.config.ts`                 | Blog collection schema (title, date, description, cover)   |
 | `src/layouts/BlogLayout.astro`          | Post page layout (date, title, description, prose styles)  |
 | `src/styles/blog-prose.css`             | Shared prose styles for blog content                       |
-| `src/pages/blog/index.astro`            | Blog index — excerpts with "Read more" links, newest first |
+| `src/pages/blog/index.astro`            | Blog index: excerpts with "Read more" links, newest first |
 | `src/pages/blog/[slug].astro`           | Individual post page with comments                         |
 | `src/pages/og/[slug].png.ts`            | OG image generation (Satori + resvg)                       |
 | `src/pages/rss.xml.ts`                  | RSS feed                                                   |
@@ -30,7 +30,7 @@ Blog posts live in `src/content/blog/{slug}/index.md` with colocated images.
 ### OG images
 
 Generated at build time with Satori (JSX to SVG) and resvg (SVG to PNG). Colors are hardcoded because Satori doesn't
-support CSS variables — keep them in sync with `global.css` theme values.
+support CSS variables; keep them in sync with `global.css` theme values.
 
 ### Comments (Remark42)
 
@@ -87,7 +87,7 @@ The website uses three analytics layers. The desktop app has **no telemetry**.
 - **D1** (API server): Download redirect endpoint logs version, arch, and country.
 
 **Decision/Why**: We avoid cookies to not need a cookie consent banner. All three analytics tools are configured to work
-without cookies. If you add or change analytics tooling, preserve this property — no cookies unless absolutely
+without cookies. If you add or change analytics tooling, preserve this property: no cookies unless absolutely
 inevitable. See `docs/tooling/umami.md` and `docs/tooling/posthog.md` for API access and config details.
 
 ## Gotchas
@@ -96,6 +96,6 @@ inevitable. See `docs/tooling/umami.md` and `docs/tooling/posthog.md` for API ac
   affect the build.
 - `site` must be set in `astro.config.mjs` for RSS and OG image URLs to work.
 - Font files for OG image generation (`inter-400.ttf`, `inter-700.ttf`) live in `public/fonts/`.
-- All pages support both light and dark mode. Don't hardcode colors — use CSS variables from `global.css`.
+- All pages support both light and dark mode. Don't hardcode colors; use CSS variables from `global.css`.
 - **Deploy order**: Always `docker compose build` before `docker compose down`. Building first keeps the old container
   serving traffic. `down → build → up` causes ~15s downtime while the image builds.

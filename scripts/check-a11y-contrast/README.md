@@ -5,7 +5,7 @@ Design-time WCAG 2.2 contrast checker for the Cmdr desktop app.
 ## Why
 
 Our E2E axe-core tests flake on `color-contrast` rules because axe + webkit2gtk + chained `color-mix(var(...))`
-sometimes disagree on the effective pixel color. The design tokens themselves are deterministic, though — we can verify
+sometimes disagree on the effective pixel color. The design tokens themselves are deterministic, though, so we can verify
 contrast at build time without a browser.
 
 This tool is tier 1 of a three-tier a11y strategy:
@@ -57,10 +57,10 @@ delta (how much contrast is missing).
 - **OKLCH mixing**: implemented (via OKLab round-trip). The sibling spaces `hsl`, `oklab`, `lch`, `lab`, `xyz` are
   approximated as OKLCH with a warning.
 - **Cascade inheritance**: each unique compound-class set is a distinct state. `.foo.bar.baz` inherits from all subset
-  entries (`.foo`, `.foo.bar`, `.foo.baz`, `.bar.baz`, etc.) in source order, but ONLY their direct contributions —
+  entries (`.foo`, `.foo.bar`, `.foo.baz`, `.bar.baz`, etc.) in source order, but ONLY their direct contributions.
   sibling compound rules don't leak each other's inherited defaults.
 - **Pseudo-elements**: `::placeholder` is handled. `::before`, `::after`, `::selection` are skipped.
-- **Pseudo-classes** (`:hover`, `:focus`, `:not(...)`) share state with the base class — hover is a transient state, not
+- **Pseudo-classes** (`:hover`, `:focus`, `:not(...)`) share state with the base class. Hover is a transient state, not
   a parallel configuration.
 - **`currentColor` / `inherit` / `unset` / `initial` / `revert`**: skipped with a warning (no fixed value to check).
 - **Specificity across files**: not modeled. We trust source order within one `<style>` block. Global rules in `app.css`
@@ -85,10 +85,10 @@ reporter.go   Pretty prints violations and optional warnings.
 
 Tests:
 
-- `contrast_test.go` — WCAG math, color-mix, OKLCH round-trip, compositing.
-- `resolver_test.go` — var() fallbacks, nested color-mix, dark overrides.
-- `parser_test.go` — app.css + Svelte parsing, selector extraction.
-- `analyzer_test.go` — cascade inheritance, known false-positive cases.
+- `contrast_test.go`: WCAG math, color-mix, OKLCH round-trip, compositing.
+- `resolver_test.go`: var() fallbacks, nested color-mix, dark overrides.
+- `parser_test.go`: app.css + Svelte parsing, selector extraction.
+- `analyzer_test.go`: cascade inheritance, known false-positive cases.
 
 ## Extending
 
@@ -112,6 +112,6 @@ allowlist alongside this README and filter in `main.go` before calling `Report`.
 
 ## Known trade-offs
 
-- No support for `light-dark()` — if Cmdr adopts that token pattern later, add parsing in resolver.go.
+- No support for `light-dark()`. If Cmdr adopts that token pattern later, add parsing in resolver.go.
 - Alpha compositing uses straight RGB (spec-correct for opaque-on-opaque). For chained translucent layers (transparent
   on transparent on solid), we composite once against `--color-bg-primary`. Sufficient for current patterns.

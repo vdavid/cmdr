@@ -3,7 +3,7 @@
  *
  * Progress dialog shown while a copy/move/delete/trash is running. Tests
  * render the default "just-mounted" state for each operation type. The
- * dialog's reactive state updates via event callbacks — our mocks return
+ * dialog's reactive state updates via event callbacks; our mocks return
  * no-op unsubscribers so only the initial render is audited.
  */
 

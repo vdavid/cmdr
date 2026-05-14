@@ -3,7 +3,7 @@
 //! Targets `manager::register_stream / unregister_stream / cancel_stream` since the full
 //! `stream_folder_suggestions` Tauri command depends on the global `MANAGER` state.
 //! Lower-level coverage of the registry's concurrency + idempotency contract is what
-//! we actually want to lock in here — `client_streaming_test.rs` exercises the
+//! we actually want to lock in here: `client_streaming_test.rs` exercises the
 //! end-to-end stream pipeline already.
 
 use super::manager::{cancel_stream, register_stream, unregister_stream};

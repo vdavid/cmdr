@@ -142,8 +142,8 @@ fn repo_root_from_handle(handle: &RepoHandle) -> Result<std::path::PathBuf, Frie
 /// Extracts the branch name from a stash subject.
 ///
 /// Git's stash subjects come in two shapes:
-/// - `WIP on <branch>: <head subject>` — `git stash` (default).
-/// - `On <branch>: <message>` — `git stash push -m "<message>"`.
+/// - `WIP on <branch>: <head subject>` (`git stash` default).
+/// - `On <branch>: <message>` (`git stash push -m "<message>"`).
 ///
 /// Returns `None` for unrecognized subjects (a custom format set via
 /// `stash.format` or a really old git that doesn't follow either

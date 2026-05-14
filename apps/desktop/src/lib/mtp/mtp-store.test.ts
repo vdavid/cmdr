@@ -276,7 +276,7 @@ describe('mtp-store', () => {
       await initialize()
 
       expect(isInitialized()).toBe(true)
-      // No scan — backend auto-connects devices, store is passive
+      // No scan: backend auto-connects devices, store is passive
       expect(getDevices()).toHaveLength(0)
       expect(onMtpDeviceConnected).toHaveBeenCalledWith(expect.any(Function))
       expect(onMtpDeviceDisconnected).toHaveBeenCalledWith(expect.any(Function))
@@ -479,7 +479,7 @@ describe('mtp-store', () => {
     })
 
     // Note: mtp-device-detected and mtp-device-removed events are no longer
-    // handled by the frontend store — the backend auto-connects/disconnects
+    // handled by the frontend store; the backend auto-connects/disconnects
     // and emits mtp-device-connected/mtp-device-disconnected instead.
   })
 

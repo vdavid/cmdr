@@ -133,7 +133,7 @@ export async function initializeSettings(): Promise<void> {
 /**
  * Send the registry's default values to the backend's `record_settings_defaults`
  * command. The backend uses this map in `ResolvedSettings::from_settings` to keep
- * manifest defaults in sync with the registry. Silently swallows errors — the Rust
+ * manifest defaults in sync with the registry. Silently swallows errors; the Rust
  * side has hardcoded fallbacks for every field it reads.
  */
 async function pushSettingsDefaultsToBackend(): Promise<void> {
@@ -142,7 +142,7 @@ async function pushSettingsDefaultsToBackend(): Promise<void> {
     for (const def of settingsRegistry) {
       const value = def.default
       // SettingValue is untagged on the wire: boolean | number | string.
-      // Values of other types (arrays, objects) are silently skipped — the Rust
+      // Values of other types (arrays, objects) are silently skipped; the Rust
       // side has hardcoded fallbacks and the lookup_* helpers only support these three.
       if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
         defaults[def.id] = value

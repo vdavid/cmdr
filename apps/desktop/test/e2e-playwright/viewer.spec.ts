@@ -214,7 +214,7 @@ test.describe('File viewer keyboard binding', () => {
       // Fire-and-forget: the eval that dispatches Escape may not resolve if the
       // window dies before pw_result fires back to the test runner. The
       // closeWindow() path uses two rAFs before calling .close(), so in practice
-      // the eval usually resolves first — but defending against either ordering
+      // the eval usually resolves first, but defending against either ordering
       // keeps the test deterministic. We assert on the windowDisappeared, not
       // on the press itself.
       viewer.keyboard.press('Escape').catch(() => {
@@ -248,7 +248,7 @@ test.describe('File viewer error handling', () => {
     // cursor" (so emitting it with `path:''` would just open file-a.txt).
     // To exercise the route guard in routes/viewer/+page.svelte we
     // directly invoke `plugin:webview|create_webview_window` with
-    // `?path=` (empty) — the same IPC the prod `new WebviewWindow(...)`
+    // `?path=` (empty), the same IPC the prod `new WebviewWindow(...)`
     // call uses. The main window's default capability grants
     // `core:webview:allow-create-webview-window`.
     const main = tauriPage as TauriPage

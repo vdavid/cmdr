@@ -112,7 +112,7 @@ export function isMtpConnectionError(error: unknown): error is MtpConnectionErro
 export async function connectMtpDevice(deviceId: string): Promise<ConnectedMtpDeviceInfo> {
   const res = await commands.connectMtpDevice(deviceId)
   if (res.status === 'error') {
-    // The error is a tagged-union MtpConnectionError, not an Error object — callers use
+    // The error is a tagged-union MtpConnectionError, not an Error object. Callers use
     // `isMtpConnectionError()` to discriminate. Lint can't see that pattern.
     // eslint-disable-next-line @typescript-eslint/only-throw-error -- tagged-union error consumed via isMtpConnectionError() guard
     throw res.error

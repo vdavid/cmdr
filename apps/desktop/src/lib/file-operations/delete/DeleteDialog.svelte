@@ -203,8 +203,8 @@
     }
 
     /** Formats item size for display. Folders show recursive info when available.
-     *  Always uses logical (content) sizes — not worth plumbing the display mode setting
-     *  through the delete dialog infrastructure for a transient confirmation dialog. */
+     *  Always uses logical (content) sizes (not worth plumbing the display mode setting
+     *  through the delete dialog infrastructure for a transient confirmation dialog). */
     function itemSizeBytes(item: DeleteSourceItem): number | null {
         // Group A wire-format: IPC sends `null` for absent fields, not `undefined`.
         return item.isDirectory ? (item.recursiveSize ?? null) : (item.size ?? null)

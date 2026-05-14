@@ -58,7 +58,7 @@ fn find_existing_mount(server: &str, share: &str) -> Option<String> {
     for line in stdout.lines() {
         let line_lower = line.to_lowercase();
         if line_lower.contains(&smb_url_lower) {
-            // Found a matching mount — derive the GVFS path
+            // Found a matching mount; derive the GVFS path
             return Some(derive_gvfs_path(server, share));
         }
     }
@@ -257,7 +257,7 @@ pub async fn mount_share(
 
 /// Unmounts all SMB shares from a given host.
 ///
-/// Linux GVFS unmount via `gio mount -u` is not wired up yet — returns empty.
+/// Linux GVFS unmount via `gio mount -u` is not wired up yet; returns empty.
 pub fn unmount_smb_shares_from_host(_server_name: &str, _server_ip: Option<&str>) -> Vec<String> {
     log::debug!("unmount_smb_shares_from_host not yet implemented on Linux");
     Vec::new()

@@ -3,7 +3,7 @@
 //! Powers the in-directory navigation feature where the user types a few characters
 //! in a focused file pane and the cursor jumps to the best-matching entry.
 //!
-//! ## Crate choice — why `nucleo-matcher`
+//! ## Crate choice: why `nucleo-matcher`
 //!
 //! Picked `nucleo-matcher = "0.3.1"` (Helix editor's matcher, also used by Zellij).
 //! Pros: microsecond-scale per-match cost, smart-case behavior (lowercase query =
@@ -18,7 +18,7 @@
 //!
 //! ## Why a separate module
 //!
-//! `find_first_match` is a pure function over `&[FileEntry]` — no `LISTING_CACHE`
+//! `find_first_match` is a pure function over `&[FileEntry]` with no `LISTING_CACHE`
 //! lock, no `tokio`. That makes it trivial to unit-test against in-memory fixtures
 //! and keeps the Tauri command layer (`commands/file_system/listing.rs`) a thin
 //! pass-through that just grabs the read lock and delegates here.
@@ -38,7 +38,7 @@ use crate::file_system::listing::metadata::FileEntry;
 ///
 /// Rules:
 /// - When `include_hidden` is `false`, dotfiles (`name.starts_with('.')`) are skipped.
-/// - The match runs against the whole filename (including extension) — fuzzy scoring
+/// - The match runs against the whole filename (including extension); fuzzy scoring
 ///   already rewards prefix and word-boundary matches, so we don't split on the dot.
 /// - Smart-case: an all-lowercase query matches case-insensitively; any uppercase
 ///   character makes that character case-sensitive (delegated to nucleo-matcher).
@@ -50,7 +50,7 @@ use crate::file_system::listing::metadata::FileEntry;
 ///
 /// ## Index space
 ///
-/// The returned index counts entries in the **visible** sequence — the same
+/// The returned index counts entries in the **visible** sequence, the same
 /// sequence `operations::get_file_at` / `get_file_range` produce when called
 /// with the same `include_hidden` flag. When `include_hidden` is `false` and
 /// the entries vec contains hidden files before the match, the returned index
@@ -160,7 +160,7 @@ mod tests {
 
     #[test]
     fn multiple_matches_pick_highest_scored() {
-        // "tests" fuzzy-matches both — but "tests.js" is the better (prefix) match
+        // "tests" fuzzy-matches both, but "tests.js" is the better (prefix) match
         // than "my_tests_helper.rs" so it should win.
         let entries = vec![entry("my_tests_helper.rs"), entry("tests.js"), entry("other.txt")];
         let idx = find_first_match(&entries, "tests", true).expect("should match");
@@ -187,7 +187,7 @@ mod tests {
     #[test]
     fn hidden_entry_included_when_include_hidden_true() {
         // Deterministic case: two clearly distinct names. The only entry that can
-        // match "alpha" is ".alpha.txt" — "zeta.bin" shares no characters with the
+        // match "alpha" is ".alpha.txt" since "zeta.bin" shares no characters with the
         // query. The match must be found AND must land at the dotfile's visible
         // index (0 when hidden is on, since the dotfile is then visible).
         let entries = vec![entry(".alpha.txt"), entry("zeta.bin")];
@@ -202,7 +202,7 @@ mod tests {
     ///
     /// Before this fix, `find_first_match` returned the absolute index into the
     /// `entries` vec. With a hidden file sitting before the match in the vec,
-    /// the frontend (which uses the index in the visible sequence — same as
+    /// the frontend (which uses the index in the visible sequence, same as
     /// `get_file_at` / `get_file_range`) landed one row too far down per
     /// skipped dotfile. This test exercises exactly that scenario.
     #[test]
@@ -242,7 +242,7 @@ mod tests {
     fn unicode_filename_is_matchable() {
         // Nucleo normalizes Unicode (Normalization::Smart). Typing the ASCII form
         // should still find the accented filename. We document the observed behavior
-        // here rather than asserting a strict score — what matters is "some match
+        // here rather than asserting a strict score. What matters is "some match
         // is found and it's the Résumé entry, not the unrelated one".
         let entries = vec![entry("notes.txt"), entry("Résumé.pdf"), entry("photo.jpg")];
         let idx = find_first_match(&entries, "resume", true).expect("should match");

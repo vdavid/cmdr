@@ -298,7 +298,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | ./target/deb
 3. Writes response to stdout (newline-delimited)
 4. Logs errors to stderr
 
-The bridge is stateless—all state lives in the main cmdr app's HTTP server.
+The bridge is stateless: all state lives in the main cmdr app's HTTP server.
 
 ## Troubleshooting development
 

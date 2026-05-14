@@ -8,7 +8,7 @@ SMB network discovery UI: host list, per-host share list, login form, and a sing
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `lazy-trigger.ts`                 | Single chokepoint for kicking off mDNS discovery on user intent. See "Lazy mDNS trigger" below                                                                                                                                                   |
 | `network-store.svelte.ts`         | Module-level `$state` singleton for all network data                                                                                                                                                                                             |
-| `NetworkBrowser.svelte`           | Host list table — rendered when pane is on the `network` volume                                                                                                                                                                                  |
+| `NetworkBrowser.svelte`           | Host list table, rendered when pane is on the `network` volume                                                                                                                                                                                  |
 | `ShareBrowser.svelte`             | Share list for a specific host, handles auth flow                                                                                                                                                                                                |
 | `NetworkLoginForm.svelte`         | Credential form rendered inside `ShareBrowser`                                                                                                                                                                                                   |
 | `ConnectToServerDialog.svelte`    | Modal dialog for manually connecting to a server by address/IP/smb:// URL                                                                                                                                                                        |
@@ -16,28 +16,28 @@ SMB network discovery UI: host list, per-host share list, login form, and a sing
 
 ## `network-store.svelte.ts`
 
-Module-level `$state` (reactive only in `.svelte`/`.svelte.ts` files). Consumed via exported getter functions — never
+Module-level `$state` (reactive only in `.svelte`/`.svelte.ts` files). Consumed via exported getter functions; never
 import the raw state variables.
 
 Key state:
 
-- `hosts: NetworkHost[]` — discovered hosts, sorted alphabetically by getters
-- `discoveryState: DiscoveryState` — `'idle' | 'searching'`
-- `resolvingHosts: SvelteSet<string>` — host IDs currently being resolved
-- `shareStates: SvelteMap<string, ShareState>` — per-host share listing status + result
-- `prefetchingHosts: SvelteSet<string>` — hosts being background-prefetched
-- `credentialStatuses: SvelteMap<string, CredentialStatus>` — `'unknown' | 'has_creds' | 'no_creds' | 'failed'`
+- `hosts: NetworkHost[]`: discovered hosts, sorted alphabetically by getters
+- `discoveryState: DiscoveryState`: `'idle' | 'searching'`
+- `resolvingHosts: SvelteSet<string>`: host IDs currently being resolved
+- `shareStates: SvelteMap<string, ShareState>`: per-host share listing status + result
+- `prefetchingHosts: SvelteSet<string>`: hosts being background-prefetched
+- `credentialStatuses: SvelteMap<string, CredentialStatus>`: `'unknown' | 'has_creds' | 'no_creds' | 'failed'`
 
 Lifecycle:
 
-- `initNetworkDiscovery()` — call once at app startup. Idempotent. Subscribes to Tauri events (`network-host-found`,
+- `initNetworkDiscovery()`: call once at app startup. Idempotent. Subscribes to Tauri events (`network-host-found`,
   `network-host-lost`, `network-host-resolved`, `network-discovery-state-changed`).
-- `cleanupNetworkDiscovery()` — unlisten all events, reset `initialized`.
+- `cleanupNetworkDiscovery()`: unlisten all events, reset `initialized`.
 
 Resolution → prefetch pipeline (fire-and-forget):
 
-1. `startResolution(host)` — calls `resolveNetworkHost`, updates host, then calls `startPrefetchShares`.
-2. `startPrefetchShares(host)` — calls `prefetchSharesCmd` (backend caches result), then triggers `fetchSharesSilent` to
+1. `startResolution(host)`: calls `resolveNetworkHost`, updates host, then calls `startPrefetchShares`.
+2. `startPrefetchShares(host)`: calls `prefetchSharesCmd` (backend caches result), then triggers `fetchSharesSilent` to
    populate `shareStates`.
 
 Key exported functions:
@@ -89,14 +89,14 @@ is checked via Keychain lookup before showing the menu if it's unknown. Actions 
 
 Rendered after user selects a host. Auth flow on mount:
 
-1. Check `shareStates` cache — use if loaded.
+1. Check `shareStates` cache: use if loaded.
 2. If cache shows `auth_required` / `signing_required`: call `tryStoredCredentials()`.
-   - `tryStoredCredentials` calls `getSmbCredentials` directly — **no** `hasSmbCredentials` pre-check to avoid a
+   - `tryStoredCredentials` calls `getSmbCredentials` directly (**no** `hasSmbCredentials` pre-check) to avoid a
      redundant macOS Keychain dialog.
    - If stored creds work, `authenticatedCredentials` is set and auth is transparent to user.
    - If no stored creds, show `NetworkLoginForm`.
 3. If cache shows any other error (`host_unreachable`, `timeout`, ...): fall through to a fresh fetch. User-initiated
-   host open is an implicit retry — the initial background prefetch may have run before the host was ready.
+   host open is an implicit retry (the initial background prefetch may have run before the host was ready).
 4. Otherwise (no cache or 'loading'): fetch via `fetchShares(host)`, same auth fallback.
 
 `authenticatedCredentials` is passed to `onShareSelect` so the caller can mount the share without re-prompting.
@@ -112,9 +112,9 @@ Props: `host`, `shareName?`, `authMode`, `errorMessage?`, `isConnecting?`, `onCo
 
 - Shows guest/credentials radio when `authMode === 'guest_allowed'`.
 - Pre-fills username from `getUsernameHints()` (server-keyed map) or `getKnownShareByName()`.
-- Tab key stops propagation — prevents the parent pane-switch shortcut from firing while tabbing between fields.
+- Tab key stops propagation, which prevents the parent pane-switch shortcut from firing while tabbing between fields.
 - `connectionMode` is `$derived.by` from `authMode` prop (guest default when guest allowed). In Svelte 5, `$derived`
-  values are read-only — the reactive behavior works because `$derived.by` re-evaluates when `authMode` changes.
+  values are read-only; the reactive behavior works because `$derived.by` re-evaluates when `authMode` changes.
   `bind:group` on the radio buttons writes to the `let` binding, not to a derived value.
 
 ## Data flow
@@ -150,7 +150,7 @@ When a direct-SMB session drops mid-use, four pieces coordinate to recover:
    state to `Disconnected`, and emits `smb-connection-changed { volumeId, state: "disconnected" }`. (See
    `volume/CLAUDE.md` § SMB live-reconnect lifecycle for the BE detail.)
 2. **`stores/volume-store.svelte.ts`** listens for that event and patches the matching volume's `smbConnectionState`
-   field — keeps the picker dot, the breadcrumb, and `currentVolumeInfo` reactive without waiting for the next
+   field, which keeps the picker dot, the breadcrumb, and `currentVolumeInfo` reactive without waiting for the next
    `volumes-changed`.
 3. **`smb-reconnect-manager.svelte.ts`** also listens, and (if any subscribers are present) starts a per-volume backoff
    cycle by calling `reconnectSmbVolume(volumeId)` on each tick. Cycle resolves when the BE emits a follow-up
@@ -174,7 +174,7 @@ picker.
 networking. It:
 
 1. No-ops if `network.enabled === false`.
-2. Calls `ensureNetworkDiscoveryStarted()` (idempotent backend command — first call kicks off the mDNS daemon, which in
+2. Calls `ensureNetworkDiscoveryStarted()` (idempotent backend command; first call kicks off the mDNS daemon, which in
    turn fires the macOS "Cmdr wants to find devices on local networks" prompt the very first time it runs).
 3. Sets `network.firstTriggerDone = true` so subsequent app launches start mDNS eagerly (returning users get full speed
    without re-prompts).
@@ -183,7 +183,7 @@ Call sites: `NetworkBrowser.onMount` (entering the Network view), `ConnectToServ
 opens a TCP socket to a private IP, which would trigger the prompt anyway), and `VolumeBreadcrumb.handleSubmenuAction`
 (the OS-mount → direct-smb2 upgrade also opens a private-IP socket).
 
-Don't gate on `network.enabled` at the call site — the helper is the single chokepoint.
+Don't gate on `network.enabled` at the call site: the helper is the single chokepoint.
 
 ## Key decisions
 
@@ -239,12 +239,12 @@ status into the name string is a workaround so MCP agents can read the same info
 
 ## Dependencies
 
-- `$lib/tauri-commands` — `listNetworkHosts`, `resolveNetworkHost`, `listSharesOnHost`, `listSharesWithCredentials`,
+- `$lib/tauri-commands`: `listNetworkHosts`, `resolveNetworkHost`, `listSharesOnHost`, `listSharesWithCredentials`,
   `prefetchShares`, `getSmbCredentials`, `saveSmbCredentials`, `deleteSmbCredentials`, `getUsernameHints`,
   `getKnownShareByName`, `updateKnownShare`, `updateLeftPaneState`, `updateRightPaneState`, `connectToServer`,
   `removeManualServer`
-- `$lib/settings/network-settings` — `getNetworkTimeoutMs`, `getShareCacheTtlMs`
-- `$lib/utils/confirm-dialog` — `confirmDialog` (used by `NetworkBrowser` for forget-password confirmation)
-- `$lib/ui/toast` — `addToast` (feedback after credential operations)
-- `../navigation/keyboard-shortcuts` — `handleNavigationShortcut`
-- `../types` — `NetworkHost`, `DiscoveryState`, `ShareInfo`, `ShareListResult`, `ShareListError`, `AuthMode`
+- `$lib/settings/network-settings`: `getNetworkTimeoutMs`, `getShareCacheTtlMs`
+- `$lib/utils/confirm-dialog`: `confirmDialog` (used by `NetworkBrowser` for forget-password confirmation)
+- `$lib/ui/toast`: `addToast` (feedback after credential operations)
+- `../navigation/keyboard-shortcuts`: `handleNavigationShortcut`
+- `../types`: `NetworkHost`, `DiscoveryState`, `ShareInfo`, `ShareListResult`, `ShareListError`, `AuthMode`

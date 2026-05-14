@@ -316,7 +316,7 @@ describe('calculateVirtualWindowVariable', () => {
     it('handles a single column wider than the container, scrolled mid-column', () => {
       const widths = [800]
       const prefixSums = prefixSumsFrom(widths)
-      // Scrolled to 200 — the (only) column still starts at 0 (off-left), so it's the first visible.
+      // Scrolled to 200; the (only) column still starts at 0 (off-left), so it's the first visible.
       const result = calculateVirtualWindowVariable(prefixSums, 0, 600, 200, widths.length)
       expect(result.startIndex).toBe(0)
       expect(result.endIndex).toBe(1)
@@ -399,7 +399,7 @@ describe('calculateVirtualWindowVariable', () => {
       // would lose the 5 left-buffer slots and end at firstVisible + viewportColumns + 5 = 3 + 5 = 8.
       // With the correct math, startIndex = max(0, 0 - 5) = 0, but endIndex still gets the full
       // bufferSize=5 on the right: lastVisibleEnd=3 (300/100), endIndex = min(20, 3 + 5) = 8.
-      // (Note: in this case the visible end happens to match — the bug only shows up when
+      // (Note: in this case the visible end happens to match; the bug only shows up when
       // the naive formula tries to "compensate" or when bufferSize is large enough that the
       // *right* edge gets clipped because the left clamp ate the buffer. See next test.)
       const widths = new Array<number>(20).fill(100)
@@ -454,7 +454,7 @@ describe('getScrollToPositionVariable', () => {
 
   describe('item is visible', () => {
     it('returns undefined when item is fully inside the viewport', () => {
-      // Viewport 100..400. Item 1 spans 100..250 — fully visible.
+      // Viewport 100..400. Item 1 spans 100..250, fully visible.
       const result = getScrollToPositionVariable(prefixSums, 1, 100, containerSize)
       expect(result).toBeUndefined()
     })
@@ -474,7 +474,7 @@ describe('getScrollToPositionVariable', () => {
 
   describe('item is off-left', () => {
     it("returns the item's left edge X when off-left", () => {
-      // Viewport 200..500. Item 0 spans 0..100 — off-left. Want to scroll to 0.
+      // Viewport 200..500. Item 0 spans 0..100 (off-left). Want to scroll to 0.
       const result = getScrollToPositionVariable(prefixSums, 0, 200, containerSize)
       expect(result).toBe(0)
     })
@@ -488,7 +488,7 @@ describe('getScrollToPositionVariable', () => {
 
   describe('item is off-right', () => {
     it('returns right − containerSize when item is off-right', () => {
-      // Viewport 0..300. Item 3 spans 450..500 — off-right. Scroll target = 500 - 300 = 200.
+      // Viewport 0..300. Item 3 spans 450..500 (off-right). Scroll target = 500 - 300 = 200.
       const result = getScrollToPositionVariable(prefixSums, 3, 0, containerSize)
       expect(result).toBe(200)
     })

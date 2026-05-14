@@ -31,7 +31,7 @@ func RunDesktopESLintTypecheck(ctx *CheckContext) (CheckResult, error) {
 		cmd = exec.Command("pnpm", "lint:fix")
 	}
 	cmd.Dir = dir
-	// No env var override — runs the full config with all rules + projectService.
+	// No env var override: runs the full config with all rules + projectService.
 
 	output, err := RunCommand(cmd, true)
 	if err != nil {

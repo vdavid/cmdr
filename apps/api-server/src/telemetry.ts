@@ -3,7 +3,7 @@ import type { Bindings } from './types'
 
 const telemetry = new Hono<{ Bindings: Bindings }>()
 
-// Crash report ingestion — writes to D1 for crash analysis
+// Crash report ingestion: writes to D1 for crash analysis
 const maxCrashReportBytes = 64 * 1024
 const crashReportRequiredFields = ['appVersion', 'osVersion', 'arch', 'signal'] as const
 const maxBacktraceBytes = 5_000
@@ -38,7 +38,7 @@ function extractTopFunction(frames: string[] | undefined): string {
  * Validate the runtime shape of a `POST /crash-report` body. Returns `null` if the
  * body is well-formed; otherwise returns the error message to surface as 400. We
  * type the input as `Record<string, unknown>` (not `CrashReport`) so the optional-
- * field checks aren't statically narrowed away — values arrive from `JSON.parse`
+ * field checks aren't statically narrowed away; values arrive from `JSON.parse`
  * and can be any shape an attacker chooses.
  */
 function validateCrashReportShape(report: Record<string, unknown>): string | null {
@@ -48,7 +48,7 @@ function validateCrashReportShape(report: Record<string, unknown>): string | nul
       return `Missing required field: ${field}`
     }
   }
-  // `null` and `undefined` both mean "field absent" — old clients omit the keys,
+  // `null` and `undefined` both mean "field absent"; old clients omit the keys,
   // newer Rust clients serialize `Option::None` as `null` (specta's unified mode
   // rejects `skip_serializing_if`). Treat them the same so an upgrade-window send
   // of a pre-fix-* crash file with `None` defaults isn't rejected.
@@ -110,7 +110,7 @@ telemetry.post('/crash-report', async (c) => {
   const topFunction = extractTopFunction(report.backtraceFrames)
   const backtraceTruncated = JSON.stringify(report.backtraceFrames ?? []).slice(0, maxBacktraceBytes)
 
-  // Write to D1 (fire-and-forget). `build_mode` and `short_id` are nullable —
+  // Write to D1 (fire-and-forget). `build_mode` and `short_id` are nullable;
   // rows from older clients stay NULL.
   const dbWrite = c.env.TELEMETRY_DB.prepare(
     `INSERT INTO crash_reports (hashed_ip, app_version, os_version, arch, signal, top_function, backtrace, build_mode, short_id)
@@ -133,7 +133,7 @@ telemetry.post('/crash-report', async (c) => {
   try {
     c.executionCtx.waitUntil(dbWrite)
   } catch {
-    // executionCtx unavailable (for example, in tests) — await inline as fallback
+    // executionCtx unavailable (for example, in tests); await inline as fallback
     await dbWrite
   }
 
@@ -142,7 +142,7 @@ telemetry.post('/crash-report', async (c) => {
 
 const versionPattern = /^\d+\.\d+\.\d+$/
 
-// Update check proxy — tracks version and arch for active user counting, then redirects to latest.json
+// Update check proxy: tracks version and arch for active user counting, then redirects to latest.json
 telemetry.get('/update-check/:version', async (c) => {
   const { version } = c.req.param()
 
@@ -169,14 +169,14 @@ telemetry.get('/update-check/:version', async (c) => {
   try {
     c.executionCtx.waitUntil(dbWrite)
   } catch {
-    // executionCtx unavailable (for example, in tests) — await inline as fallback
+    // executionCtx unavailable (for example, in tests); await inline as fallback
     await dbWrite
   }
 
   return c.redirect('https://getcmdr.com/latest.json', 302)
 })
 
-// Download redirect — tracks version, arch, and country, then redirects to GitHub Releases
+// Download redirect: tracks version, arch, and country, then redirects to GitHub Releases
 const validArchitectures = new Set(['aarch64', 'x86_64', 'universal'])
 
 telemetry.get('/download/:version/:arch', async (c) => {
@@ -201,11 +201,11 @@ telemetry.get('/download/:version/:arch', async (c) => {
   try {
     c.executionCtx.waitUntil(dbWrite)
   } catch {
-    // executionCtx unavailable (for example, in tests) — await inline as fallback
+    // executionCtx unavailable (for example, in tests); await inline as fallback
     await dbWrite
   }
 
-  // tauri-action names the Intel DMG `_x64.dmg`, not `_x86_64.dmg`. Map at the boundary —
+  // tauri-action names the Intel DMG `_x64.dmg`, not `_x86_64.dmg`. Map at the boundary;
   // we keep `x86_64` everywhere else (uname, Rust target triple, D1, telemetry, website).
   const fileArch = arch === 'x86_64' ? 'x64' : arch
   return c.redirect(`https://github.com/vdavid/cmdr/releases/download/v${version}/Cmdr_${version}_${fileArch}.dmg`, 302)

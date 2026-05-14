@@ -548,7 +548,7 @@ fn test_special_file_socket_skipped() {
     assert!(!metadata.is_dir());
     assert!(!metadata.is_symlink());
 
-    // The scan functions skip special files — we verify the metadata detection works
+    // The scan functions skip special files; we verify the metadata detection works
     // (Full scan integration requires a Tauri app handle, tested at a higher level)
 
     cleanup_temp_dir(&temp_dir);

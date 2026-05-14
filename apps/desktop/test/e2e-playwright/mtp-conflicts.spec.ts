@@ -93,7 +93,7 @@ test.beforeEach(async ({ tauriPage }) => {
   recreateMtpFixtures()
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('resync_virtual_mtp_after_disk_change')`)
 
-  // Reset both panes to local volume — short-circuit when already clean.
+  // Reset both panes to local volume; short-circuit when already clean.
   if (!(await isStateClean(tauriPage, LOCAL_VOLUME_NAME))) {
     await tauriPage.evaluate(`(function() {
       var invoke = window.__TAURI_INTERNALS__.invoke;
@@ -220,7 +220,7 @@ test.describe('MTP cross-volume move conflicts', () => {
     )
     await mcpCall('refresh', {})
 
-    // MTP file should have local content (overwritten) — local fixture is 1024 'A' chars
+    // MTP file should have local content (overwritten); local fixture is 1024 'A' chars
     const mtpContent = fs.readFileSync(mtpDest, 'utf-8')
     expect(mtpContent).toBe(expectedContent)
 

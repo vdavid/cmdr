@@ -3,7 +3,7 @@
  *
  * Alert dialogs must use role="alertdialog" with labelled title + described
  * message and a primary action button. These tests check all of that via
- * axe-core — text-only variants (short message, long message, custom button
+ * axe-core: text-only variants (short message, long message, custom button
  * label) are covered.
  */
 

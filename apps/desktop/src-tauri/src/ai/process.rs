@@ -105,7 +105,7 @@ pub fn find_available_port() -> Option<u16> {
 /// Sends SIGKILL to a process. Returns immediately (~0.5ms).
 ///
 /// Use for fire-and-forget scenarios (app quit, orphan cleanup from previous sessions).
-/// llama-server is stateless — SIGKILL is safe. macOS reclaims all GPU/Metal/mmap resources
+/// llama-server is stateless: SIGKILL is safe. macOS reclaims all GPU/Metal/mmap resources
 /// on process death regardless of signal. The llama.cpp test suite itself uses SIGKILL.
 pub fn kill_process(pid: u32) {
     #[cfg(unix)]

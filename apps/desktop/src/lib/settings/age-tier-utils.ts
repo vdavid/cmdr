@@ -15,7 +15,7 @@
  * - `tierForTime` only colors when the file's date equals today. Within last 1
  *   hour / 2 hours / 3 hours / 3+ hours.
  *
- * Returning `null` means "render without an age span" — the segment inherits
+ * Returning `null` means "render without an age span"; the segment inherits
  * the parent's text color.
  *
  * `modifiedAt` is a Unix timestamp **in seconds** (matching the FileEntry
@@ -41,7 +41,7 @@ function toDate(modifiedAtSeconds: number | null | undefined): Date | null {
 }
 
 /**
- * Year tier — colors every year. Current → fresh, last → recent, 2 ago →
+ * Year tier: colors every year. Current → fresh, last → recent, 2 ago →
  * aging, 3+ → old. Future years clamp to fresh.
  */
 export function tierForYear(
@@ -56,7 +56,7 @@ export function tierForYear(
 }
 
 /**
- * Month tier — only colors when the file's year equals the current year.
+ * Month tier: only colors when the file's year equals the current year.
  * Distance is the difference in calendar months. Future months in the same
  * year clamp to fresh.
  */
@@ -73,7 +73,7 @@ export function tierForMonth(
 }
 
 /**
- * Day tier — only colors when the file's year and month equal the current
+ * Day tier: only colors when the file's year and month equal the current
  * ones. Distance is in calendar days within that month. Future days clamp to
  * fresh.
  */
@@ -90,7 +90,7 @@ export function tierForDay(
 }
 
 /**
- * Time tier — only colors when the file's date (year/month/day) equals today.
+ * Time tier: only colors when the file's date (year/month/day) equals today.
  * Distance is the number of full hours between the file and now. Future
  * timestamps within today clamp to fresh.
  */

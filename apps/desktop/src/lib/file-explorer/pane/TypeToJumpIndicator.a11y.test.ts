@@ -4,9 +4,9 @@
  * Tooltip-like overlay surfaced in the bottom-right of the pane while the
  * user is typing for in-directory navigation. Three states:
  *
- * - Hidden — the component renders nothing (no DOM node).
- * - Active — visible with a fresh buffer, indicator says "Jump: …".
- * - Stale — buffer reset fired, indicator still visible, italic + dim. Still
+ * - Hidden: the component renders nothing (no DOM node).
+ * - Active: visible with a fresh buffer, indicator says "Jump: …".
+ * - Stale: buffer reset fired, indicator still visible, italic + dim. Still
  *   needs to announce (the live region must stay polite, not off).
  *
  * Plus a `prefers-reduced-motion: reduce` check that the CSS turns off the
@@ -32,7 +32,7 @@ describe('TypeToJumpIndicator a11y', () => {
       props: { buffer: '', visible: false, stale: false },
     })
     await tick()
-    // Nothing visible — the {#if visible} guard removes the element entirely.
+    // Nothing visible: the {#if visible} guard removes the element entirely.
     expect(target.querySelector('.type-to-jump-indicator')).toBeNull()
     await expectNoA11yViolations(target)
   })
@@ -71,7 +71,7 @@ describe('TypeToJumpIndicator a11y', () => {
     expect(el).not.toBeNull()
     expect(el?.getAttribute('role')).toBe('status')
     // Critical: the live region must NOT be flipped to `aria-live="off"` when
-    // the indicator shifts to stale — that would suppress the announcement
+    // the indicator shifts to stale, which would suppress the announcement
     // for the next keystroke. The component leaves it polite.
     expect(el?.getAttribute('aria-live')).toBe('polite')
     expect(el?.classList.contains('is-stale')).toBe(true)

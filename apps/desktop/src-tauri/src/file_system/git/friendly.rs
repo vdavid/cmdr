@@ -10,7 +10,7 @@
 //!    `try_open_blob_stream`) returns `Err(FriendlyGitError)` from the
 //!    git module.
 //! 2. `mod.rs::friendly_to_volume_error` wraps it as
-//!    `VolumeError::FriendlyGit(FriendlyGitError)` — a typed variant that
+//!    `VolumeError::FriendlyGit(FriendlyGitError)`: a typed variant that
 //!    carries the kind + path + optional raw detail end-to-end.
 //! 3. The streaming pipeline (`listing/streaming.rs`) emits a
 //!    `listing-error` event. `friendly_error_from_volume_error` matches

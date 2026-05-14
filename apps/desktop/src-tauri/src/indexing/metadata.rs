@@ -21,7 +21,7 @@ pub(super) struct MetadataSnapshot {
 ///
 /// Directories carry their inode (used for inode-based rename detection in
 /// the live event loop on filesystems where the kernel preserves directory
-/// inodes across rename — APFS/HFS+/ext4/btrfs/XFS/NTFS). Symlinks still get
+/// inodes across rename (APFS/HFS+/ext4/btrfs/XFS/NTFS). Symlinks still get
 /// `inode: None` since they aren't addressed by inode anywhere today.
 pub(super) fn extract_metadata(metadata: &std::fs::Metadata, is_dir: bool, is_symlink: bool) -> MetadataSnapshot {
     let modified_at = extract_mtime(metadata);

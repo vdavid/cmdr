@@ -24,10 +24,10 @@ use super::{
 /// Differences from macOS:
 /// - No cmdr app menu (Settings and license go under Edit, About under Help)
 /// - "Show in file manager" instead of "Show in Finder"
-/// - Function-key accelerators (F2-F8, Shift+F8) omitted — GTK intercepts them
+/// - Function-key accelerators (F2-F8, Shift+F8) omitted: GTK intercepts them
 ///   before the webview, and is_focused() fails on Linux, so JS dispatch handles these
 /// - Tab and Space accelerators omitted (GTK accessibility conflicts)
-/// - Placeholder `&` mnemonics (first letter) — final mnemonic pass is Milestone 7
+/// - Placeholder `&` mnemonics (first letter): final mnemonic pass is Milestone 7
 pub(crate) fn build_menu_linux<R: Runtime>(
     app: &AppHandle<R>,
     show_hidden_files: bool,

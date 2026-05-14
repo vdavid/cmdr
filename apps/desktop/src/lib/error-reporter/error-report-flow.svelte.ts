@@ -5,7 +5,7 @@
  * call `openErrorReportDialog(initialNote?)`. The dialog component reads from the
  * exported reactive `errorReportFlow` state and renders itself only when `open` is true.
  *
- * The actual mounting happens in `(main)/+layout.svelte` — keeping the dialog mounted
+ * The actual mounting happens in `(main)/+layout.svelte`; keeping the dialog mounted
  * once at layout level matches how `CrashReportDialog` works and ensures consistent
  * focus/Escape handling.
  */
@@ -24,7 +24,7 @@ export const errorReportFlow = $state<FlowState>({
 
 /**
  * Open the error-report preview dialog. If `initialNote` is provided, it pre-fills the
- * note textarea — used by the toast button to ferry the toast message into the report.
+ * note textarea, used by the toast button to ferry the toast message into the report.
  */
 export function openErrorReportDialog(initialNote?: string): void {
   errorReportFlow.initialNote = initialNote ?? ''

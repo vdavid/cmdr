@@ -60,7 +60,7 @@ async function injectAndNavigateIntoSubDir(tauriPage: PageLike, errorCode: numbe
         });
     })()`)
   // Wait for the error pane to render (the injected error fires during the
-  // background listing kicked off by the navigation above). 3 s — the error
+  // background listing kicked off by the navigation above). 3 s: the error
   // pane renders in <100 ms on the happy path; longer budgets just hid
   // failures behind the 8 s outer test timeout.
   await pollUntil(tauriPage, async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`), 3000)
@@ -150,7 +150,7 @@ test.describe('Error pane: Transient errors (ETIMEDOUT)', () => {
     // Wait for error pane
     await pollUntil(tauriPage, async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`), 3000)
 
-    // Click "Try again" — the injected error was cleared after first use,
+    // Click "Try again": the injected error was cleared after first use,
     // so this retry should succeed and show the directory contents. Retry the
     // click via pollUntil so a NodeList that's transiently empty (button not
     // rendered yet) doesn't silently no-op.

@@ -64,7 +64,7 @@ log = "0.4"
 fern = "0.7.1"
 # file-rotate: size+count log rotation behind a `Write` impl. Dropped tauri-plugin-log,
 # so we own the rotation now. 0.8.0 (latest stable, ~14 months old, MIT). Pulls in
-# `chrono`/`filetime`/`flate2` — all already in our dep tree.
+# `chrono`/`filetime`/`flate2` are all already in our dep tree.
 file-rotate = "0.8.0"
 # Memory allocator: returns memory to OS faster than system malloc, reduces fragmentation
 mimalloc = "0.1"
@@ -93,7 +93,7 @@ filetime = "0.2"
 exacl = "0.12"
 sysinfo = { version = "0.38.4", default-features = false, features = ["system"] }
 time = { version = "0.3", features = ["parsing", "macros", "formatting"] }
-# Playwright E2E testing plugin — socket bridge for direct webview injection (optional, feature-gated).
+# Playwright E2E testing plugin: socket bridge for direct webview injection (optional, feature-gated).
 # Pinned to the `multi-window` branch of the vdavid fork at https://github.com/vdavid/tauri-playwright
 # until upstream 0.3.0 ships to crates.io. The crate lives in `packages/plugin/` inside that repo;
 # Cargo's git source resolves the workspace member automatically.
@@ -117,7 +117,7 @@ gix = "0.81"
 #
 # Pinned at the EXACT 0.6.0-beta.19 (published 2026-05-06). 0.6 is in active beta with
 # weekly releases, but the API surface we use is stable across the 0.6 line, and this is
-# the first version that auto-routes plain `gpt-5*` to the Responses API (PR #167) — 0.5.3
+# the first version that auto-routes plain `gpt-5*` to the Responses API (PR #167); 0.5.3
 # only routed `*-pro` and `*-codex`. Stable 0.6.0 isn't out yet; bumping to a future
 # `0.6.0-beta.20` should be a no-op for us, but pin exact to avoid surprise breakage on
 # `cargo update`. Solo maintainer; MIT/Apache-2.0; ~25k LOC if we ever need to fork.
@@ -125,12 +125,12 @@ genai = "=0.6.0-beta.19"
 # Type-safe IPC: typed Rust↔TS bindings for tauri commands and events.
 # Generated `bindings.ts` lands in `apps/desktop/src/lib/ipc/`; the frontend
 # imports `commands.commandName(args)` instead of `invoke('command_name', ...)`.
-# Pinned at 2.0.0-rc.24 (published 2026-03-30, ~5 weeks old at landing) — the
+# Pinned at 2.0.0-rc.24 (published 2026-03-30, ~5 weeks old at landing); the
 # v1 line is for Tauri 1, v2 RC line is the active branch for Tauri 2.
 tauri-specta = { version = "=2.0.0-rc.24", features = ["derive", "typescript"] }
 specta = { version = "=2.0.0-rc.24", features = ["derive", "serde_json"] }
 # Fuzzy matcher for the in-directory "type to jump" feature. Helix's matcher, also used
-# by Zellij and several TUI projects — fast (microseconds per match), smart-case, good
+# by Zellij and several TUI projects; fast (microseconds per match), smart-case, good
 # scoring. Pinned at 0.3.1 (published 2024-02-20, well over a month old). MPL-2.0;
 # already in the `deny.toml` allowlist. See `file_system/listing/fuzzy_jump.rs` for usage.
 nucleo-matcher = "0.3.1"
@@ -144,10 +144,10 @@ tauri-plugin-window-state = "2"
 [target.'cfg(target_os = "linux")'.dependencies]
 trash = "5.2"
 # Credential storage via Linux secret service (GNOME Keyring / KDE Wallet).
-# `keyring` 4.0 was a full architectural rewrite — the cross-platform API moved to
+# `keyring` 4.0 was a full architectural rewrite; the cross-platform API moved to
 # `keyring-core` and each backend (Secret Service, etc.) is a separate crate. Picking
 # the zbus-based backend keeps everything pure-Rust and matches our existing tokio +
-# zbus + RustCrypto stack — no system libdbus needed at build time.
+# zbus + RustCrypto stack; no system libdbus needed at build time.
 keyring-core = "1"
 zbus-secret-service-keyring-store = { version = "1", features = ["rt-tokio-crypto-rust"] }
 # Encrypted file-based credential storage fallback when no secret service is available

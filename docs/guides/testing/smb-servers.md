@@ -1,7 +1,7 @@
 # SMB test server farm
 
 Docker-based SMB test servers for integration testing of network SMB features. Containers are provided by smb2's
-consumer test harness — Cmdr doesn't maintain its own Dockerfiles.
+consumer test harness. Cmdr doesn't maintain its own Dockerfiles.
 
 ## Overview
 

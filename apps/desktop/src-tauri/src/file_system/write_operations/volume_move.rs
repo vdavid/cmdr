@@ -39,12 +39,12 @@ pub async fn move_between_volumes(
     dest_path: PathBuf,
     config: VolumeCopyConfig,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    // Same volume — use native rename/move (instant for MTP)
+    // Same volume: use native rename/move (instant for MTP)
     if Arc::ptr_eq(&source_volume, &dest_volume) {
         return move_within_same_volume(app, source_volume, source_paths, dest_path, config).await;
     }
 
-    // Both local — delegate to the battle-tested move implementation
+    // Both local: delegate to the battle-tested move implementation
     if let (Some(src_root), Some(dest_root)) = (source_volume.local_path(), dest_volume.local_path()) {
         log::debug!(
             "move_between_volumes: both volumes are local, delegating to native move (src={}, dest={})",
@@ -66,7 +66,7 @@ pub async fn move_between_volumes(
         return super::move_files_start(app, absolute_sources, absolute_dest, write_config).await;
     }
 
-    // Cross-volume — copy each file to destination, then delete source
+    // Cross-volume: copy each file to destination, then delete source
     log::info!(
         "move_between_volumes: cross-volume move, {} -> {}, {} sources",
         source_volume.name(),
@@ -157,7 +157,7 @@ pub async fn move_between_volumes(
 
                     match resolved {
                         None => {
-                            // Skip — don't copy and don't delete source
+                            // Skip: don't copy and don't delete source
                             log::debug!(
                                 "move_between_volumes: skipping {} due to conflict resolution",
                                 source_path.display()
@@ -170,7 +170,7 @@ pub async fn move_between_volumes(
                     }
                 }
 
-                // Copy to destination (no per-file progress for moves — total_bytes is 0)
+                // Copy to destination (no per-file progress for moves: total_bytes is 0)
                 let no_progress = |_: u64, _: u64| -> ControlFlow<()> {
                     if is_cancelled(&state.intent) {
                         return ControlFlow::Break(());
@@ -210,7 +210,7 @@ pub async fn move_between_volumes(
                 // a depth-first sweep. Files take the cheap one-shot path.
                 //
                 // Failures here leave a partial-move state (data at dest, sources still
-                // at origin) — log loudly so the cause is visible in the file log;
+                // at origin). Log loudly so the cause is visible in the file log;
                 // without this the FE only sees a generic "io_error".
                 let delete_result = if source_is_dir {
                     delete_volume_path_recursive(&source_volume, source_path).await
@@ -278,7 +278,7 @@ pub async fn move_between_volumes(
         match result {
             Ok(()) => {}
             // Cancellations already emit write-cancelled from inside the handler;
-            // don't also emit write-error — the frontend would log a user-initiated
+            // don't also emit write-error. The frontend would log a user-initiated
             // cancel as an error.
             Err(WriteFailure { ref error, .. }) if matches!(error, WriteOperationError::Cancelled { .. }) => {
                 log::info!("move_between_volumes: operation {} cancelled", operation_id_for_cleanup);
@@ -306,7 +306,7 @@ pub async fn move_between_volumes(
 
 /// Moves files within the same volume using native `Volume::rename`.
 ///
-/// For MTP, this uses MTP MoveObject — a single USB command per file.
+/// For MTP, this uses MTP MoveObject: a single USB command per file.
 /// Runs as a background task with operation registration, progress events, and cancellation.
 async fn move_within_same_volume(
     app: tauri::AppHandle,
@@ -389,7 +389,7 @@ async fn move_within_same_volume(
 
                     match resolved {
                         None => {
-                            // Skip — don't move this file
+                            // Skip: don't move this file
                             log::debug!(
                                 "move_within_same_volume: skipping {} due to conflict resolution",
                                 source_path.display()
@@ -465,7 +465,7 @@ async fn move_within_same_volume(
         match result {
             Ok(()) => {}
             // Cancellations already emit write-cancelled from inside the handler;
-            // don't also emit write-error — the frontend would log a user-initiated
+            // don't also emit write-error. The frontend would log a user-initiated
             // cancel as an error.
             Err(ref e) if matches!(e, WriteOperationError::Cancelled { .. }) => {
                 log::info!("move_between_volumes: operation {} cancelled", operation_id_for_cleanup);

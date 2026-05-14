@@ -30,7 +30,7 @@ All three platform files that define `LocationCategory` and `LocationInfo`/`Volu
 - Set `is_read_only: false` at all existing construction sites
 
 The stubs file (`stubs/volumes.rs`) is also missing `fs_type` and `supports_trash` fields that exist on macOS/Linux. Fix
-this pre-existing drift while we're here — add all three fields (`fs_type`, `supports_trash`, `is_read_only`) to the
+this pre-existing drift while we're here; add all three fields (`fs_type`, `supports_trash`, `is_read_only`) to the
 stub `VolumeInfo` struct and set them at all construction sites.
 
 The frontend types already have `isReadOnly?: boolean` and `'mobile_device'` in `LocationCategory`
@@ -40,7 +40,7 @@ Files:
 
 - `src-tauri/src/volumes/mod.rs` (macOS)
 - `src-tauri/src/volumes_linux/mod.rs` (Linux)
-- `src-tauri/src/stubs/volumes.rs` (other platforms — fix full struct drift while adding `is_read_only`)
+- `src-tauri/src/stubs/volumes.rs` (other platforms; fix full struct drift while adding `is_read_only`)
 
 ### Step 2: `list_volumes()` includes connected MTP devices
 
@@ -59,7 +59,7 @@ pub async fn list_volumes() -> TimedOut<Vec<VolumeInfo>> {
 }
 ```
 
-Linux `list_volumes` is currently sync — make it `async` (Tauri commands support this) and append after:
+Linux `list_volumes` is currently sync; make it `async` (Tauri commands support this) and append after:
 
 ```rust
 // Linux
@@ -102,17 +102,17 @@ async fn append_mtp_volumes(volumes: &mut Vec<VolumeInfo>) {
 }
 ```
 
-The MTP query reads an in-memory `HashMap` — sub-millisecond, no timeout needed. The `mtp-device-connected` event is
+The MTP query reads an in-memory `HashMap` (sub-millisecond, no timeout needed). The `mtp-device-connected` event is
 emitted AFTER volumes are registered in the connection manager (`connection/mod.rs:329-348`), so no race condition.
 
 **Cache note**: The macOS `LOCATIONS_CACHE` (5-second TTL) only caches the `list_locations()` result. MTP volumes are
 appended after the cache lookup, so they're always fresh.
 
 **Stubs**: `stubs/volumes.rs` does not need MTP logic (MTP is not available on stub platforms). Its `list_volumes` stays
-as-is — it just needs the struct field changes from Step 1.
+as-is; it just needs the struct field changes from Step 1.
 
 Also apply the same MTP append to `find_containing_volume` in both files. Currently it calls `list_locations()`
-(filesystem-only), so `findContainingVolume("mtp://dev/65537/DCIM")` returns null — the frontend falls back to the root
+(filesystem-only), so `findContainingVolume("mtp://dev/65537/DCIM")` returns null; the frontend falls back to the root
 volume ID, which is wrong. Same pattern: get filesystem results, then append MTP volumes, then do the longest-prefix
 match. This fixes a pre-existing bug where tab restore and breadcrumb display break for MTP paths.
 
@@ -138,7 +138,7 @@ let absolute_dest = dest_root.join(dest_path.strip_prefix("/").unwrap_or(&dest_p
 This makes `dest_path` consistently volume-relative throughout the pipeline. `LocalPosixVolume::resolve` (line 67-71)
 already does the same strip-and-join for non-root volumes, so this aligns the optimization path with the trait path.
 
-Source paths are NOT changed — they're full absolute paths from the file listing and `src_root.join` with an absolute
+Source paths are NOT changed; they're full absolute paths from the file listing and `src_root.join` with an absolute
 path replaces the base (correct behavior, acts as a no-op).
 
 File: `src-tauri/src/file_system/write_operations/volume_copy.rs` (line 92)
@@ -155,7 +155,7 @@ File: `src/lib/file-explorer/pane/dialog-state.svelte.ts` (line 257, 276)
 
 ### Step 5: TransferDialog works with volume-relative paths end-to-end
 
-The dialog displays and passes paths relative to the selected volume. No reconstruction needed — the backend now handles
+The dialog displays and passes paths relative to the selected volume. No reconstruction needed; the backend now handles
 volume-relative `dest_path` correctly (Step 3), and all Volume trait methods (`list_directory`, `scan_for_conflicts`,
 etc.) already resolve paths through `LocalPosixVolume::resolve` or `MtpVolume::to_mtp_path`.
 
@@ -181,7 +181,7 @@ For root volume (`/`): full path = relative path (identity). For MTP (`mtp://dev
 **On volume change** (`handleVolumeChange`): Reset `editedPath` to `/` (the new volume's root). The current path is
 meaningless on a different volume.
 
-**On confirm**: Pass `editedPath` directly to `onConfirm` — it's already volume-relative, and the whole pipeline handles
+**On confirm**: Pass `editedPath` directly to `onConfirm`; it's already volume-relative, and the whole pipeline handles
 it: `copy_between_volumes` uses `(destVolumeId, destPath)` where `destPath` is volume-relative.
 
 **`validateDirectoryPath`**: No changes needed -- volume-relative paths always start with `/`.
@@ -253,10 +253,10 @@ Files:
    - Copy to MTP subfolder -- dialog shows `/DCIM`, copy goes to correct location
    - After copy, pane stays at the MTP location (not thrown to root)
    - Change volume in dropdown mid-dialog -- path resets to `/`, correct volume ID used
-   - Switch from MTP to local volume and back — paths reset correctly each time
+   - Switch from MTP to local volume and back; paths reset correctly each time
 4. Verify local-to-local copy/move still works (regression)
 5. Volume breadcrumb still shows MTP volumes correctly
-6. Disconnect MTP device while transfer dialog is open — verify graceful error on confirm
+6. Disconnect MTP device while transfer dialog is open; verify graceful error on confirm
 
 ## Why this approach is elegant
 

@@ -422,7 +422,7 @@ mod tests {
 
     /// Create a temp dir in the crate root instead of `/tmp/`.
     /// On Linux, `/tmp/` is in `EXCLUDED_PREFIXES`, so `should_exclude`
-    /// filters out entries under it — breaking verifier tests that add
+    /// filters out entries under it, breaking verifier tests that add
     /// new files/dirs and expect them to appear in the diff.
     fn test_tempdir() -> tempfile::TempDir {
         let base = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));

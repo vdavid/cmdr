@@ -13,7 +13,7 @@ JSON vs. MessagePack with real directory listings (Dec 2024):
 ## Why binary formats are slower in Tauri
 
 When returning `Vec<u8>` from a Tauri command, Tauri serializes it as a JSON array of numbers:
-`[82, 117, 115, 116, 121, ...]` — each byte becomes 1-3 chars + comma.
+`[82, 117, 115, 116, 121, ...]`: each byte becomes 1-3 chars + comma.
 
 This means: binary data is wrapped in JSON anyway (negating size benefits), JSON parsing is still required, and then
 binary decoding adds more overhead.

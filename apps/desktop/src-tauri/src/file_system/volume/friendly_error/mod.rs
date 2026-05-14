@@ -1,16 +1,16 @@
 //! Friendly error mapping: turns raw errors + path into user-facing error info.
 //!
 //! Three sources produce a `FriendlyError`, each in its own sibling module:
-//! - `volume_error` — `VolumeError` (used by listing-error path; richest, dispatches
+//! - `volume_error`: `VolumeError` (used by listing-error path; richest, dispatches
 //!   to errno on raw `IoError`)
-//! - `write_error` — `WriteOperationError` (used by `write-error` events; mirror of
+//! - `write_error`: `WriteOperationError` (used by `write-error` events; mirror of
 //!   `volume_error` for the post-`map_volume_error` shape)
-//! - `errno` — raw macOS errnos with a non-macOS fallback (called from
+//! - `errno`: raw macOS errnos with a non-macOS fallback (called from
 //!   `volume_error` when an `IoError` carries a `raw_os_error`)
-//! - `empty_root` — TCC-restricted volume root hint (a single special case)
+//! - `empty_root`: TCC-restricted volume root hint (a single special case)
 //!
 //! `enrich_with_provider` (in sibling module `provider.rs`) layers
-//! provider-specific suggestions on top — that's the second pass that turns
+//! provider-specific suggestions on top: that's the second pass that turns
 //! "Couldn't read this folder" into "This folder is managed by **MacDroid**…".
 
 mod empty_root;
@@ -21,7 +21,7 @@ mod write_error;
 
 use serde::{Deserialize, Serialize};
 
-// Public API re-exports — keep the `volume::friendly_error::*` import surface
+// Public API re-exports: keep the `volume::friendly_error::*` import surface
 // unchanged for callers regardless of how the module is split internally.
 pub use empty_root::friendly_error_for_restricted_empty_root;
 pub use volume_error::friendly_error_from_volume_error;

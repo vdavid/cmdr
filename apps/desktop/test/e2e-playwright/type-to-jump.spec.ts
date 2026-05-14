@@ -9,7 +9,7 @@
  * - Switching pane clears the buffer on the previous pane.
  *
  * Timing-sensitive scenarios (stale-state transition at 1 s, indicator hide
- * at 5 s) are intentionally left out — they'd require real-time waits that
+ * at 5 s) are intentionally left out. They'd require real-time waits that
  * are flaky under parallel-shard load. The unit tests
  * (`type-to-jump-state.svelte.test.ts`) cover those transitions deterministically
  * with fake timers.
@@ -35,7 +35,7 @@ test.beforeEach(() => {
  * Types a sequence of characters into the focused pane. Dispatches DOM
  * `KeyboardEvent`s on `document.activeElement` (matching the production
  * keyboard handler's listening site). Each char goes through the same code
- * path the user's keypresses do — no shortcuts.
+ * path the user's keypresses do, with no shortcuts.
  */
 async function typeChars(tauriPage: PageLike, chars: string): Promise<void> {
   for (const char of chars) {
@@ -73,7 +73,7 @@ test.describe('Type-to-jump', () => {
   test('typing letters jumps the cursor to the best fuzzy match', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
-    // Type "file" — the left pane has `file-a.txt`, `file-b.txt`, plus
+    // Type "file": the left pane has `file-a.txt`, `file-b.txt`, plus
     // directories `sub-dir/` and `bulk/`. The top-scoring fuzzy match for
     // "file" should be one of the `file-*.txt` entries.
     await typeChars(tauriPage, 'file')

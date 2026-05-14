@@ -8,7 +8,7 @@ import (
 // Size tier coverage.
 //
 // The size-tier utility classes (`.size-bytes`, `.size-kb`, ...) are pure text
-// utilities defined globally in `app.css` — they only declare `color:` and
+// utilities defined globally in `app.css`; they only declare `color:` and
 // inherit the background of whatever container they're rendered in. The Svelte
 // rule walker can't see this pairing because the global rules don't set a
 // background.
@@ -74,8 +74,8 @@ var sizeTiers = []sizeTier{
 // AnalyzeSizeTiers returns findings for every (tier × background × mode) combo.
 // Pseudo file path "<size-tiers>" makes the source obvious in the report.
 //
-// The rainbow palette is the default and the only one the checker validates —
-// the `accent` and `none` palettes are user opt-ins that resolve via the same
+// The rainbow palette is the default and the only one the checker validates.
+// The `accent` and `none` palettes are user opt-ins that resolve via the same
 // `--color-size-*` vars (different definitions in scoped `:root[data-...]`
 // blocks), so testing the default is sufficient unless a user changes their
 // setting. The frontend setting docs note this trade-off.
@@ -114,7 +114,7 @@ func (a *Analyzer) evaluateSizeTier(tier sizeTier, bg sizeBackground, mode Mode)
 }
 
 // syntheticSizeTierPath is a marker path used in the Finding so the reporter
-// shows where this came from. The file doesn't exist — `RelPath` falls through
+// shows where this came from. The file doesn't exist; `RelPath` falls through
 // to the absolute path and we tag it with a leading marker.
 func syntheticSizeTierPath() string {
 	// Anchor to repo-relative for readable output.

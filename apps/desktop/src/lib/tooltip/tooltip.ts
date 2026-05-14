@@ -15,7 +15,7 @@ let tooltipIdCounter = 0
 let activeElement: HTMLElement | null = null
 let showTimer: ReturnType<typeof setTimeout> | null = null
 
-/** Shared container for tooltips — keeps them inside a landmark to satisfy axe's `region` rule. */
+/** Shared container for tooltips (keeps them inside a landmark to satisfy axe's `region` rule). */
 let tooltipContainer: HTMLDivElement | null = null
 
 function ensureTooltipContainer(): HTMLDivElement {

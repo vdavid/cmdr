@@ -104,7 +104,7 @@ pub fn entry_comparator(
         if a.is_directory && b.is_directory && sort_by == SortColumn::Size {
             return match (a.recursive_size, b.recursive_size) {
                 (None, None) => {
-                    // Both unknown — sort by name, respecting sort order
+                    // Both unknown: sort by name, respecting sort order
                     let cmp = compare_names_natural(&a.name, &b.name);
                     match sort_order {
                         SortOrder::Ascending => cmp,

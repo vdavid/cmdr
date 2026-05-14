@@ -1,4 +1,4 @@
-//! Tests for `get_listing_stats()` — total/visible counts, sizes, and selection sums.
+//! Tests for `get_listing_stats()`: total/visible counts, sizes, and selection sums.
 
 use super::caching::{CachedListing, LISTING_CACHE};
 use super::operations::{get_listing_stats, list_directory_end};

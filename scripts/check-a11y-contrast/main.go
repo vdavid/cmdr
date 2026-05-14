@@ -78,7 +78,7 @@ func main() {
 	}
 
 	// Size tier utility classes (`.size-bytes` .. `.size-tb`) declare only a
-	// `color:` and inherit the background of their container — the rule
+	// `color:` and inherit the background of their container. The rule
 	// walker never pairs them with a bg. Cover every (tier × known bg × mode)
 	// combo explicitly. See `size_tiers.go` for the context list.
 	allFindings = append(allFindings, analyzer.AnalyzeSizeTiers()...)

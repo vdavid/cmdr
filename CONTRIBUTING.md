@@ -18,7 +18,7 @@ is managed separately by `rustup`. This version is tested with Rust 1.92.0.
 
 ## Dev signing certificate (macOS, optional)
 
-Cmdr stores SMB credentials in macOS Keychain. Keychain ties item access to the binary's code signature — production
+Cmdr stores SMB credentials in macOS Keychain. Keychain ties item access to the binary's code signature; production
 builds are signed, so users get a one-time prompt. But dev/E2E builds are ad-hoc signed (changes every rebuild), which
 triggers a Keychain password prompt on every restart.
 
@@ -96,10 +96,10 @@ Module paths follow the Rust crate structure: `cmdr_lib::mcp`, `cmdr_lib::networ
 
 These are slash commands for Claude Code (type `/command-name` in the CLI):
 
-- `/plan` — use when starting a feature
-- `/wrap-up` — use before finishing work
-- `/release` — prepare a release (changelog, versioning, roadmap)
-- `/commit-draft` — draft a commit message for staged changes
+- `/plan`: use when starting a feature
+- `/wrap-up`: use before finishing work
+- `/release`: prepare a release (changelog, versioning, roadmap)
+- `/commit-draft`: draft a commit message for staged changes
 
 ## Tooling
 
@@ -137,7 +137,7 @@ How to use it for testing the app:
 3. `pnpm install` if it's been a while or you've added new deps
 4. `mountpoint /mnt/cmdr/cmdr/target && mountpoint /mnt/cmdr/cmdr/node_modules` to verify the bind mounts are healthy
    - If either mountpoint check fails, run `sudo mount -a` and re-check.
-5. `eval "$(mise activate bash)"` to activate mise. It sets up Node/pnpm/Go — not available in the default SSH shell.
+5. `eval "$(mise activate bash)"` to activate mise. It sets up Node/pnpm/Go (not available in the default SSH shell).
 
 From here, either **run the app** or **run E2E tests**:
 
@@ -146,7 +146,7 @@ From here, either **run the app** or **run E2E tests**:
 cd ~/cmdr
 WEBKIT_DISABLE_COMPOSITING_MODE=1 pnpm dev
 
-# b) Run E2E tests (in Docker — same path CI runs)
+# b) Run E2E tests (in Docker, same path CI runs)
 cd ~/cmdr/apps/desktop
 pnpm test:e2e:linux
 ```
@@ -229,7 +229,7 @@ The API server is a Cloudflare Worker. To deploy it or run `wrangler` commands, 
    security add-generic-password -a "$USER" -s "CLOUDFLARE_API_TOKEN" -w "your-token"
    ```
 
-Wrangler picks up `CLOUDFLARE_API_TOKEN` from the environment — the shell profile exports it from Keychain on startup.
+Wrangler picks up `CLOUDFLARE_API_TOKEN` from the environment; the shell profile exports it from Keychain on startup.
 
 ## PostHog access (website analytics)
 
@@ -247,7 +247,7 @@ See [posthog.md](docs/tooling/posthog.md) for API recipes.
 
 ## Paddle access (payments)
 
-Paddle handles payments and subscriptions. Two API keys are needed — one for live, one for sandbox (testing).
+Paddle handles payments and subscriptions. Two API keys are needed: one for live, one for sandbox (testing).
 
 1. Go to https://vendors.paddle.com → **Developer tools** → **Authentication** → **Generate API key**
 2. Repeat for sandbox at https://sandbox-vendors.paddle.com
@@ -275,7 +275,7 @@ The token expires 2027-03-22. See [analytics-dashboard.md](docs/tooling/analytic
 
 ## ngrok access (tunnels)
 
-ngrok exposes local servers to the internet — useful for testing webhooks (for example, Paddle) against your local API
+ngrok exposes local servers to the internet, useful for testing webhooks (for example, Paddle) against your local API
 server.
 
 1. Go to https://dashboard.ngrok.com → **Your Authtoken** (or **API** → **API Keys** for the API key)

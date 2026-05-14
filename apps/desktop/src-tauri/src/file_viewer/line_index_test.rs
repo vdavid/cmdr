@@ -303,7 +303,7 @@ fn seek_line_after_multibyte_content() {
     let cancel = AtomicBool::new(false);
     let backend = LineIndexBackend::open(&file, &cancel).unwrap();
 
-    // Seek to line 2 ("plain") — verifies byte offset tracking through multibyte lines
+    // Seek to line 2 ("plain"): verifies byte offset tracking through multibyte lines
     let chunk = backend.get_lines(&SeekTarget::Line(2), 1).unwrap();
     assert_eq!(chunk.first_line_number, 2);
     assert_eq!(chunk.lines[0], "plain");
@@ -382,7 +382,7 @@ fn search_accented_char_utf16_column() {
 #[test]
 fn search_on_last_line_without_newline_utf16() {
     let dir = create_test_dir("search_last_utf8");
-    // Last line has no trailing newline — exercises the leftover-handling code path
+    // Last line has no trailing newline: exercises the leftover-handling code path
     let file = write_test_file(&dir, "test.txt", "first\n🦀rust");
 
     let cancel_scan = AtomicBool::new(false);

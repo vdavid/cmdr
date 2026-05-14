@@ -2,11 +2,11 @@
 
 ## Context
 
-On macOS, Tauri 2's `window.set_menu()` is a dead call — macOS has a single app-level menu bar and Tauri doesn't swap it
+On macOS, Tauri 2's `window.set_menu()` is a dead call: macOS has a single app-level menu bar and Tauri doesn't swap it
 on window focus (tauri-apps/tauri#5768). The viewer's `build_viewer_menu()` and `viewer_setup_menu()` exist and work on
 Linux, but do nothing on macOS.
 
-**Fix:** swap the app-level menu via `app.set_menu()` when windows gain focus. macOS-only — Linux keeps its working
+**Fix:** swap the app-level menu via `app.set_menu()` when windows gain focus. macOS-only; Linux keeps its working
 per-window menus.
 
 ## Approach
@@ -41,7 +41,7 @@ An `active_menu_kind` tracker avoids redundant swaps (viewer→viewer, main→ma
   - `viewer_menu: Mutex<Option<Menu<R>>>`
   - `active_menu_kind: Mutex<ActiveMenuKind>`
   - `viewer_word_wrap: Mutex<Option<CheckMenuItem<R>>>`
-- Add `cleanup_macos_menus_from_command(app)` — wraps `app.run_on_main_thread(cleanup_macos_menus)` for safe use from
+- Add `cleanup_macos_menus_from_command(app)`: wraps `app.run_on_main_thread(cleanup_macos_menus)` for safe use from
   Tauri command threads
 
 **`apps/desktop/src-tauri/src/commands/ui.rs`**
@@ -112,7 +112,7 @@ An `active_menu_kind` tracker avoids redundant swaps (viewer→viewer, main→ma
   active, it uses `PredefinedMenuItem::close_window` instead, so Cmd+W works natively without the exemption.
 - **Accelerator updates:** only affect main menu items. Viewer menu has no customizable accelerators. No changes needed
   in `update_menu_accelerator`.
-- **`on_menu_event` for `VIEWER_WORD_WRAP_ID`:** works unchanged — it's an app-level event handler, finds the focused
+- **`on_menu_event` for `VIEWER_WORD_WRAP_ID`:** works unchanged. It's an app-level event handler that finds the focused
   `viewer-*` window and emits to it.
 
 ## Verification

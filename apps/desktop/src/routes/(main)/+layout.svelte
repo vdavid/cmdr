@@ -183,7 +183,7 @@
             await migrateApiKeysFromSettings()
 
             // Push AI config to backend (triggers server start if provider is local + model installed).
-            // API key lives in the OS secret store now, not settings.json — fetch it separately.
+            // API key lives in the OS secret store now, not settings.json: fetch it separately.
             const cloudProviderId = getSetting('ai.cloudProvider')
             const resolvedConfig = resolveCloudConfig(cloudProviderId, getSetting('ai.cloudProviderConfigs'))
             const cloudApiKey = await getAiApiKey(cloudProviderId).catch(() => '')

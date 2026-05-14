@@ -23,7 +23,7 @@ export interface BundleManifest {
 }
 
 export interface PreviewPayload {
-  /** Local ID — server may issue a different one on send. Treat as a hint, not authoritative. */
+  /** Local ID. The server may issue a different one on send. Treat as a hint, not authoritative. */
   id: string
   /** Size of the zip bytes that would be uploaded. */
   sizeBytes: number
@@ -53,7 +53,7 @@ export async function sendErrorReport(userNote?: string): Promise<{ id: string }
 
 /**
  * Debug-only: write the bundle to the app data dir and return the path.
- * In production the command isn't registered — calling it returns an error.
+ * In production the command isn't registered, so calling it returns an error.
  */
 export async function saveErrorReportToDisk(userNote?: string): Promise<string> {
   const res = await commands.saveErrorReportToDisk(userNote ?? null)

@@ -152,7 +152,7 @@ export async function findFileIndices(
 /**
  * Returns the backend index of the highest-scoring fuzzy match for `query`,
  * or `null` if nothing matches or the listing is empty. Powers the type-to-jump
- * feature. The result is a BACKEND index — the caller must add 1 when the
+ * feature. The result is a BACKEND index; the caller must add 1 when the
  * listing has a synthetic ".." parent.
  * @param listingId - The listing ID from listDirectoryStart.
  * @param query - The buffer the user has typed. Lowercased before scoring.
@@ -182,7 +182,7 @@ export async function getFileAt(listingId: string, index: number, includeHidden:
 
 /**
  * Gets file paths at specific frontend indices from a cached listing (batch).
- * Handles the parent ".." offset internally — pass frontend indices directly.
+ * Handles the parent ".." offset internally; pass frontend indices directly.
  * @param listingId - The listing ID from listDirectoryStart.
  * @param selectedIndices - Frontend indices of selected files.
  * @param includeHidden - Whether hidden files are shown (affects index mapping).
@@ -279,7 +279,7 @@ export async function startSelectionDrag(
  * Begins a native drag with explicit file paths. Used for single-file drags
  * where the frontend has the path directly. Advertises both `public.file-url`
  * and `public.utf8-plain-text` so terminal apps (Warp, etc.) can paste paths
- * as text. Operation mask is permissive — macOS picks the actual operation.
+ * as text. Operation mask is permissive; macOS picks the actual operation.
  */
 export async function startDragPaths(paths: string[], iconPath: string): Promise<void> {
   const res = await commands.startDragPaths(paths, iconPath)
@@ -337,7 +337,7 @@ export async function pathExists(path: string, volumeId?: string): Promise<boole
 /**
  * Like `pathExists`, but returns the full `TimedOut<boolean>` so the caller can tell
  * "doesn't exist" from "couldn't tell" (timeout, or SMB volume in `Disconnected` state).
- * Use this where treating a transient connection blip as "deleted" would be wrong —
+ * Use this where treating a transient connection blip as "deleted" would be wrong;
  * for example, the directory-eviction poll in `FilePane.svelte`.
  */
 export async function pathExistsChecked(path: string, volumeId?: string): Promise<TimedOut<boolean>> {

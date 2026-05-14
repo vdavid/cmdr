@@ -1,7 +1,7 @@
 /**
  * Tier 3 a11y tests for `NewFileDialog.svelte`.
  *
- * Simpler than NewFolderDialog — no AI suggestions, no timeout warning.
+ * Simpler than NewFolderDialog: no AI suggestions, no timeout warning.
  * Covers the empty default, pre-filled name, and (via a forced stub)
  * a visible inline error message.
  */

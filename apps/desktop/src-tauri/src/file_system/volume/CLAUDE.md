@@ -1,6 +1,6 @@
 # Volume abstraction
 
-This module defines the `Volume` trait — the core abstraction for all storage backends in Cmdr — and the `VolumeManager` registry.
+This module defines the `Volume` trait (the core abstraction for all storage backends in Cmdr) and the `VolumeManager` registry.
 
 ## Purpose
 
@@ -10,21 +10,21 @@ Every file system operation (listing, copy, rename, delete, indexing, watching) 
 
 | File | Role |
 |---|---|
-| `mod.rs` | `Volume` trait (async — most methods return `Pin<Box<dyn Future>>`; sync: `name`, `root`, `supports_*`, `local_path`, `space_poll_interval`), `VolumeScanner`, `VolumeWatcher`, `VolumeReadStream` traits, `MutationEvent` enum, shared types (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `ScanConflict`, `SourceItemInfo`) |
+| `mod.rs` | `Volume` trait (async: most methods return `Pin<Box<dyn Future>>`; sync: `name`, `root`, `supports_*`, `local_path`, `space_poll_interval`), `VolumeScanner`, `VolumeWatcher`, `VolumeReadStream` traits, `MutationEvent` enum, shared types (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `ScanConflict`, `SourceItemInfo`) |
 | `friendly_error.rs` | User-facing error messages: `FriendlyError`, `ErrorCategory`, errno mapping. See [Friendly error system](#friendly-error-system) below. |
 | `provider.rs` | Provider detection and enrichment: `Provider` enum (19 variants), `detect_provider()`, `provider_suggestion()`, `enrich_with_provider()`. Re-exported via `friendly_error.rs`. |
-| `manager.rs` | `VolumeManager` — thread-safe `RwLock<HashMap>` registry; supports a default volume |
-| `local_posix.rs` | `LocalPosixVolume` — real filesystem; delegates listing to `file_system::listing`, indexing to `indexing::scanner`, watching to `indexing::watcher` (FSEvents), copy scanning via `walkdir`. Uses `libc::statvfs` FFI for space info. |
-| `mtp.rs` | `MtpVolume` — MTP device storage; async `Volume` trait with direct async MTP calls. Uses `MtpReadStream` for streaming (calls `FileDownload::next_chunk().await` directly). Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
-| `smb.rs` | `SmbVolume` — SMB share storage; async `Volume` trait with direct async smb2 calls. Splits session storage into `Arc<Mutex<Option<SmbClient>>>` + `Arc<RwLock<Option<Arc<Tree>>>>` so the hot read/write paths can clone `Connection` under a brief lock and drive compound / download ops without serializing on the client mutex. `AtomicU8` connection state. Caches `SmbConnectionParams` (host, share, port, credentials) so `attempt_reconnect` can rebuild the session in place after a transient disconnect, single-flighted via `reconnect_lock`. Holds a global `AppHandle` (`set_app_handle` in `lib.rs::setup`) for emitting `smb-connection-changed` events. Also contains `connect_smb_volume()`. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
+| `manager.rs` | `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default volume |
+| `local_posix.rs` | `LocalPosixVolume`: real filesystem; delegates listing to `file_system::listing`, indexing to `indexing::scanner`, watching to `indexing::watcher` (FSEvents), copy scanning via `walkdir`. Uses `libc::statvfs` FFI for space info. |
+| `mtp.rs` | `MtpVolume`: MTP device storage; async `Volume` trait with direct async MTP calls. Uses `MtpReadStream` for streaming (calls `FileDownload::next_chunk().await` directly). Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
+| `smb.rs` | `SmbVolume`: SMB share storage; async `Volume` trait with direct async smb2 calls. Splits session storage into `Arc<Mutex<Option<SmbClient>>>` + `Arc<RwLock<Option<Arc<Tree>>>>` so the hot read/write paths can clone `Connection` under a brief lock and drive compound / download ops without serializing on the client mutex. `AtomicU8` connection state. Caches `SmbConnectionParams` (host, share, port, credentials) so `attempt_reconnect` can rebuild the session in place after a transient disconnect, single-flighted via `reconnect_lock`. Holds a global `AppHandle` (`set_app_handle` in `lib.rs::setup`) for emitting `smb-connection-changed` events. Also contains `connect_smb_volume()`. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`. |
 | `smb_watcher.rs` | Background SMB change watcher (`run_smb_watcher`). Owns a dedicated smb2 connection for `CHANGE_NOTIFY`, debounces events, feeds `notify_directory_changed`. Spawned by `connect_smb_volume()`. |
-| `in_memory.rs` | `InMemoryVolume` — `RwLock<HashMap>` store for tests; also used for stress tests (`with_file_count`) |
+| `in_memory.rs` | `InMemoryVolume`: `RwLock<HashMap>` store for tests; also used for stress tests (`with_file_count`) |
 
 ## Architecture
 
 ```
 VolumeManager (registry)
-  └─ Arc<dyn Volume>  (async trait — most methods return Pin<Box<dyn Future>>)
+  └─ Arc<dyn Volume>  (async trait: most methods return Pin<Box<dyn Future>>)
         ├─ LocalPosixVolume   → real FS (spawn_blocking for I/O), FSEvents watcher, jwalk scanner
         ├─ MtpVolume          → direct async MTP ops
         ├─ SmbVolume          → direct async smb2 ops (direct protocol, not OS mount)
@@ -37,38 +37,38 @@ VolumeManager (registry)
 
 Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new volume types can be added incrementally. Key capability flags:
 
-- `supports_watching()` — enables the `notify`-based *listing* file watcher in `operations.rs` (separate from the `VolumeWatcher` trait used for drive indexing). `MtpVolume` returns `false` (it has its own USB event loop).
-- `supports_export()` — "this volume can stream its bytes via `open_read_stream`" (so it can act as a source in a cross-volume copy). Gates the copy dialog's "copy from this volume" UI. Local, MTP, SMB, and InMemory return `true`.
-- `supports_streaming()` — enables cross-volume transfers via `open_read_stream` / `write_from_stream`. `LocalPosixVolume`, `MtpVolume`, `SmbVolume`, and `InMemoryVolume` all return `true`. Since Phase 4 this is the universal byte path for every non-APFS-clone copy — new backends just implement the two streaming methods to get cross-volume copy for free.
-- `max_concurrent_ops()` — how many streaming copies the copy engine can drive in parallel against this volume. The batch copy path takes `min(src.max_concurrent_ops(), dst.max_concurrent_ops(), 32)` and spawns that many `FuturesUnordered` tasks. Defaults to `1` (safe for any new backend). Current values: `LocalPosixVolume` returns `available_parallelism()/2` clamped to 4..=16; `SmbVolume` returns 10 (hardcoded in Phase 4.2; Phase 4.3 will wire it to `network.smbConcurrency`); `MtpVolume` returns 1 (USB bulk transport is serial); `InMemoryVolume` returns 32.
-- `local_path()` — returns `Some` only for local volumes; allows `copyfile(2)` fast-path in copy operations. `SmbVolume` returns `None` so copies go through smb2 instead of the slow OS mount.
-- `supports_local_fs_access()` — whether `std::fs` operations (stat, read_dir) work on this volume's paths. Default `true`. `MtpVolume` and `SmbVolume` return `false`. Used to skip the legacy synthetic entry diff path (now superseded by `notify_mutation`).
-- `notify_mutation(volume_id, parent_path, mutation)` — called after a successful mutation (create, delete, rename) to update the listing cache immediately. Default impl uses `std::fs` (works for `LocalPosixVolume`). `SmbVolume` and `MtpVolume` override to use their own protocol's `get_metadata`. Fire-and-forget, no error propagation.
-- `smb_connection_state()` — returns `Some(SmbConnectionState)` for SMB volumes (green/yellow indicator in volume picker). Default `None`. Only `SmbVolume` implements it.
-- `attempt_reconnect()` — tries to rebuild the volume's underlying session in place after a transient connection loss. Default `Err(NotSupported)`. Only `SmbVolume` overrides today; the Tauri command `reconnect_smb_volume` and the FE reconnect manager call this on each backoff tick. Idempotent and single-flight: concurrent callers wait on the same in-flight attempt instead of dog-piling the server.
-- `on_unmount()` — lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
-- `scanner()` / `watcher()` — drive indexing hooks; `None` by default.
-- `space_poll_interval()` — recommended interval for the live disk-space poller (`space_poller.rs`). Default 2 s (local volumes). `SmbVolume` and `MtpVolume` override to 5 s. `InMemoryVolume` returns `None` (no polling). The poller uses this to tick each volume at its own cadence.
+- `supports_watching()`: enables the `notify`-based *listing* file watcher in `operations.rs` (separate from the `VolumeWatcher` trait used for drive indexing). `MtpVolume` returns `false` (it has its own USB event loop).
+- `supports_export()`: "this volume can stream its bytes via `open_read_stream`" (so it can act as a source in a cross-volume copy). Gates the copy dialog's "copy from this volume" UI. Local, MTP, SMB, and InMemory return `true`.
+- `supports_streaming()`: enables cross-volume transfers via `open_read_stream` / `write_from_stream`. `LocalPosixVolume`, `MtpVolume`, `SmbVolume`, and `InMemoryVolume` all return `true`. Since Phase 4 this is the universal byte path for every non-APFS-clone copy. New backends just implement the two streaming methods to get cross-volume copy for free.
+- `max_concurrent_ops()`: how many streaming copies the copy engine can drive in parallel against this volume. The batch copy path takes `min(src.max_concurrent_ops(), dst.max_concurrent_ops(), 32)` and spawns that many `FuturesUnordered` tasks. Defaults to `1` (safe for any new backend). Current values: `LocalPosixVolume` returns `available_parallelism()/2` clamped to 4..=16; `SmbVolume` returns 10 (hardcoded in Phase 4.2; Phase 4.3 will wire it to `network.smbConcurrency`); `MtpVolume` returns 1 (USB bulk transport is serial); `InMemoryVolume` returns 32.
+- `local_path()`: returns `Some` only for local volumes; allows `copyfile(2)` fast-path in copy operations. `SmbVolume` returns `None` so copies go through smb2 instead of the slow OS mount.
+- `supports_local_fs_access()`: whether `std::fs` operations (stat, read_dir) work on this volume's paths. Default `true`. `MtpVolume` and `SmbVolume` return `false`. Used to skip the legacy synthetic entry diff path (now superseded by `notify_mutation`).
+- `notify_mutation(volume_id, parent_path, mutation)`: called after a successful mutation (create, delete, rename) to update the listing cache immediately. Default impl uses `std::fs` (works for `LocalPosixVolume`). `SmbVolume` and `MtpVolume` override to use their own protocol's `get_metadata`. Fire-and-forget, no error propagation.
+- `smb_connection_state()`: returns `Some(SmbConnectionState)` for SMB volumes (green/yellow indicator in volume picker). Default `None`. Only `SmbVolume` implements it.
+- `attempt_reconnect()`: tries to rebuild the volume's underlying session in place after a transient connection loss. Default `Err(NotSupported)`. Only `SmbVolume` overrides today; the Tauri command `reconnect_smb_volume` and the FE reconnect manager call this on each backoff tick. Idempotent and single-flight: concurrent callers wait on the same in-flight attempt instead of dog-piling the server.
+- `on_unmount()`: lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
+- `scanner()` / `watcher()`: drive indexing hooks; `None` by default.
+- `space_poll_interval()`: recommended interval for the live disk-space poller (`space_poller.rs`). Default 2 s (local volumes). `SmbVolume` and `MtpVolume` override to 5 s. `InMemoryVolume` returns `None` (no polling). The poller uses this to tick each volume at its own cadence.
 
 ## Building a new volume
 
 Adding a new backend (say, FTP, WebDAV, S3, or a new device protocol) is a matter of implementing the `Volume` trait and opting into the capability flags that make sense for your backend. The checklist below walks the path in the order you'd hit each concern.
 
-Work through it top-to-bottom — each tier depends on the previous being solid. Ship to users only after tier 3.
+Work through it top-to-bottom. Each tier depends on the previous being solid. Ship to users only after tier 3.
 
-### Tier 1 — make it listable (mandatory)
+### Tier 1: make it listable (mandatory)
 
 Without these, the volume can't even appear in the UI:
 
 - [ ] Implement `name()` and `root()` (return the display name and the path everything is relative to).
-- [ ] Implement `list_directory(path, on_progress)` — the core read. Call `on_progress(count)` at least once.
-- [ ] Implement `get_metadata(path)` — per-entry stat.
+- [ ] Implement `list_directory(path, on_progress)`: the core read. Call `on_progress(count)` at least once.
+- [ ] Implement `get_metadata(path)`: per-entry stat.
 - [ ] Implement `exists(path)` and `is_directory(path)`. On backends where these would issue two round-trips, implement them in terms of `get_metadata` to share the cost.
-- [ ] Implement `get_space_info()` — for the volume usage bar and pre-copy space checks. Return zeros if the backend doesn't report it.
-- [ ] Register the volume via `VolumeManager::register_if_absent` (not `register` — see "Key decisions" above).
+- [ ] Implement `get_space_info()`: for the volume usage bar and pre-copy space checks. Return zeros if the backend doesn't report it.
+- [ ] Register the volume via `VolumeManager::register_if_absent` (not `register`; see "Key decisions" above).
 - [ ] Add unit tests using a fake/in-memory harness or real fixtures.
 
-### Tier 2 — make it writable (recommended for real-world use)
+### Tier 2: make it writable (recommended for real-world use)
 
 Everything below is optional per the trait (methods default to `Err(NotSupported)` or `false`), but a read-only volume is rarely useful:
 
@@ -80,21 +80,21 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 - [ ] Map your backend's errors through a `map_*_error` function that returns `VolumeError`. Connection-loss errors should trigger a state transition (see `SmbVolume::handle_smb_result` as a reference) so subsequent calls fail fast.
 - [ ] **No full-file buffering in per-file transfer paths.** Don't drain the incoming `VolumeReadStream` into a `Vec<u8>` before writing, and don't collect the remote file into a `Vec<u8>` before yielding. An 8 GB copy would allocate 8 GB of RAM. See the "Streaming requirement" section on each trait method's doc comment: `open_read_stream`, `write_from_stream`.
 
-### Tier 3 — integrate with the wider app (optional, but mostly expected)
+### Tier 3: integrate with the wider app (optional, but mostly expected)
 
 - [ ] If the backend has its own change-notification channel, set `supports_watching() = true` and implement a watcher task that calls `notify_directory_changed` when things move. If you rely on the OS mount's FSEvents (like SmbVolume currently does), leave it `false`.
 - [ ] If `std::fs` operations work on the volume's paths (you're a local FS with extra flavor), leave `supports_local_fs_access()` at the default `true`. Otherwise override to `false` so the legacy synthetic-diff path is skipped.
-- [ ] If `std::fs::copy` can target this volume's paths directly, return `Some(root)` from `local_path()` — the copy path will prefer `copyfile(3)` / `copy_file_range(2)` for same-device copies. Otherwise return `None` (the default).
+- [ ] If `std::fs::copy` can target this volume's paths directly, return `Some(root)` from `local_path()`. The copy path will prefer `copyfile(3)` / `copy_file_range(2)` for same-device copies. Otherwise return `None` (the default).
 - [ ] Override `space_poll_interval()` to whatever polling cadence your backend can afford (local 2 s, network 5 s, none = don't poll).
 - [ ] If the volume needs async teardown (session close, handle drop), implement `on_unmount`. The default is a no-op.
 - [ ] If the backend participates in drive indexing, implement `scanner()` and `watcher()`. Today only `LocalPosixVolume` does.
 - [ ] Add a branch to `detect_provider` / `provider_suggestion` in `provider.rs` if there's a recognizable path shape or fs type worth calling out in friendly errors.
 - [ ] Add a capability-matrix row below and update the `docs/architecture.md` volume line if the shape changes meaningfully.
 
-### Tier 4 — E2E and friendly-error polish
+### Tier 4: E2E and friendly-error polish
 
-- [ ] Add integration tests (real fixtures if possible — see the Docker SMB containers for inspiration).
-- [ ] Verify that `FriendlyError` messages come out well for your backend's common failure modes. Test the `error_messages_never_contain_error_or_failed` rule — it's enforced by existing unit tests.
+- [ ] Add integration tests (real fixtures if possible; see the Docker SMB containers for inspiration).
+- [ ] Verify that `FriendlyError` messages come out well for your backend's common failure modes. Test the `error_messages_never_contain_error_or_failed` rule: it's enforced by existing unit tests.
 - [ ] Stress-test concurrent reads and writes (the `stress_tests_*` modules in indexing are the reference pattern).
 
 ## Capability matrix
@@ -121,43 +121,43 @@ At-a-glance view of which capabilities each current volume opts into. Use this w
 
 Legend: ✅ = implemented, ❌ = opted out (default or explicitly), ⚠️ = implemented but suboptimal (memory-heavy or otherwise worth revisiting).
 
-When adding a new volume, add a column for it and fill in each row. The matrix doubles as a self-review — gaps will stare back at you.
+When adding a new volume, add a column for it and fill in each row. The matrix doubles as a self-review: gaps will stare back at you.
 
 ## Streaming patterns
 
 Reads and writes have different shapes because the consumer relationship is different:
 
 - **Reads** return a `VolumeReadStream` that an external caller polls. The download handle has to live past the function call and cross async contexts. That's where the lifetime/ownership gymnastics below come from.
-- **Writes** consume a stream (or a local file) inside the method itself. The chunk loop is the consumer, so there's nothing to hand off. Just hold the session lock for the duration, pull chunks from the source, push them into the backend's chunk-by-chunk writer. `SmbVolume::import_single_file_with_progress` and `SmbVolume::write_from_stream` are the reference implementations — open the smb2 `FileWriter`, loop `write_chunk`, call `finish()` on success or `abort()` on cancel. No task spawn, no channel, no self-referential struct.
+- **Writes** consume a stream (or a local file) inside the method itself. The chunk loop is the consumer, so there's nothing to hand off. Just hold the session lock for the duration, pull chunks from the source, push them into the backend's chunk-by-chunk writer. `SmbVolume::import_single_file_with_progress` and `SmbVolume::write_from_stream` are the reference implementations: open the smb2 `FileWriter`, loop `write_chunk`, call `finish()` on success or `abort()` on cancel. No task spawn, no channel, no self-referential struct.
 
 The rest of this section is about **read-side** lifetime handling. Which pattern to pick depends on whether your protocol SDK's download handle is `'static` or borrowed.
 
-### Pattern A — own the download (use when the SDK's download type is `'static`)
+### Pattern A: own the download (use when the SDK's download type is `'static`)
 
 If the SDK gives you a download handle that owns its session internally and doesn't borrow from anything, store it directly in your stream struct. **Example: `MtpReadStream`** (`mtp.rs:704-729`).
 
 ```rust
 struct MtpReadStream {
-    download: Option<mtp_rs::FileDownload>,  // 'static — no lifetime parameter
+    download: Option<mtp_rs::FileDownload>,  // 'static, no lifetime parameter
     total_size: u64,
     bytes_read: u64,
 }
 ```
 
-`next_chunk()` calls `download.as_mut()?.next_chunk().await` directly — no task spawn, no channel. `Drop` cancels the transfer (see the MTP gotcha in this file for the detached-task cancel pattern).
+`next_chunk()` calls `download.as_mut()?.next_chunk().await` directly, no task spawn, no channel. `Drop` cancels the transfer (see the MTP gotcha in this file for the detached-task cancel pattern).
 
-### Pattern B — channel-backed stream (use when the SDK's download type borrows `&mut Connection`)
+### Pattern B: channel-backed stream (use when the SDK's download type borrows `&mut Connection`)
 
 If the SDK's download handle holds a borrow against the session (like `smb2::FileDownload<'a>` borrowing `&'a mut Connection`), you can't stuff it into a `'static` struct. Use a background producer task that holds an `OwnedMutexGuard` over the session, drives the download, and feeds chunks through a bounded mpsc channel. **Example: `SmbReadStream`** (`smb.rs` → `open_smb_download_stream`).
 
 Key building blocks:
 - `Arc<tokio::sync::Mutex<Session>>` so the task can call `lock_owned()` and own the guard until done.
-- Bounded mpsc channel (capacity ~4) for backpressure — peak memory is `capacity × chunk_size`, a few MB regardless of file size.
+- Bounded mpsc channel (capacity ~4) for backpressure. Peak memory is `capacity × chunk_size`, a few MB regardless of file size.
 - Oneshot channel for the total size (reported before the first chunk so the consumer sees the correct `total_size()` synchronously).
-- Oneshot channel for cancellation — `Drop` on the stream sends the signal, producer breaks its loop and releases the guard.
+- Oneshot channel for cancellation. `Drop` on the stream sends the signal, producer breaks its loop and releases the guard.
 - If the session state (connection health) can transition on protocol errors, wrap the state atomic in `Arc<AtomicU8>` so the task can update it from outside `&self` context.
 
-### Anti-pattern — pre-buffering the whole file
+### Anti-pattern: pre-buffering the whole file
 
 The pre-refactor `SmbReadStream` read the entire file into a `Vec<u8>` via `read_file_pipelined` and yielded slices. For an 8 GB file that meant an 8 GB allocation. Don't do this. If the consumer API is stream-shaped, the producer should stream too.
 
@@ -165,7 +165,7 @@ The same rule applies to write paths: `write_from_stream` must drive the backend
 
 ## Path handling gotchas
 
-- **`LocalPosixVolume::resolve`**: accepts empty, `.`, relative, or absolute paths. Three-way branch for absolute paths: (1) already starts with volume root — used as-is, (2) volume root is `/` — absolute path passed through unchanged, (3) otherwise — leading `/` stripped and joined to root. This handles frontend sending full absolute paths.
+- **`LocalPosixVolume::resolve`**: accepts empty, `.`, relative, or absolute paths. Three-way branch for absolute paths: (1) already starts with volume root, used as-is; (2) volume root is `/`, absolute path passed through unchanged; (3) otherwise, leading `/` stripped and joined to root. This handles frontend sending full absolute paths.
 - **`MtpVolume::to_mtp_path`**: strips the `mtp://{device}/{storage}/` URL prefix and leading slashes, returning the bare relative path the MTP library expects.
 - **`InMemoryVolume::normalize`**: always resolves to an absolute path anchored at `/`.
 
@@ -175,13 +175,13 @@ SMB mounts are automatically upgraded to `SmbVolume` (direct smb2 connection) in
 
 1. **Startup** (`file_system::upgrade_existing_smb_mounts`): Scans registered volumes for `smbfs` type. Waits for mDNS
    discovery to reach `Active` state (polls every 500ms, up to 15s) because Keychain credentials are keyed by hostname
-   (from mDNS), not IP (from `statfs`). Uses `tauri::async_runtime::spawn` (not `tokio::spawn` — runs during `setup()`
+   (from mDNS), not IP (from `statfs`). Uses `tauri::async_runtime::spawn` (not `tokio::spawn`; runs during `setup()`
    before Tokio is fully available). Emits `volumes-changed` after upgrades so the frontend refreshes indicators.
 
 2. **Mount detection** (`volumes/watcher.rs::try_upgrade_smb_mount`): When FSEvents detects a new volume in `/Volumes/`
    and it's `smbfs`, spawns a background upgrade attempt. By this point mDNS is already active.
 
-Both paths check the `network.directSmbConnection` setting (global `AtomicBool`). Both are best-effort — failures log a
+Both paths check the `network.directSmbConnection` setting (global `AtomicBool`). Both are best-effort. Failures log a
 warning and the volume stays as `LocalPosixVolume`. The "Connect directly" UI action (`upgrade_to_smb_volume` command)
 provides a manual upgrade path.
 
@@ -201,7 +201,7 @@ manager listens for this event and runs a per-volume backoff cycle (timer-driven
 5. On success: installs the new client + tree, restarts the watcher with `spawn_watcher` (the prior watcher is cancelled via `stop_watcher` first), then `transition_to_direct` flips state and emits `smb-connection-changed { state: "direct" }`. Doing the state flip last means observers wake up to a fully-installed session.
 6. On failure: state stays `Disconnected`. The FE backoff cycle decides whether to retry.
 
-Credentials are kept in memory for the lifetime of the `SmbVolume` (no security concern — they're already in the
+Credentials are kept in memory for the lifetime of the `SmbVolume` (no security concern: they're already in the
 process's address space for every smb2 call). Only re-pulled from the secret store on auth failure, in case the user
 updated them.
 
@@ -229,22 +229,22 @@ Three-layer mapping across two files, plus a third path for "succeeded but suspi
 **Layer 0**: typed git pass-through. `VolumeError::FriendlyGit(FriendlyGitError)` is a dedicated variant the git
 module's volume hooks (`try_route_listing`, `try_route_metadata`, `try_open_blob_stream`) return when they detect a
 git-shaped failure. `friendly_error_from_volume_error` matches it first and calls `to_friendly_error()` on the carried
-payload, returning a fully-shaped `FriendlyError` with the right title, explanation, suggestion, and category — no
+payload, returning a fully-shaped `FriendlyError` with the right title, explanation, suggestion, and category, with no
 errno mapping needed, no provider enrichment downstream. Keeps git-specific copy from getting clobbered by the generic
 I/O fallback, end-to-end type-checked, no string parsing.
 
-1. **`friendly_error_from_volume_error(err, path)`** (`friendly_error.rs`) — maps `VolumeError` variants and macOS errno
+1. **`friendly_error_from_volume_error(err, path)`** (`friendly_error.rs`): maps `VolumeError` variants and macOS errno
    codes (37 codes) to a `FriendlyError` with category (Transient/NeedsAction/Serious), title, explanation, suggestion,
    and raw detail.
-2. **`enrich_with_provider(error, path)`** (`provider.rs`, re-exported from `friendly_error.rs`) — detects 19
+2. **`enrich_with_provider(error, path)`** (`provider.rs`, re-exported from `friendly_error.rs`): detects 19
    cloud/mount providers from path patterns and `statfs` filesystem type, then overwrites the suggestion with
    provider-specific advice.
-3. **`friendly_error_for_restricted_empty_root(volume_id, path)`** (`friendly_error.rs`) — for the case where the OS
+3. **`friendly_error_for_restricted_empty_root(volume_id, path)`** (`friendly_error.rs`): for the case where the OS
    returns a successful empty listing at a volume root that's commonly hidden by macOS TCC (currently iCloud Drive
    without Full Disk Access). The streaming listing path (`file_system/listing/streaming.rs`) checks this after a
    successful empty read at the volume root and emits `listing-error` with the hint instead of `listing-complete`.
    Returns `None` for any other volume / non-root path so genuine empty directories don't get the warning.
-4. **`friendly_from_write_error(err)`** (`friendly_error.rs`) — variant-by-variant mapping from
+4. **`friendly_from_write_error(err)`** (`friendly_error.rs`): variant-by-variant mapping from
    `WriteOperationError` (post-`map_volume_error`) to a `FriendlyError`. Used by `WriteErrorEvent::new` so every
    `write-error` event the FE receives carries a friendly payload, even on local-FS paths where the original
    `VolumeError` is no longer in scope. `TransferErrorDialog` renders this directly with category-based styling
@@ -336,7 +336,7 @@ The hook order is fixed: `resolve()` first (normalizes the path), then `try_rout
 ## Key decisions
 
 **Decision**: Trait with optional methods defaulting to `NotSupported`/`false`
-**Why**: New volume types (SMB, S3, FTP) will have vastly different capability sets. Forcing every implementor to stub out every method would be noisy and error-prone. Defaults let new backends start with just `list_directory` + `get_metadata` and opt in to capabilities incrementally. The alternative — a capabilities bitfield — would require runtime checks everywhere and couldn't express return-type differences.
+**Why**: New volume types (SMB, S3, FTP) will have vastly different capability sets. Forcing every implementor to stub out every method would be noisy and error-prone. Defaults let new backends start with just `list_directory` + `get_metadata` and opt in to capabilities incrementally. The alternative (a capabilities bitfield) would require runtime checks everywhere and couldn't express return-type differences.
 
 **Decision**: `VolumeScanner` and `VolumeWatcher` are separate sub-traits, not part of `Volume`
 **Why**: Scanning and watching have their own lifetimes, threading models, and state (handles, channels). Folding them into `Volume` would force every volume to carry scanner/watcher state even if it never indexes. Returning `Option<Box<dyn VolumeScanner>>` keeps the core trait lightweight.
@@ -360,7 +360,7 @@ The hook order is fixed: `resolve()` first (normalizes the path), then `try_rout
 **Why**: The mapping needs access to the full path (for provider detection) and platform-specific errno codes. Doing it in Rust keeps the frontend thin (principle: smart backend, thin frontend) and avoids duplicating errno knowledge in TypeScript. The frontend receives a ready-to-render `FriendlyError` struct with markdown strings.
 
 **Decision**: `LocalPosixVolume` uses `symlink_metadata` for `exists()` instead of `Path::exists()`
-**Why**: `Path::exists()` follows symlinks — a dangling symlink returns `false`, which would make the volume claim a file doesn't exist when it visibly does in a directory listing. `symlink_metadata` detects the symlink itself, matching what the user sees.
+**Why**: `Path::exists()` follows symlinks. A dangling symlink returns `false`, which would make the volume claim a file doesn't exist when it visibly does in a directory listing. `symlink_metadata` detects the symlink itself, matching what the user sees.
 
 ## Gotchas
 
@@ -372,13 +372,13 @@ The hook order is fixed: `resolve()` first (normalizes the path), then `try_rout
 before the `FileDownload` is fully consumed. mtp-rs's `ReceiveStream` panics on drop if not consumed or cancelled
 (to prevent USB session corruption). The `Drop` impl calls `download.cancel(DEFAULT_CANCEL_TIMEOUT).await` on a
 spawned detached task. This is safe because the stream always lives in an async context (tokio worker thread), so
-`Handle::try_current()` succeeds. The detached task runs independently — the drop returns immediately.
+`Handle::try_current()` succeeds. The detached task runs independently; the drop returns immediately.
 
-**Gotcha**: `MtpVolume::get_metadata` is expensive — it lists the entire parent directory
-**Why**: MTP has no single-file stat call — `get_metadata` lists the parent directory and searches for the entry by name. This is used by `notify_mutation` after each self-mutation (create, delete, rename) and is acceptable because those are infrequent, but avoid calling it in hot paths.
+**Gotcha**: `MtpVolume::get_metadata` is expensive: it lists the entire parent directory
+**Why**: MTP has no single-file stat call. `get_metadata` lists the parent directory and searches for the entry by name. This is used by `notify_mutation` after each self-mutation (create, delete, rename) and is acceptable because those are infrequent, but avoid calling it in hot paths.
 
 **Decision**: `notify_mutation` lives on the Volume trait, not in Tauri commands
-**Why**: Every mutation method (`create_file`, `create_directory`, `delete`, `rename`) knows what changed. Adding the notification call at the end of each method keeps it colocated with the mutation. The alternative (notification calls in every Tauri command) is fragile — easy to miss a call site.
+**Why**: Every mutation method (`create_file`, `create_directory`, `delete`, `rename`) knows what changed. Adding the notification call at the end of each method keeps it colocated with the mutation. The alternative (notification calls in every Tauri command) is fragile, easy to miss a call site.
 
 **Decision**: `SmbVolume` and `MtpVolume` store `volume_id: String` for listing cache lookups
 **Why**: `notify_mutation` needs to call `notify_directory_changed(volume_id, ...)` to find the right cached listings. The volume_id is computed at creation time (`path_to_id(mount_path)` for SMB, `"{device_id}:{storage_id}"` for MTP) and stored on the struct rather than recomputed on every mutation.
@@ -387,10 +387,10 @@ spawned detached task. This is safe because the stream always lives in an async 
 **Why**: `SmbVolume` now handles listing updates via `notify_mutation` using its own smb2 `get_metadata`. The old `std::fs`-based synthetic diff path (`emit_synthetic_entry_diff`) is redundant and goes through the slow OS mount. Returning `false` skips it.
 
 **Decision**: `SmbVolume` splits session storage: `Arc<Mutex<Option<SmbClient>>>` + `Arc<RwLock<Option<Arc<Tree>>>>`
-**Why**: Phase 4 Fix 2 unblocks concurrency on the hot copy path. Previously the session lived in one `Mutex<Option<(SmbClient, Tree)>>`, which the streaming-read producer and the compound read/write fast-paths held for the entire transfer — serializing every concurrent copy through the mutex. With smb2 0.7.x, `Connection` is `Clone` (cheap `Arc::clone`, all clones multiplex frames over one SMB session). Splitting the Tree out lets us briefly lock the client, clone its `Connection`, and release the lock, then drive `Tree::download` / `Tree::read_file_compound` / `Tree::write_file_compound` on the cloned `Connection` with no lock held. N concurrent copies on one `SmbVolume` now pipeline N operations over the single session instead of queuing on the mutex. Tree lives in a `RwLock` because we only take read locks in the hot path (cloning an `Arc<Tree>`) and only write on disconnect. The legacy large-file streaming writer (`FileWriter<'a>`) still takes the client mutex for its duration because its lifetime borrows `&'a mut Connection` from the `SmbClient`; that's documented as a Gotcha below — large files are rare in the hot path, the compound fast-path covers every small write.
+**Why**: Phase 4 Fix 2 unblocks concurrency on the hot copy path. Previously the session lived in one `Mutex<Option<(SmbClient, Tree)>>`, which the streaming-read producer and the compound read/write fast-paths held for the entire transfer, serializing every concurrent copy through the mutex. With smb2 0.7.x, `Connection` is `Clone` (cheap `Arc::clone`, all clones multiplex frames over one SMB session). Splitting the Tree out lets us briefly lock the client, clone its `Connection`, and release the lock, then drive `Tree::download` / `Tree::read_file_compound` / `Tree::write_file_compound` on the cloned `Connection` with no lock held. N concurrent copies on one `SmbVolume` now pipeline N operations over the single session instead of queuing on the mutex. Tree lives in a `RwLock` because we only take read locks in the hot path (cloning an `Arc<Tree>`) and only write on disconnect. The legacy large-file streaming writer (`FileWriter<'a>`) still takes the client mutex for its duration because its lifetime borrows `&'a mut Connection` from the `SmbClient`; that's documented as a Gotcha below. Large files are rare in the hot path, the compound fast-path covers every small write.
 
 **Decision**: `SmbVolume::local_path()` returns `None`
-**Why**: `local_path()` is checked in `volume_copy.rs` to decide whether to use native OS copy APIs. If SmbVolume returned `Some(mount_path)`, copies would go through the slow OS mount — exactly what we're trying to avoid. `root()` still returns the mount path for frontend path resolution.
+**Why**: `local_path()` is checked in `volume_copy.rs` to decide whether to use native OS copy APIs. If SmbVolume returned `Some(mount_path)`, copies would go through the slow OS mount, which is exactly what we're trying to avoid. `root()` still returns the mount path for frontend path resolution.
 
 **Decision**: `on_unmount()` trait method instead of `Any` downcasting
 **Why**: Avoids runtime type checking, extensible for future volume types (S3, FTP might also need cleanup), consistent with the trait's design of optional methods with default no-ops.
@@ -414,32 +414,32 @@ spawned detached task. This is safe because the stream always lives in an async 
 **Why**: `SmbClient::create_file_writer` / `Tree::create_file_writer` both return `FileWriter<'a>` which borrows `&'a mut Connection`. We can't release the client mutex while the writer is alive, so the streaming (large-file) write path serializes concurrent writes on one `SmbVolume`. This is acceptable because the compound fast-path in `write_from_stream` handles every file ≤ `max_write_size` (typically 1 MB on QNAP, the SMB2 spec ceiling is 8 MB) without touching the client mutex for the actual write. Large files are rare in the hot copy path; if this ever becomes a bottleneck, the fix is a future `smb2` release that exposes a `FileWriter` built from a cloned `Connection` + `Arc<Tree>` (both owned inside the writer) rather than borrowing.
 
 **Decision**: `SmbVolume` overrides `scan_for_copy_batch` to pipeline per-path stats over a single SMB session
-**Why**: The copy pipeline's scan phase used to loop `scan_for_copy` per top-level source — N sequential RTTs on the wire before the copy phase could even start. For a 100-file copy over a ~60 ms Tailscale link that's ~5 s of serial stats. Fix 4 overrides `scan_for_copy_batch` to clone `smb2::Connection` per path under a brief client-mutex acquire (cheap `Arc::clone` — all clones multiplex over the same SMB session), release the lock, then drive `tree.stat(&mut conn, path)` on each clone inside a `FuturesUnordered`. Empty root paths skip the stat. Single-path batches fall through to `scan_recursive` so one-file drag-drops don't pay the batch machinery cost. Directories found during the stat phase recurse sequentially afterward — parallel directory recursion is a future "Fix 5". Measured 6.5× wall-clock win at 100 × 10 KB: 6.11 s → 947 ms. See `docs/notes/phase4-rtt-investigation.md` for the wire trace.
+**Why**: The copy pipeline's scan phase used to loop `scan_for_copy` per top-level source, N sequential RTTs on the wire before the copy phase could even start. For a 100-file copy over a ~60 ms Tailscale link that's ~5 s of serial stats. Fix 4 overrides `scan_for_copy_batch` to clone `smb2::Connection` per path under a brief client-mutex acquire (cheap `Arc::clone`, all clones multiplex over the same SMB session), release the lock, then drive `tree.stat(&mut conn, path)` on each clone inside a `FuturesUnordered`. Empty root paths skip the stat. Single-path batches fall through to `scan_recursive` so one-file drag-drops don't pay the batch machinery cost. Directories found during the stat phase recurse sequentially afterward. Parallel directory recursion is a future "Fix 5". Measured 6.5× wall-clock win at 100 × 10 KB: 6.11 s → 947 ms. See `docs/notes/phase4-rtt-investigation.md` for the wire trace.
 
 **Decision**: `Volume::scan_for_copy_batch` returns `BatchScanResult { aggregate, per_path }` (changed in Phase 4 Fix 4)
-**Why**: The copy engine needs per-source type+size hints (`is_directory`, `total_bytes`) for its `source_hints` map, which seeds conflict detection and feeds the SMB compound fast-path's size hint. Pre-Fix-4 it paid N separate `scan_for_copy` calls to collect both aggregate stats and per-path info. Returning a `BatchScanResult` lets the batch scan surface both at once — one trait call, one round-trip to each backend. Scan-preview callers that only want the aggregate just read `.aggregate`. `LocalPosixVolume` and `InMemoryVolume` inherit the default (serial per-path loop, cheap); `MtpVolume` preserves its "group by parent dir" batch; `SmbVolume` overrides with the pipelined stat path.
+**Why**: The copy engine needs per-source type+size hints (`is_directory`, `total_bytes`) for its `source_hints` map, which seeds conflict detection and feeds the SMB compound fast-path's size hint. Pre-Fix-4 it paid N separate `scan_for_copy` calls to collect both aggregate stats and per-path info. Returning a `BatchScanResult` lets the batch scan surface both at once: one trait call, one round-trip to each backend. Scan-preview callers that only want the aggregate just read `.aggregate`. `LocalPosixVolume` and `InMemoryVolume` inherit the default (serial per-path loop, cheap); `MtpVolume` preserves its "group by parent dir" batch; `SmbVolume` overrides with the pipelined stat path.
 
 **Decision**: `SmbVolume` has a compound fast-path in `open_read_stream_with_hint` and `write_from_stream` for files ≤ `max_read_size` / `max_write_size`
 **Why**: The streaming open+read+close sequence costs 3 RTTs per file. For small files (typical 10 KB copies on a NAS) that dominates wall-clock at high-latency links (~60 ms RTT → ~180 ms/file just for protocol overhead, not data). `smb2` already exposes `Tree::read_file_compound` (CREATE+READ+CLOSE in a single compound frame = 1 RTT) and `Tree::write_file_compound` (CREATE+WRITE+FLUSH+CLOSE = 1 RTT). The copy pipeline feeds per-file size hints from the pre-copy scan; when the size is known and fits in one READ/WRITE, we take the compound path. Falls back cleanly to the streaming reader/writer when the hint is missing or the file is too big. Small compound reads return a `Vec<u8>` wrapped as a single-chunk `InlineReadStream` so the consumer API stays shaped the same. See `docs/notes/phase4-rtt-investigation.md` for the measurement.
 
 **Decision**: Phase 4 collapsed `export_to_local` / `import_from_local` onto `open_read_stream` / `write_from_stream`
-**Why**: The three pre-Phase-4 copy paths (local↔local, local↔volume, volume↔volume) duplicated the same "open a reader, pipe to a writer" logic in three different shapes. The APFS clonefile fast path is the only one with a real capability difference. Collapsing the other two to a single streaming path means new backends (S3, WebDAV, FTP) implement two methods instead of four, concurrency lives in one place (`volume_copy.rs` — Phase 4.2), and features like resume / checksum / progress benefit every direction at once. See `docs/notes/phase4-volume-copy-unification.md`.
+**Why**: The three pre-Phase-4 copy paths (local↔local, local↔volume, volume↔volume) duplicated the same "open a reader, pipe to a writer" logic in three different shapes. The APFS clonefile fast path is the only one with a real capability difference. Collapsing the other two to a single streaming path means new backends (S3, WebDAV, FTP) implement two methods instead of four, concurrency lives in one place (`volume_copy.rs`, Phase 4.2), and features like resume / checksum / progress benefit every direction at once. See `docs/notes/phase4-volume-copy-unification.md`.
 
 **Decision**: Progress callbacks use `&dyn Fn(u64, u64) -> ControlFlow<()>`, not `FnMut`
 **Why**: The Volume trait is object-safe (`dyn Volume`), so callbacks must be `Fn` (not `FnMut`). Callers use `AtomicU64` for byte counters and `Cell<Instant>` for timestamps to mutate state inside a `Fn` closure. This avoids needing `RefCell` or `Mutex` in the hot path.
 
-**Gotcha**: On macOS, never use `statvfs` alone for disk space — use `NSURLVolumeAvailableCapacityForImportantUsageKey`
+**Gotcha**: On macOS, never use `statvfs` alone for disk space. Use `NSURLVolumeAvailableCapacityForImportantUsageKey`
 **Why**: `statvfs` reports only physically free blocks and ignores purgeable space (APFS snapshots, iCloud caches), which can be tens of GB. This causes inconsistent numbers between the status bar (NSURL API) and copy validation (`statvfs`), and prematurely blocks copies that would succeed. `get_space_info_for_path` calls `crate::volumes::get_volume_space()` on macOS and falls back to `statvfs` on Linux.
 
 ## Testing
 
-- **E2E error injection**: The `Volume` trait has an `inject_error(&self, errno: i32)` method behind the `playwright-e2e` feature flag. `LocalPosixVolume` and `InMemoryVolume` implement it — the next `list_directory` call returns the injected errno, then clears it (single-shot, so retry tests work). Default is no-op.
-- `in_memory_test.rs` — unit tests for `InMemoryVolume` (CRUD, sorting, concurrency, stress 50k entries)
-- `inmemory_test.rs` — integration tests combining `InMemoryVolume` + `VolumeManager`, streaming state, sort helpers
-- `local_posix_test.rs` — real-FS tests (write ops, symlinks, copy, space info) using `std::env::temp_dir()`
-- `manager.rs` inline tests — concurrent registration/read/write-mix scenarios
-- `mtp.rs` inline tests — path conversion and capability flags (no device needed)
-- `smb.rs` inline tests — type mapping (DirectoryEntry→FileEntry, FsInfo→SpaceInfo, Error→VolumeError), connection state transitions, path conversion, capability flags (no server needed)
+- **E2E error injection**: The `Volume` trait has an `inject_error(&self, errno: i32)` method behind the `playwright-e2e` feature flag. `LocalPosixVolume` and `InMemoryVolume` implement it. The next `list_directory` call returns the injected errno, then clears it (single-shot, so retry tests work). Default is no-op.
+- `in_memory_test.rs`: unit tests for `InMemoryVolume` (CRUD, sorting, concurrency, stress 50k entries)
+- `inmemory_test.rs`: integration tests combining `InMemoryVolume` + `VolumeManager`, streaming state, sort helpers
+- `local_posix_test.rs`: real-FS tests (write ops, symlinks, copy, space info) using `std::env::temp_dir()`
+- `manager.rs` inline tests: concurrent registration/read/write-mix scenarios
+- `mtp.rs` inline tests: path conversion and capability flags (no device needed)
+- `smb.rs` inline tests: type mapping (DirectoryEntry→FileEntry, FsInfo→SpaceInfo, Error→VolumeError), connection state transitions, path conversion, capability flags (no server needed)
 - **Docker SMB integration tests**: `smb.rs` contains `#[ignore]` tests that require Docker SMB containers (start with
   `apps/desktop/test/smb-servers/start.sh`). Connect via `smb2::testing::guest_port()` (10480, guest/no-auth),
   `auth_port()` (10481, `testuser`/`testpass`), `readonly_port()` (10488), `slow_port()` (10493, 200ms latency). Use

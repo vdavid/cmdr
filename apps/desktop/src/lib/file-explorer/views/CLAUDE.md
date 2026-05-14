@@ -100,8 +100,8 @@ flight (first paint, after `FontMetricsNotReady`), every column renders at `capP
 cursor's column out of view is a state read, so one consolidated effect replaces the old height-only effect plus the
 implicit width-resize gap. It re-runs naturally after `columnWidths` arrives (the reassignment retriggers the
 dependency), so a fast resize-drag → fetch → widths-arrive sequence ends with `scrollToIndex(cursorIndex)` settling the
-view exactly once. PageUp/PageDown step distance is content-dependent — derived from `prefixSums` directly, not from the
-container width — so a "page" of skinny columns moves more files than a page of wide ones. Intentional UX: the step
+view exactly once. PageUp/PageDown step distance is content-dependent, derived from `prefixSums` directly (not from the
+container width), so a "page" of skinny columns moves more files than a page of wide ones. Intentional UX: the step
 matches what's visible.
 
 **Decision**: Shrink-wrap Ext / Size / Modified columns from the rows **currently on screen**, not the prefetch buffer
@@ -109,7 +109,7 @@ or the full directory **Why**: The name column should keep every spare pixel, so
 canvas measurement is fast enough to recompute on every scroll row-crossing and window resize. The 300ms
 `grid-template-columns ease` transition (on both `.header-row` and `.file-entry`) smooths the resulting width changes.
 Dir switches snap instead of animating (see Gotcha below). The `..` row's (often huge) recursive size only contributes
-when that row is actually on screen — otherwise the size column would stay oversized after scrolling past it.
+when that row is actually on screen. Otherwise the size column would stay oversized after scrolling past it.
 `SelectionInfo` keeps using `measureDateColumnWidth` (worst-case sampling) because it renders a single-entry snapshot
 with no "visible set" to measure from.
 
@@ -118,8 +118,8 @@ across rows zigzag horizontally when date widths vary (e.g., locale formats, cus
 halves line up. The contract: `formatDateForDisplay` (in `lib/settings/format-utils.ts`) returns a `FormattedDate` whose
 `parts: { left: DateSegment[], right: DateSegment[] | null }` carries both halves as ordered segment lists;
 `computeFullListColumnWidths` measures each half separately (via `joinSegments`) and exposes a `dateLeft` width;
-`FullList` walks each half's segments — wrapping any with a non-null `ageClass` in an age-tier span and emitting the
-rest as plain text — into `.date-left` (inline-block, fixed width, right-aligned) followed by `.date-right`
+`FullList` walks each half's segments (wrapping any with a non-null `ageClass` in an age-tier span and emitting the
+rest as plain text) into `.date-left` (inline-block, fixed width, right-aligned) followed by `.date-right`
 (`margin-left: var(--spacing-xs)`). Tooltips/MCP/status bar still see joined strings via `FormattedDate.text` (exposed
 as the `formatDateTime` shortcut).
 
@@ -130,7 +130,7 @@ via `--font-scale`, so users see text grow live. Recomputing per-column widths o
 rebuilds. Coalescing to the same 1 s + idle window the font-metrics IPC uses keeps the UI smooth during drag and snaps
 to correct widths once the user releases. `FullList` tracks the settle event via a local `scaleSettleTick` `$state` it
 bumps from the subscription, then reads inside the column-width `$effect`. `BriefList`'s Brief-column widths come from
-the backend `get_brief_column_text_widths` IPC, which uses the live font ID — the same `onDebouncedScaleChange` callback
+the backend `get_brief_column_text_widths` IPC, which uses the live font ID. The same `onDebouncedScaleChange` callback
 triggers a refetch.
 
 ## Gotchas
@@ -146,7 +146,7 @@ cache). Real files start at index 1. Adjust: `cache_index = ui_index - 1`.
 
 **Gotcha**: The ".." row shows the CURRENT folder's recursive size, not the parent folder's **Why**: The `..` row's size
 column is otherwise wasted space. Showing the total for the folder the user is browsing (sum of everything visible plus
-unloaded entries) answers "how much is in here?" — more useful than "how big is the place I'd go if I pressed
+unloaded entries) answers "how much is in here?", more useful than "how big is the place I'd go if I pressed
 Backspace." Implementation: `createParentEntry(parentPath, stats?)` in `file-list-utils.ts` takes optional stats;
 `BriefList`/`FullList` fetch them via `getDirStatsBatch([currentPath])` on dir change and via
 `updateIndexSizesInPlace(cachedEntries, currentPath)` on index refresh (single batch IPC call).
@@ -160,15 +160,15 @@ handles this.
 
 **Gotcha**: `DATE_PARTS_GAP` (4px) in `measure-column-widths.ts` mirrors the `margin-left: var(--spacing-xs)` on
 `.date-right` in `FullList.svelte`. **Why**: The measurer adds it to the total date column width when any visible row
-splits via `|`. If you change either value, change both — split-date columns will be one or two pixels off from what the
+splits via `|`. If you change either value, change both: split-date columns will be one or two pixels off from what the
 renderer actually draws otherwise.
 
 **Gotcha**: `HEADER_CHROME_ACTIVE/INACTIVE` in `measure-column-widths.ts` are tied to `SortableHeader`'s flex gap +
 caret glyph (4px gap + 8px caret = 12px active, 0px inactive). The button keeps 4px horizontal padding for hover-state
 breathing room, but an equal negative margin (`margin: 0 calc(-1 * var(--spacing-xs))`) pulls it back out so the label
-still lines up with the data cells below — only gap+caret count toward the track width. **Why**: If you change those CSS
+still lines up with the data cells below. Only gap+caret count toward the track width. **Why**: If you change those CSS
 values or the caret size/markup, update the two constants or column widths drift. The values aren't derived from the
-live DOM because pretext measurement runs without a reference element — everything is computed from the pre-known chrome
+live DOM because pretext measurement runs without a reference element. Everything is computed from the pre-known chrome
 formula.
 
 **Gotcha**: Width transitions would "slide" on dir switches, because the header (FullList) and columns (BriefList)
@@ -180,10 +180,10 @@ nav = snap; within-dir scroll/resize/stream-in = animated.
 **Gotcha**: CJK / complex-script filenames may be slightly mis-measured **Why**: The frontend canvas measurer
 (`$lib/font-metrics/measure.ts`) iterates explicit Unicode ranges covering Latin, BMP-printable characters, and common
 emoji (U+1F300–U+1FAFF). The backend stores those widths per code point and falls back to the cached `average_width` for
-anything outside the measured set — so column widths for CJK, Arabic, and rare-symbol filenames are approximate. Emoji
+anything outside the measured set, so column widths for CJK, Arabic, and rare-symbol filenames are approximate. Emoji
 is fine (measured). Latin is fine (measured). Expanding the measured set is a follow-up.
 
 **Gotcha**: Index-size refresh (`refresh_listing_index_sizes`) triggers a column-width refetch through the existing
 cache-reset path, not a separate trigger **Why**: When `recursive_size` enrichment lands, the listing may re-sort; the
 existing `cacheGeneration` bump propagates into BriefList's reset-cache effect, which clears `columnWidths`, bumps
-`widthsGeneration`, and kicks off `fetchColumnWidths()`. Don't add a separate trigger — it would double-fetch.
+`widthsGeneration`, and kicks off `fetchColumnWidths()`. Don't add a separate trigger: it would double-fetch.

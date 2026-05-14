@@ -108,7 +108,7 @@ func TestResolveOKLCHTransparent(t *testing.T) {
 
 func TestResolveLeadingPercent(t *testing.T) {
 	r := NewResolver(makeVars(), ModeLight)
-	// color-mix(in srgb, 50% red, 50% blue) — both explicit.
+	// color-mix(in srgb, 50% red, 50% blue), both explicit.
 	c, err := r.Resolve("color-mix(in srgb, 50% red, 50% blue)")
 	if err != nil {
 		t.Fatalf("err: %v", err)

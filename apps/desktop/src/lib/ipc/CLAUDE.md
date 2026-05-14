@@ -14,7 +14,7 @@ format (single quotes, no semicolons, 2-space indent). Always commit the result 
 it.
 
 CI runs the `bindings-fresh` check (`./scripts/check.sh --check bindings-fresh`), which snapshots the committed file,
-re-regenerates, byte-compares, and restores the snapshot — so your working tree is never touched. A failure means
+re-regenerates, byte-compares, and restores the snapshot, so your working tree is never touched. A failure means
 somebody changed a `#[tauri::command]` surface or a Type-derived DTO without regenerating.
 
 ## Usage
@@ -35,12 +35,12 @@ Specta-generated wrappers take **positional** arguments (in declaration order), 
 arguments are well-named locals; it's awful when they're inline primitives:
 
 ```ts
-// Good — every position is self-documenting
+// Good: every position is self-documenting
 const force = true
 const volumeId = null
 await commands.renameFile(from, to, force, volumeId)
 
-// Bad — what does the second `null` mean? Why is the third arg `5`?
+// Bad: what does the second `null` mean? Why is the third arg `5`?
 await commands.someCommand(path, null, 5, true)
 ```
 
@@ -59,10 +59,10 @@ problem to the helper instead of solving it. Just rename the locals at the call 
    pub async fn do_thing(volume_id: String, force: bool) -> Result<DoneInfo, IpcError> { ... }
    ```
 2. Any new DTO crossing the IPC boundary needs `#[derive(specta::Type)]`. Drop `Deserialize` if the type is
-   serialize-only (a return value, not a parameter), and never add `#[serde(skip_serializing_if = ...)]` — see § Type
+   serialize-only (a return value, not a parameter), and never add `#[serde(skip_serializing_if = ...)]`. See § Type
    shape constraints below.
-3. Add the path to `ipc.rs::builder()` (the `tauri::generate_handler![]` block — runtime dispatch) AND the matching
-   `collect_*_types()` helper (the `specta::function::collect_functions![]` block — type info for `bindings.ts`).
+3. Add the path to `ipc.rs::builder()` (the `tauri::generate_handler![]` block, runtime dispatch) AND the matching
+   `collect_*_types()` helper (the `specta::function::collect_functions![]` block, type info for `bindings.ts`).
    Platform-gated commands go in the cfg-matched `collect_*_types()` per platform.
 4. `pnpm bindings:regen`. Commit `bindings.ts` alongside the Rust change.
 5. Use it on the FE: `import { commands } from '$lib/ipc/bindings'; await commands.doThing(volumeId, force)`. If it
@@ -91,7 +91,7 @@ These commands stay on raw `invoke()` for now. Each call site has:
 | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `record_breadcrumb`                                      | Takes `Option<serde_json::Value>` for arbitrary breadcrumb context                             | Keep on raw `invoke()`; free-form value is the point of breadcrumbs                 |
 | `prepare_error_report_preview`                           | Return type includes `Breadcrumb.ctx: Option<serde_json::Value>`, which specta can't represent | Needs a typed `Ctx` struct to replace `Value`, or strip `ctx` from the preview type |
-| `store_font_metrics`                                     | Generic over `<R: tauri::Runtime>` — specta can't collect type info for generic commands       | Keep as-is; font metrics are write-only (no TS type needed for the return value)    |
+| `store_font_metrics`                                     | Generic over `<R: tauri::Runtime>`, specta can't collect type info for generic commands        | Keep as-is; font metrics are write-only (no TS type needed for the return value)    |
 | `stream_folder_suggestions`, `cancel_folder_suggestions` | Tauri `Channel<T>` (streaming) isn't specta-friendly yet                                       | Re-evaluate when specta supports `Channel<T>` (track upstream)                      |
 
 Note: `check_pending_crash_report`, `send_crash_report`, and `record_settings_defaults` were previously excluded and
@@ -102,7 +102,7 @@ regenerate, migrate the call site to `commands.foo(...)`.
 
 ### Future work: decoupling `prepare_error_report_preview` from `record_breadcrumb`
 
-The two commands above are coupled by a single shared type — `BundleManifest.breadcrumbs: Vec<Breadcrumb>` carries
+The two commands above are coupled by a single shared type: `BundleManifest.breadcrumbs: Vec<Breadcrumb>` carries
 `Breadcrumb.ctx: Option<serde_json::Value>`. Typing `record_breadcrumb` would unblock both, but free-form `ctx` is the
 point of breadcrumbs and we don't want to lose that.
 
@@ -110,7 +110,7 @@ Cleanest decoupling, if `prepare_error_report_preview` becomes worth typing on i
 `BreadcrumbForManifest { at, kind, message, ctx_json: Option<String> }` where `ctx_json` is
 `serde_json::to_string(&ctx).ok()` at manifest-build time. The in-memory ring buffer keeps
 `Breadcrumb { ctx: Option<Value> }` (free-form preserved), the IPC type for `prepare_error_report_preview` becomes
-specta-typeable. The bundle's manifest.json shape changes (nested object → JSON-encoded string) — mildly less ergonomic
+specta-typeable. The bundle's manifest.json shape changes (nested object → JSON-encoded string), mildly less ergonomic
 for triage but typed. Worth doing if the FE ever wants to render the manifest preview with column-typed `ctx` parsing;
 not worth doing for the IPC discipline alone.
 
@@ -123,7 +123,7 @@ not worth doing for the IPC discipline alone.
    helper layout). If the diff is purely cosmetic, fine. If it changes API shapes the FE consumes, walk the consumers.
 4. Run the full `./scripts/check.sh --include-slow` to catch Linux-stub breakage (ask: did the new specta version change
    which derives it requires?).
-5. Re-evaluate § Excluded commands — if the new RC supports `skip_serializing_if` or `serde_json::Value`, migrate the
+5. Re-evaluate § Excluded commands: if the new RC supports `skip_serializing_if` or `serde_json::Value`, migrate the
    relevant commands and shrink the table.
 
 ## Gotchas
@@ -139,12 +139,12 @@ were switched to `!= null` checks.
 **The non-obvious failure mode (lost a day to it):** when the bad `=== undefined` check is inside a Svelte 5 `$effect`
 or `$derived` and the downstream code throws on `null` (`formattedDate(null)`, `null.toLocaleString()`,
 `Number(null) + something` ending up `NaN`-poisoning a guard, etc.), the throw doesn't surface as an error in the UI or
-the console — it silently corrupts the reactive graph for _sibling_ effects on the same component. The classic
+the console, it silently corrupts the reactive graph for _sibling_ effects on the same component. The classic
 signature: a `$state` write happens (you can see the new value if you read the variable synchronously after assigning)
 but a separate `$effect` that should re-run on that change _doesn't_ re-run, and any `{#if state}` block that depends on
 it stays stuck on its previous truth value. We hit this on F8 (delete dialog) after a volume switch: the listing effect
 threw on a `null` `modifiedAt` from an SMB/MTP entry, poisoned the graph, and then `showDeleteDialog = true` silently
-failed to mount the dialog. The fix is always the same — find the `=== undefined` site that throws on `null` and switch
+failed to mount the dialog. The fix is always the same: find the `=== undefined` site that throws on `null` and switch
 it to `== null`. Suspect every site that calls a typed function (`Intl.*`, `(n: number) => …`) with an optional field as
 input.
 
@@ -152,12 +152,12 @@ input.
 
 The Rust side splits into:
 
-- `ipc.rs::builder()` — single source of truth for the Tauri-Specta `Builder<Wry>`. Contains:
+- `ipc.rs::builder()`: single source of truth for the Tauri-Specta `Builder<Wry>`. Contains:
   - The full `tauri::generate_handler![…]` for runtime dispatch (supports `#[cfg(...)]` per-line).
   - One `collect_*_types(types: &mut Types) -> Vec<Function>` per platform group (specta types collection).
   - A combined function that walks all the per-platform collectors.
 - `lib.rs::run()` calls `ipc::builder()`, passes `.invoke_handler(builder.invoke_handler())` to
-  `tauri::Builder::default()`. The runtime never writes `bindings.ts` itself — regeneration is explicit, via
+  `tauri::Builder::default()`. The runtime never writes `bindings.ts` itself; regeneration is explicit, via
   `pnpm bindings:regen` (which runs the `#[ignore]`'d `ipc::tests::export_bindings_test` and then `oxfmt`). Earlier
   versions had a debug-only `ipc::export_bindings()` call here that auto-rewrote the file on every `pnpm dev` startup,
   but it skipped both the AUTO-GENERATED header and the oxfmt postprocess, so it silently overwrote the committed
@@ -187,7 +187,7 @@ expect(call?.payload).toMatchObject({ sources, destination /* ... */ })
 What IPC tests catch:
 
 - Serde-shape drift between Rust and the typed bindings (renamed field in the Rust struct)
-- Multi-positional-arg ordering bugs (`mount_network_share` has 6 positional args — easy to swap two by accident)
+- Multi-positional-arg ordering bugs (`mount_network_share` has 6 positional args, easy to swap two by accident)
 - Typed-error discriminator shape (`{ type: 'auth_required' }` vs `{ code: 'auth_required' }` etc.)
 - Whether the FE actually calls the binding (TS compiles ≠ runtime invokes)
 
@@ -197,8 +197,8 @@ What IPC tests do **not** catch:
 - Business-logic bugs in `*_core` / `ops_*` helpers (those should have Rust unit tests)
 - UI integration (Playwright E2E covers those)
 
-When to skip an IPC test: thin getters (`get_default_volume_id`, `has_font_metrics`) — their shape is trivial and
-already enforced by the TS bindings. **Don't write IPC tests for every command** — focus on destructive, cross-window,
+When to skip an IPC test: thin getters (`get_default_volume_id`, `has_font_metrics`), their shape is trivial and
+already enforced by the TS bindings. **Don't write IPC tests for every command.** Focus on destructive, cross-window,
 and many-arg surfaces.
 
 See `docs/testing.md` § "Decision table" for the broader picture.

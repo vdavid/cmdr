@@ -11,7 +11,7 @@
 //!   the user's intent for a neutral interface.
 //! - **Light/dark mode switching**: `NSSystemColorsDidChangeNotification` fires on
 //!   appearance changes too, so we re-read and emit the mode-appropriate color.
-//!   WKWebView separately handles `prefers-color-scheme` media queries — our
+//!   WKWebView separately handles `prefers-color-scheme` media queries, so our
 //!   observer only needs to update the accent color.
 
 use std::ptr::NonNull;

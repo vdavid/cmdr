@@ -78,7 +78,7 @@ pub struct WriteOperationState {
 
 impl WriteOperationState {
     /// Construct a fresh state for a new operation. Use this from every
-    /// `*_files_start` entry point — keeps the field list out of every call
+    /// `*_files_start` entry point; keeps the field list out of every call
     /// site so adding new state members (like the estimator) is one-line.
     pub fn new(progress_interval: Duration) -> Self {
         Self {
@@ -91,8 +91,8 @@ impl WriteOperationState {
 
     /// Populate `bytes_per_second`, `files_per_second`, and `eta_seconds` on a
     /// `WriteProgressEvent` before it's emitted. Call this from every
-    /// `write-progress` emit site — local copy, local delete, trash, volume
-    /// copy, volume move, MTP, SMB — so the FE sees uniform rates and ETA
+    /// `write-progress` emit site (local copy, local delete, trash, volume
+    /// copy, volume move, MTP, SMB) so the FE sees uniform rates and ETA
     /// regardless of which backend produced the event.
     pub fn enrich_progress(&self, event: &mut WriteProgressEvent) {
         let stats = match self.estimator.lock() {
@@ -105,7 +105,7 @@ impl WriteOperationState {
                 event.files_total,
             ),
             // Poisoned mutex (another thread panicked). Skip the enrichment
-            // rather than propagating the panic — progress events are advisory.
+            // rather than propagating the panic; progress events are advisory.
             Err(_) => return,
         };
         event.bytes_per_second = Some(stats.bytes_per_second);
@@ -123,7 +123,7 @@ impl WriteOperationState {
     }
 
     /// Enrich and emit a `WriteProgressEvent` via an `OperationEventSink`. The
-    /// volume-copy/move pipeline uses this for testability — the test sink
+    /// volume-copy/move pipeline uses this for testability: the test sink
     /// stores events in a `Vec` instead of calling `app.emit`.
     pub fn emit_progress_via_sink(&self, sink: &dyn OperationEventSink, mut event: WriteProgressEvent) {
         self.enrich_progress(&mut event);
@@ -300,7 +300,7 @@ pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
         let current = OperationIntent::from_u8(state.intent.load(Ordering::Relaxed));
 
         // Valid transitions: Running → RollingBack/Stopped, RollingBack → Stopped.
-        // Stopped is terminal — no further transitions.
+        // Stopped is terminal; no further transitions.
         let valid = matches!(
             (current, target),
             (OperationIntent::Running, _) | (OperationIntent::RollingBack, OperationIntent::Stopped)
@@ -656,7 +656,7 @@ mod tests {
 
     #[test]
     fn cancel_stopped_is_terminal_for_any_target() {
-        // Stopped is terminal — no transition is valid from it.
+        // Stopped is terminal; no transition is valid from it.
         let id = unique_id("cancel-stopped");
         let state = install_state(&id, OperationIntent::Stopped);
         cancel_write_operation(&id, true);
@@ -684,7 +684,7 @@ mod tests {
 
     #[test]
     fn cancel_unknown_operation_is_a_silent_noop() {
-        // No installed state — must not panic, must not affect anything.
+        // No installed state; must not panic, must not affect anything.
         cancel_write_operation("does-not-exist-xyzzy", true);
         cancel_write_operation("does-not-exist-xyzzy", false);
     }
@@ -694,7 +694,7 @@ mod tests {
     #[test]
     fn cancel_all_stops_running_but_does_not_re_stop_already_stopped() {
         // Pins the `current != OperationIntent::Stopped` guard. If the guard
-        // flips to `==`, running operations would NOT be stopped — they'd
+        // flips to `==`, running operations would NOT be stopped; they'd
         // remain running.
         let running_id = unique_id("cancel-all-running");
         let stopped_id = unique_id("cancel-all-stopped");
@@ -742,7 +742,7 @@ mod tests {
     fn resolve_write_conflict_without_pending_sender_is_a_noop() {
         let id = unique_id("resolve-no-tx");
         let _state = install_state(&id, OperationIntent::Running);
-        // No sender stashed — must not panic.
+        // No sender stashed; must not panic.
         resolve_write_conflict(&id, ConflictResolution::Skip, false);
         uninstall_state(&id);
     }
@@ -977,7 +977,7 @@ mod tests {
         {
             let mut tx = CopyTransaction::new();
             tx.record_file(file.clone());
-            // No commit — Drop should roll back.
+            // No commit; Drop should roll back.
         }
 
         assert!(!file.exists(), "Drop-on-uncommitted must remove recorded files");

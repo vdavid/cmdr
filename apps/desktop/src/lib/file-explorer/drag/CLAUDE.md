@@ -15,12 +15,12 @@ Two backend commands, both routed through `native_drag.rs` so the pasteboard pay
 
 Pasteboard layout per drag (one `NSPasteboardItem` per file):
 
-- Every item: `public.file-url` (the URL's `absoluteString`) — Finder, IntelliJ, etc. iterate items reading this.
-- First item only: `public.utf8-plain-text` with the full shell-escaped path list joined by spaces — terminals (Warp,
+- Every item: `public.file-url` (the URL's `absoluteString`): Finder, IntelliJ, etc. iterate items reading this.
+- First item only: `public.utf8-plain-text` with the full shell-escaped path list joined by spaces (terminals like Warp
   etc.) read this via `pasteboard.string(forType:)` and insert the text at the cursor.
 - Later items: `public.utf8-plain-text` with their own escaped path (so item-iterating consumers don't see duplicates).
 - First item only: `NSFilenamesPboardType` (legacy `NSArray<NSString>` of all paths). Required for stock wry's
-  `collect_paths`, which reads only this type and `unwrap()`s if absent — see
+  `collect_paths`, which reads only this type and `unwrap()`s if absent; see
   [wry#1723](https://github.com/tauri-apps/wry/pull/1723) for the upstream fix. Drop this once wry ships a release
   containing the fix and we bump our `tauri-runtime-wry`.
 
@@ -30,11 +30,11 @@ terminals (which only accept Copy).
 
 Key files:
 
-- `drag-drop.ts` — Mouse tracking, threshold detection, drag initiation
-- `drag-image-renderer.ts` — Canvas rendering for rich OS drag preview (retina-aware, fading edges)
-- `commands/file_system/drag.rs` — `start_drag_paths` and `start_selection_drag` Tauri commands; both hop to the AppKit
+- `drag-drop.ts`: Mouse tracking, threshold detection, drag initiation
+- `drag-image-renderer.ts`: Canvas rendering for rich OS drag preview (retina-aware, fading edges)
+- `commands/file_system/drag.rs`: `start_drag_paths` and `start_selection_drag` Tauri commands; both hop to the AppKit
   main thread before calling into `native_drag::start_drag`
-- `native_drag.rs` — Builds `NSPasteboardItem`s as above, wraps each in an `NSDraggingItem`, and begins the dragging
+- `native_drag.rs`: Builds `NSPasteboardItem`s as above, wraps each in an `NSDraggingItem`, and begins the dragging
   session via a custom `CmdrDragSource` that returns the permissive op mask
 
 ### Drop-in (receiving drops)
@@ -43,15 +43,15 @@ Uses Tauri 2's `onDragDropEvent` (window-level) with DOM hit-testing to resolve 
 
 Key files:
 
-- `drop-target-hit-testing.ts` — Pure logic: `document.elementFromPoint()` + `data-drop-target-path` walk
-- `drop-target-validation.ts` — Pure logic: blocks drops onto the source itself or into a descendant
-- `DragOverlay.svelte` + `drag-overlay.svelte.ts` — Floating label near cursor
-- `../modifier-key-tracker.svelte.ts` — Alt/Cmd/Shift state (DragDropEvent doesn't include modifiers; lives in parent
+- `drop-target-hit-testing.ts`: Pure logic: `document.elementFromPoint()` + `data-drop-target-path` walk
+- `drop-target-validation.ts`: Pure logic: blocks drops onto the source itself or into a descendant
+- `DragOverlay.svelte` + `drag-overlay.svelte.ts`: Floating label near cursor
+- `../modifier-key-tracker.svelte.ts`: Alt/Cmd/Shift state (DragDropEvent doesn't include modifiers; lives in parent
   `file-explorer/` directory)
-- `drop-operation.ts` — Pure logic: resolves the `'move' | 'copy'` operation from source/target paths, the volumes list,
+- `drop-operation.ts`: Pure logic: resolves the `'move' | 'copy'` operation from source/target paths, the volumes list,
   and the current modifier state. Same function feeds the overlay label and the actual drop, so the displayed and
   executed operation can never disagree.
-- `drag-position.ts` — Corrects Tauri coords for docked DevTools (dev-only, zero overhead in prod)
+- `drag-position.ts`: Corrects Tauri coords for docked DevTools (dev-only, zero overhead in prod)
 - Integration in `DualPaneExplorer.svelte`
 
 ### Drag image detection (macOS-specific hack)
@@ -65,8 +65,8 @@ overlay (large source preview) or show it (tiny/no preview).
 
 Key files:
 
-- `drag_image_detection.rs` — Swizzle install + `draggingEntered:`/`draggingUpdated:`/`draggingExited:` overrides
-- `drag_image_swap.rs` — Image swapping logic for self-drags (transparent inside window, rich outside)
+- `drag_image_detection.rs`: Swizzle install + `draggingEntered:`/`draggingUpdated:`/`draggingExited:` overrides
+- `drag_image_swap.rs`: Image swapping logic for self-drags (transparent inside window, rich outside)
 
 ## Key decisions
 
@@ -87,7 +87,7 @@ Key files:
 - **Decision**: Custom `native_drag.rs` instead of the upstream `drag` crate
   - **Why**: The upstream crate writes only `public.file-url` per item and uses a single-op mask (Move OR Copy). That
     failed three ways: (1) terminals like Warp listen for `public.utf8-plain-text`, not file URLs, so drops were
-    silently dropped; (2) wry's `collect_paths` reads `NSFilenamesPboardType` and panics if the auto-derivation fails —
+    silently dropped; (2) wry's `collect_paths` reads `NSFilenamesPboardType` and panics if the auto-derivation fails;
     see [wry#1723](https://github.com/tauri-apps/wry/pull/1723) for the upstream fix; (3) terminals only accept
     `NSDragOperationCopy`, so a Move-only source mask makes them reject the drop entirely. Our version advertises
     file-URL + shell-escaped text + legacy filenames per the layout above, and publishes a permissive op mask.
@@ -97,7 +97,7 @@ Key files:
   - **Why**: Tauri doesn't expose modifier state in DragDropEvent. Emits `drag-modifiers` event only when state changes.
 - **Decision**: Drop operation follows Finder's volume-aware default plus Alt/Cmd/Shift modifiers
   - **Default**: same volume → Move, cross-volume → Copy (matches Finder's behavior on a stock macOS install).
-  - **Alt (Option)** held → force Copy. Beats Cmd/Shift if both are held — the user is asking for Copy.
+  - **Alt (Option)** held → force Copy. Beats Cmd/Shift if both are held: the user is asking for Copy.
   - **Cmd** held → force Move. Matches Finder's force-move modifier.
   - **Shift** held → force Move. Windows convention; included as a friendly accelerator for cross-platform users.
   - **Why**: Earlier we kept Copy-as-default for safety, but it created a confusing inconsistency: dragging out of Cmdr
@@ -113,14 +113,14 @@ Key files:
 - **Decision**: Viewport position correction only in dev mode
   - **Why**: DevTools docked mode shrinks viewport but Tauri reports window-relative positions. Offset computed via
     `outerSize()` vs `innerHeight`. Zero overhead in prod.
-- **Decision**: Self-drag op override — swizzle returns our resolved `NSDragOperation`, not wry's
+- **Decision**: Self-drag op override: swizzle returns our resolved `NSDragOperation`, not wry's
   - **Why**: Wry's stock `draggingEntered:`/`draggingUpdated:` returns `NSDragOperation::Copy` unconditionally for file
     pasteboards. Without an override, macOS would always draw the green "+" copy badge inside our window even when the
     user is performing a Move. The swizzle in `drag_image_detection.rs` forwards to wry's implementation (so Tauri's
     `onDragDropEvent` keeps firing), then substitutes the return value with our resolved op when `SELF_DRAG_ACTIVE` is
     true. The frontend pushes the resolved op via `setSelfDragResolvedOperation` from both `handleDragOver` (target
     hover changes) and the `drag-modifiers` event handler (modifier-only changes), deduped to op transitions only so IPC
-    traffic is minimal. External drag-in is unaffected — `SELF_DRAG_ACTIVE` is false then, so wry's default applies.
+    traffic is minimal. External drag-in is unaffected (`SELF_DRAG_ACTIVE` is false then, so wry's default applies).
 
 ## Gotchas
 
@@ -149,7 +149,7 @@ Key files:
     more".
 - **Gotcha**: `public.file-url` must be set with `setString:` not `setPropertyList:`
   - **Why**: Setting it via the property-list path (e.g., from `NSURL.pasteboardPropertyListForType:`) produces a value
-    AppKit can't parse back into a URL — logs "An invalid URL was found on the pasteboard" and breaks downstream
+    AppKit can't parse back into a URL. It logs "An invalid URL was found on the pasteboard" and breaks downstream
     derivations like `NSFilenamesPboardType`. Use `[item setString: url.absoluteString forType: "public.file-url"]`.
 - **Gotcha**: Stock wry panics on self-drag re-entry without `NSFilenamesPboardType`
   - **Why**: `wry-0.54.x::wkwebview::drag_drop::collect_paths` reads only the legacy `NSFilenamesPboardType` and
@@ -164,16 +164,16 @@ Key files:
     permissive mask (`Copy | Link | Generic | Move`) and let macOS modifier keys arbitrate.
 - **Gotcha**: The green "+" copy badge and the red multi-item count circle are macOS-rendered, not ours
   - **Why**: AppKit's dragging service composites both adornments on top of whatever drag image we hand it. There's no
-    public API to disable, restyle, or recolor them — they're system UI. The "+" tracks the resolved `NSDragOperation`
+    public API to disable, restyle, or recolor them: they're system UI. The "+" tracks the resolved `NSDragOperation`
     (`Copy` → green +, `Link` → curly arrow, `Move`/`Generic` → no badge); the count circle appears whenever there are
     > 1 `NSDraggingItem`s on the pasteboard. Even when the OS image is swapped to transparent for self-drags, the badges
     > still draw because they're separate sprites near the cursor, not painted onto the image surface. Don't try to
-    > replace or skin them — invest custom branding into `DragOverlay.svelte` instead, which is fully under our control.
+    > replace or skin them. Invest custom branding into `DragOverlay.svelte` instead, which is fully under our control.
 - **Gotcha**: For cross-volume self-drags, the "+" badge may appear ~1–2 frames late
   - **Why**: Both `performSingleFileDrag` and `performSelectionDrag` seed the swizzle with `'move'` via
     `setSelfDragResolvedOperation` right before `startDrag`, so the same-volume case (the default, most common) shows no
     "+" from frame one. For cross-volume drags the resolved op is `'copy'`, but JS only learns the target volume after
-    the first `handleDragOver`, so the badge flips from "no +" to "+" on the next `draggingUpdated:` — a slight "+"
+    the first `handleDragOver`, so the badge flips from "no +" to "+" on the next `draggingUpdated:`, a slight "+"
     appearing late, ~5–30ms. Picked this direction over the reverse because a badge appearing later feels intentional,
     while a badge appearing-then-disappearing reads as a glitch.
 

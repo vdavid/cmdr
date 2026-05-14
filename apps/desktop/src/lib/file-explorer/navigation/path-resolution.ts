@@ -2,7 +2,7 @@
  * Walk-up path resolution utility.
  *
  * Lives in its own module (separate from `path-navigation.ts`) so that
- * `app-status-store.ts` can import it without forming a cycle —
+ * `app-status-store.ts` can import it without forming a cycle:
  * `path-navigation.ts` imports from `app-status-store.ts` for
  * `getLastUsedPathForVolume`.
  */
@@ -17,8 +17,8 @@ export interface ResolveValidPathOptions {
   timeoutMs?: number
   /**
    * Volume root path (like "/Volumes/naspi"). When set, the walk-up stops at this
-   * boundary instead of continuing to "/" — prevents crossing into a different volume
-   * (which would fail for non-local volumes like SmbVolume).
+   * boundary instead of continuing to "/" (prevents crossing into a different volume,
+   * which would fail for non-local volumes like SmbVolume).
    */
   volumeRoot?: string
 }
@@ -42,7 +42,7 @@ export async function resolveValidPath(targetPath: string, options?: ResolveVali
     if (await check(path)) {
       return path
     }
-    // Don't walk above the volume root — that crosses into a different volume
+    // Don't walk above the volume root: that crosses into a different volume
     if (volumeRoot && path === volumeRoot) {
       break
     }

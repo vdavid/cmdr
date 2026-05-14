@@ -5,16 +5,16 @@
  * using the TauriPage API instead of the `browser` global.
  *
  * Key differences from WebDriverIO:
- * - No jsClick() workaround needed — tauriPage.click() works on all elements
- * - No pressSpaceKey() workaround — keyboard.press('Space') works directly
- * - No Backspace dispatchEvent hack — keyboard.press('Backspace') works
+ * - No jsClick() workaround needed: tauriPage.click() works on all elements
+ * - No pressSpaceKey() workaround: keyboard.press('Space') works directly
+ * - No Backspace dispatchEvent hack: keyboard.press('Backspace') works
  * - evaluate() takes a string expression, not a function
  */
 
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { ensureMcpClient, mcpCall, mcpReadResource } from '../e2e-shared/mcp-client.js'
 
-/** Union type for tauriPage — works in both Tauri and browser mode. */
+/** Union type for tauriPage. Works in both Tauri and browser mode. */
 type PageLike = TauriPage | BrowserPageAdapter
 
 // ── Selectors ────────────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ export function mapKey(key: string): string {
  * event path is the direct equivalent and is unaffected by DOM focus state.
  *
  * For non-menu shortcuts (arrow keys, Space, Tab), keep using `pressKey()` /
- * `tauriPage.keyboard.press()` — there's no Tauri-event equivalent.
+ * `tauriPage.keyboard.press()`. There's no Tauri-event equivalent.
  *
  * @example
  * await dispatchMenuCommand(tauriPage, 'file.rename') // F2-equivalent
@@ -113,7 +113,7 @@ export async function ensureAppReady(
   expectedFiles?: { leftPane?: string[]; rightPane?: string[] },
 ): Promise<void> {
   // Navigate to the main route to ensure we're on the file explorer page.
-  // This does NOT reset the directory — just ensures we're on the right route.
+  // This does NOT reset the directory. It just ensures we're on the right route.
   await navigateToRoute(tauriPage, '/')
 
   // Wait for file entries to be visible (confirms app is fully loaded)
@@ -141,7 +141,7 @@ export async function ensureAppReady(
 
   // Navigate both panes to the fixture root's left/ and right/ directories.
   // Previous tests may have entered sub-dir or navigated elsewhere.
-  // Route navigation (above) only ensures we're on the explorer PAGE —
+  // Route navigation (above) only ensures we're on the explorer PAGE,
   // it doesn't change which directory the panes are showing.
   // We emit mcp-nav-to-path Tauri events which the +page.svelte listener
   // forwards to DualPaneExplorer.navigateToPath().
@@ -194,7 +194,7 @@ export async function ensureAppReady(
 
   // Wait for the deterministic `data-app-ready` signal set at the end of
   // `+page.svelte`'s onMount (after the keydown listener and all MCP / dialog
-  // listeners are wired). This is the GATE — once it's true, onMount has
+  // listeners are wired). This is the GATE. Once it's true, onMount has
   // finished and the subsequent click+focus won't race against handler
   // attachment or focus theft from late-mounting components.
   await tauriPage.waitForFunction("document.querySelector('.dual-pane-explorer')?.dataset.appReady === 'true'", 10000)
@@ -377,7 +377,7 @@ export async function moveCursorToFile(tauriPage: PageLike, targetName: string):
   await ensureMcpClient(tauriPage)
   await mcpCall('move_cursor', { pane, filename: targetName })
 
-  // Confirm the cursor landed on the target file. Short timeout — `move_cursor`
+  // Confirm the cursor landed on the target file. Short timeout because `move_cursor`
   // is synchronous on the backend, this only covers the render tick.
   return pollUntil(
     tauriPage,
@@ -417,8 +417,8 @@ export async function navigateToRoute(tauriPage: PageLike, path: string): Promis
  * Opens a file viewer window via the production trigger and returns a TauriPage
  * scoped to the new viewer window.
  *
- * Uses the `open-file-viewer` Tauri event with a `{ path }` payload — the same
- * path the MCP server uses, which is wired in `routes/(main)/+page.svelte` to
+ * Uses the `open-file-viewer` Tauri event with a `{ path }` payload (the same
+ * path the MCP server uses), wired in `routes/(main)/+page.svelte` to
  * `openFileViewer(path)` (creates a `viewer-<timestamp>` WebviewWindow). Then
  * polls `listWindows()` for a label starting with `viewer-`.
  *
@@ -470,7 +470,7 @@ export async function closeScopedWindow(mainPage: TauriPage, scoped: TauriPage, 
   // the window closes mid-script and never returns the pw_result IPC, so the
   // plugin times out waiting for the eval to finish (30 s) and blocks the
   // socket for the next test. Calling close from the main page is fire-and-
-  // forget from the IPC plumbing's perspective — main's response comes back
+  // forget from the IPC plumbing's perspective. Main's response comes back
   // immediately, and the target window dies independently. (Touched arg
   // `scoped` is referenced to keep the API symmetrical with future helpers
   // that may need both pages.)
@@ -585,7 +585,7 @@ export async function countEntriesWithPrefix(tauriPage: PageLike, prefix: string
  *
  * Reads `cmdr://state` over MCP. Caller must have already called
  * `initMcpClient(tauriPage)`. Returns false on any error rather than
- * throwing — when in doubt, the caller should do the full reset.
+ * throwing. When in doubt, the caller should do the full reset.
  */
 export async function isStateClean(tauriPage: PageLike, localVolumeName: string): Promise<boolean> {
   try {
@@ -648,7 +648,7 @@ export async function pollUntil(
     try {
       if (await condition()) return true
     } catch {
-      // Element might not exist yet — keep polling
+      // Element might not exist yet, keep polling
     }
     await sleep(interval)
   }

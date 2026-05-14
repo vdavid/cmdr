@@ -2,7 +2,7 @@
  * Minimal Discord webhook client for #error-reports notifications.
  *
  * No queue infra. Single retry on 429 honoring `Retry-After`, then
- * `console.error` and drop. The channel is internal-only — at most one
+ * `console.error` and drop. The channel is internal-only, so at most one
  * dropped notification is acceptable.
  */
 
@@ -98,7 +98,7 @@ async function postOnce(url: string, body: unknown): Promise<Response> {
 
 /**
  * POST `body` to the webhook. On 429, sleep for `Retry-After` and retry once.
- * On second failure, log and drop — no exception to caller.
+ * On second failure, log and drop. No exception to caller.
  */
 async function postWithRetry(url: string, body: unknown, label: string): Promise<void> {
   try {

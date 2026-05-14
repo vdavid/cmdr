@@ -2,7 +2,7 @@
  * Tier 3 a11y tests for `VolumeBreadcrumb.svelte`.
  *
  * The volume selector breadcrumb + dropdown. Only the closed state is
- * audited here — the open dropdown uses lots of CSS positioning that
+ * audited here; the open dropdown uses lots of CSS positioning that
  * axe doesn't reason about correctly in jsdom. Volume-store and Tauri
  * IPC are stubbed.
  */

@@ -15,7 +15,7 @@ function buildModeToEnv(buildMode: string | null | undefined): 'prod' | 'dev' | 
 async function handleCrashNotifications(env: Bindings): Promise<void> {
   if (!env.CRASH_NOTIFICATION_EMAIL || !env.RESEND_API_KEY) return
 
-  // One row per crash, newest first. No grouping — the email shows every report.
+  // One row per crash, newest first. No grouping: the email shows every report.
   const { results } = await env.TELEMETRY_DB.prepare(
     `SELECT id, app_version, os_version, arch, signal, top_function, created_at, build_mode, short_id
          FROM crash_reports
@@ -115,7 +115,7 @@ async function handleDbSizeCheck(env: Bindings): Promise<void> {
 }
 
 /**
- * Daily sweep that corrects `total_bytes` KV drift (KV increments are racy — see
+ * Daily sweep that corrects `total_bytes` KV drift (KV increments are racy: see
  * `incrementTotalBytes`) and evicts oldest bundles if still above the high watermark.
  * Idempotent: safe to run multiple times.
  */

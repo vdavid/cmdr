@@ -22,12 +22,12 @@ then warnings. Returns the first non-ok result, or `{ severity: 'ok', message: '
 
 ```
 validateFilename()
-  ├── validateNotEmpty()          — error if blank after trim
-  ├── validateDisallowedChars()   — error if / or \0 present
-  ├── validateNameLength()        — error if >= 255 bytes (UTF-8)
-  ├── validatePathLength()        — error if >= 1024 bytes (UTF-8)
-  ├── validateExtensionChange()   — error/ok depending on 'yes'|'no'|'ask' setting
-  └── validateConflict()          — warning if a sibling already has that name (case-insensitive)
+  ├── validateNotEmpty()          : error if blank after trim
+  ├── validateDisallowedChars()   : error if / or \0 present
+  ├── validateNameLength()        : error if >= 255 bytes (UTF-8)
+  ├── validatePathLength()        : error if >= 1024 bytes (UTF-8)
+  ├── validateExtensionChange()   : error/ok depending on 'yes'|'no'|'ask' setting
+  └── validateConflict()          : warning if a sibling already has that name (case-insensitive)
 ```
 
 `validateDirectoryPath()` validates full directory paths (not filenames). Used by TransferDialog and composable with
@@ -35,11 +35,11 @@ individual validators in NewFolderDialog.
 
 ```
 validateDirectoryPath(path)
-  ├── empty check                 — error if blank after trim
-  ├── absolute check              — error if doesn't start with /
-  ├── null byte check             — error if contains \0
-  ├── total path length           — error if >= 1024 bytes (UTF-8)
-  └── per-component length        — error if any segment >= 255 bytes (splits on /, filters empty)
+  ├── empty check                 : error if blank after trim
+  ├── absolute check              : error if doesn't start with /
+  ├── null byte check             : error if contains \0
+  ├── total path length           : error if >= 1024 bytes (UTF-8)
+  └── per-component length        : error if any segment >= 255 bytes (splits on /, filters empty)
 ```
 
 Key types:
@@ -54,18 +54,18 @@ interface ValidationResult {
 
 ### Gotchas
 
-- Limits are `>= 255` and `>= 1024` (strictly), not `> 255` — the filesystem reserves the last byte.
+- Limits are `>= 255` and `>= 1024` (strictly), not `> 255`: the filesystem reserves the last byte.
 - `TextEncoder` is used for byte length, not `.length`, to handle multi-byte characters correctly.
 - `validateConflict` is case-insensitive (APFS). A case-only rename of the same file (e.g. `foo` → `Foo`) passes without
   warning. Pass `originalName` correctly or you'll get false positives.
 - `getExtension(filename)` returns the extension including the dot (e.g. `.txt`), or `''` for dotfiles without extension
   (e.g. `.gitignore` → `''`). Implemented as `lastIndexOf('.') <= 0`.
 - Extension change behavior is controlled by the `allowExtensionChanges` user setting (`yes`/`no`/`ask`). `'ask'`
-  returns `ok` at validation time — the save dialog handles it separately.
+  returns `ok` at validation time; the save dialog handles it separately.
 - `extensionsDifferMeaningfully(oldName, newName)` is the shared helper that decides whether an extension change is
   worth a confirmation. It returns false for case-only changes (e.g. `.JPG` → `.jpg`) and for changes between known
   equivalents (e.g. `.jpeg` → `.jpg`, `.md` → `.txt`), so users aren't pestered to confirm a metadata tweak. The
-  equivalence groups live in `EQUIVALENT_EXTENSION_GROUPS` in the same file — extend that constant to add more aliases.
+  equivalence groups live in `EQUIVALENT_EXTENSION_GROUPS` in the same file; extend that constant to add more aliases.
   Used by both `validateExtensionChange` and the rename save flow's "ask" gate.
 
 ## confirm-dialog.ts
@@ -96,7 +96,7 @@ When Linux support ships, this will need a per-filesystem case-sensitivity flag.
 
 **Decision**: `confirmDialog` wraps Tauri's `ask()` with explicit `cancelLabel: 'Cancel'` instead of the default.
 **Why**: The default label is "No", but macOS `NSAlert` only assigns the Escape key equivalent to a button labeled
-"Cancel". Without this override, Escape does nothing in confirmation dialogs — a jarring UX break.
+"Cancel". Without this override, Escape does nothing in confirmation dialogs, a jarring UX break.
 
 **Decision**: Custom `createDebounce`/`createThrottle` instead of lodash or a library. **Why**: Both are <35 lines. The
 throttle guarantees a trailing call (last value always fires), which lodash's default does not. The debounce exposes
@@ -117,6 +117,6 @@ tooltip. Existing callers default to always-on tooltip behavior.
 
 ## Dependencies
 
-- `filename-validation.ts` — zero external dependencies
-- `confirm-dialog.ts` — `@tauri-apps/plugin-dialog`
-- `shorten-middle.ts` — `@chenglou/pretext` (type import only; runtime import via `createPretextMeasure` caller)
+- `filename-validation.ts`: zero external dependencies
+- `confirm-dialog.ts`: `@tauri-apps/plugin-dialog`
+- `shorten-middle.ts`: `@chenglou/pretext` (type import only; runtime import via `createPretextMeasure` caller)

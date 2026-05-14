@@ -4,7 +4,7 @@
  * ModalDialog is the base for every dialog in the app. These tests cover
  * ARIA wiring (role, aria-modal, aria-labelledby, aria-describedby) and
  * the close-button label. Focus-trap and Escape behavior are covered in
- * the E2E tier — jsdom's focus model is incomplete.
+ * the E2E tier (jsdom's focus model is incomplete).
  */
 
 import { describe, it, vi } from 'vitest'

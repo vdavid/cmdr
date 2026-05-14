@@ -51,7 +51,7 @@ func writeChangelog(t *testing.T, dir, content string) {
 func TestRunChangelogCommitLinks_MissingChangelogIsSuccess(t *testing.T) {
 	// Decision: treat missing CHANGELOG.md as success rather than skip. Skipped
 	// reads as "something's wrong, can't check" in the runner UI; success is more
-	// accurate — there are zero links, so zero bad links.
+	// accurate: there are zero links, so zero bad links.
 	tmp := t.TempDir()
 	initTempGitRepo(t, tmp)
 
@@ -123,7 +123,7 @@ func TestRunChangelogCommitLinks_BadURLSHA(t *testing.T) {
 func TestRunChangelogCommitLinks_TextURLMismatch(t *testing.T) {
 	tmp := t.TempDir()
 	fullSHA := initTempGitRepo(t, tmp)
-	// Use the real SHA in the URL so the URL resolves — the failure should come
+	// Use the real SHA in the URL so the URL resolves; the failure should come
 	// purely from the text/URL mismatch, not from a missing SHA.
 	urlSHA := fullSHA[:7]
 	textSHA := "def4567" // totally different prefix
@@ -145,7 +145,7 @@ func TestRunChangelogCommitLinks_ShortSHAFlagged(t *testing.T) {
 	tmp := t.TempDir()
 	initTempGitRepo(t, tmp)
 
-	// 5 chars — below the 6-char minimum the regex accepts.
+	// 5 chars: below the 6-char minimum the regex accepts.
 	content := "# Changelog\n\n- Short ([abcde](https://github.com/vdavid/cmdr/commit/abcde))\n"
 	writeChangelog(t, tmp, content)
 

@@ -341,7 +341,7 @@ mod tests {
 
         assert!(matches!(result, Err(WriteOperationError::Cancelled { .. })));
         // Partial file cleanup is now async/best-effort (fires on a detached thread),
-        // so we don't assert file absence here — it may or may not be deleted yet.
+        // so we don't assert file absence here; it may or may not be deleted yet.
 
         cleanup_temp_dir(&temp_dir);
     }
@@ -391,7 +391,7 @@ mod tests {
     //
     // copy_metadata is the orchestrator for xattrs + ACLs + timestamps +
     // permissions. cargo-mutants showed survivors for each of those sub-
-    // functions and for `copy_metadata` itself — replacing any of them
+    // functions and for `copy_metadata` itself: replacing any of them
     // with `Ok(())` is undetectable from the existing tests because we
     // never check that those side effects actually happen. The
     // permissions axis is already covered by
@@ -442,7 +442,7 @@ mod tests {
         let val = b"sentinel-value-12345";
         if let Err(e) = xattr::set(&src, key, val) {
             // Some CI / encrypted-disk setups disallow user xattrs. Skip in
-            // that case rather than failing — the test is opportunistic.
+            // that case rather than failing: the test is opportunistic.
             log::warn!("chunked_copy_preserves_user_xattrs: setting xattr failed: {e}; skipping");
             cleanup_temp_dir(&temp_dir);
             return;

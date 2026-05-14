@@ -4,8 +4,8 @@ Opens files in a read-only viewer with instant load for any file size, virtual s
 
 ## Key files
 
-- `open-viewer.ts` — `openFileViewer(filePath)` creates new `WebviewWindow` with unique label
-- Route: `apps/desktop/src/routes/viewer/+page.svelte` — viewer UI with virtual scrolling, search bar, status bar
+- `open-viewer.ts`: `openFileViewer(filePath)` creates new `WebviewWindow` with unique label
+- Route: `apps/desktop/src/routes/viewer/+page.svelte`: viewer UI with virtual scrolling, search bar, status bar
 
 ## User interaction
 
@@ -17,15 +17,15 @@ Opens files in a read-only viewer with instant load for any file size, virtual s
 
 ## Architecture
 
-- **Virtual scrolling** — only visible lines rendered. Fixed 18px line height, per-line pretext heights when wrap is on
+- **Virtual scrolling**: only visible lines rendered. Fixed 18px line height, per-line pretext heights when wrap is on
   (FullLoad), or averaged heights (ByteSeek/LineIndex).
-- **Session-based** — `viewer_open` returns session ID. All operations pass session ID. `viewer_close` frees resources.
+- **Session-based**: `viewer_open` returns session ID. All operations pass session ID. `viewer_close` frees resources.
 - **Three backends** (chosen by Rust based on file size):
-  - FullLoad (<1MB) — entire file in RAM
-  - ByteSeek (instant) — no pre-scan, seeks by byte offset
-  - LineIndex (after scan) — O(lines/256) memory, O(1) line seeks
-- **Background search** — frontend calls `search_start`, polls `search_poll` until done or canceled
-- **Multiple viewers** — each window has unique label (`viewer-${timestamp}`). No limit on open viewers.
+  - FullLoad (<1MB): entire file in RAM
+  - ByteSeek (instant): no pre-scan, seeks by byte offset
+  - LineIndex (after scan): O(lines/256) memory, O(1) line seeks
+- **Background search**: frontend calls `search_start`, polls `search_poll` until done or canceled
+- **Multiple viewers**: each window has unique label (`viewer-${timestamp}`). No limit on open viewers.
 
 ## Key decisions
 
@@ -36,7 +36,7 @@ are approximate. LineIndex builds an O(lines/256) index in the background for ex
 progressively better behavior without choosing a mode.
 
 **Decision**: Fraction-based seeking as the default scroll model for ByteSeek. **Why**: Without a line index, the
-frontend can't ask for "line 50000" — the backend doesn't know where it is. Instead, scrolling maps to a byte fraction
+frontend can't ask for "line 50000". The backend doesn't know where it is. Instead, scrolling maps to a byte fraction
 of the file (e.g., 50% = seek to byte offset at file midpoint). The frontend caches lines at the position it requested,
 not at the backend's reported line number, because the two estimates can differ (different average line length
 assumptions). Once the background indexer finishes, it switches to exact line seeks automatically.
@@ -46,7 +46,7 @@ assumptions). Once the background indexer finishes, it switches to exact line se
 (millisecond resolution) and don't need escaping.
 
 **Decision**: Double `requestAnimationFrame` before `window.close()`. **Why**: WebKit on macOS can crash if you destroy
-a `WebPageProxy` while it's recalculating content insets. A single `requestAnimationFrame` isn't enough — you need the
+a `WebPageProxy` while it's recalculating content insets. A single `requestAnimationFrame` isn't enough. You need the
 current frame to complete AND the next one to start. This also means you must NOT call `setFocus()` on another window
 before closing, as that can trigger the dying window to recalculate.
 
@@ -83,7 +83,7 @@ Lossy display is good enough for quick inspection.
 bytes for speed. JS `String.substring()` uses UTF-16 code units. The backend does the conversion so the frontend can
 highlight matches correctly in JavaScript strings.
 
-**Gotcha**: The `windowReady` flag gates `closeWindow()` — if Escape is pressed before mount finishes, close is queued.
+**Gotcha**: The `windowReady` flag gates `closeWindow()`. If Escape is pressed before mount finishes, close is queued.
 **Why**: WebKit crashes if you close a window before its content process has finished initializing. The flag is set
 after a `requestAnimationFrame` post-mount, ensuring at least one paint cycle has completed.
 

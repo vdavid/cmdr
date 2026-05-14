@@ -64,7 +64,7 @@ function transformHtml(html) {
 
       i = tagEnd + 1
     } else {
-      // Text content — find the next tag
+      // Text content: find the next tag
       const nextTag = html.indexOf('<', i)
       const text = nextTag === -1 ? html.substring(i) : html.substring(i, nextTag)
       result += convertQuotes(text)

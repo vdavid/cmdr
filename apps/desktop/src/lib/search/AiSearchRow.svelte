@@ -1,6 +1,6 @@
 <script lang="ts">
     /**
-     * AiSearchRow — AI prompt input + Ask AI button + caveat + status/error display.
+     * AiSearchRow: AI prompt input + Ask AI button + caveat + status/error display.
      *
      * Shown when AI search is enabled. The parent orchestrator owns the actual AI search
      * execution; this component just renders the input UI and fires callbacks.
@@ -79,7 +79,7 @@
         gap: var(--spacing-sm);
     }
 
-    /* AI prompt row styling — subtle left accent border */
+    /* AI prompt row styling: subtle left accent border */
     .ai-prompt-row {
         border-left: 2px solid var(--color-accent);
         background: var(--color-bg-secondary);

@@ -2,7 +2,7 @@
  * Unit tests for the updater module's gating logic.
  *
  * The "update ready, restart now" toast must be suppressed during onboarding (the user just downloaded
- * the app — they'd be confused) and while the FDA-revoked re-prompt is showing. These tests cover the
+ * the app, they'd be confused) and while the FDA-revoked re-prompt is showing. These tests cover the
  * pure predicate plus the two trigger paths (`notifyOnboardingComplete` and `setFdaPromptShowing`).
  */
 

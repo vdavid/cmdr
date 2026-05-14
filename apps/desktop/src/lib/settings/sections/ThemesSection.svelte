@@ -15,7 +15,7 @@
 
     const themeModeDef = getSettingDefinition('theme.mode') ?? { label: '', description: '' }
 
-    // Theme application lives in `settings-applier.ts` — it runs at every window's
+    // Theme application lives in `settings-applier.ts`; it runs at every window's
     // startup, so the persisted choice takes effect on cold launches and not just
     // when this section happens to mount. Toggling the radio fires `setSetting`,
     // which the applier subscribes to.

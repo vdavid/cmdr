@@ -6,7 +6,7 @@
      * Searches the in-memory index by filename (wildcards), size, and date.
      *
      * Input layout:
-     * - AI enabled: two rows — AI prompt row (top, focused) + pattern row (bottom)
+     * - AI enabled: two rows (AI prompt row on top, focused) + pattern row (bottom)
      * - AI disabled: single pattern row with Search button
      *
      * This is the orchestrator: overlay, mount/unmount, keyboard dispatch, search
@@ -184,7 +184,7 @@
         }
     }
 
-    /** Capture-phase Escape handler — fires before native elements (select, date picker) can consume the event. */
+    /** Capture-phase Escape handler. Fires before native elements (select, date picker) can consume the event. */
     function handleEscapeCapture(e: KeyboardEvent): void {
         if (e.key === 'Escape') {
             e.preventDefault()
@@ -215,7 +215,7 @@
                 setIndexEntryCount(result.entryCount)
             }
         } catch {
-            // Index not available — indexing disabled, not started, or backend unavailable
+            // Index not available: indexing disabled, not started, or backend unavailable
             setIsIndexAvailable(false)
         }
 
@@ -277,7 +277,7 @@
             setCursorIndex(0)
             hoveredIndex = null
         } catch {
-            // IPC error — ignore silently
+            // IPC error: ignore silently
         } finally {
             setIsSearching(false)
         }
@@ -480,14 +480,14 @@
 
     /** Handles modifier-key shortcuts (⌥F, ⌥D, ⌘Enter). Returns true if handled. */
     function handleModifierShortcuts(e: KeyboardEvent): boolean {
-        // ⌥F — set scope to current folder path
+        // ⌥F: set scope to current folder path
         if (e.altKey && !e.metaKey && !e.shiftKey && e.key === 'f') {
             e.preventDefault()
             setScope(currentFolderPath)
             scheduleSearch()
             return true
         }
-        // ⌥D — clear scope (search entire drive)
+        // ⌥D: clear scope (search entire drive)
         if (e.altKey && !e.metaKey && !e.shiftKey && e.key === 'd') {
             e.preventDefault()
             setScope('')

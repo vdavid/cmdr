@@ -83,7 +83,7 @@ fn populate_worktree_columns(fe: &mut FileEntry, wt_repo: &gix::Repository) {
                 fe.display_size_tooltip = Some(format!("Detached at {}", target));
             }
             gix::head::Kind::Unborn(_) => {
-                // Fresh worktree without commits — leave the cell blank.
+                // Fresh worktree without commits, leave the cell blank.
             }
         }
     }

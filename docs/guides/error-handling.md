@@ -88,7 +88,7 @@ Examples:
 Unrecognized errno codes fall through to a generic "Couldn't read this folder" message (Serious category, retry
 enabled).
 
-See the full list in `friendly_error.rs` — search for `fn friendly_error_from_errno`.
+See the full list in `friendly_error.rs` (search for `fn friendly_error_from_errno`).
 
 ### Layer 3: provider enrichment
 

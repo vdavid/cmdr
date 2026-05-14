@@ -44,7 +44,7 @@ vi.mock('$lib/tauri-commands', () => ({
         },
         cancel,
       }
-      // Resolve the command promise immediately — the dialog `await`s it but we
+      // Resolve the command promise immediately. The dialog `await`s it but we
       // don't model the "command still pending" state in these tests; events are
       // delivered via the channel, not the promise.
       return { promise: Promise.resolve(), cancel }

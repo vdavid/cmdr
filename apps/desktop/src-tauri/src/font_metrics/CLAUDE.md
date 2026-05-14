@@ -8,7 +8,7 @@ widest filename is measured here, then the FE adds chrome and clamps.
 
 ## Key file
 
-`mod.rs` — the entire module is one file (plus `mod_test.rs` for tests).
+`mod.rs`: the entire module is one file (plus `mod_test.rs` for tests).
 
 ### Public API
 
@@ -19,8 +19,8 @@ widest filename is measured here, then the FE adds chrome and clamps.
 | `calculate_max_width(texts, font_id)` | Find the widest string from a slice; returns `None` if font ID not in cache |
 | `load_from_disk(app, font_id)` | Read `{font_id}.bin` (bincode2) from `~/…/font-metrics/` |
 | `save_to_disk(app, font_id, widths)` | Serialize and write metrics to `{font_id}.bin` |
-| `init_font_metrics(app, font_id)` | Called at app startup — loads a single specific font ID from disk into cache if its file exists |
-| `load_all_metrics_from_disk(app)` | Called at app startup — scans `~/…/font-metrics/` and pre-loads every `*.bin` file. Used so user-customized text sizes are warm on first paint. |
+| `init_font_metrics(app, font_id)` | Called at app startup: loads a single specific font ID from disk into cache if its file exists |
+| `load_all_metrics_from_disk(app)` | Called at app startup: scans `~/…/font-metrics/` and pre-loads every `*.bin` file. Used so user-customized text sizes are warm on first paint. |
 
 ### Internal state
 
@@ -32,11 +32,11 @@ METRICS_CACHE: LazyLock<RwLock<HashMap<String, FontMetrics>>>
 
 ## Key patterns
 
-- **Cache key format**: `"{family}-{weight}-{size}"`, e.g. `"system-400-12"`. Must match what the frontend's `getCurrentFontId()` returns — a mismatch means `calculate_max_width` returns `None`. The size component now varies with the user's `appearance.textSize` × system Accessibility text size, so several sizes can live in the cache simultaneously (e.g. `system-400-12` and `system-400-15`).
+- **Cache key format**: `"{family}-{weight}-{size}"`, e.g. `"system-400-12"`. Must match what the frontend's `getCurrentFontId()` returns. A mismatch means `calculate_max_width` returns `None`. The size component now varies with the user's `appearance.textSize` × system Accessibility text size, so several sizes can live in the cache simultaneously (e.g. `system-400-12` and `system-400-15`).
 - **Disk format**: bincode2 binary (~426 KB for a full Latin character set). File path: `~/Library/Application Support/…/font-metrics/{font_id}.bin`.
 - **Unmeasured code points** (e.g., rare Unicode) fall back to `average_width` computed as the mean of all measured widths.
 - `calculate_max_width` is the primary public entry point for width calculation. `FontMetrics::calculate_text_width` is the per-string method used internally.
-- `init_font_metrics` is idempotent — safe to call multiple times; it just overwrites the cache entry.
+- `init_font_metrics` is idempotent: safe to call multiple times; it just overwrites the cache entry.
 
 ## Key decisions
 
@@ -51,9 +51,9 @@ METRICS_CACHE: LazyLock<RwLock<HashMap<String, FontMetrics>>>
 
 **Decision**: Average-width fallback for unmeasured code points instead of returning an error or zero.
 **Why**: The frontend only measures a known character set: Latin, BMP-printable characters, and common emoji
-(U+1F300–U+1FAFF). Filenames can contain any Unicode — CJK, Arabic, complex scripts, rare symbols. Returning zero would
+(U+1F300–U+1FAFF). Filenames can contain any Unicode: CJK, Arabic, complex scripts, rare symbols. Returning zero would
 collapse unknown characters to invisible width, breaking column alignment. The average width keeps Brief-mode columns
-roughly sized even for scripts the frontend didn't explicitly measure — at the cost of slight visual mis-measurement
+roughly sized even for scripts the frontend didn't explicitly measure, at the cost of slight visual mis-measurement
 for CJK / complex-script filenames. Emoji and Latin are pixel-accurate; everything else is approximate. Expanding the
 measured set is a follow-up.
 
@@ -61,10 +61,10 @@ measured set is a follow-up.
 
 **Gotcha**: If the frontend's `getCurrentFontId()` format changes, `calculate_max_width` silently returns `None`.
 **Why**: The cache key is a string like `"system-400-12"` that must match exactly between frontend and backend. There's
-no validation — a mismatch just means the key isn't found in the cache. The Brief-column path surfaces this via
+no validation. A mismatch just means the key isn't found in the cache. The Brief-column path surfaces this via
 `BriefColumnsError::FontMetricsNotReady`, which the IPC wrapper maps to `IpcError { message: "font_metrics_not_ready" }`.
 The frontend catches that specific error, calls `ensureFontMetricsLoaded()`, and retries once. Until widths arrive,
-columns render at `MAX_BRIEF_COLUMN_WIDTH` as a fallback. Same race fires on a scale flip — the new font ID isn't
+columns render at `MAX_BRIEF_COLUMN_WIDTH` as a fallback. Same race fires on a scale flip: the new font ID isn't
 cached for ~100–300 ms while metrics get re-measured.
 
 ## Dependencies

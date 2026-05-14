@@ -81,7 +81,7 @@ export function parseActivationError(e: unknown): LicenseActivationError | null 
         }
       }
     } catch {
-      // Not JSON — fall through
+      // Not JSON, fall through
     }
   }
 
@@ -106,7 +106,7 @@ export async function getWindowTitle(): Promise<string> {
 
 /**
  * Activates a license key (verify + commit in one call).
- * Kept for backward compatibility — new code should use verifyLicense + commitLicense.
+ * Kept for backward compatibility. New code should use verifyLicense + commitLicense.
  */
 export async function activateLicense(licenseKey: string): Promise<LicenseInfo> {
   const res = await commands.activateLicense(licenseKey)

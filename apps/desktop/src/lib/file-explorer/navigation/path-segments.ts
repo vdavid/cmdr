@@ -5,7 +5,7 @@
  *
  * The first segment after a `.git` is the start of the portal; every
  * subsequent segment stays inside it. The `.git` segment itself is also
- * colored — that's where the portal opens.
+ * colored: that's where the portal opens.
  */
 export interface PathSegment {
   /** Visible text. */
@@ -20,7 +20,7 @@ export interface PathSegment {
  *
  * Empty leading segments (from a leading `/`) are preserved as the root
  * marker so the joined output round-trips. Empty mid-path segments
- * (from doubled slashes) are dropped — they're never legitimate.
+ * (from doubled slashes) are dropped. They're never legitimate.
  */
 export function splitPathSegments(displayPath: string): PathSegment[] {
   if (displayPath.length === 0) return []

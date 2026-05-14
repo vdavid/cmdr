@@ -38,7 +38,7 @@ mod tests {
     //! Tests for the frontend log bridge path.
     //!
     //! Locked behind a process-global mutex because `auto_dispatcher` keeps state in
-    //! statics — running these alongside the dispatcher's own tests in parallel would
+    //! statics, so running these alongside the dispatcher's own tests in parallel would
     //! race on the shared `STATE` and `ENABLED` flag.
     use super::*;
     use crate::error_reporter::auto_dispatcher::{reset_for_test, set_enabled, snapshot_for_test};
@@ -74,7 +74,7 @@ mod tests {
         reset_for_test();
     }
 
-    /// Non-error FE log levels must NOT touch the dispatcher — only `Error` reaches the
+    /// Non-error FE log levels must NOT touch the dispatcher: only `Error` reaches the
     /// `log_error!` arm of `batch_fe_logs`. Guards against a future regression where
     /// someone wires every level through the macro by accident.
     #[test]

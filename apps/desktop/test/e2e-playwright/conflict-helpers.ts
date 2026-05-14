@@ -12,7 +12,7 @@ import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { expect } from './fixtures.js'
 import { pollUntil, sleep, TRANSFER_DIALOG } from './helpers.js'
 
-/** Union type for tauriPage — works in both Tauri and browser mode. */
+/** Union type for tauriPage (works in both Tauri and browser mode). */
 type PageLike = TauriPage | BrowserPageAdapter
 
 // ── Fixture helpers ──────────────────────────────────────────────────────────
@@ -150,7 +150,7 @@ export async function selectAll(tauriPage: PageLike): Promise<void> {
 /** Waits for the dry-run scan to detect conflicts and show the policy radio buttons. */
 export async function waitForConflictPolicy(tauriPage: PageLike): Promise<void> {
   // 5 s: dry-run completes in well under 1 s on a healthy machine. The previous
-  // 15 s value was dead under the suite's 8 s per-test ceiling — it just hid
+  // 15 s value was dead under the suite's 8 s per-test ceiling; it just hid
   // failures behind the outer timeout instead of producing a useful error.
   const found = await pollUntil(tauriPage, async () => tauriPage.isVisible(`${TRANSFER_DIALOG} .conflict-policy`), 5000)
   expect(found).toBe(true)
@@ -180,7 +180,7 @@ export async function waitForDialogsToClose(tauriPage: PageLike, timeout = 5000)
 /**
  * Clicks a button by its trimmed text within `containerSelector`. Retries until
  * either the click lands or the timeout expires. Guards against Svelte rendering
- * the container without its inner buttons yet — a plain
+ * the container without its inner buttons yet; a plain
  * `querySelectorAll(...).click()` would silently no-op on an empty NodeList and
  * the test would then sit waiting for the next UI state that never comes.
  *

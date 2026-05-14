@@ -8,7 +8,7 @@
  *
  * The chrome covers the fixed-width sidebar (220 px) plus the content
  * wrapper's horizontal padding (16 px each side = 32 px). Whatever the text
- * scale, those values stay constant — only the readable content area scales,
+ * scale, those values stay constant: only the readable content area scales,
  * so a row reads with the same proportions at every size. Height scales
  * fully (no fixed-height chrome inside).
  *
@@ -38,7 +38,7 @@ export const SETTINGS_CHROME_WIDTH = 252
 export const SETTINGS_CONTENT_BASE_MIN_WIDTH = 348
 export const SETTINGS_CONTENT_BASE_MAX_WIDTH = 600
 
-/** Height scales fully — no fixed-height chrome inside the settings layout. */
+/** Height scales fully, with no fixed-height chrome inside the settings layout. */
 export const SETTINGS_BASE_HEIGHT = 600
 export const SETTINGS_BASE_MIN_HEIGHT = 400
 

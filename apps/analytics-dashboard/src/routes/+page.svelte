@@ -417,7 +417,7 @@
                                 {/if}
                             {/if}
                         {:else if cf.downloads.length > 0}
-                            <!-- Fewer than 2 days of data — show tables only -->
+                            <!-- Fewer than 2 days of data: show tables only -->
                             <div class="grid gap-4 md:grid-cols-3">
                                 <div>
                                     <h3 class="mb-2 text-sm font-medium text-text-secondary">By version</h3>

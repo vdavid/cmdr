@@ -133,7 +133,7 @@ impl InMemoryVolume {
     }
 }
 
-/// Chunk size for InMemoryReadStream (64 KB — small enough to test multi-chunk behavior
+/// Chunk size for InMemoryReadStream (64 KB, small enough to test multi-chunk behavior
 /// without needing large test data).
 const IN_MEMORY_STREAM_CHUNK_SIZE: usize = 64 * 1024;
 

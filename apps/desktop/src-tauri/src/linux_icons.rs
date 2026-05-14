@@ -2,7 +2,7 @@
 //!
 //! Uses `freedesktop-icons` (pure Rust) to look up icons in the active theme
 //! (Adwaita, Papirus, Yaru, etc.) and `mime_guess` for extension-to-MIME mapping.
-//! Thread-safe — works with rayon parallelism unlike GTK-based icon providers.
+//! Thread-safe: works with rayon parallelism unlike GTK-based icon providers.
 
 use image::DynamicImage;
 use log::{debug, warn};
@@ -81,7 +81,7 @@ fn lookup_first_icon(names: &[String], size: u16) -> Option<DynamicImage> {
                 let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("?");
                 debug!("  {name}: found {path:?} (format: {ext})");
 
-                // Skip SVGs — we don't have an SVG renderer and adding resvg would be heavy
+                // Skip SVGs: we don't have an SVG renderer and adding resvg would be heavy
                 if ext == "svg" {
                     debug!("  {name}: skipped (SVG)");
                     continue;

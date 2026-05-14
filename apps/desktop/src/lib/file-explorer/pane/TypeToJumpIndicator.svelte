@@ -1,11 +1,11 @@
 <script lang="ts">
     /**
      * Tooltip-like overlay that surfaces the user's in-flight type-to-jump buffer
-     * in the bottom-right of the pane. Pure presentational — all state lives in
+     * in the bottom-right of the pane. Pure presentational: all state lives in
      * `type-to-jump-state.svelte.ts` and is fed in via props.
      *
      * The stale state (italic + reduced opacity) signals that the buffer reset
-     * fired but the indicator hasn't hidden yet — the next keystroke will start a
+     * fired but the indicator hasn't hidden yet. The next keystroke will start a
      * fresh buffer.
      */
 

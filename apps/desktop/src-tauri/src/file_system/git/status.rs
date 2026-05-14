@@ -270,7 +270,7 @@ fn tree_index_to_entry(change: &gix::diff::index::Change) -> Option<(String, Ent
     Some((path, code))
 }
 
-/// Maps an `IndexWorktree` item (index vs worktree — i.e., unstaged) to an
+/// Maps an `IndexWorktree` item (index vs worktree, i.e., unstaged) to an
 /// `EntryStatus`. Returns `None` for items that don't represent a user-visible
 /// change (for example, stat-refresh-only updates).
 fn index_worktree_to_entry(
@@ -323,7 +323,7 @@ fn index_worktree_to_entry(
 
 /// Returns the entries that fall under `dir_in_worktree`. Repo-root scope
 /// (empty relative path) returns everything. Otherwise we filter by
-/// `<rel>/` prefix — the dir itself is excluded, only its descendants land
+/// `<rel>/` prefix: the dir itself is excluded, only its descendants land
 /// in the result, matching what the file-list cell renderer needs.
 fn slice_entries(entries: &[EntryStatus], work_dir: &Path, dir_in_worktree: &Path) -> Vec<EntryStatus> {
     let rel = match dir_in_worktree.strip_prefix(work_dir) {
@@ -380,7 +380,7 @@ mod slice_tests {
         let paths: Vec<_> = out.iter().map(|e| e.relative_path.as_str()).collect();
         // The dir "sub" matches `e.relative_path == rel`, but only because the
         // index records it explicitly (rare for git but possible for renames).
-        // We keep this case for correctness symmetry — what matters is no
+        // We keep this case for correctness symmetry. What matters is no
         // false positives like "subterranean.txt" sneaking in.
         assert!(paths.iter().any(|p| *p == "sub" || *p == "sub/b.txt"));
         assert!(!paths.contains(&"subterranean.txt"));

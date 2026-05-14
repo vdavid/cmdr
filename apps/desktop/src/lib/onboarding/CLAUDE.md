@@ -15,18 +15,18 @@ Access in macOS System Settings.
 
 Two actions are available:
 
-- **Open System Settings** — re-runs `checkFullDiskAccess()` (so TCC has a fresh registration of the bundle and the Cmdr
+- **Open System Settings**: re-runs `checkFullDiskAccess()` (so TCC has a fresh registration of the bundle and the Cmdr
   row appears in the FDA list), then calls `openPrivacySettings()` via IPC, then shows a follow-up hint to restart the
   app. The IPC deep-links straight to the Full Disk Access pane (not the Privacy category list).
-- **Deny** — saves `fullDiskAccessChoice: 'deny'` to settings, calls `startIndexingAfterFdaDecision()` so the indexer
+- **Deny**: saves `fullDiskAccessChoice: 'deny'` to settings, calls `startIndexingAfterFdaDecision()` so the indexer
   starts within this session, then calls `onComplete()` to dismiss.
 
 ## FDA gate
 
 Two things are gated on the FDA decision at app launch:
 
-1. **Drive indexer** — recursive scan from `/` would touch iCloud, Photos, and other TCC-protected paths.
-2. **Path-based icon fetches** in `volumes::list_locations` — `NSWorkspace.iconForFile:` resolution for `/Applications`,
+1. **Drive indexer**: recursive scan from `/` would touch iCloud, Photos, and other TCC-protected paths.
+2. **Path-based icon fetches** in `volumes::list_locations`: `NSWorkspace.iconForFile:` resolution for `/Applications`,
    `~/Desktop`, `~/Documents`, `~/Downloads`, the iCloud root, and other cloud-storage paths reaches into adjacent TCC
    services. On a fresh launch with FDA off, this stacks 5–10 macOS native popups (MediaLibrary, AppData, Desktop,
    Documents, Downloads, ...) on top of this in-app FDA modal.
@@ -39,7 +39,7 @@ After the user decides:
 
 - **Deny** path: `FullDiskAccessPrompt.svelte` calls `startIndexingAfterFdaDecision()`. The Tauri command clears the
   runtime gate, starts the MTP hotplug watcher, and starts the drive indexer. As the scan walks protected paths
-  (`~/Downloads`, `~/Documents`, `~/Desktop`, ...), macOS fires one TCC popup per folder — those are the "individual
+  (`~/Downloads`, `~/Documents`, `~/Desktop`, ...), macOS fires one TCC popup per folder; those are the "individual
   Allow/Deny prompts" the user opted into by denying FDA. Folders the user denies stay unindexed; their size shows as
   `<dir>`. The command does NOT re-emit `volumes-changed`: that would refire per-folder prompts via NSWorkspace icon
   resolution on top of the scan's prompts, doubling the dialog count. Sidebar favorites stay icon-less until the next
@@ -56,7 +56,7 @@ The `wasRevoked` prop switches the copy from "first ask" to "revoked" framing.
 
 `routes/(main)/+page.svelte` decides whether to render the prompt by checking:
 
-1. `checkFullDiskAccess()` IPC result — if FDA is already granted, sync setting to `'allow'` and skip.
+1. `checkFullDiskAccess()` IPC result: if FDA is already granted, sync setting to `'allow'` and skip.
 2. If FDA is not granted:
    - `'notAskedYet'` → show first-time onboarding prompt.
    - `'allow'` (but FDA revoked) → show prompt with "revoked" framing.
@@ -65,14 +65,14 @@ The `wasRevoked` prop switches the copy from "first ask" to "revoked" framing.
 ## Onboarding flag and deferred update toast
 
 A separate `isOnboarded` boolean lives in `$lib/settings-store.ts` (default `false`). It exists so the auto-update
-"restart to apply" toast doesn't fire during first-launch onboarding (the user just downloaded the app — they'd be
+"restart to apply" toast doesn't fire during first-launch onboarding (the user just downloaded the app; they'd be
 confused) nor stack on top of the FDA-revoked re-prompt.
 
 `+page.svelte` calls `notifyOnboardingComplete()` from `$lib/updates/updater.svelte` in two places:
 
-- `handleFdaComplete()` — fires whichever way the FDA prompt closes (Allow → restart hint, Deny → setting saved). The
+- `handleFdaComplete()`: fires whichever way the FDA prompt closes (Allow → restart hint, Deny → setting saved). The
   helper persists `isOnboarded: true` itself, so the page doesn't double-save.
-- The `hasFda === true` branch — covers users who granted FDA before the flag existed. If `!settings.isOnboarded`, call
+- The `hasFda === true` branch: covers users who granted FDA before the flag existed. If `!settings.isOnboarded`, call
   the helper so they get unblocked too.
 
 Around the same place where `showFdaPrompt = true` is set (both first-run and `wasRevoked`), `+page.svelte` also calls
@@ -101,7 +101,7 @@ apps (VS Code, iTerm2) do.
   automatically. The post-click hint tells the user to restart manually.
 - Uses `dialogId="full-disk-access"` on `ModalDialog`, so MCP dialog tracking is automatic.
 - **TCC's registration hook fires on `open()`, not `opendir()`.** A `read_dir` against a protected directory may be
-  silently denied without ever adding the bundle to the Full Disk Access list — leaving the user with no row to toggle
+  silently denied without ever adding the bundle to the Full Disk Access list, leaving the user with no row to toggle
   on. The probe in `permissions.rs` opens specific protected _files_ (`~/Library/Safari/Bookmarks.plist`,
   `~/Library/Mail/V10/MailData/Envelope Index`, `~/Library/Messages/chat.db`, etc.) and walks them in order until one
   returns either `Ok` or `PermissionDenied`. `NotFound` doesn't trigger TCC, so we keep walking. The component re-runs
@@ -112,7 +112,7 @@ apps (VS Code, iTerm2) do.
   `get_macos_major_version`. The same version informs the modal copy: macOS 12 and older append new FDA entries at the
   end of the list (instead of alphabetical), so the "find Cmdr" instruction adjusts.
 - **macOS 26 (Tahoe) FDA auto-add is broken.** Even with a notarized Developer ID build at `/Applications/Cmdr.app`, the
-  kernel/sandbox can short-circuit `read()` denials on TCC-protected paths without ever consulting `tccd` — meaning Cmdr
+  kernel/sandbox can short-circuit `read()` denials on TCC-protected paths without ever consulting `tccd`, meaning Cmdr
   never enters the Full Disk Access list automatically. We mitigate by firing `mmap`, `NSData dataWithContentsOfFile:`,
   and `read_dir` of the parent in addition to `read()` on a denial (one of them may thread the needle on some Tahoe
   minor versions), but on `macOS 26.1+` even the `+`-button manual add has been reported broken for some users. The
@@ -125,6 +125,6 @@ apps (VS Code, iTerm2) do.
 
 ## Dependencies
 
-- `$lib/tauri-commands` — `checkFullDiskAccess`, `getMacosMajorVersion`, `openPrivacySettings`
-- `$lib/settings-store` — `saveSettings`
-- `$lib/ui` — `ModalDialog`, `Button`
+- `$lib/tauri-commands`: `checkFullDiskAccess`, `getMacosMajorVersion`, `openPrivacySettings`
+- `$lib/settings-store`: `saveSettings`
+- `$lib/ui`: `ModalDialog`, `Button`

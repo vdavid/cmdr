@@ -31,7 +31,7 @@ export interface FileEntry {
    */
   redirectToPath?: string
   /**
-   * Loose Size-column override for virtual git entries — for example,
+   * Loose Size-column override for virtual git entries, for example:
    * `+12 / -3`, `5 files`, `12 items`, `on main`, a short SHA. When set,
    * the Size cell renders this string verbatim instead of formatted
    * bytes from `size`. Cross-category Size sorting is meaningless on
@@ -371,7 +371,7 @@ export type MountError =
 /** Type of write operation. */
 export type WriteOperationType = 'copy' | 'move' | 'delete' | 'trash'
 
-/** Transfer operations (copy or move) — subset of write operations that share UI. */
+/** Transfer operations (copy or move): subset of write operations that share UI. */
 export type TransferOperationType = 'copy' | 'move' | 'delete' | 'trash'
 
 /** Phase of a write operation. */

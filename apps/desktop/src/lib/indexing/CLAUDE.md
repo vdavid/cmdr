@@ -59,12 +59,12 @@ Module-level `$state` variables (`scanning`, `entriesScanned`, `dirsFound`, `agg
 to catch any scan already in progress. Errors from `get_index_status` are swallowed silently (indexing may be disabled
 or not yet initialized).
 
-`$state` must live in a `.svelte.ts` file — plain `.ts` files do not support Svelte runes.
+`$state` must live in a `.svelte.ts` file: plain `.ts` files do not support Svelte runes.
 
 ## Directory update events (`index-events.ts`)
 
 `initIndexEvents` registers a listener for `index-dir-updated` (payload: `{ paths: string[] }`). The callback is called
-with a batch of paths — multiple paths during DB replay, typically one path during live FS-watch mode.
+with a batch of paths: multiple paths during DB replay, typically one path during live FS-watch mode.
 
 `DualPaneExplorer` calls this and checks each path against the current directory of each pane using a path-prefix
 comparison (relies on trailing-slash normalization).
@@ -99,12 +99,12 @@ started, AND not currently scanning or aggregating (to avoid stacking overlays).
 **Decision**: "Listen first, then query" initialization pattern in `initIndexState`. **Why**: The Rust indexer starts in
 Tauri's `setup()` hook, which runs before the frontend mounts. If we registered listeners after querying status, we'd
 have a race window where `index-scan-started` fires between the query and the listener registration, leaving the UI
-stuck on "not scanning". Registering listeners first closes this gap — any event that fires during or after the query is
+stuck on "not scanning". Registering listeners first closes this gap: any event that fires during or after the query is
 caught.
 
 **Decision**: Scan overlay uses `pointer-events: none`. **Why**: The overlay sits in the top-right corner over the file
 list. Without `pointer-events: none`, it would intercept clicks on files near the corner. The overlay is purely
-informational — no interactive elements.
+informational, with no interactive elements.
 
 ## No tests
 
@@ -112,8 +112,8 @@ No unit or integration tests exist for this module yet. Manual testing via the R
 
 ## Dependencies
 
-- `@tauri-apps/api/core` — `invoke`
-- `$lib/tauri-commands` — `listen`, `UnlistenFn`
-- `$lib/ui/toast` — `addToast` (rescan notification toasts)
-- `$lib/file-explorer/selection/selection-info-utils` — `formatNumber` (overlay only)
-- `$lib/ui/ProgressOverlay.svelte` — reusable progress overlay component (used by `ScanStatusOverlay`)
+- `@tauri-apps/api/core`: `invoke`
+- `$lib/tauri-commands`: `listen`, `UnlistenFn`
+- `$lib/ui/toast`: `addToast` (rescan notification toasts)
+- `$lib/file-explorer/selection/selection-info-utils`: `formatNumber` (overlay only)
+- `$lib/ui/ProgressOverlay.svelte`: reusable progress overlay component (used by `ScanStatusOverlay`)

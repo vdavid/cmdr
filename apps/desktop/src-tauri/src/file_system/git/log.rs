@@ -8,7 +8,7 @@
 //! ## Listing v1: HEAD-reachable, capped silently
 //!
 //! `list_commits` walks the rev graph from HEAD by commit time (newest
-//! first). We cap the listing at `MAX_COMMITS` (5000) and stop silently —
+//! first). We cap the listing at `MAX_COMMITS` (5000) and stop silently.
 //! Cmdr's own repo has ~3000 commits, so the cap is a safety net, not a UX
 //! entry point. Pagination ships when the cap is reached often enough to
 //! matter. `BATCH_SIZE` (200) only gates the cancellation-poll cadence.
@@ -204,7 +204,7 @@ pub fn list_commits(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEnt
         fe.added_at = Some(author_secs as u64);
         // Files-changed vs. first parent. For an initial commit (no
         // parent), `files_changed_count` returns the total tree entry
-        // count — still a useful "size of this snapshot" cue.
+        // count, still a useful "size of this snapshot" cue.
         if let Some(n) = files_changed_count(&repo, id) {
             fe.size = Some(n);
             fe.display_size = Some(column_meta::pluralize(n, "file", "files"));

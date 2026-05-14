@@ -42,8 +42,8 @@ pub(super) struct WalkContext<'a, E> {
 /// over-counts the bytes that would actually be freed. The indexer
 /// (`indexing/scanner.rs`) already dedupes by inode for `dir_stats`, so
 /// matching that policy here keeps the FE's "X% of estimated" progress bar
-/// converging to ~100% on indexed sources. Unix-only — non-Unix has no
-/// `nlink()` in `std::fs::Metadata`, so it falls back to the old behavior.
+/// converging to ~100% on indexed sources. Unix-only (non-Unix has no
+/// `nlink()` in `std::fs::Metadata`), so it falls back to the old behavior.
 #[allow(
     clippy::too_many_arguments,
     reason = "Recursive fn requires passing state through multiple levels"
@@ -119,7 +119,7 @@ pub(super) fn walk_dir_recursive<E>(
 /// contributes bytes the first time its inode is seen; subsequent occurrences
 /// of the same inode skip the addition. Files with `nlink == 1` (the vast
 /// majority) skip the `HashSet` check entirely. On non-Unix, always returns
-/// `true` — `std::fs::Metadata` has no `nlink` accessor there.
+/// `true` (`std::fs::Metadata` has no `nlink` accessor there).
 fn file_bytes_count_toward_total(metadata: &fs::Metadata, seen_inodes: &mut HashSet<u64>) -> bool {
     #[cfg(unix)]
     {
@@ -290,11 +290,11 @@ fn scan_sources_internal(
     let mut last_progress_time = Instant::now();
     let mut visited = HashSet::new();
     // Shared across all sources in this scan so a file hardlinked between
-    // separate source roots still only contributes its bytes once — matching
+    // separate source roots still only contributes its bytes once, matching
     // what the indexer does for dir_stats aggregation.
     let mut seen_inodes: HashSet<u64> = HashSet::new();
 
-    // Index-derived expected totals — the denominator the FE renders the
+    // Index-derived expected totals: the denominator the FE renders the
     // scan-phase progress bar against while the foolproof scan runs. `None`
     // when any source isn't in the index; the FE falls back to tallies only.
     let expected = crate::indexing::expected_totals::expected_totals_for_sources(sources);

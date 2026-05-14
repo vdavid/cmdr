@@ -3,7 +3,7 @@
  * that fits the currently loaded entries plus the header label. Uses `@chenglou/pretext`
  * for pixel-accurate text measurement without DOM reflow.
  *
- * Only measures entries already cached on the client — for 500+ file directories
+ * Only measures entries already cached on the client. For 500+ file directories
  * the width refines as more of the prefetch buffer streams in.
  */
 
@@ -50,7 +50,7 @@ function buildFont(scale: number): string {
  * Header overhead inside `SortableHeader` for the column currently being sorted:
  * 4px flex gap + 8px caret. The button's 4px horizontal padding is canceled
  * by an equal negative horizontal margin, so the label lines up with the data
- * cells below — only the gap+caret count toward the column track width.
+ * cells below: only the gap+caret count toward the column track width.
  */
 const HEADER_CHROME_ACTIVE = 12
 
@@ -68,7 +68,7 @@ const HEADER_CHROME_INACTIVE = 0
  * Pretext measures via canvas, the file list renders via DOM. On macOS
  * WKWebView the two paths can disagree on glyph advance widths by a fraction
  * of a pixel even with the same `-apple-system` font and the same integer
- * pixel size — canvas returns CoreText's typographic advance, the DOM lays
+ * pixel size: canvas returns CoreText's typographic advance, the DOM lays
  * out with end-side antialiasing bleed and inline-block subpixel rounding.
  * The gap is invisible on most strings but accumulates on certain digit
  * combinations (a `00:NN` time renders ~1 px wider than pretext measures),
@@ -89,7 +89,7 @@ const MIN_DATE_WIDTH = 70
 
 /**
  * Visual gap between the date and time halves of a split date cell.
- * `var(--spacing-xs)` (4px) — set as `margin-left` on `.date-right` in
+ * `var(--spacing-xs)` (4px), set as `margin-left` on `.date-right` in
  * `FullList.svelte`. Mirror this value if the CSS changes, or split-date
  * columns will be one or two pixels off.
  */
@@ -100,7 +100,7 @@ const DATE_PARTS_GAP = 4
  * `extension-extension-extension-…` would otherwise stretch the column wide
  * enough to push the rest of the row off-screen. The sample is measured with
  * pretext at the current font, so the cap scales with font size/family.
- * `extensionxx` ≈ 11 chars — generous enough for real-world long extensions
+ * `extensionxx` ≈ 11 chars, generous enough for real-world long extensions
  * (`controller`, `component`) without truncating, and just over the literal
  * word "extension" so that word itself never gets clipped.
  */
@@ -180,7 +180,7 @@ function sizeTextForEntry(
 ): string {
   // TCC-restricted entries render `<no perms>` instead of the misleading `0`
   // the indexer recorded after a denied scan. Keep this BEFORE the
-  // `entry.displaySize` check — restricted state takes priority over virtual
+  // `entry.displaySize` check: restricted state takes priority over virtual
   // git display strings (which wouldn't apply to favorites anyway).
   if (isRestricted) return '<no perms>'
   // Virtual git entries override the Size cell with a short string
@@ -238,8 +238,8 @@ function sizeIconSuffixForEntry(entry: FileEntry, indexing: boolean, showSizeMis
 
 /**
  * Compute the shrink-wrapped Ext / Size / Modified column widths for the FullList.
- * Measures only `entries` plus the optional `parentDirStats` (shown on the ".." row) —
- * fully client-side, no disk/IPC calls.
+ * Measures only `entries` plus the optional `parentDirStats` (shown on the ".." row).
+ * Fully client-side, no disk/IPC calls.
  */
 export function computeFullListColumnWidths(args: {
   entries: FileEntry[]
@@ -280,7 +280,7 @@ export function computeFullListColumnWidths(args: {
 
   // Cap on per-row Ext text width so a single pathological extension can't
   // push the rest of the row off-screen. Compared against the row's text-only
-  // measurement (no chrome), so the header bound — `measure('Ext') + chrome` —
+  // measurement (no chrome), so the header bound (`measure('Ext') + chrome`)
   // can still win when no real extension is wider.
   const extCap = measure(EXT_CAP_SAMPLE)
 
@@ -322,7 +322,7 @@ export function computeFullListColumnWidths(args: {
   }
   dateMax = date.total
 
-  // The ".." row borrows the current folder's recursive size — often the largest
+  // The ".." row borrows the current folder's recursive size, often the largest
   // number in the listing, so fold it in or the column snaps wider the moment it loads.
   if (parentDirStats) {
     const s = getDisplaySize(parentDirStats.recursiveSize, parentDirStats.recursivePhysicalSize, sizeDisplayMode)
@@ -351,7 +351,7 @@ export function computeFullListColumnWidths(args: {
  * the final `+ MEASUREMENT_SAFETY_PAD` on `date` (so the natural width of
  * `.date-right` doesn't overflow `.col-date`'s `overflow: hidden`).
  *
- * `dateLeft` stays at 0 when no row produced a split — that's the renderer's
+ * `dateLeft` stays at 0 when no row produced a split: that's the renderer's
  * signal to skip the split path.
  */
 function finalizeDate(date: DateMaxima, dateMax: number): { date: number; dateLeft: number } {

@@ -8,7 +8,7 @@ import (
 func TestExtractE2ETestOutput_PreTestSetupFailure(t *testing.T) {
 	// Captured output when SMB containers came up but the test runner never
 	// reached `Starting Tauri app...` (silent setup failure exiting 2). No
-	// Tauri marker, no failure block, no Playwright tally — pre-test hint
+	// Tauri marker, no failure block, no Playwright tally: pre-test hint
 	// must fire.
 	input := `Run npm run preview to preview your production build locally.
 > Using @sveltejs/adapter-static

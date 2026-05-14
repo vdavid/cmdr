@@ -11,11 +11,11 @@
 //! - Each item's `NSPasteboardItem` vends `public.file-url`.
 //! - The first item additionally vends `public.utf8-plain-text` with all paths
 //!   shell-escaped and space-joined (so `pasteboard.string(forType:)` returns the
-//!   joined list — the standard "drop into terminal" gesture).
+//!   joined list, which is the standard "drop into terminal" gesture).
 //! - The first item also vends `NSFilenamesPboardType` (legacy `NSArray<NSString>`
 //!   of all paths). Required for compatibility with stock wry's `collect_paths`
 //!   ([drag_drop.rs:18-32](https://github.com/tauri-apps/wry/blob/dev/src/wkwebview/drag_drop.rs#L18-L32))
-//!   which reads only this type and `unwrap()`s if it's missing — and for any
+//!   which reads only this type and `unwrap()`s if it's missing, and for any
 //!   pre-10.13 Mac app that still calls `propertyListForType(NSFilenamesPboardType)`
 //!   directly. Drop this once [wry#1723](https://github.com/tauri-apps/wry/pull/1723)
 //!   is merged and a wry release containing it ships through `tauri-runtime-wry`.
@@ -100,7 +100,7 @@ pub fn start_drag(window: &tauri::WebviewWindow, paths: Vec<PathBuf>, icon_path:
         let string_type = NSString::from_str(TYPE_STRING);
         let filenames_type = NSString::from_str(TYPE_FILENAMES);
 
-        // Joined, shell-escaped text for the first item — what terminals get
+        // Joined, shell-escaped text for the first item: what terminals get
         // when they read `pasteboard.string(forType:)`.
         let joined_text = paths
             .iter()
@@ -176,7 +176,7 @@ pub fn start_drag(window: &tauri::WebviewWindow, paths: Vec<PathBuf>, icon_path:
         };
         let window_number: isize = msg_send![window, windowNumber];
 
-        // `mouseEventWithType:...` is a class method — send to NSEvent itself.
+        // `mouseEventWithType:...` is a class method: send to NSEvent itself.
         let drag_event: *mut AnyObject = msg_send![
             nsevent_cls,
             mouseEventWithType: NS_LEFT_MOUSE_DRAGGED,

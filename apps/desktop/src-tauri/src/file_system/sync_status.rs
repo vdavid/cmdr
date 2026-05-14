@@ -106,7 +106,7 @@ fn get_ubiquitous_bool(path: &Path, key: &str) -> Option<bool> {
     })
 }
 
-/// 8 MB stack per thread — enough for deep FileProvider XPC call chains.
+/// 8 MB stack per thread: enough for deep FileProvider XPC call chains.
 const THREAD_STACK_SIZE: usize = 8 * 1024 * 1024;
 
 /// Gets sync status for multiple paths in parallel using dedicated OS threads.

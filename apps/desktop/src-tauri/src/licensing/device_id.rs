@@ -12,7 +12,7 @@ static DEVICE_ID: OnceLock<Option<String>> = OnceLock::new();
 
 /// Returns a stable, hashed device identifier, or `None` if the platform UUID can't be read.
 ///
-/// The result is cached in memory — the hardware UUID won't change during a session.
+/// The result is cached in memory: the hardware UUID won't change during a session.
 pub fn get_device_id() -> Option<String> {
     DEVICE_ID.get_or_init(compute_device_id).clone()
 }
@@ -56,7 +56,7 @@ fn read_platform_uuid() -> Option<String> {
 
         // kIOMasterPortDefault / kIOMainPortDefault = 0
         let service = IOServiceGetMatchingService(0, matching);
-        // IOServiceMatching result is consumed by IOServiceGetMatchingService — don't CFRelease it.
+        // IOServiceMatching result is consumed by IOServiceGetMatchingService: don't CFRelease it.
         if service == 0 {
             log::warn!("IOServiceGetMatchingService found no platform expert");
             return None;
@@ -76,7 +76,7 @@ fn read_platform_uuid() -> Option<String> {
     }
 }
 
-/// Linux stub — returns `None` for now.
+/// Linux stub, returns `None` for now.
 // TODO: Read `/etc/machine-id`, apply the same salt-and-hash approach as macOS.
 #[cfg(target_os = "linux")]
 fn read_platform_uuid() -> Option<String> {

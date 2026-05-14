@@ -93,7 +93,7 @@ describe('createRenameState', () => {
     const state = createRenameState()
     state.activate(sampleTarget)
 
-    // Same name with spaces — no change after trim
+    // Same name with spaces: no change after trim
     state.setCurrentName('  file.txt  ')
     expect(state.hasChanged()).toBe(false)
 

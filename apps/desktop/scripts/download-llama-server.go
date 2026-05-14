@@ -7,7 +7,7 @@
 //
 // Usage: go run scripts/download-llama-server.go
 //
-// The script is idempotent — it skips work if the marker file matches the
+// The script is idempotent: it skips work if the marker file matches the
 // expected version.
 //
 // On non-macOS platforms (e.g., Linux CI), creates an empty placeholder file
@@ -285,7 +285,7 @@ func codesign(path, identity string) error {
 //   - the main clone already has the target version extracted.
 //
 // Returns true on success. Returns false (without erroring) if we're outside a
-// git repo, in the main clone, or the main clone's version doesn't match — the
+// git repo, in the main clone, or the main clone's version doesn't match. The
 // caller then falls back to downloading.
 func tryLinkFromMainClone() bool {
 	currentRoot, err := gitRevParse("--show-toplevel")
@@ -313,7 +313,7 @@ func tryLinkFromMainClone() bool {
 
 	// Replace any existing DestDir (empty dir from a prior trap, stale files,
 	// or an old symlink). os.RemoveAll on a symlink removes the link only, not
-	// the target — safe for the main clone.
+	// the target: safe for the main clone.
 	if err := os.RemoveAll(DestDir); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Warning: could not clear %s: %v\n", DestDir, err)
 		return false

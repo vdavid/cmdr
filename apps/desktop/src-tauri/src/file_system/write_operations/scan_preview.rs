@@ -246,7 +246,7 @@ async fn run_volume_scan_preview(
                     },
                 );
             } else {
-                // Cache results — volume scans don't produce per-file FileInfo,
+                // Cache results: volume scans don't produce per-file FileInfo,
                 // but the cache stores aggregate stats that copy_between_volumes can reuse.
                 if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
                     cache.insert(

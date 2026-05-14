@@ -274,7 +274,7 @@ func Pluralize(count int, singular, plural string) string {
 }
 
 // runOxfmtCheck runs oxfmt formatting check/fix for a given directory.
-// extensions is optional — if nil, file count is parsed from oxfmt output instead of `find`.
+// extensions is optional. If nil, file count is parsed from oxfmt output instead of `find`.
 func runOxfmtCheck(ctx *CheckContext, dir string, extensions []string) (CheckResult, error) {
 	if ctx.CI {
 		checkCmd := exec.Command("pnpm", "exec", "oxfmt", "--check", ".")

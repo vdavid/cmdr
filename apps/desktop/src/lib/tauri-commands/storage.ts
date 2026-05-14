@@ -33,7 +33,7 @@ export async function refreshVolumes(): Promise<void> {
   try {
     await commands.refreshVolumes()
   } catch {
-    // Command not available — fall back to listVolumes (shouldn't happen)
+    // Command not available, fall back to listVolumes (shouldn't happen)
     log.warn('refresh_volumes command not available')
   }
 }
@@ -67,7 +67,7 @@ export async function resolvePathVolume(path: string): Promise<PathVolumeResolut
   try {
     return (await commands.resolvePathVolume(path)) as PathVolumeResolution
   } catch {
-    // Command not available — return no volume, not timed out
+    // Command not available, return no volume, not timed out
     return { volume: null, timedOut: false }
   }
 }
@@ -189,7 +189,7 @@ export async function openSystemSettingsUrl(url: string): Promise<void> {
     const res = await commands.openSystemSettingsUrl(url)
     if (res.status === 'error') throwIpcError(res.error)
   } catch {
-    // Command not available (non-macOS) or URL rejected — silently fail
+    // Command not available (non-macOS) or URL rejected. Silently fail.
   }
 }
 

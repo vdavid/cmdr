@@ -142,7 +142,7 @@ where
                 // Handler already emitted write-cancelled
             }
             Ok(Err(e)) => {
-                // Handler error (validation, I/O, etc.) — emit write-error as safety net
+                // Handler error (validation, I/O, etc.): emit write-error as safety net
                 let _ = app_for_error.emit(
                     "write-error",
                     WriteErrorEvent::new(operation_id_for_cleanup, operation_type, e),
@@ -255,7 +255,7 @@ pub async fn delete_files_start(
     );
 
     if volume_id_str != "root" {
-        // Volume-aware delete (async) — bypass start_write_operation since the handler is async
+        // Volume-aware delete (async): bypass start_write_operation since the handler is async
         let operation_id = Uuid::new_v4().to_string();
         let state = Arc::new(WriteOperationState::new(Duration::from_millis(
             config.progress_interval_ms,

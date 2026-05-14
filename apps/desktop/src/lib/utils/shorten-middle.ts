@@ -27,7 +27,7 @@ export function shortenMiddle(
   if (textWidth <= maxWidthPx) return text
 
   const ellipsisWidth = measureWidth(ellipsis)
-  // If the text is no wider than the ellipsis, truncating can't help — return as-is.
+  // If the text is no wider than the ellipsis, truncating can't help. Return as-is.
   if (textWidth <= ellipsisWidth) return text
   // If even the ellipsis alone exceeds the budget, return it as a best-effort indicator.
   if (ellipsisWidth >= maxWidthPx) return ellipsis

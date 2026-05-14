@@ -1,7 +1,7 @@
 //! Pure predicates for "this path is *possibly* macOS-TCC-restricted."
 //!
 //! These match a hard-coded list of paths under `$HOME` (plus `/Volumes/*`
-//! for network shares). The predicate is intentionally a coarse FILTER —
+//! for network shares). The predicate is intentionally a coarse FILTER:
 //! it rules out USB drives, ordinary mode-0700 dirs, regular project
 //! folders, etc. The actual restricted-state UI only kicks in when both:
 //!
@@ -20,7 +20,7 @@ use std::sync::OnceLock;
 
 /// Home-relative prefixes for paths that macOS guards via TCC. A path
 /// matches when, after home expansion, the input equals OR is a descendant
-/// of one of these (component-wise prefix — not a string `starts_with`).
+/// of one of these (component-wise prefix, not a string `starts_with`).
 ///
 /// Sources:
 /// - Per-folder TCC services: `kTCCServiceSystemPolicy{Downloads,Documents,Desktop,Pictures,Movies,Music}Folder`
@@ -43,7 +43,7 @@ const HOME_RELATIVE_PREFIXES: &[&str] = &[
     "Library/Mobile Documents/com~apple~CloudDocs",
     // Third-party cloud storage (FileProvider)
     "Library/CloudStorage",
-    // SystemPolicyAppData (third-party app containers — broad, gated by the EACCES check at the call site)
+    // SystemPolicyAppData (third-party app containers, broad, gated by the EACCES check at the call site)
     "Library/Containers",
     "Library/Group Containers",
 ];
@@ -68,7 +68,7 @@ pub fn is_potentially_tcc_restricted(path: &Path) -> bool {
         return false;
     };
     let Ok(rest) = path.strip_prefix(home) else {
-        // Path isn't under $HOME — check the network-volume branch.
+        // Path isn't under $HOME. Check the network-volume branch.
         return is_network_volume_path(path);
     };
     HOME_RELATIVE_PREFIXES
@@ -92,7 +92,7 @@ pub fn is_network_volume_path(path: &Path) -> bool {
             return false;
         }
         // We need to statfs the *root* of the volume (`/Volumes/<share>`),
-        // not arbitrary descendants — statfs walks parents on its own, but
+        // not arbitrary descendants; statfs walks parents on its own, but
         // doing it at the volume root is cleanest and avoids triggering
         // anything inside the share.
         let mut comps = path.components();

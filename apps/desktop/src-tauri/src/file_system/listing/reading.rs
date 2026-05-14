@@ -1,7 +1,7 @@
 //! Low-level directory reading and FileEntry construction.
 //!
 //! Pure I/O functions that read from disk and build FileEntry objects.
-//! No Tauri or caching dependencies — consumed by operations.rs and streaming.rs.
+//! No Tauri or caching dependencies; consumed by operations.rs and streaming.rs.
 
 #![allow(
     dead_code,
@@ -99,7 +99,7 @@ fn list_directory_core_impl(
         match process_dir_entry(&entry) {
             Some(file_entry) => entries.push(file_entry),
             None => {
-                // Permission denied or broken symlink — return minimal entry
+                // Permission denied or broken symlink: return minimal entry
                 let is_symlink = entry.file_type().map(|ft| ft.is_symlink()).unwrap_or(false);
                 let name = entry.file_name().to_string_lossy().to_string();
                 entries.push(FileEntry {

@@ -49,7 +49,7 @@ export default {
       CallExpression(node) {
         const callee = node.callee
         // Match plain `invoke(...)`. Renamed imports (`import { invoke as foo }`)
-        // bypass this check, which is fine — that's a deliberate workaround that
+        // bypass this check, which is fine: that's a deliberate workaround that
         // already requires extra effort and reads as suspicious in review.
         if (callee.type !== 'Identifier' || callee.name !== 'invoke') return
         if (node.arguments.length < 1) return

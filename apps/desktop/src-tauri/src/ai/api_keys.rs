@@ -45,7 +45,7 @@ impl From<SecretStoreError> for AiApiKeyError {
 }
 
 /// Saves the API key for a provider. Overwrites any existing entry. Logs at INFO without ever
-/// touching the key value — the *change event* is the actionable signal for postmortem debugging
+/// touching the key value: the *change event* is the actionable signal for postmortem debugging
 /// (when did the key get set? did the save reach the keychain?), the key itself is not.
 pub fn save(provider_id: &str, api_key: &str) -> Result<(), AiApiKeyError> {
     let key = store_key(provider_id);
@@ -92,7 +92,7 @@ pub fn save_ai_api_key(provider_id: String, api_key: String) -> Result<(), AiApi
 }
 
 /// Returns the stored API key for the provider, or an empty string if none is stored.
-/// Returning empty (rather than an error) on missing keys keeps the call sites simple — they all
+/// Returning empty (rather than an error) on missing keys keeps the call sites simple: they all
 /// pass the value through to `configure_ai`, which already treats empty-string as "not configured."
 #[tauri::command]
 #[specta::specta]
@@ -123,9 +123,9 @@ mod tests {
 
     /// Per-test isolation: each test runs in its own data dir so the PlainFileStore's JSON file
     /// doesn't race across nextest's per-test processes (which would share the prod app-support
-    /// dir otherwise — secrets `save` succeeds but the subsequent `get` sees another test's write).
+    /// dir otherwise: secrets `save` succeeds but the subsequent `get` sees another test's write).
     ///
-    /// Must be called BEFORE the first secret store access in the test — the secret store backend
+    /// Must be called BEFORE the first secret store access in the test: the secret store backend
     /// is a `LazyLock` and reads these env vars exactly once.
     ///
     /// SAFETY: `std::env::set_var` is racy across threads, but each nextest test runs in its own

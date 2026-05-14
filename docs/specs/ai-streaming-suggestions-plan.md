@@ -12,7 +12,7 @@ This matters most for two paths:
    waiting; streaming makes it feel instant. This is the path that defines whether Cmdr's "blazing fast" promise holds
    when AI is on.
 2. **Cloud AI providers with reasoning models** (`gpt-5*`, `o3*`): time-to-first-output-token can be 1-3 s while the
-   model thinks. We can't make thinking faster, but with streaming the user sees the answer as soon as text starts — not
+   model thinks. We can't make thinking faster, but with streaming the user sees the answer as soon as text starts, not
    after the _entire_ answer finishes.
 
 For regular cloud chat models (`gpt-4o-mini`, `claude-haiku`), the wall-clock improvement is smaller (response is
@@ -22,7 +22,7 @@ This is the literal application of two design principles:
 
 - "Show progress, communicate what's actually happening" (`docs/design-principles.md`)
 - "All actions longer than ~1 second should be immediately cancelable, canceling not just the UI but any background
-  processes as well" (`docs/design-principles.md`) — the cancellation work in this plan is part of the same feature
+  processes as well" (`docs/design-principles.md`). The cancellation work in this plan is part of the same feature
   precisely because of this rule.
 
 ## What we're building
@@ -52,9 +52,9 @@ The non-streaming `get_folder_suggestions` Tauri command stays as-is. Tests use 
 - **Tool/function-call chunks.** We don't use tool calling here.
 - **Throttling/coalescing on the IPC channel.** Each completed suggestion line is forwarded immediately. Tokens arrive
   at 30-100/s; chunked-line emission is bounded by `max_tokens=150` × ~5-15 lines max. Channel is in-process, unbounded
-  — no backpressure concern.
+  (no backpressure concern).
 - **A "Started" event with anticipated count.** The model may emit 3 or 7. Faking `expected: 5` would violate radical
-  transparency. Frontend shows the trailing-indicator until `Done` arrives — that's enough.
+  transparency. Frontend shows the trailing-indicator until `Done` arrives. That's enough.
 - **Surfacing AI failures to the user via toast or message.** Per the existing graceful-degradation contract (CLAUDE.md
   gotcha: "AI suggestions are a nice-to-have enhancement. Returning empty gracefully hides the failure"), errors stop
   the spinner, log via `log::warn!(target: "ai_suggestions", ...)` for crash bundles, and the section hides if no
@@ -68,11 +68,11 @@ The existing AI subsystem uses global Tauri events for download progress (`ai-do
 for downloads because there's only ever one in flight. Folder suggestions are different:
 
 - The user can open the new-folder dialog, cancel, and reopen quickly. Two streams could overlap if we used a global
-  event — listeners from the second open would see chunks from the first.
+  event; listeners from the second open would see chunks from the first.
 - A single channel scoped to the call eliminates that race entirely. Tauri 2 docs explicitly recommend `Channel<T>` for
   streaming events from a command.
 
-Tradeoff: it's a new pattern in Cmdr (existing AI events use global emit). Worth it — call-scoped semantics are the
+Tradeoff: it's a new pattern in Cmdr (existing AI events use global emit). Worth it, as call-scoped semantics are the
 right fit, and the next streaming AI feature (e.g. future "explain this folder") will reuse the pattern.
 
 ### Cancellation: explicit, via `CancellationToken` + companion command
@@ -89,7 +89,7 @@ just the UI but any background processes as well, to avoid wasting the user's re
 reasoning, a folder-suggestion call can take 3+ seconds. Mandatory cancel.
 
 **The model:** the project already does cooperative cancellation in `download.rs` via a `Fn() -> bool` closure. For
-streams we use the standard tokio idiom — `tokio_util::sync::CancellationToken` — which interoperates cleanly with
+streams we use the standard tokio idiom: `tokio_util::sync::CancellationToken`, which interoperates cleanly with
 `tokio::select!` and is droppable on `Stream` async iteration.
 
 **Required dependency:** add `tokio-util` to `apps/desktop/src-tauri/Cargo.toml` (place immediately after `futures-util`
@@ -129,18 +129,18 @@ backend "the JS-side Channel was GC'd." We have to send the signal.
 an OS window. Window-level signals are too coarse.
 
 **Concurrent-streams handling:** if a previous request_id is still active when a new one arrives, we don't auto-cancel
-the prior — that would conflate "user reopened the dialog" with "user wants prior request canceled." Instead, the
+the prior (that would conflate "user reopened the dialog" with "user wants prior request canceled"). Instead, the
 dialog's `onDestroy` is what cancels. The new dialog instance starts a fresh request_id. If by chance two stream tasks
 coexist briefly (rapid open-close-open), each writes to its own Channel and they don't interfere. The CPU cost is
-bounded — a previous local-LLM stream still gets to finish only because its dialog wasn't destroyed first; in practice
+bounded. A previous local-LLM stream still gets to finish only because its dialog wasn't destroyed first; in practice
 if the user closed the prior dialog, `onDestroy` already canceled it.
 
 ### Stream-shaped API in `client.rs`, not callback-shaped
 
 `chat_completion_stream` returns a `Stream<Item = Result<String, AiError>>` of content chunks, not a `FnMut` callback.
 This matches the natural shape of `genai::Client::exec_chat_stream`, lets the caller drive the loop with normal
-`while let Some(chunk) = stream.next().await`, and makes cancellation literally `drop(stream)` — no `should_continue`
-flag piped through a closure. Reviewer flagged the closure form as the kind of "hack" the project principles warn
+`while let Some(chunk) = stream.next().await`, and makes cancellation literally `drop(stream)` (no `should_continue`
+flag piped through a closure). Reviewer flagged the closure form as the kind of "hack" the project principles warn
 against.
 
 ### Line-buffering and sanitization in Rust
@@ -171,11 +171,11 @@ enum SuggestionStreamEvent {
 
 - `Suggestion { name }`: one fully-sanitized line.
 - `Done`: stream completed cleanly. Frontend stops trailing indicator. (Zero `Suggestion`s before `Done` is valid and
-  treated the same way the existing flow handles "AI returned empty" — section hides if `aiSuggestions.length === 0`.)
+  treated the same way the existing flow handles "AI returned empty": section hides if `aiSuggestions.length === 0`.)
 - `Cancelled`: backend acknowledges a cancel. Frontend distinguishes "we asked for it" from "it just failed." Logged at
   trace level only.
 - `Failed`: backend errored. Frontend stops trailing indicator and treats as graceful degradation. The error string is
-  **not** carried in the event — it's logged on the Rust side via `log::warn!(target: "ai_suggestions", ...)` per
+  **not** carried in the event; it's logged on the Rust side via `log::warn!(target: "ai_suggestions", ...)` per
   `logging/CLAUDE.md`. Carrying a raw error string we never display would just be a leak.
 
 This shape resolves the reviewer's two concerns: (a) duplicate "errored vs cancelled" ambiguity, (b) leaking error
@@ -230,7 +230,7 @@ pub async fn chat_completion_stream(
 
 `BoxStream<'static, Result<String, AiError>>` is just a typed alias for `Pin<Box<dyn Stream + Send + 'static>>`, used to
 erase the concrete inner type. Verified: `genai::ChatStream` is already `Send + 'static` (see
-`/tmp/rust-genai/src/chat/chat_stream.rs:8` — its inner is `Pin<Box<dyn Stream<...> + Send>>`), and `ChatStreamResponse`
+`/tmp/rust-genai/src/chat/chat_stream.rs:8`, its inner is `Pin<Box<dyn Stream<...> + Send>>`), and `ChatStreamResponse`
 owns its fields, so no `Arc<Client>` lifetime concern.
 
 Import note: the project depends on `futures-util`, not `futures`. Use `futures_util::stream::BoxStream` and
@@ -347,11 +347,11 @@ pub fn cancel_stream(request_id: &str) {
 }
 ```
 
-**Use the existing `IgnorePoison` helper** (per `manager.rs` convention) — bare `lock()` would panic on poison and
+**Use the existing `IgnorePoison` helper** (per `manager.rs` convention): bare `lock()` would panic on poison and
 double-panic during the task's panic-unwind. `cancel_stream` removes-and-cancels in one step so a re-arrival
 `cancel_folder_suggestions` for the same id is idempotent.
 
-**Stream command flow (no `tokio::spawn` — `#[tauri::command] async fn` already runs on Tauri's async runtime):**
+**Stream command flow (no `tokio::spawn`; `#[tauri::command] async fn` already runs on Tauri's async runtime):**
 
 1. **Synchronously register the token** at the very top of the command body, before any `await`. This closes the "cancel
    arrives before token registered" race window.
@@ -368,7 +368,7 @@ double-panic during the task's panic-unwind. `cancel_stream` removes-and-cancels
 
    Drop runs even on panic-unwind, so the registry is always cleaned up.
 
-3. Resolve backend via `manager::resolve_backend()`. On non-`Ready`: send `Done`, return `Ok(())` (graceful — same as
+3. Resolve backend via `manager::resolve_backend()`. On non-`Ready`: send `Done`, return `Ok(())` (graceful, same as
    non-streaming command's contract).
 4. Build prompt. Construct `StreamingSanitizer`.
 5. Open `chat_completion_stream(...)`. Loop with `tokio::select!` against the token. Required imports:
@@ -464,7 +464,7 @@ export function streamFolderSuggestions(
 }
 ```
 
-UUID via `crypto.randomUUID()` — Web Crypto, available in modern browsers and Tauri's webview.
+UUID via `crypto.randomUUID()` (Web Crypto, available in modern browsers and Tauri's webview).
 
 ### Step 5: Update `NewFolderDialog.svelte`
 
@@ -511,7 +511,7 @@ onDestroy(async () => {
 `aiLoading` is replaced by `aiStreaming` (clearer intent). The pulsing chip renders iff `aiStreaming === true`. The
 whole `ai-suggestions` container is hidden when `aiAvailable === false` (AI off / not configured); during the brief
 `aiAvailable === null` bootstrap window before status is checked, the container shows just its header (no chip, no list
-— same as today). The "Loading..." span is removed.
+same as today). The "Loading..." span is removed.
 
 Template change (replace the existing `{#if aiAvailable === null || aiLoading}` branch):
 
@@ -550,7 +550,7 @@ more is coming; nothing visible when there's nothing to show.
 
 **Unit (Rust):**
 
-- `sanitize_one_line` — direct from existing `parse_suggestions` test cases.
+- `sanitize_one_line`: direct from existing `parse_suggestions` test cases.
 - `StreamingSanitizer::push_chunk`:
   - chunks split mid-line
   - chunks split exactly on `\n`
@@ -560,7 +560,7 @@ more is coming; nothing visible when there's nothing to show.
   - respects `MAX_SUGGESTIONS` cap
   - per-line markdown / bullet / numbering
   - returns-`false` from `emit` halts further processing in same chunk
-- `StreamingSanitizer::finish` — explicit test for trailing-line-without-newline flush.
+- `StreamingSanitizer::finish`: explicit test for trailing-line-without-newline flush.
 
 **Integration (hyper-based mock SSE server, Rust):**
 
@@ -569,7 +569,7 @@ That gives false confidence we'd be exercising multi-chunk parse paths. Replace 
 SSE frames with `tokio::time::sleep` between them. ~30 lines of helper plus tests. `genai`'s own integration tests use
 this exact pattern (yakbak); precedent.
 
-New file: `apps/desktop/src-tauri/src/ai/client_streaming_test.rs` — exercises `chat_completion_stream` directly:
+New file: `apps/desktop/src-tauri/src/ai/client_streaming_test.rs`: exercises `chat_completion_stream` directly:
 
 - Multi-frame SSE → stream yields each frame's content in order, total assembles to expected text.
 - SSE that errors mid-stream → first chunks delivered, then the stream yields `Err(AiError::ServerError(_))`.
@@ -577,7 +577,7 @@ New file: `apps/desktop/src-tauri/src/ai/client_streaming_test.rs` — exercises
 - Cancel mid-stream (drop the stream while frames still pending) → server-side request is closed. Track via a
   `oneshot::Sender<()>` that the hyper handler triggers when its body sink errors (client disconnect).
 
-New file: `apps/desktop/src-tauri/src/ai/suggestions_streaming_test.rs` — exercises the Tauri-command layer:
+New file: `apps/desktop/src-tauri/src/ai/suggestions_streaming_test.rs`: exercises the Tauri-command layer:
 
 - Two `stream_folder_suggestions` calls with different `request_id`s in flight; cancel one; assert only that one's
   Channel sees `Cancelled`, the other still receives `Suggestion`/`Done`.
@@ -637,7 +637,7 @@ Tests: `smoke_claude_haiku_stream` against `claude-3-5-haiku-latest`. Add the fi
   Channel-drop detection. Why: Tauri 2 `Channel::send` is fire-and-forget into the IPC queue; backend has no implicit
   drop signal."
 - New `Gotcha/Why`: "`Channel::send` succeeds into the void when the JS-side handler is GC'd; `send` only fails if the
-  webview itself is gone (window closed). Don't rely on send failure for liveness — use the explicit cancel command.
+  webview itself is gone (window closed). Don't rely on send failure for liveness; use the explicit cancel command.
   Send-error in the streaming suggestion path triggers the token as implicit cancel as a defense-in-depth."
 - New `Gotcha/Why`: "Wiremock doesn't chunk-deliver SSE bodies; integration tests use a hand-rolled hyper server."
 - New `Gotcha/Why`: "Cancel via `tokio::select!` drops the in-flight `stream.next()` future; for genai's reqwest-backed
@@ -646,7 +646,7 @@ Tests: `smoke_claude_haiku_stream` against `claude-3-5-haiku-latest`. Add the fi
 - Append to the bottom-of-file `Dependencies` section: `tokio-util` (CancellationToken).
 - Note next to the cancel-via-explicit-command Decision: "`CancellationToken::cancel` is idempotent; the same token may
   be canceled by an explicit `cancel_folder_suggestions` call AND by an implicit `Channel::send` failure in the same
-  tick — both succeed as no-ops after the first."
+  tick; both succeed as no-ops after the first."
 
 `docs/architecture.md`: AI subsystem already mapped; add the streaming feature flag/command in the AI section if that
 file lists per-subsystem commands. Quick check during implementation.
@@ -697,4 +697,4 @@ Open-close-open rapidly 3 times: watch for clean cancel-each-prior; no orphan ta
   registry is populated synchronously inside the command body before the first `await`, so by the time the command
   returns, the token is registered. Cancel calls received before the command returns are queued by Tauri anyway.
 - **Spinner-during-streaming UX**: traded "Loading..." span for a pulsing chip indicator. If the chip is distracting on
-  fast cloud paths (<300 ms total), defer to user feedback — easy CSS knob.
+  fast cloud paths (<300 ms total), defer to user feedback (easy CSS knob).

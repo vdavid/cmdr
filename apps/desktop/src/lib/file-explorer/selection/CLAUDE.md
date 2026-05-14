@@ -1,13 +1,13 @@
 # Selection display components
 
-Renders selection state and file metadata in the status bar and list headers. Does NOT manage the selection set — that
-lives in `FilePane.svelte` as a `Set<number>`.
+Renders selection state and file metadata in the status bar and list headers. Does NOT manage the selection set (that
+lives in `FilePane.svelte` as a `Set<number>`).
 
 ## Key files
 
 | File                           | Purpose                                              |
 | ------------------------------ | ---------------------------------------------------- |
-| `selection-info-utils.ts`      | Pure utilities — no DOM deps, fully tested           |
+| `selection-info-utils.ts`      | Pure utilities, no DOM deps, fully tested            |
 | `SelectionInfo.svelte`         | Status bar below each pane                           |
 | `FileIcon.svelte`              | 16x16 icon with emoji fallback and overlay badges    |
 | `SortableHeader.svelte`        | Clickable column header with sort direction triangle |
@@ -15,7 +15,7 @@ lives in `FilePane.svelte` as a `Set<number>`.
 | `components.test.ts`           | Component render tests                               |
 
 Per-component age-tier mapping (`tierForYear` / `tierForMonth` / `tierForDay` / `tierForTime`) and the
-`appearance.dateColors` palette live in [`$lib/settings/age-tier-utils.ts`](../../settings/age-tier-utils.ts) — they
+`appearance.dateColors` palette live in [`$lib/settings/age-tier-utils.ts`](../../settings/age-tier-utils.ts): they
 belong with the setting, not the selection components. The renderer side is in
 [`$lib/ui/DateLabel.svelte`](../../ui/DateLabel.svelte). See `$lib/settings/CLAUDE.md` § "Date display" for the full
 pipeline.
@@ -24,23 +24,23 @@ pipeline.
 
 Exported functions:
 
-- `formatSizeTriads(bytes)` — splits byte count into digit triads, each tagged with a `tierClass`. Uses U+2009
+- `formatSizeTriads(bytes)`: splits byte count into digit triads, each tagged with a `tierClass`. Uses U+2009
   thin-space as separator between triads.
-- `formatSizeForDisplay(bytes, { humanFriendly, format })` — single entry point used by views and the status bar to
+- `formatSizeForDisplay(bytes, { humanFriendly, format })`: single entry point used by views and the status bar to
   render byte counts. In raw-bytes mode delegates to `formatSizeTriads`. In human-friendly mode returns one tier-tagged
   span like `{ value: '1.02 MB', tierClass: 'size-mb' }`. The tier is picked from the chosen unit via
   `tierClassForUnit`, so coloring stays consistent with the triad mode.
-- `tierClassForUnit(unit)` — maps the unit suffix from `formatFileSizeWithFormat` (`bytes`, `KB`/`kB`, `MB`, `GB`, `TB`,
+- `tierClassForUnit(unit)`: maps the unit suffix from `formatFileSizeWithFormat` (`bytes`, `KB`/`kB`, `MB`, `GB`, `TB`,
   `PB`) to one of `sizeTierClasses`. TB and PB cap at `size-tb`.
-- `formatDate(timestamp)` — Unix seconds → `"YYYY-MM-DD HH:MM:SS"` local time.
-- `buildDateTooltip(entry, nowMs?)` — returns `{ html }` where each timestamp is wrapped in its age-tier span so the
+- `formatDate(timestamp)`: Unix seconds → `"YYYY-MM-DD HH:MM:SS"` local time.
+- `buildDateTooltip(entry, nowMs?)`: returns `{ html }` where each timestamp is wrapped in its age-tier span so the
   `appearance.dateColors` palette colors the date portion.
-- `getSizeDisplay(entry, isBrokenSymlink, isPermissionDenied)` — returns triads array, `'DIR'`, or `null`.
-- `getDateDisplay(entry, ...)` — returns formatted date string or `'(broken symlink)'` / `'(permission denied)'`.
-- `isBrokenSymlink(entry)` — checks `entry.isSymlink && entry.iconId === 'symlink-broken'`. Does NOT use filesystem
+- `getSizeDisplay(entry, isBrokenSymlink, isPermissionDenied)`: returns triads array, `'DIR'`, or `null`.
+- `getDateDisplay(entry, ...)`: returns formatted date string or `'(broken symlink)'` / `'(permission denied)'`.
+- `isBrokenSymlink(entry)`: checks `entry.isSymlink && entry.iconId === 'symlink-broken'`. Does NOT use filesystem
   flags.
-- `isPermissionDenied(entry)` — `!isSymlink && permissions === 0 && size === undefined`.
-- `pluralize`, `formatNumber`, `calculatePercentage` — selection summary helpers.
+- `isPermissionDenied(entry)`: `!isSymlink && permissions === 0 && size === undefined`.
+- `pluralize`, `formatNumber`, `calculatePercentage`: selection summary helpers.
 
 `sizeTierClasses` export: `['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb']`. CSS rules for these classes must
 exist in the consuming view, not here.
@@ -53,8 +53,8 @@ Status bar rendered below each pane. Four display modes via `$derived displayMod
 | ------------------- | -------------------------------------------------------- |
 | `empty`             | `stats.totalFiles === 0 && stats.totalDirs === 0`        |
 | `selection-summary` | `selectedCount > 0` (any view mode)                      |
-| `no-selection`      | Full mode, no selection — shows total file/dir counts    |
-| `file-info`         | Brief mode, no selection — shows name, size triads, date |
+| `no-selection`      | Full mode, no selection: shows total file/dir counts     |
+| `file-info`         | Brief mode, no selection: shows name, size triads, date  |
 
 In `selection-summary` mode, directory recursive sizes are included in the size display when available (from the drive
 index). The `hasOnlyDirs` branch shows size triads when `totalSize > 0`; when sizes are unavailable (indexing off), it
@@ -67,13 +67,13 @@ scanning.
 Symlink hint (Lucide info icon via `~icons/lucide/info`, rendered in tertiary text color) appears next to a directory's
 size in `file-info` mode when `entry.recursiveHasSymlinks === true`. The tooltip reads: "This folder contains symlinks.
 Symlinked content is not counted in the total to avoid double counting." This explains why a folder of symlinks may show
-`0 bytes` — Cmdr deliberately matches `du`/Finder behavior. The flag is computed by the indexing module
+`0 bytes`. Cmdr deliberately matches `du`/Finder behavior. The flag is computed by the indexing module
 (`recursive_has_symlinks` on `dir_stats`) and surfaced through enrichment.
 
 Filename truncation in `file-info` mode uses the `useShortenMiddle` action with `preferBreakAt: '.'` to preserve file
 extensions. The action uses pretext for canvas-based measurement and a built-in ResizeObserver.
 
-Date column width is computed via `measureDateColumnWidth(formatDateTime)` to stay in sync with FullList —
+Date column width is computed via `measureDateColumnWidth(formatDateTime)` to stay in sync with FullList.
 `formatDateTime` comes from `reactive-settings.svelte`.
 
 ## `FileIcon.svelte`
@@ -84,7 +84,7 @@ Props: `file: FileEntry`, `syncIcon?: string` (URL for sync overlay badge).
 - Fallback: emoji via `getFallbackEmoji(file)` from `file-list-utils`.
 - Symlink badge: 🔗 emoji, bottom-right by default. Moves to top-left when `syncIcon` is also present.
 - Sync badge: 10×10px `<img>` at bottom-right.
-- Reactivity: subscribes to `$iconCacheVersion` store — re-renders when the icon cache is populated.
+- Reactivity: subscribes to `$iconCacheVersion` store, re-renders when the icon cache is populated.
 
 ## `SortableHeader.svelte`
 
@@ -92,7 +92,7 @@ Props: `column`, `label`, `currentSortColumn`, `currentSortOrder`, `onClick`, `a
 numeric columns).
 
 Renders a `<button>` with a sort-direction triangle (▲/▼). The triangle is `display: none` on inactive columns so it
-doesn't reserve width — `FullList` shrink-wraps column widths and `opacity: 0` would have baked ~12px of dead space into
+doesn't reserve width. `FullList` shrink-wraps column widths and `opacity: 0` would have baked ~12px of dead space into
 every unsorted header. Handles both `onclick` and `onkeydown` (Enter/Space).
 
 ## Key decisions
@@ -101,7 +101,7 @@ every unsorted header. Handles both `onclick` and `onkeydown` (Enter/Space).
 shows "1.02 MB" via `formatFileSizeWithFormat`. OFF shows colored digit triads via `formatSizeTriads`. Both modes flow
 through the shared `formatSizeForDisplay` helper. **Why**: Human-readable is friendlier for most users, but power users
 (and David) want precise byte counts to compare similarly-sized files. The tier-based CSS coloring
-(`size-bytes`/`size-kb`/`size-mb`/`size-gb`/`size-tb`) is preserved in both modes — in human-friendly mode the entire
+(`size-bytes`/`size-kb`/`size-mb`/`size-gb`/`size-tb`) is preserved in both modes. In human-friendly mode the entire
 formatted string takes the tier of its chosen unit. Tooltips on file/dir/selection size still always show both formats
 so the other one is always one hover away.
 
@@ -140,9 +140,9 @@ formatter callback keeps the util pure (no reactive imports here); the `tooltip`
 
 ## Dependencies
 
-- `../types` — `FileEntry`, `SortColumn`, `SortOrder`
-- `../views/full-list-utils` — `measureDateColumnWidth`
-- `../views/file-list-utils` — `getFallbackEmoji`
-- `$lib/icon-cache` — `getCachedIcon`, `iconCacheVersion`
-- `$lib/settings/reactive-settings.svelte` — `formatFileSize`, `formatDateTime`
-- `$lib/indexing/index-state.svelte` — `isScanning`
+- `../types`: `FileEntry`, `SortColumn`, `SortOrder`
+- `../views/full-list-utils`: `measureDateColumnWidth`
+- `../views/file-list-utils`: `getFallbackEmoji`
+- `$lib/icon-cache`: `getCachedIcon`, `iconCacheVersion`
+- `$lib/settings/reactive-settings.svelte`: `formatFileSize`, `formatDateTime`
+- `$lib/indexing/index-state.svelte`: `isScanning`

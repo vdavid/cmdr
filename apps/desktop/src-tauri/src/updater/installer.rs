@@ -151,7 +151,7 @@ fn sync_remaining(src_root: &Path, dest_root: &Path, all_src_paths: &HashSet<Pat
             continue;
         }
         let dest_path = dest_root.join(relative);
-        // Skip if already synced (file exists and has same length — good enough for our use case
+        // Skip if already synced (file exists and has same length, good enough for our use case
         // since all files are freshly extracted and we just wrote them in the ordered phases)
         if dest_path.exists()
             && let (Ok(src_meta), Ok(dest_meta)) = (fs::metadata(&src_path), fs::metadata(&dest_path))
@@ -239,7 +239,7 @@ fn remove_empty_dirs(dir: &Path) {
         let path = entry.path();
         if path.is_dir() && !path.is_symlink() {
             remove_empty_dirs(&path);
-            // Try to remove — fails silently if not empty, which is fine
+            // Try to remove (fails silently if not empty, which is fine)
             let _ = fs::remove_dir(&path);
         }
     }

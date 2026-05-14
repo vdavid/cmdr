@@ -8,7 +8,7 @@ const validDownloadRanges = new Set(['24h', '7d', '30d', 'all'])
 const validActiveUserRanges = new Set(['7d', '30d', '90d', 'all'])
 const validCrashRanges = new Set(['7d', '30d', '90d', 'all'])
 
-// Values are hardcoded, never from user input — safe to interpolate into SQL.
+// Values are hardcoded, never from user input, so it's safe to interpolate into SQL.
 const rangeToSqliteInterval: Record<string, string> = {
   '24h': '-1 day',
   '7d': '-7 days',
@@ -16,7 +16,7 @@ const rangeToSqliteInterval: Record<string, string> = {
   '90d': '-90 days',
 }
 
-// Admin stats — returns activation count and device count
+// Admin stats: returns activation count and device count
 // Auth: dedicated ADMIN_API_TOKEN, separate from the Paddle secrets used by /admin/generate
 admin.get('/admin/stats', async (c) => {
   const token = c.env.ADMIN_API_TOKEN
@@ -41,7 +41,7 @@ admin.get('/admin/stats', async (c) => {
   return c.json({ totalActivations, activeDevices })
 })
 
-// Admin downloads — aggregated download data from D1
+// Admin downloads: aggregated download data from D1
 admin.get('/admin/downloads', async (c) => {
   const authError = verifyAdminAuth(c)
   if (authError) return authError
@@ -64,7 +64,7 @@ admin.get('/admin/downloads', async (c) => {
   return c.json(results)
 })
 
-// Admin active users — aggregated daily active user data from D1
+// Admin active users: aggregated daily active user data from D1
 admin.get('/admin/active-users', async (c) => {
   const authError = verifyAdminAuth(c)
   if (authError) return authError
@@ -86,7 +86,7 @@ admin.get('/admin/active-users', async (c) => {
   return c.json(results)
 })
 
-// Admin crashes — aggregated crash data from D1
+// Admin crashes: aggregated crash data from D1
 admin.get('/admin/crashes', async (c) => {
   const authError = verifyAdminAuth(c)
   if (authError) return authError

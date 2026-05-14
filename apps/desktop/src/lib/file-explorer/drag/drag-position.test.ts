@@ -95,7 +95,7 @@ describe('drag-position', () => {
       await recalculateWebviewOffset()
       expect(toViewportPosition({ x: 100, y: 200 })).toEqual({ x: 100, y: 200 })
 
-      // DevTools opens — viewport shrinks
+      // DevTools opens, viewport shrinks
       setViewportSize(1201, 553, 2)
       await recalculateWebviewOffset()
       expect(toViewportPosition({ x: 100, y: 200 })).toEqual({ x: 100, y: 475 })

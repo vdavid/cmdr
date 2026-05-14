@@ -29,7 +29,7 @@ let results = $state<SearchResultEntry[]>([])
 let totalCount = $state(0)
 let cursorIndex = $state(0)
 
-// Index availability — false when indexing is disabled or not started
+// Index availability: false when indexing is disabled or not started
 let isIndexAvailable = $state(true)
 
 // Pattern type (glob vs regex)
@@ -48,7 +48,7 @@ let scope = $state('')
 
 // System/build directory exclusion toggle (on by default).
 // The actual exclude list lives in Rust: `SYSTEM_DIR_EXCLUDES` in `search/query.rs`.
-// The frontend only controls the boolean — Rust does the filtering.
+// The frontend only controls the boolean; Rust does the filtering.
 let excludeSystemDirs = $state(true)
 
 // Getters

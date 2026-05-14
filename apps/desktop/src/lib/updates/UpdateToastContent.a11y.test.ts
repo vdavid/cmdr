@@ -2,7 +2,7 @@
  * Tier 3 a11y tests for `UpdateToastContent.svelte`.
  *
  * Simple toast body with a text message and two buttons (Restart /
- * Later). No props, no state — a single default test covers it.
+ * Later). No props, no state; a single default test covers it.
  */
 
 import { describe, it, vi } from 'vitest'

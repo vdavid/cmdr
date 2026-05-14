@@ -87,7 +87,7 @@ pub(crate) fn touch_activity() {
 
 /// Load all entries from the index DB into an in-memory `SearchIndex`.
 ///
-/// `name_folded` is NOT loaded — the search pattern is normalized instead
+/// `name_folded` is NOT loaded: the search pattern is normalized instead
 /// (NFD on macOS) to avoid ~5.1M extra String allocations and ~300 MB of memory.
 pub(crate) fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<SearchIndex, String> {
     pool.with_conn(|conn: &rusqlite::Connection| {
@@ -113,7 +113,7 @@ pub(crate) fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<
 
             let id: i64 = row.get(0).map_err(|e| format!("{e}"))?;
             let parent_id: i64 = row.get(1).map_err(|e| format!("{e}"))?;
-            // Borrow directly from SQLite's internal buffer via ValueRef — zero heap allocations.
+            // Borrow directly from SQLite's internal buffer via ValueRef: zero heap allocations.
             let name_ref = row.get_ref(2).map_err(|e| format!("{e}"))?;
             let name_str = name_ref.as_str().map_err(|e| format!("{e}"))?;
             let name_offset = names.len() as u32;
@@ -171,7 +171,7 @@ pub(crate) fn start_backstop_timer() -> tauri::async_runtime::JoinHandle<()> {
                 drop_search_index();
                 break;
             }
-            // Activity happened recently — loop and check again
+            // Activity happened recently: loop and check again
         }
     })
 }

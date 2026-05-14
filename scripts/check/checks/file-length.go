@@ -140,7 +140,7 @@ func formatLongFiles(files []longFile, allowlist map[string]int, allowlistedCoun
 
 // RunFileLength scans the repo for source files exceeding the line count threshold.
 // Files in the allowlist are suppressed if at or below their allowlisted line count.
-// Always succeeds — reports long files as a warning, never fails.
+// Always succeeds: reports long files as a warning, never fails.
 func RunFileLength(ctx *CheckContext) (CheckResult, error) {
 	allowlist := loadFileLengthAllowlist(ctx.RootDir)
 	result, err := scanFileLengths(ctx.RootDir, allowlist)

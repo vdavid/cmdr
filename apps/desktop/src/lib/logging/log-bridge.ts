@@ -111,7 +111,7 @@ async function flush(): Promise<void> {
   try {
     await commands.batchFeLogs(ipcEntries)
   } catch {
-    // Backend not available (app shutting down, or early startup) — silently drop
+    // Backend not available (app shutting down, or early startup). Silently drop.
   }
 }
 

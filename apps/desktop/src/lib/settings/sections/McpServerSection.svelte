@@ -118,7 +118,7 @@
         const wasRunning = await getMcpRunning()
 
         if (wasRunning) {
-            // Server is running — restart on the new port
+            // Server is running: restart on the new port
             try {
                 await setMcpPort(port)
             } catch (error: unknown) {
@@ -130,7 +130,7 @@
             return
         }
 
-        // Server is off — just check availability
+        // Server is off: just check availability
         await checkPort()
     }
 

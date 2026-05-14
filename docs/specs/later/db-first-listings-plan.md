@@ -11,13 +11,13 @@ Date: 2026-03-03.
 ## Intention
 
 The drive index already stores every file and directory on the volume (`entries` table). Today we only use it for
-enriching directory entries with recursive sizes. This plan promotes the index to the **primary listing source** — the
+enriching directory entries with recursive sizes. This plan promotes the index to the **primary listing source**: the
 first thing the user sees on navigation comes from a SQLite query, not from `readdir`. The filesystem read still
 happens, but in the background as a correctness check.
 
 **Why this matters:** `readdir` + `stat` takes 2–50ms per directory (more on network volumes). A `SELECT` on an indexed
 `parent_path` column takes <1ms. For power users navigating rapidly (Tab, Enter, Backspace), this difference is
-perceptible — especially with 10k+ file directories.
+perceptible, especially with 10k+ file directories.
 
 **Why now:** The index has been running in production across milestones 1–8. FSEvents + `sinceWhen` replay +
 MustScanSubDirs keep it fresh. The missing piece is per-navigation verification (`verifier.rs`) to close the last gap.
@@ -59,7 +59,7 @@ to the current `readdir` + `stat` path transparently.
 **Guard: full scan must have completed at least once.** During the initial full scan (first launch, or after "Clear
 index"), the scanner writes entries in batches. A directory might have its own entry in the `entries` table but only
 some of its children written so far. Without this guard, DB-first would show a partial listing, then verification would
-"correct" it to the full list — a visible jump. Check `scan_completed_at` in the meta table: if not set, always fall
+"correct" it to the full list: a visible jump. Check `scan_completed_at` in the meta table: if not set, always fall
 back to readdir. On subsequent cold starts, the DB is already complete (sinceWhen replay only modifies individual
 entries, not partial directories), so this guard only matters for first launch and "Clear index."
 
@@ -71,7 +71,7 @@ fn is_db_first_available(store: &IndexStore) -> bool {
 ```
 
 **Per-directory check:** Once DB-first is available, `list_entries_by_parent()` might return an empty `Vec`. This is
-ambiguous — "genuinely empty directory" vs "not indexed yet." Disambiguate by checking whether the parent directory
+ambiguous: "genuinely empty directory" vs "not indexed yet." Disambiguate by checking whether the parent directory
 itself exists in the `entries` table. If it does, the directory is indexed and legitimately empty. If not, fall back to
 readdir.
 
@@ -99,7 +99,7 @@ Mapping:
 | `is_symlink`               | `ScannedEntry.is_symlink`                                          |
 | `size`                     | `ScannedEntry.logical_size` (matches readdir's `metadata.len()`)   |
 | `modified_at`              | `ScannedEntry.modified_at`                                         |
-| `icon_id`                  | Computed: `get_icon_id(is_directory, is_symlink, &name)` — no stat |
+| `icon_id`                  | Computed: `get_icon_id(is_directory, is_symlink, &name)` (no stat) |
 | `created_at`               | `None` (not displayed; lazy-loadable later if needed)              |
 | `added_at`                 | `None` (not displayed; lazy-loadable later if needed)              |
 | `opened_at`                | `None` (not displayed; lazy-loadable later if needed)              |
@@ -111,7 +111,7 @@ Mapping:
 | `recursive_file_count`     | From `dir_stats` enrichment (existing)                             |
 | `recursive_dir_count`      | From `dir_stats` enrichment (existing)                             |
 
-The first paint shows: name, icon, size, modified date, and recursive dir sizes — all without any disk I/O. The
+The first paint shows: name, icon, size, modified date, and recursive dir sizes, all without any disk I/O. The
 currently unused fields (permissions, owner, group, dates) get defaults and can be lazy-loaded later if those columns
 are added.
 
@@ -142,9 +142,9 @@ list_directory_start_with_volume()
       └─ enrich, sort, cache, return
 ```
 
-The streaming path (`list_directory_start_streaming`) follows the same pattern — if indexed, populate the cache from DB
+The streaming path (`list_directory_start_streaming`) follows the same pattern: if indexed, populate the cache from DB
 instantly (no progress events needed for sub-ms reads), then emit `listing-complete`; if not indexed, use the existing
-streaming pipeline. In both cases, the frontend fetches entries via `getFileRange` with virtual scrolling — the IPC pipe
+streaming pipeline. In both cases, the frontend fetches entries via `getFileRange` with virtual scrolling; the IPC pipe
 is too narrow to send all entries at once, so the paginated fetch pattern stays regardless of data source.
 
 ### Verification architecture (`verifier.rs`)
@@ -157,12 +157,12 @@ this pattern but is:
 2. **Scoped to a single directory** (not a set of affected paths)
 3. **Updates the LISTING_CACHE** in addition to the DB (so the current listing reflects corrections)
 
-The verifier cancels on navigate-away — if the user navigates elsewhere before verification completes, there's no point
+The verifier cancels on navigate-away: if the user navigates elsewhere before verification completes, there's no point
 finishing.
 
 **Cancellation safety:** Each writer message (`DeleteEntry`, `UpsertEntry`, `PropagateDelta`) is processed atomically by
 the writer thread. If verification is cancelled mid-way, some corrections are committed and some aren't. The uncommitted
-ones will be caught by the next navigation to that directory, or by FSEvents. The DB is always in a consistent state —
+ones will be caught by the next navigation to that directory, or by FSEvents. The DB is always in a consistent state;
 partial verification is safe, never corrupting.
 
 ### Handling the listing cache update
@@ -174,7 +174,7 @@ listing). Approach:
 2. Compare against the DB-sourced cache entries by path.
 3. If identical (sorted by path): done.
 4. If different: replace the cache entries, re-sort, emit `listing-updated` with the listing ID.
-5. Frontend handles `listing-updated` like it handles watcher diffs today — re-fetches the visible range.
+5. Frontend handles `listing-updated` like it handles watcher diffs today; re-fetches the visible range.
 
 ### What the frontend sees
 
@@ -224,13 +224,13 @@ not currently displayed, so their default values are invisible to the user.
 ### Follow-up: disable per-directory watcher for indexed volumes
 
 Today, each listed directory gets its own `notify`/kqueue watcher (`file_system/watcher.rs`). With the volume-level
-FSEvents watcher already running, this is redundant — the same file change is processed twice (per-directory watcher
+FSEvents watcher already running, this is redundant; the same file change is processed twice (per-directory watcher
 updates `LISTING_CACHE` directly; volume watcher updates DB → emits `index-dir-updated` → frontend re-fetches). The only
 tradeoff is latency: per-directory kqueue fires in <100ms, FSEvents batches at 300ms. But 300ms is imperceptible for
 background updates.
 
 When DB-first is active for a volume, skip starting the per-directory watcher for directories on that volume. This
-simplifies the system and avoids double-processing. Not blocking for milestone 2 — can be done as a follow-up.
+simplifies the system and avoids double-processing. Not blocking for milestone 2; can be done as a follow-up.
 
 ## Performance targets
 
@@ -245,7 +245,7 @@ simplifies the system and avoids double-processing. Not blocking for milestone 2
 
 ### Milestone 1: Per-navigation verifier (`verifier.rs`)
 
-Implement the background readdir diff that runs on every navigation. This works **independently of DB-first listings** —
+Implement the background readdir diff that runs on every navigation. This works **independently of DB-first listings**;
 it improves index accuracy even when the listing still comes from readdir. Ship and validate before wiring up DB-first.
 
 **Intention:** Build confidence that the verifier keeps the index in sync. Once we trust it, the DB-first switch is
@@ -273,11 +273,11 @@ concurrent writes during verification).
 
 ### Milestone 1: Per-navigation verifier
 
-- [ ] `verifier.rs`: implement `verify_directory(parent_path, writer, cancel_token)` — bidirectional readdir diff
+- [ ] `verifier.rs`: implement `verify_directory(parent_path, writer, cancel_token)`: bidirectional readdir diff
       against DB (reuse `verify_affected_dirs` pattern: two-phase lock, DeleteEntry/UpsertEntry/PropagateDelta)
 - [ ] `verifier.rs`: accept a `CancellationToken`, cancel on navigate-away (safe: each writer message is atomic, partial
       verification leaves DB consistent)
-- [ ] `mod.rs`: wire `verify_directory` into navigation flow — after `list_directory_start`, spawn background
+- [ ] `mod.rs`: wire `verify_directory` into navigation flow: after `list_directory_start`, spawn background
       verification for the listed directory
 - [ ] `mod.rs`: cancel previous verification when user navigates away (same pattern as `cancel_nav_priority`)
 - [ ] Emit `index-dir-updated` with corrected paths after verification completes (reuses existing frontend handler)
@@ -293,7 +293,7 @@ concurrent writes during verification).
       call
 - [ ] Update all `ScannedEntry` consumers (writer, reconciler, aggregator, verifier) for the field rename
 - [ ] `store.rs`: add `entry_exists(path) -> bool` method (single-row existence check on `entries` table)
-- [ ] `indexing/mod.rs`: add `list_from_index(parent_path) -> Option<Vec<FileEntry>>` — queries DB, converts
+- [ ] `indexing/mod.rs`: add `list_from_index(parent_path) -> Option<Vec<FileEntry>>`: queries DB, converts
       ScannedEntry → FileEntry (logical_size → FileEntry.size, icon_id via `get_icon_id()`), enriches with dir_stats;
       returns `None` if directory not indexed or `scan_completed_at` not set
 - [ ] `operations.rs`: in `list_directory_start_with_volume()`, try `list_from_index` first; fall back to
@@ -314,8 +314,8 @@ concurrent writes during verification).
 - [ ] Benchmark: verification overhead (time from first paint until verification completes)
 - [ ] Profile: confirm no lock contention between DB-first reads and writer thread during concurrent scan
 - [ ] Run all checks: `./scripts/check.sh`
-- [ ] Update `indexing/CLAUDE.md` — remove "verifier.rs is a placeholder" note, document DB-first flow
-- [ ] Update `listing/CLAUDE.md` — document DB-first path in data flow section
+- [ ] Update `indexing/CLAUDE.md`: remove "verifier.rs is a placeholder" note, document DB-first flow
+- [ ] Update `listing/CLAUDE.md`: document DB-first path in data flow section
 
 ### Follow-up: watcher dedup
 

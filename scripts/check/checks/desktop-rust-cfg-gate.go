@@ -296,7 +296,7 @@ func hasDirectCfgAttribute(lines []string, lineIdx int) bool {
 			continue
 		}
 
-		// Hit a code line — no direct cfg attribute
+		// Hit a code line: no direct cfg attribute
 		break
 	}
 	return false
@@ -315,7 +315,7 @@ func isInsideCfgGatedBlock(lines []string, lineIdx int) bool {
 		braceDepth += strings.Count(trimmed, "}") - strings.Count(trimmed, "{")
 
 		if braceDepth < 0 {
-			// Found an unmatched '{' — this is the enclosing block.
+			// Found an unmatched '{': this is the enclosing block.
 			// Check if it (or its enclosing scope) has a macOS cfg gate.
 			return hasMacOSCfgAttribute(lines, j)
 		}

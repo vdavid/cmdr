@@ -9,7 +9,7 @@ use std::sync::Once;
 const SERVICE_NAME: &str = "Cmdr";
 
 /// keyring-core uses a process-wide default store. We install ours exactly once on
-/// first use; subsequent calls are no-ops. Failure is non-fatal — `Entry::new` will
+/// first use; subsequent calls are no-ops. Failure is non-fatal: `Entry::new` will
 /// return an error which we surface via `SecretStoreError::Other`, matching the prior
 /// behaviour.
 fn ensure_default_store() {

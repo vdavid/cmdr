@@ -38,7 +38,7 @@ export async function moveCursorToNewFolder(
   listen: ListenFn,
   findFileIndex: FindFileIndexFn,
 ): Promise<void> {
-  // Try to find the folder immediately — the directory-diff event often fires
+  // Try to find the folder immediately: the directory-diff event often fires
   // before this listener is set up (the folder is created before onCreated runs).
   const tryMoveCursor = async (): Promise<boolean> => {
     const index = await findFileIndex(paneListingId, folderName, showHiddenFiles)

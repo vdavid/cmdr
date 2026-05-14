@@ -3,7 +3,7 @@
  *
  * F1-F10 toolbar at the bottom of the pane. Tests cover the visible
  * and hidden states. Shift-held variant uses `<svelte:document>` so
- * we can't easily toggle it in jsdom — auditing the default variant
+ * we can't easily toggle it in jsdom, so auditing the default variant
  * is sufficient for structural a11y.
  */
 

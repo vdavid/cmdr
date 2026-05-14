@@ -7,7 +7,7 @@ import (
 
 // RunWebsiteDockerBuild runs the full Docker build for the website.
 // Catches .dockerignore mismatches, missing COPY sources, pnpm install failures,
-// and Astro build errors in the container context — anything that would break the deploy.
+// and Astro build errors in the container context, anything that would break the deploy.
 func RunWebsiteDockerBuild(ctx *CheckContext) (CheckResult, error) {
 	if !CommandExists("docker") {
 		return Skipped("docker not installed"), nil

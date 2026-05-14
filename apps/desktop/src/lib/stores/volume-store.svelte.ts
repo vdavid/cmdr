@@ -77,7 +77,7 @@ export function requestVolumeRefresh(): void {
  *    (the backend also emits an initial event, but the frontend
  *    may not be listening yet when it fires).
  *
- * Idempotent — calling multiple times is safe.
+ * Idempotent: calling multiple times is safe.
  */
 export async function initVolumeStore(): Promise<void> {
   if (initialized) return
@@ -108,7 +108,7 @@ export async function initVolumeStore(): Promise<void> {
   // Subscribe to SMB connection-state changes so the picker dot, the
   // `currentVolumeInfo.smbConnectionState` field, and any pane-level UI keying
   // off this volume update the moment a session flips Direct/Disconnected,
-  // without waiting for the next `volumes-changed` (which may not fire — the
+  // without waiting for the next `volumes-changed` (which may not fire, as the
   // volume itself didn't appear or disappear, just its session quality).
   unlistenSmbConnectionChanged = await listen<{ volumeId: string; state: 'direct' | 'disconnected' }>(
     'smb-connection-changed',

@@ -187,13 +187,13 @@ func parseAlpha(s string) (float64, bool) {
 
 // MixSRGB mixes A and B in sRGB space following CSS `color-mix` rules:
 // colors are premultiplied by their alpha, interpolated, then divided out.
-// `bWeight` is in [0, 1] — the fraction attributed to B.
+// `bWeight` is in [0, 1] (the fraction attributed to B).
 // Example: `color-mix(in srgb, A, B 65%)` => MixSRGB(A, B, 0.65) => 35%A + 65%B.
 func MixSRGB(a, b RGBA, bWeight float64) RGBA {
 	aw := 1 - bWeight
 	alpha := a.A*aw + b.A*bWeight
 	if alpha < 1e-9 {
-		// Fully transparent result — keep hue from whichever side had non-zero
+		// Fully transparent result: keep hue from whichever side had non-zero
 		// alpha originally (or zero everything).
 		return RGBA{A: 0}
 	}
@@ -215,7 +215,7 @@ func MixSRGB(a, b RGBA, bWeight float64) RGBA {
 //
 // Special case: if one side has alpha 0 (for example `transparent`), we drop
 // its color contribution entirely and take the other side's color with a
-// blended alpha — this is what CSS actually produces and what designers mean
+// blended alpha. This is what CSS actually produces and what designers mean
 // when writing `color-mix(in oklch, #foo, transparent N%)`.
 func MixOKLCH(a, b RGBA, bWeight float64) RGBA {
 	aw := 1 - bWeight
@@ -402,7 +402,7 @@ func ContrastRatio(a, b RGBA) float64 {
 	return (la + 0.05) / (lb + 0.05)
 }
 
-// namedColors — the subset of CSS named colors we need. We don't ship all 147
+// namedColors: the subset of CSS named colors we need. We don't ship all 147
 // because CSS variables overwhelmingly use hex/rgb/color-mix, and adding every
 // name just expands our attack surface for typos.
 var namedColors = map[string]RGBA{

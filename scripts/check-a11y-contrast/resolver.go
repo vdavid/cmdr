@@ -39,7 +39,7 @@ func (r *Resolver) Resolve(value string) (RGBA, error) {
 		return RGBA{}, fmt.Errorf("empty value")
 	}
 	// `currentColor` and `inherit` are opaque black or opaque white depending
-	// on cascade — we can't know. Surface a warning and return zero RGBA so
+	// on cascade; we can't know. Surface a warning and return zero RGBA so
 	// the caller can decide to skip this rule.
 	lower := strings.ToLower(value)
 	if lower == "currentcolor" || lower == "inherit" || lower == "unset" || lower == "initial" || lower == "revert" {
@@ -96,7 +96,7 @@ func (r *Resolver) resolveVar(value string) (RGBA, error) {
 		if err == nil {
 			return c, nil
 		}
-		// Variable value failed to resolve — try fallback.
+		// Variable value failed to resolve; try fallback.
 		if len(args) >= 2 {
 			return r.Resolve(strings.Join(args[1:], ","))
 		}

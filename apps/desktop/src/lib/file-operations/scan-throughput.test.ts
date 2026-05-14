@@ -41,7 +41,7 @@ describe('ScanThroughput', () => {
   it('clamps negative deltas to zero (defensive against backend resets)', () => {
     const t = new ScanThroughput()
     t.push({ timestampMs: 0, files: 100, bytes: 1000 })
-    // Scan restarts and reports lower numbers — should produce 0, not negative.
+    // Scan restarts and reports lower numbers; should produce 0, not negative.
     const r = t.push({ timestampMs: 1000, files: 50, bytes: 500 })
     expect(r.filesPerSecond).toBe(0)
     expect(r.bytesPerSecond).toBe(0)

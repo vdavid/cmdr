@@ -6,112 +6,112 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 
 ### User interaction
 
-- **Space** — toggle selection at cursor
-- **Shift+click / Shift+arrow** — range selection with anchor (A) and end (B). If anchor already selected, range
+- **Space**: toggle selection at cursor
+- **Shift+click / Shift+arrow**: range selection with anchor (A) and end (B). If anchor already selected, range
   deselects.
-- **Cmd+A / Cmd+Shift+A** — select all / deselect all
+- **Cmd+A / Cmd+Shift+A**: select all / deselect all
 - **".." entry can't be selected**
-- **Cleared on navigation** — selection is per-directory
+- **Cleared on navigation**: selection is per-directory
 
 ### Implementation
 
-- **State**: `SvelteSet<number>` (from `svelte/reactivity`) in `FilePane.svelte` — O(1) add/remove/has
-- **Preserved on sort/filter** — `resort_listing` accepts `selectedIndices[]`, returns `newSelectedIndices[]`
-- **Write operations receive indices** — backend resolves to paths from cached listing
+- **State**: `SvelteSet<number>` (from `svelte/reactivity`) in `FilePane.svelte`. O(1) add/remove/has
+- **Preserved on sort/filter**: `resort_listing` accepts `selectedIndices[]`, returns `newSelectedIndices[]`
+- **Write operations receive indices**: backend resolves to paths from cached listing
 - **Visual**: `--color-selection-fg` (yellow foreground)
 
 ### Operation lifecycle
 
-- **Snapshot** — when an operation is confirmed, FilePane snapshots selected file names into `operationSelectedNames`
+- **Snapshot**: when an operation is confirmed, FilePane snapshots selected file names into `operationSelectedNames`
   (or `'all'` sentinel if all selected)
-- **Diff-driven adjustment** — on each `directory-diff` during an operation, selection is re-resolved via
+- **Diff-driven adjustment**: on each `directory-diff` during an operation, selection is re-resolved via
   `findFileIndices` batch IPC. A `diffGeneration` counter discards stale async results.
-- **Cursor adjustment** — cursor index is also adjusted on structural diffs using the same `adjustSelectionIndices`
+- **Cursor adjustment**: cursor index is also adjusted on structural diffs using the same `adjustSelectionIndices`
   mechanism (treating cursor as a single-element selection)
-- **Source-item-done deselection** — `write-source-item-done` events individually deselect completed items (for copy and
+- **Source-item-done deselection**: `write-source-item-done` events individually deselect completed items (for copy and
   other ops that don't trigger diffs)
-- **Clear on complete/error** — safety net clears all selection on the source pane
-- **Cancel behavior** — selection reflects survivors. For `'all'` sentinel: calls `selectAll()` (move/delete/trash) or
+- **Clear on complete/error**: safety net clears all selection on the source pane
+- **Cancel behavior**: selection reflects survivors. For `'all'` sentinel: calls `selectAll()` (move/delete/trash) or
   leaves untouched (copy)
 
 ### Gotchas
 
-- **Parent offset** — when `hasParent`, frontend indices = backend indices + 1
-- **Range shrinking** — moving cursor back toward anchor removes items no longer in range
-- **Optimization flag** — `allSelected: true` avoids sending 500k indices over IPC
-- **`allSelected` + cancel** — calls `selectAll()` for move/delete/trash (source listing changed), leaves untouched for
+- **Parent offset**: when `hasParent`, frontend indices = backend indices + 1
+- **Range shrinking**: moving cursor back toward anchor removes items no longer in range
+- **Optimization flag**: `allSelected: true` avoids sending 500k indices over IPC
+- **`allSelected` + cancel**: calls `selectAll()` for move/delete/trash (source listing changed), leaves untouched for
   copy (source listing unchanged)
-- **Both panes same directory** — only source pane selection is adjusted; the other pane's selection may become stale
-- **Snapshot timing** — must happen at confirm, not when progress dialog opens (same-FS moves are instant and may
+- **Both panes same directory**: only source pane selection is adjusted; the other pane's selection may become stale
+- **Snapshot timing**: must happen at confirm, not when progress dialog opens (same-FS moves are instant and may
   complete before dialog)
-- **Snapshot covers clipboard paste** — `startTransferProgress` also snapshots, not just `handleTransferConfirm` /
+- **Snapshot covers clipboard paste**: `startTransferProgress` also snapshots, not just `handleTransferConfirm` /
   `handleDeleteConfirm`
 
 ## Navigation (`navigation/`)
 
 ### Back/forward navigation
 
-- **Per-pane history** — independent stacks, session-only (not persisted)
-- **Cross-volume** — works across local drives, network shares, MTP devices
-- **Deleted folder handling** — walks up parent tree until existing dir found. Skipped entries remain in history.
+- **Per-pane history**: independent stacks, session-only (not persisted)
+- **Cross-volume**: works across local drives, network shares, MTP devices
+- **Deleted folder handling**: walks up parent tree until existing dir found. Skipped entries remain in history.
 - **Shortcuts**: Cmd+[ (back), Cmd+] (forward), Backspace (parent)
 
 ### Gotchas
 
-- **History entries are paths** — stored as strings. No FileEntry metadata cached in history.
-- **Volume switching** — changes volume context. History still tracks old volume's paths.
+- **History entries are paths**: stored as strings. No FileEntry metadata cached in history.
+- **Volume switching**: changes volume context. History still tracks old volume's paths.
 
 ## Sorting
 
 ### Behavior
 
-- **Directories first** — always
-- **Natural sorting** — `file10.txt` after `file2.txt`
-- **Extension grouping** — dotfiles → no-extension → by extension alphabetically
-- **Per-tab sort** — each tab owns its `sortBy` + `sortOrder` (no global per-column memory)
-- **Directory sort mode** — setting `listing.directorySortMode` controls how dirs sort among themselves:
+- **Directories first**: always
+- **Natural sorting**: `file10.txt` after `file2.txt`
+- **Extension grouping**: dotfiles → no-extension → by extension alphabetically
+- **Per-tab sort**: each tab owns its `sortBy` + `sortOrder` (no global per-column memory)
+- **Directory sort mode**: setting `listing.directorySortMode` controls how dirs sort among themselves:
   - `likeFiles` (default): dirs sort by the active column (uses `recursive_size` for Size). Dirs with unknown size sort
     last.
   - `alwaysByName`: dirs always sort by name, ignoring the active sort column.
-- **Name ASC tiebreaker** — when primary sort values are equal, entries fall back to name ascending
+- **Name ASC tiebreaker**: when primary sort values are equal, entries fall back to name ascending
 
 ### Implementation
 
-- **Efficient re-sort** — `resort_listing` re-sorts cached listing without disk reads
-- **Preserves cursor by filename** — frontend sends current filename, backend returns new index
-- **Preserves selection by indices** — backend resolves filenames, re-finds after sort
-- **Dir sort mode flows via IPC** — `directorySortMode` passed to `listDirectoryStart` and `resortListing`, stored in
+- **Efficient re-sort**: `resort_listing` re-sorts cached listing without disk reads
+- **Preserves cursor by filename**: frontend sends current filename, backend returns new index
+- **Preserves selection by indices**: backend resolves filenames, re-finds after sort
+- **Dir sort mode flows via IPC**: `directorySortMode` passed to `listDirectoryStart` and `resortListing`, stored in
   `CachedListing` so watcher re-sorts use the correct mode
 
 ### Gotchas
 
-- **A and B cleared after sort** — range selection anchor/end reset (sorting is "new context")
-- **Selected indices remapped** — backend returns `newSelectedIndices[]`, frontend updates `Set`
-- **Dir size = `recursive_size`** — for sorting, dirs use `recursive_size` (from drive index), not `size` (always None)
+- **A and B cleared after sort**: range selection anchor/end reset (sorting is "new context")
+- **Selected indices remapped**: backend returns `newSelectedIndices[]`, frontend updates `Set`
+- **Dir size = `recursive_size`**: for sorting, dirs use `recursive_size` (from drive index), not `size` (always None)
 
 ## Command palette (`../command-palette/`)
 
 ### Features
 
-- **Fuzzy search** — `@leeoniya/ufuzzy` (~3.5KB), typo-tolerant
-- **Match highlighting** — matched characters underlined
-- **Persisted query** — remembered within session
-- **~60 commands** — all scopes (app, main window, file list, network, about)
+- **Fuzzy search**: `@leeoniya/ufuzzy` (~3.5KB), typo-tolerant
+- **Match highlighting**: matched characters underlined
+- **Persisted query**: remembered within session
+- **~60 commands**: all scopes (app, main window, file list, network, about)
 
 ### Gotchas
 
-- **Low-level nav commands hidden** — `showInPalette: false` for arrow keys, Page Up/Down
-- **Execution handler in +page.svelte** — `handleCommandExecute` delegates to `explorerRef`
+- **Low-level nav commands hidden**: `showInPalette: false` for arrow keys, Page Up/Down
+- **Execution handler in +page.svelte**: `handleCommandExecute` delegates to `explorerRef`
 
 ## Git (`git/`)
 
 Breadcrumb chip + status-column helpers + per-repo reactive store. Subscribe-driven, never polls.
 
-- **`RepoChip.svelte`** — Pill rendered in the breadcrumb header. Six visual states: clean, ahead, behind, dirty,
+- **`RepoChip.svelte`**: Pill rendered in the breadcrumb header. Six visual states: clean, ahead, behind, dirty,
   detached, unborn. Tooltip carries the long-form status sentence (used by screen readers via `aria-label`).
-- **`git-store.svelte.ts`** — Per-repo reactive `RepoInfo` map with refcounted subscriptions. Two panes on the same repo
+- **`git-store.svelte.ts`**: Per-repo reactive `RepoInfo` map with refcounted subscriptions. Two panes on the same repo
   share one watcher. Live updates flow via `git-state-changed` Tauri event.
-- **`status-column.ts`** — Pure helpers (`glyphFor`, `labelFor`, `fetchStatusMap`) for the optional status column in
+- **`status-column.ts`**: Pure helpers (`glyphFor`, `labelFor`, `fetchStatusMap`) for the optional status column in
   Full mode. Each cell carries a single-glyph code with a long-form `aria-label` and tooltip.
 
 `FilePane.svelte` wires the chip on every `currentPath` change: it does a one-shot `lookupRepoInfo`, then
@@ -123,15 +123,15 @@ For the full module map, decisions, and gotchas, see `git/CLAUDE.md`.
 
 ## Network browser (`network/`)
 
-- **NetworkBrowser.svelte** — Top-level network view; lists discovered servers
-- **ShareBrowser.svelte** — Lists shares on a selected server
-- **NetworkLoginForm.svelte** — Credential entry for authenticated SMB connections
-- **network-store.svelte.ts** — Reactive state for discovered servers, selected server/share, and auth mode
+- **NetworkBrowser.svelte**: Top-level network view; lists discovered servers
+- **ShareBrowser.svelte**: Lists shares on a selected server
+- **NetworkLoginForm.svelte**: Credential entry for authenticated SMB connections
+- **network-store.svelte.ts**: Reactive state for discovered servers, selected server/share, and auth mode
 
 ## Operations (`operations/`)
 
-- **apply-diff.ts** — Applies file-watcher diffs (add/remove/modify events) to a cached listing in-place
-- **adjust-selection-indices.ts** — Pure function that maps selected indices from an old listing to their positions in a
+- **apply-diff.ts**: applies file-watcher diffs (add/remove/modify events) to a cached listing in-place
+- **adjust-selection-indices.ts**: pure function that maps selected indices from an old listing to their positions in a
   new listing, given removed and added indices. Also used for cursor index adjustment on structural diffs.
 
 ## TCC-restricted treatment
@@ -150,43 +150,43 @@ indicator (TCC)" and `apps/desktop/src-tauri/src/restricted_paths/` for the back
 
 Inline rename with validation, conflict resolution, and an extension change confirmation dialog.
 
-- **InlineRenameEditor.svelte** — Inline text editor for renaming files directly in the file list
-- **RenameConflictDialog.svelte** — Dialog shown when the new name conflicts with an existing entry
-- **ExtensionChangeDialog.svelte** — Confirmation dialog when the file extension is being changed
-- **rename-activation.ts** — Logic for triggering rename mode
-- **rename-operations.ts** — Rename execution and error handling
-- **rename-state.svelte.ts** — Reactive state for the rename editor
+- **InlineRenameEditor.svelte**: inline text editor for renaming files directly in the file list
+- **RenameConflictDialog.svelte**: dialog shown when the new name conflicts with an existing entry
+- **ExtensionChangeDialog.svelte**: confirmation dialog when the file extension is being changed
+- **rename-activation.ts**: logic for triggering rename mode
+- **rename-operations.ts**: rename execution and error handling
+- **rename-state.svelte.ts**: reactive state for the rename editor
 
 ## Pane (`pane/`)
 
 Core explorer UI components:
 
-- **DualPaneExplorer.svelte** — Root component; manages both panes, unified key/command handlers, MCP exports
-- **FilePane.svelte** — Single pane: navigation, listing, cursor, selection, view mode
-- **DialogManager.svelte** — Renders all modal dialogs (transfer, delete, rename, new-folder, etc.)
-- **FunctionKeyBar.svelte** — F1–F10 bar at the bottom of the window
-- **MtpConnectionView.svelte** / **NetworkMountView.svelte** — Placeholder panes for MTP/network mount states
-- **PaneResizer.svelte** — Drag handle between the two panes
-- **ErrorPane.svelte** — Unified error display for listing failures. See [Error display](#error-display) below.
-- **VolumeUnreachableBanner.svelte** — Shown when a tab's volume resolution timed out at startup (retry + open home),
-  and also when the SMB reconnect manager has given up after exhausting its backoff cycle (retry + disconnect —
+- **DualPaneExplorer.svelte**: root component; manages both panes, unified key/command handlers, MCP exports
+- **FilePane.svelte**: single pane (navigation, listing, cursor, selection, view mode)
+- **DialogManager.svelte**: renders all modal dialogs (transfer, delete, rename, new-folder, etc.)
+- **FunctionKeyBar.svelte**: F1–F10 bar at the bottom of the window
+- **MtpConnectionView.svelte** / **NetworkMountView.svelte**: placeholder panes for MTP/network mount states
+- **PaneResizer.svelte**: drag handle between the two panes
+- **ErrorPane.svelte**: unified error display for listing failures. See [Error display](#error-display) below.
+- **VolumeUnreachableBanner.svelte**: shown when a tab's volume resolution timed out at startup (retry + open home),
+  and also when the SMB reconnect manager has given up after exhausting its backoff cycle (retry + disconnect,
   `smbGaveUp` variant)
-- **SmbReconnectingView.svelte** — Shown while the per-volume SMB reconnect cycle is running (waiting/attempting).
+- **SmbReconnectingView.svelte**: shown while the per-volume SMB reconnect cycle is running (waiting/attempting).
   Spinner + progress bar for the current backoff window + dynamic body text. Three actions: Retry now / Cancel /
   Disconnect. Driven by `smb-reconnect-manager.svelte.ts` in `network/`.
-- **selection-state.svelte.ts** — Reactive selection set (indices) with range/toggle helpers
-- **sorting-handlers.ts** / **transfer-operations.ts** / **tab-operations.ts** — Pure logic extracted from
+- **selection-state.svelte.ts**: reactive selection set (indices) with range/toggle helpers
+- **sorting-handlers.ts** / **transfer-operations.ts** / **tab-operations.ts**: pure logic extracted from
   DualPaneExplorer
-- **initialization.ts** — Startup logic: load persisted tabs + app status, resolve volumes, apply E2E overrides, create
-  tab managers
-- **index-events.ts** — Throttled index-dir-updated handler with macOS `/private/` symlink resolution
-- **dialog-state.svelte.ts** — Dialog state and handlers (transfer, delete/trash, new folder, alert, error) extracted
+- **initialization.ts**: startup logic (load persisted tabs + app status, resolve volumes, apply E2E overrides, create
+  tab managers)
+- **index-events.ts**: throttled index-dir-updated handler with macOS `/private/` symlink resolution
+- **dialog-state.svelte.ts**: dialog state and handlers (transfer, delete/trash, new folder, alert, error) extracted
   from DualPaneExplorer via factory pattern. `TransferErrorPropsData` carries an optional `FriendlyError` (from the
   backend `write-error` event payload) alongside the typed `WriteOperationError`;
   `handleTransferError(error, friendly?)` accepts both and stores them so the rendered dialog (see
   `file-operations/CLAUDE.md`) can prefer the backend copy.
-- **rename-flow.svelte.ts** — Rename flow logic (validation, conflict/extension dialogs) extracted from FilePane
-- **type-to-jump-state.svelte.ts** / **TypeToJumpIndicator.svelte** — Type-to-jump factory + the "Jump: …" chip. See
+- **rename-flow.svelte.ts**: rename flow logic (validation, conflict/extension dialogs) extracted from FilePane
+- **type-to-jump-state.svelte.ts** / **TypeToJumpIndicator.svelte**: type-to-jump factory + the "Jump: …" chip. See
   [Type-to-jump](#type-to-jump) below.
 
 ### Type-to-jump
@@ -197,10 +197,10 @@ highest-scoring fuzzy match. A bottom-right "Jump: tes" chip shows the live buff
 
 **State** (one factory instance per pane, in `FilePane.svelte`):
 
-- `buffer` — chars typed since the last reset (lowercased).
-- `indicatorVisible` / `indicatorStale` — asymmetric timeouts (see below).
-- `generation` — monotonic counter bumped per keystroke. The async match callback discards responses where
-  `generation !== state.generation` — same race-protection pattern as `adjust-selection-indices.ts`'s `diffGeneration`.
+- `buffer`: chars typed since the last reset (lowercased).
+- `indicatorVisible` / `indicatorStale`: asymmetric timeouts (see below).
+- `generation`: monotonic counter bumped per keystroke. The async match callback discards responses where
+  `generation !== state.generation` (same race-protection pattern as `adjust-selection-indices.ts`'s `diffGeneration`).
 
 **Two timers**:
 
@@ -217,7 +217,7 @@ cursor index is `backendIndex + 1` when `hasParent` is true. Forget that and the
 match.
 
 **Streaming listings**: a single keystroke = exactly one match against the cache as it stands at that moment. We don't
-auto-jump on subsequent `listing-progress` events — that would move the cursor under the user without input, violating
+auto-jump on subsequent `listing-progress` events, as that would move the cursor under the user without input, violating
 top-5 principle 3 ("the user is always in control").
 
 **MCP surface**: when the buffer or indicator is live, `FilePane` mirrors
@@ -256,8 +256,8 @@ classification or OS-specific logic):
   `~icons/lucide/triangle-alert` in warning color for transient, ⊘ `~icons/lucide/circle-alert` in error color for
   serious, no icon for needs-action
 - **Folder path**: shown in secondary text so the user knows exactly which folder is affected
-- **Explanation**: rendered as markdown via `snarkdown` — plain-language description of what happened
-- **Suggestion**: rendered as markdown — actionable steps, often provider-specific (for example, "Open **MacDroid** and
+- **Explanation**: rendered as markdown via `snarkdown` (plain-language description of what happened)
+- **Suggestion**: rendered as markdown (actionable steps, often provider-specific, for example, "Open **MacDroid** and
   check that your phone is connected")
 - **"Try again" button**: shown only for `transient` category. Calls `navigateTo(currentPath)` to retry the listing.
   Tracks retry count and timestamps, displays them in the technical details ("Retry #2 · first try 45s ago · last try
@@ -275,7 +275,7 @@ classification or OS-specific logic):
 ### For future agents
 
 The error messages and provider suggestions live in **Rust** (`file_system/volume/friendly_error.rs`), not in this
-Svelte component. The frontend is intentionally thin here — it renders what Rust sends. If you want to change the
+Svelte component. The frontend is intentionally thin here: it renders what Rust sends. If you want to change the
 wording, add a new error state, or add a new provider: edit the Rust file. See `file_system/volume/CLAUDE.md` §
 "Friendly error system" for the writing rules and how-to guides.
 
@@ -293,16 +293,16 @@ re-navigates the pane (clearing `friendlyError` in `loadDirectory`).
 
 ## Key decisions
 
-**Decision**: Scoped CSS for file explorer list components (and throughout the app — Tailwind was removed due to 15s dev
+**Decision**: Scoped CSS for file explorer list components (and throughout the app, as Tailwind was removed due to 15s dev
 startup from JIT scanning). **Why**: File lists render 50k+ items. Scoped CSS produces smaller DOM (no repetitive
 utility classes on each file entry), enabling faster rendering and lower memory.
 
-**Decision**: Icon registry pattern — `iconId` refs in file entries, separate `get_icons()` call, frontend caches.
+**Decision**: Icon registry pattern (`iconId` refs in file entries, separate `get_icons()` call, frontend caches).
 **Why**: 50k JPEG files would otherwise transmit 50k identical icon blobs (~100-200MB). Instead, file entries carry only
 an `iconId` (like `"ext:jpg"`), and a separate IPC call fetches unique icons. Frontend caches icons in IndexedDB across
 sessions.
 
-**Decision**: Non-reactive `FileDataStore` — only visible range (~50-100 items) enters Svelte reactivity. **Why**:
+**Decision**: Non-reactive `FileDataStore` (only visible range, ~50-100 items, enters Svelte reactivity). **Why**:
 Loading 20k+ files into Svelte `$state` causes 9+ second freezes (Svelte tracks the full array internally even with
 virtual scrolling). Storing data outside reactivity and slicing only visible items reduces reactivity cost from O(total)
 to O(visible). See [benchmarks](../../../../../docs/notes/non-reactive-file-store.md).
@@ -311,7 +311,7 @@ to O(visible). See [benchmarks](../../../../../docs/notes/non-reactive-file-stor
 
 **Root-layout HMR can trigger a SvelteKit TDZ crash.** When an HMR update propagates through the root `+layout.svelte`
 (for example, `app.css` changes), SvelteKit's client router can crash with
-`ReferenceError: Cannot access 'component' before initialization` — a TDZ error where a route component module hasn't
+`ReferenceError: Cannot access 'component' before initialization`, a TDZ error from a route component module not yet
 finished importing during the rebuild. This is a SvelteKit bug (sveltejs/kit#15287). `$lib/hmr-recovery.ts` catches the
 crash and forces a clean page reload. The recovery listener is imported from `+layout.ts` (a stable module that survives
 layout component re-evaluation). If sveltejs/kit#15287 gets fixed, the workaround can be removed.

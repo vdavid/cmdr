@@ -9,12 +9,12 @@ How to release a new version of Cmdr. Use the `/release` command to start.
 
 ## Keep the Mac awake during the build
 
-The self-hosted runner lives on this Mac. If the machine sleeps — even briefly, or just the display — GitHub Actions
+The self-hosted runner lives on this Mac. If the machine sleeps (even briefly, or just the display), GitHub Actions
 drops the runner connection and every in-flight matrix job fails with
 `The self-hosted runner lost communication with the server.` This bit us on the 0.13.0 release: all three jobs failed at
 exactly 11m1s each.
 
-Before pushing the tag, start `caffeinate` in the background. The release script does NOT do this automatically — the
+Before pushing the tag, start `caffeinate` in the background. The release script does NOT do this automatically; the
 agent (or the human running the release) is responsible for arming and disarming it.
 
 ```bash
@@ -25,7 +25,7 @@ kill $CAFFEINATE_PID             # once all matrix jobs are done (success or fai
 ```
 
 Agents: do this as a Bash `run_in_background` call right after the push, and `kill` it once the release monitor reports
-the run has finished (not just the build matrix — wait for the overall run to be `completed`). If the release fails and
+the run has finished (wait for the overall run to be `completed`, not just the build matrix). If the release fails and
 the user wants to re-run failed jobs, re-arm caffeinate first.
 
 ## How updates work
@@ -55,7 +55,7 @@ Go to GitHub → Releases → delete the draft manually before retrying.
 ### Apple notarization is slow (builds time out at 30 min)
 
 Apple's notarization can take anywhere from minutes to 20+ hours. If the build job times out waiting for notarization,
-the publish job won't run — no broken state.
+the publish job won't run, with no broken state.
 
 To check notarization status manually:
 
@@ -67,7 +67,7 @@ xcrun notarytool info <SUBMISSION_ID> \
 ```
 
 The submission ID is logged in the build output before the timeout. Once the status shows `Accepted`, re-run the failed
-job(s) in GitHub Actions — tauri-action will re-submit, Apple will return `Accepted` immediately (same binary hash), and
+job(s) in GitHub Actions; tauri-action will re-submit, Apple will return `Accepted` immediately (same binary hash), and
 the build will complete in minutes.
 
 Use "Re-run failed jobs" (not "Re-run all jobs") to avoid rebuilding architectures that already succeeded.
@@ -79,7 +79,7 @@ main, and triggers a website deploy. If it fails:
 
 - **Missing signatures**: check that all 3 build jobs uploaded their `.sig` files. The publish job validates this
   upfront and fails fast with a clear message.
-- **Git push failed**: another commit was pushed to main between checkout and push. Re-run the publish job — it does
+- **Git push failed**: another commit was pushed to main between checkout and push. Re-run the publish job; it does
   `git pull --rebase` to handle this, but if the rebase itself conflicts (someone else edited `latest.json`), it needs
   manual resolution.
 - **Website deploy webhook failed**: re-trigger manually by pushing any commit to main, or SSH into the server and run
@@ -101,5 +101,5 @@ gh run rerun <release-run-id> --failed
 
 Tauri's bundler includes all `[[bin]]` targets from the cmdr package, not just the main `Cmdr` binary. Dev-only tools
 must live in separate workspace crates (like `crates/index-query/`) to stay out of the bundle. Non-`.rs` files in
-`src/bin/` (like `CLAUDE.md`) also confuse the bundler — it strips the extension and tries to bundle the result as a
+`src/bin/` (like `CLAUDE.md`) also confuse the bundler; it strips the extension and tries to bundle the result as a
 binary.

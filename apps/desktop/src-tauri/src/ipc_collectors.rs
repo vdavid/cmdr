@@ -76,7 +76,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::file_viewer::viewer_close,
         crate::commands::file_viewer::viewer_setup_menu,
         crate::commands::file_viewer::viewer_set_word_wrap,
-        // store_font_metrics is generic (<R: tauri::Runtime>) — excluded from specta collection
+        // store_font_metrics is generic (<R: tauri::Runtime>): excluded from specta collection
         crate::commands::font_metrics::has_font_metrics,
         crate::commands::icons::get_icons,
         crate::commands::icons::refresh_directory_icons,
@@ -85,7 +85,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         // show_file_context_menu, show_breadcrumb_context_menu, update_pin_tab_menu,
         // set_reopen_closed_tab_enabled, show_main_window, update_menu_context,
         // set_menu_context, toggle_hidden_files, update_view_mode_menu, copy_to_clipboard
-        // are generic (<R: Runtime>) — excluded
+        // are generic (<R: Runtime>): excluded
         crate::commands::ui::show_tab_context_menu,
         crate::commands::ui::show_network_host_context_menu,
         crate::commands::ui::show_in_finder,
@@ -129,7 +129,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::ai::manager::get_ai_status,
         crate::ai::manager::get_ai_model_info,
         crate::ai::manager::get_ai_runtime_status,
-        // configure_ai, start_ai_server, start_ai_download are generic (<R: Runtime>) — excluded
+        // configure_ai, start_ai_server, start_ai_download are generic (<R: Runtime>): excluded
         crate::ai::manager::stop_ai_server,
         crate::ai::manager::check_ai_connection,
         crate::system_memory::get_system_memory_info,
@@ -144,7 +144,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::ai::api_keys::delete_ai_api_key,
         crate::ai::api_keys::has_ai_api_key,
         crate::ai::suggestions::get_folder_suggestions,
-        // set_mcp_enabled, set_mcp_port are generic (<R: Runtime>) — excluded from specta
+        // set_mcp_enabled, set_mcp_port are generic (<R: Runtime>): excluded from specta
         crate::commands::mcp::get_mcp_running,
         crate::commands::mcp::get_mcp_port,
         crate::commands::settings::check_port_available,

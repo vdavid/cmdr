@@ -13,7 +13,7 @@
 //!   `lib.rs` from `CMDR_LOG_DIR` / `CMDR_DATA_DIR` / the Tauri default. The error
 //!   reporter bundle builder needs the same path without re-deriving the env-var logic.
 //! - **Live keep-count** ([`set_keep_count`] / [`keep_count`]): the rotation keep-N value
-//!   the file chain was built with. `file-rotate` is one-shot — changing this at runtime
+//!   the file chain was built with. `file-rotate` is one-shot; changing this at runtime
 //!   does NOT reconfigure the chain, but [`eager_prune`] uses it to delete excess
 //!   archived files immediately when the user lowers the cap.
 //! - **One-shot pruner** ([`eager_prune`]): for the user-lowered-the-cap case.
@@ -33,7 +33,7 @@ static KEEP_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 /// Records the resolved log directory once, at plugin-build time.
 ///
-/// Subsequent calls are no-ops — the path doesn't change without an app restart.
+/// Subsequent calls are no-ops; the path doesn't change without an app restart.
 pub fn set_log_dir(path: PathBuf) {
     let _ = LOG_DIR.set(path);
 }
@@ -129,13 +129,13 @@ pub fn list_recent_log_files(log_dir: &Path) -> Vec<PathBuf> {
         })
         .collect();
 
-    // Newest first — `Reverse` avoids the `sort_by`/`Ord` boilerplate clippy flags.
+    // Newest first; `Reverse` avoids the `sort_by`/`Ord` boilerplate clippy flags.
     files.sort_by_key(|(_, mtime)| std::cmp::Reverse(*mtime));
     files.into_iter().map(|(p, _)| p).collect()
 }
 
 /// One-shot sweep: deletes `Cmdr_<timestamp>.log` rotation leftovers from the legacy
-/// `tauri-plugin-log` setup. Idempotent — subsequent runs find nothing.
+/// `tauri-plugin-log` setup. Idempotent; subsequent runs find nothing.
 ///
 /// Logs one INFO line per deleted file so operators can see the cleanup happen on
 /// upgrade. Per-file errors are logged at WARN and don't abort the sweep. Returns the
@@ -174,11 +174,11 @@ pub fn cleanup_legacy_log_files(log_dir: &Path) -> usize {
 
 /// Deletes all but the `keep_n` newest `*.log*` files in `log_dir`.
 ///
-/// One-shot — call once after the user lowers the cap. Returns the number of files deleted.
+/// One-shot: call once after the user lowers the cap. Returns the number of files deleted.
 /// A missing directory is not an error (returns `Ok(0)`). Per-file deletion errors are
 /// logged but don't abort the sweep.
 ///
-/// `keep_n == 0` keeps no files at all — used when the user disables log storage at runtime
+/// `keep_n == 0` keeps no files at all; used when the user disables log storage at runtime
 /// (the live `cmdr.log` will be re-created by the plugin on the next write).
 pub fn eager_prune(log_dir: &Path, keep_n: usize) -> std::io::Result<usize> {
     if !log_dir.exists() {

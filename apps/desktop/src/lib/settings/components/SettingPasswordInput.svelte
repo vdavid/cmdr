@@ -27,7 +27,7 @@
         }
     })
 
-    // Subscribe to setting changes (for external resets) — only in uncontrolled mode
+    // Subscribe to setting changes (for external resets): only in uncontrolled mode
     onMount(() => {
         if (onchange) return
         return onSpecificSettingChange(id, (_id, newValue) => {

@@ -4,8 +4,8 @@
 //! and enumerates shares using the smb-rs crate.
 //!
 //! Platform-specific modules:
-//! - `keychain.rs` — credential storage (delegates to `crate::secrets` for platform-agnostic backend)
-//! - `mount.rs` / `mount_linux.rs` — SMB mounting (macOS NetFS / Linux gio)
+//! - `keychain.rs`: credential storage (delegates to `crate::secrets` for platform-agnostic backend)
+//! - `mount.rs` / `mount_linux.rs`: SMB mounting (macOS NetFS / Linux gio)
 
 pub mod keychain;
 
@@ -126,7 +126,7 @@ pub fn get_discovery_state_value() -> DiscoveryState {
 }
 
 /// Drains the cached host map and resets discovery state to `Idle`. Pure
-/// mutation — returns the IDs of hosts that were removed so the caller can
+/// mutation: returns the IDs of hosts that were removed so the caller can
 /// emit `network-host-lost` for each. Testable without a Tauri runtime.
 pub(crate) fn drain_discovered_hosts() -> Vec<String> {
     let mut state = get_discovery_state().lock_ignore_poison();
@@ -185,7 +185,7 @@ pub(crate) fn on_host_lost<R: tauri::Runtime>(host_id: &str, app_handle: &impl E
     }
 }
 
-/// Updates the cached discovery state without emitting. Pure mutation —
+/// Updates the cached discovery state without emitting. Pure mutation;
 /// testable in isolation from a Tauri runtime. The public
 /// `on_discovery_state_changed` calls this and then emits the FE event.
 pub(crate) fn set_discovery_state(new_state: DiscoveryState) {
@@ -444,7 +444,7 @@ mod tests {
     #[test]
     fn drain_discovered_hosts_clears_state_and_returns_removed_ids() {
         // Pre-populate the global host map. We bypass `on_host_found` (which
-        // takes an Emitter) and write the map directly — the point of this
+        // takes an Emitter) and write the map directly; the point of this
         // test is the drain side effect on the cache, not the event emit.
         let _guard = DISCOVERY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
 

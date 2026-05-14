@@ -1,4 +1,4 @@
-//! Settings module — loads settings from tauri-plugin-store's JSON file at startup.
+//! Settings module: loads settings from tauri-plugin-store's JSON file at startup.
 
 pub mod loader;
 

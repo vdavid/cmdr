@@ -9,17 +9,17 @@ When Cmdr creates, deletes, or renames files through a non-local volume (SmbVolu
 doesn't update reliably. Multiple interacting causes:
 
 1. **Self-initiated mutations bypass FSEvents.** `SmbVolume` writes via smb2 (bypasses kernel VFS, so FSEvents never
-   fires). `MtpVolume` writes via USB (same — kernel doesn't know). The listing watcher relies on FSEvents for change
+   fires). `MtpVolume` writes via USB (same; the kernel doesn't know). The listing watcher relies on FSEvents for change
    detection on local volumes.
 
 2. **`handle_directory_change()` (watcher.rs:360) bails out** with `if !vol.supports_watching() { return; }` for
    non-watchable volumes. Even if called, it uses `list_directory_core` (`std::fs::read_dir`) which doesn't go through
-   the Volume trait — it only works for local volumes.
+   the Volume trait; it only works for local volumes.
 
 3. **`emit_synthetic_entry_diff` partially works for SMB.** `SmbVolume` doesn't override `supports_local_fs_access()`
    (defaults to `true`), so `should_emit_synthetic_diff` returns `true`, and the synthetic diff fires. But it calls
-   `get_single_entry` which uses `std::fs::symlink_metadata` on the OS mount path — this works but goes through the slow
-   mount path and may have stale directory caches. For MTP, `supports_local_fs_access()` returns `false`, so the
+   `get_single_entry` which uses `std::fs::symlink_metadata` on the OS mount path (this works but goes through the slow
+   mount path and may have stale directory caches). For MTP, `supports_local_fs_access()` returns `false`, so the
    synthetic diff is skipped entirely.
 
 4. **`rename_file` has no listing notification at all.** `commands/rename.rs` doesn't call `emit_synthetic_entry_diff`
@@ -28,7 +28,7 @@ doesn't update reliably. Multiple interacting causes:
 
 5. **`delete` through `write_operations` has no listing cache update.** The write_operations module emits
    `write-complete` events but doesn't patch the listing cache. The frontend is expected to re-read the listing on
-   `write-complete`. Verify this happens correctly for non-local volumes — if the frontend calls `refreshListing` which
+   `write-complete`. Verify this happens correctly for non-local volumes; if the frontend calls `refreshListing` which
    goes through `handle_directory_change`, it will bail out for non-watchable volumes (cause #2).
 
 ## Design
@@ -44,7 +44,7 @@ to create one (polling, fake events), we make the Volume trait explicitly notify
 **Layer 1: Self-mutation notification (immediate, reliable)**
 
 After each successful Volume mutation (`create_file`, `create_directory`, `delete`, `rename`), the volume notifies the
-listing system directly. This provides instant UI feedback — no watcher delay.
+listing system directly. This provides instant UI feedback with no watcher delay.
 
 **Layer 2: Background watcher (external changes)**
 
@@ -61,7 +61,7 @@ the listing instantly. The watcher is a safety net for external changes and a de
 
 ## Implementation
 
-### Milestone 1: `notify_directory_changed` — unified entry point
+### Milestone 1: `notify_directory_changed` (unified entry point)
 
 #### 1. New function in `file_system/listing/caching.rs`
 
@@ -90,7 +90,7 @@ pub enum DirectoryChange {
     Modified(FileEntry),
     /// An entry was renamed within the same directory.
     Renamed { old_name: String, new_entry: FileEntry },
-    /// Unknown or bulk change — trigger a full re-read via the Volume trait.
+    /// Unknown or bulk change: trigger a full re-read via the Volume trait.
     FullRefresh,
 }
 ```
@@ -113,7 +113,7 @@ already stores `volume_id`).
 - `Removed(name)`: Call `remove_entry_by_path(listing_id, path)` for each matching listing. Emit `directory-diff`.
 - `Modified(entry)`: Call `update_entry_sorted(listing_id, entry)`. Emit `directory-diff`.
 - `Renamed { old_name, new_entry }`: `remove_entry_by_path` for old name, `insert_entry_sorted` for new entry. This
-  handles same-directory renames. Cross-directory renames (moves) need two notifications — `Removed` in the source dir
+  handles same-directory renames. Cross-directory renames (moves) need two notifications: `Removed` in the source dir
   and `Added` in the dest dir. The caller is responsible for emitting both.
 - `FullRefresh`: For each matching listing, re-read the directory via `Volume::list_directory`, compute diff against
   cache, emit `directory-diff`. This replaces `handle_directory_change`'s `list_directory_core` call with the Volume
@@ -146,14 +146,14 @@ pub enum MutationEvent {
 
 **Why on the Volume trait**: Every Volume mutation method (`create_file`, `create_directory`, `delete`, `rename`)
 already knows what changed. Adding the notification call at the end of each method keeps it colocated with the mutation.
-The alternative (adding notification calls in every Tauri command that calls Volume methods) is fragile — easy to miss a
+The alternative (adding notification calls in every Tauri command that calls Volume methods) is fragile; it's easy to miss a
 call site.
 
 **Why a default implementation**: `LocalPosixVolume` mutations go through `std::fs`, so the default can use
-`std::fs::symlink_metadata` to construct the `FileEntry`. This means existing local volume behavior doesn't change —
+`std::fs::symlink_metadata` to construct the `FileEntry`. This means existing local volume behavior doesn't change;
 it's belt-and-suspenders alongside FSEvents.
 
-**Coupling note**: `notify_mutation` needs to call `notify_directory_changed`, which touches `LISTING_CACHE` — this
+**Coupling note**: `notify_mutation` needs to call `notify_directory_changed`, which touches `LISTING_CACHE`; this
 pulls listing concerns into the Volume layer. This is acceptable because the notification is fire-and-forget (no return
 value, no error propagation). The Volume doesn't depend on the listing system; it just calls a global function.
 
@@ -172,7 +172,7 @@ After each mutation in `SmbVolume`, call `self.notify_mutation(parent_path, even
 
 **Mutex contention note**: The watcher task stats new files via the main client (`SmbVolume::get_metadata`), sharing the
 same `Mutex<Option<(SmbClient, Tree)>>`. This means watcher stat calls queue behind user-initiated operations (and vice
-versa). This is acceptable — watcher events are debounced, so stat calls are infrequent. Large ongoing operations (like
+versa). This is acceptable; watcher events are debounced, so stat calls are infrequent. Large ongoing operations (like
 a copy) will delay watcher notifications, but the self-mutation notification provides instant feedback for
 Cmdr-initiated changes anyway.
 
@@ -184,7 +184,7 @@ Same pattern. After each MtpVolume mutation, call `self.notify_mutation()`. The 
 #### 5. Update `create_directory` and `create_file` Tauri commands
 
 Remove the `should_emit_synthetic_diff` / `emit_synthetic_entry_diff` path. The Volume's `notify_mutation` handles it
-now. The commands become cleaner — they just call the Volume method and return.
+now. The commands become cleaner; they just call the Volume method and return.
 
 **Migration note**: Keep `emit_synthetic_entry_diff` for one release cycle as a fallback for any volume types that don't
 implement `notify_mutation`. Remove once all volume types are migrated.
@@ -201,10 +201,10 @@ This change also means `handle_directory_change` works for SMB volumes, which is
 
 #### 7. Dedicated watch connection in SmbVolume
 
-`smb2::Watcher<'a>` borrows `&'a mut Connection` for its lifetime (long-poll — blocks until the server reports changes).
+`smb2::Watcher<'a>` borrows `&'a mut Connection` for its lifetime (long-poll that blocks until the server reports changes).
 This means the main `SmbClient` can't be used for watching and operations simultaneously.
 
-The watcher task owns its own connection — not stored on the struct:
+The watcher task owns its own connection (not stored on the struct):
 
 ```
 SmbVolume {
@@ -232,7 +232,7 @@ async fn run_smb_watcher(
 ) {
     // 1. Establish a separate smb2 connection
     // 2. Connect to the same share
-    // 3. Call client.watch(&tree, "", true) — recursive from share root
+    // 3. Call client.watch(&tree, "", true) -- recursive from share root
     // 4. Loop: select! { next_events() => process, cancel => break }
     // 5. On exit: call watcher.close() to release the SMB directory handle
 }
@@ -258,7 +258,7 @@ arrive for the same directory in one batch, emit `FullRefresh` instead of indivi
 operations (copying 1000 files) without 1000 individual stat calls.
 
 **`STATUS_NOTIFY_ENUM_DIR`:** The server returns this when too many changes occurred and the buffer overflowed. Emit
-`FullRefresh` for the share root — the listing system will re-read the currently displayed directory.
+`FullRefresh` for the share root; the listing system will re-read the currently displayed directory.
 
 **Cleanup on exit:** The smb2 `Watcher` has a `close(self)` method that releases the SMB directory handle. The watcher
 task must call `watcher.close().await` before exiting (on cancellation, connection loss, or any other exit path).
@@ -311,7 +311,7 @@ a file on the device).
 #### 13. Run full checks
 
 - `./scripts/check.sh`
-- `cargo nextest run` — all tests
+- `cargo nextest run`: all tests
 - SMB integration tests with Docker containers
 
 ## Risks
@@ -338,5 +338,5 @@ a file on the device).
 - **Write operations module**: Copy/move/delete through `write_operations/` already emit `write-complete` events. The
   frontend handles these by refreshing the listing. The new notification supplements this for individual operations (⌘N,
   rename, etc.). Verify during implementation that the frontend's `write-complete` handler works correctly for non-local
-  volumes — if it calls `refreshListing` which goes through `handle_directory_change`, the M1 fix (removing the
+  volumes; if it calls `refreshListing` which goes through `handle_directory_change`, the M1 fix (removing the
   `supports_watching` bail-out) is needed.

@@ -8,7 +8,7 @@
 //! Type category in `NSGlobalDomain` under the key
 //! `UIPreferredContentSizeCategoryName` (e.g. `UICTContentSizeCategoryL` for the
 //! default "Large"). The same key is read by Apple's first-party apps and is the
-//! only signal we can pick up — there is no public AppKit API for this.
+//! only signal we can pick up; there is no public AppKit API for this.
 //!
 //! ## Risks (knowingly accepted)
 //!
@@ -18,7 +18,7 @@
 //!   integration.
 //! - **`com.apple.accessibility.api` is an undocumented distributed
 //!   notification.** It's the same bus Apple's own components react to for
-//!   "something in Accessibility changed". Same fallback story — if it stops
+//!   "something in Accessibility changed". Same fallback story: if it stops
 //!   firing, the value still reads correctly on next app launch.
 //! - **Per-app overrides** (`com.apple.universalaccess` → `FontSizeCategory`)
 //!   are intentionally ignored. Cmdr ships its own per-app slider in Settings;
@@ -34,7 +34,7 @@
 //!
 //! The frontend (`settings-applier.ts`) compounds this multiplier with the
 //! user's `appearance.textSize` slider in exactly one place. The backend never
-//! computes the final scale — it only reports the system value.
+//! computes the final scale; it only reports the system value.
 
 use std::ptr::NonNull;
 
@@ -93,7 +93,7 @@ pub fn get_system_text_size_multiplier() -> f32 {
 /// Subscribes to the distributed accessibility-changed notification and emits
 /// `system-text-size-changed` with the new multiplier whenever it fires.
 ///
-/// The observer is intentionally never removed — we want updates for the entire
+/// The observer is intentionally never removed; we want updates for the entire
 /// session.
 pub fn observe_system_text_size_changes<R: Runtime>(app_handle: AppHandle<R>) {
     let initial = read_system_multiplier();

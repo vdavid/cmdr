@@ -32,7 +32,7 @@ pub fn show_file_context_menu<R: Runtime>(
 
     // The "primary" path drives single-file actions like "Copy 'filename'", Get info,
     // Quick look. `paths` carries the full selection that "Open with" and cloud actions
-    // should apply to — it equals `[path]` when the right-clicked file isn't part of a
+    // should apply to: it equals `[path]` when the right-clicked file isn't part of a
     // multi-selection, or the entire selection otherwise.
     let context_paths = if paths.is_empty() { vec![path.clone()] } else { paths };
 
@@ -85,7 +85,7 @@ fn build_file_context_info(primary_path: &str, all_paths: &[String]) -> FileCont
     let path_buf = PathBuf::from(primary_path);
     let is_icloud_drive = is_in_icloud_drive(&path_buf);
 
-    // Sync status of the primary path only — drives the cloud-action label.
+    // Sync status of the primary path only (drives the cloud-action label).
     let sync_status = if is_icloud_drive {
         let mut statuses = get_sync_statuses(vec![primary_path.to_string()]);
         statuses.remove(primary_path).unwrap_or_default()
@@ -339,7 +339,7 @@ pub fn open_in_editor(_path: String) -> Result<(), String> {
 /// Shows a native context menu for a tab (fire-and-forget).
 /// The selected action is delivered asynchronously via a `tab-context-action` Tauri event
 /// from `on_menu_event`, because `popup()` returns before the event loop processes the
-/// `MenuEvent` from muda. A synchronous channel approach doesn't work here — the wakeup
+/// `MenuEvent` from muda. A synchronous channel approach doesn't work here: the wakeup
 /// signal posted during the popup's NSEvent tracking loop gets consumed, so `recv` always
 /// times out.
 #[tauri::command]
@@ -418,7 +418,7 @@ pub fn set_reopen_closed_tab_enabled<R: Runtime>(app: AppHandle<R>, enabled: boo
 /// Enables or disables explorer-scoped menu items based on the current context.
 /// - `"explorer"`: all menu items enabled (main file explorer has focus)
 /// - `"other"`: all non-App items disabled except Close tab (⌘W), which doubles as
-///   "close the focused window" — standard macOS behavior
+///   "close the focused window" (standard macOS behavior)
 #[tauri::command]
 #[specta::specta]
 pub fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Result<(), String> {
@@ -431,7 +431,7 @@ pub fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Resul
         if id == CLOSE_TAB_ID {
             continue;
         }
-        // Reopen closed tab is managed exclusively by `set_reopen_closed_tab_enabled` —
+        // Reopen closed tab is managed exclusively by `set_reopen_closed_tab_enabled`:
         // skip it here so an "explorer" context switch doesn't enable it while the
         // focused pane's closed-tab stack is empty.
         if id == REOPEN_CLOSED_TAB_ID {

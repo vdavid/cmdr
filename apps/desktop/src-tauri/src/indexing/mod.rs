@@ -565,7 +565,7 @@ mod tests {
         // Give the locker thread time to acquire
         std::thread::sleep(Duration::from_millis(50));
 
-        // Enrich on this thread — must succeed despite INDEXING being locked
+        // Enrich on this thread; must succeed despite INDEXING being locked
         let mut entries = vec![make_file_entry("projects", "/projects", true)];
         enrich_entries_with_index(&mut entries);
 
@@ -700,7 +700,7 @@ mod tests {
 
     /// User picked Deny: auto-start. Per the onboarding contract, Cmdr
     /// proceeds in limited mode and the user gets individual TCC popups for
-    /// each protected folder the indexer touches — they accept or deny each.
+    /// each protected folder the indexer touches; they accept or deny each.
     #[test]
     fn should_auto_start_indexing_allowed_when_user_choice_is_deny() {
         assert!(should_auto_start_indexing(None, FullDiskAccessChoice::Deny, false));
@@ -737,7 +737,7 @@ mod tests {
     // The global INDEXING cell is shared with the running app (and with the
     // verifier::trigger_verification path), so these tests serialize via a
     // dedicated mutex and always restore the cell to Disabled before
-    // returning. They never call `start_indexing` (needs an AppHandle) —
+    // returning. They never call `start_indexing` (needs an AppHandle);
     // instead they install an `Initializing { store }` phase by hand and
     // drive the transitions whose Rust-side state machine is reachable
     // without a Tauri runtime: stop_indexing's Initializing -> Disabled

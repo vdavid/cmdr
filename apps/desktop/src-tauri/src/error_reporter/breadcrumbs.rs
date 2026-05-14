@@ -7,9 +7,9 @@
 //! ## Why not just use logs?
 //!
 //! Logs are noisy and unstructured. Breadcrumbs are structured (kind + ctx) and
-//! curated — only the kinds we care about during triage. The `kind: "command"`
+//! curated (only the kinds we care about during triage). The `kind: "command"`
 //! breadcrumb subsumes what was previously the manifest's `last_user_action`
-//! field (since removed) — `handleCommandExecute` pushes one on every dispatch,
+//! field (since removed); `handleCommandExecute` pushes one on every dispatch,
 //! and the most recent such entry is the "what did the user just do" signal.
 
 use chrono::Utc;
@@ -48,7 +48,7 @@ static BUFFER: Mutex<VecDeque<Breadcrumb>> = Mutex::new(VecDeque::new());
 
 /// Append a breadcrumb. Drops the oldest entry if the buffer is full.
 ///
-/// Silent on overflow / lock poisoning — breadcrumbs are best-effort instrumentation,
+/// Silent on overflow / lock poisoning. Breadcrumbs are best-effort instrumentation,
 /// not a feature we'd ever surface a failure for.
 pub fn record(kind: &str, message: &str, ctx: Option<Value>) {
     if kind.is_empty() || kind.chars().count() > MAX_KIND_CHARS {

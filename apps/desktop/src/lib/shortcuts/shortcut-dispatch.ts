@@ -1,5 +1,5 @@
 /**
- * Centralized shortcut dispatch — reverse lookup from shortcut strings to command IDs.
+ * Centralized shortcut dispatch: reverse lookup from shortcut strings to command IDs.
  *
  * Builds a Map<shortcutString, commandId> for Tier 1 commands (those eligible for
  * central keyboard dispatch). Rebuilds automatically when custom shortcuts change.
@@ -31,7 +31,7 @@ function buildShortcutMap(): Map<string, string> {
 
     const shortcuts = getEffectiveShortcuts(command.id)
     for (const shortcut of shortcuts) {
-      // First match wins — skip if shortcut already claimed
+      // First match wins; skip if shortcut already claimed
       if (!map.has(shortcut)) {
         map.set(shortcut, command.id)
       }

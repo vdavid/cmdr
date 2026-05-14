@@ -32,7 +32,7 @@ vi.mock('$lib/tauri-commands', () => ({
 describe('KeyboardShortcutsSection a11y', () => {
   // TODO: The shortcut pill renders `<span role="button" tabindex="-1">×</span>`
   // *inside* an outer `<button>` (KeyboardShortcutsSection.svelte around
-  // lines 490-500). Axe flags every pill as `nested-interactive` — nested
+  // lines 490-500). Axe flags every pill as `nested-interactive` because nested
   // focusable controls are ambiguous for screen readers. Fix: split into two
   // sibling controls (the pill button + a dedicated remove button positioned
   // next to it), or drop the inner span's `role="button"` entirely (it's

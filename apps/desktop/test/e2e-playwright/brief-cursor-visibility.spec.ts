@@ -31,7 +31,7 @@ const CURSOR_ENTRY = '.file-pane.is-focused .brief-list-container .file-entry.is
  * Tolerance for sub-pixel rounding noise in `getBoundingClientRect()` reads. With variable
  * column widths from font-metric measurement, prefix-sum scroll positions and CSS-rendered
  * column widths can diverge by up to ~1.5 px on macOS devicePixelRatio=2. The cursor is still
- * visually inside the viewport at that scale — this tolerance acknowledges the measurement
+ * visually inside the viewport at that scale. This tolerance acknowledges the measurement
  * quantization, not a logic error.
  */
 const PIXEL_TOLERANCE = 2
@@ -128,7 +128,7 @@ async function getRect(tauriPage: Parameters<typeof ensureAppReady>[0], selector
  *
  * The naive approach (four separate `getRect` calls per stability iteration) costs four
  * tauri-playwright IPC round-trips, and the four samples come from up to four different paint
- * frames — which makes the stability comparison itself prone to false negatives when the cursor
+ * frames, which makes the stability comparison itself prone to false negatives when the cursor
  * and container update on different frames. Batching to one IPC + one frame fixes both.
  */
 async function readCursorAndContainer(
@@ -153,12 +153,12 @@ async function readCursorAndContainer(
  * the file-list area is the "in view" target.
  */
 async function expectCursorInView(tauriPage: Parameters<typeof ensureAppReady>[0], context: string): Promise<void> {
-  // Wait until both rects are settled and consistent on consecutive reads —
-  // guards against reading mid-scroll. Two identical samples in a row is
+  // Wait until both rects are settled and consistent on consecutive reads.
+  // Guards against reading mid-scroll. Two identical samples in a row is
   // sufficient because scroll updates are synchronous JS work; the only
   // delay is the next paint frame.
   //
-  // Polls at 16 ms (one frame at 60 fps) — sub-frame polling would just re-sample the same
+  // Polls at 16 ms (one frame at 60 fps). Sub-frame polling would just re-sample the same
   // state without new information; the rest of the suite stays at the default 50 ms.
   //
   // State is held in single-property holder objects so the closure can mutate it without
@@ -202,13 +202,13 @@ async function expectCursorInView(tauriPage: Parameters<typeof ensureAppReady>[0
   )
   expect(settled, `${context}: cursor/container rects did not settle`).toBe(true)
 
-  // The stable sample came straight from the satisfying poll iteration — no extra IPC needed.
+  // The stable sample came straight from the satisfying poll iteration, no extra IPC needed.
   const sample = stableHolder.sample
   expect(sample, `${context}: stable rect sample not captured`).not.toBeNull()
   if (!sample) return
   const { cursor, container } = sample
 
-  // Horizontal containment — the regression this whole change exists to fix.
+  // Horizontal containment: the regression this whole change exists to fix.
   expect(
     cursor.left,
     `${context}: cursor.left (${String(cursor.left)}) < container.left (${String(container.left)})`,
@@ -218,7 +218,7 @@ async function expectCursorInView(tauriPage: Parameters<typeof ensureAppReady>[0
     `${context}: cursor.right (${String(cursor.right)}) > container.right (${String(container.right)})`,
   ).toBeLessThanOrEqual(container.right + PIXEL_TOLERANCE)
 
-  // Vertical containment — header above and pane bottom both fully exclude the row otherwise.
+  // Vertical containment: header above and pane bottom both fully exclude the row otherwise.
   expect(
     cursor.top,
     `${context}: cursor.top (${String(cursor.top)}) < container.top (${String(container.top)})`,
@@ -247,7 +247,7 @@ async function pressAndWaitCursorChange(tauriPage: Parameters<typeof ensureAppRe
   await tauriPage.keyboard.press(key)
   // 100 ms is plenty for the cursor handler to run + DOM to update. If the name doesn't change
   // within that window, the press was a no-op (e.g., ArrowRight from the last column with no
-  // entry at that row, or PageUp at the top) — that's a valid state, the next `expectCursorInView`
+  // entry at that row, or PageUp at the top). That's a valid state, the next `expectCursorInView`
   // assertion will still verify the cursor is in view. A longer wait here just inflates the test.
   await pollUntil(tauriPage, async () => (await getCursorName(tauriPage)) !== before, 100)
 }
@@ -278,7 +278,7 @@ test.describe('Brief view cursor visibility', () => {
     await executeViaCommandPalette(tauriPage, 'Brief view')
     await pollUntil(tauriPage, async () => tauriPage.isVisible('.file-pane.is-focused .brief-list-container'), 5000)
 
-    // Make sure cursor starts at column 0 — press Home and confirm.
+    // Make sure cursor starts at column 0: press Home and confirm.
     await tauriPage.keyboard.press('Home')
     await pollUntil(tauriPage, async () => (await getCursorName(tauriPage)) !== '', 3000)
     await expectCursorInView(tauriPage, 'after Home (start)')
@@ -336,8 +336,8 @@ test.describe('Brief view cursor visibility', () => {
 
     // ── Resize variant ────────────────────────────────────────────────────────
     // Tauri windows aren't directly resizable from a Playwright-in-Tauri test,
-    // and we can't drive the OS window manager. We get the same effect — and
-    // the same code path — by driving the in-app PaneResizer with synthetic
+    // and we can't drive the OS window manager. We get the same effect,
+    // and the same code path, by driving the in-app PaneResizer with synthetic
     // mouse events: it owns `leftPaneWidthPercent`, which sets the inline
     // `width: X%` on the pane wrapper. The brief-list-container's `bind:clientWidth`
     // picks the change up via the regular reactive path, exercising

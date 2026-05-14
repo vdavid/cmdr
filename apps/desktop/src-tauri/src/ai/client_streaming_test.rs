@@ -1,7 +1,7 @@
 //! Integration tests for `chat_completion_stream`.
 //!
 //! Spins up a minimal axum server that emits SSE-formatted OpenAI chat-completions
-//! deltas with configurable delays between frames. `wiremock` can't do this — it
+//! deltas with configurable delays between frames. `wiremock` can't do this: it
 //! buffers the whole body and writes it in a single response, defeating the point
 //! of testing chunk-by-chunk parsing through `genai`'s SSE pipeline.
 
@@ -123,7 +123,7 @@ async fn streams_multiple_chunks_in_order() {
 
 #[tokio::test]
 async fn empty_stream_ends_cleanly() {
-    // Server emits only [DONE] — no content. Stream yields nothing, ends Ok.
+    // Server emits only [DONE], no content. Stream yields nothing, ends Ok.
     let base_url = spawn_server(vec![Frame::Done]).await;
     let backend = AiBackend::remote(String::from("test-key"), base_url, String::from("gpt-4o-mini"));
 
@@ -164,7 +164,7 @@ async fn cancel_via_drop_closes_connection() {
     let first = stream.next().await.expect("first chunk").expect("ok");
     assert_eq!(first, "1 ");
 
-    // Drop the stream — should close the reqwest connection.
+    // Drop the stream. Should close the reqwest connection.
     drop(stream);
     // We don't have a programmatic way to assert the server saw the disconnect without
     // adding more wiring; the assertion here is "we got back to the test thread cleanly,
@@ -187,7 +187,7 @@ async fn http_500_maps_to_server_error() {
     let backend = AiBackend::remote(String::from("test-key"), base_url, String::from("gpt-4o-mini"));
 
     // The stream may open Ok (HTTP 500 isn't read until we start polling), or fail at
-    // open if genai checks status eagerly — both are valid; we just want a ServerError
+    // open if genai checks status eagerly. Both are valid; we just want a ServerError
     // somewhere in the path.
     let hit_server_error = match chat_completion_stream(&backend, SYSTEM, USER, &opts()).await {
         Err(AiError::ServerError(_)) => true,

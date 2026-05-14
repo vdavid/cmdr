@@ -67,6 +67,6 @@ pnpm dev
 ## Style reminders
 
 - Use sentence case for headings
-- Use em dashes (—) for combining thoughts, en dashes (--) for ranges
+- Use en dashes (--) for ranges. Avoid em dashes.
 - Use the Oxford comma
 - Follow the full [style guide](/docs/style-guide.md)

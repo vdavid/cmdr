@@ -17,7 +17,7 @@ use std::pin::Pin;
 /// A volume backed by an MTP device storage.
 ///
 /// This implementation wraps the MTP connection manager to provide file system
-/// abstraction. All methods are natively async — MTP operations go through the
+/// abstraction. All methods are natively async: MTP operations go through the
 /// connection manager which uses async USB bulk transfers.
 pub struct MtpVolume {
     /// Display name (typically the storage description like "Internal storage")
@@ -150,7 +150,7 @@ impl Volume for MtpVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            // MTP has no single-file stat — list the parent directory and find the entry.
+            // MTP has no single-file stat: list the parent directory and find the entry.
             let path_str = path.to_string_lossy();
             if path_str.is_empty() || path_str == "/" || path_str == "." {
                 // Root: synthesize a directory entry
@@ -365,7 +365,7 @@ impl Volume for MtpVolume {
             let same_name = from_name == to_name;
 
             if same_parent {
-                // Same directory — just rename
+                // Same directory: just rename
                 let new_name = to_name.to_string();
                 connection_manager()
                     .rename_object(&self.device_id, self.storage_id, &from_mtp, &new_name)
@@ -386,7 +386,7 @@ impl Volume for MtpVolume {
                     .await;
                 }
             } else {
-                // Different directory — use MTP MoveObject
+                // Different directory: use MTP MoveObject
                 let to_parent_str = to_parent.to_string_lossy().to_string();
                 connection_manager()
                     .move_object(&self.device_id, self.storage_id, &from_mtp, &to_parent_str)
@@ -500,7 +500,7 @@ impl Volume for MtpVolume {
                 file_count: 0,
                 dir_count: 0,
                 total_bytes: 0,
-                // Aggregate over multiple paths — not meaningful for a batch.
+                // Aggregate over multiple paths: not meaningful for a batch.
                 top_level_is_directory: false,
             };
 
@@ -612,7 +612,7 @@ impl Volume for MtpVolume {
     }
 
     fn max_concurrent_ops(&self) -> usize {
-        // MTP is a single USB bulk transport — parallel ops would just
+        // MTP is a single USB bulk transport, so parallel ops would just
         // serialize on the wire with extra overhead.
         1
     }
@@ -655,8 +655,8 @@ impl Volume for MtpVolume {
                 })?
                 .to_string();
 
-            // Stream chunks directly with .await — no need to pre-collect since
-            // we're fully async now (no nested block_on risk).
+            // Stream chunks directly with .await (no need to pre-collect; we're
+            // fully async now, no nested block_on risk).
             let mut chunks: Vec<bytes::Bytes> = Vec::new();
             while let Some(result) = stream.next_chunk().await {
                 let data = result?;
@@ -673,9 +673,8 @@ impl Volume for MtpVolume {
 
 /// Direct async streaming reader for MTP files.
 ///
-/// Calls `FileDownload::next_chunk().await` directly — possible because
-/// `VolumeReadStream::next_chunk()` is async. No background task or channel
-/// needed.
+/// Calls `FileDownload::next_chunk().await` directly (`VolumeReadStream::next_chunk()`
+/// is async, so no background task or channel needed).
 struct MtpReadStream {
     download: Option<mtp_rs::FileDownload>,
     total_size: u64,
@@ -685,7 +684,7 @@ struct MtpReadStream {
 impl Drop for MtpReadStream {
     fn drop(&mut self) {
         if let Some(mut download) = self.download.take() {
-            // Not fully consumed — cancel the USB transfer to prevent
+            // Not fully consumed: cancel the USB transfer to prevent
             // ReceiveStream's Drop from panicking (and corrupting the session).
             if let Ok(handle) = tokio::runtime::Handle::try_current() {
                 handle.spawn(async move {

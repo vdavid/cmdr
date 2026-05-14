@@ -49,7 +49,7 @@ Two things conspire to make this huge:
    information.
 
 2. **WITHOUT ROWID + text PK amplifies indexes**: In a WITHOUT ROWID table, secondary indexes store the full primary key
-   as the row pointer. So `idx_parent` stores `(parent_path, full_path)` per row — averaging 235 bytes across 5.5M rows.
+   as the row pointer. So `idx_parent` stores `(parent_path, full_path)` per row, averaging 235 bytes across 5.5M rows.
    The index is almost as large as the table.
 
 ## The fix: integer parent-child tree
@@ -77,7 +77,7 @@ The index `idx_parent_name` does double duty: listing directory children (`WHERE
 components (`WHERE parent_id = ? AND name = ?`). Both are integer-prefix scans or single seeks.
 
 No path column at all. Full paths get reconstructed by walking up the parent chain when needed, which in practice is
-almost never — the frontend already knows which directory it's in.
+almost never; the frontend already knows which directory it's in.
 
 ### The result
 
@@ -126,7 +126,7 @@ lookups during normal operation because watcher events cluster by directory and 
 same parent.
 
 **Subtree operations** lost the range-scan trick. With path keys, you could delete an entire directory tree with
-`DELETE FROM entries WHERE path >= '/foo/' AND path < '/foo0'` — a single B-tree range scan. With integer keys, you need
+`DELETE FROM entries WHERE path >= '/foo/' AND path < '/foo0'` (a single B-tree range scan). With integer keys, you need
 a recursive CTE:
 
 ```sql
@@ -152,7 +152,7 @@ I benchmarked this before committing to the migration (5.5M rows, 100K-entry sub
 The CTE was actually 16% faster. The bottleneck is WAL write I/O, not traversal. One less thing to worry about.
 
 **Case sensitivity** needed explicit handling. macOS (APFS) is case-insensitive and normalization-insensitive: "Café" in
-NFC and "Café" in NFD are the same file. The old path-based approach inherited this from the filesystem — you'd just ask
+NFC and "Café" in NFD are the same file. The old path-based approach inherited this from the filesystem; you'd just ask
 SQLite to match the path as-is and the OS handled the rest.
 
 With integer keys, the `name` column needs to respect the platform's rules. I register a custom `platform_case` SQLite
@@ -163,11 +163,11 @@ registering the collation first, so add a comment for your future self.
 ## Implementation notes
 
 The migration touched 11 Rust source files (~3,900 lines added, ~1,800 removed) and added a `PathResolver` module with
-its own LRU cache. I kept the IPC boundary path-based — the frontend sends filesystem paths, the backend resolves to IDs
+its own LRU cache. I kept the IPC boundary path-based; the frontend sends filesystem paths, the backend resolves to IDs
 internally. No frontend changes at all.
 
 The scan takes about 5 minutes for 5.5M entries on my machine (M1 Mac, APFS). Aggregating recursive directory sizes for
-528K directories takes another 10 seconds — topological sort on (id, parent_id) pairs, bottom-up accumulation,
+528K directories takes another 10 seconds: topological sort on (id, parent_id) pairs, bottom-up accumulation,
 batch-write the results.
 
 The old DB gets automatically deleted on upgrade. It's a cache, not user data, so the disposable-cache pattern works:

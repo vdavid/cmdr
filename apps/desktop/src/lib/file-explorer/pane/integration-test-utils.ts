@@ -1,7 +1,7 @@
 /**
  * Shared helpers for FilePane / VolumeBreadcrumb / selection integration tests.
  *
- * NOTE: vi.mock() calls must remain in each test file — Vitest hoists them and
+ * NOTE: vi.mock() calls must remain in each test file. Vitest hoists them and
  * they don't work when imported from a shared module. Only non-mock helpers
  * (waitForUpdates, useMountTarget) are shared here.
  */

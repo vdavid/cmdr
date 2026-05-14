@@ -6,7 +6,7 @@ use std::env;
 /// simultaneously without the dev server colliding with their installed prod build.
 /// Both sit in the 10000–29999 range per AGENTS.md (no standard ports for services we ship).
 /// Existing users with MCP enabled but the port left at the old 9224 default will auto-jump
-/// to the new prod default on upgrade — call out in release notes.
+/// to the new prod default on upgrade: call out in release notes.
 ///
 /// Mirrored in the FE settings registry (`apps/desktop/src/lib/settings/settings-registry.ts`).
 #[cfg(debug_assertions)]

@@ -357,7 +357,7 @@ fn should_emit_synthetic_diff(volume_id: Option<&str>) -> bool {
 /// Emits a synthetic `directory-diff` event for a newly created entry (file or directory).
 ///
 /// Best-effort: if any step fails (stat, cache lookup, etc.) we log a warning
-/// and return — the watcher will pick up the change later.
+/// and return. The watcher will pick up the change later.
 fn emit_synthetic_entry_diff(app: &tauri::AppHandle, entry_path: &Path, parent_path: &Path) {
     use crate::file_system::listing::reading::get_single_entry;
     use crate::file_system::listing::{find_listings_for_path, insert_entry_sorted};

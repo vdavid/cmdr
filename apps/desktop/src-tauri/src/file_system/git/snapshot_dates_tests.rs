@@ -1,4 +1,4 @@
-//! Integration tests for `snapshot_dates` — the per-file Modified column
+//! Integration tests for `snapshot_dates`: the per-file Modified column
 //! inside virtual snapshot listings.
 //!
 //! Builds fixture repos with the `git` CLI and asserts that
@@ -143,7 +143,7 @@ fn cap_falls_back_to_snapshot_date() {
     // Build a long history where `keep.txt` is touched only at the very
     // beginning (older than the cap), then the cap-many later commits all
     // touch `noise.txt`. With our 1000-commit cap and a smaller fake cap
-    // here we can't easily simulate `MAX_COMMITS_PER_WALK` — but a sanity
+    // here we can't easily simulate `MAX_COMMITS_PER_WALK`, but a sanity
     // check: the fallback path is reached when `decode_per_file_dates`
     // returns `None` for an entry that exists in the tree.
     //

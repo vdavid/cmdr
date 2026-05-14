@@ -5,7 +5,7 @@
 //! foolproof re-scan finishes. The re-scan still runs and the verified
 //! totals replace these when complete.
 //!
-//! Returns `None` if the index isn't covering all sources — partial totals
+//! Returns `None` if the index isn't covering all sources: partial totals
 //! would be misleading.
 
 use std::path::{Path, PathBuf};

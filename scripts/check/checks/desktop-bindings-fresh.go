@@ -9,7 +9,7 @@ import (
 )
 
 // RunDesktopBindingsFresh fails if `apps/desktop/src/lib/ipc/bindings.ts` is
-// out of sync with what `pnpm bindings:regen` would produce — i.e. somebody
+// out of sync with what `pnpm bindings:regen` would produce, i.e. somebody
 // edited a Rust command surface without regenerating the typed IPC bindings.
 //
 // Strategy: snapshot the committed file → run the regen → diff bytes → restore

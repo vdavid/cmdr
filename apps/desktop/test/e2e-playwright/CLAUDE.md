@@ -18,7 +18,7 @@ in `helpers.ts`.
 
 ## Running on macOS
 
-**Via the checker (recommended):** The checker handles the full lifecycle automatically — build, fixture creation, app
+**Via the checker (recommended):** The checker handles the full lifecycle automatically: build, fixture creation, app
 startup, test execution, and cleanup:
 
 ```bash
@@ -28,7 +28,7 @@ startup, test execution, and cleanup:
 The checker runs the suite as **N parallel shards**: one dedicated MTP lane (sequential, `mtp.spec.ts` +
 `mtp-conflicts.spec.ts`) plus 2 non-MTP lanes split by Playwright's `--shard X/2`. Each shard gets its own Tauri
 instance with a distinct `CMDR_DATA_DIR`, MCP port (9429 + offset), and Unix socket path. The MTP shard runs alone
-because the virtual MTP backing dir (`/tmp/cmdr-mtp-e2e-fixtures`) is shared by every Tauri instance — running MTP specs
+because the virtual MTP backing dir (`/tmp/cmdr-mtp-e2e-fixtures`) is shared by every Tauri instance. Running MTP specs
 from two shards at once would corrupt it. Per-shard logs go to `/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`.
 
 The socket path is overridable via the `CMDR_PLAYWRIGHT_SOCKET` env var (read in `src-tauri/src/lib.rs` and passed to
@@ -78,7 +78,7 @@ CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright test/e2e-pla
 CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures pnpm test:e2e:playwright --grep "cursor stays in view"
 ```
 
-The checker invocation (`./scripts/check.sh --check desktop-e2e-playwright`) doesn't support filtering — it always runs
+The checker invocation (`./scripts/check.sh --check desktop-e2e-playwright`) doesn't support filtering: it always runs
 the whole suite. So during iteration, prefer the manual flow.
 
 ## Running on Linux (Docker)
@@ -128,9 +128,9 @@ capabilities, and the cross-window focus/close lifecycle.
 
 The plugin (`tauri-plugin-playwright` 0.3.0+) supports scoping a `TauriPage` to any open window:
 
-- `tauriPage.listWindows()` — returns `WindowInfo[]` (`{ label, url, title, visible }`).
-- `tauriPage.window(label)` — fork a new TauriPage scoped to the given label. Shares the socket; cheap.
-- `tauriPage.waitForWindow(predicate, { timeout? })` — poll `listWindows()` every 100 ms, return a scoped page once a
+- `tauriPage.listWindows()`: returns `WindowInfo[]` (`{ label, url, title, visible }`).
+- `tauriPage.window(label)`: fork a new TauriPage scoped to the given label. Shares the socket; cheap.
+- `tauriPage.waitForWindow(predicate, { timeout? })`: poll `listWindows()` every 100 ms, return a scoped page once a
   window matches. Default 5 s timeout.
 
 **Canonical pattern** (also see `helpers.ts` for the three helpers that wrap the boilerplate):
@@ -153,7 +153,7 @@ await closeScopedWindow(tauriPage as TauriPage, settings, 'settings')
 
 **Capabilities**: the viewer and settings windows have RESTRICTED capability files
 (`src-tauri/capabilities/viewer.json`, `settings.json`). When a test fails because the scoped page can't call a Tauri
-command, that's a real bug — production hits the same wall. Fix by either adding the missing permission to the
+command, that's a real bug. Production hits the same wall. Fix by either adding the missing permission to the
 capability file or changing the test to use a permitted command.
 
 The auto-generated `playwright.json` capability (`src-tauri/build.rs`) now includes `"main"`, `"settings"`, and
@@ -164,15 +164,15 @@ The auto-generated `playwright.json` capability (`src-tauri/build.rs`) now inclu
 **Decision**: `accessibility.spec.ts` disables axe's `color-contrast` rule. **Why**: Contrast is checked at design time
 by `scripts/check-a11y-contrast` (deterministic, ~300 ms). Axe's `color-contrast` read `getComputedStyle().color` and
 different browser engines disagreed on how to resolve nested `color-mix(var(...))` chains on translucent overlays,
-producing environment-dependent ratios. Axe stays on for structural rules — ARIA, focus order, labels, keyboard nav —
+producing environment-dependent ratios. Axe stays on for structural rules (ARIA, focus order, labels, keyboard nav)
 where a running browser is genuinely needed. See `docs/design-system.md` § Automated contrast checks.
 
 **Note on tier 3 overlap:** Most of the structural audits here (ARIA, labels, roles, accessible names) now also run at
-the component level in tier 3 — see `apps/desktop/src/**/*.a11y.test.ts` and the helper at `src/lib/test-a11y.ts`. Tier
+the component level in tier 3, see `apps/desktop/src/**/*.a11y.test.ts` and the helper at `src/lib/test-a11y.ts`. Tier
 3 is fast (milliseconds per component) and catches regressions during dev; this E2E tier still earns its keep for
 cross-component flows jsdom can't model (focus traps, Escape return-focus, keyboard nav integration). Once tier 3
 coverage is broad, we can consider slimming this suite to those flow-level scenarios. Until then, the overlap is
-intentional — tier 3 is proving itself.
+intentional. Tier 3 is proving itself.
 
 **Decision**: Use `tauriPage.evaluate()` with string expressions instead of function callbacks. **Why**: TauriPage's
 `evaluate()` sends a JS string over the socket to be executed in the webview via `webview.eval()`. Unlike Playwright's
@@ -196,7 +196,7 @@ removes it when the feature is not active. The file is gitignored.
 ## Gotchas
 
 **Gotcha**: `npx playwright test` alone will fail with `ECONNREFUSED`. **Why**: The test suite does NOT launch the Cmdr
-binary — it connects to an already-running app via `/tmp/tauri-playwright.sock`. Use
+binary. It connects to an already-running app via `/tmp/tauri-playwright.sock`. Use
 `./scripts/check.sh --check desktop-e2e-playwright` which handles the full lifecycle (build → launch → test → cleanup),
 or start the app manually first (see "Manually" section above).
 
@@ -205,7 +205,7 @@ in-flight `evaluate()` result will be lost. Always `waitForSelector()` on the ta
 further JS.
 
 **Gotcha**: `ensureAppReady()` must reset both the route AND the directories. **Why**: Navigating to SvelteKit route `/`
-only ensures we're on the file explorer page — it does NOT change which directory either pane is showing. Pane
+only ensures we're on the file explorer page. It does NOT change which directory either pane is showing. Pane
 directories are persistent app state. So `ensureAppReady()` also emits `mcp-nav-to-path` Tauri events via
 `window.__TAURI_INTERNALS__` to navigate both panes back to the fixture root's `left/` and `right/` directories.
 
@@ -233,5 +233,5 @@ the helper throws with a snapshot of `activeElement` plus visible overlays so a 
 directly.
 
 **If you add a new auto-mounted modal** in `(main)/+layout.svelte` or anywhere that can flip a render to a `ModalDialog`
-after onboarding finishes, the recovery loop covers you — but consider whether the dialog should be gated on a user
+after onboarding finishes, the recovery loop covers you. Consider whether the dialog should be gated on a user
 gesture in production too, so it doesn't fight focus with the explorer in real use.

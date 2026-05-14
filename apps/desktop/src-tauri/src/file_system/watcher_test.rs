@@ -167,7 +167,7 @@ fn diff_does_not_mark_modified_when_only_owner_or_group_change() {
 #[test]
 fn diff_includes_add_modify_and_remove_in_one_pass() {
     // Old: a.txt (size 100), b.txt (size 200)
-    // New: a.txt (size 300 — modified), c.txt (size 50 — added)
+    // New: a.txt (size 300, modified), c.txt (size 50, added)
     // → 3 changes: remove b, modify a, add c.
     // Also pins the index semantics: removes use the OLD index, adds/modifies use the NEW index.
     let old = vec![make_entry("a.txt", Some(100)), make_entry("b.txt", Some(200))];

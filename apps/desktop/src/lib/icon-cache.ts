@@ -97,7 +97,7 @@ export async function prefetchIcons(iconIds: string[], useAppIconsForDocuments: 
   const uncached = iconIds.filter((id) => !memoryCache.has(id))
   if (uncached.length === 0) return
 
-  // Cancel any pending retry — a new fetch supersedes it
+  // Cancel any pending retry: a new fetch supersedes it
   clearTimeout(prefetchRetryTimer)
   prefetchRetryTimer = undefined
 
@@ -147,7 +147,7 @@ export async function refreshDirectoryIcons(
 ): Promise<void> {
   if (directoryPaths.length === 0 && extensions.length === 0) return
 
-  // Cancel any pending retry — a new refresh supersedes it
+  // Cancel any pending retry: a new refresh supersedes it
   clearTimeout(refreshRetryTimer)
   refreshRetryTimer = undefined
 
@@ -173,7 +173,7 @@ export async function refreshDirectoryIcons(
  * After calling this, extension icons will be re-fetched with the new setting.
  */
 export async function clearExtensionIconCache(): Promise<void> {
-  // Cancel pending retries — old icon IDs are now invalidated
+  // Cancel pending retries: old icon IDs are now invalidated
   clearTimeout(prefetchRetryTimer)
   prefetchRetryTimer = undefined
   clearTimeout(refreshRetryTimer)
@@ -207,7 +207,7 @@ export async function clearExtensionIconCache(): Promise<void> {
  * folder icons with the current accent color baked in.
  */
 export async function clearDirectoryIconCache(): Promise<void> {
-  // Cancel pending retries — old icon IDs are now invalidated
+  // Cancel pending retries: old icon IDs are now invalidated
   clearTimeout(prefetchRetryTimer)
   prefetchRetryTimer = undefined
   clearTimeout(refreshRetryTimer)

@@ -37,7 +37,7 @@ let unsubscribe: (() => void) | undefined
 /**
  * Last observed value of `advanced.maxLogStorageMb`. Used to detect `0 ↔ non-zero`
  * transitions that require an app restart (the `tauri-plugin-log` plugin has no runtime
- * reconfigure API — dropping / adding the `Folder` target only happens at build time).
+ * reconfigure API: dropping / adding the `Folder` target only happens at build time).
  */
 let lastMaxLogStorageMb: number | undefined
 
@@ -60,7 +60,7 @@ function applyDateColors(palette: DateColorsPalette): void {
 }
 
 /**
- * Density currently has no CSS-side effect — `--spacing-icon-size` is owned
+ * Density currently has no CSS-side effect: `--spacing-icon-size` is owned
  * by `app.css` as `calc(16px * var(--font-scale))`, and row height /
  * density-spacing flow through `getRowHeight()` / `getDensitySpacing()`
  * getters in `reactive-settings.svelte.ts` (used for inline styles on
@@ -89,7 +89,7 @@ async function applyBackendSettings(): Promise<void> {
   // and survives the (rare) case where the file's been edited out-of-band.
   await setErrorReportsEnabled(getSetting('updates.errorReports'))
 
-  // Virtual `.git` portal toggle. Same rationale as above — backend reads at startup,
+  // Virtual `.git` portal toggle. Same rationale as above: backend reads at startup,
   // but a re-push keeps dev/hot-reload aligned with whatever the user persisted.
   await setShowVirtualGitPortal(getSetting('fileExplorer.git.showVirtualGitPortal'))
 
@@ -201,7 +201,7 @@ function handleSettingChange(id: string, value: unknown): void {
  * Pushes a new log-storage cap to the backend and toasts a "restart required"
  * notice for `0 ↔ non-zero` transitions. The rotation strategy and target list
  * are baked in at app start, so those transitions only take full effect after
- * relaunch — a non-zero ↔ non-zero change applies live.
+ * relaunch. A non-zero ↔ non-zero change applies live.
  */
 function applyMaxLogStorageMb(newValue: number): void {
   const oldValue = lastMaxLogStorageMb

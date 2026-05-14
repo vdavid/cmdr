@@ -46,8 +46,8 @@ struct ValidationRequest {
 
 /// Response from the /activate endpoint.
 ///
-/// `organizationName` is intentionally not declared — serde drops unknown fields and the
-/// org name is read from the verified license payload, not this response.
+/// `organizationName` is intentionally not declared (serde drops unknown fields and the
+/// org name is read from the verified license payload, not this response).
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivateResponse {

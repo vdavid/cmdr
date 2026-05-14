@@ -8,7 +8,7 @@ Downloadable at [the website](https://getcmdr.com).
 - Dev server: `pnpm dev` at repo root
 - Prod build: `pnpm build` at repo root
 - Both must run **at repo root**. The root `package.json` has no `tauri` script, so `pnpm tauri dev` only works from
-  inside `apps/desktop/`. Prefer the root form — both paths flow through `tauri-wrapper.js` and are equivalent, but the
+  inside `apps/desktop/`. Prefer the root form: both paths flow through `tauri-wrapper.js` and are equivalent, but the
   root form is what's documented and what other tooling assumes.
 
 ## Principles
@@ -25,7 +25,7 @@ These are general principles for the whole project. These are not just empty sen
    both internally for ourselves, and externally toward the user. We think about the long run.
 3. **The app should feel rock solid.** The UI must _always_ be responsive. We never block the main thread. Every user
    action triggers immediate feedback, even if it's just a spinner. We communicate what's actually happening. Show
-   progress. An ETA when possible. No progress bars stuck at 100% — show the real state. Long operations are always
+   progress. An ETA when possible. No progress bars stuck at 100%; show the real state. Long operations are always
    cancelable, stopping background work too, not just the UI. The user is always in control. Assume the hostile case
    (dead network mount, huge directory, crashed mid-operation) and handle it gracefully.
 4. **Protect the user's data.** Use safe overwrite patterns like temp+rename. Offer rollback for destructive operations.
@@ -92,11 +92,11 @@ Core structure:
 
 ## Testing and checking
 
-**Before adding or modifying tests**, read [docs/testing.md](docs/testing.md) — the testing playbook (decision table,
+**Before adding or modifying tests**, read [docs/testing.md](docs/testing.md): the testing playbook (decision table,
 anti-patterns, per-feature checklist). The companion file [docs/tooling/testing.md](docs/tooling/testing.md) is the
 tools inventory.
 
-Always use the checker script for compilation, linting, formatting, and tests. Its output is concise and focused — no
+Always use the checker script for compilation, linting, formatting, and tests. Its output is concise and focused: no
 `2>&1`, `head`, or `tail` needed. Don't run raw `cargo check`, `cargo clippy`, `cargo fmt`, `cargo nextest run`, etc.
 
 - Specific checks: `./scripts/check.sh --check <name>` (e.g. `--check clippy`, `--check rustfmt`). Use `--help` for the
@@ -104,7 +104,7 @@ Always use the checker script for compilation, linting, formatting, and tests. I
 - All Rust/Svelte checks: `./scripts/check.sh --rust` or `--svelte`
 - All checks: `./scripts/check.sh`
 - **`oxfmt` must always run before you call a task done.** It's monorepo-wide (markdown, YAML, JSON, JS/TS across every
-  app) and takes ~1 second — there's no reason to skip it. It's registered under `AppOther`, which means `--rust` and
+  app) and takes ~1 second, so there's no reason to skip it. It's registered under `AppOther`, which means `--rust` and
   `--svelte` do NOT include it. If you only ran those, CI will catch unformatted markdown / JSON / etc. that you missed.
   Always finish with either `./scripts/check.sh` (the full suite) or at minimum `./scripts/check.sh --check oxfmt` after
   your other checks. No exceptions.
@@ -116,7 +116,7 @@ Always use the checker script for compilation, linting, formatting, and tests. I
   not for each tweak. Running the whole Playwright suite for one new spec wastes ~10 minutes per cycle and produces
   noisy "cascade" failures when the broken test takes the app down with it (subsequent specs fail with connection
   errors). Same principle at smaller scales for Rust and Vitest.
-- E2E (Playwright): See `apps/desktop/test/e2e-playwright/CLAUDE.md` — build with `playwright-e2e` feature, start app,
+- E2E (Playwright): See `apps/desktop/test/e2e-playwright/CLAUDE.md`. Build with `playwright-e2e` feature, start app,
   run tests
 - Ubuntu test VM: See `apps/desktop/test/e2e-linux/CLAUDE.md` § "Ubuntu test VM"
 - Docker SMB containers: 14 Samba containers (guest, auth, readonly, slow, flaky, unicode, deep nesting, etc.) for
@@ -131,14 +131,14 @@ Always use the checker script for compilation, linting, formatting, and tests. I
   `tauri-wrapper.js`; resolved in `src-tauri/src/config.rs`.
 - **Logging**: Frontend and backend logs appear together in terminal and in the log dir (dev: `<CMDR_DATA_DIR>/logs/`,
   prod: `~/Library/Logs/com.veszelovszki.cmdr/`). **Read [docs/tooling/logging.md](docs/tooling/logging.md) before using
-  `RUST_LOG`** — it has copy-paste recipes for every subsystem. Key gotcha: the Rust library target is `cmdr_lib`, not
+  `RUST_LOG`**: it has copy-paste recipes for every subsystem. Key gotcha: the Rust library target is `cmdr_lib`, not
   `cmdr`. Use `RUST_LOG=cmdr_lib::module=debug`. Note: `cmdr_lib` (lib) and `Cmdr` (bin) are both in the `cmdr` Cargo
   package, so `Compiling cmdr` in build output covers BOTH targets. Cargo won't show `Compiling cmdr_lib` separately.
 - **Crash reports**: When the app crashes, it writes a crash file to the data dir (`crash-report.json` alongside
   `settings.json`). On next launch, the app detects this file and offers to send a crash report. See
   `src-tauri/src/crash_reporter/CLAUDE.md` for architecture details.
 - **Error reports**: When triaging an error report bundle (zip + `manifest.json`), read
-  `src-tauri/src/error_reporter/CLAUDE.md` first — it documents the bundle layout, what each piece captures, and the
+  `src-tauri/src/error_reporter/CLAUDE.md` first: it documents the bundle layout, what each piece captures, and the
   redaction conventions.
 - **Hot reload**: `pnpm dev` hot-reloads. Max 15s for Rust, max 3s for frontend.
 - **Index DB queries**: The index SQLite DB uses a custom `platform_case` collation, so the `sqlite3` CLI can't query
@@ -149,9 +149,9 @@ Always use the checker script for compilation, linting, formatting, and tests. I
 
 Two MCP servers are available when the app is running via `pnpm dev`:
 
-- **cmdr** (port 9224) — High-level app control: navigation, file operations, search, dialogs, state inspection. This is
+- **cmdr** (port 9224): high-level app control: navigation, file operations, search, dialogs, state inspection. This is
   the primary way to test and interact with the running app. Architecture docs: `src-tauri/src/mcp/CLAUDE.md`.
-- **tauri** (port 9223) — Low-level Tauri access: screenshots, DOM inspection, JS execution, IPC calls. Use for visual
+- **tauri** (port 9223): low-level Tauri access: screenshots, DOM inspection, JS execution, IPC calls. Use for visual
   verification and UI automation.
 
 **Before making any MCP calls**, read [docs/tooling/mcp.md](docs/tooling/mcp.md) for usage patterns, connection
@@ -174,7 +174,7 @@ resilience, and common pitfalls.
 - ❌ When adding code that loads remote content (`fetch`, `iframe`), ask whether to disable in dev mode.
   `withGlobalTauri: true` in dev mode is a security risk.
 - ❌ When testing the Tauri app, DO NOT USE THE BROWSER. Use the MCP servers.
-- ❌ Don't ignore linter warnings — fix them or justify with a comment.
+- ❌ Don't ignore linter warnings. Fix them or justify with a comment.
 - **Icons**: We use `unplugin-icons` with `@iconify-json/lucide`. Import as Svelte components from
   `~icons/lucide/{icon-name}` (inline SVGs, no runtime cost). See `docs/style-guide.md` § Icons for usage, sizing,
   coloring, and how to find new icons.
@@ -195,8 +195,8 @@ resilience, and common pitfalls.
   in-session via `start_indexing_after_fda_decision`, the gate clears and the same call sites run normally. See
   [`apps/desktop/src-tauri/src/fda_gate.rs`](apps/desktop/src-tauri/src/fda_gate.rs) and
   [`apps/desktop/src/lib/onboarding/CLAUDE.md`](apps/desktop/src/lib/onboarding/CLAUDE.md) § "FDA gate".
-- ❌ **Tauri APIs fail silently without permissions.** Whenever you call a new Tauri API from a window — `setMinSize`,
-  `setTitle`, `show`, plugin commands, anything new — add the matching permission to that window's capability file in
+- ❌ **Tauri APIs fail silently without permissions.** Whenever you call a new Tauri API from a window (`setMinSize`,
+  `setTitle`, `show`, plugin commands, anything new), add the matching permission to that window's capability file in
   `src-tauri/capabilities/{default,settings,viewer}.json`. Without it, the call rejects with a generic "not allowed"
   error and your feature looks broken with no obvious cause. Surface failures by `await`-ing the call inside a
   `try/catch` and logging the error rather than `void`-ing the promise. See `src-tauri/capabilities/CLAUDE.md` for the
@@ -208,24 +208,23 @@ resilience, and common pitfalls.
   `@axe-core/playwright`'s `@playwright/test`) can stay pinned to older nested versions, producing weird false-positive
   failures: stylelint 17.9 misparses Svelte inline `style="..."` attributes against an old postcss; website-typecheck
   fails on a `Page` type mismatch when AxeBuilder gets a different Playwright version than the e2e specs.
-- ❌ **NEVER use `eprintln!`, `println!`, or `dbg!` in `src-tauri/` code.** They bypass the fern logger — no level
+- ❌ **NEVER use `eprintln!`, `println!`, or `dbg!` in `src-tauri/` code.** They bypass the fern logger: no level
   filtering, no file output, no inclusion in error-report bundles. Clippy denies them at the crate root. Use
   `log::debug!` / `log::info!` / `log::warn!` / `log::error!` with a scoped `target:` (for example
   `log::debug!(target: "open_with", "...")`) so logs are filterable via `RUST_LOG`. **READ
   [`apps/desktop/src-tauri/src/logging/CLAUDE.md`](apps/desktop/src-tauri/src/logging/CLAUDE.md) before adding any log
-  call or touching the log pipeline** — it has the rules and the why.
+  call or touching the log pipeline**: it has the rules and the why.
 - ❌ **NEVER build the Tauri app with raw `cargo build`.** It produces a binary without the embedded frontend (white
   screen). Always build via `pnpm tauri build` or the `node scripts/tauri-wrapper.js build` wrapper from
-  `apps/desktop/`. The `beforeBuildCommand` in `tauri.conf.json` runs the llama-server download (Go) and frontend build
-  — skipping it breaks the app. For E2E builds:
+  `apps/desktop/`. The `beforeBuildCommand` in `tauri.conf.json` runs the llama-server download (Go) and frontend build; skipping it breaks the app. For E2E builds:
   `node scripts/tauri-wrapper.js build --no-bundle --target $(rustc -vV | grep host | cut -d' ' -f2) -- --features playwright-e2e,virtual-mtp,smb-e2e`.
   The binary lands in `<repo>/target/<triple>/release/Cmdr`.
-  - **Don't add your own build-cache layer.** `pnpm tauri build` already caches internally — Cargo's incremental
+  - **Don't add your own build-cache layer.** `pnpm tauri build` already caches internally: Cargo's incremental
     compilation, Vite/SvelteKit's frontend build cache, and the `beforeBuildCommand`'s own short-circuits all kick in on
     warm runs. A "skip build if hash matches" check on top of that is redundant and risks shipping a stale binary.
 - ❌ **No string-matching error or state classification.** Don't classify errors, app state, or control flow by checking
   substrings of a message, stderr, error title, or any other free-form text. Use a typed enum variant, an errno code, or
-  an explicit flag on the struct that crosses the IPC boundary. The wording is for the user to read — code that branches
+  an explicit flag on the struct that crosses the IPC boundary. The wording is for the user to read; code that branches
   on it breaks silently when copy changes, when the OS localizes, or when an upstream library reformats its messages.
   - **Tests too**: prefer `assert!(matches!(err, VolumeError::AlreadyExists(_)))` over `err.message.contains("...")`.
     The variant is the contract; the message is documentation.
@@ -244,7 +243,7 @@ resilience, and common pitfalls.
   - **Regenerate** with `cd apps/desktop && pnpm bindings:regen` after any change to a `#[tauri::command]` surface or a
     Type-derived DTO. CI's `bindings-fresh` check fails if the committed `bindings.ts` is stale.
   - **At call sites, prefer named locals over inline primitives.** `commands.renameFile(from, to, force, volumeId)` is
-    fine; `commands.foo(true, null, 5)` isn't — extract `const force = true; const volumeId = null; const retries = 5`
+    fine; `commands.foo(true, null, 5)` isn't. Extract `const force = true; const volumeId = null; const retries = 5`
     first. This is the price specta charges for type safety.
   - For the rules around adding new commands, type shape constraints (`skip_serializing_if`, `serde_json::Value`), and
     the current exclusion list, read [`apps/desktop/src/lib/ipc/CLAUDE.md`](apps/desktop/src/lib/ipc/CLAUDE.md).
@@ -255,17 +254,17 @@ When working in a linked git worktree under `.claude/worktrees/`, the gitignored
 (llama-server binaries, ~30 MB) starts empty. You don't need to do anything: `apps/desktop/src-tauri/build.rs` invokes
 `apps/desktop/scripts/download-llama-server.go` on demand, which symlinks the dir from the main clone at
 `~/projects-git/vdavid/cmdr/` when its `.version` matches, and falls back to downloading otherwise. So raw `cargo check`
-Just Works in fresh worktrees — don't paper over a missing `resources/ai/` with a placeholder file.
+Just Works in fresh worktrees. Don't paper over a missing `resources/ai/` with a placeholder file.
 
 ## Workflow
 
 - **Always read** [style-guide.md](docs/style-guide.md) before touching code. Especially sentence case!
 - Cover your code with tests until you're confident. Don't go overboard. Test per milestone.
 - **We don't use PRs.** Changes land directly on `main`. The "PR" section in `.claude/rules/git-conventions.md` is for
-  the rare case David explicitly asks for one — default is a regular commit on `main` (or merging a feature branch into
+  the rare case David explicitly asks for one; the default is a regular commit on `main` (or merging a feature branch into
   `main`). No `gh pr create`, no review-app webhook, none of that.
 - **Never `git push` (or `git push --tags`) without explicit approval.** Even after a clean commit on `main`, pushing is
-  an external action — wait until David says to push. This applies to feature branches and tags too. The user-level rule
+  an external action, so wait until David says to push. This applies to feature branches and tags too. The user-level rule
   `~/.claude/rules/no-external-actions.md` already covers this; restating it here so it's impossible to miss.
 
 Happy coding! 🦀✨

@@ -33,7 +33,7 @@ impl MtpConnectionManager {
         // Try to list the path as a directory
         match self.list_directory(device_id, storage_id, path).await {
             Ok(entries) if !entries.is_empty() => {
-                // Directory with contents — recurse using entries directly
+                // Directory with contents: recurse using entries directly
                 let mut result = self.scan_entries_recursive(device_id, storage_id, entries).await?;
                 result.top_level_is_directory = true;
                 Ok(result)
@@ -53,7 +53,7 @@ impl MtpConnectionManager {
                 })
             }
             Err(e) => {
-                // list_directory failed — likely because path is a file, not a directory.
+                // list_directory failed, likely because path is a file, not a directory.
                 debug!(
                     "MTP scan_for_copy: list_directory failed for '{}', checking if it's a file: {:?}",
                     path, e
@@ -133,7 +133,7 @@ impl MtpConnectionManager {
         let entry = parent_entries.iter().find(|e| e.name == name)?;
 
         if entry.is_directory {
-            // It's a directory, not a file — let caller handle it
+            // It's a directory, not a file. Let caller handle it.
             return None;
         }
 

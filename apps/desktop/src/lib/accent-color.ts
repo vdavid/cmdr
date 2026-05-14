@@ -35,7 +35,7 @@ function applyAccentForCurrentSetting(): void {
     document.documentElement.style.setProperty('--color-accent', lastSystemColor)
     log.debug('Applied system accent color: {hex}', { hex: lastSystemColor })
   } else {
-    // Remove inline override — CSS fallback (Cmdr gold) takes effect
+    // Remove inline override: CSS fallback (Cmdr gold) takes effect
     document.documentElement.style.removeProperty('--color-accent')
     log.debug('Removed accent override, using CSS fallback (Cmdr gold)')
   }

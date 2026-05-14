@@ -57,7 +57,7 @@ licensing.post('/activate', async (c) => {
   try {
     c.executionCtx.waitUntil(counterPromise)
   } catch {
-    // executionCtx unavailable (for example, in tests) — await inline as fallback
+    // executionCtx unavailable (for example, in tests): await inline as fallback
     await counterPromise
   }
 

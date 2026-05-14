@@ -56,7 +56,7 @@
         selectedIndices?: Set<number>
         hasParent: boolean
         parentPath: string
-        /** Path of the directory currently being listed — used to show its total on the ".." row. */
+        /** Path of the directory currently being listed (used to show its total on the ".." row). */
         currentPath: string
         sortBy: SortColumn
         sortOrder: SortOrder
@@ -118,7 +118,7 @@
     // Recursive stats for the CURRENT directory (shown on the ".." row so that space isn't wasted).
     let parentDirStats = $state<DirStats | null>(null)
 
-    // Drive index state — show spinner while scanning OR aggregating (sizes aren't ready until aggregation finishes)
+    // Drive index state: show spinner while scanning OR aggregating (sizes aren't ready until aggregation finishes)
     const indexing = $derived(isScanning() || isAggregating())
 
     // ==== Layout constants ====
@@ -158,7 +158,7 @@
      * - 'paneWidth' mode (default): columns can grow to fill the pane.
      * - 'limited' mode: columns also can't exceed the user-chosen pixel cap.
      *
-     * `containerWidth` is always the outer ceiling — a column wider than the pane has no value.
+     * `containerWidth` is always the outer ceiling: a column wider than the pane has no value.
      */
     const capPx = $derived.by(() => {
         const userCap = getBriefColumnWidthMode() === 'limited' ? getBriefColumnWidthMaxPx() : Number.POSITIVE_INFINITY
@@ -292,7 +292,7 @@
     // the virtual-scroll math and `scrollToIndex`.
     //
     // Race guard: every fetch captures `(listingId, generation)` and ignores stale responses.
-    // Generation bumps only inside the debounced fire — not per `fetchColumnWidths()` call —
+    // Generation bumps only inside the debounced fire, not per `fetchColumnWidths()` call,
     // so a burst of triggers in 50 ms produces one IPC and one generation bump.
     let widthsGeneration = 0
     let prevItemsPerColumn = 0
@@ -417,7 +417,7 @@
         if (event.button !== 0) return
 
         // Let clicks inside the inline rename input pass through without
-        // triggering selection/drag — the input handles its own focus.
+        // triggering selection/drag. The input handles its own focus.
         const target = event.target as HTMLElement
         if (target.closest('.rename-input')) return
 
@@ -432,7 +432,7 @@
 
         // Click-to-rename: if clicking the entry already under the cursor
         // (without Shift), start a timer that activates rename after 800ms.
-        // Drag tracking still runs below so the cursor item remains draggable —
+        // Drag tracking still runs below so the cursor item remains draggable;
         // crossing the drag threshold cancels the rename timer.
         if (index === cursorIndex && !event.shiftKey && !renameState?.active && onStartRename) {
             startClickToRename(event, onStartRename)
@@ -501,7 +501,7 @@
     function handleClick(index: number) {
         const now = Date.now()
         if (lastClickIndex === index && now - lastClickTime < DOUBLE_CLICK_MS) {
-            // Double click — cancel any pending click-to-rename
+            // Double click: cancel any pending click-to-rename
             cancelClickToRename()
             const entry = getEntryAt(index)
             if (entry) onNavigate(entry)
@@ -534,7 +534,7 @@
 
     /**
      * Count of columns at least partially visible in the current scroll window.
-     * Used as the PageUp/PageDown step size — content-dependent (a "page" of skinny
+     * Used as the PageUp/PageDown step size, content-dependent (a "page" of skinny
      * columns moves more files than a "page" of wide ones), which matches user intent.
      */
     function countVisibleColumns(): number {
@@ -616,7 +616,7 @@
 
     /**
      * Single "keep cursor in view" effect. Replaces the older height-only effect and
-     * the implicit reliance on FilePane calling `scrollToIndex` on cursor moves —
+     * the implicit reliance on FilePane calling `scrollToIndex` on cursor moves.
      * width resize (drag pane resizer, window narrow) now also retriggers naturally.
      * Reads `columnWidths.length` to depend on the widths-arrival reassignment.
      *

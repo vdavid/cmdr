@@ -124,7 +124,7 @@ Note: Cold cache can be 3-4x slower due to disk I/O.
 | `RUSTY_COMMANDER_BENCHMARK=1` | Rust     | Enable Rust-side timeline logging       |
 | `VITE_BENCHMARK=1`            | Frontend | Enable TypeScript-side timeline logging |
 
-Both must be set for a complete timeline. They're independent — you can enable just one side if needed.
+Both must be set for a complete timeline. They're independent, so you can enable just one side if needed.
 
 ## Runtime toggle (TypeScript only)
 

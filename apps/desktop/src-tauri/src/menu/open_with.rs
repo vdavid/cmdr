@@ -1,7 +1,7 @@
 //! "Open with" submenu builder.
 //!
 //! Builds a native submenu from a list of candidate apps. Each item uses a stable ID
-//! of the form `open-with:<bundle-id>` — `lib.rs::on_menu_event` prefix-matches that
+//! of the form `open-with:<bundle-id>`; `lib.rs::on_menu_event` prefix-matches that
 //! and routes the click to `file_system::open_with::open_paths_with`. App URLs are
 //! cached in `MenuState.open_with_apps` keyed by bundle ID so we can resolve the
 //! click target without encoding paths into menu IDs.
@@ -9,9 +9,9 @@
 //! Each candidate uses `IconMenuItem` with the app's main icon (loaded by
 //! `file_system::open_with::load_app_icon` at candidate-list build time). App icons
 //! are full-color non-template images, so they render correctly through `IconMenuItem`
-//! — the existing "no icons on context menus" decision in `menu/CLAUDE.md` was
+//! (the existing "no icons on context menus" decision in `menu/CLAUDE.md` was
 //! specific to SF Symbol *template* images, which need auto-tinting that rasterized
-//! bitmaps can't reproduce.
+//! bitmaps can't reproduce).
 //!
 //! The first candidate (the OS default for the right-clicked file) gets a plain-text
 //! ` (default)` suffix. TODO: once `tauri-apps/muda#353` lands and Tauri exposes
@@ -57,7 +57,7 @@ pub fn build_open_with_submenu<R: Runtime>(
             };
             let id = format!("{OPEN_WITH_ID_PREFIX}{}", candidate.bundle_id);
             // `IconMenuItem` with `Some(image)` falls back to the text-only renderer
-            // when the image build fails — the menu still works without the icon.
+            // when the image build fails; the menu still works without the icon.
             let icon: Option<Image<'static>> = candidate
                 .icon
                 .as_ref()

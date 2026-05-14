@@ -8,7 +8,7 @@
  *   - with an active search query (clear button visible)
  *   - with a subsection selected
  *
- * The real settings tree is imported — we aren't mocking the registry
+ * The real settings tree is imported; we aren't mocking the registry
  * because it's a pure module with no IO.
  */
 

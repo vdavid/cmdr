@@ -119,7 +119,7 @@ pub(crate) trait ListingEventSink: Send + Sync {
     fn emit_cancelled(&self, listing_id: &str);
 }
 
-/// Tauri-backed listing event sink — calls `app.emit()` for each event.
+/// Tauri-backed listing event sink: calls `app.emit()` for each event.
 pub(crate) struct TauriListingEventSink {
     app: tauri::AppHandle,
 }
@@ -198,7 +198,7 @@ impl ListingEventSink for TauriListingEventSink {
     }
 }
 
-/// Test listing event sink — stores events for inspection.
+/// Test listing event sink: stores events for inspection.
 #[cfg(test)]
 pub(crate) struct CollectorListingEventSink {
     pub opening: std::sync::Mutex<Vec<String>>,
@@ -339,7 +339,7 @@ pub async fn list_directory_start_streaming(
                 events_for_error.emit_error(&listing_id_for_cleanup, e.to_string(), Some(friendly));
             }
             Ok(()) => {
-                // Success — listing-complete already emitted. If this path was
+                // Success: listing-complete already emitted. If this path was
                 // previously recorded as TCC-restricted, drop it: the user
                 // must have granted access (per-folder TCC popup or FDA toggle).
                 crate::restricted_paths::clear_path(&path_for_error);
@@ -426,7 +426,7 @@ pub(crate) async fn read_directory_with_progress(
         volume.list_directory(&path_for_task, Some(&on_progress)).await
     });
 
-    // Wait for either listing completion or cancellation — no polling.
+    // Wait for either listing completion or cancellation (no polling).
     let entries_result = tokio::select! {
         biased;  // check cancellation first if both are ready
         _ = state.cancel_notify.notified() => {
@@ -537,7 +537,7 @@ pub(crate) async fn read_directory_with_progress(
     // volume root, and the volume is one we know is commonly hidden by macOS TCC
     // (e.g. iCloud Drive without Full Disk Access), surface a friendly hint instead
     // of a blank pane. Real "I have zero files at the volume root" is rare enough
-    // that this hint is acceptable noise — and the FE shows a "Try again" button.
+    // that this hint is acceptable noise, and the FE shows a "Try again" button.
     if total_count == 0
         && volume_root_path.as_deref() == Some(path)
         && let Some(friendly) = friendly_error_for_restricted_empty_root(volume_id, path)

@@ -14,7 +14,7 @@ reach the host.
 1. A **"Connect to server..." pseudo-row** at the bottom of the network host list (+ icon, activatable like any row).
 2. A **connect dialog** with a text input, help text, and Connect/Cancel buttons.
 3. **Backend** that parses the address, does a TCP reachability check, and injects a synthetic host into the discovery
-   state — from there, the existing share listing / auth / mount pipeline takes over.
+   state; from there, the existing share listing / auth / mount pipeline takes over.
 4. **Persistence** of manually-added servers across restarts (new `manual-servers.json` file).
 5. **Removal** via F8 or right-click context menu (only for manually-added hosts, not discovered ones).
 6. **MCP tool** `connect_to_server` for automation.
@@ -31,7 +31,7 @@ reach the host.
 ### Pseudo-row in host list (not a toolbar button or address bar)
 
 The "Connect to server..." action lives inside the host list as the last row, with a "+" icon. Activated by
-Enter/double-click like any host row. **Why:** Consistent with Cmdr's paradigm — everything is a list item you navigate
+Enter/double-click like any host row. **Why:** Consistent with Cmdr's paradigm: everything is a list item you navigate
 to and act on. No separate toolbar to discover. The host list already has keyboard navigation; adding a pseudo-row means
 the feature is automatically keyboard-accessible.
 
@@ -43,21 +43,21 @@ without navigating away. Discovered hosts get to be in "resolving..." states bec
 manually-typed addresses have no such guarantee.
 
 **Note:** TCP reachability proves the port is open, not that SMB is working. A reachable host can still fail at the SMB
-level (wrong protocol, auth issues, etc.). That's fine — those errors are handled by the existing share listing pipeline
+level (wrong protocol, auth issues, etc.). That's fine; those errors are handled by the existing share listing pipeline
 once the host is in the list. The TCP check's job is to catch typos and unreachable hosts early.
 
 ### Separate `manual-servers.json` (not extending `known-shares.json`)
 
 `known-shares.json` stores share-level connection history (server+share pairs with auth mode and timestamps).
 Manually-added servers are server-level data with different semantics. **Why:** Clean separation of concerns. The files
-have different lifecycles — a manual server entry exists because the user explicitly added it, while known-share entries
+have different lifecycles: a manual server entry exists because the user explicitly added it, while known-share entries
 are auto-created on first connection.
 
 ### Synthetic NetworkHost injected via existing event system
 
 When a server is added, the backend creates a `NetworkHost` with `source: Manual` and a `manual-` prefixed ID, then
 calls `on_host_found()` (which inserts into `DISCOVERY_STATE` and emits `network-host-found`). **Why:** Reuses the
-entire existing pipeline. The frontend's `network-store` picks it up automatically. Share listing, auth, mounting — all
+entire existing pipeline. The frontend's `network-store` picks it up automatically. Share listing, auth, and mounting all
 work without changes.
 
 **NetworkHost field mapping for manual hosts:**
@@ -70,7 +70,7 @@ work without changes.
 | Hostname `mynas.local`       | `"mynas.local"`        | `Some("mynas.local")`   | None                    | 445    |
 
 **Why `hostname` is always set:** The share listing pipeline (`fetchShares` / `fetchSharesSilent` in network-store)
-guards on `host.hostname` being truthy — it silently returns without fetching if hostname is missing. Setting hostname
+guards on `host.hostname` being truthy; it silently returns without fetching if hostname is missing. Setting hostname
 ensures manual hosts flow through the pipeline. For IP inputs, hostname = IP is fine because `smb-rs` and
 `smbutil`/`smbclient` both accept IPs as the connect target.
 
@@ -94,7 +94,7 @@ dialog prevents accidents.
 ### Skip mDNS resolution for manual hosts
 
 The frontend's `network-host-found` event handler calls `startResolution(host)` for newly discovered hosts. For manual
-hosts, resolution must be skipped — there's no mDNS service to resolve, and `resolveNetworkHost` would call
+hosts, resolution must be skipped: there's no mDNS service to resolve, and `resolveNetworkHost` would call
 `service_name_to_hostname()` which appends `.local` (nonsensical for `192.168.1.100`). **Why:** The existing
 `hostname`-is-truthy guard in `startResolution` would handle this IF hostname is already set (which it is, per the field
 mapping above). But as a safety measure, the event handler should also check `host.source !== 'manual'` before starting
@@ -114,7 +114,7 @@ aren't supported yet. Use an IPv4 address or hostname."
 ### Duplicate detection: manual + discovered hosts for the same server
 
 A user may manually add a server that later appears via mDNS (or was already discovered but mDNS was slow). The manual
-host gets `manual-{address}` ID while the discovered one gets a service-name-based ID — they're different entries. For
+host gets `manual-{address}` ID while the discovered one gets a service-name-based ID; they're different entries. For
 v1, this is a known limitation: the user sees two entries for the same machine. They can remove the manual one once
 discovery finds it. Deduplication by IP matching is a future improvement.
 
@@ -143,7 +143,7 @@ Validation rules:
 
 ---
 
-## Milestone 1: Backend — manual server storage and injection
+## Milestone 1: Backend: manual server storage and injection
 
 **Goal:** `connect_to_server` Tauri command that parses an address, checks TCP reachability, persists the server, and
 injects it into the discovery state.
@@ -250,7 +250,7 @@ pub fn remove_manual_server(server_id: String, app_handle: AppHandle) -> Result<
 
 Call `load_manual_servers(app_handle)` from the Tauri `setup()` closure, alongside or just after `start_discovery`. This
 runs before the frontend window loads, so when the frontend's `initNetworkDiscovery()` calls `listNetworkHosts()`, the
-manual servers are already in `DISCOVERY_STATE`. No emit needed at this stage — the frontend subscribes to events after
+manual servers are already in `DISCOVERY_STATE`. No emit needed at this stage; the frontend subscribes to events after
 `initNetworkDiscovery()`, and `listNetworkHosts()` returns the full `DISCOVERY_STATE` snapshot including manual hosts.
 
 ### 1e. Unit tests
@@ -265,7 +265,7 @@ manual servers are already in `DISCOVERY_STATE`. No emit needed at this stage �
 
 ---
 
-## Milestone 2: Frontend — "Connect to server..." row and dialog
+## Milestone 2: Frontend: "Connect to server..." row and dialog
 
 **Goal:** The pseudo-row appears in the host list. Clicking it opens a dialog. Successful connection adds a host and
 auto-navigates to it.
@@ -312,7 +312,7 @@ Keyboard:
 
 - Enter → submit (if input is non-empty)
 - Escape → cancel/close
-- Tab stays within the dialog (focus trap — only two focusable elements: input and Connect button)
+- Tab stays within the dialog (focus trap; only two focusable elements: input and Connect button)
 
 State machine:
 
@@ -323,10 +323,10 @@ State machine:
 **Cancellation:** Clicking Cancel while in `connecting` state closes the dialog immediately. The backend TCP check may
 still be in flight but it's lightweight (single socket attempt) and will time out on its own. The host is NOT added.
 
-On success: call `onConnect(host, sharePath)` prop. Parent (`NetworkMountView`) handles the navigation — set
+On success: call `onConnect(host, sharePath)` prop. Parent (`NetworkMountView`) handles the navigation: set
 `currentNetworkHost` to the new host (enters `ShareBrowser`). If `sharePath` was provided (for example,
 `smb://server/docs`), pass it to `ShareBrowser` as an `autoMountShare` prop. `ShareBrowser` will, after shares finish
-loading, find the matching share by name and auto-trigger mount — same as if the user pressed Enter on it. This matches
+loading, find the matching share by name and auto-trigger mount, same as if the user pressed Enter on it. This matches
 Finder's behavior where typing `smb://server/share` in ⌘K mounts that share directly.
 
 ### 2c. Wire up the dialog in `NetworkMountView.svelte`
@@ -341,11 +341,11 @@ a new state: `showConnectDialog`. When the dialog succeeds:
 ### 2d. `autoMountShare` prop on `ShareBrowser.svelte`
 
 When `autoMountShare` is set, after `loadShares()` completes successfully, find the share whose name matches (case-
-insensitive) and call `onShareSelect` with it — triggering the normal mount flow. If no match, show a toast: "Share
+insensitive) and call `onShareSelect` with it, triggering the normal mount flow. If no match, show a toast: "Share
 '{name}' not found on {host}." and display the share list normally so the user can pick manually. Clear the prop after
 the attempt to avoid re-triggering on re-render.
 
-**Verify:** Manual testing — navigate to Network, see the "+" row, Enter on it, type `localhost:9445`, click Connect
+**Verify:** Manual testing: navigate to Network, see the "+" row, Enter on it, type `localhost:9445`, click Connect
 with Docker containers running.
 
 ---
@@ -382,7 +382,7 @@ When `network-host-lost` fires for a manual host, the existing `network-store` h
 Manual hosts should also support "Forget saved password" if they have stored credentials. Both context menu items can
 coexist: "Forget saved password" and "Remove server".
 
-**Verify:** Manual testing — add a server, right-click it (see "Remove"), press F8 (see confirmation), confirm, verify
+**Verify:** Manual testing: add a server, right-click it (see "Remove"), press F8 (see confirmation), confirm, verify
 it's gone. Restart app, verify it stays gone.
 
 ---
@@ -400,7 +400,7 @@ New tool:
 ```
 connect_to_server(address: "192.168.1.100:9445")
 → OK: Connected to 192.168.1.100:9445 (host ID: manual-192-168-1-100-9445)
-→ ERROR: Couldn't reach 192.168.1.100:9445 — connection refused
+→ ERROR: Couldn't reach 192.168.1.100:9445: connection refused
 ```
 
 Implementation: call the `connect_to_server` Tauri command directly. Return the host ID on success (so the agent can use
@@ -461,12 +461,12 @@ Add to `docs/guides/testing/manual-checklist.md`:
 
 ### 5d. Update CLAUDE.md files
 
-- `apps/desktop/src-tauri/src/network/CLAUDE.md` — add `manual_servers.rs` to architecture, add design decision about
+- `apps/desktop/src-tauri/src/network/CLAUDE.md`: add `manual_servers.rs` to architecture, add design decision about
   `HostSource`, add gotcha about `manual-` ID prefix convention
-- `apps/desktop/src/lib/file-explorer/network/CLAUDE.md` — add `ConnectToServerDialog.svelte` to key files table, update
+- `apps/desktop/src/lib/file-explorer/network/CLAUDE.md`: add `ConnectToServerDialog.svelte` to key files table, update
   `NetworkBrowser` docs for the pseudo-row, add connect-to-server to the data flow diagram
-- `apps/desktop/src-tauri/src/mcp/CLAUDE.md` — add `connect_to_server` and `remove_manual_server` tools
-- `docs/guides/testing/smb-servers.md` — add section on using `connect_to_server` MCP tool with Docker containers
+- `apps/desktop/src-tauri/src/mcp/CLAUDE.md`: add `connect_to_server` and `remove_manual_server` tools
+- `docs/guides/testing/smb-servers.md`: add section on using `connect_to_server` MCP tool with Docker containers
 
 ### 5e. Run checks
 

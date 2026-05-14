@@ -86,7 +86,7 @@ fn build_simple_repo(commits: usize) -> PathBuf {
     dir
 }
 
-// ── Root listing — counts and dates ─────────────────────────────────
+// ── Root listing: counts and dates ──────────────────────────────────
 
 #[test]
 fn root_listing_populates_size_with_item_counts() {
@@ -131,7 +131,7 @@ fn root_listing_pluralizes_singular_entries() {
     cleanup(&dir);
 }
 
-// ── Branches — ahead/behind + branch tip date ───────────────────────
+// ── Branches: ahead/behind + branch tip date ────────────────────────
 
 #[test]
 fn branches_listing_populates_ahead_behind() {
@@ -176,7 +176,7 @@ fn branches_default_branch_alone_has_blank_size() {
     cleanup(&dir);
 }
 
-// ── Tags — short SHA ────────────────────────────────────────────────
+// ── Tags: short SHA ─────────────────────────────────────────────────
 
 #[test]
 fn tags_listing_populates_short_sha() {
@@ -192,7 +192,7 @@ fn tags_listing_populates_short_sha() {
     cleanup(&dir);
 }
 
-// ── Commits — files-changed count ───────────────────────────────────
+// ── Commits: files-changed count ────────────────────────────────────
 
 #[test]
 fn commits_listing_populates_files_changed() {
@@ -207,7 +207,7 @@ fn commits_listing_populates_files_changed() {
     cleanup(&dir);
 }
 
-// ── Stash — branch parsing ──────────────────────────────────────────
+// ── Stash: branch parsing ───────────────────────────────────────────
 
 #[test]
 fn stash_listing_extracts_branch_from_subject() {
@@ -226,7 +226,7 @@ fn stash_listing_extracts_branch_from_subject() {
     cleanup(&dir);
 }
 
-// ── Worktrees — branch / SHA ────────────────────────────────────────
+// ── Worktrees: branch / SHA ─────────────────────────────────────────
 
 #[test]
 fn worktree_listing_shows_branch() {
@@ -247,7 +247,7 @@ fn worktree_listing_shows_branch() {
     cleanup(&wt);
 }
 
-// ── Submodules — pinned short SHA ───────────────────────────────────
+// ── Submodules: pinned short SHA ────────────────────────────────────
 
 #[test]
 fn submodule_listing_shows_pinned_sha() {
@@ -278,7 +278,7 @@ fn submodule_listing_shows_pinned_sha() {
     cleanup(&inner);
 }
 
-// ── Snapshot interior — files share commit date, dirs get bytes ────
+// ── Snapshot interior: files share commit date, dirs get bytes ─────
 
 #[test]
 fn snapshot_files_borrow_commit_date() {

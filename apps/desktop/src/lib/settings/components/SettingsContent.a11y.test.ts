@@ -3,7 +3,7 @@
  *
  * Dispatcher that picks which section component to render based on the
  * selectedSection path and searchQuery. Tests cover a few representative
- * paths. Child sections pull heavy state — we rely on global mocks for
+ * paths. Child sections pull heavy state, so we rely on global mocks for
  * `$lib/settings/settings-store` (see each test file's vi.mock).
  */
 

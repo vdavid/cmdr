@@ -249,7 +249,7 @@ func fetchSyncOnVM(apiKey string, vmID string, tempBranch string) error {
 }
 
 // ensureHealthyVM returns a VM ID that's verified healthy, creating or replacing as needed.
-// Silent until "☁️  VM ready!" — all setup noise is suppressed.
+// Silent until "☁️  VM ready!": all setup noise is suppressed.
 func ensureHealthyVM(rootDir string, apiKey string) (string, error) {
 	vmIDPath := rootDir + "/" + freestyleVMIDFile
 
@@ -265,7 +265,7 @@ func ensureHealthyVM(rootDir string, apiKey string) (string, error) {
 					return vmID, nil
 				}
 			}
-			// Stale or broken — delete and recreate
+			// Stale or broken: delete and recreate
 			deleteVM(apiKey, vmID)
 		}
 	}

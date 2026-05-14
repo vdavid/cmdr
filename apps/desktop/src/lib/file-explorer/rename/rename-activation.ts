@@ -4,7 +4,7 @@
  *
  * Matches Total Commander behavior: click on an already-selected entry,
  * release the mouse, and if you don't move away for 800 ms, rename
- * activates. The timer survives mouseup — it's only cancelled by
+ * activates. The timer survives mouseup; it's only cancelled by
  * mouse movement, double-click, scrolling, or keyboard actions.
  */
 
@@ -62,7 +62,7 @@ export function startClickToRename(event: MouseEvent, onActivate: () => void): v
   }
 
   state.timer = setTimeout(() => {
-    // Timer fired — activate rename
+    // Timer fired: activate rename
     cancelClickToRename()
     onActivate()
   }, RENAME_DELAY_MS)

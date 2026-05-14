@@ -21,7 +21,7 @@ export const unambiguousAlphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
  */
 export function generateRandomChars(len: number): string {
   const chars = unambiguousAlphabet
-  // 256 - (256 % 31) = 232 — bytes >= this would skew the distribution
+  // 256 - (256 % 31) = 232; bytes >= this would skew the distribution
   const maxUnbiased = 256 - (256 % chars.length)
   let out = ''
   while (out.length < len) {

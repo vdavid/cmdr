@@ -16,7 +16,7 @@ import { recreateMtpFixtures } from '../e2e-shared/mtp-fixtures.js'
 export default function globalSetup(): void {
   const existingRoot = process.env.CMDR_E2E_START_PATH
   if (existingRoot && fs.existsSync(existingRoot)) {
-    // App already running with this fixture dir — refresh text files
+    // App already running with this fixture dir: refresh text files
     recreateFixtures(existingRoot)
   } else {
     const fixtureRoot = createFixtures()

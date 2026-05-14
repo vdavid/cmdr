@@ -113,8 +113,8 @@ test.describe('Move rollback', () => {
     const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 3000)
     expect(conflictAppeared).toBe(true)
 
-    // Verify the Rollback button is shown (not just "Cancel"). Poll briefly —
-    // the button container becomes visible a frame or two before its children
+    // Verify the Rollback button is shown (not just "Cancel"). Poll briefly,
+    // because the button container becomes visible a frame or two before its children
     // render under Svelte; a one-shot read can miss it.
     const hasRollback = await pollUntil(
       tauriPage,

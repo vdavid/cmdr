@@ -245,7 +245,7 @@ test.describe('Hidden files toggle', () => {
     // handler depending on event target (document vs window).
     //
     // Each call site polls for the resulting hidden-file visibility change, so
-    // we don't need a fixed-duration settle here — the outer polls cover the
+    // we don't need a fixed-duration settle here; the outer polls cover the
     // IPC dispatch + virtual-scroll refresh.
     const toggleHidden = async () => {
       await tauriPage.keyboard.down(CTRL_OR_META)
@@ -264,12 +264,12 @@ test.describe('Hidden files toggle', () => {
       await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 3000)
     }
 
-    // Now hidden files are visible — toggle them OFF
+    // Now hidden files are visible, so toggle them OFF
     await toggleHidden()
     await pollUntil(tauriPage, async () => !(await fileExistsInFocusedPane(tauriPage, '.hidden-file')), 3000)
     expect(await fileExistsInFocusedPane(tauriPage, '.hidden-file')).toBe(false)
 
-    // Toggle back ON — hidden file should reappear
+    // Toggle back ON so the hidden file should reappear
     await toggleHidden()
     await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 3000)
     expect(await fileExistsInFocusedPane(tauriPage, '.hidden-file')).toBe(true)

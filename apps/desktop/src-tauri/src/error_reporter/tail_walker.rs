@@ -7,14 +7,14 @@
 //!
 //! Flow A's window is "the last N minutes of content," anchored on `now`. The newest
 //! lines live at the END of the file. Reading forward from the start means redacting and
-//! buffering everything older too — wasted CPU when 99 %+ of the file is outside the
+//! buffering everything older too, wasting CPU when 99 %+ of the file is outside the
 //! window. Reading backward from the end lets us bail the instant we cross the cutoff.
 //!
 //! ## Multi-line entries (panic backtraces, state YAML)
 //!
 //! Lines without a parseable leading timestamp are continuation lines of a multi-line
 //! record (panic backtraces, state-snapshot YAML). They MUST pass through untouched, and
-//! the cut boundary must land on a *timestamped* line — otherwise we'd ship a partial
+//! the cut boundary must land on a *timestamped* line, otherwise we'd ship a partial
 //! backtrace prefix without its header. Concretely: when the walker sees a non-timestamped
 //! line, it yields it without making a cutoff decision; the very next timestamped line is
 //! what the cutoff is checked against.
@@ -43,11 +43,11 @@ const CHUNK_SIZE: usize = 64 * 1024;
 
 /// Outcome of walking a single log file from the tail.
 ///
-/// `lines` is in **forward order** (oldest kept first, newest last) — we reverse before
+/// `lines` is in **forward order** (oldest kept first, newest last); we reverse before
 /// returning so callers can write them straight into the zip without flipping again.
 /// `hit_cutoff` is true when the walker stopped because it crossed the timestamp cutoff
 /// (vs. ran out of file). Callers use this to decide whether to keep walking older
-/// rotations (no — we have everything we need) or to keep going (yes — the window
+/// rotations (no, we have everything we need) or to keep going (yes, the window
 /// extends past this file's age).
 pub struct TailWalkResult {
     /// Lines kept, oldest-first. Newlines stripped. `\r` trim-trailed.
@@ -60,7 +60,7 @@ pub struct TailWalkResult {
 /// is older than `cutoff`, or (b) the file is exhausted.
 ///
 /// Lines without a parseable leading ISO-8601 timestamp are kept as continuation context
-/// without triggering a cutoff check — see the module doc.
+/// without triggering a cutoff check (see the module doc).
 ///
 /// Errors are mapped to "no lines, did not hit cutoff" so the caller can keep going. We
 /// log a warning at the same call site the legacy file-by-file reader did. An empty file
@@ -103,7 +103,7 @@ pub fn walk_tail(path: &Path, cutoff: DateTime<Utc>) -> std::io::Result<TailWalk
         // Walk newlines from RIGHT to LEFT inside `combined`. Each `\n` separates
         // a finished line on its right from earlier text on its left. When we cross a
         // newline, we yield the right-hand line. The leftmost segment (before the
-        // earliest `\n` we found in `combined`) becomes the new `pending` — it might
+        // earliest `\n` we found in `combined`) becomes the new `pending`, since it might
         // continue earlier in the file.
         let mut end = combined.len();
         while end > 0 {
@@ -128,9 +128,9 @@ pub fn walk_tail(path: &Path, cutoff: DateTime<Utc>) -> std::io::Result<TailWalk
     }
 
     // Anything left in `pending` is a line that runs from byte 0 (no earlier newline
-    // could exist). Emit it last — it's the OLDEST line in the file.
+    // could exist). Emit it last: it's the OLDEST line in the file.
     if !pending.is_empty() && !hit_cutoff {
-        // Doesn't matter what the function returns here — we're at file start, the loop
+        // Doesn't matter what the function returns here; we're at file start, the loop
         // is going to exit anyway.
         let _ = try_emit_line(&pending, cutoff, &mut newest_first, &mut hit_cutoff);
     }
@@ -143,7 +143,7 @@ pub fn walk_tail(path: &Path, cutoff: DateTime<Utc>) -> std::io::Result<TailWalk
 }
 
 /// Try to emit one line. Returns `false` to signal the outer walker should stop
-/// immediately (cutoff hit on a timestamped line). Returns `true` otherwise — the
+/// immediately (cutoff hit on a timestamped line). Returns `true` otherwise:
 /// walker keeps consuming older bytes.
 ///
 /// `kept` is appended to (newest-first order); `hit_cutoff` is set to `true` once the
@@ -161,13 +161,13 @@ fn try_emit_line(raw: &[u8], cutoff: DateTime<Utc>, kept: &mut Vec<String>, hit_
     }
     // Logs are UTF-8 by convention; `from_utf8_lossy` preserves bytes triagers can read
     // even when a line has a stray non-UTF-8 sequence (rare but the redactor handles it
-    // downstream — we don't want to drop lines for that).
+    // downstream; we don't want to drop lines for that).
     let line = String::from_utf8_lossy(bytes).into_owned();
 
     if let Some(line_ts) = parse_leading_iso8601(&line)
         && line_ts < cutoff
     {
-        // Cut here. Don't include this line — it's older than the window.
+        // Cut here. Don't include this line: it's older than the window.
         *hit_cutoff = true;
         return false;
     }
@@ -179,9 +179,9 @@ fn try_emit_line(raw: &[u8], cutoff: DateTime<Utc>, kept: &mut Vec<String>, hit_
 /// Parses an ISO-8601 stamp at the start of a log line (matches the format produced by
 /// `logging::dispatch::file_timestamp`: `YYYY-MM-DDTHH:MM:SS.mmm±HH:MM`).
 ///
-/// Returns `None` for lines that don't start with one — pre-fix-3 lines that just have
+/// Returns `None` for lines that don't start with one (pre-fix-3 lines with just
 /// `HH:MM:SS.mmm`, blank lines, panic-backtrace continuation lines, redacted-payload
-/// lines, etc. Callers fall back to keeping the line in that case rather than risk a
+/// lines, etc.). Callers fall back to keeping the line in that case rather than risk a
 /// false drop.
 pub fn parse_leading_iso8601(line: &str) -> Option<DateTime<Utc>> {
     // The timestamp is always 29 chars: 23 for date+time+ms + 6 for `±HH:MM`.
@@ -244,7 +244,7 @@ mod tests {
     #[test]
     fn long_line_spanning_multiple_chunks() {
         let now = Utc::now();
-        // 200 KB single line — three+ chunks worth of bytes for one line.
+        // 200 KB single line: three+ chunks worth of bytes for one line.
         let big_body: String = "x".repeat(200 * 1024);
         let big_line = iso_line(now - ChronoDuration::seconds(1), &big_body);
         let body = format!(

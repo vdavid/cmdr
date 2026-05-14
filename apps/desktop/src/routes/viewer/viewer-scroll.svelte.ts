@@ -329,7 +329,7 @@ export function createViewerScroll(deps: ScrollDeps) {
   /**
    * Watches wordWrap + getAllLines + getTextWidth and triggers height map preparation
    * when all conditions are met (word wrap on, fullLoad lines available, width known).
-   * Does NOT re-prepare if the height map is already ready — width changes are handled
+   * Does NOT re-prepare if the height map is already ready; width changes are handled
    * by runHeightMapReflowEffect via reflow() instead.
    */
   function runHeightMapInitEffect() {

@@ -3,7 +3,7 @@
  *
  * The listener subscribes to the Tauri `error-report-auto-sent` event, stashes the
  * report ID into the toast component's module-level `$state`, and pushes a toast via
- * `addToast`. We test the bridge — that the listener registers, dispatches on event,
+ * `addToast`. We test the bridge: that the listener registers, dispatches on event,
  * and tears down cleanly.
  */
 
@@ -28,7 +28,7 @@ describe('auto-send toast listener', () => {
   const unlisten = vi.fn()
 
   beforeEach(() => {
-    // Tear down any listener leftover from a prior test BEFORE clearing call counts —
+    // Tear down any listener leftover from a prior test BEFORE clearing call counts;
     // otherwise the prior test's `init` stays subscribed and inflates this test's
     // `unlisten` count by one.
     cleanupAutoSendToastListener()

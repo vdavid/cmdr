@@ -1,4 +1,4 @@
-/* Blog prose styles — scoped under .blog-content for Astro component isolation */
+/* Blog prose styles, scoped under .blog-content for Astro component isolation */
 
 .blog-content :global(h2) {
   margin-top: 2.5rem;

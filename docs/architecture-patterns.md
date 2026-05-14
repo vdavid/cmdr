@@ -17,12 +17,12 @@ User navigates -> old listing cleaned up -> new listing started -> events stream
 | Type                | Entry point                                                                                           | Who moves history?                                                         | Timing                                                                            |
 | ------------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | **Enter on folder** | `FilePane.handleNavigate` -> `loadDirectory`                                                          | `DualPaneExplorer.applyPathChange` pushes history AFTER `listing-complete` | History push on success only                                                      |
-| **Back/forward**    | `DualPaneExplorer.handleNavigationAction` -> `setPanePath` -> FilePane `$effect` -> `loadDirectory`   | `updatePaneAfterHistoryNavigation` moves history BEFORE load               | Optimistic — if path is gone, error handler resolves upward                       |
-| **Volume switch**   | `VolumeBreadcrumb.onVolumeChange` -> `FilePane.loadDirectory` + `DualPaneExplorer.handleVolumeChange` | Pushed immediately in `handleVolumeChange`                                 | Optimistic — `determineNavigationPath` may correct to a better path in background |
+| **Back/forward**    | `DualPaneExplorer.handleNavigationAction` -> `setPanePath` -> FilePane `$effect` -> `loadDirectory`   | `updatePaneAfterHistoryNavigation` moves history BEFORE load               | Optimistic: if path is gone, error handler resolves upward                        |
+| **Volume switch**   | `VolumeBreadcrumb.onVolumeChange` -> `FilePane.loadDirectory` + `DualPaneExplorer.handleVolumeChange` | Pushed immediately in `handleVolumeChange`                                 | Optimistic: `determineNavigationPath` may correct to a better path in background  |
 
 **Old listing cleanup** (in `FilePane.loadDirectory`, every navigation):
 
-1. `++loadGeneration` — invalidates all in-flight events
+1. `++loadGeneration`: invalidates all in-flight events
 2. `cancelListing(oldId)` -> sets `AtomicBool` in Rust -> background task stops within ~100ms
 3. `listDirectoryEnd(oldId)` -> stops file watcher, removes from `LISTING_CACHE`
 4. Unlisten all 6 event listeners
@@ -91,8 +91,8 @@ Three architectural patterns used consistently:
 | File viewer search | New query / ESC / close       | `viewerSearchCancel` IPC                 | `AtomicBool` in search loop                                            | Yes                                           |
 | Drive indexing     | App shutdown / volume unmount | `stopDriveIndex` IPC                     | `AtomicBool` on jwalk walker; incomplete scan detected on next startup | Yes                                           |
 | AI model download  | Cancel button                 | `cancelAiDownload` IPC                   | Flag checked per HTTP chunk; partial file kept for resume              | Yes                                           |
-| Viewer line fetch  | Rapid scroll                  | `currentFetchId++` (discard stale)       | None — backend serves all                                              | No, frontend-only                             |
-| Inline rename      | ESC / navigate away           | `rename.cancel()` resets state           | None — purely frontend until submit                                    | No, frontend-only                             |
+| Viewer line fetch  | Rapid scroll                  | `currentFetchId++` (discard stale)       | None; backend serves all                                               | No, frontend-only                             |
+| Inline rename      | ESC / navigate away           | `rename.cancel()` resets state           | None; purely frontend until submit                                     | No, frontend-only                             |
 
 **Known gap**: On stuck network mounts, the OS `read_dir` syscall blocks the I/O thread. The `AtomicBool` check runs
 between entries, not during the syscall. Mitigation: I/O runs on a separate OS thread; the main task polls via
@@ -106,7 +106,7 @@ Detection:
   Linux: inotify on /proc/mounts + /run/user/<uid>/gvfs/
   MTP:   nusb USB hotplug stream (separate system, own events)
 
--> State diff against KNOWN_VOLUMES (implicit debounce — multiple FSEvents, one diff)
+-> State diff against KNOWN_VOLUMES (implicit debounce: multiple FSEvents, one diff)
 
 -> Rust processing:
     Mount:   register LocalPosixVolume with VolumeManager, emit "volume-mounted"
@@ -117,7 +117,7 @@ Detection:
     DualPaneExplorer: mount -> refresh list; unmount -> handleVolumeUnmount()
 ```
 
-**`handleVolumeUnmount`**: Hard redirect — any pane on the unmounted volume switches to `~` on root volume. No
+**`handleVolumeUnmount`**: Hard redirect. Any pane on the unmounted volume switches to `~` on root volume. No
 parent-walking (entire volume is gone). Both panes checked independently. State persisted immediately.
 
 **Safety nets against races**: FilePane's 2-second `dirExistsPollInterval` also detects missing paths. If the volume
@@ -135,18 +135,18 @@ macOS appear under `/Volumes` and use the same path as local drives.
 | **Path deleted**         | `listing-error` + `pathExists` check; watcher `directory-deleted`; 2s poll | Brief spinner -> auto-navigates to parent                | `resolveValidPath`: walk parents -> `~` -> `/` (each step 1s frontend + 2s Rust timeout) | `cancelListing` + `listDirectoryEnd`                  |
 | **Permission denied**    | Rust `PermissionDenied` -> `listing-error`                                 | `PermissionDeniedPane` with OS-specific fix instructions | None (manual fix required)                                                               | `listingId` cleared, no cache/watcher                 |
 | **Network slow/dead**    | Frontend timeouts (500ms/1s); Rust timeout (2s); ESC cancel                | "Opening folder..." -> progress -> "Press ESC to cancel" | ESC navigates back; timeouts cause graceful fallback                                     | `AtomicBool` cancellation                             |
-| **Mid-stream I/O error** | Rust error through channel -> `listing-error`                              | Spinner -> auto-navigates to parent                      | Same as "path deleted"                                                                   | No partial cache (listing is atomic — all or nothing) |
+| **Mid-stream I/O error** | Rust error through channel -> `listing-error`                              | Spinner -> auto-navigates to parent                      | Same as "path deleted"                                                                   | No partial cache (listing is atomic: all or nothing)  |
 | **Volume unmounted**     | `volume-unmounted` Tauri event (dedicated handler)                         | Pane switches to home directory                          | Hard switch to root volume + `~`                                                         | Full pane state overwrite + persist                   |
 | **MTP disconnect**       | `mtp-device-removed` event                                                 | Falls back to default volume                             | `handleMtpFatalError` -> root volume + `~`                                               | Same as volume unmount                                |
 
-**Per-entry permission errors** (single unreadable file in a readable dir) don't fail the listing — they appear as
+**Per-entry permission errors** (single unreadable file in a readable dir) don't fail the listing; they appear as
 zero-permission entries with fallback metadata.
 
 ## Persistence
 
-- **App status** (`app-status.json`): ephemeral state — paths, focused pane, view modes, last-used paths per volume
-- **Settings** (`settings.json`): preferences — hidden files, density, date format. Registry-validated.
-- **Shortcuts** (`shortcuts.json`): delta-only — only customizations stored, defaults in code
+- **App status** (`app-status.json`): ephemeral state (paths, focused pane, view modes, last-used paths per volume)
+- **Settings** (`settings.json`): preferences (hidden files, density, date format). Registry-validated.
+- **Shortcuts** (`shortcuts.json`): delta-only; only customizations stored, defaults in code
 - **License** (`license.json`): activation state, timestamps
 - **Window state**: `@tauri-apps/plugin-window-state` for size/position per window label
 
@@ -157,7 +157,7 @@ Philosophy: status is "where you are" (ephemeral), settings are "how you like it
 | State                                     | Timing                                                   | Crash loss                                   |
 | ----------------------------------------- | -------------------------------------------------------- | -------------------------------------------- |
 | Pane paths, focused pane, view mode, sort | Debounced 200ms (`saveAppStatus`)                        | Up to 200ms of changes                       |
-| Tab state (paths, sort, viewMode, pinned) | **Immediate** (no debounce)                              | None — tabs are the reliable source of truth |
+| Tab state (paths, sort, viewMode, pinned) | **Immediate** (no debounce)                              | None; tabs are the reliable source of truth  |
 | `lastUsedPath` per volume                 | **Immediate** (no debounce)                              | None                                         |
 | Settings v2                               | Debounced 500ms; explicit flush on Settings window close | Up to 500ms if main window crashes           |
 | Shortcuts                                 | **Immediate** (changes are rare user actions)            | None                                         |

@@ -60,7 +60,7 @@ const DATE_COLUMN_BASE_FONT_PX = 12
 /** Extra padding for the date column width (accounts for rounding and breathing room) at scale 1 */
 const DATE_COLUMN_PADDING = 8
 
-/** Minimum date column width at scale 1 — scaled at use site so it stays proportional. */
+/** Minimum date column width at scale 1 (scaled at use site so it stays proportional). */
 const DATE_COLUMN_MIN_WIDTH = 70
 
 /** Cached canvas context for text measurement (reused for performance) */
@@ -71,7 +71,7 @@ let measureCanvasScale = 0
  * Reset the cached measurement canvas when the scale settles to a new value.
  * The next `getMeasureContext` call will rebuild the context with the new
  * font size. We deliberately wait for the debounced "settled" event rather
- * than re-running on every step of a slider drag — column widths update only
+ * than re-running on every step of a slider drag; column widths update only
  * at rest, while the CSS layer reflows live.
  */
 if (typeof window !== 'undefined') {
@@ -163,7 +163,7 @@ export function measureDateColumnWidth(formatFn: (timestamp: number) => string):
   }
 
   // Add padding and enforce minimum width. Both scale with text size so the
-  // column stays proportional at large scales — at 200%, an 8 px breathing
+  // column stays proportional at large scales; at 200%, an 8 px breathing
   // gap looks pinched.
   // Use Math.ceil to avoid subpixel rendering issues.
   const scale = getEffectiveScale()
@@ -233,7 +233,7 @@ export function getDisplaySize(
   // Coerce null → undefined at the boundary so the return type matches what
   // downstream consumers (`!= null` in render guards) expect.
   if (mode === 'logical') return logical ?? undefined
-  // Fall back to logical when physical is unavailable — a visible size is better than blank.
+  // Fall back to logical when physical is unavailable; a visible size is better than blank.
   if (mode === 'physical') return physical ?? logical ?? undefined
   // smart: min of available values, but show logical for cloud/dataless files (physical=0, logical>0)
   if (logical != null && physical != null) return physical > 0 ? Math.min(logical, physical) : logical
@@ -327,7 +327,7 @@ export type DirSizeDisplayState = 'dir' | 'scanning' | 'size' | 'size-stale'
  * - No recursiveSize + indexing active  -> 'scanning' (show spinner)
  * - No recursiveSize + not indexing     -> 'dir' (show <dir> placeholder)
  *
- * "Indexing active" means scanning OR aggregating — sizes aren't ready until aggregation finishes.
+ * "Indexing active" means scanning OR aggregating; sizes aren't ready until aggregation finishes.
  */
 export function getDirSizeDisplayState(
   recursiveSize: number | null | undefined,

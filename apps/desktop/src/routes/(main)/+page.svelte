@@ -211,7 +211,7 @@
         })
     }
 
-    // Unlisten functions for MCP and dialog listeners — cleaned up on destroy (important for HMR)
+    // Unlisten functions for MCP and dialog listeners (cleaned up on destroy, important for HMR)
     const tauriUnlistenFns: UnlistenFn[] = []
 
     /** Like safeListenTauri but also stores the unlisten function for cleanup. */
@@ -513,9 +513,9 @@
         setFdaPromptShowing(false)
         showApp = true
         // Mark onboarding as complete and (if an update is already ready) trigger the deferred toast.
-        // notifyOnboardingComplete persists `isOnboarded: true` itself — no double-save needed.
+        // notifyOnboardingComplete persists `isOnboarded: true` itself, no double-save needed.
         void notifyOnboardingComplete()
-        // Surface a deferred AI offer too. Same gate, same opening event — without this, the offer
+        // Surface a deferred AI offer too. Same gate, same opening event. Without this, the offer
         // would only show on next launch, even on the Deny path where the user stays in the session.
         notifyAiOnboardingComplete()
     }
@@ -607,7 +607,7 @@
         void explorerRef?.openDeleteDialog(true)
     }
 
-    /** Command dispatch context — wires reactive state to the extracted dispatch function */
+    /** Command dispatch context: wires reactive state to the extracted dispatch function */
     const commandDispatchCtx: CommandDispatchContext = {
         getExplorer: () => explorerRef,
         dialogs: {

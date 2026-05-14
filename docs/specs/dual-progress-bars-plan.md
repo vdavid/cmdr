@@ -3,11 +3,11 @@
 ## Why
 
 The `TransferProgressDialog` shows one byte-based progress bar with text stats below. But file operations have two
-independent progress dimensions: bytes transferred and files processed. These can diverge significantly — copying one
+independent progress dimensions: bytes transferred and files processed. These can diverge significantly. Copying one
 huge file vs many tiny files produces very different bar behaviors. Showing both gives the user a clearer mental model
 of what's happening (design principle: radical transparency).
 
-The progress bar code is also duplicated — `TransferProgressDialog` and `ProgressOverlay` each have their own inline CSS
+The progress bar code is also duplicated: `TransferProgressDialog` and `ProgressOverlay` each have their own inline CSS
 bars with no shared component.
 
 ## What we're building
@@ -28,14 +28,14 @@ spinner + "Deleting N copied files..." is correct for an indeterminate operation
 
 **Why:** `ProgressOverlay` uses a horizontal row layout (bar + percentage + ETA inline). `TransferProgressDialog` needs
 a grid layout (label, bar, detail). These are fundamentally different layouts. If the component includes label/detail
-props, one consumer won't use them, making the API dishonest. A pure bar component is more composable — consumers
+props, one consumer won't use them, making the API dishonest. A pure bar component is more composable; consumers
 arrange labels however they need.
 
 ### Size variants instead of pixel props
 
 **Why:** The codebase uses design tokens (`--spacing-*`, `--radius-*`, `--font-size-*`) rather than raw values. A
 `size: 'sm' | 'md'` prop (4px / 8px) is idiomatic. `sm` for `ProgressOverlay`'s compact floating indicator, `md` for
-dialog-level progress. Border radius scales with size: `sm` uses `--radius-xs` (2px), `md` uses `--radius-sm` (4px) —
+dialog-level progress. Border radius scales with size: `sm` uses `--radius-xs` (2px), `md` uses `--radius-sm` (4px),
 matching what each consumer had before.
 
 ### No fillColor prop
@@ -45,7 +45,7 @@ escape hatch that bypasses the design token system. Can be added later if a real
 
 ### Inline grid layout for dual bars
 
-**Why:** A vertical stack of label-above-bar pairs creates a text/bar/text/bar/text sandwich — visually noisy. An inline
+**Why:** A vertical stack of label-above-bar pairs creates a text/bar/text/bar/text sandwich, which is visually noisy. An inline
 grid aligns both bars side by side with labels left and stats right. Compact, scannable, bars are the focal element:
 
 ```
@@ -75,9 +75,9 @@ at "0 B / 0 B (0%)" is misleading. Conditionally hide the size row when `bytesTo
 
 Props:
 
-- `value: number` — 0–1 fractional progress (required)
-- `size?: 'sm' | 'md'` — bar height + radius. `sm` = 4px / `--radius-xs`, `md` = 8px / `--radius-sm`. Default `'md'`
-- `ariaLabel?: string` — accessible label for screen readers
+- `value: number`: 0–1 fractional progress (required)
+- `size?: 'sm' | 'md'`: bar height + radius. `sm` = 4px / `--radius-xs`, `md` = 8px / `--radius-sm`. Default `'md'`
+- `ariaLabel?: string`: accessible label for screen readers
 
 Internals:
 
@@ -87,7 +87,7 @@ Internals:
 - Fill div: `transition: width 0.15s ease-out` (standardized from the existing 0.1s and 0.3s)
 - Styling: `--color-bg-tertiary` track, `--color-accent` fill
 
-Note: This also improves accessibility — the existing `TransferProgressDialog` bar had no `role="progressbar"` or ARIA
+Note: This also improves accessibility. The existing `TransferProgressDialog` bar had no `role="progressbar"` or ARIA
 attributes.
 
 ### Step 2: Refactor `ProgressOverlay.svelte`
@@ -107,10 +107,10 @@ attributes.
 Script:
 
 - Import `ProgressBar`
-- Remove `percentComplete` derived (line 189) — no longer used, replaced by inline expressions
+- Remove `percentComplete` derived (line 189): no longer used, replaced by inline expressions
 
-Template — replace lines 799–828 (progress section + stats section) with a CSS grid. Preserve the current file indicator
-(lines 830–835) after the grid — it should remain outside the `{#if}` since the backend emits `current_file` during
+Template: replace lines 799–828 (progress section + stats section) with a CSS grid. Preserve the current file indicator
+(lines 830–835) after the grid, since it should remain outside the `{#if}` because the backend emits `current_file` during
 scanning too, and showing it supports radical transparency. Only show the bars when past scanning:
 
 ```svelte
@@ -156,10 +156,10 @@ CSS:
 
 ### Step 4: Update docs
 
-**`apps/desktop/src/lib/ui/CLAUDE.md`** — add ProgressBar section following the existing format (see ProgressOverlay
+**`apps/desktop/src/lib/ui/CLAUDE.md`**: add ProgressBar section following the existing format (see ProgressOverlay
 section for the pattern). Props table with types and notes. Mention consumers (ProgressOverlay, TransferProgressDialog).
 
-**`apps/desktop/src/lib/file-operations/CLAUDE.md`** — in the TransferProgressDialog bullet, update "Progress bar with
+**`apps/desktop/src/lib/file-operations/CLAUDE.md`**: in the TransferProgressDialog bullet, update "Progress bar with
 ETA, speed (MB/s), current file" → "Dual progress bars (size + file count) with speed, ETA, current file"
 
 ### Step 5: Checks

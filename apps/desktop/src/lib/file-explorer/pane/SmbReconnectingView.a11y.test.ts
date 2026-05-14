@@ -1,7 +1,7 @@
 /**
  * Tier 3 a11y tests for `SmbReconnectingView.svelte`.
  *
- * Covers the three cycle states (waiting, attempting, gave-up — but the pane
+ * Covers the three cycle states (waiting, attempting, gave-up; but the pane
  * never renders the gave-up state itself; the parent swaps to
  * `VolumeUnreachableBanner`). Validates structural a11y in each phase and that
  * the buttons stay accessible when "Retry now" is disabled mid-attempt.

@@ -3,10 +3,10 @@
  *
  * Wraps `@tauri-apps/api/mocks::mockIPC` with two affordances we want at the call sites:
  *
- *  1. A captured call log (`recorder.calls`) — every command name + payload pair the bindings
+ *  1. A captured call log (`recorder.calls`): every command name + payload pair the bindings
  *     send, in order. Lets tests assert on the **snake_case command name** (the contract that
  *     drift can break) and the **camelCase payload shape** the bindings build.
- *  2. A typed responder map — `mock(commandName, handler)` registers a per-command response
+ *  2. A typed responder map: `mock(commandName, handler)` registers a per-command response
  *     or a thrown error. Unmatched commands surface as a clear test failure instead of a
  *     mysterious `undefined`.
  *
@@ -14,7 +14,7 @@
  * call site and the Rust command signature, and that side-effecting commands hit IPC at all.
  *
  * **What this layer doesn't catch**: real permission gating (the Tauri permission system is
- * skipped — `mockIPC` patches `__TAURI_INTERNALS__.invoke` before it gets there), business
+ * skipped (`mockIPC` patches `__TAURI_INTERNALS__.invoke` before it gets there), business
  * logic in `*_core` helpers (Rust unit tests own that), or end-to-end UI behaviour
  * (Playwright owns that).
  *

@@ -38,19 +38,19 @@ app versions).
 
 | Method | Path                       | Auth         | Purpose                                                   |
 | ------ | -------------------------- | ------------ | --------------------------------------------------------- |
-| GET    | `/`                        | —            | Health check                                              |
+| GET    | `/`                        | none         | Health check                                              |
 | POST   | `/webhook/paddle`          | HMAC sig     | Purchase completed → generate & email key(s)              |
-| POST   | `/activate`                | —            | Exchange short code → full cryptographic key              |
-| POST   | `/validate`                | —            | Check subscription status via Paddle API                  |
+| POST   | `/activate`                | none         | Exchange short code → full cryptographic key              |
+| POST   | `/validate`                | none         | Check subscription status via Paddle API                  |
 | POST   | `/admin/generate`          | Bearer token | Manual key generation (customer service / testing)        |
 | GET    | `/admin/stats`             | Bearer token | Activation count + device count (for analytics dashboard) |
 | GET    | `/admin/downloads`         | Bearer token | Aggregated download data by day/version/arch/country      |
 | GET    | `/admin/active-users`      | Bearer token | Aggregated daily active users by version/arch             |
 | GET    | `/admin/crashes`           | Bearer token | Aggregated crash data by day/crash site/signal            |
-| GET    | `/download/:version/:arch` | —            | Log download to D1, 302 → GitHub                          |
-| POST   | `/crash-report`            | —            | Ingest crash report to D1                                 |
-| POST   | `/error-report`            | —            | Multipart upload (zip + meta) → R2, Discord notify        |
-| GET    | `/update-check/:version`   | —            | Log update check to D1 (deduped), 302 → latest.json       |
+| GET    | `/download/:version/:arch` | none         | Log download to D1, 302 → GitHub                          |
+| POST   | `/crash-report`            | none         | Ingest crash report to D1                                 |
+| POST   | `/error-report`            | none         | Multipart upload (zip + meta) → R2, Discord notify        |
+| GET    | `/update-check/:version`   | none         | Log update check to D1 (deduped), 302 → latest.json       |
 
 ## Environments
 
@@ -67,9 +67,9 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 | ---------------------------------- | -------------------------------- | --------------------------------- |
 | `PADDLE_ENVIRONMENT`               | `"sandbox"` (from wrangler.toml) | `"live"`                          |
 | `PADDLE_WEBHOOK_SECRET_SANDBOX`    | Sandbox secret                   | Sandbox secret (for safety)       |
-| `PADDLE_WEBHOOK_SECRET_LIVE`       | —                                | Live secret                       |
-| `PADDLE_API_KEY_SANDBOX`           | Sandbox API key                  | —                                 |
-| `PADDLE_API_KEY_LIVE`              | —                                | Live API key                      |
+| `PADDLE_WEBHOOK_SECRET_LIVE`       | n/a                              | Live secret                       |
+| `PADDLE_API_KEY_SANDBOX`           | Sandbox API key                  | n/a                               |
+| `PADDLE_API_KEY_LIVE`              | n/a                              | Live API key                      |
 | `PRICE_ID_COMMERCIAL_SUBSCRIPTION` | Sandbox price ID                 | Live price ID                     |
 | `PRICE_ID_COMMERCIAL_PERPETUAL`    | Sandbox price ID                 | Live price ID                     |
 | `ED25519_PRIVATE_KEY`              | Private key hex                  | Same private key hex              |
@@ -92,7 +92,7 @@ API key the server uses. Set to `"sandbox"` by default (from `wrangler.toml`). T
 ### Discord webhooks
 
 `DISCORD_WEBHOOK_URL` posts notifications to the `#error-reports` channel of the **Cmdr** Discord server. The URL is the
-secret — anyone holding it can post to that channel — so it lives only as a wrangler secret, never in the repo.
+secret (anyone holding it can post to that channel), so it lives only as a wrangler secret, never in the repo.
 
 **To create or rotate the webhook:**
 
@@ -110,7 +110,7 @@ secret — anyone holding it can post to that channel — so it lives only as a 
    ```
 
 Rate limit: 30 messages/min per webhook. The Worker should retry once on `Retry-After`, then drop with a `console.error`
-— we don't run our own queue infra for an internal channel.
+We don't run our own queue infra for an internal channel.
 
 ### R2 presigned URLs (for error-report download links)
 
@@ -125,7 +125,7 @@ Current values: stored in David's password store (Bitwarden). The secrets also l
 
 1. https://dash.cloudflare.com → **R2 Object Storage** → **Manage R2 API Tokens** (top right).
 2. **Create API Token**. Name: `cmdr-error-reports-presign`.
-3. Permission: **Object Read** (read-only is enough — writes go through the R2 binding, not the S3 key).
+3. Permission: **Object Read** (read-only is enough; writes go through the R2 binding, not the S3 key).
 4. Scope: **Apply to specific buckets only** → `cmdr-error-reports`.
 5. TTL: forever (or match your rotation policy).
 6. Click **Create API Token**. The token page shows THREE values that are displayed ONCE:
@@ -152,7 +152,7 @@ back to the OAuth login).
 ### Webhook verification
 
 `verifyPaddleWebhookMulti` tries both `PADDLE_WEBHOOK_SECRET_LIVE` and `PADDLE_WEBHOOK_SECRET_SANDBOX` when verifying
-incoming webhooks. This is a safety net — in practice, the sandbox dashboard sends webhooks only to the sandbox
+incoming webhooks. This is a safety net; in practice, the sandbox dashboard sends webhooks only to the sandbox
 destination (ngrok for local dev), and the live dashboard sends only to the live destination (`api.getcmdr.com`).
 
 ## Data flow
@@ -219,7 +219,7 @@ issuedAt, type, organizationName.
 **License types:** `commercial_subscription` | `commercial_perpetual`
 
 **Idempotency:** 7-day KV entry per transaction. If email throws after KV writes but before the idempotency key is set,
-Paddle's retry re-generates and re-sends — intentional design.
+Paddle's retry re-generates and re-sends. Intentional design.
 
 **Price ID → license type mapping:** `getLicenseTypeFromPriceId()` in `paddle-api.ts` maps Paddle price IDs (from
 `PRICE_ID_*` env vars) to license types. Unknown price IDs fall back to `commercial_subscription` for backwards
@@ -230,7 +230,7 @@ Cloudflare secrets (`wrangler secret put`), never in `wrangler.toml`. `/admin/st
 secret, separate from the Paddle webhook secrets used by `/admin/generate`.
 
 **Activation counter:** `/activate` increments a KV counter at `_meta:activation_count` on each successful activation.
-Read by `/admin/stats`. The counter starts from zero when deployed — initialize via the CF API if historical count is
+Read by `/admin/stats`. The counter starts from zero when deployed; initialize via the CF API if historical count is
 needed.
 
 **D1 for telemetry:** Crash reports, downloads, and update checks are stored in D1 (binding: `TELEMETRY_DB`, database:
@@ -249,7 +249,7 @@ app_version, arch, country, and continent. D1 write is fire-and-forget via `wait
 
 **Update check tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `update_checks`). Counts active users (free +
 licensed) by proxying update checks through `GET /update-check/:version`. Each unique (date, hashed_ip, app_version,
-arch) combo gets one row — `INSERT OR IGNORE` with a UNIQUE constraint handles deduplication for free. IP is hashed with
+arch) combo gets one row (`INSERT OR IGNORE` with a UNIQUE constraint handles deduplication for free). IP is hashed with
 SHA-256 + daily salt for deduplication without storing PII. D1 write is fire-and-forget via `waitUntil` +
 `.catch(() => {})`. The cron handler aggregates raw data into the `daily_active_users` summary table daily.
 
@@ -265,18 +265,17 @@ required fields, and the shape of optional fields before writing. D1 write is fi
 Devices older than 90 days are pruned on each write. If 6+ devices are active and no alert was sent in the past 30 days,
 an internal email is sent to `legal@getcmdr.com` via Resend. Device tracking is fire-and-forget and never affects the
 validation response. The KV value stores a `DeviceSet` with device hashes mapped to last-seen timestamps plus an
-optional `lastAlertedAt`. Device tracking is per seat — each seat in a multi-seat purchase has its own transaction ID
+optional `lastAlertedAt`. Device tracking is per seat: each seat in a multi-seat purchase has its own transaction ID
 and its own 6-device allowance.
 
 **Update check proxy:** `GET /update-check/:version` routes update checks through the worker to count all users (free +
-licensed). Without this, there's no signal for how many people actually run the app — Umami only tracks website visitors
-and download tracking only captures installs.
+licensed). Without this, there's no signal for how many people actually run the app (Umami only tracks website visitors
+and download tracking only captures installs).
 
 **Error report R2 key shape:** `error-reports/{prod|dev}/{yyyy-mm-dd}/{ERR-XXXXX}-{uuid}.zip`. The env segment (`prod`
 for release builds, `dev` for debug builds, inferred from `meta.buildMode`) keeps dev-run reports out of the production
-sort order. Legacy keys (`error-reports/{yyyy-mm-dd}/...` — pre-env-prefix) still exist; eviction reads the date segment
-via `extractDateSegment` which handles both shapes. The 90-day R2 lifecycle drains the legacy shape naturally — there's
-no migration.
+sort order. Legacy keys (`error-reports/{yyyy-mm-dd}/...`, pre-env-prefix) still exist; eviction reads the date segment
+via `extractDateSegment` which handles both shapes. The 90-day R2 lifecycle drains the legacy shape naturally. No migration needed.
 
 **Error report eviction (8/6 GB watermarks + lifecycle):** Three layers keep the bucket bounded.
 
@@ -287,7 +286,7 @@ no migration.
 2. **Daily cron sweep**: corrects KV drift by recomputing from R2 and re-running `tryEvict`.
 3. **R2 lifecycle rule**: 90-day expiration applied at provisioning time via `scripts/setup-cf-infra.sh`.
 
-The KV counter is approximate (read-then-write, no atomic increment — same as `_meta:activation_count`). Both the daily
+The KV counter is approximate (read-then-write, no atomic increment; same as `_meta:activation_count`). Both the daily
 sweep and post-eviction recompute correct it. R2 deletes are idempotent; concurrent evictors deleting the same oldest
 object cause no harm.
 
@@ -298,9 +297,9 @@ for presigned URLs. Convenience of click-to-download outweighs leak risk because
 
 **Short ID generation:** `generateShortId(prefix, len)` in `license.ts` produces IDs like `ERR-A2345` from the same
 unambiguous alphabet (`23456789ABCDEFGHJKMNPQRSTUVWXYZ`) as license short codes. Rejection sampling avoids modulo bias.
-The error report route does NOT regenerate the id server-side — it validates the client-supplied `meta.id` against the
+The error report route does NOT regenerate the id server-side. It validates the client-supplied `meta.id` against the
 shape `^ERR-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{5}$` and uses it as-is. On the astronomically rare R2 key collision (same
-id + same date + UUID clash), the route retries with a fresh UUID — never a fresh id — so the user-visible id from the
+id + same date + UUID clash), the route retries with a fresh UUID (never a fresh id), so the user-visible id from the
 preview dialog stays stable through to the toast.
 
 ## Local development
@@ -347,14 +346,14 @@ curl -X POST http://localhost:8787/admin/generate \
 
 Returns `code` (short code like `CMDR-ABCD-EFGH-1234`) and `type`. Change `type` to `commercial_perpetual` for a
 perpetual license. These keys use synthetic transaction IDs (`manual-*`), so they won't pass server validation via
-`/validate` — they're for offline crypto + UI testing only.
+`/validate` (offline crypto + UI testing only).
 
 For end-to-end testing including `/validate`, use the Paddle sandbox checkout flow (see
 [README.md](README.md#testing-paddle-checkout)).
 
 ### Testing Paddle checkout (sandbox)
 
-See [README.md](README.md#testing-paddle-checkout) — requires setting up a Paddle client-side token and a default
+See [README.md](README.md#testing-paddle-checkout). Requires setting up a Paddle client-side token and a default
 payment link in the sandbox dashboard. This is an interactive, human-driven flow.
 
 ## Deployment
@@ -388,7 +387,7 @@ configured per-price in the Paddle dashboard (both sandbox and live).
 ## Key decisions
 
 **Decision**: `PADDLE_ENVIRONMENT` env var controls sandbox vs live routing, rather than inferring from transaction IDs.
-**Why**: Both sandbox and live transactions use the same `txn_` prefix — there's no reliable way to detect the
+**Why**: Both sandbox and live transactions use the same `txn_` prefix, so there's no reliable way to detect the
 environment from a transaction ID. An explicit env var is unambiguous. `wrangler.toml` defaults to `"sandbox"` for local
 dev; the deployed worker overrides to `"live"` via a wrangler secret.
 
@@ -396,7 +395,7 @@ dev; the deployed worker overrides to `"live"` via a wrangler secret.
 accounts have different price IDs for the same products. Env vars let each environment use its own IDs without code
 changes. `.dev.vars` has sandbox IDs; wrangler secrets have live IDs.
 
-**Decision**: No hard enforcement of device limits — the server never rejects a validation because of device count.
+**Decision**: No hard enforcement of device limits; the server never rejects a validation because of device count.
 **Why**: Suspension is a manual decision after human review. The goal is to detect obvious key sharing (one key on 6+
 devices), not to restrict legitimate power users. Alert threshold is 6 because 3-4 Macs is normal, 5 is plausible, 6 is
 hard to explain as one person. The threshold is not published in the ToS to avoid gaming.
@@ -416,7 +415,7 @@ Safety net. If a sandbox webhook somehow reaches the production endpoint (or vic
 silently failing. Costs one extra HMAC check on mismatch.
 
 **Gotcha**: The activation counter (`_meta:activation_count` in KV) uses read-then-write, which has a race condition
-under concurrent `/activate` requests. **Why**: KV doesn't support atomic increment. The counter is approximate — if
+under concurrent `/activate` requests. **Why**: KV doesn't support atomic increment. The counter is approximate; if
 exact counts matter, query the CF API to list KV keys, or switch to Durable Objects / D1.
 
 **Gotcha**: The `/download/:version/:arch` redirect maps `x86_64` → `x64` in the filename. **Why**: `tauri-action` names
@@ -428,7 +427,7 @@ convention is already used in `.github/workflows/release.yml` when reading DMG s
 `undefined`**, not just `undefined`. **Why**: serde `Option::None` serializes as JSON `null`, not as an absent key.
 `#[serde(skip_serializing_if = "Option::is_none")]` would omit the key but is rejected by `specta`'s unified mode (the
 struct is part of a Tauri command surface). An old crash file read by a new client surfaces missing fields as `None`,
-the client posts `"buildMode": null`, and a `!== undefined`-only check rejects it — losing exactly the upgrade-window
+the client posts `"buildMode": null`, and a `!== undefined`-only check rejects it, losing exactly the upgrade-window
 reports we want to keep. Pattern: `value !== undefined && value !== null && <shape check>`. See `telemetry.ts`
 `validateCrashReportShape` for the canonical form.
 
@@ -447,4 +446,4 @@ model felt pushy for hobbyists (trial countdown, nagware). BSL gives friction-fr
 commercial terms (businesses know they must pay), and simpler enforcement (title bar shows license type, honor system
 beats trial timers). Source converts to AGPL-3.0 after 3 years per release.
 
-See also: `apps/desktop/src/lib/licensing/CLAUDE.md` — full frontend licensing feature overview
+See also: `apps/desktop/src/lib/licensing/CLAUDE.md` (full frontend licensing feature overview)

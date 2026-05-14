@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { handleCrashNotifications, handleDailyAggregation, handleDbSizeCheck, handleDailyEvictionSweep } from './index'
 import { ERROR_REPORT_PREFIX, TOTAL_BYTES_KEY } from './error-report-eviction'
 
-// Mock Resend — intercept email sends
+// Mock Resend: intercept email sends
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockSend = vi.fn<any>(() => Promise.resolve({ id: 'test-email-id' }))
 vi.mock('resend', () => ({
@@ -131,7 +131,7 @@ describe('handleCrashNotifications', () => {
     expect(emailCall.subject).toBe('Cmdr: 3 new crash reports')
     expect(emailCall.to).toBe('test@example.com')
     expect(emailCall.from).toBe('Cmdr Crash Alerts <noreply@getcmdr.com>')
-    // Per-row rendering — each crash shows up with its top_function and short id.
+    // Per-row rendering: each crash shows up with its top_function and short id.
     expect(emailCall.html).toContain('cmdr::sync::run')
     expect(emailCall.html).toContain('cmdr_lib::indexer::build')
     expect(emailCall.html).toContain('CRASH-A2345')
@@ -139,7 +139,7 @@ describe('handleCrashNotifications', () => {
     // Env column shows friendly labels.
     expect(emailCall.html).toContain('>prod<')
     expect(emailCall.html).toContain('>dev<')
-    // Row 3 has neither build_mode nor short_id — both render as `?`.
+    // Row 3 has neither build_mode nor short_id; both render as `?`.
     const questionMarkCells = emailCall.html.match(/>\?</g)?.length ?? 0
     expect(questionMarkCells).toBeGreaterThanOrEqual(2)
 
@@ -391,7 +391,7 @@ describe('scheduled handler: eviction job isolation', () => {
     // Importing the default export to exercise the dispatch
     const mod = (await import('./index')).default
     const env = {
-      // All bindings missing — each handler should bail internally or throw,
+      // All bindings missing: each handler should bail internally or throw,
       // and the scheduled wrapper's per-job try/catch absorbs each failure.
       TELEMETRY_DB: createMockD1().db,
     } as never

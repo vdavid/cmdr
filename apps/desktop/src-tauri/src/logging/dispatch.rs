@@ -8,7 +8,7 @@
 //! Tree shape:
 //!
 //! ```text
-//! root Dispatch (level Trace — pure ceiling, per-chain filters do real gating)
+//! root Dispatch (level Trace: pure ceiling, per-chain filters do real gating)
 //! ├── stdout chain
 //! │     .level(Info)                       // default; AtomicU8 below can bump to Debug
 //! │     .level_for(<from RUST_LOG>, ..)
@@ -26,10 +26,10 @@
 //! Runtime mutability:
 //!
 //! - **Stdout level** flips between Info and Debug via [`set_stdout_threshold`]. An
-//!   `AtomicU8` consulted by the chain's filter — no dispatch rebuild, no log lines lost.
+//!   `AtomicU8` consulted by the chain's filter, no dispatch rebuild, no log lines lost.
 //! - **File rotation cap** is fixed at startup (file-rotate doesn't expose a live
 //!   reconfigure). `set_keep_count` + `eager_prune` in the parent module already covered
-//!   this — same restart-required envelope as the plugin had.
+//!   this. Same restart-required envelope as the plugin had.
 
 use std::io::Write;
 use std::path::PathBuf;
@@ -42,11 +42,11 @@ use file_rotate::{ContentLimit, FileRotate, compression::Compression, suffix::Ap
 /// `log::LevelFilter` (`Off=0`, `Error=1`, ..., `Trace=5`). Default = `Info`.
 ///
 /// The fern filter reads this on every record, so the verbose toggle takes effect
-/// without rebuilding the dispatch — and no records are lost during the swap.
+/// without rebuilding the dispatch, and no records are lost during the swap.
 static STDOUT_THRESHOLD: AtomicU8 = AtomicU8::new(log::LevelFilter::Info as u8);
 
 /// Updates the stdout threshold. Records with severity below the threshold are dropped
-/// from the stdout chain only — the file chain always sees Debug+ (when enabled).
+/// from the stdout chain only. The file chain always sees Debug+ (when enabled).
 pub fn set_stdout_threshold(level: log::LevelFilter) {
     STDOUT_THRESHOLD.store(level as u8, Ordering::Relaxed);
 }
@@ -59,7 +59,7 @@ pub fn stdout_threshold() -> log::LevelFilter {
 /// Renders the current local time as an ISO 8601 stamp with millisecond precision plus
 /// a `±HH:MM` offset (e.g., `2026-04-25T01:18:28.218+02:00`).
 ///
-/// File chain only — the stdout chain stays terse with `HH:MM:SS.mmm` because devs
+/// File chain only. The stdout chain stays terse with `HH:MM:SS.mmm` because devs
 /// reading the live terminal already know the date and time. The file lives forever and
 /// gets shipped to triage; ISO + offset means a reader anywhere on the planet can pin
 /// down exactly when a line was written. Cheap parsing target for the Flow B
@@ -94,7 +94,7 @@ pub struct InitOptions {
 /// Builds the Dispatch tree and installs it as the global logger.
 ///
 /// Idempotent failure mode: returns `Err` if a previous call (or another logger) has
-/// already taken over the `log` facade. In tests this is fine — they don't need the real
+/// already taken over the `log` facade. In tests this is fine; they don't need the real
 /// logger.
 pub fn init(opts: InitOptions) -> Result<(), fern::InitError> {
     // Apply RUST_LOG up front so `set_stdout_threshold` is the only post-init knob.
@@ -131,8 +131,8 @@ pub fn init(opts: InitOptions) -> Result<(), fern::InitError> {
         crate::error_reporter::log_level_overrides::record(stdout_default, all_overrides);
     }
 
-    // Stdout chain. Stderr (not stdout) so logs don't pollute commands that pipe stdout
-    // — same behavior the previous plugin had.
+    // Stdout chain. Stderr (not stdout) so logs don't pollute commands that pipe stdout.
+    // Same behavior the previous plugin had.
     let mut stdout_chain = fern::Dispatch::new()
         .format(|out, message, record| {
             let now = chrono::Local::now();
@@ -148,13 +148,13 @@ pub fn init(opts: InitOptions) -> Result<(), fern::InitError> {
             };
             out.finish(format_args!("{ts} {color}{level:<5}\x1b[0m {target}  {message}"));
         })
-        // Ceiling — the live AtomicU8 filter below does the real gating.
+        // Ceiling: the live AtomicU8 filter below does the real gating.
         .level(log::LevelFilter::Trace)
         // Live verbose-toggle gate: drops anything below the current AtomicU8.
         .filter(|metadata| metadata.level() <= stdout_threshold())
         .chain(std::io::stderr());
 
-    // Default noise suppression — applied to the stdout chain only. The file chain
+    // Default noise suppression, applied to the stdout chain only. The file chain
     // intentionally keeps these at Debug so error reports include them.
     for (module, level) in default_noise_overrides() {
         stdout_chain = stdout_chain.level_for(module, level);
@@ -267,7 +267,7 @@ type TestBuffer = std::sync::Arc<Mutex<Vec<u8>>>;
 /// stdout / file capture buffers.
 #[cfg(test)]
 struct TestDispatch {
-    /// Forwarded from `Dispatch::into_log()` — fern's effective level ceiling. Tests
+    /// Forwarded from `Dispatch::into_log()`: fern's effective level ceiling. Tests
     /// don't need it but `into_log()` returns it anyway.
     #[allow(dead_code, reason = "Returned by fern; useful for tests that want to assert it")]
     filter: log::LevelFilter,
@@ -360,7 +360,7 @@ impl Write for SharedBufferWriter {
 mod tests {
     use super::*;
 
-    /// All dispatch tests touch the process-global `STDOUT_THRESHOLD` — serialize them
+    /// All dispatch tests touch the process-global `STDOUT_THRESHOLD`. Serialize them
     /// with a single mutex so parallel test runs don't see each other's threshold flips.
     fn test_lock() -> std::sync::MutexGuard<'static, ()> {
         static LOCK: Mutex<()> = Mutex::new(());
@@ -370,7 +370,7 @@ mod tests {
     /// Synthesizes a `log::Record` and sends it through the test logger. Avoids the
     /// global `log` facade so tests are isolated.
     fn dispatch(logger: &dyn log::Log, level: log::Level, target: &str, message: &str) {
-        // `format_args!` borrows from temporaries — keep them alive across the call.
+        // `format_args!` borrows from temporaries. Keep them alive across the call.
         let args = format_args!("{message}");
         let record = log::Record::builder().level(level).target(target).args(args).build();
         if logger.enabled(record.metadata()) {
@@ -384,7 +384,7 @@ mod tests {
     }
 
     /// The headline: a Debug record reaches the file chain but is dropped from stdout
-    /// when stdout is at its Info default. Per-output filtering — the whole point of
+    /// when stdout is at its Info default. Per-output filtering: the whole point of
     /// this rewrite.
     #[test]
     fn debug_record_hits_file_only() {
@@ -414,7 +414,7 @@ mod tests {
     }
 
     /// Verbose toggle flip: bumping stdout to Debug starts capturing what was being
-    /// dropped. No dispatch rebuild — same logger instance, AtomicU8 update only.
+    /// dropped. No dispatch rebuild: same logger instance, AtomicU8 update only.
     #[test]
     fn stdout_threshold_flip_admits_debug() {
         let _g = test_lock();
@@ -444,7 +444,7 @@ mod tests {
         assert!(buf_to_string(&d.file).is_empty());
     }
 
-    /// RUST_LOG per-module overrides apply to stdout only — the file chain stays at
+    /// RUST_LOG per-module overrides apply to stdout only. The file chain stays at
     /// Debug regardless. So `RUST_LOG=cmdr_lib::test=warn` silences this module on the
     /// terminal while the file still gets the full Info/Debug stream.
     #[test]
@@ -468,7 +468,7 @@ mod tests {
     }
 
     /// File-chain timestamps must be ISO 8601 with millisecond precision and a `±HH:MM`
-    /// offset. Triage reads logs from arbitrary timezones — a bare `HH:MM:SS.mmm` with
+    /// offset. Triage reads logs from arbitrary timezones. A bare `HH:MM:SS.mmm` with
     /// no date or offset is impossible to correlate with anything else.
     #[test]
     fn file_timestamp_is_iso8601_with_offset() {

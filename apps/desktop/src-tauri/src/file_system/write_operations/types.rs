@@ -180,7 +180,7 @@ pub struct WriteCompleteEvent {
 /// is the rendered user-facing copy (title + explanation + suggestion + category)
 /// produced by the same `friendly_error_from_volume_error` + `enrich_with_provider`
 /// pipeline the listing-error path uses. When `friendly` is `None`, the FE falls
-/// back to variant-based messages (`transfer-error-messages.ts`) — that branch
+/// back to variant-based messages (`transfer-error-messages.ts`). That branch
 /// stays in place for local-FS error paths that bypass `VolumeError`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -678,7 +678,7 @@ pub trait OperationEventSink: Send + Sync {
     fn emit_source_item_done(&self, event: WriteSourceItemDoneEvent);
 }
 
-/// Tauri-backed event sink — calls `app.emit()` for each event.
+/// Tauri-backed event sink: calls `app.emit()` for each event.
 pub struct TauriEventSink {
     app: tauri::AppHandle,
 }
@@ -716,7 +716,7 @@ impl OperationEventSink for TauriEventSink {
     }
 }
 
-/// Test event sink — stores events for inspection.
+/// Test event sink: stores events for inspection.
 #[cfg(test)]
 #[allow(
     dead_code,

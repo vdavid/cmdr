@@ -60,7 +60,7 @@ pub struct PaneState {
     /// while the user is typing for in-directory navigation. Lets MCP-driven
     /// E2E tests drive and assert the feature without poking at the DOM.
     ///
-    /// Note: cannot use `skip_serializing_if` here — specta's unified-phase
+    /// Note: cannot use `skip_serializing_if` here, because specta's unified-phase
     /// serde validator rejects conditional omission. The field is always
     /// present in the wire format (as `null` when inactive); the YAML
     /// resource layer suppresses the section when it's `None`.
@@ -81,7 +81,7 @@ pub struct TypeToJumpInfo {
     pub buffer: String,
     /// Indicator chip is visible (in either active or stale state).
     pub indicator_visible: bool,
-    /// Indicator is in the dimmed "stale" state — buffer cleared but the
+    /// Indicator is in the dimmed "stale" state: buffer cleared but the
     /// chip hasn't hidden yet. Next keystroke starts fresh.
     pub indicator_stale: bool,
     /// Name of the file the last successful match landed on, if any. Lets
@@ -155,7 +155,7 @@ impl PaneStateStore {
 }
 
 /// Tauri command to update left pane state from frontend.
-/// Preserves `tabs` — those are synced separately via `update_pane_tabs`.
+/// Preserves `tabs` (those are synced separately via `update_pane_tabs`).
 #[tauri::command]
 #[specta::specta]
 pub fn update_left_pane_state(app: AppHandle, state: PaneState) {
@@ -168,7 +168,7 @@ pub fn update_left_pane_state(app: AppHandle, state: PaneState) {
 }
 
 /// Tauri command to update right pane state from frontend.
-/// Preserves `tabs` — those are synced separately via `update_pane_tabs`.
+/// Preserves `tabs` (those are synced separately via `update_pane_tabs`).
 #[tauri::command]
 #[specta::specta]
 pub fn update_right_pane_state(app: AppHandle, state: PaneState) {

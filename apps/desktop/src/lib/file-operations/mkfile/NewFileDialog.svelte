@@ -59,7 +59,7 @@
             return
         }
 
-        // Sync checks passed — clear any previous error, then run async conflict check
+        // Sync checks passed. Clear any previous error, then run async conflict check.
         errorMessage = ''
 
         isChecking = true

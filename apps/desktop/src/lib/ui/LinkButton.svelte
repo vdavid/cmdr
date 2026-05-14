@@ -1,11 +1,11 @@
 <!--
   Link-styled element. Renders <button> for in-app actions (default) or <a> when
-  `href` is set. Owns the only sanctioned `cursor: pointer` in the app — Cmdr
+  `href` is set. Owns the only sanctioned `cursor: pointer` in the app; Cmdr
   globally sets `cursor: default` on `html` and `<a>` for native macOS feel.
 
   When using `href`: the URL is decorative (for screen readers, right-click "Copy
   link"). Always intercept the click via `onclick` and route through
-  `openExternalUrl()` — Tauri blocks raw `<a>` navigation. The eslint disable for
+  `openExternalUrl()`. Tauri blocks raw `<a>` navigation. The eslint disable for
   `svelte/no-navigation-without-resolve` is intentional here: that rule wants
   SvelteKit's `resolve()`, which doesn't apply to externally-intercepted URLs.
 -->
@@ -55,7 +55,7 @@
         border: none;
         padding: 0;
         /* Cmdr sets `cursor: default` globally on `html` and `a` for native feel.
-           Links opt back in here — the only sanctioned `cursor: pointer` in the app. */
+           Links opt back in here: the only sanctioned `cursor: pointer` in the app. */
         /* stylelint-disable-next-line declaration-property-value-disallowed-list */
         cursor: pointer;
     }
@@ -63,7 +63,7 @@
     .link-button:hover {
         /* Keep the a11y-safe accent-text color on hover; the lighter
            --color-accent-hover doesn't meet 4.5:1 on white. Underline is enough
-           affordance — already present in the resting state. */
+           affordance, already present in the resting state. */
         text-decoration: underline;
     }
 

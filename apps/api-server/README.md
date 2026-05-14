@@ -34,8 +34,8 @@ in [CLAUDE.md](CLAUDE.md).
 7. **Paddle (both environments)**: Create notification destination → webhook URL, subscribe to `transaction.completed`.
    - Sandbox: `https://unsickerly-acclivitous-lala.ngrok-free.dev/webhook/paddle` (for local dev via ngrok)
    - Live: `https://api.getcmdr.com/webhook/paddle`
-8. **Cloudflare**: Set `CLOUDFLARE_API_TOKEN` — see [cloudflare.md](../../docs/tooling/cloudflare.md#api-token).
-9. **Wrangler secrets** (deployed worker — live values):
+8. **Cloudflare**: Set `CLOUDFLARE_API_TOKEN` (see [cloudflare.md](../../docs/tooling/cloudflare.md#api-token)).
+9. **Wrangler secrets** (deployed worker, live values):
    ```
    npx wrangler secret put PADDLE_WEBHOOK_SECRET_LIVE
    npx wrangler secret put PADDLE_WEBHOOK_SECRET_SANDBOX
@@ -47,7 +47,7 @@ in [CLAUDE.md](CLAUDE.md).
    npx wrangler secret put PRICE_ID_COMMERCIAL_SUBSCRIPTION # live price ID
    npx wrangler secret put PRICE_ID_COMMERCIAL_PERPETUAL   # live price ID
    ```
-10. **`.dev.vars`** (local dev — sandbox values): see [CLAUDE.md](CLAUDE.md#configuration) for the full table.
+10. **`.dev.vars`** (local dev, sandbox values): see [CLAUDE.md](CLAUDE.md#configuration) for the full table.
 11. Save `keys/private.key` in a secure store, then delete it from the filesystem.
 12. Deploy: `cd apps/api-server && npx wrangler deploy`
 
@@ -83,6 +83,6 @@ temporarily change the default payment link to `http://localhost:3333` in the sa
 
 ## Architecture decisions
 
-- Payment provider: Paddle (Merchant of Record) — see [CLAUDE.md](CLAUDE.md) for rationale
-- License model: BSL 1.1 with free personal use — see [CLAUDE.md](CLAUDE.md)
-- [CLAUDE.md](CLAUDE.md) — full technical reference
+- Payment provider: Paddle (Merchant of Record). See [CLAUDE.md](CLAUDE.md) for rationale.
+- License model: BSL 1.1 with free personal use. See [CLAUDE.md](CLAUDE.md).
+- [CLAUDE.md](CLAUDE.md): full technical reference

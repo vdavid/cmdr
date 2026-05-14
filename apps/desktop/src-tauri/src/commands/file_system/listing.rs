@@ -63,7 +63,7 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> TimedOut<bo
         match tokio::time::timeout(PATH_EXISTS_TIMEOUT, volume.exists(Path::new(&path_for_check))).await {
             Ok(exists) => {
                 // SMB volume just transitioned to `Disconnected`? The `false` we got back
-                // is meaningless — surface it as a timeout-equivalent so callers know.
+                // is meaningless. Surface it as a timeout-equivalent so callers know.
                 if !exists && is_smb && volume.smb_connection_state().is_none() {
                     return TimedOut {
                         data: false,
@@ -105,7 +105,7 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> TimedOut<bo
 // On-demand virtual scrolling API
 // ============================================================================
 
-/// Synchronous version — prefer `list_directory_start_streaming` for non-blocking operation.
+/// Synchronous version. Prefer `list_directory_start_streaming` for non-blocking operation.
 #[tauri::command]
 #[specta::specta]
 pub async fn list_directory_start(
@@ -225,10 +225,10 @@ pub fn get_total_count(listing_id: String, include_hidden: bool) -> Result<usize
 /// The FE applies chrome + clamp on top.
 ///
 /// Error mapping (consumed by the FE):
-/// - `font_metrics_not_ready` — at least one column had no measurable filename
+/// - `font_metrics_not_ready`: at least one column had no measurable filename
 ///   in the font cache. FE retries after `ensureFontMetricsLoaded` resolves.
-/// - `invalid_items_per_column` — caller sent 0; FE clamps to >= 1 normally.
-/// - `listing_not_found:{id}` — listing already ended (or never started).
+/// - `invalid_items_per_column`: caller sent 0; FE clamps to >= 1 normally.
+/// - `listing_not_found:{id}`: listing already ended (or never started).
 /// - Anything else is a pass-through (cache-lock poisoning etc.).
 #[tauri::command]
 #[specta::specta]
@@ -289,7 +289,7 @@ pub fn get_file_at(listing_id: String, index: usize, include_hidden: bool) -> Re
 }
 
 /// Gets file paths at specific frontend indices from a cached listing (batch version of path extraction).
-/// Handles the parent ".." offset internally — callers pass frontend indices.
+/// Handles the parent ".." offset internally; callers pass frontend indices.
 #[tauri::command]
 #[specta::specta]
 pub fn get_paths_at_indices(

@@ -5,13 +5,13 @@ llama-server process, inference client with provider routing).
 
 ## Architecture
 
-- **State**: `ai-state.svelte.ts` — Reactive AI status, download progress, Tauri event listeners
-- **Toast wiring**: `ai-toast-sync.svelte.ts` — Reactively syncs state to toast via `$effect`
-- **Toast content**: `AiToastContent.svelte` — Install flow UI (offer → downloading → installing → ready)
+- **State**: `ai-state.svelte.ts`: Reactive AI status, download progress, Tauri event listeners
+- **Toast wiring**: `ai-toast-sync.svelte.ts`: Reactively syncs state to toast via `$effect`
+- **Toast content**: `AiToastContent.svelte`: Install flow UI (offer → downloading → installing → ready)
 - **Backend**: See `src-tauri/src/ai/` for model download, llama-server lifecycle, inference client
 
 `ai-state.svelte.ts` manages state and exports handlers. `ai-toast-sync.svelte.ts` uses a `$effect` to reactively watch
-`aiState.notificationState` and sync the toast — no manual notification needed after state mutations.
+`aiState.notificationState` and sync the toast; no manual notification needed after state mutations.
 `AiToastContent.svelte` imports `getAiState` and handlers directly from `ai-state.svelte.ts`. No circular dependency
 because `ai-state.svelte.ts` never imports from `ai-toast-sync.svelte.ts` or `AiToastContent.svelte`. Both are called
 from `(main)/+layout.svelte`: `initAiToastSync()` synchronously in `onMount` (before the async IIFE), and
@@ -40,11 +40,11 @@ of the modal. `initAiState()` seeds `aiState.onboarded` from `loadSettings().isO
 
 `notifyAiOnboardingComplete()` is called from `routes/(main)/+page.svelte` whenever the FDA prompt closes (Allow or Deny
 path) or for legacy users who never saw the prompt. It flips `onboarded` and, if `pendingOffer` is true, surfaces the
-offer right then. The Allow path also restarts the app — on next launch `isOnboarded` is already true so the gate
+offer right then. The Allow path also restarts the app; on next launch `isOnboarded` is already true so the gate
 doesn't engage at all.
 
 This mirrors the updater module's pattern in `$lib/updates/updater.svelte.ts` (`onboarded` + `notifyOnboardingComplete`)
-— same gate, same opening event, two independent toasts.
+Same gate, same opening event, two independent toasts.
 
 ### 7-day dismissal, permanent opt-out
 
@@ -64,22 +64,22 @@ hides suggestions section (no error shown). Feature degrades gracefully.
 ### Download resumption via HTTP Range
 
 Model download supports HTTP Range header for resume after interruption. No SHA256 verification (HuggingFace doesn't
-provide checksums) — file size check only.
+provide checksums); file size check only.
 
 ## Gotchas
 
 - **`initAiToastSync()` must be called synchronously in `onMount`**: It uses `$effect()`, which requires Svelte's
   reactive context. Calling it after an `await` (inside an async callback) causes `effect_orphan` because the reactive
-  context is gone. It runs before `initAiState()` completes — the initial `$effect` fires with `hidden` state (no-op),
+  context is gone. It runs before `initAiState()` completes; the initial `$effect` fires with `hidden` state (no-op),
   then re-fires reactively when `initAiState()` changes the notification state.
 - **Downloading toast remembers user dismissal**: `aiState.downloadToastUserDismissed` is set when the user clicks X on
   the downloading toast. While true, `ai-toast-sync.svelte.ts` won't re-add the toast even if the effect re-runs. The X
-  only hides the toast — the Rust download loop in `manager.rs` (`do_download`) keeps going because nothing sets
+  only hides the toast; the Rust download loop in `manager.rs` (`do_download`) keeps going because nothing sets
   `cancel_requested`. Only the inline "Cancel" button calls `cancelAiDownload()` and aborts the actual download. The
   flag resets in `handleDownload()` so the next download run shows the toast again. Other state transitions (offer,
-  installing, ready, starting) ignore the flag and always render — they're fresh signals.
+  installing, ready, starting) ignore the flag and always render; they're fresh signals.
 - **Status transitions are frontend-driven**: Backend emits `ai-download-progress` and `ai-install-complete` events.
-  Frontend interprets these to update `aiStatus`. Backend has no "status" concept — just `AiState` (installed/port/pid).
+  Frontend interprets these to update `aiStatus`. Backend has no "status" concept; just `AiState` (installed/port/pid).
 - **llama-server is NOT auto-restarted**: Health monitoring (periodic restart on crash) is deferred. If server crashes,
   it stays down until app restart. User sees "AI unavailable."
 - **Model switch requires app restart**: Changing selected model in Settings requires download + restart. No hot-swap.

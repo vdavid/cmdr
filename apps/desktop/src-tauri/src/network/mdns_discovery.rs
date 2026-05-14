@@ -111,7 +111,7 @@ pub fn stop_discovery() {
     }
 }
 
-/// Main event loop — maps mdns-sd events to the existing network module callbacks.
+/// Main event loop: maps mdns-sd events to the existing network module callbacks.
 fn process_events(receiver: Receiver<ServiceEvent>) {
     let mut initial_scan_complete = false;
 
@@ -123,8 +123,8 @@ fn process_events(receiver: Receiver<ServiceEvent>) {
         match event {
             ServiceEvent::SearchStarted(stype) => {
                 // mdns-sd sends SearchStarted on every periodic re-query, not just once.
-                // Only transition to Searching before the initial scan is complete —
-                // after that, we stay in Active to avoid resetting the UI spinner.
+                // Only transition to Searching before the initial scan is complete.
+                // After that, we stay in Active to avoid resetting the UI spinner.
                 if !initial_scan_complete {
                     debug!("mDNS SearchStarted: {}", stype);
                     on_discovery_state_changed(DiscoveryState::Searching, &app_handle);
@@ -149,7 +149,7 @@ fn process_events(receiver: Receiver<ServiceEvent>) {
 
                 // Transition to Active on the first found host. The old NSNetServiceBrowser
                 // code used the `moreComing` flag for this, but mdns-sd doesn't expose that
-                // concept. Triggering on the first host is a good approximation — the user
+                // concept. Triggering on the first host is a good approximation: the user
                 // sees a host, so the "Searching..." spinner should stop.
                 if !initial_scan_complete {
                     initial_scan_complete = true;
@@ -188,7 +188,7 @@ fn process_events(receiver: Receiver<ServiceEvent>) {
         }
     }
 
-    // Channel closed — daemon was shut down
+    // Channel closed: daemon was shut down
     debug!("mDNS event loop ended");
 }
 

@@ -1,19 +1,19 @@
 # SMB2 migration plan
 
 Replace the `smb` + `smb-rpc` crates with `smb2` (David's own pure-Rust SMB2/3 client) for share listing. This is phase
-1 — a drop-in replacement for the current share enumeration. Phase 2 (direct SMB I/O bypassing macOS mount) is out of
+1, a drop-in replacement for the current share enumeration. Phase 2 (direct SMB I/O bypassing macOS mount) is out of
 scope but this migration unblocks it.
 
 ## Why
 
 - **Single dependency** instead of two (`smb` + `smb-rpc`), both of which have pinning headaches (`sspi` 0.18.9 auth
   bug, `smb-rpc` exact version pin).
-- **Clean share data** — `smb2::ShareInfo` has proper `String` fields. The current code parses NDR debug-format strings
+- **Clean share data**: `smb2::ShareInfo` has proper `String` fields. The current code parses NDR debug-format strings
   via `{:?}` hacks (`clean_ndr_string`, `extract_share_name`). That all goes away.
-- **Typed errors** — `smb2::Error` has `Auth`, `Timeout`, `Disconnected`, `Protocol { status }` variants. Current code
+- **Typed errors**: `smb2::Error` has `Auth`, `Timeout`, `Disconnected`, `Protocol { status }` variants. Current code
   does string pattern matching on error messages ("logon failure", "access denied", "0xc000006d"). We can replace that
   with proper match arms.
-- **Unblocks phase 2** — `smb2` has `read_file_pipelined`, `write_file_pipelined`, streaming I/O, directory watching —
+- **Unblocks phase 2**: `smb2` has `read_file_pipelined`, `write_file_pipelined`, streaming I/O, directory watching,
   everything needed to bypass macOS mount for ~4x faster file ops.
 
 ## Scope
@@ -27,13 +27,13 @@ fallback, and UI behavior.
 
 | Concept          | Current (`smb` 0.11.1 + `smb-rpc`)                                               | New (`smb2`)                                                                                         |
 | ---------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Client creation  | `Client::new(ClientConfig)` — shared client, connections by server name          | `SmbClient::connect(ClientConfig)` — one owned client per connection                                 |
-| Connect          | `client.connect_to_address(name, addr)` + `client.ipc_connect(name, user, pass)` | `SmbClient::connect(config)` — single call, addr + creds in config                                   |
+| Client creation  | `Client::new(ClientConfig)` (shared client, connections by server name)          | `SmbClient::connect(ClientConfig)` (one owned client per connection)                                 |
+| Connect          | `client.connect_to_address(name, addr)` + `client.ipc_connect(name, user, pass)` | `SmbClient::connect(config)`: single call, addr + creds in config                                    |
 | List shares      | `client.list_shares(server_name)` → `Vec<ShareInfo1>` (NDR types)                | `client.list_shares()` → `Vec<smb2::ShareInfo>` (**already filtered** to disk shares, clean strings) |
-| Share type check | `format!("{:?}", share.share_type).contains("Disk")`                             | Not needed — `list_shares()` pre-filters                                                             |
+| Share type check | `format!("{:?}", share.share_type).contains("Disk")`                             | Not needed (`list_shares()` pre-filters)                                                             |
 | Error handling   | `err.to_string()` → string pattern matching                                      | `match err { smb2::Error::Auth { .. } => ... }`                                                      |
 | Config           | `config.connection.allow_unsigned_guest_access = true`                           | `ClientConfig { username: "Guest".into(), password: "".into(), addr, timeout, .. }`                  |
-| Mutability       | `&Client` (shared/immutable reference)                                           | `&mut SmbClient` (owned, mutable — one connection per client)                                        |
+| Mutability       | `&Client` (shared/immutable reference)                                           | `&mut SmbClient` (owned, mutable, one connection per client)                                         |
 
 **Important**: `smb2::SmbClient::list_shares(&mut self)` requires mutable access. Since smb2 uses one client per
 connection (no shared state), functions should own or mutably borrow the `SmbClient`.
@@ -45,7 +45,7 @@ to Cmdr's `ShareInfo`.
 
 ### Milestone 1: Swap the dependency and rewrite share listing
 
-These files need changes — listed in dependency order so each builds on the previous.
+These files need changes, listed in dependency order so each builds on the previous.
 
 #### 1. `apps/desktop/src-tauri/Cargo.toml`
 
@@ -59,12 +59,12 @@ These files need changes — listed in dependency order so each builds on the pr
 
 #### 2. `apps/desktop/src-tauri/src/lib.rs`
 
-- Remove `use smb as _;` (line 27) and `use smb_rpc as _;` (line 30) — these just kept the old crates linked.
+- Remove `use smb as _;` (line 27) and `use smb_rpc as _;` (line 30): these just kept the old crates linked.
 - Update log level filter: change `.level_for("smb", log::LevelFilter::Warn)` (line 260) to
   `.level_for("smb2", log::LevelFilter::Warn)`.
-- Remove `.level_for("sspi", log::LevelFilter::Warn)` (line 261) — smb2 doesn't use sspi.
+- Remove `.level_for("sspi", log::LevelFilter::Warn)` (line 261): smb2 doesn't use sspi.
 
-#### 3. `apps/desktop/src-tauri/src/network/smb_util.rs` — simplify drastically
+#### 3. `apps/desktop/src-tauri/src/network/smb_util.rs`: simplify drastically
 
 - **Replace `filter_disk_shares`** with a **`convert_shares`** function: accept `Vec<smb2::ShareInfo>`, return
   `Vec<ShareInfo>` (Cmdr's type). `smb2::SmbClient::list_shares()` already filters to disk shares and strips `$` shares
@@ -96,9 +96,9 @@ These files need changes — listed in dependency order so each builds on the pr
   benefit.
 
   **Note**: `smb2::Error` doesn't implement `Clone` (because `Error::Io` wraps `std::io::Error`). The mapping consumes
-  the error or borrows it — either works since we extract strings/status codes into Cmdr's `ShareListError`.
+  the error or borrows it. Either works since we extract strings/status codes into Cmdr's `ShareListError`.
 
-#### 4. `apps/desktop/src-tauri/src/network/smb_connection.rs` — rewrite or inline into smb_client.rs
+#### 4. `apps/desktop/src-tauri/src/network/smb_connection.rs`: rewrite or inline into smb_client.rs
 
 This is the biggest change. The current code uses smb-rs's shared `Client` model. smb2 uses owned `SmbClient`.
 
@@ -106,27 +106,27 @@ With smb2, the multi-step "establish connection → IPC connect → list shares"
 Each function becomes ~5-10 lines. **Consider inlining these into `smb_client.rs` and deleting `smb_connection.rs`
 entirely** to reduce file sprawl. If we keep the file, the changes are:
 
-- **Delete** `establish_smb_connection` — smb2 handles connection in `connect()`.
+- **Delete** `establish_smb_connection`: smb2 handles connection in `connect()`.
 - **Rewrite** `try_list_shares_as_guest`:
   - Build `addr` string as `"{ip_or_hostname}:{port}"`. **Critical**: when using hostname (no IP available), strip the
-    `.local` suffix from the addr itself — smb2's `Connection::connect()` extracts the server name from the addr string
+    `.local` suffix from the addr itself, because smb2's `Connection::connect()` extracts the server name from the addr string
     and uses it in the UNC path `\\server\IPC$`. Passing `"foo.local:445"` creates `\\foo.local\IPC$`, which some
     servers reject. Pass `"foo:445"` instead.
   - Create `smb2::ClientConfig { addr, username: "Guest".into(), password: String::new(), timeout, .. }`.
   - Call `SmbClient::connect(config).await?`.
   - Call `client.list_shares().await?`.
   - Return type changes from `Result<Vec<ShareInfo1>, String>` to `Result<Vec<smb2::ShareInfo>, smb2::Error>`.
-  - Remove the `tokio::time::timeout` wrapper — smb2's `ClientConfig.timeout` handles the TCP connect timeout. Keep an
+  - Remove the `tokio::time::timeout` wrapper: smb2's `ClientConfig.timeout` handles the TCP connect timeout. Keep an
     outer timeout around the full `connect + list_shares` sequence as a safety net (set smb2's config timeout to
     `timeout - 2s`, outer to `timeout`, so smb2's fires first and gives typed `Error::Timeout`).
 - **Rewrite** `try_list_shares_authenticated`:
   - Same pattern but with real username/password in `ClientConfig`.
-  - No need for a "fresh client" workaround — smb2 creates one connection per `SmbClient`, no shared state to leak
+  - No need for a "fresh client" workaround: smb2 creates one connection per `SmbClient`, no shared state to leak
     between attempts.
   - `domain` field in `ClientConfig`: leave empty (default). Current smb-rs code doesn't set domain either. AD
     environments may need this later.
 
-#### 5. `apps/desktop/src-tauri/src/network/smb_client.rs` — adjust orchestration
+#### 5. `apps/desktop/src-tauri/src/network/smb_client.rs`: adjust orchestration
 
 - Remove `use smb::{Client, ClientConfig}`.
 - The `list_shares_smb_rs` function: update to use the rewritten connection functions. The function's structure stays
@@ -134,27 +134,27 @@ entirely** to reduce file sprawl. If we keep the file, the changes are:
   - Error types change: the functions now return `smb2::Error`, not `String`.
   - `is_auth_error(&e)` now takes `&smb2::Error`.
   - `classify_error(&e)` now takes `&smb2::Error`.
-  - `filter_disk_shares(shares)` becomes `convert_shares(shares)` — just type mapping, no filtering.
+  - `filter_disk_shares(shares)` becomes `convert_shares(shares)`: just type mapping, no filtering.
 
-#### 6. `apps/desktop/src-tauri/examples/docker_smb_test.rs` — update or delete
+#### 6. `apps/desktop/src-tauri/examples/docker_smb_test.rs`: update or delete
 
 This example uses `smb::{Client, ClientConfig}` (line 10). After removing the `smb` dependency, it won't compile. Either
 rewrite it to use smb2, or delete it if the SMB test containers have better test coverage elsewhere.
 
 #### 7. Files that don't change
 
-- `smb_types.rs` — Cmdr's own types, no smb-rs references.
-- `smb_smbutil.rs` — shells out to CLI tools, no smb-rs references.
-- `smb_smbclient.rs` — shells out to smbclient, no smb-rs references.
-- `smb_cache.rs` — caches `ShareListResult` (Cmdr's own type).
-- `smb_util.rs` helper functions (`service_name_to_hostname`, etc.) — these are in `mod.rs`, not `smb_util.rs`.
+- `smb_types.rs`: Cmdr's own types, no smb-rs references.
+- `smb_smbutil.rs`: shells out to CLI tools, no smb-rs references.
+- `smb_smbclient.rs`: shells out to smbclient, no smb-rs references.
+- `smb_cache.rs`: caches `ShareListResult` (Cmdr's own type).
+- `smb_util.rs` helper functions (`service_name_to_hostname`, etc.): these are in `mod.rs`, not `smb_util.rs`.
 
 ### Milestone 2: Verify and clean up
 
 #### 8. Run checks
 
-- `./scripts/check.sh --check clippy --check rustfmt` — must pass.
-- `cd apps/desktop/src-tauri && cargo nextest run` — all existing network tests must pass.
+- `./scripts/check.sh --check clippy --check rustfmt`: must pass.
+- `cd apps/desktop/src-tauri && cargo nextest run`: all existing network tests must pass.
 - Specifically run: `cargo nextest run smb` to target SMB-related tests.
 
 #### 9. Manual testing against a real SMB server
@@ -162,7 +162,7 @@ rewrite it to use smb2, or delete it if the SMB test containers have better test
 - Start SMB test containers: `apps/desktop/test/smb-servers/start.sh` (containers from smb2's consumer test harness)
 - Run `pnpm dev` with `--features smb-e2e`, browse Network sidebar, verify share listing works (guest and
   authenticated).
-- Verify smbutil fallback works (connect to a Samba server that triggers protocol errors — the Pi container if
+- Verify smbutil fallback works (connect to a Samba server that triggers protocol errors, the Pi container if
   available).
 
 #### 10. E2E tests
@@ -172,7 +172,7 @@ rewrite it to use smb2, or delete it if the SMB test containers have better test
 
 #### 11. Update docs
 
-- `apps/desktop/src-tauri/src/network/CLAUDE.md`: Update "Share listing" section — mention `smb2` instead of
+- `apps/desktop/src-tauri/src/network/CLAUDE.md`: Update "Share listing" section to mention `smb2` instead of
   `smb-rs`/`smb-rpc`. Remove references to NDR parsing hacks. Update the platform strategy table. Remove the `smb-rpc`
   version pin gotcha. Remove the `sspi` 0.18.9 gotcha.
 - `benchmarks/smb/CLAUDE.md`: Add a note that the benchmarks still use the old `smb` crate and are separate from the
@@ -181,16 +181,16 @@ rewrite it to use smb2, or delete it if the SMB test containers have better test
 #### 12. Cargo.lock cleanup
 
 The lock file updates automatically when building after `Cargo.toml` changes. Verify the old `smb`, `smb-rpc`, and
-`sspi` deps are gone from `Cargo.lock` (grep for them). Don't run a blanket `cargo update` — that would also update
+`sspi` deps are gone from `Cargo.lock` (grep for them). Don't run a blanket `cargo update`, as that would also update
 unrelated dependencies.
 
 ## Risks and mitigations
 
 - **smb2 guest auth behavior differs from smb-rs**: smb-rs had an `allow_unsigned_guest_access` config toggle. smb2
-  handles signing negotiation automatically. Test guest access against servers that require signing — if smb2 rejects
+  handles signing negotiation automatically. Test guest access against servers that require signing. If smb2 rejects
   guests where smb-rs allowed them, we need to handle that in the classify_error mapping (map to `SigningRequired`).
 - **smb2's `list_shares` uses RPC internally**: Same as smb-rs. If RPC fails on old Samba servers, the smbutil fallback
-  still catches it — no change in behavior.
+  still catches it, no change in behavior.
 - **Timeout handling**: smb2's `ClientConfig.timeout` covers the TCP connect phase. The `list_shares()` RPC exchange has
   no per-call timeout. Keep the outer `tokio::time::timeout` around the full `connect + list_shares` sequence as a
   safety net. Set smb2's config timeout to `duration - 2s` so it fires first for connect timeouts and gives a typed

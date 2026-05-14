@@ -24,7 +24,7 @@ mod tests {
 
     #[test]
     fn test_is_port_available() {
-        // High port that's likely free — just verify it doesn't panic
+        // High port that's likely free, just verify it doesn't panic
         let _ = is_port_available(49999);
     }
 

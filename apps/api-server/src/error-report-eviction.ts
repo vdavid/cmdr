@@ -4,12 +4,12 @@ import type { Bindings } from './types'
  * Error report bundle eviction.
  *
  * Bookkeeping lives in KV (`ERROR_REPORT_META`), bundles live in R2
- * (`ERROR_REPORTS_BUCKET`). The KV counter is approximate ground truth — refresh
+ * (`ERROR_REPORTS_BUCKET`). The KV counter is approximate ground truth; refresh
  * via `recomputeTotal` whenever exact numbers matter.
  *
  * Key patterns:
- * - `total_bytes` — running byte total across all bundles. Approximate, drift-prone.
- * - `eviction_in_progress` — short-lived (60 s TTL) lock to prevent concurrent eviction.
+ * - `total_bytes`: running byte total across all bundles. Approximate, drift-prone.
+ * - `eviction_in_progress`: short-lived (60 s TTL) lock to prevent concurrent eviction.
  *
  * The R2 key shape is `error-reports/{prod|dev}/{yyyy-mm-dd}/{ERR-XXXXX}-{uuid}.zip`.
  *
@@ -79,7 +79,7 @@ interface ListedObject {
  * - new: `error-reports/{prod|dev}/yyyy-mm-dd/{id}-{uuid}.zip`
  * - legacy: `error-reports/yyyy-mm-dd/{id}-{uuid}.zip`
  *
- * Returns the empty string when the key matches neither shape — that pushes
+ * Returns the empty string when the key matches neither shape; that pushes
  * unrecognized keys to the front of an ascending sort, so they get evicted first.
  *
  * REMOVE-AFTER 2026-08-20: by then the 90-day R2 lifecycle has drained every
@@ -138,7 +138,7 @@ export async function tryEvict(
   try {
     const all = await listAllObjects(env.ERROR_REPORTS_BUCKET)
     // Sort oldest first. The date segment inside the key is the primary signal
-    // (yyyy-mm-dd sorts lexically) — extracted via `extractDateSegment` so the
+    // (yyyy-mm-dd sorts lexically); extracted via `extractDateSegment` so the
     // sort works across both the new `{env}/{date}` layout and the legacy
     // `{date}` layout. R2 `uploaded` breaks ties for same-day uploads.
     all.sort((a, b) => {

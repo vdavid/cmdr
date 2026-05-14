@@ -76,7 +76,7 @@ export interface ListViewAPI {
   getEntryAt(globalIndex: number): FileEntry | undefined
   /** BriefList only */
   handleKeyNavigation?(key: string, event?: KeyboardEvent): number | undefined
-  /** BriefList only — refetch per-column text widths after a listing change. */
+  /** BriefList only: refetch per-column text widths after a listing change. */
   refetchColumnWidths?(): void
   /** FullList only */
   getVisibleItemsCount?(): number

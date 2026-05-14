@@ -118,7 +118,7 @@ pub struct FileEntry {
     /// `size` keeps the within-category numeric sort key (ahead-count for
     /// branches, files-changed for commits, item count for category roots).
     /// Cross-category Size sorting is meaningless and that's an honest
-    /// tradeoff — each cell is self-explaining via tooltip + aria-label.
+    /// tradeoff. Each cell is self-explaining via tooltip + aria-label.
     pub display_size: Option<String>,
     /// Optional rich tooltip string for the Size cell, used when
     /// `display_size` is set. Example: "12 commits ahead, 3 commits behind

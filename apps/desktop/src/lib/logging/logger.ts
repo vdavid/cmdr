@@ -42,7 +42,7 @@ const isDev = import.meta.env.DEV
  * Example: ['fileExplorer', 'dragDrop'] enables debug for those features.
  */
 const debugCategories: string[] = [
-  // Always-on so error-report bundles capture pane-level diagnostics — most
+  // Always-on so error-report bundles capture pane-level diagnostics. Most
   // notably the "dialog didn't open" warn lines in `DualPaneExplorer` (rare,
   // one entry per blocked F2/F7/F8/etc. attempt) plus the existing pane-state
   // debug lines. Volume is low under normal use; tap through if needed.
@@ -102,7 +102,7 @@ async function applyLoggerConfig(verbose: boolean, isReset: boolean): Promise<vo
     lowestLevel: 'debug' | 'info' | 'warning' | 'error'
     sinks: string[]
   }> = [
-    // Single logger at debug level — sink-level filters handle the rest
+    // Single logger at debug level; sink-level filters handle the rest
     {
       category: 'app',
       lowestLevel: isDev || verbose ? 'debug' : 'error',
@@ -125,7 +125,7 @@ async function applyLoggerConfig(verbose: boolean, isReset: boolean): Promise<vo
     sinks: {
       // Console: filtered to info+ by default (debugCategories override at logger level)
       console: withFilter(getConsoleSink(), consoleLevel),
-      // Bridge: passes everything to Rust — RUST_LOG handles filtering there
+      // Bridge: passes everything to Rust. RUST_LOG handles filtering there.
       tauriBridge: getTauriBridgeSink(),
     },
     loggers,
@@ -177,7 +177,7 @@ export async function setVerboseLogging(enabled: boolean): Promise<void> {
   try {
     await commands.setLogLevel(enabled ? 'debug' : 'info')
   } catch {
-    // Backend may not be ready during early startup — silently ignore
+    // Backend may not be ready during early startup; silently ignore
   }
 
   const log = getLogTapeLogger(['app', 'logger'])

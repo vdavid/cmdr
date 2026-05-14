@@ -41,7 +41,7 @@ func NewAnalyzer(vars *VarTable) *Analyzer {
 
 // AnalyzeFile returns contrast findings for one parsed Svelte file.
 //
-// We walk the rules twice — once per mode — maintaining a separate cascade
+// We walk the rules twice (once per mode), maintaining a separate cascade
 // state per mode. Rules tagged with `ModeOnly` contribute only to their own
 // mode's pass.
 func (a *Analyzer) AnalyzeFile(pf *ParsedFile) []Finding {
@@ -142,7 +142,7 @@ func (a *Analyzer) analyzeFileForMode(pf *ParsedFile, mode Mode) []Finding {
 // inheritFrom folds all previously-seen entries whose class set is a subset of
 // `rule`'s, producing a new classState. Source order matters: later rules
 // override earlier ones. Only direct* contributions of each subset entry are
-// merged — inherited values aren't re-propagated, so sibling compound
+// merged (inherited values aren't re-propagated), so sibling compound
 // selectors don't leak each other's inherited defaults.
 func inheritFrom(entries []stateEntry, rule Rule) *classState {
 	out := &classState{}
@@ -193,7 +193,7 @@ func isSubset(small, large []string) bool {
 // stateKeyFor returns the identifier used to group state for a rule's selector.
 // Multi-class compound selectors (`.pill.empty`) get a distinct key from the
 // base class alone. Pseudo-element selectors get their own key. Pseudo-classes
-// (`.pill:hover`) share the base class's state key — hover is a transient
+// (`.pill:hover`) share the base class's state key; hover is a transient
 // runtime state, not a parallel configuration.
 func stateKeyFor(rule Rule) string {
 	sorted := sortedCopy(rule.Classes)

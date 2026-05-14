@@ -30,7 +30,7 @@ function entry(overrides: Partial<FileEntry>): FileEntry {
 
 /**
  * Build a stub `FormattedDate` for tests that don't care about per-component
- * coloring — each half is a single literal segment so `joinSegments`
+ * coloring. Each half is a single literal segment so `joinSegments`
  * reproduces it as the full string.
  */
 function stubDate(left: string, right: string | null = null) {
@@ -62,7 +62,7 @@ describe('computeFullListColumnWidths', () => {
     _setMeasureForTests(fakeMeasure)
     const w = computeFullListColumnWidths({ ...baseArgs, entries: [] })
     // With sortBy='name', none of Ext/Size/Modified are active, so each gets
-    // HEADER_CHROME_INACTIVE (0 — labels sit flush with column-track edges).
+    // HEADER_CHROME_INACTIVE (0, labels sit flush with column-track edges).
     // "Ext" = 21 + 2 (pad) = 23 → clamped to MIN_EXT_WIDTH (28); "Size" = 30 →
     // clamped to MIN_SIZE_WIDTH (40); "Modified" = 58 → clamped to
     // MIN_DATE_WIDTH (70). Floors swallow the pad in the empty-entries case.
@@ -105,7 +105,7 @@ describe('computeFullListColumnWidths', () => {
   it('caps the ext column so a pathological extension cannot dominate the row', () => {
     _setMeasureForTests(fakeMeasure)
     const longExt = 'extension-extension-extension-extension-extension'
-    // Cap sample is "extensionxx" (11 chars × 7 = 77 px) — text only, no chrome.
+    // Cap sample is "extensionxx" (11 chars × 7 = 77 px), text only, no chrome.
     const capped = computeFullListColumnWidths({
       ...baseArgs,
       entries: [entry({ name: `a.${longExt}` })],

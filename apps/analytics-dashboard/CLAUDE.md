@@ -6,9 +6,9 @@ Deployed to Cloudflare Pages at `analdash.getcmdr.com`. Auth via Cloudflare Acce
 ## Stack
 
 - **SvelteKit** with `@sveltejs/adapter-cloudflare` (CF Pages deployment)
-- **Tailwind v4** — CSS-first config in `src/app.css`, dark mode only
-- **uPlot** — lightweight canvas-based charts (line + bar)
-- **Server routes** — all API keys stay server-side, proxied via `+server.ts` / `+page.server.ts`
+- **Tailwind v4**: CSS-first config in `src/app.css`, dark mode only
+- **uPlot**: lightweight canvas-based charts (line + bar)
+- **Server routes**: all API keys stay server-side, proxied via `+server.ts` / `+page.server.ts`
 
 ## Key files
 
@@ -41,7 +41,7 @@ Each source gets its own module under `src/lib/server/sources/`:
 | Module          | Auth                                            | Data                                                                                                                              |
 | --------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `umami.ts`      | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com, getcmdr.com, and getprvw.com                    |
-| `cloudflare.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Download counts, active users by version/arch/country — fetched from worker endpoints (`/admin/downloads`, `/admin/active-users`) |
+| `cloudflare.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Download counts, active users by version/arch/country, fetched from worker endpoints (`/admin/downloads`, `/admin/active-users`) |
 | `paddle.ts`     | Bearer token, cursor pagination                 | Completed transactions, subscriptions by status                                                                                   |
 | `github.ts`     | Optional Bearer token                           | Release download counts per asset; star history (daily + cumulative) for cmdr and mtp-rs via stargazers API with pagination       |
 | `posthog.ts`    | Bearer personal API key                         | Pageview trends via Trends API (EU endpoint)                                                                                      |
@@ -86,17 +86,17 @@ All set as CF Pages secrets, never in code.
 ## Key decisions
 
 **Decision**: Metrics are organized by acquisition stage, not as a cohort funnel. **Why**: Tracking is cookieless and
-anonymous — there's no way to follow an individual from blog visit to download to payment. The stages show independent
+anonymous, so there's no way to follow an individual from blog visit to download to payment. The stages show independent
 aggregate numbers. A true funnel would require cross-site user identity tracking and a cookie banner.
 
 **Decision**: Dark mode only. **Why**: Internal tool, always viewed on a laptop. Saves effort.
 
 **Decision**: Consistent color coding across the dashboard. **Why**: Visual clarity when scanning metrics.
 
-- **Gold (`#ffc206`)**: getcmdr.com / vdavid/cmdr — the primary product
-- **Purple (`#a78bfa`)**: vdavid/mtp-rs — the library repo
-- **Autumn green (`#8faa3b`)**: veszelovszki.com — David's personal site
-- **Cyan (`#22d3ee`)**: getprvw.com — Prvw product site
+- **Gold (`#ffc206`)**: getcmdr.com / vdavid/cmdr (the primary product)
+- **Purple (`#a78bfa`)**: vdavid/mtp-rs (the library repo)
+- **Autumn green (`#8faa3b`)**: veszelovszki.com (David's personal site)
+- **Cyan (`#22d3ee`)**: getprvw.com (Prvw product site)
 
 These colors are used in metric dots, chart strokes, and chart fills. Keep them consistent when adding new UI.
 

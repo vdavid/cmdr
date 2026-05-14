@@ -28,7 +28,7 @@ export async function cacheGet<T>(source: string, range: TimeRange, extra?: stri
       const response = await cache.match(new Request(url))
       if (response) return (await response.json()) as T
     } catch {
-      // Cache API not available (local dev) — fall through to memory cache
+      // Cache API not available (local dev); fall through to memory cache
     }
   }
 

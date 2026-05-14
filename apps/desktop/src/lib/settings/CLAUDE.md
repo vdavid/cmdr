@@ -8,7 +8,7 @@
 backend behavior, you MUST add: (a) a Tauri command on the Rust side (see the mirrored rule in
 `src-tauri/src/settings/CLAUDE.md`), (b) a typed wrapper in `$lib/tauri-commands/settings.ts`, and (c) an
 `onSettingChange` case in `settings-applier.ts` that invokes it. Restart-required is a bug, not a design choice. If the
-setting looks "structural" (like re-opening a TCP connection, rebinding a port, swapping a thread pool) — still
+setting looks "structural" (like re-opening a TCP connection, rebinding a port, swapping a thread pool), still
 live-apply. Reconnect, rebind, restart the worker, whatever it takes. **MUST.** No exceptions.
 
 ## Purpose
@@ -40,7 +40,7 @@ Single source of truth for all settings. Each `SettingDefinition` contains:
 
 `appearance.textSize` (slider 50–200%, default 100%) compounds with the macOS Accessibility > Display > Text Size value
 to produce the effective scale that `lib/text-size.ts` writes to `--font-scale` on `:root`. **Compounding lives in
-exactly one place** — `text-size.ts`'s `computeAndApply()`. The CSS
+exactly one place**: `text-size.ts`'s `computeAndApply()`. The CSS
 `html { font-size: calc(16px * var(--font-scale, 1)) }` plus rem-based `--font-size-*` tokens in `app.css` cover
 typography; `applyDensity()` in `settings-applier.ts` multiplies row-height/icon-size/density-spacing by the same
 `--font-scale` so layout grows with text. After each scale change, `text-size.ts` re-triggers
@@ -50,10 +50,10 @@ typography; `applyDensity()` in `settings-applier.ts` multiplies row-height/icon
 
 Every site that shows a modified date in the UI flows through one entry point:
 
-- **`formatDateForDisplay(ts, format, customFormat, nowMs?)`** in `format-utils.ts` — pure. Returns a `FormattedDate`
+- **`formatDateForDisplay(ts, format, customFormat, nowMs?)`** in `format-utils.ts`: pure. Returns a `FormattedDate`
   with the joined `text` and structured `parts` (an ordered list of `DateSegment`s per half). Each segment carries a
   `text` and an optional `ageClass` covering one of four per-component tiers (year, month, day, time). Handles all four
-  format modes — token-based (`iso`, `short`, `custom`, default) via `applyTokens`, and `system` via
+  format modes: token-based (`iso`, `short`, `custom`, default) via `applyTokens`, and `system` via
   `Intl.DateTimeFormat#formatToParts` (component type comes from `part.type`, not from string-parsing locale output).
 - Per-component coloring rules live in `age-tier-utils.ts`: `tierForYear` colors every year (current → `age-fresh`, last
   → `age-recent`, two back → `age-aging`, three or more back → `age-old`). `tierForMonth` only colors when the year
@@ -61,9 +61,9 @@ Every site that shows a modified date in the UI flows through one entry point:
   three+ days). `tierForTime` only colors when the file's date equals today, distance in full hours. Future timestamps
   in any component clamp to the freshest tier. Segments outside their coloring window carry `ageClass: null`, and the
   renderer leaves them in default text color.
-- **`formattedDate(ts)`** in `reactive-settings.svelte.ts` — reactive wrapper that reads the current setting values.
+- **`formattedDate(ts)`** in `reactive-settings.svelte.ts`: reactive wrapper that reads the current setting values.
   This is the canonical entry point for the rest of the app.
-- **`<DateLabel modifiedAt={ts} />`** in `$lib/ui/DateLabel.svelte` — the render-side equivalent. Use it anywhere a
+- **`<DateLabel modifiedAt={ts} />`** in `$lib/ui/DateLabel.svelte`: the render-side equivalent. Use it anywhere a
   modified date appears in the UI and you don't have special layout needs (status bar, dialogs, search results, etc.).
   It walks `parts.left` / `parts.right` and wraps each segment with a non-null `ageClass` in `<span class={ageClass}>`.
 - `FullList.svelte` is the one consumer that opts out of `<DateLabel>` because its column-alignment story needs the two
@@ -72,7 +72,7 @@ Every site that shows a modified date in the UI flows through one entry point:
 - `buildDateTooltip` in `selection-info-utils.ts` mirrors the renderer for HTML tooltips: it walks segments and wraps
   the colored ones into `<span class="age-…">` directly.
 - The plain-string shortcut `formatDateTime(ts)` is `formattedDate(ts).text`. Use it for tooltips, MCP responses,
-  clipboard copies — anywhere you need a one-line label.
+  clipboard copies, anywhere you need a one-line label.
 
 ### Color palettes (size + date)
 
@@ -81,7 +81,7 @@ applied via `data-size-colors` / `data-date-colors` attributes on `<html>`. Sett
 (`--color-size-*`, `--color-age-*`) live in `app.css`. Date coloring uses four tiers (`age-fresh`, `age-recent`,
 `age-aging`, `age-old`) applied per-component (year, month, day, time) by the helpers in
 `lib/settings/age-tier-utils.ts`. The setting value `app` (renamed from the older `accent`) refers to the user-facing
-"app color" — internally the underlying CSS token is still `--color-accent`.
+"app color" (internally the underlying CSS token is still `--color-accent`).
 
 ### Reactive state (`reactive-settings.svelte.ts`)
 
@@ -93,32 +93,32 @@ applied via `data-size-colors` / `data-date-colors` attributes on `<html>`. Sett
 
 15 section components rendered inside the settings window. `ListingSection` includes:
 
-- `listing.sizeDisplay` — enum (smart/logical/physical), default smart, toggle-group. Reactive getter:
+- `listing.sizeDisplay`: enum (smart/logical/physical), default smart, toggle-group. Reactive getter:
   `getSizeDisplayMode()`.
-- `listing.humanFriendlySizeUnits` — boolean, default true, switch. Reactive getter: `getHumanFriendlySizeUnits()`. ON
+- `listing.humanFriendlySizeUnits`: boolean, default true, switch. Reactive getter: `getHumanFriendlySizeUnits()`. ON
   shows "1.02 MB" in size columns and the SelectionInfo primary size readout; OFF shows raw bytes with thin-space triad
   separators. Volume/disk-space displays, dialogs, and tooltips that already show both formats are unaffected.
-- `listing.sizeMismatchWarning` — boolean, default true, switch. Reactive getter: `getSizeMismatchWarning()`.
+- `listing.sizeMismatchWarning`: boolean, default true, switch. Reactive getter: `getSizeMismatchWarning()`.
 
-`AdvancedSection` includes `advanced.maxLogStorageMb` — number, default 200, range 0–5000, MB suffix. `0` disables log
+`AdvancedSection` includes `advanced.maxLogStorageMb`: number, default 200, range 0–5000, MB suffix. `0` disables log
 storage entirely (the `Folder` target is dropped from the plugin builder, no error reports possible). Toggling between
-`0` and any non-zero value, or raising the cap beyond its baked-in value, requires an app restart — the in-RAM cap
-updates live but the rotation strategy doesn't.
+`0` and any non-zero value, or raising the cap beyond its baked-in value, requires an app restart (the in-RAM cap
+updates live but the rotation strategy doesn't).
 
-`AdvancedSection` also includes `fileExplorer.typeToJump.resetDelay` — number, default 1000 ms, range 300–3000, step
+`AdvancedSection` also includes `fileExplorer.typeToJump.resetDelay`: number, default 1000 ms, range 300–3000, step
 100, ms suffix. Reactive getter: `getTypeToJumpResetDelay()`. The type-to-jump factory in
 `file-explorer/pane/type-to-jump-state.svelte.ts` reads this via its `getResetMs` callback on every keystroke, so slider
 changes take effect on the next keystroke without restart.
 
-`UpdatesSection` includes `updates.errorReports` — boolean, default false, switch. Opt-in for Flow B (auto-send error
+`UpdatesSection` includes `updates.errorReports`: boolean, default false, switch. Opt-in for Flow B (auto-send error
 reports when a user-visible error fires). Flow A (the **Help > Send error report…** menu item and the toast button) is
-always available regardless of this setting — clicking is the consent.
+always available regardless of this setting. Clicking is the consent.
 
 Full list: `AppearanceSection`, `ListingSection`, `FileOperationsSection`, `MtpSection`, `KeyboardShortcutsSection`,
 `NetworkSection`, `LoggingSection`, `McpServerSection`, `UpdatesSection`, `ThemesSection`, `AdvancedSection`,
 `DriveIndexingSection`, `AiSection`, `LicenseSection`, `ViewerSection`.
 
-`NetworkSection` includes `network.enabled` — boolean, default true, switch. The top-of-section toggle. When off, the
+`NetworkSection` includes `network.enabled`: boolean, default true, switch. The top-of-section toggle. When off, the
 volume picker shows "Network (disabled)" and the backend stops mDNS + clears discovered hosts. Below the switch is a
 non-interactive Local Network access info card with a deep link to System Settings > Privacy & Security > Local Network
 (via `openSystemSettingsUrl`). See `network/CLAUDE.md` (frontend and backend) for the full lifecycle.
@@ -127,16 +127,16 @@ non-interactive Local Network access info card with a deep link to System Settin
 backend (via `getAiRuntimeStatus()` and Tauri events) with registry settings (`ai.provider`, `ai.cloudProvider`,
 `ai.cloudProviderConfigs`, etc.). It's split into three files:
 
-- **`AiSection.svelte`** — Thin wrapper. Loads initial AI status, renders the provider toggle (Off / Cloud / Local),
+- **`AiSection.svelte`**: Thin wrapper. Loads initial AI status, renders the provider toggle (Off / Cloud / Local),
   handles provider switching (auto-stops local server when switching away), and conditionally renders one of the two
   sub-sections.
-- **`AiCloudSection.svelte`** — Cloud/API provider config. Provider preset dropdown (`cloud-providers.ts`), per-provider
+- **`AiCloudSection.svelte`**: Cloud/API provider config. Provider preset dropdown (`cloud-providers.ts`), per-provider
   endpoint URL and model stored in `ai.cloudProviderConfigs`, per-provider API key stored in the OS secret store via
   `saveAiApiKey` / `getAiApiKey`. Includes a two-step connection check (`check_ai_connection` Tauri command) that
   auto-triggers on API key or base URL changes (1s debounce), fetches available models from the `/models` endpoint, and
   shows connection status (connected, auth error, unreachable). When models are available, the Model field becomes a
   combobox with filtered dropdown; otherwise it's a plain text input.
-- **`AiLocalSection.svelte`** — Local LLM management. Server lifecycle (start/stop), model download with multi-step
+- **`AiLocalSection.svelte`**: Local LLM management. Server lifecycle (start/stop), model download with multi-step
   install tracking, context window setting with explicit "Apply" button (triggers server restart), RAM gauge (stacked
   bar) showing memory usage relative to system total with warning icons at >70% and >90% projected usage, system memory
   polled every 5 seconds via `get_system_memory_info`, and delete model confirmation dialog.
@@ -160,7 +160,7 @@ controls vertically aligned across rows for visual consistency. The settings win
 percentage-based, not pixel-based.
 
 **When to use `split`:** Setting rows where the control is a select, text input, password input, slider, number input,
-radio group, or combobox — anything that benefits from consistent horizontal alignment.
+radio group, or combobox, anything that benefits from consistent horizontal alignment.
 
 **When NOT to use `split`:**
 
@@ -174,24 +174,24 @@ row intentionally spans the full width.
 
 ### Other files
 
-- **cloud-providers.ts** — Cloud provider preset definitions (OpenAI, Anthropic, Groq, etc.) and per-provider config
+- **cloud-providers.ts**: Cloud provider preset definitions (OpenAI, Anthropic, Groq, etc.) and per-provider config
   helpers (`getProviderConfigs`, `setProviderConfig`, `resolveCloudConfig`). Used by `AiSection` and the startup flow in
   `+layout.svelte` to resolve the effective base URL and model. The API key is fetched separately from the OS secret
   store via `getAiApiKey(providerId)` before calling `configureAi`.
-- **settings-search.ts** — Fuzzy search over setting definitions; returns ranked matches with highlight ranges
-- **settings-applier.ts** — Listens for setting changes and applies side effects (CSS vars, backend config sync)
-- **network-settings.ts** — Network-specific setting helpers (proxy config, SMB auth defaults)
-- **settings-window.ts** — Logic for opening/focusing/closing the settings window (Tauri window management). Accepts an
+- **settings-search.ts**: Fuzzy search over setting definitions; returns ranked matches with highlight ranges
+- **settings-applier.ts**: Listens for setting changes and applies side effects (CSS vars, backend config sync)
+- **network-settings.ts**: Network-specific setting helpers (proxy config, SMB auth defaults)
+- **settings-window.ts**: Logic for opening/focusing/closing the settings window (Tauri window management). Accepts an
   optional `section` array (e.g. `['Network', 'SMB/Network shares']`) to deep-link a specific section. Two delivery
-  paths: (a) new-window — JSON-encoded array on the URL as `?section=...` (JSON because section names can contain `/`,
-  e.g. "SMB/Network shares"); (b) already-open window — emits a `navigate-to-section` Tauri event the settings page
+  paths: (a) new-window: JSON-encoded array on the URL as `?section=...` (JSON because section names can contain `/`,
+  e.g. "SMB/Network shares"); (b) already-open window: emits a `navigate-to-section` Tauri event the settings page
   listens for. The settings page also reads the URL param at mount, so reloads or fresh-opens land on the same section.
-- **format-utils.ts** — Shared formatters used in settings UI (e.g., duration, file-size display strings). Date/time is
-  covered in detail under § "Date display" above — `formatDateForDisplay` is the canonical entry point. Built-in `iso`
+- **format-utils.ts**: Shared formatters used in settings UI (e.g., duration, file-size display strings). Date/time is
+  covered in detail under § "Date display" above. `formatDateForDisplay` is the canonical entry point. Built-in `iso`
   and `short` formats include a `|` internally so the file-list renderer can split the date and time halves into two
   aligned columns; custom format default is `YYYY-MM-DD | HH:mm`. The `'system'` formatter is memoized at module scope
   (constructing `Intl.DateTimeFormat` per call shows up in virtualized scroll profiles).
-- **mcp-main-bridge.ts** — MCP bridge for settings; handles `mcp-get-all-settings` and `mcp-set-setting` round-trip
+- **mcp-main-bridge.ts**: MCP bridge for settings; handles `mcp-get-all-settings` and `mcp-set-setting` round-trip
   events in the main window (always alive), enabling AI agents to query and modify settings without the settings window
   open
 
@@ -233,7 +233,7 @@ API keys live in the OS-native secret store (macOS Keychain, Linux Secret Servic
 Linux without Secret Service) via `crate::secrets`. Access goes through the `saveAiApiKey` / `getAiApiKey` /
 `deleteAiApiKey` / `hasAiApiKey` Tauri commands. `ai.cloudProviderConfigs` in `settings.json` only holds non-secret
 fields (`model`, `baseUrl`). This keeps API keys out of Time Machine, cloud-sync backups, and any tool that mirrors
-`~/Library/Application Support`. Same secret store backs SMB credentials — see `src-tauri/src/secrets/CLAUDE.md`.
+`~/Library/Application Support`. Same secret store backs SMB credentials. See `src-tauri/src/secrets/CLAUDE.md`.
 
 ### Why debounced saves?
 
@@ -276,9 +276,9 @@ Just add to registry and it works.
 
 `hidden: true` on a `SettingDefinition` excludes it from both the main section tree and the Advanced section, but the
 value is still persisted via the same store and accessible via `getSetting`/`setSetting`. Use this for internal flags
-the backend or business logic needs to track but the user shouldn't see — for example, `network.firstTriggerDone`, which
+the backend or business logic needs to track but the user shouldn't see (for example, `network.firstTriggerDone`, which
 records whether we've ever performed a gated network action so subsequent launches can start mDNS eagerly without
-re-prompting.
+re-prompting).
 
 ### Density mapping is internal
 

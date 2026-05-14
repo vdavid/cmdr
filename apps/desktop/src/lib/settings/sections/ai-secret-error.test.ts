@@ -6,7 +6,7 @@ function setUserAgent(value: string): void {
 }
 
 beforeEach(() => {
-  // Default to macOS for tests — overridden case-by-case below. `isMacOS()` reads `userAgent`.
+  // Default to macOS for tests; overridden case-by-case below. `isMacOS()` reads `userAgent`.
   setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36')
 })
 

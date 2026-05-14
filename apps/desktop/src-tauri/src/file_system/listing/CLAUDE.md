@@ -17,7 +17,7 @@ Backend directory reading, caching, sorting, and streaming for the file explorer
   `ListingNotFound`. Wrapped by the `get_brief_column_text_widths` IPC command in `commands/file_system/listing.rs`.
 - **sorting.rs** – `SortColumn`, `SortOrder`, `sort_entries()`
 - **metadata.rs** – `FileEntry` struct, macOS extended metadata. `FileEntry` has `physical_size: Option<u64>` (populated from `st_blocks * 512`) and `recursive_physical_size: Option<u64>` (populated from drive index)
-- **fuzzy_jump.rs** – `find_first_match()` pure function powering the in-directory type-to-jump feature (Tauri command `find_first_fuzzy_match` in `commands/file_system/listing.rs`). Uses `nucleo-matcher` for smart-case fuzzy scoring; ties resolve to the lower index. The `..` parent entry is not in the cache (frontend prepends it), so no special-casing. Returns a **visible-space** index — counted over the same `visible_entries(...)` sequence as `get_file_at` / `get_file_range`, so the frontend can use the result as a cursor index directly (plus the `+1` parent-entry offset when `hasParent`). Logs each call to `target: "type_to_jump"`.
+- **fuzzy_jump.rs** – `find_first_match()` pure function powering the in-directory type-to-jump feature (Tauri command `find_first_fuzzy_match` in `commands/file_system/listing.rs`). Uses `nucleo-matcher` for smart-case fuzzy scoring; ties resolve to the lower index. The `..` parent entry is not in the cache (frontend prepends it), so no special-casing. Returns a **visible-space** index, counted over the same `visible_entries(...)` sequence as `get_file_at` / `get_file_range`, so the frontend can use the result as a cursor index directly (plus the `+1` parent-entry offset when `hasParent`). Logs each call to `target: "type_to_jump"`.
 
 ### Data flow
 
@@ -67,7 +67,7 @@ Frontend                          Backend
 ## Key decisions
 
 **Decision**: Streaming with background task, not chunked IPC
-**Why**: Chunked approach required multiple IPC calls, complex state tracking. Streaming spawns a `tokio::spawn` async task, emits events. Frontend stays responsive—Tab works, ESC cancels via `tokio::select!`-style polling.
+**Why**: Chunked approach required multiple IPC calls, complex state tracking. Streaming spawns a `tokio::spawn` async task, emits events. Frontend stays responsive: Tab works, ESC cancels via `tokio::select!`-style polling.
 
 **Decision**: Cancellation via `AtomicBool` checked per-entry
 **Why**: Network folders iterate slowly (seconds per entry). Checking on each iteration ensures responsive cancellation. ESC → cancel within ~100ms.
@@ -112,7 +112,7 @@ widest filename.
 **Decision**: Re-sort `new_entries` before `compute_diff` in full re-read path
 **Why**: `list_directory_core` always returns entries sorted by Name/Asc, but the cached listing may use a different sort. Without re-sorting, diff indices would be wrong (comparing two differently-ordered lists). The re-sort aligns `new_entries` with the cached sort order so `compute_diff` produces correct indices.
 
-**Decision**: File metadata tiers — Tier 1-2 eagerly (stat + uid→name), Tier 3-4 deferred.
+**Decision**: File metadata tiers: Tier 1-2 eagerly (stat + uid→name), Tier 3-4 deferred.
 **Why**: With 50k+ files, each metadata piece has different performance cost. Tier 1 (name, size, dates, permissions) is free from a single `stat()`. Tier 2 (owner name, symlink target) is ~1μs and cacheable. Tier 3 (macOS Spotlight/NSURL metadata) costs ~50-100μs/file. Tier 4 (EXIF, PDF) costs 1-100ms+ and reads file content. See [full tier table](../../../../../../docs/notes/file-metadata-tiers.md).
 
 ## Gotchas
@@ -126,22 +126,22 @@ since it only does cache lookups and `stat` calls via `get_single_entry`.
 ### Cache helpers (caching.rs)
 
 Used by the watcher's incremental path and synthetic mkdir to patch listings without full re-reads:
-- `find_listings_for_path(path)` — returns all listing IDs whose directory matches the given path (multiple panes/tabs may show the same directory)
-- `find_listings_for_path_on_volume(volume_id, path)` — same, but also filters by volume ID. Prevents false matches when two volumes serve overlapping paths.
-- `insert_entry_sorted(listing_id, entry)` — inserts an entry in sorted position, returns the insertion index
-- `remove_entry_by_path(listing_id, path)` — removes an entry by its file path, returns the removed index and entry
-- `update_entry_sorted(listing_id, entry)` — updates an existing entry (remove + re-insert if sort position changed), returns `ModifyResult`
-- `has_entry(listing_id, path)` — checks if a path exists in the cached listing (used to classify watcher events as add vs modify)
-- `get_listing_path(listing_id)` — returns the directory path for a listing (used to filter watcher events to direct children)
+- `find_listings_for_path(path)`: returns all listing IDs whose directory matches the given path (multiple panes/tabs may show the same directory)
+- `find_listings_for_path_on_volume(volume_id, path)`: same, but also filters by volume ID. Prevents false matches when two volumes serve overlapping paths.
+- `insert_entry_sorted(listing_id, entry)`: inserts an entry in sorted position, returns the insertion index
+- `remove_entry_by_path(listing_id, path)`: removes an entry by its file path, returns the removed index and entry
+- `update_entry_sorted(listing_id, entry)`: updates an existing entry (remove + re-insert if sort position changed), returns `ModifyResult`
+- `has_entry(listing_id, path)`: checks if a path exists in the cached listing (used to classify watcher events as add vs modify)
+- `get_listing_path(listing_id)`: returns the directory path for a listing (used to filter watcher events to direct children)
 
 ### Change notification API (caching.rs)
 
-`notify_directory_changed(volume_id, parent_path, change)` — unified entry point for notifying the listing system that a directory changed on a volume. Accepts a `DirectoryChange` enum:
-- `Added(FileEntry)` — single entry added, patches cache via `insert_entry_sorted`
-- `Removed(String)` — single entry removed by name, patches cache via `remove_entry_by_path`
-- `Modified(FileEntry)` — single entry modified, patches cache via `update_entry_sorted`
-- `Renamed { old_name, new_entry }` — same-dir rename, remove old + insert new
-- `FullRefresh` — re-reads directory via Volume trait, computes diff against cache
+`notify_directory_changed(volume_id, parent_path, change)`: unified entry point for notifying the listing system that a directory changed on a volume. Accepts a `DirectoryChange` enum:
+- `Added(FileEntry)`: single entry added, patches cache via `insert_entry_sorted`
+- `Removed(String)`: single entry removed by name, patches cache via `remove_entry_by_path`
+- `Modified(FileEntry)`: single entry modified, patches cache via `update_entry_sorted`
+- `Renamed { old_name, new_entry }`: same-dir rename, remove old + insert new
+- `FullRefresh`: re-reads directory via Volume trait, computes diff against cache
 
 All variants enrich entries with index data and emit `directory-diff` events. Natural deduplication: `insert_entry_sorted` returns `None` for duplicates, `remove_entry_by_path` returns `None` if already removed.
 
@@ -168,4 +168,4 @@ instant async cancellation. The `AtomicBool` remains for sync check points (befo
 where `.await` isn't available. `cancel_listing()` sets both: `cancelled.store(true)` + `cancel_notify.notify_waiters()`.
 
 **Gotcha**: Double-sort in the full re-read watcher path is intentional
-**Why**: `list_directory_core` returns entries in Name/Asc order. The watcher's `handle_directory_change` re-sorts them to match the listing's current sort params before calling `compute_diff`. This looks redundant but is required — without it, diff indices would be computed against a differently-ordered list, producing incorrect add/remove positions.
+**Why**: `list_directory_core` returns entries in Name/Asc order. The watcher's `handle_directory_change` re-sorts them to match the listing's current sort params before calling `compute_diff`. This looks redundant but is required: without it, diff indices would be computed against a differently-ordered list, producing incorrect add/remove positions.

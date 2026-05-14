@@ -35,7 +35,7 @@ export async function determineNavigationPath(
 ): Promise<string> {
   const pathExistsTimeoutMs = 500
 
-  // User navigated to a favorite — go to the favorite's path directly
+  // User navigated to a favorite, so go to the favorite's path directly
   if (targetPath !== volumePath) {
     return targetPath
   }

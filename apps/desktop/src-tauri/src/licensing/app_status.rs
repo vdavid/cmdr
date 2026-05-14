@@ -165,7 +165,7 @@ pub async fn validate_license_async(app: &tauri::AppHandle, transaction_id: Opti
             // Convert response to LicenseType
             let license_type = resp.license_type.as_deref().and_then(string_to_license_type);
 
-            // Update cache — server gave a definitive answer
+            // Update cache: server gave a definitive answer
             update_cached_status(
                 app,
                 &resp.status,

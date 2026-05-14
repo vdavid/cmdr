@@ -2,7 +2,7 @@
  * Tier 3 a11y tests for `Size.svelte`.
  *
  * Renders the human-friendly byte string in one or more colored spans. There's
- * no interactive surface, ARIA, or labelling to validate — axe just confirms
+ * no interactive surface, ARIA, or labelling to validate; axe just confirms
  * the produced markup has no structural a11y violations. Contrast for the
  * `.size-*` color classes is covered by tier 1 (`scripts/check-a11y-contrast`).
  */

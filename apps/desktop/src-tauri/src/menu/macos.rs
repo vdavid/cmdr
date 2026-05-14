@@ -59,7 +59,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
             &PredefinedMenuItem::separator(app)?,
             &settings_item,
             &PredefinedMenuItem::separator(app)?,
-            // System Services menu — populated by AppKit with Action extensions and other apps'
+            // System Services menu, populated by AppKit with Action extensions and other apps'
             // services (Ghostty's "New tab here", Nimble Commander's "Reveal", Quick Actions, etc.).
             // muda's PredefinedMenuItem::services wires `NSApplication.servicesMenu` for us.
             &PredefinedMenuItem::services(app, None)?,
@@ -442,7 +442,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
 
 pub(crate) fn cleanup_macos_menus() {
     // This runs during Tauri's setup() which is inside tao's `did_finish_launching`
-    // — an `extern "C"` callback that aborts on panic. NSMenu operations can raise ObjC
+    // This is an `extern "C"` callback that aborts on panic. NSMenu operations can raise ObjC
     // exceptions (which are foreign exceptions that `catch_unwind` can't catch), so we
     // use `objc2::exception::catch` to absorb them gracefully.
     let result = objc2::exception::catch(cleanup_macos_menus_inner);
@@ -480,7 +480,7 @@ fn cleanup_macos_menus_inner() {
 
         if title == "Edit" {
             // Remove system-injected items by walking backwards. We use a manual index
-            // instead of a range because each removal shifts indices — the loop must
+            // instead of a range because each removal shifts indices; the loop must
             // re-check against the live count after every removal.
             let mut j = submenu.numberOfItems() - 1;
             while j >= 0 {

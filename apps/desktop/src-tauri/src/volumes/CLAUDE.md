@@ -7,18 +7,18 @@ macOS volume and location discovery, plus live mount/unmount watching via `NSWor
 | File | Purpose |
 |---|---|
 | `mod.rs` | `LocationInfo` type and `VolumeInfo` type alias (`pub use LocationInfo as VolumeInfo` for backwards compatibility), `LocationCategory` enum, `SmbConnectionState` enum. `list_locations()`, `get_volume_space()`, `parse_cloud_provider_name()`, `get_mount_point()` (statfs-based mount resolution with APFS firmlink normalization), `resolve_path_volume_fast()` (builds `VolumeInfo` from statfs without enumerating volumes), and private helpers using `objc2`/`objc2_foundation`. |
-| `watcher.rs` | `NSWorkspace` mount/unmount observer. Subscribes to `NSWorkspaceDidMountNotification` and `NSWorkspaceDidUnmountNotification`, extracts the volume path from `NSWorkspaceVolumeURLKey`, and dispatches to `handle_volume_mounted` / `handle_volume_unmounted`. Those register/unregister with `VolumeManager` (via `register_volume_with_manager` / `unregister_volume_from_manager` — coupling to `file_system::get_volume_manager()`), emit per-volume `volume-mounted` / `volume-unmounted` Tauri events (`DualPaneExplorer` uses `volume-unmounted` with the volume path to redirect panes off ejected volumes), and trigger `volume_broadcast::emit_volumes_changed()`. |
+| `watcher.rs` | `NSWorkspace` mount/unmount observer. Subscribes to `NSWorkspaceDidMountNotification` and `NSWorkspaceDidUnmountNotification`, extracts the volume path from `NSWorkspaceVolumeURLKey`, and dispatches to `handle_volume_mounted` / `handle_volume_unmounted`. Those register/unregister with `VolumeManager` (via `register_volume_with_manager` / `unregister_volume_from_manager`, coupling to `file_system::get_volume_manager()`), emit per-volume `volume-mounted` / `volume-unmounted` Tauri events (`DualPaneExplorer` uses `volume-unmounted` with the volume path to redirect panes off ejected volumes), and trigger `volume_broadcast::emit_volumes_changed()`. |
 
 ## Location categories
 
 ```
-Favorite       — hardcoded: /Applications, ~/Desktop, ~/Documents, ~/Downloads
-MainVolume     — root volume at "/"
-AttachedVolume — /Volumes/* (skips /System, Preboot, Recovery, CloudStorage)
-CloudDrive     — iCloud at ~/Library/Mobile Documents/…, providers at ~/Library/CloudStorage/
+Favorite:       hardcoded: /Applications, ~/Desktop, ~/Documents, ~/Downloads
+MainVolume:     root volume at "/"
+AttachedVolume: /Volumes/* (skips /System, Preboot, Recovery, CloudStorage)
+CloudDrive:     iCloud at ~/Library/Mobile Documents/…, providers at ~/Library/CloudStorage/
 ```
 
-The `LocationCategory::Network` enum variant exists for future use but is currently unconstructed — the OS-level `/Network` browseable location doesn't surface as a sidebar entry yet.
+The `LocationCategory::Network` enum variant exists for future use but is currently unconstructed; the OS-level `/Network` browseable location doesn't surface as a sidebar entry yet.
 
 `list_locations()` aggregates all categories in order and deduplicates by path using a `HashSet<String>`.
 
@@ -29,13 +29,13 @@ APP_HANDLE:         OnceLock<AppHandle>  // app handle for emitting events
 OBSERVER_INSTALLED: OnceLock<()>         // idempotency gate
 ```
 
-`start_volume_watcher` is idempotent (second call returns early). The observer `RcBlock` closures aren't kept in our own static — `addObserverForName:object:queue:usingBlock:` retains the block for the lifetime of the registration, and we never remove the observer. Same pattern as `file_system/open_with.rs`.
+`start_volume_watcher` is idempotent (second call returns early). The observer `RcBlock` closures aren't kept in our own static; `addObserverForName:object:queue:usingBlock:` retains the block for the lifetime of the registration, and we never remove the observer. Same pattern as `file_system/open_with.rs`.
 
 ## `path_to_id`
 
 `path_to_id` (keep only alphanumeric + `-`, lowercase, `/` → `"root"`) is `pub(crate)` in `mod.rs` and called from `watcher.rs`. The constant `DEFAULT_VOLUME_ID = "root"` is defined in `mod.rs` and used in both files.
 
-`ICLOUD_VOLUME_ID = "cloud-icloud"` is also exported from `mod.rs`. iCloud Drive is the only cloud-drive entry that gets a hardcoded ID (others are derived from their `~/Library/CloudStorage/<provider>` directory names). Cross-module callers should use the constant — `file_system/volume/friendly_error.rs` matches the literal string with a sync-point comment because `crate::volumes` is macOS-only and can't be imported from the cross-platform `friendly_error` module.
+`ICLOUD_VOLUME_ID = "cloud-icloud"` is also exported from `mod.rs`. iCloud Drive is the only cloud-drive entry that gets a hardcoded ID (others are derived from their `~/Library/CloudStorage/<provider>` directory names). Cross-module callers should use the constant; `file_system/volume/friendly_error.rs` matches the literal string with a sync-point comment because `crate::volumes` is macOS-only and can't be imported from the cross-platform `friendly_error` module.
 
 ## Volume space
 
@@ -43,7 +43,7 @@ OBSERVER_INSTALLED: OnceLock<()>         // idempotency gate
 
 ## FDA gate
 
-The local `get_icon_for_path()` wrapper short-circuits to `None` while `crate::fda_gate::is_fda_pending_runtime()` is `true`. `get_cloud_drives()` returns an empty `Vec` under the same condition because enumerating `~/Library/CloudStorage` is FDA-gated. Both fire only at first launch — after the user clicks Allow or Deny on the in-app FDA modal, the gate clears and `volumes-changed` re-emits with full data.
+The local `get_icon_for_path()` wrapper short-circuits to `None` while `crate::fda_gate::is_fda_pending_runtime()` is `true`. `get_cloud_drives()` returns an empty `Vec` under the same condition because enumerating `~/Library/CloudStorage` is FDA-gated. Both fire only at first launch; after the user clicks Allow or Deny on the in-app FDA modal, the gate clears and `volumes-changed` re-emits with full data.
 
 **Don't add new launch-time `NSWorkspace` icon/LaunchServices lookups, or `read_dir`/metadata calls on TCC-protected paths, without checking the gate.** It's the difference between zero TCC prompts during onboarding and a stack of five-to-ten popups (MediaLibrary, AppData, Desktop, Documents, Downloads, ...). See [`src-tauri/src/fda_gate.rs`](../fda_gate.rs) for the helpers and [`src/lib/onboarding/CLAUDE.md`](../../../src/lib/onboarding/CLAUDE.md) § "FDA gate" for the user-side flow.
 
@@ -73,19 +73,19 @@ The local `get_icon_for_path()` wrapper short-circuits to `None` while `crate::f
 ## Key decisions
 
 **Decision**: Gate launch-time icon fetches on the FDA decision (`crate::fda_gate::is_fda_pending_runtime()`)
-**Why**: `NSWorkspace.iconForFile:` resolution touches LaunchServices and several adjacent TCC services beyond the input path itself. On a fresh prod install with FDA off, calling it for `/Applications`, `~/Desktop`, `~/Documents`, `~/Downloads`, the iCloud root, and per-provider cloud-storage paths stacked **5–10 macOS native permission popups** (MediaLibrary, AppData, Desktop, Documents, Downloads, ...) on top of the in-app FDA modal — exactly the onboarding-flood UX the modal is supposed to replace. Returning `icon: None` from `get_icon_for_path()` while the gate is pending eliminates the entire class. The frontend already falls back to a generic folder icon when `icon` is missing, so the sidebar still shows favorite/volume entries during onboarding; they just look generic for the few seconds before the user clicks Allow or Deny. See `commands/indexing.rs::start_indexing_after_fda_decision` for the gate-clear + re-emit on the deny path; the allow path requires a restart, so re-entering `setup()` sets the gate to `false` via the OS probe.
+**Why**: `NSWorkspace.iconForFile:` resolution touches LaunchServices and several adjacent TCC services beyond the input path itself. On a fresh prod install with FDA off, calling it for `/Applications`, `~/Desktop`, `~/Documents`, `~/Downloads`, the iCloud root, and per-provider cloud-storage paths stacked **5–10 macOS native permission popups** (MediaLibrary, AppData, Desktop, Documents, Downloads, ...) on top of the in-app FDA modal, exactly the onboarding-flood UX the modal is supposed to replace. Returning `icon: None` from `get_icon_for_path()` while the gate is pending eliminates the entire class. The frontend already falls back to a generic folder icon when `icon` is missing, so the sidebar still shows favorite/volume entries during onboarding; they just look generic for the few seconds before the user clicks Allow or Deny. See `commands/indexing.rs::start_indexing_after_fda_decision` for the gate-clear + re-emit on the deny path; the allow path requires a restart, so re-entering `setup()` sets the gate to `false` via the OS probe.
 
 **Decision**: Use `NSWorkspace` notifications (`NSWorkspaceDidMountNotification` / `NSWorkspaceDidUnmountNotification`) instead of an FSEvents watcher on `/Volumes`
-**Why**: FSEvents fires when the kernel writes a directory entry under `/Volumes`, which races the mount: `statfs` on the new mount point still returns the root filesystem's `fsid` until the OS finishes mounting. The previous implementation papered over this with a `spawn_mount_settle_watcher` that polled `fsid` for up to 10 s, but slow drives behind USB-C/Thunderbolt docks can take longer; if the poll timed out, `get_attached_volumes` filtered the volume out and only an app restart surfaced it. `NSWorkspace` notifications are posted by `diskarbitrationd` *after* the mount is fully settled and `NSFileManager` metadata is ready, so there's no race to paper over and the volume always shows up. They also carry the volume URL directly in `userInfo[NSWorkspaceVolumeURLKey]` — no diffing or polling needed. DiskArbitration would also work but requires a CFRunLoop scheduled separately from Tokio; `NSWorkspace` rides on the AppKit runloop Tauri already runs.
+**Why**: FSEvents fires when the kernel writes a directory entry under `/Volumes`, which races the mount: `statfs` on the new mount point still returns the root filesystem's `fsid` until the OS finishes mounting. The previous implementation papered over this with a `spawn_mount_settle_watcher` that polled `fsid` for up to 10 s, but slow drives behind USB-C/Thunderbolt docks can take longer; if the poll timed out, `get_attached_volumes` filtered the volume out and only an app restart surfaced it. `NSWorkspace` notifications are posted by `diskarbitrationd` *after* the mount is fully settled and `NSFileManager` metadata is ready, so there's no race to paper over and the volume always shows up. They also carry the volume URL directly in `userInfo[NSWorkspaceVolumeURLKey]` with no diffing or polling needed. DiskArbitration would also work but requires a CFRunLoop scheduled separately from Tokio; `NSWorkspace` rides on the AppKit runloop Tauri already runs.
 
 **Decision**: Use `OnceLock` for `APP_HANDLE` and `OBSERVER_INSTALLED`
-**Why**: `start_volume_watcher` must be idempotent — calling it twice (e.g., if app setup runs again) must not double-subscribe. `OnceLock::set` failing on the second call is the idempotency gate. `LazyLock` would initialize eagerly, which doesn't work because the `AppHandle` isn't available at static-init time.
+**Why**: `start_volume_watcher` must be idempotent; calling it twice (e.g., if app setup runs again) must not double-subscribe. `OnceLock::set` failing on the second call is the idempotency gate. `LazyLock` would initialize eagerly, which doesn't work because the `AppHandle` isn't available at static-init time.
 
 **Decision**: Use `NSURLVolumeAvailableCapacityForImportantUsageKey` with fallback to `NSURLVolumeAvailableCapacityKey`
-**Why**: The "ForImportantUsage" key accounts for purgeable space (iCloud, APFS snapshots) — it reports how much space the OS would make available if needed, which matches what Finder shows. The plain key reports only physically free blocks, which can be misleadingly low on APFS volumes with purgeable data. The fallback handles older macOS versions where the key doesn't exist.
+**Why**: The "ForImportantUsage" key accounts for purgeable space (iCloud, APFS snapshots): it reports how much space the OS would make available if needed, which matches what Finder shows. The plain key reports only physically free blocks, which can be misleadingly low on APFS volumes with purgeable data. The fallback handles older macOS versions where the key doesn't exist.
 
 **Decision**: `supports_trash` defaults to `true` for unknown filesystem types
-**Why**: Optimistic default. Most local filesystems support trash; the only exceptions are network mounts and FAT-family formats, which are explicitly listed. If an unknown fs type doesn't support trash, the operation fails gracefully at trash time — better than pessimistically disabling trash for a filesystem that actually supports it.
+**Why**: Optimistic default. Most local filesystems support trash; the only exceptions are network mounts and FAT-family formats, which are explicitly listed. If an unknown fs type doesn't support trash, the operation fails gracefully at trash time, better than pessimistically disabling trash for a filesystem that actually supports it.
 
 **Decision**: Use `libc::statfs` for filesystem type detection instead of `NSURLVolumeLocalizedFormatDescriptionKey`
 **Why**: The NSURL key returns a human-readable string like "APFS (Case-sensitive)" which is locale-dependent and not machine-parseable. `statfs.f_fstypename` returns a stable machine identifier ("apfs", "smbfs", "nfs") that can be matched against a known list of network/non-trash-capable filesystems.
@@ -93,13 +93,13 @@ The local `get_icon_for_path()` wrapper short-circuits to `None` while `crate::f
 ## Gotchas
 
 **Gotcha**: `path_to_id` was previously duplicated between `mod.rs` and `watcher.rs`
-**Why**: Fixed — `path_to_id` is now `pub(crate)` in `mod.rs` and `watcher.rs` calls `super::path_to_id()` directly.
+**Why**: Fixed. `path_to_id` is now `pub(crate)` in `mod.rs` and `watcher.rs` calls `super::path_to_id()` directly.
 
 **Gotcha**: `VolumeInfo` is a type alias for `LocationInfo`, not a separate type
 **Why**: The module was originally called "volumes" and used `VolumeInfo` everywhere. It was renamed to "locations" (since favorites and cloud drives aren't volumes), but the frontend still sends/receives `VolumeInfo`. The alias preserves backwards compatibility without a migration.
 
 **Gotcha**: Watcher registers/unregisters volumes with `VolumeManager` directly, creating tight coupling to `file_system::get_volume_manager()`
-**Why**: When a volume mounts, it must be immediately available for file operations. Emitting just a Tauri event and letting the frontend trigger registration would introduce a race window where operations fail because the volume isn't registered yet. Direct registration ensures atomicity — by the time the frontend receives `volume-mounted`, the volume is already usable.
+**Why**: When a volume mounts, it must be immediately available for file operations. Emitting just a Tauri event and letting the frontend trigger registration would introduce a race window where operations fail because the volume isn't registered yet. Direct registration ensures atomicity: by the time the frontend receives `volume-mounted`, the volume is already usable.
 
 **Gotcha**: `get_main_volume`, `get_attached_volumes`, and `get_volume_space` wrap their bodies in `objc2::rc::autoreleasepool`
 **Why**: These functions are called from `spawn_blocking` threads (via `blocking_with_timeout_flag` in commands). Without an autorelease pool, the `NSFileManager`, `NSURL`, `NSString`, and `NSNumber` objects created per call accumulate in a default pool that is never drained, causing memory leaks over hours.

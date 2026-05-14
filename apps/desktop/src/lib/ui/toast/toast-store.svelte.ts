@@ -22,7 +22,7 @@ export interface ToastOptions {
   closeTooltip?: string
   /**
    * Optional callback fired when the user dismisses the toast via the X button. Auto-dismiss on
-   * timeout and programmatic `dismissToast` calls do NOT trigger this — it's strictly a signal
+   * timeout and programmatic `dismissToast` calls do NOT trigger this: it's strictly a signal
    * that the user actively closed the toast.
    */
   onDismiss?: () => void
@@ -67,7 +67,7 @@ function makeRoomForNewToast(): boolean {
   if (toasts.length < maxVisibleToasts) return true
   const oldestTransientIndex = findOldestTransientIndex()
   if (oldestTransientIndex === -1) {
-    // All slots are persistent — drop the new toast.
+    // All slots are persistent: drop the new toast.
     return false
   }
   removeAtIndex(oldestTransientIndex)

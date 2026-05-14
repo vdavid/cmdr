@@ -114,12 +114,12 @@ pub(crate) fn validate_destination_writable(_destination: &Path) -> Result<(), W
 /// Checks available disk space on the destination volume against required bytes.
 ///
 /// On macOS, uses `NSURLVolumeAvailableCapacityForImportantUsageKey` which includes purgeable
-/// space (APFS snapshots, iCloud caches) — matching what Finder reports. Falls back to `statvfs`
+/// space (APFS snapshots, iCloud caches), matching what Finder reports. Falls back to `statvfs`
 /// if the NSURL query fails. On Linux, uses `statvfs` directly (no purgeable space concept).
 #[cfg(unix)]
 pub(crate) fn validate_disk_space(destination: &Path, required_bytes: u64) -> Result<(), WriteOperationError> {
     let available = get_available_space(destination).unwrap_or({
-        // Cannot determine space — return u64::MAX so the check passes and we let the OS
+        // Cannot determine space. Return u64::MAX so the check passes and we let the OS
         // report ENOSPC if it actually happens during the copy.
         u64::MAX
     });
@@ -406,7 +406,7 @@ pub(super) fn resolve_conflict(
 
             // Wait for user to call resolve_write_conflict.
             // The sender is dropped on cancel_write_operation, which unblocks the
-            // receiver immediately — no timeout needed (the old 30s timeout was a
+            // receiver immediately. No timeout needed (the old 30s timeout was a
             // safety net; sender-drop is strictly better).
             // TEMPORARY: blocking_recv because this runs inside spawn_blocking.
             // Will become rx.await in milestone 2 full async migration.

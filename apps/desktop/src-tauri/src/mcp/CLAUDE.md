@@ -2,14 +2,14 @@
 
 ## Purpose
 
-Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Agents can control the app using the same capabilities available to users—no more, no less.
+Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Agents can control the app using the same capabilities available to users, no more, no less.
 
 ## Architecture
 
 ### Server (`server.rs`)
 
 - Runs in a background tokio task spawned at app startup
-- Binds to `127.0.0.1:19224` (prod) or `127.0.0.1:19225` (dev) by default — localhost only for security. Dev and prod intentionally differ so a dev session and an installed prod build can run side-by-side. If the port is taken, auto-probes upward (up to 100 ports) to find an available one. The defaults live as `DEFAULT_PORT` in `config.rs` and are mirrored in the FE settings registry.
+- Binds to `127.0.0.1:19224` (prod) or `127.0.0.1:19225` (dev) by default, localhost only for security. Dev and prod intentionally differ so a dev session and an installed prod build can run side-by-side. If the port is taken, auto-probes upward (up to 100 ports) to find an available one. The defaults live as `DEFAULT_PORT` in `config.rs` and are mirrored in the FE settings registry.
 - Streamable HTTP transport (MCP spec 2025-11-25)
 - Endpoints: `POST /mcp` (JSON-RPC), `GET /mcp` (optional SSE), `GET /mcp/health`
 
@@ -32,11 +32,11 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 - Search (2): `search` (structured file search across the drive index, optional `scope` for path/exclude filtering), `ai_search` (natural language search using configured LLM, optional `scope` merged with AI-inferred scope)
 - Settings (1): `set_setting` (change a setting value via round-trip to frontend)
 - Network (2): `connect_to_server` (add a manual SMB server by address, checks TCP reachability), `remove_manual_server` (remove a manually-added server by host ID)
-- Async (1): `await` (poll PaneStateStore until a condition is met — `has_item`, `item_count_gte`, `path`, or `path_contains`. Supports `after_generation` to avoid matching stale state)
+- Async (1): `await` (poll PaneStateStore until a condition is met: `has_item`, `item_count_gte`, `path`, or `path_contains`. Supports `after_generation` to avoid matching stale state)
 
 ### Resources (`resources.rs`)
 
-- `cmdr://state`: Complete app state in YAML (both panes, volumes, dialogs, active `listings` cache). Includes MTP volumes with `name` and `id`, and per-pane `volumeId`. The `listings` section reflects every entry in `LISTING_CACHE` (id, volumeId, path, entry count, ageMs) — useful for triaging orphan listings in error reports.
+- `cmdr://state`: Complete app state in YAML (both panes, volumes, dialogs, active `listings` cache). Includes MTP volumes with `name` and `id`, and per-pane `volumeId`. The `listings` section reflects every entry in `LISTING_CACHE` (id, volumeId, path, entry count, ageMs), useful for triaging orphan listings in error reports.
 - `cmdr://dialogs/available`: Static metadata about available dialogs
 - `cmdr://indexing`: Drive indexing status in plain text (current phase, timeline history, DB stats). Calls `indexing::get_debug_status()` and formats as human-readable text.
 - `cmdr://settings`: All settings with current values, defaults, types, and constraints. Fetched via round-trip to the frontend (`mcp-get-all-settings` event).
@@ -44,13 +44,13 @@ Expose Cmdr functionality to AI agents via the Model Context Protocol (MCP). Age
 ### Executor (`executor/`)
 
 Directory module split by tool category. `mod.rs` contains the main `execute_tool()` dispatcher, shared types (`ToolResult`, `ToolError`), and the `mcp_round_trip` helpers. Category files:
-- `app.rs` — quit, switch_pane, swap_panes, tab
-- `view.rs` — toggle_hidden, set_view_mode, sort
-- `nav.rs` — navigation commands (with and without params)
-- `file_ops.rs` — copy, move, delete, mkdir, mkfile, refresh, select
-- `dialogs.rs` — unified dialog open/focus/close/confirm
-- `async_tools.rs` — await, connect_to_server, remove_manual_server, set_setting
-- `search.rs` — search index loading, search, ai_search
+- `app.rs`: quit, switch_pane, swap_panes, tab
+- `view.rs`: toggle_hidden, set_view_mode, sort
+- `nav.rs`: navigation commands (with and without params)
+- `file_ops.rs`: copy, move, delete, mkdir, mkfile, refresh, select
+- `dialogs.rs`: unified dialog open/focus/close/confirm
+- `async_tools.rs`: await, connect_to_server, remove_manual_server, set_setting
+- `search.rs`: search index loading, search, ai_search
 
 Most tools are fire-and-forget: emit a Tauri event and return "OK" immediately.
 
@@ -58,11 +58,11 @@ Tools where the backend can't fully validate preconditions use `mcp_round_trip`:
 
 ### Configuration (`config.rs`)
 
-Constants and configuration for the MCP server (port, bind address, transport settings). `DEFAULT_PORT` is build-mode-dependent: 19224 in prod, 19225 in dev — different so a dev session and an installed prod build don't collide on the same port (separate data dirs alone don't help since the port is a process-wide network resource). Mirrored in the FE registry; both are in 10000–29999 per AGENTS.md.
+Constants and configuration for the MCP server (port, bind address, transport settings). `DEFAULT_PORT` is build-mode-dependent: 19224 in prod, 19225 in dev, different so a dev session and an installed prod build don't collide on the same port (separate data dirs alone don't help since the port is a process-wide network resource). Mirrored in the FE registry; both are in 10000–29999 per AGENTS.md.
 
 ### Dialog state (`dialog_state.rs`)
 
-`SoftDialogTracker` implementation — tracks which dialogs MCP believes are open. Updated by MCP tool calls; not always in sync with actual Tauri window state (see gotchas).
+`SoftDialogTracker` implementation: tracks which dialogs MCP believes are open. Updated by MCP tool calls; not always in sync with actual Tauri window state (see gotchas).
 
 ### State stores
 
@@ -74,13 +74,13 @@ Frontend syncs state to these stores via Tauri commands (`update_left_pane_state
 ### Tests (`tests/`)
 
 Directory module split by test category:
-- `protocol_tests.rs` — tool name validation, schema checks, tool count
-- `resource_tests.rs` — resource URI validation, count, mime types
-- `tool_category_tests.rs` — tool existence by category, schema checks
-- `security_tests.rs` — shell injection, forbidden tool patterns, input injection
-- `request_response_tests.rs` — McpRequest parsing, McpResponse serialization
-- `pane_state_tests.rs` — PaneStateStore CRUD, edge cases, concurrency, PaneFileEntry serialization
-- `spec_compliance_tests.rs` — MCP spec 2025-11-25 compliance, origin validation, SSE events
+- `protocol_tests.rs`: tool name validation, schema checks, tool count
+- `resource_tests.rs`: resource URI validation, count, mime types
+- `tool_category_tests.rs`: tool existence by category, schema checks
+- `security_tests.rs`: shell injection, forbidden tool patterns, input injection
+- `request_response_tests.rs`: McpRequest parsing, McpResponse serialization
+- `pane_state_tests.rs`: PaneStateStore CRUD, edge cases, concurrency, PaneFileEntry serialization
+- `spec_compliance_tests.rs`: MCP spec 2025-11-25 compliance, origin validation, SSE events
 
 ## Key decisions
 
@@ -94,7 +94,7 @@ LLMs consume resources, not machines. YAML is 30-40% smaller and more readable. 
 
 ### Why plain text responses?
 
-Tool results and resource content are consumed by LLMs, not parsed by code. Output doesn't need to be JSON, YAML, or any structured format — anything that reads well to a human and is concise works. Tool results are plain text (`"OK: Navigated to /Users"`, aligned columns for search results), resources use YAML or plain text. Errors are still JSON-RPC error objects, but the `content` field is plain text. Optimize for readability and token efficiency, not parseability.
+Tool results and resource content are consumed by LLMs, not parsed by code. Output doesn't need to be JSON, YAML, or any structured format. Anything that reads well to a human and is concise works. Tool results are plain text (`"OK: Navigated to /Users"`, aligned columns for search results), resources use YAML or plain text. Errors are still JSON-RPC error objects, but the `content` field is plain text. Optimize for readability and token efficiency, not parseability.
 
 ### Why stateful architecture?
 
@@ -116,11 +116,11 @@ Binding to `0.0.0.0` would expose the server to the network. An attacker could q
 
 ### Server lifecycle is managed at runtime
 
-`start_mcp_server()` binds the port and spawns a tokio task, storing the `JoinHandle` in a static `MCP_HANDLE`. Port binding uses `bind_with_probe()` which tries tokio `TcpListener::bind` directly and retries on failure (up to 100 ports), avoiding the TOCTOU race of checking with a sync listener then re-binding async. The actual bound port is stored in `MCP_ACTUAL_PORT`. The frontend queries this via `get_mcp_port()` and shows a notice when it differs from the configured port. The server can be started/stopped live via `set_mcp_enabled` and `set_mcp_port` Tauri commands — no app restart needed. `stop_mcp_server()` aborts the task and resets `MCP_ACTUAL_PORT` to 0. `is_mcp_running()` checks whether the handle exists. At startup, `start_mcp_server_background()` wraps the async start in a fire-and-forget spawn. If the server crashes, the app continues but MCP stops working. Check logs for "MCP server crashed" errors.
+`start_mcp_server()` binds the port and spawns a tokio task, storing the `JoinHandle` in a static `MCP_HANDLE`. Port binding uses `bind_with_probe()` which tries tokio `TcpListener::bind` directly and retries on failure (up to 100 ports), avoiding the TOCTOU race of checking with a sync listener then re-binding async. The actual bound port is stored in `MCP_ACTUAL_PORT`. The frontend queries this via `get_mcp_port()` and shows a notice when it differs from the configured port. The server can be started/stopped live via `set_mcp_enabled` and `set_mcp_port` Tauri commands, no app restart needed. `stop_mcp_server()` aborts the task and resets `MCP_ACTUAL_PORT` to 0. `is_mcp_running()` checks whether the handle exists. At startup, `start_mcp_server_background()` wraps the async start in a fire-and-forget spawn. If the server crashes, the app continues but MCP stops working. Check logs for "MCP server crashed" errors.
 
 ### Live MCP control only works from the settings window
 
-`McpServerSection.svelte` subscribes to `developer.mcpEnabled` and `developer.mcpPort` changes and calls the Tauri commands directly. The main window's `settings-applier.ts` intentionally does NOT handle these settings to avoid double-firing (both windows receive setting change events). This means if an MCP tool changes `developer.mcpEnabled` via the settings bridge while the settings window is closed, the setting is saved but the server state doesn't change until the next app restart. This is acceptable — an MCP tool toggling its own server is circular.
+`McpServerSection.svelte` subscribes to `developer.mcpEnabled` and `developer.mcpPort` changes and calls the Tauri commands directly. The main window's `settings-applier.ts` intentionally does NOT handle these settings to avoid double-firing (both windows receive setting change events). This means if an MCP tool changes `developer.mcpEnabled` via the settings bridge while the settings window is closed, the setting is saved but the server state doesn't change until the next app restart. This is acceptable, since an MCP tool toggling its own server is circular.
 
 ### State sync is best-effort
 
@@ -152,11 +152,11 @@ The `cmdr://settings` resource and `set_setting` tool both use round-trips to th
 
 ### `select_volume` times out when re-selecting the same volume
 
-`select_volume` polls the target pane's path in `PaneStateStore` until it changes. If the pane is already on the requested volume (same path), no change is detected and the tool times out after 30s. This is harmless — re-selecting the same volume is a no-op.
+`select_volume` polls the target pane's path in `PaneStateStore` until it changes. If the pane is already on the requested volume (same path), no change is detected and the tool times out after 30s. This is harmless, since re-selecting the same volume is a no-op.
 
 ### Tool execution is async but mostly synchronous
 
-`execute_tool()` is an async function. Most tools are fire-and-forget — they emit a Tauri event and return immediately (for example, "OK: Copy dialog opened" not "OK: Files copied"). This applies even with `autoConfirm: true` — the tool returns when the operation starts, not when it completes. Three categories of async tools exist: (1) `mcp_round_trip` tools (`nav_to_path`, `move_cursor`) that wait up to 5s for the frontend to confirm success/failure, (2) search tools (`search`, `ai_search`) that load the search index via `spawn_blocking` and (for `ai_search`) call the LLM API.
+`execute_tool()` is an async function. Most tools are fire-and-forget: they emit a Tauri event and return immediately (for example, "OK: Copy dialog opened" not "OK: Files copied"). This applies even with `autoConfirm: true`: the tool returns when the operation starts, not when it completes. Three categories of async tools exist: (1) `mcp_round_trip` tools (`nav_to_path`, `move_cursor`) that wait up to 5s for the frontend to confirm success/failure, (2) search tools (`search`, `ai_search`) that load the search index via `spawn_blocking` and (for `ai_search`) call the LLM API.
 
 ### Error codes are JSON-RPC standard
 

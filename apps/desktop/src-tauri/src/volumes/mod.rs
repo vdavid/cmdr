@@ -65,7 +65,7 @@ pub const ICLOUD_VOLUME_ID: &str = "cloud-icloud";
 /// Local filesystems (APFS, HFS+, ext4, btrfs, xfs, zfs) support trash.
 /// Network filesystems (SMB, NFS, AFP, WebDAV, CIFS, FUSE-based SSH) and
 /// non-Mac formats (FAT32/exFAT) don't reliably support it. Unknown types
-/// default to `true` (optimistic — trash failure is caught at operation time).
+/// default to `true` (optimistic: trash failure is caught at operation time).
 pub fn supports_trash_for_fs_type(fs_type: Option<&str>) -> bool {
     let Some(fs) = fs_type else { return true };
     let fs_lower = fs.to_ascii_lowercase();
@@ -225,7 +225,7 @@ pub(crate) fn get_mount_point(path: &str) -> Option<(String, String)> {
 
 /// Build a `VolumeInfo` for the volume containing `path` using only
 /// `statfs()` and per-path NSURL resource queries. Does NOT call
-/// `list_locations()` — avoids the blocking NSFileManager volume enumeration.
+/// `list_locations()`. Avoids the blocking NSFileManager volume enumeration.
 pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
     use objc2::rc::autoreleasepool;
     use objc2_foundation::{NSString, NSURL};
@@ -333,7 +333,7 @@ fn get_favorites() -> Vec<LocationInfo> {
     let documents_str = documents.to_string_lossy();
     let downloads_str = downloads.to_string_lossy();
     // (path, name, is_protected). When `is_protected` is true and the FDA gate
-    // is pending, we MUST skip stat on this path — even `Path::exists()` trips
+    // is pending, we MUST skip stat on this path: even `Path::exists()` trips
     // TCC for the protected-folder service once `permissions::check_full_disk_access`
     // has registered the bundle with tccd. We assume protected favorites exist
     // (~/Desktop, ~/Documents, ~/Downloads are present on essentially every
@@ -351,14 +351,14 @@ fn get_favorites() -> Vec<LocationInfo> {
     favorites_paths
         .into_iter()
         .filter(|(path, _, is_protected)| {
-            // Skip the existence check for protected paths while FDA is pending —
+            // Skip the existence check for protected paths while FDA is pending:
             // see comment on `favorites_paths`. Non-protected paths are still
             // checked because `/Applications` can be absent on slim systems.
             (fda_pending && *is_protected) || Path::new(*path).exists()
         })
         .map(|(path, name, _)| {
             // Favorites are folders on the boot volume, not mount points.
-            // statfs still works — it reports the underlying volume's fs type.
+            // statfs still works: it reports the underlying volume's fs type.
             let fs_type = get_fs_type(path);
             let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
             LocationInfo {

@@ -47,9 +47,9 @@ Both paths write to `crash-report.json` in the app data dir (same dir as `settin
 - Sanitized panic message
 - Active feature flags (booleans/enums only: `indexing.enabled`, `ai.provider`, `developer.mcpEnabled`,
   `developer.verboseLogging`)
-- `buildMode` (`"release"` or `"debug"`, from `cfg!(debug_assertions)`) — lets the api server distinguish dev-run
+- `buildMode` (`"release"` or `"debug"`, from `cfg!(debug_assertions)`): lets the api server distinguish dev-run
   crashes from production ones in the email summary
-- `shortId` (`CRASH-XXXXX`) — generated at crash-file-write time via [`crate::short_id::generate("CRASH")`]
+- `shortId` (`CRASH-XXXXX`): generated at crash-file-write time via [`crate::short_id::generate("CRASH")`]
   (shared with error reports). Shown to the user in the next-launch dialog so they can reference the report.
 
 ## What we never send

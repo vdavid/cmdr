@@ -1,4 +1,4 @@
-//! FullLoadBackend — loads entire file into memory.
+//! FullLoadBackend: loads entire file into memory.
 //!
 //! Best for files under FULL_LOAD_THRESHOLD (1 MB). Provides instant random
 //! access by line number and fast search since all content is in RAM.

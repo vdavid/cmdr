@@ -9,7 +9,7 @@ import FilePane from './FilePane.svelte'
 import { waitForUpdates, useMountTarget } from './integration-test-utils'
 
 // ============================================================================
-// Mock setup (must be in each test file — Vitest hoists vi.mock calls)
+// Mock setup (must be in each test file: Vitest hoists vi.mock calls)
 // ============================================================================
 
 let mockEntry: unknown = null

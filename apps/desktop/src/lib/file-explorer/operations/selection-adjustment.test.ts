@@ -57,9 +57,9 @@ describe('diffGeneration discard logic', () => {
     generation++
     const gen2 = generation
 
-    // Stale callback arrives first — should be discarded
+    // Stale callback arrives first: should be discarded
     if (gen1 === generation) results.push([1, 2])
-    // Current callback arrives — should be applied
+    // Current callback arrives: should be applied
     if (gen2 === generation) results.push([3, 4])
 
     expect(results).toEqual([[3, 4]])
@@ -76,7 +76,7 @@ describe('diffGeneration discard logic', () => {
     // Simulate clearOperationSnapshot being called (bumps generation)
     generation++
 
-    // The in-flight callback arrives — should be discarded
+    // The in-flight callback arrives: should be discarded
     if (myGen === generation) results.push([1, 2])
 
     expect(results).toEqual([])

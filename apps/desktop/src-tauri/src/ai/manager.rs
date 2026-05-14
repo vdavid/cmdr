@@ -100,7 +100,7 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
 }
 
 /// Shuts down the AI server. Called on app quit.
-/// Fire-and-forget SIGKILL — the app is exiting so no need to reap the zombie.
+/// Fire-and-forget SIGKILL; the app is exiting so no need to reap the zombie.
 pub fn shutdown() {
     let mut manager = MANAGER.lock_ignore_poison();
     if let Some(ref mut m) = *manager
@@ -163,7 +163,7 @@ pub fn get_cloud_config() -> (String, String, String) {
 /// `commands/search.rs`) just match on the variants and decide whether the case
 /// should be hard-error or graceful-empty.
 pub enum BackendResolution {
-    /// `provider = "off"` — AI features are turned off.
+    /// `provider = "off"`: AI features are turned off.
     Off,
     /// Provider is set but missing config (e.g. local server not running, cloud key blank).
     /// Includes a human-readable reason suitable for error toasts.
@@ -207,7 +207,7 @@ static STREAM_CANCEL_TOKENS: LazyLock<Mutex<HashMap<String, CancellationToken>>>
 /// Registers a fresh `CancellationToken` for `request_id` and returns a clone for the
 /// task to await. If `request_id` collides with an existing entry (UUID collision is
 /// astronomically unlikely; buggy frontend possible) the prior token is silently
-/// orphaned — the prior task will keep running until natural completion.
+/// orphaned; the prior task will keep running until natural completion.
 pub(super) fn register_stream(request_id: &str) -> CancellationToken {
     let token = CancellationToken::new();
     STREAM_CANCEL_TOKENS
@@ -467,7 +467,7 @@ pub fn configure_ai<R: Runtime>(
         "AI configure: provider={provider}, context_size={context_size}, base_url={cloud_base_url}, model={cloud_model}"
     );
 
-    // Single lock: decide, stop, spawn — no race window for orphan processes
+    // Single lock: decide, stop, spawn (no race window for orphan processes)
     let spawn_result;
     {
         let mut manager = MANAGER.lock_ignore_poison();
@@ -951,7 +951,7 @@ fn spawn_and_track_server(m: &mut ManagerState) -> Result<(u32, u16), String> {
 
     let pid = spawn_llama_server(&m.ai_dir, model.filename, port, m.context_size)?;
 
-    // Track PID immediately — no race window where a process exists untracked
+    // Track PID immediately (no race window where a process exists untracked)
     m.child_pid = Some(pid);
     m.state.port = Some(port);
     m.state.pid = Some(pid);
@@ -997,7 +997,7 @@ async fn wait_for_server_health(ai_dir: &Path, pid: u32, port: u16) -> Result<()
         }
     }
 
-    // Timed out — kill the process instead of leaving it orphaned
+    // Timed out; kill the process instead of leaving it orphaned
     cleanup_failed_server(pid);
     let last_lines = read_log_tail(ai_dir, 20);
     crate::log_error!("AI server: health check timed out. Last log lines:\n{last_lines}");

@@ -39,14 +39,14 @@ scroll-to-match positioning.
 
 **Key invariant:** `heightMap.ready` gates all height-map paths. When false, every calculation falls through to the
 existing uniform-height code. The `scrollScale` (for MAX_SCROLL_HEIGHT compression) multiplies height map values at the
-scroll layer — the height map stores unscaled positions.
+scroll layer (the height map stores unscaled positions).
 
 ## Gotchas
 
 - `$state(false)` in `.svelte.ts` triggers `@typescript-eslint/no-unnecessary-condition` because the linter doesn't know
   the value is mutated via Svelte reactivity. Use an inline eslint-disable comment with a reason.
 - `getLineHeight()` (returns `18px × effective scale`) and the CSS rule
-  `.line { height: calc(18px * var(--font-scale)) }` in `+page.svelte` must stay paired. Both read the same scale — the
+  `.line { height: calc(18px * var(--font-scale)) }` in `+page.svelte` must stay paired. Both read the same scale: the
   JS function for virtualization math, the CSS rule for layout. If you change the 18 base, change both.
 - `runHeightMapInitEffect` guards with `if (heightMap.ready) return` to avoid re-preparing when only `textWidth`
   changes. Width-only changes are handled by `runHeightMapReflowEffect` via `reflow()` (instant) instead of re-running

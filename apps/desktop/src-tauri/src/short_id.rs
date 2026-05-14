@@ -1,7 +1,7 @@
 //! Short ID generation for user-visible report IDs (error reports, crash reports).
 //!
 //! Produces IDs like `ERR-8F3A2` or `CRASH-K7J4P` from an unambiguous alphabet
-//! (`23456789ABCDEFGHJKMNPQRSTUVWXYZ` — no `0`/`O`, no `1`/`I`/`L`). Uses rejection
+//! (`23456789ABCDEFGHJKMNPQRSTUVWXYZ`, no `0`/`O`, no `1`/`I`/`L`). Uses rejection
 //! sampling to avoid modulo bias. The alphabet is kept in sync with
 //! `apps/api-server/src/license.ts::generateShortId`.
 
@@ -20,7 +20,7 @@ const SUFFIX_LEN: usize = 5;
 pub fn generate(prefix: &str) -> String {
     let mut rng = rand::rng();
     let alphabet_len = ALPHABET.len(); // 31
-    // 256 - (256 % 31) = 232 — bytes at or above this would skew the distribution.
+    // 256 - (256 % 31) = 232: bytes at or above this would skew the distribution.
     let max_unbiased = 256 - (256 % alphabet_len);
     let mut out = String::with_capacity(prefix.len() + 1 + SUFFIX_LEN);
     out.push_str(prefix);

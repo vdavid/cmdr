@@ -28,7 +28,7 @@ fn host_for(env_key: &str) -> String {
 }
 
 /// Per-server port override (`SMB_E2E_{SERVICE}_PORT`). Matches what the
-/// frontend test fixture uses — inside Docker this is the container's internal
+/// frontend test fixture uses. Inside Docker this is the container's internal
 /// port (445), not the host port mapping. Falls back to the default (which
 /// reads `SMB_CONSUMER_*_PORT` for local macOS dev via docker-compose).
 fn port_for(env_key: &str, default_port: u16) -> u16 {

@@ -211,7 +211,7 @@ pub(super) fn truncate_for_menu_label(filename: &str, max_chars: usize) -> Strin
 
     // Find the extension (everything after the last '.', but only if there's a non-empty stem).
     // `Path::extension` skips leading-dot files and returns just the ext without the dot, which is
-    // what we want here — we treat names like ".gitignore" as extensionless.
+    // what we want here; we treat names like ".gitignore" as extensionless.
     let ext_with_dot = std::path::Path::new(filename)
         .extension()
         .and_then(|e| e.to_str())

@@ -8,7 +8,7 @@ export interface ShortenMiddleParams {
   /**
    * When true, the native `title` tooltip is set only when truncation actually
    * happened (so short, fully-visible text doesn't trigger a redundant tooltip).
-   * Defaults to false — previous callers always show the full text on hover.
+   * Defaults to false (previous callers always show the full text on hover).
    */
   tooltipWhenTruncated?: boolean
 }
@@ -78,7 +78,7 @@ export function useShortenMiddle(node: HTMLElement, params: ShortenMiddleParams)
       truncate()
     })
     .catch(() => {
-      // Pretext unavailable — CSS text-overflow: ellipsis remains as fallback
+      // Pretext unavailable; CSS text-overflow: ellipsis remains as fallback
     })
 
   const observer = new ResizeObserver(() => {

@@ -64,15 +64,15 @@ restrictions.
 
 For work projects, you'll need a license:
 
-- **$59/year** — subscription, auto-renews
-- **$149 one-time** — perpetual license
+- **$59/year**: subscription, auto-renews
+- **$149 one-time**: perpetual license
 
 Purchase at [getcmdr.com/pricing](https://getcmdr.com/pricing).
 
 ### Source code
 
 The source becomes [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html) after 3 years (rolling per release). Until
-then, you can view, modify, and learn from the code — just not use it commercially without a license.
+then, you can view, modify, and learn from the code, but not use it commercially without a license.
 
 ---
 

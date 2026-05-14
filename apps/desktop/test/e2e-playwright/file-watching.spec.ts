@@ -221,10 +221,10 @@ test.describe('File watching', () => {
       2000,
     )
 
-    // The app should still be functional — left pane unaffected
+    // The app should still be functional: left pane unaffected
     expect(await fileExistsInPane(tauriPage, 'file-a.txt', 0)).toBe(true)
 
-    // Keyboard still works (no crash) — pressing Tab twice returns focus to the
+    // Keyboard still works (no crash): pressing Tab twice returns focus to the
     // left pane; we verify by re-asserting the left-pane file is still listed.
     await tauriPage.keyboard.press('Tab')
     await tauriPage.keyboard.press('Tab')
@@ -276,7 +276,7 @@ test.describe('File watching', () => {
 
     // File should appear in right pane, and after the watcher fires there
     // should be exactly one instance (no duplicate from watcher re-adding it).
-    // Poll instead of a fixed sleep — the DOM can be transiently empty during
+    // Poll instead of a fixed sleep: the DOM can be transiently empty during
     // a watcher-triggered re-render.
     const noDuplicates = await pollUntil(
       tauriPage,
@@ -312,7 +312,7 @@ test.describe('File watching', () => {
     // It should appear (hidden files are visible)
     await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, hiddenName), 2000)
 
-    // Toggle hidden files OFF — the dotfile should disappear
+    // Toggle hidden files OFF; the dotfile should disappear
     await executeViaCommandPalette(tauriPage, 'Toggle hidden')
     await pollUntil(tauriPage, async () => !(await fileExistsInFocusedPane(tauriPage, hiddenName)), 3000)
 

@@ -1,4 +1,4 @@
-// Search IPC commands — typed wrappers for the backend search engine.
+// Search IPC commands: typed wrappers for the backend search engine.
 
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { commands } from '$lib/ipc/bindings'

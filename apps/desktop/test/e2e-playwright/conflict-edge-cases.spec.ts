@@ -40,8 +40,8 @@ test.describe('Cancel and rollback', () => {
   test('Cancel copy mid-operation rolls back partial files', async ({ tauriPage }) => {
     // Use a small in-test fixture (5 × ~1 KB files) and a per-file throttle
     // via the `set_test_throttle` IPC. This gives us a deterministic ~1 s
-    // window in which to click Rollback — orders of magnitude cheaper than
-    // staging the 170 MB `bulk/` directory just to slow the copy down.
+    // window in which to click Rollback (orders of magnitude cheaper than
+    // staging the 170 MB `bulk/` directory just to slow the copy down).
     const fixtureRoot = getFixtureRoot()
     recreateFixtures(fixtureRoot)
     const partialLeft = path.join(fixtureRoot, 'left', 'partial')
@@ -65,7 +65,7 @@ test.describe('Cancel and rollback', () => {
       await clickTransferStart(tauriPage)
 
       // Wait until the first file is committed AND later files don't exist yet.
-      // This is the deterministic "we're mid-copy" signal — no sleeps, no races.
+      // This is the deterministic "we're mid-copy" signal: no sleeps, no races.
       const rightPartial = path.join(fixtureRoot, 'right', 'partial')
       const midCopy = await pollUntil(
         tauriPage,
@@ -95,7 +95,7 @@ test.describe('Cancel and rollback', () => {
       // Wait for rollback to finish and dialogs to close.
       await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
 
-      // Rollback must remove the partial files — and the directory we created
+      // Rollback must remove the partial files and the directory we created
       // for them. Either right/partial/ doesn't exist, or it's empty.
       const exists = fs.existsSync(rightPartial)
       if (exists) {
@@ -297,7 +297,7 @@ test.describe('Type mismatch conflicts', () => {
 
     // This might or might not show conflict policy depending on how the dry-run
     // detects the type mismatch. Wait long enough for the dry-run to settle, then
-    // peek — we explicitly want to accept BOTH outcomes (visible vs. not visible),
+    // peek: we explicitly want to accept BOTH outcomes (visible vs. not visible),
     // so there's no observable signal to poll for: polling for `.conflict-policy`
     // to appear would mask the legitimate "no conflict UI" case.
     // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- dry-run-completion peek; intentionally tolerates both "conflict UI shown" and "no conflict UI" outcomes, so polling for a specific selector would mask the second case

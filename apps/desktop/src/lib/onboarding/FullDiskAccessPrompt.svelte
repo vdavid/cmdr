@@ -37,7 +37,7 @@
         hasClickedOpenSettings = true
         // Re-probe right before opening Settings so the bundle is freshly
         // registered with TCC. Without this, the Cmdr row may not appear in
-        // the Full Disk Access list — TCC only adds apps that have recently
+        // the Full Disk Access list. TCC only adds apps that have recently
         // attempted to read a protected path.
         try {
             await checkFullDiskAccess()

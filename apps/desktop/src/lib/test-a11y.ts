@@ -3,7 +3,7 @@
  *
  * Runs axe-core against a mounted DOM subtree in Vitest/jsdom and asserts
  * zero violations. Covers structural a11y (ARIA, labels, focus, keyboard
- * semantics) — NOT color contrast. Contrast is checked at design time by
+ * semantics), not color contrast. Contrast is checked at design time by
  * `scripts/check-a11y-contrast/` (tier 1). Full-page interaction checks
  * (focus traps, Escape return-focus) live in the Playwright suite (tier 2).
  *
@@ -39,7 +39,7 @@ const AXE_OPTIONS: RunOptions = {
     // Contrast is checked at design time via `scripts/check-a11y-contrast`
     // (deterministic, no engine-dependent color-mix() resolution quirks).
     'color-contrast': { enabled: false },
-    // jsdom doesn't implement computed layout — many region/landmark rules
+    // jsdom doesn't implement computed layout, so many region/landmark rules
     // misfire on synthetic fragments detached from a full document. The E2E
     // tier covers landmark structure against the real app.
     region: { enabled: false },
@@ -65,8 +65,8 @@ export async function expectNoA11yViolations(element: Element | Document = docum
 
   if (results.violations.length === 0) return
 
-  // Build a readable failure message the way jest-axe does — axe's native
-  // output is nested and hard to scan in a Vitest diff.
+  // Build a readable failure message the way jest-axe does (axe's native
+  // output is nested and hard to scan in a Vitest diff).
   const message =
     `Expected no a11y violations, got ${String(results.violations.length)}:\n\n` +
     results.violations

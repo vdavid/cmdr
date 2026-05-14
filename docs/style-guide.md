@@ -42,13 +42,13 @@ Writing, code, and design styles.
     dir counts, item counts). Byte values use `formatBytes()` / `formatFileSize()` which already handle this.
 - UI
   - **Error messages**: Keep conversational, positive, actionable, and specific. Never use the words "error" or "failed"
-    — we wouldn't say those in conversation. Suggest a next step.
+    (we wouldn't say those in conversation). Suggest a next step.
     - "Couldn't rename the file. Try again?" not "Error: Rename operation failed."
     - "Password must contain at least 12 characters" not "Password format is invalid (minimum 12 characters)"
     - "Sorry, we couldn't save your changes. Try again?" not "Failed to save changes."
   - **Success messages**: Talk about the user, not the action. Make success implicit and warm.
     - "Your files moved to ~/Documents" not "Move operation completed successfully."
-    - "Shortcut saved — it's ready to use" not "Shortcut successfully created."
+    - "Shortcut saved. It's ready to use!" not "Shortcut successfully created."
   - **Confirmation dialogs**: Title = `verb + noun` question. Body = plain irreversibility warning. Buttons = outcome
     verbs, never "Yes / No".
     - "Delete 3 files?" / "This can't be undone" / **Cancel** · **Delete**
@@ -139,7 +139,7 @@ candidates to the user with the search URL and terms so they can browse and pick
     import IconTriangleAlert from '~icons/lucide/triangle-alert'
 </script>
 
-<!-- Basic usage — inherits parent text color -->
+<!-- Basic usage: inherits parent text color -->
 <IconTriangleAlert />
 
 <!-- With explicit size (use px props, not em) -->
@@ -162,23 +162,23 @@ directly to a component's root can be brittle; the wrapping span keeps the usual
 
 #### Sizing
 
-Pass explicit `width` / `height` props (in px) on the icon. Don't use `em` — sizing should be predictable and not float
+Pass explicit `width` / `height` props (in px) on the icon. Don't use `em`: sizing should be predictable and not float
 with surrounding text size.
 
 #### Coloring
 
-Icons use `currentColor` by default — they inherit the parent's text color. To color an icon:
+Icons use `currentColor` by default (they inherit the parent's text color). To color an icon:
 
 - **Preferred**: Set `color` on the parent element (a wrapping `<span>` with a scoped CSS class)
 - **For accent color**: Use a scoped class with a stylelint disable comment (because `color: var(--color-accent)` is
-  disallowed by default for a11y reasons — it has insufficient contrast as text):
+  disallowed by default for a11y reasons, as it has insufficient contrast as text):
   ```css
   .my-icon {
     /* stylelint-disable-next-line declaration-property-value-disallowed-list -- icon indicator, not body text */
     color: var(--color-accent);
   }
   ```
-- **For semantic colors**: Use `var(--color-warning)`, `var(--color-error)`, etc. directly — these aren't restricted
+- **For semantic colors**: Use `var(--color-warning)`, `var(--color-error)`, etc. directly (these aren't restricted)
 
 #### Adding a new icon set
 

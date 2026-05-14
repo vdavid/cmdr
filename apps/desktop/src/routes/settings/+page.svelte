@@ -30,7 +30,7 @@
                 return parsed
             }
         } catch {
-            // ignore — treat as no deep-link
+            // ignore: treat as no deep-link
         }
         return null
     }
@@ -42,7 +42,7 @@
      * Settings-window dimensions track the effective text scale: at 100% the
      * base values match the historical layout; at other scales the min/max
      * grow proportionally so all rows stay visible. Tauri has no "no max
-     * height" knob — we set a very large value (50_000 logical px) which is
+     * height" knob. We set a very large value (50_000 logical px) which is
      * effectively unbounded for practical use.
      *
      * Standard NSWindow clamping behavior: when the new constraints leave the
@@ -187,7 +187,7 @@
             // Self-focusing is needed because cross-window setFocus() doesn't reliably
             // bring a window to front on macOS.
             unlistenFocusSelf = await listen('focus-self', () => {
-                // setTimeout(0) defers past the originating keydown handler —
+                // setTimeout(0) defers past the originating keydown handler;
                 // without it, macOS restores focus to the main window.
                 setTimeout(() => {
                     void getCurrentWindow().setFocus()

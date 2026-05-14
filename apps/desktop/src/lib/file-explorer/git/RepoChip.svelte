@@ -8,7 +8,7 @@
 
   const { info }: Props = $props()
 
-  /** Visual state derived from the info — drives the pill color. */
+  /** Visual state derived from the info, drives the pill color. */
   const state = $derived.by((): 'clean' | 'ahead' | 'behind' | 'dirty' | 'detached' | 'unborn' => {
     if (info.unborn) return 'unborn'
     if (info.detachedSha) return 'detached'

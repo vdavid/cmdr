@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-// Shared test state — the mock factory closures capture these references
+// Shared test state: the mock factory closures capture these references
 const listeners = new Set<(commandId: string) => void>()
 const customOverrides = new Map<string, string[]>()
 
@@ -35,7 +35,7 @@ vi.mock('$lib/commands/command-registry', () => ({
       showInPalette: false,
       shortcuts: ['⌘⇧P'],
     },
-    // Tier 2: showInPalette false, basic nav — should NOT be in dispatch
+    // Tier 2: showInPalette false, basic nav; should NOT be in dispatch
     {
       id: 'nav.up',
       name: 'Select previous',

@@ -357,7 +357,7 @@ fn pinned_commit_secs(sm: &gix::Submodule<'_>, repo_root: &Path) -> Option<i64> 
 ///
 /// Each entry carries a real `modified_at` (branch tip's committer date)
 /// and a loose `display_size` showing ahead/behind relative to the
-/// branch's upstream — falling back to `main`/`master` for branches
+/// branch's upstream, falling back to `main`/`master` for branches
 /// without a configured upstream. The numeric `size` field carries the
 /// ahead-count so within-category Size sort puts the most-ahead branch
 /// first.

@@ -127,7 +127,7 @@ test.describe('Settings page', () => {
     // Filter to a narrow query (only Appearance-tied options should match).
     await settings.fill('.search-input', 'accent')
 
-    // Sidebar updates on a 200 ms debounce — wait for the count to drop.
+    // Sidebar updates on a 200 ms debounce: wait for the count to drop.
     const narrowed = await pollUntil(
       settings,
       async () => {
@@ -160,7 +160,7 @@ test.describe('Settings page', () => {
     await settings.waitForSelector('.section-item', 5000)
     await settings.fill('.search-input', 'zzzyyyxxxnomatch')
 
-    // Sidebar updates on a 200 ms debounce — wait for all sections to vanish.
+    // Sidebar updates on a 200 ms debounce: wait for all sections to vanish.
     const empty = await pollUntil(settings, async () => (await settings.count('.section-item')) === 0, 3000)
     expect(empty).toBe(true)
 
@@ -193,7 +193,7 @@ test.describe('Settings page', () => {
       `document.querySelector('.section-item.selected')?.textContent?.trim() || ''`,
     )
 
-    // Focus the search input then press Arrow Down — handler must forward to
+    // Focus the search input then press Arrow Down: handler must forward to
     // the section list and advance the selection (no separate focus state).
     await settings.evaluate(`(function() {
             var input = document.querySelector('.search-input');
@@ -234,7 +234,7 @@ test.describe('Settings keyboard binding', () => {
     // Escape. Without this the keystroke can land on the main window (or
     // wherever focus drifted to during async onMount in the settings UI),
     // the settings window never receives it, and the test sits waiting for
-    // a window-close that won't come. Two attempts max — cheap insurance.
+    // a window-close that won't come. Two attempts max as cheap insurance.
     const tryEscape = async (): Promise<boolean> => {
       const focused = await pollUntil(
         settings,

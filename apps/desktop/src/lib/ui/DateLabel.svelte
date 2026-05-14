@@ -10,7 +10,7 @@
   Use this component anywhere you'd otherwise reach for `formatDateTime` or
   hand-roll a date string. The FullList opts out because its column-alignment
   needs the two halves rendered into specific elements, but it uses the same
-  `formattedDate(...)` data — keep it that way.
+  `formattedDate(...)` data. Keep it that way.
 -->
 <script lang="ts">
     import { formattedDate } from '$lib/settings/reactive-settings.svelte'

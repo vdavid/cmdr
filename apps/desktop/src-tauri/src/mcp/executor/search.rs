@@ -19,7 +19,7 @@ async fn ensure_search_index() -> Result<Arc<search::SearchIndex>, ToolError> {
         let guard = SEARCH_INDEX.lock().map_err(|e| ToolError::internal(format!("{e}")))?;
         if let Some(ref state) = *guard {
             if state.index.entries.is_empty() && state.index.generation == 0 {
-                // Loading sentinel — wait briefly then check again
+                // Loading sentinel: wait briefly then check again
                 log::warn!("MCP ai_search: search index is in loading sentinel state (empty, gen=0), will reload");
             } else {
                 log::debug!(
@@ -34,7 +34,7 @@ async fn ensure_search_index() -> Result<Arc<search::SearchIndex>, ToolError> {
         }
     }
 
-    // Not loaded — load synchronously via spawn_blocking
+    // Not loaded: load synchronously via spawn_blocking
     let pool = crate::indexing::get_read_pool().ok_or_else(|| {
         crate::log_error!("MCP ai_search: drive index not available (no read pool)");
         ToolError::internal(
@@ -65,7 +65,7 @@ async fn ensure_search_index() -> Result<Arc<search::SearchIndex>, ToolError> {
     );
     let index = Arc::new(index);
 
-    // Store it for reuse (no timers for MCP — one-shot)
+    // Store it for reuse (no timers for MCP; one-shot)
     {
         let mut guard = SEARCH_INDEX.lock().map_err(|e| ToolError::internal(format!("{e}")))?;
         *guard = Some(SearchIndexState {

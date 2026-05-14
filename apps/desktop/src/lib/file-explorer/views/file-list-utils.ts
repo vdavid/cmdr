@@ -30,7 +30,7 @@ export function getSyncIconPath(status: SyncStatus | undefined): string | undefi
 
 /**
  * Creates a parent directory entry (".."). When `stats` is provided, the entry
- * carries the CURRENT directory's recursive size fields — so the ".." row shows
+ * carries the CURRENT directory's recursive size fields, so the ".." row shows
  * the total for the folder we're looking at, not the folder we'd navigate into.
  */
 export function createParentEntry(parentPath: string, stats?: DirStats): FileEntry {

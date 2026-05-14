@@ -191,7 +191,7 @@ pub fn run() {
     // `bindings.ts` is regenerated explicitly via `pnpm bindings:regen` (which
     // invokes the ignored `ipc::tests::export_bindings_test` and post-processes
     // with oxfmt); CI's `bindings-fresh` check fails when it drifts. Don't
-    // re-export at runtime — without the test's header + oxfmt postprocess, that
+    // re-export at runtime. Without the test's header + oxfmt postprocess, that
     // path silently overwrites the committed file with raw specta output on
     // every dev launch.
     let specta_builder = ipc::builder();
@@ -205,7 +205,7 @@ pub fn run() {
     #[cfg(debug_assertions)]
     let builder = builder.plugin(tauri_plugin_mcp_bridge::init());
 
-    // Playwright E2E testing plugin — socket bridge for direct webview injection.
+    // Playwright E2E testing plugin: socket bridge for direct webview injection.
     // Socket path is overridable via CMDR_PLAYWRIGHT_SOCKET so parallel E2E shards
     // can each spawn their own Tauri instance bound to a distinct socket.
     #[cfg(feature = "playwright-e2e")]
@@ -240,7 +240,7 @@ pub fn run() {
             // `tauri-plugin-log`. Why: per-output level filtering. File target locked at
             // Debug (error reports need the context); stdout defaults to Info (clean for
             // `pnpm dev`) with `RUST_LOG` per-module overrides applied to stdout only.
-            // The verbose toggle bumps stdout to Debug via an AtomicU8 — no logger
+            // The verbose toggle bumps stdout to Debug via an AtomicU8, no logger
             // rebuild, no records lost.
             //
             // Log directory priority:
@@ -294,12 +294,12 @@ pub fn run() {
                 rust_log: std::env::var("RUST_LOG").ok(),
             });
             // Apply verbose default after init (init resets the threshold from RUST_LOG).
-            // RUST_LOG always wins — only bump if RUST_LOG didn't set a base level.
+            // RUST_LOG always wins. Only bump if RUST_LOG didn't set a base level.
             if std::env::var("RUST_LOG").is_err() && verbose_default {
                 logging::dispatch::set_stdout_threshold(log::LevelFilter::Debug);
             }
             if let Err(err) = init_result {
-                // Don't panic — a logger collision (rare; tests, double-init) is recoverable.
+                // Don't panic. A logger collision (rare; tests, double-init) is recoverable.
                 // The `log` macros become no-ops, which is exactly the behavior callers expect
                 // when no logger is registered. Write directly to stderr; we don't have a
                 // logger to fall back to.
@@ -353,13 +353,13 @@ pub fn run() {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             file_system::volume::smb::set_app_handle(app.handle().clone());
 
-            // Network discovery (mDNS) startup is deferred — see the post-`load_settings`
+            // Network discovery (mDNS) startup is deferred. See the post-`load_settings`
             // block below. Starting mDNS here would trigger macOS's "Cmdr wants to find devices
             // on local networks" prompt at app launch even on first install before the user has
             // shown any interest in networking. We only start at launch for returning users (who
             // already answered the OS prompt at least once, tracked via `network.firstTriggerDone`).
             //
-            // For E2E builds, virtual SMB hosts also live alongside discovery — they're only
+            // For E2E builds, virtual SMB hosts also live alongside discovery. They're only
             // injected once discovery is up.
 
             // Initialize volume broadcast (must be before watchers so they can emit)
@@ -397,7 +397,7 @@ pub fn run() {
 
             // Set the FDA gate before the first `emit_volumes_changed_now()` below.
             // The gate suppresses path-based icon fetches in `volumes::list_locations`
-            // while the user hasn't decided about FDA — without it, NSWorkspace icon
+            // while the user hasn't decided about FDA. Without it, NSWorkspace icon
             // resolution stacks several TCC prompts (MediaLibrary, AppData, Desktop,
             // Documents, Downloads, ...) on top of our in-app onboarding modal.
             // See `crate::fda_gate` and `volumes/CLAUDE.md` § "FDA gate".
@@ -413,7 +413,7 @@ pub fn run() {
             ));
 
             // Apply the Flow B opt-in flag *before* any user-visible error path can fire.
-            // Default off (opt-in by design — Flow B sends data without per-event consent).
+            // Default off (opt-in by design: Flow B sends data without per-event consent).
             error_reporter::auto_dispatcher::set_enabled(saved_settings.error_reports_enabled.unwrap_or(false));
 
             // Apply MTP enabled setting (default: true) before starting the watcher
@@ -444,7 +444,7 @@ pub fn run() {
             network::manual_servers::load_manual_servers(app.handle());
 
             // Drag image detection swizzle is installed in RunEvent::Ready (not here)
-            // because wry 0.54+ registers the WryWebView ObjC class lazily — it doesn't
+            // because wry 0.54+ registers the WryWebView ObjC class lazily. It doesn't
             // exist in the runtime until the first webview is created, which happens after
             // setup() returns.
 
@@ -464,7 +464,7 @@ pub fn run() {
             font_metrics::load_all_metrics_from_disk(app.handle());
 
             // Start mDNS network discovery only for returning users who've already answered the
-            // OS Local Network prompt at least once. Fresh installs stay quiet at launch — the
+            // OS Local Network prompt at least once. Fresh installs stay quiet at launch. The
             // frontend calls `ensure_network_discovery_started` lazily on first user network
             // action (clicks "Network", opens "Connect to server…", upgrades a mounted share).
             // E2E builds always start so virtual hosts are populated before tests run.
@@ -492,7 +492,7 @@ pub fn run() {
             space_poller::start();
 
             // Upgrade existing SMB mounts to direct smb2 connections (background, non-blocking).
-            // Gated on the same lazy-startup conditions as mDNS above — opening a TCP socket to
+            // Gated on the same lazy-startup conditions as mDNS above. Opening a TCP socket to
             // a private-IP SMB server triggers macOS's Local Network prompt independently, so
             // we must not run this on fresh installs either. Returning users already answered
             // the prompt; lazy users wait until they click Network or use the picker's "Connect
@@ -551,7 +551,7 @@ pub fn run() {
             }
 
             // titleBarStyle is "Overlay" in JSON for macOS (needed so trafficLightPosition
-            // is applied at window creation time — setting it at runtime resets the position).
+            // is applied at window creation time. Setting it at runtime resets the position.
             // On Linux/GTK, Overlay hides native window controls, so revert to Visible.
             #[cfg(target_os = "linux")]
             if let Some(window) = app.get_webview_window("main") {
@@ -619,7 +619,7 @@ pub fn run() {
             let id = event.id().as_ref();
 
             // === CheckMenuItem exceptions: sync checked state and emit directly ===
-            // These must NOT go through "execute-command" — that would double-toggle.
+            // These must NOT go through "execute-command", as that would double-toggle.
             if id == SHOW_HIDDEN_FILES_ID {
                 let menu_state = app.state::<MenuState<tauri::Wry>>();
                 let guard = menu_state.show_hidden_files.lock_ignore_poison();
@@ -768,7 +768,7 @@ pub fn run() {
             // Custom MenuItems for Cut/Copy/Paste route through execute-command in the main window
             // so the frontend can decide between file and text clipboard. In non-main windows
             // (viewer, settings), we send the native action through the responder chain so
-            // WKWebView handles text clipboard natively — just like PredefinedMenuItems would.
+            // WKWebView handles text clipboard natively, just like PredefinedMenuItems would.
             if id == EDIT_CUT_ID || id == EDIT_COPY_ID || id == EDIT_PASTE_ID {
                 let main_focused = app
                     .get_webview_window("main")
@@ -793,7 +793,7 @@ pub fn run() {
             }
 
             // === Open with submenu: dynamic IDs prefix-routed before unified dispatch ===
-            // Items have IDs like `open-with:com.apple.Xcode` — too dynamic to enumerate
+            // Items have IDs like `open-with:com.apple.Xcode`, too dynamic to enumerate
             // in `menu_id_to_command`. We resolve the bundle ID back to an app path via
             // `MenuState.context.open_with_apps` and call the launch helper directly.
             #[cfg(target_os = "macos")]
@@ -863,7 +863,7 @@ pub fn run() {
                 );
             }
 
-            // Unknown menu ID — no-op (all known IDs are handled above)
+            // Unknown menu ID: no-op (all known IDs are handled above)
         })
         .invoke_handler(specta_builder.invoke_handler())
         .on_window_event(|window, event| {

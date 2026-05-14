@@ -20,7 +20,7 @@ export type Bindings = {
   // Config
   PRODUCT_NAME: string
   SUPPORT_EMAIL: string
-  // "sandbox" (default) or "live" — controls which Paddle API to use for /validate
+  // "sandbox" (default) or "live": controls which Paddle API to use for /validate
   PADDLE_ENVIRONMENT?: string
   // Price IDs for license type mapping
   PRICE_ID_COMMERCIAL_SUBSCRIPTION?: string
@@ -36,7 +36,7 @@ export type Bindings = {
   // Discord webhook URL for #error-reports channel notifications
   DISCORD_WEBHOOK_URL?: string
   // R2 S3-compatible credentials, used to mint long-TTL presigned download URLs
-  // for the Discord embed. Bindings can't presign on their own — the S3 API can.
+  // for the Discord embed. Bindings can't presign on their own, but the S3 API can.
   R2_ACCOUNT_ID?: string
   R2_ACCESS_KEY_ID?: string
   R2_SECRET_ACCESS_KEY?: string
@@ -65,7 +65,7 @@ export interface PaddleWebhookPayload {
 export const maxOrganizationNameLength = 500
 
 // KV key for the activation counter, read by /admin/stats.
-// Starts from zero on deploy — initialize via the CF API if you need historical count.
+// Starts from zero on deploy. Initialize via the CF API if you need historical count.
 export const activationCountKey = '_meta:activation_count'
 export const maxTransactionIdLength = 200
 

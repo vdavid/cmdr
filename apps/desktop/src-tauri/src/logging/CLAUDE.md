@@ -15,7 +15,7 @@ file target locked at Debug, terminal defaults to Info.
   log::warn!(target: "cloud_actions", "evict failed: {e}");
   ```
   Then dev sees just that subsystem with `RUST_LOG=open_with=debug pnpm dev`. Without a
-  `target:`, the log gets the file's module path as its target — workable but noisier
+  `target:`, the log gets the file's module path as its target, workable but noisier
   and harder to filter consistently. For new subsystems, pick a short stable `target:`
   string and use it across that module's log calls.
 - The verbose toggle in Settings flips the stdout chain to Debug at runtime; `RUST_LOG`
@@ -32,11 +32,11 @@ file target locked at Debug, terminal defaults to Info.
 ## Dispatch tree
 
 ```
-root Dispatch (level Trace — pure ceiling, per-chain filters do real gating)
+root Dispatch (level Trace: pure ceiling, per-chain filters do real gating)
 ├── stdout chain
 │     .level(Info)                       // default; AtomicU8 below can bump to Debug
-│     .level_for("nusb", Warn) ...        // noise overrides — stdout only
-│     .level_for(<from RUST_LOG>, ...)    // per-module overrides — stdout only
+│     .level_for("nusb", Warn) ...        // noise overrides (stdout only)
+│     .level_for(<from RUST_LOG>, ...)    // per-module overrides (stdout only)
 │     .filter(stdout-threshold AtomicU8)  // verbose-toggle gate, no rebuild
 │     .chain(io::stderr())
 └── file chain (skipped when advanced.maxLogStorageMb = 0)
@@ -63,7 +63,7 @@ chains are independent.
 
 The plugin is one-shot, owns the global `log` facade, and routes everything through a
 single shared level. Per-target levels would have required either patching the plugin or
-shipping two loggers — neither great. fern gives us a tree of independent dispatches with
+shipping two loggers, neither great. fern gives us a tree of independent dispatches with
 their own levels and filters; `file-rotate` is a small, focused crate exposing
 size+count rotation behind a `Write` impl. Together they're ~250 LOC of glue plus two
 ~3000 LOC well-maintained MIT crates.
@@ -76,7 +76,7 @@ The `list_recent_log_files` helper sorts by mtime so the live file is always fir
 `init` records the resolved stdout default + per-module overrides into
 `error_reporter::log_level_overrides::record` so the error-report bundle's
 `logLevels` field shows triagers what *could* have been logged. The file chain's
-`Debug` is hard-coded in the manifest — the dispatch tree is the only source of
+`Debug` is hard-coded in the manifest: the dispatch tree is the only source of
 truth, and a triager seeing `fileChain: "debug"` should match what's in this file.
 
 ## Verbose toggle (`developer.verboseLogging`)
@@ -87,7 +87,7 @@ with `log::LevelFilter`'s integer value. fern reads it via a `.filter(...)` clos
 every record, so the toggle takes effect mid-stream without rebuilding the dispatch (no
 records lost during the swap).
 
-The file chain ignores this knob entirely — it stays at Debug whenever log storage is
+The file chain ignores this knob entirely: it stays at Debug whenever log storage is
 enabled. RUST_LOG sets the **startup** stdout threshold; the toggle takes over at
 runtime if the user clicks it.
 
@@ -95,14 +95,13 @@ runtime if the user clicks it.
 
 `init` skips the file chain entirely when `keep_count == 0`. The stdout chain still
 works. The verbose toggle still works. The error reporter sees `log_dir() == None` (well,
-it sees the path but `keep_count == 0`) and produces a bundle with empty `logs/` —
-upload still goes through, just less useful. The settings UI documents this.
+it sees the path but `keep_count == 0`) and produces a bundle with empty `logs/`; upload still goes through, just less useful. The settings UI documents this.
 
 ## Cap changes at runtime
 
 `set_keep_count(n)` updates the in-RAM count. `eager_prune(dir, n)` is called by
 `set_max_log_storage_mb` to delete excess archived files immediately so the user sees
-the change. `file-rotate` itself doesn't get reconfigured — the keep-N value baked into
+the change. `file-rotate` itself doesn't get reconfigured: the keep-N value baked into
 the rotator at startup stays. Restart-to-apply is documented in the settings UI for
 `0 ↔ non-zero` transitions and for raising the cap above the previously baked-in value.
 
@@ -118,13 +117,13 @@ the rotator at startup stays. Restart-to-apply is documented in the settings UI 
 - **AtomicU8 for the verbose toggle, not dispatch rebuild**: rebuilding would briefly
   drop log records (between the old logger going away and the new one being installed),
   which is the wrong tradeoff for a user-facing toggle. The atomic costs one Relaxed load
-  per record — a rounding error.
+  per record, a rounding error.
 - **Stdout chain chains stderr, not stdout**: matches the previous plugin behavior. Devs
   who pipe stdout for parsing don't get logs in their pipe.
 
 ## Timestamp formats
 
-- **Stdout chain**: `HH:MM:SS.mmm` — terse, devs reading the live terminal know the date.
+- **Stdout chain**: `HH:MM:SS.mmm` (terse; devs reading the live terminal know the date).
 - **File chain**: `YYYY-MM-DDTHH:MM:SS.mmm±HH:MM` (ISO 8601 with millisecond precision
   and timezone offset). The file lives forever and gets shipped to triage; bare
   `HH:MM:SS.mmm` is impossible to correlate without context. The error reporter's
@@ -133,14 +132,14 @@ the rotator at startup stays. Restart-to-apply is documented in the settings UI 
 ## Gotcha/Why
 
 - `list_recent_log_files` returns `Vec<PathBuf>` in "newest-first by mtime" order. Trust
-  mtime, not the filename — `file-rotate` uses `.1`, `.2`, ... suffixes, not timestamps.
+  mtime, not the filename: `file-rotate` uses `.1`, `.2`, ... suffixes, not timestamps.
 - The active-file pattern is `^cmdr\.log(\.\d+)?$` (case-insensitive). Anything else
   (the legacy `Cmdr_<timestamp>.log` from the pre-`319d5d37` plugin setup, weird
   `cmdr.logsy` typos, unrelated `notes.log`s) is rejected. Legacy files are removed
   on startup by `cleanup_legacy_log_files`.
 - `eager_prune(dir, 0)` wipes everything including the live file; `file-rotate` re-creates
   it on the next write. This is the correct behavior for the "user just disabled logging
-  at runtime" path — we stop capturing immediately rather than waiting for the next
+  at runtime" path: we stop capturing immediately rather than waiting for the next
   restart.
 - The log dir resolution in `lib.rs` and in `early_load_max_log_storage_mb` /
   `early_load_verbose_logging` must stay in sync. `lib.rs` resolves it inside `setup()`;

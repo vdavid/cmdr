@@ -1,7 +1,7 @@
 //! Error reporter Tauri commands.
 //!
 //! Two preview/send commands plus a debug-only save-to-disk command. Business logic lives
-//! in `crate::error_reporter` — these wrappers just shape inputs/outputs for the IPC layer.
+//! in `crate::error_reporter`. These wrappers just shape inputs/outputs for the IPC layer.
 
 use crate::error_reporter::{
     self, BundleKind, BundleManifest, BundleScope, FLOW_A_BUNDLE_CAP_MB, settings_defaults::SettingValue,
@@ -26,7 +26,7 @@ const MAX_USER_NOTE_CHARS: usize = 100_000;
 ///
 /// Called once from `initializeSettings()` in `apps/desktop/src/lib/settings/settings-store.ts`
 /// after the registry has loaded. Subsequent calls overwrite (HMR-safe in dev).
-/// Failures are silent — the Rust side falls back to hardcoded defaults if the map
+/// Failures are silent. The Rust side falls back to hardcoded defaults if the map
 /// is missing or doesn't include a given key.
 #[tauri::command]
 #[specta::specta]
@@ -67,8 +67,8 @@ pub struct SendResult {
 /// The zip bytes are dropped after measuring so we don't ferry MB across IPC.
 ///
 /// Scope: last hour of log content (see [`BundleScope::flow_a_default`]). Capped at
-/// 1 MB compressed during streaming via [`FLOW_A_BUNDLE_CAP_MB`] — early termination,
-/// no post-hoc trimming. The trailing `cap_bundle_to_mb` is a defense-in-depth no-op
+/// 1 MB compressed during streaming via [`FLOW_A_BUNDLE_CAP_MB`] (early termination,
+/// no post-hoc trimming). The trailing `cap_bundle_to_mb` is a defense-in-depth no-op
 /// for this path (the streaming pipeline already enforces the cap) but stays in case
 /// the manifest grows large enough to push the bundle over by itself.
 #[tauri::command]
@@ -90,7 +90,7 @@ pub async fn prepare_error_report_preview(
     })
 }
 
-/// Re-build the bundle and upload it. Returns the server-issued ID — display *that* to
+/// Re-build the bundle and upload it. Returns the server-issued ID; display *that* to
 /// the user, not any locally-generated ID from a prior `prepare` call.
 #[tauri::command]
 #[specta::specta]

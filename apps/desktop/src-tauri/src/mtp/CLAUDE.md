@@ -9,18 +9,18 @@ On Linux, users may need udev rules for USB device permissions (see `resources/9
 | File | Purpose |
 |------|---------|
 | `mod.rs` | Re-exports public surface; module-level doc |
-| `types.rs` | `MtpDeviceInfo`, `MtpStorageInfo` — camelCase JSON via `serde(rename_all)` |
+| `types.rs` | `MtpDeviceInfo`, `MtpStorageInfo`: camelCase JSON via `serde(rename_all)` |
 | `discovery.rs` | `list_mtp_devices()` via `mtp_rs::MtpDevice::list_devices()`; device IDs formatted as `"mtp-{location_id}"` |
-| `watcher.rs` | `start_mtp_watcher()` — nusb hotplug watcher; 500 ms delay on connect before re-checking; auto-connects detected devices via `MtpConnectionManager::connect()` and auto-disconnects removed ones |
+| `watcher.rs` | `start_mtp_watcher()`: nusb hotplug watcher; 500 ms delay on connect before re-checking; auto-connects detected devices via `MtpConnectionManager::connect()` and auto-disconnects removed ones |
 | `macos_workaround.rs` | macOS-only (`#[cfg(target_os = "macos")]`). Auto-suppresses `ptpcamerad` via `launchctl disable` + `pkill`; restores on disconnect/exit; `ensure_ptpcamerad_enabled()` on startup for crash recovery. Falls back to manual `PTPCAMERAD_WORKAROUND_COMMAND` dialog if suppression fails |
 | `connection/mod.rs` | `MtpConnectionManager` singleton (`LazyLock`); `DeviceEntry` map; `connect()` (idempotent, probes write capability, registers `MtpVolume`); `disconnect()` |
 | `connection/cache.rs` | `PathHandleCache` (path → MTP object handle), `ListingCache` (5 s TTL), `EventDebouncer` (500 ms per device) |
 | `connection/errors.rs` | `MtpConnectionError` enum with typed variants and `map_mtp_error()` from `mtp_rs::Error` |
 | `connection/event_loop.rs` | Background tokio task per device: polls `device.next_event()`, computes diffs, emits `directory-diff` events using the unified diff system |
 | `connection/directory_ops.rs` | `list_directory()` (with lock-contention logging), `resolve_path_to_handle()` (cache-only) |
-| `connection/file_ops.rs` | `download_file()`, `upload_file()`, `open_download_stream()` — emit `mtp-transfer-progress` Tauri events. `open_download_stream()` returns a `FileDownload` for streaming reads (used by `MtpReadStream` in `volume/mtp.rs`). |
-| `connection/mutation_ops.rs` | `delete()` (recursive, children-first), `create_folder()`, `rename()`, `move_object()` — no copy+delete fallback |
-| `connection/bulk_ops.rs` | `scan_for_copy()` — uses `Box::pin` for async recursion |
+| `connection/file_ops.rs` | `download_file()`, `upload_file()`, `open_download_stream()`: emit `mtp-transfer-progress` Tauri events. `open_download_stream()` returns a `FileDownload` for streaming reads (used by `MtpReadStream` in `volume/mtp.rs`). |
+| `connection/mutation_ops.rs` | `delete()` (recursive, children-first), `create_folder()`, `rename()`, `move_object()`: no copy+delete fallback |
+| `connection/bulk_ops.rs` | `scan_for_copy()`: uses `Box::pin` for async recursion |
 | `virtual_device.rs` | Virtual MTP device for E2E testing; creates backing dirs + registers device via `mtp-rs`. Gated behind `virtual-mtp` feature. Run with: `cd apps/desktop && pnpm tauri dev -c src-tauri/tauri.dev.json --features virtual-mtp` |
 
 ## Architecture / data flow
@@ -29,7 +29,7 @@ On Linux, users may need udev rules for USB device permissions (see `resources/9
 USB plug-in
   → nusb hotplug event (watcher.rs)
   → 500 ms delay
-  → check MTP_ENABLED gate — skip if disabled
+  → check MTP_ENABLED gate, skip if disabled
   → list_mtp_devices() (discovery.rs)
   → auto_connect_device() (watcher.rs)
     → MtpConnectionManager::connect()
@@ -58,8 +58,8 @@ Event loop (event_loop.rs)
 
 `MTP_ENABLED` (`AtomicBool`, default `true`) in `watcher.rs` gates all auto-connect behavior. The watcher loop always runs (it's `OnceLock`-based, no shutdown channel), but `check_for_device_changes()` returns early when disabled.
 
-- **`set_mtp_enabled_flag(bool)`** — Sets the flag without side effects. Called at startup from `lib.rs` before `start_mtp_watcher()` so the initial auto-connect respects the persisted setting.
-- **`set_mtp_enabled(bool, app)`** — Async. Called at runtime via the `set_mtp_enabled` Tauri command. When disabling: disconnects all devices, clears `KNOWN_DEVICES`, restores ptpcamerad (macOS). When enabling: calls `check_for_device_changes()` to pick up already-plugged devices.
+- **`set_mtp_enabled_flag(bool)`**: Sets the flag without side effects. Called at startup from `lib.rs` before `start_mtp_watcher()` so the initial auto-connect respects the persisted setting.
+- **`set_mtp_enabled(bool, app)`**: Async. Called at runtime via the `set_mtp_enabled` Tauri command. When disabling: disconnects all devices, clears `KNOWN_DEVICES`, restores ptpcamerad (macOS). When enabling: calls `check_for_device_changes()` to pick up already-plugged devices.
 - **Setting key**: `fileOperations.mtpEnabled` in `settings.json`, read by `settings/loader.rs` at startup.
 - **Interaction with ptpcamerad**: disabling MTP calls `restore_ptpcamerad_unconditionally()`. Re-enabling triggers auto-connect, which re-suppresses ptpcamerad if devices are found.
 
@@ -81,7 +81,7 @@ It never orchestrates MTP connections.
 
 ## Dependencies
 
-- `mtp_rs` — MTP session, object listing, file transfer
-- `nusb` — USB hotplug events
-- `futures_util` — `StreamExt` for hotplug stream
-- `crate::file_system` — `VolumeManager`, `MtpVolume`, `FileEntry`, `compute_diff`
+- `mtp_rs`: MTP session, object listing, file transfer
+- `nusb`: USB hotplug events
+- `futures_util`: `StreamExt` for hotplug stream
+- `crate::file_system`: `VolumeManager`, `MtpVolume`, `FileEntry`, `compute_diff`

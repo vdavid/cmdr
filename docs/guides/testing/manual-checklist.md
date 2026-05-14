@@ -13,7 +13,7 @@ Use this checklist before each release to verify features that cannot be automat
 - [ ] Both panes display home directory contents
 - [ ] No error dialogs on startup
 
-### Context menu (native macOS—cannot be automated)
+### Context menu (native macOS, cannot be automated)
 
 - [ ] Right-click shows native context menu
 - [ ] "Open" works
@@ -22,7 +22,7 @@ Use this checklist before each release to verify features that cannot be automat
 - [ ] "Get info" opens system Info panel
 - [ ] "Quick Look" previews file (space bar alternative)
 
-### Drag-and-drop (Tauri plugin—cannot be automated)
+### Drag-and-drop (Tauri plugin, cannot be automated)
 
 - [ ] Drag file to Finder copies/moves it
 - [ ] Drag file to other apps (like Mail) attaches it

@@ -60,7 +60,7 @@ pub struct IndexReplayCompleteEvent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RescanReason {
-    /// Event ID gap too large — app hasn't run for a long time.
+    /// Event ID gap too large: app hasn't run for a long time.
     StaleIndex,
     /// FSEvents journal unavailable (gap detected during replay).
     JournalGap,
@@ -74,7 +74,7 @@ pub enum RescanReason {
     ReconcilerBufferOverflow,
     /// Previous scan didn't complete (app crashed or was force-quit).
     IncompletePreviousScan,
-    /// FSEvents channel overflowed — events were dropped.
+    /// FSEvents channel overflowed: events were dropped.
     WatcherChannelOverflow,
 }
 
@@ -117,7 +117,7 @@ pub enum ActivityPhase {
     Reconciling,
     /// Processing live filesystem events in real time.
     Live,
-    /// Idle — indexing initialized but no active work.
+    /// Idle: indexing initialized but no active work.
     Idle,
 }
 
@@ -340,7 +340,7 @@ mod tests {
     //!
     //! `DebugStats` is the journal the debug window reads. Transitions are
     //! one-way appends (each `set_phase` closes the previous entry and pushes
-    //! a new one) — this isn't a strict state machine, but it does encode a
+    //! a new one). This isn't a strict state machine, but it does encode a
     //! pipeline order (`Replaying -> Live`, `Scanning -> Aggregating ->
     //! Reconciling -> Live`) that the UI relies on for the timeline strip.
     //!

@@ -1,4 +1,4 @@
-/* PostHog session replay, heatmaps, click tracking — loaded from CDN to avoid bundling dompurify. */
+/* PostHog session replay, heatmaps, click tracking (loaded from CDN to avoid bundling dompurify). */
 /* eslint-disable */
 // noinspection CommaExpressionJS,EqualityComparisonWithCoercionJS,JSReferencingMutableVariableFromClosure,ES6ConvertVarToLetConst,JSValidateTypes
 

@@ -427,7 +427,7 @@ pub async fn resync_virtual_mtp_after_disk_change() -> Result<(usize, usize), St
     let _ = mtp::virtual_device::rescan_virtual_device();
     mtp::connection_manager().clear_all_listing_caches().await;
 
-    // Phase 5: resume — past this point the watcher is live again.
+    // Phase 5: resume (past this point the watcher is live again).
     mtp::virtual_device::resume_virtual_watcher();
 
     Ok(result)

@@ -75,7 +75,7 @@ export function formatSizeForDisplay(
 
 /**
  * Renders a byte count as a colored HTML span string (e.g. `<span class="size-mb">1.02 MB</span>`).
- * For embedding inside HTML strings — tooltips, error messages, etc. Use the `<Size>` component
+ * For embedding inside HTML strings (tooltips, error messages, etc.). Use the `<Size>` component
  * for inline rendering in Svelte templates.
  */
 export function formatSizeHtmlColored(bytes: number, format: FileSizeFormat): string {
@@ -128,7 +128,7 @@ function renderSegments(segments: DateSegment[]): string {
  * Builds date tooltip content as HTML, with each colored segment wrapped in
  * its age-tier span so the active `data-date-colors` palette colors year,
  * month, day, and time independently. Takes a `formatter` callback so the
- * util stays pure — the caller passes `formattedDate` from
+ * util stays pure: the caller passes `formattedDate` from
  * `reactive-settings.svelte.ts` to inherit the user's date format setting, or
  * a stub from tests.
  *

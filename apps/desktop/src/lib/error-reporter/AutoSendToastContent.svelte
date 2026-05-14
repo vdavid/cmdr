@@ -25,7 +25,7 @@
 
     function handleView() {
         // Reuse Flow A's preview dialog so the user can inspect what was just sent.
-        // The dialog re-builds the bundle locally — same inputs, deterministic output —
+        // The dialog re-builds the bundle locally (same inputs, deterministic output)
         // so what they see matches what shipped (modulo the timestamp).
         dismissToast(TOAST_ID)
         openErrorReportDialog()

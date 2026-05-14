@@ -28,7 +28,7 @@ export XDG_RUNTIME_DIR=/run/user/$(id -u)
 mkdir -p "$XDG_RUNTIME_DIR"
 chmod 700 "$XDG_RUNTIME_DIR"
 
-# Start GVFS daemon (needed for gio mount — Cmdr uses this for SMB mounting on Linux)
+# Start GVFS daemon (needed for gio mount, which Cmdr uses for SMB mounting on Linux)
 echo "Starting GVFS daemon..."
 /usr/libexec/gvfsd &
 sleep 0.5
@@ -60,7 +60,7 @@ if [ "${VNC:-}" = "1" ]; then
     echo ""
 fi
 
-# Change to the app directory if we're mounted (skip in VNC mode — it runs from repo root)
+# Change to the app directory if we're mounted (skip in VNC mode: it runs from repo root)
 if [ -d "/app/apps/desktop" ] && [ "${VNC:-}" != "1" ]; then
     cd /app/apps/desktop
 fi

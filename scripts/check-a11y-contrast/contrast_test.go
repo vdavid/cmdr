@@ -137,7 +137,7 @@ func TestMixOKLCH_AccentSubtle(t *testing.T) {
 	// color at alpha 0.15. Composited on white:
 	//   result = accent * 0.15 + white * 0.85
 	//   ~= (212*0.15+255*0.85, 160*0.15+255*0.85, 6*0.15+255*0.85)
-	//   ~= (248.6, 240.8, 217.7)  — pale warm yellow, luminance ~0.87.
+	//   ~= (248.6, 240.8, 217.7)  (pale warm yellow, luminance ~0.87)
 	white, _ := ParseColor("#ffffff")
 	out := CompositeOver(m, white)
 	lum := RelativeLuminance(out)

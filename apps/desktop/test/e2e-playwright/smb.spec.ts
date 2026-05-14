@@ -50,14 +50,14 @@ import os from 'os'
 test.setTimeout(120_000)
 
 // Linux SMB tests run inside Docker (gvfs-based mounting). mDNS discovery and
-// GVFS mount are environmentally flaky on Docker overlay filesystems — see
+// GVFS mount are environmentally flaky on Docker overlay filesystems; see
 // e2e-linux/CLAUDE.md for the GVFS / UDisks2VolumeMonitor warning the OS spews
 // when concurrent mounts collide. A single retry hides this without masking
 // real regressions. SMB tests are skipped on macOS, so the retry only fires on
 // Linux.
 test.describe.configure({ retries: 1 })
 
-/** Name of the root/local volume — differs by platform. */
+/** Name of the root/local volume (differs by platform). */
 const LOCAL_VOLUME_NAME = os.platform() === 'linux' ? 'Root' : 'Macintosh HD'
 
 test.beforeAll(() => {
@@ -84,13 +84,13 @@ test.beforeEach(async ({ tauriPage }) => {
   recreateFixtures(getFixtureRoot())
   // After recreating the fixture tree, give the OS file watcher time to coalesce
   // its initial-scan events before we navigate into the directories. There's no
-  // UI-side "watcher armed" signal to poll for — events fire into the backend
-  // and are debounced there, so a fixed pre-nav settle is what actually keeps
+  // UI-side "watcher armed" signal to poll for (events fire into the backend
+  // and are debounced there), so a fixed pre-nav settle is what actually keeps
   // SMB tests from racing the watcher's first burst.
-  // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- watcher initial-scan coalescing window; no UI-side signal — backend debounces watcher events with no observable "armed" marker
+  // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- watcher initial-scan coalescing window; no UI-side signal, backend debounces watcher events with no observable "armed" marker
   await sleep(1000)
 
-  // Navigate to the main route first — volume-select event listeners
+  // Navigate to the main route first: volume-select event listeners
   // only exist on the file explorer page, not on /settings.
   await tauriPage.evaluate(`(function() {
         var a = document.createElement('a');
@@ -214,7 +214,7 @@ describeSmb('SMB share browsing', () => {
     await mcpCall('move_cursor', { pane: 'left', filename: 'SMB Test (Guest)' })
     await mcpCall('open_under_cursor', {})
 
-    // Wait for share browser to load — look for .share-row elements
+    // Wait for share browser to load (look for .share-row elements)
     await pollUntil(tauriPage, async () => shareExistsInPane(tauriPage, SMB_GUEST_SHARE), 30000)
 
     const hasPublic = await shareExistsInPane(tauriPage, SMB_GUEST_SHARE)
@@ -307,7 +307,7 @@ describeSmb('SMB cross-storage copy', () => {
     }
 
     // Write test file directly to the SMB server via smbclient (bypasses GVFS
-    // caching — files written through the GVFS mount aren't immediately visible).
+    // caching; files written through the GVFS mount aren't immediately visible).
     smbWriteFile(
       SMB_GUEST_HOST,
       SMB_GUEST_PORT,
@@ -364,7 +364,7 @@ describeSmb('SMB authentication', () => {
   test('listing shares with valid credentials returns private share', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
-    // Call the Tauri IPC command directly — same backend path the login form
+    // Call the Tauri IPC command directly: same backend path the login form
     // uses. Uses a unique hostId to bypass any cached results.
     const result = await tauriPage.evaluate<{ shares: { name: string }[]; authMode: string }>(`
       window.__TAURI_INTERNALS__.invoke('list_shares_with_credentials', {
@@ -465,7 +465,7 @@ describeSmb('SMB unicode server', () => {
     await mcpCall('move_cursor', { pane: 'left', filename: 'SMB Test (Unicode)' })
     await mcpCall('open_under_cursor', {})
 
-    // Wait for share browser to load — should show at least one share
+    // Wait for share browser to load, should show at least one share
     await pollUntil(
       tauriPage,
       async () => {

@@ -43,7 +43,7 @@ use super::{
 #[derive(Default)]
 pub struct FileContextInfo {
     pub sync_status: SyncStatus,
-    /// Whether this path is in iCloud Drive specifically — gates the cloud action menu
+    /// Whether this path is in iCloud Drive specifically. Gates the cloud action menu
     /// items. Eviction / download work via `FileManager` ubiquity APIs, which only
     /// support iCloud (not third-party File Providers). See `cloud_actions.rs` for why.
     pub is_icloud_drive: bool,
@@ -54,7 +54,7 @@ pub struct FileContextInfo {
 #[derive(Default)]
 pub struct FileContextInfo;
 
-/// Result of building a file context menu — the menu itself, plus (on macOS) a
+/// Result of building a file context menu: the menu itself, plus (on macOS) a
 /// `bundle_id → app_path` map that the caller stores in `MenuState.context.open_with_apps`
 /// so `lib.rs::on_menu_event` can resolve `open-with:<bundle-id>` clicks back to an app URL.
 pub struct ContextMenuResult<R: Runtime> {
@@ -104,7 +104,7 @@ pub fn build_context_menu<R: Runtime>(
         menu.append(&open_item)?;
         #[cfg(target_os = "macos")]
         {
-            // Open with submenu — Finder convention: shown for files, not directories.
+            // Open with submenu: Finder convention, shown for files, not directories.
             let (submenu, map) = super::open_with::build_open_with_submenu(app, &info.open_with.candidates)?;
             menu.append(&submenu)?;
             open_with_apps = map;
@@ -156,7 +156,7 @@ pub fn build_context_menu<R: Runtime>(
     menu.append(&copy_filename_item)?;
     menu.append(&copy_path_item)?;
 
-    // Cloud actions (macOS File Provider) — only show when the file is in a
+    // Cloud actions (macOS File Provider): only show when the file is in a
     // cloud-managed folder, gated by sync status.
     #[cfg(target_os = "macos")]
     if info.is_icloud_drive {
@@ -325,7 +325,7 @@ pub fn build_network_host_context_menu(
 ) -> tauri::Result<Menu<Wry>> {
     let menu = Menu::new(app)?;
 
-    // "Disconnect" is always shown — if nothing is mounted, the backend handles it gracefully
+    // "Disconnect" is always shown. If nothing is mounted, the backend handles it gracefully.
     let disconnect = MenuItem::with_id(app, NETWORK_HOST_DISCONNECT_ID, "Disconnect", true, None::<&str>)?;
     menu.append(&disconnect)?;
 

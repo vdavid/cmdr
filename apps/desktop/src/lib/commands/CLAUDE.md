@@ -7,7 +7,7 @@ Centralized command registry and fuzzy search engine for the command palette.
 | File                   | Purpose                                                                                  |
 | ---------------------- | ---------------------------------------------------------------------------------------- |
 | `types.ts`             | `Command`, `CommandMatch`, `CommandScope` types                                          |
-| `command-registry.ts`  | The `commands` array — single source of truth. `getPaletteCommands()` filter.            |
+| `command-registry.ts`  | The `commands` array (single source of truth). `getPaletteCommands()` filter.            |
 | `fuzzy-search.ts`      | `searchCommands(query, recentCommandIds?)` using `@leeoniya/ufuzzy`                      |
 | `index.ts`             | Barrel re-export                                                                         |
 | `fuzzy-search.test.ts` | Vitest tests: empty query, exact/fuzzy matches, ranking, index bounds, palette filtering |
@@ -40,7 +40,7 @@ keyboard routing is handled by each UI component.
 `command-registry.ts` holds ~60 commands grouped by scope. Key rules:
 
 - `showInPalette: false` for low-level navigation (↑/↓, ←/→, volume/palette modal internals).
-- `app.commandPalette` has `showInPalette: false` — opening the palette from inside itself makes no sense.
+- `app.commandPalette` has `showInPalette: false`; opening the palette from inside itself makes no sense.
 - `getPaletteCommands()` is the only filter exported; `commands` (the full array) is also exported for use by shortcut
   documentation and future settings panes.
 
@@ -60,8 +60,8 @@ query non-empty →
 
 uFuzzy configuration:
 
-- `intraMode: 1` — typo-tolerant within-word fuzzy matching (e.g. "tyoe" → "type")
-- `interIns: 3` — max 3 inserted characters between matched chars
+- `intraMode: 1`: typo-tolerant within-word fuzzy matching (for example "tyoe" → "type")
+- `interIns: 3`: max 3 inserted characters between matched chars
 
 `info.ranges` is a flat `[start, end, start, end, ...]` array where `end` is exclusive. The code unpacks ranges into
 individual character indices for `matchedIndices`.
@@ -92,13 +92,13 @@ Exception: `CheckMenuItem`s (show hidden files, view modes) keep separate handli
 **Decision**: `scope` is a documentation-only string literal, not enforced at runtime. **Why**: Keyboard routing is
 handled by each UI component (FilePane, NetworkBrowser, etc.) based on what's focused, not by the command system. Making
 scope enforcement centralized would require the command module to know about all UI state. Instead, scope exists for
-conflict detection in the shortcuts system and for display in settings — the actual dispatch is the responsibility of
+conflict detection in the shortcuts system and for display in settings; the actual dispatch is the responsibility of
 each component's keydown handler or the centralized dispatch map.
 
 **Decision**: `showInPalette: false` for native macOS commands (quit, hide, hide others, show all). **Why**: These
 commands are handled by macOS via `PredefinedMenuItems` with native selectors (`terminate:`, `hide:`, etc.). The native
 menu accelerators handle the keyboard shortcuts directly. Including them in the JS shortcut dispatch map would cause
-double-execution — the native handler fires AND the JS handler fires.
+double-execution: the native handler fires AND the JS handler fires.
 
 **Decision**: `isMacOS()` called at module load time for platform-specific command names and visibility. **Why**: Some
 commands only make sense on macOS (`Get info`, `Quick look`, `Show in Finder`). Rather than filtering at render time,
@@ -106,7 +106,7 @@ the registry itself contains platform-correct names and `showInPalette` values. 
 systems platform-aware without platform checks scattered through the UI.
 
 **Decision**: uFuzzy as the fuzzy search library (over alternatives like Fuse.js, fzf-for-js). **Why**: uFuzzy is
-optimized for the exact use case — short search phrases against short-to-medium phrases. It's pure TypeScript with no
+optimized for the exact use case: short search phrases against short-to-medium phrases. It's pure TypeScript with no
 dependencies, handles typos (`intraMode: 1`), and returns match ranges for highlighting. Fuse.js is heavier and slower
 for this scale. The `interIns: 3` setting limits inserted characters between matches to avoid nonsensical matches on a
 ~60-item list.
@@ -129,18 +129,18 @@ lookup but add complexity for no measurable gain at this scale.
 
 **Gotcha**: `getPaletteCommands()` is the only filter; there's no `getCommandById()`. **Why**: Command lookup by ID
 happens in the shortcuts system (which builds its own reverse map) and in `handleCommandExecute` (which uses a switch
-statement). The commands module intentionally stays minimal — it's a registry and a search engine, not a full command
+statement). The commands module intentionally stays minimal: it's a registry and a search engine, not a full command
 bus.
 
 **Gotcha**: `info.ranges` from uFuzzy is a flat `[start, end, start, end, ...]` array, not an array of tuples. **Why**:
 uFuzzy uses this flat format for performance. The code unpacks ranges into individual character indices for
-`matchedIndices`. If you change the highlighting approach, you need to understand this flat layout — `end` is exclusive.
+`matchedIndices`. If you change the highlighting approach, you need to understand this flat layout (`end` is exclusive).
 
 **Gotcha**: `handleCommandExecute` intercepts `edit.copy` and `selection.selectAll` BEFORE logging when the user's
 selection is inside an opt-in text region (`.error-pane` or `[data-text-region]`). **Why**: The native macOS Edit menu's
 accelerators (⌘C, ⌘A) fire through this dispatcher even when the user is selecting/copying plain text in the ErrorPane.
 Without the early bail, every text copy would log `FE:user-action edit.copy` and trigger file-scope side effects (file
-copy, file select-all) — polluting the user-action log used for rollback and breaking the user's expectation that ⌘C/⌘A
+copy, file select-all), polluting the user-action log used for rollback and breaking the user's expectation that ⌘C/⌘A
 do text things in selectable regions. See `handleTextRegionShortcut` in `command-dispatch.ts`.
 
 **Gotcha**: Adding a command with a menu item requires changes in four places. **Why**: The menu system (Rust) and
@@ -151,4 +151,4 @@ or vice versa).
 
 ## Dependencies
 
-- `@leeoniya/ufuzzy` (npm) — pure TypeScript, no Tauri or Svelte deps in this module.
+- `@leeoniya/ufuzzy` (npm): pure TypeScript, no Tauri or Svelte deps in this module.

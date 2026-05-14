@@ -16,7 +16,7 @@ bridge to sync via `Handle::block_on`. This creates:
 2. **Invisible blocking**: `block_on` inside `spawn_blocking` blocks a thread pool thread. Fine for one operation, but N
    concurrent copies each blocking a thread is wasteful.
 3. **Cancellation fragility**: 50+ `is_cancelled()` checks scattered through the write pipelines. Easy to miss a site.
-   Async gives us `select!` + `CancellationToken` — composable and impossible to forget.
+   Async gives us `select!` + `CancellationToken`, composable and impossible to forget.
 4. **Future volume types**: FTP, S3, WebDAV are all async. Each would need the same `block_on` bridge + channel
    workaround. Async trait makes them first-class.
 
@@ -36,7 +36,7 @@ From `design-principles.md` and our conversation:
 
 ### In scope
 
-- `Volume` trait: async methods via manual `Pin<Box<dyn Future>>` return types (no `async-trait` crate — see decisions)
+- `Volume` trait: async methods via manual `Pin<Box<dyn Future>>` return types (no `async-trait` crate; see decisions)
 - `VolumeReadStream` trait: `next_chunk` becomes `async fn`
 - 4 implementors: `LocalPosixVolume`, `InMemoryVolume`, `MtpVolume`, `SmbVolume`
 - **Volume** copy/move/delete pipelines (`volume_copy.rs`, `volume_move.rs`, `delete.rs`): `spawn_blocking` wrappers
@@ -46,7 +46,7 @@ From `design-principles.md` and our conversation:
   `volume_move.rs`, `volume_conflict.rs`, `volume_strategy.rs`, `mod.rs`, `trash.rs`, and all test files that construct
   `WriteOperationState`.
 - Cancellation: `CancellationToken` for volume pipelines. **Local pipelines** (`copy.rs`, `move_op.rs`, `delete.rs` for
-  local ops, `trash.rs`) keep `AtomicU8`-based `is_cancelled()` for now — they run in `spawn_blocking` where async
+  local ops, `trash.rs`) keep `AtomicU8`-based `is_cancelled()` for now; they run in `spawn_blocking` where async
   cancellation doesn't help. This is a deliberate dual mechanism, not a bug. Tracked for future consolidation.
 - Scan preview: volume path becomes async
 - Space poller: becomes async
@@ -75,8 +75,8 @@ Steps:
 1. **No `async-trait` crate.** On Rust 1.94, `async fn in trait` is stable for static dispatch. For `dyn Volume` (which
    we need for `Arc<dyn Volume>`), we use manual desugaring: methods that need async return
    `Pin<Box<dyn Future<Output = T> + Send + '_>>`. Methods that are trivially sync (`name()`, `root()`,
-   `supports_streaming()`, `supports_watching()`, `supports_export()`, etc.) STAY as regular `fn` — no async overhead
-   for identity accessors. This avoids the `async-trait` dependency entirely and keeps the trait readable.
+   `supports_streaming()`, `supports_watching()`, `supports_export()`, etc.) STAY as regular `fn` (no async overhead
+   for identity accessors). This avoids the `async-trait` dependency entirely and keeps the trait readable.
 
    **Why not `async-trait`**: On current Rust stable, `async fn in dyn trait` is not natively supported but manual
    boxing works. `async-trait` is a macro that does the same boxing with nicer syntax but adds a proc-macro dependency
@@ -100,26 +100,26 @@ Steps:
 
 4. **Update `LocalPosixVolume`.** Async methods clone the fields they need from `self`, then enter
    `Box::pin(async move { spawn_blocking(move || { ... }).await.unwrap() })`. The `spawn_blocking` closure requires
-   `'static`, so you CANNOT capture `&self` — clone `self.root`, `self.name`, etc. before the closure. Pattern:
+   `'static`, so you CANNOT capture `&self`. Clone `self.root`, `self.name`, etc. before the closure. Pattern:
 
    ```rust
    fn list_directory(&self, path: &Path) -> Pin<Box<dyn Future<Output = Result<...>> + Send + '_>> {
        let root = self.root.clone();
        let path = path.to_path_buf();
        Box::pin(async move {
-           spawn_blocking(move || { /* use root, path — owned, 'static */ }).await.unwrap()
+           spawn_blocking(move || { /* use root, path, owned, 'static */ }).await.unwrap()
        })
    }
    ```
 
-   `name()` and `root()` stay sync — they return `&self.name` and `&self.root` directly.
+   `name()` and `root()` stay sync: they return `&self.name` and `&self.root` directly.
 
 5. **Update `InMemoryVolume`.** Async methods wrap in `Box::pin(async { sync_body })`. Bodies unchanged (no I/O).
    Mechanical.
 
 6. **Update `MtpVolume`.** Remove ALL `Handle::block_on` calls. Replace with direct `.await` on the
    `MtpConnectionManager` async methods. Remove the `runtime_handle` field. Remove the `SendSyncProgress` hack. The
-   channel-based `MtpChannelStream` (Option E) is replaced — since `next_chunk` is now async, `MtpReadStream` can call
+   channel-based `MtpChannelStream` (Option E) is replaced: since `next_chunk` is now async, `MtpReadStream` can call
    `download.next_chunk().await` directly. No channel needed.
 
 7. **Update `SmbVolume`.** Remove ALL `Handle::block_on` and `with_smb` bridge calls. Create an async `with_smb_async`
@@ -131,7 +131,7 @@ Steps:
    cancellation. Never `select!` around a lock-holding future.
 
 8. **Convert tests that call Volume methods directly.** `in_memory_test.rs`, `local_posix_test.rs`, `smb.rs` inline
-   tests, `mtp.rs` inline tests, `inmemory_test.rs`, write operation `tests.rs` — these all call Volume methods and must
+   tests, `mtp.rs` inline tests, `inmemory_test.rs`, write operation `tests.rs`: these all call Volume methods and must
    be `#[tokio::test]` with `.await`.
 
 9. **Temporary bridge for production callers.** At call sites in non-test code (listing pipeline, copy pipeline,
@@ -158,7 +158,7 @@ Steps:
    **All** code that constructs `WriteOperationState` must be updated: `volume_copy.rs`, `volume_move.rs`, `mod.rs`,
    `trash.rs`, `volume_strategy.rs` tests, `tests.rs`, `volume_move.rs` tests.
 
-   The `pending_resolution: RwLock<Option<...>>` field becomes redundant — the resolution value travels through the
+   The `pending_resolution: RwLock<Option<...>>` field becomes redundant: the resolution value travels through the
    channel. Remove it and all reads/writes to it.
 
    The `resolve_write_conflict` Tauri command (in `commands/file_system/write_ops.rs`) sends on the channel instead of
@@ -217,7 +217,7 @@ copy pipeline without Tauri or real I/O.
 Steps:
 
 1. **Remove dead code:**
-   - `MtpChannelStream` (Option E channel bridge) — replaced by direct async `MtpReadStream`
+   - `MtpChannelStream` (Option E channel bridge), replaced by direct async `MtpReadStream`
    - `runtime_handle` fields on MtpVolume and SmbVolume
    - `SendSyncProgress` hack on MtpVolume
    - `with_smb` sync bridge on SmbVolume (keep only async `with_smb_async`)
@@ -251,7 +251,7 @@ sync and only box methods that do I/O. When Rust stabilizes `async fn in dyn tra
 **Decision**: Split methods into sync and async categories **Why**: `name()`, `root()`, `supports_streaming()` etc. are
 identity functions that return struct fields. Making them async would add heap allocation for zero benefit. Keeping them
 sync means callers don't pay `.await` overhead for trivial accessors. The async methods are the ones that actually do
-I/O. This is the same pattern as `std::io::Read` vs `tokio::io::AsyncRead` — not everything needs to be async.
+I/O. This is the same pattern as `std::io::Read` vs `tokio::io::AsyncRead`; not everything needs to be async.
 
 **Decision**: `name()` and `root()` stay as `fn` returning `&str` / `&Path` **Why**: These return borrowed references
 from struct fields. Async methods with `Pin<Box<dyn Future>>` return types need `+ '_` lifetime annotations, and
@@ -265,13 +265,13 @@ naturally carries the value. Timeout is `tokio::time::timeout(30s, rx.recv())`, 
 
 **Decision**: Condvar migration touches ALL write operations, not just volume ops **Why**: `WriteOperationState` is a
 shared struct used by local copy, local move, trash, and volume operations. Its `conflict_condvar` field must change
-globally. However, local operations continue using `spawn_blocking` and `AtomicU8` for their cancellation — they don't
+globally. However, local operations continue using `spawn_blocking` and `AtomicU8` for their cancellation; they don't
 gain `CancellationToken`. This creates a dual mechanism which is acceptable because local ops are inherently sync
 (blocking syscalls) and async cancellation wouldn't help them.
 
 **Decision**: Local pipeline conflict resolution uses `blocking_recv()`, not `.await` **Why**: `resolve_conflict` in
 `helpers.rs` is called from local copy/move pipelines inside `spawn_blocking`. You can't `.await` inside
-`spawn_blocking`. `tokio::sync::mpsc::Receiver::blocking_recv()` is designed for exactly this case — it blocks the
+`spawn_blocking`. `tokio::sync::mpsc::Receiver::blocking_recv()` is designed for exactly this case: it blocks the
 current thread (fine inside `spawn_blocking`) and receives from the channel. The volume pipeline uses the async
 `.recv().await`. Same channel type, two recv styles depending on context. This is a safe, well-documented tokio pattern.
 
@@ -308,7 +308,7 @@ await, resolution arrives after timeout, cancel during conflict wait, rollback d
 
 **Risk**: `tokio::sync::Mutex` cancellation leaves SMB in inconsistent state **Mitigation**: Cancellation boundaries are
 between operations (after lock is released), never while holding the lock. Enforce via code structure:
-`{ let guard = mutex.lock().await; guard.do_thing().await; }` — the guard drops before `select!` can cancel.
+`{ let guard = mutex.lock().await; guard.do_thing().await; }`: the guard drops before `select!` can cancel.
 
 ## Checking
 

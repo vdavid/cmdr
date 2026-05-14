@@ -21,7 +21,7 @@ export interface DateSegment {
 /**
  * The full result of formatting a timestamp for display in the UI.
  *
- * This is the single source of truth — every site that shows a modified date
+ * This is the single source of truth: every site that shows a modified date
  * to the user should obtain it via {@link formatDateForDisplay} (or its
  * reactive wrapper `formattedDate` in `reactive-settings.svelte.ts`). New
  * date-touching code should never reach for `Date#toLocaleString` or
@@ -31,7 +31,7 @@ export interface DateSegment {
  * `parts.left` and `parts.right` each carry an ordered list of segments.
  * Concatenating their `text` reproduces the plain string in `text`. Each
  * segment knows whether it should be wrapped in an age-tier span via its
- * `ageClass` — the renderer doesn't have to call any tier helper itself.
+ * `ageClass`, so the renderer doesn't have to call any tier helper itself.
  */
 export interface FormattedDate {
   /** Joined `"left right"` (or just `left` when there's no split). Use for
@@ -63,7 +63,7 @@ export function joinSegments(segments: DateSegment[]): string {
  * (year, month, day, time), so the renderer can color each segment
  * independently.
  *
- * Returns the empty result for `null`, `undefined`, or `0` timestamps —
+ * Returns the empty result for `null`, `undefined`, or `0` timestamps.
  * virtual git entries arrive as `null` over the wire and a few legacy code
  * paths use `0` as a sentinel; treat both as absent.
  *
@@ -82,7 +82,7 @@ export function formatDateForDisplay(
 
   const date = new Date(timestamp * 1000)
 
-  // Precompute per-component tiers once — every segment of the same type
+  // Precompute per-component tiers once; every segment of the same type
   // shares the same age class within a single formatted date.
   const tiers: ComponentTiers = {
     year: tierForYear(timestamp, nowMs),
@@ -195,7 +195,7 @@ function applyTokens(date: Date, format: string, tiers: ComponentTiers): DateSeg
         component = 'time'
         break
       default:
-        // Unreachable — TOKEN_RE only matches the above.
+        // Unreachable: TOKEN_RE only matches the above.
         text = token
         component = 'time'
     }
@@ -210,7 +210,7 @@ function applyTokens(date: Date, format: string, tiers: ComponentTiers): DateSeg
  * Build the parts for the `'system'` format using
  * `Intl.DateTimeFormat#formatToParts`. The component type is identified
  * structurally (`type: 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second'`
- * → our four buckets) — no string parsing, no locale assumptions.
+ * → our four buckets, no string parsing, no locale assumptions.
  *
  * We mirror `Date#toLocaleString`'s shape (short date + medium time) so
  * existing dev/user expectations don't shift visibly with this refactor.

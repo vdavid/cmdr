@@ -1,7 +1,7 @@
 //! Friendly hint when a TCC-restricted volume root lists successfully but empty.
 //!
 //! macOS's TCC-style restrictions (e.g. iCloud Drive without Full Disk Access)
-//! don't surface as `EACCES` — `read_dir` succeeds and returns zero entries. That
+//! don't surface as `EACCES`. `read_dir` succeeds and returns zero entries. That
 //! looks identical to a genuinely empty folder. We can't distinguish the two, so
 //! we hedge: show a hint only when the volume is one we know is commonly hidden
 //! by TCC, and only at the volume root.
@@ -19,8 +19,8 @@ use super::{ErrorCategory, FriendlyError};
 /// Returns `None` when no hint is warranted (any non-recognized volume, or any
 /// non-root path).
 pub fn friendly_error_for_restricted_empty_root(volume_id: &str, path: &Path) -> Option<FriendlyError> {
-    // Match the literal volume ID — `crate::volumes` is macOS-only so we can't import
-    // the constant from there. Kept in sync with `volumes::ICLOUD_VOLUME_ID` (macOS).
+    // Match the literal volume ID (`crate::volumes` is macOS-only, so we can't import
+    // the constant from there). Kept in sync with `volumes::ICLOUD_VOLUME_ID` (macOS).
     if volume_id == "cloud-icloud" {
         Some(FriendlyError {
             category: ErrorCategory::NeedsAction,

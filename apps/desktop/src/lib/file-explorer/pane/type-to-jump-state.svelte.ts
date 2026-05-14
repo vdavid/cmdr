@@ -54,7 +54,7 @@ export interface TypeToJumpState {
   /**
    * Stops any pending timers so they can't fire after the owning component is gone.
    * Call from the component's destroy hook. Idempotent; safe to call alongside `clear`.
-   * After `dispose`, `appendChar` would schedule new timers — don't call it post-dispose.
+   * After `dispose`, `appendChar` would schedule new timers. Don't call it post-dispose.
    */
   dispose: () => void
 }
@@ -67,7 +67,7 @@ export function createTypeToJumpState(options: TypeToJumpStateOptions): TypeToJu
   let indicatorStale = $state(false)
   let generation = $state(0)
 
-  // Timers live outside $state — they're handles, not reactive values.
+  // Timers live outside $state (they're handles, not reactive values).
   let bufferResetTimer: ReturnType<typeof setTimeout> | null = null
   let indicatorHideTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -111,7 +111,7 @@ export function createTypeToJumpState(options: TypeToJumpStateOptions): TypeToJu
 
   function appendChar(char: string): number {
     // If the previous buffer was already stale, treat this keystroke as a fresh
-    // start — the visible buffer was already conceptually empty.
+    // start: the visible buffer was already conceptually empty.
     if (indicatorStale) {
       buffer = ''
       indicatorStale = false
@@ -129,14 +129,14 @@ export function createTypeToJumpState(options: TypeToJumpStateOptions): TypeToJu
     buffer = ''
     indicatorVisible = false
     indicatorStale = false
-    // Don't bump the generation here — that's reserved for new keystrokes.
+    // Don't bump the generation here; that's reserved for new keystrokes.
     // Out-of-order responses from before the clear will still apply against the
     // (now-empty) buffer, but the caller's downstream check (`buffer !== ''`)
     // gates that.
   }
 
   function dispose() {
-    // Stop pending timers without resetting reactive fields — the owning
+    // Stop pending timers without resetting reactive fields: the owning
     // component is on its way out so its $state slots are about to be GC'd
     // anyway. Mirrors the pattern other Svelte factories use for cleanup.
     clearTimers()

@@ -309,7 +309,7 @@ fn cap_bundle_keeps_newest_lines_and_manifest() {
     let parsed: BundleManifest = serde_json::from_str(manifest_json).unwrap();
     assert_eq!(parsed.id, "ERR-AB23X");
 
-    // `logs/cmdr.log` is present and contains the LAST line of the input — proves we
+    // `logs/cmdr.log` is present and contains the LAST line of the input, proving we
     // trimmed from the head, not the tail.
     let cmdr_log = entries
         .get("logs/cmdr.log")
@@ -425,7 +425,7 @@ fn build_bundle_24h_filter_drops_old_files() {
     let salt: [u8; 16] = [0u8; 16];
     // The legacy file-by-mtime filter was the Flow A path, but Flow A now uses the
     // streaming tail walker. Run this assertion against the legacy path via the
-    // `Recent { window: 24h }` configuration — same behavior, easier-to-read intent.
+    // `Recent { window: 24h }` configuration, same behavior, easier-to-read intent.
     let scope = BundleScope::Recent {
         window: Duration::from_secs(24 * 3600),
     };
@@ -518,7 +518,7 @@ mod settings_defaults_tests {
     use std::collections::HashMap;
     use std::sync::Mutex;
 
-    /// Serialize tests in this module — `settings_defaults` is process-global state.
+    /// Serialize tests in this module (`settings_defaults` is process-global state).
     fn test_lock() -> std::sync::MutexGuard<'static, ()> {
         static LOCK: Mutex<()> = Mutex::new(());
         LOCK.lock().unwrap_or_else(|e| e.into_inner())
@@ -553,7 +553,7 @@ mod settings_defaults_tests {
         settings_defaults::reset_for_test();
 
         let mut map = HashMap::new();
-        // FE registry says indexing is OFF by default (hypothetical — production says
+        // FE registry says indexing is OFF by default (hypothetical; production says
         // true). If `from_settings` ever drifts back to the hardcoded fallback, this
         // test catches it.
         map.insert("indexing.enabled".to_string(), SettingValue::Bool(false));

@@ -23,7 +23,7 @@
     const canSubmit = $derived(address.trim().length > 0 && dialogState !== 'connecting')
 
     onMount(async () => {
-        // Lazy-start mDNS — opening this dialog signals intent to do networking, and
+        // Lazy-start mDNS: opening this dialog signals intent to do networking, and
         // `connectToServer` itself opens a TCP socket to a private IP (which would also
         // trigger the macOS Local Network prompt on its own). Triggering here first means
         // the prompt fires alongside the dialog rather than after the user hits Connect.

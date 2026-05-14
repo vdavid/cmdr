@@ -1,4 +1,4 @@
-//! Direct SMB operations — uses the `smb` crate to talk SMB2/3 directly, bypassing the OS mount.
+//! Direct SMB operations: uses the `smb` crate to talk SMB2/3 directly, bypassing the OS mount.
 
 use crate::config::Target;
 use futures_util::StreamExt;

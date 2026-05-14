@@ -2,7 +2,7 @@
 
 How we test Cmdr. Decision rules, anti-patterns, and a per-feature checklist. If you're adding tests, read this first.
 
-The companion file [docs/tooling/testing.md](tooling/testing.md) is the tools inventory — one paragraph per tool.
+The companion file [docs/tooling/testing.md](tooling/testing.md) is the tools inventory (one paragraph per tool).
 
 ## Test pyramid
 
@@ -21,19 +21,19 @@ layer catches different bugs:
 Default to the lowest layer that can express the property you want to check. E2E is the most expensive lane; don't push
 work into it that a unit test would cover.
 
-## Decision table — what tool for what test
+## Decision table: what tool for what test
 
 | You want to test                                              | Tool / layer                                                                                                                                        |
 | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pure function with edge cases                                 | `proptest` (Rust unit). State a property, fuzz inputs.                                                                                              |
 | Pure function with a few specific inputs                      | Plain example tests in `mod tests`                                                                                                                  |
-| Behavior coverage of an existing tested function              | `cargo mutants` survivor triage — every survived mutant is a behavior-level gap                                                                     |
+| Behavior coverage of an existing tested function              | `cargo mutants` survivor triage: every survived mutant is a behavior-level gap                                                                      |
 | State machine transition                                      | Rust unit test, **drive via the public interface**, not by setting the atomic directly                                                              |
 | `#[tauri::command]` boundary                                  | vitest IPC contract test using `installIpcMock()` from `apps/desktop/src/lib/ipc/test-helpers.ts`                                                   |
 | Frontend component logic                                      | vitest + svelte-testing-library in `*.test.ts`                                                                                                      |
 | Component-level a11y (ARIA, labels, focus order)              | tier-3 a11y test in `*.a11y.test.ts`                                                                                                                |
-| Keyboard shortcut opens a dialog                              | E2E spec, use `dispatchMenuCommand(tauriPage, 'file.copy')` — **never** synthetic F-key press unless the test exists to verify the keyboard pathway |
-| Wait for UI state to change in E2E                            | `pollUntil(tauriPage, async () => …, timeout)` from `helpers.ts` — **never** `await sleep(N)`                                                       |
+| Keyboard shortcut opens a dialog                              | E2E spec, use `dispatchMenuCommand(tauriPage, 'file.copy')`. **Never** synthetic F-key press unless the test exists to verify the keyboard pathway  |
+| Wait for UI state to change in E2E                            | `pollUntil(tauriPage, async () => …, timeout)` from `helpers.ts`. **Never** `await sleep(N)`                                                        |
 | Cross-component flow (return-focus, dialog stack, navigation) | E2E (Playwright)                                                                                                                                    |
 | Storage volume operation (MTP, SMB)                           | Integration test against a virtual fixture (virtual-mtp feature, Docker SMB containers)                                                             |
 
@@ -72,7 +72,7 @@ await pollUntil(
 
 The `cmdr/no-arbitrary-sleep-in-e2e` ESLint rule flags this. Opt out per-line with
 `// eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- <reason>` only when there's a genuine fixed-duration wait
-(e.g., watcher debounce settling) — and even then, prefer a poll if any state changes.
+(e.g., watcher debounce settling), and even then, prefer a poll if any state changes.
 
 ### ❌ Synthesized F-key dispatches for tests that care about the resulting dialog
 
@@ -89,12 +89,12 @@ await dispatchMenuCommand(tauriPage, 'file.copy')
 await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
 ```
 
-Keep one or two dedicated tests on the keyboard pathway (`app.spec.ts` has these — names like "opens copy dialog with
+Keep one or two dedicated tests on the keyboard pathway (`app.spec.ts` has these, with names like "opens copy dialog with
 F5"). The rest should use `dispatchMenuCommand`.
 
 ### ❌ Direct atomic / store mutation in state-machine tests
 
-A state-machine test that does `state.intent.store(OperationIntent::RollingBack)` is testing nothing — it bypasses the
+A state-machine test that does `state.intent.store(OperationIntent::RollingBack)` is testing nothing: it bypasses the
 validation guard the public function performs. Drive through the public interface:
 
 ```rust
@@ -109,7 +109,7 @@ assert_eq!(intent, OperationIntent::RollingBack as u8);
 ```
 
 If the public function takes `AppHandle` that you can't fixture-up cheaply, extract a pure inner helper and test that
-through the public-via-helper path — don't reach past the guard.
+through the public-via-helper path. Don't reach past the guard.
 
 ### ❌ `retries: 1` to mask a race
 
@@ -142,18 +142,18 @@ Cargo / Vite / `beforeBuildCommand` already cache. Wrapping risks shipping stale
 | New write-side operation (copy / move / delete / etc.) | Unit tests for the core + at least one E2E covering cancel and a conflict policy                                                                                                 |
 | New volume implementation                              | Integration tests against the virtual fixture for that volume kind                                                                                                               |
 
-## Hot spots — modules with the strictest testing bar
+## Hot spots: modules with the strictest testing bar
 
 These modules have invested test infrastructure. New code here must keep that bar:
 
-- **`apps/desktop/src-tauri/src/file_system/write_operations/`** — state.rs has 30+ tests pinning every state-machine
+- **`apps/desktop/src-tauri/src/file_system/write_operations/`**: state.rs has 30+ tests pinning every state-machine
   transition. Pattern: `cancel_write_operation` through the public interface, never via direct atomic mutation. See
   state.rs `mod tests`.
-- **`apps/desktop/src-tauri/src/indexing/`** — `IndexPhase` lifecycle tests in indexing/mod.rs require a real
+- **`apps/desktop/src-tauri/src/indexing/`**: `IndexPhase` lifecycle tests in indexing/mod.rs require a real
   `IndexStore` (use `tempdir`-backed) and a dedicated test mutex (INDEXING is global).
-- **`apps/desktop/src-tauri/src/file_viewer/`** — `SearchStatus` transitions through `search_cancel` are subtle (the
+- **`apps/desktop/src-tauri/src/file_viewer/`**: `SearchStatus` transitions through `search_cancel` are subtle (the
   thread writes `Cancelled`, the caller must not null `session.search` first). See `session.rs::tests`.
-- **`apps/desktop/src-tauri/src/file_system/index/store.rs`** — `platform_case_compare` has proptests for comparator
+- **`apps/desktop/src-tauri/src/file_system/index/store.rs`**: `platform_case_compare` has proptests for comparator
   algebra and NFC≡NFD equivalence. Don't regress these.
 
 ## E2E env-var hooks
@@ -161,20 +161,20 @@ These modules have invested test infrastructure. New code here must keep that ba
 E2E test hooks split along two axes:
 
 - **Hard hooks** (binary shape) live behind Cargo features:
-  - `playwright-e2e` — feature-gated Tauri commands (`inject_listing_error`, `set_test_throttle`, `flush_file_watcher`)
+  - `playwright-e2e`: feature-gated Tauri commands (`inject_listing_error`, `set_test_throttle`, `flush_file_watcher`)
     and the tauri-plugin-playwright socket bridge.
-  - `virtual-mtp` — virtual MTP device with deterministic fixtures.
-  - `smb-e2e` — virtual SMB hosts injected into mDNS discovery.
+  - `virtual-mtp`: virtual MTP device with deterministic fixtures.
+  - `smb-e2e`: virtual SMB hosts injected into mDNS discovery.
 
   These are compiled out of production binaries entirely. New commands or backends that don't make sense in prod go
   here.
 
 - **Soft hooks** (runtime only) live behind environment variables. They are **strictly additive**: may add a delay, skip
-  a non-essential step, or emit extra telemetry — never replace production logic. With the env var unset, the code path
+  a non-essential step, or emit extra telemetry. Never replace production logic. With the env var unset, the code path
   is exactly what production runs.
 
   All soft hooks should be wired through `crate::test_mode` so the list of test hooks is grep-able from one place. New
-  env-var-driven hooks land there with a helper function — don't sprinkle `std::env::var(...)` reads through subsystems.
+  env-var-driven hooks land there with a helper function. Don't sprinkle `std::env::var(...)` reads through subsystems.
 
 **Existing soft hooks** (env vars):
 
@@ -182,7 +182,7 @@ E2E test hooks split along two axes:
 | ----------------------------------- | -------------------------------------------------------------------------- |
 | `CMDR_E2E_MODE=1`                   | Canonical "we're under E2E" marker; subsystems can flip behaviors.         |
 | `CMDR_E2E_START_PATH`               | Fixture directory; surfaced via `get_e2e_start_path` so FE can pick it up. |
-| `CMDR_E2E_SHARD_KIND`               | "mtp" / "non-mtp" / "all" — selects spec subset for parallel sharding.     |
+| `CMDR_E2E_SHARD_KIND`               | "mtp" / "non-mtp" / "all": selects spec subset for parallel sharding.      |
 | `CMDR_E2E_JSON_REPORT`              | Per-shard Playwright JSON report path.                                     |
 | `CMDR_E2E_OUTPUT_DIR`               | Per-shard Playwright artifact dir.                                         |
 | `CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP=1` | Non-MTP shards opt out of wiping the shared MTP backing dir.               |
@@ -195,7 +195,7 @@ E2E test hooks split along two axes:
 | Command                  | Purpose                                                                            |
 | ------------------------ | ---------------------------------------------------------------------------------- |
 | `set_test_throttle(ms)`  | Mid-run override of `CMDR_E2E_COPY_THROTTLE_MS`; clears with `null`.               |
-| `flush_file_watcher()`   | Synchronously re-reads every active watch — bypasses debouncer + FSEvents latency. |
+| `flush_file_watcher()`   | Synchronously re-reads every active watch, bypassing debouncer + FSEvents latency. |
 | `inject_listing_error()` | Inject an IoError into a volume's next list_directory for retry coverage.          |
 
 ## Process

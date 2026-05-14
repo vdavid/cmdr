@@ -1,6 +1,6 @@
 # SMB benchmark configuration
 # Copy this file to config.toml and fill in your values.
-# config.toml is gitignored — never commit credentials.
+# config.toml is gitignored; never commit credentials.
 
 [[targets]]
 name = "qnap"

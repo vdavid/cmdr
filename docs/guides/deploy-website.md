@@ -57,7 +57,7 @@ webhook --version
 openssl rand -hex 32
 ```
 
-Save this secret — you'll need it in two places:
+Save this secret. You'll need it in two places:
 
 1. On the server (step 5)
 2. In GitHub secrets (step 7)
@@ -155,11 +155,11 @@ Set the following (get values from the relevant dashboards):
 | `PUBLIC_PADDLE_PRICE_ID_*`   | Paddle > Catalog > Prices                                                                                                  |
 | `PUBLIC_PADDLE_ENVIRONMENT`  | `sandbox` or `live`                                                                                                        |
 | `PUBLIC_LISTMONK_LIST_UUID`  | Listmonk admin > Lists > your list > Settings                                                                              |
-| `PUBLIC_UMAMI_HOST`          | `/u` — proxied through Caddy to avoid adblockers                                                                           |
+| `PUBLIC_UMAMI_HOST`          | `/u` (proxied through Caddy to avoid adblockers)                                                                           |
 | `PUBLIC_UMAMI_WEBSITE_ID`    | Umami > Settings > Websites > getcmdr.com > ID                                                                             |
-| `PUBLIC_DOWNLOAD_BASE_URL`   | `https://api.getcmdr.com` — routes downloads through the API server for analytics. Leave empty to link directly to GitHub. |
+| `PUBLIC_DOWNLOAD_BASE_URL`   | `https://api.getcmdr.com` (routes downloads through the API server for analytics). Leave empty to link directly to GitHub. |
 | `PUBLIC_POSTHOG_KEY`         | PostHog project API key (starts with `phc_`). Leave empty to disable.                                                      |
-| `PUBLIC_POSTHOG_HOST`        | `/ph` — proxied through Caddy to avoid adblockers                                                                          |
+| `PUBLIC_POSTHOG_HOST`        | `/ph` (proxied through Caddy to avoid adblockers)                                                                          |
 
 ### 9. Set up Docker network and do initial deploy
 

@@ -38,7 +38,7 @@ Cloudflare dashboard > getcmdr.com > Email > Email Routing > Routes > add `newsl
 
 ### 3. Resend
 
-Domain verification (`getcmdr.com`) is already done — the API server uses Resend too. No extra DNS records needed. Just
+Domain verification (`getcmdr.com`) is already done. The API server uses Resend too. No extra DNS records needed. Just
 grab your API key from the [Resend dashboard](https://resend.com/api-keys) (or create a new one scoped to sending).
 
 ### 4. Deploy containers
@@ -108,7 +108,7 @@ Reload Caddy: `docker compose restart caddy` in Caddy's folder.
    - **Skip TLS verification**: off
    - Leave max connections, retries, timeouts, and HELO hostname at defaults
    - **Name**: set it to `email-primary`
-   - Delete the second (disabled, Gmail) SMTP block — it's a template and not needed
+   - Delete the second (disabled, Gmail) SMTP block. It's a template and not needed.
    - Click **Save** at the bottom, then click **Test connection** to verify
 3. **General settings**: Settings > General tab:
    - **Site name**: `Cmdr`
@@ -131,8 +131,8 @@ Reload Caddy: `docker compose restart caddy` in Caddy's folder.
    - Save, then open the list and note the **UUID** shown on the list page (you'll need it in step 8)
 5. **System email templates**: The opt-in confirmation and other system emails are branded to match Cmdr. The templates
    live in `email-templates/` and get baked into the Docker image at build time via `--static-dir`. To edit:
-   - `email-templates/base.html` — shared header/footer wrapper (dark theme, logo, accent bar)
-   - `email-templates/subscriber-optin.html` — the double opt-in confirmation email
+   - `email-templates/base.html`: shared header/footer wrapper (dark theme, logo, accent bar)
+   - `email-templates/subscriber-optin.html`: the double opt-in confirmation email
    - Preview locally: `cd infra/listmonk/preview && go run .` → [localhost:9900](http://localhost:9900)
    - After editing, rebuild and redeploy: `docker compose up -d --build`
 6. **Campaign template** (optional): Campaigns > Templates (in the sidebar) lets you edit the HTML wrapper used around
@@ -243,7 +243,7 @@ in `eu-north-1`:
 6. Click "Get started"
 7. On the [Get set up page](https://eu-north-1.console.aws.amazon.com/ses/home?region=eu-north-1#/get-set-up), verify
    the email address (check inbox for verification link)
-8. Verify the sending domain — go to
+8. Verify the sending domain. Go to
    [SES > Identities](https://eu-north-1.console.aws.amazon.com/ses/home?region=eu-north-1#/identities) >
    `getcmdr.com` > **Authentication** tab, then add in Cloudflare DNS (all non-proxied):
    - **DKIM**: 3 CNAME records (`xxx._domainkey.getcmdr.com` → `xxx.dkim.amazonses.com`), comment: "For AWS DKIM"
@@ -274,7 +274,7 @@ In step 6.2, use these values instead of the Resend ones:
 - **Port**: `587`
 - **Auth protocol**: `LOGIN`
 - **Username**: the SMTP username from above (starts with `AKIA...`)
-- **Password**: the SMTP password from above (not the IAM secret key — SES generates a separate SMTP password)
+- **Password**: the SMTP password from above (not the IAM secret key. SES generates a separate SMTP password.)
 - **TLS**: `STARTTLS`
 
 ### AWS SNS (bounce/complaint handling)

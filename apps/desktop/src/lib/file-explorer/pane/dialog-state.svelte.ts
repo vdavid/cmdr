@@ -147,14 +147,14 @@ export function createDialogState(deps: DialogStateDeps) {
       // Re-select all survivors (move/delete/trash changed the source listing)
       getSourcePaneRef()?.selectAll()
     } else if (prevSnapshot == null) {
-      // No snapshot taken — fall back to milestone 1 behavior
+      // No snapshot taken; fall back to milestone 1 behavior
       clearSourcePaneSelection()
     }
     // For 'all' + copy: source listing unchanged, existing indices still valid
     // For array snapshot: selection already reflects survivors from diff-driven adjustment
   }
 
-  /** Refreshes panes after a transfer completes — for move/delete/trash, refresh both panes. */
+  /** Refreshes panes after a transfer completes. For move/delete/trash, refresh both panes. */
   function refreshPanesAfterTransfer() {
     const opType = transferProgressProps?.operationType
     const isDeleteOrTrash = opType === 'delete' || opType === 'trash'
@@ -176,7 +176,7 @@ export function createDialogState(deps: DialogStateDeps) {
       }
     }
 
-    // Refresh disk space on both panes — both might be on the same volume
+    // Refresh disk space on both panes (both might be on the same volume)
     void deps.getLeftPaneRef()?.refreshVolumeSpace()
     void deps.getRightPaneRef()?.refreshVolumeSpace()
   }

@@ -278,7 +278,7 @@ describe('CommandPalette', () => {
 
     // Wait for the palette's onMount to run so it captures `trigger` as the
     // previously focused element. After this, simulate "palette has stolen
-    // focus" by focusing something else — the test cares about restore-on-destroy.
+    // focus" by focusing something else; the test cares about restore-on-destroy.
     await tick()
 
     const otherEl = document.createElement('input')
@@ -420,7 +420,7 @@ describe('CommandPalette', () => {
     expect(input?.getAttribute('aria-activedescendant')).toBe(firstOption.id)
     expect(firstOption.getAttribute('tabindex')).toBe('0')
 
-    // Every other option is tabindex="-1" — only the cursor option is tabbable
+    // Every other option is tabindex="-1": only the cursor option is tabbable
     // (satisfies axe's scrollable-region-focusable rule while keeping DOM focus on the input).
     const otherOptions = Array.from(target.querySelectorAll<HTMLElement>('[role="option"]')).slice(1)
     for (const opt of otherOptions) {

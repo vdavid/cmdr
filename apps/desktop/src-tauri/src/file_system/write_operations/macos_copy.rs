@@ -148,7 +148,7 @@ extern "C" fn copy_progress_callback(
     // SAFETY: ctx is a pointer to CopyProgressContext that we passed in
     let context = unsafe { &*(ctx as *const CopyProgressContext) };
 
-    // Check cancellation (log only once to avoid spam — macOS may call this hundreds of times
+    // Check cancellation (log only once to avoid spam: macOS may call this hundreds of times
     // after COPYFILE_QUIT while draining buffers)
     if super::state::is_cancelled(&context.cancelled) {
         if !context.cancel_logged.swap(true, Ordering::Relaxed) {
@@ -339,7 +339,7 @@ pub fn copy_file_native(
         copyfile_state_free(state);
     }
 
-    // Check cancellation regardless of result — macOS copyfile(3) can return 0 (success)
+    // Check cancellation regardless of result. macOS copyfile(3) can return 0 (success)
     // even after the callback returned COPYFILE_QUIT, because it may continue draining
     // buffered I/O (especially common when the source is on a network mount).
     if let Some(ctx) = context

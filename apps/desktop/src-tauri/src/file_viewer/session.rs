@@ -1,4 +1,4 @@
-//! ViewerSession — orchestrates file viewer backends and manages session lifecycle.
+//! ViewerSession: orchestrates file viewer backends and manages session lifecycle.
 //!
 //! Opens a file, picks the right backend based on file size, and provides a session-based
 //! API for the frontend. Sessions are cached by ID and cleaned up on close.
@@ -313,7 +313,7 @@ pub fn search_start(session_id: &str, query: String) -> Result<(), ViewerError> 
         session.path.clone()
     };
 
-    // Spawn search thread — creates its own backend for searching
+    // Spawn search thread. Creates its own backend for searching.
     let cancel_clone = cancel.clone();
     let matches_clone = matches;
     let bytes_scanned_clone = bytes_scanned;

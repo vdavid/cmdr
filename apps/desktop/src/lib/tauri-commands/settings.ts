@@ -92,7 +92,7 @@ export async function setMaxLogStorageMb(value: number): Promise<void> {
  * Enables or disables the Flow B error-report auto-dispatcher.
  *
  * Pushed live from the settings UI whenever `updates.errorReports` changes. Default off
- * (opt-in by design — Flow B sends a small log snippet on user-visible errors without
+ * (opt-in by design: Flow B sends a small log snippet on user-visible errors without
  * per-event consent). Flipping this off doesn't tear down an in-flight debounce window;
  * the next user-visible error after disable simply doesn't enqueue.
  *
@@ -201,7 +201,7 @@ export async function getDirStatsBatch(paths: string[]): Promise<(DirStats | nul
 /** System RAM breakdown in bytes. Categories are non-overlapping and sum to `totalBytes`. */
 export interface SystemMemoryInfo {
   totalBytes: number
-  /** Wired + compressor-occupied memory (kernel, drivers — can't be freed). */
+  /** Wired + compressor-occupied memory (kernel, drivers; can't be freed). */
   wiredBytes: number
   /** App memory: active + inactive - purgeable (process memory the user can free by quitting apps). */
   appBytes: number
@@ -420,7 +420,7 @@ export interface FolderSuggestionsStream {
 /**
  * Streams folder name suggestions, calling `onEvent` for each event from the backend.
  *
- * The backend always resolves the IPC promise to `void` — all signaling (suggestions,
+ * The backend always resolves the IPC promise to `void`; all signaling (suggestions,
  * completion, cancellation, failure) goes through the channel. Cancel via the returned
  * handle, not by ignoring the promise: Tauri 2's `Channel::send` is fire-and-forget,
  * so the backend cannot detect frontend abandonment without the explicit cancel command.
@@ -450,7 +450,7 @@ export function streamFolderSuggestions(
       // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- streaming Channel<T> not specta-friendly yet; tracked for follow-up
       await invoke('cancel_folder_suggestions', { requestId })
     } catch {
-      // Idempotent — entry may already be gone.
+      // Idempotent: entry may already be gone.
     }
   }
   return { promise, cancel }

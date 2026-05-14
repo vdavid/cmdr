@@ -1,7 +1,7 @@
 # Error reporter (frontend)
 
-Flow A — user-initiated "Send error report" UI. Lets the user preview the redacted log bundle, optionally add a note,
-and ship it to the api server. Flow B — opt-in auto-send on user-visible errors — is wired here too: a tiny listener
+Flow A (user-initiated "Send error report" UI): lets the user preview the redacted log bundle, optionally add a note,
+and ship it to the api server. Flow B (opt-in auto-send on user-visible errors) is wired here too: a tiny listener
 turns the backend's `error-report-auto-sent` event into a confirmation toast.
 
 ## Files
@@ -10,28 +10,28 @@ turns the backend's `error-report-auto-sent` event into a confirmation toast.
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `error-report-flow.svelte.ts`    | Reactive store + `openErrorReportDialog(initialNote?)` entry point (Flow A)                                                                                                                                                                                                  |
 | `ErrorReportDialog.svelte`       | Preview-and-send dialog: preview, note textarea, manifest, send/cancel (Flow A)                                                                                                                                                                                              |
-| `ErrorReportToastContent.svelte` | Flow A post-send confirmation toast — shows the server-issued ID + Copy                                                                                                                                                                                                      |
-| `BundleSavedToastContent.svelte` | Toast shown after the dev-only "Save bundle to disk" action — shows the saved path with "Reveal in Finder" + "Dismiss" buttons. Same module-state bridging pattern as `ErrorReportToastContent`.                                                                             |
+| `ErrorReportToastContent.svelte` | Flow A post-send confirmation toast: shows the server-issued ID + Copy                                                                                                                                                                                                       |
+| `BundleSavedToastContent.svelte` | Toast shown after the dev-only "Save bundle to disk" action: shows the saved path with "Reveal in Finder" + "Dismiss" buttons. Same module-state bridging pattern as `ErrorReportToastContent`.                                                                              |
 | `auto-send-toast.svelte.ts`      | Flow B listener: subscribes to `error-report-auto-sent`, renders the auto-send toast                                                                                                                                                                                         |
-| `AutoSendToastContent.svelte`    | Flow B toast UI — title, reference ID, "View" + "Change settings" links, 10 s timeout                                                                                                                                                                                        |
+| `AutoSendToastContent.svelte`    | Flow B toast UI: title, reference ID, "View" + "Change settings" links, 10 s timeout                                                                                                                                                                                         |
 | `breadcrumbs.ts`                 | Thin `recordBreadcrumb(kind, message, ctx?)` wrapper around the `record_breadcrumb` IPC. Fire-and-forget; failures swallowed. Wire from FE event handlers to add triage context to error report bundles. See `error_reporter/CLAUDE.md` § Breadcrumbs for backend semantics. |
 
 ## Entry points
 
 - **Help menu → "Send error report…"** routes through `command-dispatch.ts`'s `help.sendErrorReport` case.
-- **Inline button on error toasts** — `ToastItem.svelte` adds a "Send error report…" link to error-level toasts that
+- **Inline button on error toasts**: `ToastItem.svelte` adds a "Send error report…" link to error-level toasts that
   carry a plain-text message. The toast text is pre-filled into the dialog's note textarea so the user starts from real
   context.
 
 Both call `openErrorReportDialog(initialNote?)`, which flips the store flag the layout watches. The dialog mounts inside
-`(main)/+layout.svelte` — same pattern as `CrashReportDialog`.
+`(main)/+layout.svelte` (same pattern as `CrashReportDialog`).
 
 ## Two-command split (matches backend)
 
 The dialog calls `prepareErrorReportPreview` to render the preview (no network) and `sendErrorReport` to ship the
 bundle. Two commands instead of one stateful "prepare-then-send" pair, because:
 
-- Caching MB of zip bytes across IPC round-trips is wasteful — re-building is cheap.
+- Caching MB of zip bytes across IPC round-trips is wasteful; re-building is cheap.
 - Holding bundle state on the Rust side risks leaks if the user dismisses without sending.
 - The inputs (log file contents + user note) are deterministic enough that the preview matches the actual upload
   byte-for-byte modulo the timestamp.
@@ -41,8 +41,8 @@ See `apps/desktop/src-tauri/src/error_reporter/CLAUDE.md` for the backend ration
 ## ID handling
 
 `prepareErrorReportPreview` returns a locally-generated `ERR-XXXXX` ID. **Display the preview ID in the dialog**, but
-**only display the post-send toast with the server's response ID** — the server may regenerate the ID on a HEAD
-collision. The `sendErrorReport` return value is the canonical one to show the user.
+**only display the post-send toast with the server's response ID** (the server may regenerate the ID on a HEAD
+collision). The `sendErrorReport` return value is the canonical one to show the user.
 
 Bridge: `ErrorReportToastContent.svelte` exports `setLastSentReportId(id)` from a `<script module>` block. The dialog
 calls it right before `addToast(component, ...)` so the toast can render the ID without the toast system needing to
@@ -52,10 +52,10 @@ forward props. Same pattern as `MtpConnectedToastContent`.
 
 - Soft warning at 50 000 chars (counter appears, no other change).
 - Hard limit at 100 000 chars (red border, "Send" disabled).
-- Backend command also enforces 100 000 chars — both layers in case the textarea control is bypassed (paste, etc.).
+- Backend command also enforces 100 000 chars; both layers guard against the textarea being bypassed (paste, etc.).
 - Server enforces a separate 10 MB total payload cap, which is mostly hit by logs, not the note.
 
-## Flow B — auto-send toast
+## Flow B: auto-send toast
 
 When the `updates.errorReports` setting is on, the Rust auto-dispatcher fires `error-report-auto-sent` (payload:
 server-issued report ID) after a successful upload. `auto-send-toast.svelte.ts` listens for that event from the main
@@ -64,13 +64,13 @@ window layout's `onMount` and shows a toast via `addToast(AutoSendToastContent, 
 - **Title**: "Error report sent"
 - **Body**: Reference ID badge.
 - **Actions**: "View" reuses the Flow A preview dialog so the user can inspect what was shipped (the dialog re-builds
-  the bundle locally — deterministic modulo the timestamp). "Change settings" opens the Settings window so they can flip
+  the bundle locally (deterministic modulo the timestamp). "Change settings" opens the Settings window so they can flip
   the opt-in flag.
-- **Auto-dismiss after 10 s**, longer than the default 4 s — auto-sent reports are surprising, so the user needs more
+- **Auto-dismiss after 10 s**, longer than the default 4 s; auto-sent reports are surprising, so the user needs more
   time to notice and act.
 
 The listener is initialized in `(main)/+layout.svelte` next to the Flow A dialog mount, and torn down in the matching
-`onDestroy`. Idempotent — repeated `init` calls are no-ops.
+`onDestroy`. Idempotent; repeated `init` calls are no-ops.
 
 ## Dev affordance
 
@@ -88,7 +88,7 @@ production it isn't registered, so calling the wrapper would return an error.
   `.chars().count()` (Unicode code points). `userNote.length` (UTF-16 code units) would let emoji-heavy notes bypass the
   cap on the frontend and then fail server-side.
 - `errorReportFlow.initialNote` is captured when the dialog mounts via
-  `let userNote = $state(errorReportFlow.initialNote)`. Subsequent edits to the textarea are local to the component —
+  `let userNote = $state(errorReportFlow.initialNote)`. Subsequent edits to the textarea are local to the component;
   closing and reopening the dialog reads from the store again.
 - `<script module>` blocks in Svelte 5 _do_ support `$state`. The compiler warns if you put module-level state in a
   regular `<script>` block by mistake.

@@ -26,8 +26,8 @@ Generic key-value secret storage with pluggable backends.
 
 The trait stores opaque `&[u8]` / `Vec<u8>`. Callers handle their own serialization format. Current consumers:
 
-- `network/keychain.rs` — SMB credentials, stored as `username\0password` under keys like `smb://server/share`.
-- `ai/api_keys.rs` — cloud AI provider API keys, stored as raw UTF-8 under keys like `ai.apiKey.openai`.
+- `network/keychain.rs`: SMB credentials, stored as `username\0password` under keys like `smb://server/share`.
+- `ai/api_keys.rs`: cloud AI provider API keys, stored as raw UTF-8 under keys like `ai.apiKey.openai`.
 
 This keeps the store reusable for any future secret type.
 
@@ -56,11 +56,11 @@ app's data dir convention). Existing Linux alpha users would need to re-enter SM
 ## Gotchas
 
 - `keyring-core` requires a process-wide default store. We install ours lazily via a `Once` in `keyring_linux.rs`'s
-  `ensure_default_store()` — called from every public method on `KeyringStore`. Replaced the legacy `keyring = "3"`
+  `ensure_default_store()`, called from every public method on `KeyringStore`. Replaced the legacy `keyring = "3"`
   crate during the v4 ecosystem split (the canonical `keyring` crate became a sample/example crate; cross-platform
   API moved to `keyring-core` and each backend ships separately). We picked the zbus-based backend
-  (`zbus-secret-service-keyring-store` with `rt-tokio-crypto-rust`) since we already use zbus + tokio + RustCrypto —
-  no system libdbus needed.
+  (`zbus-secret-service-keyring-store` with `rt-tokio-crypto-rust`) since we already use zbus + tokio + RustCrypto.
+  No system libdbus needed.
 - We use the `set_secret(&[u8])` / `get_secret() -> Vec<u8>` API on `keyring_core::Entry` so we can pass through
   arbitrary binary values instead of forcing UTF-8 strings via `set_password` / `get_password`.
 - `EncryptedFileStore` and `PlainFileStore` have separate `Mutex` statics for file access serialization (they're

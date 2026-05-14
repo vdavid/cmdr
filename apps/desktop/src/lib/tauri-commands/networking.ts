@@ -412,21 +412,21 @@ export async function ensureNetworkDiscoveryStarted(): Promise<void> {
   try {
     await commands.ensureNetworkDiscoveryStarted()
   } catch {
-    // Stub on unsupported platforms — silently swallow
+    // Stub on unsupported platforms. Silently swallow.
   }
 }
 
 /**
  * Pushes the `network.enabled` toggle live to the backend. When `false`, stops mDNS and
  * clears the discovered host list (the frontend store empties via `network-host-lost`).
- * When `true`, the backend stays passive — discovery starts only when the user takes a
+ * When `true`, the backend stays passive: discovery starts only when the user takes a
  * network action and the frontend calls `ensureNetworkDiscoveryStarted`.
  */
 export async function setNetworkEnabled(enabled: boolean): Promise<void> {
   try {
     await commands.setNetworkEnabled(enabled)
   } catch {
-    // Stub on unsupported platforms — silently swallow
+    // Stub on unsupported platforms. Silently swallow.
   }
 }
 

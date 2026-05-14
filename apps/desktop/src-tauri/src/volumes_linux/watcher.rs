@@ -1,8 +1,8 @@
 //! Volume mount/unmount watcher for Linux.
 //!
 //! Two watchers run concurrently:
-//! - `/proc/mounts` (inotify) — detects standard mount/unmount operations
-//! - `/run/user/<uid>/gvfs/` (inotify) — detects GVFS SMB share mount/unmount
+//! - `/proc/mounts` (inotify): detects standard mount/unmount operations
+//! - `/run/user/<uid>/gvfs/` (inotify): detects GVFS SMB share mount/unmount
 //!   (these are subdirectories of a single gvfsd-fuse mount, so they don't
 //!   appear in `/proc/mounts`)
 //!
@@ -63,7 +63,7 @@ pub fn start_volume_watcher(app: &AppHandle) {
 
     match watcher_result {
         Ok(mut watcher) => {
-            // Watch /proc/mounts — inotify fires when mounts change
+            // Watch /proc/mounts. Inotify fires when mounts change.
             let proc_mounts = Path::new("/proc/mounts");
             if let Err(e) = watcher.watch(proc_mounts, notify::RecursiveMode::NonRecursive) {
                 error!("Failed to watch /proc/mounts: {}", e);

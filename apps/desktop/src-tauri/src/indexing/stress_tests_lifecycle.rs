@@ -54,7 +54,7 @@ fn lifecycle_transitions_under_load() {
     let tree2 = build_synthetic_tree(2, 3, 5, 2048);
     for chunk in tree2.chunks(10) {
         // Some of these sends may fail if the writer processes Shutdown
-        // before draining the channel — that's expected and fine.
+        // before draining the channel. That's expected and fine.
         let _ = writer.send(WriteMessage::InsertEntriesV2(chunk.to_vec()));
     }
 
@@ -64,7 +64,7 @@ fn lifecycle_transitions_under_load() {
 
     // ── Phase 3: spawn a NEW writer on the same DB ─────────────────
     // The DB may be partially populated (truncated but not fully
-    // re-inserted). That's fine — we verify no corruption, then do a
+    // re-inserted). That's fine. We verify no corruption, then do a
     // complete rescan.
 
     let writer2 = IndexWriter::spawn(&db_path, None).expect("spawn second writer");
@@ -74,7 +74,7 @@ fn lifecycle_transitions_under_load() {
     let entry_count: i64 = read_conn2
         .query_row("SELECT COUNT(*) FROM entries", [], |row| row.get(0))
         .unwrap();
-    // Could be 0 (if truncate ran) or partial — just verify no error.
+    // Could be 0 (if truncate ran) or partial, just verify no error.
     assert!(entry_count >= 0, "entry count should be non-negative");
 
     // Do a complete fresh scan to bring DB to a consistent state.
@@ -147,7 +147,7 @@ fn lifecycle_transitions_under_load() {
     let (tx, _rx) = tokio::sync::oneshot::channel::<()>();
     w.send(WriteMessage::Flush(tx)).unwrap();
 
-    // Immediately send Shutdown — the writer must handle the dropped
+    // Immediately send Shutdown. The writer must handle the dropped
     // oneshot sender (Flush response fails to send) and then exit.
     w.shutdown();
 
@@ -163,7 +163,7 @@ fn lifecycle_transitions_under_load() {
     // send(Shutdown) instead of shutdown() (which would join the thread).
     std::thread::sleep(std::time::Duration::from_millis(100));
 
-    // Second shutdown: channel is closed, send returns Err — must not panic.
+    // Second shutdown: channel is closed, send returns Err. Must not panic.
     let result = w.send(WriteMessage::Shutdown);
     assert!(result.is_err(), "second Shutdown send should fail (channel closed)");
 
@@ -270,7 +270,7 @@ fn double_start_guard_prevents_concurrent_scans() {
     // Clean up
     scanning.store(false, Ordering::Relaxed);
 
-    // Also verify that the writer itself works fine through this —
+    // Also verify that the writer itself works fine through this:
     // populate data and verify consistency
     writer.send(WriteMessage::TruncateData).unwrap();
     writer.flush_blocking().unwrap();
@@ -300,7 +300,7 @@ fn early_shutdown_during_active_writes() {
 
     writer.send(WriteMessage::TruncateData).unwrap();
 
-    // Build a large tree — enough batches that shutdown races with inserts
+    // Build a large tree, enough batches that shutdown races with inserts
     let tree = build_synthetic_tree(3, 4, 6, 1024);
 
     // Send batches from a separate thread to simulate async scan
@@ -308,7 +308,7 @@ fn early_shutdown_during_active_writes() {
     let send_thread = std::thread::spawn(move || {
         let mut sent = 0u64;
         for chunk in tree.chunks(5) {
-            // Some sends will fail after shutdown — that's expected
+            // Some sends will fail after shutdown. That's expected.
             if writer_clone
                 .send(WriteMessage::InsertEntriesV2(chunk.to_vec()))
                 .is_err()
@@ -477,7 +477,7 @@ fn shutdown_with_mixed_queued_work() {
         .unwrap();
     writer.send(WriteMessage::IncrementalVacuum).unwrap();
 
-    // Now shut down — the writer processes everything in order, then exits
+    // Now shut down. The writer processes everything in order, then exits.
     writer.shutdown();
 
     // Verify: DB should have all the data (shutdown processes remaining messages)
@@ -520,7 +520,7 @@ fn shutdown_with_mixed_queued_work() {
         "all dirs should have stats after aggregation + backfill"
     );
 
-    // No leftover locks — another writer can start
+    // No leftover locks. Another writer can start.
     let writer2 = IndexWriter::spawn(&db_path, None).expect("spawn after mixed-work shutdown");
     writer2.flush_blocking().unwrap();
     writer2.shutdown();

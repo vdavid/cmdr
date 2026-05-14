@@ -77,7 +77,7 @@ export function getExtension(filename: string): string {
 }
 
 /**
- * Extensions treated as equivalent — switching between any two in a group skips the rename warning.
+ * Extensions treated as equivalent: switching between any two in a group skips the rename warning.
  * Each group lists spellings of the same underlying format, lowercase, no leading dot.
  *
  * The `md`/`markdown`/`txt` group is included by deliberate choice: Markdown is plain text and
@@ -133,7 +133,7 @@ export function validateExtensionChange(
     const oldExt = getExtension(oldName)
     return { severity: 'error', message: `Changing the file extension isn't allowed (was "${oldExt}")` }
   }
-  // 'ask' — no error, the dialog will handle it on save
+  // 'ask': no error, the dialog will handle it on save
   return OK_RESULT
 }
 
@@ -148,7 +148,7 @@ export function validateConflict(newName: string, siblingNames: string[], origin
 
   for (const sibling of siblingNames) {
     if (sibling.toLowerCase() === trimmedLower) {
-      // Case-only rename of the same file — no warning
+      // Case-only rename of the same file: no warning
       if (sibling.toLowerCase() === originalLower) continue
       return { severity: 'warning', message: `"${trimmed}" already exists in this folder` }
     }

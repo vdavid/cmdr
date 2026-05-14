@@ -6,8 +6,8 @@ Design language for the Cmdr desktop app and getcmdr.com website.
 
 1. **The tool recedes, the content leads.** The file list is 90% of the app. Chrome (toolbars, dialogs, headers) should
    be quiet so file names, sizes, and icons can breathe. Rich data, calm surroundings.
-2. **Personal, not branded.** In the app, the user's macOS accent color drives all interactive UI — selection, focus,
-   buttons. The Cmdr brand (mustard yellow) lives only on marketing surfaces. The app feels like _their_ tool, not ours.
+2. **Personal, not branded.** In the app, the user's macOS accent color drives all interactive UI (selection, focus,
+   buttons). The Cmdr brand (mustard yellow) lives only on marketing surfaces. The app feels like _their_ tool, not ours.
 3. **Native, not web.** System font. Platform scrollbars. Fast transitions. No hover animations that would feel alien in
    a macOS window. The app should be indistinguishable from an AppKit app at a glance.
 4. **Respect the OS.** Light/dark via `prefers-color-scheme`. Accent color via `NSColor.controlAccentColor()`. Reduced
@@ -43,7 +43,7 @@ The app and website use different color temperatures by design:
 - **App neutrals are pure gray.** A file manager displays user content (icons, text, images) that shouldn't be
   color-biased. Pure gray is the most neutral canvas, like a photographer's gray card.
 - **Website neutrals are warm.** Marketing surfaces benefit from personality. Warm tones feel approachable and
-  intentional — cold grays feel generic.
+  intentional. Cold grays feel generic.
 
 **App (light):**
 
@@ -52,7 +52,7 @@ The app and website use different color temperatures by design:
 | `--color-bg-primary`     | `#ffffff` | Main canvas                                 |
 | `--color-bg-secondary`   | `#f5f5f5` | Headers, sidebars                           |
 | `--color-bg-tertiary`    | `#e8e8e8` | Hover fills, grouped sections               |
-| `--color-text-primary`   | `#1a1a1a` | Body text (not pure black — easier on eyes) |
+| `--color-text-primary`   | `#1a1a1a` | Body text (not pure black, easier on eyes) |
 | `--color-text-secondary` | `#666666` | Labels, descriptions                        |
 | `--color-text-tertiary`  | `#888888` | Timestamps, metadata                        |
 | `--color-border`         | `#ddd`    | Default borders                             |
@@ -66,7 +66,7 @@ The app and website use different color temperatures by design:
 | `--color-bg-primary`     | `#1e1e1e` | Main canvas                                |
 | `--color-bg-secondary`   | `#2a2a2a` | Headers, sidebars                          |
 | `--color-bg-tertiary`    | `#333333` | Hover fills, grouped sections              |
-| `--color-text-primary`   | `#e8e8e8` | Body text (not pure white — reduces glare) |
+| `--color-text-primary`   | `#e8e8e8` | Body text (not pure white, reduces glare) |
 | `--color-text-secondary` | `#aaaaaa` | Labels, descriptions                       |
 | `--color-text-tertiary`  | `#888888` | Timestamps, metadata                       |
 | `--color-border`         | `#444444` | Default borders                            |
@@ -95,7 +95,7 @@ The app and website use different color temperatures by design:
 | `--color-text-secondary`   | `#5c5c66` | Body                   |
 | `--color-border`           | `#d8d7d3` | Borders                |
 
-Note: blog code blocks use a dark syntax theme regardless of page mode — they keep their dark surface/border tokens.
+Note: blog code blocks use a dark syntax theme regardless of page mode; they keep their dark surface/border tokens.
 
 ### Semantic colors
 
@@ -119,7 +119,7 @@ white text on a warning-colored badge, use `--color-accent-fg` (always dark in b
 The selection gold is intentional: it must be distinct from the accent color (which can be _any_ hue the user picks).
 Gold was chosen because it reads as "marked" rather than "active," and contrasts with every macOS accent option.
 
-**Contrast note:** `#c9a227` on `#ffffff` gives ~3.5:1 — passes WCAG AA for large text but not normal text. At 12px
+**Contrast note:** `#c9a227` on `#ffffff` gives ~3.5:1, which passes WCAG AA for large text but not normal text. At 12px
 (`--font-size-sm`) this is borderline. Acceptable because selected file names are always accompanied by a secondary cue
 (the gold is applied only to names, never to standalone labels), but worth revisiting if we get accessibility
 complaints.
@@ -127,7 +127,7 @@ complaints.
 **Automated contrast checks:** `scripts/check-a11y-contrast/` runs at build time via
 `./scripts/check.sh --check a11y-contrast`. It parses `app.css` design tokens and every scoped `<style>` block, resolves
 `var()` chains + `color-mix(in srgb, ...)` + `color-mix(in oklch, ...)`, and flags fg/bg pairs that fail WCAG 2.2 in
-light OR dark mode. This is intentionally deterministic — no browser, no axe-core — so it doesn't flake on color-mix
+light OR dark mode. This is intentionally deterministic (no browser, no axe-core), so it doesn't flake on color-mix
 rendering quirks. See `scripts/check-a11y-contrast/README.md` for scope and limitations.
 
 **Three-tier a11y testing strategy:**
@@ -149,15 +149,15 @@ Tiers 2 and 3 intentionally overlap for the structural rules. Tier 3 is the fast
 | `--color-highlight`        | `rgba(255, 213, 0, 0.4)`  | `rgba(255, 213, 100, 0.9)` | Find-in-file and settings search match |
 | `--color-highlight-active` | `rgba(255, 150, 50, 0.6)` | `rgba(255, 150, 100, 0.9)` | Currently focused search match         |
 
-Dark mode uses near-opaque highlights because the dark background absorbs more color — translucent yellow becomes
+Dark mode uses near-opaque highlights because the dark background absorbs more color: translucent yellow becomes
 invisible.
 
 ### Size-tier colors
 
-File sizes are subtly color-coded by magnitude — a distinctive Cmdr feature. Colors are derived from
+File sizes are subtly color-coded by magnitude, a distinctive Cmdr feature. Colors are derived from
 `--color-text-secondary` via `color-mix` so they stay readable in both modes without separate light/dark values.
 
-The progression uses a single blue hue at increasing saturation — a "depth" metaphor where bigger = deeper. This avoids
+The progression uses a single blue hue at increasing saturation: a "depth" metaphor where bigger = deeper. This avoids
 the yellow → red "heat" connotation (size isn't danger, it's volume) and complements the pure-gray neutral palette.
 
 ```css
@@ -171,7 +171,7 @@ the yellow → red "heat" connotation (size isn't danger, it's volume) and compl
 Bytes get a 15% blue tint (not plain gray) so even the smallest tier participates in the progression. The 60/40 mix for
 KB+ gives clear differentiation between adjacent tiers.
 
-When a file is **selected**, size tiers switch to a gold depth progression mirroring the blue one — bytes get a subtle
+When a file is **selected**, size tiers switch to a gold depth progression mirroring the blue one: bytes get a subtle
 gold tint, higher tiers get richer gold, TB uses the full `--color-selection-fg`. The date column also turns gold. This
 keeps the "selected = gold" language consistent across all columns (name, size, date).
 
@@ -193,7 +193,7 @@ anchor the file list below them. Kept as a separate token rather than reusing `-
 --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 ```
 
-**Type scale.** Fixed `px`, not `rem` — the app scales with macOS display settings, not browser font preferences.
+**Type scale.** Fixed `px`, not `rem`: the app scales with macOS display settings, not browser font preferences.
 `html { font-size: 16px }` is hardcoded to establish `1rem = 16px`. The body inherits this. The tokens below are for
 explicit use on specific elements, not as a global cascade.
 
@@ -256,7 +256,7 @@ Base unit: **4px**. Every spacing value must be a multiple of 4, no exceptions.
 | `--spacing-2xl` | 32px  | Page-level padding, large dialog body                 |
 
 The existing 2px (`--spacing-xxs`) is used in tight file-list contexts. Keep it available but prefer `--spacing-xs`
-(4px) when possible. The existing 6px (25 uses) is off-scale — migrate to `--spacing-xs` (4px) or `--spacing-sm` (8px)
+(4px) when possible. The existing 6px (25 uses) is off-scale; migrate to `--spacing-xs` (4px) or `--spacing-sm` (8px)
 case by case.
 
 ### Website
@@ -275,7 +275,7 @@ Tailwind's spacing scale (base 4px). No custom tokens needed.
 | `--radius-lg`   | 8px    | Dialogs, cards, larger containers               |
 | `--radius-full` | 9999px | Circles, pills                                  |
 
-The scale intentionally uses small values — large radii look web-native, not macOS-native.
+The scale intentionally uses small values: large radii look web-native, not macOS-native.
 
 ### Website
 
@@ -327,7 +327,7 @@ In dark mode, the backup shadow uses `rgba(255, 255, 255, 0.08)` instead.
 | `--z-notification` | `400` | Toasts, notifications (always on top) |
 | `--z-tooltip`      | `500` | Tooltips (above all other layers)     |
 
-Keep gaps between tiers so intermediate values are available without reshuffling. Never use raw numbers — always
+Keep gaps between tiers so intermediate values are available without reshuffling. Never use raw numbers; always
 reference the token.
 
 ### Website
@@ -369,25 +369,25 @@ Every interactive element needs a visible focus indicator. This is a keyboard-dr
 
 | Element type                                                          | How focus is handled                                                                                                 |
 | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Buttons                                                               | Global `button:focus-visible` rule in `app.css` — automatic, no per-component work needed                            |
+| Buttons                                                               | Global `button:focus-visible` rule in `app.css` (automatic, no per-component work needed)                            |
 | Inputs, selects, textareas                                            | Each component provides its own `:focus` rule: `border-color: var(--color-accent); box-shadow: var(--shadow-focus);` |
 | File list containers (BriefList, FullList)                            | Cursor/selection highlight serves as the focus indicator. `outline: none` is intentional                             |
-| Non-interactive containers (`<div>` without tabindex, or tabindex=-1) | May use `outline: none` freely — no focus indicator needed                                                           |
+| Non-interactive containers (`<div>` without tabindex, or tabindex=-1) | May use `outline: none` freely (no focus indicator needed)                                                           |
 
 **Standard pattern for inputs:** Set `outline: none` on the base selector, then pair it with a `:focus` rule that
 applies `border-color: var(--color-accent)` and `box-shadow: var(--shadow-focus)`. If the element has `border: none`,
 add `border: 1px solid transparent` to the base so the border-color change is visible on focus.
 
 **Why `:focus` instead of `:focus-visible`:** Browsers only apply `:focus-visible` to keyboard-initiated focus, hiding
-the ring on click. In a keyboard-first file manager, users constantly switch between mouse and keyboard mid-action —
+the ring on click. In a keyboard-first file manager, users constantly switch between mouse and keyboard mid-action,
 hiding the indicator on click would make the currently focused element invisible when they reach for the keyboard.
 
-### File list (app — the primary surface)
+### File list (app, the primary surface)
 
 The file list is what users see 90% of the time. Every other component is secondary.
 
 **Density** is a user setting (`appearance.uiDensity`): Compact | Comfortable (default) | Spacious. The setting applies
-three runtime CSS variables via JS in `settings-applier.ts`. These are NOT defined in `app.css` — they're set
+three runtime CSS variables via JS in `settings-applier.ts`. These are NOT defined in `app.css`; they're set
 dynamically on `document.documentElement`.
 
 | Density               | `--row-height` | `--icon-size` | `--density-spacing` |
@@ -396,7 +396,7 @@ dynamically on `document.documentElement`.
 | Comfortable (default) | 20px           | 32px          | 4px                 |
 | Spacious              | 28px           | 40px          | 8px                 |
 
-Row padding: `2px 8px` (vertical, horizontal). Line-height: `1.0` — the row height variable, not line-height, controls
+Row padding: `2px 8px` (vertical, horizontal). Line-height: `1.0`; the row height variable, not line-height, controls
 vertical rhythm.
 
 **Cursor highlight:**
@@ -404,10 +404,10 @@ vertical rhythm.
 - Focused pane: `background: var(--color-accent-subtle)` (derived from system accent at ~15% opacity)
 - Unfocused pane: `background: var(--color-bg-tertiary)` (neutral, no accent)
 
-**Selection:** File names turn `var(--color-selection-fg)` (gold). No background change — color alone signals selection,
+**Selection:** File names turn `var(--color-selection-fg)` (gold). No background change; color alone signals selection,
 keeping the list scannable.
 
-**Scrollbars:** Native macOS. No custom styling. This is deliberate — custom scrollbars immediately feel web-native.
+**Scrollbars:** Native macOS. No custom styling. This is deliberate: custom scrollbars immediately feel web-native.
 
 ### Buttons (app)
 
@@ -460,7 +460,7 @@ font-size: var(--font-size-sm); /* 12px */
 border-radius: var(--radius-sm); /* 4px */
 ```
 
-**All buttons:** `cursor: default`. No `outline: none` on focus — rely on focus-visible ring.
+**All buttons:** `cursor: default`. No `outline: none` on focus; rely on focus-visible ring.
 
 ### Buttons (website)
 
@@ -492,7 +492,7 @@ contrast against dark chrome).
 ```css
 padding: 8px 12px;
 border: 1px solid var(--color-border);
-border-radius: var(--radius-sm); /* 4px — tighter than buttons, matches macOS text fields */
+border-radius: var(--radius-sm); /* 4px, tighter than buttons, matches macOS text fields */
 font-size: var(--font-size-md); /* 14px */
 line-height: 1.4;
 background: var(--color-bg-primary);
@@ -505,7 +505,7 @@ Focus: `border-color: var(--color-accent); box-shadow: var(--shadow-focus);` Err
 ### Tooltips (app)
 
 Custom frosted-glass tooltips via Svelte action (`use:tooltip`). A singleton `<div>` is appended to `<body>` and
-repositioned per hover — only one tooltip exists at a time.
+repositioned per hover; only one tooltip exists at a time.
 
 **Glass material:**
 
@@ -549,24 +549,24 @@ border-radius: var(--radius-sm);
 line-height: 1;
 ```
 
-Keep them visually quiet — they're reference, not action. Monospace so key combinations (`Cmd+Shift+N`) align neatly.
+Keep them visually quiet; they're reference, not action. Monospace so key combinations (`Cmd+Shift+N`) align neatly.
 
 ### Loading states (app)
 
 For operations under ~1 second, no indicator needed. For longer operations, follow the progressive disclosure from the
 design guidelines in AGENTS.md:
 
-1. **Spinner** — immediately on start. Use the existing LoadingIcon component.
-2. **Progress bar + counter** — when the total is known (for example, "Loading 42 of 318 files"). Use `--color-accent`
+1. **Spinner**: immediately on start. Use the existing LoadingIcon component.
+2. **Progress bar + counter**: when the total is known (for example, "Loading 42 of 318 files"). Use `--color-accent`
    for the filled portion, `--color-bg-tertiary` for the track.
-3. **Time estimate** — when we can extrapolate. Show in `--color-text-tertiary` below the progress bar.
+3. **Time estimate**: when we can extrapolate. Show in `--color-text-tertiary` below the progress bar.
 
 All long operations must be cancelable. The cancel action should be a secondary button or `Escape` key, and must stop
 both the UI indicator and the background process.
 
 ### Empty states (app)
 
-Centered, single-line message in `--color-text-tertiary` at `--font-size-sm`: "Empty folder". No icon, no illustration —
+Centered, single-line message in `--color-text-tertiary` at `--font-size-sm`: "Empty folder". No icon, no illustration;
 keep it as quiet as the rest of the chrome. Shown when a directory exists and has loaded successfully but contains no
 entries.
 
@@ -597,7 +597,7 @@ injectable `measureWidth` function).
 widths (`width: 500px`, not `min-width/max-width`) to prevent layout jitter.
 
 **Number formatting**: Use `formatNumber()` from `selection-info-utils` for all user-facing counts (file counts, dir
-counts, item counts). Raw numbers like `194667` are hard to read — always display as `194,667`. Byte values use
+counts, item counts). Raw numbers like `194667` are hard to read; always display as `194,667`. Byte values use
 `formatBytes()` / `formatFileSize()` which already handle this. Use `font-variant-numeric: tabular-nums` on numeric
 displays so digits don't shift as values update.
 
@@ -613,9 +613,9 @@ Auto-dismiss after 4 seconds. Close button on hover.
 1. System font only. Never import a web font.
 2. All colors via CSS custom properties from `app.css`. Never hardcode hex in component styles.
 3. All spacing via `--spacing-*` tokens. Never use arbitrary px values.
-4. Accent color is dynamic — never assume it's blue. Derive hover/subtle variants with `color-mix()`.
+4. Accent color is dynamic; never assume it's blue. Derive hover/subtle variants with `color-mix()`.
 5. Transitions default to `var(--transition-base)`. Only `--transition-fast` or `--transition-slow` with justification.
-6. Focus indicator on every interactive element. No bare `outline: none` — see "Focus indicators" under Component
+6. Focus indicator on every interactive element. No bare `outline: none`; see "Focus indicators" under Component
    patterns.
 7. `prefers-reduced-motion` wraps all non-essential animation.
 8. Scrollbars stay native. Never style `::-webkit-scrollbar`.
@@ -631,7 +631,7 @@ The reset and global styles in `app.css` already establish these. Re-declaring t
 | `margin`              | `0`          | Reset (`* { margin: 0 }`)                                               |
 | `padding`             | `0`          | Reset (`* { padding: 0 }`)                                              |
 | `box-sizing`          | `border-box` | Reset (`html { box-sizing: border-box }` + `* { box-sizing: inherit }`) |
-| `cursor`              | `default`    | `html, body { cursor: default }` — inherited by all descendants         |
+| `cursor`              | `default`    | `html, body { cursor: default }` (inherited by all descendants)         |
 | `user-select`         | `none`       | `html, body { user-select: none }`                                      |
 | `overscroll-behavior` | `none`       | `* { overscroll-behavior: none }`                                       |
 
@@ -641,7 +641,7 @@ The reset and global styles in `app.css` already establish these. Re-declaring t
 | ------------- | ---------------------------------------------------------------------------------------- |
 | `color`       | `var(--color-text-primary)`                                                              |
 | `font-size`   | `16px` (via `html`)                                                                      |
-| `font-family` | Inherited from browser default (system font) — set `var(--font-system)` only when needed |
+| `font-family` | Inherited from browser default (system font); set `var(--font-system)` only when needed |
 
 **CSS defaults you don't need to write:**
 
@@ -672,7 +672,7 @@ When in doubt, check whether removing the declaration changes anything. If it do
 
 ### What makes it feel like Cmdr on both surfaces
 
-Not shared tokens — shared _decisions_:
+Not shared tokens, but shared _decisions_:
 
 - Borders, not shadows, define structure. You can remove every shadow and still perceive the layout.
 - One accent hue at a time. Everything else is neutral. No gratuitous color.

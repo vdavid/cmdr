@@ -235,7 +235,7 @@ mod signal_handler {
     const APP_VERSION_FIELD_LEN: usize = 32;
 
     unsafe extern "C" {
-        /// macOS/glibc `backtrace()` from execinfo.h — async-signal-safe on macOS.
+        /// macOS/glibc `backtrace()` from execinfo.h: async-signal-safe on macOS.
         fn backtrace(buffer: *mut *mut libc::c_void, size: libc::c_int) -> libc::c_int;
     }
 
@@ -478,7 +478,7 @@ fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
 
 /// Cache active settings for crash reports, using the app's settings loader.
 /// This piggybacks on `settings::load_settings` so defaults stay in sync.
-/// Fields that are `None` in the settings struct mean "user hasn't changed this" —
+/// Fields that are `None` in the settings struct mean "user hasn't changed this":
 /// the frontend registry owns the defaults. We pass through `None` as-is; the crash
 /// report consumer can interpret null as "default."
 fn cache_active_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {

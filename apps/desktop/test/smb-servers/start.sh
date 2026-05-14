@@ -62,7 +62,7 @@ if [ ${#services[@]} -eq 0 ]; then
 fi
 
 # Active TCP probe on each service's published port 445 until smbd accepts a
-# connection. NEVER replace this with `sleep N` — see
+# connection. NEVER replace this with `sleep N`; see
 # ../CLAUDE.md "Testing principles → No magic timer waits". `docker compose up -d`
 # returns when containers transition to "running", which is well before smbd
 # inside them has bound the port. Some images (auth, 50shares, unicode) legitimately

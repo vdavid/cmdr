@@ -73,7 +73,7 @@ pub(super) async fn copy_single_path(
 
 /// Streams one file from source to destination via `open_read_stream` /
 /// `write_from_stream`. Per-chunk progress and cancellation are enforced by
-/// the destination's `write_from_stream` implementation — it calls
+/// the destination's `write_from_stream` implementation, which calls
 /// `on_progress` between chunks and returns `VolumeError::Cancelled` on
 /// `ControlFlow::Break(())`.
 async fn stream_pipe_file(

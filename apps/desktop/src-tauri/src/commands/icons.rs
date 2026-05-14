@@ -19,8 +19,8 @@ const ICONS_TIMEOUT: Duration = Duration::from_secs(2);
 /// Returns an empty map while `crate::fda_gate::is_fda_pending_runtime()` is true.
 /// `fetch_fresh_extension_icon` walks UTType / LaunchServices, which on macOS
 /// touches MediaLibrary, AppData, FileProvider, and Apple Events TCC services
-/// for media/app/cloud-storage/scriptable extensions — exactly the popups we
-/// must not stack on top of the in-app FDA modal. Frontend re-requests after
+/// for media/app/cloud-storage/scriptable extensions (exactly the popups we
+/// must not stack on top of the in-app FDA modal). Frontend re-requests after
 /// the gate clears.
 #[tauri::command]
 #[specta::specta]
@@ -44,7 +44,7 @@ pub async fn get_icons(icon_ids: Vec<String>, use_app_icons_for_documents: bool)
 /// When `use_app_icons_for_documents` is true, falls back to app icons for files without
 /// document-specific icons. When false, uses Finder-style document icons.
 ///
-/// Returns an empty map while the FDA gate is pending — same reason as
+/// Returns an empty map while the FDA gate is pending. Same reason as
 /// `get_icons`. See `crate::fda_gate`.
 #[tauri::command]
 #[specta::specta]

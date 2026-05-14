@@ -166,7 +166,7 @@ export function parseGitHubReleases(raw: GitHubRawRelease[]): GitHubData {
 
 /**
  * Fetches GitHub release download counts. Not time-range-dependent
- * (GitHub doesn't provide per-period download stats — counts are cumulative).
+ * (GitHub doesn't provide per-period download stats; counts are cumulative).
  * Cached under '30d' range since data changes slowly.
  */
 export async function fetchGitHubData(env: GitHubEnv): Promise<SourceResult<GitHubData>> {

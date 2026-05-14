@@ -9,7 +9,7 @@
  * permission drift in the capability file would be invisible until a user opens the
  * viewer. mockIPC can't simulate Tauri's permission gate (the gate is on the Rust
  * side; the mock patches `__TAURI_INTERNALS__.invoke` *before* it gets there), but
- * we can pin the wire format — that's the contract that drift can break independently
+ * we can pin the wire format. That's the contract that drift can break independently
  * of the permission system.
  */
 

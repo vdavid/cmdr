@@ -91,7 +91,7 @@
     }
 
     /** Resolves the server address for mounting, preferring IP but falling back to hostname for loopback. */
-    /** Returns the hostname or IP to connect to (without port — port is passed separately). */
+    /** Returns the hostname or IP to connect to (without port; port is passed separately). */
     function resolveServerAddress(networkHost: NetworkHost): string {
         const ip = networkHost.ipAddress
         const isLoopback = ip === '127.0.0.1' || ip === '::1'
@@ -134,7 +134,7 @@
 
             // Find the actual volume for the mounted path
             // This ensures proper breadcrumb display and volume context
-            // (No need to refresh volume list — the mount event triggers a volumes-changed broadcast)
+            // (No need to refresh volume list; the mount event triggers a volumes-changed broadcast)
             const { volume: mountedVolume } = await resolvePathVolume(mountPath)
 
             if (mountedVolume) {

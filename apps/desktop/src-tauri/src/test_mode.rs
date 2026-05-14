@@ -9,20 +9,20 @@
 //!   alternative backends and are compiled out of production binaries.
 //! - **Soft hooks** (runtime-only) live behind environment variables read by
 //!   this module. They are **strictly additive**: they may add a delay, skip a
-//!   non-essential step, or emit extra telemetry — but they must never replace
+//!   non-essential step, or emit extra telemetry, but they must never replace
 //!   production logic. With the env var unset, the code path is exactly what
 //!   production runs.
 //!
 //! The canonical env vars handled here are documented in
 //! `docs/testing.md` § "E2E env-var hooks". New soft hooks should be wired
 //! through helpers in this file rather than reading env vars from random call
-//! sites — that way the convention stays discoverable and the list of test
+//! sites, that way the convention stays discoverable and the list of test
 //! hooks is grep-able from one place.
 //!
 //! Reading an unset env var is cheap (single syscall on Linux/macOS, cached by
 //! libc on most platforms), but for hooks called in tight loops we still
 //! recommend caching the parsed result behind an `AtomicU64` or similar. The
-//! `COPY_THROTTLE_OVERRIDE` static below is the canonical shape — set via the
+//! `COPY_THROTTLE_OVERRIDE` static below is the canonical shape, set via the
 //! `set_test_throttle` IPC command from a test, read on every copy loop tick.
 
 use std::sync::atomic::{AtomicI64, Ordering};
@@ -62,7 +62,7 @@ pub fn effective_copy_throttle_ms() -> Option<u64> {
 /// Subsystems may use this to enable diagnostics or skip behaviors that don't
 /// make sense during automated tests (popping the AI offer, mDNS, etc.).
 ///
-/// **Strictly additive** — code must keep working with the var unset.
+/// **Strictly additive**: code must keep working with the var unset.
 pub fn is_e2e_mode() -> bool {
     std::env::var("CMDR_E2E_MODE").as_deref() == Ok("1")
 }
@@ -85,9 +85,9 @@ mod tests {
     use super::*;
 
     /// Test mode reads exactly `"1"`. Anything else is off. This guards the
-    /// `as_deref() == Ok("1")` shape — replacing it with `is_ok()` would let
+    /// `as_deref() == Ok("1")` shape (replacing it with `is_ok()` would let
     /// `CMDR_E2E_MODE=0` accidentally enable test mode in CI, where the
-    /// variable is sometimes set to `0` to explicitly disable.
+    /// variable is sometimes set to `0` to explicitly disable).
     ///
     /// `serial_test`-free: we never mutate the env in the test; we just read
     /// what's there and assert the helper's parse rules through a private

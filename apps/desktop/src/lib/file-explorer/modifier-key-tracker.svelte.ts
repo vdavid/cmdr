@@ -7,7 +7,7 @@
 // Two sources feed this state:
 // 1. Document keydown/keyup events (works when webview is focused)
 // 2. Native `drag-modifiers` Tauri event from the swizzled WryWebView
-//    (reads [NSEvent modifierFlags] — works during OS-level drags when
+//    (reads [NSEvent modifierFlags], works during OS-level drags when
 //    the webview doesn't receive keyboard events)
 
 let altKeyHeld = $state(false)

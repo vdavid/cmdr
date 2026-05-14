@@ -12,7 +12,7 @@ Docker SMB containers for local development and E2E testing, provided by smb2's 
 ```
 
 The Docker Compose files live in `.compose/`. They're **vendored** from smb2's consumer test harness (see
-`.compose/VENDORED.md`) — if they're missing or stale after an smb2 bump, follow the re-vendor steps there.
+`.compose/VENDORED.md`). If they're missing or stale after an smb2 bump, follow the re-vendor steps there.
 
 CI runs the Rust SMB integration tests automatically via the `desktop-rust-integration-tests` check, which starts the
 `core` containers, runs `cargo nextest run --run-ignored only -E 'test(smb_integration_)'`, and tears them down.

@@ -104,7 +104,7 @@ export async function loadPersistedState(): Promise<InitializedState> {
 
   // E2E override: apply fixture paths to the active tab data BEFORE creating tab managers,
   // so the managers are initialized with the correct paths from the start.
-  // Must override both path AND volumeId — persisted state may have a non-root volume
+  // Must override both path AND volumeId. Persisted state may have a non-root volume
   // (e.g. VirtioFS mount) whose path resolver would mangle the absolute fixture path.
   if (e2eStartPath) {
     const leftActiveTab = resolvedLeftPaneTabs.tabs.find((t) => t.id === resolvedLeftPaneTabs.activeTabId)

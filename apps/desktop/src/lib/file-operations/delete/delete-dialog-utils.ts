@@ -1,6 +1,6 @@
 /**
  * Utility functions for the delete confirmation dialog.
- * Pure functions — no Svelte reactivity, no side effects.
+ * Pure functions, no Svelte reactivity, no side effects.
  */
 
 /** Minimal item info needed by DeleteDialog for display.

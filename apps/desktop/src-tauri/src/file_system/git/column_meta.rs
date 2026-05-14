@@ -5,7 +5,7 @@
 //! Every virtual entry gets a real timestamp into `modified_at` so the
 //! Modified column never reads as blank. Inside a snapshot (commit / tag /
 //! stash tree walk) every file and subdir borrows the snapshot's commit
-//! date — that's a frozen point in time, so the same date everywhere is
+//! date. That's a frozen point in time, so the same date everywhere is
 //! semantically correct.
 //!
 //! ## Size column (loose semantics)
@@ -14,7 +14,7 @@
 //! string per row (`+12 / -3`, `5 files`, `12 items`, `on main`, short
 //! SHA). The numeric `size` keeps a within-category sort key so the user
 //! can still sort by Size and get a useful order. Cross-category Size
-//! sorting is meaningless on purpose — each cell is self-explaining via
+//! sorting is meaningless on purpose. Each cell is self-explaining via
 //! tooltip + aria-label.
 
 use std::path::Path;
@@ -80,7 +80,7 @@ pub fn upstream_tip(repo: &gix::Repository, local_branch: &str) -> Option<(Strin
 pub struct AheadBehind {
     pub ahead: u32,
     pub behind: u32,
-    /// Display label of the comparison branch — `origin/main`, `main`, etc.
+    /// Display label of the comparison branch: `origin/main`, `main`, etc.
     pub vs: String,
 }
 
@@ -88,7 +88,7 @@ pub struct AheadBehind {
 /// back to `main` / `master` when no upstream is configured.
 ///
 /// Returns `None` when no comparison branch can be found (the branch
-/// itself is the default and there's no upstream — in that case the
+/// itself is the default and there's no upstream. In that case the
 /// caller leaves the cell blank).
 pub fn ahead_behind_for_branch(repo: &gix::Repository, local_branch: &str, local_tip: ObjectId) -> Option<AheadBehind> {
     if let Some((vs, upstream_id)) = upstream_tip(repo, local_branch) {
@@ -133,7 +133,7 @@ pub fn commit_meta(repo: &gix::Repository, id: ObjectId) -> Result<CommitMeta, F
 /// from the commit's tree.
 ///
 /// Uses gix's tree-diff. We also collect the recursive byte total of the
-/// commit tree as a side effect because the tree walk is identical — the
+/// commit tree as a side effect because the tree walk is identical; the
 /// caller can drop it if not needed.
 pub fn files_changed_count(repo: &gix::Repository, commit_id: ObjectId) -> Option<u64> {
     let commit = repo.find_commit(commit_id).ok()?;
@@ -145,7 +145,7 @@ pub fn files_changed_count(repo: &gix::Repository, commit_id: ObjectId) -> Optio
         return Some(count_blobs_recursive(repo, &tree));
     }
     // Diff against first parent (the conventional "main" parent for merge
-    // commits — `git show` does the same).
+    // commits, same as `git show`).
     let parent = repo.find_commit(parents[0]).ok()?;
     let parent_tree = parent.tree().ok()?;
 
@@ -177,7 +177,7 @@ fn count_blobs_recursive(_repo: &gix::Repository, tree: &gix::Tree<'_>) -> u64 {
                 count = count.saturating_add(1);
             }
             EntryKind::Commit => {
-                // Submodule pointer — count as one entry.
+                // Submodule pointer: count as one entry.
                 count = count.saturating_add(1);
             }
         }

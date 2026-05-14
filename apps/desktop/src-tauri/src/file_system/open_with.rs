@@ -141,7 +141,7 @@ mod imp {
         Some(NSURL::fileURLWithPath(&ns_path))
     }
 
-    /// Calls `URLsForApplicationsToOpenURL:` synchronously. Runs on the calling thread —
+    /// Calls `URLsForApplicationsToOpenURL:` synchronously. Runs on the calling thread;
     /// callers should arrange to be off the main thread and on a stack ≥ 8 MB.
     fn fetch_candidates_for_path(path: &Path) -> Vec<PathBuf> {
         autoreleasepool(|_| {
@@ -215,7 +215,7 @@ mod imp {
 
     /// Reads the app's main icon (`CFBundleIconFile` from Info.plist) and returns it as
     /// an RGBA buffer suitable for `tauri::image::Image::new_owned`. The `.icns` file
-    /// usually contains multiple sizes — we prefer 32x32, falling back to larger sizes
+    /// usually contains multiple sizes. We prefer 32x32, falling back to larger sizes
     /// (resized via the `image` crate) if 32x32 isn't present.
     pub fn load_app_icon(app_path: &Path) -> Option<AppIcon> {
         use icns::{IconFamily, IconType};
@@ -238,7 +238,7 @@ mod imp {
         let family = IconFamily::read(file).ok()?;
 
         // Preferred sizes in order: exact match first to avoid resampling, then larger
-        // sizes that we'll downsample. Skip 16x16 — it's blurry on Retina.
+        // sizes that we'll downsample. Skip 16x16 (it's blurry on Retina).
         let candidates = [
             IconType::RGBA32_32x32,
             IconType::RGBA32_64x64,

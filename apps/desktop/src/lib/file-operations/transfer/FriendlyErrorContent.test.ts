@@ -1,5 +1,5 @@
 /**
- * Direct tests for `FriendlyErrorContent.svelte` — covers markdown rendering and the
+ * Direct tests for `FriendlyErrorContent.svelte`: covers markdown rendering and the
  * anchor click delegate. The parent `TransferErrorDialog.friendly.test.ts` exercises
  * the same surface via the dialog wrapper; this file pins the component in isolation
  * so the coverage check is happy and so changes to the parent don't accidentally

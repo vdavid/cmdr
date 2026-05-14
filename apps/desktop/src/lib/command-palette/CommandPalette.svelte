@@ -30,14 +30,14 @@
     /**
      * Element that had focus when the palette opened. We restore focus to it on
      * destroy so the focused pane (or whichever element triggered the palette)
-     * gets keyboard input again — without this, focus falls to <body> and arrow
+     * gets keyboard input again. Without this, focus falls to <body> and arrow
      * keys silently no-op until the user clicks back into a pane.
      */
     let previousActiveElement: HTMLElement | null = null
 
     // Derived: filtered and ranked results. When the query is empty, recents
     // lead the list (most-recent first) so the cursor at index 0 lands on the
-    // user's last-executed command — Enter re-runs it.
+    // user's last-executed command (Enter re-runs it).
     const results = $derived(searchCommands(query, recentCommandIds))
 
     // Boundary between recents and the rest in the empty-query view. Used to
@@ -55,7 +55,7 @@
     })
 
     // Stable per-option IDs let the combobox input announce the active option
-    // to assistive tech via aria-activedescendant — DOM focus stays in the input.
+    // to assistive tech via aria-activedescendant. DOM focus stays in the input.
     function optionId(commandId: string): string {
         return `palette-option-${commandId}`
     }
@@ -324,7 +324,7 @@
         border-top: 1px solid var(--color-border);
     }
 
-    /* First heading sits right after the input — no top border */
+    /* First heading sits right after the input, no top border */
     .group-heading:first-child {
         border-top: none;
     }

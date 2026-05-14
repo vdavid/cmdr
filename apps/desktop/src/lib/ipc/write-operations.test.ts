@@ -5,7 +5,7 @@
  * These verify the **boundary**: that the typed bindings send the right snake_case
  * command name, with the camelCase payload shape the Rust signatures expect, including
  * the optional config object (which contains `progressIntervalMs`, `conflictResolution`,
- * `dryRun`, etc.). The business logic — actually copying bytes — lives in `*_core`
+ * `dryRun`, etc.). The business logic (actually copying bytes) lives in `*_core`
  * helpers and is owned by the Rust unit tests.
  *
  * Error paths use `WriteOperationError` variants (`source_not_found`, `destination_full`,
@@ -104,7 +104,7 @@ describe('commands.deleteFiles', () => {
     const volumeId = 'smb://server/share'
     await commands.deleteFiles(['/x', '/y'], volumeId, { dryRun: true })
 
-    // Note the camelCase `volumeId` payload key — Tauri-Specta sends in camelCase and the
+    // Note the camelCase `volumeId` payload key. Tauri-Specta sends in camelCase and the
     // Rust side deserializes via the standard serde camelCase rename on the IPC layer.
     expect(ipc.lastCall('delete_files')?.payload).toEqual({
       sources: ['/x', '/y'],

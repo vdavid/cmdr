@@ -135,7 +135,7 @@ describe('TabBar double-click empty area', () => {
     const onNewTab = vi.fn()
     const { target } = await mountTabBar(onNewTab)
     const tabList = target.querySelector('.tab-list') as HTMLElement
-    // Click the .tab-list element directly (not on any child .tab) — the trailing
+    // Click the .tab-list element directly (not on any child .tab); the trailing
     // empty flex region is the .tab-list itself outside of any `.tab` button.
     tabList.dispatchEvent(new MouseEvent('dblclick', { button: 0, bubbles: true }))
     expect(onNewTab).toHaveBeenCalledTimes(1)

@@ -4,7 +4,7 @@ compatibility_date = "2025-01-01"
 
 # api.getcmdr.com is a proxied CNAME → *.workers.dev (handles IPv4 + IPv6).
 # The zone-level route tells Cloudflare to send matching requests to this Worker.
-# license.getcmdr.com is kept as a permanent alias — existing app versions hardcode it.
+# license.getcmdr.com is kept as a permanent alias: existing app versions hardcode it.
 workers_dev = true
 
 [[routes]]
@@ -39,7 +39,7 @@ database_name = "cmdr-telemetry"
 database_id = "537fdb4a-cd66-4faf-a2fe-3e51b5f6f915"
 
 # R2 bucket for error report bundles (zips of redacted logs + manifest)
-# Provision with ./scripts/setup-cf-infra.sh — that also applies the 90-day lifecycle rule.
+# Provision with ./scripts/setup-cf-infra.sh (that also applies the 90-day lifecycle rule).
 [[r2_buckets]]
 binding = "ERROR_REPORTS_BUCKET"
 bucket_name = "cmdr-error-reports"
@@ -56,7 +56,7 @@ crons = ["0 */12 * * *"]
 # Non-secret config
 PRODUCT_NAME = "Cmdr"
 SUPPORT_EMAIL = "veszelovszki@gmail.com"
-# "sandbox" or "live" — controls which Paddle API + key to use for /validate and webhooks.
+# "sandbox" or "live": controls which Paddle API + key to use for /validate and webhooks.
 # Override with `wrangler secret put PADDLE_ENVIRONMENT` → "live" when going live.
 PADDLE_ENVIRONMENT = "sandbox"
 

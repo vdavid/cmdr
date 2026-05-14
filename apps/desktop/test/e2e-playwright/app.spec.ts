@@ -1,5 +1,5 @@
 /**
- * E2E tests for the Cmdr Tauri application — basic rendering, keyboard
+ * E2E tests for the Cmdr Tauri application: basic rendering, keyboard
  * navigation, mouse interactions, navigation, and dialogs.
  *
  * Uses tauri-playwright in Tauri mode: commands are injected directly into
@@ -26,8 +26,8 @@ type PageLike = TauriPage | BrowserPageAdapter
 /**
  * Moves the cursor to "sub-dir". Uses the MCP `move_cursor` tool (via
  * `moveCursorToFile`) which jumps directly to the target file and waits for
- * the render to land — synchronous on the backend, ~1 evaluate() worth of
- * UI overhead. The previous keyboard-driven implementation pressed Home then
+ * the render to land (synchronous on the backend, ~1 evaluate() worth of
+ * UI overhead). The previous keyboard-driven implementation pressed Home then
  * ArrowDown N times with fixed-duration sleeps between each press, which was
  * slow and prone to flakes when the press cadence outran the cursor render.
  * The tests that call this care about *navigation* (Enter, Backspace) after
@@ -229,10 +229,10 @@ test.describe('Mouse interactions', () => {
             return -1;
         })()`)
 
-    // Pick a different entry to click — if cursor is on [0], click [1]; otherwise click [0]
+    // Pick a different entry to click: if cursor is on [0], click [1]; otherwise click [0]
     const targetIndex: number = initialCursorIndex === 1 ? 0 : 1
 
-    // Dispatch mousedown then click — the cursor movement handler is on
+    // Dispatch mousedown then click; the cursor movement handler is on
     // onmousedown, not onclick. Must set button:0 (handleMouseDown checks it).
     await tauriPage.evaluate(`(function() {
             var pane = document.querySelectorAll('.file-pane')[0];
@@ -351,7 +351,7 @@ test.describe('Navigation', () => {
   test('navigates to parent with Backspace', async ({ tauriPage }) => {
     // Healthy-system budget is ~2-3 s. The 8 s test timeout exists to absorb
     // CI/load jitter, not to mask hangs. Temporary phase timings here so the
-    // next failure pinpoints which step blew the budget — remove once stable.
+    // next failure pinpoints which step blew the budget; remove once stable.
     const t0 = Date.now()
     const log = (phase: string) => {
       // eslint-disable-next-line no-console
@@ -538,13 +538,13 @@ test.describe('Transfer dialogs', () => {
 
     await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, 'unused-cancel-folder')
 
-    // Cancel is always enabled — click directly. No fixed wait needed.
+    // Cancel is always enabled; click directly. No fixed wait needed.
     await tauriPage.click(`${MKDIR_DIALOG} .btn-secondary`)
 
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
     expect(await tauriPage.isVisible('.modal-overlay')).toBe(false)
 
-    // File listing must not have grown — Cancel must not create the folder.
+    // File listing must not have grown; Cancel must not create the folder.
     const finalCount = await tauriPage.evaluate<number>(
       `document.querySelectorAll('.file-pane.is-focused .file-entry').length`,
     )

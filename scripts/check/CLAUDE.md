@@ -89,7 +89,7 @@ go run ./scripts/check --only-freestyle
 | `checks/common.go`                                                        | Core types (`CheckDefinition`, `CheckResult`, `CheckContext`, `CheckFunc`), shared utils (`RunCommand`, `EnsureGoTool`, `runPrettierCheck`, `runESLintCheck`) |
 | `checks/registry.go`                                                      | `AllChecks`: canonical ordered list of all check definitions. Lookup and validation functions.                                                                |
 | `checks/registry_test.go`                                                 | Collision detection, `CLIName()` tests                                                                                                                        |
-| `stats.go`                                                                | CSV stats logging (`logCheckStats`) — appends one row per check to `~/cmdr-check-log.csv`                                                                     |
+| `stats.go`                                                                | CSV stats logging (`logCheckStats`): appends one row per check to `~/cmdr-check-log.csv`                                                                     |
 | `colors.go`                                                               | ANSI color constants                                                                                                                                          |
 | `utils.go`                                                                | `findRootDir()` (walks up until `apps/desktop/src-tauri/Cargo.toml` is found)                                                                                 |
 | `checks/desktop-rust-*.go`                                                | One file per Rust check                                                                                                                                       |
@@ -117,7 +117,7 @@ counted as failed. Dependencies not in the selected run set are treated as satis
 **Self-contained E2E checks:** `desktop-e2e-playwright` manages the full lifecycle (build binary once, create per-shard
 fixtures, start N Tauri instances, run N Playwright processes in parallel, cleanup). Each shard runs in its own isolated
 `CMDR_DATA_DIR` with its own Unix socket and MCP port (9429 + shard offset). One shard is dedicated to MTP specs
-(serialized — the virtual MTP backing dir at `/tmp/cmdr-mtp-e2e-fixtures` is shared by every Tauri instance). Stale
+(serialized; the virtual MTP backing dir at `/tmp/cmdr-mtp-e2e-fixtures` is shared by every Tauri instance). Stale
 processes on each port are killed before starting. Per-shard logs go to
 `/tmp/cmdr-e2e-playwright-<shard>-<timestamp>.log`.
 
@@ -133,7 +133,7 @@ captured. When unset, the log starts with `=== RUST_LOG unset (default warn leve
 **Go tool auto-install:** `EnsureGoTool(name, installPath)` checks PATH first, then runs `go install` and returns the
 full binary path. Used for staticcheck, nilaway, etc.
 
-**TTY detection:** `golang.org/x/term.IsTerminal` gates the live status line — CI logs stay clean.
+**TTY detection:** `golang.org/x/term.IsTerminal` gates the live status line; CI logs stay clean.
 
 **CSV stats logging:** Each check run appends a row to `~/cmdr-check-log.csv` with timestamp, app, check name, duration,
 result (pass/fail/skip/blocked), and optional counts (total, issues, changes). `CheckResult` has `Total`, `Issues`,
@@ -165,7 +165,7 @@ Run:               RunDesktopESLint,
 ## Adding a new check
 
 1. Create `checks/{app}-{name}.go` with a `func RunSomething(ctx *CheckContext) (CheckResult, error)`. Use
-   `website-build.go` or `website-docker.go` as templates — they're the simplest.
+   `website-build.go` or `website-docker.go` as templates; they're the simplest.
 2. Register it in `AllChecks` in `registry.go` (ID, App, Tech, DependsOn, Run).
 3. Return `Success("message")` on pass, `fmt.Errorf(...)` on fail, `Skipped("reason")` to skip.
 4. Add a test file if the check has non-trivial logic (`checks/{app}-{name}_test.go`).
@@ -265,9 +265,9 @@ each successful install. On the next run, if the mtime matches, install is skipp
 `node_modules/` so it's automatically invalidated if `node_modules` is deleted. Always runs in CI (`--ci`).
 
 **Decision**: E2E failure output uses section-aware filtering, not a pattern denylist. **Why**: The checker's contract
-with agents is that output is concise enough to read in full — no `head`/`tail`/`grep` needed. Raw Playwright + Tauri +
+with agents is that output is concise enough to read in full: no `head`/`tail`/`grep` needed. Raw Playwright + Tauri +
 Docker output is 1000+ lines on a failure (test pass markers, app stdout log, post-ELIFECYCLE build dump). The captured
-output has four stable sections — setup, per-test progress, numbered failure blocks, post-ELIFECYCLE dump — split by
+output has four stable sections (setup, per-test progress, numbered failure blocks, post-ELIFECYCLE dump), split by
 fixed delimiters (`Starting Tauri app...`, `\d+\) \[tauri\]`, `[ELIFECYCLE]`). `extractE2ETestOutput` in
 `desktop-svelte-e2e-playwright.go` keeps the failure blocks verbatim, drops the post-ELIFECYCLE dump, and in the
 progress section keeps `✘` markers with their preceding annotation lines (like `[SMB diag] MCP port: …`) while dropping
@@ -278,17 +278,17 @@ If the run died before reaching the test phase, none of `Starting Tauri app...`,
 or a `\d+ (passed|failed|flaky|skipped)` tally line will be present. `isPreTestFailure` checks all three; only if all
 three are absent does the filter prepend `note: tests did not reach the run phase` and drop the verbose
 `docker compose ps` table (anchored on its `NAME IMAGE COMMAND` header so prose containing `Up <N>` survives). Checking
-the tally and failure block — not just the Tauri marker — avoids false positives on macOS playwright shards, where Tauri
+the tally and failure block (not just the Tauri marker) avoids false positives on macOS playwright shards, where Tauri
 is started by the Go check and its stdout goes to a per-shard log file, so the marker never appears in Playwright stdout
 regardless of success.
 
 **Decision**: `cargo test` / `cargo nextest` failure output is filtered by dropping pass/skip verdict lines only.
 **Why**: A 1786-test run produces ~1800 noise lines around 2 real failures. The harness format is stable enough that a
-single per-line regex — `^test … ... (ok|ignored…)$` for `cargo test`, `^\s+(PASS|SKIP) [...] …$` for `cargo nextest` —
+single per-line regex (`^test … ... (ok|ignored…)$` for `cargo test`, `^\s+(PASS|SKIP) [...] …$` for `cargo nextest`)
 can drop the noise without risking false positives on panic-message bodies (start-of-line anchor protects quoted test
-phrases). `trimRustTestProgress` in `desktop-rust-tests-linux.go` runs after `trimBuildNoise`. Everything else —
-`running N tests` header, FAIL/FAILED/LEAK/TIMEOUT verdicts, the `failures:` block, the `test result:` / `Summary`
-tally, `error:` lines, bench results — passes through unchanged.
+phrases). `trimRustTestProgress` in `desktop-rust-tests-linux.go` runs after `trimBuildNoise`. Everything else
+(`running N tests` header, FAIL/FAILED/LEAK/TIMEOUT verdicts, the `failures:` block, the `test result:` / `Summary`
+tally, `error:` lines, bench results) passes through unchanged.
 
 **Decision**: silence apt/dpkg at the source, not via a post-hoc denylist. **Why**: `provisionScript` redirects both apt
 commands to a log file under `DEBIAN_FRONTEND=noninteractive` + `-qq`, so on a successful provision the check's stdout
@@ -296,12 +296,12 @@ gets zero apt lines. The log lives on a per-run host directory (`/tmp/cmdr-rust-
 bind-mounted into the container at `/cmdr-logs`, so it survives the container's `--rm` and is discoverable from the
 check's Success/failure message. On apt failure, the script dumps the full log to stderr (captured by Go) so the user
 sees what went wrong without having to fish for the file. A previous attempt to scrub the verbose output with a
-`packageManagerNoiseRE` denylist was a treadmill — every Debian version adds new dpkg verbs (`Setting up`, `Unpacking`,
+`packageManagerNoiseRE` denylist was a treadmill: every Debian version adds new dpkg verbs (`Setting up`, `Unpacking`,
 `Processing triggers`, `Get:N`, `Hit:N`, `Selecting previously unselected package`, `Created symlink`,
 `update-alternatives:`, `procps:`, etc.), continuation lines from multi-line apt prompts have no stable shape, and
 `apt-get -qq` alone doesn't propagate to dpkg's per-package chatter. Redirection at source is bulletproof and
 zero-maint. `trimBuildNoise` now only cuts everything before the last `Compiling …` line; when no such line exists
-(provisioning died before cargo ran), the output is returned verbatim. Length-based truncation is forbidden everywhere —
+(provisioning died before cargo ran), the output is returned verbatim. Length-based truncation is forbidden everywhere;
 if 200 tests fail, all 200 panic bodies pass through.
 
 **Decision**: nextest binary is arch-aware. **Why**: `https://get.nexte.st/latest/linux` serves the x86_64-musl build by
@@ -316,12 +316,12 @@ Two modes for offloading checks to a freestyle.sh VM:
 
 - `--only-freestyle`: runs only freestyle-compatible checks on the VM, skips the rest entirely.
 - `--prefer-freestyle`: runs freestyle-compatible checks on the VM and the rest locally, in parallel. This is the "run
-  everything as fast as possible" mode — Rust checks run on your Mac while Node/Go checks run on the VM simultaneously.
+  everything as fast as possible" mode: Rust checks run on your Mac while Node/Go checks run on the VM simultaneously.
 
 **How it works:** Creates a temporary git commit of the full working tree (without modifying the local index/worktree),
 pushes it to a temp branch, fetches on the VM, runs checks, cleans up the branch.
 
-**What's freestyle-compatible:** Node/TS checks (Svelte, Astro, API server), Go checks, and metrics — any check without
+**What's freestyle-compatible:** Node/TS checks (Svelte, Astro, API server), Go checks, and metrics; any check without
 `FreestyleIncompat: true`. The VM uses `--freestyle-remote` internally to filter to only these checks.
 
 **What's not:** Rust checks (dep compilation exceeds freestyle's ~15 min API timeout) and Docker checks (no Docker

@@ -89,7 +89,7 @@ pub struct VerifyResult {
 
 /// Verify a license key or short code without writing anything to disk or cache.
 /// If the input is a short code, exchanges it for the full key via the server first.
-/// This is the "try it" step — call `commit_license` afterwards to persist a verified key.
+/// This is the "try it" step: call `commit_license` afterwards to persist a verified key.
 pub async fn verify_license_async(input: &str) -> Result<VerifyResult, LicenseActivationError> {
     let (full_key, short_code) = if is_short_code(input) {
         let key = activate_short_code(input).await?;
@@ -117,7 +117,7 @@ pub async fn verify_license_async(input: &str) -> Result<VerifyResult, LicenseAc
 }
 
 /// Persist a verified license key to disk and update caches.
-/// This is the "save it" step — only call after verification confirms the key is good
+/// This is the "save it" step: only call after verification confirms the key is good
 /// (or on network fallback when the key is crypto-valid but the server is unreachable).
 pub fn commit_license(
     app: &tauri::AppHandle,
@@ -265,7 +265,7 @@ fn validate_license_key_with_public_key(
         .decode(parts[1])
         .map_err(|_| LicenseActivationError::BadEncoding)?;
 
-    // Parse public key (internal error — should never happen with a valid compiled-in key)
+    // Parse public key (internal error: should never happen with a valid compiled-in key)
     let public_key_bytes = hex_decode(public_key_hex).map_err(|_| LicenseActivationError::BadPayload)?;
 
     let public_key = VerifyingKey::from_bytes(

@@ -149,7 +149,7 @@ export function buildTransferPropsFromDroppedPaths(
     destinationPath: destPath,
     direction,
     currentVolumeId: destVolumeId,
-    // Approximate counts — the transfer dialog will scan for accurate totals
+    // Approximate counts: the transfer dialog will scan for accurate totals
     fileCount: droppedPaths.length,
     folderCount: 0,
     sourceFolderPath,

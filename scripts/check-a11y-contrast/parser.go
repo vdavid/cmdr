@@ -531,7 +531,7 @@ func splitDecl(d string) (string, string) {
 	}
 	prop := strings.ToLower(strings.TrimSpace(d[:colon]))
 	val := strings.TrimSpace(d[colon+1:])
-	// Strip `!important` — doesn't affect the value.
+	// Strip `!important`; doesn't affect the value.
 	if idx := strings.LastIndex(strings.ToLower(val), "!important"); idx >= 0 {
 		val = strings.TrimSpace(val[:idx])
 	}
@@ -540,7 +540,7 @@ func splitDecl(d string) (string, string) {
 
 func parseFontSizePx(v string) float64 {
 	v = strings.TrimSpace(v)
-	// If it's a var(), we can't resolve here — we rely on well-known tokens.
+	// If it's a var(), we can't resolve here; we rely on well-known tokens.
 	// Many rules use the tokens directly; we handle them by name.
 	if strings.HasPrefix(v, "var(") {
 		return fontSizeFromVar(v)

@@ -106,7 +106,7 @@ fn format_file_compact(
 fn build_pane_yaml(state: &PaneState, indent: &str) -> String {
     let mut lines = Vec::new();
 
-    // Tabs (first — gives context for which tab is active before showing its content)
+    // Tabs (first, gives context for which tab is active before showing its content)
     if !state.tabs.is_empty() {
         lines.push(format!("{}tabs:", indent));
         for (idx, tab) in state.tabs.iter().enumerate() {
@@ -165,7 +165,7 @@ fn build_pane_yaml(state: &PaneState, indent: &str) -> String {
     // Selected count
     lines.push(format!("{}selected: {}", indent, state.selected_indices.len()));
 
-    // Type-to-jump state — only emitted while a buffer or visible indicator
+    // Type-to-jump state: only emitted while a buffer or visible indicator
     // exists, so the YAML stays clean during the common case.
     if let Some(ref ttj) = state.type_to_jump {
         lines.push(format!("{}typeToJump:", indent));
@@ -380,7 +380,7 @@ pub async fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> 
                 }
             }
 
-            // Dialogs — derived from window manager + soft dialog tracker
+            // Dialogs: derived from window manager + soft dialog tracker
             let mut dialog_entries: Vec<String> = Vec::new();
 
             // Window-based dialogs: derive from Tauri's window manager
@@ -415,7 +415,7 @@ pub async fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> 
                 }
             }
 
-            // Active listings — every entry currently in LISTING_CACHE. Helps triage
+            // Active listings: every entry currently in LISTING_CACHE. Helps triage
             // bugs caused by orphan listings (started but not bound to a pane) and
             // race conditions involving in-flight directory loads.
             let listings = crate::file_system::listing::caching::snapshot_listings();

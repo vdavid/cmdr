@@ -77,7 +77,7 @@ pub async fn set_indexing_enabled(app: AppHandle, enabled: bool) -> Result<(), S
 ///    so subsequent code paths can run normally. The deny path runs in the
 ///    same process; the allow path restarts the app, which re-enters
 ///    `setup()` and sets the atomic via the OS probe.
-/// 2. Start the MTP hotplug watcher. MTP is opt-in per device — the
+/// 2. Start the MTP hotplug watcher. MTP is opt-in per device; the
 ///    watcher itself doesn't trigger TCC.
 /// 3. Start the drive indexer. On the Deny path this is what surfaces the
 ///    "individual Allow/Deny prompts" the user signed up for by denying

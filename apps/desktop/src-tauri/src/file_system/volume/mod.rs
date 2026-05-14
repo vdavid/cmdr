@@ -26,7 +26,7 @@ use tokio::sync::mpsc;
 ///
 /// `Direct` means Cmdr's smb2 session is active (fast path).
 /// `OsMount` means only the OS mount is alive (fallback path).
-/// `Disconnected` means an SmbVolume exists but its smb2 session is broken — the
+/// `Disconnected` means an SmbVolume exists but its smb2 session is broken. The
 /// frontend reconnect manager owns the recovery cycle.
 ///
 /// Non-SMB volumes return `None` from `Volume::smb_connection_state()` (trait
@@ -35,9 +35,9 @@ use tokio::sync::mpsc;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum SmbConnectionState {
-    /// smb2 session active — fast path (green indicator).
+    /// smb2 session active: fast path (green indicator).
     Direct,
-    /// Using OS mount only — slower fallback (yellow indicator).
+    /// Using OS mount only: slower fallback (yellow indicator).
     OsMount,
     /// Cmdr's smb2 session has dropped. The frontend swaps to `SmbReconnectingView`
     /// and the per-volume reconnect manager runs the backoff cycle.
@@ -93,13 +93,13 @@ pub struct CopyScanResult {
 /// the copy engine uses to seed its `source_hints` map (without re-issuing N
 /// stat probes). `per_path[i].0` is the caller's input path verbatim; `.1`
 /// carries `top_level_is_directory` and `total_bytes` (for top-level files,
-/// that's the file size — used by the SMB compound fast-path).
+/// that's the file size, used by the SMB compound fast-path).
 #[derive(Debug, Clone)]
 pub struct BatchScanResult {
     /// Aggregate stats across all input paths.
     pub aggregate: CopyScanResult,
     /// Per-input-path result, in the same order as the `paths` slice the
-    /// caller passed in. Paths that failed to scan won't appear — on a
+    /// caller passed in. Paths that failed to scan won't appear. On a
     /// per-path failure the method returns `Err` without partial data.
     pub per_path: Vec<(PathBuf, CopyScanResult)>,
 }
@@ -370,7 +370,7 @@ pub trait Volume: Send + Sync {
 
     /// Deletes a single file or **empty** directory.
     ///
-    /// **Strict contract — must NOT recurse.** If `path` is a non-empty directory,
+    /// **Strict contract: must NOT recurse.** If `path` is a non-empty directory,
     /// the implementation must return an error (typically `VolumeError::IoError`
     /// with errno `ENOTEMPTY` or equivalent), not silently delete the contents.
     /// The conflict resolver and several callers rely on this: `apply_volume_conflict_resolution`
@@ -380,7 +380,7 @@ pub trait Volume: Send + Sync {
     /// loosened.
     ///
     /// For recursive deletes, callers should walk the tree themselves and call
-    /// `delete` per leaf — see `delete_volume_path_recursive` in `volume_copy.rs`.
+    /// `delete` per leaf. See `delete_volume_path_recursive` in `volume_copy.rs`.
     ///
     /// Default: `NotSupported`.
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
@@ -489,7 +489,7 @@ pub trait Volume: Send + Sync {
     /// Tries to rebuild this volume's underlying session in place after a
     /// transient connection loss. Idempotent and expected to be single-flight.
     ///
-    /// Default returns `Err(NotSupported)`. Only `SmbVolume` overrides today —
+    /// Default returns `Err(NotSupported)`. Only `SmbVolume` overrides today;
     /// it's invoked by the FE reconnect manager on each backoff tick and on the
     /// "Retry now" button. Future network/cloud volumes should override this
     /// when they have a story for in-place reconnect.
@@ -538,7 +538,7 @@ pub trait Volume: Send + Sync {
     // ========================================
 
     /// Returns whether this volume can stream its bytes via `open_read_stream`
-    /// — that is, it can act as a source in a cross-volume copy. Gates the copy
+    /// (that is, it can act as a source in a cross-volume copy). Gates the copy
     /// dialog's "copy from this volume" UI.
     fn supports_export(&self) -> bool {
         false
@@ -572,7 +572,7 @@ pub trait Volume: Send + Sync {
     /// The default iterates over `scan_for_copy` per path, which is correct for
     /// volumes where per-path I/O is cheap (local FS, in-memory). Volume types
     /// with expensive per-path I/O (MTP, SMB, FTP, S3) should override this to
-    /// batch — typically by pipelining per-path stats over a shared session
+    /// batch, typically by pipelining per-path stats over a shared session
     /// (SMB) or grouping paths by parent directory and listing each parent
     /// once (MTP).
     ///
@@ -589,7 +589,7 @@ pub trait Volume: Send + Sync {
                 file_count: 0,
                 dir_count: 0,
                 total_bytes: 0,
-                // Aggregate over multiple paths — meaningless for a batch.
+                // Aggregate over multiple paths: meaningless for a batch.
                 // Callers that need per-path type should read `per_path`.
                 top_level_is_directory: false,
             };
@@ -655,7 +655,7 @@ pub trait Volume: Send + Sync {
     /// # Streaming requirement
     ///
     /// **Must stream.** Don't read the whole file into a `Vec<u8>` inside
-    /// this method and hand chunks of it back — that's just pre-buffering
+    /// this method and hand chunks of it back. That's just pre-buffering
     /// with extra steps. A user streaming an 8 GB file would allocate 8 GB
     /// of RAM before the consumer sees a single byte. Drive the backend's
     /// streaming reader (smb2: `FileDownload`, mtp-rs: `FileDownload`) on
@@ -684,7 +684,7 @@ pub trait Volume: Send + Sync {
     /// instead of the 3-RTT streaming open. Backends that can't use the hint
     /// fall through to `open_read_stream`.
     ///
-    /// The hint is best-effort — callers pass `None` when they don't know
+    /// The hint is best-effort. Callers pass `None` when they don't know
     /// the size ahead of time, and the backend must work correctly either
     /// way.
     #[allow(
@@ -719,7 +719,7 @@ pub trait Volume: Send + Sync {
     /// and push it straight into the backend's streaming writer (smb2:
     /// `FileWriter`, mtp-rs: `upload_stream`) in the same loop. Holding the
     /// backend's session mutex across the source `next_chunk` awaits is
-    /// fine — different volumes use different mutexes, so there's no
+    /// fine. Different volumes use different mutexes, so there's no
     /// deadlock risk.
     ///
     /// Peak memory per transfer should be bounded by a small chunk buffer

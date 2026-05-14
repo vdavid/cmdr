@@ -1,4 +1,4 @@
-//! ByteSeekBackend — byte-offset seeking with no pre-scan.
+//! ByteSeekBackend: byte-offset seeking with no pre-scan.
 //!
 //! Opens the file and can immediately serve lines at any byte position.
 //! Scans backward up to MAX_BACKWARD_SCAN bytes to find a newline boundary.
@@ -66,13 +66,13 @@ impl ByteSeekBackend {
         let bytes_read = file.read(&mut buf)?;
         let buf = &buf[..bytes_read];
 
-        // Search backward for '\n' — the line starts right after the last newline before offset.
+        // Search backward for '\n'; the line starts right after the last newline before offset.
         // We search in reverse using memchr on the reversed slice approach.
         if let Some(pos) = buf.iter().rposition(|&b| b == b'\n') {
             // Line starts right after this newline
             Ok(scan_start + pos as u64 + 1)
         } else {
-            // No newline found within MAX_BACKWARD_SCAN — treat scan_start as line start
+            // No newline found within MAX_BACKWARD_SCAN, treat scan_start as line start
             // (or if scan_start == 0, the file starts here)
             Ok(scan_start)
         }
@@ -119,7 +119,7 @@ impl ByteSeekBackend {
                     current_offset += (nl_pos + 1) as u64; // +1 for newline
                     pos += nl_pos + 1;
                 } else {
-                    // No newline in remaining data — save as leftover
+                    // No newline in remaining data, save as leftover
                     leftover.extend_from_slice(&data[pos..]);
                     continue 'outer;
                 }
@@ -285,7 +285,7 @@ impl FileViewerBackend for ByteSeekBackend {
                     line_byte_offset = scanned;
                     line_number += 1;
                 } else {
-                    // Incomplete line — save as leftover for next iteration
+                    // Incomplete line, save as leftover for next iteration
                     leftover.extend_from_slice(&data[pos..]);
                     break;
                 }
@@ -295,7 +295,7 @@ impl FileViewerBackend for ByteSeekBackend {
             *progress.lock_ignore_poison() = scanned;
         }
 
-        // Handle last line without newline (only reached if limit not hit — loop breaks early otherwise)
+        // Handle last line without newline (only reached if limit not hit; loop breaks early otherwise)
         if !leftover.is_empty() {
             let line = String::from_utf8_lossy(&leftover);
             let line_lower = line.to_lowercase();

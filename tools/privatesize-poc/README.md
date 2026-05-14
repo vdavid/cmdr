@@ -4,7 +4,7 @@ Proof-of-concept tool that compares three file size metrics for a directory tree
 
 - **Logical** (`meta.len()`): File content size
 - **Physical** (`st_blocks * 512`): Allocated disk blocks (what our index currently uses)
-- **Private size** (`ATTR_CMNEXT_PRIVATESIZE`): Bytes that would be freed if the file were deleted — correctly accounts
+- **Private size** (`ATTR_CMNEXT_PRIVATESIZE`): Bytes that would be freed if the file were deleted, correctly accounting
   for APFS clone sharing
 
 ## Usage
@@ -19,7 +19,7 @@ cargo build --release
 
 APFS clones share disk extents via copy-on-write. `st_blocks * 512` reports the full allocation per clone, overcounting
 shared data. macOS provides `ATTR_CMNEXT_PRIVATESIZE` via `getattrlist()` which reports only the unique (non-shared)
-bytes — the actual reclaimable space.
+bytes, i.e. the actual reclaimable space.
 
 This PoC was used to validate the API works and measure the delta. See the conversation in which it was created for the
 full investigation.

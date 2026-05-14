@@ -17,7 +17,7 @@ copy via the FriendlyError pipeline.
 | `status-column.ts`       | Pure helpers: `glyphFor`, `labelFor`, `fetchStatusMap`. No reactivity                                                                                                      |
 | `status-column.test.ts`  | Tests for `glyphFor`, `labelFor`, and `fetchStatusMap` (mocks the IPC envelope)                                                                                            |
 | `git-store.test.ts`      | Tests for refcounted subscribe/unsubscribe and `lookupRepoInfo` envelope unwrapping                                                                                        |
-| `path-detection.ts`      | `isVirtualGitPath(path)` — shared regex matching the seven backend `Cat` segments. Used to skip filesystem-bound polls (and future similar checks) on virtual portal paths |
+| `path-detection.ts`      | `isVirtualGitPath(path)`: shared regex matching the seven backend `Cat` segments. Used to skip filesystem-bound polls (and future similar checks) on virtual portal paths |
 | `path-detection.test.ts` | Tests for `isVirtualGitPath` (each category, raw passthrough, real `.git` internals, lookalikes)                                                                           |
 
 ## Lifecycle
@@ -25,7 +25,7 @@ copy via the FriendlyError pipeline.
 `FilePane.svelte` drives the chip:
 
 1. On every `currentPath` change, call `syncGitState(path)`.
-2. `syncGitState` runs `lookupRepoInfo(path)` — fast, one-shot.
+2. `syncGitState` runs `lookupRepoInfo(path)` (fast, one-shot).
 3. If a new repo, subscribe via `subscribeToRepo(repoRoot)`. The store keeps a refcount, so two panes on the same repo
    share one watcher.
 4. On unmount or path-off-repo, call `unsubscribeFromRepo(repoRoot)`.
@@ -45,9 +45,9 @@ mutations. The chip never polls.
 
 Three keys, all under `fileExplorer.git.*`:
 
-- `fileExplorer.git.showRepoChip` (default `true`) — gates the chip render.
-- `fileExplorer.git.showStatusColumn` (default `false`) — gates the optional status column in Full mode.
-- `fileExplorer.git.showVirtualGitPortal` (default `true`) — controls whether `cd .git` shows the virtual portal. M4
+- `fileExplorer.git.showRepoChip` (default `true`): gates the chip render.
+- `fileExplorer.git.showStatusColumn` (default `false`): gates the optional status column in Full mode.
+- `fileExplorer.git.showVirtualGitPortal` (default `true`): controls whether `cd .git` shows the virtual portal. M4
   rebuilds the round-trip: `settings-applier.ts` calls `setShowVirtualGitPortal(value)` (Tauri command
   `set_show_virtual_git_portal`), which flips a Rust `AtomicBool` consulted on every volume-hook entry. Toggling off
   makes the portal stop hijacking `.git` listings immediately. **Settings > General > Git > GitSection.svelte** wires

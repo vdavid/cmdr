@@ -2,7 +2,7 @@
 
 Unified logging system. Both frontend (Svelte/TS) and backend (Rust) logs appear in the same terminal stream and log
 file, with unified timestamps. The Rust side runs a hand-rolled `fern` dispatch tree with **per-output level filtering**
-— file target stays at Debug regardless of `RUST_LOG` or the verbose toggle, terminal defaults to Info.
+: file target stays at Debug regardless of `RUST_LOG` or the verbose toggle, terminal defaults to Info.
 
 ## File map
 
@@ -36,9 +36,9 @@ getAppLogger('feature')
 - **LogTape kept on frontend**: Preserves the `getAppLogger()` API, hierarchical categories, and per-feature debug
   toggles (`debugCategories` array). Only the sink changed.
 - **Custom batch IPC instead of plugin JS API**: The bridge batches into one IPC call per 100ms, with dedup and throttle
-  — critical for infinite-loop protection.
+  (critical for infinite-loop protection).
 - **Hand-rolled fern dispatch instead of `tauri-plugin-log`**: The plugin routes everything through one shared level. We
-  needed per-output filtering — file at Debug for error reports, terminal at Info for clean dev output. fern's tree of
+  needed per-output filtering: file at Debug for error reports, terminal at Info for clean dev output. fern's tree of
   `Dispatch` chains makes this trivial; the plugin made it impossible. See
   `apps/desktop/src-tauri/src/logging/CLAUDE.md`.
 - **RUST_LOG parsed into `level_for()` calls on the stdout chain only**: same parsing as before, but applied only to
@@ -48,7 +48,7 @@ getAppLogger('feature')
   stdout chain from Info to Debug at runtime via an `AtomicU8` (no dispatch rebuild, no records lost). The file target
   stays Debug regardless, so error report content is unchanged. Frontend LogTape gating works as before.
 - **file-rotate for size+count rotation**: small, focused crate exposing rotation behind a `Write` impl. Replaced the
-  plugin's built-in rotation. Keep-N is `ceil(cap_mb / 50)` — same math as before. The eager-prune on cap-lowered events
+  plugin's built-in rotation. Keep-N is `ceil(cap_mb / 50)`, same math as before. The eager-prune on cap-lowered events
   still runs so the user sees excess files vanish immediately.
 - **Restart-required for 0 ↔ non-zero transitions**: `file-rotate` is constructed once at startup with its keep-N value.
   Changing the cap between `0` and any non-zero value requires an app restart (the file chain is either present or
@@ -72,4 +72,4 @@ See [docs/tooling/logging.md](../../../docs/tooling/logging.md) for how to add l
 recipes, and the verbose toggle.
 
 When debugging issues, the error report bundle from the Help menu (**Help > Send error report…**) includes recent
-debug-level logs from the file target — the same logs the cap setting governs.
+debug-level logs from the file target, the same logs the cap setting governs.

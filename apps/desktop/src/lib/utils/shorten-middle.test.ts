@@ -87,7 +87,7 @@ describe('shortenMiddle', () => {
     })
 
     it('path where snapping would waste >60% of budget falls back to raw cut', () => {
-      // Break chars only near the very start — snapping would waste most of the start budget
+      // Break chars only near the very start, so snapping would waste most of the start budget
       const text = '/a/bcdefghijklmnopqrstuvwxyz' // 28 chars = 224px
       const maxWidth = 120 // 15 char budget, minus 1 = 14 chars, start budget ~7 chars
       const result = shortenMiddle(text, maxWidth, mockMeasure, { preferBreakAt: '/' })

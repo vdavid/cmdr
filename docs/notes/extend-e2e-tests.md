@@ -1,4 +1,4 @@
-# Extend E2E tests — coverage-driven walk
+# Extend E2E tests: coverage-driven walk
 
 Status: in progress.
 
@@ -21,7 +21,7 @@ Status: in progress.
 | 13  | file-watching.spec.ts       | done   | 11           | 0           | CRUD + batch + threshold + dedup all covered                        |
 | 14  | mtp.spec.ts                 | done   | 21           | 0           | 21 tests across browse/copy/move/delete/rename/read-only            |
 | 15  | mtp-conflicts.spec.ts       | done   | 5            | 0           | move-conflict matrix saturated                                      |
-| 16  | smb.spec.ts                 | skip   | —            | —           | Out of scope per brief                                              |
+| 16  | smb.spec.ts                 | skip   | N/A          | N/A         | Out of scope per brief                                              |
 
 ## Per-spec analysis
 
@@ -42,23 +42,23 @@ Status: in progress.
 - Clear-search button (`.search-clear`) round-trip.
 - Arrow Up/Down in the search box drives section selection (the search box has its own `handleSearchKeydown` separate
   from the section-tree listbox).
-- Escape closes the settings window (out of scope — the spec runs many tests that need the window open).
-- `?section=...` URL deep-link (out of scope — requires a window reload).
+- Escape closes the settings window (out of scope: the spec runs many tests that need the window open).
+- `?section=...` URL deep-link (out of scope: requires a window reload).
 - `navigate-to-section` Tauri event (covered indirectly by the volume picker test; testing it from within the Settings
   window's own context is non-load-bearing).
-- Last section persistence (`saveLastSettingsSection`) — also needs a reload.
+- Last section persistence (`saveLastSettingsSection`): also needs a reload.
 
 **Tests added** (3):
 
-1. `search narrows the visible sidebar sections and clearing restores them` — drives the debounced filter with `accent`
+1. `search narrows the visible sidebar sections and clearing restores them`: drives the debounced filter with `accent`
    (matches one Appearance row), then clicks the `×` and asserts the full list is back.
-2. `search shows an empty sidebar for queries with no matches` — covers the no-match branch and confirms the clear
+2. `search shows an empty sidebar for queries with no matches`: covers the no-match branch and confirms the clear
    button is still reachable; cleans up search state for the next test.
-3. `Arrow Down in the search box moves section selection forward` — covers the dual-keydown path in
+3. `Arrow Down in the search box moves section selection forward`: covers the dual-keydown path in
    `SettingsSidebar.handleSearchKeydown` (Arrow keys in input forward to `navigateSections`); clears any leftover search
    up front so a `.selected` row is present.
 
-**Skipped (with reason)**: Escape-closes-window, URL deep-link, last-section persistence — all need a window reload that
+**Skipped (with reason)**: Escape-closes-window, URL deep-link, last-section persistence. All need a window reload that
 the shared test suite isn't set up to do cleanly.
 
 ### git-portal.spec.ts
@@ -79,12 +79,12 @@ portal toggle), both documented.
 
 **Tests added** (2):
 
-1. `navigates tags/v1.0.0 and sees the tree at the tagged commit` — covers the tag-resolving branch and dot-in-ref
+1. `navigates tags/v1.0.0 and sees the tree at the tagged commit`: covers the tag-resolving branch and dot-in-ref
    parser path.
-2. `navigates commits/ and shows the single HEAD commit by short SHA` — covers `list_commits` integration via the
+2. `navigates commits/ and shows the single HEAD commit by short SHA`: covers `list_commits` integration via the
    listing pipeline; regex-checks for a 7+ hex name to avoid pinning to a specific SHA across git versions.
 
-**Skipped (with reason)**: Friendly git error rendering — already covered by Rust unit tests + the broader
+**Skipped (with reason)**: Friendly git error rendering. Already covered by Rust unit tests + the broader
 friendly-error path is exercised by `error-pane.spec.ts`.
 
 ### viewer.spec.ts
@@ -104,18 +104,17 @@ friendly-error path is exercised by `error-pane.spec.ts`.
 - W toggles word wrap (cross-state setting + CSS class flip).
 - Enter advances to next match (already covered indirectly because `findMatches` test pulls a match count, but no test
   confirms navigation).
-- F3 from file list opens viewer (cross-component; opens a NEW Tauri window, outside the test's single-window scope —
-  defer).
-- Line heights variant testing (FullLoad pretext path) — deep internal, deferred.
+- F3 from file list opens viewer (cross-component; opens a NEW Tauri window, outside the test's single-window scope; deferred).
+- Line heights variant testing (FullLoad pretext path): deep internal, deferred.
 
 **Tests added** (1):
 
-1. `shows "No matches" status for a query with no hits` — fills with `Z * 40` (the fixture is `A` × 1024 so cannot
+1. `shows "No matches" status for a query with no hits`: fills with `Z * 40` (the fixture is `A` × 1024 so cannot
    match), polls the `.match-count` aria-live region for "No matches". Resets the query in cleanup.
 
 **Skipped (with reason)**: F3-opens-viewer (cross-window flow), line-heights internals (tier 3 candidates), W toggles
 word wrap (the synthetic keydown reaches `<svelte:window on:keydown>` but doesn't flip the wrap class reliably;
-investigating focus / `viewerSetWordWrap` IPC side effects would consume disproportionate time for a single-key path —
+investigating focus / `viewerSetWordWrap` IPC side effects would consume disproportionate time for a single-key path;
 deferred with a TODO).
 
 ### indexing.spec.ts
@@ -144,10 +143,10 @@ click-disabled-leaves-volume-unchanged.
 
 **Gaps identified**:
 
-- Settings deep-link to Network section when clicking the disabled entry — `settings-window.ts` emits a
+- Settings deep-link to Network section when clicking the disabled entry: `settings-window.ts` emits a
   `navigate-to-section` event. Already exists implicitly in code, and the test author explicitly notes inspecting the
   settings window is awkward via `evaluate()`.
-- mDNS-actually-stops behavior — unobservable from the UI side.
+- mDNS-actually-stops behavior: unobservable from the UI side.
 
 **Tests added**: 0. **Reason**: Existing tests cover the user-observable UX cleanly. Backend mDNS-stop is unit-level.
 The deep-link assertion would require spawning the settings window from the test, which is structurally fragile.
@@ -165,15 +164,15 @@ retry), accessibility (role/heading).
 - Folder path display (user must see WHICH directory failed).
 - `<details>` technical-details disclosure default-collapsed + click-to-expand.
 - Retry info text rendering after multiple clicks (deep UX; gated by hitting retry repeatedly within seconds).
-- `x-apple.systempreferences:` link handling — unit-testable; production-impactful but doesn't load-bear here.
+- `x-apple.systempreferences:` link handling: unit-testable; production-impactful but doesn't load-bear here.
 
 **Tests added** (1):
 
-1. `shows the offending folder path and a collapsed technical details disclosure` — injects ETIMEDOUT, asserts
+1. `shows the offending folder path and a collapsed technical details disclosure`: injects ETIMEDOUT, asserts
    `.folder-path` ends with `/left/sub-dir`, then verifies `<details>` starts without the `open` attribute and gains it
    after clicking the summary.
 
-**Skipped (with reason)**: Retry-info-after-multi-click — feels like UX polish coverage; deferred unless we see
+**Skipped (with reason)**: Retry-info-after-multi-click: feels like UX polish coverage; deferred unless we see
 regressions.
 
 ### file-operations.spec.ts
@@ -209,7 +208,7 @@ mismatches (file↔dir).
 **Gaps identified**:
 
 - Same-volume copy with both conflict and non-conflict mixed (already covered by Layout A/B).
-- ⌃Z/⌘Z to undo a completed transfer — but the app doesn't have undo today.
+- ⌃Z/⌘Z to undo a completed transfer (the app doesn't have undo today).
 
 **Tests added**: 0. **Reason**: The conflict-policy matrix is saturated by the three files together. Adding more cases
 dilutes signal.
@@ -232,12 +231,12 @@ copy dialog open/escape, F6 move dialog open/escape.
 
 **Tests added** (2):
 
-1. `Cancel button closes the new folder dialog without creating anything` — exercises the `.btn-secondary` path through
+1. `Cancel button closes the new folder dialog without creating anything`: exercises the `.btn-secondary` path through
    `ModalDialog`, asserts no folder was created (file-entry count unchanged).
-2. `opens the delete confirmation dialog with F8` — F8 opens the `delete-confirmation` dialog (the recycle-bin path, not
+2. `opens the delete confirmation dialog with F8`: F8 opens the `delete-confirmation` dialog (the recycle-bin path, not
    ⇧F8); Escape closes it and leaves the file under cursor in place.
 
-**Skipped (with reason)**: ⌘A and Cancel-button on the transfer dialog — the transfer-dialog Cancel button is wired
+**Skipped (with reason)**: ⌘A and Cancel-button on the transfer dialog. The transfer-dialog Cancel button is wired
 through the same path as Escape (both call the same `closeDialog`), so the additional test would duplicate signal.
 
 ### accessibility.spec.ts
@@ -249,8 +248,8 @@ palette/Search/Settings/File viewer) in both light and dark modes.
 
 **Gaps identified**:
 
-- Error pane in axe — but `error-pane.spec.ts` covers ARIA explicitly.
-- Network volume picker open state — narrower coverage.
+- Error pane in axe (`error-pane.spec.ts` covers ARIA explicitly).
+- Network volume picker open state: narrower coverage.
 
 **Tests added**: 0. **Reason**: Each frame is already audited in both modes; structural a11y for individual components
 lives at tier 3 (`*.a11y.test.ts`). Adding more axe snapshots without a clear missing-component would inflate the suite.
@@ -264,7 +263,7 @@ lives at tier 3 (`*.a11y.test.ts`). Adding more axe snapshots without a clear mi
 
 **Gaps identified**:
 
-- Permissions-change watching — out of e2e scope.
+- Permissions-change watching: out of e2e scope.
 - Watcher behavior under symlink resolution.
 
 **Tests added**: 0. **Reason**: The spec already covers the full CRUD matrix plus the structural edge cases (threshold,
@@ -302,7 +301,7 @@ already-unit-tested files. Both tools worked; neither is wired into CI. Total: 5
 - **stryker-mutator v9.6.1** (`@stryker-mutator/core`, `@stryker-mutator/vitest-runner`): worked after three config
   tweaks. Required `plugins: ["@stryker-mutator/vitest-runner"]` to load the runner; `inPlace: true` to avoid `oxc`
   transformer failing on the sandbox copy ("Tsconfig not found" for unrelated `.a11y.test.ts` files); and leaving the
-  vitest config alone (no `dir`, no `related: false`) — `perTest` coverage analysis picks the right test files
+  vitest config alone (no `dir`, no `related: false`): `perTest` coverage analysis picks the right test files
   automatically. Took ~12 s total for one mutated file (45 mutants, 4 workers).
 
 ### Slices and results
@@ -353,7 +352,7 @@ All passed first clean run and again after `./scripts/check.sh`.
 4. `rate_division_uses_dt_not_a_constant`. Drives the estimator with `dt = 2.0 s` so `delta / dt` and `delta * dt`
    differ by 4×; existing tests all used 1 s steps where the two are numerically identical. Kills `/ → *` and `/ → %` on
    lines 152, 153.
-5. `first_post_seed_sample_initializes_rate_directly`. Asserts exact rate after exactly two `update()` calls — the
+5. `first_post_seed_sample_initializes_rate_directly`. Asserts exact rate after exactly two `update()` calls: the
    `samples == 0` branch sets the rate directly to the instantaneous rate; existing 3-sample tests masked the mutant
    `samples != 0` because the EWMA caught up. Kills the `== 0 → != 0` mutant on line 159 and the
    `1.0 - (-dt / TAU).exp()` alpha arithmetic mutants on line 157 (those changes throw `alpha` off by a large factor,
@@ -364,16 +363,16 @@ All passed first clean run and again after `./scripts/check.sh`.
 Stopped well short of the 10-test budget. The rest of the surviving cargo-mutants survivors land in `eta_from_axes` (a
 saturating two-axis ETA selector). High-value follow-ups, in order:
 
-1. `eta.rs:223 > → ==/</>=` in `eta_from_axes` (3 mutants) — `bytes_remaining > 0` guard.
-2. `eta.rs:224 / → %`, `eta.rs:231 / → %` — axis-rate ÷ axis-remaining divisions.
-3. `eta.rs:225, 232 == → !=` — short-circuit early-return checks on rates.
-4. `eta.rs:230 > → >=` — files axis boundary check.
-5. `eta.rs:247 > → ==/</>=` (3 mutants), `eta.rs:247:64 > → >=` — final-pick comparison.
-6. `eta.rs:190 && → ||` in `compute_stats` — guard combining the two axes.
+1. `eta.rs:223 > → ==/</>=` in `eta_from_axes` (3 mutants): `bytes_remaining > 0` guard.
+2. `eta.rs:224 / → %`, `eta.rs:231 / → %`: axis-rate ÷ axis-remaining divisions.
+3. `eta.rs:225, 232 == → !=`: short-circuit early-return checks on rates.
+4. `eta.rs:230 > → >=`: files axis boundary check.
+5. `eta.rs:247 > → ==/</>=` (3 mutants), `eta.rs:247:64 > → >=`: final-pick comparison.
+6. `eta.rs:190 && → ||` in `compute_stats`: guard combining the two axes.
 7. Stryker survivors that the new tests do not kill, e.g. `scan-throughput.ts:31 constructor body → {}` (windowMs never
-   read — easy fix: a test that constructs with two different `windowMs` and asserts different drop behavior).
+   read; easy fix: a test that constructs with two different `windowMs` and asserts different drop behavior).
 
-The `> 0 ? fps : 0` mutants on `scan-throughput.ts:62, 63` (turning `>` into `>=`) are **equivalent mutants** — when
+The `> 0 ? fps : 0` mutants on `scan-throughput.ts:62, 63` (turning `>` into `>=`) are **equivalent mutants**: when
 `fps == 0`, both branches return `0`, so no test can differentiate them. Skip.
 
 ### Verdict on long-term CI integration
@@ -386,7 +385,7 @@ gate. Concretely:
   reconciler tests. Worth keeping the binary install in dev's mise toolchain and running ad-hoc on hot spots when adding
   non-trivial numeric / state-machine code (eta, write-op state machines, conflict resolution, indexing, etc.).
 - stryker: ~12 s per file is fast, but the config has sharp edges (`oxc` sandbox issues, plugin discovery) and there's
-  no obvious gain from a CI-blocking gate. Same recommendation as cargo-mutants — ad-hoc on numeric / branching FE
+  no obvious gain from a CI-blocking gate. Same recommendation as cargo-mutants: ad-hoc on numeric / branching FE
   utilities (`scan-throughput`, eventually `font-metrics`, `accent-color`, etc.).
 
 Concrete next steps if pushing this further:
@@ -401,7 +400,7 @@ Concrete next steps if pushing this further:
 ### Step 7 follow-up: deep mutation-testing pass
 
 A second pass walked five more hot-spot modules. cargo-mutants `--list` is fast (no build), so I used it to enumerate
-mutants per file, then read each module and added tests targeting the structurally surviving ones — skipping a full
+mutants per file, then read each module and added tests targeting the structurally surviving ones, skipping a full
 `cargo mutants` run because the baseline build alone is ~10–15 min per file. Trade-off: the new tests aren't proven
 mutation-killers in the strict sense, but they directly cover the mutated lines and behavior, which is what the killer
 tests in Step 7 ended up doing anyway.
@@ -414,7 +413,7 @@ Total: 50 new unit tests across 5 modules, ~0.15 s combined runtime. All 1 699 l
   `cancel_all_write_operations`, `resolve_write_conflict`, status-cache CRUD
   (`register`/`update`/`unregister`/`list_active_operations`/`get_operation_status`, including the bytes-vs-files
   percent axis and the `.min(100.0)` clamp), `FileInfo` sort keys, and `CopyTransaction` commit / rollback / Drop.
-  Highest-leverage module of the pass — the state machine and status cache back every cancel click and every progress
+  Highest-leverage module of the pass: the state machine and status cache back every cancel click and every progress
   query, with zero coverage before.
 - `file_system/write_operations/copy_strategy.rs` (16 mutants, **+5 tests**): the `is_apfs` and `is_same_apfs_volume`
   helpers were only covered indirectly through `copy_file_with_strategy`. Direct positive/negative tests on macOS now
@@ -426,7 +425,7 @@ Total: 50 new unit tests across 5 modules, ~0.15 s combined runtime. All 1 699 l
   `compute_diff`'s index semantics (remove uses OLD index; add/modify use NEW).
 - `file_system/write_operations/chunked_copy.rs` (16 mutants, **+3 tests**): existing tests covered byte fidelity and
   basic permissions but never checked the metadata-preservation side effects. New tests stamp a fixed mtime via
-  `filetime` and roundtrip a user xattr (macOS) — kills `copy_timestamps → Ok(())`, `copy_xattrs → Ok(())`,
+  `filetime` and roundtrip a user xattr (macOS): kills `copy_timestamps → Ok(())`, `copy_xattrs → Ok(())`,
   `copy_metadata → Ok(())`. Plus a multi-chunk byte-total assertion that kills the `total_bytes += bytes_read`
   arithmetic mutants the existing progress test couldn't differentiate.
 - `indexing/store.rs` (~150 mutants overall, **+6 tests** on `platform_case_compare` / `normalize_for_comparison`): the
@@ -443,7 +442,7 @@ Modules examined but skipped:
   `tauri::AppHandle` for event emission; meaningful tests would require a mock-emitter refactor that exceeds the
   "minimal refactor for testability" budget. `move_to_trash_sync` (the pure-Rust core) is already covered.
 
-No bugs surfaced in this pass — every survivor was a real coverage gap, not buggy live code. The state-machine guard in
+No bugs surfaced in this pass: every survivor was a real coverage gap, not buggy live code. The state-machine guard in
 `cancel_write_operation` is correct: Running→{RollingBack,Stopped}, RollingBack→Stopped, Stopped terminal, exactly as
 the doc-comment promises.
 
@@ -458,23 +457,23 @@ diminishing returns.
 
 The clear net-positive proptest targets, in order:
 
-1. **`indexing::aggregator::topological_sort_bottom_up`** — 1 example test for a function with non-trivial tree
+1. **`indexing::aggregator::topological_sort_bottom_up`**: 1 example test for a function with non-trivial tree
    invariants. Cycle and duplicate-ID behavior isn't asserted today.
-2. **`search::query::glob_to_regex`** — 4 example tests; infinite input space; output feeds a regex engine that panics
+2. **`search::query::glob_to_regex`**: 4 example tests; infinite input space; output feeds a regex engine that panics
    on malformed input. "Output is always valid regex" is a one-line property and a real safety net.
-3. **`search::query::split_scope_segments`** — 10 example tests for a parser with nested escape/quote rules. Round-trip
+3. **`search::query::split_scope_segments`**: 10 example tests for a parser with nested escape/quote rules. Round-trip
    and segment-count properties are cheap.
-4. **`indexing::store::platform_case_compare`** (macOS) — comparator-law properties (reflexivity, antisymmetry,
+4. **`indexing::store::platform_case_compare`** (macOS): comparator-law properties (reflexivity, antisymmetry,
    transitivity) plus NFC≡NFD equivalence. Highest user impact because miscompare corrupts the search index.
 
 Verdict: worth adding `proptest` as a dev-dependency for these four targets specifically, ~half a day of work. Not worth
-a project-wide convention. Don't introduce it for ETA, sorting, or validation — example tests already cover the
+a project-wide convention. Don't introduce it for ETA, sorting, or validation: example tests already cover the
 interesting cases.
 
 ## IPC contract coverage (investigation)
 
-How well are the 193 `#[tauri::command]` entry points (visible via `bindings.ts`) tested _at the IPC layer_ — i.e., a
-test actually calls the command function or mocks/invokes it by name? Full report: `/tmp/cmdr-ipc-coverage-report.md`.
+How well are the 193 `#[tauri::command]` entry points (visible via `bindings.ts`) tested _at the IPC layer_ (i.e., a
+test actually calls the command function or mocks/invokes it by name)? Full report: `/tmp/cmdr-ipc-coverage-report.md`.
 
 Counts (commit `742939e9`):
 
@@ -494,7 +493,7 @@ IPC tests), settings/UI mutators (most untested). The write_ops surface (`create
 call the command itself.
 
 Verdict: **weak at the IPC surface, strong underneath**. If we want to raise contract coverage meaningfully, the
-productive move is a vitest `mockIPC` layer that asserts each `commands.foo(...)` call returns a typed shape — not
+productive move is a vitest `mockIPC` layer that asserts each `commands.foo(...)` call returns a typed shape, not
 Rust-side per-command tests.
 
 ## State-machine coverage (investigation)
@@ -509,8 +508,8 @@ Coverage is uneven:
 - **Strong**: `SmbVolume::ConnectionState` (Direct ⇄ Disconnected, idempotency, single-flight reconnect),
   `OperationIntent` (atomic level), `SmbReconnectManager` FE, AI notification FE, MTP FE, updater FE, error-reporter
   `auto_dispatcher` debounce.
-- **Weak**: `IndexPhase` (Disabled/Initializing/Running/ShuttingDown — no direct test of any transition or the
-  start/stop race), `ActivityPhase` (six-state telemetry pipeline, no test), `DiscoveryState` (network mDNS — three
+- **Weak**: `IndexPhase` (Disabled/Initializing/Running/ShuttingDown: no direct test of any transition or the
+  start/stop race), `ActivityPhase` (six-state telemetry pipeline, no test), `DiscoveryState` (network mDNS: three
   transitions, no test), `network-store` `ShareState` + `CredentialStatus` FE (a11y tests only), `ConnectToServerDialog`
   FE.
 - **Tested at wrong layer**: `cancel_write_operation`'s validation guard (state.rs:306) is bypassed by all tests, which
@@ -537,24 +536,24 @@ orchestration-level lifecycles (`IndexPhase`, `ActivityPhase`, `DiscoveryState`)
 
 17 state-transition tests added (and one bug fix surfaced while writing them):
 
-- **`SmbVolume::ConnectionState`** — dropped the dead `OsMount` variant. The internal state machine is now exactly the
+- **`SmbVolume::ConnectionState`**: dropped the dead `OsMount` variant. The internal state machine is now exactly the
   binary shape it was already operating as (`Direct ⇄ Disconnected`). The outer `SmbConnectionState::OsMount` (attached
   by `enrich_smb_connection_state` for SMB shares with an OS mount but no Cmdr smb2 session) is unchanged.
-- **`SearchStatus`** — fix + transition test. `search_cancel` was clearing `session.search`, which made the `Cancelled`
+- **`SearchStatus`**: fix + transition test. `search_cancel` was clearing `session.search`, which made the `Cancelled`
   status (set by the search thread on cancel) unobservable: poll returned `Idle`. Stopped nulling the state on cancel;
   the thread now writes `Cancelled` and poll surfaces it. New test pins `Running → Cancelled` and the reset-on-new-start
   contract.
-- **`DiscoveryState`** — three transition tests (`Idle → Searching → Active → Idle`, `Searching → Idle` via drain, drain
+- **`DiscoveryState`**: three transition tests (`Idle → Searching → Active → Idle`, `Searching → Idle` via drain, drain
   side effects). Factored `set_discovery_state` and `drain_discovered_hosts` out of the event-emitting public paths so
   the state machine fragment is testable without standing up a Tauri runtime.
-- **`ActivityPhase`** — nine tests covering the full scan pipeline (`Idle → Replaying → Live`,
+- **`ActivityPhase`**: nine tests covering the full scan pipeline (`Idle → Replaying → Live`,
   `Scanning → Aggregating → Reconciling → Live`), the shutdown path (`* → Idle`), the duration-closing branch the
   timeline UX depends on, the 20-entry ring-buffer cap, `reset`, and `close_phase_with_stats` attaching to the current
   entry.
-- **`IndexPhase`** — four tests: `Initializing → Disabled` via the public `stop_indexing` race path, the two catch-all
+- **`IndexPhase`**: four tests: `Initializing → Disabled` via the public `stop_indexing` race path, the two catch-all
   no-op arms (`stop_indexing` from `Disabled`, `clear_index` from non-`Running`), and the pure `is_initializing_phase`
   classifier the post-`resume_or_scan` decision now goes through. `start_indexing`'s full happy path needs an
-  `AppHandle` and `IndexManager` and remains untested at unit-test level — the stress tests cover the writer-layer
+  `AppHandle` and `IndexManager` and remains untested at unit-test level. The stress tests cover the writer-layer
   machinery underneath.
 
 Honest verdict per machine:
@@ -563,7 +562,7 @@ Honest verdict per machine:
   instance per test), `DiscoveryState` (already had a global cell, only needed an emit/state split).
 - **Awkward**: `IndexPhase` (carries owned non-`Clone` data, transitions split across `start_indexing`/`stop_indexing`/
   `clear_index`, and the race fragment we cared about needs a real `IndexStore`).
-- **Impossible without a Tauri runtime**: `start_indexing`'s `Disabled → Initializing → Running` happy path — needs an
+- **Impossible without a Tauri runtime**: `start_indexing`'s `Disabled → Initializing → Running` happy path: needs an
   `AppHandle` to spawn the writer and the verifier. The post-scan decision was extracted to a pure helper so the
   state-machine fragment that matters (the race) is at least testable.
 
@@ -572,12 +571,12 @@ Honest verdict per machine:
 A vitest `mockIPC` harness (`apps/desktop/src/lib/ipc/test-helpers.ts`) plus 23 contract tests for the three
 highest-priority command groups:
 
-- **Write operations** (9 tests) — `copy_files`, `move_files`, `delete_files`, `trash_files`, `cancel_write_operation`.
+- **Write operations** (9 tests): `copy_files`, `move_files`, `delete_files`, `trash_files`, `cancel_write_operation`.
   Pins the payload shape (including the optional config object and the `volumeId` / `itemSizes` shapes) and one typed
   `WriteOperationError` variant on the error branch.
-- **File viewer** (8 tests) — `viewer_open`, `viewer_get_lines`, `viewer_search_start`/`_poll`/`_cancel`,
+- **File viewer** (8 tests): `viewer_open`, `viewer_get_lines`, `viewer_search_start`/`_poll`/`_cancel`,
   `viewer_close`. Coverage report flagged this group as 9/9 untested at the IPC layer.
-- **SMB connection** (6 tests) — `connect_to_server`, `list_shares_on_host`, `mount_network_share`. The mount path has 6
+- **SMB connection** (6 tests): `connect_to_server`, `list_shares_on_host`, `mount_network_share`. The mount path has 6
   positional args and AGENTS.md specifically calls out positional-soup as fragile.
 
 What the harness catches: argument coercion, snake-case command name typos, payload-key shape drift, and the typed-error
@@ -590,12 +589,12 @@ check + `cmdr/no-raw-tauri-invoke` ESLint rule cover most of the realistic drift
 check on top: it verifies that the FE actually drives the binding (not just that the binding compiles), and it documents
 the wire format in a way that survives a refactor. Worth doing for the write-side, viewer, and SMB groups because those
 are the ones where a renamed Rust function or a flipped payload key would surface as a generic runtime failure with no
-obvious cause. Not worth expanding to all 193 commands — diminishing returns kick in fast once the binding shapes are
+obvious cause. Not worth expanding to all 193 commands: diminishing returns kick in fast once the binding shapes are
 pinned for the destructive / cross-window surfaces.
 
 No bugs surfaced during this pass. Side effect of writing the tests: confirmed that the typed-error discriminator shapes
 (`type` for `WriteOperationError` / `MountError` / `ShareListError`, `code` for `LicenseActivationError`) are consistent
-on the wire — the FE branching on `error.type` / `error.code` will see the values the bindings declare.
+on the wire: the FE branching on `error.type` / `error.code` will see the values the bindings declare.
 
 ## Final state
 
@@ -605,9 +604,9 @@ Branch `e2e-speedup`, 47 commits, ready for fast-forward to `main`.
 
 | Category                       | Tests   | Bugs surfaced                                                            |
 | ------------------------------ | ------- | ------------------------------------------------------------------------ |
-| E2E coverage extension         | 9       | 1 — Cancel-copy rollback (Rust `Ok(())` arm + Svelte settle-window race) |
+| E2E coverage extension         | 9       | 1: Cancel-copy rollback (Rust `Ok(())` arm + Svelte settle-window race) |
 | Mutation testing (Rust+Svelte) | 55      | 0                                                                        |
-| State-machine transitions      | 17      | 1 — `file_viewer` `SearchStatus::Cancelled` unobservable to FE           |
+| State-machine transitions      | 17      | 1: `file_viewer` `SearchStatus::Cancelled` unobservable to FE            |
 | Property-based (proptest)      | 12      | 0                                                                        |
 | IPC contract (mockIPC)         | 23      | 0                                                                        |
 | **Total new unit / IPC tests** | **107** |                                                                          |
@@ -625,7 +624,7 @@ binary `Direct ⇄ Disconnected` shape).
 
 - **E2E checker total**: 13m 12s baseline → **4m 18s** in the final slow pass (−67%).
 - **E2E Playwright wall-clock**: 10m 12s baseline → ~1m 48s longest shard (−82%).
-- **Fast checker total**: ~2m 30s baseline → **3m 13s** (+43s) — the regression is the new IPC contract tests (+30s of
+- **Fast checker total**: ~2m 30s baseline → **3m 13s** (+43s). The regression is the new IPC contract tests (+30s of
   Svelte vitest) and the +79 Rust tests (+1s). Net cost is well below what an equivalent E2E spec would add.
 
 ### Real bugs fixed
@@ -642,7 +641,7 @@ binary `Direct ⇄ Disconnected` shape).
 
 ### Dead code removed
 
-- `SmbVolume::ConnectionState::OsMount` variant — never written to the atomic, two unreachable `match` arms gone. The
+- `SmbVolume::ConnectionState::OsMount` variant: never written to the atomic, two unreachable `match` arms gone. The
   OS-mount fallback the UI renders lives at the outer `SmbConnectionState` enriched by `enrich_smb_connection_state` in
   `commands/volumes.rs`, not on this internal atomic.
 
@@ -651,11 +650,11 @@ binary `Direct ⇄ Disconnected` shape).
 - **Mutation testing (cargo-mutants + stryker)**: zero bugs, 55 tests added. Tools work but are too slow / noisy for CI
   gating. Worth ad-hoc runs on numeric / state-machine modules. Don't wire into `check.sh`.
 - **State-machine coverage**: 17 tests, 1 real bug (file_viewer search-cancel). Highest signal-to-noise of the
-  test-quality push — the bug was a real silent UX failure, surfaced by writing the transition test.
+  test-quality push. The bug was a real silent UX failure, surfaced by writing the transition test.
 - **Property-based (proptest)**: 12 tests, 0 bugs. `proptest` added as a dev-dep, scoped to four targets
   (`topological_sort_bottom_up`, `glob_to_regex`, `split_scope_segments`, `platform_case_compare`). Worth keeping for
   those specific algorithmic spots; not worth a project-wide convention.
-- **IPC contract tests (vitest mockIPC)**: 23 tests, 0 bugs. Modest value — `bindings-fresh` + `no-raw-tauri-invoke`
+- **IPC contract tests (vitest mockIPC)**: 23 tests, 0 bugs. Modest value: `bindings-fresh` + `no-raw-tauri-invoke`
   already cover most drift. Worth doing for destructive / cross-window surfaces (write ops, viewer, SMB); diminishing
   returns past that.
 - **E2E coverage extension**: 9 tests, 1 real bug (cancel-copy rollback). Surfaced by walking the slowest test (32.7 s)
@@ -663,7 +662,7 @@ binary `Direct ⇄ Disconnected` shape).
 
 ### Outstanding items
 
-- **Linux SMB flakes**: `50-share host shows correct share count` and `unicode shares render correctly` — flake under
+- **Linux SMB flakes**: `50-share host shows correct share count` and `unicode shares render correctly`: flake under
   GVFS race in Docker. Pre-existing, David is aware. Not addressed in this branch.
 - **Step 6a parallel-load keystroke-dispatch flakes**: rarely surface on warm runs; Step 6e converted the worst
   offenders to `dispatchMenuCommand`. Three remaining keyboard-pathway tests can flake under heavy parallel load
@@ -680,14 +679,14 @@ binary `Direct ⇄ Disconnected` shape).
 
 The viewer and settings UIs run in their own Tauri `WebviewWindow`s in production (labels `viewer-<ts>` and `settings`).
 Before the multi-window migration, the e2e tests bypassed this by routing the main window to `/viewer?path=...` and
-`/settings` — which exercised the page components but not the cross-window plumbing (label uniqueness, capability
+`/settings`, which exercised the page components but not the cross-window plumbing (label uniqueness, capability
 restrictions, focus/close lifecycle).
 
 The migration uses `tauri-plugin-playwright` 0.3.0's new multi-window targeting:
 
-- `tauriPage.waitForWindow(predicate, { timeout? })` — polls `listWindows()` every 100 ms, returns a TauriPage scoped to
+- `tauriPage.waitForWindow(predicate, { timeout? })`: polls `listWindows()` every 100 ms, returns a TauriPage scoped to
   the matching window.
-- `tauriPage.window(label)` — fork a scoped page from an existing one (cheap, shared socket).
+- `tauriPage.window(label)`: fork a scoped page from an existing one (cheap, shared socket).
 
 **Canonical test pattern**:
 
@@ -716,7 +715,7 @@ published, the repo points at the `vdavid/tauri-playwright` fork on the `multi-w
   resolves the workspace member (`packages/plugin/`) automatically; the resolved commit hash is pinned in `Cargo.lock`.
 - npm: `apps/desktop/package.json` → `file:.../packages/test/srsholmes-tauri-playwright-0.3.0.tgz`. We can't use a
   GitHub ref here because the fork's `packages/test/package.json` has no `prepare` script, so pnpm doesn't run the
-  `tsup` build after fetching from git — leaving `dist/` missing and the package broken at import time. The tarball is
+  `tsup` build after fetching from git, leaving `dist/` missing and the package broken at import time. The tarball is
   pre-built and lives in the fork's tree. TODO: drop this once `@srsholmes/tauri-playwright@0.3.0` ships to npm.
 
 Revert both to crates.io / npm registry refs (with the appropriate `0.3.x` version) once the fork is merged upstream and
@@ -724,5 +723,5 @@ published.
 
 **Capability extension**: the auto-generated `playwright.json` capability (in `src-tauri/build.rs`) now targets
 `["main", "settings", "viewer-*"]` instead of just `["main"]`. Without this, the plugin's `pw_result` IPC callback would
-be rejected by Tauri's permission system when evaluating into a viewer or settings window — the eval itself would land
+be rejected by Tauri's permission system when evaluating into a viewer or settings window. The eval itself would land
 in the webview, but the result callback would never get back to the test runner.

@@ -2,7 +2,7 @@
  * Component-level test for `ToastItem.svelte`.
  *
  * Focuses on the close-button tooltip and the `onUserDismiss` vs `onTimeout`
- * split — both added so the AI download toast can show a tooltip on its X
+ * split, both added so the AI download toast can show a tooltip on its X
  * button and remember user-driven dismissal.
  */
 

@@ -15,8 +15,8 @@ site stays up.
 
 ## Files
 
-- `hooks.json` — Webhook configuration (reads secret from env var)
-- `deploy-website.sh` — The actual deployment script
+- `hooks.json`: Webhook configuration (reads secret from env var)
+- `deploy-website.sh`: The actual deployment script
 
 ## Logs
 

@@ -42,7 +42,7 @@ expresses the full sync (copy + delete stale) in a single shell command.
 **Why**: `reqwest::get` uses a default client with no overall timeout. A stuck TCP handshake to the redirect target
 (`getcmdr.com/latest.json`) was observed to hang for 2.5 min before reporting `error sending request for url …`,
 which made transient network blips look like a hung app and tripped the auto error reporter. The bounds keep the
-periodic check honest. Download/install paths are intentionally NOT timed out — they run with user attention and
+periodic check honest. Download/install paths are intentionally NOT timed out: they run with user attention and
 can legitimately take a while.
 
 **Decision**: Walk `reqwest::Error::source()` for log-friendly messages (`describe_error_chain`).
@@ -52,7 +52,7 @@ underlying error class without pulling in `anyhow`.
 
 **Decision**: Atomic rename (write to temp file, then `rename()`) instead of in-place `fs::copy`.
 **Why**: `fs::copy` overwrites the destination in-place, keeping the same inode. macOS's kernel code signing cache
-keys on inode — it validates the new binary's pages against the old binary's cached code directory, causing
+keys on inode (it validates the new binary's pages against the old binary's cached code directory), causing
 `SIGKILL (Code Signature Invalid)` on launch. Atomic rename creates a new inode, forcing a fresh validation.
 The admin-privilege path (`rsync -a`) already uses atomic rename by default.
 

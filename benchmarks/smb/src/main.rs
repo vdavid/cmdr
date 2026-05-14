@@ -14,7 +14,7 @@ use std::process;
 
 use config::BenchConfig;
 
-/// Test file counts and sizes — turn these down during development, up for real benchmarks.
+/// Test file counts and sizes. Turn these down during development, up for real benchmarks.
 /// Each suite is run independently against both native and direct methods.
 const SUITES: &[Suite] = &[
     Suite { name: "small", file_count: 500, file_size_bytes: 100 * 1024 },       // 500 × 100 KB

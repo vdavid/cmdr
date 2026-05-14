@@ -13,7 +13,7 @@ use zip::write::{SimpleFileOptions, ZipWriter};
 
 /// Always preserve at least this many lines of the most recent file, even if the cap
 /// would otherwise force it down to nothing. [`cap_bundle_to_mb`] may exceed the cap by
-/// up to ~10% to honor this — better to ship 1.1 MB of useful context than 0.
+/// up to ~10% to honor this. Better to ship 1.1 MB of useful context than 0.
 const MIN_TAIL_LINES_OF_NEWEST_FILE: usize = 50;
 
 /// Cap the bundle to `cap_mb` megabytes, **trimming log content from the head**, not
@@ -30,7 +30,7 @@ const MIN_TAIL_LINES_OF_NEWEST_FILE: usize = 50;
 ///    [`MIN_TAIL_LINES_OF_NEWEST_FILE`] lines of the newest file, even if it pushes the
 ///    output ~10% over the cap. Shipping a 1.1 MB bundle with useful tail beats
 ///    shipping a 542-byte bundle with only the manifest (which is what the broken
-///    pre-fix-6 implementation did — see the bug report).
+///    pre-fix-6 implementation did (see the bug report).
 ///
 /// If the input zip is already under the cap, returns it untouched.
 pub fn cap_bundle_to_mb(zip_bytes: Vec<u8>, cap_mb: usize) -> Vec<u8> {
@@ -85,7 +85,7 @@ pub fn cap_bundle_to_mb(zip_bytes: Vec<u8>, cap_mb: usize) -> Vec<u8> {
                 .compression_method(zip::CompressionMethod::Deflated)
                 .last_modified_time(*mtime);
             if writer.start_file("manifest.json", opts).is_err() || writer.write_all(bytes).is_err() {
-                // Manifest write failed — bail to the original.
+                // Manifest write failed; bail to the original.
                 return zip_bytes;
             }
         }
@@ -97,7 +97,7 @@ pub fn cap_bundle_to_mb(zip_bytes: Vec<u8>, cap_mb: usize) -> Vec<u8> {
         // pathological pseudo-random text only ~1.1×; we pick a budget that lands the
         // compressed output near `target` in the worst case rather than the best.
         // Concretely: uncompressed_budget = target * 1.0. On real logs we'll be far
-        // under the cap (acceptable — cap is a ceiling, not a quota). On worst-case
+        // under the cap (acceptable: cap is a ceiling, not a quota). On worst-case
         // input we'll be just under the cap. The minimum-tail floor below covers the
         // pathological "every line still wouldn't fit" case.
         let uncompressed_budget = target;
@@ -118,7 +118,7 @@ pub fn cap_bundle_to_mb(zip_bytes: Vec<u8>, cap_mb: usize) -> Vec<u8> {
             } else {
                 let mut kept = pick_tail_within_budget(&lines, remaining_budget);
                 // Floor: ensure the newest file ships at least N lines (even if we'd
-                // marginally exceed the cap — see the doc comment).
+                // marginally exceed the cap (see the doc comment).
                 if i == 0 && kept.len() < MIN_TAIL_LINES_OF_NEWEST_FILE.min(lines.len()) {
                     kept = take_tail(&lines, MIN_TAIL_LINES_OF_NEWEST_FILE);
                 }
@@ -159,7 +159,7 @@ pub fn cap_bundle_to_mb(zip_bytes: Vec<u8>, cap_mb: usize) -> Vec<u8> {
 }
 
 /// Split a log file's content into lines (without trailing newlines) so we can pack
-/// them tail-first into the capped zip. Empty trailing slice is dropped — we add the
+/// them tail-first into the capped zip. Empty trailing slice is dropped; we add the
 /// `\n` separator on write-out anyway.
 fn split_into_lines(content: &[u8]) -> Vec<&[u8]> {
     let mut lines: Vec<&[u8]> = content.split(|b| *b == b'\n').collect();

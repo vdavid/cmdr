@@ -206,7 +206,7 @@ async fn scan_volume_recursive(
         .map_err(|e| map_volume_error(&path.display().to_string(), e))?;
 
     if is_dir {
-        // Recurse into children first — list_directory returns FileEntry with size,
+        // Recurse into children first. list_directory returns FileEntry with size,
         // so we use child.size directly instead of calling get_metadata (which returns
         // NotSupported on MTP).
         let children = volume
@@ -246,7 +246,7 @@ async fn scan_volume_recursive(
             is_dir: true,
         });
     } else {
-        // Top-level file without listing context — size unknown, use 0.
+        // Top-level file without listing context: size unknown, use 0.
         // Progress still tracks file count accurately.
         entries.push(VolumeDeleteEntry {
             path: path.to_path_buf(),
@@ -306,7 +306,7 @@ pub(super) async fn delete_volume_files_with_progress(
 ) -> Result<(), WriteOperationError> {
     use tauri::Emitter;
 
-    // Phase 1: Scan — recursively enumerate the tree via volume.list_directory()
+    // Phase 1: Scan. Recursively enumerate the tree via volume.list_directory().
     let mut entries: Vec<VolumeDeleteEntry> = Vec::new();
     let mut total_bytes = 0u64;
     let mut last_progress_time = Instant::now();
@@ -328,7 +328,7 @@ pub(super) async fn delete_volume_files_with_progress(
             )
             .await?;
         } else {
-            // Top-level file — size unknown without listing the parent, use 0.
+            // Top-level file: size unknown without listing the parent, use 0.
             // Progress still tracks file count accurately, and individual file
             // deletes are near-instant on MTP.
             entries.push(VolumeDeleteEntry {
@@ -372,7 +372,7 @@ pub(super) async fn delete_volume_files_with_progress(
         return Ok(());
     }
 
-    // Phase 2: Delete — files first, then directories deepest-first
+    // Phase 2: Delete. Files first, then directories deepest-first.
     // entries are already in order: children before parents (due to recursive scan).
     // We process files first, then dirs in reverse order.
     let mut files_done = 0;

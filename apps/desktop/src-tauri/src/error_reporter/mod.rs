@@ -17,13 +17,13 @@
 //!
 //! ## Module layout
 //!
-//! - [`bundle_builder`] — the two build pipelines (Flow A streaming and Flow B legacy
+//! - [`bundle_builder`]: the two build pipelines (Flow A streaming and Flow B legacy
 //!   window) plus the shared zip-writing path.
-//! - [`bundle_capper`] — post-hoc size cap that trims log content from the head of the
+//! - [`bundle_capper`]: post-hoc size cap that trims log content from the head of the
 //!   newest file. Used by Flow B and as defense-in-depth on Flow A.
-//! - [`tail_walker`] — reads a log file from the end backward in 64 KB chunks.
-//! - [`auto_dispatcher`] — Flow B (opt-in auto-send on user-visible errors).
-//! - [`breadcrumbs`] — bounded ring buffer of recent triage events.
+//! - [`tail_walker`]: reads a log file from the end backward in 64 KB chunks.
+//! - [`auto_dispatcher`]: Flow B (opt-in auto-send on user-visible errors).
+//! - [`breadcrumbs`]: bounded ring buffer of recent triage events.
 //!
 //! `mod.rs` keeps the public types ([`BundleKind`], [`BundleScope`], [`BundleManifest`],
 //! [`ResolvedSettings`], [`BuiltBundle`], [`UploadResult`]), the [`log_error!`] macro,
@@ -55,7 +55,7 @@ pub use bundle_capper::cap_bundle_to_mb;
 
 /// Log an error and (if Flow B is opted in) feed it to the auto-dispatcher.
 ///
-/// Drop-in replacement for [`log::error!`] at user-visible failure sites — anything that
+/// Drop-in replacement for [`log::error!`] at user-visible failure sites: anything that
 /// already produces a user-facing toast or that an end user would consider "this didn't
 /// work." Don't migrate noisy library-level errors (`smb2`, `nusb`, etc.); the goal is
 /// signal, not coverage.
@@ -68,12 +68,12 @@ pub use bundle_capper::cap_bundle_to_mb;
 /// terminal clean. The error-level message stays a single readable line.
 ///
 /// The auto-dispatcher and the manifest's `userNote` see only the user-supplied message
-/// — the backtrace lives in the log file. Backtrace lines are redacted by the same
+/// The backtrace lives in the log file. Backtrace lines are redacted by the same
 /// path-redactor every other log line goes through, so build-machine paths embedded in
 /// symbol metadata don't leak.
 ///
 /// The macro evaluates its arguments exactly once. The `format!()` and backtrace capture
-/// happen whether or not the auto-dispatcher is enabled — `force_capture` runs ~0.1–1 ms,
+/// happen whether or not the auto-dispatcher is enabled; `force_capture` runs ~0.1–1 ms,
 /// negligible at error-event rates. The dispatcher's hot path bails out on a single
 /// atomic load when the opt-in flag is off.
 ///
@@ -112,7 +112,7 @@ macro_rules! log_error {
 /// live in [`crate::short_id`] so the crash reporter can reuse them.
 const SHORT_ID_PREFIX: &str = "ERR";
 
-/// Flavor of the bundle — kept separate so Phase 5's auto-sender can share the same builder.
+/// Flavor of the bundle, kept separate so Phase 5's auto-sender can share the same builder.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum BundleKind {
@@ -147,14 +147,14 @@ impl BuildMode {
 ///   within `[now - window, now]`. The default for Flow A's manual-send path is one
 ///   hour (`flow_a_default()`). Implemented as a tail-walker that reads each log file
 ///   from the end backward in 64 KB chunks, stops the moment it crosses the cutoff,
-///   and streams lines straight into the zip writer — no full-file read, no
-///   intermediate `Vec<String>`. Lines without a parseable timestamp (panic backtrace
+///   and streams lines straight into the zip writer (no full-file read, no
+///   intermediate `Vec<String>`). Lines without a parseable timestamp (panic backtrace
 ///   continuation, state YAML) pass through untouched; the cut boundary always lands
 ///   on a timestamped line. See [`tail_walker`] for the implementation.
 /// - `Window { first_error_at }`: include content whose timestamp falls inside
 ///   `[first_error_at - 30 min, now]`. Files entirely outside that window are dropped;
 ///   surviving files are line-filtered by parsing the leading ISO-8601 stamp. Used by
-///   Flow B (auto-send) — the window is anchored on the actual error, so we ship
+///   Flow B (auto-send): the window is anchored on the actual error, so we ship
 ///   surrounding context without the noise. This path still uses the full-read +
 ///   per-line filter pipeline because the bundle-build runs off the user's hot path
 ///   (in a debounced background task) and the simpler code is easier to reason about
@@ -167,7 +167,7 @@ pub enum BundleScope {
 
 impl BundleScope {
     /// Default Flow A scope: last hour of log content. Manual error reports are about
-    /// "something that just happened" — anything older is irrelevant noise.
+    /// "something that just happened"; anything older is irrelevant noise.
     pub fn flow_a_default() -> Self {
         BundleScope::Recent {
             window: FLOW_A_DEFAULT_WINDOW,
@@ -176,7 +176,7 @@ impl BundleScope {
 }
 
 /// Default window for Flow A's manual-send path. Picked from "what would a user mean
-/// when they click 'send error report'?" — anything that happened in the past hour, not
+/// when they click 'send error report'?": anything that happened in the past hour, not
 /// last week's session. Lowered from the original 24 h after the streaming rewrite: with
 /// tail-walking we could afford a wider window cheaply, but a wider window dilutes triage
 /// signal more than it adds context.
@@ -184,7 +184,7 @@ const FLOW_A_DEFAULT_WINDOW: Duration = Duration::from_secs(60 * 60);
 
 /// Hard cap for Flow A bundles. 1 MB compressed lands at roughly 19 MB uncompressed,
 /// which still gives plenty of recent log context. Lowered from the original 10 MB
-/// after live QA showed user-initiated bundles routinely topped 100 MB uncompressed —
+/// after live QA showed user-initiated bundles routinely topped 100 MB uncompressed;
 /// excessive for triage when the tail of the most recent file is what we actually need.
 pub const FLOW_A_BUNDLE_CAP_MB: usize = 1;
 /// Hard cap for Flow B bundles. Same 1 MB ceiling as Flow A; both flows ship the same
@@ -195,7 +195,7 @@ pub const FLOW_B_BUNDLE_CAP_MB: usize = 1;
 /// settings struct resolved against the registry defaults so triagers never see `null`.
 ///
 /// **Source of defaults**: `apps/desktop/src/lib/settings/settings-registry.ts`. If a
-/// default changes there, mirror it here — and add a comment if the discrepancy is
+/// default changes there, mirror it here, and add a comment if the discrepancy is
 /// intentional (it usually isn't). The defaults are duplicated rather than fetched at
 /// runtime because the manifest is built before the frontend can answer round trips
 /// (and even when it could, paying a 5 s round-trip per error report is silly).
@@ -225,8 +225,8 @@ impl ResolvedSettings {
     /// 2. The FE-pushed registry default (see [`settings_defaults`]). Avoids drift when
     ///    the FE registry's default changes.
     /// 3. A hardcoded fallback. Used only before the FE has called
-    ///    `record_settings_defaults` (very early errors, unit tests with no FE) — it's
-    ///    a safety net, not the primary source.
+    ///    `record_settings_defaults` (very early errors, unit tests with no FE);
+    ///    it's a safety net, not the primary source.
     fn from_settings(s: &crate::settings::loader::Settings) -> Self {
         Self {
             indexing_enabled: s
@@ -312,12 +312,12 @@ pub struct LogLevelSnapshot {
 /// `sample_first` and `sample_last` are the preview samples the dialog renders. With the
 /// post-fix-7 tail-walker pipeline:
 /// - `sample_first` is the **oldest** lines we kept for the live file (the head of the
-///   in-window content, NOT the head of the file on disk — that one is hours/days old
-///   and not in the bundle).
+///   in-window content, NOT the head of the file on disk (that one is hours/days old
+///   and not in the bundle)).
 /// - `sample_last` is the **newest** lines (the very tail of what we shipped).
 ///
 /// The field names are kept for FE compatibility with `apps/desktop/src/lib/error-reporter/`
-/// — see the dialog's "Sample of first/last N lines" headings. The semantics changed
+/// (see the dialog's "Sample of first/last N lines" headings). The semantics changed
 /// (under the old pipeline `sample_first` was the file's first lines, full stop), but
 /// "oldest kept" / "newest kept" matches what a triager actually wants to see.
 #[derive(Debug, Clone)]
@@ -344,7 +344,7 @@ pub fn generate_short_id() -> String {
 }
 
 /// POST the bundle to the ingestion server. In CI this skips the network call and
-/// synthesizes a response using the locally generated ID — CI runs shouldn't pollute
+/// synthesizes a response using the locally generated ID; CI runs shouldn't pollute
 /// the live error-report channel even if a test triggers a report. Debug builds DO
 /// upload; the manifest's `buildMode: "debug"` field lets the server tag those
 /// reports `[DEV]` so triage can separate them from production traffic.
@@ -447,7 +447,7 @@ pub mod log_level_overrides {
     static SNAPSHOT: OnceLock<(String, Vec<(String, String)>)> = OnceLock::new();
 
     /// Called once from `logging::dispatch::init` after RUST_LOG parsing. Subsequent
-    /// calls are no-ops — `OnceLock::set` returns `Err` after the first set.
+    /// calls are no-ops; `OnceLock::set` returns `Err` after the first set.
     pub fn record(default_level: log::LevelFilter, overrides: Vec<(String, log::LevelFilter)>) {
         let default_str = format!("{default_level:?}").to_lowercase();
         let entries: Vec<(String, String)> = overrides
@@ -480,7 +480,7 @@ pub mod settings_defaults {
     use std::sync::Mutex;
 
     /// Settings registry default values pushed from FE. The wire format matches JSON
-    /// primitives via `#[serde(untagged)]` — TS sees `boolean | number | string`.
+    /// primitives via `#[serde(untagged)]`; TS sees `boolean | number | string`.
     /// Extend with more variants only when settings of the new shape appear; any field
     /// shape outside this set means the value can't fit in `lookup_*` helpers anyway.
     #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -495,7 +495,7 @@ pub mod settings_defaults {
 
     /// Replace the stored defaults map. Called from the `record_settings_defaults`
     /// Tauri command. A `None` entry from a buggy FE caller is treated as "no
-    /// default available" — `lookup_*` falls through to the hardcoded fallback.
+    /// default available"; `lookup_*` falls through to the hardcoded fallback.
     pub fn record(map: HashMap<String, SettingValue>) {
         if let Ok(mut guard) = DEFAULTS.lock() {
             *guard = Some(map);

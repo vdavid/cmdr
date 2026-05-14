@@ -32,13 +32,13 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
      wrappers (which internally listen to Tauri events). Uses a `BufferedEvent` discriminated union
      (`{ type: 'progress'; event: WriteProgressEvent }`, etc.) to buffer events until the `operationId` is known.
    - Dual progress bars (size + file count). Speed (both bytes/s and files/s) and ETA come pre-computed from the backend
-     (`write_operations/eta.rs`) on every `WriteProgressEvent` — the dialog renders the numbers and applies a tiny
+     (`write_operations/eta.rs`) on every `WriteProgressEvent`; the dialog renders the numbers and applies a tiny
      display low-pass to the ETA to prevent flicker. No FE-side math.
    - Dynamic stage indicator: "Scanning" → "Copying" (+ "Cleaning up" for cross-FS move)
    - **Scanning-phase UI** (both `waitingForScan` and `phase === 'scanning'` paths): rendered via the
      `ScanPhaseBody.svelte` child component. Shows source path, running tallies (`bytesFound / filesFound / dirsFound`),
-     FE-computed throughput from `ScanThroughput` (`scan-throughput.ts`), and — when the backend supplies
-     `expectedFilesTotal` / `expectedBytesTotal` from the drive index — a `ProgressBar` capped at 100% with "X% of
+     FE-computed throughput from `ScanThroughput` (`scan-throughput.ts`), and, when the backend supplies
+     `expectedFilesTotal` / `expectedBytesTotal` from the drive index, a `ProgressBar` capped at 100% with "X% of
      estimated" text. Current directory (`event.currentDir`) renders above the filename so the user sees where in the
      tree the walker is. Title is reframed per operation: "Verifying before copy…", "Counting items to delete…", etc.
    - Conflict resolution inline (if using `Stop` mode instead of dry-run)
@@ -55,7 +55,7 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
 
 ### Shared utilities
 
-- **scan-throughput.ts**: `ScanThroughput` — tiny rolling-window estimator (default 2s window) that turns scan-event
+- **scan-throughput.ts**: `ScanThroughput`: tiny rolling-window estimator (default 2s window) that turns scan-event
   tally deltas into `filesPerSecond` / `bytesPerSecond`. Used by `DeleteDialog` and `TransferProgressDialog` to show
   throughput during the scan phase, since `EtaEstimator` (backend) only covers write phases. Returns nulls until two
   samples land, clamps negative deltas to zero, and resets cleanly between scans. Pure module, no Svelte/Tauri coupling.
@@ -135,10 +135,10 @@ When directory has parent entry shown at index 0, frontend indices are offset by
 ## Gotchas
 
 - **Always use batch IPC for selection lookups**: `get_paths_at_indices` (paths only) and `get_files_at_indices` (full
-  FileEntry objects) fetch all selected items in a single IPC call. Never loop over `getFileAt` per-index — with 50k
+  FileEntry objects) fetch all selected items in a single IPC call. Never loop over `getFileAt` per-index; with 50k
   selected files, per-file IPC takes 5-10 seconds. The batch calls take ~1ms regardless of count.
 - **MTP move is interleaved copy + delete per file**: Moves involving MTP volumes copy and then delete each file
-  individually (not copy-all-then-delete-all). This minimizes duplicates on partial failure — if it fails mid-way, only
+  individually (not copy-all-then-delete-all). This minimizes duplicates on partial failure: if it fails mid-way, only
   the current file exists in both places. The progress UI shows three stages (Scanning → Copying → Removing source). If
   copy succeeds but delete fails, the user keeps files in both places (safer than losing data). Rollback is hidden
   during the delete phase since the copy is already done.
@@ -150,7 +150,7 @@ When directory has parent entry shown at index 0, frontend indices are offset by
   only refreshes destination.
 - **Rollback / Cancel buttons disable during settle window**: `TransferProgressDialog` holds open for
   `MIN_DISPLAY_MS = 400 ms` after `write-complete` so the user can read the final state. During that window, both Cancel
-  and Rollback buttons must be disabled (`disabled={isCancelling || operationSettled}`) — a click here hits a backend
+  and Rollback buttons must be disabled (`disabled={isCancelling || operationSettled}`); a click here hits a backend
   whose operation state was already removed, so it's a no-op but briefly flashes "Rolling back..." giving false
   feedback. `operationSettled` is a `$state(false)` that flips when the operation reaches a terminal state. See
   `TransferProgressDialog.svelte` and the Cancel-copy investigation in `docs/notes/speed-up-e2e-tests.md`.
@@ -158,7 +158,7 @@ When directory has parent entry shown at index 0, frontend indices are offset by
   the scan keeps running (TransferDialog sets `confirmed = true` and skips cancellation in `onDestroy`).
   TransferProgressDialog picks up listening to the same scan events via `scanInProgress` prop. `waitForScanThenStart`
   subscribes to the scan events first, then awaits `checkScanPreviewStatus()`. Both the `scan-preview-complete` listener
-  AND the status check can signal "ready to start" — especially for fast scans that complete during the status-check
+  AND the status check can signal "ready to start", especially for fast scans that complete during the status-check
   `await`. Both paths converge on a local `kickOff()` helper guarded by a `started` flag, so `startOperation()`
   dispatches exactly once. The scan-error and scan-cancelled listeners also flip `started = true` as a terminal signal,
   so a late `scan-preview-complete` event can't dispatch an operation after we've errored or cancelled.

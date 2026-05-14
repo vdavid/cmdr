@@ -22,7 +22,7 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 
 ## `navigation-history.ts`
 
-Purely functional — all operations return new objects, never mutate.
+Purely functional: all operations return new objects, never mutate.
 
 ```
 NavigationHistory = { stack: HistoryEntry[], currentIndex: number }
@@ -35,22 +35,21 @@ Key functions: `createHistory`, `push`, `pushPath`, `back`, `forward`, `getCurre
 `push` returns the **same reference** when the new entry equals the current one (deduplication). Callers can use
 reference equality to skip re-renders.
 
-Entries carry full `volumeId` — navigating back can cross volume boundaries (e.g. from an external drive back to
-`root`).
+Entries carry full `volumeId` (navigating back can cross volume boundaries, for example from an external drive back to `root`).
 
 ### Gotcha: history is pushed on both listing success AND listing failure
 
 `FilePane.svelte`'s `onPathChange?.(loadPath)` callback is the canonical place where a navigation lands in history. It
 fires from two branches: `handleListingComplete` (success) AND the `listing-error` handler when the path still exists
 (error pane will render). Without the second branch, navigating to a folder that fails to list (TCC-restricted, mode
-0700, etc.) would show the `ErrorPane` while leaving the path absent from history — `Cmd+[` would then visually jump
+0700, etc.) would show the `ErrorPane` while leaving the path absent from history; `Cmd+[` would then visually jump
 back two steps because the current pane state isn't in the stack. The `listing-error` handler with the auto-fallback
 (path deleted → navigate to parent) doesn't push via this callback; it relies on the fallback navigation's own
 `applyPathChange` push.
 
 ## `path-navigation.ts`
 
-`determineNavigationPath(volumeId, volumePath, targetPath, otherPane)` — picks best initial path when switching volumes.
+`determineNavigationPath(volumeId, volumePath, targetPath, otherPane)`: picks best initial path when switching volumes.
 Runs checks **in parallel** with 500ms frontend timeouts per check. Priority:
 
 1. Favorite path (when `targetPath !== volumePath`)
@@ -58,19 +57,19 @@ Runs checks **in parallel** with 500ms frontend timeouts per check. Priority:
 3. Stored `lastUsedPath` for this volume
 4. Default: `~` for `DEFAULT_VOLUME_ID`, else volume root
 
-`withTimeout(promise, ms, fallback)` — imported from `$lib/utils/timing` and re-exported. Races a promise against a
+`withTimeout(promise, ms, fallback)`: imported from `$lib/utils/timing` and re-exported. Races a promise against a
 timeout, returning the fallback on expiry. Used by `determineNavigationPath` and also by `VolumeBreadcrumb.svelte`
 (wraps `getVolumeSpace`). `DualPaneExplorer.svelte` uses `resolvePathVolume` for startup tab restore (backend has its
 own 2s timeout, no frontend wrapper needed).
 
 ## `path-resolution.ts`
 
-`resolveValidPath(targetPath, options?)` — walks parent tree until an existing directory is found. Accepts optional
-`{ pathExistsFn, timeoutMs }` — defaults to Tauri `pathExists` with 1s timeout per step. Used both at runtime (with
+`resolveValidPath(targetPath, options?)`: walks parent tree until an existing directory is found. Accepts optional
+`{ pathExistsFn, timeoutMs }`: defaults to Tauri `pathExists` with 1s timeout per step. Used both at runtime (with
 timeouts) and at startup via `app-status-store.ts`'s `resolvePersistedPath` wrapper (no timeout, injected
 `pathExistsFn`). Fallback chain: parent dirs → `~` → `/` → `null` (volume unmounted).
 
-Lives in its own module so `app-status-store.ts` can import it without forming a cycle — `path-navigation.ts` itself
+Lives in its own module so `app-status-store.ts` can import it without forming a cycle; `path-navigation.ts` itself
 imports `getLastUsedPathForVolume` from `app-status-store.ts`.
 
 ### Non-blocking navigation pattern
@@ -95,9 +94,9 @@ guards against stale corrections when the user navigates away before resolution 
 
 `NavigationContext` fields:
 
-- `currentIndex`, `totalCount` — always required
-- `itemsPerColumn`, `visibleColumns` — Brief mode only; presence enables Brief branch
-- `visibleItems` — Full mode PageUp/PageDown page size
+- `currentIndex`, `totalCount`: always required
+- `itemsPerColumn`, `visibleColumns`: Brief mode only; presence enables Brief branch
+- `visibleItems`: Full mode PageUp/PageDown page size
 
 Handled keys:
 
@@ -120,7 +119,7 @@ and `volume-space-manager.svelte.ts` respectively.
 
 Props: `volumeId`, `currentPath`, `onVolumeChange?`.
 
-`containingVolumeId` is derived separately via `resolvePathVolume(currentPath)` — the active checkmark tracks the real
+`containingVolumeId` is derived separately via `resolvePathVolume(currentPath)`: the active checkmark tracks the real
 containing volume, not the `volumeId` prop (which may be a favorite's virtual ID).
 
 Keyboard/mouse mode: entering keyboard nav sets `isKeyboardMode = true`, suppressing CSS `:hover` highlights. Mouse
@@ -139,7 +138,7 @@ System Settings. State is owned by `crate::restricted_paths` in the backend and 
 `$lib/stores/restricted-paths-store.svelte` (`isRestricted(path)`). The backend records `PermissionDenied` on paths
 matching a hard-coded "possibly TCC-restricted on macOS" list (Downloads/Documents/Desktop/Pictures/Movies/Music,
 `~/Library/Safari/Mail/Messages`, iCloud Drive, `~/Library/CloudStorage`, Containers, network volumes) and re-probes
-every entry whenever the app regains focus (NSApplicationDidBecomeActive observer) — that's how the styling clears
+every entry whenever the app regains focus (NSApplicationDidBecomeActive observer), which is how the styling clears
 without polling after the user grants permission in System Settings. The same `tcc_paths::is_potentially_tcc_restricted`
 predicate also drives the dedicated "This folder is restricted by macOS" `FriendlyError` shown in `ErrorPane` for
 permission-denied listings on those paths.
@@ -173,26 +172,26 @@ These patterns emerged during the volume picker implementation and should be fol
 - **Tooltip dismissal.** Pass empty string to the `use:tooltip` directive when the element's popup is open. The
   directive's `update` handler calls `hideTooltip()` automatically.
 - **macOS-native menu feel.** Submenu overlaps the parent slightly (~5px). Hovering the row opens the submenu (not just
-  the arrow). Submenu highlight appears only on direct interaction (mouse hover on the item, or keyboard navigation) —
+  the arrow). Submenu highlight appears only on direct interaction (mouse hover on the item, or keyboard navigation),
   not automatically when the submenu opens via row hover.
 
 ## `volume-grouping.ts`
 
 Pure logic for organizing volumes into display groups. No reactive state.
 
-`groupByCategory(vols)` — groups volumes by category in display order:
+`groupByCategory(vols)`: groups volumes by category in display order:
 
-1. Favorites — no checkmark shown even if current path is a favorite
-2. main_volume + attached_volume — merged into one group
+1. Favorites: no checkmark shown even if current path is a favorite
+2. main_volume + attached_volume: merged into one group
 3. Cloud drives
-4. Mobile (MTP) devices — filtered from unified volume list (`category === 'mobile_device'`)
-5. Network — always includes a synthetic `'network'` entry (`smb://`) plus any mounted SMB shares. The synthetic entry's
+4. Mobile (MTP) devices: filtered from unified volume list (`category === 'mobile_device'`)
+5. Network: always includes a synthetic `'network'` entry (`smb://`) plus any mounted SMB shares. The synthetic entry's
    name flips to `"Network (disabled)"` when `options.networkEnabled === false`. `VolumeBreadcrumb` reads
    `getNetworkEnabled()` from reactive settings to set the option, and intercepts clicks on the disabled entry to open
    Settings → Network → SMB/Network shares (via `openSettingsWindow(['Network', 'SMB/Network shares'])`) instead of
    navigating.
 
-`getIconForVolume(volume)` — returns the appropriate icon path for a volume based on its category.
+`getIconForVolume(volume)`: returns the appropriate icon path for a volume based on its category.
 
 ## `volume-space-manager.svelte.ts`
 
@@ -218,8 +217,8 @@ component to render inline indicators (no toasts):
 
 ## Dependencies
 
-- `$lib/stores/volume-store.svelte` — `getVolumes` (backend-pushed reactive volume list)
-- `$lib/tauri-commands` — `resolvePathVolume`, `pathExists`
-- `$lib/utils/timing` — `withTimeout` (defense-in-depth IPC timeout wrapper)
-- `$lib/app-status-store` — `getLastUsedPathForVolume`
-- `../types` — `VolumeInfo`, `LocationCategory`, `NetworkHost`
+- `$lib/stores/volume-store.svelte`: `getVolumes` (backend-pushed reactive volume list)
+- `$lib/tauri-commands`: `resolvePathVolume`, `pathExists`
+- `$lib/utils/timing`: `withTimeout` (defense-in-depth IPC timeout wrapper)
+- `$lib/app-status-store`: `getLastUsedPathForVolume`
+- `../types`: `VolumeInfo`, `LocationCategory`, `NetworkHost`

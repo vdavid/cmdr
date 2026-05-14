@@ -12,7 +12,7 @@ const isDev = args.includes('dev')
 const isBuild = args.includes('build')
 
 // Dev mode: inject dev config and set CMDR_DATA_DIR to isolate dev data from production.
-// This replaces the old `cfg!(debug_assertions)` branch in Rust — the wrapper is the single
+// This replaces the old `cfg!(debug_assertions)` branch in Rust. The wrapper is the single
 // source of truth for dev/prod path separation.
 const env = { ...process.env }
 if (isDev) {

@@ -21,15 +21,15 @@ use std::time::Instant;
 use crate::file_system::listing::caching::LISTING_CACHE;
 use crate::file_system::listing::metadata::FileEntry;
 
-/// Errors from `compute_brief_column_text_widths`. Internal to the backend —
+/// Errors from `compute_brief_column_text_widths`. Internal to the backend;
 /// the IPC command wrapper maps these to `IpcError` for the wire.
 #[derive(Debug, Clone, PartialEq)]
 pub enum BriefColumnsError {
-    /// `calculate_max_width` returned `None` for at least one column —
+    /// `calculate_max_width` returned `None` for at least one column:
     /// the font metrics cache doesn't yet hold the requested `font_id`.
     /// Callers retry after `ensureFontMetricsLoaded` resolves.
     FontMetricsNotReady,
-    /// `items_per_column == 0` — would divide by zero. FE clamps to >= 1.
+    /// `items_per_column == 0` (would divide by zero). FE clamps to >= 1.
     InvalidItemsPerColumn,
     /// The listing ID isn't in `LISTING_CACHE` (already ended, or never started).
     ListingNotFound(String),
@@ -46,7 +46,7 @@ fn is_visible(entry: &FileEntry) -> bool {
 ///
 /// Returns a `Vec<f32>` of length equal to the number of columns required to
 /// display all visible entries (plus the `".."` parent literal when
-/// `has_parent`). Values are guaranteed finite — no NaN, no Infinity — so the
+/// `has_parent`). Values are guaranteed finite (no NaN, no Infinity), so the
 /// FE's `Float64Array` prefix sums stay valid.
 ///
 /// Reads `LISTING_CACHE` with a read lock. Caller is responsible for wrapping

@@ -32,12 +32,12 @@ overlay).
 the file list from scrolling or handling shortcuts behind the modal.
 
 **Recents on empty query**: `pruneRecentCommands` / `pushRecentCommand` from `$lib/app-status-store` (Tauri store). On
-mount, the palette calls `pruneRecentCommands(validIds)` — this loads the persisted recents, drops any IDs that are no
+mount, the palette calls `pruneRecentCommands(validIds)`: this loads the persisted recents, drops any IDs that are no
 longer valid palette commands (renamed / removed since last use), saves the cleaned list back, and returns it. The
 pruned list is then passed to `searchCommands(query, recentCommandIds)`. When the query is empty, recents lead the
 result (most-recent first), with a `Recent` subheader above them and an `All commands` subheader before the rest. On
 every Enter / click, `pushRecentCommand(id)` moves the ID to the front; duplicates are removed; the list is capped
-at 10. The query itself is not persisted across opens — the palette always opens empty so the user's last-executed
+at 10. The query itself is not persisted across opens; the palette always opens empty so the user's last-executed
 command sits at index 0 (cursor default), making Enter re-run it.
 
 **Own overlay, no shared ModalDialog**: `CommandPalette` manages its own `position: fixed` overlay and `role="dialog"`
@@ -47,9 +47,9 @@ ARIA attributes. It does not use the shared `ModalDialog` component.
 `aria-expanded`, `aria-autocomplete="list"`, `aria-activedescendant` pointing to the cursor option's id). DOM focus
 stays on the input the whole time; the active option is announced to screen readers via `aria-activedescendant`, not by
 moving focus. Each option has a stable id (`palette-option-{command.id}`). The cursor option also gets `tabindex="0"`
-(others get `tabindex="-1"`) — roving tabindex on a single item. This satisfies axe's `scrollable-region-focusable` rule
+(others get `tabindex="-1"`), a roving tabindex on a single item. This satisfies axe's `scrollable-region-focusable` rule
 (the scrollable listbox has at least one focusable descendant) without moving DOM focus away from the input. The listbox
-itself isn't rendered when a search yields zero results — the "No commands found" message replaces it — so the
+itself isn't rendered when a search yields zero results (the "No commands found" message replaces it), so the
 scrollable-region rule has nothing to flag in the empty state, and `aria-expanded` flips to `false`.
 
 **Cursor reset**: `cursorIndex` resets to `0` and `hoveredIndex` to `null` on every query change (via `$effect` tracking
@@ -58,7 +58,7 @@ scrollable-region rule has nothing to flag in the empty state, and `aria-expande
 **Fuzzy highlight rendering**: `highlightMatches()` converts the flat `matchedIndices` set into `{ text, highlighted }`
 segments and renders `<mark class="match-highlight">` for matched chars.
 
-**Shortcut display**: `formatShortcuts()` calls `.slice(0, 2)` — at most 2 shortcuts are shown per command.
+**Shortcut display**: `formatShortcuts()` calls `.slice(0, 2)`; at most 2 shortcuts are shown per command.
 
 **jsdom limitation**: `scrollIntoView` is not implemented in jsdom; tests mock it via
 `Element.prototype.scrollIntoView = vi.fn()`.
@@ -68,7 +68,7 @@ segments and renders `<mark class="match-highlight">` for matched chars.
 **Decision**: Own overlay and modal, not using the shared `ModalDialog` component. **Why**: The command palette has
 unique interaction requirements (live fuzzy filtering, keyboard-first navigation, two-cursor hover model) that don't fit
 `ModalDialog`'s confirm/cancel pattern. Sharing would mean adding palette- specific escape hatches to a generic
-component. The palette's overlay also needs `stopPropagation` on all keydown events — a concern that shouldn't leak into
+component. The palette's overlay also needs `stopPropagation` on all keydown events, a concern that shouldn't leak into
 a shared component.
 
 **Decision**: Two independent cursor models (`cursorIndex` for keyboard, `hoveredIndex` for mouse). **Why**: VS Code and
@@ -80,7 +80,7 @@ the same intensity. Without this separation, moving the mouse would fight keyboa
 WAI-ARIA combobox-with-listbox pattern. Typing must stay routed to the input while the user is browsing options, so
 moving real focus to a row would mean every arrow press steals focus from the search field and breaks the search-as-
 you-type flow. `aria-activedescendant` lets screen readers announce the active option without changing DOM focus. The
-cursor option still gets `tabindex="0"` (roving tabindex of one) — this is what satisfies axe's
+cursor option still gets `tabindex="0"` (roving tabindex of one); this is what satisfies axe's
 `scrollable-region-focusable` rule, which otherwise flags the listbox because no descendant would be in the tab order.
 The combination (combobox semantics + a single tabbable descendant) is what GitHub's command bar and several other
 production palettes ship.
@@ -126,6 +126,6 @@ Add the command to `$lib/commands/command-registry.ts` and handle the ID in the 
 
 ## Dependencies
 
-- `$lib/commands` — `searchCommands`, `getPaletteCommands`, `CommandMatch`
-- `$lib/app-status-store` — `pruneRecentCommands`, `pushRecentCommand`
+- `$lib/commands`: `searchCommands`, `getPaletteCommands`, `CommandMatch`
+- `$lib/app-status-store`: `pruneRecentCommands`, `pushRecentCommand`
 - CSS variables from `app.css` (`--z-modal`, `--color-accent-subtle`, `--color-bg-secondary`, etc.)

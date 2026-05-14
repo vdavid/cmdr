@@ -7,7 +7,7 @@ Reusable UI components used across the entire desktop app.
 | File                     | Purpose                                                                                        |
 | ------------------------ | ---------------------------------------------------------------------------------------------- |
 | `ModalDialog.svelte`     | Central modal container: overlay, dragging, Escape, focus, MCP tracking                        |
-| `dialog-registry.ts`     | `SOFT_DIALOG_REGISTRY` array — single source of truth for all dialog IDs                       |
+| `dialog-registry.ts`     | `SOFT_DIALOG_REGISTRY` array: single source of truth for all dialog IDs                        |
 | `Button.svelte`          | Styled button with variant and size props                                                      |
 | `LinkButton.svelte`      | Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned `cursor: pointer` |
 | `CommandBox.svelte`      | Copyable terminal command (monospace + Copy button)                                            |
@@ -15,8 +15,8 @@ Reusable UI components used across the entire desktop app.
 | `AlertDialog.svelte`     | Single-action confirmation dialog built on `ModalDialog`                                       |
 | `ProgressBar.svelte`     | Reusable progress bar (just the bar, no labels or layout)                                      |
 | `ProgressOverlay.svelte` | Floating top-right progress indicator: spinner, progress bar, ETA                              |
-| `Size.svelte`            | Canonical inline byte-count renderer — human-friendly + rainbow tier color                     |
-| `toast/`                 | Centralized toast notification system — store, container, item                                 |
+| `Size.svelte`            | Canonical inline byte-count renderer: human-friendly + rainbow tier color                      |
+| `toast/`                 | Centralized toast notification system: store, container, item                                  |
 
 ## ModalDialog
 
@@ -46,7 +46,7 @@ MCP "available dialogs" resource stays in sync.
 To add a new dialog:
 
 1. Add an entry to `SOFT_DIALOG_REGISTRY` in `dialog-registry.ts`.
-2. Pass the new id as `dialogId` to `ModalDialog` — MCP tracking is then automatic.
+2. Pass the new id as `dialogId` to `ModalDialog`. MCP tracking is then automatic.
 
 ## Tooltip (`../tooltip/tooltip.ts`)
 
@@ -77,7 +77,7 @@ import { tooltip } from '$lib/tooltip/tooltip'
 `TooltipParam` type: `string | { text?, html?, shortcut?, overflowOnly? } | null | undefined`.
 
 The tooltip element has `white-space: pre-line` and uses global CSS classes, so `<span class="size-mb">` etc. work
-inside `{ html }` tooltips. The `html` variant renders via `innerHTML` — only use with trusted content.
+inside `{ html }` tooltips. The `html` variant renders via `innerHTML`; only use with trusted content.
 
 ## Button
 
@@ -87,18 +87,18 @@ Variants: `primary` | `secondary` (default) | `danger`. Sizes: `regular` (defaul
 ## LinkButton
 
 Use this for anything that should look and behave like a link. Renders a `<button>` by default (in-app actions like
-"Open settings", "Show format help"), or an `<a>` when you pass `href` (for external URLs — mailto:, https:// — that
+"Open settings", "Show format help"), or an `<a>` when you pass `href` (for external URLs like `mailto:`, `https://` that
 your `onclick` intercepts and routes through `openExternalUrl()`). It is the **only** place in the app that opts back
-into `cursor: pointer` — Cmdr globally sets `cursor: default` on `html` and `<a>` for native macOS feel
+into `cursor: pointer`; Cmdr globally sets `cursor: default` on `html` and `<a>` for native macOS feel
 (`app.css:363-366`), and stylelint blocks `cursor: pointer` everywhere else (`.stylelintrc.mjs:38`). Don't roll your own
 link-styled button or anchor with raw CSS; the cursor opt-in stays in one place by convention.
 
-Hover keeps the resting accent-text color (the lighter `--color-accent-hover` doesn't meet 4.5:1 contrast on white) —
-the underline is enough affordance.
+Hover keeps the resting accent-text color (the lighter `--color-accent-hover` doesn't meet 4.5:1 contrast on white).
+The underline is enough affordance.
 
 The `href` mode includes a per-line eslint disable for `svelte/no-navigation-without-resolve`. That rule wants
 SvelteKit's `resolve()`, which is for internal routes; we route external URLs through `openExternalUrl()` after
-`event.preventDefault()` in `onclick`. The `<a href>` is decorative — it gives screen readers the right semantics and
+`event.preventDefault()` in `onclick`. The `<a href>` is decorative: it gives screen readers the right semantics and
 preserves "right-click → Copy link." For SvelteKit-internal navigation, don't use `LinkButton`; use `<a>` with
 `resolve()` directly.
 
@@ -116,7 +116,7 @@ where the first 50% is invisible (effectively 200ms before fade begins), avoidin
 
 ## ProgressBar
 
-Reusable progress bar component — just the bar, no labels or layout. Consumers arrange their own labels around it.
+Reusable progress bar component: just the bar, no labels or layout. Consumers arrange their own labels around it.
 
 Props:
 
@@ -168,22 +168,22 @@ Call `dismissTransientToasts()` on pane navigation to clear stale feedback.
 
 `ToastOptions` extras for component-content toasts that have their own action buttons:
 
-- `closeTooltip?: string` — tooltip text shown on hover/focus over the X button. Set this when the toast also has its
+- `closeTooltip?: string`: tooltip text shown on hover/focus over the X button. Set this when the toast also has its
   own buttons (for example, an inline "Cancel"), so users can tell what each control does. Without it, no tooltip
   renders.
-- `onDismiss?: () => void` — fires only when the user clicks X (or the inline "Send error report…" link). Auto-dismiss
+- `onDismiss?: () => void`: fires only when the user clicks X (or the inline "Send error report…" link). Auto-dismiss
   on timeout and programmatic `dismissToast()` calls do NOT trigger it. Use this when the caller needs to remember "the
   user closed this," for example to avoid re-adding a toast that's tied to long-running background work.
 
 ## CommandBox
 
-`CommandBox.svelte` — monospace terminal command with a one-click Copy button and 2-second "Copied!" feedback. Takes a
+`CommandBox.svelte`: monospace terminal command with a one-click Copy button and 2-second "Copied!" feedback. Takes a
 single `command` string prop. Handles clipboard internally (`copyToClipboard` with `navigator.clipboard` fallback).
 Parent controls spacing via its own wrapper. Used in `PtpcameradDialog`, `MtpPermissionDialog`, and `ShareBrowser`.
 
 ## Size
 
-`Size.svelte` — canonical inline byte-count renderer. Takes `bytes: number | null | undefined` and optional `fallback`
+`Size.svelte`: canonical inline byte-count renderer. Takes `bytes: number | null | undefined` and optional `fallback`
 (default `''`). Always human-friendly (`"1.02 MB"`), always colored with the active rainbow tier class
 (`size-bytes`/`size-kb`/`size-mb`/`size-gb`/`size-tb`). Respects the `appearance.fileSizeFormat` setting (binary vs.
 decimal) and follows palette swaps via the `data-size-colors` attribute on `<html>` automatically.
@@ -191,14 +191,14 @@ decimal) and follows palette swaps via the `data-size-colors` attribute on `<htm
 Use this in Svelte templates: `<Size bytes={entry.size} />`. For HTML string contexts (tooltips, error messages, prose
 that goes through `{@html}`), use one of two helpers from `$lib/file-explorer/selection/selection-info-utils.ts`:
 
-- `formatSizeHtmlColored(bytes, format)` — full pipeline: byte count → formatted string → colored span.
-- `colorizeSizeString(text)` — when you already have a formatted size string (e.g. from the legacy `formatBytes` in
+- `formatSizeHtmlColored(bytes, format)`: full pipeline: byte count → formatted string → colored span.
+- `colorizeSizeString(text)`: when you already have a formatted size string (for example, from the legacy `formatBytes` in
   `$lib/tauri-commands`) and just need to wrap it in the right tier span.
 
 The `<Size>` component does NOT cover the raw-bytes triad mode used by the file-list size column (which is gated by
 `listing.humanFriendlySizeUnits`). That column renders `formatSizeForDisplay` directly because it also needs the
 mismatch-warning + cursor-row neutralization treatment. Outside the size column, the human-friendly form is always
-correct — David tested every site and confirmed the simplification.
+correct. David tested every site and confirmed the simplification.
 
 ## Ark UI
 
@@ -211,15 +211,15 @@ elements like `<Button>` are our own thin wrappers (a button needs no headless l
 
 ## Adding a component-level a11y test (tier 3)
 
-Cmdr runs a three-tier a11y strategy — see `docs/design-system.md` § "Automated contrast checks" and
+Cmdr runs a three-tier a11y strategy; see `docs/design-system.md` § "Automated contrast checks" and
 `apps/desktop/test/e2e-playwright/accessibility.spec.ts` for tiers 1 and 2. Tier 3 runs axe-core against a component
 mounted in Vitest/jsdom, covering structural a11y (ARIA, labels, focusable-when-enabled) in milliseconds. Contrast is
 tier 1's job; focus traps and Escape-return-focus are tier 2's.
 
 Helper: `$lib/test-a11y` exports `expectNoA11yViolations(container)`. Same axe ruleset as E2E, minus `color-contrast`
-and `region` (both misfire in jsdom — see the helper's comments).
+and `region` (both misfire in jsdom; see the helper's comments).
 
-Template — colocate `ComponentName.a11y.test.ts` next to the component:
+Template: colocate `ComponentName.a11y.test.ts` next to the component.
 
 ```ts
 import { describe, it } from 'vitest'
@@ -249,7 +249,7 @@ investigating why a test passes silently.
 
 Current coverage: ~60 component-level `.a11y.test.ts` files covering dialogs, file explorer panes, settings components
 and sections, search, command palette, toasts, crash/licensing/onboarding, and MTP dialogs. Skipped tests (marked
-`it.skip` with a `TODO:` + axe rule ID) flag real a11y findings the team hasn't fixed yet — do NOT remove those skips
+`it.skip` with a `TODO:` + axe rule ID) flag real a11y findings the team hasn't fixed yet. Do NOT remove those skips
 without fixing the underlying component. Each skip has a concrete fix noted in the test file.
 
 ## Key decisions
@@ -271,7 +271,7 @@ design token system.
 
 **Decision**: Toast content accepts both `string` and `Component<any>` (Svelte component). **Why**: Simple notifications
 are strings. Interactive toasts (update restart, AI download) need buttons and state, so they're full Svelte components.
-The toast item renders strings as `<span>` and components via `{@const}` + render — no wrapper needed.
+The toast item renders strings as `<span>` and components via `{@const}` + render. No wrapper needed.
 
 **Decision**: Toast dedup uses an optional `id` key with in-place replacement rather than preventing duplicates.
 **Why**: The update toast and AI toast need to update their content as state changes (e.g. download progress) while
@@ -283,12 +283,12 @@ keeping the same slot in the stack. Replacing in place avoids the visual flicker
   destructuring as `title: dialogTitle`.
 - `containerStyle` exists because stylelint blocks non-standard CSS custom properties (any not matching
   `(color|spacing|font)-` prefix). Use it for one-off sizing instead of CSS vars.
-- `blur` prop applies `backdrop-filter` which triggers GPU compositing — use sparingly.
-- When the toast stack is full (5 toasts) and all are persistent, new toasts are silently dropped. This is intentional —
+- `blur` prop applies `backdrop-filter` which triggers GPU compositing; use sparingly.
+- When the toast stack is full (5 toasts) and all are persistent, new toasts are silently dropped. This is intentional:
   persistent toasts represent important state (update ready, AI installing) and should not be evicted by transient
   feedback.
 
 ## Dependencies
 
-- `$lib/tauri-commands` — `notifyDialogOpened`, `notifyDialogClosed`
-- `apps/desktop/src/app.css` — all CSS variables used here must be defined there
+- `$lib/tauri-commands`: `notifyDialogOpened`, `notifyDialogClosed`
+- `apps/desktop/src/app.css`: all CSS variables used here must be defined there

@@ -19,11 +19,11 @@ Three provider modes:
 | `process.rs` | Spawns child process with `DYLD_LIBRARY_PATH` set. Instant SIGKILL to stop (llama-server is stateless; macOS reclaims all GPU/mmap resources). `kill_process` for fire-and-forget (quit, orphans), `kill_and_reap_in_background` for normal operation (reaps zombie in bg thread). `kill_stale_llama_servers` for belt-and-suspenders orphan cleanup by process name. Port discovery via `bind(:0)`. |
 | `client.rs` | `genai`-backed chat client. `AiBackend` is a struct bundling a long-lived `genai::Client` with a model name; built via `AiBackend::local(port)` or `AiBackend::remote(api_key, base_url, model)`. The model name picks the adapter (`claude-*` → Anthropic native, `gemini-*` → Gemini native, `gpt-5*`/`*-pro`/`*-codex` → OpenAI Responses API, etc.). Auto-omits `temperature`/`top_p` for OpenAI Responses adapter and for chat-completions reasoning models (`o1*`, `o3*`, `o4*`, `chatgpt-*`, `gpt-5*` defense-in-depth) and substitutes `ReasoningEffort::Low`. Local backend forces the OpenAI adapter via a `ServiceTargetResolver` pinning endpoint to `http://127.0.0.1:<port>/v1/`. Exposes both `chat_completion` (full response) and `chat_completion_stream` (returns a `BoxStream<Result<String, AiError>>` of content chunks; reasoning/thought-signature/tool-call chunks filtered out). |
 | `client_integration_test.rs` | `wiremock`-based tests covering request shape per adapter (chat completions vs Responses API), parsing, error mapping. Always run in CI. |
-| `client_streaming_test.rs` | `axum`-based SSE mock server tests for `chat_completion_stream`: chunks arrive in order, empty streams end cleanly, drop-mid-stream closes the connection, HTTP 5xx maps to `ServerError`. Always run in CI. (Wiremock can't chunk-deliver SSE bodies — see Gotchas.) |
+| `client_streaming_test.rs` | `axum`-based SSE mock server tests for `chat_completion_stream`: chunks arrive in order, empty streams end cleanly, drop-mid-stream closes the connection, HTTP 5xx maps to `ServerError`. Always run in CI. (Wiremock can't chunk-deliver SSE bodies. See Gotchas.) |
 | `client_real_openai_test.rs` | `#[ignore]`-gated smoke tests against `api.openai.com`, including streaming variants for `gpt-4o-mini`, `gpt-5-mini`, `o3-mini`. Run with `OPENAI_API_KEY=$(security find-generic-password -a "$USER" -s "OPENAI_API_KEY" -w) cargo nextest run --lib --run-ignored only ai::client_real_openai_test`. Costs ~$0.001 per full run. |
 | `client_real_anthropic_test.rs` | `#[ignore]`-gated smoke tests against `api.anthropic.com` (chat + streaming variants of `claude-3-5-haiku-latest`). Anthropic's native streaming protocol differs from OpenAI's SSE shape; without this we'd only test the OpenAI lineage. Run with `ANTHROPIC_API_KEY=$(security find-generic-password -a "$USER" -s "ANTHROPIC_API_KEY" -w) cargo nextest run --lib --run-ignored only ai::client_real_anthropic_test`. |
 | `suggestions.rs` | Builds few-shot prompt from listing cache, routes to configured backend, sanitizes response. Also exposes `stream_folder_suggestions` + `cancel_folder_suggestions` Tauri commands and a `StreamingSanitizer` that runs the per-line sanitizer on streamed chunks (line-buffers across chunk boundaries, dedupes case-insensitively against existing names + already-emitted, caps at `MAX_SUGGESTIONS`). |
-| `suggestions_streaming_test.rs` | Tests for the `manager::register_stream`/`unregister_stream`/`cancel_stream` registry — concurrent ids don't interfere, double-cancel is idempotent, missing id is a no-op. |
+| `suggestions_streaming_test.rs` | Tests for the `manager::register_stream`/`unregister_stream`/`cancel_stream` registry: concurrent ids don't interfere, double-cancel is idempotent, missing id is a no-op. |
 
 ### Tauri commands
 
@@ -45,8 +45,8 @@ Frontend loads
        cloudApiKey, cloudBaseUrl, cloudModel
      })
        -> backend: if provider === 'local' && model installed && local AI supported
-            -> spawn_and_track_server() (sync, inside lock — PID tracked immediately)
-            -> wait_for_server_health() (async — polls up to 60s)
+            -> spawn_and_track_server() (sync, inside lock, PID tracked immediately)
+            -> wait_for_server_health() (async, polls up to 60s)
             -> emit 'ai-server-ready' when healthy
 ```
 
@@ -117,13 +117,13 @@ The frontend (`AiSection.svelte`) tracks `installStep` state and displays "Step 
 
 **Decision**: Default provider is `local` (temporary). **Why**: Matches the current onboarding toast flow. Long-term
 direction is to make OpenAI-compatible the primary recommended path, with local LLM as the secondary option for
-privacy-focused users. The architecture doesn't fight this switch — it's just a default value change.
+privacy-focused users. The architecture doesn't fight this switch: it's just a default value change.
 
 **Decision**: Use `genai` crate as the chat client instead of hand-rolled `reqwest` JSON.
 **Why**: We hit two production bugs that were per-provider quirks: (1) GPT-5/o-series chat models reject any non-default `temperature` (HTTP 400), and (2) `gpt-*-pro` / `*-codex` models only respond on `/v1/responses`, not `/v1/chat/completions` (HTTP 404). Each new model adds another quirk. `genai` normalizes ~20 providers, auto-routes Responses-API models, and gives us Anthropic / Gemini / xAI / OpenRouter for free with the same code path. Tradeoff: pinned at `0.5.3` (stable, ~3 months old) with a solo maintainer; mitigated by it being MIT/Apache-2.0 + small enough to fork if needed.
 
 **Decision**: Streaming uses `tauri::ipc::Channel<T>` per call, not the global `app.emit` pattern that downloads use.
-**Why**: User can open the new-folder dialog, cancel, and reopen quickly. Two streams could overlap if we used a global event — listeners from the second open would see chunks from the first. Channel scopes the events to a single command invocation, eliminating the race. Tauri 2 docs explicitly recommend `Channel<T>` for streaming events from a command.
+**Why**: User can open the new-folder dialog, cancel, and reopen quickly. Two streams could overlap if we used a global event: listeners from the second open would see chunks from the first. Channel scopes the events to a single command invocation, eliminating the race. Tauri 2 docs explicitly recommend `Channel<T>` for streaming events from a command.
 
 **Decision**: Streaming command `stream_folder_suggestions` always returns `Ok(())`; all signaling (suggestions, completion, cancellation, failure) goes through `Channel<SuggestionStreamEvent>`.
 **Why**: Mixing IPC `Result<_, String>` with channel events would split the error contract. One signaling path is simpler for both Rust and TypeScript callers. `#[tauri::command]` requires the `Result` return type purely for syntactic reasons here.
@@ -132,7 +132,7 @@ privacy-focused users. The architecture doesn't fight this switch — it's just 
 **Why**: AGENTS.md principle "smart backend, thin frontend." Sanitization rules (markdown stripping, numbering detection, dedupe by case-insensitive existing-names + emit-history) are non-trivial; replicating them in TypeScript would create two authorities that drift. Frontend just renders strings.
 
 **Decision**: Cancellation via explicit `cancel_folder_suggestions` command + `tokio_util::sync::CancellationToken`, not implicit drop detection on the Channel.
-**Why**: Tauri 2's `Channel::send` is fire-and-forget into the IPC queue. It does NOT report frontend handler GC or webview destruction back to the backend. Without an explicit cancel signal, the backend would keep streaming after the user closes the dialog — billing cloud providers and pegging local-LLM compute. `CancellationToken::cancel` is itself idempotent, so the same token can be canceled by an explicit cancel call AND by an implicit `Channel::send` failure in the same tick — both succeed.
+**Why**: Tauri 2's `Channel::send` is fire-and-forget into the IPC queue. It does NOT report frontend handler GC or webview destruction back to the backend. Without an explicit cancel signal, the backend would keep streaming after the user closes the dialog, billing cloud providers and pegging local-LLM compute. `CancellationToken::cancel` is itself idempotent, so the same token can be canceled by an explicit cancel call AND by an implicit `Channel::send` failure in the same tick. Both succeed.
 
 **Decision**: Cancel-token registry (`STREAM_CANCEL_TOKENS`) is a separate `LazyLock<Mutex<HashMap>>` in `manager.rs`, not part of `ManagerState`.
 **Why**: Streaming task lifecycle is orthogonal to file-manager AI state. Keeping it isolated lets us drop entries on task end without holding the wider `MANAGER` lock and without inflating `ManagerState`.
@@ -143,7 +143,7 @@ privacy-focused users. The architecture doesn't fight this switch — it's just 
 
 **Gotcha**: `genai 0.6` auto-routes `gpt-5*`, `*-codex`, `*-pro` to the Responses API, but `o1*`/`o3*`/`o4*`/`chatgpt-*` stay on Chat Completions even though they also reject custom `temperature`. We layer `is_openai_chat_reasoning_model()` on top to strip `temperature`/`top_p` and substitute `ReasoningEffort::Low` for those. The heuristic also matches `gpt-5*` as defense-in-depth in case `genai`'s routing rule changes.
 
-**Gotcha**: For reasoning models, `max_tokens` (`max_output_tokens` on Responses API) covers reasoning + visible answer combined. Real-world finding: at `ReasoningEffort::Low`, `gpt-5-mini` consumed all 40 tokens thinking and emitted no `output_text` — `first_text()` returned `None`. `suggestions.rs` (`max_tokens=150`) and `commands/search.rs` (`max_tokens=200`) may occasionally produce empty results when the user picks a reasoning model. Bump to `max_tokens >= 300` if empty-result rate becomes a problem; the empty-result graceful degradation already covers it functionally.
+**Gotcha**: For reasoning models, `max_tokens` (`max_output_tokens` on Responses API) covers reasoning + visible answer combined. Real-world finding: at `ReasoningEffort::Low`, `gpt-5-mini` consumed all 40 tokens thinking and emitted no `output_text`, so `first_text()` returned `None`. `suggestions.rs` (`max_tokens=150`) and `commands/search.rs` (`max_tokens=200`) may occasionally produce empty results when the user picks a reasoning model. Bump to `max_tokens >= 300` if empty-result rate becomes a problem; the empty-result graceful degradation already covers it functionally.
 
 **Gotcha**: `tauri::async_runtime::spawn` is used in `configure_ai` and `start_ai_server` instead of `tokio::spawn`.
 **Why**: These may run during Tauri setup before the tokio runtime is fully available. `tauri::async_runtime::spawn` uses Tauri's own runtime which is always ready at that point.
@@ -157,12 +157,12 @@ privacy-focused users. The architecture doesn't fight this switch — it's just 
 **Gotcha**: The process spawn and `child_pid` assignment must happen synchronously inside the MANAGER lock.
 **Why**: Previously, spawn happened inside an async task, creating a race window where a process existed but wasn't tracked in `child_pid`. Rapid provider switching (Local → OpenAI → Local → OpenAI) could orphan processes that survived app quit. Fixed by splitting into `spawn_and_track_server` (sync, inside lock) + `wait_for_server_health` (async).
 
-**Gotcha**: `wait_for_server_health` kills the process on timeout or early death — don't remove that cleanup.
+**Gotcha**: `wait_for_server_health` kills the process on timeout or early death. Don't remove that cleanup.
 **Why**: Without it, a process that fails health check would be orphaned (PID tracked but never cleaned up until explicit stop).
 
-**Gotcha**: `Channel::send` returns `Err` only when the webview itself is gone (window closed); it succeeds silently after the JS-side handler is GC'd. Don't rely on send failure for liveness — use the explicit `cancel_folder_suggestions` command. Send-error in the streaming-suggestion `try_emit` callback triggers the cancel token as defense-in-depth implicit cancel.
+**Gotcha**: `Channel::send` returns `Err` only when the webview itself is gone (window closed); it succeeds silently after the JS-side handler is GC'd. Don't rely on send failure for liveness: use the explicit `cancel_folder_suggestions` command. Send-error in the streaming-suggestion `try_emit` callback triggers the cancel token as defense-in-depth implicit cancel.
 
-**Gotcha**: Cancel via `tokio::select!` drops the in-flight `stream.next()` future. For `genai`'s reqwest-backed SSE this is the desired terminal action — closes the connection, cuts billing. Single-poll cancel-safety is the only model we rely on; we never resume a previously-canceled stream.
+**Gotcha**: Cancel via `tokio::select!` drops the in-flight `stream.next()` future. For `genai`'s reqwest-backed SSE this is the desired terminal action: closes the connection, cuts billing. Single-poll cancel-safety is the only model we rely on; we never resume a previously-canceled stream.
 
 **Gotcha**: `wiremock` does not chunk-deliver SSE bodies in distinct frames; it writes the whole body in one HTTP response. That gives false confidence we'd be exercising multi-chunk parse paths. `client_streaming_test.rs` uses an `axum`-based mock SSE server with `tokio::time::sleep` between frames instead.
 

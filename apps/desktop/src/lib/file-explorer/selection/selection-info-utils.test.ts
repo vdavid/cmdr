@@ -172,9 +172,9 @@ describe('buildDateTooltip', () => {
   })
 
   it('wraps colored segments in their age-tier spans', () => {
-    // Today (same year/month/day as NOW_MS) — year/month/day all fresh.
+    // Today (same year/month/day as NOW_MS): year/month/day all fresh.
     const sameDay = Date.parse('2026-05-11T08:00:00Z') / 1000
-    // Five years ago — year tier is age-old, no month/day/time coloring.
+    // Five years ago: year tier is age-old, no month/day/time coloring.
     const old = Date.parse('2021-05-11T08:00:00Z') / 1000
     const entry = createFileEntry({ createdAt: old, modifiedAt: sameDay })
     const html = buildDateTooltip(entry, fmt).html

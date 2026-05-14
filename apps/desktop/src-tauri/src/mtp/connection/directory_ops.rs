@@ -382,7 +382,7 @@ impl MtpConnectionManager {
             Some(parent_handle)
         };
 
-        // Get streaming listing (fast — single USB transaction for GetObjectHandles)
+        // Get streaming listing (fast: single USB transaction for GetObjectHandles)
         let mut listing = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS),
             storage.list_objects_stream(parent_opt),
@@ -597,7 +597,7 @@ impl MtpConnectionManager {
             return Ok(*handle);
         }
 
-        // Path not in cache — only paths that have been listed (browsed) are cached
+        // Path not in cache: only paths that have been listed (browsed) are cached
         Err(MtpConnectionError::Other {
             device_id: entry.info.id.clone(),
             message: format!(

@@ -42,7 +42,7 @@
     /**
      * Element that had focus when the dialog opened. Restored on destroy so
      * keyboard input flows back to wherever it came from (typically a file
-     * pane) — without this, focus falls to <body> and arrow keys silently
+     * pane): without this, focus falls to <body> and arrow keys silently
      * no-op until the user clicks back into a pane.
      */
     let previousActiveElement: HTMLElement | null = null

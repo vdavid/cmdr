@@ -174,7 +174,7 @@ pub async fn copy_between_volumes(
             }
             Err(WriteFailure { ref error, .. }) if matches!(error, WriteOperationError::Cancelled { .. }) => {
                 // write-cancelled was already emitted by copy_volumes_with_progress,
-                // so don't also emit write-error — it would make the frontend log
+                // so don't also emit write-error: it would make the frontend log
                 // a user-initiated cancel as an error.
                 log::info!("copy_between_volumes: operation {} cancelled", operation_id_for_cleanup,);
             }
@@ -326,7 +326,7 @@ pub(crate) async fn copy_volumes_with_progress(
         );
         // TODO: extend the preview cache to carry per-source type + size so this
         // branch doesn't need to re-stat. For now, the preview path already saved
-        // one full scan per source — this extra stat is bounded by source count
+        // one full scan per source, and this extra stat is bounded by source count
         // and the compound fast-path falls back cleanly when size is unknown.
         for source_path in source_paths {
             let is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
@@ -369,7 +369,7 @@ pub(crate) async fn copy_volumes_with_progress(
         // Default impl loops per-path for backends where per-path I/O is
         // cheap (local FS, in-memory). MTP overrides to group by parent dir.
         let batch = source_volume.scan_for_copy_batch(source_paths).await.map_err(|e| {
-            // No specific source path here — pick the first one or fall back to the dest.
+            // No specific source path here; pick the first one or fall back to the dest.
             let path = source_paths.first().cloned().unwrap_or_else(|| dest_path.to_path_buf());
             WriteFailure::from_volume(&path, e)
         })?;
@@ -418,7 +418,7 @@ pub(crate) async fn copy_volumes_with_progress(
     }
 
     // Phase 3: Copy files with progress
-    // Shared atomics — updated by in-flight tasks (under concurrency) or
+    // Shared atomics, updated by in-flight tasks (under concurrency) or
     // the sequential closure below. The driver reads them after each file to
     // keep `files_done` / `bytes_done` in sync for post-loop bookkeeping.
     let files_done_atomic = Arc::new(AtomicUsize::new(0));
@@ -665,7 +665,7 @@ pub(crate) async fn copy_volumes_with_progress(
                     copied_paths.lock().unwrap().push(completed_dest);
                 }
                 Some(Err((failed_dest, e))) => {
-                    // Remove from in-flight partials — this one's its own
+                    // Remove from in-flight partials; this one's its own
                     // partial cleanup the post-loop logic will do.
                     let mut partials = in_flight_partials.lock().unwrap();
                     if let Some(pos) = partials.iter().position(|p| p == &failed_dest) {
@@ -674,7 +674,7 @@ pub(crate) async fn copy_volumes_with_progress(
                     drop(partials);
                     last_dest_path = Some(failed_dest.clone());
                     copy_error = Some(WriteFailure::from_volume(&failed_dest, e));
-                    // Drop remaining in-flight tasks — their streams close,
+                    // Drop remaining in-flight tasks; their streams close,
                     // temp files get cleaned up by the per-backend write
                     // abort + delete path. Partial cleanup is done below.
                     break;
@@ -859,13 +859,13 @@ pub(crate) async fn copy_volumes_with_progress(
         return Ok(());
     }
 
-    // Cancelled or errored — decide between rollback and cancel
+    // Cancelled or errored: decide between rollback and cancel
     if intent == OperationIntent::RollingBack {
         // Include the last in-progress item in rollback (it was partially created)
         if let Some(partial_path) = last_dest_path.take() {
             copied_paths.push(partial_path);
         }
-        // Under concurrency there can be multiple partials — the tasks we
+        // Under concurrency there can be multiple partials. The tasks we
         // dropped on abort each left a .cmdr-tmp-<uuid> that the backend's
         // writer.abort() cleaned up, but the destination path itself may have
         // an already-renamed file. Roll those back too.
@@ -875,7 +875,7 @@ pub(crate) async fn copy_volumes_with_progress(
             }
         }
 
-        // User requested rollback — delete all copied files in reverse order with progress
+        // User requested rollback: delete all copied files in reverse order with progress
         log::info!(
             "copy_volumes_with_progress: rolling back op={}, {} paths to delete",
             operation_id,
@@ -902,7 +902,7 @@ pub(crate) async fn copy_volumes_with_progress(
             rolled_back: rollback_completed,
         });
     } else {
-        // Stopped or error — keep completed files, clean up partial files.
+        // Stopped or error: keep completed files, clean up partial files.
         // Sequential path leaves at most one partial in `last_dest_path`.
         // Concurrent path leaves one-per-in-flight-task in `in_flight_partials`
         // (already net of anything that finished before the abort).
@@ -1019,7 +1019,7 @@ async fn volume_rollback_with_progress(
             return false;
         }
 
-        // Each copied path may be a file or a directory tree — delete recursively
+        // Each copied path may be a file or a directory tree, so delete recursively
         if let Err(e) = delete_volume_path_recursive(volume, path).await {
             log::warn!(
                 "volume_rollback_with_progress: failed to delete {}: {:?}",
@@ -1075,13 +1075,13 @@ async fn volume_rollback_with_progress(
 ///
 /// For files: calls `volume.delete()` directly.
 /// For directories: lists contents, deletes children (files first, then subdirs),
-/// then deletes the directory itself. Best-effort — logs errors but continues.
+/// then deletes the directory itself. Best-effort: logs errors but continues.
 pub(super) async fn delete_volume_path_recursive(volume: &Arc<dyn Volume>, path: &Path) -> Result<(), VolumeError> {
     let is_dir = match volume.is_directory(path).await {
         Ok(true) => true,
         Ok(false) => false,
         Err(_) => {
-            // Path may not exist (already deleted or never fully created) — nothing to do
+            // Path may not exist (already deleted or never fully created). Nothing to do.
             return Ok(());
         }
     };
@@ -1131,7 +1131,7 @@ pub(crate) struct WriteFailure {
 impl WriteFailure {
     /// Construct a `WriteFailure` from an originating `VolumeError + path`. Maps the error
     /// to a `WriteOperationError` and retains the volume context for friendly rendering.
-    /// One spot to clone, one spot to map — replaces the per-call-site `e.clone()` boilerplate.
+    /// One spot to clone, one spot to map, replacing the per-call-site `e.clone()` boilerplate.
     pub(super) fn from_volume(path: &Path, e: VolumeError) -> Self {
         let error = map_volume_error(&path.display().to_string(), e.clone());
         Self {
@@ -1141,7 +1141,7 @@ impl WriteFailure {
     }
 
     /// Construct a `WriteFailure` from a synthetic `WriteOperationError` (no volume
-    /// context — used for cancellation, validation errors, etc.).
+    /// context. Used for cancellation, validation errors, etc.
     pub(super) fn synthetic(error: WriteOperationError) -> Self {
         Self {
             error,

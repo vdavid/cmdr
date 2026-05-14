@@ -3,7 +3,7 @@
  *
  * The backend EtaEstimator covers write phases but not the scan-preview pipeline,
  * so the FE computes a simple rolling rate from event-to-event tally deltas.
- * Keep the algorithm tiny — we just want a calm number for the user to read,
+ * Keep the algorithm tiny: we just want a calm number for the user to read,
  * not a forecast.
  *
  * Returns null files/s and bytes/s until two samples have arrived (no point

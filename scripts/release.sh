@@ -15,7 +15,7 @@ if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   exit 1
 fi
 
-# Check for uncommitted changes (CHANGELOG.md and roadmap are allowed — they get included in the release commit)
+# Check for uncommitted changes (CHANGELOG.md and roadmap are allowed, they get included in the release commit)
 EXCLUDE=(':!CHANGELOG.md' ':!apps/website/src/pages/roadmap.astro')
 if ! git diff --quiet -- "${EXCLUDE[@]}" || ! git diff --staged --quiet -- "${EXCLUDE[@]}"; then
   echo "Error: Working tree has uncommitted changes (other than CHANGELOG.md and roadmap.astro). Commit or stash them first."

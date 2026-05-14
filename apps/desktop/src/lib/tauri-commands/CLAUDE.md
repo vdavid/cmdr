@@ -1,13 +1,13 @@
 # Tauri commands
 
 Typed TypeScript wrappers for every Tauri IPC command and event. This is the canonical import path for all backend
-communication — never import from sub-files directly.
+communication. Never import from sub-files directly.
 
 ```ts
 // Correct
 import { listDirectoryStart, copyFiles } from '$lib/tauri-commands'
 
-// Wrong — imports from sub-files directly
+// Wrong: imports from sub-files directly
 import { listDirectoryStart } from '$lib/tauri-commands/file-listing'
 ```
 
@@ -15,11 +15,11 @@ import { listDirectoryStart } from '$lib/tauri-commands/file-listing'
 
 | File                  | Contents                                                                                                                                                                             |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ipc-types.ts`        | `TimedOut<T>`, `IpcError`, `isIpcError()`, `getIpcErrorMessage()` — shared timeout-aware types                                                                                       |
+| `ipc-types.ts`        | `TimedOut<T>`, `IpcError`, `isIpcError()`, `getIpcErrorMessage()`: shared timeout-aware types                                                                                        |
 | `index.ts`            | Barrel re-export of everything below                                                                                                                                                 |
 | `file-listing.ts`     | Virtual-scroll listing API, batch accessors (`getPathsAtIndices`, `getFilesAtIndices`), drag-and-drop, `pathExists`, `createDirectory`, `createFile`, sync status, font metrics      |
 | `file-viewer.ts`      | Viewer session only: open, seek, search, close, word wrap menu                                                                                                                       |
-| `file-actions.ts`     | Open file/URL, Finder reveal, Quick Look, Get Info, context menu, clipboard, open in editor, cloud actions (`cloudMakeAvailableOffline` / `cloudRemoveDownload` — iCloud Drive only) |
+| `file-actions.ts`     | Open file/URL, Finder reveal, Quick Look, Get Info, context menu, clipboard, open in editor, cloud actions (`cloudMakeAvailableOffline` / `cloudRemoveDownload`, iCloud Drive only)  |
 | `icons.ts`            | Icon fetching (`getIcons`, `refreshDirectoryIcons`) and cache invalidation                                                                                                           |
 | `app-state.ts`        | MCP pane state, dialog open/close tracking, menu context, view settings, `showMainWindow`                                                                                            |
 | `write-operations.ts` | Copy/move/delete, conflict resolution, scan preview, `formatBytes`/`formatDuration`                                                                                                  |
@@ -52,7 +52,7 @@ import { listDirectoryStart } from '$lib/tauri-commands/file-listing'
 
 **Every function** delegates to the typed bindings in `$lib/ipc/bindings` (`commands.commandName(args)`), unwrapping the
 `Result<T, E>` shape via `throwIpcError` from `./ipc-types` where applicable. A small number of commands aren't yet in
-the typed bindings (see `apps/desktop/src/lib/ipc/CLAUDE.md` § Excluded commands) — those wrappers still call
+the typed bindings (see `apps/desktop/src/lib/ipc/CLAUDE.md` § Excluded commands); those wrappers still call
 `invoke<T>(commandName, args)` with camelCase args matching Rust's `serde(rename_all = "camelCase")` and carry an
 `// eslint-disable-next-line cmdr/no-raw-tauri-invoke -- …` opt-out comment that names the conversion blocker.
 
@@ -72,10 +72,10 @@ returning safe empty/null fallbacks so the same code runs on other platforms.
 **Timeout-aware return types**: Commands that use backend timeouts return structured types so the frontend can
 distinguish "timed out" from "genuinely empty/none":
 
-- `TimedOut<T>` (`{ data: T, timedOut: boolean }`) — for commands returning collections, `Option`, or `()`. Callers
+- `TimedOut<T>` (`{ data: T, timedOut: boolean }`): for commands returning collections, `Option`, or `()`. Callers
   unwrap `.data` for the value and check `.timedOut` to detect timeouts. Used by `listVolumes`, `getVolumeSpace`,
   `getSyncStatus`, `getIcons`, `refreshDirectoryIcons`, `refreshListing`.
-- `IpcError` (`{ message: string, timedOut: boolean }`) — thrown as exception by commands returning `Result<T, _>`. Use
+- `IpcError` (`{ message: string, timedOut: boolean }`): thrown as exception by commands returning `Result<T, _>`. Use
   `isIpcError(e)` type guard and `getIpcErrorMessage(e)` helper in catch blocks. Used by `viewerOpen`, `viewerGetLines`,
   `createDirectory`, `createFile`, `listDirectoryStart`, `moveToTrash`, `checkRenamePermission`, `checkRenameValidity`,
   `renameFile`, `scanVolumeForCopy`, `scanVolumeForConflicts`.
@@ -89,9 +89,9 @@ distinguish "timed out" from "genuinely empty/none":
 
 ## Dependencies
 
-- `$lib/ipc/bindings` — typed `commands.*` and `events.*` (auto-generated by `tauri-specta`)
-- `./ipc-types` — `throwIpcError`, `TimedOut`, `IpcError` helpers
-- `@tauri-apps/api/core` — raw `invoke` (only for excluded commands; see `lib/ipc/CLAUDE.md`)
-- `@tauri-apps/api/event` — `listen`, `UnlistenFn`
-- `@tauri-apps/plugin-opener` — `openPath`, `openUrl`
+- `$lib/ipc/bindings`: typed `commands.*` and `events.*` (auto-generated by `tauri-specta`)
+- `./ipc-types`: `throwIpcError`, `TimedOut`, `IpcError` helpers
+- `@tauri-apps/api/core`: raw `invoke` (only for excluded commands; see `lib/ipc/CLAUDE.md`)
+- `@tauri-apps/api/event`: `listen`, `UnlistenFn`
+- `@tauri-apps/plugin-opener`: `openPath`, `openUrl`
 - Types from `$lib/file-explorer/types`

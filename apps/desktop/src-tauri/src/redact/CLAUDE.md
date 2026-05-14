@@ -56,7 +56,7 @@ The trailing segment is classified by `has_extension_like_suffix`:
 
 This means `notes.md` → `<file>.md` but `Application Support` → `<dir>`. Trade-off: an
 extensionless file like `id_rsa`, `README`, or `Makefile` will be (mis)labeled `<dir>`.
-Acceptable in our context — Cmdr's logs are dominated by directory listings, so defaulting
+Acceptable in our context: Cmdr's logs are dominated by directory listings, so defaulting
 to `<dir>` reads more accurately on real triage data than the pre-fix-7 always-`<file>`
 default.
 
@@ -64,7 +64,7 @@ default.
 
 Tradeoff between debuggability ("I can see this is a Documents path") and PII safety
 ("but I don't want to leak project codenames"). The allowlist captures the dirs that are
-near-universal across users — anything custom collapses. Net result: triagers can usually
+near-universal across users, anything custom collapses. Net result: triagers can usually
 guess the failure context without seeing the user's secrets.
 
 ### Decision: MTP owner names redacted, model names kept
@@ -77,7 +77,7 @@ because model strings alone aren't identifying and are useful diagnostic context
 The pattern requires both a capitalized possessive AND a model word from a known set
 (`iPhone | iPad | Pixel | Galaxy | OnePlus | Note | Tablet | Phone | Camera | ...`)
 immediately after the `'s `. This keeps English contractions (`it's a Pixel`) and module
-paths (`cmdr_lib::mtp::device`) untouched. `That's Pixel 8 Pro` does match — accepted as
+paths (`cmdr_lib::mtp::device`) untouched. `That's Pixel 8 Pro` does match, accepted as
 an over-redaction (rare phrasing without an article between `'s` and the model word).
 Bare model names like `Pixel 8 Pro` are deliberately NOT redacted.
 
@@ -105,7 +105,7 @@ Three steps:
 ## Gotchas
 
 - The dispatch order in `dispatch()` mirrors the alternation order in the regex. SMB URIs
-  with userinfo (`smb://user@host/...`) match `smb_uri` first (it's listed earlier) — they
+  with userinfo (`smb://user@host/...`) match `smb_uri` first (it's listed earlier), so they
   do **not** fall through to `url_userinfo`. The userinfo is dropped along with the host.
 - `redact_text` splits on `\n` and redacts each line independently. This keeps regex `\b`
   anchors predictable and lets us return `Cow::Borrowed` per line.
@@ -113,6 +113,6 @@ Three steps:
   `[...]` whitespace is literal, so `[A-Za-z]` is fine but `[ A-Za-z ]` would match a space.
 - Paths with embedded spaces like `/Volumes/My Backup Drive/...` are matched by allowing
   single spaces between path components. Multi-space gaps stop the match.
-- The `url_userinfo` pattern preserves the host on purpose — the assumption is that the host
+- The `url_userinfo` pattern preserves the host on purpose: the assumption is that the host
   is part of a well-known service URL the developer needs to see. If we ever store private
   hosts in URLs, revisit this.

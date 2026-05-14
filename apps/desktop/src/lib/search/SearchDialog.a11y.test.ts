@@ -64,7 +64,7 @@ describe('SearchDialog a11y', () => {
       },
     })
     await tick()
-    // Don't await the IPC chain — we're auditing the first paint.
+    // Don't await the IPC chain: we're auditing the first paint.
     await expectNoA11yViolations(target)
   })
 

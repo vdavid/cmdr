@@ -42,7 +42,7 @@ type changelogScanResult struct {
 // RunChangelogCommitLinks validates that every GitHub commit URL referenced in
 // CHANGELOG.md resolves to a real commit in the repo, and that any `[sha](url)`
 // pair has matching SHAs. If CHANGELOG.md is missing, the check succeeds with
-// 0 SHAs validated — no CHANGELOG means no risk of bad links.
+// 0 SHAs validated; no CHANGELOG means no risk of bad links.
 func RunChangelogCommitLinks(ctx *CheckContext) (CheckResult, error) {
 	path := filepath.Join(ctx.RootDir, "CHANGELOG.md")
 	file, err := os.Open(path)
@@ -144,7 +144,7 @@ func scanChangelogForCommitLinks(r io.Reader) (changelogScanResult, error) {
 func scanLineForLinkIssues(line string, lineNum int) []changelogCommitLinkFinding {
 	var findings []changelogCommitLinkFinding
 
-	// Paired `[hash](url)` — flag mismatches where neither is a prefix of the other.
+	// Paired `[hash](url)`: flag mismatches where neither is a prefix of the other.
 	for _, m := range changelogPairedLinkPattern.FindAllStringSubmatch(line, -1) {
 		textSHA := strings.ToLower(m[1])
 		urlSHA := strings.ToLower(m[2])
@@ -156,7 +156,7 @@ func scanLineForLinkIssues(line string, lineNum int) []changelogCommitLinkFindin
 		}
 	}
 
-	// Any URL — flag SHAs below 6 or above 40 chars.
+	// Any URL: flag SHAs below 6 or above 40 chars.
 	for _, m := range changelogAnyCommitURLPattern.FindAllStringSubmatch(line, -1) {
 		sha := strings.ToLower(m[1])
 		if len(sha) < 6 {
@@ -193,9 +193,9 @@ func formatFindingsError(findings []changelogCommitLinkFinding) error {
 }
 
 // resolveShasWithBatch pipes all SHAs through a single `git cat-file --batch-check`
-// process. Returns (resolved, bad, err) — `resolved` maps each input SHA (abbreviated
+// process. Returns (resolved, bad, err): `resolved` maps each input SHA (abbreviated
 // or full) to its full 40-char SHA when the object is a commit; `bad` lists the
-// inputs that didn't resolve as a commit (missing, ambiguous, or wrong type — tree,
+// inputs that didn't resolve as a commit (missing, ambiguous, or wrong type: tree,
 // blob, tag). Returns an error only on I/O failure; unresolved SHAs are data, not
 // errors.
 func resolveShasWithBatch(rootDir string, shas []string) (map[string]string, []string, error) {
@@ -229,7 +229,7 @@ func resolveShasWithBatch(rootDir string, shas []string) (map[string]string, []s
 	}
 
 	if err := cmd.Wait(); err != nil {
-		// Non-zero exit can happen when some SHAs are missing — that's expected
+		// Non-zero exit can happen when some SHAs are missing, which is expected
 		// and already captured above. Only fail if the stdin writer itself broke,
 		// or if we got no resolutions at all and git wrote to stderr.
 		if w := *writeErr; w != nil {
@@ -245,7 +245,7 @@ func resolveShasWithBatch(rootDir string, shas []string) (map[string]string, []s
 // collectReachableFromHEAD runs `git rev-list HEAD` and returns the set of all
 // full-40-char commit SHAs reachable from HEAD. Used to catch SHAs that resolve
 // in the local object DB (via reflog or dangling objects) but aren't merged
-// into HEAD — which would fail in CI's fresh clone.
+// into HEAD, which would fail in CI's fresh clone.
 func collectReachableFromHEAD(rootDir string) (map[string]struct{}, error) {
 	cmd := exec.Command("git", "rev-list", "HEAD")
 	cmd.Dir = rootDir

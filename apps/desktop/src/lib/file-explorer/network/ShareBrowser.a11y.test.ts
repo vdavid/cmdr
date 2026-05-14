@@ -3,7 +3,7 @@
  *
  * Share listing for a host. Covers the loaded-with-shares state and
  * (via authMode via NetworkLoginForm) the auth-required state. Auto-
- * mount and autoMountAttempted paths are not exercised — those flow
+ * mount and autoMountAttempted paths are not exercised; those flow
  * through the network-store into async mount IPC which we just stub.
  */
 

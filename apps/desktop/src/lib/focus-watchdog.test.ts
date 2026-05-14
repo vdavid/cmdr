@@ -70,7 +70,7 @@ describe('focus watchdog', () => {
     dialog.setAttribute('role', 'dialog')
     document.body.appendChild(dialog)
 
-    // Focus on body (the symptom we'd otherwise warn about) — but the dialog
+    // Focus on body (the symptom we'd otherwise warn about), but the dialog
     // is open, so we should suppress.
     document.body.focus()
 
@@ -98,7 +98,7 @@ describe('focus watchdog', () => {
     // closed and left focus on some stray input).
     stray.focus()
 
-    // Just before the 500 ms threshold — no warn yet.
+    // Just before the 500 ms threshold, no warn yet.
     vi.advanceTimersByTime(499)
     expect(warnSpy).not.toHaveBeenCalled()
 
@@ -135,11 +135,11 @@ describe('focus watchdog', () => {
     vi.advanceTimersByTime(600)
     expect(warnSpy).toHaveBeenCalledTimes(1)
 
-    // Focus returns to the explorer — resets the warned flag.
+    // Focus returns to the explorer, resetting the warned flag.
     explorer.focus()
     vi.advanceTimersByTime(100)
 
-    // Lose focus again — should warn anew (new episode).
+    // Lose focus again: should warn anew (new episode).
     stray.focus()
     vi.advanceTimersByTime(600)
     expect(warnSpy).toHaveBeenCalledTimes(2)

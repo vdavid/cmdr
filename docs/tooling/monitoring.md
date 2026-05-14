@@ -4,7 +4,7 @@ We use [UptimeRobot](https://uptimerobot.com/) (free tier) to monitor `getcmdr.c
 
 ## What's monitored
 
-- **HTTP monitor** on `https://getcmdr.com` — checks every 5 minutes from multiple regions.
+- **HTTP monitor** on `https://getcmdr.com`: checks every 5 minutes from multiple regions.
 
 ## Alerts
 

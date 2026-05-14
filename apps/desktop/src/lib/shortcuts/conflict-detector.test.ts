@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import type { Command } from '$lib/commands/types'
 import type { CommandScope } from './scope-hierarchy'
 
-// Shared test state — mock factory closures capture these references
+// Shared test state: mock factory closures capture these references
 const customOverrides = new Map<string, string[]>()
 
 const testCommands: Command[] = []

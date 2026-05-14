@@ -5,7 +5,7 @@ Rust / Go dep sweep that followed the v0.14.0 release.
 
 ## Current effective minimums (nothing declared)
 
-We don't pin a `minimumSystemVersion` in `tauri.conf.json` and the website doesn't list a minimum OS version either —
+We don't pin a `minimumSystemVersion` in `tauri.conf.json` and the website doesn't list a minimum OS version either;
 only "macOS (Apple Silicon and Intel)" and "Linux: alpha." So the floors below are implicit, imposed by the stack.
 
 ### macOS
@@ -13,12 +13,12 @@ only "macOS (Apple Silicon and Intel)" and "Linux: alpha." So the floors below a
 | Constraint                                                              | Minimum                                                        |
 | ----------------------------------------------------------------------- | -------------------------------------------------------------- |
 | Tauri 2 runtime (WKWebView, FFI bindings)                               | macOS 10.15 Catalina (2019-10)                                 |
-| Apple Silicon binary (arm64)                                            | macOS 11.0 Big Sur (2020-11) — M1 ships with this              |
+| Apple Silicon binary (arm64)                                            | macOS 11.0 Big Sur (2020-11), M1 ships with this              |
 | Intel binary (x86_64)                                                   | macOS 10.15 Catalina (2019-10)                                 |
-| Universal binary (what we ship)                                         | Per-arch — 10.15 Intel, 11.0 Apple Silicon                     |
+| Universal binary (what we ship)                                         | Per-arch: 10.15 Intel, 11.0 Apple Silicon                     |
 | Apple frameworks we touch (`IOKit`, `core-foundation`, `FSEvents`, etc) | Ancient, not a binding constraint                              |
 | Modern CSS we use (`:has()`, container queries, top-level await)        | macOS 12 Monterey (2021-10) for things to render correctly     |
-| llama-server (AI feature only)                                          | Apple Silicon only — no Intel AI build, rest of app works fine |
+| llama-server (AI feature only)                                          | Apple Silicon only (no Intel AI build, rest of app works fine) |
 
 **Effective practical floor: macOS 12 Monterey (2021-10).** Anyone older may launch the app but see CSS render oddities.
 
@@ -38,7 +38,7 @@ tightest constraint.
 
 ## ES2025 features and where they're available
 
-Sourced from WebKit feature status and MDN baseline data. Cmdr doesn't currently use any of these — this table is for
+Sourced from WebKit feature status and MDN baseline data. Cmdr doesn't currently use any of these; this table is for
 future reference when we consider adopting them.
 
 | Feature                                       | WebKit | macOS Safari/WKWebView floor  | Linux WebKitGTK | Windows WebView2 (Chromium) |
@@ -54,17 +54,17 @@ future reference when we consider adopting them.
 
 | Feature                  | Where it'd help in Cmdr today                                                                                                                                                                            |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Set.union/intersection` | `FilePane.svelte` `SvelteSet<number>` selection adjustments — replaces hand-rolled union/intersect with native methods.                                                                                  |
+| `Set.union/intersection` | `FilePane.svelte` `SvelteSet<number>` selection adjustments: replaces hand-rolled union/intersect with native methods.                                                                                  |
 | `using` / `await using`  | Manual `try/finally` for cleanup: closing streams, releasing locks, unlistening Tauri events. `auto-send-toast.svelte.ts`, `network-store.svelte.ts`, file-explorer disposal flows. The biggest QoL win. |
-| `Promise.try`            | Wraps a sync-or-async function in a Promise and catches sync throws — cleaner than `new Promise((resolve) => resolve(maybeThrow()))`.                                                                    |
-| Iterator helpers         | Wherever we do `Array.from(iter).map().filter()` — drops the intermediate array allocation.                                                                                                              |
-| `RegExp.escape`          | Search pattern building — replaces our hand-rolled `\\$&` escape with a one-liner.                                                                                                                       |
+| `Promise.try`            | Wraps a sync-or-async function in a Promise and catches sync throws, cleaner than `new Promise((resolve) => resolve(maybeThrow()))`.                                                                    |
+| Iterator helpers         | Wherever we do `Array.from(iter).map().filter()`: drops the intermediate array allocation.                                                                                                              |
+| `RegExp.escape`          | Search pattern building: replaces our hand-rolled `\\$&` escape with a one-liner.                                                                                                                       |
 | `Float16Array`           | Not relevant.                                                                                                                                                                                            |
 
 ### What's safe to adopt today
 
 Without bumping our floor: only `Set.union` and friends. They need only macOS 13.6.5+, which most current Macs have.
-Everything else needs macOS 14.7+ — so adopting them means declaring that floor and updating the website.
+Everything else needs macOS 14.7+, so adopting them means declaring that floor and updating the website.
 
 ## Recommendation if we want to use the fancier ES2025 features
 

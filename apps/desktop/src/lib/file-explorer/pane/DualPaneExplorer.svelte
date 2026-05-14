@@ -165,7 +165,7 @@
     let leftTabMgr = $state<TabManager>(createTabManager(createInitialTabState('~', DEFAULT_VOLUME_ID)))
     let rightTabMgr = $state<TabManager>(createTabManager(createInitialTabState('~', DEFAULT_VOLUME_ID)))
 
-    // Derived active tab state — these replace the old scalar variables
+    // Derived active tab state: these replace the old scalar variables
     const leftPath = $derived(getActiveTab(leftTabMgr).path)
     const rightPath = $derived(getActiveTab(rightTabMgr).path)
     const leftVolumeId = $derived(getActiveTab(leftTabMgr).volumeId)
@@ -386,7 +386,7 @@
     $effect(() => {
         if (!import.meta.env.DEV || import.meta.env.MODE === 'test') return
         // Snapshot reads every property, setting up reactivity on push/pop/mutate.
-        // It also produces plain JSON so Tauri's event channel can serialize it —
+        // It also produces plain JSON so Tauri's event channel can serialize it;
         // raw `$state` proxies + nested NavigationHistory throw on structured-clone.
         const leftSnap = $state.snapshot(leftTabMgr.closedStack)
         const rightSnap = $state.snapshot(rightTabMgr.closedStack)
@@ -490,7 +490,7 @@
     async function handleSortChange(pane: 'left' | 'right', newColumn: SortColumn) {
         // Cancel any active rename on the affected pane (sort invalidates indices)
         getPaneRef(pane)?.cancelRename()
-        // Re-sort changes the listing's index space — any in-flight type-to-jump
+        // Re-sort changes the listing's index space; any in-flight type-to-jump
         // match would land on the wrong row.
         getPaneRef(pane)?.clearJumpState()
 
@@ -655,8 +655,8 @@
 
     function handleFocus(pane: 'left' | 'right') {
         if (focusedPane !== pane) {
-            // Clear the type-to-jump buffer on whichever pane is losing focus —
-            // a buffer that the user can no longer see (because they switched panes)
+            // Clear the type-to-jump buffer on whichever pane is losing focus.
+            // A buffer that the user can no longer see (because they switched panes)
             // shouldn't keep matching.
             getPaneRef(focusedPane)?.clearJumpState()
             focusedPane = pane
@@ -686,7 +686,7 @@
         }
 
         if (entry.path === cancelledPath) {
-            // Listing completed before cancel — history has the cancelled path pushed. Go back.
+            // Listing completed before cancel; history has the cancelled path pushed. Go back.
             if (canGoBack(history)) {
                 const newHistory = back(history)
                 const target = getCurrentEntry(newHistory)
@@ -701,7 +701,7 @@
                 const target = validPath ?? '~'
                 const isOutsideVolume = entry.volumeId !== 'root' && (target === '~' || target === '/')
                 if (isOutsideVolume) {
-                    // Volume root unreachable — switch to root volume
+                    // Volume root unreachable: switch to root volume
                     setPaneVolumeId(pane, 'root')
                     saveAppStatus({ [paneKey(pane, 'volumeId')]: 'root' })
                 }
@@ -713,7 +713,7 @@
             return
         }
 
-        // Listing didn't complete — history still points at the previous folder (correct destination).
+        // Listing didn't complete; history still points at the previous folder (correct destination).
         // setPanePath won't trigger FilePane's $effect (path unchanged), so call navigateToPath directly.
         void paneRef?.navigateToPath(entry.path, selectName)
         containerElement?.focus()
@@ -744,7 +744,7 @@
 
         const volumeId = result.volume ? result.volume.id : await getDefaultVolumeId()
 
-        // Clear unreachable and navigate — let FilePane try to load the directory directly.
+        // Clear unreachable and navigate; let FilePane try to load the directory directly.
         // Even if volume resolution timed out, the directory itself may be reachable.
         tab.unreachable = null
         setPaneVolumeId(pane, volumeId)
@@ -752,7 +752,7 @@
         setPaneHistory(pane, push(getPaneHistory(pane), { volumeId, path: originalPath }))
         saveTabsForPaneSide(pane)
 
-        // Sync the volume selector — retry may have fixed a mount that was stale
+        // Sync the volume selector; retry may have fixed a mount that was stale
         requestVolumeRefresh()
 
         log.info('Volume retry navigating to {path} on volume {vol}', {
@@ -838,7 +838,7 @@
             }
             if (isTypeToJumpResetKey(e)) {
                 activePaneRef.clearJumpState()
-                // Fall through — Enter/arrows/Backspace/ESC keep their existing meaning.
+                // Fall through; Enter/arrows/Backspace/ESC keep their existing meaning.
             }
         }
 
@@ -1084,7 +1084,7 @@
 
         // Initialize volume store (subscribes to backend-pushed volume list)
         // and MTP store (subscribes to device connection events). Also wire up
-        // the SMB reconnect manager — it listens for `smb-connection-changed`
+        // the SMB reconnect manager; it listens for `smb-connection-changed`
         // and runs the per-volume backoff cycle that drives `SmbReconnectingView`.
         await Promise.all([
             initVolumeStore(),
@@ -1214,12 +1214,12 @@
                 lastDragPosition = null
                 lastPushedSelfDragOp = null
             } else {
-                // 'leave' — cursor left the window or drag was cancelled
+                // 'leave': cursor left the window or drag was cancelled
                 clearDropTargets()
                 hideOverlay()
                 stopModifierTracking()
                 resetDraggingFromSelf()
-                // Do NOT call endSelfDragSession() here — the native swizzle needs
+                // Do NOT call endSelfDragSession() here; the native swizzle needs
                 // SELF_DRAG_ACTIVE + rich image path to swap images on window exit.
                 // State is cleaned up when startDrag resolves (finally block) or on drop.
                 externalDragHasLargeImage = false
@@ -1227,7 +1227,7 @@
                 lastDragPosition = null
                 // Keep lastPushedSelfDragOp set so re-entry doesn't redundantly re-push the
                 // same op. clear_self_drag_state on the native side resets the AtomicU8 too.
-                // Do NOT clear the fingerprint here — that's the key to re-entry detection
+                // Do NOT clear the fingerprint here; that's the key to re-entry detection
             }
         })
     })
@@ -1299,7 +1299,7 @@
         }
 
         const targetEntry = getCurrentEntry(newHistory)
-        // Navigate immediately — if path is gone, FilePane's error handler resolves upward
+        // Navigate immediately; if path is gone, FilePane's error handler resolves upward
         updatePaneAfterHistoryNavigation(pane, newHistory, targetEntry.path)
     }
 
@@ -1605,7 +1605,7 @@
     /** Pastes files from the system clipboard into the current directory. */
     export async function pasteFromClipboard(forceMove: boolean) {
         try {
-            // Check MTP before reading clipboard — MTP paste is always rejected,
+            // Check MTP before reading clipboard; MTP paste is always rejected,
             // no point reading the system clipboard just to reject it.
             const volumeId = getPaneVolumeId(focusedPane)
             if (volumeId.startsWith('mtp-')) {
@@ -1630,7 +1630,7 @@
                 operationType,
                 sourcePaths: result.paths,
                 sourceFolderPath,
-                // Clipboard files don't belong to a specific pane — pick the opposite as best guess.
+                // Clipboard files don't belong to a specific pane; pick the opposite as best guess.
                 // Harmless if wrong: it just clears selection on the non-destination pane.
                 sourcePaneSide: focusedPane === 'left' ? 'right' : 'left',
                 destinationPath: destPath,
@@ -1816,7 +1816,7 @@
 
     /**
      * Swap left and right panes entirely (paths, volumes, history, sort, view mode, listing state).
-     * Zero backend calls — we just swap listing ownership on the frontend.
+     * Zero backend calls: we just swap listing ownership on the frontend.
      */
     export function swapPanes(): void {
         if (!canSwapPanes()) return
@@ -2110,7 +2110,7 @@
         if (!paneRef) return 'Pane not available'
         // Note: previously we re-anchored DOM focus on the container after the listing
         // settled, but the late-firing `.finally()` callback raced with subsequent test
-        // keystrokes (mtp.spec.ts line 414 — `deletes multiple selected files on MTP`)
+        // keystrokes (mtp.spec.ts line 414: `deletes multiple selected files on MTP`)
         // and dropped one of the Space presses on the floor. If MCP/test paths actually
         // need focus restoration here, rewire the `mcp-nav-to-path` listener to restore
         // focus AFTER awaiting the promise, not via fire-and-forget `.finally()`.
@@ -2134,7 +2134,7 @@
         // MCP-driven cursor placement: re-anchor DOM focus on the explorer container
         // so the next keystroke (the agent often follows move_cursor with a shortcut)
         // lands in the right dispatcher chain. Also makes the awaited completion
-        // genuine — `void` swallowed the cursor-set promise and let MCP report `OK`
+        // genuine; `void` swallowed the cursor-set promise and let MCP report `OK`
         // before the cursor was observably positioned.
         containerElement?.focus()
     }

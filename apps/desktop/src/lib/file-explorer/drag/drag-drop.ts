@@ -6,7 +6,7 @@
 // `startDragPaths()` / `startSelectionDrag()` resolve BEFORE macOS delivers
 // `draggingEntered:`/`draggingExited:` events to the webview. Any state that the native
 // swizzle reads (SELF_DRAG_ACTIVE, rich image path) must NOT be cleared from JS code
-// that runs after the start call resolves — it would race with the AppKit callbacks.
+// that runs after the start call resolves; it would race with the AppKit callbacks.
 // Self-drag state is only cleared on drop (via endSelfDragSession from the drop handler).
 //
 // ## Pasteboard types
@@ -80,7 +80,7 @@ interface DragCallbacks {
    * Called when the drag actually initiates (threshold crossed), for BOTH single-file and
    * selection contexts. Use this for side-effects that should run on every drag start,
    * regardless of whether the drag promoted a selection or used an existing one. Type-to-jump
-   * uses this to clear its buffer — typing a query then dragging means the user moved on.
+   * uses this to clear its buffer; typing a query then dragging means the user moved on.
    */
   onDragInitiate?: () => void
 }
@@ -142,12 +142,12 @@ export function clearSelfDragFingerprint(): void {
   selfDragFileInfos = null
 }
 
-/** Pending temp file cleanup — stored during drag, executed when session ends. */
+/** Pending temp file cleanup: stored during drag, executed when session ends. */
 let pendingImageCleanup: (() => Promise<void>) | null = null
 
 /**
  * Ends the self-drag session: clears Rust state and deletes the temp drag image.
- * Idempotent — safe to call from both the drop handler and the startDrag finally block.
+ * Idempotent; safe to call from both the drop handler and the startDrag finally block.
  */
 export async function endSelfDragSession(): Promise<void> {
   const cleanup = pendingImageCleanup
@@ -299,7 +299,7 @@ export function startSelectionDragTracking(
       // Stop any pending click-to-rename timer so it doesn't fire mid-drag.
       cancelClickToRename()
 
-      // Fire onDragInitiate for both contexts — anything that wants to react
+      // Fire onDragInitiate for both contexts; anything that wants to react
       // to "a drag is starting" (type-to-jump buffer clear, etc.) hooks in here.
       cbs.onDragInitiate?.()
 
@@ -375,7 +375,7 @@ async function performSingleFileDrag(filePath: string, iconId: string, fileInfo?
   const resolved = await resolveDragIconPath(iconId, fileInfos)
   if (!resolved) return
 
-  // Store cleanup for later — the temp file must survive the entire drag session
+  // Store cleanup for later; the temp file must survive the entire drag session
   // because the native swizzle reads it from disk on every window exit.
   pendingImageCleanup = resolved.usedCanvas ? cleanupTempDragImage : cleanupTempIcon
 
@@ -389,7 +389,7 @@ async function performSingleFileDrag(filePath: string, iconId: string, fileInfo?
   // would feel like a glitch.
   await setSelfDragResolvedOperation('move')
 
-  // Don't reset draggingFromSelf after the start call — it resolves before the
+  // Don't reset draggingFromSelf after the start call; it resolves before the
   // OS delivers drop/leave events. The flag is cleared by the drop handler.
   draggingFromSelf = true
   await startDragPaths([filePath], resolved.path)
@@ -404,16 +404,16 @@ async function performSelectionDrag(context: SelectionDragContext): Promise<void
   const resolved = await resolveDragIconPath(context.iconId, context.fileInfos)
   if (!resolved) return
 
-  // Store cleanup for later — the temp file must survive the entire drag session
+  // Store cleanup for later; the temp file must survive the entire drag session
   pendingImageCleanup = resolved.usedCanvas ? cleanupTempDragImage : cleanupTempIcon
 
   // Store rich image path so native swizzle can swap to it on window exit
   await prepareSelfDragOverlay(resolved.path)
 
-  // Seed the swizzle with our best-guess op — see performSingleFileDrag comment.
+  // Seed the swizzle with our best-guess op; see performSingleFileDrag comment.
   await setSelfDragResolvedOperation('move')
 
-  // Don't reset draggingFromSelf after startDrag — see performSingleFileDrag comment.
+  // Don't reset draggingFromSelf after startDrag; see performSingleFileDrag comment.
   draggingFromSelf = true
   await startSelectionDrag(context.listingId, context.indices, context.includeHidden, context.hasParent, resolved.path)
 }

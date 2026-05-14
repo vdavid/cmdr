@@ -96,7 +96,7 @@ pub(super) fn copy_files_with_progress(
             );
             cached
         } else {
-            // Cache miss despite frontend coordination — scan may not have completed yet
+            // Cache miss despite frontend coordination: scan may not have completed yet
             log::warn!(
                 "preview_id={} cache miss despite frontend coordination, starting fresh scan for operation_id={}",
                 preview_id,
@@ -226,7 +226,7 @@ pub(super) fn copy_files_with_progress(
 
             // E2E-only per-file throttle. In production (env + IPC override both
             // unset), `effective_copy_throttle_ms()` returns None and this is a
-            // single atomic load — zero added latency. Under E2E it gives the
+            // single atomic load (zero added latency). Under E2E it gives the
             // spec a deterministic window to click Cancel/Rollback. Strictly
             // additive: see `crate::test_mode` for the convention.
             if let Some(ms) = crate::test_mode::effective_copy_throttle_ms()
@@ -240,7 +240,7 @@ pub(super) fn copy_files_with_progress(
 
     match result {
         Ok(()) => {
-            // The loop succeeded — but the user may have clicked Rollback between the last
+            // The loop succeeded, but the user may have clicked Rollback between the last
             // file's `is_cancelled` check and the loop's exit (or, with APFS clonefile, the
             // whole 170 MB / 23 file copy can finish in <100 ms so the click lands after the
             // loop completes but before this match arm runs). Honor the rollback intent
@@ -309,7 +309,7 @@ pub(super) fn copy_files_with_progress(
 
                 match intent {
                     OperationIntent::RollingBack => {
-                        // User requested rollback — tracked rollback with progress events.
+                        // User requested rollback: tracked rollback with progress events.
                         // Pass the progress state at cancellation so the frontend sees
                         // the bars counting backwards from where they were.
                         log::info!(
@@ -328,7 +328,7 @@ pub(super) fn copy_files_with_progress(
                             scan_result.file_count,
                             scan_result.total_bytes,
                         );
-                        // rollback_with_progress already deleted the files — commit to
+                        // rollback_with_progress already deleted the files; commit to
                         // prevent Drop from trying to delete them again.
                         transaction.commit();
 
@@ -343,7 +343,7 @@ pub(super) fn copy_files_with_progress(
                         );
                     }
                     _ => {
-                        // Stopped (or unknown) — keep partial files
+                        // Stopped (or unknown): keep partial files
                         log::info!(
                             "copy_files_with_progress: cancelled op={}, keeping {} partial files",
                             operation_id,
@@ -364,8 +364,8 @@ pub(super) fn copy_files_with_progress(
                 }
             } else {
                 // Non-cancellation error - always rollback. Routed through `log_error!`
-                // so opt-in users get an auto error report — copy failures are exactly
-                // the kind of "this didn't work" we want signal on.
+                // so opt-in users get an auto error report (copy failures are exactly
+                // the kind of "this didn't work" we want signal on).
                 crate::log_error!(
                     "copy_files_with_progress: failed op={} error={:?}, rolling back",
                     operation_id,
@@ -388,7 +388,7 @@ pub(super) fn copy_files_with_progress(
 /// Used by both copy and cross-filesystem move operations.
 ///
 /// Note: The parent-directory-creation and conflict-resolution pattern here is similar to
-/// `merge_move_directory` in `move_op.rs`. The duplication is intentional — copy has progress
+/// `merge_move_directory` in `move_op.rs`. The duplication is intentional: copy has progress
 /// tracking, symlink handling, byte counting, strategy selection, and transaction recording
 /// that don't apply to same-FS move's simple rename. A shared abstraction would be forced.
 #[allow(
@@ -430,7 +430,7 @@ pub(super) fn copy_single_item(
     if let Some(parent) = dest_path.parent()
         && !created_dirs.contains(parent)
     {
-        // Fast path: parent already exists and is a directory — record it and skip the ancestor walk
+        // Fast path: parent already exists and is a directory; record it and skip the ancestor walk
         if parent.is_dir() {
             created_dirs.insert(parent.to_path_buf());
         } else {
@@ -457,7 +457,7 @@ pub(super) fn copy_single_item(
             };
 
             if let Some(blocking) = blocking_file {
-                // A file exists where we need a directory — resolve as a conflict.
+                // A file exists where we need a directory: resolve as a conflict.
                 // Use the blocking file path (not source) so the conflict dialog shows correct metadata.
                 match resolve_conflict(
                     &blocking,
@@ -470,7 +470,7 @@ pub(super) fn copy_single_item(
                 )? {
                     Some(resolved) if resolved.needs_safe_overwrite => {
                         // Overwrite: rename blocking file to backup, create directory, then delete backup.
-                        // This is safe — if create_dir_all fails, we can restore the backup.
+                        // This is safe: if create_dir_all fails, we can restore the backup.
                         let backup_path = blocking.with_extension(format!(
                             "{}.cmdr-backup-{}",
                             blocking
@@ -490,7 +490,7 @@ pub(super) fn copy_single_item(
                             });
                         }
 
-                        // Directory created successfully — delete backup in background
+                        // Directory created successfully; delete backup in background
                         super::helpers::remove_file_in_background(backup_path);
                         log::debug!(
                             "copy: replaced file with directory at {} (type mismatch)",
@@ -752,12 +752,12 @@ pub(super) fn copy_single_item(
 /// Rolls back created files with progress events, checking for cancellation between deletions.
 ///
 /// Emits progress events with _decreasing_ `files_done` / `bytes_done` so the frontend's
-/// progress bars count backwards from the cancellation point toward zero — no UI flicker,
-/// no separate rollback view.
+/// progress bars count backwards from the cancellation point toward zero (no UI flicker,
+/// no separate rollback view).
 ///
 /// Returns `true` if rollback completed fully, `false` if the user cancelled it
 /// (intent transitioned to `Stopped`). Does NOT call `transaction.rollback()` or
-/// `transaction.commit()` — the caller must commit unconditionally (this function
+/// `transaction.commit()`. The caller must commit unconditionally (this function
 /// already deleted whatever it deleted).
 #[allow(
     clippy::too_many_arguments,
@@ -859,7 +859,7 @@ fn rollback_with_progress(
         }
     }
 
-    // Delete created directories (no progress events — this is fast)
+    // Delete created directories (no progress events; this is fast)
     for dir in transaction.created_dirs.iter().rev() {
         let _ = fs::remove_dir(dir);
     }

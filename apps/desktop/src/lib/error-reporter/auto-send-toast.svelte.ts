@@ -3,7 +3,7 @@
  * toast. Mounted once at app boot from `(main)/+layout.svelte`, alongside the Flow A
  * dialog. Single responsibility: bridge the backend event into the toast system.
  *
- * The toast auto-dismisses after 10 seconds (longer than the default 4 s — auto-sent
+ * The toast auto-dismisses after 10 seconds (longer than the default 4 s; auto-sent
  * reports are surprising; the user needs time to notice and act).
  */
 
@@ -24,7 +24,7 @@ type AutoSentPayload = string
 let unlisten: UnlistenFn | undefined
 
 /**
- * Start listening for `error-report-auto-sent` events. Idempotent — repeated calls
+ * Start listening for `error-report-auto-sent` events. Idempotent; repeated calls
  * are no-ops (the second listener would just dedup via the toast `id` slot, but we
  * skip the work entirely).
  */

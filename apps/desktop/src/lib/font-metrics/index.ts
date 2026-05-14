@@ -30,7 +30,7 @@ function readEffectiveScale(): number {
  * The size component scales with the effective text-size multiplier (system
  * Accessibility × user setting). The Rust cache keys metrics by this exact
  * string, so a new scale produces a new cache miss and re-measure. The Rust
- * side keeps multiple sizes in memory side-by-side — no eviction needed.
+ * side keeps multiple sizes in memory side-by-side (no eviction needed).
  */
 export function getCurrentFontId(): string {
   const size = Math.max(1, Math.round(BASE_FONT_SIZE_PX * readEffectiveScale()))

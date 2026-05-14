@@ -59,7 +59,7 @@ Platform-specific formatting:
 - macOS: `⌘⇧P` (symbols)
 - Windows/Linux: `Ctrl+Shift+P` (names)
 
-No normalization—shortcuts are stored exactly as displayed.
+No normalization: shortcuts are stored exactly as displayed.
 
 ### MCP integration (`mcp-shortcuts-listener.ts`)
 
@@ -154,7 +154,7 @@ These are semantically different.
 
 ### Default shortcuts are immutable
 
-`command-registry.ts` is compiled into the app. Changing defaults requires a new build. This is intentional—defaults are
+`command-registry.ts` is compiled into the app. Changing defaults requires a new build. This is intentional: defaults are
 part of the app's behavior, not user data.
 
 ### Scope overlap is transitive

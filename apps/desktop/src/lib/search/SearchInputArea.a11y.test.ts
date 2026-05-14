@@ -1,8 +1,8 @@
 /**
  * Tier 3 a11y tests for `SearchInputArea.svelte`.
  *
- * Pattern row + scope row + filter row. Many controls — input, toggles,
- * selects. Tests cover the default state (filters "any"), an expanded
+ * Pattern row + scope row + filter row. Many controls (input, toggles,
+ * selects) cover the default state (filters "any"), an expanded
  * size filter (single bound), a "between" size filter (two bounds),
  * and a date filter.
  */

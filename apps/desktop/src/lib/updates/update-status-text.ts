@@ -2,7 +2,7 @@
  * Shared formatter for the update-check status string. Used by both the Settings > Updates
  * section and the menu-triggered toast so the wording stays in sync.
  *
- * Returns `null` for the error case — callers render their own error UI (with a follow-up
+ * Returns `null` for the error case; callers render their own error UI (with a follow-up
  * "Send error report" link) and read `state.error` directly.
  */
 export interface UpdateStatusReadable {

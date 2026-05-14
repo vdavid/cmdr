@@ -20,13 +20,13 @@ drops flags ~10%), MCP timeouts from missing `namePattern`.
 The LLM receives a compact classification prompt (~600 chars) and returns key-value lines with enum tokens:
 `keywords: rymd`, `type: documents`, `time: recent`. Rust then deterministically maps these to regex patterns, timestamp
 ranges, byte thresholds, and scope paths. No JSON generation, no regex generation, no date math by the LLM. No two-pass
-refinement — single pass only.
+refinement: single pass only.
 
 Key files:
 
-- `ai_response_parser.rs` — parses key-value lines, validates enums
-- `ai_query_builder.rs` — maps enums to `SearchQuery` fields, merges keyword+type patterns
-- `search.rs` — contains `CLASSIFICATION_PROMPT`, orchestrates the pipeline
+- `ai_response_parser.rs`: parses key-value lines, validates enums
+- `ai_query_builder.rs`: maps enums to `SearchQuery` fields, merges keyword+type patterns
+- `search.rs`: contains `CLASSIFICATION_PROMPT`, orchestrates the pipeline
 
 The v2 design history is in git (former `docs/specs/ai-search-v2-plan.md`).
 
@@ -49,18 +49,18 @@ The v2 design history is in git (former `docs/specs/ai-search-v2-plan.md`).
 
 Issues found:
 
-- `invoice.*rymd|rymd.*invoice` — over-constrained, should be `*rymd*`
-- "screenshots from this week" — didn't know macOS `Screenshot YYYY-MM-DD` naming
-- "documents older than a year" — 886K results, no file extension filter
-- "big videos I can delete" — `{a,b}` brace expansion not supported in our glob engine, 0 results
-- "node_modules taking up space" — good, but no size filter for "taking up space"
-- "python script yesterday" — good translation
+- `invoice.*rymd|rymd.*invoice`: over-constrained, should be `*rymd*`
+- "screenshots from this week": didn't know macOS `Screenshot YYYY-MM-DD` naming
+- "documents older than a year": 886K results, no file extension filter
+- "big videos I can delete": `{a,b}` brace expansion not supported in our glob engine, 0 results
+- "node_modules taking up space": good, but no size filter for "taking up space"
+- "python script yesterday": good translation
 
 ### R2: after scope filtering, case toggle, system dir exclusion, two-pass preflight (19 queries)
 
 Good: ssh keys, tax 2024, log files, zip >50mb, empty folders, biggest files, recent downloads. Bad: kubernetes (8559
-hits — refinement broadened to all `.yml`), package.json not in node_modules (`excludeDirs` ignored), "files edited
-today" (2607 hits — no system exclusion). Broken (MCP timeouts): fonts, docker compose, presentation.
+hits, refinement broadened to all `.yml`), package.json not in node_modules (`excludeDirs` ignored), "files edited
+today" (2607 hits, no system exclusion). Broken (MCP timeouts): fonts, docker compose, presentation.
 
 ### R3: after flag preservation fix (29 queries)
 
@@ -72,7 +72,7 @@ over-narrowed to `note*.md`).
 
 New regressions from compaction:
 
-- rymd invoices: refinement generated `(?=...)` lookahead — regex error
+- rymd invoices: refinement generated `(?=...)` lookahead (regex error)
 - node_modules: lost name filter entirely, returned Spotlight dirs
 - empty folders: lost `maxSize: 0` trick (224K hits)
 - recent downloads: lost `~/Downloads` scope (51K hits)
@@ -86,8 +86,8 @@ failures: LLM returns no `namePattern` → scan 5.6M entries → 60s → MCP cli
 Restored R4 regressions. Added query #30 (audio recordings meetings). This round established the final v1 baseline.
 Cloud model: 28/30 queries produce usable results. Remaining failures:
 
-- package.json not in node_modules — LLM never reliably produces `excludeDirs`
-- markdown notes this month — refinement over-narrows `\.md$` to `note*.md`
+- package.json not in node_modules: LLM never reliably produces `excludeDirs`
+- markdown notes this month: refinement over-narrows `\.md$` to `note*.md`
 
 R5 demonstrated the architectural ceiling: the two-pass JSON generation approach can't reliably handle `excludeDirs`,
 creative filter tricks, or complex multi-field combinations. These are structural limitations, not prompt-tunable.
@@ -111,20 +111,20 @@ generation, date computation, and query assembly deterministically.
 
 **R6 issues found and fixed post-eval:**
 
-1. Missing `shell-scripts` type — query #22 had no type to map to. Added `shell-scripts` type with `\.(sh|bash|zsh)$`.
-2. Missing `last_3_months`/`last_6_months` time enums — query #24 "contracts last 6 months" couldn't express the time
+1. Missing `shell-scripts` type: query #22 had no type to map to. Added `shell-scripts` type with `\.(sh|bash|zsh)$`.
+2. Missing `last_3_months`/`last_6_months` time enums: query #24 "contracts last 6 months" couldn't express the time
    range. Added both enums.
-3. Keyword/type confusion — "HEIC photos" produced `keywords: heic / type: photos` → merged pattern
+3. Keyword/type confusion: "HEIC photos" produced `keywords: heic / type: photos` → merged pattern
    `heic.*\.(jpg|jpeg|png|heic|webp|gif)$` which only matches files with "heic" in the name AND a photo extension. This
    misses `IMG_1234.heic` (no "heic" in the name part). Similar issue: "sqlite databases" produced
    `sqlite.*\.(sqlite|sqlite3|db)$` which misses `history.db`. Fix: added redundant-keyword detection in
-   `merge_keyword_and_type` — when the keyword is a known extension that appears in the type's pattern, the keyword is
+   `merge_keyword_and_type`: when the keyword is a known extension that appears in the type's pattern, the keyword is
    dropped and just the type pattern is used. Also added prompt rules to prevent this classification in the first place.
-4. `.key` extension in presentations type — `\.(ppt|pptx|key|odp)$` matched TLS certificates, not Keynote files. Removed
+4. `.key` extension in presentations type: `\.(ppt|pptx|key|odp)$` matched TLS certificates, not Keynote files. Removed
    `.key` from the pattern.
-5. Prompt improvements — added rules for singular keywords, time-only-when-explicit, type-over-keywords preference,
+5. Prompt improvements: added rules for singular keywords, time-only-when-explicit, type-over-keywords preference,
    stronger exclude examples. Added 3 new examples (contracts, shell scripts, HEIC).
-6. Exclude handling — added stronger prompt rule: "ALWAYS use `exclude` when the user says 'not in', 'but not in',
+6. Exclude handling: added stronger prompt rule: "ALWAYS use `exclude` when the user says 'not in', 'but not in',
    'excluding', 'except in'."
 
 ### R7-local: post-fix eval on 2B model (30 queries)
@@ -134,7 +134,7 @@ removal from presentations, prompt improvements for singular keywords and time-o
 
 **Results: 13 Great/Perfect (43%), 11 Good/Okay (37%), 6 Bad (20%), 0 errors.**
 
-Compared to R6-local: Great/Perfect up from 7→13, Bad down from 13→6. The architecture is confirmed sound — remaining
+Compared to R6-local: Great/Perfect up from 7→13, Bad down from 13→6. The architecture is confirmed sound. Remaining
 gaps are 2B model quality (3 queries) and 2 missing capabilities (scope inference, markdown type).
 
 **Key fixes confirmed:**
@@ -147,17 +147,17 @@ gaps are 2B model quality (3 queries) and 2 missing capabilities (scope inferenc
 - Redundant keyword detection: #21 HEIC no longer merges keywords with photos type.
 - Singular keyword rule: #24 uses `contract` instead of `contracts`.
 
-**Remaining 6 Bad queries — root causes:**
+**Remaining 6 Bad queries, root causes:**
 
-1. #14 kubernetes — `type: code` without keywords returns all 351K code files. 2B model doesn't understand "kubernetes"
+1. #14 kubernetes: `type: code` without keywords returns all 351K code files. 2B model doesn't understand "kubernetes"
    as a keyword, classifies it as a code query.
-2. #18 recent downloads — `time: recent` emitted but no `scope: downloads`. Missing capability.
-3. #25 .env files — merge logic gap: `keywords: env` + `type: env-files` → `env.*\.env` pattern.
-4. #27 markdown notes — no `markdown` type exists, falls back to `type: documents` which loses `.md`.
-5. #29 package.json not in node_modules — 2B model dumps all words as keywords, no `exclude`.
-6. (Regressions) #3 node_modules, #12 tax docs — 2B model dumps all words as keywords instead of classifying.
+2. #18 recent downloads: `time: recent` emitted but no `scope: downloads`. Missing capability.
+3. #25 .env files: merge logic gap: `keywords: env` + `type: env-files` → `env.*\.env` pattern.
+4. #27 markdown notes: no `markdown` type exists, falls back to `type: documents` which loses `.md`.
+5. #29 package.json not in node_modules: 2B model dumps all words as keywords, no `exclude`.
+6. (Regressions) #3 node_modules, #12 tax docs: 2B model dumps all words as keywords instead of classifying.
 
-Root cause pattern: #3, #14, #29 share the same 2B model limitation — the model ignores enum structure and puts raw
+Root cause pattern: #3, #14, #29 share the same 2B model limitation: the model ignores enum structure and puts raw
 query words as keywords. #25 is a merge logic gap in `ai_query_builder.rs`. #18 and #27 are missing capabilities (scope
 inference, markdown type). Cloud model handles all of these correctly.
 
@@ -223,7 +223,7 @@ many/few results, wrong filters. Error = regex/parse failure. MCP fail = timeout
 - **Exclude reliability on local models.** The 2B model sometimes ignores "not in X" and omits the `exclude` field.
   Cloud models handle this reliably with the strengthened prompt rules.
 - **Synonym expansion.** Cloud models expand "kubernetes" to include k8s/kube/helm in keywords. Local models return only
-  the literal word. This is acceptable — the user can add terms manually.
+  the literal word. This is acceptable; the user can add terms manually.
 - **Markdown not in documents type.** `.md` files are in the `code` type extension list, not `documents`. This means
   "markdown notes this month" requires the LLM to either pick `type: code` (too broad) or omit type and use keyword
   only. The current prompt doesn't have a `markdown` type.
@@ -353,7 +353,7 @@ Today: {TODAY}.
   than positive categories. Cloud models handle it reliably; local models need more examples.
 - **Post-fix R7 confirmed: type table + prompt rules are the highest-leverage fixes.** Adding `shell-scripts`,
   `last_6_months`, and the "time only when explicit" rule fixed 6+ queries each. The 2B model's remaining failures are
-  almost entirely "dumps all words as keywords" — a model quality limit, not a prompt/architecture issue.
+  almost entirely "dumps all words as keywords", a model quality limit, not a prompt/architecture issue.
 - **Redundant keyword detection works but merge logic still has gaps.** The `keyword_redundant_with_type` check handles
   known extensions, but `keywords: env` + `type: env-files` still merges to `env.*\.env` because `env` isn't recognized
   as redundant with `env-files`. Edge cases need either broader heuristics or special-case handling.
@@ -369,25 +369,25 @@ Today: {TODAY}.
 | Keyword/type merge gap  | ~5% of kw+type queries           | `keywords: env` + `type: env-files` → `env.*\.env`     | Broader redundancy heuristics or special-case handling needed      |
 | Missing exclude (local) | ~15% of exclude queries on local | package.json not in node_modules                       | Stronger prompt examples, explicit "ALWAYS use exclude" rule       |
 | Missing capability      | Ad hoc                           | No `scope: downloads` inference, no `markdown` type    | Add capabilities as identified                                     |
-| Wrong time defaulting   | Mostly fixed in R7               | Was ~5% on local, now rare                             | Prompt rule: "Never default to recent/today" — confirmed effective |
+| Wrong time defaulting   | Mostly fixed in R7               | Was ~5% on local, now rare                             | Prompt rule: "Never default to recent/today" (confirmed effective) |
 | Type table gap          | Mostly fixed                     | `shell-scripts` and time enums added in R6→R7          | Add to type table + validator + prompt                             |
 
 ## Concrete next steps
 
 R7-local confirmed the architecture is sound. Remaining work is capability gaps and 2B model quality.
 
-1. **Add `markdown` type** — `.md` files don't belong in `documents` (office docs) or `code` (too broad). Would fix
+1. **Add `markdown` type**: `.md` files don't belong in `documents` (office docs) or `code` (too broad). Would fix
    query #27. Low effort, high impact.
-2. **Fix `env-files` merge logic** — `keywords: env` + `type: env-files` produces `env.*\.env` which matches nothing.
+2. **Fix `env-files` merge logic**: `keywords: env` + `type: env-files` produces `env.*\.env` which matches nothing.
    Either treat `env` as redundant with `env-files`, or special-case the merge. Would fix query #25.
-3. **Add `scope: downloads` inference** — when the user says "downloads" without other context, infer `scope: downloads`
+3. **Add `scope: downloads` inference**: when the user says "downloads" without other context, infer `scope: downloads`
    instead of treating it as a keyword. Would fix query #18.
-4. **Consider a `images` alias for `photos`** — some users say "images" not "photos". Currently falls through to `None`.
+4. **Consider a `images` alias for `photos`**: some users say "images" not "photos". Currently falls through to `None`.
 5. **Extend EXTENSION_KEYWORDS list** as new confusion cases are found. The current list covers the most common
    extensions but isn't exhaustive.
-6. **Local model exclude training** — the 2B model's exclude handling could improve with more examples or a dedicated
+6. **Local model exclude training**: the 2B model's exclude handling could improve with more examples or a dedicated
    "negative filter" example cluster in the prompt.
 7. **Evaluate adding `tiff`/`bmp`/`raw`/`cr2`/`nef` to photos type** for photographers.
-8. **Evaluate adding `csv` to documents type** — currently only in config via the generic extension list.
-9. **Consider cloud fallback for ambiguous queries** — the 3 "keyword dumping" failures (#3, #14, #29) are a 2B model
+8. **Evaluate adding `csv` to documents type**: currently only in config via the generic extension list.
+9. **Consider cloud fallback for ambiguous queries**: the 3 "keyword dumping" failures (#3, #14, #29) are a 2B model
    quality limit. A heuristic (e.g., >3 keywords emitted) could trigger cloud fallback for these cases.

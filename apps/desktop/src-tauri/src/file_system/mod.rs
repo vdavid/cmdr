@@ -80,12 +80,12 @@ static DIRECT_SMB_ENABLED: AtomicBool = AtomicBool::new(true);
 /// Set from the `advanced.filterSafeSaveArtifacts` setting at startup.
 static FILTER_SAFE_SAVE_ARTIFACTS: AtomicBool = AtomicBool::new(true);
 
-/// Concurrent SMB ops per session — the `SmbVolume::max_concurrent_ops()` value.
+/// Concurrent SMB ops per session: the `SmbVolume::max_concurrent_ops()` value.
 /// Set from the `network.smbConcurrency` setting at startup. Default 10, clamped
 /// to `1..=32` (above 32 exceeds smb2's `MAX_PIPELINE_WINDOW`; below 1 is nonsense).
 ///
 /// `AtomicUsize` because `SmbVolume::max_concurrent_ops()` reads this on every
-/// batch-copy dispatch — lock-free matters.
+/// batch-copy dispatch, so lock-free matters.
 static SMB_CONCURRENCY: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(10);
 
 /// Sets the direct SMB connection preference. Call from app setup after loading settings.
@@ -109,7 +109,7 @@ pub fn is_filter_safe_save_artifacts_enabled() -> bool {
 }
 
 /// Sets the SMB concurrency value. Call from app setup after loading settings.
-/// Clamps the input to `1..=32` defensively — a misconfigured settings file
+/// Clamps the input to `1..=32` defensively: a misconfigured settings file
 /// shouldn't be able to starve or overwhelm the copy engine.
 pub fn set_smb_concurrency(value: usize) {
     let clamped = value.clamp(1, 32);
@@ -229,7 +229,7 @@ pub fn upgrade_existing_smb_mounts() {
         volumes_to_upgrade.len()
     );
 
-    // Use tauri's runtime spawn — this runs during setup() before Tokio is fully available.
+    // Use tauri's runtime spawn (this runs during setup() before Tokio is fully available).
     // Wait for mDNS discovery to reach Active state (initial burst complete) so hostname
     // resolution is available for Keychain lookup.
     tauri::async_runtime::spawn(async move {
@@ -277,7 +277,7 @@ pub fn upgrade_existing_smb_mounts() {
 /// Waits until mDNS discovery reaches the `Active` state (initial burst complete).
 ///
 /// Polls every 500ms for up to 15 seconds. If discovery never reaches Active,
-/// proceeds anyway — the upgrade will try without hostname resolution and may
+/// proceeds anyway: the upgrade will try without hostname resolution and may
 /// fall back to guest access.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 async fn wait_for_mdns_ready() {

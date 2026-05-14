@@ -2,7 +2,7 @@
 //!
 //! macOS-only mapping with a non-macOS fallback. Called from
 //! `volume_error::friendly_error_from_volume_error` for `IoError` with a `raw_os_error`.
-//! Kept separate because it's a 600-line bulk of independent errno arms — folding
+//! Kept separate because it's a 600-line bulk of independent errno arms, and folding
 //! it in with the rest of the friendly-error mapping would dwarf the genuinely
 //! semantic logic.
 

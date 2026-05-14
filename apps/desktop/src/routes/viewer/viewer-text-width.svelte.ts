@@ -40,7 +40,7 @@ export function createTextWidthTracker(deps: TextWidthDeps) {
     }
   }
 
-  /** Re-measures when visible lines first appear — `ResizeObserver` won't fire if the
+  /** Re-measures when visible lines first appear: `ResizeObserver` won't fire if the
    *  container size didn't change but the inner `.line-text` element just became
    *  present in the DOM. */
   function runVisibleLinesEffect() {

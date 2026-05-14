@@ -36,7 +36,7 @@ export function groupByCategory(
       // Network section: show a single "Network" item that opens NetworkBrowser
       // Also include any pre-mounted network volumes (mounted shares).
       // When networking is disabled in Settings, the synthetic entry is labelled
-      // "Network (disabled)" — already-mounted shares stay listed (filesystem I/O on
+      // "Network (disabled)": already-mounted shares stay listed (filesystem I/O on
       // them doesn't need Local Network permission).
       const networkVolumes = vols.filter((v) => v.category === 'network')
 

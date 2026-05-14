@@ -1,4 +1,4 @@
-# Git history & branches browser — plan
+# Git history & branches browser: plan
 
 A read-only, file-manager-native way to browse git history and branches for any cloned repo. No new top-level volume, no
 new mental model: the existing `.git` directory becomes a portal into refs, commits, stash, worktrees, and submodules.
@@ -161,10 +161,10 @@ in `git/CLAUDE.md`. It's the only place in the design where we shadow a real dir
 - **Breadcrumb segments inside `.git/...`**: rendered with a new dedicated `--color-git-portal` token (subtle accent
   variant, distinct from `--color-accent` to avoid the "alarming" feel). Hover/click behavior unchanged.
 - **Git-themed icons** (four total, reused with category context):
-  - `git:branch` — branches and `branches/` parent
-  - `git:tag` — tags and `tags/` parent
-  - `git:commit` — commits and `commits/` parent
-  - `git:fork` — stash, worktrees, submodules, and the `raw/` parent (catch-all for less-common categories)
+  - `git:branch`: branches and `branches/` parent
+  - `git:tag`: tags and `tags/` parent
+  - `git:commit`: commits and `commits/` parent
+  - `git:fork`: stash, worktrees, submodules, and the `raw/` parent (catch-all for less-common categories)
   - All sourced from Lucide where available (`git-branch`, `tag`, `git-commit-horizontal`, `git-fork`).
 
 ### Settings
@@ -268,7 +268,7 @@ Each milestone is independently shippable. Each ends with: tests passing, full `
 The agent should run sequentially. There's no rush, and parallel work risks merge conflicts in shared files (Volume
 trait, listing pipeline, FilePane).
 
-### Milestone 1 — Foundation: detection, chip, status column, schema
+### Milestone 1: Foundation: detection, chip, status column, schema
 
 **Goal**: make every worktree-aware folder feel "git-aware" and ship the schema additions M2/M3 will rely on. Zero
 virtual paths yet.
@@ -343,7 +343,7 @@ virtual paths yet.
   script under `scripts/`) that builds the fixture deterministically into `target/test-fixtures/git/`. Tests that need
   it call the script first if the dir is missing. Document the script in `git/CLAUDE.md`.
 
-### Milestone 2 — Virtual `.git` portal: refs, tags, trees, blobs
+### Milestone 2: Virtual `.git` portal: refs, tags, trees, blobs
 
 **Goal**: `cd .git`, navigate `branches/<name>/...` and `tags/<name>/...`, preview files, copy them out via the existing
 copy engine.
@@ -410,7 +410,7 @@ copy engine.
 - Symlinks in trees: gix represents target as blob content. Surface as `FileEntry` with `isSymlink: true`.
 - Watcher must invalidate virtual listings cleanly. Test with both panes open on the same repo's `branches/`.
 
-### Milestone 3 — Commits, stash, worktrees, submodules
+### Milestone 3: Commits, stash, worktrees, submodules
 
 **Goal**: fill in the four remaining categories. Same pattern as M2 but with category-specific quirks.
 
@@ -449,7 +449,7 @@ copy engine.
 - gix stash API maturity. Document the gix recon outcome.
 - Linked worktree's `.git/worktrees/<name>/HEAD` watcher subscription needs to update when worktrees are added.
 
-### Milestone 4 — Polish: settings UI, friendly errors, E2E
+### Milestone 4: Polish: settings UI, friendly errors, E2E
 
 **Goal**: ship-ready quality. Settings panel UI, FriendlyError integration end-to-end, full E2E coverage.
 

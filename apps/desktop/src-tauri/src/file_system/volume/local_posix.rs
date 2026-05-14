@@ -184,7 +184,7 @@ impl Volume for LocalPosixVolume {
         // `.git`-watcher pipeline (`file_system::git::watcher`), not via
         // mutation hooks. Mutating ops on them already return
         // `NotSupported` above, but a future caller might land here through
-        // a different path — early-return rather than try to stat a path
+        // a different path; early-return rather than try to stat a path
         // that has no real-FS counterpart.
         if git::is_virtual(parent_path) {
             return Box::pin(async {});
@@ -634,7 +634,7 @@ struct LocalPosixReadStream {
     bytes_read: u64,
 }
 
-/// 1 MiB chunks — matches `chunked_copy.rs`'s constant.
+/// 1 MiB chunks, matching `chunked_copy.rs`'s constant.
 const LOCAL_STREAM_CHUNK_SIZE: usize = 1024 * 1024;
 
 impl VolumeReadStream for LocalPosixReadStream {
@@ -657,7 +657,7 @@ impl VolumeReadStream for LocalPosixReadStream {
 
             match result {
                 Ok(buf) if buf.is_empty() => {
-                    // EOF — drop the file handle.
+                    // EOF: drop the file handle.
                     drop(file_ret);
                     None
                 }
@@ -686,7 +686,7 @@ impl VolumeReadStream for LocalPosixReadStream {
 /// Gets space information for a path.
 ///
 /// On macOS, uses `NSURLVolumeAvailableCapacityForImportantUsageKey` which includes purgeable
-/// space (APFS snapshots, iCloud caches) — matching what Finder reports. Falls back to `statvfs`
+/// space (APFS snapshots, iCloud caches), matching what Finder reports. Falls back to `statvfs`
 /// if the NSURL query fails. On Linux, uses `statvfs` directly (no purgeable space concept).
 fn get_space_info_for_path(path: &Path) -> Result<SpaceInfo, VolumeError> {
     // On macOS, prefer the NSURL API that accounts for purgeable space.
