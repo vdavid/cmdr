@@ -36,7 +36,12 @@ export default defineConfig({
   retries,
   workers: 1, // Single worker per Playwright process — one Tauri app instance
   reporter: [['list'], ['json', { outputFile: jsonReport }]],
-  timeout: 30000,
+  // Tight default: 8 s per test forces specs to be deterministic about UI waits.
+  // Tests that legitimately need longer (axe audits, MTP virtual-device protocol
+  // overhead, SMB+Docker latency, drive-index convergence) call `test.setTimeout`
+  // with a reason in the comment. Anything without a justified override should
+  // fit comfortably in 8 s after the throttle / flush-watcher work.
+  timeout: 8000,
 
   globalSetup: './global-setup.ts',
   globalTeardown: './global-teardown.ts',
