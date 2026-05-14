@@ -119,6 +119,46 @@ details.
 | `mtp-conflicts.spec.ts`       | MTP conflict resolution: cross-volume move (MTP↔local) and same-volume move (MTP→MTP) with overwrite/skip policies. Requires `virtual-mtp` feature.                                                                                                         |
 | `smb.spec.ts`                 | SMB E2E tests: virtual host discovery (14 hosts), share listing, mounting, cross-storage copy, 50-share enumeration, unicode share rendering. Uses `e2e-shared/smb-fixtures.ts` and smb2's consumer Docker containers. Requires `smb-e2e` feature + Docker. |
 
+## Multi-window testing
+
+The viewer (label `viewer-<timestamp>`) and settings (label `settings`) UIs run in their own Tauri `WebviewWindow` in
+production. Tests that exercise them must do so through the production multi-window flow, not by routing the main
+window to `/viewer` or `/settings`. The latter exercises the page component but skips label uniqueness, restricted
+capabilities, and the cross-window focus/close lifecycle.
+
+The plugin (`tauri-plugin-playwright` 0.3.0+) supports scoping a `TauriPage` to any open window:
+
+- `tauriPage.listWindows()` — returns `WindowInfo[]` (`{ label, url, title, visible }`).
+- `tauriPage.window(label)` — fork a new TauriPage scoped to the given label. Shares the socket; cheap.
+- `tauriPage.waitForWindow(predicate, { timeout? })` — poll `listWindows()` every 100 ms, return a scoped page once a
+  window matches. Default 5 s timeout.
+
+**Canonical pattern** (also see `helpers.ts` for the three helpers that wrap the boilerplate):
+
+```ts
+import { openViewerWindow, openSettingsWindowViaProd, closeScopedWindow } from './helpers.js'
+
+// Viewer: open via the same `open-file-viewer` event prod / MCP use.
+const viewer = await openViewerWindow(tauriPage as TauriPage, filePath)
+await viewer.waitForSelector('.viewer-container', 15000)
+// ... interact only via `viewer`, never `tauriPage`, for window-scoped DOM ...
+await closeScopedWindow(tauriPage as TauriPage, viewer, viewer.targetWindow!)
+
+// Settings: stable label.
+const settings = await openSettingsWindowViaProd(tauriPage as TauriPage)
+await settings.waitForSelector('.settings-window', 15000)
+// ... interact via `settings` ...
+await closeScopedWindow(tauriPage as TauriPage, settings, 'settings')
+```
+
+**Capabilities**: the viewer and settings windows have RESTRICTED capability files
+(`src-tauri/capabilities/viewer.json`, `settings.json`). When a test fails because the scoped page can't call a Tauri
+command, that's a real bug — production hits the same wall. Fix by either adding the missing permission to the
+capability file or changing the test to use a permitted command.
+
+The auto-generated `playwright.json` capability (`src-tauri/build.rs`) now includes `"main"`, `"settings"`, and
+`"viewer-*"` so the plugin's `pw_result` IPC callback works from all three.
+
 ## Key decisions
 
 **Decision**: `accessibility.spec.ts` disables axe's `color-contrast` rule. **Why**: Contrast is checked at design time

@@ -675,3 +675,50 @@ binary `Direct ⇄ Disconnected` shape).
 - `./scripts/check.sh` (fast pass): **green in 3m 13s**, 1728 Rust + 1812 Svelte tests pass.
 - `./scripts/check.sh --only-slow`: **green except the two pre-existing Linux SMB flakes**. E2E Playwright 131/131 in 4m
   18s across 3 shards; rust-tests-linux 1699/1699; eslint-typecheck 453/453.
+
+## Follow-up: multi-window migration (viewer + settings)
+
+The viewer and settings UIs run in their own Tauri `WebviewWindow`s in production (labels `viewer-<ts>` and `settings`).
+Before the multi-window migration, the e2e tests bypassed this by routing the main window to `/viewer?path=...` and
+`/settings` — which exercised the page components but not the cross-window plumbing (label uniqueness, capability
+restrictions, focus/close lifecycle).
+
+The migration uses `tauri-plugin-playwright` 0.3.0's new multi-window targeting:
+
+- `tauriPage.waitForWindow(predicate, { timeout? })` — polls `listWindows()` every 100 ms, returns a TauriPage scoped
+  to the matching window.
+- `tauriPage.window(label)` — fork a scoped page from an existing one (cheap, shared socket).
+
+**Canonical test pattern**:
+
+```ts
+// 1. Open via prod trigger (same path the menu / shortcut / MCP uses).
+const viewer = await openViewerWindow(tauriPage, filePath)
+//      ^^^ helper in helpers.ts; emits `open-file-viewer` and waits for a new viewer-* label
+
+// 2. Wait for the new window's content.
+await viewer.waitForSelector('.viewer-container', 15000)
+await viewer.waitForSelector('.file-content', 10000)
+
+// 3. Run all interactions through the scoped page.
+await viewer.fill('.search-input', 'AAA')
+
+// 4. Close via Escape + listWindows() poll for label disappearance.
+await closeScopedWindow(tauriPage, viewer, viewer.targetWindow!)
+```
+
+For settings: `openSettingsWindowViaProd(tauriPage)` (label `settings`).
+
+**Dependency override**: while the upstream `@srsholmes/tauri-playwright` 0.3.0 + matching plugin crate aren't published,
+the repo points at a local fork:
+
+- Rust: `apps/desktop/src-tauri/Cargo.toml` → `path = ".../tauri-playwright/packages/plugin"`
+- npm: `apps/desktop/package.json` → `file:.../packages/test/srsholmes-tauri-playwright-0.3.0.tgz`
+
+Revert both to crates.io / npm registry refs (with the appropriate `0.3.x` version) once the fork is merged upstream
+and published.
+
+**Capability extension**: the auto-generated `playwright.json` capability (in `src-tauri/build.rs`) now targets
+`["main", "settings", "viewer-*"]` instead of just `["main"]`. Without this, the plugin's `pw_result` IPC callback
+would be rejected by Tauri's permission system when evaluating into a viewer or settings window — the eval itself
+would land in the webview, but the result callback would never get back to the test runner.
