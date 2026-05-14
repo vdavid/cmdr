@@ -9,6 +9,7 @@
     import { initSettingsApplier, cleanupSettingsApplier } from '$lib/settings/settings-applier'
     import { initReactiveSettings, cleanupReactiveSettings } from '$lib/settings/reactive-settings.svelte'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
+    import { initFocusWatchdog } from '$lib/focus-watchdog'
     import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
     import { initializeShortcuts, setupMcpShortcutsListener, cleanupMcpShortcutsListener } from '$lib/shortcuts'
     import { setupMcpMainBridge, cleanupMcpMainBridge } from '$lib/settings'
@@ -160,6 +161,11 @@
         // Sync AI state to toast. Must be called synchronously (not after an await)
         // because it uses $effect, which requires Svelte's reactive context.
         initAiToastSync()
+
+        // Catch focus leaks: if neither pane is keyboard-focused for 500 ms+
+        // while the main window is active and no dialog is open, log a WARN
+        // with the offending activeElement so we can trace the culprit.
+        initFocusWatchdog()
 
         // Initialize all async setup
         void (async () => {
