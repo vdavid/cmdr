@@ -10,6 +10,7 @@
         type SettingsValues,
         formatDuration,
     } from '$lib/settings'
+    import type { DurationUnit } from '$lib/settings/types'
     import SettingsSection from '../components/SettingsSection.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { Switch } from '@ark-ui/svelte/switch'
@@ -63,8 +64,26 @@
         setSetting(id, checked as SettingsValues[typeof id])
     }
 
-    function handleNumberChange(id: SettingId, details: NumberInputValueChangeDetails) {
-        setSetting(id, details.valueAsNumber as SettingsValues[typeof id])
+    const DURATION_UNIT_MS: Record<DurationUnit, number> = {
+        ms: 1,
+        s: 1000,
+        min: 60_000,
+        h: 3_600_000,
+        d: 86_400_000,
+    }
+
+    function unitFactor(unit: DurationUnit | undefined): number {
+        return unit ? DURATION_UNIT_MS[unit] : 1
+    }
+
+    function handleNumberChange(
+        id: SettingId,
+        details: NumberInputValueChangeDetails,
+        durationUnit?: DurationUnit,
+    ) {
+        const raw = details.valueAsNumber
+        const value = durationUnit ? raw * unitFactor(durationUnit) : raw
+        setSetting(id, value as SettingsValues[typeof id])
     }
 
     function handleReset(id: SettingId) {
@@ -138,13 +157,21 @@
                             <Switch.HiddenInput />
                         </Switch.Root>
                     {:else if setting.type === 'number' || setting.type === 'duration'}
+                        {@const durationUnit =
+                            setting.type === 'duration' ? setting.constraints?.unit : undefined}
+                        {@const factor = unitFactor(durationUnit)}
+                        {@const rawValue = Number(getSetting(id))}
                         <NumberInput.Root
-                            value={String(getSetting(id))}
+                            value={String(durationUnit ? rawValue / factor : rawValue)}
                             onValueChange={(d) => {
-                                handleNumberChange(id, d)
+                                handleNumberChange(id, d, durationUnit)
                             }}
-                            min={setting.constraints?.min ?? setting.constraints?.minMs}
-                            max={setting.constraints?.max ?? setting.constraints?.maxMs}
+                            min={setting.type === 'duration'
+                                ? (setting.constraints?.minMs ?? 0) / factor
+                                : setting.constraints?.min}
+                            max={setting.type === 'duration'
+                                ? (setting.constraints?.maxMs ?? Infinity) / factor
+                                : setting.constraints?.max}
                             step={setting.constraints?.step ?? 1}
                         >
                             <NumberInput.Control class="number-control">
