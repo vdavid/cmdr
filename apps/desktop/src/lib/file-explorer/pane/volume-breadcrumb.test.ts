@@ -473,7 +473,7 @@ describe('VolumeBreadcrumb', () => {
       expect(items[0].classList.contains('is-focused-and-under-cursor')).toBe(true)
     })
 
-    it('ArrowUp at first item stays at first', async () => {
+    it('ArrowUp at first item wraps to last', async () => {
       const component = mount(VolumeBreadcrumb, {
         target: getTarget(),
         props: {
@@ -490,7 +490,7 @@ describe('VolumeBreadcrumb', () => {
 
       await tick()
 
-      // Try to move up when already at first
+      // Move up from first — should wrap to last
       const handleKeyDown = (component as unknown as { handleKeyDown: (e: KeyboardEvent) => boolean }).handleKeyDown
       const event = new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true })
       handleKeyDown(event)
@@ -498,6 +498,44 @@ describe('VolumeBreadcrumb', () => {
       await tick()
 
       const items = getTarget().querySelectorAll('.volume-item')
+      expect(items.length).toBeGreaterThan(1)
+      expect(items[0].classList.contains('is-focused-and-under-cursor')).toBe(false)
+      expect(items[items.length - 1].classList.contains('is-focused-and-under-cursor')).toBe(true)
+    })
+
+    it('ArrowDown at last item wraps to first', async () => {
+      const component = mount(VolumeBreadcrumb, {
+        target: getTarget(),
+        props: {
+          volumeId: 'root',
+          currentPath: '/',
+        },
+      })
+
+      await waitForUpdates(100)
+
+      // Open dropdown
+      const toggle = (component as unknown as { toggle: () => void }).toggle
+      toggle()
+
+      await tick()
+
+      const handleKeyDown = (component as unknown as { handleKeyDown: (e: KeyboardEvent) => boolean }).handleKeyDown
+
+      // Walk down to the last item
+      const items = getTarget().querySelectorAll('.volume-item')
+      expect(items.length).toBeGreaterThan(1)
+      for (let i = 0; i < items.length - 1; i++) {
+        handleKeyDown(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+        await tick()
+      }
+      expect(items[items.length - 1].classList.contains('is-focused-and-under-cursor')).toBe(true)
+
+      // One more ArrowDown should wrap back to first
+      handleKeyDown(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+      await tick()
+
+      expect(items[items.length - 1].classList.contains('is-focused-and-under-cursor')).toBe(false)
       expect(items[0].classList.contains('is-focused-and-under-cursor')).toBe(true)
     })
 
