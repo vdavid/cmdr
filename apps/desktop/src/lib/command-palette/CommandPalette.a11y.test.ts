@@ -12,8 +12,8 @@ import CommandPalette from './CommandPalette.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 vi.mock('$lib/app-status-store', () => ({
-  loadPaletteQuery: vi.fn(() => Promise.resolve('')),
-  savePaletteQuery: vi.fn(() => Promise.resolve()),
+  loadRecentCommands: vi.fn(() => Promise.resolve([])),
+  pushRecentCommand: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('$lib/commands', () => ({

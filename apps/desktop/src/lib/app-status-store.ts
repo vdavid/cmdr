@@ -222,33 +222,48 @@ export async function saveLastUsedPathForVolume(volumeId: string, path: string):
 }
 
 // ============================================================================
-// Command palette query persistence
+// Command palette recents persistence
 // ============================================================================
 
+export const RECENT_COMMANDS_LIMIT = 10
+
 /**
- * Loads the last used command palette query.
- * Returns empty string if not previously saved.
+ * Pure update step for the recents list: move `commandId` to the front,
+ * drop any prior occurrence, cap at RECENT_COMMANDS_LIMIT. Exposed for testing.
  */
-export async function loadPaletteQuery(): Promise<string> {
+export function dedupAndPrependRecent(existing: string[], commandId: string): string[] {
+  return [commandId, ...existing.filter((id) => id !== commandId)].slice(0, RECENT_COMMANDS_LIMIT)
+}
+
+/**
+ * Loads the list of recently executed command IDs, most-recent first.
+ * Returns an empty array if nothing was saved or parsing fails.
+ */
+export async function loadRecentCommands(): Promise<string[]> {
   try {
     const store = await getStore()
-    const query = await store.get('paletteQuery')
-    return typeof query === 'string' ? query : ''
+    const raw = await store.get('recentCommandIds')
+    if (!Array.isArray(raw)) return []
+    return raw.filter((id): id is string => typeof id === 'string').slice(0, RECENT_COMMANDS_LIMIT)
   } catch {
-    return ''
+    return []
   }
 }
 
 /**
- * Saves the current command palette query for next time.
+ * Records a command execution. The given ID is moved to the front; if it was
+ * already in the list, the previous entry is dropped (no duplicates). The list
+ * is capped at RECENT_COMMANDS_LIMIT entries.
  */
-export async function savePaletteQuery(query: string): Promise<void> {
+export async function pushRecentCommand(commandId: string): Promise<void> {
   try {
     const store = await getStore()
-    await store.set('paletteQuery', query)
+    const existing = await loadRecentCommands()
+    const next = dedupAndPrependRecent(existing, commandId)
+    await store.set('recentCommandIds', next)
     await store.save()
   } catch {
-    // Silently fail
+    // Silently fail - persistence is nice-to-have
   }
 }
 

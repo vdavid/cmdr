@@ -8,7 +8,7 @@ Centralized command registry and fuzzy search engine for the command palette.
 | ---------------------- | ---------------------------------------------------------------------------------------- |
 | `types.ts`             | `Command`, `CommandMatch`, `CommandScope` types                                          |
 | `command-registry.ts`  | The `commands` array — single source of truth. `getPaletteCommands()` filter.            |
-| `fuzzy-search.ts`      | `searchCommands(query)` using `@leeoniya/ufuzzy`                                         |
+| `fuzzy-search.ts`      | `searchCommands(query, recentCommandIds?)` using `@leeoniya/ufuzzy`                      |
 | `index.ts`             | Barrel re-export                                                                         |
 | `fuzzy-search.test.ts` | Vitest tests: empty query, exact/fuzzy matches, ranking, index bounds, palette filtering |
 
@@ -46,14 +46,16 @@ keyboard routing is handled by each UI component.
 
 ## Fuzzy search
 
-`searchCommands(query)` wraps `@leeoniya/ufuzzy`:
+`searchCommands(query, recentCommandIds?)` wraps `@leeoniya/ufuzzy`:
 
 ```
-query empty → return all getPaletteCommands() with matchedIndices: []
+query empty →
+  recents (filtered through getPaletteCommands to drop stale IDs) first,
+  then the rest of getPaletteCommands() in registry order
 query non-empty →
   haystack = paletteCommands.map(c => c.name)
   [idxs, info, order] = fuzzy.search(haystack, query)
-  order.map(...) → CommandMatch[] ranked by relevance
+  order.map(...) → CommandMatch[] ranked by relevance (recents argument ignored)
 ```
 
 uFuzzy configuration:

@@ -5,12 +5,12 @@
      * Features:
      * - Fuzzy search with highlighted matches
      * - Keyboard navigation (↑/↓/Enter/Escape)
-     * - Persists last query across app restarts
+     * - Empty-query view lists recently executed commands, most-recent first
      * - Blocks keyboard events from propagating to file explorer
      */
     import { onDestroy, onMount, tick } from 'svelte'
     import { searchCommands, type CommandMatch } from '$lib/commands'
-    import { loadPaletteQuery, savePaletteQuery } from '$lib/app-status-store'
+    import { loadRecentCommands, pushRecentCommand } from '$lib/app-status-store'
 
     interface Props {
         /** Called when user selects a command */
@@ -22,6 +22,7 @@
     const { onExecute, onClose }: Props = $props()
 
     let query = $state('')
+    let recentCommandIds = $state<string[]>([])
     let cursorIndex = $state(0)
     let hoveredIndex = $state<number | null>(null)
     let inputElement: HTMLInputElement | undefined = $state()
@@ -34,8 +35,10 @@
      */
     let previousActiveElement: HTMLElement | null = null
 
-    // Derived: filtered and ranked results
-    const results = $derived(searchCommands(query))
+    // Derived: filtered and ranked results. When the query is empty, recents
+    // lead the list (most-recent first) so the cursor at index 0 lands on the
+    // user's last-executed command — Enter re-runs it.
+    const results = $derived(searchCommands(query, recentCommandIds))
 
     // Reset cursor position when query changes
     $effect(() => {
@@ -46,14 +49,11 @@
 
     onMount(() => {
         previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
-        // Load persisted query and focus input
-        void loadPaletteQuery().then((savedQuery) => {
-            query = savedQuery
-            void tick().then(() => {
-                inputElement?.focus()
-                inputElement?.select()
-            })
+        // Load recents so the empty-query view leads with the user's last-executed commands.
+        void loadRecentCommands().then((ids) => {
+            recentCommandIds = ids
         })
+        inputElement?.focus()
     })
 
     onDestroy(() => {
@@ -72,7 +72,6 @@
         switch (e.key) {
             case 'Escape':
                 e.preventDefault()
-                void savePaletteQuery(query)
                 onClose()
                 break
             case 'ArrowDown':
@@ -90,8 +89,9 @@
             case 'Enter':
                 e.preventDefault()
                 if (results[cursorIndex]) {
-                    void savePaletteQuery(query)
-                    onExecute(results[cursorIndex].command.id)
+                    const id = results[cursorIndex].command.id
+                    void pushRecentCommand(id)
+                    onExecute(id)
                 }
                 break
         }
@@ -105,14 +105,14 @@
     }
 
     function handleResultClick(index: number) {
-        void savePaletteQuery(query)
-        onExecute(results[index].command.id)
+        const id = results[index].command.id
+        void pushRecentCommand(id)
+        onExecute(id)
     }
 
     function handleOverlayClick(e: MouseEvent) {
         // Only close if clicking the overlay itself, not the modal content
         if (e.target === e.currentTarget) {
-            void savePaletteQuery(query)
             onClose()
         }
     }

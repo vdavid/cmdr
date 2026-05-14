@@ -4,21 +4,21 @@ VS Code/Spotlight-style modal for searching and executing app commands via fuzzy
 
 ## Files
 
-| File                     | Purpose                                                                           |
-| ------------------------ | --------------------------------------------------------------------------------- |
-| `CommandPalette.svelte`  | Modal UI: keyboard nav, mouse hover, fuzzy-highlighted results, query persistence |
-| `CommandPalette.test.ts` | Vitest tests with mocked `$lib/commands` and `$lib/app-status-store`              |
+| File                     | Purpose                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------- |
+| `CommandPalette.svelte`  | Modal UI: keyboard nav, mouse hover, fuzzy-highlighted results, recents on empty |
+| `CommandPalette.test.ts` | Vitest tests with mocked `$lib/commands` and `$lib/app-status-store`             |
 
 ## Data flow
 
 ```
 User presses ⌘⇧P
   → +page.svelte sets showCommandPalette = true
-  → CommandPalette mounts, loads persisted query from app-status-store, focuses input
-  → searchCommands(query) returns CommandMatch[] (reactive via $derived)
+  → CommandPalette mounts, loads recentCommandIds from app-status-store, focuses input
+  → searchCommands(query, recentCommandIds) returns CommandMatch[] (reactive via $derived)
   → User navigates with ↑/↓ (keyboard cursor) or mouse (hover cursor)
-  → Enter / click → onExecute(commandId) → handleCommandExecute() in command-dispatch.ts
-  → Escape / overlay click → query saved, onClose() called
+  → Enter / click → pushRecentCommand(id), onExecute(commandId) → handleCommandExecute()
+  → Escape / overlay click → onClose() called
 ```
 
 ## Key patterns
@@ -31,8 +31,12 @@ overlay).
 **Event propagation**: `stopPropagation()` is called on every `keydown` in the overlay `div`'s handler. This prevents
 the file list from scrolling or handling shortcuts behind the modal.
 
-**Query persistence**: `loadPaletteQuery` / `savePaletteQuery` from `$lib/app-status-store` (Tauri store). Query is
-loaded on mount; saved on Escape, Enter, and overlay-click close.
+**Recents on empty query**: `loadRecentCommands` / `pushRecentCommand` from `$lib/app-status-store` (Tauri store). On
+mount, the palette loads the recent command IDs and passes them to `searchCommands(query, recentCommandIds)`. When the
+query is empty, recents lead the result (most-recent first), then the rest of the palette commands in registry order. On
+every Enter / click, `pushRecentCommand(id)` records the execution: the ID moves to the front, duplicates are removed,
+the list is capped at 10. The query itself is not persisted across opens — the palette always opens empty so the user's
+last-executed command sits at index 0 (cursor default), making Enter re-run it.
 
 **Own overlay, no shared ModalDialog**: `CommandPalette` manages its own `position: fixed` overlay and `role="dialog"`
 ARIA attributes. It does not use the shared `ModalDialog` component.
@@ -61,9 +65,12 @@ Spotlight both have this behavior: arrow keys move a "hard" cursor, while mouse 
 doesn't interfere with keyboard navigation. Arrow keys clear `hoveredIndex` so there's never two items highlighted at
 the same intensity. Without this separation, moving the mouse would fight keyboard navigation.
 
-**Decision**: Query persisted across open/close via `app-status-store`. **Why**: Users often open the palette, run a
-command, then reopen to run a related command. Preserving the query saves retyping. Saved on every close path (Escape,
-Enter, overlay click) to ensure nothing is lost.
+**Decision**: Empty-query view shows recents (last 10 executed commands, most-recent first) instead of persisting the
+last query. **Why**: Users tend to reach for the same handful of commands. Persisting the query only helped the "run a
+related command" reopen case; recents covers that AND every other reopen (the last-executed command is at index 0, so
+Enter re-runs it just like the old query-persist behavior, but the previous 9 commands are also one arrow press away).
+Single mechanism replaces two. Recents update on every Enter / click via `pushRecentCommand`, which dedups and caps
+at 10.
 
 **Decision**: `$derived` for search results instead of debounced input. **Why**: `searchCommands()` via uFuzzy is fast
 enough for ~60 commands that debouncing would only add latency. The `$derived` reactive binding reruns the search
@@ -100,5 +107,5 @@ Add the command to `$lib/commands/command-registry.ts` and handle the ID in the 
 ## Dependencies
 
 - `$lib/commands` — `searchCommands`, `CommandMatch`
-- `$lib/app-status-store` — `loadPaletteQuery`, `savePaletteQuery`
+- `$lib/app-status-store` — `loadRecentCommands`, `pushRecentCommand`
 - CSS variables from `app.css` (`--z-modal`, `--color-accent-subtle`, `--color-bg-secondary`, etc.)

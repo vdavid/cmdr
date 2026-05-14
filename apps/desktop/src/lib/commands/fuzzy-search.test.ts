@@ -89,6 +89,42 @@ describe('searchCommands', () => {
     })
   })
 
+  describe('recents on empty query', () => {
+    it('leads the result with recents in given order', () => {
+      const results = searchCommands('', ['app.about', 'file.copyPath'])
+      expect(results[0]?.command.id).toBe('app.about')
+      expect(results[1]?.command.id).toBe('file.copyPath')
+    })
+
+    it('filters out stale IDs (commands no longer in the palette)', () => {
+      const results = searchCommands('', ['definitely.not.a.real.command', 'app.about'])
+      // Stale ID dropped silently; real recent leads.
+      expect(results[0]?.command.id).toBe('app.about')
+      expect(results.every((r) => r.command.id !== 'definitely.not.a.real.command')).toBe(true)
+    })
+
+    it('appends remaining palette commands after recents with no duplicates', () => {
+      const results = searchCommands('', ['app.about'])
+      const ids = results.map((r) => r.command.id)
+      // Each command appears exactly once.
+      expect(new Set(ids).size).toBe(ids.length)
+      // The recent leads.
+      expect(ids[0]).toBe('app.about')
+    })
+
+    it('falls back to plain order when recents is empty', () => {
+      const withRecents = searchCommands('', [])
+      const withoutArg = searchCommands('')
+      expect(withRecents.map((r) => r.command.id)).toEqual(withoutArg.map((r) => r.command.id))
+    })
+
+    it('ignores recents when the query is non-empty', () => {
+      const results = searchCommands('about', ['file.copyPath'])
+      // file.copyPath does not contain "about", so it must not appear just because it's recent.
+      expect(results.every((r) => r.command.id !== 'file.copyPath')).toBe(true)
+    })
+  })
+
   describe('command filtering', () => {
     it('excludes commands with showInPalette: false', () => {
       const results = searchCommands('')

@@ -19,17 +19,24 @@ const fuzzy = new uFuzzy({
  * Search commands with fuzzy matching.
  *
  * @param query - Search query string
+ * @param recentCommandIds - Optional list of recently executed command IDs, most-recent first.
+ *   When the query is empty, recents (filtered to still-valid palette commands) lead the result,
+ *   followed by the remaining palette commands in registry order. Ignored for non-empty queries.
  * @returns Array of matched commands with highlight indices, ordered by relevance
  */
-export function searchCommands(query: string): CommandMatch[] {
+export function searchCommands(query: string, recentCommandIds: string[] = []): CommandMatch[] {
   const paletteCommands = getPaletteCommands()
 
-  // Empty query returns all commands (no highlighting)
+  // Empty query: show recents first, then the rest of the palette in registry order.
   if (!query.trim()) {
-    return paletteCommands.map((command) => ({
-      command,
-      matchedIndices: [],
-    }))
+    const byId = new Map(paletteCommands.map((c) => [c.id, c]))
+    const recents = recentCommandIds.flatMap((id) => {
+      const command = byId.get(id)
+      return command ? [{ command, matchedIndices: [] }] : []
+    })
+    const recentIds = new Set(recents.map((m) => m.command.id))
+    const rest = paletteCommands.filter((c) => !recentIds.has(c.id)).map((command) => ({ command, matchedIndices: [] }))
+    return [...recents, ...rest]
   }
 
   // Build haystack from command names

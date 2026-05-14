@@ -2,16 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, unmount } from 'svelte'
 import { tick } from 'svelte'
 import CommandPalette from './CommandPalette.svelte'
+import { loadRecentCommands, pushRecentCommand } from '$lib/app-status-store'
 
 // Mock the app-status-store to avoid Tauri dependency in tests
 vi.mock('$lib/app-status-store', () => ({
-  loadPaletteQuery: vi.fn().mockResolvedValue(''),
-  savePaletteQuery: vi.fn().mockResolvedValue(undefined),
+  loadRecentCommands: vi.fn().mockResolvedValue([]),
+  pushRecentCommand: vi.fn().mockResolvedValue(undefined),
 }))
 
 // Mock the commands module to provide test data
 vi.mock('$lib/commands', () => ({
-  searchCommands: vi.fn((query: string) => {
+  searchCommands: vi.fn((query: string, recentIds: string[] = []) => {
     const allCommands = [
       { command: { id: 'app.quit', name: 'Quit Cmdr', scope: 'App', shortcuts: ['⌘Q'] }, matchedIndices: [] },
       { command: { id: 'app.about', name: 'About Cmdr', scope: 'App', shortcuts: [] }, matchedIndices: [] },
@@ -29,7 +30,18 @@ vi.mock('$lib/commands', () => ({
         matchedIndices: [],
       },
     ]
-    if (!query.trim()) return allCommands
+    if (!query.trim()) {
+      // Mirror the real implementation's recents-first ordering so tests can
+      // exercise the wiring without depending on the real fuzzy module.
+      const byId = new Map(allCommands.map((m) => [m.command.id, m]))
+      const recents = recentIds.flatMap((id) => {
+        const match = byId.get(id)
+        return match ? [match] : []
+      })
+      const recentSet = new Set(recents.map((m) => m.command.id))
+      const rest = allCommands.filter((m) => !recentSet.has(m.command.id))
+      return [...recents, ...rest]
+    }
     return allCommands.filter((c) => c.command.name.toLowerCase().includes(query.toLowerCase()))
   }),
 }))
@@ -43,6 +55,8 @@ describe('CommandPalette', () => {
     mockOnClose = vi.fn()
     // Mock scrollIntoView which isn't available in jsdom
     Element.prototype.scrollIntoView = vi.fn()
+    vi.mocked(loadRecentCommands).mockResolvedValue([])
+    vi.mocked(pushRecentCommand).mockClear()
   })
 
   it('renders the modal with search input', async () => {
@@ -288,6 +302,60 @@ describe('CommandPalette', () => {
     otherEl.remove()
     trigger.remove()
     target.remove()
+  })
+
+  it('leads the empty-query list with recents, most-recent first', async () => {
+    vi.mocked(loadRecentCommands).mockResolvedValue(['file.copyPath', 'app.about'])
+
+    const target = document.createElement('div')
+    mount(CommandPalette, {
+      target,
+      props: { onExecute: mockOnExecute, onClose: mockOnClose },
+    })
+
+    // Two ticks: one for onMount to start, one for the resolved recents to land.
+    await tick()
+    await tick()
+
+    const input = target.querySelector('input')
+    input?.focus()
+    input?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await tick()
+
+    expect(mockOnExecute).toHaveBeenCalledWith('file.copyPath')
+  })
+
+  it('records the executed command on Enter', async () => {
+    const target = document.createElement('div')
+    mount(CommandPalette, {
+      target,
+      props: { onExecute: mockOnExecute, onClose: mockOnClose },
+    })
+    await tick()
+
+    const input = target.querySelector('input')
+    input?.focus()
+    input?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await tick()
+
+    expect(pushRecentCommand).toHaveBeenCalledWith('app.quit')
+  })
+
+  it('records the executed command on click', async () => {
+    const target = document.createElement('div')
+    mount(CommandPalette, {
+      target,
+      props: { onExecute: mockOnExecute, onClose: mockOnClose },
+    })
+    await tick()
+
+    const items = target.querySelectorAll('[class*="result-item"]')
+    expect(items.length).toBeGreaterThan(1)
+    ;(items[1] as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await tick()
+
+    expect(pushRecentCommand).toHaveBeenCalledWith('app.about')
+    expect(mockOnExecute).toHaveBeenCalledWith('app.about')
   })
 
   it('does not throw if the previously focused element is no longer in the DOM', async () => {
