@@ -457,12 +457,18 @@ export async function openSettingsWindowViaProd(tauriPage: TauriPage): Promise<T
  * Closes a scoped window (viewer or settings) and waits for it to disappear
  * from the window list. `mainPage` is needed for the post-close `listWindows()`
  * poll because the scoped page is gone once the window closes.
+ *
+ * Uses the Tauri window-close IPC directly instead of synthesizing Escape:
+ * the viewer's Escape handler closes an open search bar first (one extra
+ * Escape needed before the window-close path runs), and the settings window
+ * may not have focus when afterEach kicks in. The window-close call has no
+ * such gating and works regardless of in-page state.
  */
 export async function closeScopedWindow(mainPage: TauriPage, scoped: TauriPage, label: string): Promise<void> {
-  // Try Escape first — both viewer and settings windows handle Escape to close
-  // in production (`routes/viewer/+page.svelte`, `routes/settings/+page.svelte`).
+  // Ask the scoped window to close itself via the Tauri API. Both `viewer.json`
+  // and `settings.json` capabilities grant `core:window:allow-close`.
   try {
-    await scoped.keyboard.press('Escape')
+    await scoped.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|close')`)
   } catch {
     // The window may already be gone; fall through to the poll.
   }
@@ -475,13 +481,7 @@ export async function closeScopedWindow(mainPage: TauriPage, scoped: TauriPage, 
     5000,
   )
   if (!gone) {
-    // Fallback: ask the scoped window to close itself via the Tauri API.
-    try {
-      await scoped.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|close')`)
-    } catch {
-      // Ignore — best-effort cleanup.
-    }
-    await pollUntil(mainPage, async () => !(await mainPage.listWindows()).map((w) => w.label).includes(label), 3000)
+    throw new Error(`closeScopedWindow: window '${label}' still present after 5s`)
   }
 }
 
