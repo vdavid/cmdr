@@ -52,9 +52,9 @@ pub use volume::{
     VolumeError,
 };
 // Watcher management - init_watcher_manager must be called from lib.rs
-pub use watcher::{init_watcher_manager, update_debounce_ms};
 #[cfg(feature = "playwright-e2e")]
 pub use watcher::flush_all_watchers;
+pub use watcher::{init_watcher_manager, update_debounce_ms};
 // Diff types for file watching (used by MTP module for unified diff events)
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use watcher::{DirectoryDiff, compute_diff};

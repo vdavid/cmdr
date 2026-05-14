@@ -75,7 +75,9 @@ pub fn is_e2e_mode() -> bool {
 /// Reading the env var on every iteration is fine: the value only matters
 /// under E2E, and the syscall is in the noise next to a real file copy.
 pub fn e2e_copy_throttle_ms() -> Option<u64> {
-    std::env::var("CMDR_E2E_COPY_THROTTLE_MS").ok().and_then(|s| s.parse().ok())
+    std::env::var("CMDR_E2E_COPY_THROTTLE_MS")
+        .ok()
+        .and_then(|s| s.parse().ok())
 }
 
 #[cfg(test)]

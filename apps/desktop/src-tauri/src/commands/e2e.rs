@@ -44,4 +44,3 @@ pub async fn flush_file_watcher() -> Result<(), String> {
     crate::file_system::flush_all_watchers().await;
     Ok(())
 }
-
