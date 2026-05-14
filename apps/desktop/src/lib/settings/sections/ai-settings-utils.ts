@@ -1,17 +1,92 @@
-import { getSetting, resolveCloudConfig } from '$lib/settings'
-import { configureAi } from '$lib/tauri-commands'
+import { getSetting, setSetting, resolveCloudConfig } from '$lib/settings'
+import { configureAi, getAiApiKey, saveAiApiKey } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
+import { addToast } from '$lib/ui/toast'
+import { describeSecretError } from './ai-secret-error'
 
 const logger = getAppLogger('ai-settings')
 
-/** Push current AI config (provider, context size, cloud credentials) to the Rust backend. */
+/** Stable id so the same toast replaces in place across consecutive failed startup attempts. */
+const secretErrorToastId = 'ai-secret-store-error'
+
+/**
+ * One-time migration: move `apiKey` fields out of `ai.cloudProviderConfigs` (settings.json) into
+ * the OS secret store. Runs idempotently at startup; once the JSON blob no longer contains any
+ * `apiKey` field, this is a near-zero-cost no-op.
+ *
+ * Per-provider semantics: if saving to the secret store fails for one provider, that provider's
+ * `apiKey` stays in settings.json so the user can retry later. Other providers still migrate.
+ *
+ * TODO: Remove this migration after 2026-09-01. By then, testers will have had time to migrate
+ * their pre-launch keys, and continuing to ship the code only adds attack surface (the migration
+ * step temporarily handles plaintext keys).
+ */
+export async function migrateApiKeysFromSettings(): Promise<void> {
+  const raw = getSetting('ai.cloudProviderConfigs')
+  let parsed: Record<string, Record<string, unknown> | undefined>
+  try {
+    parsed = JSON.parse(raw) as Record<string, Record<string, unknown> | undefined>
+  } catch {
+    return
+  }
+
+  let mutated = false
+  for (const [providerId, config] of Object.entries(parsed)) {
+    if (!config) continue
+    const legacyApiKey = config.apiKey
+    if (typeof legacyApiKey !== 'string' || legacyApiKey.length === 0) {
+      if ('apiKey' in config) {
+        // Empty string is harmless but pollutes the JSON — drop it as part of the migration.
+        delete config.apiKey
+        mutated = true
+      }
+      continue
+    }
+    try {
+      await saveAiApiKey(providerId, legacyApiKey)
+      delete config.apiKey
+      mutated = true
+      logger.info('Migrated AI API key for provider {provider} to secret store', { provider: providerId })
+    } catch (e) {
+      logger.warn(
+        "Couldn't migrate AI API key for provider {provider} — leaving the legacy entry in settings.json: {error}",
+        { provider: providerId, error: e },
+      )
+    }
+  }
+
+  if (mutated) {
+    setSetting('ai.cloudProviderConfigs', JSON.stringify(parsed))
+  }
+}
+
+/** Push current AI config (provider, context size, cloud credentials) to the Rust backend. The API
+ *  key is fetched from the OS secret store; the rest comes from `settings.json`. Surfaces secret
+ *  store failures as a persistent toast (deduped) so a silently-broken keyring isn't invisible to
+ *  the user. */
 export async function pushConfigToBackend(): Promise<void> {
   try {
-    const resolved = resolveCloudConfig(getSetting('ai.cloudProvider'), getSetting('ai.cloudProviderConfigs'))
+    const providerId = getSetting('ai.cloudProvider')
+    const resolved = resolveCloudConfig(providerId, getSetting('ai.cloudProviderConfigs'))
+
+    let apiKey = ''
+    try {
+      apiKey = await getAiApiKey(providerId)
+    } catch (e) {
+      logger.error("Couldn't read AI API key from secret store: {error}", { error: e })
+      const msg = describeSecretError(e, 'read')
+      const body = msg.body ? `\n${msg.body}` : ''
+      addToast(`${msg.title}${body}`, {
+        level: msg.level,
+        dismissal: 'persistent',
+        id: secretErrorToastId,
+      })
+    }
+
     await configureAi(
       getSetting('ai.provider'),
       Number(getSetting('ai.localContextSize')),
-      resolved.apiKey,
+      apiKey,
       resolved.baseUrl,
       resolved.model,
     )

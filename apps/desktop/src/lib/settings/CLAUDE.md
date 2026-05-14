@@ -131,11 +131,11 @@ backend (via `getAiRuntimeStatus()` and Tauri events) with registry settings (`a
   handles provider switching (auto-stops local server when switching away), and conditionally renders one of the two
   sub-sections.
 - **`AiCloudSection.svelte`** — Cloud/API provider config. Provider preset dropdown (`cloud-providers.ts`), per-provider
-  API key storage in a JSON blob (`ai.cloudProviderConfigs`), endpoint URL, model combobox. Old flat settings
-  (`ai.openaiApiKey`, `ai.openaiBaseUrl`, `ai.openaiModel`) are migrated on first load. Includes a two-step connection
-  check (`check_ai_connection` Tauri command) that auto-triggers on API key or base URL changes (1s debounce), fetches
-  available models from the `/models` endpoint, and shows connection status (connected, auth error, unreachable). When
-  models are available, the Model field becomes a combobox with filtered dropdown; otherwise it's a plain text input.
+  endpoint URL and model stored in `ai.cloudProviderConfigs`, per-provider API key stored in the OS secret store via
+  `saveAiApiKey` / `getAiApiKey`. Includes a two-step connection check (`check_ai_connection` Tauri command) that
+  auto-triggers on API key or base URL changes (1s debounce), fetches available models from the `/models` endpoint, and
+  shows connection status (connected, auth error, unreachable). When models are available, the Model field becomes a
+  combobox with filtered dropdown; otherwise it's a plain text input.
 - **`AiLocalSection.svelte`** — Local LLM management. Server lifecycle (start/stop), model download with multi-step
   install tracking, context window setting with explicit "Apply" button (triggers server restart), RAM gauge (stacked
   bar) showing memory usage relative to system total with warning icons at >70% and >90% projected usage, system memory
@@ -176,7 +176,8 @@ row intentionally spans the full width.
 
 - **cloud-providers.ts** — Cloud provider preset definitions (OpenAI, Anthropic, Groq, etc.) and per-provider config
   helpers (`getProviderConfigs`, `setProviderConfig`, `resolveCloudConfig`). Used by `AiSection` and the startup flow in
-  `+layout.svelte` to resolve the effective API key, base URL, and model before calling `configureAi`.
+  `+layout.svelte` to resolve the effective base URL and model. The API key is fetched separately from the OS secret
+  store via `getAiApiKey(providerId)` before calling `configureAi`.
 - **settings-search.ts** — Fuzzy search over setting definitions; returns ranked matches with highlight ranges
 - **settings-applier.ts** — Listens for setting changes and applies side effects (CSS vars, backend config sync)
 - **network-settings.ts** — Network-specific setting helpers (proxy config, SMB auth defaults)
@@ -226,10 +227,13 @@ Defining all settings in a registry enables:
 3. UI generation for Advanced section (technical settings don't need custom UI)
 4. Schema migration (registry knows what's valid, can transform old data)
 
-### Why store OpenAI API key in `settings.json`, not keychain?
+### Why store cloud AI API keys in the OS secret store, not `settings.json`?
 
-Simpler first version. The file is already in the user's private app support directory. Keychain integration can come
-later if needed. The key is never sent anywhere except the user's configured endpoint.
+API keys live in the OS-native secret store (macOS Keychain, Linux Secret Service, or an encrypted file fallback on
+Linux without Secret Service) via `crate::secrets`. Access goes through the `saveAiApiKey` / `getAiApiKey` /
+`deleteAiApiKey` / `hasAiApiKey` Tauri commands. `ai.cloudProviderConfigs` in `settings.json` only holds non-secret
+fields (`model`, `baseUrl`). This keeps API keys out of Time Machine, cloud-sync backups, and any tool that mirrors
+`~/Library/Application Support`. Same secret store backs SMB credentials — see `src-tauri/src/secrets/CLAUDE.md`.
 
 ### Why debounced saves?
 

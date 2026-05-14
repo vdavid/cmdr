@@ -12,8 +12,10 @@
         setProviderConfig,
         cloudProviderPresets,
     } from '$lib/settings'
-    import { checkAiConnection } from '$lib/tauri-commands'
+    import { checkAiConnection, getAiApiKey, saveAiApiKey } from '$lib/tauri-commands'
     import { pushConfigToBackend } from './ai-settings-utils'
+    import { describeSecretError, type SecretErrorMessage } from './ai-secret-error'
+    import { addToast, dismissToast } from '$lib/ui/toast'
 
     interface Props {
         searchQuery: string
@@ -42,6 +44,13 @@
     let availableModels = $state<string[]>([])
     let connectionCheckTimer: ReturnType<typeof setTimeout> | null = null
 
+    // Secret store error (read or save failed). Shown inline above the connection status, and
+    // re-emitted as a persistent toast so the user can act on it without re-opening Settings.
+    // Reused across save/read attempts via a stable toast id, so we replace in place instead of
+    // stacking duplicates.
+    let secretError = $state<SecretErrorMessage | null>(null)
+    const secretErrorToastId = 'ai-secret-store-error'
+
     // Model combobox state
     let comboboxOpen = $state(false)
     let comboboxFilter = $state('')
@@ -56,13 +65,15 @@
     // Event listeners cleanup
     const unlistenFns: Array<() => void> = []
 
-    // Load current cloud provider config into local state
-    loadCloudProviderConfig(cloudProviderId)
+    // Load current cloud provider config into local state. The API key is async (lives in the OS
+    // secret store, not settings.json) so the input shows '' until the fetch resolves on first
+    // mount — fine for a settings panel that's not on the hot path.
+    void loadCloudProviderConfig(cloudProviderId)
 
     // Subscribe to cloud provider changes
     const unsubCloudProvider = onSpecificSettingChange('ai.cloudProvider', (_id, newValue) => {
         cloudProviderId = newValue
-        loadCloudProviderConfig(cloudProviderId)
+        void loadCloudProviderConfig(cloudProviderId)
         void pushConfigToBackend()
     })
     unlistenFns.push(unsubCloudProvider)
@@ -138,35 +149,87 @@
         }
     }
 
-    function loadCloudProviderConfig(providerId: string): void {
+    async function loadCloudProviderConfig(providerId: string): Promise<void> {
         const configsJson = getSetting('ai.cloudProviderConfigs')
         const configs = getProviderConfigs(configsJson)
         const providerConfig = configs[providerId]
         const preset = getCloudProvider(providerId)
 
-        currentApiKey = providerConfig?.apiKey ?? ''
         currentModel = providerConfig?.model ?? preset?.defaultModel ?? ''
         currentBaseUrl =
             providerId === 'custom' || providerId === 'azure-openai'
                 ? (providerConfig?.baseUrl ?? preset?.baseUrl ?? '')
                 : (preset?.baseUrl ?? '')
+
+        // Reset eagerly so a stale key from the previous provider doesn't flash while the secret
+        // store read is in flight.
+        currentApiKey = ''
+        clearSecretError()
+        await loadApiKeyForProvider(providerId)
     }
 
-    function saveCloudProviderField(field: 'apiKey' | 'model' | 'baseUrl', value: string): void {
+    async function loadApiKeyForProvider(providerId: string): Promise<void> {
+        try {
+            const fetched = await getAiApiKey(providerId)
+            // Bail out if the user switched providers again before the fetch resolved.
+            if (providerId !== cloudProviderId) return
+            currentApiKey = fetched
+        } catch (e) {
+            if (providerId !== cloudProviderId) return
+            // Empty key is the right user-visible state when the read fails so the user can re-enter.
+            // We surface the failure inline + via toast so the cause is actionable.
+            setSecretError(describeSecretError(e, 'read'))
+        }
+    }
+
+    function saveCloudProviderField(field: 'model' | 'baseUrl', value: string): void {
         const configsJson = getSetting('ai.cloudProviderConfigs')
         const configs = getProviderConfigs(configsJson)
-        const existing = configs[cloudProviderId] ?? { apiKey: '', model: '' }
+        const existing = configs[cloudProviderId] ?? { model: '' }
 
-        if (field === 'apiKey') existing.apiKey = value
-        else if (field === 'model') existing.model = value
+        if (field === 'model') existing.model = value
         else existing.baseUrl = value
 
         const newJson = setProviderConfig(configsJson, cloudProviderId, existing)
         setSetting('ai.cloudProviderConfigs', newJson)
 
-        // Trigger debounced connection check on API key or base URL change
-        if (field === 'apiKey' || field === 'baseUrl') {
+        // Trigger debounced connection check on base URL change (model changes don't affect connectivity).
+        if (field === 'baseUrl') {
             scheduleConnectionCheck()
+        }
+    }
+
+    async function handleApiKeyChange(value: string): Promise<void> {
+        // Reflect the typed value locally so the input stays in sync regardless of save outcome.
+        currentApiKey = value
+        clearSecretError()
+        try {
+            await saveAiApiKey(cloudProviderId, value)
+        } catch (e) {
+            // Failed to persist — surface it visibly and SKIP pushing config + scheduling the
+            // connection check. The in-memory value would mislead the user into thinking it worked.
+            setSecretError(describeSecretError(e, 'save'))
+            return
+        }
+        // Push the new key to the backend so suggestions and the connection check both see it.
+        void pushConfigToBackend()
+        scheduleConnectionCheck()
+    }
+
+    function setSecretError(msg: SecretErrorMessage): void {
+        secretError = msg
+        const body = msg.body ? `\n${msg.body}` : ''
+        addToast(`${msg.title}${body}`, {
+            level: msg.level,
+            dismissal: 'persistent',
+            id: secretErrorToastId,
+        })
+    }
+
+    function clearSecretError(): void {
+        if (secretError !== null) {
+            secretError = null
+            dismissToast(secretErrorToastId)
         }
     }
 
@@ -313,8 +376,7 @@
             ariaLabel="API key"
             value={currentApiKey}
             onchange={(value: string) => {
-                currentApiKey = value
-                saveCloudProviderField('apiKey', value)
+                void handleApiKeyChange(value)
             }}
         />
     </SettingRow>
@@ -419,6 +481,18 @@
 </SettingRow>
 
 <!-- Connection status -->
+{#if secretError}
+    <div class="secret-error" role="alert">
+        <span class="connection-status-icon connection-status-error">&#x2717;</span>
+        <span class="secret-error-text">
+            <span class="secret-error-title">{secretError.title}</span>
+            {#if secretError.body}
+                <span class="secret-error-body">{secretError.body}</span>
+            {/if}
+        </span>
+    </div>
+{/if}
+
 {#if connectionStatus === 'checking'}
     <div class="connection-status">
         <span class="status-spinner">&#x27F3;</span>
@@ -559,6 +633,29 @@
     }
 
     .connection-status-text {
+        color: var(--color-text-secondary);
+    }
+
+    .secret-error {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm) 0;
+        font-size: var(--font-size-sm);
+    }
+
+    .secret-error-text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xxs);
+    }
+
+    .secret-error-title {
+        color: var(--color-error);
+        font-weight: 600;
+    }
+
+    .secret-error-body {
         color: var(--color-text-secondary);
     }
 

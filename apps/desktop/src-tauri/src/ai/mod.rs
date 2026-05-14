@@ -11,6 +11,7 @@
 //! 3. Add a new entry to `AVAILABLE_MODELS`
 //! 4. Update `DEFAULT_MODEL_ID` if the new model should be the default
 
+pub mod api_keys;
 pub mod client;
 #[cfg(test)]
 mod client_integration_test;

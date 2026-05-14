@@ -20,6 +20,7 @@
         connectMtpDevice,
         cancelAllWriteOperations,
         configureAi,
+        getAiApiKey,
         checkPendingCrashReport,
         sendCrashReport,
         type MtpExclusiveAccessErrorEvent,
@@ -27,6 +28,7 @@
         type CrashReport,
     } from '$lib/tauri-commands'
     import { getSetting, resolveCloudConfig } from '$lib/settings'
+    import { migrateApiKeysFromSettings } from '$lib/settings/sections/ai-settings-utils'
     import { initAiState } from '$lib/ai/ai-state.svelte'
     import { initAiToastSync } from '$lib/ai/ai-toast-sync.svelte'
     import { addToast } from '$lib/ui/toast'
@@ -175,15 +177,20 @@
             // Initialize settings and apply them to CSS variables
             await initSettingsApplier()
 
-            // Push AI config to backend (triggers server start if provider is local + model installed)
-            const resolvedConfig = resolveCloudConfig(
-                getSetting('ai.cloudProvider'),
-                getSetting('ai.cloudProviderConfigs'),
-            )
+            // One-time migration of pre-launch testers' plaintext API keys from settings.json to
+            // the OS secret store. TODO: remove this call after 2026-09-01 (see function comment).
+            // Awaited so the first `getAiApiKey` below sees the freshly-migrated value.
+            await migrateApiKeysFromSettings()
+
+            // Push AI config to backend (triggers server start if provider is local + model installed).
+            // API key lives in the OS secret store now, not settings.json — fetch it separately.
+            const cloudProviderId = getSetting('ai.cloudProvider')
+            const resolvedConfig = resolveCloudConfig(cloudProviderId, getSetting('ai.cloudProviderConfigs'))
+            const cloudApiKey = await getAiApiKey(cloudProviderId).catch(() => '')
             void configureAi(
                 getSetting('ai.provider'),
                 Number(getSetting('ai.localContextSize')),
-                resolvedConfig.apiKey,
+                cloudApiKey,
                 resolvedConfig.baseUrl,
                 resolvedConfig.model,
             )

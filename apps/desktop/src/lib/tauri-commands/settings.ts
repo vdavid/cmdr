@@ -344,6 +344,34 @@ export async function checkAiConnection(baseUrl: string, apiKey: string): Promis
 }
 
 // ============================================================================
+// AI API key storage (OS secret store, not settings.json)
+// ============================================================================
+
+/** Stores the API key for a cloud provider in the OS secret store (macOS Keychain etc.). */
+export async function saveAiApiKey(providerId: string, apiKey: string): Promise<void> {
+  const res = await commands.saveAiApiKey(providerId, apiKey)
+  if (res.status === 'error') throwIpcError(res.error)
+}
+
+/** Returns the stored API key for a cloud provider, or '' if none is stored. */
+export async function getAiApiKey(providerId: string): Promise<string> {
+  const res = await commands.getAiApiKey(providerId)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/** Removes the stored API key for a cloud provider. Idempotent. */
+export async function deleteAiApiKey(providerId: string): Promise<void> {
+  const res = await commands.deleteAiApiKey(providerId)
+  if (res.status === 'error') throwIpcError(res.error)
+}
+
+/** Returns true if an API key is stored for the provider. */
+export async function hasAiApiKey(providerId: string): Promise<boolean> {
+  return commands.hasAiApiKey(providerId)
+}
+
+// ============================================================================
 // E2E test support
 // ============================================================================
 

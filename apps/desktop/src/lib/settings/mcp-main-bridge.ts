@@ -31,35 +31,16 @@ interface GetAllSettingsPayload {
 
 const maskedPlaceholder = '********'
 
-/** Returns true for settings that contain secrets (API keys, tokens, etc.). */
+/** Returns true for settings that contain secrets (API keys, tokens, etc.). AI provider API keys
+ *  live in the OS secret store now, so `ai.cloudProviderConfigs` no longer needs special-case
+ *  redaction — it only holds model and base URL. */
 function isSensitive(def: SettingDefinition): boolean {
-  return def.component === 'password-input' || def.id === 'ai.cloudProviderConfigs'
+  return def.component === 'password-input'
 }
 
-/** Mask a sensitive value for safe display. Password-input fields are fully masked.
- *  `ai.cloudProviderConfigs` is a JSON blob — we redact any `apiKey` fields inside it. */
-function maskValue(def: SettingDefinition, value: unknown): unknown {
-  if (def.component === 'password-input') {
-    // Fully mask; show placeholder only when a value is actually set
-    return typeof value === 'string' && value.length > 0 ? maskedPlaceholder : ''
-  }
-
-  if (def.id === 'ai.cloudProviderConfigs' && typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value) as Record<string, Record<string, unknown>>
-      for (const providerConfig of Object.values(parsed)) {
-        if (typeof providerConfig.apiKey === 'string' && providerConfig.apiKey.length > 0) {
-          providerConfig.apiKey = maskedPlaceholder
-        }
-      }
-      return JSON.stringify(parsed)
-    } catch {
-      // Not valid JSON — mask the entire value to be safe
-      return value.length > 2 ? maskedPlaceholder : value
-    }
-  }
-
-  return value
+/** Mask a sensitive value for safe display. */
+function maskValue(_def: SettingDefinition, value: unknown): unknown {
+  return typeof value === 'string' && value.length > 0 ? maskedPlaceholder : ''
 }
 
 /** Build a YAML representation of all settings grouped by section. */

@@ -12,6 +12,7 @@ Three provider modes:
 | File | Purpose |
 |---|---|
 | `mod.rs` | Types (`AiStatus`, `AiState`, `DownloadProgress`, `ModelInfo`), model registry (`AVAILABLE_MODELS`, `DEFAULT_MODEL_ID`), `is_local_ai_supported()` gate |
+| `api_keys.rs` | Per-provider cloud API key storage. Delegates to `crate::secrets::store()` (macOS Keychain, Linux Secret Service, or encrypted-file fallback). One entry per provider under key `ai.apiKey.<providerId>`. Exposes `save_ai_api_key` / `get_ai_api_key` / `delete_ai_api_key` / `has_ai_api_key` Tauri commands. Keys are NOT stored in `settings.json`. |
 | `manager.rs` | Central coordinator. Global `Mutex<Option<ManagerState>>` singleton. Most Tauri commands live here. Stores provider + cloud-AI config (`cloud_api_key`/`cloud_base_url`/`cloud_model`). Exposes `resolve_backend() -> BackendResolution` so callers don't reinvent provider routing. Also owns the `STREAM_CANCEL_TOKENS` registry (`register_stream`/`unregister_stream`/`cancel_stream`) for in-flight `stream_folder_suggestions` cancellation. |
 | `download.rs` | HTTP streaming download with Range-based resume. Emits `ai-download-progress` events (200ms throttle). Cooperative cancellation via function parameter (`Fn() -> bool`). |
 | `extract.rs` | Copies bundled `llama-server` binary + dylibs from `resources/ai/` to the AI data dir. Sets Unix permissions, handles symlinks. |
@@ -27,6 +28,7 @@ Three provider modes:
 ### Tauri commands
 
 Core: `get_ai_status`, `get_ai_model_info`, `get_ai_runtime_status`, `configure_ai`, `start_ai_server`, `stop_ai_server`, `check_ai_connection`, `start_ai_download`, `cancel_ai_download`, `get_folder_suggestions`, `stream_folder_suggestions`, `cancel_folder_suggestions`. Note: `get_system_memory_info` moved to top-level `system_memory.rs`.
+API keys: `save_ai_api_key`, `get_ai_api_key`, `delete_ai_api_key`, `has_ai_api_key` (in `api_keys.rs`).
 Legacy (still wired, used by toast): `uninstall_ai`, `dismiss_ai_offer`, `opt_out_ai`, `opt_in_ai`, `is_ai_opted_out`.
 
 ## Startup flow
@@ -37,9 +39,10 @@ Tauri setup()
 
 Frontend loads
   -> initializeSettings()           <- loads settings from tauri-plugin-store
+  -> getAiApiKey(providerId)        <- fetches API key from OS secret store
   -> configureAi({                  <- pushes AI config to backend
        provider, contextSize,
-       openaiApiKey, openaiBaseUrl, openaiModel
+       cloudApiKey, cloudBaseUrl, cloudModel
      })
        -> backend: if provider === 'local' && model installed && local AI supported
             -> spawn_and_track_server() (sync, inside lock — PID tracked immediately)
@@ -78,7 +81,7 @@ The frontend (`AiSection.svelte`) tracks `installStep` state and displays "Step 
 - Download guard: `download_in_progress` flag prevents concurrent downloads.
 - Server logs written to `llama-server.log` in the AI dir for debugging.
 - `opted_out` field in `AiState` is legacy. `ai.provider` in frontend settings store is the source of truth.
-- OpenAI config (api_key, base_url, model) stored in `ManagerState` so suggestions.rs can read without settings files.
+- OpenAI config (api_key, base_url, model) stored in `ManagerState` so suggestions.rs can read without settings files. The api_key originates from the OS secret store (`api_keys.rs`), pushed in via `configure_ai`.
 - `configure_ai` is idempotent -- frontend calls it on startup and whenever any AI setting changes.
 - `ModelInfo` includes `kv_bytes_per_token` and `base_overhead_bytes` for frontend memory estimation.
 

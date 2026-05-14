@@ -166,8 +166,9 @@ export function getCloudProvider(id: string): CloudProviderPreset | undefined {
   return cloudProviderPresets.find((p) => p.id === id)
 }
 
+/** Non-secret per-provider config persisted in `settings.json`. API keys live in the OS secret
+ *  store via the `saveAiApiKey` / `getAiApiKey` Tauri commands, not here. */
 export interface CloudProviderConfig {
-  apiKey: string
   model: string
   baseUrl?: string // only stored for 'custom' and 'azure-openai'
 }
@@ -189,12 +190,12 @@ export function setProviderConfig(raw: string, providerId: string, config: Cloud
   return JSON.stringify(configs)
 }
 
-/** Resolve the effective config for the current cloud provider. */
+/** Resolve the effective non-secret config for the current cloud provider. The API key is fetched
+ *  separately via `commands.getAiApiKey(providerId)` (lives in the OS secret store). */
 export function resolveCloudConfig(
   cloudProviderId: string,
   configsJson: string,
 ): {
-  apiKey: string
   baseUrl: string
   model: string
 } {
@@ -208,7 +209,6 @@ export function resolveCloudConfig(
       : (preset?.baseUrl ?? '')
 
   return {
-    apiKey: providerConfig?.apiKey ?? '',
     baseUrl,
     model: providerConfig?.model ?? preset?.defaultModel ?? '',
   }

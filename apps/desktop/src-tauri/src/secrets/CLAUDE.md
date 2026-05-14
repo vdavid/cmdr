@@ -24,8 +24,12 @@ Generic key-value secret storage with pluggable backends.
 
 ### Generic byte storage, not typed credentials
 
-The trait stores opaque `&[u8]` / `Vec<u8>`. Callers (like `network/keychain.rs` for SMB) handle their own
-serialization format. This keeps the store reusable for any secret type.
+The trait stores opaque `&[u8]` / `Vec<u8>`. Callers handle their own serialization format. Current consumers:
+
+- `network/keychain.rs` — SMB credentials, stored as `username\0password` under keys like `smb://server/share`.
+- `ai/api_keys.rs` — cloud AI provider API keys, stored as raw UTF-8 under keys like `ai.apiKey.openai`.
+
+This keeps the store reusable for any future secret type.
 
 ### File-based stores use `CMDR_DATA_DIR`
 

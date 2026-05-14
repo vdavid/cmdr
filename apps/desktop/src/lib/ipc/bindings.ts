@@ -874,6 +874,18 @@ export const commands = {
   optInAi: () => __TAURI_INVOKE<void>('opt_in_ai'),
   // Returns whether the user has opted out of AI features.
   isAiOptedOut: () => __TAURI_INVOKE<boolean>('is_ai_opted_out'),
+  saveAiApiKey: (providerId: string, apiKey: string) =>
+    typedError<null, AiApiKeyError>(__TAURI_INVOKE('save_ai_api_key', { providerId, apiKey })),
+  /**
+   *  Returns the stored API key for the provider, or an empty string if none is stored.
+   *  Returning empty (rather than an error) on missing keys keeps the call sites simple — they all
+   *  pass the value through to `configure_ai`, which already treats empty-string as "not configured."
+   */
+  getAiApiKey: (providerId: string) =>
+    typedError<string, AiApiKeyError>(__TAURI_INVOKE('get_ai_api_key', { providerId })),
+  deleteAiApiKey: (providerId: string) =>
+    typedError<null, AiApiKeyError>(__TAURI_INVOKE('delete_ai_api_key', { providerId })),
+  hasAiApiKey: (providerId: string) => __TAURI_INVOKE<boolean>('has_ai_api_key', { providerId }),
   /**
    *  Generates folder name suggestions for the given directory.
    *
@@ -1747,6 +1759,12 @@ export type ActivityPhase =
   | 'live'
   // Idle — indexing initialized but no active work.
   | 'idle'
+
+// Error types surfaced over IPC for AI API key operations.
+export type AiApiKeyError =
+  | { type: 'not_found'; message: string }
+  | { type: 'access_denied'; message: string }
+  | { type: 'other'; message: string }
 
 // Result of checking connectivity to an AI API endpoint.
 export type AiConnectionCheckResult = {

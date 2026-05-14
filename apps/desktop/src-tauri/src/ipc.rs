@@ -185,6 +185,10 @@ fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::ai::manager::opt_out_ai,
         crate::ai::manager::opt_in_ai,
         crate::ai::manager::is_ai_opted_out,
+        crate::ai::api_keys::save_ai_api_key,
+        crate::ai::api_keys::get_ai_api_key,
+        crate::ai::api_keys::delete_ai_api_key,
+        crate::ai::api_keys::has_ai_api_key,
         crate::ai::suggestions::get_folder_suggestions,
         // set_mcp_enabled, set_mcp_port are generic (<R: Runtime>) — excluded from specta
         crate::commands::mcp::get_mcp_running,
@@ -884,6 +888,10 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::ai::manager::opt_out_ai,
         crate::ai::manager::opt_in_ai,
         crate::ai::manager::is_ai_opted_out,
+        crate::ai::api_keys::save_ai_api_key,
+        crate::ai::api_keys::get_ai_api_key,
+        crate::ai::api_keys::delete_ai_api_key,
+        crate::ai::api_keys::has_ai_api_key,
         crate::ai::suggestions::get_folder_suggestions,
         // stream_folder_suggestions / cancel_folder_suggestions: streaming via tauri Channel<T>;
         // not specta-friendly yet, kept on raw invoke (eslint opt-out at FE call sites).

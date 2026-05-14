@@ -47,9 +47,8 @@ describe('getCloudProvider', () => {
 
 describe('getProviderConfigs', () => {
   it('parses valid JSON', () => {
-    const json = '{"openai":{"apiKey":"sk-123","model":"gpt-4"}}'
+    const json = '{"openai":{"model":"gpt-4"}}'
     const configs = getProviderConfigs(json)
-    expect(configs['openai']?.apiKey).toBe('sk-123')
     expect(configs['openai']?.model).toBe('gpt-4')
   })
 
@@ -68,26 +67,24 @@ describe('getProviderConfigs', () => {
 
 describe('setProviderConfig', () => {
   it('adds a new provider config', () => {
-    const result = setProviderConfig('{}', 'openai', { apiKey: 'sk-123', model: 'gpt-4' })
+    const result = setProviderConfig('{}', 'openai', { model: 'gpt-4' })
     const parsed = getProviderConfigs(result)
-    expect(parsed['openai']?.apiKey).toBe('sk-123')
     expect(parsed['openai']?.model).toBe('gpt-4')
   })
 
   it('updates an existing provider config', () => {
-    const initial = '{"openai":{"apiKey":"sk-old","model":"gpt-3"}}'
-    const result = setProviderConfig(initial, 'openai', { apiKey: 'sk-new', model: 'gpt-4' })
+    const initial = '{"openai":{"model":"gpt-3"}}'
+    const result = setProviderConfig(initial, 'openai', { model: 'gpt-4' })
     const parsed = getProviderConfigs(result)
-    expect(parsed['openai']?.apiKey).toBe('sk-new')
     expect(parsed['openai']?.model).toBe('gpt-4')
   })
 
   it('preserves other providers when updating one', () => {
-    const initial = '{"openai":{"apiKey":"sk-1","model":"gpt-4"},"groq":{"apiKey":"gsk-2","model":"llama"}}'
-    const result = setProviderConfig(initial, 'openai', { apiKey: 'sk-new', model: 'gpt-4.1' })
+    const initial = '{"openai":{"model":"gpt-4"},"groq":{"model":"llama"}}'
+    const result = setProviderConfig(initial, 'openai', { model: 'gpt-4.1' })
     const parsed = getProviderConfigs(result)
-    expect(parsed['openai']?.apiKey).toBe('sk-new')
-    expect(parsed['groq']?.apiKey).toBe('gsk-2')
+    expect(parsed['openai']?.model).toBe('gpt-4.1')
+    expect(parsed['groq']?.model).toBe('llama')
   })
 })
 
@@ -96,28 +93,24 @@ describe('resolveCloudConfig', () => {
     const config = resolveCloudConfig('openai', '{}')
     expect(config.baseUrl).toBe('https://api.openai.com/v1')
     expect(config.model).toBe('gpt-4.1-mini')
-    expect(config.apiKey).toBe('')
   })
 
-  it('uses stored API key and model when available', () => {
-    const configsJson = '{"openai":{"apiKey":"sk-test","model":"gpt-4"}}'
+  it('uses stored model when available', () => {
+    const configsJson = '{"openai":{"model":"gpt-4"}}'
     const config = resolveCloudConfig('openai', configsJson)
-    expect(config.apiKey).toBe('sk-test')
     expect(config.model).toBe('gpt-4')
     expect(config.baseUrl).toBe('https://api.openai.com/v1')
   })
 
   it('uses stored base URL for custom provider', () => {
-    const configsJson = '{"custom":{"apiKey":"key","model":"model","baseUrl":"https://my-api.com/v1"}}'
+    const configsJson = '{"custom":{"model":"model","baseUrl":"https://my-api.com/v1"}}'
     const config = resolveCloudConfig('custom', configsJson)
     expect(config.baseUrl).toBe('https://my-api.com/v1')
-    expect(config.apiKey).toBe('key')
     expect(config.model).toBe('model')
   })
 
   it('uses stored base URL for azure-openai provider', () => {
-    const configsJson =
-      '{"azure-openai":{"apiKey":"key","model":"gpt-4","baseUrl":"https://myresource.openai.azure.com/openai/v1"}}'
+    const configsJson = '{"azure-openai":{"model":"gpt-4","baseUrl":"https://myresource.openai.azure.com/openai/v1"}}'
     const config = resolveCloudConfig('azure-openai', configsJson)
     expect(config.baseUrl).toBe('https://myresource.openai.azure.com/openai/v1')
   })
@@ -126,13 +119,11 @@ describe('resolveCloudConfig', () => {
     const config = resolveCloudConfig('groq', '{}')
     expect(config.baseUrl).toBe('https://api.groq.com/openai/v1')
     expect(config.model).toBe('llama-3.3-70b-versatile')
-    expect(config.apiKey).toBe('')
   })
 
   it('returns empty strings for unknown provider', () => {
     const config = resolveCloudConfig('nonexistent', '{}')
     expect(config.baseUrl).toBe('')
     expect(config.model).toBe('')
-    expect(config.apiKey).toBe('')
   })
 })

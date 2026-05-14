@@ -325,6 +325,10 @@ export {
   stopAiServer,
   startAiServer,
   checkAiConnection,
+  saveAiApiKey,
+  getAiApiKey,
+  deleteAiApiKey,
+  hasAiApiKey,
   getSystemMemoryInfo,
 } from './settings'
 export type {
