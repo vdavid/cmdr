@@ -131,6 +131,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         // Tab commands (file-scoped)
         NEW_TAB_ID => Some(("tab.new", CommandScope::FileScoped)),
         CLOSE_TAB_ID => Some(("tab.close", CommandScope::FileScoped)),
+        REOPEN_CLOSED_TAB_ID => Some(("tab.reopen", CommandScope::FileScoped)),
         NEXT_TAB_ID => Some(("tab.next", CommandScope::FileScoped)),
         PREV_TAB_ID => Some(("tab.prev", CommandScope::FileScoped)),
         PIN_TAB_MENU_ID => Some(("tab.togglePin", CommandScope::FileScoped)),
@@ -211,6 +212,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "nav.parent" => Some(GO_PARENT_ID),
         "tab.new" => Some(NEW_TAB_ID),
         "tab.close" => Some(CLOSE_TAB_ID),
+        "tab.reopen" => Some(REOPEN_CLOSED_TAB_ID),
         "tab.next" => Some(NEXT_TAB_ID),
         "tab.prev" => Some(PREV_TAB_ID),
         "tab.togglePin" => Some(PIN_TAB_MENU_ID),
@@ -311,6 +313,8 @@ pub struct MenuState<R: Runtime> {
     pub view_mode_brief_accel: Mutex<Option<String>>,
     /// Pin/unpin tab menu item (label toggles based on active tab state)
     pub pin_tab: Mutex<Option<MenuItem<R>>>,
+    /// Reopen closed tab menu item (enabled when the focused pane's closed-tab stack is non-empty)
+    pub reopen_closed_tab: Mutex<Option<MenuItem<R>>>,
     /// Generic menu items keyed by menu item ID, for accelerator and enable/disable updates.
     pub items: Mutex<HashMap<String, MenuItemEntry<R>>>,
     /// Sort by submenu (disabled when not in explorer context)
@@ -336,6 +340,7 @@ impl<R: Runtime> Default for MenuState<R> {
             view_mode_full_accel: Mutex::new(Some("Cmd+1".to_string())),
             view_mode_brief_accel: Mutex::new(Some("Cmd+2".to_string())),
             pin_tab: Mutex::new(None),
+            reopen_closed_tab: Mutex::new(None),
             items: Mutex::new(HashMap::new()),
             sort_submenu: Mutex::new(None),
             network_host_context: Mutex::new(NetworkHostMenuContext::default()),
@@ -361,6 +366,8 @@ pub struct MenuItems<R: Runtime> {
     pub view_right_pane_submenu: Submenu<R>,
     /// Pin/unpin tab menu item (label updated dynamically by frontend)
     pub pin_tab: MenuItem<R>,
+    /// Reopen closed tab menu item (enable state synced from frontend)
+    pub reopen_closed_tab: MenuItem<R>,
     /// Generic menu items for accelerator updates, keyed by menu item ID.
     pub items: HashMap<String, MenuItemEntry<R>>,
     /// Sort by submenu (disabled when not in explorer context)
@@ -382,6 +389,7 @@ pub const VIEWER_WORD_WRAP_ID: &str = "viewer_word_wrap";
 pub const NEW_TAB_ID: &str = "new_tab";
 pub const PIN_TAB_MENU_ID: &str = "pin_tab_menu";
 pub const CLOSE_TAB_ID: &str = "close_tab";
+pub const REOPEN_CLOSED_TAB_ID: &str = "reopen_closed_tab";
 pub const NEXT_TAB_ID: &str = "next_tab";
 pub const PREV_TAB_ID: &str = "prev_tab";
 pub const CLOSE_OTHER_TABS_ID: &str = "close_other_tabs";
@@ -1364,6 +1372,7 @@ mod tests {
             "nav.parent",
             "tab.new",
             "tab.close",
+            "tab.reopen",
             "tab.next",
             "tab.prev",
             "tab.togglePin",

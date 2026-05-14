@@ -129,8 +129,9 @@ fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::icons::clear_extension_icon_cache,
         crate::commands::icons::clear_directory_icon_cache,
         // show_file_context_menu, show_breadcrumb_context_menu, update_pin_tab_menu,
-        // show_main_window, update_menu_context, set_menu_context, toggle_hidden_files,
-        // update_view_mode_menu, copy_to_clipboard are generic (<R: Runtime>) — excluded
+        // set_reopen_closed_tab_enabled, show_main_window, update_menu_context,
+        // set_menu_context, toggle_hidden_files, update_view_mode_menu, copy_to_clipboard
+        // are generic (<R: Runtime>) — excluded
         crate::commands::ui::show_tab_context_menu,
         crate::commands::ui::show_network_host_context_menu,
         crate::commands::ui::show_in_finder,
@@ -586,6 +587,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::ui::show_tab_context_menu,
         crate::commands::ui::show_network_host_context_menu,
         crate::commands::ui::update_pin_tab_menu,
+        crate::commands::ui::set_reopen_closed_tab_enabled,
         crate::commands::ui::show_main_window,
         crate::commands::ui::update_menu_context,
         crate::commands::ui::set_menu_context,

@@ -5,14 +5,16 @@ import {
   createTabManager,
   getActiveTab,
   addTab,
-  closeTab,
-  closeOtherTabs,
+  closeTabRecording,
+  closeOtherTabsRecording,
+  reopenLastClosedTab as reopenLastClosedTabInMgr,
   switchTab,
   cycleTab as cycleTabInManager,
   getAllTabs,
   getTabCount,
   pinTab,
   unpinTab,
+  MAX_TABS_PER_PANE,
   type TabManager,
 } from '../tabs/tab-state-manager.svelte'
 import type { TabState, TabId, PersistedTab, PersistedPaneTabs } from '../tabs/tab-types'
@@ -93,6 +95,7 @@ export async function handleTabClose(
   getTabMgr: (pane: 'left' | 'right') => TabManager,
   focusedPane: 'left' | 'right',
   syncPinTabMenu: () => void,
+  getClosedTabsCap: () => number,
 ) {
   const mgr = getTabMgr(pane)
   const tab = getAllTabs(mgr).find((t) => t.id === tabId)
@@ -100,7 +103,7 @@ export async function handleTabClose(
     const ok = await confirmDialog('This tab is pinned. Close it anyway?', 'Close pinned tab')
     if (!ok) return
   }
-  closeTab(mgr, tabId)
+  closeTabRecording(mgr, tabId, getClosedTabsCap())
   saveTabsForPane(pane, getTabMgr)
   if (pane === focusedPane) syncPinTabMenu()
 }
@@ -111,6 +114,7 @@ export function handleTabMiddleClick(
   getTabMgr: (pane: 'left' | 'right') => TabManager,
   focusedPane: 'left' | 'right',
   syncPinTabMenu: () => void,
+  getClosedTabsCap: () => number,
 ) {
   const mgr = getTabMgr(pane)
   const tab = getAllTabs(mgr).find((t) => t.id === tabId)
@@ -118,7 +122,7 @@ export function handleTabMiddleClick(
   if (tab.pinned) {
     unpinTab(mgr, tabId)
   }
-  void handleTabClose(pane, tabId, getTabMgr, focusedPane, syncPinTabMenu)
+  void handleTabClose(pane, tabId, getTabMgr, focusedPane, syncPinTabMenu, getClosedTabsCap)
 }
 
 export async function handleTabContextMenu(
@@ -128,6 +132,7 @@ export async function handleTabContextMenu(
   getTabMgr: (pane: 'left' | 'right') => TabManager,
   focusedPane: 'left' | 'right',
   syncPinTabMenu: () => void,
+  getClosedTabsCap: () => number,
 ) {
   event.preventDefault()
 
@@ -188,11 +193,11 @@ export async function handleTabContextMenu(
       if (pane === focusedPane && tabId === mgr.activeTabId) syncPinTabMenu()
       break
     case 'tab_close_others':
-      closeOtherTabs(mgr, tabId)
+      closeOtherTabsRecording(mgr, tabId, getClosedTabsCap())
       saveTabsForPane(pane, getTabMgr)
       break
     case 'tab_close': {
-      void handleTabClose(pane, tabId, getTabMgr, focusedPane, syncPinTabMenu)
+      void handleTabClose(pane, tabId, getTabMgr, focusedPane, syncPinTabMenu, getClosedTabsCap)
       break
     }
   }
@@ -243,9 +248,10 @@ export function newTab(
 export function closeActiveTab(
   focusedPane: 'left' | 'right',
   getTabMgr: (pane: 'left' | 'right') => TabManager,
+  getClosedTabsCap: () => number,
 ): 'closed' | 'last-tab' {
   const mgr = getTabMgr(focusedPane)
-  const result = closeTab(mgr, mgr.activeTabId)
+  const result = closeTabRecording(mgr, mgr.activeTabId, getClosedTabsCap())
   if (result.closed) {
     saveTabsForPane(focusedPane, getTabMgr)
   }
@@ -256,6 +262,7 @@ export function closeActiveTab(
 export async function closeActiveTabWithConfirmation(
   focusedPane: 'left' | 'right',
   getTabMgr: (pane: 'left' | 'right') => TabManager,
+  getClosedTabsCap: () => number,
 ): Promise<'closed' | 'last-tab' | 'cancelled'> {
   const mgr = getTabMgr(focusedPane)
   const activeTab = getActiveTab(mgr)
@@ -271,7 +278,7 @@ export async function closeActiveTabWithConfirmation(
     if (!ok) return 'cancelled'
   }
 
-  const result = closeTab(mgr, mgr.activeTabId)
+  const result = closeTabRecording(mgr, mgr.activeTabId, getClosedTabsCap())
   if (result.closed) {
     saveTabsForPane(focusedPane, getTabMgr)
     return 'closed'
@@ -283,10 +290,25 @@ export async function closeActiveTabWithConfirmation(
 export function closeOtherTabsInFocusedPane(
   focusedPane: 'left' | 'right',
   getTabMgr: (pane: 'left' | 'right') => TabManager,
+  getClosedTabsCap: () => number,
 ) {
   const mgr = getTabMgr(focusedPane)
-  closeOtherTabs(mgr, mgr.activeTabId)
+  closeOtherTabsRecording(mgr, mgr.activeTabId, getClosedTabsCap())
   saveTabsForPane(focusedPane, getTabMgr)
+}
+
+/** Reopens the most-recently-closed tab in the focused pane. */
+export function reopenLastClosedTabInPane(
+  focusedPane: 'left' | 'right',
+  getTabMgr: (pane: 'left' | 'right') => TabManager,
+): 'reopened' | 'empty' | 'cap' {
+  const mgr = getTabMgr(focusedPane)
+  const result = reopenLastClosedTabInMgr(mgr, MAX_TABS_PER_PANE)
+  if ('reopened' in result) {
+    saveTabsForPane(focusedPane, getTabMgr)
+    return 'reopened'
+  }
+  return result.reason
 }
 
 /** Toggles pin state on the active tab in the focused pane. */

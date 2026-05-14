@@ -65,10 +65,22 @@
         event.preventDefault()
         onContextMenu(tabId, event)
     }
+
+    /** Double-click on an empty area of the tab bar opens a new tab.
+     *  Empty area = the bar's padding strip, the trailing flex space inside `.tab-list`,
+     *  and the 3px top spacer. We bail when the click hits a tab, the close button,
+     *  or the new-tab button so those still behave as expected. */
+    function handleTabBarDblClick(event: MouseEvent) {
+        if (event.button !== 0) return
+        const target = event.target as Element | null
+        if (!target) return
+        if (target.closest('.tab, .close-btn, .new-tab-btn')) return
+        onNewTab()
+    }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="tab-bar" onclick={onPaneFocus}>
+<div class="tab-bar" onclick={onPaneFocus} ondblclick={handleTabBarDblClick}>
     <div class="tab-list" role="tablist" aria-label="{paneId} pane tabs">
         {#each tabs as tab, index (tab.id)}
             {@const isActive = tab.id === activeTabId}

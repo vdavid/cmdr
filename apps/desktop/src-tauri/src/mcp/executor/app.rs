@@ -59,7 +59,7 @@ pub fn execute_tab<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult
         "activate" => tab_id
             .ok_or_else(|| ToolError::invalid_params("'tab_id' is required for activate"))?
             .to_string(),
-        "new" => String::new(), // not used
+        "new" | "reopen" => String::new(), // not used
         _ => {
             // close, close_others, set_pinned: default to active tab
             if let Some(id) = tab_id {
@@ -84,6 +84,7 @@ pub fn execute_tab<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult
 
     // Validate tab_id exists (for actions that need it)
     if action != "new"
+        && action != "reopen"
         && !resolved_tab_id.is_empty()
         && let Some(store) = app.try_state::<PaneStateStore>()
     {
@@ -107,6 +108,10 @@ pub fn execute_tab<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult
         "new" => {
             app.emit("mcp-tab", json!({"action": "new", "pane": pane}))?;
             Ok(json!(format!("OK: Creating new tab in {} pane", pane)))
+        }
+        "reopen" => {
+            app.emit("mcp-tab", json!({"action": "reopen", "pane": pane}))?;
+            Ok(json!(format!("OK: Reopening last closed tab in {} pane", pane)))
         }
         "close" => {
             app.emit(

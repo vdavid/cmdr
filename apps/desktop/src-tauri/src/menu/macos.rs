@@ -13,12 +13,12 @@ use super::{
     COPY_PATH_ID, DESELECT_ALL_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID,
     ENTER_LICENSE_KEY_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID,
     FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_PARENT_ID, HELP_SEND_ERROR_REPORT_ID, MenuItems,
-    NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, SEARCH_FILES_ID,
-    SELECT_ALL_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID,
-    SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
-    VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode, brief_view_label, build_sort_submenu,
-    build_zoom_submenu, copy_path_accelerator, full_view_label, register_item, show_in_file_manager_accelerator,
-    show_in_file_manager_label,
+    NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID,
+    SEARCH_FILES_ID, SELECT_ALL_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID,
+    SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID,
+    VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode, brief_view_label,
+    build_sort_submenu, build_zoom_submenu, copy_path_accelerator, full_view_label, register_item,
+    show_in_file_manager_accelerator, show_in_file_manager_label,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -276,6 +276,14 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // --- Tab menu ---
     let new_tab_item = MenuItem::with_id(app, NEW_TAB_ID, "New tab", true, Some("Cmd+T"))?;
     let close_tab_item = MenuItem::with_id(app, CLOSE_TAB_ID, "Close tab", true, Some("Cmd+W"))?;
+    // Disabled initially; frontend enables it after the first close via `set_reopen_closed_tab_enabled`.
+    let reopen_closed_tab_item = MenuItem::with_id(
+        app,
+        REOPEN_CLOSED_TAB_ID,
+        "Reopen closed tab",
+        false,
+        Some("Cmd+Shift+T"),
+    )?;
     let next_tab_item = MenuItem::with_id(app, NEXT_TAB_ID, "Next tab", true, Some("Ctrl+Tab"))?;
     let prev_tab_item = MenuItem::with_id(app, PREV_TAB_ID, "Previous tab", true, Some("Ctrl+Shift+Tab"))?;
     let pin_tab_item = MenuItem::with_id(app, PIN_TAB_MENU_ID, "Pin tab", true, None::<&str>)?;
@@ -288,6 +296,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         &[
             &new_tab_item,
             &close_tab_item,
+            &reopen_closed_tab_item,
             &PredefinedMenuItem::separator(app)?,
             &next_tab_item,
             &prev_tab_item,
@@ -392,12 +401,13 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     register_item(&mut items, GO_FORWARD_ID, &go_forward_item, &go_menu, 1);
     register_item(&mut items, GO_PARENT_ID, &go_parent_item, &go_menu, 3);
 
-    // Tab menu positions: new(0), close(1), sep(2), next(3), prev(4), sep(5), pin(6), close_others(7)
+    // Tab menu positions: new(0), close(1), reopen(2), sep(3), next(4), prev(5), sep(6), pin(7), close_others(8)
     register_item(&mut items, NEW_TAB_ID, &new_tab_item, &tab_menu, 0);
     register_item(&mut items, CLOSE_TAB_ID, &close_tab_item, &tab_menu, 1);
-    register_item(&mut items, NEXT_TAB_ID, &next_tab_item, &tab_menu, 3);
-    register_item(&mut items, PREV_TAB_ID, &prev_tab_item, &tab_menu, 4);
-    register_item(&mut items, CLOSE_OTHER_TABS_ID, &close_other_tabs_item, &tab_menu, 7);
+    register_item(&mut items, REOPEN_CLOSED_TAB_ID, &reopen_closed_tab_item, &tab_menu, 2);
+    register_item(&mut items, NEXT_TAB_ID, &next_tab_item, &tab_menu, 4);
+    register_item(&mut items, PREV_TAB_ID, &prev_tab_item, &tab_menu, 5);
+    register_item(&mut items, CLOSE_OTHER_TABS_ID, &close_other_tabs_item, &tab_menu, 8);
 
     // Help menu positions: send_error_report(0)
     register_item(
@@ -422,6 +432,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         view_left_pane_submenu,
         view_right_pane_submenu,
         pin_tab: pin_tab_item,
+        reopen_closed_tab: reopen_closed_tab_item,
         items,
         sort_submenu,
     })

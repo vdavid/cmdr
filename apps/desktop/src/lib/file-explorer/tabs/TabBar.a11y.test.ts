@@ -5,7 +5,7 @@
  * tabs, and pinned tabs.
  */
 
-import { describe, it } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import TabBar from './TabBar.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
@@ -95,5 +95,74 @@ describe('TabBar a11y', () => {
     })
     await tick()
     await expectNoA11yViolations(target)
+  })
+})
+
+describe('TabBar double-click empty area', () => {
+  /** Mounts a fresh TabBar with the given onNewTab spy and returns the target + element refs. */
+  async function mountTabBar(onNewTab: () => void) {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(TabBar, {
+      target,
+      props: {
+        tabs: [makeTab('t1', '/Users/test'), makeTab('t2', '/Users/test/Downloads')],
+        activeTabId: 't1',
+        paneId: 'left',
+        maxTabs: 10,
+        onTabSwitch: noop,
+        onTabClose: noop,
+        onTabMiddleClick: noop,
+        onNewTab,
+        onContextMenu: noop,
+        onPaneFocus: noop,
+      },
+    })
+    await tick()
+    const bar = target.querySelector('.tab-bar') as HTMLElement
+    return { target, bar }
+  }
+
+  it('dblclick on the empty .tab-bar padding fires onNewTab', async () => {
+    const onNewTab = vi.fn()
+    const { bar } = await mountTabBar(onNewTab)
+    // The bar itself (not a child) is the empty padding/spacer surface.
+    bar.dispatchEvent(new MouseEvent('dblclick', { button: 0, bubbles: true }))
+    expect(onNewTab).toHaveBeenCalledTimes(1)
+  })
+
+  it('dblclick on the trailing flex space of .tab-list fires onNewTab', async () => {
+    const onNewTab = vi.fn()
+    const { target } = await mountTabBar(onNewTab)
+    const tabList = target.querySelector('.tab-list') as HTMLElement
+    // Click the .tab-list element directly (not on any child .tab) — the trailing
+    // empty flex region is the .tab-list itself outside of any `.tab` button.
+    tabList.dispatchEvent(new MouseEvent('dblclick', { button: 0, bubbles: true }))
+    expect(onNewTab).toHaveBeenCalledTimes(1)
+  })
+
+  it('dblclick on a .tab does NOT fire onNewTab', async () => {
+    const onNewTab = vi.fn()
+    const { target } = await mountTabBar(onNewTab)
+    const tab = target.querySelector('.tab') as HTMLElement
+    tab.dispatchEvent(new MouseEvent('dblclick', { button: 0, bubbles: true }))
+    expect(onNewTab).not.toHaveBeenCalled()
+  })
+
+  it('dblclick on .new-tab-btn does NOT fire onNewTab (avoids double-create)', async () => {
+    const onNewTab = vi.fn()
+    const { target } = await mountTabBar(onNewTab)
+    const newTabBtn = target.querySelector('.new-tab-btn') as HTMLElement
+    newTabBtn.dispatchEvent(new MouseEvent('dblclick', { button: 0, bubbles: true }))
+    expect(onNewTab).not.toHaveBeenCalled()
+  })
+
+  it('dblclick on .close-btn does NOT fire onNewTab', async () => {
+    const onNewTab = vi.fn()
+    const { target } = await mountTabBar(onNewTab)
+    const closeBtn = target.querySelector('.close-btn') as HTMLElement
+    expect(closeBtn).not.toBeNull()
+    closeBtn.dispatchEvent(new MouseEvent('dblclick', { button: 0, bubbles: true }))
+    expect(onNewTab).not.toHaveBeenCalled()
   })
 })

@@ -537,6 +537,7 @@ pub fn run() {
             *menu_state.view_left_pane_submenu.lock_ignore_poison() = Some(menu_items.view_left_pane_submenu);
             *menu_state.view_right_pane_submenu.lock_ignore_poison() = Some(menu_items.view_right_pane_submenu);
             *menu_state.pin_tab.lock_ignore_poison() = Some(menu_items.pin_tab);
+            *menu_state.reopen_closed_tab.lock_ignore_poison() = Some(menu_items.reopen_closed_tab);
             *menu_state.items.lock_ignore_poison() = menu_items.items;
             *menu_state.sort_submenu.lock_ignore_poison() = Some(menu_items.sort_submenu);
             app.manage(menu_state);

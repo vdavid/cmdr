@@ -56,6 +56,7 @@ export interface ExplorerAPI {
   newTab: () => boolean
   closeActiveTab: () => 'closed' | 'last-tab'
   closeActiveTabWithConfirmation: () => Promise<'closed' | 'last-tab' | 'cancelled'>
+  reopenLastClosedTab: () => 'reopened' | 'empty' | 'cap'
   cycleTab: (direction: 'next' | 'prev') => void
   togglePinActiveTab: () => void
   closeOtherTabs: () => void

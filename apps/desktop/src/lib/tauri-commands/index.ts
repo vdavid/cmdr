@@ -87,6 +87,7 @@ export {
   updateViewModeMenu,
   showMainWindow,
   updatePinTabMenu,
+  setReopenClosedTabEnabled,
 } from './app-state'
 export type { PaneFileEntry, PaneState, McpTabInfo } from './app-state'
 

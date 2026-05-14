@@ -35,13 +35,13 @@ impl Tool {
 fn get_tab_tools() -> Vec<Tool> {
     vec![Tool {
         name: "tab".to_string(),
-        description: "Create, close, activate, or pin tabs".to_string(),
+        description: "Create, close, activate, pin, or reopen tabs".to_string(),
         input_schema: json!({
             "type": "object",
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["new", "close", "close_others", "activate", "set_pinned"],
+                    "enum": ["new", "close", "close_others", "activate", "set_pinned", "reopen"],
                     "description": "Action to perform on the tab"
                 },
                 "pane": {
@@ -51,7 +51,7 @@ fn get_tab_tools() -> Vec<Tool> {
                 },
                 "tab_id": {
                     "type": "string",
-                    "description": "Tab ID. Defaults to active tab for close, close_others, set_pinned. Required for activate."
+                    "description": "Tab ID. Defaults to active tab for close, close_others, set_pinned. Required for activate. Not used for new or reopen."
                 },
                 "pinned": {
                     "type": "boolean",
@@ -625,6 +625,7 @@ mod tests {
         assert!(action_enum.contains(&json!("close_others")));
         assert!(action_enum.contains(&json!("activate")));
         assert!(action_enum.contains(&json!("set_pinned")));
+        assert!(action_enum.contains(&json!("reopen")));
 
         let pane_enum = props.get("pane").unwrap().get("enum").unwrap().as_array().unwrap();
         assert!(pane_enum.contains(&json!("left")));

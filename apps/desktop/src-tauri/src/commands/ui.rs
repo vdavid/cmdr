@@ -1,8 +1,8 @@
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
-    CLOSE_TAB_ID, CommandScope, FileContextInfo, MenuState, ViewMode, build_breadcrumb_context_menu,
-    build_context_menu, build_network_host_context_menu, build_tab_context_menu, frontend_shortcut_to_accelerator,
-    menu_id_to_command, rebuild_view_mode_items, sync_view_mode_check_states,
+    CLOSE_TAB_ID, CommandScope, FileContextInfo, MenuState, REOPEN_CLOSED_TAB_ID, ViewMode,
+    build_breadcrumb_context_menu, build_context_menu, build_network_host_context_menu, build_tab_context_menu,
+    frontend_shortcut_to_accelerator, menu_id_to_command, rebuild_view_mode_items, sync_view_mode_check_states,
 };
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use std::process::Command;
@@ -401,6 +401,20 @@ pub fn update_pin_tab_menu<R: Runtime>(app: AppHandle<R>, is_pinned: bool) -> Re
     item.set_text(label).map_err(|e| e.to_string())
 }
 
+/// Enables or disables the Tab menu "Reopen closed tab" item based on whether the
+/// focused pane's closed-tab stack has entries. Mirrors the dynamic-label pattern
+/// used by `update_pin_tab_menu`.
+#[tauri::command]
+#[specta::specta]
+pub fn set_reopen_closed_tab_enabled<R: Runtime>(app: AppHandle<R>, enabled: bool) -> Result<(), String> {
+    let menu_state = app.state::<MenuState<R>>();
+    let guard = menu_state.reopen_closed_tab.lock_ignore_poison();
+    let Some(item) = guard.as_ref() else {
+        return Err("Menu not initialized".to_string());
+    };
+    item.set_enabled(enabled).map_err(|e| e.to_string())
+}
+
 /// Enables or disables explorer-scoped menu items based on the current context.
 /// - `"explorer"`: all menu items enabled (main file explorer has focus)
 /// - `"other"`: all non-App items disabled except Close tab (⌘W), which doubles as
@@ -415,6 +429,12 @@ pub fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Resul
         // Close tab stays enabled: on_menu_event has special logic to close the focused
         // non-main window when main isn't focused (standard ⌘W behavior on macOS).
         if id == CLOSE_TAB_ID {
+            continue;
+        }
+        // Reopen closed tab is managed exclusively by `set_reopen_closed_tab_enabled` —
+        // skip it here so an "explorer" context switch doesn't enable it while the
+        // focused pane's closed-tab stack is empty.
+        if id == REOPEN_CLOSED_TAB_ID {
             continue;
         }
         let is_app = matches!(menu_id_to_command(id), Some((_, CommandScope::App)));

@@ -51,6 +51,12 @@ export async function updatePinTabMenu(isPinned: boolean): Promise<void> {
   await invoke('update_pin_tab_menu', { isPinned })
 }
 
+/** Enables or disables the Tab menu "Reopen closed tab" item based on whether the focused pane's closed-tab stack has entries. */
+export async function setReopenClosedTabEnabled(enabled: boolean): Promise<void> {
+  // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic over Runtime; not in typed bindings
+  await invoke('set_reopen_closed_tab_enabled', { enabled })
+}
+
 // ============================================================================
 // Dialog tracking
 // ============================================================================

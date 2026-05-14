@@ -173,6 +173,7 @@ export interface SettingsValues {
   'advanced.filterSafeSaveArtifacts': boolean
   'advanced.diskSpaceChangeThreshold': number
   'advanced.maxLogStorageMb': number
+  'fileExplorer.tabs.closedTabHistorySize': number
 }
 
 export type SettingId = keyof SettingsValues

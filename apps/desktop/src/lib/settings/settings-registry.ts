@@ -913,6 +913,23 @@ export const settingsRegistry: SettingDefinition[] = [
       step: 1,
     },
   },
+  {
+    id: 'fileExplorer.tabs.closedTabHistorySize',
+    section: ['Advanced'],
+    label: 'Number of closed tabs to remember per pane',
+    description:
+      'How many recently closed tabs to keep per pane for "Reopen closed tab" (⌘⇧T). Higher values let you reopen further back in history; lower values free up memory sooner. Only applies to tabs closed in the current session.',
+    keywords: ['tab', 'closed', 'reopen', 'history', 'undo', 'pane'],
+    type: 'number',
+    default: 10,
+    component: 'number-input',
+    showInAdvanced: true,
+    constraints: {
+      min: 1,
+      max: 50,
+      step: 1,
+    },
+  },
 ]
 
 // ============================================================================

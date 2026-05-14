@@ -7,6 +7,11 @@ import {
   addTab,
   closeTab,
   closeOtherTabs,
+  closeTabRecording,
+  closeOtherTabsRecording,
+  reopenLastClosedTab,
+  trimClosedStack,
+  getClosedStackSize,
   switchTab,
   pinTab,
   unpinTab,
@@ -358,6 +363,239 @@ describe('tab-state-manager', () => {
 
       expect(getAllTabs(mgr)).toHaveLength(2)
       expect(getTabCount(mgr)).toBe(2)
+    })
+  })
+
+  // -------------------------------------------------------------------------
+  // Closed-tab history (Cmd+Shift+T)
+  // -------------------------------------------------------------------------
+
+  describe('closeTabRecording / reopenLastClosedTab', () => {
+    it('pushes the closed tab onto the stack on close', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      const tab2 = makeTab({ id: 'tab-2', path: '/Users/test/Downloads' })
+      addTab(mgr, 'tab-1', tab2)
+
+      closeTabRecording(mgr, 'tab-2', 10)
+
+      expect(getClosedStackSize(mgr)).toBe(1)
+      expect(mgr.closedStack[0].tab.id).toBe('tab-2')
+      expect(mgr.closedStack[0].tab.path).toBe('/Users/test/Downloads')
+    })
+
+    it('does not record the last tab (closeTab returns closed: false)', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+
+      closeTabRecording(mgr, 'tab-1', 10)
+
+      expect(getClosedStackSize(mgr)).toBe(0)
+      expect(getTabCount(mgr)).toBe(1)
+    })
+
+    it('reopens the most-recently-closed tab and restores it as active', () => {
+      const tab1 = makeTab({ id: 'tab-1', path: '/a' })
+      const mgr = createTabManager(tab1)
+      const tab2 = makeTab({ id: 'tab-2', path: '/b' })
+      addTab(mgr, 'tab-1', tab2)
+
+      closeTabRecording(mgr, 'tab-2', 10)
+      expect(getTabCount(mgr)).toBe(1)
+
+      const result = reopenLastClosedTab(mgr, MAX_TABS_PER_PANE)
+
+      expect(result).toEqual({ reopened: 'tab-2' })
+      expect(getTabCount(mgr)).toBe(2)
+      expect(mgr.activeTabId).toBe('tab-2')
+      expect(getClosedStackSize(mgr)).toBe(0)
+    })
+
+    it('drops oldest entries when over cap on push (FIFO trim)', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      // Build a pane with 4 tabs total so we can close 3.
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-2' }))
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-3' }))
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-4' }))
+
+      const cap = 2
+      closeTabRecording(mgr, 'tab-2', cap)
+      closeTabRecording(mgr, 'tab-3', cap)
+      closeTabRecording(mgr, 'tab-4', cap)
+
+      // Oldest (`tab-2`) is gone; stack holds the two most recent.
+      expect(getClosedStackSize(mgr)).toBe(cap)
+      expect(mgr.closedStack.map((e) => e.tab.id)).toEqual(['tab-3', 'tab-4'])
+    })
+
+    it('returns { reason: "empty" } when the stack is empty', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+
+      const result = reopenLastClosedTab(mgr, MAX_TABS_PER_PANE)
+
+      expect(result).toEqual({ reason: 'empty' })
+    })
+
+    it('returns { reason: "cap" } at the tab cap, leaving the stack untouched', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      // Build to MAX_TABS_PER_PANE − 1, close one, then push back to cap with another tab.
+      for (let i = 2; i <= MAX_TABS_PER_PANE; i++) {
+        addTab(mgr, 'tab-1', makeTab({ id: `tab-${String(i)}` }))
+      }
+      expect(getTabCount(mgr)).toBe(MAX_TABS_PER_PANE)
+
+      // Close one to record it on the stack.
+      closeTabRecording(mgr, 'tab-2', 10)
+      expect(getClosedStackSize(mgr)).toBe(1)
+
+      // Re-fill to cap with a new tab that doesn't go on the stack.
+      addTab(mgr, mgr.activeTabId, makeTab({ id: 'tab-extra' }))
+      expect(getTabCount(mgr)).toBe(MAX_TABS_PER_PANE)
+
+      const result = reopenLastClosedTab(mgr, MAX_TABS_PER_PANE)
+
+      expect(result).toEqual({ reason: 'cap' })
+      // No pop, no mutation.
+      expect(getClosedStackSize(mgr)).toBe(1)
+      expect(getTabCount(mgr)).toBe(MAX_TABS_PER_PANE)
+    })
+
+    it('restores pin state, cursorFilename, and history on reopen', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      const tab2 = makeTab({
+        id: 'tab-2',
+        path: '/restore-here',
+        pinned: true,
+        cursorFilename: 'cursor.txt',
+        history: { stack: [{ volumeId: 'root', path: '/restore-here' }], currentIndex: 0 },
+      })
+      addTab(mgr, 'tab-1', tab2)
+
+      closeTabRecording(mgr, 'tab-2', 10)
+      const result = reopenLastClosedTab(mgr, MAX_TABS_PER_PANE)
+      expect(result).toEqual({ reopened: 'tab-2' })
+
+      const restored = getAllTabs(mgr).find((t) => t.id === 'tab-2')
+      expect(restored).toBeDefined()
+      expect(restored?.pinned).toBe(true)
+      expect(restored?.cursorFilename).toBe('cursor.txt')
+      expect(restored?.history.stack).toHaveLength(1)
+      expect(restored?.history.stack[0].path).toBe('/restore-here')
+    })
+
+    it('restores the tab at its original index', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-2' }))
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-3' }))
+      // Order now: tab-2 (0), tab-3 (1), tab-1 (2)
+      mgr.activeTabId = 'tab-2' // active so closing doesn't affect index of tab-3
+      // Close the middle tab (tab-3 at index 1).
+      closeTabRecording(mgr, 'tab-3', 10)
+      // Order now: tab-2, tab-1
+      expect(getAllTabs(mgr).map((t) => t.id)).toEqual(['tab-2', 'tab-1'])
+
+      reopenLastClosedTab(mgr, MAX_TABS_PER_PANE)
+      expect(getAllTabs(mgr).map((t) => t.id)).toEqual(['tab-2', 'tab-3', 'tab-1'])
+    })
+  })
+
+  describe('closeOtherTabsRecording', () => {
+    it('pushes closed tabs right-to-left so popping restores the original order', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-2' }))
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-3' }))
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-4' }))
+      // Order: tab-2 (0), tab-3 (1), tab-4 (2), tab-1 (3)
+      const originalOrder = getAllTabs(mgr).map((t) => t.id)
+      expect(originalOrder).toEqual(['tab-2', 'tab-3', 'tab-4', 'tab-1'])
+
+      // Close everything except tab-3 (index 1).
+      closeOtherTabsRecording(mgr, 'tab-3', 50)
+
+      // After close, only tab-3 remains.
+      expect(getAllTabs(mgr).map((t) => t.id)).toEqual(['tab-3'])
+
+      // Pop and re-insert each tab. After reopening all closed ones, order should match
+      // the pre-close arrangement exactly.
+      while (getClosedStackSize(mgr) > 0) {
+        const popped = reopenLastClosedTab(mgr, 50)
+        expect('reopened' in popped).toBe(true)
+      }
+
+      expect(getAllTabs(mgr).map((t) => t.id)).toEqual(originalOrder)
+    })
+
+    it('does not push pinned tabs (they stay open)', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-2' }))
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-3', pinned: true }))
+
+      closeOtherTabsRecording(mgr, 'tab-1', 10)
+
+      // tab-3 (pinned) stays; only tab-2 was closed.
+      expect(getClosedStackSize(mgr)).toBe(1)
+      expect(mgr.closedStack[0].tab.id).toBe('tab-2')
+    })
+  })
+
+  describe('trimClosedStack', () => {
+    it('drops oldest entries from the front', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-2' }))
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-3' }))
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-4' }))
+
+      // Push three closes in a row with a generous cap.
+      closeTabRecording(mgr, 'tab-2', 10)
+      closeTabRecording(mgr, 'tab-3', 10)
+      closeTabRecording(mgr, 'tab-4', 10)
+      expect(mgr.closedStack.map((e) => e.tab.id)).toEqual(['tab-2', 'tab-3', 'tab-4'])
+
+      trimClosedStack(mgr, 1)
+
+      expect(mgr.closedStack.map((e) => e.tab.id)).toEqual(['tab-4'])
+    })
+
+    it('is a no-op when current size <= cap', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-2' }))
+      closeTabRecording(mgr, 'tab-2', 10)
+
+      trimClosedStack(mgr, 10)
+
+      expect(getClosedStackSize(mgr)).toBe(1)
+    })
+  })
+
+  describe('closeTab / closeOtherTabs (non-recording variants stay) ', () => {
+    it('non-recording closeTab does not touch the closed stack', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-2' }))
+
+      closeTab(mgr, 'tab-2')
+
+      expect(getClosedStackSize(mgr)).toBe(0)
+    })
+
+    it('non-recording closeOtherTabs does not touch the closed stack', () => {
+      const tab1 = makeTab({ id: 'tab-1' })
+      const mgr = createTabManager(tab1)
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-2' }))
+      addTab(mgr, 'tab-1', makeTab({ id: 'tab-3' }))
+
+      closeOtherTabs(mgr, 'tab-1')
+
+      expect(getClosedStackSize(mgr)).toBe(0)
     })
   })
 })

@@ -158,6 +158,7 @@ export const commands: Command[] = [
   // ============================================================================
   { id: 'tab.new', name: 'New tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌘T'] },
   { id: 'tab.close', name: 'Close tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌘W'] },
+  { id: 'tab.reopen', name: 'Reopen closed tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌘⇧T'] },
   { id: 'tab.next', name: 'Next tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌃Tab'] },
   { id: 'tab.prev', name: 'Previous tab', scope: 'Main window', showInPalette: true, shortcuts: ['⌃⇧Tab'] },
   { id: 'tab.togglePin', name: 'Toggle pin tab', scope: 'Main window', showInPalette: true, shortcuts: [] },

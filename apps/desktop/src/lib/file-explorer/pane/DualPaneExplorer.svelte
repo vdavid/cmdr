@@ -57,8 +57,10 @@
         getActiveTab,
         getAllTabs,
         getTabCount,
-        closeTab,
-        closeOtherTabs as closeOtherTabsInMgr,
+        closeTabRecording,
+        closeOtherTabsRecording,
+        trimClosedStack,
+        getClosedStackSize,
         MAX_TABS_PER_PANE,
         pinTab,
         unpinTab,
@@ -77,6 +79,7 @@
         closeActiveTabWithConfirmation as tabOpsCloseActiveTabWithConfirmation,
         togglePinActiveTab as tabOpsTogglePinActiveTab,
         closeOtherTabsInFocusedPane as tabOpsCloseOtherTabs,
+        reopenLastClosedTabInPane as tabOpsReopenLastClosedTab,
         syncPinTabMenuForPane,
         cycleTab as tabOpsCycleTab,
         switchToTab as tabOpsSwitchToTab,
@@ -124,6 +127,8 @@
     import { createIndexEventHandler } from './index-events'
     import { loadPersistedState } from './initialization'
     import { getDirectorySortMode } from '$lib/settings/reactive-settings.svelte'
+    import { getSetting, onSettingChange } from '$lib/settings'
+    import { setReopenClosedTabEnabled } from '$lib/tauri-commands'
     import { resolveDropTarget } from '../drag/drop-target-hit-testing'
     import { isInvalidSelfDescendantDrop } from '../drag/drop-target-validation'
     import { pickDropOperation } from '../drag/drop-operation'
@@ -143,6 +148,18 @@
 
     function saveTabsForPaneSide(pane: 'left' | 'right') {
         saveTabsForPane(pane, getTabMgr)
+    }
+
+    /** Per-pane closed-tab history cap, lives in `fileExplorer.tabs.closedTabHistorySize` setting. */
+    function getClosedTabsCap(): number {
+        return getSetting('fileExplorer.tabs.closedTabHistorySize')
+    }
+
+    /** Pushes the focused pane's closed-stack-empty state to the backend so the
+     *  File menu's "Reopen closed tab" item enables/disables in sync. */
+    function syncReopenMenuState() {
+        const enabled = getClosedStackSize(getTabMgr(focusedPane)) > 0
+        void setReopenClosedTabEnabled(enabled)
     }
 
     let leftTabMgr = $state<TabManager>(createTabManager(createInitialTabState('~', DEFAULT_VOLUME_ID)))
@@ -521,6 +538,20 @@
         })
     })
 
+    // Trim both panes' closed-tab stacks when the cap setting decreases.
+    let unlistenClosedTabsCap: (() => void) | undefined
+    $effect(() => {
+        if (!initialized) return
+        unlistenClosedTabsCap = onSettingChange((id, value) => {
+            if (id !== 'fileExplorer.tabs.closedTabHistorySize') return
+            const cap = typeof value === 'number' ? value : getClosedTabsCap()
+            trimClosedStack(leftTabMgr, cap)
+            trimClosedStack(rightTabMgr, cap)
+            syncReopenMenuState()
+        })
+        return () => unlistenClosedTabsCap?.()
+    })
+
     function handleVolumeChange(
         pane: 'left' | 'right',
         volumeId: string,
@@ -616,6 +647,7 @@
             saveAppStatus({ focusedPane: pane })
             void updateFocusedPane(pane)
             syncPinTabMenu()
+            syncReopenMenuState()
             pushViewMenuState()
         }
         // Always restore DOM focus (needed after inline rename or dialog close within a pane)
@@ -1055,6 +1087,7 @@
 
         initialized = true
         syncPinTabMenu()
+        syncReopenMenuState()
         pushViewMenuState()
 
         // Sync initial tab state to MCP backend
@@ -2230,11 +2263,14 @@
     // --- Tab bar handler functions (logic in tab-operations.ts) ---
 
     function handleTabClose(pane: 'left' | 'right', tabId: TabId) {
-        void tabOpsHandleTabClose(pane, tabId, getTabMgr, focusedPane, syncPinTabMenu)
+        void tabOpsHandleTabClose(pane, tabId, getTabMgr, focusedPane, syncPinTabMenu, getClosedTabsCap).then(() => {
+            syncReopenMenuState()
+        })
     }
 
     function handleTabMiddleClick(pane: 'left' | 'right', tabId: TabId) {
-        tabOpsHandleTabMiddleClick(pane, tabId, getTabMgr, focusedPane, syncPinTabMenu)
+        tabOpsHandleTabMiddleClick(pane, tabId, getTabMgr, focusedPane, syncPinTabMenu, getClosedTabsCap)
+        syncReopenMenuState()
     }
 
     function handleNewTab(pane: 'left' | 'right') {
@@ -2242,7 +2278,17 @@
     }
 
     function handleTabContextMenu(pane: 'left' | 'right', tabId: TabId, event: MouseEvent) {
-        void tabOpsHandleTabContextMenu(pane, tabId, event, getTabMgr, focusedPane, syncPinTabMenu)
+        void tabOpsHandleTabContextMenu(
+            pane,
+            tabId,
+            event,
+            getTabMgr,
+            focusedPane,
+            syncPinTabMenu,
+            getClosedTabsCap,
+        ).then(() => {
+            syncReopenMenuState()
+        })
     }
 
     export function newTab(): boolean {
@@ -2250,11 +2296,21 @@
     }
 
     export function closeActiveTab(): 'closed' | 'last-tab' {
-        return tabOpsCloseActiveTab(focusedPane, getTabMgr)
+        const result = tabOpsCloseActiveTab(focusedPane, getTabMgr, getClosedTabsCap)
+        syncReopenMenuState()
+        return result
     }
 
     export async function closeActiveTabWithConfirmation(): Promise<'closed' | 'last-tab' | 'cancelled'> {
-        return tabOpsCloseActiveTabWithConfirmation(focusedPane, getTabMgr)
+        const result = await tabOpsCloseActiveTabWithConfirmation(focusedPane, getTabMgr, getClosedTabsCap)
+        syncReopenMenuState()
+        return result
+    }
+
+    export function reopenLastClosedTab(): 'reopened' | 'empty' | 'cap' {
+        const result = tabOpsReopenLastClosedTab(focusedPane, getTabMgr)
+        syncReopenMenuState()
+        return result
     }
 
     export function togglePinActiveTab(): void {
@@ -2262,7 +2318,8 @@
     }
 
     export function closeOtherTabs(): void {
-        tabOpsCloseOtherTabs(focusedPane, getTabMgr)
+        tabOpsCloseOtherTabs(focusedPane, getTabMgr, getClosedTabsCap)
+        syncReopenMenuState()
     }
 
     function handleMcpTabAction(
@@ -2283,13 +2340,24 @@
                     log.warn(`MCP tab close: can't close last tab in ${pane} pane`)
                     return
                 }
-                closeTab(mgr, tabId ?? mgr.activeTabId)
+                closeTabRecording(mgr, tabId ?? mgr.activeTabId, getClosedTabsCap())
                 saveTabsForPaneSide(pane)
                 if (pane === focusedPane) syncPinTabMenu()
+                if (pane === focusedPane) syncReopenMenuState()
             },
             close_others: () => {
-                closeOtherTabsInMgr(mgr, tabId ?? mgr.activeTabId)
+                closeOtherTabsRecording(mgr, tabId ?? mgr.activeTabId, getClosedTabsCap())
                 saveTabsForPaneSide(pane)
+                if (pane === focusedPane) syncReopenMenuState()
+            },
+            reopen: () => {
+                if (pane === focusedPane) {
+                    // Cheap path: existing helper handles the focused pane.
+                    reopenLastClosedTab()
+                    return
+                }
+                // For non-focused panes, call the tab-operations helper with the target pane.
+                tabOpsReopenLastClosedTab(pane, getTabMgr)
             },
             activate: () => {
                 if (tabId) switchToTab(pane, tabId)

@@ -103,6 +103,7 @@ vi.mock('$lib/tauri-commands', () => ({
   // Tab mocks
   updatePaneTabs: vi.fn().mockResolvedValue(undefined),
   updatePinTabMenu: vi.fn().mockResolvedValue(undefined),
+  setReopenClosedTabEnabled: vi.fn().mockResolvedValue(undefined),
   showTabContextMenu: vi.fn().mockResolvedValue(null),
   updateViewModeMenu: vi.fn().mockResolvedValue(undefined),
   // Volume space polling

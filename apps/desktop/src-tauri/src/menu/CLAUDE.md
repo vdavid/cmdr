@@ -201,3 +201,9 @@ also Window and Help.
   conflict with the custom MenuItem.
 - **Pin tab label**: `pin_tab` in MenuState is updated dynamically by the frontend to show
   "Pin tab" or "Unpin tab" based on the active tab's state.
+- **Reopen closed tab item**: The Tab submenu includes "Reopen closed tab" (⌘⇧T on macOS) between
+  Close tab and the Next/Previous tab pair. The item is created **disabled** and toggled live via
+  `set_reopen_closed_tab_enabled(enabled: bool)` — same dynamic-state pattern as `pin_tab`'s label.
+  `MenuState.reopen_closed_tab` holds the `MenuItem` reference. The frontend pushes enable state
+  after every close, reopen, and focus change so the menu always reflects the focused pane's
+  closed-tab stack.

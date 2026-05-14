@@ -141,6 +141,7 @@ const menuCommands = [
   // Tabs
   'tab.new',
   'tab.close',
+  'tab.reopen',
   'tab.next',
   'tab.prev',
   'tab.closeOthers',

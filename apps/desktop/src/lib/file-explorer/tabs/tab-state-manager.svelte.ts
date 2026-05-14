@@ -2,15 +2,26 @@ import type { TabId, TabState } from './tab-types'
 
 export const MAX_TABS_PER_PANE = 10
 
+/** One entry on the per-pane closed-tab stack, captured via `$state.snapshot`. */
+export interface ClosedTab {
+  /** Full snapshot of the closed tab (history, pin state, sort, etc.). `unreachable` is forced to `null`. */
+  tab: TabState
+  /** Position in the tabs array at close time. Used to restore the tab in its original slot. */
+  originalIndex: number
+}
+
 export interface TabManager {
   tabs: TabState[]
   activeTabId: TabId
+  /** LIFO stack of recently closed tabs (top of stack = most recent). Capped via setting. */
+  closedStack: ClosedTab[]
 }
 
 /** Creates a tab manager with a single initial tab */
 export function createTabManager(initialTab: TabState): TabManager {
   const tabs = $state<TabState[]>([initialTab])
   let activeTabId = $state<TabId>(initialTab.id)
+  const closedStack = $state<ClosedTab[]>([])
 
   return {
     get tabs() {
@@ -25,6 +36,13 @@ export function createTabManager(initialTab: TabState): TabManager {
     },
     set activeTabId(value: TabId) {
       activeTabId = value
+    },
+    get closedStack() {
+      return closedStack
+    },
+    set closedStack(value: ClosedTab[]) {
+      closedStack.length = 0
+      closedStack.push(...value)
     },
   }
 }
@@ -95,6 +113,102 @@ export function closeTab(mgr: TabManager, tabId: TabId): CloseTabResult {
 export function closeOtherTabs(mgr: TabManager, tabId: TabId): void {
   mgr.tabs = mgr.tabs.filter((t) => t.id === tabId || t.pinned)
   mgr.activeTabId = tabId
+}
+
+// --- Closed-tab history (Cmd+Shift+T) ----------------------------------------------
+
+/**
+ * Snapshots a tab for the closed-tab stack. Drops `unreachable` (runtime-only) and
+ * deep-clones reactive state via `$state.snapshot` so the entry survives even if the
+ * underlying tab object is later mutated or garbage collected.
+ */
+function snapshotTabForClose(tab: TabState): TabState {
+  const snap = $state.snapshot(tab) as TabState
+  snap.unreachable = null
+  return snap
+}
+
+/** Pushes onto the closed-tab stack, dropping the oldest entry if at `cap`. */
+function pushClosed(mgr: TabManager, entry: ClosedTab, cap: number): void {
+  mgr.closedStack.push(entry)
+  while (mgr.closedStack.length > cap) {
+    mgr.closedStack.shift() // drop oldest (front)
+  }
+}
+
+/**
+ * Closes a tab and records the close on the closed-tab stack so it can be reopened.
+ * No-op record when `closeTab` returns `{ closed: false }` (nothing to record).
+ */
+export function closeTabRecording(mgr: TabManager, tabId: TabId, cap: number): CloseTabResult {
+  const index = mgr.tabs.findIndex((t) => t.id === tabId)
+  if (index === -1) return { closed: false }
+  const tabToClose = mgr.tabs[index]
+  const snapshot = snapshotTabForClose(tabToClose)
+  const result = closeTab(mgr, tabId)
+  if (result.closed) {
+    pushClosed(mgr, { tab: snapshot, originalIndex: index }, cap)
+  }
+  return result
+}
+
+/**
+ * Closes all other tabs (except the given one + pinned), recording each close on the
+ * closed-tab stack in right-to-left order. Pushing rightmost-first means that popping
+ * in reverse and re-inserting each tab at its `originalIndex` restores the exact
+ * pre-close arrangement.
+ */
+export function closeOtherTabsRecording(mgr: TabManager, tabId: TabId, cap: number): void {
+  // Collect tabs to close with their original indices, then push right-to-left.
+  const toClose: { snapshot: TabState; originalIndex: number }[] = []
+  mgr.tabs.forEach((tab, index) => {
+    if (tab.id !== tabId && !tab.pinned) {
+      toClose.push({ snapshot: snapshotTabForClose(tab), originalIndex: index })
+    }
+  })
+  // Sort by descending originalIndex so we push rightmost first.
+  toClose.sort((a, b) => b.originalIndex - a.originalIndex)
+  for (const entry of toClose) {
+    pushClosed(mgr, { tab: entry.snapshot, originalIndex: entry.originalIndex }, cap)
+  }
+  closeOtherTabs(mgr, tabId)
+}
+
+/** Result of `reopenLastClosedTab`. */
+export type ReopenResult = { reopened: TabId } | { reason: 'empty' | 'cap' }
+
+/**
+ * Pops the most-recently-closed tab and re-inserts it at its original index.
+ * Refuses with `{ reason: 'cap' }` when the manager is at `maxTabs` (no pop, no mutation).
+ * Refuses with `{ reason: 'empty' }` when the stack is empty.
+ */
+export function reopenLastClosedTab(mgr: TabManager, maxTabs: number): ReopenResult {
+  if (mgr.closedStack.length === 0) {
+    return { reason: 'empty' }
+  }
+  if (mgr.tabs.length >= maxTabs) {
+    return { reason: 'cap' }
+  }
+  const entry = mgr.closedStack.pop()
+  if (!entry) return { reason: 'empty' }
+  const insertAt = Math.min(entry.originalIndex, mgr.tabs.length)
+  // The snapshot is plain data; re-insert directly. Svelte's $state reactivity covers
+  // the parent array, so mutations to nested fields work via the manager's accessors.
+  mgr.tabs.splice(insertAt, 0, entry.tab)
+  mgr.activeTabId = entry.tab.id
+  return { reopened: entry.tab.id }
+}
+
+/** Trims the closed-tab stack to `cap` entries (drops oldest from the front). */
+export function trimClosedStack(mgr: TabManager, cap: number): void {
+  while (mgr.closedStack.length > cap) {
+    mgr.closedStack.shift()
+  }
+}
+
+/** Returns the number of entries on the closed-tab stack. */
+export function getClosedStackSize(mgr: TabManager): number {
+  return mgr.closedStack.length
 }
 
 /** Stores cursor filename on the old active tab, then activates the new tab.

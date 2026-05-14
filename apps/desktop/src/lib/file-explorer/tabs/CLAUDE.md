@@ -84,13 +84,41 @@ query hides it gracefully without JavaScript measurement. Middle-click close sti
 Tab state persisted via `loadPaneTabs`/`savePaneTabs` in `app-status-store.ts`. Migrates from old scalar keys on first
 load.
 
+## Closed-tab history (Cmd+Shift+T)
+
+Per-pane in-memory LIFO stack of recently closed tabs (`closedStack: ClosedTab[]` on `TabManager`). Session-only — not
+persisted to disk. Capped by `fileExplorer.tabs.closedTabHistorySize` (default 10, range 1–50, set in Advanced
+settings). When the cap shrinks, both panes' stacks are trimmed live (oldest first). When the cap is reached on close,
+the oldest entry is dropped; the close itself never refuses.
+
+Each entry stores `{ tab, originalIndex }` where `tab` is a `$state.snapshot` of the closed tab with `unreachable: null`
+(runtime-only state isn't restored). Reopening pops the top entry and re-inserts the tab at
+`min(originalIndex, tabs.length)`, restoring pin state, sort, view mode, cursor filename, and history. The original tab
+`id` is kept so consumers see the same tab return.
+
+`closeOtherTabsRecording` pushes closed tabs in right-to-left order (rightmost first). Popping in reverse and
+re-inserting at `originalIndex` restores the exact pre-close arrangement.
+
+The Tab menu's "Reopen closed tab" item enables/disables based on the focused pane's stack via the
+`set_reopen_closed_tab_enabled` Tauri command (mirrors the `update_pin_tab_menu` pattern). Frontend pushes the state
+after every close, reopen, and focus change. Empty-stack reopen shows a toast ("No recently closed tabs in this pane.");
+reopen at the tab cap shows "Tab limit reached" and leaves the stack untouched.
+
+## Double-click empty tab bar to open a new tab
+
+`TabBar.svelte`'s `ondblclick` handler routes to `onNewTab` when the target isn't inside `.tab`, `.close-btn`, or
+`.new-tab-btn` — so the bar's padding strip, the trailing flex space of `.tab-list`, and the 3px top spacer all count as
+"new tab" surfaces.
+
 ## MCP
 
 - `tab` tool with `action`: `new` (create tab), `close` (close tab), `close_others` (close all but target + pinned),
-  `activate` (switch to tab), `set_pinned` (pin/unpin)
-- `tab_id` defaults to active tab for close/close_others/set_pinned; required for activate
+  `activate` (switch to tab), `set_pinned` (pin/unpin), `reopen` (pop the closed-tab stack)
+- `tab_id` defaults to active tab for close/close_others/set_pinned; required for activate; not used for new/reopen
 - `close` on the last tab returns an error instead of closing the window
 - `close` skips the pinned-tab confirmation dialog (agents know what they're doing)
 - `set_pinned` is idempotent
+- `reopen` is a no-op when the stack is empty or the pane is at the tab cap; the frontend surfaces both as toasts. The
+  backend emits the action regardless — agents get the "OK" fire-and-forget reply.
 - Tab list shown in `cmdr://state` YAML resource
 - Frontend syncs tab state to backend via debounced `updatePaneTabs` IPC
