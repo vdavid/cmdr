@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from 'svelte'
+import { mount, unmount } from 'svelte'
 import { tick } from 'svelte'
 import CommandPalette from './CommandPalette.svelte'
 
@@ -255,5 +255,60 @@ describe('CommandPalette', () => {
     // Check that shortcuts are displayed
     const shortcutElements = target.querySelectorAll('[class*="shortcut"]')
     expect(shortcutElements.length).toBeGreaterThan(0)
+  })
+
+  it('restores focus to the previously focused element on destroy', async () => {
+    const trigger = document.createElement('button')
+    document.body.appendChild(trigger)
+    trigger.focus()
+    expect(document.activeElement).toBe(trigger)
+
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const component = mount(CommandPalette, {
+      target,
+      props: { onExecute: mockOnExecute, onClose: mockOnClose },
+    })
+
+    // Wait for the palette's onMount to run so it captures `trigger` as the
+    // previously focused element. After this, simulate "palette has stolen
+    // focus" by focusing something else — the test cares about restore-on-destroy.
+    await tick()
+
+    const otherEl = document.createElement('input')
+    document.body.appendChild(otherEl)
+    otherEl.focus()
+    expect(document.activeElement).toBe(otherEl)
+
+    void unmount(component)
+    await tick()
+
+    expect(document.activeElement).toBe(trigger)
+
+    otherEl.remove()
+    trigger.remove()
+    target.remove()
+  })
+
+  it('does not throw if the previously focused element is no longer in the DOM', async () => {
+    const trigger = document.createElement('button')
+    document.body.appendChild(trigger)
+    trigger.focus()
+
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const component = mount(CommandPalette, {
+      target,
+      props: { onExecute: mockOnExecute, onClose: mockOnClose },
+    })
+    await tick()
+
+    trigger.remove()
+    expect(() => {
+      void unmount(component)
+    }).not.toThrow()
+    await tick()
+
+    target.remove()
   })
 })

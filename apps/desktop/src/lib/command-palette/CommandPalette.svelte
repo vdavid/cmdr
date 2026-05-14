@@ -8,7 +8,7 @@
      * - Persists last query across app restarts
      * - Blocks keyboard events from propagating to file explorer
      */
-    import { onMount, tick } from 'svelte'
+    import { onDestroy, onMount, tick } from 'svelte'
     import { searchCommands, type CommandMatch } from '$lib/commands'
     import { loadPaletteQuery, savePaletteQuery } from '$lib/app-status-store'
 
@@ -26,6 +26,13 @@
     let hoveredIndex = $state<number | null>(null)
     let inputElement: HTMLInputElement | undefined = $state()
     let resultsContainer: HTMLDivElement | undefined = $state()
+    /**
+     * Element that had focus when the palette opened. We restore focus to it on
+     * destroy so the focused pane (or whichever element triggered the palette)
+     * gets keyboard input again — without this, focus falls to <body> and arrow
+     * keys silently no-op until the user clicks back into a pane.
+     */
+    let previousActiveElement: HTMLElement | null = null
 
     // Derived: filtered and ranked results
     const results = $derived(searchCommands(query))
@@ -38,6 +45,7 @@
     })
 
     onMount(() => {
+        previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
         // Load persisted query and focus input
         void loadPaletteQuery().then((savedQuery) => {
             query = savedQuery
@@ -46,6 +54,15 @@
                 inputElement?.select()
             })
         })
+    })
+
+    onDestroy(() => {
+        // Restore focus to whatever had it before we opened, if it's still in the DOM.
+        // Without this, focus falls to <body> after close and keyboard nav stops working
+        // for the previously focused pane until the user clicks back into it.
+        if (previousActiveElement?.isConnected) {
+            previousActiveElement.focus()
+        }
     })
 
     function handleKeyDown(e: KeyboardEvent) {
