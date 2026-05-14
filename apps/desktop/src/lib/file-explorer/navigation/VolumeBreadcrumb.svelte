@@ -242,11 +242,11 @@
     function handleDropdownKey(key: string): boolean {
         switch (key) {
             case 'ArrowDown':
-                highlightedIndex = Math.min(highlightedIndex + 1, allVolumes.length - 1)
+                highlightedIndex = (highlightedIndex + 1) % allVolumes.length
                 enterKeyboardMode()
                 return true
             case 'ArrowUp':
-                highlightedIndex = Math.max(highlightedIndex - 1, 0)
+                highlightedIndex = (highlightedIndex - 1 + allVolumes.length) % allVolumes.length
                 enterKeyboardMode()
                 return true
             case 'ArrowRight':
