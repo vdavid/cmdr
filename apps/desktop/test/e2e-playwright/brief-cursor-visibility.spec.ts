@@ -206,6 +206,9 @@ test.describe('Brief view cursor visibility', () => {
   })
 
   test('cursor stays in view under arrow nav, Home/End, PageUp/PageDown, and resize', async ({ tauriPage }) => {
+    // ArrowRight × 50 + Home/End + PageUp/Down + resize measurements; ~15 s steady state.
+    // Per-press settle polls + rect-stability checks add up; legitimately > 8 s.
+    test.setTimeout(30_000)
     await ensureAppReady(tauriPage)
     await disableTransitions(tauriPage)
 

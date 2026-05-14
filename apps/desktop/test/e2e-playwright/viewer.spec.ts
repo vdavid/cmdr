@@ -140,6 +140,12 @@ test.describe('File viewer search', () => {
   })
 
   test('finds matches in file content', async ({ tauriPage }) => {
+    // Self-contained: open the search bar (afterEach closes the viewer between tests,
+    // so each search test stands on its own).
+    if (!(await tauriPage.isVisible('.search-bar'))) {
+      await tauriPage.keyboard.press('Control+f')
+      await tauriPage.waitForSelector('.search-bar', 5000)
+    }
     await tauriPage.waitForSelector('.search-input', 5000)
     await tauriPage.fill('.search-input', 'AAA')
 
@@ -160,6 +166,11 @@ test.describe('File viewer search', () => {
   })
 
   test('closes search with Escape', async ({ tauriPage }) => {
+    // Self-contained: open the search bar first.
+    if (!(await tauriPage.isVisible('.search-bar'))) {
+      await tauriPage.keyboard.press('Control+f')
+      await tauriPage.waitForSelector('.search-bar', 5000)
+    }
     expect(await tauriPage.isVisible('.search-bar')).toBe(true)
 
     await tauriPage.keyboard.press('Escape')
@@ -169,7 +180,7 @@ test.describe('File viewer search', () => {
   })
 
   test('shows "No matches" status for a query with no hits', async ({ tauriPage }) => {
-    // Reopen the search bar — the previous test closed it with Escape.
+    // Self-contained: ensure the search bar is open.
     if (!(await tauriPage.isVisible('.search-bar'))) {
       await tauriPage.keyboard.press('Control+f')
       await tauriPage.waitForSelector('.search-bar', 5000)
