@@ -173,6 +173,43 @@ test.describe('File viewer search', () => {
   })
 })
 
+test.describe('File viewer keyboard binding', () => {
+  // The shared `closeScopedWindow` helper deliberately bypasses the keyboard
+  // pathway (it invokes `plugin:window|close` from the main page) because the
+  // scoped page's `evaluate` deadlocks when the target window dies mid-script.
+  // That keeps the bulk of the suite stable but leaves the actual Escape → close
+  // binding untested. This block exists to cover that binding separately.
+
+  test('Escape closes the viewer window (production binding)', async ({ tauriPage }) => {
+    const main = tauriPage as TauriPage
+    const viewer = await openViewerForFile(main, testFilePath)
+    const label = viewer.targetWindow
+    if (!label) throw new Error('Scoped viewer page has no targetWindow label')
+
+    // Fire-and-forget: the eval that dispatches Escape may not resolve if the
+    // window dies before pw_result fires back to the test runner. The
+    // closeWindow() path uses two rAFs before calling .close(), so in practice
+    // the eval usually resolves first — but defending against either ordering
+    // keeps the test deterministic. We assert on the windowDisappeared, not on
+    // the press itself.
+    viewer.keyboard.press('Escape').catch(() => {
+      /* window died mid-script before pw_result; expected */
+    })
+
+    const gone = await pollUntil(
+      main,
+      async () => {
+        const labels = (await main.listWindows()).map((w) => w.label)
+        return !labels.includes(label)
+      },
+      5000,
+    )
+    if (!gone) {
+      throw new Error(`Escape did not close viewer window '${label}' within 5s`)
+    }
+  })
+})
+
 test.describe('File viewer error handling', () => {
   test('shows error for missing file path', async ({ tauriPage }) => {
     // The production `openFileViewer` helper requires a path, and the

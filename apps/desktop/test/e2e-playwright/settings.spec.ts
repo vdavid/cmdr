@@ -215,3 +215,35 @@ test.describe('Settings page', () => {
     expect(advanced).toBe(true)
   })
 })
+
+test.describe('Settings keyboard binding', () => {
+  // The shared `closeScopedWindow` helper closes the settings window via
+  // `plugin:window|close` from the main page, bypassing the keyboard handler
+  // entirely. This block covers the actual Escape → getCurrentWindow().close()
+  // binding in `routes/settings/+page.svelte`.
+
+  test('Escape closes the settings window (production binding)', async ({ tauriPage }) => {
+    const main = tauriPage as TauriPage
+    const settings = await openSettingsWindowViaProd(main)
+    await settings.waitForSelector('.settings-window', 15000)
+
+    // Fire-and-forget: the dispatched Escape triggers getCurrentWindow().close()
+    // synchronously inside the handler, so the window may die before pw_result
+    // fires back. The poll on listWindows() is the assertion.
+    settings.keyboard.press('Escape').catch(() => {
+      /* window died mid-script before pw_result; expected */
+    })
+
+    const gone = await pollUntil(
+      main,
+      async () => {
+        const labels = (await main.listWindows()).map((w) => w.label)
+        return !labels.includes('settings')
+      },
+      5000,
+    )
+    if (!gone) {
+      throw new Error("Escape did not close settings window 'settings' within 5s")
+    }
+  })
+})
