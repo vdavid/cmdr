@@ -50,8 +50,8 @@ The frontend has matching TypeScript types in `$lib/tauri-commands/ipc-types.ts`
 **Decision**: JSON for all Tauri IPC, not binary formats (MessagePack, Protobuf).
 **Why**: Benchmarked with real directory listings: MessagePack is 34-58% SLOWER than JSON despite being 17-19% smaller. Tauri serializes `Vec<u8>` as a JSON array of numbers, so binary data gets wrapped in JSON anyway, negating size benefits and adding extra decoding overhead. See [benchmark data](../../../../../docs/notes/json-ipc-benchmarks.md).
 
-**Decision**: No `commands/ai.rs` file -- AI commands register directly from `ai::manager` and `ai::suggestions`.
-**Why**: The AI subsystem has its own complex lifecycle (model loading, suggestion pipelines). Adding a thin wrapper in `commands/` would just be boilerplate forwarding. Registering directly keeps the AI command surface co-located with its implementation, which changes frequently.
+**Decision**: No `commands/ai.rs` file -- AI commands register directly from `ai::manager`, `ai::suggestions`, and `ai::api_keys`.
+**Why**: The AI subsystem has its own complex lifecycle (model loading, suggestion pipelines, secret-store-backed API keys). Adding a thin wrapper in `commands/` would just be boilerplate forwarding. Registering directly keeps the AI command surface co-located with its implementation, which changes frequently.
 
 **Decision**: No `commands/space_poller.rs` -- space poller commands register directly from `space_poller.rs`.
 **Why**: Same reasoning as AI. The poller has its own lifecycle (init, start, watch/unwatch). Three commands: `watch_volume_space`, `unwatch_volume_space`, `set_disk_space_threshold`.
@@ -66,7 +66,7 @@ The frontend has matching TypeScript types in `$lib/tauri-commands/ipc-types.ts`
   - `blocking_result_with_timeout(duration, closure)` → `Result<T, IpcError>` — for commands that already return `Result`. Timeout becomes `Err(IpcError { message, timedOut: true })`.
   - For P2 commands using raw `tokio::time::timeout`, map the `Elapsed` error to `IpcError::timeout()` and other errors to `IpcError::from_err(msg)`.
 - **`expand_tilde`** is applied conditionally: for `list_directory` it's gated on `volume_id == "root"`, but for write operations (copy, move, delete, scan preview) it's always applied. MTP and network volume paths must never be tilde-expanded.
-- **AI commands** are registered directly from `ai::manager` and `ai::suggestions` — there is no `commands/ai.rs` file.
+- **AI commands** are registered directly from `ai::manager`, `ai::suggestions`, and `ai::api_keys` — there is no `commands/ai.rs` file.
 - **Platform gates.** `volumes` is macOS-only; `mtp` and `network` are macOS+Linux; `volumes_linux` is Linux-only. Individual functions also use `#[cfg]` where behaviour differs (e.g., `sync_status`).
 - **`delete_files` and `rename_file` accept `volume_id`.** When set to a non-root volume, `delete_files` routes to the volume-aware delete path and skips local `validate_sources` (MTP virtual paths fail `symlink_metadata`). `rename_file` passes `volume_id` through for MTP rename support; permission checks are skipped for non-root volumes.
 - **`start_selection_drag` and `start_drag_paths`** require the main thread. Both delegate to a shared `run_drag_on_main_thread` helper that hops via `app.run_on_main_thread()` plus a `std::sync::mpsc` channel and returns the result synchronously. Pasteboard construction lives in `crate::native_drag` (file-URL + shell-escaped text per item).
