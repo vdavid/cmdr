@@ -39,6 +39,13 @@
     let overlayElement: HTMLDivElement | undefined = $state()
     let dialogPosition = $state({ x: 0, y: 0 })
     let isDragging = $state(false)
+    /**
+     * Element that had focus when the dialog opened. Restored on destroy so
+     * keyboard input flows back to wherever it came from (typically a file
+     * pane) — without this, focus falls to <body> and arrow keys silently
+     * no-op until the user clicks back into a pane.
+     */
+    let previousActiveElement: HTMLElement | null = null
 
     const dialogStyle = $derived(
         `transform: translate(${String(dialogPosition.x)}px, ${String(dialogPosition.y)}px);${containerStyle ? ` ${containerStyle}` : ''}`,
@@ -83,6 +90,7 @@
     }
 
     onMount(async () => {
+        previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
         if (dialogId) {
             void notifyDialogOpened(dialogId)
         }
@@ -93,6 +101,11 @@
     onDestroy(() => {
         if (dialogId) {
             void notifyDialogClosed(dialogId)
+        }
+        // Restore focus to whatever had it before the dialog opened. The connected-check
+        // skips elements that were unmounted while the dialog was up (e.g., a rename input).
+        if (previousActiveElement?.isConnected) {
+            previousActiveElement.focus()
         }
     })
 </script>
