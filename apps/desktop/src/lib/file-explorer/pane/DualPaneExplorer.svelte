@@ -382,6 +382,22 @@
         })
     })
 
+    // Emit closed-tab stacks to debug window (dev mode only, skip in tests)
+    $effect(() => {
+        if (!import.meta.env.DEV || import.meta.env.MODE === 'test') return
+        // Snapshot reads every property, setting up reactivity on push/pop/mutate.
+        // It also produces plain JSON so Tauri's event channel can serialize it —
+        // raw `$state` proxies + nested NavigationHistory throw on structured-clone.
+        const leftSnap = $state.snapshot(leftTabMgr.closedStack)
+        const rightSnap = $state.snapshot(rightTabMgr.closedStack)
+        const focused = focusedPane
+        untrack(() => {
+            void import('@tauri-apps/api/event').then(({ emit }) => {
+                void emit('debug-closed-tabs', { left: leftSnap, right: rightSnap, focusedPane: focused })
+            })
+        })
+    })
+
     // Derived volume paths - handle 'network' virtual volume specially
     const leftVolumePath = $derived(
         leftVolumeId === 'network' ? 'smb://' : (volumes.find((v) => v.id === leftVolumeId)?.path ?? '/'),

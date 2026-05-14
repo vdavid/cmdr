@@ -4,6 +4,7 @@
     import DebugDriveIndexPanel from './DebugDriveIndexPanel.svelte'
     import DebugToastPanel from './DebugToastPanel.svelte'
     import DebugHistoryPanel from './DebugHistoryPanel.svelte'
+    import DebugClosedTabsPanel from './DebugClosedTabsPanel.svelte'
     import DebugErrorPreviewPanel from './DebugErrorPreviewPanel.svelte'
 
     let pageElement: HTMLDivElement | undefined = $state()
@@ -91,6 +92,7 @@
         <DebugDriveIndexPanel />
         <DebugToastPanel />
         <DebugHistoryPanel />
+        <DebugClosedTabsPanel />
         <DebugErrorPreviewPanel />
     </div>
 </div>
@@ -250,6 +252,75 @@
     }
 
     :global(.no-history) {
+        margin: 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        font-style: italic;
+    }
+
+    /* Closed-tabs styles (mirror history-panes layout) */
+    :global(.closed-tabs-panes) {
+        display: flex;
+        gap: 12px;
+    }
+
+    :global(.closed-tabs-pane) {
+        flex: 1;
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-md);
+        padding: 8px;
+        min-width: 0;
+    }
+
+    :global(.closed-tabs-pane.focused) {
+        outline: 2px solid var(--color-accent);
+    }
+
+    :global(.closed-tabs-pane h3) {
+        margin: 0 0 var(--spacing-sm);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+    }
+
+    :global(.closed-tabs-list) {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        font-size: var(--font-size-sm);
+        font-family: var(--font-mono);
+    }
+
+    :global(.closed-tabs-list li) {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        padding: 3px 4px;
+        border-radius: var(--radius-sm);
+        color: var(--color-text-secondary);
+        min-width: 0;
+    }
+
+    :global(.closed-tabs-list li.top) {
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+        font-weight: 600;
+    }
+
+    :global(.closed-tab-marker) {
+        flex-shrink: 0;
+        width: 12px;
+        text-align: center;
+    }
+
+    :global(.closed-tab-path) {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    :global(.no-closed-tabs) {
         margin: 0;
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);

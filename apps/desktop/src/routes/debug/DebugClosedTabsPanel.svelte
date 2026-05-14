@@ -1,0 +1,96 @@
+<script lang="ts">
+    import { onMount, onDestroy } from 'svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
+    import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
+    import type { ClosedTab } from '$lib/file-explorer/tabs/tab-state-manager.svelte'
+
+    interface ClosedTabsPayload {
+        left: ClosedTab[]
+        right: ClosedTab[]
+        focusedPane: 'left' | 'right'
+    }
+
+    let leftStack = $state<ClosedTab[]>([])
+    let rightStack = $state<ClosedTab[]>([])
+    let focusedPane = $state<'left' | 'right'>('left')
+    let unlisten: (() => void) | undefined
+
+    onMount(async () => {
+        try {
+            const { listen } = await import('@tauri-apps/api/event')
+            unlisten = await listen<ClosedTabsPayload>('debug-closed-tabs', (event) => {
+                leftStack = event.payload.left
+                rightStack = event.payload.right
+                focusedPane = event.payload.focusedPane
+            })
+        } catch {
+            // Not in Tauri environment
+        }
+    })
+
+    onDestroy(() => {
+        unlisten?.()
+    })
+
+    /** Multi-line tooltip text for one closed tab (tooltip CSS is `white-space: pre-line`). */
+    function tabDetails(entry: ClosedTab): string {
+        const t = entry.tab
+        const sort = `${t.sortBy} ${t.sortOrder}`
+        const cursor = t.cursorFilename ?? '(none)'
+        const lines = [
+            `Path: ${t.path}`,
+            `Volume: ${t.volumeId}`,
+            `Sort: ${sort}`,
+            `View: ${t.viewMode}`,
+            `Pinned: ${t.pinned ? 'yes' : 'no'}`,
+            `Cursor: ${cursor}`,
+            `Original index: ${entry.originalIndex}`,
+            `Tab id: ${t.id}`,
+        ]
+        return lines.join('\n')
+    }
+</script>
+
+<section class="debug-section">
+    <h2>Closed tabs</h2>
+    <div class="closed-tabs-panes">
+        <div class="closed-tabs-pane" class:focused={focusedPane === 'left'}>
+            <h3>Left pane</h3>
+            {#if leftStack.length > 0}
+                <ul class="closed-tabs-list">
+                    {#each leftStack as entry, i (`${entry.tab.id}-${i}`)}
+                        {@const isTop = i === leftStack.length - 1}
+                        <li class:top={isTop} use:tooltip={tabDetails(entry)}>
+                            <span class="closed-tab-marker">{isTop ? '↑' : '·'}</span>
+                            <span
+                                class="closed-tab-path"
+                                use:useShortenMiddle={{ text: entry.tab.path, preferBreakAt: '/' }}
+                            ></span>
+                        </li>
+                    {/each}
+                </ul>
+            {:else}
+                <p class="no-closed-tabs">No recently closed tabs</p>
+            {/if}
+        </div>
+        <div class="closed-tabs-pane" class:focused={focusedPane === 'right'}>
+            <h3>Right pane</h3>
+            {#if rightStack.length > 0}
+                <ul class="closed-tabs-list">
+                    {#each rightStack as entry, i (`${entry.tab.id}-${i}`)}
+                        {@const isTop = i === rightStack.length - 1}
+                        <li class:top={isTop} use:tooltip={tabDetails(entry)}>
+                            <span class="closed-tab-marker">{isTop ? '↑' : '·'}</span>
+                            <span
+                                class="closed-tab-path"
+                                use:useShortenMiddle={{ text: entry.tab.path, preferBreakAt: '/' }}
+                            ></span>
+                        </li>
+                    {/each}
+                </ul>
+            {:else}
+                <p class="no-closed-tabs">No recently closed tabs</p>
+            {/if}
+        </div>
+    </div>
+</section>
