@@ -156,6 +156,48 @@ These modules have invested test infrastructure. New code here must keep that ba
 - **`apps/desktop/src-tauri/src/file_system/index/store.rs`** — `platform_case_compare` has proptests for comparator
   algebra and NFC≡NFD equivalence. Don't regress these.
 
+## E2E env-var hooks
+
+E2E test hooks split along two axes:
+
+- **Hard hooks** (binary shape) live behind Cargo features:
+  - `playwright-e2e` — feature-gated Tauri commands (`inject_listing_error`, `set_test_throttle`, `flush_file_watcher`)
+    and the tauri-plugin-playwright socket bridge.
+  - `virtual-mtp` — virtual MTP device with deterministic fixtures.
+  - `smb-e2e` — virtual SMB hosts injected into mDNS discovery.
+
+  These are compiled out of production binaries entirely. New commands or backends that don't make sense in prod go
+  here.
+
+- **Soft hooks** (runtime only) live behind environment variables. They are **strictly additive**: may add a delay, skip
+  a non-essential step, or emit extra telemetry — never replace production logic. With the env var unset, the code path
+  is exactly what production runs.
+
+  All soft hooks should be wired through `crate::test_mode` so the list of test hooks is grep-able from one place. New
+  env-var-driven hooks land there with a helper function — don't sprinkle `std::env::var(...)` reads through subsystems.
+
+**Existing soft hooks** (env vars):
+
+| Variable                            | Purpose                                                                    |
+| ----------------------------------- | -------------------------------------------------------------------------- |
+| `CMDR_E2E_MODE=1`                   | Canonical "we're under E2E" marker; subsystems can flip behaviors.         |
+| `CMDR_E2E_START_PATH`               | Fixture directory; surfaced via `get_e2e_start_path` so FE can pick it up. |
+| `CMDR_E2E_SHARD_KIND`               | "mtp" / "non-mtp" / "all" — selects spec subset for parallel sharding.     |
+| `CMDR_E2E_JSON_REPORT`              | Per-shard Playwright JSON report path.                                     |
+| `CMDR_E2E_OUTPUT_DIR`               | Per-shard Playwright artifact dir.                                         |
+| `CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP=1` | Non-MTP shards opt out of wiping the shared MTP backing dir.               |
+| `CMDR_E2E_SKIP_MTP_FIXTURES=1`      | Non-MTP shards skip `globalSetup`'s MTP fixture reset.                     |
+| `CMDR_E2E_COPY_THROTTLE_MS`         | Per-file sleep inside the copy loop. Lets tests stage Cancel/Rollback.     |
+| `CMDR_PLAYWRIGHT_SOCKET`            | Override the plugin's Unix socket path (one socket per shard).             |
+
+**Existing soft hooks** (IPC-driven, feature-gated to `playwright-e2e`):
+
+| Command                  | Purpose                                                                            |
+| ------------------------ | ---------------------------------------------------------------------------------- |
+| `set_test_throttle(ms)`  | Mid-run override of `CMDR_E2E_COPY_THROTTLE_MS`; clears with `null`.               |
+| `flush_file_watcher()`   | Synchronously re-reads every active watch — bypasses debouncer + FSEvents latency. |
+| `inject_listing_error()` | Inject an IoError into a volume's next list_directory for retry coverage.          |
+
 ## Process
 
 - After adding a substantial chunk of new code: run `cargo mutants --file <new_file>` (Rust) or `pnpm exec stryker run`

@@ -54,9 +54,7 @@ test.describe('Cancel and rollback', () => {
 
     // Per-file throttle: 200 ms × 5 files ≈ 1 s of copy time, plenty of room
     // to click Rollback after file 0 is committed.
-    await tauriPage.evaluate(
-      `window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: 200 })`,
-    )
+    await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: 200 })`)
 
     try {
       const found = await moveCursorToFile(tauriPage, 'partial')
@@ -106,9 +104,7 @@ test.describe('Cancel and rollback', () => {
         expect(remaining.length).toBe(0)
       }
     } finally {
-      await tauriPage.evaluate(
-        `window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null })`,
-      )
+      await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null })`)
     }
   })
 })
