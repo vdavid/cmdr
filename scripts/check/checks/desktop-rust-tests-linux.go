@@ -26,9 +26,16 @@ const goVersion = "1.25.7"
 // producing cross-test state leaks. nextest spawns a fresh process per test, matching
 // macOS local and CI behavior. Precompiled binary from get.nexte.st (no `cargo install`
 // recompile) keeps the cold-cache run fast.
+// apt is silenced at the source via -qq + DEBIAN_FRONTEND=noninteractive:
+// -qq makes apt silent on success, errors only (E:/W: lines still print).
+// noninteractive prevents debconf from trying terminal frontends (the
+// "unable to initialize frontend: Dialog" noise is purely a TTY-mismatch
+// complaint that has no real signal). Combined, ~1000 lines of dpkg setup
+// chatter on a fresh container reduce to zero on success.
 var provisionScript = fmt.Sprintf(`set -e
-apt-get update
-apt-get install -y --no-install-recommends \
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -qq
+apt-get install -y -qq --no-install-recommends \
   libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libacl1-dev \
   curl ca-certificates
 curl -fsSL https://go.dev/dl/go%s.linux-$(dpkg --print-architecture).tar.gz | tar -xz -C /usr/local
@@ -60,34 +67,69 @@ func RunRustTestsLinux(ctx *CheckContext) (CheckResult, error) {
 		"sh", "-c", provisionScript)
 	output, err := RunCommand(cmd, true)
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("rust tests failed on Linux\n%s", indentOutput(trimBuildNoise(output)))
+		summary := trimRustTestProgress(trimBuildNoise(output))
+		return CheckResult{}, fmt.Errorf("rust tests failed on Linux\n%s", indentOutput(summary))
 	}
 	return Success("All tests passed on Linux"), nil
 }
 
 var compilingLineRe = regexp.MustCompile(`(?m)^\s*Compiling \w+ v`)
 
-// trimBuildNoise strips apt-get and cargo compilation output, keeping
-// everything after the last "Compiling ..." line. Falls back to the
-// last 50 lines if no Compiling line is found (e.g. build failure).
+// trimBuildNoise drops cargo's pre-compile setup (apt/dpkg/rustup chatter)
+// by keeping everything after the last `Compiling …` line. If no Compiling
+// line exists (provisioning failed before cargo ran), the output is returned
+// as-is — apt is silenced at source via -qq + DEBIAN_FRONTEND=noninteractive
+// in provisionScript, so a no-Compiling failure already comes back clean
+// (rustup info + actual error, no apt noise to filter).
+//
+// Nothing is ever truncated by length: if the test run produces 500 lines of
+// real failures, all 500 survive.
 func trimBuildNoise(output string) string {
-	locs := compilingLineRe.FindAllStringIndex(output, -1)
-	if len(locs) > 0 {
+	if locs := compilingLineRe.FindAllStringIndex(output, -1); len(locs) > 0 {
 		lastEnd := locs[len(locs)-1][1]
-		// Find the end of that line
-		nl := strings.IndexByte(output[lastEnd:], '\n')
-		if nl >= 0 {
-			trimmed := strings.TrimLeft(output[lastEnd+nl+1:], "\n")
-			if trimmed != "" {
+		if nl := strings.IndexByte(output[lastEnd:], '\n'); nl >= 0 {
+			if trimmed := strings.TrimLeft(output[lastEnd+nl+1:], "\n"); trimmed != "" {
 				return trimmed
 			}
 		}
 	}
-
-	// Fallback: show last 50 lines
-	lines := strings.Split(output, "\n")
-	if len(lines) > 50 {
-		return strings.Join(lines[len(lines)-50:], "\n")
-	}
 	return output
+}
+
+// testProgressNoiseRE matches per-test pass/skip lines that are pure noise on
+// a failure. Two formats are recognised:
+//
+//	cargo test    `test foo::bar ... ok`
+//	              `test foo::bar ... ignored, <reason>`
+//	cargo nextest `        PASS [   0.001s] cmdr_lib foo::bar`
+//	              `        SKIP [   0.001s] cmdr_lib foo::bar`
+//	              `        PASS [   0.001s] cmdr_lib foo::bar (reason)`
+//
+// Anchored to the start of the line (with optional leading whitespace for the
+// nextest form) so panic-message bodies that quote these phrases can't be
+// misclassified. FAIL/LEAK/TIMEOUT/SLOW/bench results and every non-test line
+// fall through unchanged.
+var testProgressNoiseRE = regexp.MustCompile(
+	`^(?:test .+ \.\.\. (?:ok|ignored(?:, .*)?)|\s+(?:PASS|SKIP) \[[^\]]*\] \S+ \S.*)$`,
+)
+
+// trimRustTestProgress drops `test … ok` / `test … ignored…` / nextest
+// `PASS [...]` and `SKIP [...]` lines from cargo test or cargo nextest
+// output. Everything else is kept verbatim: `running N tests` headers,
+// FAIL/FAILED markers, the `failures:` block (panic stdout + listing), the
+// `test result:` / `Summary` tally, `error:` lines, and any other text.
+//
+// The filter is single-pass and per-line, so it survives weird interleaving
+// (multiple test binaries, multi-line panic messages, debconf noise after the
+// suite exits) — it can only ever keep too much, never drop a real signal.
+func trimRustTestProgress(output string) string {
+	lines := strings.Split(output, "\n")
+	kept := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if testProgressNoiseRE.MatchString(line) {
+			continue
+		}
+		kept = append(kept, line)
+	}
+	return strings.Join(kept, "\n")
 }

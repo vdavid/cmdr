@@ -491,8 +491,22 @@ func stopProcessOnPort(port string) {
 //	                          out-of-order build output Docker flushes after
 //	                          the run exits — already saved in the full log
 //	                          file the surrounding error message links to)
+//
+// If the run died before reaching the test phase (e.g. SMB container setup
+// failed silently in desktop-e2e-linux), none of §1, §3, or the tally exist.
+// We detect that by absence of all of: the Tauri start marker, a numbered
+// failure block, and a `N passed`/`N failed` tally. In that case the full
+// pre-ELIFECYCLE transcript is kept, the verbose `docker compose ps` table
+// is dropped, and a one-line hint is prepended.
+//
+// The Tauri-marker check alone is insufficient because the macOS playwright
+// shards start Tauri in the Go check (with its stdout going to a log file),
+// so the marker never appears in Playwright's stdout — even on a successful
+// run.
 func extractE2ETestOutput(output string) string {
-	if idx := strings.LastIndex(output, "Starting Tauri app..."); idx >= 0 {
+	tauriStarted := strings.Contains(output, "Starting Tauri app...")
+	if tauriStarted {
+		idx := strings.LastIndex(output, "Starting Tauri app...")
 		output = output[idx:]
 	}
 	if idx := strings.Index(output, "[ELIFECYCLE]"); idx >= 0 {
@@ -512,7 +526,73 @@ func extractE2ETestOutput(output string) string {
 	}
 	kept := filterTestProgress(lines[:boundary])
 	kept = append(kept, lines[boundary:]...)
+
+	if isPreTestFailure(output, lines, boundary) {
+		kept = dropDockerComposePsTable(kept)
+		kept = append(
+			[]string{"note: tests did not reach the run phase — failure was in pre-test setup. See full log for details.", ""},
+			kept...,
+		)
+	}
 	return strings.Join(kept, "\n")
+}
+
+// playwrightTallyRE matches the Playwright run-summary lines like `1 failed`,
+// `42 passed (1.2m)`, `3 flaky`. Presence of any of these — or of a
+// `\d+) [tauri]` failure block — proves the run reached the test phase.
+var playwrightTallyRE = regexp.MustCompile(`(?m)^\s*\d+\s+(?:passed|failed|flaky|skipped)\b`)
+
+// isPreTestFailure reports whether the captured output looks like the run
+// died before reaching the Playwright test phase. True only if NONE of these
+// are present: the `Starting Tauri app...` marker, a `\d+) [tauri] …`
+// failure-block header, or a `\d+ (passed|failed|flaky|skipped)` tally line.
+func isPreTestFailure(rawOutput string, prefilterLines []string, failureBlockBoundary int) bool {
+	if strings.Contains(rawOutput, "Starting Tauri app...") {
+		return false
+	}
+	if failureBlockBoundary < len(prefilterLines) {
+		// failureBlockHeaderRE already matched at this index.
+		return false
+	}
+	return !playwrightTallyRE.MatchString(rawOutput)
+}
+
+// dockerPsHeaderRE matches the column header emitted by `docker compose ps`.
+// The exact column set varies by Docker version but NAME and IMAGE are always
+// the first two, separated by run-length whitespace.
+var dockerPsHeaderRE = regexp.MustCompile(`^NAME\s+IMAGE\s+COMMAND\b`)
+
+// dockerPsRowRE matches a `docker compose ps` data row, identified by the
+// container-status token `Up <duration> [(state)]`. Only used once a header
+// has been seen (see dropDockerComposePsTable), so similar phrases in prose
+// can't trigger it.
+var dockerPsRowRE = regexp.MustCompile(`\bUp \d+\s+\w+(\s+\((healthy|unhealthy|starting)\))?`)
+
+// dropDockerComposePsTable removes the column header and data rows of any
+// `docker compose ps` block embedded in the output. To avoid eating benign
+// prose that happens to contain `Up <N> …`, rows are only dropped after a
+// matching `NAME IMAGE COMMAND` header line; the next blank line or
+// non-matching line ends the table.
+func dropDockerComposePsTable(lines []string) []string {
+	out := make([]string, 0, len(lines))
+	inTable := false
+	for _, line := range lines {
+		stripped := stripANSI(line)
+		if dockerPsHeaderRE.MatchString(stripped) {
+			inTable = true
+			continue
+		}
+		if inTable {
+			if strings.TrimSpace(stripped) == "" || !dockerPsRowRE.MatchString(stripped) {
+				inTable = false
+				out = append(out, line)
+				continue
+			}
+			continue
+		}
+		out = append(out, line)
+	}
+	return out
 }
 
 // failureBlockHeaderRE matches the first line of a Playwright failure entry,

@@ -274,6 +274,28 @@ progress section keeps `✘` markers with their preceding annotation lines (like
 `✓`/`-` markers with theirs. The untouched output stays in the timestamped log file the error message links to. Both
 `desktop-e2e-linux` and `desktop-e2e-playwright` call the same helper.
 
+If the run dies before reaching the Playwright phase (e.g. the Linux runner's SMB setup fails silently), the
+`Starting Tauri app...` anchor is missing. In that case the filter keeps the full pre-ELIFECYCLE transcript, drops the
+verbose `docker compose ps` table (anchored on its `NAME IMAGE COMMAND` header so prose containing `Up <N>` survives),
+and prepends a one-line `note: Tauri app never started — failure was in pre-test setup` so the reader knows to look at
+the log file rather than wonder why no test failure block is visible.
+
+**Decision**: `cargo test` / `cargo nextest` failure output is filtered by dropping pass/skip verdict lines only.
+**Why**: A 1786-test run produces ~1800 noise lines around 2 real failures. The harness format is stable enough that a
+single per-line regex — `^test … ... (ok|ignored…)$` for `cargo test`, `^\s+(PASS|SKIP) [...] …$` for `cargo nextest` —
+can drop the noise without risking false positives on panic-message bodies (start-of-line anchor protects quoted test
+phrases). `trimRustTestProgress` in `desktop-rust-tests-linux.go` runs after `trimBuildNoise`. Everything else —
+`running N tests` header, FAIL/FAILED/LEAK/TIMEOUT verdicts, the `failures:` block, the `test result:` / `Summary`
+tally, `error:` lines, bench results — passes through unchanged.
+
+**Decision**: `trimBuildNoise` is denylist-only, never length-based. **Why**: When the Docker provisioning step fails
+(e.g. rustup hits an x86/arm64 architecture mismatch, apt can't find a package), the captured output is a mix of
+successful apt/dpkg/debconf chatter and the real error. The previous "fall back to last 50 lines" heuristic could clip
+the top of a real error block. Instead, `packageManagerNoiseRE` drops a fixed set of unambiguous noise patterns
+(`Setting up …`, `Processing triggers for …`, `Unpacking …`, `Reading package lists…`, `debconf: …`, etc.) — none of
+which can appear in compile errors, panics, rustup info, or test output. Everything else passes through, no matter how
+long. Apt's _failure_ path (`E:` / `W:`) is kept, so dropping the success chatter can't hide a real error.
+
 ## Freestyle.sh remote execution
 
 Two modes for offloading checks to a freestyle.sh VM:
