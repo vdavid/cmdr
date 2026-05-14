@@ -481,11 +481,7 @@ export async function closeScopedWindow(mainPage: TauriPage, scoped: TauriPage, 
     } catch {
       // Ignore — best-effort cleanup.
     }
-    await pollUntil(
-      mainPage,
-      async () => !(await mainPage.listWindows()).map((w) => w.label).includes(label),
-      3000,
-    )
+    await pollUntil(mainPage, async () => !(await mainPage.listWindows()).map((w) => w.label).includes(label), 3000)
   }
 }
 

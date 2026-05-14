@@ -122,8 +122,8 @@ details.
 ## Multi-window testing
 
 The viewer (label `viewer-<timestamp>`) and settings (label `settings`) UIs run in their own Tauri `WebviewWindow` in
-production. Tests that exercise them must do so through the production multi-window flow, not by routing the main
-window to `/viewer` or `/settings`. The latter exercises the page component but skips label uniqueness, restricted
+production. Tests that exercise them must do so through the production multi-window flow, not by routing the main window
+to `/viewer` or `/settings`. The latter exercises the page component but skips label uniqueness, restricted
 capabilities, and the cross-window focus/close lifecycle.
 
 The plugin (`tauri-plugin-playwright` 0.3.0+) supports scoping a `TauriPage` to any open window:

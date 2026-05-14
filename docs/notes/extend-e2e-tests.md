@@ -685,8 +685,8 @@ restrictions, focus/close lifecycle).
 
 The migration uses `tauri-plugin-playwright` 0.3.0's new multi-window targeting:
 
-- `tauriPage.waitForWindow(predicate, { timeout? })` — polls `listWindows()` every 100 ms, returns a TauriPage scoped
-  to the matching window.
+- `tauriPage.waitForWindow(predicate, { timeout? })` — polls `listWindows()` every 100 ms, returns a TauriPage scoped to
+  the matching window.
 - `tauriPage.window(label)` — fork a scoped page from an existing one (cheap, shared socket).
 
 **Canonical test pattern**:
@@ -709,16 +709,16 @@ await closeScopedWindow(tauriPage, viewer, viewer.targetWindow!)
 
 For settings: `openSettingsWindowViaProd(tauriPage)` (label `settings`).
 
-**Dependency override**: while the upstream `@srsholmes/tauri-playwright` 0.3.0 + matching plugin crate aren't published,
-the repo points at a local fork:
+**Dependency override**: while the upstream `@srsholmes/tauri-playwright` 0.3.0 + matching plugin crate aren't
+published, the repo points at a local fork:
 
 - Rust: `apps/desktop/src-tauri/Cargo.toml` → `path = ".../tauri-playwright/packages/plugin"`
 - npm: `apps/desktop/package.json` → `file:.../packages/test/srsholmes-tauri-playwright-0.3.0.tgz`
 
-Revert both to crates.io / npm registry refs (with the appropriate `0.3.x` version) once the fork is merged upstream
-and published.
+Revert both to crates.io / npm registry refs (with the appropriate `0.3.x` version) once the fork is merged upstream and
+published.
 
 **Capability extension**: the auto-generated `playwright.json` capability (in `src-tauri/build.rs`) now targets
-`["main", "settings", "viewer-*"]` instead of just `["main"]`. Without this, the plugin's `pw_result` IPC callback
-would be rejected by Tauri's permission system when evaluating into a viewer or settings window — the eval itself
-would land in the webview, but the result callback would never get back to the test runner.
+`["main", "settings", "viewer-*"]` instead of just `["main"]`. Without this, the plugin's `pw_result` IPC callback would
+be rejected by Tauri's permission system when evaluating into a viewer or settings window — the eval itself would land
+in the webview, but the result callback would never get back to the test runner.
