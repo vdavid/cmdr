@@ -223,6 +223,17 @@ pub(super) fn copy_files_with_progress(
                     },
                 );
             }
+
+            // E2E-only per-file throttle. In production (env + IPC override both
+            // unset), `effective_copy_throttle_ms()` returns None and this is a
+            // single atomic load — zero added latency. Under E2E it gives the
+            // spec a deterministic window to click Cancel/Rollback. Strictly
+            // additive: see `crate::test_mode` for the convention.
+            if let Some(ms) = crate::test_mode::effective_copy_throttle_ms()
+                && ms > 0
+            {
+                std::thread::sleep(Duration::from_millis(ms));
+            }
         }
         Ok(())
     })();

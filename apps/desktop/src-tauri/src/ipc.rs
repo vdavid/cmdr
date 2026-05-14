@@ -475,7 +475,10 @@ fn collect_updater_types(_types: &mut Types) -> Vec<Function> {
 #[cfg(feature = "playwright-e2e")]
 fn collect_e2e_types(types: &mut Types) -> Vec<Function> {
     use specta::function::collect_functions;
-    collect_functions![crate::commands::file_system::inject_listing_error](types)
+    collect_functions![
+        crate::commands::file_system::inject_listing_error,
+        crate::commands::e2e::set_test_throttle,
+    ](types)
 }
 #[cfg(not(feature = "playwright-e2e"))]
 fn collect_e2e_types(_types: &mut Types) -> Vec<Function> {
@@ -916,6 +919,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::search::parse_search_scope,
         crate::commands::search::get_system_dir_excludes,
         crate::commands::e2e::get_e2e_start_path,
+        #[cfg(feature = "playwright-e2e")]
+        crate::commands::e2e::set_test_throttle,
         #[cfg(feature = "playwright-e2e")]
         crate::commands::file_system::inject_listing_error,
         #[cfg(debug_assertions)]

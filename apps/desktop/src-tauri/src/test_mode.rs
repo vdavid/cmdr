@@ -21,9 +21,42 @@
 //!
 //! Reading an unset env var is cheap (single syscall on Linux/macOS, cached by
 //! libc on most platforms), but for hooks called in tight loops we still
-//! recommend caching the parsed result behind an `AtomicU64` or similar. See
-//! `crate::file_system::write_operations::test_throttle` for the canonical
-//! shape.
+//! recommend caching the parsed result behind an `AtomicU64` or similar. The
+//! `COPY_THROTTLE_OVERRIDE` static below is the canonical shape — set via the
+//! `set_test_throttle` IPC command from a test, read on every copy loop tick.
+
+use std::sync::atomic::{AtomicI64, Ordering};
+
+/// Runtime override for the per-file copy throttle, settable via the
+/// `set_test_throttle` IPC command (feature-gated to `playwright-e2e`).
+///
+/// `-1` means "no override; use `CMDR_E2E_COPY_THROTTLE_MS` instead". Any
+/// non-negative value is the throttle in milliseconds. Stored as `i64` so we
+/// can encode the "unset" sentinel without a separate flag.
+static COPY_THROTTLE_OVERRIDE: AtomicI64 = AtomicI64::new(-1);
+
+/// Sets the IPC-driven copy throttle override.
+///
+/// `None` clears the override and falls back to `CMDR_E2E_COPY_THROTTLE_MS`.
+/// `Some(ms)` pins the copy loop to that per-file delay. Used by E2E specs
+/// that need a known window in which to click Cancel/Rollback.
+pub fn set_copy_throttle_override(ms: Option<u64>) {
+    let v = match ms {
+        Some(n) => n.min(i64::MAX as u64) as i64,
+        None => -1,
+    };
+    COPY_THROTTLE_OVERRIDE.store(v, Ordering::Relaxed);
+}
+
+/// Returns the effective per-file copy throttle: IPC override wins, then the
+/// `CMDR_E2E_COPY_THROTTLE_MS` env var, then `None`.
+pub fn effective_copy_throttle_ms() -> Option<u64> {
+    let override_val = COPY_THROTTLE_OVERRIDE.load(Ordering::Relaxed);
+    if override_val >= 0 {
+        return Some(override_val as u64);
+    }
+    e2e_copy_throttle_ms()
+}
 
 /// `CMDR_E2E_MODE=1` signals that the running binary is under an E2E run.
 /// Subsystems may use this to enable diagnostics or skip behaviors that don't
@@ -91,5 +124,29 @@ mod tests {
         assert_eq!(parse(Some("200")), Some(200));
         // Reference call to ensure the public helper survives `#![deny(unused)]`.
         let _ = e2e_copy_throttle_ms();
+    }
+
+    /// The IPC-set override beats the env var; clearing it goes back to env.
+    /// The override is process-global, so this test is serial within the same
+    /// process. We restore the state to `-1` (unset) at the end so other tests
+    /// see the same baseline.
+    #[test]
+    fn copy_throttle_override_round_trip() {
+        // Save and restore the override so this test is safe to run in any order.
+        let prior = COPY_THROTTLE_OVERRIDE.load(Ordering::Relaxed);
+
+        set_copy_throttle_override(Some(150));
+        assert_eq!(effective_copy_throttle_ms(), Some(150));
+
+        set_copy_throttle_override(Some(0));
+        assert_eq!(effective_copy_throttle_ms(), Some(0));
+
+        set_copy_throttle_override(None);
+        // With the override cleared, we fall back to whatever the env says.
+        // We don't assert the exact result because the env is test-runner-dependent;
+        // we only assert the call doesn't panic and behaves as documented.
+        let _ = effective_copy_throttle_ms();
+
+        COPY_THROTTLE_OVERRIDE.store(prior, Ordering::Relaxed);
     }
 }
