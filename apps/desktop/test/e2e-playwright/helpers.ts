@@ -520,6 +520,23 @@ export async function isStateClean(tauriPage: PageLike, localVolumeName: string)
   }
 }
 
+// ── E2E test-mode IPCs (feature-gated, not in typed bindings) ───────────────
+
+/**
+ * Forces the backend file watcher to flush any pending events.
+ *
+ * The debouncer + FSEvents/inotify add up to seconds of latency per FS
+ * mutation under E2E. After this returns, every active watch has been
+ * re-read and the frontend has received the corresponding `directory-diff`
+ * event. See `commands/e2e.rs::flush_file_watcher` for the Rust side.
+ *
+ * Compiled only with the `playwright-e2e` Cargo feature; not in typed
+ * bindings, so we call it via raw `__TAURI_INTERNALS__.invoke`.
+ */
+export async function flushFileWatcher(tauriPage: PageLike): Promise<void> {
+  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('flush_file_watcher')`)
+}
+
 // ── Utility ─────────────────────────────────────────────────────────────────
 
 export function sleep(ms: number): Promise<void> {
