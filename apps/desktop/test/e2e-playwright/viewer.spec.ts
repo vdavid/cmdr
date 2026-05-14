@@ -12,6 +12,28 @@ import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 
 type PageLike = TauriPage | BrowserPageAdapter
 
+/**
+ * Per-test cleanup: leave the viewer route so the next test's
+ * `navigateAndWaitForViewer` / explorer-route call starts from a clean state.
+ *
+ * Originally we wanted to press Escape (which the viewer's keydown handler
+ * already binds to "close window" — see `routes/viewer/+page.svelte`). In
+ * E2E, though, the viewer runs in the main window via SvelteKit routing —
+ * not as a separate WebviewWindow like in production. Pressing Escape there
+ * would call `currentWindow.close()` on the *main* window and tear down the
+ * test infrastructure. The Escape binding is correct for the production
+ * separate-window viewer; for the routed test fixture, the equivalent
+ * cleanup is to navigate back to `/`.
+ */
+async function exitViewer(tauriPage: PageLike): Promise<void> {
+  const onViewerRoute = await tauriPage.isVisible('.viewer-container')
+  if (!onViewerRoute) return
+  await navigateToRoute(tauriPage, '/')
+  // Confirm we're off the viewer route. The afterEach contract: no
+  // viewer-container in the main window's DOM, and the explorer is back.
+  await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.viewer-container')), 3000)
+}
+
 // Use fixture file from the shared E2E fixture tree
 const fixtureRoot = process.env.CMDR_E2E_START_PATH ?? '/tmp/cmdr-e2e-fallback'
 const testFilePath = path.join(fixtureRoot, 'left', 'file-a.txt')
@@ -60,6 +82,10 @@ test.describe('File viewer', () => {
     }
   })
 
+  test.afterEach(async ({ tauriPage }) => {
+    await exitViewer(tauriPage)
+  })
+
   test('renders the viewer container', async ({ tauriPage }) => {
     expect(await tauriPage.isVisible('.viewer-container')).toBe(true)
   })
@@ -100,6 +126,10 @@ test.describe('File viewer search', () => {
     if (!hasContent) {
       await navigateAndWaitForViewer(tauriPage, testFilePath)
     }
+  })
+
+  test.afterEach(async ({ tauriPage }) => {
+    await exitViewer(tauriPage)
   })
 
   test('opens search bar with Ctrl+F', async ({ tauriPage }) => {
@@ -167,6 +197,10 @@ test.describe('File viewer search', () => {
 })
 
 test.describe('File viewer error handling', () => {
+  test.afterEach(async ({ tauriPage }) => {
+    await exitViewer(tauriPage)
+  })
+
   test('shows error for missing file path', async ({ tauriPage }) => {
     await navigateToViewer(tauriPage)
 
