@@ -9,6 +9,7 @@ overrides:
   lodash: '>=4.17.23'
   cookie: '>=0.7.0'
   tmp: '>=0.2.4'
+  '@srsholmes/tauri-playwright': https://github.com/vdavid/tauri-playwright/releases/download/v0.3.0-pre.1/srsholmes-tauri-playwright-0.3.0.tgz
 
 importers:
 
@@ -156,8 +157,8 @@ importers:
         specifier: ^1.59.1
         version: 1.59.1
       '@srsholmes/tauri-playwright':
-        specifier: file:/Users/veszelovszki/projects-git/vdavid/tauri-playwright/packages/test/srsholmes-tauri-playwright-0.3.0.tgz
-        version: file:../tauri-playwright/packages/test/srsholmes-tauri-playwright-0.3.0.tgz(@playwright/test@1.59.1)
+        specifier: https://github.com/vdavid/tauri-playwright/releases/download/v0.3.0-pre.1/srsholmes-tauri-playwright-0.3.0.tgz
+        version: https://github.com/vdavid/tauri-playwright/releases/download/v0.3.0-pre.1/srsholmes-tauri-playwright-0.3.0.tgz(@playwright/test@1.59.1)
       '@sveltejs/adapter-static':
         specifier: ^3.0.10
         version: 3.0.10(@sveltejs/kit@2.58.0(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.5(@typescript-eslint/types@8.59.0))(vite@8.0.10(@types/node@25.6.0)(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.55.5(@typescript-eslint/types@8.59.0))(typescript@6.0.3)(vite@8.0.10(@types/node@25.6.0)(esbuild@0.27.3)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)))
@@ -2001,8 +2002,8 @@ packages:
   '@speed-highlight/core@1.2.14':
     resolution: {integrity: sha512-G4ewlBNhUtlLvrJTb88d2mdy2KRijzs4UhnlrOSRT4bmjh/IqNElZa3zkrZ+TC47TwtlDWzVLFADljF1Ijp5hA==}
 
-  '@srsholmes/tauri-playwright@file:../tauri-playwright/packages/test/srsholmes-tauri-playwright-0.3.0.tgz':
-    resolution: {integrity: sha512-0Gh2cUdXyA+bOzOxfFsxFFjsRjMMyf+t+WKxA7l+UYi5NyePGWkM6c88EXPxcb9FJnHspa5jSDQOYfPyAY1toA==, tarball: file:../tauri-playwright/packages/test/srsholmes-tauri-playwright-0.3.0.tgz}
+  '@srsholmes/tauri-playwright@https://github.com/vdavid/tauri-playwright/releases/download/v0.3.0-pre.1/srsholmes-tauri-playwright-0.3.0.tgz':
+    resolution: {integrity: sha512-0Gh2cUdXyA+bOzOxfFsxFFjsRjMMyf+t+WKxA7l+UYi5NyePGWkM6c88EXPxcb9FJnHspa5jSDQOYfPyAY1toA==, tarball: https://github.com/vdavid/tauri-playwright/releases/download/v0.3.0-pre.1/srsholmes-tauri-playwright-0.3.0.tgz}
     version: 0.3.0
     engines: {node: '>=18'}
     peerDependencies:
@@ -7654,7 +7655,7 @@ snapshots:
 
   '@speed-highlight/core@1.2.14': {}
 
-  '@srsholmes/tauri-playwright@file:../tauri-playwright/packages/test/srsholmes-tauri-playwright-0.3.0.tgz(@playwright/test@1.59.1)':
+  '@srsholmes/tauri-playwright@https://github.com/vdavid/tauri-playwright/releases/download/v0.3.0-pre.1/srsholmes-tauri-playwright-0.3.0.tgz(@playwright/test@1.59.1)':
     dependencies:
       '@playwright/test': 1.59.1
 
