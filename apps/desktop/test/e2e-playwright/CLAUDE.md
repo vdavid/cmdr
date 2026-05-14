@@ -153,8 +153,8 @@ await closeScopedWindow(tauriPage as TauriPage, settings, 'settings')
 
 **Capabilities**: the viewer and settings windows have RESTRICTED capability files
 (`src-tauri/capabilities/viewer.json`, `settings.json`). When a test fails because the scoped page can't call a Tauri
-command, that's a real bug. Production hits the same wall. Fix by either adding the missing permission to the
-capability file or changing the test to use a permitted command.
+command, that's a real bug. Production hits the same wall. Fix by either adding the missing permission to the capability
+file or changing the test to use a permitted command.
 
 The auto-generated `playwright.json` capability (`src-tauri/build.rs`) now includes `"main"`, `"settings"`, and
 `"viewer-*"` so the plugin's `pw_result` IPC callback works from all three.
@@ -168,8 +168,8 @@ producing environment-dependent ratios. Axe stays on for structural rules (ARIA,
 where a running browser is genuinely needed. See `docs/design-system.md` § Automated contrast checks.
 
 **Note on tier 3 overlap:** Most of the structural audits here (ARIA, labels, roles, accessible names) now also run at
-the component level in tier 3, see `apps/desktop/src/**/*.a11y.test.ts` and the helper at `src/lib/test-a11y.ts`. Tier
-3 is fast (milliseconds per component) and catches regressions during dev; this E2E tier still earns its keep for
+the component level in tier 3, see `apps/desktop/src/**/*.a11y.test.ts` and the helper at `src/lib/test-a11y.ts`. Tier 3
+is fast (milliseconds per component) and catches regressions during dev; this E2E tier still earns its keep for
 cross-component flows jsdom can't model (focus traps, Escape return-focus, keyboard nav integration). Once tier 3
 coverage is broad, we can consider slimming this suite to those flow-level scenarios. Until then, the overlap is
 intentional. Tier 3 is proving itself.
@@ -233,5 +233,5 @@ the helper throws with a snapshot of `activeElement` plus visible overlays so a 
 directly.
 
 **If you add a new auto-mounted modal** in `(main)/+layout.svelte` or anywhere that can flip a render to a `ModalDialog`
-after onboarding finishes, the recovery loop covers you. Consider whether the dialog should be gated on a user
-gesture in production too, so it doesn't fight focus with the explorer in real use.
+after onboarding finishes, the recovery loop covers you. Consider whether the dialog should be gated on a user gesture
+in production too, so it doesn't fight focus with the explorer in real use.

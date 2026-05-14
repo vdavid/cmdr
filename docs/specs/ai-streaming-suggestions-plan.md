@@ -132,8 +132,8 @@ an OS window. Window-level signals are too coarse.
 the prior (that would conflate "user reopened the dialog" with "user wants prior request canceled"). Instead, the
 dialog's `onDestroy` is what cancels. The new dialog instance starts a fresh request_id. If by chance two stream tasks
 coexist briefly (rapid open-close-open), each writes to its own Channel and they don't interfere. The CPU cost is
-bounded. A previous local-LLM stream still gets to finish only because its dialog wasn't destroyed first; in practice
-if the user closed the prior dialog, `onDestroy` already canceled it.
+bounded. A previous local-LLM stream still gets to finish only because its dialog wasn't destroyed first; in practice if
+the user closed the prior dialog, `onDestroy` already canceled it.
 
 ### Stream-shaped API in `client.rs`, not callback-shaped
 

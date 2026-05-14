@@ -30,8 +30,8 @@ All three platform files that define `LocationCategory` and `LocationInfo`/`Volu
 - Set `is_read_only: false` at all existing construction sites
 
 The stubs file (`stubs/volumes.rs`) is also missing `fs_type` and `supports_trash` fields that exist on macOS/Linux. Fix
-this pre-existing drift while we're here; add all three fields (`fs_type`, `supports_trash`, `is_read_only`) to the
-stub `VolumeInfo` struct and set them at all construction sites.
+this pre-existing drift while we're here; add all three fields (`fs_type`, `supports_trash`, `is_read_only`) to the stub
+`VolumeInfo` struct and set them at all construction sites.
 
 The frontend types already have `isReadOnly?: boolean` and `'mobile_device'` in `LocationCategory`
 (`src/lib/file-explorer/types.ts:134,153`). No frontend type changes needed.

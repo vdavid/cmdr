@@ -6,8 +6,8 @@
   generalize user-facing text, labels, or behavior to be "cross-platform". Instead, fork by OS. On macOS, say "Finder",
   "Trash", "System Settings". On Linux, say "file manager", "Trash" (FreeDesktop spec), and use DE-specific terminology
   where possible. Windows (later) gets its own native terms too. This applies to error messages, menu labels, tooltips,
-  and any user-visible string. Use `isMacOS()` / `cfg(target_os)` to branch. A few extra lines of platform-specific
-  text are always better than one watered-down generic string.
+  and any user-visible string. Use `isMacOS()` / `cfg(target_os)` to branch. A few extra lines of platform-specific text
+  are always better than one watered-down generic string.
 - Always apply radical transparency: make the internals of what's happening available. Like, don't just put a "Syncing"
   spinner but write exactly what's happening. Don't overshare/overcomplicate, but the user must understand what's
   happening to an extent that they could explain it to someone else if asked.

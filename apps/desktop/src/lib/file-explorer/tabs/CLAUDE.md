@@ -5,8 +5,8 @@ Per-pane tab system for the dual-pane file explorer. Each pane side (left/right)
 ## Architecture
 
 - `tab-types.ts`: Type definitions: `TabId`, `TabState`, `PersistedTab`, `PersistedPaneTabs`, `UnreachableState`
-- `tab-state-manager.svelte.ts`: Reactive state manager using `$state()`. All tab operations (add, close, switch,
-  cycle, pin). Max 10 tabs per pane.
+- `tab-state-manager.svelte.ts`: Reactive state manager using `$state()`. All tab operations (add, close, switch, cycle,
+  pin). Max 10 tabs per pane.
 - `TabBar.svelte`: Tab bar UI component. Always visible, Chrome-style shrinking tabs, pin icons, close buttons, context
   menu.
 - `tab-state-manager.test.ts`: Unit tests for state manager

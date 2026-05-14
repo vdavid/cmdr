@@ -47,9 +47,9 @@ ARIA attributes. It does not use the shared `ModalDialog` component.
 `aria-expanded`, `aria-autocomplete="list"`, `aria-activedescendant` pointing to the cursor option's id). DOM focus
 stays on the input the whole time; the active option is announced to screen readers via `aria-activedescendant`, not by
 moving focus. Each option has a stable id (`palette-option-{command.id}`). The cursor option also gets `tabindex="0"`
-(others get `tabindex="-1"`), a roving tabindex on a single item. This satisfies axe's `scrollable-region-focusable` rule
-(the scrollable listbox has at least one focusable descendant) without moving DOM focus away from the input. The listbox
-itself isn't rendered when a search yields zero results (the "No commands found" message replaces it), so the
+(others get `tabindex="-1"`), a roving tabindex on a single item. This satisfies axe's `scrollable-region-focusable`
+rule (the scrollable listbox has at least one focusable descendant) without moving DOM focus away from the input. The
+listbox itself isn't rendered when a search yields zero results (the "No commands found" message replaces it), so the
 scrollable-region rule has nothing to flag in the empty state, and `aria-expanded` flips to `false`.
 
 **Cursor reset**: `cursorIndex` resets to `0` and `hoveredIndex` to `null` on every query change (via `$effect` tracking

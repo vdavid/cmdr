@@ -98,8 +98,8 @@ Update the sync_status entry to reflect that Linux now delegates to `file_system
 
 ## Files to modify
 
-| File                                             | Action                                                     |
-| ------------------------------------------------ | ---------------------------------------------------------- |
+| File                                             | Action                                                    |
+| ------------------------------------------------ | --------------------------------------------------------- |
 | `src-tauri/src/file_system/sync_status_types.rs` | Create: shared `SyncStatus` enum                          |
 | `src-tauri/src/file_system/sync_status.rs`       | Edit: remove enum definition, `pub use` from shared       |
 | `src-tauri/src/file_system/sync_status_linux.rs` | Create: socket protocol, CLI fallback, tests              |

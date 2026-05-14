@@ -38,14 +38,14 @@ Deployed to Cloudflare Pages at `analdash.getcmdr.com`. Auth via Cloudflare Acce
 
 Each source gets its own module under `src/lib/server/sources/`:
 
-| Module          | Auth                                            | Data                                                                                                                              |
-| --------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `umami.ts`      | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com, getcmdr.com, and getprvw.com                    |
+| Module          | Auth                                            | Data                                                                                                                             |
+| --------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `umami.ts`      | JWT (username/password login)                   | Page views, visitors, referrers, countries, download events for veszelovszki.com, getcmdr.com, and getprvw.com                   |
 | `cloudflare.ts` | Bearer token (via `LICENSE_SERVER_ADMIN_TOKEN`) | Download counts, active users by version/arch/country, fetched from worker endpoints (`/admin/downloads`, `/admin/active-users`) |
-| `paddle.ts`     | Bearer token, cursor pagination                 | Completed transactions, subscriptions by status                                                                                   |
-| `github.ts`     | Optional Bearer token                           | Release download counts per asset; star history (daily + cumulative) for cmdr and mtp-rs via stargazers API with pagination       |
-| `posthog.ts`    | Bearer personal API key                         | Pageview trends via Trends API (EU endpoint)                                                                                      |
-| `license.ts`    | Bearer admin token                              | Activation count + active devices from `/admin/stats`                                                                             |
+| `paddle.ts`     | Bearer token, cursor pagination                 | Completed transactions, subscriptions by status                                                                                  |
+| `github.ts`     | Optional Bearer token                           | Release download counts per asset; star history (daily + cumulative) for cmdr and mtp-rs via stargazers API with pagination      |
+| `posthog.ts`    | Bearer personal API key                         | Pageview trends via Trends API (EU endpoint)                                                                                     |
+| `license.ts`    | Bearer admin token                              | Activation count + active devices from `/admin/stats`                                                                            |
 
 Each module exports a typed fetch function returning `SourceResult<T>` (ok + data, or error string). Results are cached
 via `cache.ts` (5 min TTL for 24h/7d, 1 hour for 30d). The page server calls all sources in parallel.

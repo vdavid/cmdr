@@ -265,8 +265,8 @@ required fields, and the shape of optional fields before writing. D1 write is fi
 Devices older than 90 days are pruned on each write. If 6+ devices are active and no alert was sent in the past 30 days,
 an internal email is sent to `legal@getcmdr.com` via Resend. Device tracking is fire-and-forget and never affects the
 validation response. The KV value stores a `DeviceSet` with device hashes mapped to last-seen timestamps plus an
-optional `lastAlertedAt`. Device tracking is per seat: each seat in a multi-seat purchase has its own transaction ID
-and its own 6-device allowance.
+optional `lastAlertedAt`. Device tracking is per seat: each seat in a multi-seat purchase has its own transaction ID and
+its own 6-device allowance.
 
 **Update check proxy:** `GET /update-check/:version` routes update checks through the worker to count all users (free +
 licensed). Without this, there's no signal for how many people actually run the app (Umami only tracks website visitors
@@ -275,7 +275,8 @@ and download tracking only captures installs).
 **Error report R2 key shape:** `error-reports/{prod|dev}/{yyyy-mm-dd}/{ERR-XXXXX}-{uuid}.zip`. The env segment (`prod`
 for release builds, `dev` for debug builds, inferred from `meta.buildMode`) keeps dev-run reports out of the production
 sort order. Legacy keys (`error-reports/{yyyy-mm-dd}/...`, pre-env-prefix) still exist; eviction reads the date segment
-via `extractDateSegment` which handles both shapes. The 90-day R2 lifecycle drains the legacy shape naturally. No migration needed.
+via `extractDateSegment` which handles both shapes. The 90-day R2 lifecycle drains the legacy shape naturally. No
+migration needed.
 
 **Error report eviction (8/6 GB watermarks + lifecycle):** Three layers keep the bucket bounded.
 
@@ -353,8 +354,8 @@ For end-to-end testing including `/validate`, use the Paddle sandbox checkout fl
 
 ### Testing Paddle checkout (sandbox)
 
-See [README.md](README.md#testing-paddle-checkout). Requires setting up a Paddle client-side token and a default
-payment link in the sandbox dashboard. This is an interactive, human-driven flow.
+See [README.md](README.md#testing-paddle-checkout). Requires setting up a Paddle client-side token and a default payment
+link in the sandbox dashboard. This is an interactive, human-driven flow.
 
 ## Deployment
 

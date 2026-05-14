@@ -94,8 +94,8 @@ The API key approach is better than Apple ID: no MFA issues, no app-specific pas
 
 ### 2.2. Save the credentials
 
-- [x] Note the **Issuer ID** shown at the top of the page (for example, `abcd1234-abcd-1234-abcd-abcd1234abcd`): this
-      is `APPLE_API_ISSUER`
+- [x] Note the **Issuer ID** shown at the top of the page (for example, `abcd1234-abcd-1234-abcd-abcd1234abcd`): this is
+      `APPLE_API_ISSUER`
 - [x] Note the **Key ID** in the table row (for example, `A1B2C3D4E5`): this is `APPLE_API_KEY`
 - [x] Click **Download API Key** (saves `AuthKey_A1B2C3D4E5.p8`). **You can only download this once.**
 - [x] Base64-encode it:

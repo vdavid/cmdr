@@ -157,8 +157,8 @@ gaps are 2B model quality (3 queries) and 2 missing capabilities (scope inferenc
 5. #29 package.json not in node_modules: 2B model dumps all words as keywords, no `exclude`.
 6. (Regressions) #3 node_modules, #12 tax docs: 2B model dumps all words as keywords instead of classifying.
 
-Root cause pattern: #3, #14, #29 share the same 2B model limitation: the model ignores enum structure and puts raw
-query words as keywords. #25 is a merge logic gap in `ai_query_builder.rs`. #18 and #27 are missing capabilities (scope
+Root cause pattern: #3, #14, #29 share the same 2B model limitation: the model ignores enum structure and puts raw query
+words as keywords. #25 is a merge logic gap in `ai_query_builder.rs`. #18 and #27 are missing capabilities (scope
 inference, markdown type). Cloud model handles all of these correctly.
 
 ## Query catalog
@@ -376,8 +376,8 @@ Today: {TODAY}.
 
 R7-local confirmed the architecture is sound. Remaining work is capability gaps and 2B model quality.
 
-1. **Add `markdown` type**: `.md` files don't belong in `documents` (office docs) or `code` (too broad). Would fix
-   query #27. Low effort, high impact.
+1. **Add `markdown` type**: `.md` files don't belong in `documents` (office docs) or `code` (too broad). Would fix query
+   #27. Low effort, high impact.
 2. **Fix `env-files` merge logic**: `keywords: env` + `type: env-files` produces `env.*\.env` which matches nothing.
    Either treat `env` as redundant with `env-files`, or special-case the merge. Would fix query #25.
 3. **Add `scope: downloads` inference**: when the user says "downloads" without other context, infer `scope: downloads`

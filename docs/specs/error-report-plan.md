@@ -70,8 +70,8 @@ toast as described above; "View" opens the same preview dialog as Flow A.
 
 Tapping `log::Log` to fire on every `log::error!` is fragile (tauri-plugin-log already owns the global logger) and noisy
 (`smb2`, `nusb` warnings would trigger reports we don't want). Instead, add a `log_error!` macro that does
-`log::error!(...)` plus `error_reporter::auto_dispatcher::on_error_logged(...)`, and migrate select call sites: the
-same set that already produces user-visible error toasts. Panics still go through the existing crash reporter.
+`log::error!(...)` plus `error_reporter::auto_dispatcher::on_error_logged(...)`, and migrate select call sites: the same
+set that already produces user-visible error toasts. Panics still go through the existing crash reporter.
 
 This is a strict superset of the literal interpretation: we only auto-report errors the developer flagged as
 user-impacting. Better signal, less noise.
@@ -104,8 +104,8 @@ A **90-day R2 lifecycle rule** is the third safety layer.
 
 ### Long-TTL presigned URLs (no re-mint endpoint)
 
-Discord message embeds a long-TTL presigned R2 GET URL (7-day TTL, R2's max for presigned URLs). Only the maintainer
-has access to the Cmdr Discord server, and the `#error-reports` channel is not shared, so the convenience of a
+Discord message embeds a long-TTL presigned R2 GET URL (7-day TTL, R2's max for presigned URLs). Only the maintainer has
+access to the Cmdr Discord server, and the `#error-reports` channel is not shared, so the convenience of a
 click-to-download link outweighs the theoretical risk of URL leakage. If that changes, flip to short-TTL + admin re-mint
 endpoint later (cost: ~50 LOC).
 
@@ -240,5 +240,5 @@ One PR. Update:
   shape so we don't treat module paths as filesystem paths.
 - No `Co-Authored-By` lines in commits (`.claude/rules/git-conventions.md`).
 - Sentence case for all UI strings.
-- Frontend log target prefix is `FE:` (set by `batch_fe_logs`). Redactor doesn't need to know; it operates on the message
-  body, not the target.
+- Frontend log target prefix is `FE:` (set by `batch_fe_logs`). Redactor doesn't need to know; it operates on the
+  message body, not the target.

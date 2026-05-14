@@ -68,7 +68,8 @@ Wire trace order (msg_ids in the main session, filtering out the background watc
 - Streaming downloads: file 0 `Create/Read/Close` msg_ids `28, 29, 30`; file 1 `31, 32, 33`; file 2 `34, 35, 36`.
   Strictly sequential, with no interleaving between files.
 
-Wall-clock: **838 ms** for 3 files, vs. 328 ms for 1 file. Ratio 2.55× (not the ~1× we'd see if 3-way concurrency were working). Per-file amortized at FILE_COUNT=3: **279 ms**, which is close to the 1-file number (328 ms).
+Wall-clock: **838 ms** for 3 files, vs. 328 ms for 1 file. Ratio 2.55× (not the ~1× we'd see if 3-way concurrency were
+working). Per-file amortized at FILE_COUNT=3: **279 ms**, which is close to the 1-file number (328 ms).
 
 **Concurrency is not kicking in on the SMB read side.** Root cause: `SmbVolume::open_smb_download_stream` (`smb.rs:354`)
 acquires `smb_arc.lock_owned()` and **holds the session mutex for the entire download** (CREATE + READ loop + CLOSE).
@@ -198,11 +199,11 @@ the stream's first and only chunk. Caller sees the normal `VolumeReadStream` API
 Two sub-problems:
 
 1. **We don't know file size before CREATE.** `open_file` returns size alongside file_id. To decide compound vs
-   pipelined before CREATE, we'd need a prior stat (another RTT, which defeats the point) or a size hint from the caller (the
-   copy path has one, as `copy_single_path` scan phase already computed per-file sizes). Alternatively: always try
-   compound first; if the READ in the compound returns short, close the handle (compound already closed it)
-   handle and open for a pipelined read. Compound inherently handles "file fits in one READ"; if it doesn't, the data is
-   truncated, not errored, so we'd need a length check.
+   pipelined before CREATE, we'd need a prior stat (another RTT, which defeats the point) or a size hint from the caller
+   (the copy path has one, as `copy_single_path` scan phase already computed per-file sizes). Alternatively: always try
+   compound first; if the READ in the compound returns short, close the handle (compound already closed it) handle and
+   open for a pipelined read. Compound inherently handles "file fits in one READ"; if it doesn't, the data is truncated,
+   not errored, so we'd need a length check.
 2. **The writer side is separate**: we pay 4 RTTs on write regardless. `smb2::Tree` has `write_file_compound`
    (CREATE+WRITE+FLUSH+CLOSE in one compound = 1 RTT); see `write_file_pipelined`'s fallback at `tree.rs:1757`. For
    SMB-dest small writes we can do the same fast-path in `write_from_stream`.
@@ -252,8 +253,9 @@ Medium-high confidence that RTTs are the primary cost, but not 100%. Back-of-env
   260 ms/file it'd take thousands of hops to matter, which is not plausible.
 - **Progress event throttling.** 200 ms throttle is per-operation, not per-file, so it doesn't stall per-file work.
 - **Volume scan phase.** `copy_single_path` calls `source_volume.is_directory(source_path)` per file
-  (`volume_strategy.rs:42`). For SMB that's a `get_metadata` → CREATE+QueryInfo+CLOSE, which on the current code is likely
-  another 1–3 RTTs per file that isn't in the "transfer" budget. Worth double-checking the pre-flight cost separately.
+  (`volume_strategy.rs:42`). For SMB that's a `get_metadata` → CREATE+QueryInfo+CLOSE, which on the current code is
+  likely another 1–3 RTTs per file that isn't in the "transfer" budget. Worth double-checking the pre-flight cost
+  separately.
 
 What I'd measure to be sure: run one small SMB copy with `RUST_LOG=smb2::client::connection=debug` and count `execute` /
 `execute_compound` calls per file. Separately instrument the `volume_strategy::copy_single_path` entry/exit and
@@ -321,8 +323,8 @@ tree: read_file_compound done, read 10240 bytes
 ```
 
 Ratio 3-files / 1-file = 374 / 144 = 2.6×. If concurrency were working we'd see ~1×. The session-mutex bottleneck
-identified in the original analysis is still in play: the compound fast-path reduces per-file RTTs but can't
-parallelize across files while the mutex serializes them. See "Fix 2 blocker" below.
+identified in the original analysis is still in play: the compound fast-path reduces per-file RTTs but can't parallelize
+across files while the mutex serializes them. See "Fix 2 blocker" below.
 
 ### Fix 2 blocker (unblocking SMB read-path concurrency)
 
@@ -496,16 +498,16 @@ execute_compound: 3 operations, msg_ids=[174, 175, 303]  ; dispatched before fil
 ...                                                       ; 10 read compounds dispatched back-to-back
 ```
 
-All 10 scan stats land on the wire before any response arrives; then the same pattern repeats for the 10 compound
-reads. That's exactly the pipelining Fix 4 was built to deliver.
+All 10 scan stats land on the wire before any response arrives; then the same pattern repeats for the 10 compound reads.
+That's exactly the pipelining Fix 4 was built to deliver.
 
 ### Gap remaining
 
 The 9.5 ms/file figure is close to the ceiling on this link: ~60 ms RTT / 10-way concurrency ≈ 6 ms/file just for the
 RTT cost of a single compound round-trip, plus the TCP/TLS framing overhead. The 100-file run takes ~950 ms, split
 roughly between scan + copy. Future "Fix 5" (parallel directory-recursion inside the batch scan) would help when sources
-are top-level directories rather than leaf files, which is out of scope for this round since the 100-tiny-files scenario is
-already files-only.
+are top-level directories rather than leaf files, which is out of scope for this round since the 100-tiny-files scenario
+is already files-only.
 
 ### Reproducing
 

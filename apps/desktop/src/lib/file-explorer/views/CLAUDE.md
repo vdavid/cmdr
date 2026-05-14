@@ -118,8 +118,8 @@ across rows zigzag horizontally when date widths vary (e.g., locale formats, cus
 halves line up. The contract: `formatDateForDisplay` (in `lib/settings/format-utils.ts`) returns a `FormattedDate` whose
 `parts: { left: DateSegment[], right: DateSegment[] | null }` carries both halves as ordered segment lists;
 `computeFullListColumnWidths` measures each half separately (via `joinSegments`) and exposes a `dateLeft` width;
-`FullList` walks each half's segments (wrapping any with a non-null `ageClass` in an age-tier span and emitting the
-rest as plain text) into `.date-left` (inline-block, fixed width, right-aligned) followed by `.date-right`
+`FullList` walks each half's segments (wrapping any with a non-null `ageClass` in an age-tier span and emitting the rest
+as plain text) into `.date-left` (inline-block, fixed width, right-aligned) followed by `.date-right`
 (`margin-left: var(--spacing-xs)`). Tooltips/MCP/status bar still see joined strings via `FormattedDate.text` (exposed
 as the `formatDateTime` shortcut).
 
@@ -146,8 +146,8 @@ cache). Real files start at index 1. Adjust: `cache_index = ui_index - 1`.
 
 **Gotcha**: The ".." row shows the CURRENT folder's recursive size, not the parent folder's **Why**: The `..` row's size
 column is otherwise wasted space. Showing the total for the folder the user is browsing (sum of everything visible plus
-unloaded entries) answers "how much is in here?", more useful than "how big is the place I'd go if I pressed
-Backspace." Implementation: `createParentEntry(parentPath, stats?)` in `file-list-utils.ts` takes optional stats;
+unloaded entries) answers "how much is in here?", more useful than "how big is the place I'd go if I pressed Backspace."
+Implementation: `createParentEntry(parentPath, stats?)` in `file-list-utils.ts` takes optional stats;
 `BriefList`/`FullList` fetch them via `getDirStatsBatch([currentPath])` on dir change and via
 `updateIndexSizesInPlace(cachedEntries, currentPath)` on index refresh (single batch IPC call).
 
@@ -180,8 +180,8 @@ nav = snap; within-dir scroll/resize/stream-in = animated.
 **Gotcha**: CJK / complex-script filenames may be slightly mis-measured **Why**: The frontend canvas measurer
 (`$lib/font-metrics/measure.ts`) iterates explicit Unicode ranges covering Latin, BMP-printable characters, and common
 emoji (U+1F300–U+1FAFF). The backend stores those widths per code point and falls back to the cached `average_width` for
-anything outside the measured set, so column widths for CJK, Arabic, and rare-symbol filenames are approximate. Emoji
-is fine (measured). Latin is fine (measured). Expanding the measured set is a follow-up.
+anything outside the measured set, so column widths for CJK, Arabic, and rare-symbol filenames are approximate. Emoji is
+fine (measured). Latin is fine (measured). Expanding the measured set is a follow-up.
 
 **Gotcha**: Index-size refresh (`refresh_listing_index_sizes`) triggers a column-width refetch through the existing
 cache-reset path, not a separate trigger **Why**: When `recursive_size` enrichment lands, the listing may re-sort; the

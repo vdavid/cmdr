@@ -61,8 +61,8 @@ Every site that shows a modified date in the UI flows through one entry point:
   three+ days). `tierForTime` only colors when the file's date equals today, distance in full hours. Future timestamps
   in any component clamp to the freshest tier. Segments outside their coloring window carry `ageClass: null`, and the
   renderer leaves them in default text color.
-- **`formattedDate(ts)`** in `reactive-settings.svelte.ts`: reactive wrapper that reads the current setting values.
-  This is the canonical entry point for the rest of the app.
+- **`formattedDate(ts)`** in `reactive-settings.svelte.ts`: reactive wrapper that reads the current setting values. This
+  is the canonical entry point for the rest of the app.
 - **`<DateLabel modifiedAt={ts} />`** in `$lib/ui/DateLabel.svelte`: the render-side equivalent. Use it anywhere a
   modified date appears in the UI and you don't have special layout needs (status bar, dialogs, search results, etc.).
   It walks `parts.left` / `parts.right` and wraps each segment with a non-null `ageClass` in `<span class={ageClass}>`.
@@ -105,8 +105,8 @@ storage entirely (the `Folder` target is dropped from the plugin builder, no err
 `0` and any non-zero value, or raising the cap beyond its baked-in value, requires an app restart (the in-RAM cap
 updates live but the rotation strategy doesn't).
 
-`AdvancedSection` also includes `fileExplorer.typeToJump.resetDelay`: number, default 1000 ms, range 300–3000, step
-100, ms suffix. Reactive getter: `getTypeToJumpResetDelay()`. The type-to-jump factory in
+`AdvancedSection` also includes `fileExplorer.typeToJump.resetDelay`: number, default 1000 ms, range 300–3000, step 100,
+ms suffix. Reactive getter: `getTypeToJumpResetDelay()`. The type-to-jump factory in
 `file-explorer/pane/type-to-jump-state.svelte.ts` reads this via its `getResetMs` callback on every keystroke, so slider
 changes take effect on the next keystroke without restart.
 

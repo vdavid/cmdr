@@ -18,14 +18,13 @@ app.
 
 1. Fires an immediate `checkForUpdates()` call.
 2. Schedules a `setInterval` using `advanced.updateCheckInterval` from settings.
-3. Listens for setting changes via `onSpecificSettingChange`; clears and re-creates the interval when the value
-   changes.
+3. Listens for setting changes via `onSpecificSettingChange`; clears and re-creates the interval when the value changes.
 4. Returns a cleanup function that `+layout.svelte` calls in `onDestroy`.
 
 `checkForUpdates()` transitions the state machine: `idle → checking → downloading → installing → ready` (macOS) or
 `idle → checking → downloading → ready` (non-macOS; see asymmetry below). If an update is found, it downloads and
-installs automatically with no user confirmation needed. The user is only asked at the `ready` stage whether to restart now
-or later.
+installs automatically with no user confirmation needed. The user is only asked at the `ready` stage whether to restart
+now or later.
 
 ```
 idle ──invoke──► checking ──update found──► downloading ──► installing ──► ready
@@ -53,8 +52,8 @@ The frontend branches on platform at the top of `checkForUpdates()`:
 
 When `status` becomes `'ready'`, the updater funnels through the `showUpdateToast()` helper instead of calling
 `addToast` directly. The helper consults `shouldShowUpdateToast({ onboarded, fdaPromptShowing, status })`, a pure,
-unit-tested predicate, and only fires `addToast(UpdateToastContent, { id: 'update', dismissal: 'persistent' })` when
-all three conditions hold. `UpdateToastContent.svelte` renders the toast body, calls `relaunch()` directly from
+unit-tested predicate, and only fires `addToast(UpdateToastContent, { id: 'update', dismissal: 'persistent' })` when all
+three conditions hold. `UpdateToastContent.svelte` renders the toast body, calls `relaunch()` directly from
 `@tauri-apps/plugin-process` for the restart action, and handles the "Later" button by calling `dismissToast('update')`.
 There is no local `$state` dismissed flag; dismissal is managed entirely by the toast infrastructure.
 
@@ -103,8 +102,8 @@ and toast logic are shared across both paths.
 
 **Decision**: Auto-download without user confirmation; only prompt for restart. **Why**: Updates are small (~63 MB).
 Asking "download now?" adds a decision point that most users will always accept. Downloading silently in the background
-respects the user's time. The restart prompt is necessary because the app must quit to apply the update; that's the
-only destructive action.
+respects the user's time. The restart prompt is necessary because the app must quit to apply the update; that's the only
+destructive action.
 
 **Decision**: State machine guards against re-checking during download or ready states. **Why**: `checkForUpdates`
 returns early if status is `downloading` or `ready`. Without this, a periodic interval tick could start a second
@@ -130,8 +129,8 @@ interval is acceptable.
   `updateState.error`. See `apps/desktop/src-tauri/src/error_reporter/CLAUDE.md` § convention.
 - Default interval: 60 minutes. Configurable in settings from 5 minutes to 24 hours.
 - Unit tests in `updater.test.ts` cover the gating logic via the pure `shouldShowUpdateToast` predicate plus the
-  `notifyOnboardingComplete` and `setFdaPromptShowing` triggers. The download-and-install path is still untested; it
-  has hard Tauri/network dependencies.
+  `notifyOnboardingComplete` and `setFdaPromptShowing` triggers. The download-and-install path is still untested; it has
+  hard Tauri/network dependencies.
 - Cleanup is mandatory: the return value of `startUpdateChecker()` must be called in `onDestroy`.
 
 ## Dependencies

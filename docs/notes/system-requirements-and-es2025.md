@@ -13,9 +13,9 @@ only "macOS (Apple Silicon and Intel)" and "Linux: alpha." So the floors below a
 | Constraint                                                              | Minimum                                                        |
 | ----------------------------------------------------------------------- | -------------------------------------------------------------- |
 | Tauri 2 runtime (WKWebView, FFI bindings)                               | macOS 10.15 Catalina (2019-10)                                 |
-| Apple Silicon binary (arm64)                                            | macOS 11.0 Big Sur (2020-11), M1 ships with this              |
+| Apple Silicon binary (arm64)                                            | macOS 11.0 Big Sur (2020-11), M1 ships with this               |
 | Intel binary (x86_64)                                                   | macOS 10.15 Catalina (2019-10)                                 |
-| Universal binary (what we ship)                                         | Per-arch: 10.15 Intel, 11.0 Apple Silicon                     |
+| Universal binary (what we ship)                                         | Per-arch: 10.15 Intel, 11.0 Apple Silicon                      |
 | Apple frameworks we touch (`IOKit`, `core-foundation`, `FSEvents`, etc) | Ancient, not a binding constraint                              |
 | Modern CSS we use (`:has()`, container queries, top-level await)        | macOS 12 Monterey (2021-10) for things to render correctly     |
 | llama-server (AI feature only)                                          | Apple Silicon only (no Intel AI build, rest of app works fine) |
@@ -54,11 +54,11 @@ future reference when we consider adopting them.
 
 | Feature                  | Where it'd help in Cmdr today                                                                                                                                                                            |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Set.union/intersection` | `FilePane.svelte` `SvelteSet<number>` selection adjustments: replaces hand-rolled union/intersect with native methods.                                                                                  |
+| `Set.union/intersection` | `FilePane.svelte` `SvelteSet<number>` selection adjustments: replaces hand-rolled union/intersect with native methods.                                                                                   |
 | `using` / `await using`  | Manual `try/finally` for cleanup: closing streams, releasing locks, unlistening Tauri events. `auto-send-toast.svelte.ts`, `network-store.svelte.ts`, file-explorer disposal flows. The biggest QoL win. |
-| `Promise.try`            | Wraps a sync-or-async function in a Promise and catches sync throws, cleaner than `new Promise((resolve) => resolve(maybeThrow()))`.                                                                    |
-| Iterator helpers         | Wherever we do `Array.from(iter).map().filter()`: drops the intermediate array allocation.                                                                                                              |
-| `RegExp.escape`          | Search pattern building: replaces our hand-rolled `\\$&` escape with a one-liner.                                                                                                                       |
+| `Promise.try`            | Wraps a sync-or-async function in a Promise and catches sync throws, cleaner than `new Promise((resolve) => resolve(maybeThrow()))`.                                                                     |
+| Iterator helpers         | Wherever we do `Array.from(iter).map().filter()`: drops the intermediate array allocation.                                                                                                               |
+| `RegExp.escape`          | Search pattern building: replaces our hand-rolled `\\$&` escape with a one-liner.                                                                                                                        |
 | `Float16Array`           | Not relevant.                                                                                                                                                                                            |
 
 ### What's safe to adopt today

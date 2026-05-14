@@ -3,8 +3,8 @@
 Two UX polish issues in file operation dialogs (Copy, Move, Delete, Trash):
 
 1. **Raw numbers are hard to read**: file/dir counts like `194667` should display as `194,667`
-2. **Dialog width jitters**: the current-file path changes every second, resizing the dialog. Should be fixed width
-   with smart mid-path truncation
+2. **Dialog width jitters**: the current-file path changes every second, resizing the dialog. Should be fixed width with
+   smart mid-path truncation
 
 ## Milestone 1: `formatNumber` in all file operation dialogs
 

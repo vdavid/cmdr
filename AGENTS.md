@@ -216,7 +216,8 @@ resilience, and common pitfalls.
   call or touching the log pipeline**: it has the rules and the why.
 - ❌ **NEVER build the Tauri app with raw `cargo build`.** It produces a binary without the embedded frontend (white
   screen). Always build via `pnpm tauri build` or the `node scripts/tauri-wrapper.js build` wrapper from
-  `apps/desktop/`. The `beforeBuildCommand` in `tauri.conf.json` runs the llama-server download (Go) and frontend build; skipping it breaks the app. For E2E builds:
+  `apps/desktop/`. The `beforeBuildCommand` in `tauri.conf.json` runs the llama-server download (Go) and frontend build;
+  skipping it breaks the app. For E2E builds:
   `node scripts/tauri-wrapper.js build --no-bundle --target $(rustc -vV | grep host | cut -d' ' -f2) -- --features playwright-e2e,virtual-mtp,smb-e2e`.
   The binary lands in `<repo>/target/<triple>/release/Cmdr`.
   - **Don't add your own build-cache layer.** `pnpm tauri build` already caches internally: Cargo's incremental
@@ -261,10 +262,10 @@ Just Works in fresh worktrees. Don't paper over a missing `resources/ai/` with a
 - **Always read** [style-guide.md](docs/style-guide.md) before touching code. Especially sentence case!
 - Cover your code with tests until you're confident. Don't go overboard. Test per milestone.
 - **We don't use PRs.** Changes land directly on `main`. The "PR" section in `.claude/rules/git-conventions.md` is for
-  the rare case David explicitly asks for one; the default is a regular commit on `main` (or merging a feature branch into
-  `main`). No `gh pr create`, no review-app webhook, none of that.
+  the rare case David explicitly asks for one; the default is a regular commit on `main` (or merging a feature branch
+  into `main`). No `gh pr create`, no review-app webhook, none of that.
 - **Never `git push` (or `git push --tags`) without explicit approval.** Even after a clean commit on `main`, pushing is
-  an external action, so wait until David says to push. This applies to feature branches and tags too. The user-level rule
-  `~/.claude/rules/no-external-actions.md` already covers this; restating it here so it's impossible to miss.
+  an external action, so wait until David says to push. This applies to feature branches and tags too. The user-level
+  rule `~/.claude/rules/no-external-actions.md` already covers this; restating it here so it's impossible to miss.
 
 Happy coding! 🦀✨

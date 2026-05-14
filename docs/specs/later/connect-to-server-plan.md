@@ -57,8 +57,8 @@ are auto-created on first connection.
 
 When a server is added, the backend creates a `NetworkHost` with `source: Manual` and a `manual-` prefixed ID, then
 calls `on_host_found()` (which inserts into `DISCOVERY_STATE` and emits `network-host-found`). **Why:** Reuses the
-entire existing pipeline. The frontend's `network-store` picks it up automatically. Share listing, auth, and mounting all
-work without changes.
+entire existing pipeline. The frontend's `network-store` picks it up automatically. Share listing, auth, and mounting
+all work without changes.
 
 **NetworkHost field mapping for manual hosts:**
 
@@ -345,8 +345,8 @@ insensitive) and call `onShareSelect` with it, triggering the normal mount flow.
 '{name}' not found on {host}." and display the share list normally so the user can pick manually. Clear the prop after
 the attempt to avoid re-triggering on re-render.
 
-**Verify:** Manual testing: navigate to Network, see the "+" row, Enter on it, type `localhost:9445`, click Connect
-with Docker containers running.
+**Verify:** Manual testing: navigate to Network, see the "+" row, Enter on it, type `localhost:9445`, click Connect with
+Docker containers running.
 
 ---
 

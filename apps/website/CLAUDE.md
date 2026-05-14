@@ -15,17 +15,17 @@ Blog posts live in `src/content/blog/{slug}/index.md` with colocated images.
 
 ### Key files
 
-| File                                    | Purpose                                                    |
-| --------------------------------------- | ---------------------------------------------------------- |
-| `src/content.config.ts`                 | Blog collection schema (title, date, description, cover)   |
-| `src/layouts/BlogLayout.astro`          | Post page layout (date, title, description, prose styles)  |
-| `src/styles/blog-prose.css`             | Shared prose styles for blog content                       |
+| File                                    | Purpose                                                   |
+| --------------------------------------- | --------------------------------------------------------- |
+| `src/content.config.ts`                 | Blog collection schema (title, date, description, cover)  |
+| `src/layouts/BlogLayout.astro`          | Post page layout (date, title, description, prose styles) |
+| `src/styles/blog-prose.css`             | Shared prose styles for blog content                      |
 | `src/pages/blog/index.astro`            | Blog index: excerpts with "Read more" links, newest first |
-| `src/pages/blog/[slug].astro`           | Individual post page with comments                         |
-| `src/pages/og/[slug].png.ts`            | OG image generation (Satori + resvg)                       |
-| `src/pages/rss.xml.ts`                  | RSS feed                                                   |
-| `src/components/Remark42Comments.astro` | Comment widget (disabled in dev)                           |
-| `src/components/BlogImageClick.astro`   | Click-to-fullsize for blog images                          |
+| `src/pages/blog/[slug].astro`           | Individual post page with comments                        |
+| `src/pages/og/[slug].png.ts`            | OG image generation (Satori + resvg)                      |
+| `src/pages/rss.xml.ts`                  | RSS feed                                                  |
+| `src/components/Remark42Comments.astro` | Comment widget (disabled in dev)                          |
+| `src/components/BlogImageClick.astro`   | Click-to-fullsize for blog images                         |
 
 ### OG images
 

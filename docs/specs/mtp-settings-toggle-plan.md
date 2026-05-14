@@ -13,8 +13,8 @@ that MTP support exists as a feature.
 
 ### Where in settings: `General > File operations`
 
-MTP is a file operations feature (transferring files to/from Android devices). It doesn't warrant its own section;
-a single toggle. The `File operations` section already has 3 settings and can accommodate one more.
+MTP is a file operations feature (transferring files to/from Android devices). It doesn't warrant its own section; a
+single toggle. The `File operations` section already has 3 settings and can accommodate one more.
 
 Not `Network` (MTP is USB, not network). Not `Advanced`: it's a meaningful user-facing feature toggle, not a technical
 knob.
@@ -44,8 +44,8 @@ disabled. This ensures the `OnceLock` statics are ready for when the user re-ena
 
 ### In-progress transfers on disable
 
-When MTP is disabled, active transfers will fail with connection errors. This is acceptable for v1: the toggle is
-rarely used, and the user is explicitly choosing to disable MTP. Documenting this behavior is sufficient.
+When MTP is disabled, active transfers will fail with connection errors. This is acceptable for v1: the toggle is rarely
+used, and the user is explicitly choosing to disable MTP. Documenting this behavior is sufficient.
 
 ### Platform visibility
 

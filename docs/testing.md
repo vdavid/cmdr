@@ -23,19 +23,19 @@ work into it that a unit test would cover.
 
 ## Decision table: what tool for what test
 
-| You want to test                                              | Tool / layer                                                                                                                                        |
-| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pure function with edge cases                                 | `proptest` (Rust unit). State a property, fuzz inputs.                                                                                              |
-| Pure function with a few specific inputs                      | Plain example tests in `mod tests`                                                                                                                  |
-| Behavior coverage of an existing tested function              | `cargo mutants` survivor triage: every survived mutant is a behavior-level gap                                                                      |
-| State machine transition                                      | Rust unit test, **drive via the public interface**, not by setting the atomic directly                                                              |
-| `#[tauri::command]` boundary                                  | vitest IPC contract test using `installIpcMock()` from `apps/desktop/src/lib/ipc/test-helpers.ts`                                                   |
-| Frontend component logic                                      | vitest + svelte-testing-library in `*.test.ts`                                                                                                      |
-| Component-level a11y (ARIA, labels, focus order)              | tier-3 a11y test in `*.a11y.test.ts`                                                                                                                |
-| Keyboard shortcut opens a dialog                              | E2E spec, use `dispatchMenuCommand(tauriPage, 'file.copy')`. **Never** synthetic F-key press unless the test exists to verify the keyboard pathway  |
-| Wait for UI state to change in E2E                            | `pollUntil(tauriPage, async () => …, timeout)` from `helpers.ts`. **Never** `await sleep(N)`                                                        |
-| Cross-component flow (return-focus, dialog stack, navigation) | E2E (Playwright)                                                                                                                                    |
-| Storage volume operation (MTP, SMB)                           | Integration test against a virtual fixture (virtual-mtp feature, Docker SMB containers)                                                             |
+| You want to test                                              | Tool / layer                                                                                                                                       |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pure function with edge cases                                 | `proptest` (Rust unit). State a property, fuzz inputs.                                                                                             |
+| Pure function with a few specific inputs                      | Plain example tests in `mod tests`                                                                                                                 |
+| Behavior coverage of an existing tested function              | `cargo mutants` survivor triage: every survived mutant is a behavior-level gap                                                                     |
+| State machine transition                                      | Rust unit test, **drive via the public interface**, not by setting the atomic directly                                                             |
+| `#[tauri::command]` boundary                                  | vitest IPC contract test using `installIpcMock()` from `apps/desktop/src/lib/ipc/test-helpers.ts`                                                  |
+| Frontend component logic                                      | vitest + svelte-testing-library in `*.test.ts`                                                                                                     |
+| Component-level a11y (ARIA, labels, focus order)              | tier-3 a11y test in `*.a11y.test.ts`                                                                                                               |
+| Keyboard shortcut opens a dialog                              | E2E spec, use `dispatchMenuCommand(tauriPage, 'file.copy')`. **Never** synthetic F-key press unless the test exists to verify the keyboard pathway |
+| Wait for UI state to change in E2E                            | `pollUntil(tauriPage, async () => …, timeout)` from `helpers.ts`. **Never** `await sleep(N)`                                                       |
+| Cross-component flow (return-focus, dialog stack, navigation) | E2E (Playwright)                                                                                                                                   |
+| Storage volume operation (MTP, SMB)                           | Integration test against a virtual fixture (virtual-mtp feature, Docker SMB containers)                                                            |
 
 ## Anti-patterns
 
@@ -89,8 +89,8 @@ await dispatchMenuCommand(tauriPage, 'file.copy')
 await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
 ```
 
-Keep one or two dedicated tests on the keyboard pathway (`app.spec.ts` has these, with names like "opens copy dialog with
-F5"). The rest should use `dispatchMenuCommand`.
+Keep one or two dedicated tests on the keyboard pathway (`app.spec.ts` has these, with names like "opens copy dialog
+with F5"). The rest should use `dispatchMenuCommand`.
 
 ### ❌ Direct atomic / store mutation in state-machine tests
 

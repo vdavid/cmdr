@@ -1,7 +1,7 @@
 # Testing tools
 
-Inventory of testing tools available in Cmdr. One paragraph per tool: what it is, where it lives, how to invoke it,
-when to reach for it.
+Inventory of testing tools available in Cmdr. One paragraph per tool: what it is, where it lives, how to invoke it, when
+to reach for it.
 
 Decision rules for which tool to use are in [docs/testing.md](../testing.md). This file answers "is there a tool for
 X?".
@@ -16,10 +16,10 @@ Run all: through the checker: `./scripts/check.sh --check rust-tests`. Don't run
 ### `proptest` (property-based testing)
 
 Dev-dependency on `cmdr-lib`. Use for pure functions where the input space is large enough that example tests miss edge
-cases: comparators, parsers, transforms, generators. State a property (round-trip, idempotence, "output is valid for
-the consumer"), let proptest fuzz inputs. Patterns to copy: `indexing/aggregator.rs` (topological sort),
-`search/query.rs` (glob_to_regex + scope parsing), `indexing/store.rs` (platform_case_compare comparator laws). Keep
-properties **tight**: "function doesn't panic" is too weak.
+cases: comparators, parsers, transforms, generators. State a property (round-trip, idempotence, "output is valid for the
+consumer"), let proptest fuzz inputs. Patterns to copy: `indexing/aggregator.rs` (topological sort), `search/query.rs`
+(glob_to_regex + scope parsing), `indexing/store.rs` (platform_case_compare comparator laws). Keep properties **tight**:
+"function doesn't panic" is too weak.
 
 ### `cargo-mutants` (mutation testing)
 
@@ -49,8 +49,8 @@ cross-window / multi-positional-arg commands; skip for thin getters.
 
 ### `stryker-mutator` (mutation testing for TS)
 
-Not in package.json: install ad-hoc: `pnpm add -D -w @stryker-mutator/core @stryker-mutator/typescript-checker`. Fast
-on a single file (~12 s on a 600-line module) but choppy on the full Svelte/Tauri project. Sharp config edges. Use for
+Not in package.json: install ad-hoc: `pnpm add -D -w @stryker-mutator/core @stryker-mutator/typescript-checker`. Fast on
+a single file (~12 s on a 600-line module) but choppy on the full Svelte/Tauri project. Sharp config edges. Use for
 numeric / pure-TS modules only; **don't** attempt on `.svelte` files. Pattern to copy: how it ran on
 `apps/desktop/src/lib/.../scan-throughput.ts` during the Step 7 push.
 

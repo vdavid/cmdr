@@ -9,16 +9,16 @@ copy via the FriendlyError pipeline.
 
 ## File map
 
-| File                     | Role                                                                                                                                                                       |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `RepoChip.svelte`        | Single-line pill rendering branch + ahead/behind/dirty in the header                                                                                                       |
-| `RepoChip.test.ts`       | Snapshot-style tests for the six visual states                                                                                                                             |
-| `git-store.svelte.ts`    | Per-repo reactive `RepoInfo` map. `subscribeToRepo(repoRoot)` is the live channel; `lookupRepoInfo(path)` is one-shot                                                      |
-| `status-column.ts`       | Pure helpers: `glyphFor`, `labelFor`, `fetchStatusMap`. No reactivity                                                                                                      |
-| `status-column.test.ts`  | Tests for `glyphFor`, `labelFor`, and `fetchStatusMap` (mocks the IPC envelope)                                                                                            |
-| `git-store.test.ts`      | Tests for refcounted subscribe/unsubscribe and `lookupRepoInfo` envelope unwrapping                                                                                        |
+| File                     | Role                                                                                                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RepoChip.svelte`        | Single-line pill rendering branch + ahead/behind/dirty in the header                                                                                                      |
+| `RepoChip.test.ts`       | Snapshot-style tests for the six visual states                                                                                                                            |
+| `git-store.svelte.ts`    | Per-repo reactive `RepoInfo` map. `subscribeToRepo(repoRoot)` is the live channel; `lookupRepoInfo(path)` is one-shot                                                     |
+| `status-column.ts`       | Pure helpers: `glyphFor`, `labelFor`, `fetchStatusMap`. No reactivity                                                                                                     |
+| `status-column.test.ts`  | Tests for `glyphFor`, `labelFor`, and `fetchStatusMap` (mocks the IPC envelope)                                                                                           |
+| `git-store.test.ts`      | Tests for refcounted subscribe/unsubscribe and `lookupRepoInfo` envelope unwrapping                                                                                       |
 | `path-detection.ts`      | `isVirtualGitPath(path)`: shared regex matching the seven backend `Cat` segments. Used to skip filesystem-bound polls (and future similar checks) on virtual portal paths |
-| `path-detection.test.ts` | Tests for `isVirtualGitPath` (each category, raw passthrough, real `.git` internals, lookalikes)                                                                           |
+| `path-detection.test.ts` | Tests for `isVirtualGitPath` (each category, raw passthrough, real `.git` internals, lookalikes)                                                                          |
 
 ## Lifecycle
 

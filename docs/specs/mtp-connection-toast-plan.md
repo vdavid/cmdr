@@ -34,8 +34,7 @@ The toast should be informative but not alarming. Content:
 The toast system renders custom components with zero props (`<ContentComponent />`). To pass the device name, we use a
 **module-level `$state` variable** in the toast component file. The `+layout.svelte` listener sets this variable before
 calling `addToast`. The component reads it reactively. This follows the same self-contained pattern as
-`CrashReportToastContent` (which knows its own toast ID by convention). The component also knows where to find its
-data.
+`CrashReportToastContent` (which knows its own toast ID by convention). The component also knows where to find its data.
 
 ```ts
 // In MtpConnectedToastContent.svelte (module context)
@@ -83,9 +82,9 @@ MTP..." button, the device disconnects and MTP is turned off. No need for a sepa
 
 ### "Disable MTP..." button in toast
 
-Must call `setSetting('fileOperations.mtpEnabled', false)`, NOT `setMtpEnabled()` directly. The settings-applier
-already listens for `fileOperations.mtpEnabled` changes and calls the Tauri command. Calling the command directly would
-desync the setting value from the backend state.
+Must call `setSetting('fileOperations.mtpEnabled', false)`, NOT `setMtpEnabled()` directly. The settings-applier already
+listens for `fileOperations.mtpEnabled` changes and calls the Tauri command. Calling the command directly would desync
+the setting value from the backend state.
 
 ### SettingCheckbox component
 
@@ -130,8 +129,8 @@ New settings with defaults work via `getSetting()` fallback to the registry defa
   `SettingSwitch` (no `split`). The warning setting uses `SettingCheckbox` (no `split`), styled less prominently.
 - `src/lib/settings/sections/FileOperationsSection.svelte`: Remove the MTP setting row (the `mtpEnabledDef` lookup, the
   `shouldShow` block, and the `SettingSwitch` import if no longer needed)
-- `src/lib/settings/components/SettingsContent.svelte`: Import `MtpSection`, add
-  `shouldShowSection(['General', 'MTP'])` block in the General sections group
+- `src/lib/settings/components/SettingsContent.svelte`: Import `MtpSection`, add `shouldShowSection(['General', 'MTP'])`
+  block in the General sections group
 
 **Testing:** Run `svelte-check`. Visually verify in Settings.
 

@@ -5,8 +5,8 @@ Design-time WCAG 2.2 contrast checker for the Cmdr desktop app.
 ## Why
 
 Our E2E axe-core tests flake on `color-contrast` rules because axe + webkit2gtk + chained `color-mix(var(...))`
-sometimes disagree on the effective pixel color. The design tokens themselves are deterministic, though, so we can verify
-contrast at build time without a browser.
+sometimes disagree on the effective pixel color. The design tokens themselves are deterministic, though, so we can
+verify contrast at build time without a browser.
 
 This tool is tier 1 of a three-tier a11y strategy:
 

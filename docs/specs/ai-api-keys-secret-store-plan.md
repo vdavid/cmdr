@@ -133,5 +133,5 @@ Secret-Service-less systems. No new UX needed for the AI flow; the SMB-side toas
 - Migration of existing keys (deliberately skipped; app is pre-launch).
 - Hardening the macOS Keychain ACL (default behavior already silent for same-app reads on a codesigned build).
 - Any change to SMB credential storage.
-- Removing the `cloud-providers.ts` `apiKey` field from any external JSON that might exist in user-exported settings
-  (no such export exists).
+- Removing the `cloud-providers.ts` `apiKey` field from any external JSON that might exist in user-exported settings (no
+  such export exists).

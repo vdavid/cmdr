@@ -40,8 +40,8 @@ of the modal. `initAiState()` seeds `aiState.onboarded` from `loadSettings().isO
 
 `notifyAiOnboardingComplete()` is called from `routes/(main)/+page.svelte` whenever the FDA prompt closes (Allow or Deny
 path) or for legacy users who never saw the prompt. It flips `onboarded` and, if `pendingOffer` is true, surfaces the
-offer right then. The Allow path also restarts the app; on next launch `isOnboarded` is already true so the gate
-doesn't engage at all.
+offer right then. The Allow path also restarts the app; on next launch `isOnboarded` is already true so the gate doesn't
+engage at all.
 
 This mirrors the updater module's pattern in `$lib/updates/updater.svelte.ts` (`onboarded` + `notifyOnboardingComplete`)
 Same gate, same opening event, two independent toasts.

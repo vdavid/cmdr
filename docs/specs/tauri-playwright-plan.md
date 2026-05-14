@@ -267,8 +267,8 @@ This single constant replaces the Linux-specific `ctrlKey: true` and macOS `disp
 
 #### 2.3 Install npm dependencies
 
-**What**: Add `@srsholmes/tauri-playwright` and `@playwright/test` to devDependencies. No Chromium install needed:
-Tauri mode runs against the real app webview, not a browser.
+**What**: Add `@srsholmes/tauri-playwright` and `@playwright/test` to devDependencies. No Chromium install needed: Tauri
+mode runs against the real app webview, not a browser.
 
 **Changes in `apps/desktop/package.json`**:
 
@@ -280,8 +280,8 @@ Tauri mode runs against the real app webview, not a browser.
 
 Port tests one at a time, verifying each runs before moving to the next. Order matters; start with the simplest:
 
-1. **`app.spec.ts`** (basic rendering, keyboard nav, mouse clicks): validates the fundamental connection and
-   interaction model works
+1. **`app.spec.ts`** (basic rendering, keyboard nav, mouse clicks): validates the fundamental connection and interaction
+   model works
 2. **`viewer.spec.ts`** (file viewer): tests SvelteKit navigation, which was the most hacky part in WebDriverIO
 3. **`settings.spec.ts`** (settings page): another navigation test, plus form interactions
 4. **`file-operations.spec.ts`** (copy, move, rename, mkdir): the most complex, touches filesystem and dialogs
@@ -358,8 +358,8 @@ the page context is destroyed.
 
 **Practical impact**: After triggering navigation, tests must `waitForSelector` or `waitForFunction` before evaluating
 further JS. This is standard Playwright practice and the old tests already do this (they wait for `.settings-window` or
-`.viewer-container` after navigating). But it's worth calling out because the polling model was more forgiving; it
-would just retry on the new page.
+`.viewer-container` after navigating). But it's worth calling out because the polling model was more forgiving; it would
+just retry on the new page.
 
 The `__PW_ACTIVE__` flag in the init script is also relevant here: it re-initializes on each page load (since init
 scripts run on every navigation), so the fixture can detect when the new page is ready.

@@ -87,14 +87,14 @@ Variants: `primary` | `secondary` (default) | `danger`. Sizes: `regular` (defaul
 ## LinkButton
 
 Use this for anything that should look and behave like a link. Renders a `<button>` by default (in-app actions like
-"Open settings", "Show format help"), or an `<a>` when you pass `href` (for external URLs like `mailto:`, `https://` that
-your `onclick` intercepts and routes through `openExternalUrl()`). It is the **only** place in the app that opts back
-into `cursor: pointer`; Cmdr globally sets `cursor: default` on `html` and `<a>` for native macOS feel
+"Open settings", "Show format help"), or an `<a>` when you pass `href` (for external URLs like `mailto:`, `https://`
+that your `onclick` intercepts and routes through `openExternalUrl()`). It is the **only** place in the app that opts
+back into `cursor: pointer`; Cmdr globally sets `cursor: default` on `html` and `<a>` for native macOS feel
 (`app.css:363-366`), and stylelint blocks `cursor: pointer` everywhere else (`.stylelintrc.mjs:38`). Don't roll your own
 link-styled button or anchor with raw CSS; the cursor opt-in stays in one place by convention.
 
-Hover keeps the resting accent-text color (the lighter `--color-accent-hover` doesn't meet 4.5:1 contrast on white).
-The underline is enough affordance.
+Hover keeps the resting accent-text color (the lighter `--color-accent-hover` doesn't meet 4.5:1 contrast on white). The
+underline is enough affordance.
 
 The `href` mode includes a per-line eslint disable for `svelte/no-navigation-without-resolve`. That rule wants
 SvelteKit's `resolve()`, which is for internal routes; we route external URLs through `openExternalUrl()` after
@@ -168,11 +168,10 @@ Call `dismissTransientToasts()` on pane navigation to clear stale feedback.
 
 `ToastOptions` extras for component-content toasts that have their own action buttons:
 
-- `closeTooltip?: string`: tooltip text shown on hover/focus over the X button. Set this when the toast also has its
-  own buttons (for example, an inline "Cancel"), so users can tell what each control does. Without it, no tooltip
-  renders.
-- `onDismiss?: () => void`: fires only when the user clicks X (or the inline "Send error report…" link). Auto-dismiss
-  on timeout and programmatic `dismissToast()` calls do NOT trigger it. Use this when the caller needs to remember "the
+- `closeTooltip?: string`: tooltip text shown on hover/focus over the X button. Set this when the toast also has its own
+  buttons (for example, an inline "Cancel"), so users can tell what each control does. Without it, no tooltip renders.
+- `onDismiss?: () => void`: fires only when the user clicks X (or the inline "Send error report…" link). Auto-dismiss on
+  timeout and programmatic `dismissToast()` calls do NOT trigger it. Use this when the caller needs to remember "the
   user closed this," for example to avoid re-adding a toast that's tied to long-running background work.
 
 ## CommandBox
@@ -192,8 +191,8 @@ Use this in Svelte templates: `<Size bytes={entry.size} />`. For HTML string con
 that goes through `{@html}`), use one of two helpers from `$lib/file-explorer/selection/selection-info-utils.ts`:
 
 - `formatSizeHtmlColored(bytes, format)`: full pipeline: byte count → formatted string → colored span.
-- `colorizeSizeString(text)`: when you already have a formatted size string (for example, from the legacy `formatBytes` in
-  `$lib/tauri-commands`) and just need to wrap it in the right tier span.
+- `colorizeSizeString(text)`: when you already have a formatted size string (for example, from the legacy `formatBytes`
+  in `$lib/tauri-commands`) and just need to wrap it in the right tier span.
 
 The `<Size>` component does NOT cover the raw-bytes triad mode used by the file-list size column (which is gated by
 `listing.humanFriendlySizeUnits`). That column renders `formatSizeForDisplay` directly because it also needs the

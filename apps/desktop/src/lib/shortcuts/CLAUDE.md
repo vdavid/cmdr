@@ -154,8 +154,8 @@ These are semantically different.
 
 ### Default shortcuts are immutable
 
-`command-registry.ts` is compiled into the app. Changing defaults requires a new build. This is intentional: defaults are
-part of the app's behavior, not user data.
+`command-registry.ts` is compiled into the app. Changing defaults requires a new build. This is intentional: defaults
+are part of the app's behavior, not user data.
 
 ### Scope overlap is transitive
 

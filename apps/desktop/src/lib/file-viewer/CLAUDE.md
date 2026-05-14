@@ -36,10 +36,10 @@ are approximate. LineIndex builds an O(lines/256) index in the background for ex
 progressively better behavior without choosing a mode.
 
 **Decision**: Fraction-based seeking as the default scroll model for ByteSeek. **Why**: Without a line index, the
-frontend can't ask for "line 50000". The backend doesn't know where it is. Instead, scrolling maps to a byte fraction
-of the file (e.g., 50% = seek to byte offset at file midpoint). The frontend caches lines at the position it requested,
-not at the backend's reported line number, because the two estimates can differ (different average line length
-assumptions). Once the background indexer finishes, it switches to exact line seeks automatically.
+frontend can't ask for "line 50000". The backend doesn't know where it is. Instead, scrolling maps to a byte fraction of
+the file (e.g., 50% = seek to byte offset at file midpoint). The frontend caches lines at the position it requested, not
+at the backend's reported line number, because the two estimates can differ (different average line length assumptions).
+Once the background indexer finishes, it switches to exact line seeks automatically.
 
 **Decision**: Timestamp-based unique window labels (`viewer-${Date.now()}`). **Why**: Each viewer needs its own Tauri
 `WebviewWindow` label. Using the file path would prevent opening the same file twice. Timestamps are unique enough

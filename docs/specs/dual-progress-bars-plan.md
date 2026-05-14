@@ -28,8 +28,8 @@ spinner + "Deleting N copied files..." is correct for an indeterminate operation
 
 **Why:** `ProgressOverlay` uses a horizontal row layout (bar + percentage + ETA inline). `TransferProgressDialog` needs
 a grid layout (label, bar, detail). These are fundamentally different layouts. If the component includes label/detail
-props, one consumer won't use them, making the API dishonest. A pure bar component is more composable; consumers
-arrange labels however they need.
+props, one consumer won't use them, making the API dishonest. A pure bar component is more composable; consumers arrange
+labels however they need.
 
 ### Size variants instead of pixel props
 
@@ -45,8 +45,9 @@ escape hatch that bypasses the design token system. Can be added later if a real
 
 ### Inline grid layout for dual bars
 
-**Why:** A vertical stack of label-above-bar pairs creates a text/bar/text/bar/text sandwich, which is visually noisy. An inline
-grid aligns both bars side by side with labels left and stats right. Compact, scannable, bars are the focal element:
+**Why:** A vertical stack of label-above-bar pairs creates a text/bar/text/bar/text sandwich, which is visually noisy.
+An inline grid aligns both bars side by side with labels left and stats right. Compact, scannable, bars are the focal
+element:
 
 ```
 Size   [========================] 1.2 / 3.5 GB (34%)
@@ -110,8 +111,8 @@ Script:
 - Remove `percentComplete` derived (line 189): no longer used, replaced by inline expressions
 
 Template: replace lines 799–828 (progress section + stats section) with a CSS grid. Preserve the current file indicator
-(lines 830–835) after the grid, since it should remain outside the `{#if}` because the backend emits `current_file` during
-scanning too, and showing it supports radical transparency. Only show the bars when past scanning:
+(lines 830–835) after the grid, since it should remain outside the `{#if}` because the backend emits `current_file`
+during scanning too, and showing it supports radical transparency. Only show the bars when past scanning:
 
 ```svelte
 {#if phase !== 'scanning'}

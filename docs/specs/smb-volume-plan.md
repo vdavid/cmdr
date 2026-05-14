@@ -121,8 +121,8 @@ Implement `Volume` trait:
 - `exists(path)` → `client.stat()`, return `true` on success, `false` on `NotFound` error.
 - `is_directory(path)` → `client.stat()`, check `is_directory` field.
 - `local_path()` → **`None`**. See copy strategy discussion below. OS integration features (Quick Look, "Reveal in
-  Finder", drag & drop) don't use `local_path()`; they construct full paths from `root()`, which returns the mount
-  path. So returning `None` from `local_path()` only affects the copy fast-path, which is the desired behavior.
+  Finder", drag & drop) don't use `local_path()`; they construct full paths from `root()`, which returns the mount path.
+  So returning `None` from `local_path()` only affects the copy fast-path, which is the desired behavior.
 - `supports_watching()` → `false` initially. Use the existing FSEvents watcher on the mount path (which already works
   for mounted SMB shares). Add smb2-native watching later.
 - `get_space_info()` → `client.fs_info(&tree)` via `block_on`, map to `SpaceInfo`.

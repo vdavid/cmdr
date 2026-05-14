@@ -1,8 +1,8 @@
 # Error reporter (frontend)
 
 Flow A (user-initiated "Send error report" UI): lets the user preview the redacted log bundle, optionally add a note,
-and ship it to the api server. Flow B (opt-in auto-send on user-visible errors) is wired here too: a tiny listener
-turns the backend's `error-report-auto-sent` event into a confirmation toast.
+and ship it to the api server. Flow B (opt-in auto-send on user-visible errors) is wired here too: a tiny listener turns
+the backend's `error-report-auto-sent` event into a confirmation toast.
 
 ## Files
 

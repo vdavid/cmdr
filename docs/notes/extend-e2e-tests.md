@@ -52,8 +52,8 @@ Status: in progress.
 
 1. `search narrows the visible sidebar sections and clearing restores them`: drives the debounced filter with `accent`
    (matches one Appearance row), then clicks the `×` and asserts the full list is back.
-2. `search shows an empty sidebar for queries with no matches`: covers the no-match branch and confirms the clear
-   button is still reachable; cleans up search state for the next test.
+2. `search shows an empty sidebar for queries with no matches`: covers the no-match branch and confirms the clear button
+   is still reachable; cleans up search state for the next test.
 3. `Arrow Down in the search box moves section selection forward`: covers the dual-keydown path in
    `SettingsSidebar.handleSearchKeydown` (Arrow keys in input forward to `navigateSections`); clears any leftover search
    up front so a `.selected` row is present.
@@ -79,13 +79,13 @@ portal toggle), both documented.
 
 **Tests added** (2):
 
-1. `navigates tags/v1.0.0 and sees the tree at the tagged commit`: covers the tag-resolving branch and dot-in-ref
-   parser path.
-2. `navigates commits/ and shows the single HEAD commit by short SHA`: covers `list_commits` integration via the
-   listing pipeline; regex-checks for a 7+ hex name to avoid pinning to a specific SHA across git versions.
+1. `navigates tags/v1.0.0 and sees the tree at the tagged commit`: covers the tag-resolving branch and dot-in-ref parser
+   path.
+2. `navigates commits/ and shows the single HEAD commit by short SHA`: covers `list_commits` integration via the listing
+   pipeline; regex-checks for a 7+ hex name to avoid pinning to a specific SHA across git versions.
 
-**Skipped (with reason)**: Friendly git error rendering. Already covered by Rust unit tests + the broader
-friendly-error path is exercised by `error-pane.spec.ts`.
+**Skipped (with reason)**: Friendly git error rendering. Already covered by Rust unit tests + the broader friendly-error
+path is exercised by `error-pane.spec.ts`.
 
 ### viewer.spec.ts
 
@@ -104,7 +104,8 @@ friendly-error path is exercised by `error-pane.spec.ts`.
 - W toggles word wrap (cross-state setting + CSS class flip).
 - Enter advances to next match (already covered indirectly because `findMatches` test pulls a match count, but no test
   confirms navigation).
-- F3 from file list opens viewer (cross-component; opens a NEW Tauri window, outside the test's single-window scope; deferred).
+- F3 from file list opens viewer (cross-component; opens a NEW Tauri window, outside the test's single-window scope;
+  deferred).
 - Line heights variant testing (FullLoad pretext path): deep internal, deferred.
 
 **Tests added** (1):
@@ -459,8 +460,8 @@ The clear net-positive proptest targets, in order:
 
 1. **`indexing::aggregator::topological_sort_bottom_up`**: 1 example test for a function with non-trivial tree
    invariants. Cycle and duplicate-ID behavior isn't asserted today.
-2. **`search::query::glob_to_regex`**: 4 example tests; infinite input space; output feeds a regex engine that panics
-   on malformed input. "Output is always valid regex" is a one-line property and a real safety net.
+2. **`search::query::glob_to_regex`**: 4 example tests; infinite input space; output feeds a regex engine that panics on
+   malformed input. "Output is always valid regex" is a one-line property and a real safety net.
 3. **`search::query::split_scope_segments`**: 10 example tests for a parser with nested escape/quote rules. Round-trip
    and segment-count properties are cheap.
 4. **`indexing::store::platform_case_compare`** (macOS): comparator-law properties (reflexivity, antisymmetry,
@@ -508,10 +509,9 @@ Coverage is uneven:
 - **Strong**: `SmbVolume::ConnectionState` (Direct ⇄ Disconnected, idempotency, single-flight reconnect),
   `OperationIntent` (atomic level), `SmbReconnectManager` FE, AI notification FE, MTP FE, updater FE, error-reporter
   `auto_dispatcher` debounce.
-- **Weak**: `IndexPhase` (Disabled/Initializing/Running/ShuttingDown: no direct test of any transition or the
-  start/stop race), `ActivityPhase` (six-state telemetry pipeline, no test), `DiscoveryState` (network mDNS: three
-  transitions, no test), `network-store` `ShareState` + `CredentialStatus` FE (a11y tests only), `ConnectToServerDialog`
-  FE.
+- **Weak**: `IndexPhase` (Disabled/Initializing/Running/ShuttingDown: no direct test of any transition or the start/stop
+  race), `ActivityPhase` (six-state telemetry pipeline, no test), `DiscoveryState` (network mDNS: three transitions, no
+  test), `network-store` `ShareState` + `CredentialStatus` FE (a11y tests only), `ConnectToServerDialog` FE.
 - **Tested at wrong layer**: `cancel_write_operation`'s validation guard (state.rs:306) is bypassed by all tests, which
   set the atomic directly. The `RollingBack → Stopped` valid-transition assertion and the rejection of terminal-state
   writes are not exercised through the public API.
@@ -574,8 +574,8 @@ highest-priority command groups:
 - **Write operations** (9 tests): `copy_files`, `move_files`, `delete_files`, `trash_files`, `cancel_write_operation`.
   Pins the payload shape (including the optional config object and the `volumeId` / `itemSizes` shapes) and one typed
   `WriteOperationError` variant on the error branch.
-- **File viewer** (8 tests): `viewer_open`, `viewer_get_lines`, `viewer_search_start`/`_poll`/`_cancel`,
-  `viewer_close`. Coverage report flagged this group as 9/9 untested at the IPC layer.
+- **File viewer** (8 tests): `viewer_open`, `viewer_get_lines`, `viewer_search_start`/`_poll`/`_cancel`, `viewer_close`.
+  Coverage report flagged this group as 9/9 untested at the IPC layer.
 - **SMB connection** (6 tests): `connect_to_server`, `list_shares_on_host`, `mount_network_share`. The mount path has 6
   positional args and AGENTS.md specifically calls out positional-soup as fragile.
 
@@ -602,14 +602,14 @@ Branch `e2e-speedup`, 47 commits, ready for fast-forward to `main`.
 
 ### Tests added across the push
 
-| Category                       | Tests   | Bugs surfaced                                                            |
-| ------------------------------ | ------- | ------------------------------------------------------------------------ |
+| Category                       | Tests   | Bugs surfaced                                                           |
+| ------------------------------ | ------- | ----------------------------------------------------------------------- |
 | E2E coverage extension         | 9       | 1: Cancel-copy rollback (Rust `Ok(())` arm + Svelte settle-window race) |
-| Mutation testing (Rust+Svelte) | 55      | 0                                                                        |
-| State-machine transitions      | 17      | 1: `file_viewer` `SearchStatus::Cancelled` unobservable to FE            |
-| Property-based (proptest)      | 12      | 0                                                                        |
-| IPC contract (mockIPC)         | 23      | 0                                                                        |
-| **Total new unit / IPC tests** | **107** |                                                                          |
+| Mutation testing (Rust+Svelte) | 55      | 0                                                                       |
+| State-machine transitions      | 17      | 1: `file_viewer` `SearchStatus::Cancelled` unobservable to FE           |
+| Property-based (proptest)      | 12      | 0                                                                       |
+| IPC contract (mockIPC)         | 23      | 0                                                                       |
+| **Total new unit / IPC tests** | **107** |                                                                         |
 
 Plus dead code removal: `SmbVolume::ConnectionState::OsMount` variant dropped (state machine collapsed to its real
 binary `Direct ⇄ Disconnected` shape).
@@ -723,5 +723,5 @@ published.
 
 **Capability extension**: the auto-generated `playwright.json` capability (in `src-tauri/build.rs`) now targets
 `["main", "settings", "viewer-*"]` instead of just `["main"]`. Without this, the plugin's `pw_result` IPC callback would
-be rejected by Tauri's permission system when evaluating into a viewer or settings window. The eval itself would land
-in the webview, but the result callback would never get back to the test runner.
+be rejected by Tauri's permission system when evaluating into a viewer or settings window. The eval itself would land in
+the webview, but the result callback would never get back to the test runner.

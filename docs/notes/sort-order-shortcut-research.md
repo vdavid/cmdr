@@ -23,8 +23,8 @@ Research and decisions behind the `Cmd+3..6` / `Cmd+F3..F6` shortcuts that chang
 
 Why this set, this order:
 
-- Builds on our existing `⌘1`/`⌘2` (Full/Brief view), keeping the number-key block coherent: view shape (1, 2), then sort
-  (3, 4, 5, 6).
+- Builds on our existing `⌘1`/`⌘2` (Full/Brief view), keeping the number-key block coherent: view shape (1, 2), then
+  sort (3, 4, 5, 6).
 - Single-modifier so it's fast to hit one-handed.
 - Date modified before Size matches what people sort by most often after Name/Extension.
 - "Date created", "Date added", "Kind", "Permissions", etc. get no default shortcut. Users who want them can bind one in
@@ -75,9 +75,9 @@ Date modified moved up by one. The shortcut order (`⌘3..6`) matches the menu o
 ## Files touched
 
 - `apps/desktop/src/lib/commands/command-registry.ts`: added `shortcuts` arrays for the four sort commands
-- `apps/desktop/src-tauri/src/menu/mod.rs`: `build_sort_submenu` now takes accelerator params and reorders Date
-  modified above Size; sort items added to the items HashMap and to `command_id_to_menu_id` so user-customized shortcuts
-  re-flow into the menu
+- `apps/desktop/src-tauri/src/menu/mod.rs`: `build_sort_submenu` now takes accelerator params and reorders Date modified
+  above Size; sort items added to the items HashMap and to `command_id_to_menu_id` so user-customized shortcuts re-flow
+  into the menu
 - `apps/desktop/src-tauri/src/menu/macos.rs` and `linux.rs`: pass `Cmd+3..6` accelerators; register sort items in items
   HashMap
 - `apps/desktop/src/lib/shortcuts/shortcuts-store.ts`: added the four sort command IDs to `menuCommands`

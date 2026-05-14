@@ -76,8 +76,8 @@ triggers a re-measure. Multiple sizes coexist in the cache; the Rust side never 
 
 ## Exported functions
 
-- `ensureFontMetricsLoaded()`: main entry point; checks cache, schedules measurement if needed. `lib/text-size.ts`
-  calls this on a 1 s debounce after each scale change.
+- `ensureFontMetricsLoaded()`: main entry point; checks cache, schedules measurement if needed. `lib/text-size.ts` calls
+  this on a 1 s debounce after each scale change.
 - `getCurrentFontId()`: returns the font ID for the current effective scale (e.g. `system-400-12`, `system-400-15`).
 
 ## Dependencies

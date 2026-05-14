@@ -14,11 +14,12 @@ resize-triggered reflow is instant (no IPC), which is better than the current pr
 
 ### Rust: collect char counts during file scan
 
-**`full_load.rs`**: Add `char_counts: Vec<u32>`. Populate during `open()` while splitting lines (already iterating, trivial cost).
+**`full_load.rs`**: Add `char_counts: Vec<u32>`. Populate during `open()` while splitting lines (already iterating,
+trivial cost).
 
-**`line_index.rs`**: Add `char_counts: Vec<u32>`. Count chars during the existing memchr scan: each line segment
-between newlines is decoded and counted. Adds ~30% scan time but avoids a second pass. The 5s indexing timeout still
-applies; if char counting pushes it over, the session stays in ByteSeek (no regression).
+**`line_index.rs`**: Add `char_counts: Vec<u32>`. Count chars during the existing memchr scan: each line segment between
+newlines is decoded and counted. Adds ~30% scan time but avoids a second pass. The 5s indexing timeout still applies; if
+char counting pushes it over, the session stays in ByteSeek (no regression).
 
 **`byte_seek.rs`**: No change. Returns `None` for char counts.
 
@@ -83,8 +84,8 @@ different internals:
 ## Known edge cases
 
 - **Tabs**: `chars().count()` counts tab as 1 char but CSS renders it as `tab-size` chars (typically 4 or 8). Count each
-  tab as `tab_size` during the Rust scan (one branch in the counting loop, trivial cost). Without this, tab-heavy
-  files (Go, Makefiles, C) would have visible scroll drift on every indented line.
+  tab as `tab_size` during the Rust scan (one branch in the counting loop, trivial cost). Without this, tab-heavy files
+  (Go, Makefiles, C) would have visible scroll drift on every indented line.
 - **CJK double-width**: Undercounts by up to 50% for CJK-heavy lines. Can use `unicode-width` crate later.
 - **Emoji ZWJ**: Overcounts multi-codepoint emoji. Acceptable, same magnitude as old averaged approach.
 - **IPC size for large files**: 1M lines = 4MB of `u32` values. Serialize as a comma-separated string (not JSON array)

@@ -114,8 +114,8 @@ initial `LineChunk` contains everything). This is the clean case: all data avail
 ByteSeek/LineIndex files continue using the existing averaged approach unchanged.
 
 **Line count guard:** A 1MB file of single-byte lines could theoretically have ~1M lines. At ~0.09ms per `layout()`
-call, that's ~90ms for reflow, which is noticeable during resize. Add a guard: if `totalLines > 50_000`, skip the height map and
-fall back to averaged heights. This is conservative; we can raise the limit after benchmarking.
+call, that's ~90ms for reflow, which is noticeable during resize. Add a guard: if `totalLines > 50_000`, skip the height
+map and fall back to averaged heights. This is conservative; we can raise the limit after benchmarking.
 
 ## Implementation
 

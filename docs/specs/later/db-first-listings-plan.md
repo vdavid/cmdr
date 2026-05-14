@@ -59,9 +59,9 @@ to the current `readdir` + `stat` path transparently.
 **Guard: full scan must have completed at least once.** During the initial full scan (first launch, or after "Clear
 index"), the scanner writes entries in batches. A directory might have its own entry in the `entries` table but only
 some of its children written so far. Without this guard, DB-first would show a partial listing, then verification would
-"correct" it to the full list: a visible jump. Check `scan_completed_at` in the meta table: if not set, always fall
-back to readdir. On subsequent cold starts, the DB is already complete (sinceWhen replay only modifies individual
-entries, not partial directories), so this guard only matters for first launch and "Clear index."
+"correct" it to the full list: a visible jump. Check `scan_completed_at` in the meta table: if not set, always fall back
+to readdir. On subsequent cold starts, the DB is already complete (sinceWhen replay only modifies individual entries,
+not partial directories), so this guard only matters for first launch and "Clear index."
 
 ```rust
 fn is_db_first_available(store: &IndexStore) -> bool {
@@ -111,9 +111,8 @@ Mapping:
 | `recursive_file_count`     | From `dir_stats` enrichment (existing)                             |
 | `recursive_dir_count`      | From `dir_stats` enrichment (existing)                             |
 
-The first paint shows: name, icon, size, modified date, and recursive dir sizes, all without any disk I/O. The
-currently unused fields (permissions, owner, group, dates) get defaults and can be lazy-loaded later if those columns
-are added.
+The first paint shows: name, icon, size, modified date, and recursive dir sizes, all without any disk I/O. The currently
+unused fields (permissions, owner, group, dates) get defaults and can be lazy-loaded later if those columns are added.
 
 ### Integration into the listing pipeline
 
@@ -273,8 +272,8 @@ concurrent writes during verification).
 
 ### Milestone 1: Per-navigation verifier
 
-- [ ] `verifier.rs`: implement `verify_directory(parent_path, writer, cancel_token)`: bidirectional readdir diff
-      against DB (reuse `verify_affected_dirs` pattern: two-phase lock, DeleteEntry/UpsertEntry/PropagateDelta)
+- [ ] `verifier.rs`: implement `verify_directory(parent_path, writer, cancel_token)`: bidirectional readdir diff against
+      DB (reuse `verify_affected_dirs` pattern: two-phase lock, DeleteEntry/UpsertEntry/PropagateDelta)
 - [ ] `verifier.rs`: accept a `CancellationToken`, cancel on navigate-away (safe: each writer message is atomic, partial
       verification leaves DB consistent)
 - [ ] `mod.rs`: wire `verify_directory` into navigation flow: after `list_directory_start`, spawn background
@@ -293,9 +292,9 @@ concurrent writes during verification).
       call
 - [ ] Update all `ScannedEntry` consumers (writer, reconciler, aggregator, verifier) for the field rename
 - [ ] `store.rs`: add `entry_exists(path) -> bool` method (single-row existence check on `entries` table)
-- [ ] `indexing/mod.rs`: add `list_from_index(parent_path) -> Option<Vec<FileEntry>>`: queries DB, converts
-      ScannedEntry → FileEntry (logical_size → FileEntry.size, icon_id via `get_icon_id()`), enriches with dir_stats;
-      returns `None` if directory not indexed or `scan_completed_at` not set
+- [ ] `indexing/mod.rs`: add `list_from_index(parent_path) -> Option<Vec<FileEntry>>`: queries DB, converts ScannedEntry
+      → FileEntry (logical_size → FileEntry.size, icon_id via `get_icon_id()`), enriches with dir_stats; returns `None`
+      if directory not indexed or `scan_completed_at` not set
 - [ ] `operations.rs`: in `list_directory_start_with_volume()`, try `list_from_index` first; fall back to
       `volume.list_directory()` if `None`
 - [ ] `operations.rs`: when DB-first path is used, spawn background `verify_directory`

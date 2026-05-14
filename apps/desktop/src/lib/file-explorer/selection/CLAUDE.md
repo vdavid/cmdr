@@ -24,8 +24,8 @@ pipeline.
 
 Exported functions:
 
-- `formatSizeTriads(bytes)`: splits byte count into digit triads, each tagged with a `tierClass`. Uses U+2009
-  thin-space as separator between triads.
+- `formatSizeTriads(bytes)`: splits byte count into digit triads, each tagged with a `tierClass`. Uses U+2009 thin-space
+  as separator between triads.
 - `formatSizeForDisplay(bytes, { humanFriendly, format })`: single entry point used by views and the status bar to
   render byte counts. In raw-bytes mode delegates to `formatSizeTriads`. In human-friendly mode returns one tier-tagged
   span like `{ value: '1.02 MB', tierClass: 'size-mb' }`. The tier is picked from the chosen unit via
@@ -49,12 +49,12 @@ exist in the consuming view, not here.
 
 Status bar rendered below each pane. Four display modes via `$derived displayMode`:
 
-| Mode                | Condition                                                |
-| ------------------- | -------------------------------------------------------- |
-| `empty`             | `stats.totalFiles === 0 && stats.totalDirs === 0`        |
-| `selection-summary` | `selectedCount > 0` (any view mode)                      |
-| `no-selection`      | Full mode, no selection: shows total file/dir counts     |
-| `file-info`         | Brief mode, no selection: shows name, size triads, date  |
+| Mode                | Condition                                               |
+| ------------------- | ------------------------------------------------------- |
+| `empty`             | `stats.totalFiles === 0 && stats.totalDirs === 0`       |
+| `selection-summary` | `selectedCount > 0` (any view mode)                     |
+| `no-selection`      | Full mode, no selection: shows total file/dir counts    |
+| `file-info`         | Brief mode, no selection: shows name, size triads, date |
 
 In `selection-summary` mode, directory recursive sizes are included in the size display when available (from the drive
 index). The `hasOnlyDirs` branch shows size triads when `totalSize > 0`; when sizes are unavailable (indexing off), it

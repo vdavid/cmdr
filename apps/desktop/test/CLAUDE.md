@@ -7,8 +7,7 @@
 A `sleep N` or `setTimeout(N)` call as a "wait for the thing to be ready" is a bug. It's **slow on the happy path**
 (everyone pays N every time, even when the thing was ready in 50 ms) and **flaky on the slow path** (when load pushes
 startup past N, the test fails at random with no signal about what wasn't ready). Active probes are faster AND steadier
-  They exit the instant the condition becomes true and fail loudly with a clear "X didn't become ready in 60 s"
-message.
+They exit the instant the condition becomes true and fail loudly with a clear "X didn't become ready in 60 s" message.
 
 Always write the probe instead:
 

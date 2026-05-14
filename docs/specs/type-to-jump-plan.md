@@ -127,8 +127,8 @@ bar's height + small gap. Mock this in M2 and adjust before locking in.
 - The indicator carries `role="status"` and `aria-live="polite"` so screen readers announce buffer changes and the
   matched filename (e.g., "Jump to AGENTS.md"). Pattern: see `apps/desktop/src/lib/ui/toast/` and `RepoChip.svelte`'s
   `aria-label`.
-- The visual fade between active and stale states respects `prefers-reduced-motion`: no animated opacity transition
-  when the user prefers reduced motion (replace with an instant flip). Top-5 design principle.
+- The visual fade between active and stale states respects `prefers-reduced-motion`: no animated opacity transition when
+  the user prefers reduced motion (replace with an instant flip). Top-5 design principle.
 - The indicator does not steal focus (`pointer-events: none`, no `tabindex`). Keyboard focus stays on the file list.
 - Visual styling uses existing design tokens (`--color-overlay-bg`, `--radius-sm`, `--shadow-elevated`, `--z-overlay`).
   No raw px for `font-size`, `border-radius`, `font-family`, or `z-index ≥ 10`. Stylelint enforces this.
@@ -233,8 +233,8 @@ No special applier code needed. Final section path in § Open questions.
   `cursorIndex`.
 - **Streaming listings (MTP, SMB, large local dirs)**: A pane may receive a listing that's still being read in the
   background (`list_directory_start_streaming`). Calling `find_first_fuzzy_match` during streaming matches whatever's in
-  `LISTING_CACHE` at that moment. A 60k-file MTP folder can arrive over several seconds, and the user typing "AGE"
-  early can land on a partial match that gets superseded later when `AGENTS.md` arrives. **Decision: do NOT auto-jump on
+  `LISTING_CACHE` at that moment. A 60k-file MTP folder can arrive over several seconds, and the user typing "AGE" early
+  can land on a partial match that gets superseded later when `AGENTS.md` arrives. **Decision: do NOT auto-jump on
   streaming progress.** The cursor moving under the user without a keystroke violates "the user is always in control"
   (top-5 principle 3). Behavior instead: a match lands once per keystroke, full stop. If the user types again after more
   entries have streamed in, the next IPC call evaluates against the fuller cache. Document this clearly in the

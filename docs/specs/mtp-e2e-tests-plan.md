@@ -121,8 +121,8 @@ Run a manual test: build with `--features playwright-e2e,virtual-mtp`, start the
 2. Both storages show as separate entries (for example "Virtual Pixel 9 - Internal Storage" and "Virtual Pixel 9 - SD
    Card"). **Note the exact text**: the MCP `select_volume` will need it.
 3. Browsing the writable storage shows the pre-populated files.
-4. The read-only storage (SD Card) is actually detected as read-only. Check the log for `access_capability=ReadOnly`
-   and `is_read_only=true` on the SD Card storage (lines 608-611 of `connection/mod.rs`). Note: if mtp-rs reports the
+4. The read-only storage (SD Card) is actually detected as read-only. Check the log for `access_capability=ReadOnly` and
+   `is_read_only=true` on the SD Card storage (lines 608-611 of `connection/mod.rs`). Note: if mtp-rs reports the
    `AccessCapability` as read-only, the write probe is skipped entirely (the `storage_reports_read_only` branch at line
    588-591). So the expected log is the storage info line, not the probe line.
 5. **Check the device ID** in the volume picker DOM or logs: virtual devices get location IDs in the
@@ -429,7 +429,8 @@ Needed because the device ID is assigned at runtime. Tests call this once and re
 **Why**: Tests that `is_read_only` propagates from the write probe through to UI behavior. Uses keyboard because we want
 to test the user-facing error path.
 
-**Note**: The exact UI behavior (error dialog, disabled buttons, etc.) depends on how Cmdr handles read-only volumes. Verify during Milestone 1 manual testing and make assertions specific.
+**Note**: The exact UI behavior (error dialog, disabled buttons, etc.) depends on how Cmdr handles read-only volumes.
+Verify during Milestone 1 manual testing and make assertions specific.
 
 #### Test: file watching / external change detection (MCP + Node.js)
 
@@ -479,8 +480,7 @@ All MTP E2E tests pass on both macOS (native) and Linux (Docker).
 
 ### 6a. Update CLAUDE.md files
 
-- `apps/desktop/src-tauri/src/mtp/CLAUDE.md`: add virtual device module to file map, note the `virtual-mtp` feature
-  flag
+- `apps/desktop/src-tauri/src/mtp/CLAUDE.md`: add virtual device module to file map, note the `virtual-mtp` feature flag
 - `apps/desktop/src-tauri/src/mcp/CLAUDE.md`: document MTP volume support in `select_volume`, `nav_to_path`, and
   `cmdr://state`
 - `apps/desktop/test/CLAUDE.md`: mention MTP E2E tests and the virtual device approach
@@ -505,7 +505,8 @@ If the Playwright build instructions reference `--features playwright-e2e`, note
   tests.
 - **Multi-device scenarios**: One virtual device validates the full pipeline. Multi-device adds complexity without
   testing different code paths.
-- **File viewer (F3) on MTP files**: Can be added as a follow-up; it tests viewer integration, not the core MTP pipeline.
+- **File viewer (F3) on MTP files**: Can be added as a follow-up; it tests viewer integration, not the core MTP
+  pipeline.
 - **Cross-storage copy**: SD Card is read-only, so Internal→SD is impossible. SD→Internal is a download, same code path
   as MTP-to-local.
 - **Eject/disconnect**: Cmdr doesn't have an eject feature currently. Out of scope.
@@ -514,11 +515,10 @@ If the Playwright build instructions reference `--features playwright-e2e`, note
 
 - **JavaScript number precision for device IDs**: Virtual device location IDs (`0xFFFF_0000_0000_0000+` range) exceed
   `Number.MAX_SAFE_INTEGER`. The string `id` field (`"mtp-{location_id}"`) is safe, but `MtpDeviceInfo.location_id` is
-  `u64` in Rust and `number` in TypeScript: serde serializes it as a JSON number that JavaScript will silently
-  truncate. **Fix required**: either change `location_id` to serialize as a string (add
-  `#[serde(serialize_with = "...")]` on the Rust side and update the TS type to `string`), or accept the truncation
-  since `location_id` is only used for display/logging, never for device lookup (the string `id` is used for that).
-  **Verify during Milestone 1**.
+  `u64` in Rust and `number` in TypeScript: serde serializes it as a JSON number that JavaScript will silently truncate.
+  **Fix required**: either change `location_id` to serialize as a string (add `#[serde(serialize_with = "...")]` on the
+  Rust side and update the TS type to `string`), or accept the truncation since `location_id` is only used for
+  display/logging, never for device lookup (the string `id` is used for that). **Verify during Milestone 1**.
 - **Read-only enforcement**: The plan assumes mtp-rs's `read_only: true` config enforces read-only at the MTP protocol
   level. If it only affects `AccessCapability` metadata, the write probe would mark it writable. **Verify during
   Milestone 1**. Fallback: make the backing dir OS-level read-only (`chmod`).

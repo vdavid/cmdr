@@ -75,8 +75,8 @@ Steps:
 1. **No `async-trait` crate.** On Rust 1.94, `async fn in trait` is stable for static dispatch. For `dyn Volume` (which
    we need for `Arc<dyn Volume>`), we use manual desugaring: methods that need async return
    `Pin<Box<dyn Future<Output = T> + Send + '_>>`. Methods that are trivially sync (`name()`, `root()`,
-   `supports_streaming()`, `supports_watching()`, `supports_export()`, etc.) STAY as regular `fn` (no async overhead
-   for identity accessors). This avoids the `async-trait` dependency entirely and keeps the trait readable.
+   `supports_streaming()`, `supports_watching()`, `supports_export()`, etc.) STAY as regular `fn` (no async overhead for
+   identity accessors). This avoids the `async-trait` dependency entirely and keeps the trait readable.
 
    **Why not `async-trait`**: On current Rust stable, `async fn in dyn trait` is not natively supported but manual
    boxing works. `async-trait` is a macro that does the same boxing with nicer syntax but adds a proc-macro dependency

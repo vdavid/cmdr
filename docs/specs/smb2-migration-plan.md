@@ -109,8 +109,8 @@ entirely** to reduce file sprawl. If we keep the file, the changes are:
 - **Delete** `establish_smb_connection`: smb2 handles connection in `connect()`.
 - **Rewrite** `try_list_shares_as_guest`:
   - Build `addr` string as `"{ip_or_hostname}:{port}"`. **Critical**: when using hostname (no IP available), strip the
-    `.local` suffix from the addr itself, because smb2's `Connection::connect()` extracts the server name from the addr string
-    and uses it in the UNC path `\\server\IPC$`. Passing `"foo.local:445"` creates `\\foo.local\IPC$`, which some
+    `.local` suffix from the addr itself, because smb2's `Connection::connect()` extracts the server name from the addr
+    string and uses it in the UNC path `\\server\IPC$`. Passing `"foo.local:445"` creates `\\foo.local\IPC$`, which some
     servers reject. Pass `"foo:445"` instead.
   - Create `smb2::ClientConfig { addr, username: "Guest".into(), password: String::new(), timeout, .. }`.
   - Call `SmbClient::connect(config).await?`.

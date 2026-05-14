@@ -7,7 +7,8 @@ Design language for the Cmdr desktop app and getcmdr.com website.
 1. **The tool recedes, the content leads.** The file list is 90% of the app. Chrome (toolbars, dialogs, headers) should
    be quiet so file names, sizes, and icons can breathe. Rich data, calm surroundings.
 2. **Personal, not branded.** In the app, the user's macOS accent color drives all interactive UI (selection, focus,
-   buttons). The Cmdr brand (mustard yellow) lives only on marketing surfaces. The app feels like _their_ tool, not ours.
+   buttons). The Cmdr brand (mustard yellow) lives only on marketing surfaces. The app feels like _their_ tool, not
+   ours.
 3. **Native, not web.** System font. Platform scrollbars. Fast transitions. No hover animations that would feel alien in
    a macOS window. The app should be indistinguishable from an AppKit app at a glance.
 4. **Respect the OS.** Light/dark via `prefers-color-scheme`. Accent color via `NSColor.controlAccentColor()`. Reduced
@@ -47,31 +48,31 @@ The app and website use different color temperatures by design:
 
 **App (light):**
 
-| Token                    | Value     | Role                                        |
-| ------------------------ | --------- | ------------------------------------------- |
-| `--color-bg-primary`     | `#ffffff` | Main canvas                                 |
-| `--color-bg-secondary`   | `#f5f5f5` | Headers, sidebars                           |
-| `--color-bg-tertiary`    | `#e8e8e8` | Hover fills, grouped sections               |
+| Token                    | Value     | Role                                       |
+| ------------------------ | --------- | ------------------------------------------ |
+| `--color-bg-primary`     | `#ffffff` | Main canvas                                |
+| `--color-bg-secondary`   | `#f5f5f5` | Headers, sidebars                          |
+| `--color-bg-tertiary`    | `#e8e8e8` | Hover fills, grouped sections              |
 | `--color-text-primary`   | `#1a1a1a` | Body text (not pure black, easier on eyes) |
-| `--color-text-secondary` | `#666666` | Labels, descriptions                        |
-| `--color-text-tertiary`  | `#888888` | Timestamps, metadata                        |
-| `--color-border`         | `#ddd`    | Default borders                             |
-| `--color-border-strong`  | `#bbb`    | Panel dividers, emphasized boundaries       |
-| `--color-border-subtle`  | `#e8e8e8` | Internal separators                         |
+| `--color-text-secondary` | `#666666` | Labels, descriptions                       |
+| `--color-text-tertiary`  | `#888888` | Timestamps, metadata                       |
+| `--color-border`         | `#ddd`    | Default borders                            |
+| `--color-border-strong`  | `#bbb`    | Panel dividers, emphasized boundaries      |
+| `--color-border-subtle`  | `#e8e8e8` | Internal separators                        |
 
 **App (dark):**
 
-| Token                    | Value     | Role                                       |
-| ------------------------ | --------- | ------------------------------------------ |
-| `--color-bg-primary`     | `#1e1e1e` | Main canvas                                |
-| `--color-bg-secondary`   | `#2a2a2a` | Headers, sidebars                          |
-| `--color-bg-tertiary`    | `#333333` | Hover fills, grouped sections              |
+| Token                    | Value     | Role                                      |
+| ------------------------ | --------- | ----------------------------------------- |
+| `--color-bg-primary`     | `#1e1e1e` | Main canvas                               |
+| `--color-bg-secondary`   | `#2a2a2a` | Headers, sidebars                         |
+| `--color-bg-tertiary`    | `#333333` | Hover fills, grouped sections             |
 | `--color-text-primary`   | `#e8e8e8` | Body text (not pure white, reduces glare) |
-| `--color-text-secondary` | `#aaaaaa` | Labels, descriptions                       |
-| `--color-text-tertiary`  | `#888888` | Timestamps, metadata                       |
-| `--color-border`         | `#444444` | Default borders                            |
-| `--color-border-strong`  | `#555555` | Panel dividers                             |
-| `--color-border-subtle`  | `#333333` | Internal separators                        |
+| `--color-text-secondary` | `#aaaaaa` | Labels, descriptions                      |
+| `--color-text-tertiary`  | `#888888` | Timestamps, metadata                      |
+| `--color-border`         | `#444444` | Default borders                           |
+| `--color-border-strong`  | `#555555` | Panel dividers                            |
+| `--color-border-subtle`  | `#333333` | Internal separators                       |
 
 **Website (dark):**
 
@@ -387,8 +388,8 @@ hiding the indicator on click would make the currently focused element invisible
 The file list is what users see 90% of the time. Every other component is secondary.
 
 **Density** is a user setting (`appearance.uiDensity`): Compact | Comfortable (default) | Spacious. The setting applies
-three runtime CSS variables via JS in `settings-applier.ts`. These are NOT defined in `app.css`; they're set
-dynamically on `document.documentElement`.
+three runtime CSS variables via JS in `settings-applier.ts`. These are NOT defined in `app.css`; they're set dynamically
+on `document.documentElement`.
 
 | Density               | `--row-height` | `--icon-size` | `--density-spacing` |
 | --------------------- | -------------- | ------------- | ------------------- |
@@ -637,10 +638,10 @@ The reset and global styles in `app.css` already establish these. Re-declaring t
 
 **Inherited from `body` (don't repeat on child elements unless overriding):**
 
-| Property      | Global value                                                                             |
-| ------------- | ---------------------------------------------------------------------------------------- |
-| `color`       | `var(--color-text-primary)`                                                              |
-| `font-size`   | `16px` (via `html`)                                                                      |
+| Property      | Global value                                                                            |
+| ------------- | --------------------------------------------------------------------------------------- |
+| `color`       | `var(--color-text-primary)`                                                             |
+| `font-size`   | `16px` (via `html`)                                                                     |
 | `font-family` | Inherited from browser default (system font); set `var(--font-system)` only when needed |
 
 **CSS defaults you don't need to write:**

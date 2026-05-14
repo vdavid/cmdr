@@ -65,8 +65,8 @@ A `fn friendly_error_from_volume_error(err: &VolumeError, path: &Path) -> Friend
    Transient, `StorageFull` → NeedsAction, `DeviceDisconnected` → NeedsAction)
 3. Falls back to a sensible default for `IoError { raw_os_error: None, .. }` and unknown codes
 
-This is `#[cfg(target_os = "macos")]` for the errno match body. Linux and Windows get their own mapping files later.
-The `VolumeError` variant matching is OS-agnostic.
+This is `#[cfg(target_os = "macos")]` for the errno match body. Linux and Windows get their own mapping files later. The
+`VolumeError` variant matching is OS-agnostic.
 
 **How errno is preserved**: The current `VolumeError::IoError(String)` variant changes to
 `VolumeError::IoError { message: String, raw_os_error: Option<i32> }`. The `From<std::io::Error>` impl (line 205)
@@ -148,8 +148,8 @@ and its string matching are removed entirely.
 
 **Deleted-path auto-navigation**: `FilePane.svelte` lines 840–854 check `pathExists()` when a listing error arrives. If
 the path was deleted, it auto-navigates to the nearest valid parent instead of showing an error. This logic must be
-preserved exactly as-is, and `ErrorPane` only renders in the "path exists but has another error" branch. The `pathExists`
-check runs before any error display decision. The flow is:
+preserved exactly as-is, and `ErrorPane` only renders in the "path exists but has another error" branch. The
+`pathExists` check runs before any error display decision. The flow is:
 
 1. `listing-error` arrives → check if MTP (short-circuit to `MtpConnectionView`)
 2. → check `pathExists(loadPath)` → if gone, auto-navigate to valid parent
@@ -336,8 +336,8 @@ and writing right before touching the FE avoids rework.
 
 - `package.json`: add `snarkdown` dependency
 - `src/lib/file-explorer/types.ts`: update `ListingErrorEvent` to include `friendly?: FriendlyError`
-- `src/lib/file-explorer/pane/FilePane.svelte`: replace both `isPermissionDenied` check + `PermissionDeniedPane` and
-  the `<div class="error-message">` with the new `ErrorPane`
+- `src/lib/file-explorer/pane/FilePane.svelte`: replace both `isPermissionDenied` check + `PermissionDeniedPane` and the
+  `<div class="error-message">` with the new `ErrorPane`
 
 **Files to delete:**
 

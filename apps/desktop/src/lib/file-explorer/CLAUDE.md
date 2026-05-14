@@ -22,8 +22,8 @@ Dual-pane file explorer with keyboard-driven navigation, file selection, sorting
 
 ### Operation lifecycle
 
-- **Snapshot**: when an operation is confirmed, FilePane snapshots selected file names into `operationSelectedNames`
-  (or `'all'` sentinel if all selected)
+- **Snapshot**: when an operation is confirmed, FilePane snapshots selected file names into `operationSelectedNames` (or
+  `'all'` sentinel if all selected)
 - **Diff-driven adjustment**: on each `directory-diff` during an operation, selection is re-resolved via
   `findFileIndices` batch IPC. A `diffGeneration` counter discards stale async results.
 - **Cursor adjustment**: cursor index is also adjusted on structural diffs using the same `adjustSelectionIndices`
@@ -111,8 +111,8 @@ Breadcrumb chip + status-column helpers + per-repo reactive store. Subscribe-dri
   detached, unborn. Tooltip carries the long-form status sentence (used by screen readers via `aria-label`).
 - **`git-store.svelte.ts`**: Per-repo reactive `RepoInfo` map with refcounted subscriptions. Two panes on the same repo
   share one watcher. Live updates flow via `git-state-changed` Tauri event.
-- **`status-column.ts`**: Pure helpers (`glyphFor`, `labelFor`, `fetchStatusMap`) for the optional status column in
-  Full mode. Each cell carries a single-glyph code with a long-form `aria-label` and tooltip.
+- **`status-column.ts`**: Pure helpers (`glyphFor`, `labelFor`, `fetchStatusMap`) for the optional status column in Full
+  mode. Each cell carries a single-glyph code with a long-form `aria-label` and tooltip.
 
 `FilePane.svelte` wires the chip on every `currentPath` change: it does a one-shot `lookupRepoInfo`, then
 `subscribeToRepo` on a new repo, and `unsubscribeFromRepo` on unmount or path-off-repo. The chip respects the
@@ -168,9 +168,9 @@ Core explorer UI components:
 - **MtpConnectionView.svelte** / **NetworkMountView.svelte**: placeholder panes for MTP/network mount states
 - **PaneResizer.svelte**: drag handle between the two panes
 - **ErrorPane.svelte**: unified error display for listing failures. See [Error display](#error-display) below.
-- **VolumeUnreachableBanner.svelte**: shown when a tab's volume resolution timed out at startup (retry + open home),
-  and also when the SMB reconnect manager has given up after exhausting its backoff cycle (retry + disconnect,
-  `smbGaveUp` variant)
+- **VolumeUnreachableBanner.svelte**: shown when a tab's volume resolution timed out at startup (retry + open home), and
+  also when the SMB reconnect manager has given up after exhausting its backoff cycle (retry + disconnect, `smbGaveUp`
+  variant)
 - **SmbReconnectingView.svelte**: shown while the per-volume SMB reconnect cycle is running (waiting/attempting).
   Spinner + progress bar for the current backoff window + dynamic body text. Three actions: Retry now / Cancel /
   Disconnect. Driven by `smb-reconnect-manager.svelte.ts` in `network/`.
@@ -293,8 +293,8 @@ re-navigates the pane (clearing `friendlyError` in `loadDirectory`).
 
 ## Key decisions
 
-**Decision**: Scoped CSS for file explorer list components (and throughout the app, as Tailwind was removed due to 15s dev
-startup from JIT scanning). **Why**: File lists render 50k+ items. Scoped CSS produces smaller DOM (no repetitive
+**Decision**: Scoped CSS for file explorer list components (and throughout the app, as Tailwind was removed due to 15s
+dev startup from JIT scanning). **Why**: File lists render 50k+ items. Scoped CSS produces smaller DOM (no repetitive
 utility classes on each file entry), enabling faster rendering and lower memory.
 
 **Decision**: Icon registry pattern (`iconId` refs in file entries, separate `get_icons()` call, frontend caches).

@@ -159,9 +159,9 @@ pattern as the listing's `loadGeneration`, but with the listing-id key added so 
 **Why:** Currently there's a height-only effect at `BriefList.svelte:512–520`, plus implicit reliance on FilePane
 calling `scrollToIndex` when `cursorIndex` changes. With the new exact math, we can consolidate: a single `$effect` that
 depends on `cursorIndex`, `containerWidth`, `containerHeight`, and `columnWidths` (reading `.length` is enough to wire
-the dependency (Svelte 5 `$state` arrays track by value when reassigned). It runs `scrollToIndex(cursorIndex)`.
-Replaces both the height-resize effect and any new width-resize effect we'd otherwise need, and naturally fires after
-widths settle.
+the dependency (Svelte 5 `$state` arrays track by value when reassigned). It runs `scrollToIndex(cursorIndex)`. Replaces
+both the height-resize effect and any new width-resize effect we'd otherwise need, and naturally fires after widths
+settle.
 
 We don't need an extra "tick" indirection: assigning `columnWidths = result` retriggers the effect by virtue of
 state-write semantics in Svelte 5. The fetch path naturally coalesces redundant work because the 50 ms debounce on
@@ -281,8 +281,7 @@ Why this file split: a new module keeps the brief-mode-specific column math out 
 densely populated. The pure-logic function is unit-testable without Tauri / app handle.
 
 **Logging:** `log::debug!(target: "brief_columns", "Computed {n} widths for listing {id} in {μs}μs")` when slow (>5 ms)
-to catch regressions. `log::warn!(target: "brief_columns", "Font metrics not ready for {font_id}")` on the `None`
-path.
+to catch regressions. `log::warn!(target: "brief_columns", "Font metrics not ready for {font_id}")` on the `None` path.
 
 **Bindings regen:** `cd apps/desktop && pnpm bindings:regen` after adding/changing commands. Update
 `apps/desktop/src/lib/tauri-commands` consumers of the changed `get_max_filename_width` / `list_directory_start*`
@@ -337,8 +336,8 @@ signatures (now requiring `fontId`).
   - Replace `scrollToIndex` body with the prefix-sum version (Milestone 4).
   - Replace the height-only effect (line 510–520) with a single "keep cursor in view" effect depending on `cursorIndex`,
     `containerWidth`, `containerHeight`, `columnWidths.length`.
-  - `handleKeyNavigation` (line 451): replace `const visibleColumns = Math.ceil(containerWidth / maxFilenameWidth)`
-    with an exact count derived from `prefixSums`. Implementation: count columns `c` for which
+  - `handleKeyNavigation` (line 451): replace `const visibleColumns = Math.ceil(containerWidth / maxFilenameWidth)` with
+    an exact count derived from `prefixSums`. Implementation: count columns `c` for which
     `prefixSums[c] < scrollLeft + containerWidth && prefixSums[c + 1] > scrollLeft`. Two binary searches on `prefixSums`
     give the range in O(log n). Don't derive from `virtualWindow.endIndex - startIndex - 2 * bufferColumns`, as that
     formula underestimates at list edges where `endIndex` is clamped by `totalItems`, and the `Math.max(1, ...)` floor
@@ -468,22 +467,21 @@ commands, only the new `get_brief_column_text_widths` command.**
 
 **Documentation updates:**
 
-- `apps/desktop/src/lib/file-explorer/views/CLAUDE.md`: rewrite the shrink-wrap decision entry; note the new IPC
-  command in the data flow; add a "Gotcha: CJK / complex-script filenames may be slightly mis-measured because the
-  backend uses cached average widths for code points outside the measured Latin + BMP-printable + emoji ranges. Emoji is
-  fine (measured). Latin is fine (measured)." entry. Also note: PageUp/PageDown step is now content-dependent (derived
-  from `virtualWindow`), not container-width-derived.
+- `apps/desktop/src/lib/file-explorer/views/CLAUDE.md`: rewrite the shrink-wrap decision entry; note the new IPC command
+  in the data flow; add a "Gotcha: CJK / complex-script filenames may be slightly mis-measured because the backend uses
+  cached average widths for code points outside the measured Latin + BMP-printable + emoji ranges. Emoji is fine
+  (measured). Latin is fine (measured)." entry. Also note: PageUp/PageDown step is now content-dependent (derived from
+  `virtualWindow`), not container-width-derived.
 - `apps/desktop/src/lib/file-explorer/CLAUDE.md`: add a brief pointer to the new IPC command under "Architecture" if
   appropriate.
 - `apps/desktop/src-tauri/src/font_metrics/CLAUDE.md`: note that `calculate_max_width` is now also the basis for
   per-column widths, not just the per-listing cap. List the CJK approximation. Update the "Gotcha" line that says "The
   frontend handles the `None` by falling back to its own width estimation." That's no longer accurate; FE now surfaces
   `FontMetricsNotReady` and retries after `ensureFontMetricsLoaded()`.
-- `apps/desktop/src-tauri/src/file_system/listing/CLAUDE.md`: add `brief_columns.rs` to the Module structure table.
-  Also trim `maxFilenameWidth,` from the `listing-complete` payload in the ASCII data-flow diagram (~line 38).
-- `apps/desktop/src-tauri/src/commands/CLAUDE.md`: add the new command to the file map row for
-  `file_system/listing.rs`. Note the `font_id` parameter addition to `get_max_filename_width` and
-  `list_directory_start*`.
+- `apps/desktop/src-tauri/src/file_system/listing/CLAUDE.md`: add `brief_columns.rs` to the Module structure table. Also
+  trim `maxFilenameWidth,` from the `listing-complete` payload in the ASCII data-flow diagram (~line 38).
+- `apps/desktop/src-tauri/src/commands/CLAUDE.md`: add the new command to the file map row for `file_system/listing.rs`.
+  Note the `font_id` parameter addition to `get_max_filename_width` and `list_directory_start*`.
 
 **Checks before declaring done:**
 
@@ -551,8 +549,8 @@ commands, only the new `get_brief_column_text_widths` command.**
    FE measurer, replace the cap-based math with prefix-sum math, consolidate the cursor-visibility effect, hook up
    diff/resize/scale triggers. Big commit; this is where behavior actually changes.
 4. **`Brief mode: E2E test for cursor visibility under navigation and resize`**: Milestone 5 E2E test.
-5. **`Docs: Backend-driven Brief column widths`**: Milestone 5 docs updates. Can fold into commit 3 if reviewers
-   prefer; splitting keeps commit 3 reviewable.
+5. **`Docs: Backend-driven Brief column widths`**: Milestone 5 docs updates. Can fold into commit 3 if reviewers prefer;
+   splitting keeps commit 3 reviewable.
 
 ## Parallelizable notes
 
@@ -585,5 +583,5 @@ Don't try to parallelize Milestone 2 against Milestone 3: they touch the same fi
 - A one-time review of the `average_width` fallback strategy in `font_metrics/mod.rs`, e.g., a separate average per
   script range, once the font-metrics subsystem becomes more central. Refinement, not a blocker.
 
-(The previously-listed "remove vestigial `max_filename_width`" follow-up was rolled into Milestone 3, leaving dead
-state in the codebase wasn't the right call.)
+(The previously-listed "remove vestigial `max_filename_width`" follow-up was rolled into Milestone 3, leaving dead state
+in the codebase wasn't the right call.)

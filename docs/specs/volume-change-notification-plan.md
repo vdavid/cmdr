@@ -146,16 +146,16 @@ pub enum MutationEvent {
 
 **Why on the Volume trait**: Every Volume mutation method (`create_file`, `create_directory`, `delete`, `rename`)
 already knows what changed. Adding the notification call at the end of each method keeps it colocated with the mutation.
-The alternative (adding notification calls in every Tauri command that calls Volume methods) is fragile; it's easy to miss a
-call site.
+The alternative (adding notification calls in every Tauri command that calls Volume methods) is fragile; it's easy to
+miss a call site.
 
 **Why a default implementation**: `LocalPosixVolume` mutations go through `std::fs`, so the default can use
-`std::fs::symlink_metadata` to construct the `FileEntry`. This means existing local volume behavior doesn't change;
-it's belt-and-suspenders alongside FSEvents.
+`std::fs::symlink_metadata` to construct the `FileEntry`. This means existing local volume behavior doesn't change; it's
+belt-and-suspenders alongside FSEvents.
 
-**Coupling note**: `notify_mutation` needs to call `notify_directory_changed`, which touches `LISTING_CACHE`; this
-pulls listing concerns into the Volume layer. This is acceptable because the notification is fire-and-forget (no return
-value, no error propagation). The Volume doesn't depend on the listing system; it just calls a global function.
+**Coupling note**: `notify_mutation` needs to call `notify_directory_changed`, which touches `LISTING_CACHE`; this pulls
+listing concerns into the Volume layer. This is acceptable because the notification is fire-and-forget (no return value,
+no error propagation). The Volume doesn't depend on the listing system; it just calls a global function.
 
 #### 3. SmbVolume implementation
 
@@ -172,9 +172,9 @@ After each mutation in `SmbVolume`, call `self.notify_mutation(parent_path, even
 
 **Mutex contention note**: The watcher task stats new files via the main client (`SmbVolume::get_metadata`), sharing the
 same `Mutex<Option<(SmbClient, Tree)>>`. This means watcher stat calls queue behind user-initiated operations (and vice
-versa). This is acceptable; watcher events are debounced, so stat calls are infrequent. Large ongoing operations (like
-a copy) will delay watcher notifications, but the self-mutation notification provides instant feedback for
-Cmdr-initiated changes anyway.
+versa). This is acceptable; watcher events are debounced, so stat calls are infrequent. Large ongoing operations (like a
+copy) will delay watcher notifications, but the self-mutation notification provides instant feedback for Cmdr-initiated
+changes anyway.
 
 #### 4. MtpVolume implementation
 
@@ -201,8 +201,8 @@ This change also means `handle_directory_change` works for SMB volumes, which is
 
 #### 7. Dedicated watch connection in SmbVolume
 
-`smb2::Watcher<'a>` borrows `&'a mut Connection` for its lifetime (long-poll that blocks until the server reports changes).
-This means the main `SmbClient` can't be used for watching and operations simultaneously.
+`smb2::Watcher<'a>` borrows `&'a mut Connection` for its lifetime (long-poll that blocks until the server reports
+changes). This means the main `SmbClient` can't be used for watching and operations simultaneously.
 
 The watcher task owns its own connection (not stored on the struct):
 

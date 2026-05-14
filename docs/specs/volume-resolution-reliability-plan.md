@@ -17,8 +17,8 @@ volume is THIS path on?" Answerable in microseconds via `statfs()`.
 - **Retry doesn't sync.** Clicking "Retry" on the unreachable banner fixes the pane but the volume selector still shows
   the stale/broken state. They use different code paths that don't talk to each other.
 - **Frontend does too much.** The startup flow has its own 3s `withTimeout` wrapper, volume resolution logic, and
-  unreachable state management. This belongs in the backend. The frontend should just ask "resolve this path" and
-  render whatever comes back.
+  unreachable state management. This belongs in the backend. The frontend should just ask "resolve this path" and render
+  whatever comes back.
 
 ### What's already fixed
 
@@ -31,8 +31,8 @@ retry flow still use the old `findContainingVolume` path. That's what this plan 
 ### The fix: `statfs()` on the path itself
 
 Instead of enumerating all volumes and finding which one matches, call `statfs()` directly on the path. On macOS, this
-returns `f_mntonname` (mount point) and `f_fstypename` (fs type) in microseconds for local filesystems, with no network I/O,
-no volume enumeration, no dependency on other mounts.
+returns `f_mntonname` (mount point) and `f_fstypename` (fs type) in microseconds for local filesystems, with no network
+I/O, no volume enumeration, no dependency on other mounts.
 
 **The backend owns all resolution logic.** The frontend sends a path, gets back a `VolumeInfo` (or a timeout flag). No
 frontend timeout wrappers, no fallback logic, no volume-list-dependent resolution.
@@ -44,8 +44,8 @@ match the main volume entry. (macOS firmlinks `/System/Volumes/Data` to `/` for 
 
 **Symlinks:** `statfs` follows symlinks, so `~/projects` → `/Volumes/External/projects` correctly returns
 `/Volumes/External` as the mount point. But the input path string doesn't start with `/Volumes/External`, so cache
-lookup fails. Fix: canonicalize the path only when mount point doesn't prefix-match, and only for matching. Don't
-change the displayed path.
+lookup fails. Fix: canonicalize the path only when mount point doesn't prefix-match, and only for matching. Don't change
+the displayed path.
 
 **Deleted directories:** `statfs` fails with `ENOENT`. Walk up parent directories until one succeeds. FilePane
 separately handles the missing path via `resolveValidPath`.
@@ -105,10 +105,10 @@ ran out of time." Here, `timed_out: true` means "the filesystem didn't respond, 
 - `get_mount_point(path) -> Option<(String, String)>`: `statfs()`, returns `(mount_point, fs_type)`. Normalizes APFS
   firmlinks. On `ENOENT`, walks up parents.
 - `resolve_path_volume_fast(path) -> Option<VolumeInfo>`: calls `get_mount_point`, builds a `VolumeInfo` directly from
-  the `statfs` data (mount point → `id` via `path_to_id`, `fs_type`, `supports_trash`). Does NOT call `list_locations()`;
-  that would reintroduce the NSFileManager dependency we're escaping. For name/icon, use per-path NSURL resource
-  queries (same approach as Milestone 3). The volume selector has the full `VolumeInfo` from the broadcast; this
-  function only needs enough to identify the volume and set the tab's `volumeId`.
+  the `statfs` data (mount point → `id` via `path_to_id`, `fs_type`, `supports_trash`). Does NOT call
+  `list_locations()`; that would reintroduce the NSFileManager dependency we're escaping. For name/icon, use per-path
+  NSURL resource queries (same approach as Milestone 3). The volume selector has the full `VolumeInfo` from the
+  broadcast; this function only needs enough to identify the volume and set the tab's `volumeId`.
 
 **Implementation (`src-tauri/src/commands/volumes.rs`):**
 
