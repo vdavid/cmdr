@@ -349,7 +349,17 @@ test.describe('Navigation', () => {
   })
 
   test('navigates to parent with Backspace', async ({ tauriPage }) => {
+    // Healthy-system budget is ~2-3 s. The 8 s test timeout exists to absorb
+    // CI/load jitter, not to mask hangs. Temporary phase timings here so the
+    // next failure pinpoints which step blew the budget — remove once stable.
+    const t0 = Date.now()
+    const log = (phase: string) => {
+      // eslint-disable-next-line no-console
+      console.log(`[backspace-test] ${phase} +${String(Date.now() - t0)}ms`)
+    }
+
     await ensureAppReady(tauriPage)
+    log('ensureAppReady done')
 
     // Ensure we're inside sub-dir
     const alreadyInside = await tauriPage.evaluate<boolean>(`(function() {
@@ -360,13 +370,16 @@ test.describe('Navigation', () => {
                 return (e.querySelector('.name') || {}).textContent === 'nested-file.txt';
             });
         })()`)
+    log(`alreadyInside=${String(alreadyInside)}`)
 
     if (!alreadyInside) {
       if (!(await moveCursorToSubDir(tauriPage))) {
         test.skip()
         return
       }
+      log('cursor on sub-dir')
       await tauriPage.keyboard.press('Enter')
+      log('Enter pressed')
       await pollUntil(
         tauriPage,
         async () =>
@@ -378,12 +391,14 @@ test.describe('Navigation', () => {
                             return (e.querySelector('.name') || {}).textContent === 'nested-file.txt';
                         });
                     })()`),
-        5000,
+        2000,
       )
+      log('inside sub-dir')
     }
 
     // Press Backspace to go to parent
     await tauriPage.keyboard.press('Backspace')
+    log('Backspace pressed')
 
     // Accept either landing: left/ (sub-dir visible) or fixture root (left visible)
     await pollUntil(
@@ -398,8 +413,9 @@ test.describe('Navigation', () => {
                     });
                     return names.indexOf('sub-dir') >= 0 || names.indexOf('left') >= 0;
                 })()`),
-      5000,
+      2000,
     )
+    log('parent listing settled')
   })
 })
 

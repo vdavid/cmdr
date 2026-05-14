@@ -1,5 +1,36 @@
 # Desktop app tests
 
+## Testing principles
+
+### ❌ Never use magic timer waits — always probe the actual readiness condition
+
+A `sleep N` or `setTimeout(N)` call as a "wait for the thing to be ready" is a bug. It's **slow on the happy path**
+(everyone pays N every time, even when the thing was ready in 50 ms) and **flaky on the slow path** (when load pushes
+startup past N, the test fails at random with no signal about what wasn't ready). Active probes are faster AND steadier
+— they exit the instant the condition becomes true and they fail loudly with a clear "X didn't become ready in 60 s"
+message.
+
+Always write the probe instead:
+
+- "container/daemon listening on a port" → tight loop on `nc -z host port` or bash `/dev/tcp/host/port` with ~100 ms
+  poll and ~60 s deadline.
+- "DOM element rendered" → `waitForSelector(...)`. Never bare `sleep`.
+- "app state changed" → `pollUntil(condition, timeout)` from `helpers.ts`.
+- "Tauri event fired" → `tauriPage.waitForFunction(...)` for simple JS, `pollUntil` for anything needing Node-side
+  logic.
+
+This applies to test code, test-setup scripts (bash, Node, Go), CI helpers, and production code. The only acceptable
+sub-second `sleep` is the poll interval **inside** a probe loop (`while ! ready; do sleep 0.1; done`).
+
+If you catch yourself writing `sleep N`, stop and ask "what am I actually waiting for?" — then probe that.
+
+**Case study (2026-05-14):** `smb-servers/start.sh` had `sleep 3` after `docker compose up -d`. The `guest` container
+bound port 445 fast enough; `auth`, `50shares`, `unicode` legitimately needed >3 s under load to finish user creation /
+share materialisation. E2E runs flaked with `Cannot reach smb-consumer-X` because smbd hadn't bound the port yet when
+tests started connecting. Replaced with per-service TCP probes on the published `445` port — now exits in ~100 ms on a
+warm machine, in 5-10 s on a cold one, and gives a deterministic `did not accept TCP within 60s` error if a container is
+genuinely broken.
+
 ## E2E test suites
 
 | Suite                              | Tech                      | Runs on                           | What it tests                                                          |

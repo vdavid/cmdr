@@ -271,7 +271,7 @@ test.describe('Brief view cursor visibility', () => {
       tauriPage,
       async () =>
         tauriPage.evaluate<boolean>(`!!document.querySelector('.file-pane.is-focused [data-filename="a-00.txt"]')`),
-      10000,
+      3000,
     )
 
     // Switch to Brief view via the command palette (same path file-operations.spec.ts uses).

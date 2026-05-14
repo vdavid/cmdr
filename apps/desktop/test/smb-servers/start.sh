@@ -26,27 +26,26 @@ if [ ! -f "$COMPOSE_DIR/docker-compose.yml" ]; then
 fi
 
 mode="${1:-core}"
+services=()
 
 case "$mode" in
     minimal)
         echo "Starting minimal SMB servers (guest, auth)..."
-        docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" up -d \
-            smb-consumer-guest smb-consumer-auth
+        services=(smb-consumer-guest smb-consumer-auth)
         ;;
     e2e)
         echo "Starting E2E SMB servers (guest, auth, 50shares, unicode)..."
-        docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" up -d \
-            smb-consumer-guest smb-consumer-auth smb-consumer-50shares smb-consumer-unicode
+        services=(smb-consumer-guest smb-consumer-auth smb-consumer-50shares smb-consumer-unicode)
         ;;
     core)
         echo "Starting core SMB servers (auth scenarios + edge cases)..."
-        docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" up -d \
-            smb-consumer-guest smb-consumer-auth smb-consumer-both \
-            smb-consumer-readonly smb-consumer-flaky smb-consumer-slow
+        services=(smb-consumer-guest smb-consumer-auth smb-consumer-both \
+                  smb-consumer-readonly smb-consumer-flaky smb-consumer-slow)
         ;;
     all)
         echo "Starting all SMB servers (14 containers)..."
-        docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" up -d
+        # Empty services list means "all defined in compose" for both `up` and
+        # the post-up probe loop. We resolve the actual set via `compose ps`.
         ;;
     *)
         echo "Unknown mode: $mode"
@@ -55,9 +54,41 @@ case "$mode" in
         ;;
 esac
 
+docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" up -d "${services[@]}"
+
+# Resolve the list of running services if `all` was requested.
+if [ ${#services[@]} -eq 0 ]; then
+    mapfile -t services < <(docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" ps --services)
+fi
+
+# Active TCP probe on each service's published port 445 until smbd accepts a
+# connection. NEVER replace this with `sleep N` — see
+# ../CLAUDE.md "Testing principles → No magic timer waits". `docker compose up -d`
+# returns when containers transition to "running", which is well before smbd
+# inside them has bound the port. Some images (auth, 50shares, unicode) legitimately
+# need >3 s under load to finish user creation / share materialisation, and the
+# previous `sleep 3` made E2E runs flake with "Cannot reach smb-consumer-X".
 echo ""
-echo "Waiting for containers to be healthy..."
-sleep 3
+echo "Waiting for smbd to accept TCP on each container..."
+deadline=$((SECONDS + 60))
+for service in "${services[@]}"; do
+    host_port=$(docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" port "$service" 445 2>/dev/null | awk -F: '{print $NF}')
+    if [ -z "$host_port" ]; then
+        echo "  ! could not resolve host port for $service (skipping probe)" >&2
+        continue
+    fi
+    while ! (exec 3<>"/dev/tcp/127.0.0.1/$host_port") 2>/dev/null; do
+        if [ $SECONDS -ge $deadline ]; then
+            echo "ERROR: $service (port $host_port) did not accept TCP within 60s" >&2
+            docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" logs --tail=50 "$service" >&2
+            exit 1
+        fi
+        sleep 0.1
+    done
+    exec 3<&-
+    exec 3>&-
+    echo "  ✓ $service ready on :$host_port"
+done
 
 # Show status
 docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" ps

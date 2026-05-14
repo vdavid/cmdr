@@ -57,7 +57,7 @@ test.describe('Copy round-trip', () => {
     await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
 
     // Wait for dialog to close (confirms copy succeeded)
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 10000)
+    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
 
     // Switch to right pane to verify the file appeared in DOM
     await tauriPage.keyboard.press('Tab')
@@ -100,7 +100,7 @@ test.describe('Move round-trip', () => {
     await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
 
     // Wait for dialog to close
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 10000)
+    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
 
     // Verify file-b.txt is gone from left pane DOM
     await pollUntil(tauriPage, async () => !(await fileExistsInPane(tauriPage, 'file-b.txt', 0)), 5000)
@@ -137,7 +137,9 @@ test.describe('Rename round-trip', () => {
 
     await tauriPage.keyboard.press('F2')
 
-    await tauriPage.waitForSelector('.rename-input', 10000)
+    // 3 s: the rename input appears in <100 ms on the happy path. Previous
+    // 10 s budget exceeded the suite's 8 s per-test ceiling.
+    await tauriPage.waitForSelector('.rename-input', 3000)
 
     // Clear existing value and type the new name. Use the native value setter
     // + input event to clear (Svelte reads e.target.value in handleInput),
@@ -259,17 +261,17 @@ test.describe('Hidden files toggle', () => {
     const hiddenVisibleAtStart = await fileExistsInFocusedPane(tauriPage, '.hidden-file')
     if (!hiddenVisibleAtStart) {
       await toggleHidden()
-      await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 10000)
+      await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 3000)
     }
 
     // Now hidden files are visible — toggle them OFF
     await toggleHidden()
-    await pollUntil(tauriPage, async () => !(await fileExistsInFocusedPane(tauriPage, '.hidden-file')), 10000)
+    await pollUntil(tauriPage, async () => !(await fileExistsInFocusedPane(tauriPage, '.hidden-file')), 3000)
     expect(await fileExistsInFocusedPane(tauriPage, '.hidden-file')).toBe(false)
 
     // Toggle back ON — hidden file should reappear
     await toggleHidden()
-    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 10000)
+    await pollUntil(tauriPage, async () => fileExistsInFocusedPane(tauriPage, '.hidden-file'), 3000)
     expect(await fileExistsInFocusedPane(tauriPage, '.hidden-file')).toBe(true)
   })
 })

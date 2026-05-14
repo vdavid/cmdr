@@ -25,6 +25,7 @@ import {
   waitForConflictPolicy,
   selectConflictPolicy,
   clickTransferStart,
+  clickConflictButton,
   waitForDialogsToClose,
 } from './conflict-helpers.js'
 
@@ -165,10 +166,10 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
     await clickTransferStart(tauriPage)
 
     // Wait for progress dialog with inline conflict UI
-    await tauriPage.waitForSelector('[data-dialog-id="transfer-progress"]', 10000)
+    await tauriPage.waitForSelector('[data-dialog-id="transfer-progress"]', 3000)
 
     // Wait for first conflict to appear
-    const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 15000)
+    const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 3000)
     expect(conflictAppeared).toBe(true)
 
     // Capture the first conflict's filename so we can poll for the next one
@@ -178,13 +179,11 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
       `(document.querySelector('.conflict-section .conflict-filename')?.textContent || '').trim()`,
     )
 
-    // First conflict: click "Overwrite" (single file, not "Overwrite all")
-    await tauriPage.evaluate(`(function(){
-      var btns = document.querySelectorAll('.conflict-buttons-row button');
-      for (var i=0; i<btns.length; i++) {
-        if (btns[i].textContent.trim() === 'Overwrite') { btns[i].click(); break; }
-      }
-    })()`)
+    // First conflict: click "Overwrite" (single file, not "Overwrite all").
+    // `.conflict-section` being visible doesn't guarantee Svelte has rendered
+    // the inner buttons yet, so retry via clickConflictButton until the click
+    // actually lands.
+    await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Overwrite')
 
     // Wait for the next conflict (different filename) or for the conflict UI
     // to disappear (no more conflicts).
@@ -200,18 +199,13 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
             return name !== ${firstNameJson};
           })()`,
         ),
-      10000,
+      3000,
     )
     // After the wait, `.conflict-section` might still be visible (next conflict)
     // or gone (no more conflicts) — we proceed if there's a new conflict to act on.
     const stillVisible = await tauriPage.isVisible('.conflict-section')
     if (nextConflict && stillVisible) {
-      await tauriPage.evaluate(`(function(){
-        var btns = document.querySelectorAll('.conflict-buttons-row button');
-        for (var i=0; i<btns.length; i++) {
-          if (btns[i].textContent.trim() === 'Skip all') { btns[i].click(); break; }
-        }
-      })()`)
+      await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Skip all')
     }
 
     await waitForDialogsToClose(tauriPage)
@@ -254,17 +248,12 @@ test.describe('Rename conflict resolution', () => {
     await clickTransferStart(tauriPage)
 
     // Wait for progress dialog with conflict
-    await tauriPage.waitForSelector('[data-dialog-id="transfer-progress"]', 10000)
-    const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 15000)
+    await tauriPage.waitForSelector('[data-dialog-id="transfer-progress"]', 3000)
+    const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 3000)
     expect(conflictAppeared).toBe(true)
 
     // Click "Rename" — keeps both files, incoming gets " (1)" suffix
-    await tauriPage.evaluate(`(function(){
-      var btns = document.querySelectorAll('.conflict-buttons-row button');
-      for (var i=0; i<btns.length; i++) {
-        if (btns[i].textContent.trim() === 'Rename') { btns[i].click(); break; }
-      }
-    })()`)
+    await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Rename')
 
     await waitForDialogsToClose(tauriPage)
 
@@ -289,17 +278,12 @@ test.describe('Rename conflict resolution', () => {
 
     // Use "Ask for each" to get inline dialog, then click "Rename all"
     await clickTransferStart(tauriPage)
-    await tauriPage.waitForSelector('[data-dialog-id="transfer-progress"]', 10000)
+    await tauriPage.waitForSelector('[data-dialog-id="transfer-progress"]', 3000)
 
-    const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 15000)
+    const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 3000)
     expect(conflictAppeared).toBe(true)
 
-    await tauriPage.evaluate(`(function(){
-      var btns = document.querySelectorAll('.conflict-buttons-row button');
-      for (var i=0; i<btns.length; i++) {
-        if (btns[i].textContent.trim() === 'Rename all') { btns[i].click(); break; }
-      }
-    })()`)
+    await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Rename all')
 
     await waitForDialogsToClose(tauriPage)
 

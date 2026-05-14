@@ -161,17 +161,28 @@ test.describe('Network toggle in volume picker', () => {
     await openVolumePicker(tauriPage)
     await tauriPage.waitForSelector(ANY_VOLUME_ITEM, 3000)
 
-    // Click the synthetic Network entry. Find it by label since `data-index` is volatile.
-    await tauriPage.evaluate(`(function() {
-      var items = document.querySelectorAll('.volume-item');
-      for (var i = 0; i < items.length; i++) {
-        var label = items[i].querySelector('.volume-label');
-        if (label && label.textContent === 'Network (disabled)') {
-          items[i].click();
-          return;
-        }
-      }
-    })()`)
+    // Click the synthetic Network entry. Find it by label since `data-index` is
+    // volatile. Retry on miss: setSettingViaBridge has already returned, but the
+    // dropdown's `.volume-item` list may still be re-rendering with the new
+    // label. A one-shot click against an in-flight render would silently no-op
+    // and then we'd wait for a dropdown-close that won't come.
+    const clicked = await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(`(function() {
+          var items = document.querySelectorAll('.volume-item');
+          for (var i = 0; i < items.length; i++) {
+            var label = items[i].querySelector('.volume-label');
+            if (label && label.textContent === 'Network (disabled)') {
+              items[i].click();
+              return true;
+            }
+          }
+          return false;
+        })()`),
+      2000,
+    )
+    expect(clicked).toBe(true)
 
     // The dropdown should close. `handleVolumeSelect` sets `isOpen = false` up front, so
     // both the early-return and the navigate paths close the dropdown — but only the

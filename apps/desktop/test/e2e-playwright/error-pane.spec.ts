@@ -60,8 +60,10 @@ async function injectAndNavigateIntoSubDir(tauriPage: PageLike, errorCode: numbe
         });
     })()`)
   // Wait for the error pane to render (the injected error fires during the
-  // background listing kicked off by the navigation above).
-  await pollUntil(tauriPage, async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`), 10000)
+  // background listing kicked off by the navigation above). 3 s — the error
+  // pane renders in <100 ms on the happy path; longer budgets just hid
+  // failures behind the 8 s outer test timeout.
+  await pollUntil(tauriPage, async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`), 3000)
 }
 
 /** Navigates the focused pane back to the fixture root's left/ directory. */
@@ -97,7 +99,7 @@ test.describe('Error pane: Transient errors (ETIMEDOUT)', () => {
     const errorPaneVisible = await pollUntil(
       tauriPage,
       async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`),
-      15000,
+      3000,
     )
     expect(errorPaneVisible).toBe(true)
 
@@ -146,23 +148,28 @@ test.describe('Error pane: Transient errors (ETIMEDOUT)', () => {
     await injectAndNavigateIntoSubDir(tauriPage, 60)
 
     // Wait for error pane
-    await pollUntil(
-      tauriPage,
-      async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`),
-      15000,
-    )
+    await pollUntil(tauriPage, async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`), 3000)
 
     // Click "Try again" — the injected error was cleared after first use,
-    // so this retry should succeed and show the directory contents
-    await tauriPage.evaluate(`(function() {
-            var buttons = document.querySelectorAll('.error-pane button');
-            for (var i = 0; i < buttons.length; i++) {
-                if (buttons[i].textContent.trim() === 'Try again') {
-                    buttons[i].click();
-                    return;
-                }
+    // so this retry should succeed and show the directory contents. Retry the
+    // click via pollUntil so a NodeList that's transiently empty (button not
+    // rendered yet) doesn't silently no-op.
+    const tryAgainClicked = await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(`(function() {
+          var buttons = document.querySelectorAll('.error-pane button');
+          for (var i = 0; i < buttons.length; i++) {
+            if ((buttons[i].textContent || '').trim() === 'Try again') {
+              buttons[i].click();
+              return true;
             }
-        })()`)
+          }
+          return false;
+        })()`),
+      2000,
+    )
+    expect(tryAgainClicked).toBe(true)
 
     // The error pane should disappear and file entries should appear
     const recovered = await pollUntil(
@@ -191,11 +198,7 @@ test.describe('Error pane: NeedsAction errors (EACCES)', () => {
     await injectAndNavigateIntoSubDir(tauriPage, 13)
 
     // Wait for the error pane to appear
-    await pollUntil(
-      tauriPage,
-      async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`),
-      15000,
-    )
+    await pollUntil(tauriPage, async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`), 3000)
 
     // Verify the title says "No permission"
     const title = await tauriPage.evaluate<string>(
@@ -232,11 +235,7 @@ test.describe('Error pane: Accessibility', () => {
     // Inject an error to show the error pane
     await injectAndNavigateIntoSubDir(tauriPage, 60)
 
-    await pollUntil(
-      tauriPage,
-      async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`),
-      15000,
-    )
+    await pollUntil(tauriPage, async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`), 3000)
 
     // Verify role="alert" on the error pane
     const hasAlertRole = await tauriPage.evaluate<boolean>(
@@ -263,11 +262,7 @@ test.describe('Error pane: UI affordances', () => {
 
     await injectAndNavigateIntoSubDir(tauriPage, 60)
 
-    await pollUntil(
-      tauriPage,
-      async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`),
-      15000,
-    )
+    await pollUntil(tauriPage, async () => tauriPage.evaluate<boolean>(`!!document.querySelector('.error-pane')`), 3000)
 
     // The displayed folder path must end with the path we navigated into.
     const folderPath = await tauriPage.evaluate<string>(

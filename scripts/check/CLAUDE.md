@@ -274,11 +274,13 @@ progress section keeps `✘` markers with their preceding annotation lines (like
 `✓`/`-` markers with theirs. The untouched output stays in the timestamped log file the error message links to. Both
 `desktop-e2e-linux` and `desktop-e2e-playwright` call the same helper.
 
-If the run dies before reaching the Playwright phase (e.g. the Linux runner's SMB setup fails silently), the
-`Starting Tauri app...` anchor is missing. In that case the filter keeps the full pre-ELIFECYCLE transcript, drops the
-verbose `docker compose ps` table (anchored on its `NAME IMAGE COMMAND` header so prose containing `Up <N>` survives),
-and prepends a one-line `note: Tauri app never started — failure was in pre-test setup` so the reader knows to look at
-the log file rather than wonder why no test failure block is visible.
+If the run died before reaching the test phase, none of `Starting Tauri app...`, a `\d+) [tauri]` failure-block header,
+or a `\d+ (passed|failed|flaky|skipped)` tally line will be present. `isPreTestFailure` checks all three; only if all
+three are absent does the filter prepend `note: tests did not reach the run phase` and drop the verbose
+`docker compose ps` table (anchored on its `NAME IMAGE COMMAND` header so prose containing `Up <N>` survives). Checking
+the tally and failure block — not just the Tauri marker — avoids false positives on macOS playwright shards, where Tauri
+is started by the Go check and its stdout goes to a per-shard log file, so the marker never appears in Playwright stdout
+regardless of success.
 
 **Decision**: `cargo test` / `cargo nextest` failure output is filtered by dropping pass/skip verdict lines only.
 **Why**: A 1786-test run produces ~1800 noise lines around 2 real failures. The harness format is stable enough that a
@@ -288,13 +290,25 @@ phrases). `trimRustTestProgress` in `desktop-rust-tests-linux.go` runs after `tr
 `running N tests` header, FAIL/FAILED/LEAK/TIMEOUT verdicts, the `failures:` block, the `test result:` / `Summary`
 tally, `error:` lines, bench results — passes through unchanged.
 
-**Decision**: `trimBuildNoise` is denylist-only, never length-based. **Why**: When the Docker provisioning step fails
-(e.g. rustup hits an x86/arm64 architecture mismatch, apt can't find a package), the captured output is a mix of
-successful apt/dpkg/debconf chatter and the real error. The previous "fall back to last 50 lines" heuristic could clip
-the top of a real error block. Instead, `packageManagerNoiseRE` drops a fixed set of unambiguous noise patterns
-(`Setting up …`, `Processing triggers for …`, `Unpacking …`, `Reading package lists…`, `debconf: …`, etc.) — none of
-which can appear in compile errors, panics, rustup info, or test output. Everything else passes through, no matter how
-long. Apt's _failure_ path (`E:` / `W:`) is kept, so dropping the success chatter can't hide a real error.
+**Decision**: silence apt/dpkg at the source, not via a post-hoc denylist. **Why**: `provisionScript` redirects both apt
+commands to a log file under `DEBIAN_FRONTEND=noninteractive` + `-qq`, so on a successful provision the check's stdout
+gets zero apt lines. The log lives on a per-run host directory (`/tmp/cmdr-rust-tests-linux-<unix-ts>/provision.log`)
+bind-mounted into the container at `/cmdr-logs`, so it survives the container's `--rm` and is discoverable from the
+check's Success/failure message. On apt failure, the script dumps the full log to stderr (captured by Go) so the user
+sees what went wrong without having to fish for the file. A previous attempt to scrub the verbose output with a
+`packageManagerNoiseRE` denylist was a treadmill — every Debian version adds new dpkg verbs (`Setting up`, `Unpacking`,
+`Processing triggers`, `Get:N`, `Hit:N`, `Selecting previously unselected package`, `Created symlink`,
+`update-alternatives:`, `procps:`, etc.), continuation lines from multi-line apt prompts have no stable shape, and
+`apt-get -qq` alone doesn't propagate to dpkg's per-package chatter. Redirection at source is bulletproof and
+zero-maint. `trimBuildNoise` now only cuts everything before the last `Compiling …` line; when no such line exists
+(provisioning died before cargo ran), the output is returned verbatim. Length-based truncation is forbidden everywhere —
+if 200 tests fail, all 200 panic bodies pass through.
+
+**Decision**: nextest binary is arch-aware. **Why**: `https://get.nexte.st/latest/linux` serves the x86_64-musl build by
+default; on an arm64 container (e.g. Apple Silicon under OrbStack) cargo's rustup-shim happily syncs the aarch64
+toolchain, then execs the x86 nextest binary and OrbStack crashes with
+`Dynamic loader not found: /lib64/ld-linux-x86-64.so.2`. The fix is `dpkg --print-architecture` → `linux` for amd64 and
+`linux-arm` for arm64, matching the Go tarball selection.
 
 ## Freestyle.sh remote execution
 

@@ -26,9 +26,12 @@ const testFilePath = path.join(fixtureRoot, 'left', 'file-a.txt')
  */
 async function openViewerForFile(mainPage: TauriPage, filePath: string): Promise<TauriPage> {
   const viewer = await openViewerWindow(mainPage, filePath)
-  await viewer.waitForSelector('.viewer-container', 15000)
+  // 3 s: the viewer window mounts and renders content well under 1 s on a
+  // healthy machine. The previous 15 s / 10 s budgets exceeded the suite's 8 s
+  // per-test ceiling and just hid failures behind the outer timeout.
+  await viewer.waitForSelector('.viewer-container', 3000)
   try {
-    await viewer.waitForSelector('.file-content', 10000)
+    await viewer.waitForSelector('.file-content', 3000)
   } catch {
     const hasStatusMsg = await viewer.isVisible('.status-message')
     if (hasStatusMsg) {
@@ -186,15 +189,43 @@ test.describe('File viewer keyboard binding', () => {
     const label = viewer.targetWindow
     if (!label) throw new Error('Scoped viewer page has no targetWindow label')
 
-    // Fire-and-forget: the eval that dispatches Escape may not resolve if the
-    // window dies before pw_result fires back to the test runner. The
-    // closeWindow() path uses two rAFs before calling .close(), so in practice
-    // the eval usually resolves first — but defending against either ordering
-    // keeps the test deterministic. We assert on the windowDisappeared, not on
-    // the press itself.
-    viewer.keyboard.press('Escape').catch(() => {
-      /* window died mid-script before pw_result; expected */
-    })
+    // Verify focus is inside the viewer webview before pressing Escape. If the
+    // keystroke lands on the main window (focus race with the open animation,
+    // or a late-mounting modal stealing focus), the viewer never receives it
+    // and the test sits waiting for the window-close. Two attempts max.
+    const tryEscape = async (): Promise<boolean> => {
+      const focused = await pollUntil(
+        viewer,
+        async () =>
+          viewer.evaluate<boolean>(`(function(){
+            if (!document.hasFocus()) return false;
+            var root = document.querySelector('.viewer-container');
+            return !!(root && document.activeElement && root.contains(document.activeElement));
+          })()`),
+        1000,
+      )
+      if (!focused) {
+        await viewer.evaluate(`(function(){
+          var root = document.querySelector('.viewer-container');
+          if (root && 'focus' in root) root.focus();
+        })()`)
+        return false
+      }
+      // Fire-and-forget: the eval that dispatches Escape may not resolve if the
+      // window dies before pw_result fires back to the test runner. The
+      // closeWindow() path uses two rAFs before calling .close(), so in practice
+      // the eval usually resolves first — but defending against either ordering
+      // keeps the test deterministic. We assert on the windowDisappeared, not
+      // on the press itself.
+      viewer.keyboard.press('Escape').catch(() => {
+        /* window died mid-script before pw_result; expected */
+      })
+      return true
+    }
+
+    if (!(await tryEscape())) {
+      await tryEscape()
+    }
 
     const gone = await pollUntil(
       main,
@@ -202,10 +233,10 @@ test.describe('File viewer keyboard binding', () => {
         const labels = (await main.listWindows()).map((w) => w.label)
         return !labels.includes(label)
       },
-      5000,
+      3000,
     )
     if (!gone) {
-      throw new Error(`Escape did not close viewer window '${label}' within 5s`)
+      throw new Error(`Escape did not close viewer window '${label}' within 3s`)
     }
   })
 })
@@ -240,18 +271,21 @@ test.describe('File viewer error handling', () => {
     const viewer = await main.waitForWindow((w) => w.label === label && !before.has(w.label), { timeout: 10000 })
 
     try {
-      await viewer.waitForSelector('.viewer-container', 15000)
-      await viewer.waitForSelector('.status-message', 10000)
+      // 3 s budget per wait: the viewer route mounts and the missing-path branch
+      // resolves well under 1 s on a healthy machine. Previous 15 s / 10 s values
+      // exceeded the suite's 8 s per-test ceiling.
+      await viewer.waitForSelector('.viewer-container', 3000)
+      await viewer.waitForSelector('.status-message', 3000)
 
       // Status starts as "Loading…" before the missing-path branch resolves; poll the textContent so we read it after it
-      // settles rather than the moment the element first exists. Slow Linux Docker E2E flakes here without the poll.
+      // settles rather than the moment the element first exists.
       const settled = await pollUntil(
         viewer,
         async () => {
           const t = await viewer.textContent('.status-message')
           return t !== null && t.includes('No file path')
         },
-        10000,
+        3000,
       )
       expect(settled).toBe(true)
     } finally {

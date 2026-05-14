@@ -149,11 +149,10 @@ export async function selectAll(tauriPage: PageLike): Promise<void> {
 
 /** Waits for the dry-run scan to detect conflicts and show the policy radio buttons. */
 export async function waitForConflictPolicy(tauriPage: PageLike): Promise<void> {
-  const found = await pollUntil(
-    tauriPage,
-    async () => tauriPage.isVisible(`${TRANSFER_DIALOG} .conflict-policy`),
-    15000,
-  )
+  // 5 s: dry-run completes in well under 1 s on a healthy machine. The previous
+  // 15 s value was dead under the suite's 8 s per-test ceiling — it just hid
+  // failures behind the outer timeout instead of producing a useful error.
+  const found = await pollUntil(tauriPage, async () => tauriPage.isVisible(`${TRANSFER_DIALOG} .conflict-policy`), 5000)
   expect(found).toBe(true)
 }
 
@@ -170,7 +169,50 @@ export async function clickTransferStart(tauriPage: PageLike): Promise<void> {
 }
 
 /** Waits for all modal dialogs to close after an operation completes. */
-export async function waitForDialogsToClose(tauriPage: PageLike, timeout = 15000): Promise<void> {
+export async function waitForDialogsToClose(tauriPage: PageLike, timeout = 5000): Promise<void> {
+  // 5 s default: transfer dialogs close in <1 s on the happy path. Callers can
+  // pass a tighter timeout when the wait is wrapped inside another budget.
+  // The previous 15 s default exceeded the suite's 8 s per-test ceiling.
   const closed = await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), timeout)
   expect(closed).toBe(true)
+}
+
+/**
+ * Clicks a button by its trimmed text within `containerSelector`. Retries until
+ * either the click lands or the timeout expires. Guards against Svelte rendering
+ * the container without its inner buttons yet — a plain
+ * `querySelectorAll(...).click()` would silently no-op on an empty NodeList and
+ * the test would then sit waiting for the next UI state that never comes.
+ *
+ * Used by the conflict flows where the buttons appear inside `.conflict-section`
+ * (`.conflict-buttons-row`, `.conflict-cancel`) but may render a frame after
+ * their container becomes visible.
+ */
+export async function clickConflictButton(
+  tauriPage: PageLike,
+  containerSelector: string,
+  buttonText: string,
+  timeout = 2000,
+): Promise<void> {
+  const sel = JSON.stringify(containerSelector)
+  const txt = JSON.stringify(buttonText)
+  const clicked = await pollUntil(
+    tauriPage,
+    async () =>
+      tauriPage.evaluate<boolean>(`(function(){
+        var btns = document.querySelectorAll(${sel});
+        for (var i = 0; i < btns.length; i++) {
+          if ((btns[i].textContent || '').trim() === ${txt}) {
+            btns[i].click();
+            return true;
+          }
+        }
+        return false;
+      })()`),
+    timeout,
+  )
+  expect(
+    clicked,
+    `clickConflictButton: no "${buttonText}" button under "${containerSelector}" within ${String(timeout)}ms`,
+  ).toBe(true)
 }

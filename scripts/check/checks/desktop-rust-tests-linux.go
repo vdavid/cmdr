@@ -2,9 +2,12 @@ package checks
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // goVersion must match `.mise.toml`'s `go` entry. The container provisioning script
@@ -16,8 +19,12 @@ const goVersion = "1.25.7"
 // provisionScript installs the GTK/WebKit dev libraries Tauri's compile step needs,
 // plus a matching Go toolchain and cargo-nextest, then runs the test suite. Each step
 // short-circuits on failure via `set -e`. dpkg's architecture names (amd64 / arm64)
-// line up with Go's download filenames, so a single $(dpkg --print-architecture)
-// covers both x86 and ARM.
+// line up with Go's download filenames AND with nextest's pre-built URLs
+// (`https://get.nexte.st/latest/linux` for x86, `…/linux-arm` for ARM), so a single
+// $(dpkg --print-architecture) covers both. Installing the wrong-arch nextest binary
+// caused a silent OrbStack crash on Apple Silicon (`Dynamic loader not found:
+// /lib64/ld-linux-x86-64.so.2`) — cargo triggers a rustup toolchain sync, then execs
+// nextest, which is when the x86 binary hit the arm64 dynamic-loader wall.
 //
 // nextest (vs raw `cargo test`) is required: a handful of tests (e.g.
 // `ai::api_keys::tests::*`) rely on per-test process isolation because the underlying
@@ -26,21 +33,41 @@ const goVersion = "1.25.7"
 // producing cross-test state leaks. nextest spawns a fresh process per test, matching
 // macOS local and CI behavior. Precompiled binary from get.nexte.st (no `cargo install`
 // recompile) keeps the cold-cache run fast.
-// apt is silenced at the source via -qq + DEBIAN_FRONTEND=noninteractive:
-// -qq makes apt silent on success, errors only (E:/W: lines still print).
-// noninteractive prevents debconf from trying terminal frontends (the
-// "unable to initialize frontend: Dialog" noise is purely a TTY-mismatch
-// complaint that has no real signal). Combined, ~1000 lines of dpkg setup
-// chatter on a fresh container reduce to zero on success.
+//
+// Apt output: silenced via -qq + DEBIAN_FRONTEND=noninteractive + redirection to
+// /cmdr-logs/provision.log (host-mounted to a per-run dir under /tmp). On success the
+// log file is preserved for post-mortem; on apt failure the full log is dumped to
+// stderr (captured by the Go side and shown to the user). The Success message
+// includes the host log path so it's discoverable in the 1% case where someone wants
+// to inspect what got installed.
 var provisionScript = fmt.Sprintf(`set -e
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq
-apt-get install -y -qq --no-install-recommends \
-  libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libacl1-dev \
-  curl ca-certificates
-curl -fsSL https://go.dev/dl/go%s.linux-$(dpkg --print-architecture).tar.gz | tar -xz -C /usr/local
+PROVISION_LOG=/cmdr-logs/provision.log
+mkdir -p /cmdr-logs
+
+ARCH=$(dpkg --print-architecture)
+case "$ARCH" in
+  amd64) NEXTEST_URL=https://get.nexte.st/latest/linux ;;
+  arm64) NEXTEST_URL=https://get.nexte.st/latest/linux-arm ;;
+  *) echo "unsupported architecture: $ARCH" >&2; exit 1 ;;
+esac
+
+{
+  echo "=== apt-get update ==="
+  apt-get update -qq
+  echo "=== apt-get install ==="
+  apt-get install -y -qq --no-install-recommends \
+    libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libacl1-dev \
+    curl ca-certificates
+} >> "$PROVISION_LOG" 2>&1 || {
+  echo "--- apt failed; full provision log follows ---" >&2
+  cat "$PROVISION_LOG" >&2
+  exit 1
+}
+
+curl -fsSL https://go.dev/dl/go%s.linux-${ARCH}.tar.gz | tar -xz -C /usr/local
 export PATH=/usr/local/go/bin:$PATH
-curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C /usr/local/bin
+curl -LsSf "$NEXTEST_URL" | tar zxf - -C /usr/local/bin
 cargo nextest run --no-fail-fast 2>&1`, goVersion)
 
 // RunRustTestsLinux runs Rust tests in a Linux Docker container.
@@ -57,10 +84,20 @@ func RunRustTestsLinux(ctx *CheckContext) (CheckResult, error) {
 		return Skipped("Docker not running"), nil
 	}
 
+	// Per-run host log dir, bind-mounted into the container at /cmdr-logs so
+	// the apt log survives `--rm`. macOS auto-cleans /tmp on reboot; we don't
+	// otherwise prune.
+	logDir := fmt.Sprintf("/tmp/cmdr-rust-tests-linux-%d", time.Now().Unix())
+	if err := os.MkdirAll(logDir, 0o755); err != nil {
+		return CheckResult{}, fmt.Errorf("failed to create log dir: %w", err)
+	}
+	provisionLog := filepath.Join(logDir, "provision.log")
+
 	// Mount the whole repo so cargo can find the workspace root Cargo.toml (and its Cargo.lock).
 	// Working directory is the Rust crate inside the workspace.
 	cmd := exec.Command("docker", "run", "--rm",
 		"-v", ctx.RootDir+":/repo",
+		"-v", logDir+":/cmdr-logs",
 		"-w", "/repo/apps/desktop/src-tauri",
 		"-e", "CARGO_TARGET_DIR=/tmp/cargo-target",
 		"rust:latest",
@@ -68,9 +105,9 @@ func RunRustTestsLinux(ctx *CheckContext) (CheckResult, error) {
 	output, err := RunCommand(cmd, true)
 	if err != nil {
 		summary := trimRustTestProgress(trimBuildNoise(output))
-		return CheckResult{}, fmt.Errorf("rust tests failed on Linux\n%s", indentOutput(summary))
+		return CheckResult{}, fmt.Errorf("rust tests failed on Linux (provision log: %s)\n%s", provisionLog, indentOutput(summary))
 	}
-	return Success("All tests passed on Linux"), nil
+	return Success(fmt.Sprintf("All tests passed on Linux (provision log: %s)", provisionLog)), nil
 }
 
 var compilingLineRe = regexp.MustCompile(`(?m)^\s*Compiling \w+ v`)

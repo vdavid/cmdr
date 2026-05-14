@@ -145,17 +145,17 @@ async function openCommandPalette(tauriPage: PageLike): Promise<void> {
   await tauriPage.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', {
         key: 'p', ctrlKey: ${String(CTRL_OR_META === 'Control')}, metaKey: ${String(CTRL_OR_META === 'Meta')}, shiftKey: true, bubbles: true
     }))`)
-  // 15s: defensive bound. Selector resolves in <100 ms on the happy path; only matters under
-  // CPU contention (CI under load, parallel runs, slow Linux Docker).
-  await tauriPage.waitForSelector('.palette-overlay', 15000)
+  // 3 s: the palette overlay renders in <100 ms on the happy path. Previous
+  // 15 s budget exceeded the suite's 8 s per-test ceiling.
+  await tauriPage.waitForSelector('.palette-overlay', 3000)
 }
 
 /** Open the search dialog overlay. */
 async function openSearchDialog(tauriPage: PageLike): Promise<void> {
   await dispatchMenuCommand(tauriPage, 'search.open')
-  // 15s: defensive bound. Selector resolves in <100 ms on the happy path; only matters under
-  // CPU contention.
-  await tauriPage.waitForSelector('.search-overlay', 15000)
+  // 3 s: the search overlay renders in <100 ms on the happy path. Previous
+  // 15 s budget exceeded the suite's 8 s per-test ceiling.
+  await tauriPage.waitForSelector('.search-overlay', 3000)
 }
 
 /** Switch the app theme via Tauri's setTheme API.
@@ -249,9 +249,9 @@ for (const mode of ['light', 'dark'] as const) {
       await ensureAppReady(tauriPage)
 
       await executeViaCommandPalette(tauriPage, 'license')
-      // 15s: defensive bound. License dialog opens in <100 ms on the happy path; only matters
-      // under CPU contention.
-      await tauriPage.waitForSelector('[data-dialog-id="license"]', 15000)
+      // 3 s: the license dialog opens in <100 ms on the happy path. Previous
+      // 15 s budget exceeded the suite's 8 s per-test ceiling.
+      await tauriPage.waitForSelector('[data-dialog-id="license"]', 3000)
 
       const { all } = await runAxeAudit(tauriPage, `License dialog (${mode})`, '[data-dialog-id="license"]')
       await dismissDialog(tauriPage)
@@ -299,8 +299,12 @@ for (const mode of ['light', 'dark'] as const) {
       // main window's `/settings` route — it's a separate WebviewWindow.
       const settings = await openSettingsWindowViaProd(tauriPage as TauriPage)
       try {
-        await settings.waitForSelector('.settings-window', 15000)
-        await settings.waitForSelector('.settings-sidebar', 10000)
+        // This test legitimately overrides the default 8 s budget (see
+        // `test.setTimeout(15_000)` above) because it audits ~15 settings
+        // sections sequentially. The waitForSelector budgets here only need
+        // to cover the initial settings-window mount, which is <1 s.
+        await settings.waitForSelector('.settings-window', 3000)
+        await settings.waitForSelector('.settings-sidebar', 3000)
 
         // All settings sections with their sidebar paths and data-section-id selectors
         const sections: { name: string; path: string[]; sectionId: string }[] = [
@@ -381,8 +385,10 @@ for (const mode of ['light', 'dark'] as const) {
       if (!viewerLabel) throw new Error('Scoped viewer page has no targetWindow label')
 
       try {
-        await viewer.waitForSelector('.viewer-container', 15000)
-        await viewer.waitForSelector('.file-content', 10000)
+        // 3 s: viewer mounts and renders content in <1 s on a healthy machine.
+        // Previous 15 s / 10 s budgets exceeded the suite's 8 s per-test ceiling.
+        await viewer.waitForSelector('.viewer-container', 3000)
+        await viewer.waitForSelector('.file-content', 3000)
 
         const { all } = await runAxeAudit(viewer, `File viewer (${mode})`)
         expect(all, `Found ${String(all.length)} violation(s) in file viewer (${mode})`).toHaveLength(0)

@@ -16,6 +16,7 @@ import {
   waitForConflictPolicy,
   selectConflictPolicy,
   clickTransferStart,
+  clickConflictButton,
   waitForDialogsToClose,
 } from './conflict-helpers.js'
 
@@ -106,29 +107,32 @@ test.describe('Move rollback', () => {
 
     // Use "Ask for each" to pause on conflict and test rollback from there
     await clickTransferStart(tauriPage)
-    await tauriPage.waitForSelector('[data-dialog-id="transfer-progress"]', 10000)
+    await tauriPage.waitForSelector('[data-dialog-id="transfer-progress"]', 3000)
 
     // Wait for conflict dialog (bravo/foxtrot/golf.txt conflicts)
-    const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 15000)
+    const conflictAppeared = await pollUntil(tauriPage, async () => tauriPage.isVisible('.conflict-section'), 3000)
     expect(conflictAppeared).toBe(true)
 
-    // Verify the Rollback button is shown (not just "Cancel")
-    const hasRollback = await tauriPage.evaluate<boolean>(`(function(){
-      var btns = document.querySelectorAll('.conflict-cancel button');
-      for (var i=0; i<btns.length; i++) {
-        if (btns[i].textContent.trim() === 'Rollback') return true;
-      }
-      return false;
-    })()`)
+    // Verify the Rollback button is shown (not just "Cancel"). Poll briefly —
+    // the button container becomes visible a frame or two before its children
+    // render under Svelte; a one-shot read can miss it.
+    const hasRollback = await pollUntil(
+      tauriPage,
+      async () =>
+        tauriPage.evaluate<boolean>(`(function(){
+          var btns = document.querySelectorAll('.conflict-cancel button');
+          for (var i=0; i<btns.length; i++) {
+            if ((btns[i].textContent || '').trim() === 'Rollback') return true;
+          }
+          return false;
+        })()`),
+      2000,
+    )
     expect(hasRollback).toBe(true)
 
-    // Click Rollback to cancel the move mid-conflict
-    await tauriPage.evaluate(`(function(){
-      var btns = document.querySelectorAll('.conflict-cancel button');
-      for (var i=0; i<btns.length; i++) {
-        if (btns[i].textContent.trim() === 'Rollback') { btns[i].click(); break; }
-      }
-    })()`)
+    // Click Rollback to cancel the move mid-conflict. Retry on empty NodeList
+    // for the same reason as the hasRollback poll above.
+    await clickConflictButton(tauriPage, '.conflict-cancel button', 'Rollback')
 
     await waitForDialogsToClose(tauriPage)
 

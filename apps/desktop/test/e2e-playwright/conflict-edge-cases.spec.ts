@@ -278,7 +278,7 @@ test.describe('Type mismatch conflicts', () => {
           return !!pane.querySelector('[data-filename="config"]');
         })()`)
       },
-      10000,
+      3000,
     )
     expect(ready).toBe(true)
 

@@ -17,8 +17,11 @@ test.describe('Settings page', () => {
 
   test.beforeEach(async ({ tauriPage }) => {
     settings = await openSettingsWindowViaProd(tauriPage as TauriPage)
-    await settings.waitForSelector('.settings-window', 15000)
-    await settings.waitForSelector('.settings-sidebar', 10000)
+    // 3 s: the settings window mounts in well under 1 s on a healthy machine.
+    // The previous 15 s / 10 s budgets exceeded the suite's 8 s per-test ceiling
+    // and just hid failures behind the outer timeout.
+    await settings.waitForSelector('.settings-window', 3000)
+    await settings.waitForSelector('.settings-sidebar', 3000)
   })
 
   test.afterEach(async ({ tauriPage }) => {
@@ -225,14 +228,44 @@ test.describe('Settings keyboard binding', () => {
   test('Escape closes the settings window (production binding)', async ({ tauriPage }) => {
     const main = tauriPage as TauriPage
     const settings = await openSettingsWindowViaProd(main)
-    await settings.waitForSelector('.settings-window', 15000)
+    await settings.waitForSelector('.settings-window', 3000)
 
-    // Fire-and-forget: the dispatched Escape triggers getCurrentWindow().close()
-    // synchronously inside the handler, so the window may die before pw_result
-    // fires back. The poll on listWindows() is the assertion.
-    settings.keyboard.press('Escape').catch(() => {
-      /* window died mid-script before pw_result; expected */
-    })
+    // Verify focus is actually inside the settings webview before pressing
+    // Escape. Without this the keystroke can land on the main window (or
+    // wherever focus drifted to during async onMount in the settings UI),
+    // the settings window never receives it, and the test sits waiting for
+    // a window-close that won't come. Two attempts max — cheap insurance.
+    const tryEscape = async (): Promise<boolean> => {
+      const focused = await pollUntil(
+        settings,
+        async () =>
+          settings.evaluate<boolean>(`(function(){
+            if (!document.hasFocus()) return false;
+            var root = document.querySelector('.settings-window');
+            return !!(root && document.activeElement && root.contains(document.activeElement));
+          })()`),
+        1000,
+      )
+      if (!focused) {
+        // Re-focus inside the settings webview and let the caller retry.
+        await settings.evaluate(`(function(){
+          var root = document.querySelector('.settings-window');
+          if (root && 'focus' in root) root.focus();
+        })()`)
+        return false
+      }
+      // Fire-and-forget: the dispatched Escape triggers getCurrentWindow().close()
+      // synchronously inside the handler, so the window may die before pw_result
+      // fires back. The poll on listWindows() below is the assertion.
+      settings.keyboard.press('Escape').catch(() => {
+        /* window died mid-script before pw_result; expected */
+      })
+      return true
+    }
+
+    if (!(await tryEscape())) {
+      await tryEscape()
+    }
 
     const gone = await pollUntil(
       main,
@@ -240,10 +273,10 @@ test.describe('Settings keyboard binding', () => {
         const labels = (await main.listWindows()).map((w) => w.label)
         return !labels.includes('settings')
       },
-      5000,
+      3000,
     )
     if (!gone) {
-      throw new Error("Escape did not close settings window 'settings' within 5s")
+      throw new Error("Escape did not close settings window 'settings' within 3s")
     }
   })
 })

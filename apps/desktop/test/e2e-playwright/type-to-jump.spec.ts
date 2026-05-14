@@ -16,12 +16,20 @@
  */
 
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, pollUntil } from './helpers.js'
+import { recreateFixtures } from '../e2e-shared/fixtures.js'
+import { ensureAppReady, getFixtureRoot, pollUntil } from './helpers.js'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 
 type PageLike = TauriPage | BrowserPageAdapter
 
 const INDICATOR = '.type-to-jump-indicator'
+
+// Earlier suites (file-operations.spec.ts) mutate `left/` (create, rename, move,
+// delete). Without this, type-to-jump's `ensureAppReady` fails because the
+// expected `file-a.txt` / `sub-dir` entries are gone.
+test.beforeEach(() => {
+  recreateFixtures(getFixtureRoot())
+})
 
 /**
  * Types a sequence of characters into the focused pane. Dispatches DOM
