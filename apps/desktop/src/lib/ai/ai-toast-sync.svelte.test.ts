@@ -57,7 +57,7 @@ describe('ai-toast-sync', () => {
     const options = vi.mocked(addToast).mock.calls[0][1]
     expect(options?.id).toBe('ai')
     expect(options?.dismissal).toBe('persistent')
-    expect(options?.closeTooltip).toBe('Close this notification (the download will continue in the background)')
+    expect(options?.closeTooltip).toBe('Close this notification — the download will continue in the background')
     expect(typeof options?.onDismiss).toBe('function')
   })
 

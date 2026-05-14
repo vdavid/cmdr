@@ -7,7 +7,7 @@ const title = 'Cmdr will track your entire file system'
 test.describe('Blog', () => {
   test('blog index loads with correct title', async ({ page }) => {
     await page.goto('/blog')
-    await expect(page).toHaveTitle('Blog — Cmdr')
+    await expect(page).toHaveTitle('Blog | Cmdr')
   })
 
   test('blog index lists posts with dates', async ({ page }) => {
