@@ -264,6 +264,16 @@ when deps haven't changed. A marker file (`node_modules/.pnpm-install-marker`) s
 each successful install. On the next run, if the mtime matches, install is skipped. The marker lives inside
 `node_modules/` so it's automatically invalidated if `node_modules` is deleted. Always runs in CI (`--ci`).
 
+**Decision**: E2E failure output uses section-aware filtering, not a pattern denylist. **Why**: The checker's contract
+with agents is that output is concise enough to read in full — no `head`/`tail`/`grep` needed. Raw Playwright + Tauri +
+Docker output is 1000+ lines on a failure (test pass markers, app stdout log, post-ELIFECYCLE build dump). The captured
+output has four stable sections — setup, per-test progress, numbered failure blocks, post-ELIFECYCLE dump — split by
+fixed delimiters (`Starting Tauri app...`, `\d+\) \[tauri\]`, `[ELIFECYCLE]`). `extractE2ETestOutput` in
+`desktop-svelte-e2e-playwright.go` keeps the failure blocks verbatim, drops the post-ELIFECYCLE dump, and in the
+progress section keeps `✘` markers with their preceding annotation lines (like `[SMB diag] MCP port: …`) while dropping
+`✓`/`-` markers with theirs. The untouched output stays in the timestamped log file the error message links to. Both
+`desktop-e2e-linux` and `desktop-e2e-playwright` call the same helper.
+
 ## Freestyle.sh remote execution
 
 Two modes for offloading checks to a freestyle.sh VM:

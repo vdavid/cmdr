@@ -474,14 +474,79 @@ func stopProcessOnPort(port string) {
 	time.Sleep(500 * time.Millisecond)
 }
 
-// extractE2ETestOutput returns everything from "Starting Tauri app..." onward,
-// stripping the setup preamble (Docker, apt-get, pnpm install, Playwright download).
+// extractE2ETestOutput returns a concise failure summary for E2E test runs.
+// The captured output has four sections with stable delimiters:
+//
+//	§1 setup/build         → trimmed at the last "Starting Tauri app..."
+//	§2 per-test progress   → ✓/- markers (and their preceding annotation
+//	                          lines) are dropped; ✘ markers and their
+//	                          preceding annotation lines are kept
+//	§3 failure blocks      → kept verbatim (numbered `N) [tauri] …` blocks
+//	                          plus the final `N failed / M flaky / X passed`
+//	                          tally)
+//	§4 post-ELIFECYCLE     → dropped (this is the Tauri stdout dump and
+//	                          out-of-order build output Docker flushes after
+//	                          the run exits — already saved in the full log
+//	                          file the surrounding error message links to)
 func extractE2ETestOutput(output string) string {
-	idx := strings.LastIndex(output, "Starting Tauri app...")
-	if idx >= 0 {
-		return output[idx:]
+	if idx := strings.LastIndex(output, "Starting Tauri app..."); idx >= 0 {
+		output = output[idx:]
 	}
-	return output
+	if idx := strings.Index(output, "[ELIFECYCLE]"); idx >= 0 {
+		if eol := strings.IndexByte(output[idx:], '\n'); eol >= 0 {
+			output = output[:idx+eol]
+		} else {
+			output = output[:idx]
+		}
+	}
+	lines := strings.Split(output, "\n")
+	boundary := len(lines)
+	for i, line := range lines {
+		if failureBlockHeaderRE.MatchString(stripANSI(line)) {
+			boundary = i
+			break
+		}
+	}
+	kept := filterTestProgress(lines[:boundary])
+	kept = append(kept, lines[boundary:]...)
+	return strings.Join(kept, "\n")
+}
+
+// failureBlockHeaderRE matches the first line of a Playwright failure entry,
+// e.g. "  1) [tauri] › test/e2e-playwright/smb.spec.ts:206:3 › …". This is
+// the §2 → §3 boundary.
+var failureBlockHeaderRE = regexp.MustCompile(`^\s*\d+\)\s+\[tauri\]\s`)
+
+// ansiEscapeRE matches ANSI CSI escape sequences (e.g. color codes).
+var ansiEscapeRE = regexp.MustCompile(`\x1b\[[0-9;]*[A-Za-z]`)
+
+func stripANSI(s string) string {
+	return ansiEscapeRE.ReplaceAllString(s, "")
+}
+
+// filterTestProgress collapses Playwright per-test progress output: lines
+// preceding a ✓ or - marker (and the marker itself) are dropped, while lines
+// preceding a ✘ marker (and the marker) are kept. Lines that have no marker
+// at all at the end of the section (typically blank padding before §3) are
+// kept too.
+func filterTestProgress(lines []string) []string {
+	out := make([]string, 0, len(lines))
+	var buf []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(stripANSI(line))
+		switch {
+		case strings.HasPrefix(trimmed, "✘"):
+			out = append(out, buf...)
+			out = append(out, line)
+			buf = buf[:0]
+		case strings.HasPrefix(trimmed, "✓"), strings.HasPrefix(trimmed, "- "):
+			buf = buf[:0]
+		default:
+			buf = append(buf, line)
+		}
+	}
+	out = append(out, buf...)
+	return out
 }
 
 // readLogTail reads the last N lines of a log file.
