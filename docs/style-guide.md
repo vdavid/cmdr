@@ -32,7 +32,9 @@ Writing, code, and design styles.
   - **Use sentence case in labels**: Applies to buttons, labels, and similar. But omit periods on short microcopy.
   - **Capitalize names correctly**: For example, there is GitHub but mailcow.
   - **Use the Oxford comma**: Use "1, 2, and 3" rather than "1, 2 and 3".
-  - **Use en dashes but no em dashes**: en dash for ranges, but avoid structures that'd need an em dash.
+  - **No em-dashes** (`—`). Avoid structures that'd need an em dash. They are AI hallmarks. Use parens, commas, colons,
+  - or rephrase. En-dashes in ranges are OK. Vary the connector, don't default to `;`. Use `:` to explain or qualify,
+  - `,` for a tight list, parens for am aside, new sentence when two ideas don't compress. `;` is OK for other cases.
   - **Use colon for lists**: Use the format I used in this list you're reading right now.
   - **Spell out numbers one through nine.** Use numerals for 10+.
   - **Use ISO dates**: Use YYYY-MM-DD wherever it makes sense.
