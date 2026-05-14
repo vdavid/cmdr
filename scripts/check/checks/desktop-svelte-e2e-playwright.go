@@ -504,6 +504,14 @@ func stopProcessOnPort(port string) {
 // so the marker never appears in Playwright's stdout — even on a successful
 // run.
 func extractE2ETestOutput(output string) string {
+	// Extract any SMB-stack readiness lines from §1 BEFORE we trim the setup
+	// phase away. These banners come from desktop-e2e-linux's pre-flight and
+	// post-flight probes and are crucial signal for diagnosing SMB-related
+	// test failures — they answer "were the SMB containers healthy when
+	// tests started / ended?" Without preserving them, every SMB failure
+	// looks like a pure Cmdr-side bug.
+	smbBanners := extractSMBBanners(output)
+
 	tauriStarted := strings.Contains(output, "Starting Tauri app...")
 	if tauriStarted {
 		idx := strings.LastIndex(output, "Starting Tauri app...")
@@ -534,7 +542,32 @@ func extractE2ETestOutput(output string) string {
 			kept...,
 		)
 	}
+
+	if len(smbBanners) > 0 {
+		kept = append(smbBanners, append([]string{""}, kept...)...)
+	}
 	return strings.Join(kept, "\n")
+}
+
+// smbBannerRE matches the pre-flight and post-flight SMB readiness banners
+// emitted by `e2e-linux.sh` (via `log_info`/`log_warn`). ANSI colour codes
+// are stripped before matching. Anchored on substring rather than start of
+// line so the `[INFO]` / `[WARN]` prefix is tolerated.
+var smbBannerRE = regexp.MustCompile(`SMB (?:e2e stack ready|post-flight): .+`)
+
+// extractSMBBanners pulls out the SMB readiness banners (pre-flight and
+// post-flight) from raw output. Returned strings have ANSI escapes removed
+// and a `[SMB] ` prefix added so they're trivially greppable in the
+// failing-test summary.
+func extractSMBBanners(output string) []string {
+	var out []string
+	for line := range strings.SplitSeq(output, "\n") {
+		stripped := stripANSI(line)
+		if m := smbBannerRE.FindString(stripped); m != "" {
+			out = append(out, "[SMB] "+m)
+		}
+	}
+	return out
 }
 
 // playwrightTallyRE matches the Playwright run-summary lines like `1 failed`,

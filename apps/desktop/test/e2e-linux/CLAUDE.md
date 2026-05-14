@@ -73,9 +73,17 @@ as `running` only means the container is alive; smbd inside can be hung, OOM-kil
 version of this script trusted the running-check and skipped the probe, which produced `Cannot reach smb-consumer-X`
 test failures whenever a stale stack from a prior run was unhealthy. If the probe fails on the already-running path, the
 SMB stack is torn down and restarted before tests run. The final probe (30 s deadline) emits an
-`SMB e2e stack ready: all 4 containers accepting TCP on :445` banner — visible at the top of the failing-test output if
-a later test still fails, so a reader can tell at a glance whether SMB was the upstream problem. See
-`apps/desktop/test/CLAUDE.md` "Testing principles" for the no-magic-sleep rule this enforces.
+`SMB e2e stack ready: all 4 containers accepting TCP on :445` banner. See `apps/desktop/test/CLAUDE.md` "Testing
+principles" for the no-magic-sleep rule this enforces.
+
+**Post-flight SMB probe**: after the test phase exits (success or failure), the script re-runs `probe_smb_ports 5` and
+emits either `SMB post-flight: all 4 containers still accepting TCP on :445` or
+`SMB post-flight: at least one container is no longer accepting TCP — likely died mid-run` plus per-service compose
+state. Both pre- and post-flight banners are hoisted to the top of the failing-test summary by the checker's filter
+(prefixed `[SMB]`) so an agent reading a failed run can immediately tell whether SMB was healthy at start, at end, or
+both. Diverging banners (pre-flight OK + post-flight FAIL) localise the problem to "containers died mid-run"; both OK
+localises to Cmdr-side SMB code; both FAIL points at infra / Docker networking. The post-flight probe is
+`set +e`-wrapped so it can never mask the underlying test exit code.
 
 ## Gotchas
 

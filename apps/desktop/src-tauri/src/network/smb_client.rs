@@ -3,7 +3,7 @@
 //! Uses the `smb2` crate to list shares on network hosts.
 //! Implements caching and authentication handling.
 
-use log::debug;
+use log::{debug, warn};
 use std::time::Duration;
 
 // Re-export public types (re-exports of items used in smb_client's public API)
@@ -83,9 +83,19 @@ async fn list_shares_uncached(
     match list_shares_smb2(hostname, ip_address, port, credentials, timeout).await {
         Ok(result) => Ok(result),
         Err(ShareListError::ProtocolError { ref message }) => {
-            // Protocol error (likely RPC incompatibility with Samba)
-            // Try smbutil fallback on macOS
-            debug!("smb2 failed with protocol error: {}, trying smbutil fallback", message);
+            // Protocol error (likely RPC incompatibility with Samba). Try the
+            // platform fallback: smbutil (macOS) / smbclient (Linux).
+            // Logged at warn! so it's visible in the default E2E log without
+            // RUST_LOG=debug — we need this for diagnosing intermittent
+            // SMB E2E failures where both paths fail and the user only sees
+            // the secondary error.
+            warn!(
+                "smb2 list_shares failed (host={}, port={}, has_creds={}): ProtocolError({:?}); falling back to smbutil/smbclient",
+                hostname,
+                port,
+                credentials.is_some(),
+                message,
+            );
             list_shares_smbutil(hostname, ip_address, port).await
         }
         Err(e) => Err(e),

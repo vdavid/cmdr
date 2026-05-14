@@ -378,6 +378,10 @@ if $INTERACTIVE; then
 else
     log_info "Running E2E tests in Docker..."
     log_info "Binary path: $DOCKER_TAURI_BINARY"
+    # Capture the test exit code so we can run a post-flight diagnostic
+    # regardless of pass/fail, then re-propagate it as the script's status.
+    set +e
+    docker_test_status=0
     docker run --rm \
         --network "$SMB_NETWORK" \
         $SMB_DOCKER_ARGS \
@@ -457,6 +461,31 @@ else
                     --reporter=list
             fi
         '
+    docker_test_status=$?
+    set -e
+
+    # Post-flight SMB probe: did the consumer containers survive the run?
+    # The pre-flight probe confirms TCP at start; this one tells us whether
+    # the same containers are still serving when the test phase exits.
+    # Diverging results (pre-flight OK, post-flight FAIL) point at containers
+    # dying mid-run (memory pressure, smbd crash) vs Cmdr-side bugs.
+    # Runs with `set +e` because we never want this diagnostic to mask the
+    # underlying test result.
+    set +e
+    if probe_smb_ports 5; then
+        log_info "SMB post-flight: all 4 containers still accepting TCP on :445"
+    else
+        log_warn "SMB post-flight: at least one container is no longer accepting TCP — likely died mid-run"
+        for service in "${SMB_E2E_SERVICES[@]}"; do
+            state=$(docker compose -p smb-consumer ps --format '{{.State}} {{.Status}}' "$service" 2>/dev/null | head -1)
+            log_warn "  $service: ${state:-unknown}"
+        done
+    fi
+    set -e
+
+    if [ "$docker_test_status" -ne 0 ]; then
+        exit "$docker_test_status"
+    fi
 fi
 
 log_info "Done!"

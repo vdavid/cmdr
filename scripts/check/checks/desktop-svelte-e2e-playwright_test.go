@@ -179,6 +179,77 @@ func TestDropDockerComposePsTable_DoesNotEatProseWithUpDigits(t *testing.T) {
 	}
 }
 
+func TestExtractE2ETestOutput_PreservesSMBPreFlightBanner(t *testing.T) {
+	// SMB pre-flight banner lives in §1 (before "Starting Tauri app..."),
+	// which the filter trims. The extractor must preserve it explicitly.
+	input := `[INFO] Starting SMB containers (e2e)...
+[INFO] SMB e2e stack ready: all 4 containers accepting TCP on :445
+[INFO] Running E2E tests in Docker...
+Starting Tauri app...
+   ✘ test/example.spec.ts:1:1 › fails
+
+  1) [tauri] › test/example.spec.ts:1:1 › fails
+
+     Error: boom
+
+  1 failed
+[ELIFECYCLE] Command failed with exit code 1.
+`
+	out := extractE2ETestOutput(input)
+	if !strings.Contains(out, "[SMB] SMB e2e stack ready: all 4 containers accepting TCP on :445") {
+		t.Errorf("expected pre-flight banner preserved with [SMB] prefix, got:\n%s", out)
+	}
+	if !strings.HasPrefix(out, "[SMB]") {
+		t.Errorf("expected output to start with the SMB banner, got:\n%s", out)
+	}
+	if !strings.Contains(out, "Error: boom") {
+		t.Errorf("test failure body must still be present, got:\n%s", out)
+	}
+}
+
+func TestExtractE2ETestOutput_PreservesBothPreAndPostFlightBanners(t *testing.T) {
+	// Post-flight runs after the test phase exits, so a healthy run emits
+	// both banners. Both must surface in the output.
+	input := `[INFO] SMB e2e stack ready: all 4 containers accepting TCP on :445
+Starting Tauri app...
+   ✘ test/foo.spec.ts:1:1 › x
+
+  1) [tauri] › test/foo.spec.ts:1:1 › x
+
+     Error: oops
+
+  1 failed
+[WARN] SMB post-flight: at least one container is no longer accepting TCP — likely died mid-run
+[ELIFECYCLE] Command failed with exit code 1.
+`
+	out := extractE2ETestOutput(input)
+	if !strings.Contains(out, "[SMB] SMB e2e stack ready: all 4 containers") {
+		t.Errorf("expected pre-flight banner preserved, got:\n%s", out)
+	}
+	if !strings.Contains(out, "[SMB] SMB post-flight: at least one container") {
+		t.Errorf("expected post-flight banner preserved, got:\n%s", out)
+	}
+}
+
+func TestExtractE2ETestOutput_NoSMBBannerForMacOSRuns(t *testing.T) {
+	// On macOS the desktop-e2e-playwright check doesn't emit SMB banners
+	// (no SMB containers involved). Filter must not add stray [SMB] lines.
+	input := `Starting Tauri app...
+   ✘ test/bar.spec.ts:1:1 › y
+
+  1) [tauri] › test/bar.spec.ts:1:1 › y
+
+     Error: nope
+
+  1 failed
+[ELIFECYCLE] Command failed with exit code 1.
+`
+	out := extractE2ETestOutput(input)
+	if strings.Contains(out, "[SMB]") {
+		t.Errorf("did not expect [SMB] banner on macOS-style run, got:\n%s", out)
+	}
+}
+
 func TestDropDockerComposePsTable_EndsOnBlankOrNonRowLine(t *testing.T) {
 	// After the table ends, normal lines must resume being kept.
 	input := []string{

@@ -219,7 +219,7 @@
 
         const submenuResult = handleSubmenuKey(e.key, {
             isOpen: () => submenu.volumeId !== null,
-            close: () => submenu.close(),
+            close: () => { submenu.close(); },
             activate: () => {
                 void handleSubmenuAction()
             },

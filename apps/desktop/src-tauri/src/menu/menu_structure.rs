@@ -5,6 +5,7 @@
 //! per-platform menu bar shape to `menu::macos::build_menu_macos` and
 //! `menu::linux::build_menu_linux`.
 
+#[cfg(target_os = "macos")]
 use std::collections::HashMap;
 #[cfg(target_os = "macos")]
 use std::path::PathBuf;
@@ -23,11 +24,13 @@ use super::menu_items::{
     COPY_FILENAME_MAX_CHARS, copy_path_accelerator, show_in_file_manager_accelerator, show_in_file_manager_label,
     truncate_for_menu_label,
 };
+#[cfg(target_os = "macos")]
+use super::{CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, GET_INFO_ID, QUICK_LOOK_ID};
 use super::{
-    CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID,
-    FILE_COPY_ID, FILE_DELETE_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, MenuItems,
-    NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, QUICK_LOOK_ID,
-    RENAME_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEWER_WORD_WRAP_ID, ViewMode,
+    COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_MOVE_ID,
+    FILE_NEW_FOLDER_ID, FILE_VIEW_ID, MenuItems, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID,
+    NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID,
+    TAB_PIN_ID, VIEWER_WORD_WRAP_ID, ViewMode,
 };
 
 /// Per-file information needed to build a fully-populated context menu.

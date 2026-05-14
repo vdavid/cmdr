@@ -5,7 +5,7 @@
 //! equivalent of the macOS `smbutil` fallback in `smb_smbutil.rs`.
 
 use crate::network::smb_types::{ShareInfo, ShareListError};
-use log::debug;
+use log::{debug, warn};
 use std::process::Command;
 
 /// Lists shares using `smbclient -L` and returns parsed disk shares.
@@ -69,11 +69,44 @@ pub async fn run_smbclient_list(
     );
 
     if !output.status.success() {
-        debug!("smbclient stderr: {}", stderr);
+        // Logged at warn! so the raw output is captured at default level —
+        // crucial for diagnosing E2E flakes where smbclient is the last-resort
+        // fallback and its stderr is the only direct window into what the
+        // server actually told us. Truncated to 1 KiB each to avoid log
+        // bloat on pathological output.
+        let port_suffix = if port == 445 {
+            String::new()
+        } else {
+            format!(":{}", port)
+        };
+        warn!(
+            "smbclient -L //{}{} failed (exit={:?}, has_creds={}). stderr: {} | stdout: {}",
+            host,
+            port_suffix,
+            output.status.code(),
+            credentials.is_some(),
+            truncate_for_log(&stderr, 1024),
+            truncate_for_log(&stdout, 1024),
+        );
         return Err(classify_smbclient_error(&stdout, &stderr, host, credentials.is_some()));
     }
 
     Ok(parse_smbclient_output(&stdout))
+}
+
+/// Truncates a string to at most `max` bytes for log output, appending an
+/// ellipsis-with-byte-count when the input was longer. Operates on the raw
+/// byte length to keep behaviour deterministic regardless of UTF-8 width.
+fn truncate_for_log(s: &str, max: usize) -> String {
+    if s.len() <= max {
+        return s.to_string();
+    }
+    // Cut at a char boundary at or before `max` so we never split a UTF-8 sequence.
+    let mut end = max;
+    while end > 0 && !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    format!("{}…[truncated, {} bytes total]", &s[..end], s.len())
 }
 
 /// Classifies smbclient error output into a typed error.
@@ -261,6 +294,27 @@ mod tests {
 
         let err = classify_smbclient_error("", "NT_STATUS_LOGON_FAILURE", "host", true);
         assert!(matches!(err, ShareListError::AuthFailed { .. }));
+    }
+
+    #[test]
+    fn truncate_for_log_passes_short_unchanged() {
+        assert_eq!(truncate_for_log("hello", 10), "hello");
+    }
+
+    #[test]
+    fn truncate_for_log_truncates_long() {
+        let s = "a".repeat(2000);
+        let out = truncate_for_log(&s, 1024);
+        assert!(out.starts_with(&"a".repeat(1024)));
+        assert!(out.contains("[truncated, 2000 bytes total]"));
+    }
+
+    #[test]
+    fn truncate_for_log_respects_utf8_boundary() {
+        let s = "abc中文".to_string();
+        let out = truncate_for_log(&s, 4);
+        // Byte 3 is 'c'; byte 4 starts '中' (multi-byte). We must back off to 3.
+        assert_eq!(out, "abc…[truncated, 9 bytes total]");
     }
 
     #[test]
