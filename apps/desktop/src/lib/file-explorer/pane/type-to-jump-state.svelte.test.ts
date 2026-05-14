@@ -13,8 +13,8 @@
  * - `getResetMs` is read on each keystroke (so a live setting change applies
  *   on the next keypress, not later).
  *
- * Uses Vitest fake timers — see `smb-reconnect-manager.svelte.test.ts` for the
- * same pattern.
+ * Uses Vitest fake timers (see `smb-reconnect-manager.svelte.test.ts` for the
+ * same pattern).
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -69,7 +69,7 @@ describe('createTypeToJumpState', () => {
     expect(state.indicatorVisible).toBe(false)
     expect(state.indicatorStale).toBe(false)
 
-    // Timers must be cancelled — advancing past the hide delay must not fire
+    // Timers must be cancelled: advancing past the hide delay must not fire
     // the hide callback nor flip any state.
     vi.advanceTimersByTime(INDICATOR_HIDE_MS + 100)
     expect(onIndicatorHide).not.toHaveBeenCalled()
@@ -113,7 +113,7 @@ describe('createTypeToJumpState', () => {
     expect(state.indicatorStale).toBe(true)
     expect(state.buffer).toBe('')
 
-    // Next keystroke clears the stale flag and starts a fresh buffer — must
+    // Next keystroke clears the stale flag and starts a fresh buffer: must
     // not append to a previous "co".
     state.appendChar('s')
     expect(state.buffer).toBe('s')
@@ -139,7 +139,7 @@ describe('createTypeToJumpState', () => {
     ])
 
     // Simulate an out-of-order IPC response for keystroke 2 arriving after 3.
-    // The caller's guard is `generation !== state.generation` — verify the
+    // The caller's guard is `generation !== state.generation`: verify the
     // contract by checking against the live counter.
     const staleGen = captured[1].generation
     expect(staleGen).toBe(2)
@@ -153,7 +153,7 @@ describe('createTypeToJumpState', () => {
     const state = createTypeToJumpState({ getResetMs: () => resetMs, onMatch: vi.fn() })
 
     state.appendChar('a')
-    // Change the setting between keystrokes — the next press should schedule
+    // Change the setting between keystrokes: the next press should schedule
     // a timer using the NEW value.
     resetMs = 500
     state.appendChar('b')
@@ -163,17 +163,17 @@ describe('createTypeToJumpState', () => {
     expect(state.buffer).toBe('ab')
     expect(state.indicatorStale).toBe(false)
 
-    // Cross the 500 ms boundary — the timer scheduled with resetMs=500 fires.
+    // Cross the 500 ms boundary: the timer scheduled with resetMs=500 fires.
     vi.advanceTimersByTime(101)
     expect(state.buffer).toBe('')
     expect(state.indicatorStale).toBe(true)
   })
 
-  it('keystrokes restart both timers — slow continuous typing never hides the indicator', () => {
+  it('keystrokes restart both timers, so slow continuous typing never hides the indicator', () => {
     const state = createTypeToJumpState({ getResetMs: () => 1000, onMatch: vi.fn() })
     state.appendChar('a')
 
-    // Press another key every 800 ms (less than reset delay) — the buffer
+    // Press another key every 800 ms (less than reset delay): the buffer
     // must keep growing and never go stale.
     for (let i = 0; i < 10; i++) {
       vi.advanceTimersByTime(800)
@@ -196,7 +196,7 @@ describe('createTypeToJumpState', () => {
     expect(log).toHaveBeenCalledWith('type-to-jump: indicator hidden')
   })
 
-  it('clear() is idempotent — multiple calls do not throw or fire callbacks', () => {
+  it('clear() is idempotent: multiple calls do not throw or fire callbacks', () => {
     const onIndicatorHide = vi.fn()
     const state = createTypeToJumpState({ getResetMs: () => 1000, onMatch: vi.fn(), onIndicatorHide })
     state.clear()

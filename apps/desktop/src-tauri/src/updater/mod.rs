@@ -5,9 +5,9 @@
 //! preserving the directory inode and `com.apple.macl` xattr.
 //!
 //! Three Tauri commands:
-//! - `check_for_update` — fetches `latest.json`, compares versions
-//! - `download_update` — downloads tarball, verifies minisign signature
-//! - `install_update` — extracts and syncs into the running `.app` bundle
+//! - `check_for_update`: fetches `latest.json`, compares versions
+//! - `download_update`: downloads tarball, verifies minisign signature
+//! - `install_update`: extracts and syncs into the running `.app` bundle
 
 mod installer;
 mod manifest;
@@ -20,13 +20,13 @@ use std::time::Duration;
 use tauri::State;
 
 // Per-call timeouts for the manifest fetch. The default `reqwest::get` client has no
-// overall timeout — a stuck TCP handshake against the redirect target can hang for
+// overall timeout. A stuck TCP handshake against the redirect target can hang for
 // minutes before the OS gives up. These bounds keep a flaky network from looking like
 // a hung app and stop the auto-error-reporter from firing on long hangs.
 const MANIFEST_CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 const MANIFEST_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
-// Per-call timeouts for the tarball download. No overall `timeout` here — a 60+ MB
+// Per-call timeouts for the tarball download. No overall `timeout` here: a 60+ MB
 // download on a slow connection can legitimately take minutes. `read_timeout` bounds
 // "no bytes received in N seconds" instead, which catches mid-download stalls without
 // punishing slow-but-working networks.
@@ -65,7 +65,7 @@ impl UpdateState {
 /// if a newer version is available.
 ///
 /// Returns `None` when:
-/// - The `CI` env var is set (CI guard — avoids network calls in tests)
+/// - The `CI` env var is set (CI guard: avoids network calls in tests)
 /// - The remote version is not newer than the current version
 /// - The manifest doesn't contain an entry for this platform
 #[tauri::command]
@@ -224,14 +224,14 @@ mod tests {
 
     /// Sanity-check against an actual `reqwest::Error` for a name that can never resolve
     /// (`.invalid` TLD per RFC 6761). `#[ignore]`'d because it depends on the local resolver
-    /// — run with
+    /// Run with
     /// `cargo nextest run -p cmdr describe_error_chain --run-ignored=ignored-only --no-capture`
     /// to see what reqwest 0.13's source() chain actually surfaces. The `eprintln!` is
     /// allowed locally because the whole point of these tests is to render the chain into
-    /// stderr for human inspection — they're verification harnesses, not production code.
+    /// stderr for human inspection; they're verification harnesses, not production code.
     #[tokio::test]
     #[ignore = "network-dependent; run manually to verify reqwest chain content"]
-    #[allow(clippy::print_stderr, reason = "verification harness — see fn doc")]
+    #[allow(clippy::print_stderr, reason = "verification harness; see fn doc")]
     async fn describe_error_chain_unwraps_reqwest_dns_failure() {
         let err = reqwest::Client::builder()
             .connect_timeout(Duration::from_secs(2))
@@ -251,7 +251,7 @@ mod tests {
     /// `#[ignore]` for the same reason as the DNS test.
     #[tokio::test]
     #[ignore = "network-dependent; run manually to verify reqwest chain content"]
-    #[allow(clippy::print_stderr, reason = "verification harness — see fn doc")]
+    #[allow(clippy::print_stderr, reason = "verification harness; see fn doc")]
     async fn describe_error_chain_unwraps_reqwest_connect_timeout() {
         let err = reqwest::Client::builder()
             .connect_timeout(Duration::from_millis(500))
@@ -265,7 +265,7 @@ mod tests {
         eprintln!("connect-timeout chain: {msg}");
         // reqwest 0.13 wording, captured from a one-shot run on macOS:
         //   error sending request for url (http://10.255.255.1/): client error (Connect): tcp connect error: deadline has elapsed
-        // Match on the "tcp connect" cause rather than a "timeout" keyword — reqwest words it
+        // Match on the "tcp connect" cause rather than a "timeout" keyword; reqwest words it
         // as "deadline has elapsed", not "timeout".
         let lower = msg.to_lowercase();
         assert!(

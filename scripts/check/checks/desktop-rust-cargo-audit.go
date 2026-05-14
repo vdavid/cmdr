@@ -101,7 +101,7 @@ func formatAuditReport(report cargoAuditReport) string {
 	lines = append(lines, strings.Join(parts, ", "), "")
 
 	for _, v := range report.Vulnerabilities.List {
-		lines = append(lines, fmt.Sprintf("VULN  %s %s — %s", v.Package.Name, v.Package.Version, v.Advisory.Title))
+		lines = append(lines, fmt.Sprintf("VULN  %s %s: %s", v.Package.Name, v.Package.Version, v.Advisory.Title))
 		fix := "no fix available"
 		if len(v.Versions.Patched) > 0 {
 			fix = "upgrade to " + strings.Join(v.Versions.Patched, " or ")
@@ -110,7 +110,7 @@ func formatAuditReport(report cargoAuditReport) string {
 	}
 	for kind, entries := range report.Warnings {
 		for _, w := range entries {
-			lines = append(lines, fmt.Sprintf("WARN  %s %s — %s: %s (%s)",
+			lines = append(lines, fmt.Sprintf("WARN  %s %s, %s: %s (%s)",
 				w.Package.Name, w.Package.Version, kind, w.Advisory.Title, w.Advisory.ID))
 		}
 	}

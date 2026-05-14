@@ -191,7 +191,7 @@ pub fn mount_share_sync(
     // Prepare output array for mount points
     let mut mountpoints: *const c_void = ptr::null();
 
-    // Call NetFSMountURLSync. Mount path is NULL even when disambiguating —
+    // Call NetFSMountURLSync. Mount path is NULL even when disambiguating;
     // NetFS auto-creates the mount point in /Volumes/ (we can't mkdir there).
     // With ForceNewSession, NetFS treats this as a separate server and picks
     // a disambiguated name (public-1, public-2, etc.) automatically.
@@ -317,7 +317,7 @@ fn disambiguated_mount_path(server: &str, share: &str, port: u16) -> Option<Stri
         && info.share == share
         && info.port == port
     {
-        return None; // Same server — let NetFS handle EEXIST
+        return None; // Same server: let NetFS handle EEXIST
     }
 
     // Collision: find the next available suffix

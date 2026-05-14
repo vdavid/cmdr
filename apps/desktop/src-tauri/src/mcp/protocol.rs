@@ -123,7 +123,7 @@ impl Default for ServerCapabilities {
                 version: env!("CARGO_PKG_VERSION").to_string(),
             },
             instructions: concat!(
-                "Controls a running Cmdr file manager instance — a keyboard-driven, two-pane file ",
+                "Controls a running Cmdr file manager instance, a keyboard-driven two-pane file ",
                 "explorer for macOS. Use these tools when the user asks to navigate directories, browse ",
                 "files, manage selections, copy files, change view settings, or interact with dialogs in ",
                 "Cmdr.\n\n",
@@ -133,7 +133,7 @@ impl Default for ServerCapabilities {
                 "(nav_to_path, nav_to_parent, nav_back, nav_forward) and view tools (sort, set_view_mode, ",
                 "toggle_hidden) affect one pane at a time. File operations like copy work on the current ",
                 "selection and target the opposite pane. The dialog tool manages modal dialogs (settings, ",
-                "file viewer, about) — only one instance of each type can be open.",
+                "file viewer, about); only one instance of each type can be open.",
             )
             .to_string(),
         }

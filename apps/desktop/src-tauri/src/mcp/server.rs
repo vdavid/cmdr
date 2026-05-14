@@ -110,7 +110,7 @@ pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: M
 
     // Bind directly with retry to avoid TOCTOU race. The old approach used
     // find_available_port() (sync TcpListener check) then bound again with
-    // tokio — the port could be taken between the two steps.
+    // tokio; the port could be taken between the two steps.
     let (listener, port) = bind_with_probe(configured_port).await?;
 
     if port != configured_port {
@@ -129,7 +129,7 @@ pub async fn start_mcp_server<R: Runtime + 'static>(app: AppHandle<R>, config: M
         if let Err(e) = axum::serve(listener, router).await {
             crate::log_error!("MCP server crashed: {}", e);
         }
-        // Server exited (crash or graceful shutdown) — reset port so
+        // Server exited (crash or graceful shutdown); reset port so
         // is_mcp_running() and get_mcp_actual_port() reflect reality.
         MCP_ACTUAL_PORT.store(0, Ordering::Relaxed);
     });
@@ -163,7 +163,7 @@ pub fn stop_mcp_server() {
 }
 
 /// Returns whether the MCP server task is currently running.
-/// Uses `MCP_ACTUAL_PORT` as the source of truth — the spawned task resets it
+/// Uses `MCP_ACTUAL_PORT` as the source of truth: the spawned task resets it
 /// to 0 when it exits (crash or graceful shutdown), so a non-zero port means running.
 pub fn is_mcp_running() -> bool {
     MCP_ACTUAL_PORT.load(Ordering::Relaxed) != 0
@@ -416,7 +416,7 @@ async fn handle_mcp_post<R: Runtime>(
             && client_version != DEFAULT_PROTOCOL_VERSION
         {
             log::debug!(
-                "MCP: Protocol version mismatch: got {}, expected {} — accepting per-request (version was negotiated at initialize)",
+                "MCP: Protocol version mismatch: got {}, expected {} (accepting per-request; version was negotiated at initialize)",
                 client_version,
                 negotiated
             );

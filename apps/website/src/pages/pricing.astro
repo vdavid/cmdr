@@ -15,7 +15,7 @@ const paddleConfig = {
 }
 const isPaddleConfigured = paddleConfig.clientToken !== ''
 
-// FAQ data — single source of truth for both visible cards and ld+json structured data.
+// FAQ data: single source of truth for both visible cards and ld+json structured data.
 // `answer` is plain text (used in ld+json). `answerHtml` is optional rich HTML for the visible card.
 const faq = [
     {
@@ -186,7 +186,7 @@ const faq = [
             </div>
         </div>
 
-        <!-- FAQ Section — ld+json and visible cards both render from the `faq` array in frontmatter -->
+        <!-- FAQ Section: ld+json and visible cards both render from the `faq` array in frontmatter -->
         <script type="application/ld+json" set:html={JSON.stringify({
             "@context": "https://schema.org",
             "@type": "FAQPage",
@@ -383,7 +383,7 @@ const faq = [
                         window.Paddle.Checkout.open(checkoutOptions)
                     }
 
-                    // Handle buy button clicks — all plans go through the org name modal
+                    // Handle buy button clicks: all plans go through the org name modal
                     document.querySelectorAll('[data-paddle-price]').forEach(function (button) {
                         button.addEventListener('click', function () {
                             const priceKey = button.dataset.paddlePrice

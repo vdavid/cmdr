@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { formatDateForDisplay, formatFileSizeWithFormat, joinSegments, type DateSegment } from './format-utils'
 
-// Fixed timestamp: March 15, 2024 14:30:45 local — local date to avoid timezone flakiness.
+// Fixed timestamp: March 15, 2024 14:30:45 local (local date to avoid timezone flakiness).
 const fixedDate = new Date(2024, 2, 15, 14, 30, 45)
 const timestamp = fixedDate.getTime() / 1000
 
@@ -18,7 +18,7 @@ function find(segments: DateSegment[], text: string): DateSegment | undefined {
   return segments.find((s) => s.text === text)
 }
 
-describe('formatDateForDisplay — text', () => {
+describe('formatDateForDisplay: text', () => {
   it('returns empty result for undefined/null/zero timestamps', () => {
     for (const t of [undefined, null, 0]) {
       const d = formatDateForDisplay(t, 'iso', '', NOW_MS)
@@ -53,7 +53,7 @@ describe('formatDateForDisplay — text', () => {
   })
 })
 
-describe('formatDateForDisplay — segments (iso)', () => {
+describe('formatDateForDisplay: segments (iso)', () => {
   it('splits ISO into year/month/day on the left, hour/minute on the right with literals between', () => {
     const d = formatDateForDisplay(timestamp, 'iso', '', NOW_MS)
     expect(d.parts.left.map((s) => s.text)).toEqual(['2024', '-', '03', '-', '15'])
@@ -74,7 +74,7 @@ describe('formatDateForDisplay — segments (iso)', () => {
   })
 })
 
-describe('formatDateForDisplay — segments (short)', () => {
+describe('formatDateForDisplay: segments (short)', () => {
   it('omits year and includes day + time segments', () => {
     const d = formatDateForDisplay(timestamp, 'short', '', NOW_MS)
     expect(d.parts.left.map((s) => s.text)).toEqual(['03', '/', '15'])
@@ -82,14 +82,14 @@ describe('formatDateForDisplay — segments (short)', () => {
   })
 })
 
-describe('formatDateForDisplay — segments (custom)', () => {
+describe('formatDateForDisplay: segments (custom)', () => {
   it('finds tokens in any order in custom formats', () => {
     const d = formatDateForDisplay(timestamp, 'custom', 'DD/MM/YYYY | HH:mm', NOW_MS)
     expect(d.parts.left.map((s) => s.text)).toEqual(['15', '/', '03', '/', '2024'])
     expect(d.parts.right?.map((s) => s.text)).toEqual(['14', ':', '30'])
   })
 
-  it('handles repeated tokens — each occurrence becomes its own segment', () => {
+  it('handles repeated tokens: each occurrence becomes its own segment', () => {
     const d = formatDateForDisplay(timestamp, 'custom', 'YYYY YYYY', NOW_MS)
     expect(d.parts.left.map((s) => s.text)).toEqual(['2024', ' ', '2024'])
     // Both year segments share the same tier (whatever year tier the timestamp produces).
@@ -109,7 +109,7 @@ describe('formatDateForDisplay — segments (custom)', () => {
   })
 })
 
-describe('formatDateForDisplay — segments (system)', () => {
+describe('formatDateForDisplay: segments (system)', () => {
   it('uses Intl.formatToParts and classifies each part structurally', () => {
     const d = formatDateForDisplay(timestamp, 'system', '', NOW_MS)
     // The locale shape varies (en-US may emit a 2-digit year, sv-SE 4-digit);
@@ -122,7 +122,7 @@ describe('formatDateForDisplay — segments (system)', () => {
   })
 })
 
-describe('formatDateForDisplay — per-component ageClass', () => {
+describe('formatDateForDisplay: per-component ageClass', () => {
   it('colors year, month, day, time as fresh when the file is "today" relative to now', () => {
     // The timestamp is 2024-03-15 14:30:45 local; NOW_MS is 2024-03-16 14:30:45.
     // Year matches (fresh), month matches (fresh), day differs by one (recent).

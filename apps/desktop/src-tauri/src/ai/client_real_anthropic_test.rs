@@ -1,4 +1,4 @@
-//! Real-API smoke tests against Anthropic. **Not run in CI** — gated behind `#[ignore]`,
+//! Real-API smoke tests against Anthropic. **Not run in CI**: gated behind `#[ignore]`,
 //! requires a valid `ANTHROPIC_API_KEY` env var.
 //!
 //! Why a separate file from `client_real_openai_test.rs`: Anthropic's native streaming
@@ -37,7 +37,7 @@ fn opts() -> ChatOptions {
 }
 
 #[tokio::test]
-#[ignore = "real API call — set ANTHROPIC_API_KEY to run"]
+#[ignore = "real API call; set ANTHROPIC_API_KEY to run"]
 async fn smoke_claude_haiku_chat() {
     let Some(api_key) = api_key_or_skip() else {
         panic!("ANTHROPIC_API_KEY not set");
@@ -58,7 +58,7 @@ async fn smoke_claude_haiku_chat() {
 }
 
 #[tokio::test]
-#[ignore = "real API call — set ANTHROPIC_API_KEY to run"]
+#[ignore = "real API call; set ANTHROPIC_API_KEY to run"]
 async fn smoke_claude_haiku_stream() {
     let Some(api_key) = api_key_or_skip() else {
         panic!("ANTHROPIC_API_KEY not set");

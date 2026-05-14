@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 /// `opendir()`. A `read_dir` attempt against a protected directory may be
 /// silently denied without ever adding the bundle to System Settings → Privacy
 /// & Security → Full Disk Access. Even `open()` alone has been observed not
-/// to register the bundle on some macOS versions — the actual `read()` is
+/// to register the bundle on some macOS versions; the actual `read()` is
 /// what reliably triggers `tccd`.
 ///
 /// Order matters: we walk until we hit a file that exists on this account,
@@ -39,7 +39,7 @@ fn fda_probe_files() -> Vec<PathBuf> {
 fn try_read_byte(path: &Path) -> std::io::Result<()> {
     let mut f = File::open(path)?;
     let mut buf = [0u8; 1];
-    // We don't care if we got 0 bytes (empty file) or 1 — both mean the read
+    // We don't care if we got 0 bytes (empty file) or 1, both mean the read
     // syscall reached the kernel and was allowed. The variant we care about
     // is the `Err` case, which is what TCC denial returns.
     let _ = f.read(&mut buf)?;
@@ -121,7 +121,7 @@ pub fn check_full_disk_access() -> bool {
             }
             Err(e) if e.kind() == ErrorKind::PermissionDenied => {
                 log::debug!(target: "fda_probe", "FDA probe: PermissionDenied on {:?} via read() → FDA NOT granted; firing extra triggers", path);
-                // Best-effort extra triggers — we don't care about results,
+                // Best-effort extra triggers. We don't care about results,
                 // only that tccd hears about us through different syscall
                 // paths. Each one is independently logged so we can see in
                 // the TCC log which one (if any) finally registers the bundle.
@@ -155,8 +155,8 @@ pub fn check_full_disk_access() -> bool {
             }
         }
     }
-    log::warn!(target: "fda_probe", "FDA probe: no candidate path produced a definitive signal — treating as no FDA");
-    // No probed file existed. Treat as "no FDA" — better to show the prompt
+    log::warn!(target: "fda_probe", "FDA probe: no candidate path produced a definitive signal; treating as no FDA");
+    // No probed file existed. Treat as "no FDA": better to show the prompt
     // than skip it.
     false
 }

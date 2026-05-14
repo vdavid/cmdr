@@ -69,7 +69,7 @@ function formatReport(data: DashboardData): string {
   blank()
 
   // 1. Awareness
-  h2('Awareness — how many people see Cmdr content?')
+  h2('Awareness: how many people see Cmdr content?')
   if (!data.umami.ok) {
     line(`Couldn't load: ${data.umami.error}`)
   } else {
@@ -128,7 +128,7 @@ function formatReport(data: DashboardData): string {
   blank()
 
   // 2. Interest
-  h2('Interest — how many engage with the product page?')
+  h2('Interest: how many engage with the product page?')
   if (!data.umami.ok && !data.posthog.ok) {
     line(
       `Couldn't load: ${[!data.umami.ok ? data.umami.error : '', !data.posthog.ok ? data.posthog.error : ''].filter(Boolean).join('; ')}`,
@@ -183,7 +183,7 @@ function formatReport(data: DashboardData): string {
   blank()
 
   // 3. Download
-  h2('Download — how many actually download?')
+  h2('Download: how many actually download?')
   if (!data.cloudflare.ok && !data.github.ok) {
     line(
       `Couldn't load: ${[!data.cloudflare.ok ? data.cloudflare.error : '', !data.github.ok ? data.github.error : ''].filter(Boolean).join('; ')}`,
@@ -283,7 +283,7 @@ function formatReport(data: DashboardData): string {
   blank()
 
   // 4. Active use
-  h2('Active use — how many run the app?')
+  h2('Active use: how many run the app?')
   if (!data.cloudflare.ok) {
     line(`Couldn't load: ${data.cloudflare.error}`)
   } else {
@@ -311,7 +311,7 @@ function formatReport(data: DashboardData): string {
   blank()
 
   // 5. Payment
-  h2('Payment — how many pay?')
+  h2('Payment: how many pay?')
   if (!data.paddle.ok) {
     line(`Couldn't load: ${data.paddle.error}`)
   } else {
@@ -334,7 +334,7 @@ function formatReport(data: DashboardData): string {
   blank()
 
   // 6. Retention
-  h2('Retention — do they stay?')
+  h2('Retention: do they stay?')
   if (!data.paddle.ok) {
     line(`Couldn't load: ${data.paddle.error}`)
   } else {

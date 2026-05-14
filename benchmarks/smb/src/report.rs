@@ -12,7 +12,7 @@ pub fn print_table(results: &AllResults) {
         let total_mb =
             (suite.file_count as f64 * suite.file_size_bytes as f64) / (1024.0 * 1024.0);
         println!(
-            "Target: {} | Suite: {} — {} files × {} KB ({:.1} MB total)",
+            "Target: {} | Suite: {}: {} files × {} KB ({:.1} MB total)",
             suite.target_name,
             suite.suite_name,
             suite.file_count,

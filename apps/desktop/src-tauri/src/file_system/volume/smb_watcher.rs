@@ -87,7 +87,7 @@ pub(super) async fn run_smb_watcher(
         for (parent_path, events) in &events_by_dir {
             if events.len() > WATCHER_BATCH_THRESHOLD {
                 debug!(
-                    "smb_watcher: {} events for {} — emitting FullRefresh",
+                    "smb_watcher: {} events for {}, emitting FullRefresh",
                     events.len(),
                     parent_path.display()
                 );
@@ -158,7 +158,7 @@ pub(super) async fn run_smb_watcher(
                                     );
                                 }
                                 None => {
-                                    // Couldn't stat new name — emit remove + skip add
+                                    // Couldn't stat new name: emit remove + skip add
                                     notify_directory_changed(
                                         volume_id,
                                         parent_path,
@@ -167,7 +167,7 @@ pub(super) async fn run_smb_watcher(
                                 }
                             }
                         } else {
-                            // Got new name without old name — treat as add
+                            // Got new name without old name, treating as add
                             if let Some(entry) = stat_via_volume(volume_id, &entry_path).await {
                                 notify_directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
                             }
@@ -293,7 +293,7 @@ pub(super) async fn run_smb_watcher(
                                 match result {
                                     Ok(Ok(more_events)) => Some(more_events),
                                     Ok(Err(_)) => None,
-                                    Err(_) => None, // timeout — done debouncing
+                                    Err(_) => None, // timeout: done debouncing
                                 }
                             },
                             _ = &mut cancel_rx => {
@@ -323,7 +323,7 @@ pub(super) async fn run_smb_watcher(
                                         .push((event.action, normalized_filename));
                                 }
                             }
-                            None => break, // timeout or error — process batch
+                            None => break, // timeout or error: process batch
                         }
                     }
 
@@ -347,15 +347,15 @@ pub(super) async fn run_smb_watcher(
 
                     if is_enum_dir {
                         debug!(
-                            "smb_watcher({}): STATUS_NOTIFY_ENUM_DIR — emitting FullRefresh for share root",
+                            "smb_watcher({}): STATUS_NOTIFY_ENUM_DIR, emitting FullRefresh for share root",
                             share_name
                         );
                         notify_directory_changed(&volume_id, &mount_path, DirectoryChange::FullRefresh);
-                        // Continue watching — the server is still alive
+                        // Continue watching: the server is still alive
                         continue;
                     }
 
-                    // Connection lost or other error — try to reconnect
+                    // Connection lost or other error: try to reconnect
                     warn!("smb_watcher({}): error from next_events: {}", share_name, e);
 
                     // Close the watcher handle (best-effort, connection may be dead)

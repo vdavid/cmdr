@@ -108,7 +108,7 @@ const {
             } catch { /* localStorage unavailable */ }
         </script>
 
-        {/* Umami analytics — self-hosted, cookieless */}
+        {/* Umami analytics: self-hosted, cookieless */}
         {
             import.meta.env.PUBLIC_UMAMI_WEBSITE_ID && (
                 <script
@@ -123,7 +123,7 @@ const {
         <slot />
 
         {
-            /* PostHog — session replay, heatmaps, click tracking.
+            /* PostHog: session replay, heatmaps, click tracking.
             Loaded from PostHog's CDN to avoid bundling dompurify (has an unpatched XSS advisory).
             Snippet lives in public/scripts/posthog-init.js (extracted to avoid prettier parse errors). */
         }

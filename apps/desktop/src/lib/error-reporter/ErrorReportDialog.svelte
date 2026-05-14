@@ -47,7 +47,7 @@
     const isDev = import.meta.env.DEV
 
     // Build the preview ONCE when the dialog mounts. The user note doesn't change the
-    // log content — only the manifest's `userNote` field — so there's no reason to
+    // log content: only the manifest's `userNote` field changes, so there's no reason to
     // re-run the megabyte-scale bundle build on every keystroke. The displayed manifest
     // is overlaid with the live `userNote` value below; the actual bundle that gets
     // shipped is rebuilt server-side-of-IPC on Send with the final note.
@@ -68,7 +68,7 @@
         }
     }
 
-    // Manifest shown in the preview — the cached one from `buildInitialPreview`, with
+    // Manifest shown in the preview: the cached one from `buildInitialPreview`, with
     // the live note value patched in so the user sees what they're about to send. The
     // backend trims and drops empty notes before writing them to `manifest.json`, so
     // mirror that here.

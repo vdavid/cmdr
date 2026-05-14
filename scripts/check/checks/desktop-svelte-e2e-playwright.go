@@ -18,7 +18,7 @@ import (
 // Each shard owns its own Unix socket, MCP port, data dir, and fixture dir so
 // the instances don't clobber each other. The MTP shard runs alone because
 // the virtual MTP backing dir (/tmp/cmdr-mtp-e2e-fixtures) is shared by every
-// Tauri instance — running MTP tests in two shards at once would corrupt it.
+// Tauri instance; running MTP tests in two shards at once would corrupt it.
 const (
 	socketTimeout    = 60 * time.Second
 	processKillGrace = 3 * time.Second
@@ -354,7 +354,7 @@ func createE2EFixtures(desktopDir string) (string, error) {
 	}
 
 	// The script is `console.log(createFixtures())` so the path is on its own
-	// line. Scan all lines for one starting with "/" — npm may inject update
+	// line. Scan all lines for one starting with "/"; npm may inject update
 	// notices after our output.
 	for line := range strings.SplitSeq(strings.TrimSpace(output), "\n") {
 		trimmed := strings.TrimSpace(line)
@@ -389,7 +389,7 @@ func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
 		"CMDR_MCP_ENABLED=true",
 		"CMDR_E2E_START_PATH="+s.fixtureDir,
 		"CMDR_PLAYWRIGHT_SOCKET="+s.socketPath,
-		// Canonical "we're under E2E" marker — soft test hooks gate on this.
+		// Canonical "we're under E2E" marker; soft test hooks gate on this.
 		// See docs/testing.md § "E2E env-var hooks" and src-tauri/src/test_mode.rs.
 		"CMDR_E2E_MODE=1",
 	)
@@ -489,7 +489,7 @@ func stopProcessOnPort(port string) {
 //	                          tally)
 //	§4 post-ELIFECYCLE     → dropped (this is the Tauri stdout dump and
 //	                          out-of-order build output Docker flushes after
-//	                          the run exits — already saved in the full log
+//	                          the run exits, already saved in the full log
 //	                          file the surrounding error message links to)
 //
 // If the run died before reaching the test phase (e.g. SMB container setup
@@ -501,7 +501,7 @@ func stopProcessOnPort(port string) {
 //
 // The Tauri-marker check alone is insufficient because the macOS playwright
 // shards start Tauri in the Go check (with its stdout going to a log file),
-// so the marker never appears in Playwright's stdout — even on a successful
+// so the marker never appears in Playwright's stdout, even on a successful
 // run.
 func extractE2ETestOutput(output string) string {
 	// Extract any SMB-stack readiness lines from §1 BEFORE we trim the setup
@@ -538,7 +538,7 @@ func extractE2ETestOutput(output string) string {
 	if isPreTestFailure(output, lines, boundary) {
 		kept = dropDockerComposePsTable(kept)
 		kept = append(
-			[]string{"note: tests did not reach the run phase — failure was in pre-test setup. See full log for details.", ""},
+			[]string{"note: tests did not reach the run phase; failure was in pre-test setup. See full log for details.", ""},
 			kept...,
 		)
 	}
@@ -571,8 +571,8 @@ func extractSMBBanners(output string) []string {
 }
 
 // playwrightTallyRE matches the Playwright run-summary lines like `1 failed`,
-// `42 passed (1.2m)`, `3 flaky`. Presence of any of these — or of a
-// `\d+) [tauri]` failure block — proves the run reached the test phase.
+// `42 passed (1.2m)`, `3 flaky`. Presence of any of these, or of a
+// `\d+) [tauri]` failure block, proves the run reached the test phase.
 var playwrightTallyRE = regexp.MustCompile(`(?m)^\s*\d+\s+(?:passed|failed|flaky|skipped)\b`)
 
 // isPreTestFailure reports whether the captured output looks like the run

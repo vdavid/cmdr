@@ -83,7 +83,7 @@
 20:00:00.007 INFO  indexing::watcher  Watcher: started on / (since_when=927249459)
 20:00:00.008 INFO  indexing::events  Index rescan triggered (StaleIndex)
 20:00:00.009 INFO  indexing::writer  Writer: truncated entries + dir_stats (8830ms)
-20:00:00.010 INFO  indexing::writer  ComputeAllAggregates: done — 599656 directories in 16.3s
+20:00:00.010 INFO  indexing::writer  ComputeAllAggregates: done, 599656 directories in 16.3s
 20:00:00.011 INFO  indexing::manager  Scan: complete (6347974 entries, 599655 dirs, 217.9s)
 20:00:00.012 INFO  indexing::manager  Reconciler: 2503 events buffered during scan
 20:00:00.013 INFO  updater  Checking for updates (current version: 0.13.0)

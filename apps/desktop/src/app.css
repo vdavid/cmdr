@@ -44,7 +44,7 @@
      * reads the macOS system accent color and overrides --color-accent via
      * accent-color.ts → initAccentColor(). See src-tauri/src/accent_color.rs. */
   --color-accent: #d4a006;
-  --color-accent-fg: #1a1a1a; /* Text on accent backgrounds — dark in both themes for a11y */
+  --color-accent-fg: #1a1a1a; /* Text on accent backgrounds: dark in both themes for a11y */
   --color-accent-text: color-mix(
     in srgb,
     var(--color-accent),
@@ -66,16 +66,16 @@
   --color-error: #d32f2f;
   --color-error-bg: #fef2f2;
   --color-error-border: #fecaca;
-  /* Darker variant for text in error contexts — guarantees ≥4.5:1 on `--color-error-bg`
+  /* Darker variant for text in error contexts: guarantees ≥4.5:1 on `--color-error-bg`
      and similar tinted bgs (the non-text `--color-error` at `#d32f2f` only reaches ~4:1). */
   --color-error-text: #b91c1c;
   --color-warning: #e65100;
   --color-warning-bg: rgba(230, 81, 0, 0.1);
-  /* Same reasoning as `--color-error-text` — the brand `--color-warning` at `#e65100`
+  /* Same reasoning as `--color-error-text`: the brand `--color-warning` at `#e65100`
      clocks ~3.3:1 on the warning tint; this darker variant meets AA. */
   --color-warning-text: #9a3412;
 
-  /* Disk usage bar — solid colors mixed against the track for clean layering.
+  /* Disk usage bar: solid colors mixed against the track for clean layering.
      * Uses color-mix against the border color (not transparent) to avoid
      * muddy blending when the semi-transparent fill sits atop the track. */
   --color-disk-ok: color-mix(in srgb, var(--color-allow) 60%, var(--color-border));
@@ -131,7 +131,7 @@
      * Light mode uses saturated dark hues (no gray mix) so tiers stay visually
      * distinct against white surfaces. Every value clears WCAG AA against the
      * lightest background we render sizes on (`--color-bg-tertiary`). Dark
-     * mode keeps the legacy bright-hue formula — see the `@media
+     * mode keeps the legacy bright-hue formula; see the `@media
      * (prefers-color-scheme: dark)` override below. */
   --color-size-bytes: #097309;
   --color-size-kb: #806300;
@@ -139,7 +139,7 @@
   --color-size-gb: #c01e1e;
   --color-size-tb: #7a30b0;
 
-  /* === Size tier colors — selected state (gold depth progression) === */
+  /* === Size tier colors: selected state (gold depth progression) === */
   --color-size-bytes-selected: color-mix(in srgb, var(--color-text-secondary) 40%, var(--color-selection-fg));
   --color-size-kb-selected: color-mix(in srgb, var(--color-text-secondary) 25%, var(--color-selection-fg));
   --color-size-mb-selected: color-mix(in srgb, var(--color-text-secondary) 15%, var(--color-selection-fg));
@@ -151,7 +151,7 @@
      * applied as a `data-date-colors` attribute on `<html>` by the settings
      * applier. The default block here is the App palette (matches the default
      * setting value, so first paint is correct even before the applier runs).
-     * Four tiers — fresh / recent / aging / old — applied per date component
+     * Four tiers (fresh / recent / aging / old) applied per date component
      * (year, month, day, time) by the formatter in
      * `lib/settings/format-utils.ts`.
      *
@@ -178,7 +178,7 @@
 
   /* === Sizing ===
    * `--spacing-icon-size` scales the file-list icon column with the user's
-   * text size. The 16 base mirrors the historical hardcoded width — density
+   * text size. The 16 base mirrors the historical hardcoded width; density
    * is intentionally NOT a factor (the densityMappings `iconSize` field is
    * unused for now; revisit once density is reworked).
    *
@@ -248,7 +248,7 @@
 }
 
 /* === Size tier palette: None ===
-   All tiers fall back to the secondary text color — no coloring. */
+   All tiers fall back to the secondary text color (no coloring). */
 :root[data-size-colors='none'] {
   --color-size-bytes: var(--color-text-secondary);
   --color-size-kb: var(--color-text-secondary);
@@ -271,7 +271,7 @@
 }
 
 /* === Date age palette: Off ===
-   All tiers fall back to the secondary text color — no coloring. */
+   All tiers fall back to the secondary text color (no coloring). */
 :root[data-date-colors='off'] {
   --color-age-fresh: var(--color-text-secondary);
   --color-age-recent: var(--color-text-secondary);
@@ -298,7 +298,7 @@
     --color-text-secondary: #b0b0b0;
     --color-text-tertiary: #a0a0a0;
 
-    /* === Interactive States (fallbacks — see light-mode comment above) === */
+    /* === Interactive States (fallbacks; see light-mode comment above) === */
     --color-accent: #ffc206;
     --color-accent-text: var(--color-accent); /* Bright accent is already readable on dark backgrounds */
     --color-accent-hover: color-mix(in oklch, var(--color-accent), white 10%);
@@ -315,13 +315,13 @@
     --color-error: #f44336;
     --color-error-bg: #450a0a;
     --color-error-border: #7f1d1d;
-    /* Light-on-dark text variant — see light-mode comment. ≥4.5:1 on `--color-error-bg`. */
+    /* Light-on-dark text variant (see light-mode comment). ≥4.5:1 on `--color-error-bg`. */
     --color-error-text: #fca5a5;
     --color-warning: #f5a623;
     --color-warning-bg: rgba(245, 166, 35, 0.15);
     --color-warning-text: #fdba74;
 
-    /* Disk usage bar — solid colors, same mixing strategy as light mode */
+    /* Disk usage bar: solid colors, same mixing strategy as light mode */
     --color-disk-ok: color-mix(in srgb, var(--color-allow) 60%, var(--color-border));
     --color-disk-warning: color-mix(in srgb, var(--color-warning) 70%, var(--color-border));
     --color-disk-danger: var(--color-error);
@@ -348,7 +348,7 @@
     /* === Selection === */
     --color-selection-fg: #d4a82a;
 
-    /* Git portal — brighter teal in dark mode for readability against
+    /* Git portal: brighter teal in dark mode for readability against
        the dark background. */
     --color-git-portal: #4dd0e1;
     --color-git-portal-text: #80deea;
@@ -363,7 +363,7 @@
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
     --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
 
-    /* === Size tier colors — dark mode rainbow ===
+    /* === Size tier colors: dark mode rainbow ===
        Brighter hues than light mode so the 70% mix with the lighter
        `--color-text-secondary` clears WCAG AA against every dark surface
        (incl. the brownish composited `--color-warning-bg`, which is why tb
@@ -374,7 +374,7 @@
     --color-size-gb: color-mix(in srgb, var(--color-text-secondary) 70%, #ff4444);
     --color-size-tb: color-mix(in srgb, var(--color-text-secondary) 70%, #c060ff);
 
-    /* Date age palette: base (App) needs no override here — the color-mix
+    /* Date age palette: base (App) needs no override here; the color-mix
        formula above pulls from `--color-accent` and `--color-text-secondary`,
        which the dark mode block already redefined. Only Wilting carries its
        own dark values (see the gated rule below). */
@@ -391,7 +391,7 @@
   }
 }
 
-/* Screen reader only — visually hidden but accessible to assistive technology */
+/* Screen reader only: visually hidden but accessible to assistive technology */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -629,7 +629,7 @@ a:focus-visible,
  *
  * This is intentional: we want macOS-native behavior, not web-browser
  * font-size preferences. We only honor OS display scaling (Displays) and the
- * Accessibility text-size signal — never WebKit's per-site font-size pref.
+ * Accessibility text-size signal, never WebKit's per-site font-size pref.
  */
 html {
   /* stylelint-disable-next-line declaration-property-value-disallowed-list -- base size, not a component value */

@@ -219,7 +219,7 @@ pub fn get_file_at(listing_id: &str, index: usize, include_hidden: bool) -> Resu
         // breadcrumb when investigating cursor/selection bugs without firing crash
         // reports for legitimate drift.
         log::debug!(
-            "get_file_at: index {} out of bounds (listing {} has {} entries at {}) — likely FE/BE drift after async listing refresh",
+            "get_file_at: index {} out of bounds (listing {} has {} entries at {}): likely FE/BE drift after async listing refresh",
             index,
             listing_id,
             total,
@@ -267,7 +267,7 @@ pub fn get_paths_at_indices(
 /// Gets full FileEntry objects at specific backend indices from a cached listing.
 ///
 /// Unlike `get_paths_at_indices` (which takes frontend indices and handles the parent offset),
-/// this takes backend indices directly — the caller is responsible for any offset adjustment.
+/// this takes backend indices directly. The caller is responsible for any offset adjustment.
 /// Used by the delete dialog where full entry metadata (name, size, isDirectory, etc.) is needed.
 pub fn get_files_at_indices(
     listing_id: &str,

@@ -23,7 +23,7 @@ const goVersion = "1.25.7"
 // (`https://get.nexte.st/latest/linux` for x86, `…/linux-arm` for ARM), so a single
 // $(dpkg --print-architecture) covers both. Installing the wrong-arch nextest binary
 // caused a silent OrbStack crash on Apple Silicon (`Dynamic loader not found:
-// /lib64/ld-linux-x86-64.so.2`) — cargo triggers a rustup toolchain sync, then execs
+// /lib64/ld-linux-x86-64.so.2`). Cargo triggers a rustup toolchain sync, then execs
 // nextest, which is when the x86 binary hit the arm64 dynamic-loader wall.
 //
 // nextest (vs raw `cargo test`) is required: a handful of tests (e.g.
@@ -115,7 +115,7 @@ var compilingLineRe = regexp.MustCompile(`(?m)^\s*Compiling \w+ v`)
 // trimBuildNoise drops cargo's pre-compile setup (apt/dpkg/rustup chatter)
 // by keeping everything after the last `Compiling …` line. If no Compiling
 // line exists (provisioning failed before cargo ran), the output is returned
-// as-is — apt is silenced at source via -qq + DEBIAN_FRONTEND=noninteractive
+// as-is. Apt is silenced at source via -qq + DEBIAN_FRONTEND=noninteractive
 // in provisionScript, so a no-Compiling failure already comes back clean
 // (rustup info + actual error, no apt noise to filter).
 //
@@ -158,7 +158,7 @@ var testProgressNoiseRE = regexp.MustCompile(
 //
 // The filter is single-pass and per-line, so it survives weird interleaving
 // (multiple test binaries, multi-line panic messages, debconf noise after the
-// suite exits) — it can only ever keep too much, never drop a real signal.
+// suite exits) and can only ever keep too much, never drop a real signal.
 func trimRustTestProgress(output string) string {
 	lines := strings.Split(output, "\n")
 	kept := make([]string, 0, len(lines))

@@ -40,7 +40,7 @@ type reminderMiss struct {
 // RunClaudeMdReminder warns when source files were changed (in the working tree
 // or on the current branch vs the base branch) under a directory that has a
 // colocated CLAUDE.md, but the CLAUDE.md itself was not also touched. Always
-// succeeds — emits warnings, never fails.
+// succeeds (emits warnings, never fails).
 //
 // The intent is a low-friction nudge to the agent that just made the change:
 // "you touched code under X/, did you mean to update X/CLAUDE.md too?"
@@ -105,7 +105,7 @@ func RunClaudeMdReminder(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	msg := fmt.Sprintf("%d %s with source changes but no CLAUDE.md update:\n%s"+
-		"Just a friendly reminder — if your changes affect the documented architecture, decisions, or gotchas, consider updating these.",
+		"Just a friendly reminder: if your changes affect the documented architecture, decisions, or gotchas, consider updating these.",
 		len(misses),
 		Pluralize(len(misses), "directory", "directories"),
 		sb.String(),

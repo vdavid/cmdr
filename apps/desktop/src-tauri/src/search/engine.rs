@@ -133,7 +133,7 @@ fn prepare_scope_filter(query: &SearchQuery) -> ScopeFilter {
             Some(ids.iter().copied().collect::<HashSet<i64>>())
         }
     } else if query.include_paths.as_ref().is_some_and(|p| !p.is_empty()) {
-        // include_paths present but include_path_ids not set — this shouldn't happen.
+        // include_paths present but include_path_ids not set (this shouldn't happen).
         // Resolve was expected to happen at the call site before search().
         log::warn!("search: include_paths present but include_path_ids not pre-resolved; scope will be ignored");
         None
@@ -310,7 +310,7 @@ pub(crate) fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchR
                 }
             }
 
-            // Scope filter (ancestor walk — only for entries passing all other filters)
+            // Scope filter (ancestor walk): only for entries passing all other filters
             if scope_filter.is_active() && !scope_filter.matches(index, *i) {
                 return false;
             }

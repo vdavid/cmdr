@@ -331,7 +331,7 @@ describe('ai-state', () => {
     })
 
     it('does not flip state to Offer when there is no pending offer', async () => {
-      // Backend says Available — model already installed, no offer to surface.
+      // Backend says Available: model already installed, no offer to surface.
       vi.mocked(loadSettings).mockResolvedValue(NOT_ONBOARDED)
       vi.mocked(getAiStatus).mockResolvedValue('available')
       vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
@@ -346,7 +346,7 @@ describe('ai-state', () => {
       expect(state.onboarded).toBe(true)
     })
 
-    it('is idempotent — second call does not re-trigger the offer', async () => {
+    it('is idempotent: second call does not re-trigger the offer', async () => {
       vi.mocked(loadSettings).mockResolvedValue(NOT_ONBOARDED)
       vi.mocked(getAiStatus).mockResolvedValue('offer')
       vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
@@ -367,8 +367,8 @@ describe('ai-state', () => {
     it('does not regress onboarded=true if notifyAiOnboardingComplete fires while loadSettings is in flight', async () => {
       // Race: legacy fallback paths in `+page.svelte` (hasFda + !isOnboarded, deny + !isOnboarded)
       // call `notifyAiOnboardingComplete()` without any user gate. If `initAiState` is still
-      // awaiting `loadSettings()` when that hook fires — and disk hasn't synced the
-      // `notifyOnboardingComplete()` save yet — a plain assignment in initAiState would clobber
+      // awaiting `loadSettings()` when that hook fires, and disk hasn't synced the
+      // `notifyOnboardingComplete()` save yet. A plain assignment in initAiState would clobber
       // the hook's `onboarded = true` back to a stale `false`, leaving the offer permanently gated.
       let resolveSettings: ((value: typeof NOT_ONBOARDED) => void) | undefined
       vi.mocked(loadSettings).mockImplementation(
@@ -397,7 +397,7 @@ describe('ai-state', () => {
       expect(state.pendingOffer).toBe(false)
     })
 
-    it('does not gate downloading state — install events flow through even when not onboarded', async () => {
+    it('does not gate downloading state: install events flow through even when not onboarded', async () => {
       // Edge case: user starts onboarding, app keeps running, backend somehow emits installing/ready.
       // The gate only suppresses the initial Offer, not in-flight install signals (which can only
       // arise after the user accepted the offer somewhere).

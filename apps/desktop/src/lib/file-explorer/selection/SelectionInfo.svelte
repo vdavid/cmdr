@@ -87,7 +87,7 @@
     // File info mode (Brief mode without selection)
     // ========================================================================
 
-    // Drive index scanning state — used for stale indicator when dirs are shown
+    // Drive index scanning state (used for stale indicator when dirs are shown)
     const scanning = $derived(isScanning())
 
     const sizeDisplayMode = $derived(getSizeDisplayMode())

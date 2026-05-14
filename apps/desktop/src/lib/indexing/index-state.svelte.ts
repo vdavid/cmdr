@@ -217,7 +217,7 @@ export async function initIndexState(): Promise<void> {
   // before the frontend's event listeners are registered.
   //
   // Guard: snapshot eventVersion before the IPC call. If any scan/replay event arrived
-  // while the response was in flight, the event's state is more recent — skip the IPC result.
+  // while the response was in flight, the event's state is more recent, so skip the IPC result.
   const versionBeforeIpc = eventVersion
   try {
     const res = await commands.getIndexStatus()
@@ -227,7 +227,7 @@ export async function initIndexState(): Promise<void> {
       dirsFound = res.data.dirsFound
     }
   } catch {
-    // Indexing not initialized or unavailable — no-op
+    // Indexing not initialized or unavailable: no-op
   }
 }
 

@@ -159,7 +159,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         renameSiblingNames = names
       })
 
-      // Skip permission check for MTP volumes — checkRenamePermission uses
+      // Skip permission check for MTP volumes: checkRenamePermission uses
       // symlink_metadata and Unix access() which don't work on MTP virtual paths.
       // The validity check (conflict detection) IS volume-aware and runs for all volumes.
       const currentVolumeId = deps.getVolumeId()

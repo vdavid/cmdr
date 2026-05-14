@@ -90,8 +90,8 @@ describe('clearAllToasts', () => {
 
 describe('closeTooltip and onDismiss', () => {
   it('stores closeTooltip on the toast when passed', () => {
-    addToast(dummyContent, { closeTooltip: 'Close — work continues in background' })
-    expect(getToasts()[0].closeTooltip).toBe('Close — work continues in background')
+    addToast(dummyContent, { closeTooltip: 'Close (work continues in background)' })
+    expect(getToasts()[0].closeTooltip).toBe('Close (work continues in background)')
   })
 
   it('leaves closeTooltip undefined when not passed', () => {

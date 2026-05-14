@@ -2,13 +2,13 @@
  * Per-volume SMB reconnect manager.
  *
  * Drives the backoff cycle that re-establishes a Disconnected `SmbVolume`. One
- * cycle per volume — both panes on the same share share a single cycle and see
+ * cycle per volume; both panes on the same share share a single cycle and see
  * identical UI.
  *
  * Lifecycle:
  * - `init()` is called once at app startup. Sets up the global
  *   `smb-connection-changed` event listener.
- * - `subscribe(volumeId, onSuccess?)` returns an unsubscribe fn. Refcounted —
+ * - `subscribe(volumeId, onSuccess?)` returns an unsubscribe fn. Refcounted;
  *   when the last subscriber leaves, any in-flight cycle is cancelled (the
  *   connection stays Disconnected; lazy reconnect on next nav handles re-entry).
  * - On `disconnected` event for a volume with subscribers, a cycle starts
@@ -31,7 +31,7 @@ const log = getAppLogger('smbReconnect')
 
 /**
  * Backoff schedule for reconnect attempts. The total wait time is the sum of
- * these delays. Single source of truth — every label and progress bar derives
+ * these delays. Single source of truth; every label and progress bar derives
  * from this array, so changing it propagates to the UI automatically.
  */
 export const RECONNECT_DELAYS_MS = [2000, 4000, 8000, 16000, 30000] as const
@@ -88,14 +88,14 @@ class SmbReconnectManager {
   /**
    * Subscribes a viewer (typically a FilePane) to this volume's reconnect
    * cycle. The optional `onSuccess` callback fires when the cycle completes.
-   * Returns an unsubscribe function — call it on volume change / unmount.
+   * Returns an unsubscribe function; call it on volume change / unmount.
    *
    * Gotcha/Why: every method that both reads and writes the SvelteMap is
    * wrapped in `untrack`. Without it, calling `subscribe` from a Svelte
    * `$effect` would track the `map.get(volumeId)` read, then the subsequent
    * `map.set` would invalidate that dep, the effect would re-run, and we'd
    * be in a tight subscribe→unsubscribe loop that pegs the main thread (verified
-   * — both panes stuck on Loading…). `untrack` decouples our internal map
+   * (both panes stuck on Loading…). `untrack` decouples our internal map
    * accesses from the caller's reactive context. Reactive readers like the
    * `getState`-backed `$derived` still work because `untrack` only suppresses
    * read tracking; writes still fire invalidations to anyone with a tracked dep.
@@ -165,7 +165,7 @@ class SmbReconnectManager {
 
   /**
    * "Retry now" button: fires an attempt immediately and, on failure, resumes
-   * the backoff at the FIRST delay (per the design — full reset, not resume
+   * the backoff at the FIRST delay (per the design: full reset, not resume
    * from where we were).
    *
    * Disabled during `attempting` (the button itself is disabled in the view).
@@ -185,7 +185,7 @@ class SmbReconnectManager {
 
   /**
    * "Cancel" button: stops the cycle and clears state. The connection stays
-   * Disconnected — the user can navigate back to the share later and the lazy
+   * Disconnected; the user can navigate back to the share later and the lazy
    * reconnect path will pick up.
    */
   cancel(volumeId: string): void {
@@ -207,7 +207,7 @@ class SmbReconnectManager {
   private handleDisconnected(volumeId: string): void {
     untrack(() => {
       const entry = this.map.get(volumeId)
-      if (!entry) return // No subscribers — lazy reconnect handles it on next nav.
+      if (!entry) return // No subscribers; lazy reconnect handles it on next nav.
       if (entry.timerId !== null || entry.state.status === 'attempting') return
       this.beginAttempt(volumeId, 0)
     })
@@ -220,7 +220,7 @@ class SmbReconnectManager {
       // Idempotent: if no cycle is in flight (state is the baseline + no timer),
       // there's nothing to clean up and no subscribers to notify. This guards
       // against double-firing when both `runAttempt`'s success branch and the
-      // `smb-connection-changed` event fire — whichever runs first wins.
+      // `smb-connection-changed` event fire; whichever runs first wins.
       const noActiveCycle = entry.state.status === 'waiting' && entry.timerId === null && entry.state.attemptIndex === 0
       if (noActiveCycle) return
       if (entry.timerId) clearTimeout(entry.timerId)
@@ -272,7 +272,7 @@ class SmbReconnectManager {
 
     try {
       await reconnectSmbVolume(volumeId)
-      // Success — defensive backstop in case the `smb-connection-changed`
+      // Success: defensive backstop in case the `smb-connection-changed`
       // event somehow doesn't arrive (unexpected, but `handleDirect` is
       // idempotent so calling both paths is safe).
       this.handleDirect(volumeId)
@@ -282,7 +282,7 @@ class SmbReconnectManager {
         volumeId,
         error: String(e),
       })
-      // Re-fetch entry — `cancel` may have run during the attempt.
+      // Re-fetch entry: `cancel` may have run during the attempt.
       const e2 = this.map.get(volumeId)
       if (!e2) return
       const next = attemptIndex + 1
@@ -335,7 +335,7 @@ export function ordinalCount(n: number): string {
  * - attemptIndex=1 → "Retried once, will try it 3 times more after this."
  * - attemptIndex=2 → "Retried twice, will try it twice more after this."
  * - attemptIndex=3 → "Retried 3 times, will try it once more after this."
- * - attemptIndex=4 → "Retried 4 times, this is the final attempt — will drop the connection if it fails."
+ * - attemptIndex=4 → "Retried 4 times, this is the final attempt. Connection drops if it fails."
  */
 export function reconnectProgressMessage(attemptIndex: number): string | null {
   if (attemptIndex < 1) return null

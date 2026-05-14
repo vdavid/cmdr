@@ -306,7 +306,7 @@
                         scroll.lineCache.set(startLine + i, chunk.lines[i])
                     }
                 })
-                .catch(() => {}) // Non-critical — height map just won't activate
+                .catch(() => {}) // Non-critical: height map just won't activate
         }
 
         getCurrentWindow()

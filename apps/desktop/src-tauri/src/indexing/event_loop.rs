@@ -205,7 +205,7 @@ pub(super) async fn run_live_event_loop(
                 }
             }
             _ = flush_interval.tick() => {
-                // Check if the FSEvents channel overflowed — events were dropped
+                // Check if the FSEvents channel overflowed. Events were dropped
                 // between FSEvents and our forward task. The only safe recovery is
                 // a full rescan.
                 if let Some(ref flag) = watcher_overflow
@@ -219,7 +219,7 @@ pub(super) async fn run_live_event_loop(
                                  {event_count} live events. Some file changes were lost."
                             ),
                         );
-                        // Drain and discard remaining events — they're a partial
+                        // Drain and discard remaining events: they're a partial
                         // picture and processing them before a rescan is pointless.
                         event_rx.close();
                         while event_rx.recv().await.is_some() {}
@@ -272,23 +272,23 @@ pub(super) async fn run_live_event_loop(
 ///
 /// Three-phase approach:
 ///
-/// **Phase 1 — Directory creations:** Sort by path depth and process parents
+/// **Phase 1: Directory creations:** Sort by path depth and process parents
 /// before children, then flush so the read connection sees the newly created
 /// rows when later phases resolve children.
 ///
-/// **Phase 1.5 — Rename detection by inode:** For every event flagged
+/// **Phase 1.5: Rename detection by inode:** For every event flagged
 /// `item_renamed` whose path still exists on disk, stat the path and look
 /// up its inode. If the DB already has an entry with that inode at a
 /// *different* `(parent_id, name)`, send `MoveEntryV2` to reuse the existing
-/// row — preserving its `entry_id` and (for directories) its `dir_stats`.
+/// row, preserving its `entry_id` and (for directories) its `dir_stats`.
 /// The matched event is removed from the batch so Phase 2 doesn't re-process
 /// it. Then we flush again so Phase 2's `resolve_path` sees the moved row;
 /// the OLD-path event of the same rename will then silently no-op.
 ///
-/// **Phase 2 — Everything else:** Files, modifications, removals, and any
+/// **Phase 2: Everything else:** Files, modifications, removals, and any
 /// rename events that didn't match by inode (the OLD-path side of a successful
-/// match, or both sides of an inode-unstable rename — exFAT/FAT-family
-/// volumes). The latter falls through to today's create/delete behaviour.
+/// match, or both sides of an inode-unstable rename on exFAT/FAT-family
+/// volumes. The latter falls through to today's create/delete behaviour.
 ///
 /// Without Phase 1, child file events in the same 1s batch as their parent
 /// directory's creation event would fail `resolve_path()` and be silently
@@ -366,9 +366,9 @@ pub(super) fn process_live_batch(
 /// Returns the number of renames handled so the caller can decide whether to
 /// flush before Phase 2.
 ///
-/// Events whose stat fails are *not* removed — they're either the OLD-path
-/// side of a successful match (which silently no-ops in Phase 2 once the row
-/// has moved) or true removals/unrelated noise that Phase 2 needs to see.
+/// Events whose stat fails are *not* removed (they're either the OLD-path
+/// side of a successful match, which silently no-ops in Phase 2 once the row
+/// has moved, or true removals/unrelated noise that Phase 2 needs to see).
 pub(super) fn detect_renames_by_inode(
     events: &mut Vec<(String, watcher::FsChangeEvent)>,
     conn: &Connection,
@@ -404,7 +404,7 @@ pub(super) fn detect_renames_by_inode(
 
         let existing_id = match IndexStore::find_entry_by_inode(conn, inode) {
             Ok(Some(id)) => id,
-            // No DB row for this inode — Phase 2 will create one.
+            // No DB row for this inode. Phase 2 will create one.
             Ok(None) => return true,
             Err(e) => {
                 log::warn!(target: "indexing::event_loop", "rename pre-pass: find_entry_by_inode({inode}) failed: {e}");
@@ -798,7 +798,7 @@ pub(super) async fn run_replay_event_loop(
     ]);
     DEBUG_STATS.set_phase(super::ActivityPhase::Live, "post-replay");
 
-    // Replay done — allow verifier to run and report scanning=false to frontend.
+    // Replay done. Allow verifier to run and report scanning=false to frontend.
     scanning.store(false, Ordering::Relaxed);
 
     log::info!("Replay: switching to live mode");
@@ -990,7 +990,7 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
         if !verify_result.new_dir_paths.is_empty() {
             // Resolve paths → IDs and batch-read dir_stats via ReadPool.
             // Note: although `run_background_verification` is async, `pool.with_conn()`
-            // is safe here because the closure contains no `.await` points — the task
+            // is safe here because the closure contains no `.await` points; the task
             // cannot migrate threads mid-closure, so thread-local storage is reliable.
             let dir_deltas: Vec<(i64, store::DirStatsById)> = get_read_pool()
                 .and_then(|pool| {
@@ -1099,7 +1099,7 @@ struct VerifyResult {
 /// "parent directory modified" without individual removal events. Similarly,
 /// new children may not get individual creation events.
 ///
-/// Two-phase approach — no `INDEXING` lock needed:
+/// Two-phase approach, no `INDEXING` lock needed:
 ///
 /// **Phase 1 (ReadPool, no lock):** Resolve each affected path to its entry ID,
 /// list children as `EntryRow` (integer-keyed), and snapshot into a `HashMap`.
@@ -1299,7 +1299,7 @@ mod tests {
         let merged = merge_fs_events(&created, &removed);
 
         assert!(merged.flags.item_removed, "item_removed should be set");
-        assert!(!merged.flags.item_created, "item_created is dropped — removed wins");
+        assert!(!merged.flags.item_created, "item_created is dropped; removed wins");
         assert!(merged.flags.item_is_file, "item_is_file should be preserved");
         assert_eq!(merged.event_id, 200, "higher event_id should be kept");
     }
@@ -1330,7 +1330,7 @@ mod tests {
         let merged = merge_fs_events(&removed, &created);
 
         assert!(merged.flags.item_removed, "item_removed should be set");
-        assert!(!merged.flags.item_created, "item_created is dropped — removed wins");
+        assert!(!merged.flags.item_created, "item_created is dropped; removed wins");
         assert!(merged.flags.item_is_file, "item_is_file should be preserved");
         assert_eq!(merged.event_id, 200, "higher event_id should be kept");
     }
@@ -1910,7 +1910,7 @@ mod tests {
     use crate::indexing::store::{DirStatsById, ROOT_ID};
 
     /// Create a temp dir under CARGO_MANIFEST_DIR (Linux's `should_exclude`
-    /// blocks `/tmp/`, but we don't actually scan here — the path just has
+    /// blocks `/tmp/`, but we don't actually scan here (the path just has
     /// to exist on disk so `stat` succeeds and gives us a real inode).
     fn rename_test_tempdir() -> tempfile::TempDir {
         let base = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -2123,7 +2123,7 @@ mod tests {
 
     /// Inode-unstable filesystems (exFAT/FAT) report a different inode for
     /// the renamed dir than the DB has. The pre-pass leaves the event in
-    /// the batch so Phase 2 falls through to today's create/delete path —
+    /// the batch so Phase 2 falls through to today's create/delete path,
     /// no regression from current behaviour.
     #[test]
     fn detect_renames_by_inode_no_match_keeps_event() {
@@ -2173,7 +2173,7 @@ mod tests {
         IndexStore::insert_entry_v2(&conn, parent_id, "Foo", true, false, None, None, None, Some(inode)).unwrap();
         drop(conn);
 
-        // Non-renamed event (item_modified) — the pre-pass must ignore it.
+        // Non-renamed event (item_modified): the pre-pass must ignore it.
         let modified = make_event(
             &new_dir_path.to_string_lossy(),
             42,
@@ -2197,7 +2197,7 @@ mod tests {
     }
 
     /// `item_renamed` event whose path is gone (the OLD-path side of a
-    /// rename pair) stays in the batch — the pre-pass only handles new-path
+    /// rename pair) stays in the batch. The pre-pass only handles new-path
     /// events. Phase 2 will resolve the old path; if a `MoveEntryV2` already
     /// landed for the same inode, `resolve_path` returns None and Phase 2
     /// silently no-ops.
@@ -2206,7 +2206,7 @@ mod tests {
         let (writer, db_path, _db_dir) = rename_test_setup();
         let _ = insert_path_chain(&db_path, Path::new("/some/parent"), &writer);
 
-        // Path doesn't exist on disk — symlink_metadata will fail.
+        // Path doesn't exist on disk, symlink_metadata will fail.
         let gone_path = "/some/parent/RemovedOrRenamedAway";
         let mut events = vec![(gone_path.to_string(), renamed_event(gone_path, 7))];
         let mut pending_paths = HashSet::new();
@@ -2288,12 +2288,12 @@ mod tests {
 
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
 
-        // The original row survives — same id, renamed in place.
+        // The original row survives: same id, renamed in place.
         let entry = IndexStore::get_entry_by_id(&conn, foo_id).unwrap().unwrap();
         assert_eq!(entry.name, "Bar", "row should be renamed in place");
         assert_eq!(entry.parent_id, parent_id);
 
-        // dir_stats preserved — the whole point of the fix.
+        // dir_stats preserved: the whole point of the fix.
         let stats = IndexStore::get_dir_stats_by_id(&conn, foo_id).unwrap().unwrap();
         assert_eq!(
             stats.recursive_logical_size, 42_000,

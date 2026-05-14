@@ -66,7 +66,7 @@ export default {
     },
     messages: {
       stringMatchOnError:
-        "Substring-matching `{{ property }}` is fragile — it couples behavior to wording that's free to change. " +
+        "Substring-matching `{{ property }}` is fragile: it couples behavior to wording that's free to change. " +
         'Use a typed flag from the backend struct, an error code, or a discriminated-union variant. ' +
         'See AGENTS.md § "No string-matching error or state classification".',
     },

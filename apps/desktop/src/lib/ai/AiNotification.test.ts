@@ -126,7 +126,7 @@ describe('AiToastContent', () => {
   it('renders downloading state with progress text', () => {
     mockState.notificationState = 'downloading'
     mockState.downloadProgress = { bytesDownloaded: 500000, totalBytes: 4000000, speed: 100000, etaSeconds: 35 }
-    mockState.progressText = '12% — 500.0 KB / 4.0 MB — 100.0 KB/s — 35s remaining'
+    mockState.progressText = '12% · 500.0 KB / 4.0 MB · 100.0 KB/s · 35s remaining'
 
     const target = mountToast()
 
@@ -202,7 +202,7 @@ describe('AiToastContent', () => {
   it('shows progress bar when downloading with known total', () => {
     mockState.notificationState = 'downloading'
     mockState.downloadProgress = { bytesDownloaded: 2000000, totalBytes: 4000000, speed: 100000, etaSeconds: 20 }
-    mockState.progressText = '50% — 2.0 MB / 4.0 MB'
+    mockState.progressText = '50% · 2.0 MB / 4.0 MB'
 
     const target = mountToast()
 

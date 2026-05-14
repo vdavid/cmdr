@@ -23,7 +23,7 @@ const SUGGESTION_SYSTEM_PROMPT: &str = "You are a pattern-matching assistant. Ca
 
 /// Generates folder name suggestions for the given directory.
 ///
-/// Suggestions are a nice-to-have enhancement — every "no backend" case (provider off,
+/// Suggestions are a nice-to-have enhancement: every "no backend" case (provider off,
 /// missing key, local server not running) silently returns `Ok(Vec::new())`. UI hides
 /// the feature instead of surfacing an error.
 #[tauri::command]
@@ -93,7 +93,7 @@ fn build_prompt(current_path: &str, file_names: &[String]) -> String {
 ///
 /// Strips bullets / numbering / markdown, length-bounds, rejects forbidden chars.
 /// Returns `None` for invalid lines (empty, contains `/` or `\0`, > 255 bytes).
-/// Does NOT dedupe — that's the caller's job (existing-names check + emit-history).
+/// Does NOT dedupe: that's the caller's job (existing-names check + emit-history).
 pub(super) fn sanitize_one_line(raw: &str) -> Option<String> {
     let trimmed = raw.trim();
     // Strip leading bullets like "- docs" / "* docs"
@@ -172,7 +172,7 @@ async fn get_suggestions_from_backend(
 /// Wire-format event for streaming folder suggestions.
 ///
 /// Frontend renders `Suggestion` immediately; treats `Done`/`Cancelled`/`Failed` as
-/// stream-end markers. `Failed` carries no message — the error is logged on the Rust
+/// stream-end markers. `Failed` carries no message: the error is logged on the Rust
 /// side, not surfaced to the user (suggestions are nice-to-have; graceful degrade).
 #[derive(Clone, Serialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
@@ -189,7 +189,7 @@ pub enum SuggestionStreamEvent {
 /// through [`sanitize_one_line`], dedupes case-insensitively against `existing_names`
 /// + previously-emitted, and calls `emit` per accepted suggestion.
 ///
-/// `emit` returns `bool`: `false` halts further processing (caller wants to stop —
+/// `emit` returns `bool`: `false` halts further processing (caller wants to stop:
 /// cancellation, channel send-error, etc.).
 pub(super) struct StreamingSanitizer<'a> {
     existing_names: &'a [String],
@@ -268,7 +268,7 @@ impl<'a> StreamingSanitizer<'a> {
 
 /// Streams folder name suggestions to the frontend via `Channel`.
 ///
-/// Always returns `Ok(())` — all signaling (suggestions, completion, errors) goes
+/// Always returns `Ok(())`. All signaling (suggestions, completion, errors) goes
 /// through `on_event`. The IPC `Result` exists only because `#[tauri::command]`
 /// requires it. See `ai/CLAUDE.md` § Decisions.
 #[tauri::command]
@@ -281,10 +281,10 @@ pub async fn stream_folder_suggestions(
 ) -> Result<(), String> {
     log::debug!("AI suggestions stream: start request_id={request_id} listing={listing_id} path={current_path}");
 
-    // Register the cancellation token synchronously BEFORE any await — closes the
+    // Register the cancellation token synchronously BEFORE any await. This closes the
     // race window where `cancel_folder_suggestions` could arrive before registration.
     let token = super::manager::register_stream(&request_id);
-    // RAII guard — unregisters even on panic-unwind.
+    // RAII guard: unregisters even on panic-unwind.
     struct UnregisterGuard<'a>(&'a str);
     impl Drop for UnregisterGuard<'_> {
         fn drop(&mut self) {
@@ -542,7 +542,7 @@ mod tests {
     fn streaming_finish_flushes_trailing_line_without_newline() {
         let existing: Vec<String> = vec![];
         let mut s = StreamingSanitizer::new(&existing);
-        // No trailing `\n` — flush should still emit "scripts".
+        // No trailing `\n`; flush should still emit "scripts".
         let out = collect(&mut s, &["docs\ntests\nscripts"]);
         assert_eq!(out, vec!["docs", "tests", "scripts"]);
     }

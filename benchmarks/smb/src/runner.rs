@@ -55,7 +55,7 @@ pub async fn run_all(config: &BenchConfig, suites: &[Suite], iterations: usize) 
             println!(
                 "\n========================================\n\
                  Target: {} ({})\n\
-                 Suite: {} — {} × {} KB\n\
+                 Suite: {}: {} × {} KB\n\
                  ========================================",
                 target.name,
                 target.host,
@@ -96,7 +96,7 @@ async fn run_suite(target: &Target, suite: &Suite, iterations: usize) -> Result<
     let (client, unc_path, chunk_sizes) = direct::connect(target).await?;
     println!("  Connected.");
 
-    // Warmup run (not counted) — primes NAS caches
+    // Warmup run (not counted): primes NAS caches
     println!("  Warmup run...");
     run_one_cycle(target, &client, &unc_path, &chunk_sizes, suite, &data, &tmp_base).await;
     // Let the SMB cache settle after warmup cleanup

@@ -105,7 +105,7 @@ fn single_column_single_short_name() {
 
 #[test]
 fn long_name_unclamped_width() {
-    // Backend doesn't clamp — FE owns the cap. Verify a very long name
+    // Backend doesn't clamp; FE owns the cap. Verify a very long name
     // measures to its full width.
     seed_font(DEFAULT_FONT_ID, 8.0);
     let long = "a".repeat(200);
@@ -171,10 +171,10 @@ fn has_parent_offset_math_items_per_column_5() {
     // 12 visible entries + ".." → 13 cells, items_per_column = 5.
     // total_cells = 13, columns = ceil(13 / 5) = 3.
     //
-    // Col 0: ".." + entries[0..4) — 5 cells, names: "..", "a", "b", "c", "d"
+    // Col 0: ".." + entries[0..4) -> 5 cells, names: "..", "a", "b", "c", "d"
     //   widest = "..widest" only via the entry. Place a wide name in col 0.
-    // Col 1: entries[4..9) — 5 cells: "e", "f", "g", "h", "i"
-    // Col 2: entries[9..14) clamped to [9..12) — 3 cells: "j", "k", "l"
+    // Col 1: entries[4..9) -> 5 cells: "e", "f", "g", "h", "i"
+    // Col 2: entries[9..14) clamped to [9..12) -> 3 cells: "j", "k", "l"
     //
     // We'll plant a known-width filename in each column to verify the slicing.
     seed_font(DEFAULT_FONT_ID, 3.0);
@@ -184,16 +184,16 @@ fn has_parent_offset_math_items_per_column_5() {
         make_entry("a"),
         make_entry("bb"),
         make_entry("ccc"),
-        make_entry("ddddddd"), // 7 chars — widest in col 0 except possibly ".."
+        make_entry("ddddddd"), // 7 chars, widest in col 0 except possibly ".."
         // entries[4..9) → column 1
         make_entry("e"),
         make_entry("ff"),
         make_entry("ggg"),
         make_entry("hhhh"),
-        make_entry("iiiiiiiii"), // 9 chars — widest in col 1
+        make_entry("iiiiiiiii"), // 9 chars, widest in col 1
         // entries[9..12) → column 2
         make_entry("j"),
-        make_entry("kkkkk"), // 5 chars — widest in col 2
+        make_entry("kkkkk"), // 5 chars, widest in col 2
         make_entry("ll"),
     ];
 
@@ -230,8 +230,8 @@ fn has_parent_parent_literal_counts_in_col0() {
 fn has_parent_items_per_column_1() {
     // Edge: items_per_column = 1 with has_parent.
     // Col 0: ".." only (entries[0..0)).
-    // Col 1: entries[0..1) — first entry.
-    // Col 2: entries[1..2) — second entry.
+    // Col 1: entries[0..1) -> first entry.
+    // Col 2: entries[1..2) -> second entry.
     seed_font(DEFAULT_FONT_ID, 2.0);
 
     insert_listing("bc_parent_ipc1", vec![make_entry("foo"), make_entry("longername")]);
@@ -336,7 +336,7 @@ fn missing_listing_returns_listing_not_found() {
 }
 
 // ============================================================================
-// All values are finite (no NaN/Inf) — Risk #11 guard
+// All values are finite (no NaN/Inf): Risk #11 guard
 // ============================================================================
 
 #[test]

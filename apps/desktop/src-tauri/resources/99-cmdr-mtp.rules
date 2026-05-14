@@ -17,4 +17,4 @@ SUBSYSTEM=="usb", ATTR{bInterfaceClass}=="ff", ATTR{bInterfaceSubClass}=="ff", A
 
 # Fallback: grant access to any USB device the logged-in user plugs in
 # (modern systemd systems use TAG+="uaccess" which grants access to the
-# physically logged-in user via ACLs — this is the recommended approach)
+# physically logged-in user via ACLs, which is the recommended approach)

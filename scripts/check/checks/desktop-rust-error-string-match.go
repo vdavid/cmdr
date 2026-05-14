@@ -65,7 +65,7 @@ func RunErrorStringMatch(ctx *CheckContext) (CheckResult, error) {
 		}
 		return CheckResult{}, fmt.Errorf(
 			"found %d %s of substring-matching error/state values "+
-				"(use a typed enum variant, errno code, or explicit flag instead — "+
+				"(use a typed enum variant, errno code, or explicit flag instead: "+
 				"add `%s <reason>` on the line above to opt a specific site out):\n%s",
 			len(violations), Pluralize(len(violations), "site", "sites"), AllowErrorStringMatchComment, sb.String(),
 		)
@@ -89,7 +89,7 @@ func scanForErrorStringMatch(rootDir, srcDir string) ([]errorStringMatchSite, in
 			return nil
 		}
 		// Skip dedicated test files. In-file `#[cfg(test)] mod tests {}` blocks are
-		// still scanned — test assertions like `err.message.contains("...")` are
+		// still scanned: test assertions like `err.message.contains("...")` are
 		// exactly the kind of stringly-typed check we want to flag.
 		if isRustTestFile(d.Name()) {
 			return nil

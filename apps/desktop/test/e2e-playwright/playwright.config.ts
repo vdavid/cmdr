@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test'
 
 // Shard kind switches which specs this Playwright process runs:
-// - "mtp": only mtp.spec.ts + mtp-conflicts.spec.ts (must run alone — single
+// - "mtp": only mtp.spec.ts + mtp-conflicts.spec.ts (must run alone: single
 //   virtual MTP device backing dir is shared across all Tauri instances).
 // - "non-mtp": everything except MTP specs.
 // - unset / "all": every spec (single-instance / legacy run).
@@ -31,10 +31,10 @@ export default defineConfig({
   testMatch,
   testIgnore,
   outputDir,
-  fullyParallel: false, // Tests share app state — run sequentially within a shard
+  fullyParallel: false, // Tests share app state, run sequentially within a shard
   forbidOnly: !!process.env.CI,
   retries,
-  workers: 1, // Single worker per Playwright process — one Tauri app instance
+  workers: 1, // Single worker per Playwright process, one Tauri app instance
   reporter: [['list'], ['json', { outputFile: jsonReport }]],
   // Tight default: 8 s per test forces specs to be deterministic about UI waits.
   // Tests that legitimately need longer (axe audits, MTP virtual-device protocol
@@ -50,9 +50,9 @@ export default defineConfig({
     {
       name: 'tauri',
       use: {
-        // @ts-expect-error — custom fixture option from tauri-playwright
+        // @ts-expect-error -- custom fixture option from tauri-playwright
         mode: 'tauri',
-        // Traces and screenshots are useless in Tauri mode — they capture
+        // Traces and screenshots are useless in Tauri mode. They capture
         // the blank Playwright browser page, not the real Tauri webview.
         // Native screenshots are captured via CoreGraphics on test failure.
         trace: 'off',

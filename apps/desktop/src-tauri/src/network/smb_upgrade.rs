@@ -1,9 +1,9 @@
 //! SMB upgrade helpers: establish direct smb2 connections for OS-mounted SMB volumes.
 //!
 //! Shared across three upgrade paths:
-//! 1. **Startup** (`file_system::upgrade_existing_smb_mounts`) — scans existing mounts
-//! 2. **Mount-time** (`volumes::watcher::try_upgrade_smb_mount`) — FSEvents detects new mount
-//! 3. **Manual** (`commands::network::upgrade_to_smb_volume`) — user clicks "Connect directly"
+//! 1. **Startup** (`file_system::upgrade_existing_smb_mounts`): scans existing mounts
+//! 2. **Mount-time** (`volumes::watcher::try_upgrade_smb_mount`): FSEvents detects new mount
+//! 3. **Manual** (`commands::network::upgrade_to_smb_volume`): user clicks "Connect directly"
 
 use crate::network::get_discovered_hosts;
 
@@ -11,9 +11,9 @@ use crate::network::get_discovered_hosts;
 #[derive(serde::Serialize, specta::Type)]
 #[serde(tag = "status", rename_all = "camelCase")]
 pub enum UpgradeResult {
-    /// Upgrade succeeded — volume now uses direct smb2.
+    /// Upgrade succeeded: volume now uses direct smb2.
     Success,
-    /// Credentials needed — frontend should show login form.
+    /// Credentials needed: frontend should show login form.
     CredentialsNeeded {
         server: String,
         share: String,
@@ -142,9 +142,9 @@ pub(crate) fn resolve_ip_to_hostname(ip: &str) -> Option<String> {
 /// Resolves a server address from `statfs` to a connectable address.
 ///
 /// `statfs` can return different formats depending on how the mount was created:
-/// - An IP address like `192.168.1.111` — usable as-is
-/// - A DNS hostname like `fileserver.corp.example.com` — usable as-is
-/// - An mDNS service name like `Naspolya._smb._tcp.local` — NOT resolvable by DNS,
+/// - An IP address like `192.168.1.111`: usable as-is
+/// - A DNS hostname like `fileserver.corp.example.com`: usable as-is
+/// - An mDNS service name like `Naspolya._smb._tcp.local`: NOT resolvable by DNS,
 ///   must be resolved to an IP via the mDNS discovery state
 ///
 /// Returns the resolved IP if possible, otherwise the original string.
@@ -165,7 +165,7 @@ pub(crate) fn resolve_server_address(server: &str) -> String {
                 log::debug!("Resolved mDNS service name {} to IP {}", server, ip);
                 return ip.clone();
             }
-            // Host found but no IP yet — try the hostname
+            // Host found but no IP yet; try the hostname
             if let Some(ref hostname) = host.hostname {
                 log::debug!("Resolved mDNS service name {} to hostname {}", server, hostname);
                 return hostname.clone();
@@ -174,7 +174,7 @@ pub(crate) fn resolve_server_address(server: &str) -> String {
     }
 
     log::warn!(
-        "Could not resolve mDNS service name {} — no matching discovered host",
+        "Could not resolve mDNS service name {} (no matching discovered host)",
         server
     );
     server.to_string()

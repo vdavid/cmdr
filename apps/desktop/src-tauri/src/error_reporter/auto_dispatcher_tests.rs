@@ -64,7 +64,7 @@ fn respects_disabled_flag() {
         "with the flag off, no state should be created"
     );
 
-    // Flip on, fire one, flip off again — the active window stays (we don't tear it
+    // Flip on, fire one, flip off again. The active window stays (we don't tear it
     // down on disable; the user opted out, not "abort everything in flight"). New
     // errors after disable still don't accumulate.
     set_enabled(true);
@@ -150,7 +150,7 @@ fn late_app_handle_picks_up_active_window() {
     assert_eq!(
         flush_spawned_for_test(),
         Some(false),
-        "test seam doesn't spawn — flag must remain false"
+        "test seam doesn't spawn: flag must remain false"
     );
 
     // Subsequent error in the same window must keep flush_spawned = false too,
@@ -212,7 +212,7 @@ fn late_app_handle_with_no_active_window_is_noop() {
 
     assert!(
         simulate_late_app_handle_for_test().is_none(),
-        "no active window — nothing to spawn"
+        "no active window: nothing to spawn"
     );
     assert!(
         snapshot_for_test().is_none(),
@@ -223,13 +223,13 @@ fn late_app_handle_with_no_active_window_is_noop() {
 }
 
 /// Documents the crash-loop interaction. If the process exits during the 60 s window,
-/// the spawned flush task is dropped before it fires — by design. The crash reporter
+/// the spawned flush task is dropped before it fires, by design. The crash reporter
 /// covers panics; the auto-dispatcher is for soft errors that don't kill the app.
 #[test]
 fn crash_loop_safety_note() {
     // Behavioural assertion: the dispatcher does not write anything to disk on
     // `record_error`. If the process were to exit immediately after, no in-flight
-    // report would persist. (We don't queue or persist failed/pending auto-sends —
+    // report would persist. (We don't queue or persist failed/pending auto-sends;
     // see the module-level docs for the rationale.)
     let _guard = lock_and_reset();
     set_enabled(true);

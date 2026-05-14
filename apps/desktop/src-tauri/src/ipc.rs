@@ -6,7 +6,7 @@
 //!
 //! ## Why
 //!
-//! Tauri command names used to live as magic strings on both sides — a Rust
+//! Tauri command names used to live as magic strings on both sides: a Rust
 //! `#[tauri::command]` plus an `invoke('command_name', args)` on the frontend,
 //! with no compile-time link. Renaming the Rust side silently broke runtime
 //! IPC with a generic "not allowed" error. Now the frontend imports typed
@@ -22,8 +22,8 @@
 //!   `tauri::Builder::default()` via `.invoke_handler(builder.invoke_handler())`
 //!   and `builder.mount_events(app)` in setup.
 //! - In debug builds we call [`builder().export(...)`] to regenerate
-//!   `apps/desktop/src/lib/ipc/bindings.ts` on each launch — that's the only
-//!   place the bindings are written to disk; everything else just imports them.
+//!   `apps/desktop/src/lib/ipc/bindings.ts` on each launch (that's the only
+//!   place the bindings are written to disk; everything else just imports them).
 //!
 //! ## File layout
 //!
@@ -513,7 +513,7 @@ mod tests {
 
     /// Regenerates `apps/desktop/src/lib/ipc/bindings.ts`.
     ///
-    /// Marked `#[ignore]` so it doesn't fire on every `cargo nextest run` —
+    /// Marked `#[ignore]` so it doesn't fire on every `cargo nextest run`:
     /// it has the side effect of writing to disk, which would silently mutate
     /// the working tree on every test run. The canonical entry point is
     /// `pnpm bindings:regen` (from the desktop app dir or repo root via the
@@ -527,7 +527,7 @@ mod tests {
     fn export_bindings_test() {
         let b = builder();
         b.export(
-            Typescript::default().header("// AUTO-GENERATED — do not edit. Regenerate with `pnpm bindings:regen`.\n"),
+            Typescript::default().header("// AUTO-GENERATED: do not edit. Regenerate with `pnpm bindings:regen`.\n"),
             "../src/lib/ipc/bindings.ts",
         )
         .expect("Failed to export bindings");

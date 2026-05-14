@@ -117,7 +117,7 @@ if $FORCE_BUILD || ! docker image inspect "$IMAGE_NAME" &> /dev/null; then
 fi
 
 # VNC mode: runs pnpm dev inside Docker with VNC for interactive debugging.
-# Does NOT require a pre-built binary — uses Vite + Tauri hot reload instead.
+# Does NOT require a pre-built binary; uses Vite + Tauri hot reload instead.
 if $VNC_MODE; then
     log_info "Starting VNC mode with hot reload..."
 
@@ -177,7 +177,7 @@ if $VNC_MODE; then
     exit 0
 fi
 
-# Always build — cargo handles incrementality (fast when nothing changed, correct when
+# Always build: cargo handles incrementality (fast when nothing changed, correct when
 # something did). Skipping based on binary existence caused stale-binary bugs.
 log_info "Building Linux Tauri binary inside Docker..."
 
@@ -350,7 +350,7 @@ start_smb_containers() {
 start_smb_containers
 
 # SMB env vars: inside the Docker network, containers are addressable by name on port 445
-# CMDR_MCP_ENABLED: release builds disable MCP by default — tests need it
+# CMDR_MCP_ENABLED: release builds disable MCP by default; tests need it
 # --privileged: needed for mount -t cifs inside the container (SYS_ADMIN alone is
 # blocked by Docker's default seccomp profile which denies the mount syscall)
 SMB_ENV_ARGS="-e SMB_E2E_GUEST_HOST=smb-consumer-guest -e SMB_E2E_GUEST_PORT=445 -e SMB_E2E_AUTH_HOST=smb-consumer-auth -e SMB_E2E_AUTH_PORT=445 -e SMB_E2E_50SHARES_HOST=smb-consumer-50shares -e SMB_E2E_50SHARES_PORT=445 -e SMB_CONSUMER_50SHARES_PORT=445 -e SMB_E2E_UNICODE_HOST=smb-consumer-unicode -e SMB_E2E_UNICODE_PORT=445 -e SMB_CONSUMER_UNICODE_PORT=445 -e CMDR_MCP_ENABLED=true"

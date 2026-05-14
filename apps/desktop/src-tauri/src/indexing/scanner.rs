@@ -308,7 +308,7 @@ fn run_scan(
                 // Surface TCC-restricted paths to the frontend store so the
                 // sidebar can show the "this folder is limited by macOS"
                 // styling. `record_denial` filters internally to known
-                // TCC-restricted prefixes — USB drives etc. are ignored.
+                // TCC-restricted prefixes (USB drives etc. are ignored).
                 if let Some(io_err) = e.io_error()
                     && io_err.kind() == std::io::ErrorKind::PermissionDenied
                     && let Some(p) = e.path()
@@ -330,7 +330,7 @@ fn run_scan(
 
         // For volume-root scans, double-check exclusions on the iteration side
         // (process_read_dir callback prevents descent, but entries can leak through
-        // before the rayon callback runs). Subtree scans skip this — the caller
+        // before the rayon callback runs). Subtree scans skip this: the caller
         // explicitly chose the subtree, so global exclusions don't apply.
         if is_volume_root && should_exclude(&path_str) {
             continue;
@@ -418,7 +418,7 @@ fn run_scan(
     // Flush final batch
     flush_batch(&mut batch, writer)?;
     log::debug!(
-        "Scanner: walk complete — {total_entries} entries, {total_dirs} dirs in {}ms",
+        "Scanner: walk complete: {total_entries} entries, {total_dirs} dirs in {}ms",
         start.elapsed().as_millis()
     );
 
@@ -500,7 +500,7 @@ pub(super) fn should_exclude(path_str: &str) -> bool {
         if e2e_path.starts_with(path_str) {
             return false;
         }
-        // Exclude everything else — we only care about the fixture subtree
+        // Exclude everything else: we only care about the fixture subtree
         return true;
     }
 

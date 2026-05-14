@@ -5,7 +5,7 @@
 //!
 //! Two backend constructors:
 //! - [`AiBackend::local`]: forces the OpenAI adapter at `http://127.0.0.1:<port>/v1/`.
-//! - [`AiBackend::remote`]: BYOK — the model name picks the adapter (e.g. `claude-*` →
+//! - [`AiBackend::remote`]: BYOK. The model name picks the adapter (e.g. `claude-*` →
 //!   Anthropic native, `gemini-*` → Gemini native, `gpt-5*`/`*-pro`/`*-codex` → OpenAI
 //!   Responses), and `base_url` overrides the endpoint.
 
@@ -88,7 +88,7 @@ impl std::fmt::Display for AiError {
 ///
 /// `options` are the caller-supplied generation knobs. We auto-strip `temperature`/
 /// `top_p` and substitute [`ReasoningEffort::Low`] when the resolved adapter+model
-/// is reasoning-class — see [`is_openai_chat_reasoning_model`].
+/// is reasoning-class (see [`is_openai_chat_reasoning_model`]).
 pub async fn chat_completion(
     backend: &AiBackend,
     system_prompt: &str,
@@ -140,7 +140,7 @@ pub async fn chat_completion(
 ///
 /// Same per-model option fixups as [`chat_completion`] (reasoning models get
 /// `temperature`/`top_p` stripped and `ReasoningEffort::Low` substituted). Reasoning,
-/// thought-signature, and tool-call chunks are filtered out — callers only see the
+/// thought-signature, and tool-call chunks are filtered out; callers only see the
 /// visible text content. Stream ends when `genai` emits `End` or errors; an empty
 /// stream (zero chunks) is valid and matches the same graceful-degradation contract
 /// as `chat_completion`'s "AI returned no text" case.
@@ -290,7 +290,7 @@ fn map_genai_error(e: genai::Error) -> AiError {
     AiError::ServerError(e.to_string())
 }
 
-/// Checks if the local llama-server is healthy. Pings `/health` directly — `genai`
+/// Checks if the local llama-server is healthy. Pings `/health` directly; `genai`
 /// doesn't expose this, and it's not a chat call anyway.
 pub async fn health_check(port: u16) -> bool {
     let url = format!("http://127.0.0.1:{port}/health");

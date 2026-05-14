@@ -57,7 +57,7 @@ describe('ToastItem a11y', () => {
       target,
       props: {
         id: 't3',
-        content: 'Update available — restart to apply',
+        content: 'Update available: restart to apply',
         level: 'warn',
         dismissal: 'persistent',
         timeoutMs: 0,

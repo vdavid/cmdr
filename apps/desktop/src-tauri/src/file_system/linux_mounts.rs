@@ -103,7 +103,7 @@ pub fn is_network_fs_type(fstype: &str) -> bool {
         "fuse.sshfs" | "fuse.rclone" | "fuse.s3fs" | "fuse.gvfsd-fuse" => true,
         // FUSE-based local filesystems (known safe)
         "fuse.ntfs-3g" | "fuse.exfat" | "fuseblk" => false,
-        // Unknown FUSE subtypes — could be network, use chunked copy to be safe
+        // Unknown FUSE subtypes; could be network, use chunked copy to be safe
         s if s.starts_with("fuse.") => true,
         _ => false,
     }
@@ -206,7 +206,7 @@ user@host:/path /mnt/sshfs fuse.sshfs rw,relatime 0 0
         assert!(is_network_fs_type("fuse.s3fs"));
         assert!(is_network_fs_type("fuse.gvfsd-fuse"));
 
-        // Unknown FUSE subtypes — conservatively treated as network
+        // Unknown FUSE subtypes; conservatively treated as network
         assert!(is_network_fs_type("fuse.mycloud"));
 
         // Known-local FUSE types

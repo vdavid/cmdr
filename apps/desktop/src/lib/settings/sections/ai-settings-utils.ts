@@ -36,7 +36,7 @@ export async function migrateApiKeysFromSettings(): Promise<void> {
     const legacyApiKey = config.apiKey
     if (typeof legacyApiKey !== 'string' || legacyApiKey.length === 0) {
       if ('apiKey' in config) {
-        // Empty string is harmless but pollutes the JSON — drop it as part of the migration.
+        // Empty string is harmless but pollutes the JSON. Drop it as part of the migration.
         delete config.apiKey
         mutated = true
       }
@@ -49,7 +49,7 @@ export async function migrateApiKeysFromSettings(): Promise<void> {
       logger.info('Migrated AI API key for provider {provider} to secret store', { provider: providerId })
     } catch (e) {
       logger.warn(
-        "Couldn't migrate AI API key for provider {provider} — leaving the legacy entry in settings.json: {error}",
+        "Couldn't migrate AI API key for provider {provider}. Leaving the legacy entry in settings.json: {error}",
         { provider: providerId, error: e },
       )
     }

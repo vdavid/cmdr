@@ -276,7 +276,7 @@ pub(crate) fn resolve_include_paths(query: &mut SearchQuery, pool: &ReadPool) {
                 }
             }
             if resolved.is_empty() {
-                // No valid include paths resolved — use impossible ID to force all entries to fail
+                // No valid include paths resolved: use impossible ID to force all entries to fail
                 resolved.push(i64::MIN);
             }
             resolved
@@ -401,7 +401,7 @@ mod tests {
                 // It must not match a string with a different last character.
                 // Skip strings ending in `]` or other edge codepoints because
                 // appending arbitrary content might collide with grapheme
-                // clusters in surprising ways — instead, prepend.
+                // clusters in surprising ways, so prepend instead.
                 let modified = format!("X{glob}Y");
                 prop_assert!(
                     !compiled.is_match(&modified) || modified == glob,

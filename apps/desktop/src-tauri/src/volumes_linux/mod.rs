@@ -12,7 +12,7 @@ pub mod watcher;
 
 #[allow(
     unused_imports,
-    reason = "API parity with macOS volumes module — used once SMB enrichment lands on Linux"
+    reason = "API parity with macOS volumes module; used once SMB enrichment lands on Linux"
 )]
 pub use crate::file_system::volume::SmbConnectionState;
 
@@ -461,7 +461,7 @@ pub fn get_volume_space(path: &str) -> Option<VolumeSpaceInfo> {
 
 /// Resolve a path to its mount point and filesystem type by finding the
 /// longest mount-point prefix match in `/proc/mounts`. Always succeeds
-/// because `/` is always mounted — even nonexistent paths match root.
+/// because `/` is always mounted, so even nonexistent paths match root.
 pub(crate) fn get_mount_point(path: &str) -> Option<(String, String)> {
     let mounts = linux_mounts::parse_proc_mounts();
     let fs_type = linux_mounts::fs_type_for_path_from_entries(Path::new(path), &mounts)?;
@@ -520,7 +520,7 @@ fn is_virtual_fs(fstype: &str) -> bool {
 }
 
 /// Mount paths that are system internals and should never appear as volumes.
-/// These are path prefixes — any mount whose mountpoint starts with one of these is filtered out.
+/// These are path prefixes; any mount whose mountpoint starts with one of these is filtered out.
 const HIDDEN_MOUNT_PREFIXES: &[&str] = &[
     "/snap/",            // Ubuntu snap loopback packages (squashfs)
     "/run/snapd/",       // Snap daemon internals
@@ -789,7 +789,7 @@ share /mnt/cmdr virtiofs rw,relatime 0 0
 
         // Restore
         if let Some(prev) = prev {
-            // SAFETY: Same as above — restoring original value.
+            // SAFETY: Same as above; restoring original value.
             unsafe { std::env::set_var("USER", prev) };
         }
     }

@@ -73,7 +73,7 @@ else
     echo "KV namespace already exists with ID: $NAMESPACE_ID"
 fi
 
-# Update wrangler.toml with the namespace ID — only if the placeholder is still
+# Update wrangler.toml with the namespace ID, but only if the placeholder is still
 # present. Once `LICENSE_CODES` has its real ID, this is a no-op (idempotent).
 # We do NOT do a broad `[a-f0-9]{32}` substitution here because the file now
 # holds multiple distinct KV IDs (BLOG_LIKES, ERROR_REPORT_META, etc.) and a
@@ -128,14 +128,14 @@ echo "Applying 90-day lifecycle rule to $ERROR_REPORTS_BUCKET_NAME..."
 # of failing the whole script.
 LIFECYCLE_HELP=$(npx wrangler r2 bucket lifecycle --help 2>&1 || true)
 if echo "$LIFECYCLE_HELP" | grep -q " add "; then
-    # wrangler 3.x / 4.x form — takes --name, --prefix (optional), --expire-days.
+    # wrangler 3.x / 4.x form: takes --name, --prefix (optional), --expire-days.
     # Idempotency: lifecycle add is tolerant of re-running with the same rule name.
     npx wrangler r2 bucket lifecycle add "$ERROR_REPORTS_BUCKET_NAME" \
         --name "expire-90-days" \
         --expire-days 90 2>/dev/null \
         || echo "Note: lifecycle rule may already exist (this is fine) or the wrangler CLI subcommand differs. Verify with: npx wrangler r2 bucket lifecycle list $ERROR_REPORTS_BUCKET_NAME"
 elif echo "$LIFECYCLE_HELP" | grep -q " set "; then
-    echo "Your wrangler uses 'lifecycle set' — please run it manually:"
+    echo "Your wrangler uses 'lifecycle set'. Please run it manually:"
     echo "   npx wrangler r2 bucket lifecycle set $ERROR_REPORTS_BUCKET_NAME <rules.json>"
     echo "   where rules.json expires objects older than 90 days."
 else

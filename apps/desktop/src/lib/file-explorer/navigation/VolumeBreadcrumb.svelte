@@ -335,7 +335,7 @@
         breadcrumbPopup.close()
         if (!vid) return
 
-        // Direct smb2 upgrade opens a TCP socket to a private IP — that triggers macOS's
+        // Direct smb2 upgrade opens a TCP socket to a private IP, which triggers macOS's
         // Local Network prompt on its own, so this is the right moment to also kick off
         // mDNS discovery for the rest of the network UI.
         triggerNetworkDiscovery()
@@ -662,7 +662,7 @@
     }
 
     .chevron {
-        /* CSS triangle — consistent size across fonts. Uses currentcolor
+        /* CSS triangle: consistent size across fonts. Uses currentcolor
            so the parent element controls the color via hover/active states. */
         display: inline-block;
         width: 0;
@@ -690,7 +690,7 @@
     .volume-dropdown {
         position: fixed;
         min-width: 220px;
-        max-height: calc(100vh - 30px); /* Fallback — overridden dynamically by fitDropdownToViewport() */
+        max-height: calc(100vh - 30px); /* Fallback, overridden dynamically by fitDropdownToViewport() */
         overflow-y: auto;
         background-color: var(--color-bg-secondary);
         border: 1px solid var(--color-border-strong);
@@ -987,7 +987,7 @@
     }
 
     .submenu-trigger {
-        /* CSS right-pointing triangle — matches macOS submenu arrow */
+        /* CSS right-pointing triangle (matches macOS submenu arrow) */
         display: inline-block;
         width: 0;
         height: 0;

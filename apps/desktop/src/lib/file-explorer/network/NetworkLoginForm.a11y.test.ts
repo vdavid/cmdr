@@ -77,7 +77,7 @@ describe('NetworkLoginForm a11y', () => {
       props: {
         host,
         authMode: 'creds_required',
-        errorMessage: 'Authentication failed — wrong password',
+        errorMessage: 'Authentication failed: wrong password',
         onConnect: () => {},
         onCancel: () => {},
       },

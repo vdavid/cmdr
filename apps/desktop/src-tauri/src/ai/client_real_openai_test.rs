@@ -1,4 +1,4 @@
-//! Real-API smoke tests against OpenAI. **Not run in CI** — these are gated behind
+//! Real-API smoke tests against OpenAI. **Not run in CI**: these are gated behind
 //! the `#[ignore]` attribute and need a valid `OPENAI_API_KEY` env var.
 //!
 //! Run with:
@@ -37,7 +37,7 @@ fn opts() -> ChatOptions {
 }
 
 #[tokio::test]
-#[ignore = "real API call — set OPENAI_API_KEY to run"]
+#[ignore = "real API call: set OPENAI_API_KEY to run"]
 async fn smoke_gpt_4o_mini_chat_completions() {
     let Some(api_key) = api_key_or_skip() else {
         panic!("OPENAI_API_KEY not set");
@@ -59,7 +59,7 @@ async fn smoke_gpt_4o_mini_chat_completions() {
 }
 
 #[tokio::test]
-#[ignore = "real API call — set OPENAI_API_KEY to run"]
+#[ignore = "real API call: set OPENAI_API_KEY to run"]
 async fn smoke_gpt_5_routes_through_responses_api() {
     // gpt-5* should route through `/v1/responses` and use reasoning_effort instead
     // of temperature. If our adjust_for_model is wrong, OpenAI returns HTTP 400.
@@ -83,7 +83,7 @@ async fn smoke_gpt_5_routes_through_responses_api() {
 }
 
 #[tokio::test]
-#[ignore = "real API call — set OPENAI_API_KEY to run"]
+#[ignore = "real API call: set OPENAI_API_KEY to run"]
 async fn smoke_o3_mini_omits_temperature() {
     // o3-mini stays on /v1/chat/completions but rejects custom temperature. Our
     // is_openai_chat_reasoning_model heuristic must catch this.
@@ -124,7 +124,7 @@ async fn collect_stream(backend: &AiBackend, model_label: &str) -> String {
 }
 
 #[tokio::test]
-#[ignore = "real API call — set OPENAI_API_KEY to run"]
+#[ignore = "real API call: set OPENAI_API_KEY to run"]
 async fn smoke_gpt_4o_mini_stream() {
     let Some(api_key) = api_key_or_skip() else {
         panic!("OPENAI_API_KEY not set");
@@ -135,11 +135,11 @@ async fn smoke_gpt_4o_mini_stream() {
 }
 
 #[tokio::test]
-#[ignore = "real API call — set OPENAI_API_KEY to run"]
+#[ignore = "real API call: set OPENAI_API_KEY to run"]
 async fn smoke_gpt_5_mini_stream() {
     // Routes through Responses API. Reasoning may eat budget; with max_tokens=200 we
     // expect at least *some* output_text. Acceptable to assert "stream completed
-    // without error" rather than "non-empty" — reasoning models are inherently variable.
+    // without error" rather than "non-empty"; reasoning models are inherently variable.
     let Some(api_key) = api_key_or_skip() else {
         panic!("OPENAI_API_KEY not set");
     };
@@ -151,7 +151,7 @@ async fn smoke_gpt_5_mini_stream() {
 }
 
 #[tokio::test]
-#[ignore = "real API call — set OPENAI_API_KEY to run"]
+#[ignore = "real API call: set OPENAI_API_KEY to run"]
 async fn smoke_o3_mini_stream() {
     let Some(api_key) = api_key_or_skip() else {
         panic!("OPENAI_API_KEY not set");

@@ -2,7 +2,7 @@
  * User-friendly error message generation for transfer (copy/move) operations.
  * Extracted from TransferErrorDialog.svelte for testability.
  *
- * Error classification happens on the backend — each WriteOperationError variant
+ * Error classification happens on the backend: each WriteOperationError variant
  * carries structured data, so the frontend just maps variant → user-facing text.
  * No string parsing needed.
  */

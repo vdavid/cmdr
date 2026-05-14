@@ -3,7 +3,7 @@
 #
 # Catches accumulating bugs (credit/handle leaks, memory growth, per-iteration
 # slowdown) that short integration tests can't see. Assumes Docker SMB
-# containers are running — start them with
+# containers are running. Start them with
 # `apps/desktop/test/smb-servers/start.sh core` first.
 #
 # Usage:
@@ -27,7 +27,7 @@ elif [ -z "${CMDR_SOAK_DURATION_SECS:-}" ] && [ -z "${CMDR_SOAK_ITERATIONS:-}" ]
     export CMDR_SOAK_DURATION_SECS=1800
 fi
 
-echo "SMB soak — duration=${CMDR_SOAK_DURATION_SECS:-unset} iterations=${CMDR_SOAK_ITERATIONS:-unset}"
+echo "SMB soak: duration=${CMDR_SOAK_DURATION_SECS:-unset} iterations=${CMDR_SOAK_ITERATIONS:-unset}"
 echo "Requires Docker SMB containers (apps/desktop/test/smb-servers/start.sh core)."
 
 cd "$REPO_ROOT/apps/desktop/src-tauri"

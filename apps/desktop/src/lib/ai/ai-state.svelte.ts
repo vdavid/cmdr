@@ -82,7 +82,7 @@ export async function initAiState(): Promise<() => void> {
   }
 
   // Seed the onboarded gate from persisted settings. While `false`, an Offer status stays
-  // hidden — the FDA modal owns the screen during first launch. Returning users (isOnboarded
+  // hidden. The FDA modal owns the screen during first launch. Returning users (isOnboarded
   // already true) skip the gate entirely.
   //
   // Sticky merge instead of plain assignment: `+page.svelte` may have already called
@@ -136,7 +136,7 @@ export async function handleDownload(): Promise<void> {
   setSetting('ai.provider', 'local')
   aiState.notificationState = 'downloading'
   aiState.downloadProgress = { bytesDownloaded: 0, totalBytes: 0, speed: 0, etaSeconds: 0 }
-  // New download run — clear any previous user-dismissed flag so the toast shows again.
+  // New download run: clear any previous user-dismissed flag so the toast shows again.
   aiState.downloadToastUserDismissed = false
   try {
     await startAiDownload()

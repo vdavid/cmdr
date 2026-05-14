@@ -2,13 +2,13 @@
 //!
 //! Both `volume_error::friendly_error_from_volume_error` (listing path) and
 //! `write_error::friendly_from_write_error` (copy/move/delete/trash error path)
-//! map several variants to the same conceptual outcome — "not found",
+//! map several variants to the same conceptual outcome: "not found",
 //! "permission denied", "device disconnected", and so on. Without a single
 //! source of truth the user could see different titles or suggestions for the
 //! same situation depending on which layer the error originated in.
 //!
 //! Each function here returns the canonical `FriendlyError` for one kind. The
-//! caller passes the raw-detail string (formatted differently per source —
+//! caller passes the raw-detail string (formatted differently per source:
 //! `VolumeError::to_string()` vs `format!("{err:?}")`) and any kind-specific
 //! data (the path, error message, etc.).
 //!
@@ -41,9 +41,9 @@ pub(super) fn not_found(path_display: &str, raw_detail: String) -> FriendlyError
 
 /// Permission-denied on a path that macOS guards via TCC (Downloads, Documents,
 /// Desktop, Pictures, Movies, Music, iCloud Drive, FileProvider domains, network
-/// volumes, etc. — see `crate::restricted_paths::tcc_paths`). The user has two
+/// volumes, etc.; see `crate::restricted_paths::tcc_paths`). The user has two
 /// distinct escape hatches (Full Disk Access for everything, or per-folder
-/// Files & Folders for just this one) — the generic permission-denied copy only
+/// Files & Folders for just this one). The generic permission-denied copy only
 /// mentions the per-folder pane, so we override it here.
 pub(super) fn tcc_restricted(path_display: &str, raw_detail: String) -> FriendlyError {
     FriendlyError {
@@ -130,7 +130,7 @@ pub(super) fn device_disconnected(path_display: &str, raw_detail: String) -> Fri
             - Navigate here again once the device is back"
             .into(),
         raw_detail,
-        // listing path doesn't show a Retry button — the user navigates back.
+        // listing path doesn't show a Retry button (the user navigates back).
         // Operations (write_error) override to true so the dialog gets a Retry.
         retry_hint: false,
         action_kind: None,

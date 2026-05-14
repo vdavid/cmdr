@@ -205,12 +205,12 @@
         }
 
         isActivating = true
-        // Don't clear error/hasError here — keep old error visible during retry to avoid flicker.
+        // Don't clear error/hasError here. Keep old error visible during retry to avoid flicker.
         // Each outcome path below sets its own error state.
 
         try {
             // Step 1: Verify the key offline (Ed25519 + short code exchange if needed).
-            // Nothing is written to disk — if this fails, we show a clean error.
+            // Nothing is written to disk. If this fails, we show a clean error.
             const verifyResult = await verifyLicense(cleanedKey)
 
             // Step 2: Validate with the license server, passing transactionId explicitly
@@ -219,7 +219,7 @@
             try {
                 newStatus = await validateLicenseWithServer(verifyResult.info.transactionId)
             } catch {
-                // Network error — fall through to network fallback
+                // Network error; fall through to network fallback
             }
 
             // Step 3: Decide whether to commit (persist) the key based on server response.
@@ -235,7 +235,7 @@
                 showActivationToast(verifyResult.info)
                 onSuccess()
             } else if (newStatus?.type === 'expired') {
-                // Key IS valid, just expired — commit it so the user can renew
+                // Key IS valid, just expired. Commit it so the user can renew
                 await commitLicense(verifyResult.fullKey, verifyResult.shortCode)
                 setCachedStatus(newStatus)
                 isServerInvalidError = false
@@ -244,14 +244,14 @@
                 hasError = true
             } else if (newStatus?.type === 'personal') {
                 // Server checked with Paddle and this transaction is unknown.
-                // DON'T commit — nothing is stored, no cleanup needed.
+                // DON'T commit. Nothing is stored, no cleanup needed.
                 serverInvalidRetryCount++
                 isServerInvalidError = true
                 error =
                     "We know this key but when we checked it with our payment provider, it didn't recognize it. This can happen if the purchase was refunded or not cleared."
                 hasError = true
             } else {
-                // Network error (newStatus is null) — key is crypto-valid, commit optimistically
+                // Network error (newStatus is null): key is crypto-valid, commit optimistically
                 await commitLicense(verifyResult.fullKey, verifyResult.shortCode)
                 handleNetworkFallback(verifyResult.info)
             }
@@ -277,7 +277,7 @@
     }
 
     function handleCancelAfterInvalid() {
-        // Invalid keys are never stored, so no cleanup is needed — just close.
+        // Invalid keys are never stored, so no cleanup is needed. Just close.
         onClose()
     }
 

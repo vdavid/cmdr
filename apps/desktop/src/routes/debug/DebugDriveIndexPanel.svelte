@@ -251,7 +251,7 @@
                     <span
                         class="status-badge ready"
                         use:tooltip={{
-                            text: 'FSEvents watcher is active — receiving live filesystem change notifications',
+                            text: 'FSEvents watcher is active, receiving live filesystem change notifications',
                         }}>Watcher on</span
                     >
                 {:else}
@@ -361,7 +361,7 @@
                             >Dirs missing stats <span
                                 class="info-icon"
                                 use:tooltip={{
-                                    text: 'Directories without aggregates — will show no size in the UI until backfilled',
+                                    text: 'Directories without aggregates: will show no size in the UI until backfilled',
                                 }}>i</span
                             ></span
                         >
@@ -464,7 +464,7 @@
                         >MustScanSubDirs <span
                             class="info-icon"
                             use:tooltip={{
-                                text: 'FSEvents with MustScanSubDirs flag — means the OS coalesced events and a full subtree rescan is needed',
+                                text: 'FSEvents with MustScanSubDirs flag: the OS coalesced events and a full subtree rescan is needed',
                             }}>i</span
                         ></span
                     >

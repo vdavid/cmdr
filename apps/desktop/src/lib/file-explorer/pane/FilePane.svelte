@@ -133,7 +133,7 @@
         onCancelLoading?: (cancelledPath: string, selectName?: string) => void
         /** Called when MTP connection fails fatally (device disconnected, timeout) - parent should fall back to previous volume */
         onMtpFatalError?: (error: string) => void
-        /** Volume resolution timed out for this tab — show banner instead of file list */
+        /** Volume resolution timed out for this tab: show banner instead of file list */
         unreachable?: UnreachableState | null
         /** Called when user clicks "Retry" on the unreachable banner */
         onRetryUnreachable?: () => void
@@ -174,7 +174,7 @@
     let error = $state<string | null>(null)
     let friendlyError = $state<FriendlyError | null>(null)
 
-    // SMB upgrade login form state — shown when "Connect directly" needs credentials
+    // SMB upgrade login form state: shown when "Connect directly" needs credentials
     let smbUpgradeLogin = $state<{
         volumeId: string
         server: string
@@ -198,7 +198,7 @@
     // Operation snapshot: tracks which files were selected when an operation started,
     // so the diff handler can adjust selection as files disappear.
     let operationSelectedNames = $state<string[] | 'all' | null>(null)
-    let diffGeneration = 0 // NOT $state — only used in async callbacks, never for rendering
+    let diffGeneration = 0 // NOT $state: only used in async callbacks, never for rendering
 
     // Type-to-jump: per-pane buffer + indicator. The reset delay is read live
     // from Settings > Advanced on each keystroke via the reactive getter, so
@@ -273,8 +273,8 @@
      * `currentPath`, subscribes to live updates if it's a new repo, and
      * unsubscribes when the path leaves the previous repo.
      *
-     * Runs whenever EITHER the chip or the status column is enabled — both
-     * read from `gitRepoInfo`. When both are off (or we're on a network /
+     * Runs whenever EITHER the chip or the status column is enabled (both
+     * read from `gitRepoInfo`). When both are off (or we're on a network /
      * MTP volume that can't host a git repo), the subscription is dropped.
      */
     async function syncGitState(path: string): Promise<void> {
@@ -352,11 +352,11 @@
     // view and to decide whether subscribing to the SMB reconnect manager is
     // even relevant for this pane).
     const currentVolumeInfo = $derived(getStoreVolumes().find((v) => v.id === volumeId) ?? null)
-    /** True if this pane is on an SMB share (any state — direct, os_mount, or disconnected). */
+    /** True if this pane is on an SMB share (any state: direct, os_mount, or disconnected). */
     const isSmbVolume = $derived(currentVolumeInfo?.smbConnectionState != null)
     /**
      * Reactive: the per-volume reconnect cycle state, or `null` if no cycle is
-     * running. The manager is the single source of truth for the view — by the
+     * running. The manager is the single source of truth for the view. By the
      * time this is non-null, the backend has already emitted `disconnected` and
      * the manager has scheduled the first attempt.
      */
@@ -365,13 +365,13 @@
     const showSmbReconnecting = $derived(
         reconnectState !== null && (reconnectState.status === 'waiting' || reconnectState.status === 'attempting'),
     )
-    /** Show the gave-up state — uses the existing unreachable banner with an added Disconnect button. */
+    /** Show the gave-up state: uses the existing unreachable banner with an added Disconnect button. */
     const showSmbGaveUp = $derived(reconnectState !== null && reconnectState.status === 'gave-up')
 
     // Subscribe to the per-volume reconnect manager whenever this pane is on
     // an SMB share. The subscription is refcounted (multiple panes on the same
     // share share one cycle) and serves two purposes:
-    // 1. Tells the manager "someone is watching" — the cycle starts on the next
+    // 1. Tells the manager "someone is watching": the cycle starts on the next
     //    `disconnected` event (via `handleDisconnected`), but only if subscribers > 0.
     // 2. Registers a success callback so the pane re-runs `loadDirectory` after
     //    a successful reconnect. (Reactive `$effect` covers showing/hiding the view.)
@@ -407,7 +407,7 @@
         const targetVolumeId = volumeId
         smbReconnectManager.cancel(targetVolumeId)
         // Fire the OS-level unmount (macOS: `diskutil unmount`). We don't await
-        // here — the FSEvents-driven `volumes-changed` will tear down the
+        // here. The FSEvents-driven `volumes-changed` will tear down the
         // SmbVolume and remove the entry; meanwhile the user expects the pane
         // to leave the broken share immediately, so navigate away in parallel.
         void disconnectSmbVolume(targetVolumeId).catch((e: unknown) => {
@@ -487,14 +487,14 @@
      * fires the IPC match, and (on the response) moves the cursor.
      *
      * Streaming listings: per the plan, we do NOT auto-jump on
-     * `listing-progress` — each keystroke = exactly one match against the
+     * `listing-progress`: each keystroke = exactly one match against the
      * cache as it stands at that moment.
      */
     export function handleJumpKeystroke(char: string): void {
         if (!listingId || loading || isNetworkView || isMtpDeviceOnly) return
         typeToJump.appendChar(char)
-        // Surface the buffer change to MCP — `runJumpMatch` syncs again on
-        // success, but a no-match keystroke would otherwise leave MCP stale.
+        // Surface the buffer change to MCP (`runJumpMatch` syncs again on
+        // success, but a no-match keystroke would otherwise leave MCP stale).
         debouncedSyncMcp.call()
     }
 
@@ -511,7 +511,7 @@
     /**
      * Runs the IPC fuzzy match and applies the result if it's still fresh.
      * The generation tag guards against out-of-order responses (slow keystroke 1
-     * resolving after fast keystroke 2 — same pattern as `diffGeneration`).
+     * resolving after fast keystroke 2, same pattern as `diffGeneration`).
      */
     async function runJumpMatch(buffer: string, generation: number): Promise<void> {
         if (!listingId || buffer === '') return
@@ -536,7 +536,7 @@
                     debouncedSyncMcp.call()
                 }
             } catch {
-                // Cache lookup failure is non-fatal — MCP just lacks the name.
+                // Cache lookup failure is non-fatal: MCP just lacks the name.
             }
         } catch (e) {
             log.warn('type-to-jump match failed: {error}', { error: getIpcErrorMessage(e) })
@@ -561,7 +561,7 @@
         return selection.getSelectedIndices()
     }
 
-    /** Whether ".." is shown — needed for index adjustment in copy/move. */
+    /** Whether ".." is shown (needed for index adjustment in copy/move). */
     export function hasParentEntry(): boolean {
         return hasParent
     }
@@ -632,7 +632,7 @@
         onRequestFocus: () => onRequestFocus?.(),
     })
 
-    // Destructure handlers — factory methods don't use `this`, safe to destructure
+    // Destructure handlers: factory methods don't use `this`, safe to destructure
     /* eslint-disable @typescript-eslint/unbound-method -- factory return, no `this` */
     const {
         handleRenameInput,
@@ -811,7 +811,7 @@
     // Poll to detect when the current directory is deleted externally (FSEvents doesn't notify)
     const dirExistsPollMs = 2000
     let dirExistsPollInterval: ReturnType<typeof setInterval>
-    let dirNotExistsCount = 0 // Consecutive "not exists" results — require 2 before navigating away
+    let dirNotExistsCount = 0 // Consecutive "not exists" results: require 2 before navigating away
 
     // Derive includeHidden from showHiddenFiles prop
     const includeHidden = $derived(showHiddenFiles)
@@ -849,7 +849,7 @@
             if (backendIndex >= totalCount) break
             const entry = await getFileAt(listingId, backendIndex, includeHidden)
             // Null means the listing on the BE has fewer entries than our cached
-            // `totalCount` (a directory-diff is mid-flight). Stop here — keeps the
+            // `totalCount` (a directory-diff is mid-flight). Stop here: keeps the
             // partial MCP state consistent and avoids trailing out-of-bounds calls
             // for the rest of the visible range.
             if (!entry) break
@@ -879,7 +879,7 @@
             const loadedStart = Math.max(0, visibleRangeStart)
             const loadedEnd = Math.min(effectiveTotal, visibleRangeEnd)
             // Surface type-to-jump state so MCP-driven tests can assert it.
-            // Only populated while a buffer or visible indicator exists —
+            // Only populated while a buffer or visible indicator exists:
             // keeps the YAML clean in the common case (no jump active).
             const typeToJumpInfo =
                 typeToJump.indicatorVisible || typeToJump.buffer !== ''
@@ -965,7 +965,7 @@
     let visibleRangeStart = $state(0)
     let visibleRangeEnd = $state(100)
 
-    // Pending load completion resolver — used by navigateToPath to signal when listing is done.
+    // Pending load completion resolver: used by navigateToPath to signal when listing is done.
     // Set at the start of loadDirectory, resolved by handleListingComplete / error / cancel handlers.
     let pendingLoadResolve: (() => void) | null = null
     let pendingLoadReject: ((reason: string) => void) | null = null
@@ -991,7 +991,7 @@
         const target = validPath ?? '~'
         const isOutsideVolume = volumeId !== 'root' && (target === '~' || target === '/')
         if (isOutsideVolume && onVolumeChange) {
-            // The volume root was unreachable — switch to the root volume
+            // The volume root was unreachable: switch to the root volume
             log.info('Volume root unreachable, switching to root volume with path: {target}', { target })
             onVolumeChange('root', '/', target)
         } else {
@@ -1116,10 +1116,10 @@
 
                         // For local volumes, check if the path was deleted.
                         // Use the checked variant so a connection-blip "false" doesn't get treated as
-                        // "deleted" — show the error pane in that case instead of walking up.
+                        // "deleted": show the error pane in that case instead of walking up.
                         void pathExistsChecked(loadPath).then(({ data: exists, timedOut }) => {
                             if (!exists && !timedOut) {
-                                // Path is gone — auto-navigate to nearest valid parent
+                                // Path is gone: auto-navigate to nearest valid parent
                                 log.info('Listing error for deleted path, navigating to valid parent: {path}', {
                                     path: loadPath,
                                 })
@@ -1127,7 +1127,7 @@
                                     navigateToFallback(validPath)
                                 })
                             } else {
-                                // Path exists, or we couldn't tell — show the original listing error
+                                // Path exists, or we couldn't tell: show the original listing error
                                 resetLoadingState(event.payload.message, false, event.payload.friendly)
                                 // Record the failed path in history so Cmd+[ goes back one step,
                                 // not two. The success path pushes via the `onPathChange` call in
@@ -1237,7 +1237,7 @@
         // Extract the folder name we were trying to enter, so parent can select it when reloading
         const folderName = currentPath.split('/').pop()
 
-        // Tell parent to navigate back — passes the path we were loading so parent can decide where to go
+        // Tell parent to navigate back (passes the path we were loading so parent can decide where to go)
         onCancelLoading?.(currentPath, folderName)
     }
 
@@ -1246,7 +1246,7 @@
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function navigateToPath(path: string, selectName?: string): Promise<void> {
         currentPath = path
-        // Start loadDirectory first — it rejects any previous pending load
+        // Start loadDirectory first: it rejects any previous pending load
         void loadDirectory(path, selectName)
         // Then set up our promise (after the previous one was rejected)
         return new Promise<void>((resolve, reject) => {
@@ -1311,7 +1311,7 @@
     async function fetchSyncStatusForPaths(paths: string[]) {
         if (paths.length === 0) return
 
-        // Cancel any pending retry — a new fetch supersedes it
+        // Cancel any pending retry: a new fetch supersedes it
         clearTimeout(syncRetryTimer)
         syncRetryTimer = undefined
 
@@ -1363,7 +1363,7 @@
                     paths = selectedPaths
                 }
             } catch {
-                // Selection lookup failed — fall back to single-file action.
+                // Selection lookup failed: fall back to single-file action.
             }
         }
         await showFileContextMenu(entry.path, entry.name, entry.isDirectory, paths)
@@ -1425,7 +1425,7 @@
             void unwatchVolumeSpace(paneId)
             void watchVolumeSpace(paneId, newVolumeId, targetPath)
         } else {
-            // Leaving a physical volume — stop watching
+            // Leaving a physical volume: stop watching
             void unwatchVolumeSpace(paneId)
         }
     }
@@ -1666,7 +1666,7 @@
                         return
                     }
                 }
-                // File not found (was hidden) or no file — clamp cursor
+                // File not found (was hidden) or no file: clamp cursor
                 if (currentCursor >= total) {
                     await setCursorIndex(Math.max(0, total - 1))
                 }
@@ -1695,15 +1695,15 @@
     // Track the previous volumeId to detect MTP connection completion
     let prevVolumeId = $state(volumeId)
 
-    // Reactive path loading — handles persistence restore AND MTP connection completion.
+    // Reactive path loading: handles persistence restore AND MTP connection completion.
     // One effect to avoid duplicate loadDirectory calls from overlapping triggers.
     $effect(() => {
         const newPath = initialPath // Track this
-        const curPath = untrack(() => currentPath) // Don't track — user navigation changes this
+        const curPath = untrack(() => currentPath) // Don't track: user navigation changes this
         const currentVolumeId = volumeId
 
         // Case 1: MTP device just connected (device-only → storage-specific)
-        // This takes priority — the device just became browsable, always load.
+        // This takes priority: the device just became browsable, always load.
         const wasDeviceOnly = isMtpVolumeId(prevVolumeId) && !prevVolumeId.includes(':')
         const isNowConnected = isMtpVolumeId(currentVolumeId) && currentVolumeId.includes(':')
 
@@ -1727,7 +1727,7 @@
             void loadDirectory(newPath)
         }
 
-        // Case 3: Device-only MTP — just sync path, don't load (auto-connect handles transition)
+        // Case 3: Device-only MTP: just sync path, don't load (auto-connect handles transition)
         if (isMtpDeviceOnly && newPath !== curPath) {
             log.debug('[FilePane] initialPath effect (MTP device-only): updating path only, paneId={paneId}', {
                 paneId,
@@ -1738,7 +1738,7 @@
 
     // Sync the breadcrumb's git chip and the status column whenever the path
     // changes (or when either feature toggle flips). Keep this effect tiny
-    // and side-effecting — actual repo lookup happens in `syncGitState` so
+    // and side-effecting: actual repo lookup happens in `syncGitState` so
     // we can call it from non-reactive paths too.
     $effect(() => {
         const path = currentPath
@@ -1747,7 +1747,7 @@
         void syncGitState(path)
     })
 
-    // Update global menu context when cursor position or focus changes (debounced — only matters for right-click)
+    // Update global menu context when cursor position or focus changes (debounced: only matters for right-click)
     $effect(() => {
         if (!isFocused) return
         if (entryUnderCursor && entryUnderCursor.name !== '..') {
@@ -1755,7 +1755,7 @@
         }
     })
 
-    // Re-fetch entry under the cursor when cursorIndex changes (debounced — status bar info can lag one frame)
+    // Re-fetch entry under the cursor when cursorIndex changes (debounced: status bar info can lag one frame)
     $effect(() => {
         void cursorIndex // Track
         if (listingId && !loading) {
@@ -1763,7 +1763,7 @@
         }
     })
 
-    // Re-fetch listing stats when selection changes (throttled — shows live count at steady cadence)
+    // Re-fetch listing stats when selection changes (throttled: shows live count at steady cadence)
     $effect(() => {
         void selection.selectedIndices.size // Track selection changes
         if (listingId && !loading) {
@@ -2050,7 +2050,7 @@
             if (isVirtualGitPath(currentPath)) return
             void pathExistsChecked(currentPath).then(({ data: exists, timedOut }) => {
                 // `timedOut` covers both a 2s syscall timeout and an SMB volume in
-                // `Disconnected` state — in both cases we don't know whether the path
+                // `Disconnected` state: in both cases we don't know whether the path
                 // exists. Reset the counter and wait for the connection to recover.
                 if (timedOut) {
                     dirNotExistsCount = 0
@@ -2066,7 +2066,7 @@
                 if (dirNotExistsCount < 2) return
 
                 // If on an external volume, check whether the volume root itself is gone.
-                // If so, skip — the volume unmount handler will manage the transition.
+                // If so, skip: the volume unmount handler will manage the transition.
                 if (volumePath !== '/') {
                     void pathExistsChecked(volumePath).then(
                         ({ data: volumeExists, timedOut: volumeTimedOut }) => {

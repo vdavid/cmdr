@@ -345,13 +345,13 @@ pub async fn check_reachability(host: &str, port: u16) -> Result<(), String> {
             Ok(())
         }
         Ok(Err(e)) => {
-            debug!("Unreachable: {} — {}", addr, e);
-            Err(format!("Couldn't reach {} — {}", addr, e))
+            debug!("Unreachable: {} ({})", addr, e);
+            Err(format!("Couldn't reach {}: {}", addr, e))
         }
         Err(_) => {
             debug!("Timed out connecting to {}", addr);
             Err(format!(
-                "Couldn't reach {} — connection timed out after {}s",
+                "Couldn't reach {}: connection timed out after {}s",
                 addr, REACHABILITY_TIMEOUT_SECS
             ))
         }
@@ -885,7 +885,7 @@ mod tests {
         assert_eq!(
             store.servers.len(),
             thread_count,
-            "Expected {} servers but got {} — a concurrent write was lost",
+            "Expected {} servers but got {} (a concurrent write was lost)",
             thread_count,
             store.servers.len()
         );
@@ -1049,7 +1049,7 @@ mod integration_tests {
         assert_eq!(host.ip_address, None);
         assert_eq!(host.port, 9445);
 
-        // ID is deterministic — same inputs produce same ID
+        // ID is deterministic: same inputs produce same ID
         let id = generate_server_id(&parsed.host, parsed.port);
         assert_eq!(id, host.id);
     }

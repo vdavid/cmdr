@@ -16,7 +16,7 @@ let mcpPort: number | null = null
 /** Discovers the actual MCP port from the running app via Tauri IPC. */
 export async function initMcpClient(tauriPage: PageLike): Promise<void> {
   mcpPort = await tauriPage.evaluate<number>(`window.__TAURI_INTERNALS__.invoke('get_mcp_port')`)
-  if (!mcpPort) throw new Error('MCP server not running — enable it in Settings > Developer')
+  if (!mcpPort) throw new Error('MCP server not running: enable it in Settings > Developer')
 }
 
 /** Idempotent init: calls `initMcpClient` only if the port hasn't been discovered yet. */

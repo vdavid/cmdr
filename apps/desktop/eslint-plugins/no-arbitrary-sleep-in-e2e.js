@@ -8,11 +8,11 @@
  * recreate the same pattern.
  *
  * What this rule flags:
- *   await sleep(<any-arg>)              // most common — `sleep` imported from helpers.ts
+ *   await sleep(<any-arg>)              // most common (`sleep` imported from helpers.ts)
  *   await helpers.sleep(<any-arg>)      // qualified call form
  *
  * Scope: only `*.spec.ts` files inside `test/e2e-playwright/`. Helper files
- * (helpers.ts, conflict-helpers.ts, etc.) are NOT linted — they implement
+ * (helpers.ts, conflict-helpers.ts, etc.) are NOT linted: they implement
  * `pollUntil` itself, which legitimately calls `sleep(interval)` between
  * iterations.
  *
@@ -40,7 +40,7 @@ export default {
     },
     messages: {
       sleepInE2E:
-        '`await sleep({{ arg }})` in an E2E spec is a fixed margin — either too tight (flake) or too loose (slow). ' +
+        '`await sleep({{ arg }})` in an E2E spec is a fixed margin, either too tight (flake) or too loose (slow). ' +
         'Replace with `pollUntil(page, async () => …, timeout)` or `page.waitForSelector(selector, timeout)`. ' +
         'See `docs/testing.md` § "❌ `await sleep(N)` in E2E specs". ' +
         'Opt out per-line with `// eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- <reason>` only when a ' +

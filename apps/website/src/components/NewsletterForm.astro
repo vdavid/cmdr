@@ -30,7 +30,7 @@ const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)
         class="newsletter-form__input"
     />
 
-    {/* Honeypot — hidden from humans, filled by bots */}
+    {/* Honeypot: hidden from humans, filled by bots */}
     <div aria-hidden="true" style="position:absolute;left:-9999px;top:-9999px;">
         <label>
             Leave this empty
@@ -172,7 +172,7 @@ const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)
                 e.preventDefault()
                 feedback.textContent = ''
 
-                // Honeypot check — silently discard
+                // Honeypot check: silently discard
                 if (honeypot.value) return
 
                 const email = emailInput.value.trim()

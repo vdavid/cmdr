@@ -129,7 +129,7 @@
     const isCopy = $derived(operationType === 'copy')
     const isMove = $derived(operationType === 'move')
 
-    /** Title for the scanning phase — names the upcoming action so the user
+    /** Title for the scanning phase: names the upcoming action so the user
      *  knows why we're walking the tree, not just "scanning for fun". */
     const scanTitleMap: Record<TransferOperationType, string> = {
         copy: 'Verifying before copy...',
@@ -143,7 +143,7 @@
         volumes.find((v) => v.id === destVolumeId)?.smbConnectionState === 'os_mount',
     )
 
-    /** Whether this move involves a non-local volume (MTP, etc.) — backend handles all strategy. */
+    /** Whether this move involves a non-local volume (MTP, etc.); backend handles all strategy. */
     const isVolumeMove = $derived(
         operationType === 'move' && (sourceVolumeId !== DEFAULT_VOLUME_ID || (destVolumeId ?? DEFAULT_VOLUME_ID) !== DEFAULT_VOLUME_ID),
     )
@@ -167,7 +167,7 @@
 
     /** Fraction (0..1) for the scan-phase progress bar. Returns `null` when no
      *  expected total is available (the FE falls back to running tallies only).
-     *  Picks whichever axis has the higher fraction — if the index estimate is
+     *  Picks whichever axis has the higher fraction; if the index estimate is
      *  off (files added since the last index pass), the bar still tracks toward
      *  100% via whichever axis advances faster. Capped at 1.0 visually. */
     const scanProgressFraction = $derived.by<number | null>(() => {
@@ -193,7 +193,7 @@
     /** Set when the operation reaches a terminal state (complete, error, cancel, rollback).
      *  Prevents onDestroy's safety-net cancel from interfering with an already-handled outcome.
      *  Reactive ($state) so the Cancel/Rollback buttons can disable themselves during the
-     *  MIN_DISPLAY_MS hold-open window after write-complete — clicking them then would be a
+     *  MIN_DISPLAY_MS hold-open window after write-complete; clicking them then would be a
      *  no-op since the backend state is already gone. */
     let operationSettled = $state(false)
 
@@ -252,11 +252,11 @@
     let filesPerSecond = $state<number | null>(null)
     /** Raw ETA from the backend (`max(ETA_bytes, ETA_files)`). */
     let etaSecondsRaw = $state<number | null>(null)
-    /** Display-smoothed ETA — slow EWMA over the raw value to kill flicker on
+    /** Display-smoothed ETA: slow EWMA over the raw value to kill flicker on
      *  the "Ns remaining" readout. The estimator itself stays responsive. */
     let etaSecondsDisplay = $state<number | null>(null)
 
-    /** Smooth the displayed ETA toward the latest backend value. Display-only —
+    /** Smooth the displayed ETA toward the latest backend value. Display-only;
      *  the underlying estimator is unsmoothed and reacts to real changes. */
     function updateDisplayEta(raw: number | null) {
         if (raw === null) {
@@ -273,7 +273,7 @@
         etaSecondsDisplay = etaSecondsDisplay + 0.25 * (raw - etaSecondsDisplay)
     }
 
-    // Progress stages for visualization — the active phase label adapts to operation type.
+    // Progress stages for visualization; the active phase label adapts to operation type.
     const activePhaseId = $derived<WriteOperationPhase>(
         operationType === 'delete' ? 'deleting' : operationType === 'trash' ? 'trashing' : 'copying',
     )
@@ -304,7 +304,7 @@
             bytesTotal: event.bytesTotal,
         })
 
-        // Drop the smoothed ETA on phase transitions — the backend estimator
+        // Drop the smoothed ETA on phase transitions; the backend estimator
         // resets, so the FE display number should re-warm with it.
         if (event.phase !== phase) {
             etaSecondsDisplay = null
@@ -457,7 +457,7 @@
             )
         }
         if (operationType === 'move') {
-            // Volume move (MTP or other non-local) — backend handles same-volume, cross-volume, etc.
+            // Volume move (MTP or other non-local); backend handles same-volume, cross-volume, etc.
             if (isVolumeMove) {
                 return moveBetweenVolumes(
                     sourceVolumeId,
@@ -482,7 +482,7 @@
                 previewId,
             })
         }
-        // Copy: always use copyBetweenVolumes — the backend handles local-to-local optimization
+        // Copy: always use copyBetweenVolumes; the backend handles local-to-local optimization
         return copyBetweenVolumes(
             sourceVolumeId,
             sourcePaths,
@@ -530,7 +530,7 @@
             // If the dialog was destroyed/cancelled while waiting for the IPC response,
             // cancel the operation immediately and bail out
             if (destroyed) {
-                log.info('Dialog destroyed before operationId arrived — cancelling op={operationId}', {
+                log.info('Dialog destroyed before operationId arrived; cancelling op={operationId}', {
                     operationId,
                 })
                 void cancelWriteOperation(operationId, true)
@@ -568,7 +568,7 @@
         }
 
         if (!operationId) {
-            log.warn('Cancel requested but no operationId yet — will cancel after IPC resolves')
+            log.warn('Cancel requested but no operationId yet; will cancel after IPC resolves')
             destroyed = true
             return
         }
@@ -605,7 +605,7 @@
             try {
                 await cancelWriteOperation(operationId, true)
                 log.debug('Rollback request sent successfully')
-                // Dialog stays open — progress events with phase=rolling_back will update the UI.
+                // Dialog stays open; progress events with phase=rolling_back will update the UI.
                 // Dialog closes when write-cancelled event is received.
             } catch (err) {
                 log.error('Failed to rollback operation: {error}', { error: err })
@@ -674,7 +674,7 @@
      * Two independent signals can say "scan done": the `scan-preview-complete`
      * event firing, or the post-subscription `checkScanPreviewStatus` IPC
      * returning true. Either can win the race. Both converge on `kickOff()`,
-     * which is idempotent via the `started` flag — so the operation dispatches
+     * which is idempotent via the `started` flag; the operation dispatches
      * exactly once, even if both signals arrive during the `await`.
      *
      * We subscribe to events BEFORE the status check so a fast completion
@@ -685,7 +685,7 @@
      */
     async function waitForScanThenStart() {
         if (!previewId) {
-            log.error('waitForScanThenStart called with null previewId — TransferDialog invariant violated')
+            log.error('waitForScanThenStart called with null previewId; TransferDialog invariant violated')
             void startOperation()
             return
         }
@@ -738,7 +738,7 @@
             await onScanPreviewError((event) => {
                 if (!isOurScanEvent(event.previewId)) return
                 if (started) return // already dispatched or terminated; ignore late errors
-                started = true // terminal — don't let a late scan-complete dispatch an operation
+                started = true // terminal; don't let a late scan-complete dispatch an operation
                 log.error('Scan preview error: {message}', { message: event.message })
                 waitingForScan = false
                 cleanupScanListeners()
@@ -754,7 +754,7 @@
             await onScanPreviewCancelled((event) => {
                 if (!isOurScanEvent(event.previewId)) return
                 if (started) return // already dispatched or terminated; ignore late cancellations
-                started = true // terminal — don't let a late scan-complete dispatch an operation
+                started = true // terminal; don't let a late scan-complete dispatch an operation
                 log.info('Scan preview cancelled')
                 waitingForScan = false
                 cleanupScanListeners()
@@ -793,7 +793,7 @@
         cleanupScanListeners()
         if (operationId && !operationSettled) {
             // Unexpected teardown (hot-reload, navigation, window close): stop the operation
-            // but don't roll back — never do silent background work without visual feedback.
+            // but don't roll back; never do silent background work without visual feedback.
             void cancelWriteOperation(operationId, false)
         }
         cleanup()
@@ -1037,7 +1037,7 @@
                 </div>
             </div>
 
-            <!-- Current file (active phase only — scanning shows it inside scanPhaseBody) -->
+            <!-- Current file (active phase only; scanning shows it inside scanPhaseBody) -->
             {#if currentFile}
                 <div class="current-file" use:useShortenMiddle={{ text: currentFile, preferBreakAt: '/' }}>
                 </div>
@@ -1052,7 +1052,7 @@
 
         <!-- Action buttons -->
         <!-- Once `operationSettled` is true (write-complete / write-cancelled / write-error
-             arrived) the backend state is gone, so a Rollback click can't be honored — disable
+             arrived) the backend state is gone, so a Rollback click can't be honored; disable
              both buttons during the MIN_DISPLAY_MS hold-open window. Without this, the user can
              click Rollback after the copy completed and silently get nothing. -->
         <div class="button-row">

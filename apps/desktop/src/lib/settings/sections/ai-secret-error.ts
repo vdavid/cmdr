@@ -18,7 +18,7 @@ export interface SecretErrorMessage {
 /** Pulls a `kind` + `message` out of whatever the Tauri command rejected with. The error shape
  *  varies: `IpcError` from `throwIpcError`, a bare `AiApiKeyError` object, or a generic JS Error. */
 function extractErrorShape(e: unknown): { kind: SecretErrorKind; message: string } {
-  // IpcError shape: { message, timedOut } — wraps the underlying serialized error.
+  // IpcError shape: { message, timedOut }. Wraps the underlying serialized error.
   if (isIpcError(e)) {
     const msg = e.message
     const kind = inferKindFromMessage(msg)

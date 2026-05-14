@@ -262,7 +262,7 @@ impl IndexWriter {
         // Phase 1 instrumentation: track best-effort channel depth.
         self.queue_depth.fetch_add(1, Ordering::Relaxed);
         self.sender.send(msg).map_err(|e| {
-            // Send failed — undo the depth bump so the heartbeat doesn't drift.
+            // Send failed. Undo the depth bump so the heartbeat doesn't drift.
             self.queue_depth.fetch_sub(1, Ordering::Relaxed);
             let _ = e;
             IndexStoreError::Io(std::io::Error::new(
@@ -430,10 +430,10 @@ impl WriterStats {
 /// (`bulk_get_children_stats_by_id` and `bulk_get_child_dir_ids`) by tracking
 /// the same information incrementally as entries are inserted.
 struct AccumulatorMaps {
-    /// `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count, has_symlinks_direct)` — direct children only.
+    /// `parent_id -> (logical_size_sum, physical_size_sum, file_count, dir_count, has_symlinks_direct)`: direct children only.
     /// `has_symlinks_direct` is `true` if any direct child of `parent_id` is a symlink.
     direct_stats: HashMap<i64, (u64, u64, u64, u64, bool)>,
-    /// `parent_id -> Vec<child_dir_id>` — direct child directories only.
+    /// `parent_id -> Vec<child_dir_id>`: direct child directories only.
     child_dirs: HashMap<i64, Vec<i64>>,
     /// Running count of entries inserted so far (for flushing progress).
     entries_inserted: u64,
@@ -510,7 +510,7 @@ fn writer_loop(
 
         let msg = match recv_result {
             Ok(m) => {
-                // Decrement queue depth — the message has left the channel.
+                // Decrement queue depth: the message has left the channel.
                 queue_depth.fetch_sub(1, Ordering::Relaxed);
                 m
             }
@@ -1256,7 +1256,7 @@ fn handle_delete_subtree_by_id(conn: &rusqlite::Connection, root_id: i64, mutati
             -(dir_count as i32),
         );
         // If the deleted subtree contained any symlinks, the parent's
-        // `recursive_has_symlinks` may flip — recompute up the chain.
+        // `recursive_has_symlinks` may flip, so recompute up the chain.
         if subtree_had_symlinks {
             propagate_recursive_has_symlinks(conn, pid);
         }
@@ -1327,7 +1327,7 @@ fn handle_compute_all_aggregates(
     match result {
         Ok(count) => {
             log::info!(
-                "ComputeAllAggregates: done — {count} directories in {:.1}s",
+                "ComputeAllAggregates: done, {count} directories in {:.1}s",
                 t.elapsed().as_secs_f64(),
             );
         }
@@ -1502,7 +1502,7 @@ fn recompute_recursive_has_symlinks(conn: &rusqlite::Connection, dir_id: i64) ->
 /// from its direct children + subdirs' stored flags.
 ///
 /// Stops walking up as soon as an ancestor's recomputed value matches the value
-/// already in the DB — the OR-aggregate is monotonic, so once the value stabilizes,
+/// already in the DB. The OR-aggregate is monotonic, so once the value stabilizes,
 /// further ancestors won't change.
 ///
 /// Used after symlink additions/removals (and subtree deletes that may have
@@ -1520,7 +1520,7 @@ fn propagate_recursive_has_symlinks(conn: &rusqlite::Connection, start_id: i64) 
             .map(|s| s.recursive_has_symlinks);
 
         if old_value == Some(new_value) {
-            // No change — the rest of the chain can't change either.
+            // No change: the rest of the chain can't change either.
             break;
         }
 
@@ -1830,7 +1830,7 @@ mod tests {
             .unwrap();
         }
 
-        // Delete the file — writer should auto-propagate (-500, -1, 0) to parent id=10
+        // Delete the file: writer should auto-propagate (-500, -1, 0) to parent id=10
         writer.send(WriteMessage::DeleteEntryById(11)).unwrap();
         writer.flush_blocking().unwrap();
 
@@ -2027,7 +2027,7 @@ mod tests {
             .unwrap();
         }
 
-        // Delete a non-existent entry — should not propagate any delta
+        // Delete a non-existent entry: should not propagate any delta
         writer.send(WriteMessage::DeleteEntryById(999)).unwrap();
         writer.flush_blocking().unwrap();
 
@@ -2196,7 +2196,7 @@ mod tests {
             .unwrap();
         }
 
-        // Insert a new file via UpsertEntryV2 — should auto-propagate to parent
+        // Insert a new file via UpsertEntryV2: should auto-propagate to parent
         writer
             .send(WriteMessage::UpsertEntryV2 {
                 parent_id: 10,
@@ -2273,7 +2273,7 @@ mod tests {
             .unwrap();
         writer.flush_blocking().unwrap();
 
-        // Update the same file with a larger size — should propagate +100 delta
+        // Update the same file with a larger size: should propagate +100 delta
         writer
             .send(WriteMessage::UpsertEntryV2 {
                 parent_id: 10,
@@ -2467,7 +2467,7 @@ mod tests {
             .unwrap();
         writer.flush_blocking().unwrap();
 
-        // Reconciler sends update for secondary with full sizes — dedup should fire again
+        // Reconciler sends update for secondary with full sizes: dedup should fire again
         writer
             .send(WriteMessage::UpsertEntryV2 {
                 parent_id: ROOT_ID,
@@ -2560,7 +2560,7 @@ mod tests {
         writer.send(WriteMessage::DeleteEntryById(primary_id)).unwrap();
         writer.flush_blocking().unwrap();
 
-        // Reconciler sends update for secondary — nlink=1 since it's the only link now
+        // Reconciler sends update for secondary: nlink=1 since it's the only link now
         writer
             .send(WriteMessage::UpsertEntryV2 {
                 parent_id: ROOT_ID,
@@ -3008,7 +3008,7 @@ mod tests {
 
     // ── MoveEntryV2 tests ────────────────────────────────────────────
 
-    /// Helper: insert a dir with dir_stats. Returns nothing — the caller knows the id it asked for.
+    /// Helper: insert a dir with dir_stats. Returns nothing (the caller knows the id it asked for).
     fn insert_dir_with_stats(
         writer: &IndexWriter,
         db_path: &Path,

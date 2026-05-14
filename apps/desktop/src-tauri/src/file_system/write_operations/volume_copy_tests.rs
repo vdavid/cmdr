@@ -629,7 +629,7 @@ async fn delete_volume_path_recursive_missing_path_is_ok() {
 async fn test_concurrent_copy_50_files_all_succeed() {
     let (source, dest) = make_volumes();
 
-    // 50 small files — well over the threshold=3 and concurrency=32.
+    // 50 small files, well over the threshold=3 and concurrency=32.
     for i in 0..50 {
         let name = format!("/file_{:02}.bin", i);
         source
@@ -891,7 +891,7 @@ async fn test_concurrent_copy_cancellation_mid_batch() {
 
     // Either Cancelled (pure cancel branch) or IoError (if a task's
     // progress callback returned Break). Both are valid cancellation
-    // shapes — matching the sequential test `test_multi_file_copy_cancel_mid_flight`.
+    // shapes, matching the sequential test `test_multi_file_copy_cancel_mid_flight`.
     assert!(
         matches!(
             result,
@@ -907,7 +907,7 @@ async fn test_concurrent_copy_cancellation_mid_batch() {
         result
     );
 
-    // Intent was flipped to Stopped by the sink — confirm we observed it.
+    // Intent was flipped to Stopped by the sink; confirm we observed it.
     assert_eq!(load_intent(&state.intent), OperationIntent::Stopped);
 
     // Less than all 20 landed (cancellation worked somewhere).
@@ -930,14 +930,14 @@ async fn test_concurrent_copy_cancellation_mid_batch() {
 //   user "david", password in `SMB2_TEST_NAS_PASSWORD` env var.
 // - 100 × 10 KB files pre-uploaded at `_test/bench_100tiny/f_000.bin`
 //   through `f_099.bin` (see `smb2`'s `bench_100_tiny_files_seq_vs_parallel`
-//   — running that benchmark uploads them as a side effect).
+//   (running that benchmark uploads them as a side effect).
 //
 // Run with:
 //   cd apps/desktop/src-tauri && cargo test --release \
 //     --lib phase4_bench -- --ignored --nocapture --test-threads=1
 
 #[tokio::test]
-#[ignore = "Phase 4 baseline — requires QNAP at 192.168.1.111 and SMB2_TEST_NAS_PASSWORD env var"]
+#[ignore = "Phase 4 baseline: requires QNAP at 192.168.1.111 and SMB2_TEST_NAS_PASSWORD env var"]
 #[allow(
     clippy::print_stdout,
     clippy::needless_update,
@@ -970,7 +970,7 @@ async fn phase4_bench_baseline_smb_to_local_100_tiny_files() {
         445,
     )
     .await
-    .expect("SMB connect failed — is QNAP at 192.168.1.111 reachable?");
+    .expect("SMB connect failed (is QNAP at 192.168.1.111 reachable?)");
     let smb_setup = smb_setup_start.elapsed();
 
     // ── Set up destination (local temp dir) ───────────────────────

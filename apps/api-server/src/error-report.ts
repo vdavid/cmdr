@@ -26,7 +26,7 @@ const SHORT_ID_PATTERN = /^ERR-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{5}$/
 export interface ErrorReportMeta {
   /**
    * Client-generated `ERR-XXXXX` shown in the UI before upload. The server uses this
-   * id as-is — the trailing UUID in the R2 key guarantees object uniqueness, so we
+   * id as-is. The trailing UUID in the R2 key guarantees object uniqueness, so we
    * never regenerate. The server validates the shape and rejects malformed ids.
    */
   id: string
@@ -35,7 +35,7 @@ export interface ErrorReportMeta {
    * Set by the desktop client from `cfg!(debug_assertions)`. `'debug'` reports
    * come from a dev build of the app; the Discord notification gets a `[DEV]`
    * prefix so triage can keep them apart from production traffic. Optional for
-   * backwards compatibility with older clients that didn't set it — unset is
+   * backwards compatibility with older clients that didn't set it; unset is
    * treated as `'release'`.
    */
   buildMode?: 'release' | 'debug'
@@ -111,7 +111,7 @@ function scheduleBackground(c: { executionCtx: ExecutionContext }, work: Promise
 /**
  * Background work that runs after the 200 has already shipped:
  * update the bytes counter, maybe evict, post Discord notification.
- * Wrapped to never throw — failures here are logged, not propagated.
+ * Wrapped to never throw; failures here are logged, not propagated.
  */
 async function postUploadWork(
   env: Bindings,
@@ -207,7 +207,7 @@ errorReport.post('/error-report', async (c) => {
   const datePrefix = todayDatePrefix()
   const env = envSegment(meta.buildMode)
   // The trailing UUID guarantees object uniqueness on its own. On the astronomically
-  // rare (id, date, uuid) collision, retry with a fresh UUID — never a fresh id, so
+  // rare (id, date, uuid) collision, retry with a fresh UUID, never a fresh id, so
   // the user-visible id the dialog showed stays stable.
   let key = buildR2Key(env, datePrefix, id, crypto.randomUUID())
   for (let attempt = 0; attempt < 3; attempt++) {

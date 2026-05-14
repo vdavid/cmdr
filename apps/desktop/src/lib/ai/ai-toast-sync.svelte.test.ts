@@ -57,7 +57,7 @@ describe('ai-toast-sync', () => {
     const options = vi.mocked(addToast).mock.calls[0][1]
     expect(options?.id).toBe('ai')
     expect(options?.dismissal).toBe('persistent')
-    expect(options?.closeTooltip).toBe('Close this notification — the download will continue in the background')
+    expect(options?.closeTooltip).toBe('Close this notification (the download will continue in the background)')
     expect(typeof options?.onDismiss).toBe('function')
   })
 
@@ -75,7 +75,7 @@ describe('ai-toast-sync', () => {
     markDownloadToastDismissed()
     flushSync()
 
-    // No new addToast call — the effect re-ran but skipped the add.
+    // No new addToast call: the effect re-ran but skipped the add.
     expect(addToast).toHaveBeenCalledTimes(1)
   })
 
@@ -90,7 +90,7 @@ describe('ai-toast-sync', () => {
     expect(addToast).toHaveBeenCalledTimes(1)
 
     // User goes back to offer, then starts a new download. `handleDownload` clears the
-    // flag, then sets the state — mirror that order here.
+    // flag, then sets the state. Mirror that order here.
     state.notificationState = 'offer'
     flushSync()
     state.downloadToastUserDismissed = false

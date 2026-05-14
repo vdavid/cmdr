@@ -1,7 +1,7 @@
 //! Copy strategy selection for file operations.
 //!
 //! The only reason to use platform-native copy APIs (`copyfile(3)`, `copy_file_range(2)`) is
-//! filesystem-level cloning (APFS clonefile, btrfs/XFS reflink) — instant, zero-cost copies
+//! filesystem-level cloning (APFS clonefile, btrfs/XFS reflink): instant, zero-cost copies
 //! that create a copy-on-write pointer instead of copying bytes. In all other cases, our chunked
 //! copy is equivalent in speed and strictly better for progress reporting and cancellation.
 //!
@@ -46,7 +46,7 @@ use super::types::WriteOperationError;
 /// Returns true if source and dest are on the same APFS volume (clonefile is possible).
 ///
 /// Checks two things:
-/// 1. Same volume via `st_dev` (device ID from `stat`) — same approach as `is_same_filesystem`
+/// 1. Same volume via `st_dev` (device ID from `stat`), same approach as `is_same_filesystem`
 /// 2. Filesystem type is APFS via `statfs.f_fstypename`
 ///
 /// Handles non-existent destination paths by checking the parent directory.
@@ -54,7 +54,7 @@ use super::types::WriteOperationError;
 fn is_same_apfs_volume(source: &Path, dest: &Path) -> bool {
     use std::os::unix::fs::MetadataExt;
 
-    // Check same volume via device ID (works even when dest doesn't exist — we check parent)
+    // Check same volume via device ID (works even when dest doesn't exist: we check parent)
     let src_dev = match std::fs::metadata(source) {
         Ok(m) => m.dev(),
         Err(_) => return false,
@@ -75,7 +75,7 @@ fn is_same_apfs_volume(source: &Path, dest: &Path) -> bool {
         return false;
     }
 
-    // Same volume — now check if it's APFS (only APFS supports clonefile)
+    // Same volume: now check if it's APFS (only APFS supports clonefile)
     is_apfs(source)
 }
 
@@ -102,7 +102,7 @@ fn is_apfs(path: &Path) -> bool {
 
 /// Copies file contents using the best strategy for the source/destination combination.
 ///
-/// On macOS, uses `copyfile(3)` only for same-APFS-volume copies (APFS clonefile — instant,
+/// On macOS, uses `copyfile(3)` only for same-APFS-volume copies (APFS clonefile: instant,
 /// zero-cost copy-on-write). All other cases use chunked copy for reliable cancellation and
 /// progress reporting.
 #[cfg(target_os = "macos")]
@@ -250,7 +250,7 @@ mod tests {
     }
 
     // ----------------------------------------------------------------------
-    // is_apfs / is_same_apfs_volume — mutation-driven survivors.
+    // is_apfs / is_same_apfs_volume: mutation-driven survivors.
     //
     // Both helpers were previously only covered indirectly via
     // copy_file_with_strategy. cargo-mutants showed survivors for
@@ -267,7 +267,7 @@ mod tests {
         let temp_dir = create_temp_dir("is-apfs-true");
         assert!(
             is_apfs(&temp_dir),
-            "tempfs path on macOS dev box should be APFS — if this fails on a non-APFS bot, gate the test on a precheck"
+            "tempfs path on macOS dev box should be APFS. If this fails on a non-APFS bot, gate the test on a precheck."
         );
         cleanup_temp_dir(&temp_dir);
     }

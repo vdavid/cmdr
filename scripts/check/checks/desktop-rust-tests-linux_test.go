@@ -10,7 +10,7 @@ func TestTrimRustTestProgress_CargoTestFormat(t *testing.T) {
 	input := `running 4 tests
 test foo::bar ... ok
 test foo::baz ... ignored
-test foo::qux ... ignored, real API call — set ANTHROPIC_API_KEY to run
+test foo::qux ... ignored, real API call (set ANTHROPIC_API_KEY to run)
 test foo::doom ... FAILED
 
 failures:
@@ -104,7 +104,7 @@ error: test run failed
 func TestTrimRustTestProgress_PanicMessageWithTestPhrase(t *testing.T) {
 	// A panic body that happens to contain a "test ... ok" substring on its
 	// own line MUST be preserved. Anchoring to the start of the line is what
-	// protects this case — only the cargo harness emits unindented `test `
+	// protects this case; only the cargo harness emits unindented `test `
 	// lines.
 	input := `test foo::bar ... FAILED
 
@@ -174,7 +174,7 @@ W: Failed to fetch http://example.com/repo
 }
 
 func TestTrimBuildNoise_DoesNotTruncateLongOutput(t *testing.T) {
-	// 200 distinct rustc error lines must ALL survive — no length-based
+	// 200 distinct rustc error lines must ALL survive. No length-based
 	// truncation may exist. Each line is unique so we can count survivors.
 	var sb strings.Builder
 	for i := range 200 {

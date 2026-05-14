@@ -3,8 +3,8 @@
 //! See `tcc_paths.rs` for the path predicate. This module owns the runtime
 //! state (a `RwLock<HashSet<PathBuf>>`), exposes a small API for callers
 //! that observe `PermissionDenied`, and runs an `NSApplicationDidBecomeActive`
-//! observer that re-probes the set whenever the user returns to Cmdr —
-//! that's how the UI feels "live" after the user grants permission in
+//! observer that re-probes the set whenever the user returns to Cmdr.
+//! That's how the UI feels "live" after the user grants permission in
 //! System Settings, without polling.
 //!
 //! Public flow:
@@ -107,11 +107,11 @@ pub fn snapshot() -> Vec<String> {
 }
 
 /// Re-probe every path in the restricted set with a cheap `read_dir`. Any
-/// path that now opens successfully is cleared. Runs on a blocking task —
-/// safe to call from the main thread (the observer block does so).
+/// path that now opens successfully is cleared. Runs on a blocking task,
+/// so it's safe to call from the main thread (the observer block does so).
 ///
-/// macOS-only because the only caller — the `NSApplicationDidBecomeActive`
-/// observer in `install_did_become_active_observer` below — is itself macOS
+/// macOS-only because the only caller (the `NSApplicationDidBecomeActive`
+/// observer in `install_did_become_active_observer` below) is itself macOS
 /// only. Other platforms have no equivalent re-probe trigger today, so the
 /// function would just be dead code there (and `#![deny(unused)]` would fail
 /// the Linux build).
@@ -131,7 +131,7 @@ pub fn reprobe_all_async() {
                 Ok(_) => to_clear.push(path.clone()),
                 Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => { /* still denied */ }
                 Err(_) => {
-                    // NotFound, broken symlink, etc. — clear so the set
+                    // NotFound, broken symlink, etc.: clear so the set
                     // doesn't grow forever with stale entries.
                     to_clear.push(path.clone());
                 }
@@ -147,7 +147,7 @@ fn schedule_emit() {
     let generation = EMIT_GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
     let app = match APP_HANDLE.get() {
         Some(a) => a.clone(),
-        None => return, // init() hasn't run yet — first emit will go via bootstrap query.
+        None => return, // init() hasn't run yet; first emit will go via bootstrap query.
     };
     tauri::async_runtime::spawn(async move {
         tokio::time::sleep(Duration::from_millis(DEBOUNCE_MS)).await;
@@ -179,7 +179,7 @@ fn install_did_become_active_observer() {
         center.addObserverForName_object_queue_usingBlock(
             // NSApplication notification (posted on the app itself, not NSWorkspace).
             // NotificationCenter still routes by name, so this works via
-            // the NSWorkspace center too — but for symmetry with the rest
+            // the NSWorkspace center too, but for symmetry with the rest
             // of our observers we use the workspace center. The
             // app-became-active name is rebroadcast through the workspace
             // center on macOS 12+.

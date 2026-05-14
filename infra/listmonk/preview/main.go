@@ -18,7 +18,7 @@ import (
 const port = "9900"
 
 // ---------------------------------------------------------------------------
-// Localizer mock — same interface as listmonk's L template object
+// Localizer mock (same interface as listmonk's L template object)
 // ---------------------------------------------------------------------------
 
 type localizer struct{ t map[string]string }
@@ -82,8 +82,8 @@ code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 13p
 </style></head><body>
 <h1>Email template preview</h1>
 <ul>
-<li><a href="/optin">Opt-in confirmation</a> — <code>email-templates/subscriber-optin.html</code></li>
-<li><a href="/campaign">Campaign newsletter</a> — <code>campaign-template.html</code></li>
+<li><a href="/optin">Opt-in confirmation</a>: <code>email-templates/subscriber-optin.html</code></li>
+<li><a href="/campaign">Campaign newsletter</a>: <code>campaign-template.html</code></li>
 </ul>
 <p class="hint">Edit the template files, then refresh the browser to see changes.</p>
 </body></html>`)
@@ -130,7 +130,7 @@ func handleCampaign(w http.ResponseWriter, _ *http.Request) {
 	data := map[string]any{
 		"L": loc,
 		"Campaign": map[string]any{
-			"Subject": "What's new in Cmdr — February 2026",
+			"Subject": "What's new in Cmdr: February 2026",
 			"Attribs": map[string]string{
 				"preheader": "Fresh features, bug fixes, and what's coming next.",
 			},
@@ -205,7 +205,7 @@ func rewriteLocalizerCalls(src string) string {
 }
 
 // ---------------------------------------------------------------------------
-// Sample content — exercises most CSS styles in the campaign template
+// Sample content (exercises most CSS styles in the campaign template)
 // ---------------------------------------------------------------------------
 
 const sampleCampaignContent = `
@@ -216,17 +216,17 @@ and more keyboard-friendly.</p>
 
 <h2>Highlights</h2>
 <ul>
-<li><strong>Batch rename</strong> — rename dozens of files with a single pattern.
+<li><strong>Batch rename</strong>: rename dozens of files with a single pattern.
 <a href="https://getcmdr.com">Learn more</a></li>
-<li><strong>Quick preview</strong> — press Space to preview any file without
+<li><strong>Quick preview</strong>: press Space to preview any file without
 leaving the file list</li>
-<li><strong>Faster SMB</strong> — network folder loading is now 3x faster on
+<li><strong>Faster SMB</strong>: network folder loading is now 3x faster on
 large shares</li>
 </ul>
 
 <blockquote>
 "I switched from Forklift and haven't looked back. The speed difference is
-insane."<br>— A happy Cmdr user
+insane."<br>- A happy Cmdr user
 </blockquote>
 
 <h2>Try it out</h2>

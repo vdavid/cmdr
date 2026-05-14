@@ -25,7 +25,7 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
 
     let raw = format!("{err:?}");
     match err {
-        // Variants that map to a shared kind — same copy as the listing path.
+        // Variants that map to a shared kind: same copy as the listing path.
         W::SourceNotFound { path } | W::SameLocation { path } => {
             // SameLocation and SourceNotFound both surface as "this file isn't usable" to the user.
             // Differentiating them here would just be noise; the typed variant is still in `error`
@@ -36,19 +36,19 @@ pub fn friendly_from_write_error(err: &crate::file_system::write_operations::Wri
         W::PermissionDenied { path, .. } => kinds::permission_denied(path, raw),
         W::Cancelled { .. } => kinds::cancelled(raw),
         W::DeviceDisconnected { path } => {
-            // Operation context — user can retry the move/copy after reconnecting.
+            // Operation context: user can retry the move/copy after reconnecting.
             let mut friendly = kinds::device_disconnected(path, raw);
             friendly.retry_hint = true;
             friendly
         }
         W::ConnectionInterrupted { path } => {
-            // ConnectionInterrupted is a transient version of ConnectionTimeout — a network
+            // ConnectionInterrupted is a transient version of ConnectionTimeout: a network
             // hiccup rather than a strict timeout. The kind copy is generic enough to fit both.
             let _ = path;
             kinds::connection_timeout(raw)
         }
 
-        // Variants with kind-specific data — inline.
+        // Variants with kind-specific data: inline.
         W::InsufficientSpace {
             required,
             available,

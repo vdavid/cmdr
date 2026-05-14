@@ -17,7 +17,7 @@ use std::time::Duration;
 static WATCHER_GUARD: Mutex<Option<WatcherGuard>> = Mutex::new(None);
 
 /// Root directory for the virtual device's backing files.
-/// The TypeScript E2E fixture helper references the same path — see
+/// The TypeScript E2E fixture helper references the same path; see
 /// `test/e2e-shared/mtp-fixtures.ts`.
 pub const MTP_FIXTURE_ROOT: &str = "/tmp/cmdr-mtp-e2e-fixtures";
 
@@ -30,7 +30,7 @@ pub fn setup_virtual_mtp_device() -> u64 {
     let internal = root.join("internal");
     let readonly = root.join("readonly");
 
-    // Clean slate — remove any leftover fixtures from a previous run
+    // Clean slate: remove any leftover fixtures from a previous run
     if root.exists() {
         fs::remove_dir_all(root).expect("failed to clean MTP fixture root");
     }
@@ -44,7 +44,7 @@ pub fn setup_virtual_mtp_device() -> u64 {
     // Populate writable storage
     fs::write(
         internal.join("Documents/report.txt"),
-        "Quarterly report — Q4 2025 placeholder content.\n",
+        "Quarterly report: Q4 2025 placeholder content.\n",
     )
     .expect("failed to write report.txt");
     fs::write(

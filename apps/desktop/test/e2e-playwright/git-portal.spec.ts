@@ -33,7 +33,7 @@ function repoPath(): string {
 }
 
 /**
- * Builds a deterministic git repo inside the fixture root. Idempotent —
+ * Builds a deterministic git repo inside the fixture root. Idempotent:
  * tears down any prior copy first so individual test runs start clean.
  *
  * Layout:
@@ -100,7 +100,7 @@ test.describe('Git portal', () => {
 
     // The portal root mixes the six virtual categories with the real
     // `.git/*` entries. Branches, tags, and commits always appear (the
-    // optional virtual categories — stash/worktrees/submodules — only
+    // optional virtual categories (stash/worktrees/submodules), only
     // surface when present, which this fixture doesn't set up). Real
     // entries like HEAD and config prove the mixed listing renders both
     // sides side-by-side instead of hiding the on-disk contents.
@@ -138,7 +138,7 @@ test.describe('Git portal', () => {
     // commits/ lists each reachable commit as a virtual directory whose display
     // name is `<short-sha> <subject>` (matches `git log --oneline`). The fixture
     // commits exactly once, so we expect at least one such entry. We don't pin
-    // the SHA itself — `git init` results aren't reproducible across versions.
+    // the SHA itself, since `git init` results aren't reproducible across versions.
     await ensureAppReady(tauriPage)
     await navigateLeftPaneTo(tauriPage, path.join(repoPath(), '.git/commits'))
 
@@ -151,7 +151,7 @@ test.describe('Git portal', () => {
           var entries = pane.querySelectorAll('.file-entry');
           for (var i = 0; i < entries.length; i++) {
             var name = entries[i].getAttribute('data-filename') || '';
-            // <short-sha> <subject> — e.g. "abc1234 Add fixture content"
+            // <short-sha> <subject>, for example "abc1234 Add fixture content"
             if (/^[0-9a-f]{7,} /.test(name)) return true;
           }
           return false;
@@ -181,7 +181,7 @@ test.describe('Git portal', () => {
   })
 
   // Portal toggle is exercised by:
-  //  - The Rust unit tests on `git::try_route_listing` (volume-hook level —
+  //  - The Rust unit tests on `git::try_route_listing` (volume-hook level,
   //    drives the AtomicBool the toggle flips).
   //  - The `set_show_virtual_git_portal` IPC + watcher invalidation (covered by
   //    `git::watcher::refresh_all_virtual_listings_after_toggle`).

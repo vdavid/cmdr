@@ -19,7 +19,7 @@
 //!
 //! # Salted mode (per-bundle correlation)
 //!
-//! [`redact_line`] emits bare `<dir>` / `<file>` tokens — useful, but indistinguishable
+//! [`redact_line`] emits bare `<dir>` / `<file>` tokens, useful but indistinguishable
 //! when a log line mentions the same directory twenty times. The error reporter calls
 //! [`redact_line_salted`] instead, threading a 16-byte random salt minted at bundle
 //! build time. Salted mode emits `<dir:HHHHHH>` / `<file:HHHHHH>` where the 6 hex chars
@@ -55,7 +55,7 @@ const SAFE_PARENT_DIR_NAMES: &[&str] = &[
     "Application Support",
 ];
 
-/// Redact one log line. Hot path — called per line by the error reporter.
+/// Redact one log line. Hot path: called per line by the error reporter.
 ///
 /// Returns a [`Cow::Borrowed`] when no redaction was needed so we don't allocate
 /// on lines like `"Reconciler: switched to live mode"` that have no PII at all.
@@ -168,11 +168,11 @@ fn redactor_regex() -> &'static Regex {
             #   "<Owner>'s Pixel 8 Pro"  → "<mtp-owner>'s Pixel 8 Pro"
             #   "<Owner>'s iPhone"        → "<mtp-owner>'s iPhone"
             # We ONLY match when the owner name is capitalized (so English contractions
-            # like "It's a Pixel" don't match — `It` would be the owner candidate, but
+            # like "It's a Pixel" don't match: `It` would be the owner candidate, but
             # the model word must follow the apostrophe-`s`-space pattern, and we
             # require the model to be one of a known set).
             # Bare model names without an owner ("Pixel 8 Pro") are intentionally NOT
-            # matched — model strings alone aren't identifying and they're useful diag.
+            # matched; model strings alone aren't identifying and they're useful diag.
             | (?P<mtp_owner>
                 \b [A-Z][a-zA-Z]+ ' s
                 \x20+
@@ -241,7 +241,7 @@ fn dispatch(caps: &Captures<'_>, salt: Option<&[u8]>) -> String {
     if let Some(m) = caps.name("mtp_owner") {
         return redact_mtp_owner(m.as_str());
     }
-    // Shouldn't happen — regex matched but no named group. Return verbatim to be safe.
+    // Shouldn't happen: regex matched but no named group. Return verbatim to be safe.
     caps.get(0).map(|m| m.as_str().to_string()).unwrap_or_default()
 }
 
@@ -298,7 +298,7 @@ fn split_trailing_noise(s: &str) -> (&str, &str) {
         }
     }
 
-    // Trim a trailing `\s+<lowercase word>` — a sentence continuation.
+    // Trim a trailing `\s+<lowercase word>` (a sentence continuation).
     // Walk back over word chars, then require at least one whitespace before them.
     {
         let mut i = end;
@@ -306,7 +306,7 @@ fn split_trailing_noise(s: &str) -> (&str, &str) {
             i -= 1;
         }
         if i < end && i > 0 && bytes[i - 1] == b' ' {
-            // Check the word starts with a lowercase letter — capital words are
+            // Check the word starts with a lowercase letter; capital words are
             // often real path components (`/Volumes/My Backup Drive`).
             if let Some(&first) = bytes.get(i)
                 && first.is_ascii_lowercase()
@@ -386,7 +386,7 @@ fn redact_windows_home(path: &str, salt: Option<&[u8]>) -> String {
 }
 
 fn redact_unix_system(path: &str, salt: Option<&[u8]>) -> String {
-    // `/tmp/<rest>`, `/var/<rest>`, `/private/<rest>`, `/opt/<rest>` — keep prefix verbatim,
+    // `/tmp/<rest>`, `/var/<rest>`, `/private/<rest>`, `/opt/<rest>`: keep prefix verbatim,
     // redact everything below it with shape preservation.
     // Find the second `/` (end of the prefix dir), keep `/tmp/` etc., walk the tail.
     let mut slashes = 0;
@@ -483,14 +483,14 @@ fn redact_path_tail(tail: &str, salt: Option<&[u8]>) -> String {
     }
     let segments: Vec<&str> = body.split('/').collect();
     if segments.len() == 1 {
-        // Single segment under the prefix — could be a dir or a file. We guess based on
+        // Single segment under the prefix: could be a dir or a file. We guess based on
         // presence of an extension: segments with a `.X` suffix are files, otherwise dirs.
         let seg = segments[0];
         let is_file = has_extension_like_suffix(seg);
         return format!("/{}", redact_leaf(seg, is_file, salt));
     }
     // Walk segments: all but the last are dirs; the last is guessed via the
-    // extension heuristic — leaves with `.ext` are files, leaves without are dirs.
+    // extension heuristic: leaves with `.ext` are files, leaves without are dirs.
     // The pre-fix-7 code labeled every leaf `<file>`, which made directory listings
     // (the most common log line) incorrectly read as files in error reports.
     let mut out = String::new();
@@ -501,14 +501,14 @@ fn redact_path_tail(tail: &str, salt: Option<&[u8]>) -> String {
             let is_file = has_extension_like_suffix(seg);
             out.push_str(&redact_leaf(seg, is_file, salt));
         } else if i == last_idx - 1 {
-            // Immediate parent dir of the leaf — allowlist check.
+            // Immediate parent dir of the leaf; allowlist check.
             if is_safe_parent_dir(seg) {
                 out.push_str(seg);
             } else {
                 out.push_str(&dir_token(seg, salt));
             }
         } else {
-            // Ancestor dirs — always collapse.
+            // Ancestor dirs: always collapse.
             out.push_str(&dir_token(seg, salt));
         }
     }
@@ -553,13 +553,13 @@ fn file_token(seg: &str, salt: Option<&[u8]>) -> String {
 }
 
 /// Short, salted, lowercase-hex hash for path segments. 6 hex chars = 3 bytes ≈ 16 M
-/// distinct values; collisions are possible but harmless — only correlation within a
+/// distinct values; collisions are possible but harmless: only correlation within a
 /// single bundle's window matters here, and a bundle holds at most low-thousands of
 /// distinct path segments. Cross-bundle correlation is prevented by varying the salt.
 ///
 /// Uses SHA-256 (already in our dep tree for license device hashing) rather than
 /// pulling in a second hash crate just for this. The hash is overkill for what we
-/// need — we only consume the first 3 bytes — but the cost is one allocation per
+/// need: we only consume the first 3 bytes, but the cost is one allocation per
 /// distinct path segment per bundle build, negligible.
 fn short_hash(salt: &[u8], segment: &str) -> String {
     use sha2::{Digest, Sha256};

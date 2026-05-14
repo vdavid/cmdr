@@ -27,7 +27,7 @@ use super::stress_test_helpers::{build_synthetic_tree, check_db_consistency, mak
 fn concurrent_scan_with_buffered_events_and_replay() {
     let (writer, read_conn, _dir) = setup_writer();
 
-    // Phase 1: simulate start_scan — truncate
+    // Phase 1: simulate start_scan -- truncate
     writer.send(WriteMessage::TruncateData).unwrap();
     writer.flush_blocking().unwrap();
 
@@ -141,7 +141,7 @@ fn concurrent_scan_with_buffered_events_and_replay() {
     // Phase 5: verify DB consistency
     check_db_consistency(&fresh_conn);
 
-    // Verify the scan data is present — all original directories should exist
+    // Verify the scan data is present -- all original directories should exist
     for &dir_id in &all_dir_ids {
         let entry = IndexStore::get_entry_by_id(&fresh_conn, dir_id).unwrap();
         assert!(
@@ -303,7 +303,7 @@ fn concurrent_batch_inserts_with_aggregation() {
 
 // ── Test 3: concurrent scan + enrichment reads ──────────────────────
 
-/// Exercises concurrent writes (scan batches) and reads (enrichment) —
+/// Exercises concurrent writes (scan batches) and reads (enrichment),
 /// the scenario that caused "DB is locked" (26785fc) and enrichment
 /// lock contention (d125a24).
 #[test]
@@ -378,7 +378,7 @@ fn concurrent_scan_with_enrichment_reads() {
                     // Try parent-id-based enrichment
                     let parent_result =
                         pool.with_conn(|conn| enrichment::enrich_via_parent_id_on(&mut entries, conn, "/"));
-                    // During concurrent writes, enrichment may fail to find stats —
+                    // During concurrent writes, enrichment may fail to find stats;
                     // that's expected. What matters: no SQLite errors, no panics.
                     if let Err(e) = parent_result {
                         // ReadPool errors (connection issues) would be a real problem
@@ -434,7 +434,7 @@ fn concurrent_scan_with_enrichment_reads() {
 // ── Test 4: live event storm + concurrent reads ─────────────────────
 
 /// Exercises the scenario where many FS events arrive concurrently with
-/// enrichment reads — the scenario that caused false deletions (f0c225f),
+/// enrichment reads, the scenario that caused false deletions (f0c225f),
 /// MustScanSubDirs data loss (31df59e), and event dedup issues (207ddee).
 #[test]
 fn live_event_storm_with_concurrent_reads() {
@@ -468,9 +468,9 @@ fn live_event_storm_with_concurrent_reads() {
     //   special-case it).
     //
     // We use two classes of paths:
-    // 1. Non-resolvable paths (under /nonexistent/) — exercise the code path
+    // 1. Non-resolvable paths (under /nonexistent/) -- exercise the code path
     //    without affecting indexed data.
-    // 2. Paths matching real DB entries — test actual deletions.
+    // 2. Paths matching real DB entries -- test actual deletions.
     let mut events: Vec<FsChangeEvent> = Vec::new();
     let mut event_id_counter: u64 = 200;
 
@@ -517,7 +517,7 @@ fn live_event_storm_with_concurrent_reads() {
     }
 
     // MustScanSubDirs events for non-resolvable directories.
-    // process_fs_event doesn't special-case must_scan_sub_dirs — it falls
+    // process_fs_event doesn't special-case must_scan_sub_dirs; it falls
     // through to the item_is_dir handler, which stats and (on failure)
     // tries to delete. Non-resolvable paths are no-ops.
     for i in 0..5 {
@@ -636,7 +636,7 @@ fn live_event_storm_with_concurrent_reads() {
 //
 // Negative finding: under this load shape, the WAL/read-pool/single-writer architecture
 // really does decouple read-side enrichment from write-side reconciler work. The 2-minute
-// production stall must therefore involve something *outside* the SQLite layer — most
+// production stall must therefore involve something *outside* the SQLite layer, most
 // likely tokio-runtime starvation around `tokio::task::block_in_place` inside
 // `process_live_batch`, Tauri event-emit serialization, or `app.emit()` traversing the
 // WebKit Cocoa bridge under load. None of those are reachable from a unit test.
@@ -780,7 +780,7 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
     writer.send(WriteMessage::ComputeAllAggregates).unwrap();
     writer.flush_blocking().unwrap();
 
-    // Build a ReadPool — listings enrich through this.
+    // Build a ReadPool; listings enrich through this.
     let pool = Arc::new(ReadPool::new(db_path.clone()).expect("create read pool"));
 
     // ── Background reconciler storm ───────────────────────────────────
@@ -837,7 +837,7 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
                     let _ = reconciler::process_fs_event(&event, &conn, &writer);
                     events_fired.fetch_add(1, Ordering::Relaxed);
                     counter += 1;
-                    // No sleep — apply full pressure. The 20K-bounded writer channel
+                    // No sleep; apply full pressure. The 20K-bounded writer channel
                     // is the limit. Periodically fire heavier writer commands.
                     if thread_idx == 0 && counter.is_multiple_of(500) {
                         let _ = writer.send(WriteMessage::BackfillMissingDirStats);
@@ -918,7 +918,7 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
                         FileEntry::new(name, p.to_string_lossy().to_string(), is_dir, false)
                     })
                     .collect();
-                // 2) enrich — this is the dominant cost when the index is contended.
+                // 2) enrich -- this is the dominant cost when the index is contended.
                 let parent_path = path.to_string_lossy().to_string();
                 let enrich_start = Instant::now();
                 let _ = pool.with_conn(|conn| enrichment::enrich_via_parent_id_on(&mut entries, conn, &parent_path));

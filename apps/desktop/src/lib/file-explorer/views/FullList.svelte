@@ -71,7 +71,7 @@
         selectedIndices?: Set<number>
         hasParent: boolean
         parentPath: string
-        /** Path of the directory currently being listed — used to show its total on the ".." row. */
+        /** Path of the directory currently being listed (used to show its total on the ".." row). */
         currentPath: string
         sortBy: SortColumn
         sortOrder: SortOrder
@@ -165,18 +165,18 @@
         format: getFileSizeFormat(),
     })
 
-    // Drive index state — show spinner while scanning OR aggregating (sizes aren't ready until aggregation finishes)
+    // Drive index state: show spinner while scanning OR aggregating (sizes aren't ready until aggregation finishes)
     const indexing = $derived(isScanning() || isAggregating())
 
     // Column widths are declared after the virtual window, which gates parent-row inclusion.
     let columnWidths = $state({ ext: 60, size: 115, date: 80, dateLeft: 0 })
     let skipTransition = $state(false)
 
-    /** Icon column width in the grid template — tracks density × text scale. */
+    /** Icon column width in the grid template, tracks density × text scale. */
     const iconColWidth = $derived(getIconSize())
 
     /**
-     * Scale-settled "tick" — bumped from `onDebouncedScaleChange` so the
+     * Scale-settled "tick", bumped from `onDebouncedScaleChange` so the
      * column-width `$effect` re-runs after the user releases the text-size
      * slider (or the OS settles a new accessibility size). Live drag is
      * already covered by CSS reflow; this catches the canvas-measured
@@ -241,11 +241,11 @@
     // entries stream into the prefetch buffer.
     //
     // Held across the "empty cache" window right after a dir switch so we don't
-    // collapse to header-only widths and then snap outward again — `skipTransition`
+    // collapse to header-only widths and then snap outward again; `skipTransition`
     // handles the actual nav by suppressing the CSS transition for one paint.
     //
     // The ".." row's (often huge) recursive size only factors in when that row is
-    // actually on screen — otherwise the size column stays oversized after scrolling.
+    // actually on screen; otherwise the size column stays oversized after scrolling.
     const firstVisibleGlobalIndex = $derived(rowHeight > 0 ? Math.floor(scrollTop / rowHeight) : 0)
     const lastVisibleGlobalIndex = $derived(
         rowHeight > 0 && containerHeight > 0
@@ -391,7 +391,7 @@
         if (event.button !== 0) return
 
         // Let clicks inside the inline rename input pass through without
-        // triggering selection/drag — the input handles its own focus.
+        // triggering selection/drag; the input handles its own focus.
         const target = event.target as HTMLElement
         if (target.closest('.rename-input')) return
 
@@ -406,7 +406,7 @@
 
         // Click-to-rename: if clicking the entry already under the cursor
         // (without Shift), start a timer that activates rename after 800ms.
-        // Drag tracking still runs below so the cursor item remains draggable —
+        // Drag tracking still runs below so the cursor item remains draggable;
         // crossing the drag threshold cancels the rename timer.
         if (index === cursorIndex && !event.shiftKey && !renameState?.active && onStartRename) {
             startClickToRename(event, onStartRename)
@@ -501,7 +501,7 @@
             cachedRange = { start: 0, end: 0 }
             prevCacheProps = currentProps
             // Suppress the grid-template-columns transition for the first paint after
-            // a dir switch — otherwise the header (which persists across navs) slides
+            // a dir switch; otherwise the header (which persists across navs) slides
             // from the previous dir's widths to the new ones.
             skipTransition = true
             requestAnimationFrame(() => {
@@ -779,7 +779,7 @@
                                             >{/each}</span
                                     >
                                     {#if indexing}
-                                        <span class="size-stale icon-indicator" use:tooltip={'Updating index — size may change.'}
+                                        <span class="size-stale icon-indicator" use:tooltip={'Updating index: size may change.'}
                                             ><IconHourglass width="12" height="12" /></span
                                         >
                                     {/if}
@@ -1106,7 +1106,7 @@
     /* Split date cells: `.date-left` is fixed-width (set inline from the
        column-widths measurer) so the right halves align across rows. The 4px
        margin on `.date-right` is mirrored as `DATE_PARTS_GAP` in
-       `measure-column-widths.ts` — keep them in sync. */
+       `measure-column-widths.ts`; keep them in sync. */
     .date-left {
         display: inline-block;
         text-align: right;

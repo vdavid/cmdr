@@ -46,7 +46,7 @@ fn get_app_handle() -> Option<AppHandle> {
 #[serde(rename_all = "camelCase")]
 struct SmbConnectionChangedPayload {
     volume_id: String,
-    /// `"direct"` or `"disconnected"`. The internal state machine is binary —
+    /// `"direct"` or `"disconnected"`. The internal state machine is binary;
     /// the OS-mount fallback only exists at the outer `SmbConnectionState` layer
     /// (driven by `enrich_smb_connection_state`), not on the smb2 hot path.
     state: &'static str,
@@ -171,7 +171,7 @@ fn map_smb_error(err: smb2::Error) -> VolumeError {
 /// on a single volume briefly lock the client to clone its `Connection` (a
 /// cheap `Arc::clone`), release the lock, and drive `Tree::download` /
 /// `Tree::read_file_compound` / `Tree::write_file_compound` on the cloned
-/// `Connection` — so N downloads run pipelined on one SMB session instead of
+/// `Connection`, so N downloads run pipelined on one SMB session instead of
 /// serializing through the mutex. The `watcher_cancel` field uses
 /// `std::sync::Mutex` because it is only accessed briefly (no awaits while
 /// held).
@@ -180,8 +180,8 @@ fn map_smb_error(err: smb2::Error) -> VolumeError {
 /// Cached on the volume so `attempt_reconnect()` can rebuild the session in
 /// place after a `ConnectionLost` / `SessionExpired` without going through the
 /// mount flow again. Credentials are kept in memory for the lifetime of the
-/// `SmbVolume` — no security concern since they're already in the process's
-/// address space (we're using them for every smb2 call). On auth failure we
+/// `SmbVolume` (no security concern: they're already in the process's
+/// address space, used on every smb2 call). On auth failure we
 /// re-pull from the secret store in case the user updated them.
 #[derive(Debug, Clone)]
 pub(crate) struct SmbConnectionParams {
@@ -198,7 +198,7 @@ pub struct SmbVolume {
     name: String,
     /// OS mount point (for example, "/Volumes/Documents").
     mount_path: PathBuf,
-    /// SMB share name. Mirrors `params.share_name` — kept here for cheap reads
+    /// SMB share name. Mirrors `params.share_name`, kept here for cheap reads
     /// in log lines and hot paths without locking `params`.
     share_name: String,
     /// Volume ID for listing cache lookups (from `path_to_id(mount_path)`).
@@ -211,7 +211,7 @@ pub struct SmbVolume {
     /// smb2 client (owns the Connection). `None` when disconnected.
     ///
     /// Most methods still lock this mutex and call `client.stat(tree, ...)`
-    /// etc. — SmbClient's async methods need `&mut self`, and these aren't
+    /// etc. SmbClient's async methods need `&mut self` and these aren't
     /// hot-path parallel. The hot copy path (compound read/write, download
     /// stream) briefly locks just to clone the `Connection` (via
     /// `client.connection_mut().clone()`), releases the lock, and drives the
@@ -220,8 +220,8 @@ pub struct SmbVolume {
     client: Arc<tokio::sync::Mutex<Option<SmbClient>>>,
     /// Tree (share connection), wrapped as `Arc<Tree>` so concurrent hot-path
     /// ops can hold a reference without serializing on the client mutex.
-    /// `None` when disconnected. The `RwLock` is essentially uncontended — we
-    /// only write on disconnect — so readers just clone the `Arc` out under a
+    /// `None` when disconnected. The `RwLock` is essentially uncontended (we
+    /// only write on disconnect), so readers just clone the `Arc` out under a
     /// read guard and drop the guard immediately.
     tree: Arc<tokio::sync::RwLock<Option<Arc<Tree>>>>,
     /// Current connection health.
@@ -236,7 +236,7 @@ pub struct SmbVolume {
     reconnect_lock: Arc<tokio::sync::Mutex<()>>,
     /// Set by `on_unmount` so that any in-flight `do_attempt_reconnect` can bail
     /// out without installing a fresh session into an orphaned volume.
-    /// Once `true`, the volume is permanently dead — `attempt_reconnect` becomes
+    /// Once `true`, the volume is permanently dead; `attempt_reconnect` becomes
     /// a no-op error.
     unmounted: Arc<AtomicBool>,
 }
@@ -358,7 +358,7 @@ impl SmbVolume {
                 total_bytes: 0,
                 // Root path is always a directory; the file branch below
                 // overwrites this to `false`. Subdirectory recursions also
-                // return `true` — only the leaf file branch sets `false`.
+                // return `true`; only the leaf file branch sets `false`.
                 top_level_is_directory: true,
             };
 
@@ -380,7 +380,7 @@ impl SmbVolume {
                 }
             }
 
-            // It's a directory — list and recurse
+            // It's a directory: list and recurse
             result.dir_count += 1;
             let display_path = self.to_display_path(smb_path);
             let entries = self.list_directory_impl(Path::new(&display_path)).await?;
@@ -457,8 +457,8 @@ impl SmbVolume {
     /// Acquires the client mutex and returns a guard over the `Option<SmbClient>`.
     /// Checks connection state first, then verifies the client is present.
     ///
-    /// Most methods still go through this (stat, list_directory, rename, etc.)
-    /// — only the hot streaming-read / compound-write paths use the cheaper
+    /// Most methods still go through this (stat, list_directory, rename, etc.);
+    /// only the hot streaming-read / compound-write paths use the cheaper
     /// `clone_connection` helper that releases the lock before driving the op.
     async fn acquire_client(&self) -> Result<tokio::sync::MutexGuard<'_, Option<SmbClient>>, VolumeError> {
         self.check_connection()?;
@@ -480,7 +480,7 @@ impl SmbVolume {
     }
 
     /// Briefly locks the client mutex, clones its `Connection` (cheap
-    /// `Arc::clone` — all clones multiplex frames over the same SMB session),
+    /// `Arc::clone`; all clones multiplex frames over the same SMB session),
     /// and releases the lock. Also reads out an `Arc<Tree>`. Returns both.
     ///
     /// Callers can then drive `Tree::download` / `Tree::read_file_compound` /
@@ -528,7 +528,7 @@ impl SmbVolume {
         tokio::spawn(async move {
             // The task owns its `Connection` clone and an `Arc<Tree>` reference.
             // No lock is held, so other tasks can spawn in parallel and each
-            // drive their own download on a fresh `Connection` clone — all
+            // drive their own download on a fresh `Connection` clone, all
             // multiplexed over the same SMB session by smb2's receiver task.
             let mut conn = conn;
             let mut download = match tree.download(&mut conn, &smb_path_owned).await {
@@ -565,7 +565,7 @@ impl SmbVolume {
                     chunk = download.next_chunk() => match chunk {
                         Some(Ok(bytes)) => {
                             if chunk_tx.send(Ok(bytes)).await.is_err() {
-                                // Consumer dropped — stop pumping.
+                                // Consumer dropped; stop pumping.
                                 break;
                             }
                         }
@@ -583,7 +583,7 @@ impl SmbVolume {
                 }
             }
             // `download` drops here (releases SMB file handle at connection close).
-            // `conn` and `tree` drop here — the `Arc<Connection>` inner and the
+            // `conn` and `tree` drop here: the `Arc<Connection>` inner and the
             // `Arc<Tree>` unwind when every concurrent task finishes.
         });
 
@@ -624,7 +624,7 @@ impl SmbVolume {
                     kind,
                     smb2::ErrorKind::NotFound | smb2::ErrorKind::IsADirectory | smb2::ErrorKind::AlreadyExists
                 ) {
-                    // Expected fall-through cases — the caller is using the typed
+                    // Expected fall-through cases: the caller is using the typed
                     // `VolumeError` variant as a signal, not an error:
                     // - `NotFound` for existence checks (rename dest, conflict detection)
                     // - `IsADirectory` for `delete()`'s "try delete_file first, fall back to
@@ -789,7 +789,7 @@ impl SmbVolume {
                     {
                         match build_session(&refreshed).await {
                             Ok(pair) => {
-                                // Refreshed creds worked — persist them on the volume.
+                                // Refreshed creds worked; persist them on the volume.
                                 let mut params_w = self.params.write().await;
                                 params_w.username = refreshed.username.clone();
                                 params_w.password = refreshed.password.clone();
@@ -807,7 +807,7 @@ impl SmbVolume {
                     _ => {
                         // No fresh creds available, or they're identical to the cached ones.
                         warn!(
-                            "SmbVolume::attempt_reconnect(share={}): no fresh credentials available — giving up on this attempt",
+                            "SmbVolume::attempt_reconnect(share={}): no fresh credentials available; giving up on this attempt",
                             self.share_name
                         );
                         return Err(map_smb_error(err));
@@ -919,7 +919,7 @@ const SMB_STREAM_CHANNEL_CAPACITY: usize = 4;
 /// The producer task owns an `OwnedMutexGuard` over the smb2 session and drives
 /// an `smb2::FileDownload`, sending each chunk down an mpsc channel. The
 /// consumer (this struct) just reads from the channel. This avoids buffering
-/// the whole file in memory — peak is bounded by the channel capacity.
+/// the whole file in memory; peak is bounded by the channel capacity.
 ///
 /// Dropping the stream before it's fully consumed sends a cancel signal so
 /// the producer can stop early and release the SMB session lock.
@@ -933,7 +933,7 @@ struct SmbReadStream {
 impl Drop for SmbReadStream {
     fn drop(&mut self) {
         if let Some(tx) = self.cancel.take() {
-            // Best-effort — if the producer already finished, recv side is dropped
+            // Best-effort: if the producer already finished, recv side is dropped
             // and the send is a no-op.
             let _ = tx.send(());
         }
@@ -963,7 +963,7 @@ impl VolumeReadStream for SmbReadStream {
 /// Wraps a pre-read `Vec<u8>` as a `VolumeReadStream` that yields the whole
 /// buffer as a single chunk. Used by the compound fast-path in
 /// `open_read_stream_with_hint`, where the full file body came back inside one
-/// SMB compound response — there's no more I/O to drive, just hand the bytes
+/// SMB compound response; there's no more I/O to drive, just hand the bytes
 /// to the consumer.
 struct InlineReadStream {
     data: Option<Vec<u8>>,
@@ -1119,7 +1119,7 @@ impl Volume for SmbVolume {
     }
 
     fn supports_watching(&self) -> bool {
-        // Start with false — the existing FSEvents watcher on the OS mount
+        // Starts as false: the existing FSEvents watcher on the OS mount
         // point already provides change notifications. smb2-native watching
         // can be added later as an optimization.
         false
@@ -1276,7 +1276,7 @@ impl Volume for SmbVolume {
             debug!("SmbVolume::delete: share={}, path={:?}", self.share_name, smb_path);
 
             // Try delete_file first (one round-trip). If the path is a directory,
-            // the server returns STATUS_FILE_IS_A_DIRECTORY — then try delete_directory.
+            // the server returns STATUS_FILE_IS_A_DIRECTORY; then try delete_directory.
             // This avoids a stat round-trip for every file in bulk deletes.
             let file_result = {
                 let (tree, mut conn) = self.clone_session().await?;
@@ -1465,15 +1465,15 @@ impl Volume for SmbVolume {
             let smb_paths: Vec<String> = paths.iter().map(|p| self.to_smb_path(p)).collect();
 
             debug!(
-                "SmbVolume::scan_for_copy_batch: share={}, {} paths — pipelining stats",
+                "SmbVolume::scan_for_copy_batch: share={}, {} paths; pipelining stats",
                 self.share_name,
                 paths.len()
             );
 
             // Build N pipelined stats: one cloned `Connection` per path, no
             // lock held across any stat. `Arc<Tree>` is shared cheaply. Empty
-            // paths (volume root) skip the stat — the root is always a
-            // directory — and route straight into the recursion list.
+            // paths (volume root) skip the stat: the root is always a
+            // directory, and they route straight into the recursion list.
             use futures_util::StreamExt;
             use futures_util::stream::FuturesUnordered;
 
@@ -1491,7 +1491,7 @@ impl Volume for SmbVolume {
 
             for (idx, smb_path) in smb_paths.iter().enumerate() {
                 if smb_path.is_empty() {
-                    // Root — no stat needed. Inline a ready future so the
+                    // Root: no stat needed. Inline a ready future so the
                     // ordering logic below still sees a slot for this index.
                     stat_futs.push(Box::pin(std::future::ready((idx, Ok(StatOutcome::Root)))));
                     continue;
@@ -1557,7 +1557,7 @@ impl Volume for SmbVolume {
             }
 
             // Recurse sequentially into each discovered directory. Per-dir
-            // recursion still serializes on listing + child stats — that's a
+            // recursion still serializes on listing + child stats; that's a
             // future "Fix 5" (pipelined directory recursion). For the 100 ×
             // tiny-file scenario all sources are files, so this loop is never
             // entered.
@@ -1624,7 +1624,7 @@ impl Volume for SmbVolume {
         // Updated at app startup from `settings.json` via
         // `file_system::set_smb_concurrency`. Lock-free atomic load on every
         // call, so a settings change in the current session applies on the next
-        // batch-copy dispatch (no reconnect required — Connection::clone is
+        // batch-copy dispatch (no reconnect required; Connection::clone is
         // cheap).
         crate::file_system::smb_concurrency()
     }
@@ -1660,14 +1660,14 @@ impl Volume for SmbVolume {
             // `Connection` with no lock held, so N concurrent small reads
             // pipeline over one SMB session. Falls through to the streaming
             // path when the hint is missing, too large, or the compound read
-            // returns short (truncated file — rare but possible if size
+            // returns short (truncated file, rare but possible if size
             // changed since the scan).
             if let Some(size) = size_hint {
                 let (tree, mut conn) = self.clone_session().await?;
                 let max_read = conn.params().map(|p| p.max_read_size).unwrap_or(65536) as u64;
                 if size > 0 && size <= max_read {
                     debug!(
-                        "SmbVolume::open_read_stream_with_hint: share={}, path={:?}, size={} — using compound fast-path",
+                        "SmbVolume::open_read_stream_with_hint: share={}, path={:?}, size={}; using compound fast-path",
                         self.share_name, smb_path, size
                     );
                     let read_result = tree.read_file_compound(&mut conn, &smb_path).await;
@@ -1676,7 +1676,7 @@ impl Volume for SmbVolume {
                         return Ok(Box::new(InlineReadStream::new(data)) as Box<dyn VolumeReadStream>);
                     }
                     debug!(
-                        "SmbVolume::open_read_stream_with_hint: compound read returned {} bytes, expected {} — falling back to streaming",
+                        "SmbVolume::open_read_stream_with_hint: compound read returned {} bytes, expected {}; falling back to streaming",
                         data.len(),
                         size
                     );
@@ -1684,7 +1684,7 @@ impl Volume for SmbVolume {
             }
 
             debug!(
-                "SmbVolume::open_read_stream_with_hint: share={}, path={:?} — using streaming path",
+                "SmbVolume::open_read_stream_with_hint: share={}, path={:?}; using streaming path",
                 self.share_name, smb_path
             );
             let stream = self.open_smb_download_stream(&smb_path).await?;
@@ -1712,7 +1712,7 @@ impl Volume for SmbVolume {
             // CREATE+WRITE+FLUSH+CLOSE as a single compound frame (1 RTT
             // instead of 4). Runs on a cloned `Connection` with no lock held,
             // so N concurrent small writes pipeline over one SMB session.
-            // Small files are the hot case — for anything larger we fall
+            // Small files are the hot case; for anything larger we fall
             // through to the streaming writer below.
             if size > 0 {
                 let (tree, mut conn) = self.clone_session().await?;
@@ -1725,7 +1725,7 @@ impl Volume for SmbVolume {
                         // Fire progress per chunk AND honor cancellation, so
                         // the fast-path has the same cancel/progress contract
                         // as the streaming fallback below. Cancel here aborts
-                        // before the compound WRITE touches the wire — the
+                        // before the compound WRITE touches the wire: the
                         // destination never sees a partial file.
                         if on_progress(buffer.len() as u64, size).is_break() {
                             return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
@@ -1740,13 +1740,13 @@ impl Volume for SmbVolume {
                         let bytes_written = self.handle_smb_result("write_from_stream(compound)", write_result)?;
                         return Ok(bytes_written);
                     }
-                    // Size mismatch — drop the cloned conn and re-feed the
+                    // Size mismatch: drop the cloned conn and re-feed the
                     // already-drained buffer through the streaming writer
                     // below (which needs the client mutex because
                     // `FileWriter` borrows `&'a mut Connection` from the
                     // `SmbClient`).
                     debug!(
-                        "SmbVolume::write_from_stream: compound fast-path source yielded {} bytes, expected {} — falling back",
+                        "SmbVolume::write_from_stream: compound fast-path source yielded {} bytes, expected {}; falling back",
                         buffer.len(),
                         size
                     );
@@ -1770,7 +1770,7 @@ impl Volume for SmbVolume {
             // client mutex for the duration of the transfer because
             // `FileWriter<'a>` borrows `&'a mut Connection` from the
             // `SmbClient` we create it from. Large files are rare in the hot
-            // copy path, so this doesn't hurt concurrency in practice — the
+            // copy path, so this doesn't hurt concurrency in practice; the
             // compound fast-path above handles every small file without
             // touching the client mutex for the write itself.
             let tree_arc = self.tree_arc().await?;
@@ -1816,7 +1816,7 @@ impl Volume for SmbVolume {
         // SmbVolume always returns `Some` so the frontend can distinguish
         // "not an SMB volume" (None) from "SMB volume in trouble"
         // (Some(Disconnected)). The reconnect manager keys off the latter.
-        // The internal state machine is binary — the outer `OsMount` variant
+        // The internal state machine is binary; the outer `OsMount` variant
         // is only attached by `enrich_smb_connection_state` for SMB shares
         // that have an OS mount but no Cmdr smb2 session at all.
         Some(match self.connection_state() {
@@ -1852,7 +1852,7 @@ impl Volume for SmbVolume {
         // Drop the smb2 session. Uses blocking_lock() / blocking_write() since
         // on_unmount is sync (called from FSEvents thread, no Tokio runtime).
         // Safe because we just set state to Disconnected, so no async task
-        // will acquire either lock. Drop Tree first, then SmbClient — Tree
+        // will acquire either lock. Drop Tree first, then SmbClient: Tree
         // holds a tree_id referenced by session-scoped server state, and we
         // want it to go first so any lingering `FileDownload` clones finish
         // before the client (which owns the Connection) vanishes. In
@@ -2043,7 +2043,7 @@ mod tests {
     fn map_smb_error_io() {
         let err = smb2::Error::Io(std::io::Error::new(std::io::ErrorKind::BrokenPipe, "pipe broke"));
         let ve = map_smb_error(err);
-        // IO errors (callback errors, etc.) are not connection losses — they map to IoError.
+        // IO errors (callback errors, etc.) are not connection losses; they map to IoError.
         // Real connection losses come through Error::Disconnected → ConnectionLost.
         assert!(matches!(ve, VolumeError::IoError { .. }));
     }
@@ -2065,7 +2065,7 @@ mod tests {
     fn map_smb_error_file_is_a_directory() {
         // STATUS_FILE_IS_A_DIRECTORY is returned when delete_file is called on a dir.
         // smb2 0.8.0 exposes this as the typed `ErrorKind::IsADirectory` variant, so
-        // `map_smb_error` surfaces it as `VolumeError::IsADirectory` — the delete
+        // `map_smb_error` surfaces it as `VolumeError::IsADirectory`; the delete
         // fast-path matches on that to decide whether to retry with delete_directory.
         let err = smb2::Error::Protocol {
             status: smb2::types::status::NtStatus::FILE_IS_A_DIRECTORY,
@@ -2097,7 +2097,7 @@ mod tests {
 
     #[test]
     fn connection_state_unknown_value_defaults_to_disconnected() {
-        // The internal state machine is binary — `1` (the old `OsMount`
+        // The internal state machine is binary; `1` (the old `OsMount`
         // discriminant) and any other unknown byte must decode as
         // `Disconnected`, the safe / "stop using smb2" state.
         assert_eq!(ConnectionState::from_u8(1), ConnectionState::Disconnected);
@@ -2223,7 +2223,7 @@ mod tests {
     async fn single_flight_concurrent_callers_serialize() {
         // Two parallel `do_attempt_reconnect` calls must serialize on
         // `reconnect_lock`. With the volume already Direct, both should return
-        // Ok cheaply — the second one observes Direct after the first releases
+        // Ok cheaply: the second one observes Direct after the first releases
         // the guard. Mutex contention itself is the assertion that single-flight
         // is wired up; if it wasn't, both calls would race past the early-exit
         // check.
@@ -2321,7 +2321,7 @@ mod tests {
     /// Unique directory name for test isolation.
     ///
     /// Combines the PID, a nanosecond timestamp, and a process-wide atomic
-    /// counter so that tests running in parallel never collide — neither
+    /// counter so that tests running in parallel never collide: neither
     /// within one process (the nanosecond clock resolution isn't fine enough
     /// on its own) nor across the separate processes nextest forks per test
     /// (where the static counter resets to 0 and two processes hitting the
@@ -2360,7 +2360,7 @@ mod tests {
     // Every SMB copy test that lands a file on a destination hashes the
     // source bytes and the destination bytes and compares the two. A
     // pipeline bug that drops, duplicates, reorders, or reuses a chunk's
-    // buffer will change the hash — the old `bytes_written == expected`
+    // buffer will change the hash; the old `bytes_written == expected`
     // and `metadata.size == N` assertions would silently pass. blake3 is
     // fast (well over a GB/s single-threaded), so the 20 MB streaming
     // tests pay negligible hashing cost on top of the SMB RTTs.
@@ -2403,7 +2403,7 @@ mod tests {
         assert!(vol.list_directory_impl(Path::new("")).await.is_ok());
 
         // Simulate "the server hung up": drop the smb2 session and flip state.
-        // We don't need to actually break the network — `attempt_reconnect`'s
+        // We don't need to actually break the network; `attempt_reconnect`'s
         // job is to rebuild the session regardless of why state went down.
         {
             let mut client_guard = vol.client.lock().await;
@@ -2454,7 +2454,7 @@ mod tests {
         // CI noise.
         assert!(
             elapsed < Duration::from_millis(50),
-            "noop reconnect took {:?} — expected <50ms",
+            "noop reconnect took {:?}; expected <50ms",
             elapsed
         );
     }
@@ -2533,13 +2533,13 @@ mod tests {
         let meta = vol.get_metadata(Path::new(&file_path)).await.unwrap();
         let mtime = meta.modified_at.expect("mtime should be populated");
 
-        // Must be Unix seconds — not millis (*1000) or micros (*1_000_000).
+        // Must be Unix seconds, not millis (*1000) or micros (*1_000_000).
         // Allow a 1 hour window for clock skew between host and container.
         let lower = now_secs.saturating_sub(3600);
         let upper = now_secs + 3600;
         assert!(
             mtime >= lower && mtime <= upper,
-            "modified_at {mtime} out of range [{lower}, {upper}] — likely wrong unit (seconds expected)",
+            "modified_at {mtime} out of range [{lower}, {upper}]; likely wrong unit (seconds expected)",
         );
 
         vol.delete(Path::new(&file_path)).await.unwrap();
@@ -2716,7 +2716,7 @@ mod tests {
     #[tokio::test]
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
     async fn smb_integration_scan_for_copy_batch_mixed() {
-        // Phase 4 Fix 4 — pipelined batch scan on the SMB hot copy path.
+        // Phase 4 Fix 4: pipelined batch scan on the SMB hot copy path.
         // Mixed batch of files + a directory: aggregate counts should match
         // what the per-path scan_for_copy loop would produce, and the
         // per_path vec should carry correct top_level_is_directory / size.
@@ -2820,7 +2820,7 @@ mod tests {
     #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
     async fn smb_integration_scan_for_copy_batch_propagates_missing_path_error() {
         // If one path in the batch doesn't exist, the whole batch must
-        // surface an error (callers treat scan as a pre-flight gate — a
+        // surface an error (callers treat scan as a pre-flight gate: a
         // missing source is a user-visible problem, not a silent drop).
         let vol = make_docker_volume().await;
         let dir = test_dir_name();
@@ -2906,7 +2906,7 @@ mod tests {
         let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::<()>();
 
         for chunk in chunks {
-            // blocking_send is fine in tests — we sized the channel to fit.
+            // blocking_send is fine in tests; we sized the channel to fit.
             chunk_tx.try_send(chunk).expect("channel has capacity in test setup");
         }
         // Drop chunk_tx so recv returns None after draining.
@@ -3098,7 +3098,7 @@ mod tests {
 
         // Byte-level integrity: a progress-reporting write that loses or
         // duplicates chunks would still satisfy the "progress_calls >= 1
-        // and final bytes_done == 200_000" assertions — hash the destination
+        // and final bytes_done == 200_000" assertions; hash the destination
         // against the source to catch that.
         let mut verify = vol
             .open_read_stream(Path::new(&format!("{}/big.bin", dir)))
@@ -3161,7 +3161,7 @@ mod tests {
 
         let progress_calls = AtomicUsize::new(0);
 
-        // Read from InMemory, write to SMB — the same path copy_single_path takes
+        // Read from InMemory, write to SMB (the same path copy_single_path takes)
         let stream = source.open_read_stream(Path::new("/photo.bin")).await.unwrap();
         let bytes = smb_vol
             .write_from_stream(Path::new(&format!("{}/photo.bin", dir)), 100_000, stream, &|_, _| {
@@ -3203,7 +3203,7 @@ mod tests {
         ensure_clean(&vol, &dir).await;
         vol.create_directory(Path::new(&dir)).await.unwrap();
 
-        // 20 MB — guarantees multiple READs even at 8 MB max_read_size.
+        // 20 MB: guarantees multiple READs even at 8 MB max_read_size.
         let size = 20 * 1024 * 1024;
         let data: Vec<u8> = (0..size).map(|i| (i % 251) as u8).collect();
         let smb_path = format!("{}/big-stream.bin", dir);
@@ -3258,8 +3258,8 @@ mod tests {
         let smb_path = format!("{}/export-large.bin", dir);
         vol.create_file(Path::new(&smb_path), &data).await.unwrap();
 
-        // Hash chunks as they arrive — see the sibling large-file test for
-        // why we avoid `assert_eq!` on 20 MB `Vec<u8>`s.
+        // Hash chunks as they arrive (see the sibling large-file test for
+        // why we avoid `assert_eq!` on 20 MB `Vec<u8>`s).
         let mut stream = vol.open_read_stream(Path::new(&smb_path)).await.unwrap();
         assert_eq!(stream.total_size(), size as u64);
 
@@ -3306,7 +3306,7 @@ mod tests {
         let _first = stream.next_chunk().await.unwrap().unwrap();
         drop(stream);
 
-        // Subsequent op on the volume should succeed — the producer task
+        // Subsequent op on the volume should succeed; the producer task
         // must have released the session mutex on cancel.
         let entries = vol.list_directory(Path::new(&dir), None).await.unwrap();
         assert!(entries.iter().any(|e| e.name == "cancel-me.bin"));
@@ -3480,17 +3480,17 @@ mod tests {
     /// Cross-task content integrity: 100 concurrent SMB → local copies, each file
     /// with unique deterministic content. After the batch completes, every
     /// destination's blake3 hash must match the hash of the source it claims to
-    /// come from — catches buffer reuse across tasks, wrong-buffer-to-wrong-path
+    /// come from: catches buffer reuse across tasks, wrong-buffer-to-wrong-path
     /// routing, races in the `Arc<Mutex<Option<SmbClient>>>` +
     /// `Arc<RwLock<Option<Arc<Tree>>>>` split-session (Fix 2), and
     /// cross-MessageId wire demux mistakes on cloned `Connection`s.
     ///
-    /// Identical-content tests can't see any of these — every file would hash
+    /// Identical-content tests can't see any of these; every file would hash
     /// the same, so a "swapped slice mid-file" or "task B's buffer landed under
     /// task A's path" bug would pass trivially. Unique per-file content makes
     /// any cross-contamination flip at least one destination's hash.
     ///
-    /// Runs the real copy pipeline (`copy_volumes_with_progress` — the same
+    /// Runs the real copy pipeline (`copy_volumes_with_progress`, the same
     /// function `copy_between_volumes` calls) so `FuturesUnordered` + Fix 2's
     /// split session + Fix 3's compound fast-path + Fix 4's pipelined scan all
     /// execute together, the way a user's "copy 100 files" action does.
@@ -3504,8 +3504,8 @@ mod tests {
 
         // Content scheme: `blake3(b"cmdr-fix8-" || index_le) .as_bytes() repeated 320 times`
         // = 10_240 bytes per file, truly unique per index, every byte position varies
-        // between files. Any cross-task slice swap — even a 32-byte block in the
-        // middle of one file coming from a neighbor's buffer — flips blake3.
+        // between files. Any cross-task slice swap (even a 32-byte block in the
+        // middle of one file coming from a neighbor's buffer) flips blake3.
         // 10 KB keeps fixture setup cheap and stays inside the SMB compound
         // fast-path (Fix 3) so we're exercising it, not the streaming fallback.
         fn expected_content(index: usize) -> Vec<u8> {
@@ -3532,8 +3532,8 @@ mod tests {
         let vol: Arc<dyn Volume> = smb_vol.clone();
 
         // Fixture: create 100 files on the SMB source, serially. Parallel
-        // `create_file` on a single SMB session wouldn't speed this up —
-        // creates are 1 RTT each — and keeping setup simple keeps any bug
+        // `create_file` on a single SMB session wouldn't speed this up
+        // (creates are 1 RTT each), and keeping setup simple keeps any bug
         // the test catches unambiguously a read/copy-path bug, not a
         // write-path races-with-itself bug.
         let fixture_start = Instant::now();
@@ -3554,7 +3554,7 @@ mod tests {
         // Destination: local TempDir wrapped in a LocalPosixVolume. We feed the
         // copy pipeline the same way production does (SMB volume → Local
         // volume → `copy_volumes_with_progress`). `dest_path` is "/" relative to
-        // the local volume root — i.e. the TempDir itself.
+        // the local volume root (i.e. the TempDir itself).
         let local_dir = tempfile::TempDir::new().expect("create TempDir");
         let dest_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
             "dest",
@@ -3583,7 +3583,7 @@ mod tests {
         );
         assert!(result.is_ok(), "copy should succeed: {:?}", result);
 
-        // Count landed files — cheap aggregate sanity check before per-index
+        // Count landed files: cheap aggregate sanity check before per-index
         // verification. A cross-contamination bug that swapped two destinations
         // would still show 100 files here, so this is not the real check.
         let entries = std::fs::read_dir(local_dir.path())
@@ -3611,7 +3611,7 @@ mod tests {
             let expected_hash = hash_bytes(&expected_bytes);
             let actual_hash = hash_bytes(&actual_bytes);
             if actual_hash != expected_hash {
-                // Find the first diff position and a small slice of context —
+                // Find the first diff position and a small slice of context;
                 // a 10 KB diff dump would drown the terminal on any failure.
                 let first_diff = expected_bytes.iter().zip(actual_bytes.iter()).position(|(a, b)| a != b);
                 let diff_detail = match first_diff {
@@ -3682,16 +3682,16 @@ mod tests {
     // - Time-bounded:                `CMDR_SOAK_DURATION_SECS=1800 ...` (30 min)
     //
     // Uses `smb-consumer-auth` (port 10481, share `private`, `testuser` /
-    // `testpass`) because it permits writes. Never runs by default — gated
+    // `testpass`) because it permits writes. Never runs by default; gated
     // on `#[ignore]`.
 
-    /// `getrusage(RUSAGE_SELF).ru_maxrss` — peak resident set size. On macOS the
+    /// `getrusage(RUSAGE_SELF).ru_maxrss`: peak resident set size. On macOS the
     /// value is in bytes; on Linux it's in kilobytes. Returns megabytes.
     ///
     /// Why peak-RSS not current-RSS: macOS/Linux both surface `ru_maxrss` from
     /// `getrusage(2)` without needing extra deps (`sysinfo` with `process`
     /// feature, `proc_pidinfo` FFI, or `/proc/self/status`). For a leak hunt
-    /// peak RSS is actually the metric we want — current RSS oscillates with
+    /// peak RSS is actually the metric we want; current RSS oscillates with
     /// glibc/jemalloc GC, peak is monotonic and only grows when we genuinely
     /// retain more bytes.
     fn process_peak_rss_mb() -> f64 {
@@ -3723,7 +3723,7 @@ mod tests {
     /// Counts this process's open file descriptors. Both macOS and Linux
     /// expose `/dev/fd/` as a directory listing the current process's open
     /// descriptors (on Linux it's actually a symlink to `/proc/self/fd/`).
-    /// A short-lived extra FD is opened to read the directory — subtract 1
+    /// A short-lived extra FD is opened to read the directory; subtract 1
     /// so the returned number reflects the steady-state count before the
     /// measurement started.
     fn open_fd_count() -> usize {
@@ -3791,7 +3791,7 @@ mod tests {
 
         const FILE_COUNT: usize = 100;
 
-        // Iteration budget. Duration takes priority if both are set — it's
+        // Iteration budget. Duration takes priority if both are set; it's
         // the more useful knob for manual long-soak runs.
         let duration_budget: Option<Duration> = std::env::var("CMDR_SOAK_DURATION_SECS")
             .ok()
@@ -3832,7 +3832,7 @@ mod tests {
         let baseline_fds = open_fd_count();
         let baseline_credits = smb_credits_snapshot(&smb_vol).await;
         log::info!(
-            "smb_soak_copy_loop: baseline — RSS {:.1} MB, FDs {}, credits {:?}",
+            "smb_soak_copy_loop: baseline: RSS {:.1} MB, FDs {}, credits {:?}",
             baseline_rss_mb,
             baseline_fds,
             baseline_credits,
@@ -3859,7 +3859,7 @@ mod tests {
         };
 
         loop {
-            // Stop condition — duration takes priority if set.
+            // Stop condition: duration takes priority if set.
             match duration_budget {
                 Some(d) => {
                     if loop_start.elapsed() >= d {
@@ -3901,7 +3901,7 @@ mod tests {
             per_iter_ms.push(iter_elapsed.as_secs_f64() * 1000.0);
 
             if let Err(e) = result {
-                iter_errors.push(format!("iter {iter_idx}: copy failed — {e:?}"));
+                iter_errors.push(format!("iter {iter_idx}: copy failed: {e:?}"));
                 break;
             }
 
@@ -3952,7 +3952,7 @@ mod tests {
                 let window_avg = window.iter().sum::<f64>() / window.len() as f64;
                 let credits = smb_credits_snapshot(&smb_vol).await;
                 log::info!(
-                    "smb_soak_copy_loop: iter {} — window-avg {:.1} ms, RSS {:.1} MB (Δ {:+.1}), FDs {} (Δ {:+}), credits {:?}",
+                    "smb_soak_copy_loop: iter {} (window-avg {:.1} ms, RSS {:.1} MB, Δ {:+.1}, FDs {}, Δ {:+}, credits {:?})",
                     iter_idx,
                     window_avg,
                     rss,
@@ -3963,7 +3963,7 @@ mod tests {
                 );
             }
 
-            // Dest tempdir drops here — so on-disk FD count on the local
+            // Dest tempdir drops here, so on-disk FD count on the local
             // side lands back at baseline before the next iteration.
             drop(dest_vol);
         }
@@ -3974,7 +3974,7 @@ mod tests {
         let final_fds = open_fd_count();
         let final_credits = smb_credits_snapshot(&smb_vol).await;
 
-        // Cleanup SMB source before any assertion — so a failed assertion
+        // Cleanup SMB source before any assertion, so a failed assertion
         // doesn't leave debris in the container.
         ensure_clean(&smb_vol, &src_dir).await;
 
@@ -3982,7 +3982,7 @@ mod tests {
         // ratio (10%-window math needs two non-trivial samples).
         if total_iters < 20 {
             panic!(
-                "soak ran only {total_iters} iterations — need at least 20 to compute drift (set CMDR_SOAK_ITERATIONS=100 minimum)"
+                "soak ran only {total_iters} iterations; need at least 20 to compute drift (set CMDR_SOAK_ITERATIONS=100 minimum)"
             );
         }
 
@@ -3995,7 +3995,7 @@ mod tests {
         let drift = last_avg / first_avg;
 
         log::info!(
-            "smb_soak_copy_loop: DONE — {} iters in {:?} ({:.1} ms/iter avg)",
+            "smb_soak_copy_loop: DONE: {} iters in {:?} ({:.1} ms/iter avg)",
             total_iters,
             total_elapsed,
             per_iter_ms.iter().sum::<f64>() / total_iters as f64
@@ -4042,7 +4042,7 @@ mod tests {
         );
         assert!(
             peak_rss_mb - baseline_rss_mb < 100.0,
-            "peak RSS grew by {:.1} MB (baseline {:.1} MB, peak {:.1} MB) — exceeds 100 MB ceiling",
+            "peak RSS grew by {:.1} MB (baseline {:.1} MB, peak {:.1} MB); exceeds 100 MB ceiling",
             peak_rss_mb - baseline_rss_mb,
             baseline_rss_mb,
             peak_rss_mb
@@ -4050,7 +4050,7 @@ mod tests {
         let fd_delta = final_fds as i64 - baseline_fds as i64;
         assert!(
             fd_delta < 5,
-            "final FD count grew by {} (baseline {}, final {}) — exceeds 5 FD ceiling (suggests leak)",
+            "final FD count grew by {} (baseline {}, final {}); exceeds 5 FD ceiling (suggests leak)",
             fd_delta,
             baseline_fds,
             final_fds

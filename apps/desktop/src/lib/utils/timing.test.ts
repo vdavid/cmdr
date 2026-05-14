@@ -52,7 +52,7 @@ describe('createDebounce', () => {
     expect(fn).toHaveBeenCalledOnce()
   })
 
-  it('resets timer on repeated calls — only the last one fires', () => {
+  it('resets timer on repeated calls, only the last one fires', () => {
     const fn = vi.fn()
     const debounced = createDebounce(fn, 100)
 

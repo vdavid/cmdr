@@ -545,8 +545,8 @@ pub async fn disconnect_network_host(
 /// so the FE is free to fire on its own schedule. Returns `Ok(())` on success
 /// (state is now `Direct`), or an `IpcError` describing why the rebuild failed.
 ///
-/// Calling this on a non-SMB volume yields `IpcError` with `NotSupported` —
-/// the trait default. The FE only ever invokes this for known SMB volumes.
+/// Calling this on a non-SMB volume yields `IpcError` with `NotSupported`
+/// (the trait default). The FE only ever invokes this for known SMB volumes.
 #[tauri::command]
 #[specta::specta]
 pub async fn reconnect_smb_volume(volume_id: String) -> Result<(), crate::commands::util::IpcError> {
@@ -667,7 +667,7 @@ pub fn remove_manual_server(server_id: String, app_handle: tauri::AppHandle) -> 
 /// Idempotently starts mDNS discovery if it isn't running. Triggered by the frontend the first
 /// time the user takes a network action (clicks "Network", opens "Connect to server…", or
 /// upgrades a mounted share to direct smb2). The first call here is what triggers macOS's
-/// "Cmdr wants to find devices on local networks" prompt — we defer to the latest reasonable
+/// "Cmdr wants to find devices on local networks" prompt; we defer to the latest reasonable
 /// moment so fresh installs don't see the prompt at launch.
 ///
 /// Also kicks off the existing-SMB-mount upgrade pass: if macOS auto-remounted SMB shares
@@ -689,7 +689,7 @@ pub fn ensure_network_discovery_started(app_handle: tauri::AppHandle) {
 
 /// Live-apply the `network.enabled` toggle. When `false`, stops mDNS and clears the discovered
 /// host list (frontend store empties via emitted `network-host-lost` events). When `true`, this
-/// is a no-op — the frontend triggers `ensure_network_discovery_started` separately when the
+/// is a no-op; the frontend triggers `ensure_network_discovery_started` separately when the
 /// user takes a network action.
 #[tauri::command]
 #[specta::specta]

@@ -192,7 +192,7 @@
         flex: 1 1 0;
         /* Tabs fill the entire bar height. With `.tab-bar { align-items: end }`
          * and the tab matching the bar height, the colored top edge of the
-         * active tab is always at the bar's top — flush below the (fixed)
+         * active tab is always at the bar's top, flush below the (fixed)
          * window title-bar at every text scale. */
         height: var(--spacing-tab-bar-height);
         padding: 0 var(--spacing-sm);
@@ -211,7 +211,7 @@
             color var(--transition-fast);
     }
 
-    /* Subtle separator between inactive tabs — hidden next to the active tab */
+    /* Subtle separator between inactive tabs, hidden next to the active tab */
     .tab:not(.active, .before-active, .after-active, :first-child)::before {
         content: '';
         position: absolute;

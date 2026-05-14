@@ -47,7 +47,7 @@ func RunLogErrorMacro(ctx *CheckContext) (CheckResult, error) {
 			sb.WriteString(fmt.Sprintf("  %s:%d: %s\n", v.relPath, v.line, v.text))
 		}
 		return CheckResult{}, fmt.Errorf(
-			"found %d raw `log::error!` %s outside the allowlist (use `crate::log_error!` instead — see error_reporter/CLAUDE.md):\n%s",
+			"found %d raw `log::error!` %s outside the allowlist (use `crate::log_error!` instead; see error_reporter/CLAUDE.md):\n%s",
 			len(violations), Pluralize(len(violations), "site", "sites"), sb.String(),
 		)
 	}
@@ -97,7 +97,7 @@ func scanForRawLogError(rootDir, srcDir string) ([]logErrorSite, int, error) {
 			if !strings.Contains(line, "log::error!") {
 				continue
 			}
-			// Skip lines that are clearly comments — `///`, `//`, `//!`.
+			// Skip lines that are clearly comments: `///`, `//`, `//!`.
 			trimmed := strings.TrimLeft(line, " \t")
 			if strings.HasPrefix(trimmed, "//") {
 				continue

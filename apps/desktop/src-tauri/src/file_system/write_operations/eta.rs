@@ -1,6 +1,6 @@
 //! ETA + throughput estimator for write operations.
 //!
-//! Tracks two independent rates — bytes/second and files/second — via a
+//! Tracks two independent rates (bytes/second and files/second) via a
 //! time-weighted exponential moving average (τ ≈ 3 s half-life), then combines
 //! them with `max(ETA_bytes, ETA_files)`. The operation can't finish before
 //! either axis is done, so the larger remaining time is the truthful one.
@@ -21,11 +21,11 @@
 //! ## Phase transitions and rollback
 //!
 //! Resetting on phase change (scanning → copying, copying → rolling_back) is
-//! required because the counters reset too — otherwise an EWMA fed
+//! required because the counters reset too. Otherwise an EWMA fed
 //! `bytes_done = 0` after `bytes_done = 5_000_000_000` would emit garbage.
 //! Rollback flips the sign: `bytes_done` decreases. The estimator treats
-//! "progress toward the phase target" as positive — target is `bytes_total`
-//! during forward phases, `0` during rollback.
+//! "progress toward the phase target" as positive (target is `bytes_total`
+//! during forward phases, `0` during rollback).
 
 use std::time::{Duration, Instant};
 
@@ -38,7 +38,7 @@ const EWMA_TAU_SECS: f64 = 3.0;
 
 /// Don't emit an ETA until we've seen at least this many samples in the current
 /// phase. The first sample initializes the EWMA from the instantaneous rate, which
-/// can be wild — wait for one more to stabilize.
+/// can be wild. Wait for one more to stabilize.
 const MIN_SAMPLES_FOR_ETA: u32 = 2;
 
 /// Don't emit an ETA until at least this much wall time has elapsed in the current
@@ -54,7 +54,7 @@ pub struct EtaStats {
     /// Smoothed files per second.
     pub files_per_second: f32,
     /// Seconds remaining. `None` while the estimator is warming up or when both
-    /// rates are zero (operation stalled — no point lying about the ETA).
+    /// rates are zero (operation stalled: no point lying about the ETA).
     pub eta_seconds: Option<u32>,
 }
 
@@ -81,8 +81,8 @@ struct PhaseState {
 }
 
 /// Per-operation estimator. Constructed once when the operation starts; updated
-/// from each progress emission. `Default` is the only way to make one — there's
-/// no useful state to seed.
+/// from each progress emission. `Default` is the only way to make one;
+/// there's no useful state to seed.
 #[derive(Debug, Default)]
 pub struct EtaEstimator {
     state: Option<PhaseState>,
@@ -130,7 +130,7 @@ impl EtaEstimator {
         let state = self.state.as_mut().expect("just reset or pre-existing");
         let dt = now.saturating_duration_since(state.last_t).as_secs_f64();
         if dt <= 0.0 {
-            // Two updates in the same instant — return the last computed stats.
+            // Two updates in the same instant; return the last computed stats.
             return compute_stats(state, bytes_done, bytes_total, files_done, files_total);
         }
 
@@ -152,8 +152,8 @@ impl EtaEstimator {
         let inst_bytes_rate = delta_bytes / dt;
         let inst_files_rate = delta_files / dt;
 
-        // Time-weighted EWMA: α = 1 − exp(−Δt / τ). At Δt = τ, α ≈ 0.63 — most
-        // of the weight on the new sample. At Δt ≪ τ, α small — heavy smoothing.
+        // Time-weighted EWMA: α = 1 − exp(−Δt / τ). At Δt = τ, α ≈ 0.63 (most
+        // of the weight on the new sample). At Δt ≪ τ, α small (heavy smoothing).
         let alpha = 1.0 - (-dt / EWMA_TAU_SECS).exp();
 
         if state.samples == 0 {
@@ -283,7 +283,7 @@ mod tests {
 
     #[test]
     fn warmup_suppresses_eta_until_min_elapsed() {
-        // Two samples 200 ms apart — below MIN_ELAPSED_FOR_ETA.
+        // Two samples 200 ms apart, below MIN_ELAPSED_FOR_ETA.
         let stats = run(
             WriteOperationPhase::Copying,
             10_000_000,
@@ -318,7 +318,7 @@ mod tests {
     #[test]
     fn file_heavy_steady_workload() {
         // 100k tiny files, ~1 kB each (so byte work is trivial). 1k files/s.
-        // After 2 s of progress, 2k files done — 98k left at 1k/s → ~98 s.
+        // After 2 s of progress, 2k files done: 98k left at 1k/s → ~98 s.
         let stats = run(
             WriteOperationPhase::Deleting,
             100_000_000,
@@ -388,11 +388,11 @@ mod tests {
             );
         }
 
-        // 25_010 of 174_661 files done — about 149_651 remaining. At ~5k/s ≈ ~30 s.
+        // 25_010 of 174_661 files done: about 149_651 remaining. At ~5k/s ≈ ~30 s.
         let eta = last.eta_seconds.expect("warmed up by now");
         assert!(
             eta >= 20,
-            "ETA collapsed to {eta} s — should reflect remaining file count",
+            "ETA collapsed to {eta} s: should reflect remaining file count",
         );
         // Files rate should dominate the readout.
         assert!(last.files_per_second > 1000.0);
@@ -439,8 +439,8 @@ mod tests {
         // After 12 s at the new rate (4τ) the EWMA's residual error fraction is
         // exp(-12/3) ≈ 1.8% of the original step. For a 60→6 MB/s step that's a
         // ~1 MB/s residual, so the reading should be ≤ 8 MB/s (under 35% over
-        // target). Importantly, it must be well below the original 60 MB/s —
-        // i.e. the estimator is converging, not anchored.
+        // target). Importantly, it must be well below the original 60 MB/s
+        // (i.e. the estimator is converging, not anchored).
         let bps = final_stats.bytes_per_second;
         assert!(
             bps <= 8_000_000,
@@ -448,7 +448,7 @@ mod tests {
         );
         assert!(
             bps >= 5_500_000,
-            "bytes_per_second = {bps} should still be ≥ 5.5 MB/s — overshooting low means the EWMA went off course",
+            "bytes_per_second = {bps} should still be ≥ 5.5 MB/s (overshooting low means the EWMA went off course)",
         );
     }
 
@@ -481,7 +481,7 @@ mod tests {
             );
         }
 
-        // The rate has decayed significantly. ETA may be None or large — either
+        // The rate has decayed significantly. ETA may be None or large; either
         // is acceptable. We just need it not to be a wildly wrong small number.
         let stalled = est.update(
             at(start, 10_000),
@@ -493,7 +493,7 @@ mod tests {
         );
         assert!(
             stalled.eta_seconds.map(|e| e > 30).unwrap_or(true),
-            "ETA during stall = {:?} — should be large or None",
+            "ETA during stall = {:?}: should be large or None",
             stalled.eta_seconds,
         );
 
@@ -529,7 +529,7 @@ mod tests {
         est.update(at(start, 2000), WriteOperationPhase::Scanning, 0, 0, 2000, 0);
 
         // Transition to Copying: bytes_done resets to 0 from scanning's 0,
-        // but the file count is fresh — files_done starts back at 0 in the
+        // but the file count is fresh. files_done starts back at 0 in the
         // emitter's view of "files copied so far" (vs "files scanned").
         let on_transition = est.update(at(start, 2100), WriteOperationPhase::Copying, 0, 5_000_000_000, 0, 2000);
         // Reset → zero stats on the transition sample, then re-warm.
@@ -582,8 +582,8 @@ mod tests {
         est.update(at(start, 1000), WriteOperationPhase::Copying, 500, 1_000, 5, 10);
         let a = est.update(at(start, 2000), WriteOperationPhase::Copying, 700, 1_000, 7, 10);
         let b = est.update(at(start, 2000), WriteOperationPhase::Copying, 800, 1_000, 8, 10);
-        // Second call at same instant: rates unchanged, but counters refreshed
-        // — the next call (with dt > 0) will use the latest counters as the
+        // Second call at same instant: rates unchanged, but counters refreshed.
+        // The next call (with dt > 0) will use the latest counters as the
         // reference. We just check that the second update didn't blow up or
         // produce NaN.
         assert!(b.bytes_per_second >= a.bytes_per_second.saturating_sub(1));
@@ -591,7 +591,7 @@ mod tests {
 
     /// `cargo-mutants` survivor target: the rate formula `delta / dt` is
     /// numerically indistinguishable from `delta * dt` whenever dt is exactly
-    /// 1.0 s — every other test uses 1 s steps. This drives the estimator
+    /// 1.0 s; every other test uses 1 s steps. This drives the estimator
     /// with `dt = 2.0 s` so `delta / 2` and `delta * 2` differ by 4x, then
     /// asserts the rate tightly enough to catch `* dt` and `% dt` mutants
     /// on the `inst_bytes_rate` / `inst_files_rate` lines.
@@ -600,7 +600,7 @@ mod tests {
         // Two 2-second steps at 100 MB/s and 50 files/s. After seed + 1 EWMA
         // step, the rate should be very close to the instantaneous rate of
         // 100 MB/s and 50 files/s (the EWMA combines the post-seed direct-set
-        // 100 MB/s with another 100 MB/s sample — no drift).
+        // 100 MB/s with another 100 MB/s sample, no drift).
         let stats = run(
             WriteOperationPhase::Copying,
             10_000_000_000,

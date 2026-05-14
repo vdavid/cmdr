@@ -278,7 +278,7 @@ export async function disconnect(deviceId: string): Promise<void> {
 /**
  * Initializes the MTP store.
  * Sets up event listeners for device connection state tracking.
- * The backend handles device detection and auto-connection — this store
+ * The backend handles device detection and auto-connection; this store
  * is a passive consumer that tracks connection state for UI purposes.
  * Should be called once when the app starts.
  */

@@ -12,7 +12,7 @@
 //! callbacks on the main thread. The `start_drag_paths` / `start_selection_drag`
 //! commands return **before** macOS delivers `draggingEntered:`/`draggingExited:`
 //! events. Therefore, state must **never** be cleared from JS async callbacks that
-//! run after the start call resolves — they race with the swizzle. State is only
+//! run after the start call resolves. They race with the swizzle. State is only
 //! cleared on drop (via the Tauri `clear_self_drag_overlay` command from the
 //! frontend drop handler).
 
@@ -131,7 +131,7 @@ unsafe fn create_transparent_nsimage() -> *mut AnyObject {
     let Some(cls) = AnyClass::get(c"NSImage") else {
         warn_once(
             &WARNED_NSIMAGE_MISSING,
-            "drag_image_swap: NSImage class not found — drag image swapping is disabled. \
+            "drag_image_swap: NSImage class not found. Drag image swapping is disabled. \
              NSImage is a core AppKit class; if it's missing, check whether the framework \
              is loaded correctly.",
         );
@@ -152,7 +152,7 @@ unsafe fn load_nsimage_from_path(path: &str) -> *mut AnyObject {
     let Some(nsimage_cls) = AnyClass::get(c"NSImage") else {
         warn_once(
             &WARNED_NSIMAGE_MISSING,
-            "drag_image_swap: NSImage class not found — drag image swapping is disabled. \
+            "drag_image_swap: NSImage class not found. Drag image swapping is disabled. \
              NSImage is a core AppKit class; if it's missing, check whether the framework \
              is loaded correctly.",
         );

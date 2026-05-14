@@ -3,7 +3,7 @@
 //! Watches for USB device connect/disconnect events via nusb's hotplug API.
 //! On detection, auto-connects devices and emits `mtp-device-connected` /
 //! `mtp-device-disconnected` events (via the connection manager). The frontend
-//! is a passive consumer — it never orchestrates connections.
+//! is a passive consumer. It never orchestrates connections.
 
 use log::{debug, error, info, warn};
 use nusb::hotplug::HotplugEvent;
@@ -154,7 +154,7 @@ fn auto_disconnect_device(device_id: String) {
     tauri::async_runtime::spawn(async move {
         let cm = super::connection_manager();
         if let Err(e) = cm.disconnect(&device_id, app.as_ref()).await {
-            // NotConnected is fine — device may not have been connected yet
+            // NotConnected is fine: device may not have been connected yet
             debug!("Disconnect for removed device {} returned: {:?}", device_id, e);
         }
     });
@@ -263,7 +263,7 @@ fn suppress_ptpcamerad_if_needed() {
         }
         Ok(false) => {} // Already suppressed
         Err(e) => warn!(
-            "Failed to suppress ptpcamerad: {} — falling back to manual workaround dialog",
+            "Failed to suppress ptpcamerad: {} (falling back to manual workaround dialog)",
             e
         ),
     }

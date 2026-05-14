@@ -348,7 +348,7 @@ describe('getTechnicalDetails', () => {
   })
 })
 
-describe('getUserFriendlyMessage — delete operation', () => {
+describe('getUserFriendlyMessage: delete operation', () => {
   it('uses "delete" in source_not_found message', () => {
     const error: WriteOperationError = { type: 'source_not_found', path: '/path/to/file.txt' }
     const result = getUserFriendlyMessage(error, 'delete')
@@ -409,7 +409,7 @@ describe('getUserFriendlyMessage — delete operation', () => {
   })
 })
 
-describe('getUserFriendlyMessage — trash operation', () => {
+describe('getUserFriendlyMessage: trash operation', () => {
   it('uses "move to trash" in source_not_found message', () => {
     const error: WriteOperationError = { type: 'source_not_found', path: '/path/to/file.txt' }
     const result = getUserFriendlyMessage(error, 'trash')

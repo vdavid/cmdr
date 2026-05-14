@@ -168,7 +168,7 @@ export function handleSubmenuKey(key: string, h: SubmenuKeyHandlers): boolean | 
     case 'ArrowDown':
     case 'ArrowUp':
     case 'ArrowRight':
-      return true // absorb — single-item submenu
+      return true // absorb: single-item submenu
     case 'ArrowLeft':
     case 'Escape':
       h.close()

@@ -24,12 +24,12 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 	// Docker is a hard requirement. Surface a clear message instead of a cryptic error.
 	if !CommandExists("docker") {
 		return CheckResult{}, fmt.Errorf(
-			"docker is required for SMB integration tests — install Docker or run without this check",
+			"docker is required for SMB integration tests; install Docker or run without this check",
 		)
 	}
 	if _, err := RunCommand(exec.Command("docker", "info"), true); err != nil {
 		return CheckResult{}, fmt.Errorf(
-			"docker daemon is not running — start Docker or run without this check",
+			"docker daemon is not running; start Docker or run without this check",
 		)
 	}
 
@@ -77,7 +77,7 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		}
 	}
 
-	// Use --release to match the perf profile of shipped code — compound reads
+	// Use --release to match the perf profile of shipped code; compound reads
 	// and writes are sensitive to -O settings. nextest's expression filter
 	// matches only our `smb_integration_*` tests, so unrelated `#[ignore]`
 	// tests are still skipped.

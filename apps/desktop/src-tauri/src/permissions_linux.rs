@@ -26,7 +26,7 @@ pub fn open_privacy_settings() -> Result<(), String> {
     // GNOME: gnome-control-center privacy
     // KDE: systemsettings (no direct privacy section URL)
     // Fallback: xdg-open is unlikely to have a privacy URI, so return an error.
-    Err("Privacy settings aren't needed on Linux — file access is governed by standard Unix permissions, not app sandboxing.".to_string())
+    Err("Privacy settings aren't needed on Linux. File access is governed by standard Unix permissions, not app sandboxing.".to_string())
 }
 
 /// Stub: `x-apple.systempreferences:` URLs only exist on macOS.
@@ -60,7 +60,7 @@ pub fn open_appearance_settings() -> Result<(), String> {
     } else if desktop.contains("XFCE") {
         &[("xfce4-appearance-settings", &[] as &[&str], "XFCE")]
     } else {
-        // Unknown or empty DE (common via SSH) — try all in order
+        // Unknown or empty DE (common via SSH): try all in order
         &[
             ("gnome-control-center", &["background"] as &[&str], "GNOME"),
             ("systemsettings", &["kcm_lookandfeel"], "KDE"),

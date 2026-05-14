@@ -2,7 +2,7 @@
 //! `#[ignore]` and the `CMDR_LOCAL_LLAMA_PORT` env var.
 //!
 //! Purpose: prove the local-LLM streaming path works end-to-end against an actual
-//! reqwest connection to a real model — covering the gap between our axum mock SSE
+//! reqwest connection to a real model, covering the gap between our axum mock SSE
 //! tests (`client_streaming_test.rs`) and real-world behavior. The local LLM is the
 //! path that defines whether Cmdr's "blazing fast" promise holds when AI is on.
 //!
@@ -39,7 +39,7 @@ fn opts() -> ChatOptions {
 }
 
 #[tokio::test]
-#[ignore = "real local llama-server — set CMDR_LOCAL_LLAMA_PORT to run"]
+#[ignore = "real local llama-server; set CMDR_LOCAL_LLAMA_PORT to run"]
 async fn local_chat_completion_returns_text() {
     let Some(port) = port_or_skip() else {
         panic!("CMDR_LOCAL_LLAMA_PORT not set");
@@ -57,7 +57,7 @@ async fn local_chat_completion_returns_text() {
 }
 
 #[tokio::test]
-#[ignore = "real local llama-server — set CMDR_LOCAL_LLAMA_PORT to run"]
+#[ignore = "real local llama-server; set CMDR_LOCAL_LLAMA_PORT to run"]
 async fn local_streaming_emits_multiple_chunks_progressively() {
     let Some(port) = port_or_skip() else {
         panic!("CMDR_LOCAL_LLAMA_PORT not set");
@@ -90,7 +90,7 @@ async fn local_streaming_emits_multiple_chunks_progressively() {
     // tok/s; the local 3B model qualifies.
     assert!(
         ttft < total_elapsed,
-        "TTFT ({ttft:?}) should be < total ({total_elapsed:?}) — otherwise we're not streaming"
+        "TTFT ({ttft:?}) should be < total ({total_elapsed:?}); otherwise we're not streaming"
     );
 
     log::info!(
@@ -100,11 +100,11 @@ async fn local_streaming_emits_multiple_chunks_progressively() {
 }
 
 #[tokio::test]
-#[ignore = "real local llama-server — set CMDR_LOCAL_LLAMA_PORT to run"]
+#[ignore = "real local llama-server; set CMDR_LOCAL_LLAMA_PORT to run"]
 async fn local_streaming_through_sanitizer_emits_valid_suggestions() {
     // The real test: feed a real local-LLM stream through `StreamingSanitizer` and
     // assert it produces ≥1 valid folder name. This is the combination users will
-    // actually hit (`stream_folder_suggestions` does exactly this internally) — minus
+    // actually hit (`stream_folder_suggestions` does exactly this internally), minus
     // only the Tauri Channel transport, which is covered by other tests.
     let Some(port) = port_or_skip() else {
         panic!("CMDR_LOCAL_LLAMA_PORT not set");
@@ -150,7 +150,7 @@ async fn local_streaming_through_sanitizer_emits_valid_suggestions() {
 }
 
 #[tokio::test]
-#[ignore = "real local llama-server — set CMDR_LOCAL_LLAMA_PORT to run"]
+#[ignore = "real local llama-server; set CMDR_LOCAL_LLAMA_PORT to run"]
 async fn local_streaming_drop_mid_stream_releases_server() {
     // Drops the stream after the first chunk. Server should keep accepting new requests
     // afterward (proves the connection cleanup path works against a real server, not

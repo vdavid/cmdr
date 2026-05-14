@@ -1,6 +1,6 @@
 <script lang="ts">
     /**
-     * SearchInputArea — Pattern row + scope row + filter row.
+     * SearchInputArea: pattern row + scope row + filter row.
      *
      * All query configuration inputs. The parent orchestrator owns search execution;
      * this component renders the inputs and fires callbacks on changes.

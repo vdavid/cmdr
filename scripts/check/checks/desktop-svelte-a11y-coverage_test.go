@@ -89,7 +89,7 @@ func TestA11yCoverage_MissingTest(t *testing.T) {
 func TestA11yCoverage_EmptyTestFile(t *testing.T) {
 	tmp := setupGitRepo(t, map[string]string{
 		"apps/desktop/src/lib/ui/Button.svelte":             "<button>Click</button>",
-		"apps/desktop/src/lib/ui/Button.a11y.test.ts":       "// empty — doesn't import the helper",
+		"apps/desktop/src/lib/ui/Button.a11y.test.ts":       "// empty, doesn't import the helper",
 		"scripts/check/checks/a11y-coverage-allowlist.json": `{"exempt":{}}`,
 	})
 
@@ -125,7 +125,7 @@ func TestA11yCoverage_AllowlistSuppresses(t *testing.T) {
 
 func TestA11yCoverage_DeadAllowlistEntry(t *testing.T) {
 	tmp := setupGitRepo(t, map[string]string{
-		// No component at the allowlisted path — it was deleted/moved.
+		// No component at the allowlisted path (it was deleted/moved).
 		"apps/desktop/src/lib/ui/Other.svelte":              "<div />",
 		"apps/desktop/src/lib/ui/Other.a11y.test.ts":        `import { expectNoA11yViolations } from '$lib/test-a11y'`,
 		"scripts/check/checks/a11y-coverage-allowlist.json": `{"exempt":{"apps/desktop/src/lib/deleted/Gone.svelte":"stale entry"}}`,
@@ -152,7 +152,7 @@ func TestA11yCoverage_IgnoresUntrackedFiles(t *testing.T) {
 		"scripts/check/checks/a11y-coverage-allowlist.json": `{"exempt":{}}`,
 	})
 
-	// Create an untracked new svelte file with no test — should be ignored.
+	// Create an untracked new svelte file with no test; should be ignored.
 	untracked := filepath.Join(tmp, "apps/desktop/src/lib/ui/Untracked.svelte")
 	if err := os.WriteFile(untracked, []byte("<div />"), 0644); err != nil {
 		t.Fatal(err)
@@ -190,7 +190,7 @@ func TestA11yCoverage_MissingAllowlistIsOkWhenNoScope(t *testing.T) {
 		"some-other-file.txt": "unrelated",
 	})
 
-	// Don't write an allowlist file — should default to empty.
+	// Don't write an allowlist file; should default to empty.
 	ctx := &CheckContext{RootDir: tmp}
 	result, err := RunA11yCoverage(ctx)
 	if err != nil {

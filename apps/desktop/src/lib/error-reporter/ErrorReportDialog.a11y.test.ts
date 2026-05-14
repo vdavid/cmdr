@@ -143,7 +143,7 @@ describe('ErrorReportDialog', () => {
     const textarea = target.querySelector('textarea')
     expect(textarea).not.toBeNull()
     if (!textarea) throw new Error('textarea missing')
-    const oneEmoji = '\u{1F680}' // rocket — 1 code point, 2 UTF-16 units
+    const oneEmoji = '\u{1F680}' // rocket: 1 code point, 2 UTF-16 units
     // Use 50 001 emoji so we exceed the soft-warn threshold (50 000) by code points.
     const note = oneEmoji.repeat(50_001)
     textarea.value = note
@@ -157,7 +157,7 @@ describe('ErrorReportDialog', () => {
     expect(counter).not.toBeNull()
     expect(counter?.textContent).toContain((50_001).toLocaleString('en-US'))
 
-    // Send button must still be enabled — 50 001 < 100 000 (the hard cap).
+    // Send button must still be enabled: 50 001 < 100 000 (the hard cap).
     const sendButton = Array.from(target.querySelectorAll('button')).find((b) =>
       b.textContent.trim().startsWith('Send report'),
     )
@@ -175,7 +175,7 @@ describe('ErrorReportDialog', () => {
 
     const textarea = target.querySelector('textarea')
     if (!textarea) throw new Error('textarea missing')
-    // 100 001 code-points of emoji — 200 002 UTF-16 units. Naive `.length` would have
+    // 100 001 code-points of emoji (200 002 UTF-16 units). Naive `.length` would have
     // already reported "over" at 50 001 emoji; what we're checking here is that the
     // boundary at 100 000 also fires, regardless of representation.
     textarea.value = '\u{1F680}'.repeat(100_001)

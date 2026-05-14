@@ -9,7 +9,7 @@
 //!
 //! ## Why not retry on upload failure
 //!
-//! We're already debounced at 60 s — the network may be flaky, but the user is going to
+//! We're already debounced at 60 s; the network may be flaky, but the user is going to
 //! hit other errors soon enough if they keep hitting the same code path. Retrying inside
 //! a single dispatch risks flooding the server during outages, with no benefit (the user
 //! still has the manual flow if they want to be sure their report lands).
@@ -17,7 +17,7 @@
 //! ## Crash-loop interaction
 //!
 //! If the app exits inside the 60 s debounce window, the report does NOT fire. This
-//! mirrors the frontend log bridge's `beforeunload` semantics — flushed-on-shutdown
+//! mirrors the frontend log bridge's `beforeunload` semantics; flushed-on-shutdown
 //! reports require a separate codepath we don't ship. Crashes are still covered: panics
 //! route through `crash_reporter`, which writes to disk synchronously and uploads on the
 //! next launch. The auto-dispatcher is for soft, recoverable errors.
@@ -51,7 +51,7 @@ const JITTER: Duration = Duration::from_secs(10);
 
 /// Tail size for the auto-send bundle, re-exported from the error_reporter module so
 /// the cap stays in lockstep with the bundle scope (Flow B fires without per-event
-/// consent — small bundle, anchored on the actual error).
+/// consent; small bundle, anchored on the actual error).
 const AUTO_BUNDLE_CAP_MB: usize = FLOW_B_BUNDLE_CAP_MB;
 
 /// Server URL for error report ingestion. Mirrors the commands layer constant.
@@ -67,7 +67,7 @@ pub const AUTO_SENT_EVENT: &str = "error-report-auto-sent";
 /// Master switch driven by the `updates.errorReports` setting. Default: off (opt-in).
 ///
 /// Read on the hot path of every `log_error!` call, so it's an atomic with `Relaxed`
-/// ordering — no synchronization needed beyond "eventually visible to other threads".
+/// ordering; no synchronization needed beyond "eventually visible to other threads".
 static ENABLED: AtomicBool = AtomicBool::new(false);
 
 /// AppHandle stashed at startup so the macro doesn't have to thread one in.
@@ -116,7 +116,7 @@ pub fn is_enabled() -> bool {
 /// from `scheduled_send_at`; if it's already past, fire immediately.
 pub fn set_app_handle(handle: AppHandle<Wry>) {
     if APP_HANDLE.set(handle.clone()).is_err() {
-        // Already set — nothing more to do. Tests reset the handle differently; in prod
+        // Already set; nothing more to do. Tests reset the handle differently; in prod
         // setup runs once.
         return;
     }
@@ -145,7 +145,7 @@ pub fn set_app_handle(handle: AppHandle<Wry>) {
 
 /// Throttles `cmdr://state` snapshots so an error storm in a tight loop doesn't fill
 /// the log file with thousands of YAML blobs. One snapshot every 30 s is plenty for
-/// triage — if the same error keeps firing, the *first* snapshot is the load-bearing
+/// triage; if the same error keeps firing, the *first* snapshot is the load-bearing
 /// one anyway.
 static LAST_STATE_SNAPSHOT_AT: Mutex<Option<Instant>> = Mutex::new(None);
 const STATE_SNAPSHOT_THROTTLE: Duration = Duration::from_secs(30);
@@ -210,7 +210,7 @@ pub fn on_error_logged(category: &str, message: &str) {
     };
 
     // Spawn the flush task only if the AppHandle has been wired up. If it's not, the
-    // debounce state is preserved with `flush_spawned = false` — when `set_app_handle`
+    // debounce state is preserved with `flush_spawned = false`; when `set_app_handle`
     // eventually runs, it'll spawn the task with the remaining time (or fire immediately
     // if the deadline has already passed).
     let Some(app) = APP_HANDLE.get().cloned() else {

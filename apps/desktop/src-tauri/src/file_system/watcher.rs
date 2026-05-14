@@ -221,7 +221,7 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
             (true, Some(entry)) => modifies.push(entry.clone()),
             (true, None) => removes.push(path.clone()),
             (false, Some(entry)) => adds.push(entry.clone()),
-            (false, None) => {} // Not in cache and gone from disk — ignore
+            (false, None) => {} // Not in cache and gone from disk: ignore
         }
     }
 
@@ -403,7 +403,7 @@ pub async fn handle_directory_change(listing_id: &str) {
             }
         }
     } else {
-        // Volume unregistered — fall back to std::fs for local paths
+        // Volume unregistered: fall back to std::fs for local paths
         match list_directory_core(&path) {
             Ok(entries) => entries,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
@@ -490,7 +490,7 @@ pub async fn handle_directory_change(listing_id: &str) {
 ///
 /// Feature-gated to `playwright-e2e` so production builds can't accidentally
 /// bypass the debouncer (which exists to prevent thrash on bursts of events;
-/// tests don't need that — they need determinism).
+/// tests don't need that: they need determinism).
 #[cfg(feature = "playwright-e2e")]
 pub async fn flush_all_watchers() {
     let listing_ids: Vec<String> = match WATCHER_MANAGER.read() {

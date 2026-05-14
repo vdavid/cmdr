@@ -1,4 +1,4 @@
-//! `IndexManager` — central coordinator for the drive indexing system.
+//! `IndexManager`: central coordinator for the drive indexing system.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -109,7 +109,7 @@ impl IndexManager {
                 let last_event_id: u64 = last_event_id_str.parse().unwrap_or(0);
                 if last_event_id > 0 {
                     // Pre-check: compare stored event ID with current system event ID.
-                    // If the gap is too large, skip replay entirely — replaying tens of
+                    // If the gap is too large, skip replay entirely. Replaying tens of
                     // millions of events is slower than a fresh scan. The watcher channel
                     // (32K capacity) has overflow detection as a secondary safety net.
                     let current_id = watcher::current_event_id();
@@ -126,7 +126,7 @@ impl IndexManager {
                                  The app likely hasn't run for a long time."
                             ),
                         );
-                        return self.start_scan("stale index — journal gap too large");
+                        return self.start_scan("stale index: journal gap too large");
                     }
 
                     let current_id = watcher::current_event_id();
@@ -457,7 +457,7 @@ impl IndexManager {
 
                     // Check if the FSEvents channel overflowed (events dropped
                     // before reaching the forward task). If so, our buffered events
-                    // are incomplete — the reconciler replay will miss changes.
+                    // are incomplete. The reconciler replay will miss changes.
                     // We still proceed (the scan data itself is fine), but log a
                     // warning. The live event loop will detect the overflow flag
                     // and trigger a rescan at that point, since a fresh scan is
@@ -466,7 +466,7 @@ impl IndexManager {
                         && flag.load(Ordering::Relaxed)
                     {
                         log::info!(
-                            "FSEvents channel overflowed during scan — some watcher \
+                            "FSEvents channel overflowed during scan. Some watcher \
                                  events were dropped. Live event loop will trigger a rescan."
                         );
                     }
@@ -507,7 +507,7 @@ impl IndexManager {
                     DEBUG_STATS.close_phase_with_stats(vec![]);
                     DEBUG_STATS.set_phase(ActivityPhase::Reconciling, "post-scan");
 
-                    // Tell the frontend to refresh all visible listings — directory
+                    // Tell the frontend to refresh all visible listings. Directory
                     // sizes are now available for the first time after a full scan.
                     let _ = app.emit(
                         "index-dir-updated",

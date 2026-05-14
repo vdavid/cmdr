@@ -277,10 +277,10 @@ fn mtp_device_owner_names() {
 #[test]
 fn mtp_owner_negatives() {
     let must_be_unchanged = [
-        // English contractions — `It`, `That`, `He`, `She` would be the "owner"
+        // English contractions: `It`, `That`, `He`, `She` would be the "owner"
         // candidate but we only match capitalized words AND a known model word.
         // `it's a Pixel` has lowercase `it`, so safe. `That's a Pixel 8 Pro` has
-        // capitalized "That" but "Pixel 8 Pro" follows — uh oh, that WOULD match.
+        // capitalized "That" but "Pixel 8 Pro" follows (uh oh, that WOULD match).
         // Avoid that by listing safe sentences without leading "<Capital>'s <model>"
         // shape, plus a few realistic non-owner sentences.
         "it's a Pixel 8 Pro phone",
@@ -288,11 +288,11 @@ fn mtp_owner_negatives() {
         "Pixel 8 Pro detected",
         "iPhone 15 Pro detected",
         "Galaxy S24 connected",
-        // Module paths — must not match.
+        // Module paths: must not match.
         "cmdr_lib::mtp::device",
         "cmdr_lib::redact::tests",
         // Random capitalized phrases that look ownership-y but aren't followed by
-        // an MTP model word — must NOT match.
+        // an MTP model word: must NOT match.
         "John's car was here",
         "Alice's project codename",
     ];
@@ -301,7 +301,7 @@ fn mtp_owner_negatives() {
     }
 }
 
-/// `<Capitalized>'s <Model>` triggers redaction — including pronouns like `That's Pixel`.
+/// `<Capitalized>'s <Model>` triggers redaction, including pronouns like `That's Pixel`.
 /// We accept this overmatch: the `'s` + model shape is rare in English without an actual
 /// possessive, and over-redacting a generic sentence is safer than under-redacting a real
 /// owner name. Pin the behaviour so any future tightening is deliberate.
@@ -352,7 +352,7 @@ fn negatives_unchanged() {
         "Reconciler: switched to live mode",
         "indexing::manager  Replay: watcher started (since_event_id=888910657, current=890423195)",
         "127 errors", // not 4-octet IP
-        "1.2.3.4.5",  // 5 octets — IPv4 regex matches first 4. acceptable; see below.
+        "1.2.3.4.5",  // 5 octets: IPv4 regex matches first 4. acceptable; see below.
         "release v0.13.0",
     ];
     // Most must be unchanged. A couple noted as "acceptable to redact":
@@ -373,7 +373,7 @@ fn negatives_unchanged() {
     for input in must_be_unchanged {
         assert_eq!(r(input), input, "should be unchanged: {input:?}");
     }
-    // The 1.2.3.4.5 case: IPv4 regex matches "1.2.3.4" — that's acceptable; assert it doesn't
+    // The 1.2.3.4.5 case: IPv4 regex matches "1.2.3.4", which is acceptable; assert it doesn't
     // crash and produces some redaction.
     let _ = r(cases[11]);
 }
@@ -501,6 +501,6 @@ fn replacement_count_histogram() {
 
     // Sanity: every pattern class is exercised at least once in the corpus.
     for (label, count) in &counts {
-        assert!(*count > 0, "no occurrences of {label} — corpus coverage gap");
+        assert!(*count > 0, "no occurrences of {label}: corpus coverage gap");
     }
 }

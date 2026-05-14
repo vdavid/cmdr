@@ -25,7 +25,7 @@ import (
 //     from `$lib/test-a11y`, OR the component's relative path is in the
 //     allowlist.
 //   - Flags dead allowlist entries (paths pointing to files that no longer
-//     exist) — forces cleanup when components move or get deleted.
+//     exist). This forces cleanup when components move or get deleted.
 
 const a11yCoverageScope = "apps/desktop/src/lib"
 
@@ -36,7 +36,7 @@ const a11yCoverageTestImportMarker = "$lib/test-a11y"
 
 type a11yCoverageAllowlist struct {
 	// Exempt maps a relative path (from repo root) to a human-readable reason.
-	// Example: "apps/desktop/src/lib/file-explorer/pane/FilePane.svelte": "too composed for jsdom — tier 2 covers"
+	// Example: "apps/desktop/src/lib/file-explorer/pane/FilePane.svelte": "too composed for jsdom, tier 2 covers"
 	Exempt map[string]string `json:"exempt"`
 }
 
@@ -182,7 +182,7 @@ func formatA11yCoverageFailure(r a11yCoverageResult) string {
 	if len(r.deadAllowlist) > 0 {
 		sb.WriteString(fmt.Sprintf("  %d dead allowlist entry/entries (file no longer exists):\n", len(r.deadAllowlist)))
 		for _, f := range r.deadAllowlist {
-			sb.WriteString(fmt.Sprintf("    - %s — remove from scripts/check/checks/a11y-coverage-allowlist.json\n", f))
+			sb.WriteString(fmt.Sprintf("    - %s: remove from scripts/check/checks/a11y-coverage-allowlist.json\n", f))
 		}
 	}
 	sb.WriteString("\nTemplate for new test: see apps/desktop/src/lib/ui/CLAUDE.md § Adding a component-level a11y test (tier 3).\n")

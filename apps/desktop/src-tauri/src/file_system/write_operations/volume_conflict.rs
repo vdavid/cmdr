@@ -123,19 +123,19 @@ async fn apply_volume_conflict_resolution(
             // - For files: delete the dest first so the streaming writer lands a fresh
             //   copy. Same-named files in dest get genuinely replaced, byte-for-byte.
             // - For directories: SKIP the delete entirely. The recursive copy will
-            //   merge into the existing tree — same-named files inside get overwritten
+            //   merge into the existing tree; same-named files inside get overwritten
             //   by the streaming writers, files in dest that aren't in source are
             //   preserved.
             //
             // The dir branch is enforced HERE rather than relying on `Volume::delete`'s
             // "file or empty directory" trait contract. Today every backend honors
             // that contract (delete of a non-empty dir fails benignly), but a future
-            // backend with recursive delete semantics — or a refactor that consolidates
-            // delete + delete_recursive — would silently flip the UX from merge to
+            // backend with recursive delete semantics, or a refactor that consolidates
+            // delete + delete_recursive, would silently flip the UX from merge to
             // wholesale replace, deleting files unique to dest. That's a data-loss
             // footgun. Stat-and-skip makes the merge guarantee architectural, not
             // emergent. See `dir_overwrite_must_merge_not_replace_even_with_recursive_delete`
-            // in the test module — it pins this with a wrapper Volume that violates
+            // in the test module; it pins this with a wrapper Volume that violates
             // the contract.
             let is_dir = dest_volume.is_directory(dest_path).await.unwrap_or(false);
             if !is_dir && let Err(e) = dest_volume.delete(dest_path).await {
@@ -144,7 +144,7 @@ async fn apply_volume_conflict_resolution(
                     dest_path.display(),
                     e
                 );
-                // Continue — the streaming writer might still succeed if the failure
+                // Continue: the streaming writer might still succeed if the failure
                 // was transient.
             }
             Ok(Some(dest_path.to_path_buf()))
@@ -198,7 +198,7 @@ mod tests {
     use std::pin::Pin;
     use std::sync::Arc;
 
-    /// Wraps an `InMemoryVolume` but makes `delete` recursive — simulates a future
+    /// Wraps an `InMemoryVolume` but makes `delete` recursive, simulating a future
     /// backend (or refactor) that doesn't honor the trait's "file or empty directory"
     /// contract.
     ///
@@ -239,14 +239,14 @@ mod tests {
         ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
             self.inner.is_directory(path)
         }
-        /// Recursive delete — contractually wrong, but plausible for some backends.
+        /// Recursive delete: contractually wrong, but plausible for some backends.
         fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
             Box::pin(async move {
                 if self.inner.is_directory(path).await.unwrap_or(false) {
                     let entries = self.inner.list_directory(path, None).await?;
                     for entry in entries {
                         let child = PathBuf::from(&entry.path);
-                        // Recurse — child might also be a non-empty directory.
+                        // Recurse: child might also be a non-empty directory.
                         Box::pin(self.delete(&child)).await.ok();
                     }
                 }
@@ -270,7 +270,7 @@ mod tests {
             .await
             .unwrap();
 
-        // Wrap so `delete` is recursive — the dangerous future-backend scenario.
+        // Wrap so `delete` is recursive: the dangerous future-backend scenario.
         let dest_recursive: Arc<dyn Volume> = Arc::new(RecursiveDeleteVolume {
             inner: Arc::clone(&inner),
         });
@@ -285,7 +285,7 @@ mod tests {
         assert_eq!(result, Some(PathBuf::from("/photos")));
 
         // CRITICAL: files unique to dest must still be there. If this fails, the
-        // resolver wholesale-deleted the dest tree — Cmdr's "Overwrite means merge
+        // resolver wholesale-deleted the dest tree. Cmdr's "Overwrite means merge
         // for dirs" UX has silently flipped to "Overwrite means replace", and any
         // file in dest that isn't in source is gone.
         assert!(
@@ -298,7 +298,7 @@ mod tests {
         // Also check the dir itself is intact (not a `delete` retry surprise).
         assert!(
             inner.exists(Path::new("/photos")).await,
-            "Dest directory itself must remain — the recursive copy needs it as a merge target."
+            "Dest directory itself must remain; the recursive copy needs it as a merge target."
         );
     }
 

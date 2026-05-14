@@ -6,7 +6,7 @@
 //! latter is correct as a "frozen point in time", but it's useless as a
 //! "when did I last work on this?" hint.
 //!
-//! ## Algorithm — walk-once batching
+//! ## Algorithm: walk-once batching
 //!
 //! For a tree-listing call at `(commit_id, dir_path)` returning N entries:
 //!
@@ -18,16 +18,16 @@
 //! 3. Stop early when every entry is dated, or after `MAX_COMMITS_PER_WALK`,
 //!    or when the rev-walk runs out of commits.
 //! 4. Entries that didn't get a date within the cap fall back to the
-//!    snapshot's commit date — `tree::list_tree` handles that.
+//!    snapshot's commit date (`tree::list_tree` handles that).
 //!
 //! For initial commits (no parent), every entry gets the initial commit's
-//! date — short-circuited up front.
+//! date, short-circuited up front.
 //!
 //! ## Cache
 //!
 //! Tree listings at a specific commit are immutable, so `(commit_id,
 //! dir_path)` is a content-addressable key that never goes stale. Cmdr uses
-//! a tiny FIFO-bounded cache (`MAX_CACHE_ENTRIES` keys) — far smaller than
+//! a tiny FIFO-bounded cache (`MAX_CACHE_ENTRIES` keys), far smaller than
 //! the heap impact of a full listing, and big enough to cover repeated
 //! navigation between sibling snapshot dirs without re-walking.
 //!
@@ -65,7 +65,7 @@ pub const MAX_COMMITS_PER_WALK: usize = 1000;
 /// FIFO cap on the result cache. Each entry is a `HashMap<String, u64>`
 /// bounded by directory size, so this caps total memory at around
 /// (avg-dir-size × 50). For a 100-entry directory, ~5000 string + u64
-/// pairs sit in the cache — a few hundred KB at most.
+/// pairs sit in the cache (a few hundred KB at most).
 const MAX_CACHE_ENTRIES: usize = 50;
 
 /// Result map: top-level entry name (relative to `dir_path`) → committer
@@ -73,11 +73,11 @@ const MAX_CACHE_ENTRIES: usize = 50;
 pub type DateMap = HashMap<String, u64>;
 
 /// Cache key. `dir_path` uses forward slashes and never starts/ends with `/`
-/// — same shape `tree::list_tree` accepts. Empty string means the root tree.
+/// (same shape `tree::list_tree` accepts). Empty string means the root tree.
 type CacheKey = (ObjectId, String);
 
 /// FIFO bounded cache. We picked FIFO over true LRU to keep the
-/// implementation tiny — for snapshot navigation the access pattern is
+/// implementation tiny: for snapshot navigation the access pattern is
 /// "open a folder, look around, move on", so eviction order rarely matters.
 struct DateCache {
     entries: Vec<(CacheKey, DateMap)>,
@@ -115,7 +115,7 @@ fn cache() -> &'static Mutex<DateCache> {
     &CACHE
 }
 
-/// Drops every cached `(commit_id, dir_path)` result. Test-only today —
+/// Drops every cached `(commit_id, dir_path)` result. Test-only today;
 /// the runtime cache is content-addressable and never needs invalidation.
 #[allow(
     dead_code,
@@ -132,7 +132,7 @@ pub fn clear_cache() {
 ///
 /// `dir_path` uses forward slashes, no leading/trailing slash, empty for
 /// the root tree. Returns a map keyed by top-level entry name. Entries
-/// that didn't surface within `MAX_COMMITS_PER_WALK` are simply absent —
+/// that didn't surface within `MAX_COMMITS_PER_WALK` are simply absent;
 /// the caller falls back to the snapshot date.
 pub fn decode_per_file_dates(
     handle: &RepoHandle,
@@ -204,7 +204,7 @@ fn compute_dates(handle: &RepoHandle, commit_id: ObjectId, dir_path: &str) -> Re
 
         let info = match info {
             Ok(i) => i,
-            // Skip unreadable commits rather than abort — an early-history
+            // Skip unreadable commits rather than abort: an early-history
             // shallow boundary shouldn't poison every entry's date.
             Err(_) => continue,
         };
@@ -277,7 +277,7 @@ fn diff_into_dates(
         if top.is_empty() {
             return Ok(std::ops::ControlFlow::Continue(()));
         }
-        // Cheap membership test — `pending` is small (single-directory
+        // Cheap membership test (`pending` is small, single-directory
         // listings are <=200 entries in practice).
         if pending.iter().any(|p| p == top) {
             dates.entry(top.to_string()).or_insert(secs);
@@ -336,13 +336,13 @@ fn committer_secs(repo: &gix::Repository, id: ObjectId) -> Option<u64> {
     u64::try_from(time.seconds).ok()
 }
 
-/// Backstop helper — `Path` form of the keying convention. Not used by the
+/// Backstop helper: `Path` form of the keying convention. Not used by the
 /// hot path (`dir_path` is already a `&str`) but exposed for callers that
 /// hold a `Path` and want to query the cache without rebuilding the slash
 /// shape themselves.
 #[allow(
     dead_code,
-    reason = "Public helper — the hot path uses &str; this exists for future callers passing a Path"
+    reason = "Public helper; the hot path uses &str, but this exists for future callers passing a Path"
 )]
 pub fn dir_path_from_subpath(sub: &Path) -> String {
     sub.to_string_lossy().replace('\\', "/").trim_matches('/').to_string()

@@ -6,8 +6,8 @@
 //! 3. Swap the OS drag image for self-drags (delegated to `drag_image_swap`)
 //!
 //! Events emitted:
-//! - `drag-image-size` `{ width, height }` — on drag enter
-//! - `drag-modifiers` `{ altHeld, cmdHeld, shiftHeld }` — on drag enter and every drag update (only when changed)
+//! - `drag-image-size` `{ width, height }`: on drag enter
+//! - `drag-modifiers` `{ altHeld, cmdHeld, shiftHeld }`: on drag enter and every drag update (only when changed)
 //!
 //! ## Resilience
 //!
@@ -94,7 +94,7 @@ pub fn install(app_handle: AppHandle) {
 
     let Some((_label, webview_window)) = app_handle.webview_windows().into_iter().next() else {
         log::warn!(
-            "drag_image_detection: no webview windows found — swizzle skipped. \
+            "drag_image_detection: no webview windows found, swizzle skipped. \
              Drag image detection and modifier tracking during drags are disabled."
         );
         return;
@@ -104,7 +104,7 @@ pub fn install(app_handle: AppHandle) {
         unsafe { install_swizzles(webview.inner()) };
     }) {
         log::warn!(
-            "drag_image_detection: with_webview failed ({e}) — swizzle skipped. \
+            "drag_image_detection: with_webview failed ({e}), swizzle skipped. \
              Drag image detection and modifier tracking during drags are disabled."
         );
     }
@@ -118,7 +118,7 @@ unsafe fn install_swizzles(webview_ptr: *mut std::ffi::c_void) {
     let obj = webview_ptr as *const AnyObject;
     if obj.is_null() {
         log::warn!(
-            "drag_image_detection: native webview pointer is null — swizzle skipped. \
+            "drag_image_detection: native webview pointer is null, swizzle skipped. \
              Drag image detection and modifier tracking during drags are disabled."
         );
         return;
@@ -127,7 +127,7 @@ unsafe fn install_swizzles(webview_ptr: *mut std::ffi::c_void) {
     let cls: *const AnyClass = unsafe { msg_send![obj, class] };
     let Some(cls) = (unsafe { cls.as_ref() }) else {
         log::warn!(
-            "drag_image_detection: could not get ObjC class from webview — swizzle skipped. \
+            "drag_image_detection: could not get ObjC class from webview, swizzle skipped. \
              Drag image detection and modifier tracking during drags are disabled."
         );
         return;
@@ -143,7 +143,7 @@ unsafe fn install_swizzles(webview_ptr: *mut std::ffi::c_void) {
         }
     } else {
         log::warn!(
-            "drag_image_detection: draggingEntered: not found on webview class — \
+            "drag_image_detection: draggingEntered: not found on webview class. \
              drag image size detection is disabled. \
              Wry may have changed how it implements NSDraggingDestination; \
              check wry's drag-and-drop event handling in its ObjC layer."
@@ -160,7 +160,7 @@ unsafe fn install_swizzles(webview_ptr: *mut std::ffi::c_void) {
         }
     } else {
         log::warn!(
-            "drag_image_detection: draggingUpdated: not found on webview class — \
+            "drag_image_detection: draggingUpdated: not found on webview class. \
              live modifier key tracking during drags is disabled. \
              Wry may have changed how it implements NSDraggingDestination; \
              check wry's drag-and-drop event handling in its ObjC layer."
@@ -177,7 +177,7 @@ unsafe fn install_swizzles(webview_ptr: *mut std::ffi::c_void) {
         }
     } else {
         log::warn!(
-            "drag_image_detection: draggingExited: not found on webview class — \
+            "drag_image_detection: draggingExited: not found on webview class. \
              drag image swapping on window exit is disabled. \
              Wry may have changed how it implements NSDraggingDestination; \
              check wry's drag-and-drop event handling in its ObjC layer."
@@ -190,13 +190,13 @@ unsafe fn install_swizzles(webview_ptr: *mut std::ffi::c_void) {
 // --- Modifier key detection ---
 
 /// Reads the current Alt/Cmd/Shift modifier state from `[NSEvent modifierFlags]`.
-/// This is a class method that reads hardware state — works even when the webview isn't focused.
+/// This is a class method that reads hardware state, so it works even when the webview isn't focused.
 /// Returns all flags as `false` if NSEvent can't be found (graceful degradation).
 fn read_modifiers() -> DragModifiers {
     let Some(cls) = AnyClass::get(c"NSEvent") else {
         warn_once(
             &WARNED_NSEVENT_MISSING,
-            "drag_image_detection: NSEvent class not found — modifier key detection during drags \
+            "drag_image_detection: NSEvent class not found. Modifier key detection during drags \
              is disabled. This is a core AppKit class and shouldn't disappear; if it did, check \
              whether macOS moved it to a different framework or renamed it. Modifier detection \
              falls back to JS keydown/keyup, which doesn't work during OS-level drags.",
@@ -241,7 +241,7 @@ fn emit_modifiers_forced() {
 
 // --- Helpers for forwarding to original implementations ---
 
-/// Forwards to wry's original `draggingEntered:`. Always safe to call — returns
+/// Forwards to wry's original `draggingEntered:`. Always safe to call: returns
 /// `NSDragOperation::Copy` if the original wasn't saved (shouldn't happen in practice).
 unsafe fn call_original_entered(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) -> usize {
     unsafe {
@@ -262,7 +262,7 @@ unsafe fn call_original_entered(this: &AnyObject, cmd: Sel, drag_info: &AnyObjec
 unsafe fn call_original_updated(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) -> usize {
     unsafe {
         if let Some(&original) = ORIGINAL_UPDATED_IMP.get() {
-            // SAFETY: Same as call_original_entered — `draggingUpdated:` has an identical signature.
+            // SAFETY: Same as call_original_entered. `draggingUpdated:` has an identical signature.
             let f =
                 std::mem::transmute::<Imp, unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject) -> usize>(original);
             f(this, cmd, drag_info)
@@ -277,7 +277,7 @@ unsafe fn call_original_updated(this: &AnyObject, cmd: Sel, drag_info: &AnyObjec
 unsafe fn call_original_exited(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) {
     unsafe {
         if let Some(&original) = ORIGINAL_EXITED_IMP.get() {
-            // SAFETY: Same as call_original_entered — `draggingExited:` has the same parameter
+            // SAFETY: Same as call_original_entered. `draggingExited:` has the same parameter
             // signature but returns void instead of NSDragOperation.
             let f = std::mem::transmute::<Imp, unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject)>(original);
             f(this, cmd, drag_info)
@@ -330,7 +330,7 @@ unsafe extern "C-unwind" fn swizzled_dragging_entered(this: &AnyObject, cmd: Sel
     if result.is_err() {
         warn_once(
             &WARNED_ENTERED_PANIC,
-            "drag_image_detection: panic in draggingEntered swizzle — drag image detection \
+            "drag_image_detection: panic in draggingEntered swizzle. Drag image detection \
              and initial modifier state may not work for this session. \
              This is likely caused by a wry or macOS API change; check that NSDraggingItem's \
              draggingFrame() and NSEvent's modifierFlags still match the expected signatures \
@@ -355,7 +355,7 @@ unsafe extern "C-unwind" fn swizzled_dragging_updated(this: &AnyObject, cmd: Sel
     if result.is_err() {
         warn_once(
             &WARNED_UPDATED_PANIC,
-            "drag_image_detection: panic in draggingUpdated swizzle — live modifier key \
+            "drag_image_detection: panic in draggingUpdated swizzle. Live modifier key \
              tracking during drags is disabled for this session. \
              Check NSEvent.modifierFlags usage in drag_image_detection.rs.",
         );
@@ -380,7 +380,7 @@ unsafe extern "C-unwind" fn swizzled_dragging_exited(this: &AnyObject, cmd: Sel,
     if result.is_err() {
         warn_once(
             &WARNED_EXITED_PANIC,
-            "drag_image_detection: panic in draggingExited swizzle — drag image swap-back \
+            "drag_image_detection: panic in draggingExited swizzle. Drag image swap-back \
              to rich preview is disabled for this session. \
              Check NSImage and NSDraggingItem usage in drag_image_detection.rs.",
         );
@@ -398,13 +398,13 @@ unsafe fn read_drag_image_size(drag_info: &AnyObject) -> (f64, f64) {
         return size;
     }
 
-    // Fallback: try the deprecated `draggedImage()` — works for same-process drags.
+    // Fallback: try the deprecated `draggedImage()`, which works for same-process drags.
     // Guard with respondsToSelector: since Apple may remove this deprecated API entirely.
     let responds: Bool = unsafe { msg_send![drag_info, respondsToSelector: sel!(draggedImage)] };
     if !responds.as_bool() {
         warn_once(
             &WARNED_DRAGGED_IMAGE_REMOVED,
-            "drag_image_detection: draggedImage selector no longer exists on NSDraggingInfo — \
+            "drag_image_detection: draggedImage selector no longer exists on NSDraggingInfo. \
              Apple removed this deprecated API in this macOS version. \
              The primary path (enumerateDraggingItems) still works; this only affects \
              same-process drag size detection as a fallback. \
@@ -434,7 +434,7 @@ unsafe fn enumerate_dragging_frames(drag_info: &AnyObject) -> (f64, f64) {
     let Some(nsarray_cls) = AnyClass::get(c"NSArray") else {
         warn_once(
             &WARNED_NSARRAY_MISSING,
-            "drag_image_detection: NSArray class not found — drag frame enumeration is disabled. \
+            "drag_image_detection: NSArray class not found. Drag frame enumeration is disabled. \
              NSArray is a core Foundation class; if it's missing, something is fundamentally \
              wrong with the ObjC runtime. Check if Foundation is loaded correctly.",
         );

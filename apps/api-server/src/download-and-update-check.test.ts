@@ -62,7 +62,7 @@ describe('GET /download/:version/:arch', () => {
     )
   })
 
-  it('still records x86_64 (not x64) in D1 — filename mapping is purely cosmetic', async () => {
+  it('still records x86_64 (not x64) in D1 (filename mapping is purely cosmetic)', async () => {
     const { db, bindMock } = createMockD1()
     const bindings = createBindings({ TELEMETRY_DB: db })
 
@@ -148,7 +148,7 @@ describe('GET /update-check/:version', () => {
   })
 
   it('silently ignores duplicate update checks (INSERT OR IGNORE)', async () => {
-    // Simulate D1 returning success for INSERT OR IGNORE on a duplicate — the UNIQUE constraint
+    // Simulate D1 returning success for INSERT OR IGNORE on a duplicate. The UNIQUE constraint
     // makes it a no-op. The route should still return 302 without errors.
     const { db } = createMockD1(() => Promise.resolve({ success: true, meta: { changes: 0 } }))
     const bindings = createBindings({ TELEMETRY_DB: db })

@@ -243,7 +243,7 @@ pub(super) fn trash_files_with_progress(
             items_total
         );
         for error in &errors {
-            log::warn!("  Failed: {} — {}", error.path.display(), error.message);
+            log::warn!("  Failed: {}: {}", error.path.display(), error.message);
         }
     }
 

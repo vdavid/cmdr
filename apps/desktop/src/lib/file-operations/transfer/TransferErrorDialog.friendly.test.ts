@@ -2,8 +2,8 @@
  * Tests for `TransferErrorDialog.svelte`'s backend-`FriendlyError` rendering path.
  *
  * The component has two sources of copy:
- *   - `friendlyError` prop (backend `WriteErrorEvent.friendly` payload) — preferred
- *   - `getUserFriendlyMessage(error, operationType)` — fallback for events without friendly
+ *   - `friendlyError` prop (backend `WriteErrorEvent.friendly` payload): preferred
+ *   - `getUserFriendlyMessage(error, operationType)`: fallback for events without friendly
  *
  * The companion `TransferErrorDialog.a11y.test.ts` exercises the fallback path.
  * This file pins the friendly-path behaviour: title comes from `friendlyError.title`,
@@ -56,7 +56,7 @@ function mountDialog(props: {
   return target
 }
 
-describe('TransferErrorDialog — friendlyError prop', () => {
+describe('TransferErrorDialog: friendlyError prop', () => {
   it('renders friendlyError.title instead of the fallback variant title', async () => {
     const target = mountDialog({ friendlyError: makeFriendly({ title: 'Backend says hello' }) })
     await tick()
@@ -69,7 +69,7 @@ describe('TransferErrorDialog — friendlyError prop', () => {
   it('renders markdown in explanation and suggestion (bold and list)', async () => {
     const target = mountDialog({
       friendlyError: makeFriendly({
-        explanation: "Cmdr couldn't finish — try **opening Finder** first.",
+        explanation: "Cmdr couldn't finish. Try **opening Finder** first.",
         suggestion: '- one\n- two\n- three',
       }),
     })

@@ -181,7 +181,7 @@ async fn poll_loop() {
             };
             let space = match tokio::time::timeout(FETCH_TIMEOUT, fetch).await {
                 Ok(Some(s)) => s,
-                _ => continue, // timeout or no data — skip this tick
+                _ => continue, // timeout or no data: skip this tick
             };
 
             if exceeds_threshold(&volume_id, &space, threshold) {
@@ -235,7 +235,7 @@ fn exceeds_threshold(volume_id: &str, new: &CachedSpace, threshold: u64) -> bool
             let diff = (old.available_bytes as i64 - new.available_bytes as i64).unsigned_abs();
             diff >= threshold
         }
-        None => true, // First fetch — always emit.
+        None => true, // First fetch: always emit.
     }
 }
 

@@ -56,7 +56,7 @@ describe('AiToastContent a11y', () => {
       speed: 10_000_000,
       etaSeconds: 150,
     }
-    state.progressText = '25% — 500 MB / 2 GB — 10 MB/s — 2m 30s remaining'
+    state.progressText = '25% · 500 MB / 2 GB · 10 MB/s · 2m 30s remaining'
 
     const target = document.createElement('div')
     document.body.appendChild(target)
