@@ -175,12 +175,32 @@ test.describe('File viewer search', () => {
 
 test.describe('File viewer error handling', () => {
   test('shows error for missing file path', async ({ tauriPage }) => {
-    // Open a viewer with an empty path to exercise the missing-path branch in
-    // routes/viewer/+page.svelte. Production never does this (openFileViewer
-    // requires a path), but the route guard still matters as a defence in depth.
-    const viewer = await openViewerWindow(tauriPage as TauriPage, '')
-    const viewerLabel = viewer.targetWindow
-    if (!viewerLabel) throw new Error('Scoped viewer page has no targetWindow label')
+    // The production `openFileViewer` helper requires a path, and the
+    // `open-file-viewer` event listener routes empty paths to "open for
+    // cursor" (so emitting it with `path:''` would just open file-a.txt).
+    // To exercise the route guard in routes/viewer/+page.svelte we
+    // directly invoke `plugin:webview|create_webview_window` with
+    // `?path=` (empty) — the same IPC the prod `new WebviewWindow(...)`
+    // call uses. The main window's default capability grants
+    // `core:webview:allow-create-webview-window`.
+    const main = tauriPage as TauriPage
+    const label = `viewer-${String(Date.now())}-missing-path-test`
+    const labelJson = JSON.stringify(label)
+    const before = new Set((await main.listWindows()).map((w) => w.label))
+    await main.evaluate(`(function() {
+        var invoke = window.__TAURI_INTERNALS__.invoke;
+        return invoke('plugin:webview|create_webview_window', {
+            options: {
+                label: ${labelJson},
+                url: '/viewer?path=',
+                title: 'Viewer',
+                width: 800, height: 600, minWidth: 400, minHeight: 300,
+                resizable: true, minimizable: true, maximizable: true,
+                closable: true, focus: true,
+            },
+        });
+    })()`)
+    const viewer = await main.waitForWindow((w) => w.label === label && !before.has(w.label), { timeout: 10000 })
 
     try {
       await viewer.waitForSelector('.viewer-container', 15000)
@@ -198,7 +218,7 @@ test.describe('File viewer error handling', () => {
       )
       expect(settled).toBe(true)
     } finally {
-      await closeScopedWindow(tauriPage as TauriPage, viewer, viewerLabel)
+      await closeScopedWindow(main, viewer, label)
     }
   })
 })
