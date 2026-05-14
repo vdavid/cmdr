@@ -281,16 +281,34 @@ func TestRunFileLength_AllowlistSuppresses(t *testing.T) {
 	}
 }
 
+func TestRunFileLength_AllowlistWithinBuffer(t *testing.T) {
+	tmp := t.TempDir()
+
+	// File at 990 lines vs allowlist 900 — within the 10% growth buffer
+	path := filepath.Join(tmp, "grew.go")
+	if err := os.WriteFile(path, []byte(strings.Repeat("line\n", 990)), 0644); err != nil {
+		t.Fatal(err)
+	}
+	writeAllowlist(t, tmp, map[string]int{"grew.go": 900})
+
+	ctx := &CheckContext{RootDir: tmp}
+	result, err := RunFileLength(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Code != ResultSuccess {
+		t.Errorf("expected success (within 10%% buffer), got code %d: %s", result.Code, result.Message)
+	}
+}
+
 func TestRunFileLength_AllowlistExceeded(t *testing.T) {
 	tmp := t.TempDir()
 
-	// Create a file that exceeds its allowlist
+	// File at 1035 lines vs allowlist 900 — 15% over, outside the 10% buffer
 	path := filepath.Join(tmp, "grew.go")
-	if err := os.WriteFile(path, []byte(strings.Repeat("line\n", 950)), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(strings.Repeat("line\n", 1035)), 0644); err != nil {
 		t.Fatal(err)
 	}
-
-	// Allowlist it at 900 (but it's 950 now)
 	writeAllowlist(t, tmp, map[string]int{"grew.go": 900})
 
 	ctx := &CheckContext{RootDir: tmp}
@@ -299,13 +317,16 @@ func TestRunFileLength_AllowlistExceeded(t *testing.T) {
 		t.Fatal(err)
 	}
 	if result.Code != ResultWarning {
-		t.Errorf("expected warning (file exceeded allowlist), got code %d", result.Code)
+		t.Errorf("expected warning (file exceeded allowlist + buffer), got code %d", result.Code)
 	}
 	if !strings.Contains(result.Message, "grew.go") {
 		t.Errorf("expected 'grew.go' in message, got: %s", result.Message)
 	}
 	if !strings.Contains(result.Message, "allowlist: 900") {
 		t.Errorf("expected 'allowlist: 900' in message, got: %s", result.Message)
+	}
+	if !strings.Contains(result.Message, "+15% growth") {
+		t.Errorf("expected '+15%% growth' in message, got: %s", result.Message)
 	}
 }
 

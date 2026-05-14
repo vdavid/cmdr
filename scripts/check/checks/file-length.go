@@ -14,6 +14,10 @@ const (
 	fileLengthWarnLines     = 800
 	fileLengthCriticalLines = 1200
 
+	// Tolerate this much growth above each allowlisted file's recorded line count before warning,
+	// so small incremental edits don't trigger a warning until growth becomes meaningful.
+	fileLengthAllowlistBufferPct = 10
+
 	ansiYellow = "\033[33m"
 	ansiRed    = "\033[31m"
 	ansiReset  = "\033[0m"
@@ -91,7 +95,7 @@ func scanFileLengths(rootDir string, allowlist map[string]int) (fileLengthScanRe
 			return nil
 		}
 		relPath, _ := filepath.Rel(rootDir, path)
-		if allowedLines, ok := allowlist[relPath]; ok && lineCount <= allowedLines {
+		if allowedLines, ok := allowlist[relPath]; ok && lineCount <= allowedLines*(100+fileLengthAllowlistBufferPct)/100 {
 			result.allowlistedCount++
 			return nil
 		}
@@ -115,7 +119,8 @@ func formatLongFiles(files []longFile, allowlist map[string]int, allowlistedCoun
 		tokenStr := formatTokenCount(f.sizeBytes / 4)
 		detail := fmt.Sprintf("(%d lines, %d kB, ~%s tokens)", f.lines, sizeKB, tokenStr)
 		if allowedLines, ok := allowlist[f.relPath]; ok {
-			detail = fmt.Sprintf("(%d lines, allowlist: %d, %d kB, ~%s tokens)", f.lines, allowedLines, sizeKB, tokenStr)
+			growthPct := (f.lines - allowedLines) * 100 / allowedLines
+			detail = fmt.Sprintf("(%d lines, allowlist: %d, %d kB, ~%s tokens, +%d%% growth)", f.lines, allowedLines, sizeKB, tokenStr, growthPct)
 		}
 		color := ansiYellow
 		if f.lines >= fileLengthCriticalLines {
