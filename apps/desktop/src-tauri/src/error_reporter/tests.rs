@@ -190,10 +190,18 @@ fn short_id_matches_expected_format() {
 fn short_id_is_statistically_unique() {
     let mut seen = HashSet::new();
     for _ in 0..1000 {
-        let id = generate_short_id();
-        // ~28.6 million possible IDs; collisions in 1k samples are vanishingly rare.
-        assert!(seen.insert(id), "duplicate ID generated within 1000 samples");
+        seen.insert(generate_short_id());
     }
+    // ID space is 31^5 ≈ 28.6 M. The birthday paradox predicts ~0.02 collisions
+    // in 1000 samples on average, so insisting on zero collisions trips ~1.7% of
+    // CI runs on a perfectly healthy RNG. Allow up to 10 collisions: that's a
+    // multi-million-sigma cushion from real entropy, and a genuinely broken RNG
+    // (say, outputs only ~100 distinct values) would produce hundreds.
+    assert!(
+        seen.len() >= 990,
+        "expected at least 990 distinct IDs in 1000 samples, got {}",
+        seen.len()
+    );
 }
 
 #[test]

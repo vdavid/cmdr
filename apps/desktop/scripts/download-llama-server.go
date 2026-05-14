@@ -60,8 +60,7 @@ func main() {
 	// The AI feature is macOS-only, but Tauri requires the resource to exist.
 	if runtime.GOOS != "darwin" {
 		if err := createPlaceholder(PlaceholderFile); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Error creating placeholder: %v\n", err)
-			os.Exit(1)
+			fail("create placeholder", err)
 		}
 		return
 	}
@@ -80,74 +79,106 @@ func main() {
 		return
 	}
 
-	// Download the upstream tarball to a temp file
-	tmpFile, err := os.CreateTemp("", "llama-server-*.tar.gz")
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Error creating temp file: %v\n", err)
-		os.Exit(1)
+	if err := prepareForDarwin(); err != nil {
+		fail("prepare llama-server", err)
 	}
-	tmpPath := tmpFile.Name()
-	_ = tmpFile.Close()
-	defer func() { _ = os.Remove(tmpPath) }()
+}
+
+func fail(stage string, err error) {
+	_, _ = fmt.Fprintf(os.Stderr, "Error: %s: %v\n", stage, err)
+	os.Exit(1)
+}
+
+// prepareForDarwin runs the full macOS pipeline: download → verify → extract →
+// (optional) codesign → write the version marker. Each step returns a wrapped
+// error so main() handles exit codes in one place.
+func prepareForDarwin() error {
+	tmpPath, cleanup, err := makeTempArchive()
+	if err != nil {
+		return err
+	}
+	defer cleanup()
 
 	fmt.Printf("Downloading llama-server %s...\n", Version)
 	fmt.Printf("URL: %s\n", DownloadURL)
-
 	if err := downloadFile(DownloadURL, tmpPath); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Error downloading: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("download: %w", err)
 	}
 
-	// Verify checksum
-	actualChecksum, err := computeSHA256(tmpPath)
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Error computing checksum: %v\n", err)
-		os.Exit(1)
-	}
-	if actualChecksum != ExpectedSHA256 {
-		_, _ = fmt.Fprintf(os.Stderr, "Checksum mismatch!\n  Expected: %s\n  Got:      %s\n", ExpectedSHA256, actualChecksum)
-		os.Exit(1)
+	if err := verifyChecksum(tmpPath, ExpectedSHA256); err != nil {
+		return err
 	}
 	fmt.Println("Download verified")
 
-	// Clean destination directory (fresh extraction each time version changes)
-	if err := os.RemoveAll(DestDir); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Error cleaning destination: %v\n", err)
-		os.Exit(1)
-	}
-	if err := os.MkdirAll(DestDir, 0o755); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Error creating destination: %v\n", err)
-		os.Exit(1)
+	if err := resetDir(DestDir); err != nil {
+		return err
 	}
 
-	// Extract only llama-server binary and .dylib files
 	extracted, err := extractNeededFiles(tmpPath, DestDir)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Error extracting: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("extract: %w", err)
 	}
 	fmt.Printf("Extracted %d files\n", len(extracted))
 
-	// Sign binaries if APPLE_SIGNING_IDENTITY is set (CI release builds)
-	identity := os.Getenv("APPLE_SIGNING_IDENTITY")
-	if identity != "" {
-		fmt.Printf("Signing %d files with identity %q...\n", len(extracted), identity)
-		for _, path := range extracted {
-			if err := codesign(path, identity); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "Error signing %s: %v\n", path, err)
-				os.Exit(1)
-			}
+	if identity := os.Getenv("APPLE_SIGNING_IDENTITY"); identity != "" {
+		if err := signAll(extracted, identity); err != nil {
+			return err
 		}
-		fmt.Println("All files signed")
 	}
 
-	// Write version marker for idempotency
 	if err := os.WriteFile(MarkerFile, []byte(Version), 0o644); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Error writing version marker: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("write version marker: %w", err)
 	}
-
 	fmt.Println("llama-server prepared")
+	return nil
+}
+
+// makeTempArchive creates a temp file path for the upstream tarball and returns
+// a cleanup func that removes it. The file is closed before returning so the
+// downloader can open it for writing.
+func makeTempArchive() (string, func(), error) {
+	tmpFile, err := os.CreateTemp("", "llama-server-*.tar.gz")
+	if err != nil {
+		return "", nil, fmt.Errorf("create temp file: %w", err)
+	}
+	tmpPath := tmpFile.Name()
+	_ = tmpFile.Close()
+	return tmpPath, func() { _ = os.Remove(tmpPath) }, nil
+}
+
+// verifyChecksum re-hashes the downloaded archive and bails on a mismatch.
+func verifyChecksum(archivePath, expected string) error {
+	actual, err := computeSHA256(archivePath)
+	if err != nil {
+		return fmt.Errorf("compute checksum: %w", err)
+	}
+	if actual != expected {
+		return fmt.Errorf("checksum mismatch: expected %s, got %s", expected, actual)
+	}
+	return nil
+}
+
+// resetDir wipes and recreates dir so every version change starts from a clean slate.
+func resetDir(dir string) error {
+	if err := os.RemoveAll(dir); err != nil {
+		return fmt.Errorf("clean destination: %w", err)
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("create destination: %w", err)
+	}
+	return nil
+}
+
+// signAll codesigns each extracted binary with the given identity (used in CI release builds).
+func signAll(paths []string, identity string) error {
+	fmt.Printf("Signing %d files with identity %q...\n", len(paths), identity)
+	for _, path := range paths {
+		if err := codesign(path, identity); err != nil {
+			return fmt.Errorf("sign %s: %w", path, err)
+		}
+	}
+	fmt.Println("All files signed")
+	return nil
 }
 
 // extractNeededFiles extracts only the llama-server binary and .dylib files from

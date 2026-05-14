@@ -44,7 +44,7 @@
             `View: ${t.viewMode}`,
             `Pinned: ${t.pinned ? 'yes' : 'no'}`,
             `Cursor: ${cursor}`,
-            `Original index: ${entry.originalIndex}`,
+            `Original index: ${String(entry.originalIndex)}`,
             `Tab id: ${t.id}`,
         ]
         return lines.join('\n')
@@ -58,7 +58,7 @@
             <h3>Left pane</h3>
             {#if leftStack.length > 0}
                 <ul class="closed-tabs-list">
-                    {#each leftStack as entry, i (`${entry.tab.id}-${i}`)}
+                    {#each leftStack as entry, i (`${entry.tab.id}-${String(i)}`)}
                         {@const isTop = i === leftStack.length - 1}
                         <li class:top={isTop} use:tooltip={tabDetails(entry)}>
                             <span class="closed-tab-marker">{isTop ? '↑' : '·'}</span>
@@ -77,7 +77,7 @@
             <h3>Right pane</h3>
             {#if rightStack.length > 0}
                 <ul class="closed-tabs-list">
-                    {#each rightStack as entry, i (`${entry.tab.id}-${i}`)}
+                    {#each rightStack as entry, i (`${entry.tab.id}-${String(i)}`)}
                         {@const isTop = i === rightStack.length - 1}
                         <li class:top={isTop} use:tooltip={tabDetails(entry)}>
                             <span class="closed-tab-marker">{isTop ? '↑' : '·'}</span>

@@ -21,11 +21,13 @@ if (import.meta.hot) {
       const now = Date.now()
       const lastReload = Number(sessionStorage.getItem(DEBOUNCE_KEY) ?? '0')
       if (now - lastReload < DEBOUNCE_MS) {
+        // eslint-disable-next-line no-console -- dev-only HMR crash recovery; app logger may not be initialized yet at this point
         console.warn('[HMR] SvelteKit TDZ crash detected, skipping reload (debounce)')
         return
       }
 
       sessionStorage.setItem(DEBOUNCE_KEY, String(now))
+      // eslint-disable-next-line no-console -- dev-only HMR crash recovery; app logger may not be initialized yet at this point
       console.warn('[HMR] SvelteKit component TDZ crash detected, reloading page')
       location.reload()
     }

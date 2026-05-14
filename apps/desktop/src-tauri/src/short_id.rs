@@ -63,8 +63,17 @@ mod tests {
     fn ids_are_statistically_unique() {
         let mut seen = HashSet::new();
         for _ in 0..1000 {
-            let id = generate("ERR");
-            assert!(seen.insert(id), "duplicate ID within 1000 samples");
+            seen.insert(generate("ERR"));
         }
+        // 31^5 ≈ 28.6 M ID space → birthday paradox predicts ~0.02 collisions
+        // on average per 1000 samples, with tiny variance. Insisting on zero
+        // collisions trips ~1.7% of CI runs on a perfectly healthy RNG. Allow
+        // up to 10: catches a genuinely broken RNG (hundreds of collisions)
+        // without flaking on real entropy.
+        assert!(
+            seen.len() >= 990,
+            "expected at least 990 distinct IDs in 1000 samples, got {}",
+            seen.len()
+        );
     }
 }

@@ -361,7 +361,7 @@ describe('CommandPalette', () => {
     await tick()
     await tick()
 
-    const headings = Array.from(target.querySelectorAll('.group-heading')).map((el) => el.textContent?.trim())
+    const headings = Array.from(target.querySelectorAll('.group-heading')).map((el) => el.textContent.trim())
     expect(headings).toEqual(['Recent', 'All commands'])
   })
 
@@ -399,6 +399,54 @@ describe('CommandPalette', () => {
 
     // Grouping is for the recents view only; typing collapses it.
     expect(target.querySelectorAll('.group-heading').length).toBe(0)
+  })
+
+  it('wires combobox ARIA: aria-activedescendant follows the cursor, only the cursor option is tabbable', async () => {
+    const target = document.createElement('div')
+    mount(CommandPalette, {
+      target,
+      props: { onExecute: mockOnExecute, onClose: mockOnClose },
+    })
+    await tick()
+
+    const input = target.querySelector<HTMLInputElement>('input.search-input')
+    expect(input?.getAttribute('role')).toBe('combobox')
+    expect(input?.getAttribute('aria-controls')).toBe('palette-listbox')
+    expect(input?.getAttribute('aria-autocomplete')).toBe('list')
+    expect(input?.getAttribute('aria-expanded')).toBe('true')
+
+    // Cursor starts at index 0 → activedescendant points to the first option's id.
+    const firstOption = target.querySelectorAll<HTMLElement>('[role="option"]')[0]
+    expect(input?.getAttribute('aria-activedescendant')).toBe(firstOption.id)
+    expect(firstOption.getAttribute('tabindex')).toBe('0')
+
+    // Every other option is tabindex="-1" — only the cursor option is tabbable
+    // (satisfies axe's scrollable-region-focusable rule while keeping DOM focus on the input).
+    const otherOptions = Array.from(target.querySelectorAll<HTMLElement>('[role="option"]')).slice(1)
+    for (const opt of otherOptions) {
+      expect(opt.getAttribute('tabindex')).toBe('-1')
+    }
+  })
+
+  it('drops the listbox entirely on a no-results query', async () => {
+    const target = document.createElement('div')
+    mount(CommandPalette, {
+      target,
+      props: { onExecute: mockOnExecute, onClose: mockOnClose },
+    })
+    await tick()
+
+    const input = target.querySelector<HTMLInputElement>('input')
+    if (input) {
+      input.value = 'xxxxxnomatch'
+      input.dispatchEvent(new InputEvent('input', { bubbles: true }))
+    }
+    await tick()
+
+    // No listbox means axe's scrollable-region-focusable rule doesn't apply.
+    expect(target.querySelector('[role="listbox"]')).toBeNull()
+    expect(target.querySelector('.no-results')?.textContent).toContain('No commands found')
+    expect(input?.getAttribute('aria-expanded')).toBe('false')
   })
 
   it('does not throw if the previously focused element is no longer in the DOM', async () => {

@@ -123,7 +123,7 @@ export function closeOtherTabs(mgr: TabManager, tabId: TabId): void {
  * underlying tab object is later mutated or garbage collected.
  */
 function snapshotTabForClose(tab: TabState): TabState {
-  const snap = $state.snapshot(tab) as TabState
+  const snap = $state.snapshot(tab)
   snap.unreachable = null
   return snap
 }

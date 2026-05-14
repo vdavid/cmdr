@@ -69,12 +69,11 @@ test.describe('Cancel and rollback', () => {
       const rightPartial = path.join(fixtureRoot, 'right', 'partial')
       const midCopy = await pollUntil(
         tauriPage,
-        async () => {
-          return (
+        () =>
+          Promise.resolve(
             fs.existsSync(path.join(rightPartial, 'file-0.txt')) &&
-            !fs.existsSync(path.join(rightPartial, 'file-3.txt'))
-          )
-        },
+              !fs.existsSync(path.join(rightPartial, 'file-3.txt')),
+          ),
         5000,
         50,
       )

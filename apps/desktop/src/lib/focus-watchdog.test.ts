@@ -10,12 +10,15 @@
  * detach them before the next install.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest'
 
 // `vi.mock` is hoisted above imports; the factory needs to reach into a
 // hoisted scope to share the spy with the test body. `vi.hoisted` is the
-// supported escape hatch.
-const { warnSpy } = vi.hoisted(() => ({ warnSpy: vi.fn() }))
+// supported escape hatch. Typing the spy's signature here lets each test's
+// `warnSpy.mock.calls[0]` destructure as a real tuple instead of `unknown[]`.
+const { warnSpy } = vi.hoisted(() => ({
+  warnSpy: vi.fn<(message: string, ctx: { ae: string }) => void>(),
+}))
 
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({
@@ -29,7 +32,7 @@ vi.mock('$lib/logging/logger', () => ({
 import { initFocusWatchdog, _resetForTests } from './focus-watchdog'
 
 describe('focus watchdog', () => {
-  let hasFocusSpy: ReturnType<typeof vi.spyOn>
+  let hasFocusSpy: MockInstance<() => boolean>
 
   beforeEach(() => {
     warnSpy.mockClear()
@@ -48,7 +51,7 @@ describe('focus watchdog', () => {
     document.body.innerHTML = ''
   })
 
-  it('does not warn when focus is inside the explorer', async () => {
+  it('does not warn when focus is inside the explorer', () => {
     const explorer = document.createElement('div')
     explorer.className = 'dual-pane-explorer'
     explorer.tabIndex = -1
@@ -62,7 +65,7 @@ describe('focus watchdog', () => {
     expect(warnSpy).not.toHaveBeenCalled()
   })
 
-  it('does not warn when a dialog is open even if focus is loose', async () => {
+  it('does not warn when a dialog is open even if focus is loose', () => {
     const dialog = document.createElement('div')
     dialog.setAttribute('role', 'dialog')
     document.body.appendChild(dialog)
@@ -77,7 +80,7 @@ describe('focus watchdog', () => {
     expect(warnSpy).not.toHaveBeenCalled()
   })
 
-  it('warns when focus leaves the explorer, no dialog open, after 500 ms', async () => {
+  it('warns when focus leaves the explorer, no dialog open, after 500 ms', () => {
     const explorer = document.createElement('div')
     explorer.className = 'dual-pane-explorer'
     explorer.tabIndex = -1
@@ -103,10 +106,10 @@ describe('focus watchdog', () => {
     vi.advanceTimersByTime(2)
     expect(warnSpy).toHaveBeenCalledTimes(1)
     const [, ctx] = warnSpy.mock.calls[0]
-    expect((ctx as { ae: string }).ae).toContain('input')
+    expect(ctx.ae).toContain('input')
   })
 
-  it('warns only once per episode and resets when focus returns to a pane', async () => {
+  it('warns only once per episode and resets when focus returns to a pane', () => {
     const explorer = document.createElement('div')
     explorer.className = 'dual-pane-explorer'
     explorer.tabIndex = -1
@@ -142,7 +145,7 @@ describe('focus watchdog', () => {
     expect(warnSpy).toHaveBeenCalledTimes(2)
   })
 
-  it('does not warn during the initial paint if focus is already inside the explorer', async () => {
+  it('does not warn during the initial paint if focus is already inside the explorer', () => {
     const explorer = document.createElement('div')
     explorer.className = 'dual-pane-explorer'
     explorer.tabIndex = -1

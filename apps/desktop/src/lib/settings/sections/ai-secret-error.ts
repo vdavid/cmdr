@@ -44,7 +44,7 @@ function extractErrorShape(e: unknown): { kind: SecretErrorKind; message: string
 /** Heuristic for stringly-typed errors. Prefer the typed `AiApiKeyError` path when possible. */
 function inferKindFromMessage(msg: string): SecretErrorKind {
   const lower = msg.toLowerCase()
-  // eslint-disable-next-line cmdr/no-error-string-match -- secret-store errors don't carry typed OS codes; substring inspection is the only signal
+
   if (lower.includes('denied') || lower.includes('cancelled') || lower.includes('canceled')) {
     return 'access_denied'
   }

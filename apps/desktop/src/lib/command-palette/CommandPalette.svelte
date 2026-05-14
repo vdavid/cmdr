@@ -54,6 +54,15 @@
         return n
     })
 
+    // Stable per-option IDs let the combobox input announce the active option
+    // to assistive tech via aria-activedescendant — DOM focus stays in the input.
+    function optionId(commandId: string): string {
+        return `palette-option-${commandId}`
+    }
+    const activeDescendantId = $derived(
+        results[cursorIndex] ? optionId(results[cursorIndex].command.id) : undefined,
+    )
+
     // Reset cursor position when query changes
     $effect(() => {
         void query // Track
@@ -186,12 +195,24 @@
             spellcheck="false"
             autocomplete="off"
             autocapitalize="off"
+            role="combobox"
+            aria-controls="palette-listbox"
+            aria-expanded={results.length > 0}
+            aria-autocomplete="list"
+            aria-activedescendant={activeDescendantId}
         />
 
-        <div class="results-container" bind:this={resultsContainer} role="listbox" aria-label="Commands" tabindex="-1">
-            {#if results.length === 0 && query.trim()}
-                <div class="no-results">No commands found</div>
-            {:else}
+        {#if results.length === 0 && query.trim()}
+            <div class="no-results">No commands found</div>
+        {:else}
+            <div
+                id="palette-listbox"
+                class="results-container"
+                bind:this={resultsContainer}
+                role="listbox"
+                aria-label="Commands"
+                tabindex="-1"
+            >
                 {#each results as match, index (match.command.id)}
                     {#if recentCount > 0 && index === 0}
                         <div class="group-heading">Recent</div>
@@ -201,6 +222,7 @@
                     {/if}
                     <div
                         class="result-item"
+                        id={optionId(match.command.id)}
                         class:is-under-cursor={index === cursorIndex}
                         class:is-hovered={hoveredIndex === index && index !== cursorIndex}
                         onclick={() => {
@@ -213,7 +235,7 @@
                             hoveredIndex = null
                         }}
                         role="option"
-                        tabindex="-1"
+                        tabindex={index === cursorIndex ? 0 : -1}
                         aria-selected={index === cursorIndex}
                     >
                         <span class="command-name">
@@ -230,8 +252,8 @@
                         {/if}
                     </div>
                 {/each}
-            {/if}
-        </div>
+            </div>
+        {/if}
     </div>
 </div>
 

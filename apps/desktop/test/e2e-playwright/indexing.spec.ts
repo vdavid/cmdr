@@ -218,6 +218,7 @@ test.describe('Drive indexing', () => {
       }
       // If the index has data but not the exact size, the extra file hasn't been indexed yet.
       // Wait a bit more.
+      // eslint-disable-next-line no-console -- test diagnostic for index-readiness fallback timing
       console.warn(
         `Index has recursiveSize=${String(fallback.recursiveSize)}, expected ${String(expectedSizeWithExtra)}`,
       )
