@@ -1,4 +1,15 @@
 fn main() {
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=resources/ai/.version");
+    println!("cargo:rerun-if-changed=../scripts/download-llama-server.go");
+
+    // Ensure resources/ai/ is populated before tauri_build::build() validates the
+    // resource glob in tauri.conf.json. The Go script is idempotent (skips when
+    // .version matches) and symlinks from the main clone in worktrees instead of
+    // re-downloading. Without this, a fresh worktree's first `cargo check` fails
+    // with an opaque glob error.
+    ensure_llama_resources();
+
     // When the playwright-e2e feature is active, generate a capability file that
     // grants the plugin's IPC permissions. This file is gitignored and only exists
     // during feature-enabled builds (the plugin's permission schemas aren't available
@@ -31,4 +42,23 @@ fn main() {
     }
 
     tauri_build::build()
+}
+
+fn ensure_llama_resources() {
+    let status = std::process::Command::new("go")
+        .args(["run", "scripts/download-llama-server.go"])
+        .current_dir("..")
+        .stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
+        .status();
+    match status {
+        Ok(s) if s.success() => {}
+        Ok(s) => panic!(
+            "download-llama-server.go failed with exit code {}. Run `cd apps/desktop && go run scripts/download-llama-server.go` to see the full output.",
+            s.code().unwrap_or(-1),
+        ),
+        Err(e) => panic!(
+            "Failed to invoke `go run scripts/download-llama-server.go`: {e}. Make sure `go` is on PATH (mise shims should handle this). This script downloads the llama-server binaries that Tauri bundles via `resources/ai/*`.",
+        ),
+    }
 }

@@ -72,6 +72,14 @@ func main() {
 		return
 	}
 
+	// In a linked worktree, try to symlink from the main clone's populated
+	// resources/ai/ instead of downloading 30 MB. Falls through to the download
+	// path if we're in the main clone or the main clone has a stale/missing
+	// version.
+	if tryLinkFromMainClone() {
+		return
+	}
+
 	// Download the upstream tarball to a temp file
 	tmpFile, err := os.CreateTemp("", "llama-server-*.tar.gz")
 	if err != nil {
@@ -239,6 +247,64 @@ func codesign(path, identity string) error {
 		return fmt.Errorf("%w: %s", err, string(output))
 	}
 	return nil
+}
+
+// tryLinkFromMainClone symlinks DestDir to the main clone's resources/ai/ when:
+//   - we're inside a linked git worktree (not the main clone itself), and
+//   - the main clone already has the target version extracted.
+//
+// Returns true on success. Returns false (without erroring) if we're outside a
+// git repo, in the main clone, or the main clone's version doesn't match — the
+// caller then falls back to downloading.
+func tryLinkFromMainClone() bool {
+	currentRoot, err := gitRevParse("--show-toplevel")
+	if err != nil {
+		return false
+	}
+	commonDir, err := gitRevParse("--git-common-dir")
+	if err != nil {
+		return false
+	}
+	if !filepath.IsAbs(commonDir) {
+		commonDir = filepath.Join(currentRoot, commonDir)
+	}
+	mainRoot := filepath.Dir(commonDir)
+
+	if mainRoot == currentRoot {
+		return false
+	}
+
+	srcDir := filepath.Join(mainRoot, "apps", "desktop", DestDir)
+	srcMarker := filepath.Join(srcDir, ".version")
+	if !isCurrentVersion(srcMarker, Version) {
+		return false
+	}
+
+	// Replace any existing DestDir (empty dir from a prior trap, stale files,
+	// or an old symlink). os.RemoveAll on a symlink removes the link only, not
+	// the target — safe for the main clone.
+	if err := os.RemoveAll(DestDir); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Warning: could not clear %s: %v\n", DestDir, err)
+		return false
+	}
+	if err := os.MkdirAll(filepath.Dir(DestDir), 0o755); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Warning: could not create parent dir: %v\n", err)
+		return false
+	}
+	if err := os.Symlink(srcDir, DestDir); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Warning: could not symlink to main clone: %v\n", err)
+		return false
+	}
+	fmt.Printf("Linked %s -> %s (version %s, shared with main clone)\n", DestDir, srcDir, Version)
+	return true
+}
+
+func gitRevParse(arg string) (string, error) {
+	out, err := exec.Command("git", "rev-parse", arg).Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
 }
 
 func isCurrentVersion(markerPath, version string) bool {

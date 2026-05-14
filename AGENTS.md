@@ -249,6 +249,14 @@ resilience, and common pitfalls.
   - For the rules around adding new commands, type shape constraints (`skip_serializing_if`, `serde_json::Value`), and
     the current exclusion list, read [`apps/desktop/src/lib/ipc/CLAUDE.md`](apps/desktop/src/lib/ipc/CLAUDE.md).
 
+## Worktrees
+
+When working in a linked git worktree under `.claude/worktrees/`, the gitignored `apps/desktop/src-tauri/resources/ai/`
+(llama-server binaries, ~30 MB) starts empty. You don't need to do anything: `apps/desktop/src-tauri/build.rs` invokes
+`apps/desktop/scripts/download-llama-server.go` on demand, which symlinks the dir from the main clone at
+`~/projects-git/vdavid/cmdr/` when its `.version` matches, and falls back to downloading otherwise. So raw `cargo check`
+Just Works in fresh worktrees — don't paper over a missing `resources/ai/` with a placeholder file.
+
 ## Workflow
 
 - **Always read** [style-guide.md](docs/style-guide.md) before touching code. Especially sentence case!
