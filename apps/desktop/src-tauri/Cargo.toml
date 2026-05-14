@@ -94,7 +94,7 @@ exacl = "0.12"
 sysinfo = { version = "0.38.4", default-features = false, features = ["system"] }
 time = { version = "0.3", features = ["parsing", "macros", "formatting"] }
 # Playwright E2E testing plugin — socket bridge for direct webview injection (optional, feature-gated)
-tauri-plugin-playwright = { version = "0.2.2", optional = true }
+tauri-plugin-playwright = { path = "/Users/veszelovszki/projects-git/vdavid/tauri-playwright/packages/plugin", optional = true }
 # Error reporter: zip the bundle (manifest + redacted log files). `deflate` is the default
 # compression algorithm; we don't need bzip2/zstd/etc. for log text.
 zip = { version = "8.6", default-features = false, features = ["deflate"] }

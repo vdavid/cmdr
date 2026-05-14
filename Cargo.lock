@@ -8765,9 +8765,7 @@ dependencies = [
 
 [[package]]
 name = "tauri-plugin-playwright"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2de803dd4ac54e9457e45f5e3f1f654eab2581d8cd60a14defc18d66725fcea5"
+version = "0.3.0"
 dependencies = [
  "log",
  "serde",
