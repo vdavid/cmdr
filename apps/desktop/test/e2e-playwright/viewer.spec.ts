@@ -1,233 +1,204 @@
 /**
  * E2E tests for the file viewer.
  *
- * Uses SvelteKit's link-click interception for client-side navigation.
- * Test file: Uses a text file from the shared E2E fixtures (left/file-a.txt).
+ * The viewer runs in its own Tauri window in production (label `viewer-<ts>`).
+ * Each test opens a viewer via the production trigger (`open-file-viewer`
+ * Tauri event → `openFileViewer(path)` → new `WebviewWindow`), then scopes a
+ * `TauriPage` to the new window via `tauriPage.waitForWindow()`. All viewer
+ * interactions go through that scoped page. The scoped page shares the plugin
+ * socket with the main page, so it's cheap to create.
+ *
+ * Test file: a 1 KB text file from the shared E2E fixtures (`left/file-a.txt`).
  */
 
 import path from 'path'
 import { test, expect } from './fixtures.js'
-import { navigateToRoute, pollUntil } from './helpers.js'
-import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
-
-type PageLike = TauriPage | BrowserPageAdapter
-
-/**
- * Per-test cleanup: leave the viewer route so the next test's
- * `navigateAndWaitForViewer` / explorer-route call starts from a clean state.
- *
- * Originally we wanted to press Escape (which the viewer's keydown handler
- * already binds to "close window" — see `routes/viewer/+page.svelte`). In
- * E2E, though, the viewer runs in the main window via SvelteKit routing —
- * not as a separate WebviewWindow like in production. Pressing Escape there
- * would call `currentWindow.close()` on the *main* window and tear down the
- * test infrastructure. The Escape binding is correct for the production
- * separate-window viewer; for the routed test fixture, the equivalent
- * cleanup is to navigate back to `/`.
- */
-async function exitViewer(tauriPage: PageLike): Promise<void> {
-  const onViewerRoute = await tauriPage.isVisible('.viewer-container')
-  if (!onViewerRoute) return
-  await navigateToRoute(tauriPage, '/')
-  // Confirm we're off the viewer route. The afterEach contract: no
-  // viewer-container in the main window's DOM, and the explorer is back.
-  await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.viewer-container')), 3000)
-}
+import { closeScopedWindow, openViewerWindow, pollUntil } from './helpers.js'
+import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 // Use fixture file from the shared E2E fixture tree
 const fixtureRoot = process.env.CMDR_E2E_START_PATH ?? '/tmp/cmdr-e2e-fallback'
 const testFilePath = path.join(fixtureRoot, 'left', 'file-a.txt')
 
 /**
- * Ensure the main app is loaded, then navigate to the viewer.
- * If we're not on the main route, navigate back to "/" first.
+ * Opens a viewer for `filePath` and waits for the file content to render.
+ * Returns the scoped TauriPage for the new viewer window.
  */
-async function navigateToViewer(tauriPage: PageLike, filePath?: string): Promise<void> {
-  const hasExplorer = await tauriPage.isVisible('.dual-pane-explorer')
-  if (!hasExplorer) {
-    await navigateToRoute(tauriPage, '/')
-    await tauriPage.waitForSelector('.dual-pane-explorer', 15000)
-  }
-
-  const viewerPath = filePath ? `/viewer?path=${encodeURIComponent(filePath)}` : '/viewer'
-  await navigateToRoute(tauriPage, viewerPath)
-}
-
-/**
- * Navigates to the viewer for a given file and waits for file content to render.
- */
-async function navigateAndWaitForViewer(tauriPage: PageLike, filePath: string): Promise<void> {
-  await navigateToViewer(tauriPage, filePath)
-
-  await tauriPage.waitForSelector('.viewer-container', 15000)
-
+async function openViewerForFile(mainPage: TauriPage, filePath: string): Promise<TauriPage> {
+  const viewer = await openViewerWindow(mainPage, filePath)
+  await viewer.waitForSelector('.viewer-container', 15000)
   try {
-    await tauriPage.waitForSelector('.file-content', 10000)
+    await viewer.waitForSelector('.file-content', 10000)
   } catch {
-    const hasStatusMsg = await tauriPage.isVisible('.status-message')
+    const hasStatusMsg = await viewer.isVisible('.status-message')
     if (hasStatusMsg) {
-      const text = await tauriPage.textContent('.status-message')
+      const text = await viewer.textContent('.status-message')
       throw new Error(`Viewer did not load file content. Status: "${text ?? ''}"`)
     }
     throw new Error('Viewer did not load file content and no status message found')
   }
+  return viewer
 }
 
 test.describe('File viewer', () => {
+  let viewer: TauriPage
+  let viewerLabel: string
+
   test.beforeEach(async ({ tauriPage }) => {
-    // Navigate to viewer if not already showing file content
-    const hasContent = await tauriPage.isVisible('.file-content')
-    if (!hasContent) {
-      await navigateAndWaitForViewer(tauriPage, testFilePath)
-    }
+    viewer = await openViewerForFile(tauriPage as TauriPage, testFilePath)
+    const wl = viewer.targetWindow
+    if (!wl) throw new Error('Scoped viewer page has no targetWindow label')
+    viewerLabel = wl
   })
 
   test.afterEach(async ({ tauriPage }) => {
-    await exitViewer(tauriPage)
+    await closeScopedWindow(tauriPage as TauriPage, viewer, viewerLabel)
   })
 
-  test('renders the viewer container', async ({ tauriPage }) => {
-    expect(await tauriPage.isVisible('.viewer-container')).toBe(true)
+  test('renders the viewer container', async () => {
+    expect(await viewer.isVisible('.viewer-container')).toBe(true)
   })
 
-  test('displays file content with line elements', async ({ tauriPage }) => {
-    expect(await tauriPage.isVisible('.file-content')).toBe(true)
-    const lineCount = await tauriPage.count('.line')
+  test('displays file content with line elements', async () => {
+    expect(await viewer.isVisible('.file-content')).toBe(true)
+    const lineCount = await viewer.count('.line')
     expect(lineCount).toBeGreaterThan(0)
   })
 
-  test('shows file name in status bar', async ({ tauriPage }) => {
-    const statusText = await tauriPage.textContent('.status-bar')
+  test('shows file name in status bar', async () => {
+    const statusText = await viewer.textContent('.status-bar')
     expect(statusText).toContain('file-a.txt')
   })
 
-  test('shows line count in status bar', async ({ tauriPage }) => {
-    const statusText = await tauriPage.textContent('.status-bar')
+  test('shows line count in status bar', async () => {
+    const statusText = await viewer.textContent('.status-bar')
     // file-a.txt contains 1024 bytes of 'A' (no newlines) = 1 line
     expect(statusText).toContain('1 line')
   })
 
-  test('shows file size in status bar', async ({ tauriPage }) => {
-    const statusText = await tauriPage.textContent('.status-bar')
+  test('shows file size in status bar', async () => {
+    const statusText = await viewer.textContent('.status-bar')
     // file-a.txt is 1024 bytes = 1 KB
     expect(statusText).toContain('KB')
   })
 
-  test('shows backend mode badge', async ({ tauriPage }) => {
-    expect(await tauriPage.isVisible('.backend-badge')).toBe(true)
-    const badgeText = await tauriPage.textContent('.backend-badge')
+  test('shows backend mode badge', async () => {
+    expect(await viewer.isVisible('.backend-badge')).toBe(true)
+    const badgeText = await viewer.textContent('.backend-badge')
     expect(badgeText).toBe('in memory')
   })
 })
 
 test.describe('File viewer search', () => {
+  let viewer: TauriPage
+  let viewerLabel: string
+
   test.beforeEach(async ({ tauriPage }) => {
-    const hasContent = await tauriPage.isVisible('.file-content')
-    if (!hasContent) {
-      await navigateAndWaitForViewer(tauriPage, testFilePath)
-    }
+    viewer = await openViewerForFile(tauriPage as TauriPage, testFilePath)
+    const wl = viewer.targetWindow
+    if (!wl) throw new Error('Scoped viewer page has no targetWindow label')
+    viewerLabel = wl
   })
 
   test.afterEach(async ({ tauriPage }) => {
-    await exitViewer(tauriPage)
+    await closeScopedWindow(tauriPage as TauriPage, viewer, viewerLabel)
   })
 
-  test('opens search bar with Ctrl+F', async ({ tauriPage }) => {
-    await tauriPage.keyboard.press('Control+f')
+  test('opens search bar with Ctrl+F', async () => {
+    await viewer.keyboard.press('Control+f')
 
-    await tauriPage.waitForSelector('.search-bar', 5000)
-    expect(await tauriPage.isVisible('.search-bar')).toBe(true)
+    await viewer.waitForSelector('.search-bar', 5000)
+    expect(await viewer.isVisible('.search-bar')).toBe(true)
   })
 
-  test('finds matches in file content', async ({ tauriPage }) => {
-    // Self-contained: open the search bar (afterEach closes the viewer between tests,
-    // so each search test stands on its own).
-    if (!(await tauriPage.isVisible('.search-bar'))) {
-      await tauriPage.keyboard.press('Control+f')
-      await tauriPage.waitForSelector('.search-bar', 5000)
+  test('finds matches in file content', async () => {
+    if (!(await viewer.isVisible('.search-bar'))) {
+      await viewer.keyboard.press('Control+f')
+      await viewer.waitForSelector('.search-bar', 5000)
     }
-    await tauriPage.waitForSelector('.search-input', 5000)
-    await tauriPage.fill('.search-input', 'AAA')
+    await viewer.waitForSelector('.search-input', 5000)
+    await viewer.fill('.search-input', 'AAA')
 
     // Wait for search results (debounced search + backend poll)
     await pollUntil(
-      tauriPage,
+      viewer,
       async () => {
-        const visible = await tauriPage.isVisible('.match-count')
+        const visible = await viewer.isVisible('.match-count')
         if (!visible) return false
-        const text = await tauriPage.textContent('.match-count')
+        const text = await viewer.textContent('.match-count')
         return text?.includes('of') ?? false
       },
       5000,
     )
 
-    const matchText = await tauriPage.textContent('.match-count')
+    const matchText = await viewer.textContent('.match-count')
     expect(matchText).toContain('of')
   })
 
-  test('closes search with Escape', async ({ tauriPage }) => {
-    // Self-contained: open the search bar first.
-    if (!(await tauriPage.isVisible('.search-bar'))) {
-      await tauriPage.keyboard.press('Control+f')
-      await tauriPage.waitForSelector('.search-bar', 5000)
+  test('closes search with Escape', async () => {
+    if (!(await viewer.isVisible('.search-bar'))) {
+      await viewer.keyboard.press('Control+f')
+      await viewer.waitForSelector('.search-bar', 5000)
     }
-    expect(await tauriPage.isVisible('.search-bar')).toBe(true)
+    expect(await viewer.isVisible('.search-bar')).toBe(true)
 
-    await tauriPage.keyboard.press('Escape')
+    await viewer.keyboard.press('Escape')
 
-    await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.search-bar')), 3000)
-    expect(await tauriPage.isVisible('.search-bar')).toBe(false)
+    await pollUntil(viewer, async () => !(await viewer.isVisible('.search-bar')), 3000)
+    expect(await viewer.isVisible('.search-bar')).toBe(false)
   })
 
-  test('shows "No matches" status for a query with no hits', async ({ tauriPage }) => {
-    // Self-contained: ensure the search bar is open.
-    if (!(await tauriPage.isVisible('.search-bar'))) {
-      await tauriPage.keyboard.press('Control+f')
-      await tauriPage.waitForSelector('.search-bar', 5000)
+  test('shows "No matches" status for a query with no hits', async () => {
+    if (!(await viewer.isVisible('.search-bar'))) {
+      await viewer.keyboard.press('Control+f')
+      await viewer.waitForSelector('.search-bar', 5000)
     }
 
-    await tauriPage.waitForSelector('.search-input', 5000)
-    await tauriPage.fill('.search-input', 'Z'.repeat(40))
+    await viewer.waitForSelector('.search-input', 5000)
+    await viewer.fill('.search-input', 'Z'.repeat(40))
 
-    // file-a.txt is 1024 'A' chars, so 'Z' x 40 cannot match. Wait for the
-    // search to settle in the No-matches state. The match-count span lives
-    // inside `.search-bar` and is `aria-live="polite"`.
+    // file-a.txt is 1024 'A' chars, so 'Z' x 40 cannot match.
     const settled = await pollUntil(
-      tauriPage,
+      viewer,
       async () => {
-        const text = (await tauriPage.textContent('.match-count')) ?? ''
+        const text = (await viewer.textContent('.match-count')) ?? ''
         return text.includes('No matches')
       },
       5000,
     )
     expect(settled).toBe(true)
 
-    // Cleanup: clear the query so the next test starts at a sensible state.
-    await tauriPage.fill('.search-input', '')
+    // Cleanup: clear the query.
+    await viewer.fill('.search-input', '')
   })
 })
 
 test.describe('File viewer error handling', () => {
-  test.afterEach(async ({ tauriPage }) => {
-    await exitViewer(tauriPage)
-  })
-
   test('shows error for missing file path', async ({ tauriPage }) => {
-    await navigateToViewer(tauriPage)
+    // Open a viewer with an empty path to exercise the missing-path branch in
+    // routes/viewer/+page.svelte. Production never does this (openFileViewer
+    // requires a path), but the route guard still matters as a defence in depth.
+    const viewer = await openViewerWindow(tauriPage as TauriPage, '')
+    const viewerLabel = viewer.targetWindow
+    if (!viewerLabel) throw new Error('Scoped viewer page has no targetWindow label')
 
-    await tauriPage.waitForSelector('.viewer-container', 15000)
-    await tauriPage.waitForSelector('.status-message', 10000)
+    try {
+      await viewer.waitForSelector('.viewer-container', 15000)
+      await viewer.waitForSelector('.status-message', 10000)
 
-    // Status starts as "Loading…" before the missing-path branch resolves; poll the textContent so we read it after it
-    // settles rather than the moment the element first exists. Slow Linux Docker E2E flakes here without the poll.
-    const settled = await pollUntil(
-      tauriPage,
-      async () => {
-        const t = await tauriPage.textContent('.status-message')
-        return t !== null && t.includes('No file path')
-      },
-      10000,
-    )
-    expect(settled).toBe(true)
+      // Status starts as "Loading…" before the missing-path branch resolves; poll the textContent so we read it after it
+      // settles rather than the moment the element first exists. Slow Linux Docker E2E flakes here without the poll.
+      const settled = await pollUntil(
+        viewer,
+        async () => {
+          const t = await viewer.textContent('.status-message')
+          return t !== null && t.includes('No file path')
+        },
+        10000,
+      )
+      expect(settled).toBe(true)
+    } finally {
+      await closeScopedWindow(tauriPage as TauriPage, viewer, viewerLabel)
+    }
   })
 })

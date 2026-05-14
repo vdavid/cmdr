@@ -411,6 +411,84 @@ export async function navigateToRoute(tauriPage: PageLike, path: string): Promis
     })()`)
 }
 
+// ── Multi-window helpers ────────────────────────────────────────────────────
+
+/**
+ * Opens a file viewer window via the production trigger and returns a TauriPage
+ * scoped to the new viewer window.
+ *
+ * Uses the `open-file-viewer` Tauri event with a `{ path }` payload — the same
+ * path the MCP server uses, which is wired in `routes/(main)/+page.svelte` to
+ * `openFileViewer(path)` (creates a `viewer-<timestamp>` WebviewWindow). Then
+ * polls `listWindows()` for a label starting with `viewer-`.
+ *
+ * @param filePath - File path to view. Pass an empty string to exercise the
+ *   "missing path" error branch in `routes/viewer/+page.svelte`.
+ */
+export async function openViewerWindow(tauriPage: TauriPage, filePath: string): Promise<TauriPage> {
+  const before = new Set((await tauriPage.listWindows()).map((w) => w.label).filter((l) => l.startsWith('viewer-')))
+  const pathJson = JSON.stringify(filePath)
+  await tauriPage.evaluate(`(function() {
+        var invoke = window.__TAURI_INTERNALS__.invoke;
+        invoke('plugin:event|emit', { event: 'open-file-viewer', payload: { path: ${pathJson} } });
+    })()`)
+  // Wait for a NEW viewer-* window (not one left open from a previous test).
+  const viewer = await tauriPage.waitForWindow((w) => w.label.startsWith('viewer-') && !before.has(w.label), {
+    timeout: 10000,
+  })
+  return viewer
+}
+
+/**
+ * Opens the settings window via the production trigger and returns a TauriPage
+ * scoped to it. Uses the `open-settings` Tauri event, which `(main)/+page.svelte`
+ * forwards to `openSettingsWindow()`. The settings window has the stable label
+ * `settings`.
+ */
+export async function openSettingsWindowViaProd(tauriPage: TauriPage): Promise<TauriPage> {
+  await tauriPage.evaluate(`(function() {
+        var invoke = window.__TAURI_INTERNALS__.invoke;
+        invoke('plugin:event|emit', { event: 'open-settings' });
+    })()`)
+  return tauriPage.waitForWindow((w) => w.label === 'settings', { timeout: 10000 })
+}
+
+/**
+ * Closes a scoped window (viewer or settings) and waits for it to disappear
+ * from the window list. `mainPage` is needed for the post-close `listWindows()`
+ * poll because the scoped page is gone once the window closes.
+ */
+export async function closeScopedWindow(mainPage: TauriPage, scoped: TauriPage, label: string): Promise<void> {
+  // Try Escape first — both viewer and settings windows handle Escape to close
+  // in production (`routes/viewer/+page.svelte`, `routes/settings/+page.svelte`).
+  try {
+    await scoped.keyboard.press('Escape')
+  } catch {
+    // The window may already be gone; fall through to the poll.
+  }
+  const gone = await pollUntil(
+    mainPage,
+    async () => {
+      const labels = (await mainPage.listWindows()).map((w) => w.label)
+      return !labels.includes(label)
+    },
+    5000,
+  )
+  if (!gone) {
+    // Fallback: ask the scoped window to close itself via the Tauri API.
+    try {
+      await scoped.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|close')`)
+    } catch {
+      // Ignore — best-effort cleanup.
+    }
+    await pollUntil(
+      mainPage,
+      async () => !(await mainPage.listWindows()).map((w) => w.label).includes(label),
+      3000,
+    )
+  }
+}
+
 // ── Fixture helpers ─────────────────────────────────────────────────────────
 
 /** Returns the fixture root path from the CMDR_E2E_START_PATH environment variable. */
