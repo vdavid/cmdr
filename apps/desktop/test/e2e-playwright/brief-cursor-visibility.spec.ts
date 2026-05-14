@@ -160,40 +160,53 @@ async function expectCursorInView(tauriPage: Parameters<typeof ensureAppReady>[0
   //
   // Polls at 16 ms (one frame at 60 fps) — sub-frame polling would just re-sample the same
   // state without new information; the rest of the suite stays at the default 50 ms.
-  let prev: { cursor: Rect | null; container: Rect | null } | null = null
+  //
+  // State is held in single-property holder objects so the closure can mutate it without
+  // tripping TS's "let-widened-across-closure" type narrowing. `lastStable` carries the
+  // sample that satisfied the stability comparison out to the assertions below.
+  interface Sample {
+    cursor: Rect
+    container: Rect
+  }
+  const prevHolder: { sample: Sample | null } = { sample: null }
+  const stableHolder: { sample: Sample | null } = { sample: null }
+
   const settled = await pollUntil(
     tauriPage,
     async () => {
       const next = await readCursorAndContainer(tauriPage)
       if (!next.cursor || !next.container) {
-        prev = next
+        prevHolder.sample = null
         return false
       }
-      if (!prev?.cursor || !prev.container) {
-        prev = next
+      const nextSample: Sample = { cursor: next.cursor, container: next.container }
+      const prev = prevHolder.sample
+      if (prev === null) {
+        prevHolder.sample = nextSample
         return false
       }
       const stable =
-        Math.abs(prev.cursor.left - next.cursor.left) < 0.5 &&
-        Math.abs(prev.cursor.right - next.cursor.right) < 0.5 &&
-        Math.abs(prev.container.left - next.container.left) < 0.5 &&
-        Math.abs(prev.container.right - next.container.right) < 0.5
-      prev = next
-      return stable
+        Math.abs(prev.cursor.left - nextSample.cursor.left) < 0.5 &&
+        Math.abs(prev.cursor.right - nextSample.cursor.right) < 0.5 &&
+        Math.abs(prev.container.left - nextSample.container.left) < 0.5 &&
+        Math.abs(prev.container.right - nextSample.container.right) < 0.5
+      if (stable) {
+        stableHolder.sample = nextSample
+        return true
+      }
+      prevHolder.sample = nextSample
+      return false
     },
     3000,
     16,
   )
   expect(settled, `${context}: cursor/container rects did not settle`).toBe(true)
 
-  // `prev` is the most-recent sample (assigned just before the stable comparison returned true),
-  // and by definition it agrees with the prior sample to within 0.5 px on both rects. Use it
-  // directly for assertions — no extra IPC round-trip needed.
-  const cursor = prev?.cursor ?? null
-  const container = prev?.container ?? null
-  expect(cursor, `${context}: cursor not found`).not.toBeNull()
-  expect(container, `${context}: brief-list container not found`).not.toBeNull()
-  if (!cursor || !container) return
+  // The stable sample came straight from the satisfying poll iteration — no extra IPC needed.
+  const sample = stableHolder.sample
+  expect(sample, `${context}: stable rect sample not captured`).not.toBeNull()
+  if (!sample) return
+  const { cursor, container } = sample
 
   // Horizontal containment — the regression this whole change exists to fix.
   expect(
