@@ -16,11 +16,13 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { test, expect } from './fixtures.js'
 import {
+  closeScopedWindow,
   dispatchMenuCommand,
   ensureAppReady,
-  navigateToRoute,
   executeViaCommandPalette,
   moveCursorToFile,
+  openSettingsWindowViaProd,
+  openViewerWindow,
   pollUntil,
   sleep,
   CTRL_OR_META,
@@ -292,87 +294,101 @@ for (const mode of ['light', 'dark'] as const) {
       test.setTimeout(15_000)
       await ensureAppReady(tauriPage)
 
-      // Navigate to settings
-      await navigateToRoute(tauriPage, '/settings')
-      await tauriPage.waitForSelector('.settings-window', 15000)
-      await tauriPage.waitForSelector('.settings-sidebar', 10000)
+      // Open settings via the production trigger and scope this audit to the
+      // dedicated settings window. The settings UI no longer renders into the
+      // main window's `/settings` route — it's a separate WebviewWindow.
+      const settings = await openSettingsWindowViaProd(tauriPage as TauriPage)
+      try {
+        await settings.waitForSelector('.settings-window', 15000)
+        await settings.waitForSelector('.settings-sidebar', 10000)
 
-      // All settings sections with their sidebar paths and data-section-id selectors
-      const sections: { name: string; path: string[]; sectionId: string }[] = [
-        { name: 'Appearance', path: ['General', 'Appearance'], sectionId: 'general-appearance' },
-        { name: 'Listing', path: ['General', 'Listing'], sectionId: 'general-listing' },
-        { name: 'File operations', path: ['General', 'File operations'], sectionId: 'general-file-operations' },
-        { name: 'Drive indexing', path: ['General', 'Drive indexing'], sectionId: 'general-drive-indexing' },
-        { name: 'Updates', path: ['General', 'Updates'], sectionId: 'general-updates' },
-        { name: 'Viewer', path: ['General', 'Viewer'], sectionId: 'general-viewer' },
-        {
-          name: 'SMB/Network shares',
-          path: ['Network', 'SMB/Network shares'],
-          sectionId: 'network-smb-network-shares',
-        },
-        { name: 'Keyboard shortcuts', path: ['Keyboard shortcuts'], sectionId: 'keyboard-shortcuts' },
-        { name: 'Themes', path: ['Themes'], sectionId: 'themes' },
-        { name: 'License', path: ['License'], sectionId: 'license' },
-        { name: 'AI', path: ['AI'], sectionId: 'ai' },
-        { name: 'MCP server', path: ['Developer', 'MCP server'], sectionId: 'developer-mcp-server' },
-        { name: 'Logging', path: ['Developer', 'Logging'], sectionId: 'developer-logging' },
-        { name: 'Advanced', path: ['Advanced'], sectionId: 'advanced' },
-      ]
+        // All settings sections with their sidebar paths and data-section-id selectors
+        const sections: { name: string; path: string[]; sectionId: string }[] = [
+          { name: 'Appearance', path: ['General', 'Appearance'], sectionId: 'general-appearance' },
+          { name: 'Listing', path: ['General', 'Listing'], sectionId: 'general-listing' },
+          { name: 'File operations', path: ['General', 'File operations'], sectionId: 'general-file-operations' },
+          { name: 'Drive indexing', path: ['General', 'Drive indexing'], sectionId: 'general-drive-indexing' },
+          { name: 'Updates', path: ['General', 'Updates'], sectionId: 'general-updates' },
+          { name: 'Viewer', path: ['General', 'Viewer'], sectionId: 'general-viewer' },
+          {
+            name: 'SMB/Network shares',
+            path: ['Network', 'SMB/Network shares'],
+            sectionId: 'network-smb-network-shares',
+          },
+          { name: 'Keyboard shortcuts', path: ['Keyboard shortcuts'], sectionId: 'keyboard-shortcuts' },
+          { name: 'Themes', path: ['Themes'], sectionId: 'themes' },
+          { name: 'License', path: ['License'], sectionId: 'license' },
+          { name: 'AI', path: ['AI'], sectionId: 'ai' },
+          { name: 'MCP server', path: ['Developer', 'MCP server'], sectionId: 'developer-mcp-server' },
+          { name: 'Logging', path: ['Developer', 'Logging'], sectionId: 'developer-logging' },
+          { name: 'Advanced', path: ['Advanced'], sectionId: 'advanced' },
+        ]
 
-      const allViolations: { section: string; violations: AxeViolation[] }[] = []
+        const allViolations: { section: string; violations: AxeViolation[] }[] = []
 
-      for (const section of sections) {
-        // Click sidebar to navigate to the section
-        await tauriPage.evaluate(`(function() {
-            var items = document.querySelectorAll('.section-item');
-            for (var i = 0; i < items.length; i++) {
-                if (items[i].textContent.trim() === ${JSON.stringify(section.path[section.path.length - 1])}) {
-                    items[i].click();
-                    break;
-                }
-            }
-        })()`)
+        for (const section of sections) {
+          // Click sidebar to navigate to the section
+          await settings.evaluate(`(function() {
+              var items = document.querySelectorAll('.section-item');
+              for (var i = 0; i < items.length; i++) {
+                  if (items[i].textContent.trim() === ${JSON.stringify(section.path[section.path.length - 1])}) {
+                      items[i].click();
+                      break;
+                  }
+              }
+          })()`)
 
-        // Wait for the section to be visible
-        const sectionSelector = `[data-section-id="${section.sectionId}"]`
-        const sectionVisible = await pollUntil(tauriPage, async () => tauriPage.isVisible(sectionSelector), 5000)
-        if (!sectionVisible) {
-          // eslint-disable-next-line no-console
-          console.log(`⚠ Settings section "${section.name}" not visible, skipping`)
-          continue
+          // Wait for the section to be visible
+          const sectionSelector = `[data-section-id="${section.sectionId}"]`
+          const sectionVisible = await pollUntil(settings, async () => settings.isVisible(sectionSelector), 5000)
+          if (!sectionVisible) {
+            // eslint-disable-next-line no-console
+            console.log(`⚠ Settings section "${section.name}" not visible, skipping`)
+            continue
+          }
+
+          // Brief settle for sections with async data (for example, Drive indexing
+          // loads dbFileSize which controls the "Clear index" button's disabled state).
+          // The pollUntil above already gated on section visibility — this just lets
+          // any reactive child updates land before axe inspects the DOM. No specific
+          // selector to poll on: each section loads different async data (index size,
+          // licensing, AI config, etc.) with no shared "settled" signal.
+          // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- async section data settle; no shared "settled" signal across the heterogeneous settings sections (index size, license, AI config, etc.) and axe needs a stable DOM
+          await sleep(150)
+
+          const { all } = await runAxeAudit(settings, `Settings: ${section.name} (${mode})`)
+          if (all.length > 0) {
+            allViolations.push({ section: section.name, violations: all })
+          }
         }
 
-        // Brief settle for sections with async data (for example, Drive indexing
-        // loads dbFileSize which controls the "Clear index" button's disabled state).
-        // The pollUntil above already gated on section visibility — this just lets
-        // any reactive child updates land before axe inspects the DOM. No specific
-        // selector to poll on: each section loads different async data (index size,
-        // licensing, AI config, etc.) with no shared "settled" signal.
-        // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- async section data settle; no shared "settled" signal across the heterogeneous settings sections (index size, license, AI config, etc.) and axe needs a stable DOM
-        await sleep(150)
-
-        const { all } = await runAxeAudit(tauriPage, `Settings: ${section.name} (${mode})`)
-        if (all.length > 0) {
-          allViolations.push({ section: section.name, violations: all })
-        }
+        const totalViolations = allViolations.reduce((sum, s) => sum + s.violations.length, 0)
+        const failedSections = allViolations.map((s) => `${s.section} (${String(s.violations.length)})`).join(', ')
+        expect(totalViolations, `Violations in settings (${mode}): ${failedSections}`).toBe(0)
+      } finally {
+        await closeScopedWindow(tauriPage as TauriPage, settings, 'settings')
       }
-
-      const totalViolations = allViolations.reduce((sum, s) => sum + s.violations.length, 0)
-      const failedSections = allViolations.map((s) => `${s.section} (${String(s.violations.length)})`).join(', ')
-      expect(totalViolations, `Violations in settings (${mode}): ${failedSections}`).toBe(0)
     })
 
     test(`File viewer with text file`, async ({ tauriPage }) => {
       await ensureAppReady(tauriPage)
 
-      // Navigate to viewer with the ~1KB text file
-      const viewerPath = `/viewer?path=${encodeURIComponent(testFilePath)}`
-      await navigateToRoute(tauriPage, viewerPath)
-      await tauriPage.waitForSelector('.viewer-container', 15000)
-      await tauriPage.waitForSelector('.file-content', 10000)
+      // Open the viewer via the production trigger (new WebviewWindow), then
+      // scope axe to the new window. The viewer no longer renders into the
+      // main window's `/viewer` route.
+      const viewer = await openViewerWindow(tauriPage as TauriPage, testFilePath)
+      const viewerLabel = viewer.targetWindow
+      if (!viewerLabel) throw new Error('Scoped viewer page has no targetWindow label')
 
-      const { all } = await runAxeAudit(tauriPage, `File viewer (${mode})`)
-      expect(all, `Found ${String(all.length)} violation(s) in file viewer (${mode})`).toHaveLength(0)
+      try {
+        await viewer.waitForSelector('.viewer-container', 15000)
+        await viewer.waitForSelector('.file-content', 10000)
+
+        const { all } = await runAxeAudit(viewer, `File viewer (${mode})`)
+        expect(all, `Found ${String(all.length)} violation(s) in file viewer (${mode})`).toHaveLength(0)
+      } finally {
+        await closeScopedWindow(tauriPage as TauriPage, viewer, viewerLabel)
+      }
     })
   })
 }
