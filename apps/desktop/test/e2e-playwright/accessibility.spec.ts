@@ -189,7 +189,6 @@ for (const mode of ['light', 'dark'] as const) {
     })
 
     test(`main explorer view`, async ({ tauriPage }) => {
-      test.setTimeout(120_000)
       await ensureAppReady(tauriPage)
 
       const { all } = await runAxeAudit(tauriPage, `Main explorer (${mode})`)
@@ -197,7 +196,6 @@ for (const mode of ['light', 'dark'] as const) {
     })
 
     test(`Copy dialog`, async ({ tauriPage }) => {
-      test.setTimeout(120_000)
       await ensureAppReady(tauriPage)
       await moveCursorToFile(tauriPage, 'file-a.txt')
 
@@ -210,7 +208,6 @@ for (const mode of ['light', 'dark'] as const) {
     })
 
     test(`Delete dialog`, async ({ tauriPage }) => {
-      test.setTimeout(120_000)
       await ensureAppReady(tauriPage)
       await moveCursorToFile(tauriPage, 'file-a.txt')
 
@@ -224,7 +221,6 @@ for (const mode of ['light', 'dark'] as const) {
     })
 
     test(`Move dialog`, async ({ tauriPage }) => {
-      test.setTimeout(120_000)
       await ensureAppReady(tauriPage)
       await moveCursorToFile(tauriPage, 'file-a.txt')
 
@@ -237,7 +233,6 @@ for (const mode of ['light', 'dark'] as const) {
     })
 
     test(`About dialog`, async ({ tauriPage }) => {
-      test.setTimeout(120_000)
       await ensureAppReady(tauriPage)
 
       await executeViaCommandPalette(tauriPage, 'About Cmdr')
@@ -249,7 +244,6 @@ for (const mode of ['light', 'dark'] as const) {
     })
 
     test(`License dialog`, async ({ tauriPage }) => {
-      test.setTimeout(120_000)
       await ensureAppReady(tauriPage)
 
       await executeViaCommandPalette(tauriPage, 'license')
@@ -263,7 +257,6 @@ for (const mode of ['light', 'dark'] as const) {
     })
 
     test(`Command palette`, async ({ tauriPage }) => {
-      test.setTimeout(120_000)
       await ensureAppReady(tauriPage)
 
       await openCommandPalette(tauriPage)
@@ -278,7 +271,6 @@ for (const mode of ['light', 'dark'] as const) {
     })
 
     test(`Search dialog`, async ({ tauriPage }) => {
-      test.setTimeout(120_000)
       await ensureAppReady(tauriPage)
 
       await openSearchDialog(tauriPage)
@@ -293,7 +285,11 @@ for (const mode of ['light', 'dark'] as const) {
     })
 
     test(`Settings: all sections`, async ({ tauriPage }) => {
-      test.setTimeout(180_000)
+      // Loops through ~15 settings sections, running an axe audit per section. Observed ~8 s
+      // light-mode, ~4 s dark-mode in practice; 15 s gives headroom for slow runs without
+      // letting a real regression hide behind the default 8 s budget. The other a11y tests in
+      // this file run in <1 s and use the default 8 s.
+      test.setTimeout(15_000)
       await ensureAppReady(tauriPage)
 
       // Navigate to settings
@@ -367,7 +363,6 @@ for (const mode of ['light', 'dark'] as const) {
     })
 
     test(`File viewer with text file`, async ({ tauriPage }) => {
-      test.setTimeout(120_000)
       await ensureAppReady(tauriPage)
 
       // Navigate to viewer with the ~1KB text file
