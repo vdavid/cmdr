@@ -51,6 +51,16 @@
     let secretError = $state<SecretErrorMessage | null>(null)
     const secretErrorToastId = 'ai-secret-store-error'
 
+    // Debounce API key saves so manual typing doesn't fire one secret-store write per keystroke
+    // (especially relevant on Linux where every Secret Service call is a D-Bus round trip).
+    // Paste arrives as a single oninput so it sees no added latency. 300 ms is short enough that
+    // the save feels instantaneous after the user pauses, and well under the connection-check
+    // debounce (1000 ms) so the order is: type → save → check.
+    const API_KEY_SAVE_DEBOUNCE_MS = 300
+    let apiKeySaveTimer: ReturnType<typeof setTimeout> | null = null
+    // Captured at schedule time so a switch-provider-mid-typing flushes against the right key.
+    let pendingApiKeySave: { providerId: string; value: string } | null = null
+
     // Model combobox state
     let comboboxOpen = $state(false)
     let comboboxFilter = $state('')
@@ -72,6 +82,10 @@
 
     // Subscribe to cloud provider changes
     const unsubCloudProvider = onSpecificSettingChange('ai.cloudProvider', (_id, newValue) => {
+        // Commit any in-flight typing to the OLD provider's keychain entry before we switch —
+        // otherwise the pending save would silently target the wrong provider after `cloudProviderId`
+        // changes below.
+        flushPendingApiKeySave()
         cloudProviderId = newValue
         void loadCloudProviderConfig(cloudProviderId)
         void pushConfigToBackend()
@@ -85,6 +99,9 @@
     unlistenFns.push(unsubCloudConfigs)
 
     onDestroy(() => {
+        // Flush any in-flight typing before tearing down — closing Settings (or navigating to a
+        // different section) shouldn't drop a key the user already typed.
+        flushPendingApiKeySave()
         for (const fn of unlistenFns) {
             fn()
         }
@@ -199,19 +216,44 @@
         }
     }
 
-    async function handleApiKeyChange(value: string): Promise<void> {
+    function handleApiKeyChange(value: string): void {
         // Reflect the typed value locally so the input stays in sync regardless of save outcome.
         currentApiKey = value
         clearSecretError()
+        // Capture the provider at schedule time. If the user switches providers before the timer
+        // fires, the trailing keystroke from the previous provider still targets the right entry.
+        pendingApiKeySave = { providerId: cloudProviderId, value }
+        if (apiKeySaveTimer) clearTimeout(apiKeySaveTimer)
+        apiKeySaveTimer = setTimeout(() => {
+            const pending = pendingApiKeySave
+            apiKeySaveTimer = null
+            pendingApiKeySave = null
+            if (pending) void persistApiKey(pending.providerId, pending.value)
+        }, API_KEY_SAVE_DEBOUNCE_MS)
+    }
+
+    /** Immediately commit any pending API key save. Idempotent — safe to call when nothing's queued. */
+    function flushPendingApiKeySave(): void {
+        if (!apiKeySaveTimer || !pendingApiKeySave) return
+        clearTimeout(apiKeySaveTimer)
+        const pending = pendingApiKeySave
+        apiKeySaveTimer = null
+        pendingApiKeySave = null
+        void persistApiKey(pending.providerId, pending.value)
+    }
+
+    async function persistApiKey(providerId: string, value: string): Promise<void> {
         try {
-            await saveAiApiKey(cloudProviderId, value)
+            await saveAiApiKey(providerId, value)
         } catch (e) {
             // Failed to persist — surface it visibly and SKIP pushing config + scheduling the
             // connection check. The in-memory value would mislead the user into thinking it worked.
             setSecretError(describeSecretError(e, 'save'))
             return
         }
-        // Push the new key to the backend so suggestions and the connection check both see it.
+        // Only sync the backend if the user is still on this provider. Otherwise the new
+        // provider's pushConfigToBackend (triggered by the switch) is the authoritative push.
+        if (providerId !== cloudProviderId) return
         void pushConfigToBackend()
         scheduleConnectionCheck()
     }
@@ -375,9 +417,7 @@
             placeholder={apiKeyPlaceholder}
             ariaLabel="API key"
             value={currentApiKey}
-            onchange={(value: string) => {
-                void handleApiKeyChange(value)
-            }}
+            onchange={handleApiKeyChange}
         />
     </SettingRow>
 {/if}
