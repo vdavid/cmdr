@@ -238,7 +238,7 @@ export const settingsRegistry: SettingDefinition[] = [
     section: ['General', 'Listing'],
     label: 'Maximum column width in Brief mode',
     description:
-      'Limits how wide Brief mode columns can grow to fit long filenames. Columns are always capped at the pane width regardless — the chosen limit only kicks in when it would be smaller than the pane.',
+      'Limits how wide Brief mode columns can grow to fit long filenames. Columns are always capped at the pane width regardless; the chosen limit only kicks in when it would be smaller than the pane.',
     keywords: ['brief', 'column', 'width', 'max', 'maximum', 'limit', 'pane', 'shrink-wrap'],
     type: 'enum',
     default: 'paneWidth',
@@ -406,7 +406,7 @@ export const settingsRegistry: SettingDefinition[] = [
     section: ['General', 'Updates'],
     label: 'Send crash reports',
     description:
-      'Automatically send crash reports when Cmdr quits unexpectedly. Includes app version, macOS version, and crash location — no file names or personal data.',
+      'Automatically send crash reports when Cmdr quits unexpectedly. Includes app version, macOS version, and crash location. Never file names or personal data.',
     keywords: ['crash', 'report', 'privacy', 'telemetry', 'bug', 'error'],
     type: 'boolean',
     default: false,

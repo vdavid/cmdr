@@ -504,12 +504,12 @@
                                                 }}>×</span
                                             >
                                         {:else}
-                                            —
+                                            (none)
                                         {/if}
                                     </button>
                                 {/each}
                             {:else}
-                                <span class="no-shortcut">—</span>
+                                <span class="no-shortcut">(none)</span>
                             {/if}
                             <button
                                 class="add-shortcut"

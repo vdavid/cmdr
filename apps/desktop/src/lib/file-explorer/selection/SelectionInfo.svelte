@@ -272,7 +272,7 @@
                 {pluralize(totalDirs, 'dir', 'dirs')}{#if totalSize === 0}
                     selected{/if}.
                 {#if showSelectionStale}
-                    <span class="stale-indicator stale-icon" use:tooltip={'Updating index — size may change.'}
+                    <span class="stale-indicator stale-icon" use:tooltip={'Updating index, size may change.'}
                         ><IconHourglass width="12" height="12" /></span
                     >
                 {/if}
@@ -286,7 +286,7 @@
                     &nbsp;and {formatNumber(selectedDirs)} of {formatNumber(totalDirs)}
                     {pluralize(totalDirs, 'dir', 'dirs')}{/if}.
                 {#if showSelectionStale}
-                    <span class="stale-indicator stale-icon" use:tooltip={'Updating index — size may change.'}
+                    <span class="stale-indicator stale-icon" use:tooltip={'Updating index, size may change.'}
                         ><IconHourglass width="12" height="12" /></span
                     >
                 {/if}

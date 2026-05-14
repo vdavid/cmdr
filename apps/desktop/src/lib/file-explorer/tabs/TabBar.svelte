@@ -37,7 +37,7 @@
 
     function tabTooltipText(tab: TabState): string {
         const volumeName = volumeNameById.get(tab.volumeId)
-        return volumeName ? `${volumeName} — ${tab.path}` : tab.path
+        return volumeName ? `${volumeName} · ${tab.path}` : tab.path
     }
 
     function handleTabMouseDown(event: MouseEvent, tabId: TabId) {

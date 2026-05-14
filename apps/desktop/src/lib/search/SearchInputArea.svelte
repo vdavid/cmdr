@@ -158,7 +158,7 @@
             use:tooltip={{
                 html:
                     '<div style="max-width:380px">' +
-                    '<div style="font-weight:600;margin-bottom:4px">Search scope — which folders to search in</div>' +
+                    '<div style="font-weight:600;margin-bottom:4px">Search scope: which folders to search in</div>' +
                     '<div style="color:var(--color-text-secondary);margin-bottom:8px">Comma-separated paths. Use ! to exclude.</div>' +
                     '<table style="border-spacing:0;margin-bottom:8px;width:100%">' +
                     '<tr><td style="padding:2px 12px 2px 0;white-space:nowrap"><code>~/projects</code></td><td style="color:var(--color-text-secondary)">Search in one folder</td></tr>' +

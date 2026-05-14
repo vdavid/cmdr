@@ -211,6 +211,6 @@ function formatProgressText(progress: AiDownloadProgress): string {
   const total = colorizeSizeString(formatBytes(progress.totalBytes))
   const speed = colorizeSizeString(formatBytes(progress.speed))
   const eta = progress.etaSeconds > 0 ? formatDuration(progress.etaSeconds) : ''
-  const etaPart = eta ? ` — ${eta} remaining` : ''
-  return `${String(percent)}% — ${downloaded} / ${total} — ${speed}/s${etaPart}`
+  const etaPart = eta ? ` · ${eta} remaining` : ''
+  return `${String(percent)}% · ${downloaded} / ${total} · ${speed}/s${etaPart}`
 }

@@ -285,9 +285,11 @@ async fn flush(app: AppHandle<Wry>) {
         return;
     };
 
+    let plural = if state.error_count == 1 { "" } else { "s" };
     let note = format!(
-        "auto-send: {count} error(s) within 60s, first: {cat} — {msg}",
+        "auto-send: {count} error{plural} within 60s, first: {cat} | {msg}",
         count = state.error_count,
+        plural = plural,
         cat = state.first_category,
         msg = state.first_message,
     );

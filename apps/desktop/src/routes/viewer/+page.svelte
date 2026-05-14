@@ -310,7 +310,7 @@
         }
 
         getCurrentWindow()
-            .setTitle(`${result.fileName} — Viewer`)
+            .setTitle(`${result.fileName} | Viewer`)
             .catch(() => {})
 
         await setupMcpListeners(path)
