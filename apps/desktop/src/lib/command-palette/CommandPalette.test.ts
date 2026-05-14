@@ -2,47 +2,39 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, unmount } from 'svelte'
 import { tick } from 'svelte'
 import CommandPalette from './CommandPalette.svelte'
-import { loadRecentCommands, pushRecentCommand } from '$lib/app-status-store'
+import { pruneRecentCommands, pushRecentCommand } from '$lib/app-status-store'
+
+const ALL_COMMANDS = [
+  { id: 'app.quit', name: 'Quit Cmdr', scope: 'App', shortcuts: ['⌘Q'], showInPalette: true },
+  { id: 'app.about', name: 'About Cmdr', scope: 'App', shortcuts: [], showInPalette: true },
+  { id: 'file.copyPath', name: 'Copy path to clipboard', scope: 'Main window', shortcuts: [], showInPalette: true },
+  { id: 'view.showHidden', name: 'Toggle hidden files', scope: 'Main window', shortcuts: ['⌘⇧.'], showInPalette: true },
+]
 
 // Mock the app-status-store to avoid Tauri dependency in tests
 vi.mock('$lib/app-status-store', () => ({
-  loadRecentCommands: vi.fn().mockResolvedValue([]),
+  pruneRecentCommands: vi.fn().mockResolvedValue([]),
   pushRecentCommand: vi.fn().mockResolvedValue(undefined),
 }))
 
 // Mock the commands module to provide test data
 vi.mock('$lib/commands', () => ({
+  getPaletteCommands: vi.fn(() => ALL_COMMANDS),
   searchCommands: vi.fn((query: string, recentIds: string[] = []) => {
-    const allCommands = [
-      { command: { id: 'app.quit', name: 'Quit Cmdr', scope: 'App', shortcuts: ['⌘Q'] }, matchedIndices: [] },
-      { command: { id: 'app.about', name: 'About Cmdr', scope: 'App', shortcuts: [] }, matchedIndices: [] },
-      {
-        command: { id: 'file.copyPath', name: 'Copy path to clipboard', scope: 'Main window', shortcuts: [] },
-        matchedIndices: [],
-      },
-      {
-        command: {
-          id: 'view.showHidden',
-          name: 'Toggle hidden files',
-          scope: 'Main window',
-          shortcuts: ['⌘⇧.'],
-        },
-        matchedIndices: [],
-      },
-    ]
+    const allMatches = ALL_COMMANDS.map((command) => ({ command, matchedIndices: [] }))
     if (!query.trim()) {
       // Mirror the real implementation's recents-first ordering so tests can
       // exercise the wiring without depending on the real fuzzy module.
-      const byId = new Map(allCommands.map((m) => [m.command.id, m]))
+      const byId = new Map(allMatches.map((m) => [m.command.id, m]))
       const recents = recentIds.flatMap((id) => {
         const match = byId.get(id)
         return match ? [match] : []
       })
       const recentSet = new Set(recents.map((m) => m.command.id))
-      const rest = allCommands.filter((m) => !recentSet.has(m.command.id))
+      const rest = allMatches.filter((m) => !recentSet.has(m.command.id))
       return [...recents, ...rest]
     }
-    return allCommands.filter((c) => c.command.name.toLowerCase().includes(query.toLowerCase()))
+    return allMatches.filter((c) => c.command.name.toLowerCase().includes(query.toLowerCase()))
   }),
 }))
 
@@ -55,7 +47,7 @@ describe('CommandPalette', () => {
     mockOnClose = vi.fn()
     // Mock scrollIntoView which isn't available in jsdom
     Element.prototype.scrollIntoView = vi.fn()
-    vi.mocked(loadRecentCommands).mockResolvedValue([])
+    vi.mocked(pruneRecentCommands).mockResolvedValue([])
     vi.mocked(pushRecentCommand).mockClear()
   })
 
@@ -305,7 +297,7 @@ describe('CommandPalette', () => {
   })
 
   it('leads the empty-query list with recents, most-recent first', async () => {
-    vi.mocked(loadRecentCommands).mockResolvedValue(['file.copyPath', 'app.about'])
+    vi.mocked(pruneRecentCommands).mockResolvedValue(['file.copyPath', 'app.about'])
 
     const target = document.createElement('div')
     mount(CommandPalette, {
@@ -356,6 +348,57 @@ describe('CommandPalette', () => {
 
     expect(pushRecentCommand).toHaveBeenCalledWith('app.about')
     expect(mockOnExecute).toHaveBeenCalledWith('app.about')
+  })
+
+  it('renders "Recent" and "All commands" subheaders when recents exist', async () => {
+    vi.mocked(pruneRecentCommands).mockResolvedValue(['file.copyPath', 'app.about'])
+
+    const target = document.createElement('div')
+    mount(CommandPalette, {
+      target,
+      props: { onExecute: mockOnExecute, onClose: mockOnClose },
+    })
+    await tick()
+    await tick()
+
+    const headings = Array.from(target.querySelectorAll('.group-heading')).map((el) => el.textContent?.trim())
+    expect(headings).toEqual(['Recent', 'All commands'])
+  })
+
+  it('renders no group subheaders when there are no recents', async () => {
+    vi.mocked(pruneRecentCommands).mockResolvedValue([])
+
+    const target = document.createElement('div')
+    mount(CommandPalette, {
+      target,
+      props: { onExecute: mockOnExecute, onClose: mockOnClose },
+    })
+    await tick()
+    await tick()
+
+    expect(target.querySelectorAll('.group-heading').length).toBe(0)
+  })
+
+  it('renders no group subheaders during an active search', async () => {
+    vi.mocked(pruneRecentCommands).mockResolvedValue(['file.copyPath'])
+
+    const target = document.createElement('div')
+    mount(CommandPalette, {
+      target,
+      props: { onExecute: mockOnExecute, onClose: mockOnClose },
+    })
+    await tick()
+    await tick()
+
+    const input = target.querySelector('input')
+    if (input) {
+      input.value = 'copy'
+      input.dispatchEvent(new InputEvent('input', { bubbles: true }))
+    }
+    await tick()
+
+    // Grouping is for the recents view only; typing collapses it.
+    expect(target.querySelectorAll('.group-heading').length).toBe(0)
   })
 
   it('does not throw if the previously focused element is no longer in the DOM', async () => {

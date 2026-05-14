@@ -9,8 +9,8 @@
      * - Blocks keyboard events from propagating to file explorer
      */
     import { onDestroy, onMount, tick } from 'svelte'
-    import { searchCommands, type CommandMatch } from '$lib/commands'
-    import { loadRecentCommands, pushRecentCommand } from '$lib/app-status-store'
+    import { searchCommands, getPaletteCommands, type CommandMatch } from '$lib/commands'
+    import { pruneRecentCommands, pushRecentCommand } from '$lib/app-status-store'
 
     interface Props {
         /** Called when user selects a command */
@@ -40,6 +40,20 @@
     // user's last-executed command — Enter re-runs it.
     const results = $derived(searchCommands(query, recentCommandIds))
 
+    // Boundary between recents and the rest in the empty-query view. Used to
+    // render the "Recent" / "All commands" subheaders. Always 0 when the query
+    // is non-empty (no grouping during search).
+    const recentCount = $derived.by(() => {
+        if (query.trim() || recentCommandIds.length === 0) return 0
+        const recentSet = new Set(recentCommandIds)
+        let n = 0
+        for (const r of results) {
+            if (recentSet.has(r.command.id)) n++
+            else break
+        }
+        return n
+    })
+
     // Reset cursor position when query changes
     $effect(() => {
         void query // Track
@@ -49,8 +63,10 @@
 
     onMount(() => {
         previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
-        // Load recents so the empty-query view leads with the user's last-executed commands.
-        void loadRecentCommands().then((ids) => {
+        // Load recents and prune any IDs that no longer correspond to a valid palette
+        // command (renamed or removed since last use). Self-heals the persisted list.
+        const validIds = new Set(getPaletteCommands().map((c) => c.id))
+        void pruneRecentCommands(validIds).then((ids) => {
             recentCommandIds = ids
         })
         inputElement?.focus()
@@ -177,6 +193,12 @@
                 <div class="no-results">No commands found</div>
             {:else}
                 {#each results as match, index (match.command.id)}
+                    {#if recentCount > 0 && index === 0}
+                        <div class="group-heading">Recent</div>
+                    {/if}
+                    {#if recentCount > 0 && index === recentCount}
+                        <div class="group-heading">All commands</div>
+                    {/if}
                     <div
                         class="result-item"
                         class:is-under-cursor={index === cursorIndex}
@@ -267,6 +289,22 @@
         text-align: center;
         color: var(--color-text-tertiary);
         font-size: var(--font-size-md);
+    }
+
+    /* Section headers between recents and the rest of the palette */
+    .group-heading {
+        padding: var(--spacing-sm) var(--spacing-lg) var(--spacing-xxs);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        color: var(--color-text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-top: 1px solid var(--color-border);
+    }
+
+    /* First heading sits right after the input — no top border */
+    .group-heading:first-child {
+        border-top: none;
     }
 
     .result-item {

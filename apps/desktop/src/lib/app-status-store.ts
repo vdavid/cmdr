@@ -267,6 +267,29 @@ export async function pushRecentCommand(commandId: string): Promise<void> {
   }
 }
 
+/**
+ * Loads recents and drops any IDs that aren't in `validIds`. If anything was
+ * pruned, the cleaned list is written back. Returns the (possibly pruned) list.
+ *
+ * Call this on palette open: it self-heals the store against commands that were
+ * renamed or removed since the user last used them. Without it, stale IDs would
+ * just take up slots in the cap-10 list and reduce the visible recents count.
+ */
+export async function pruneRecentCommands(validIds: ReadonlySet<string>): Promise<string[]> {
+  try {
+    const existing = await loadRecentCommands()
+    const pruned = existing.filter((id) => validIds.has(id))
+    if (pruned.length !== existing.length) {
+      const store = await getStore()
+      await store.set('recentCommandIds', pruned)
+      await store.save()
+    }
+    return pruned
+  } catch {
+    return []
+  }
+}
+
 // ============================================================================
 // Settings window section persistence
 // ============================================================================

@@ -14,7 +14,7 @@ VS Code/Spotlight-style modal for searching and executing app commands via fuzzy
 ```
 User presses ⌘⇧P
   → +page.svelte sets showCommandPalette = true
-  → CommandPalette mounts, loads recentCommandIds from app-status-store, focuses input
+  → CommandPalette mounts, calls pruneRecentCommands(validIds) (load + drop stale + save), focuses input
   → searchCommands(query, recentCommandIds) returns CommandMatch[] (reactive via $derived)
   → User navigates with ↑/↓ (keyboard cursor) or mouse (hover cursor)
   → Enter / click → pushRecentCommand(id), onExecute(commandId) → handleCommandExecute()
@@ -31,12 +31,14 @@ overlay).
 **Event propagation**: `stopPropagation()` is called on every `keydown` in the overlay `div`'s handler. This prevents
 the file list from scrolling or handling shortcuts behind the modal.
 
-**Recents on empty query**: `loadRecentCommands` / `pushRecentCommand` from `$lib/app-status-store` (Tauri store). On
-mount, the palette loads the recent command IDs and passes them to `searchCommands(query, recentCommandIds)`. When the
-query is empty, recents lead the result (most-recent first), then the rest of the palette commands in registry order. On
-every Enter / click, `pushRecentCommand(id)` records the execution: the ID moves to the front, duplicates are removed,
-the list is capped at 10. The query itself is not persisted across opens — the palette always opens empty so the user's
-last-executed command sits at index 0 (cursor default), making Enter re-run it.
+**Recents on empty query**: `pruneRecentCommands` / `pushRecentCommand` from `$lib/app-status-store` (Tauri store). On
+mount, the palette calls `pruneRecentCommands(validIds)` — this loads the persisted recents, drops any IDs that are no
+longer valid palette commands (renamed / removed since last use), saves the cleaned list back, and returns it. The
+pruned list is then passed to `searchCommands(query, recentCommandIds)`. When the query is empty, recents lead the
+result (most-recent first), with a `Recent` subheader above them and an `All commands` subheader before the rest. On
+every Enter / click, `pushRecentCommand(id)` moves the ID to the front; duplicates are removed; the list is capped
+at 10. The query itself is not persisted across opens — the palette always opens empty so the user's last-executed
+command sits at index 0 (cursor default), making Enter re-run it.
 
 **Own overlay, no shared ModalDialog**: `CommandPalette` manages its own `position: fixed` overlay and `role="dialog"`
 ARIA attributes. It does not use the shared `ModalDialog` component.
@@ -106,6 +108,6 @@ Add the command to `$lib/commands/command-registry.ts` and handle the ID in the 
 
 ## Dependencies
 
-- `$lib/commands` — `searchCommands`, `CommandMatch`
-- `$lib/app-status-store` — `loadRecentCommands`, `pushRecentCommand`
+- `$lib/commands` — `searchCommands`, `getPaletteCommands`, `CommandMatch`
+- `$lib/app-status-store` — `pruneRecentCommands`, `pushRecentCommand`
 - CSS variables from `app.css` (`--z-modal`, `--color-accent-subtle`, `--color-bg-secondary`, etc.)

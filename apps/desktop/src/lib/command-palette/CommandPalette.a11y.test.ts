@@ -12,29 +12,31 @@ import CommandPalette from './CommandPalette.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 vi.mock('$lib/app-status-store', () => ({
-  loadRecentCommands: vi.fn(() => Promise.resolve([])),
+  pruneRecentCommands: vi.fn(() => Promise.resolve([])),
   pushRecentCommand: vi.fn(() => Promise.resolve()),
 }))
 
-vi.mock('$lib/commands', () => ({
-  searchCommands: vi.fn((query: string) => {
-    const all = [
-      { command: { id: 'app.quit', name: 'Quit Cmdr', scope: 'App', shortcuts: ['\u2318Q'] }, matchedIndices: [] },
-      { command: { id: 'app.about', name: 'About Cmdr', scope: 'App', shortcuts: [] }, matchedIndices: [] },
-      {
-        command: {
-          id: 'file.copyPath',
-          name: 'Copy path to clipboard',
-          scope: 'Main window',
-          shortcuts: [],
-        },
-        matchedIndices: [],
-      },
-    ]
-    if (!query.trim()) return all
-    return all.filter((c) => c.command.name.toLowerCase().includes(query.toLowerCase()))
-  }),
-}))
+vi.mock('$lib/commands', () => {
+  const all = [
+    { id: 'app.quit', name: 'Quit Cmdr', scope: 'App', shortcuts: ['\u2318Q'], showInPalette: true },
+    { id: 'app.about', name: 'About Cmdr', scope: 'App', shortcuts: [], showInPalette: true },
+    {
+      id: 'file.copyPath',
+      name: 'Copy path to clipboard',
+      scope: 'Main window',
+      shortcuts: [],
+      showInPalette: true,
+    },
+  ]
+  return {
+    getPaletteCommands: vi.fn(() => all),
+    searchCommands: vi.fn((query: string) => {
+      const matches = all.map((command) => ({ command, matchedIndices: [] }))
+      if (!query.trim()) return matches
+      return matches.filter((c) => c.command.name.toLowerCase().includes(query.toLowerCase()))
+    }),
+  }
+})
 
 describe('CommandPalette a11y', () => {
   beforeEach(() => {
