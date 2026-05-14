@@ -17,10 +17,10 @@ use super::events::{
 };
 use super::reconciler::{self, EventReconciler};
 use super::scanner::{self, ScanConfig};
+use super::state::{INDEXING, IndexPhase};
 use super::store::IndexStore;
 use super::watcher::{self, DriveWatcher};
 use super::writer::{IndexWriter, WriteMessage};
-use super::{INDEXING, IndexPhase};
 
 // ── IndexManager ─────────────────────────────────────────────────────
 

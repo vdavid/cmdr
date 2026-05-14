@@ -8,7 +8,6 @@
     import {
         viewerOpen,
         viewerGetLines,
-        viewerGetStatus,
         viewerClose,
         viewerSetupMenu,
         viewerSetWordWrap,
@@ -23,11 +22,13 @@
     import { getAppLogger } from '$lib/logging/logger'
     import { createViewerSearch } from './viewer-search.svelte'
     import { createViewerScroll } from './viewer-scroll.svelte'
+    import { createTextWidthTracker } from './viewer-text-width.svelte'
+    import { createIndexingPoll } from './viewer-indexing-poll'
+    import { handleNavigationKey, handleToggleKey } from './viewer-keyboard'
     import Size from '$lib/ui/Size.svelte'
 
     const log = getAppLogger('viewer')
 
-    let textWidth = $state(0)
     let fileName = $state('')
     let totalLines = $state<number | null>(null)
     let estimatedLines = $state(1) // Backend's estimate based on initial sample
@@ -43,9 +44,14 @@
     // Derive current mode: if we started with byteSeek but now have totalLines, we upgraded to lineIndex
     const currentMode = $derived(backendType === 'byteSeek' && totalLines !== null ? 'lineIndex' : backendType)
 
-    // Indexing status polling
-    let indexingPollTimer: ReturnType<typeof setInterval> | undefined
-    const INDEXING_POLL_INTERVAL = 500
+    const indexingPoll = createIndexingPoll({
+        getSessionId: () => sessionId,
+        onStatus: ({ backendType: bt, isIndexing: ind, totalLines: tl }) => {
+            backendType = bt
+            isIndexing = ind
+            if (tl !== null) totalLines = tl
+        },
+    })
 
     // Window lifecycle state: prevents closing before WebKit is fully initialized
     let windowReady = $state(false)
@@ -56,6 +62,11 @@
     let unlistenMcpClose: UnlistenFn | undefined
     let unlistenMcpFocus: UnlistenFn | undefined
     let unlistenWordWrap: UnlistenFn | undefined
+
+    const textWidthTracker = createTextWidthTracker({
+        getContentRef: () => scroll.contentRef,
+        getVisibleLinesKey: () => scroll.visibleLines,
+    })
 
     const scroll = createViewerScroll({
         getSessionId: () => sessionId,
@@ -80,7 +91,7 @@
             }
             return lines
         },
-        getTextWidth: () => textWidth,
+        getTextWidth: () => textWidthTracker.textWidth,
     })
 
     const search = createViewerSearch({
@@ -126,89 +137,18 @@
 
     // Track available text width for height map calculations via ResizeObserver + visible lines change
     $effect(() => {
-        const ref = scroll.contentRef
-        if (!ref) return
-        const el = ref // Capture non-null ref for closures
-
-        function measureTextWidth() {
-            const lineText = el.querySelector('.line-text')
-            if (lineText) {
-                const w = lineText.getBoundingClientRect().width
-                if (w > 0 && Math.abs(w - textWidth) > 1) {
-                    textWidth = w
-                }
-            }
-        }
-
-        const observer = new ResizeObserver(() => {
-            measureTextWidth()
-        })
-        observer.observe(el)
-
-        // Initial measurement after mount
-        requestAnimationFrame(() => {
-            measureTextWidth()
-        })
-
-        return () => {
-            observer.disconnect()
-        }
+        return textWidthTracker.runResizeEffect()
     })
 
     // Re-measure text width when lines first appear (ResizeObserver won't fire if container size didn't change)
     $effect(() => {
-        void scroll.visibleLines // Track when lines change
-        if (textWidth > 0) return // Already measured
-        requestAnimationFrame(() => {
-            const ref = scroll.contentRef
-            if (!ref) return
-            const lineText = ref.querySelector('.line-text')
-            if (lineText) {
-                const w = lineText.getBoundingClientRect().width
-                if (w > 0) {
-                    textWidth = w
-                }
-            }
-        })
+        textWidthTracker.runVisibleLinesEffect()
     })
 
     // Debounce search input
     $effect(() => {
         search.runDebounceEffect()
     })
-
-    // Indexing status polling functions
-    function startIndexingPoll() {
-        stopIndexingPoll()
-        indexingPollTimer = setInterval(() => {
-            void pollIndexingStatus()
-        }, INDEXING_POLL_INTERVAL)
-    }
-
-    async function pollIndexingStatus() {
-        if (!sessionId) return
-        try {
-            const status = await viewerGetStatus(sessionId)
-            backendType = status.backendType
-            isIndexing = status.isIndexing
-            if (status.totalLines !== null) {
-                totalLines = status.totalLines
-            }
-            if (!status.isIndexing) {
-                log.info('Indexing finished, backendType={backendType}', { backendType: status.backendType })
-                stopIndexingPoll()
-            }
-        } catch {
-            stopIndexingPoll()
-        }
-    }
-
-    function stopIndexingPoll() {
-        if (indexingPollTimer) {
-            clearInterval(indexingPollTimer)
-            indexingPollTimer = undefined
-        }
-    }
 
     function closeWindow() {
         if (closing) return
@@ -249,39 +189,6 @@
         setSetting('viewer.wordWrap', scroll.wordWrap)
     }
 
-    function handleToggleKey(e: KeyboardEvent): boolean {
-        if (e.key.toLowerCase() === 'w' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-            toggleWordWrap()
-            return true
-        }
-        return false
-    }
-
-    function handleNavigationKey(key: string): boolean {
-        switch (key) {
-            case 'ArrowUp':
-                scroll.scrollByLines(-1)
-                return true
-            case 'ArrowDown':
-                scroll.scrollByLines(1)
-                return true
-            case 'PageUp':
-                scroll.scrollByPages(-1)
-                return true
-            case 'PageDown':
-                scroll.scrollByPages(1)
-                return true
-            case 'Home':
-                scroll.scrollToStart()
-                return true
-            case 'End':
-                scroll.scrollToEnd()
-                return true
-            default:
-                return false
-        }
-    }
-
     function handleKeyDown(e: KeyboardEvent) {
         if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
             e.preventDefault()
@@ -319,7 +226,7 @@
 
         if (search.searchVisible && document.activeElement === search.searchInputRef) return
 
-        if (handleToggleKey(e) || handleNavigationKey(e.key)) {
+        if (handleToggleKey(e, toggleWordWrap) || handleNavigationKey(e.key, scroll)) {
             e.preventDefault()
         }
     }
@@ -368,7 +275,7 @@
         )
 
         if (result.isIndexing) {
-            startIndexingPoll()
+            indexingPoll.start()
         }
 
         scroll.lineCache.clear()
@@ -515,7 +422,7 @@
         cleanupListeners()
         search.destroy()
         scroll.destroy()
-        stopIndexingPoll()
+        indexingPoll.stop()
     })
 </script>
 

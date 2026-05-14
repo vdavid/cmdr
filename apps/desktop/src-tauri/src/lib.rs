@@ -69,6 +69,7 @@ mod ignore_poison;
 pub use ignore_poison::IgnorePoison;
 
 mod ipc;
+mod ipc_collectors;
 
 mod logging;
 

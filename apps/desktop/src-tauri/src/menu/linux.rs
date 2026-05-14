@@ -5,6 +5,10 @@ use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
 };
 
+use super::menu_items::{
+    brief_view_label, build_sort_submenu, build_zoom_submenu, copy_path_accelerator, full_view_label, register_item,
+    show_in_file_manager_accelerator, show_in_file_manager_label,
+};
 use super::{
     ABOUT_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID, COPY_FILENAME_ID,
     COPY_PATH_ID, DESELECT_ALL_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID,
@@ -13,9 +17,7 @@ use super::{
     NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID,
     SEARCH_FILES_ID, SELECT_ALL_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID,
     SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID,
-    VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode, brief_view_label,
-    build_sort_submenu, build_zoom_submenu, copy_path_accelerator, full_view_label, register_item,
-    show_in_file_manager_accelerator, show_in_file_manager_label,
+    VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode,
 };
 
 /// Linux menu: builds all menus from scratch, matching the macOS menu structure.

@@ -35,12 +35,12 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
      (`write_operations/eta.rs`) on every `WriteProgressEvent` — the dialog renders the numbers and applies a tiny
      display low-pass to the ETA to prevent flicker. No FE-side math.
    - Dynamic stage indicator: "Scanning" → "Copying" (+ "Cleaning up" for cross-FS move)
-   - **Scanning-phase UI** (both `waitingForScan` and `phase === 'scanning'` paths): rendered via the local
-     `scanPhaseBody` snippet. Shows source path, running tallies (`bytesFound / filesFound / dirsFound`), FE-computed
-     throughput from `ScanThroughput` (`scan-throughput.ts`), and — when the backend supplies `expectedFilesTotal` /
-     `expectedBytesTotal` from the drive index — a `ProgressBar` capped at 100% with "X% of estimated" text. Current
-     directory (`event.currentDir`) renders above the filename so the user sees where in the tree the walker is. Title
-     is reframed per operation: "Verifying before copy…", "Counting items to delete…", etc.
+   - **Scanning-phase UI** (both `waitingForScan` and `phase === 'scanning'` paths): rendered via the
+     `ScanPhaseBody.svelte` child component. Shows source path, running tallies (`bytesFound / filesFound / dirsFound`),
+     FE-computed throughput from `ScanThroughput` (`scan-throughput.ts`), and — when the backend supplies
+     `expectedFilesTotal` / `expectedBytesTotal` from the drive index — a `ProgressBar` capped at 100% with "X% of
+     estimated" text. Current directory (`event.currentDir`) renders above the filename so the user sees where in the
+     tree the walker is. Title is reframed per operation: "Verifying before copy…", "Counting items to delete…", etc.
    - Conflict resolution inline (if using `Stop` mode instead of dry-run)
    - Cancel button → rollback transaction (user chooses keep/rollback)
 
@@ -68,6 +68,8 @@ F8/Shift+F8 (trash/delete). Transfer and delete operations share `TransferProgre
 - **transfer/DirectionIndicator.svelte**: Arrow graphic showing source → destination (operation-agnostic)
 - **transfer/TransferDialog.svelte**, **transfer/TransferProgressDialog.svelte**,
   **transfer/TransferErrorDialog.svelte**: Transfer UI components
+- **transfer/ScanPhaseBody.svelte**: Scan-phase tallies/throughput/current-dir body shared by both `waitingForScan` and
+  `phase === 'scanning'` branches in `TransferProgressDialog.svelte`
 - **transfer/transfer-error-messages.ts**: Operation-specific error strings
 
 ### Delete/trash (`delete/`)

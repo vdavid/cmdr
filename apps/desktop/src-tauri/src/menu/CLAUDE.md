@@ -6,11 +6,21 @@ window focus context.
 
 ## File layout
 
-- `mod.rs` — shared types (`MenuState`, `MenuItems`, `MenuItemEntry`, `CommandScope`, `ViewMode`,
-  `FileContextInfo`, `ContextMenuResult`), constants (all menu item IDs), ID mapping functions
-  (`menu_id_to_command`, `command_id_to_menu_id`), platform-aware accelerator/label helpers, the
-  `build_menu` dispatcher, context menu builders, viewer menu builder, and accelerator update
-  functions.
+- `mod.rs` — shared types (`MenuState`, `MenuItems`, `MenuItemEntry`, `MenuContext`,
+  `NetworkHostMenuContext`, `CommandScope`, `ViewMode`), constants (all menu item IDs), the
+  ID mapping functions (`menu_id_to_command`, `command_id_to_menu_id`), and re-exports of the
+  public API exposed by the submodules below.
+- `menu_items.rs` — small-piece builders and platform-aware helpers: `build_sort_submenu`,
+  `build_zoom_submenu`, `register_item`, `truncate_for_menu_label`, the `copy_path_accelerator` /
+  `show_in_file_manager_*` / `full_view_label` / `brief_view_label` platform helpers, and the
+  `SortSubmenuItems` struct.
+- `menu_structure.rs` — hierarchical assembly: the `build_menu` dispatcher, file context menu
+  (`build_context_menu`), breadcrumb / tab / network-host context menus, the viewer-window menu
+  (`build_viewer_menu`), plus the `FileContextInfo` and `ContextMenuResult` types.
+- `menu_handlers.rs` — event-handler and live-update helpers: `rebuild_view_mode_items`,
+  `sync_view_mode_check_states`, `update_menu_item_accelerator`, `frontend_shortcut_to_accelerator`,
+  and the macOS post-construction wrappers `cleanup_macos_menus` / `set_macos_menu_icons` (the
+  actual objc2 FFI lives in `macos.rs`).
 - `macos.rs` — `build_menu_macos` (full macOS menu bar), `cleanup_macos_menus` (removes
   system-injected Edit items, registers Help menu), `set_macos_menu_icons` (SF Symbol icons via
   objc2 FFI), and their helpers.

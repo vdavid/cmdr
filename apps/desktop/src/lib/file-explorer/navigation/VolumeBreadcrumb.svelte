@@ -15,7 +15,7 @@
     import { getCachedIcon, iconCacheVersion, prefetchIcons } from '$lib/icon-cache'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import InfoIcon from '~icons/lucide/info'
-    import type { VolumeInfo, SmbConnectionState } from '../types'
+    import type { VolumeInfo } from '../types'
 
     const RESTRICTED_FOLDER_TOOLTIP =
         'Access to this folder is limited. Grant Cmdr Full Disk Access in System Settings → Privacy & Security → Full Disk Access to remove all such limits. Or grant per-folder access in System Settings → Privacy & Security → Files & Folders → Cmdr.'
@@ -28,6 +28,15 @@
     } from '$lib/stores/volume-store.svelte'
     import { groupByCategory, getIconForVolume } from './volume-grouping'
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
+    import {
+        createBreadcrumbPopupController,
+        createKeyboardModeTracker,
+        createSubmenuController,
+        getConnectionTooltip,
+        handleDropdownKey,
+        handleSubmenuKey,
+        shouldShowCheckmark,
+    } from './volume-breadcrumb-handlers.svelte'
 
     interface Props {
         volumeId: string
@@ -49,21 +58,18 @@
     let highlightedIndex = $state(-1)
     let dropdownRef: HTMLDivElement | undefined = $state()
     // Keyboard mode: when true, CSS :hover is suppressed to avoid double-highlight
-    let isKeyboardMode = $state(false)
-    let lastMousePos = $state<{ x: number; y: number } | null>(null)
+    const keyboardMode = createKeyboardModeTracker()
 
     // The ID of the actual volume that contains the current path
     // This is used to show the checkmark on the correct volume, not on favorites
     let containingVolumeId = $state<string | null>(null)
 
     // Submenu state for "Connect directly" option on os_mount volumes
-    let submenuVolumeId = $state<string | null>(null)
+    const submenu = createSubmenuController()
     let submenuRef: HTMLDivElement | undefined = $state()
-    let submenuPosition = $state<{ top: number; left: number } | null>(null)
-    let submenuHighlighted = $state(false)
 
     // Breadcrumb inline popup state (for yellow indicator in closed breadcrumb)
-    let breadcrumbPopupOpen = $state(false)
+    const breadcrumbPopup = createBreadcrumbPopupController()
     let breadcrumbPopupRef: HTMLSpanElement | undefined = $state()
 
     const spaceManager = createVolumeSpaceManager()
@@ -108,13 +114,12 @@
     // When dropdown opens, initialize highlight to current volume and fit to viewport
     $effect(() => {
         if (isOpen) {
-            const currentIdx = allVolumes.findIndex((v) => shouldShowCheckmark(v))
+            const currentIdx = allVolumes.findIndex((v) => shouldShowCheckmark(v, containingVolumeId))
             highlightedIndex = currentIdx >= 0 ? currentIdx : 0
             void fitDropdownToViewport()
         } else {
             highlightedIndex = -1
-            isKeyboardMode = false
-            lastMousePos = null
+            keyboardMode.reset()
         }
     })
 
@@ -185,120 +190,81 @@
         }
     }
 
+    function setOpen(value: boolean) {
+        isOpen = value
+        if (value) void spaceManager.fetchVolumeSpaces(volumes)
+    }
+
     function handleToggle() {
-        isOpen = !isOpen
-        if (isOpen) {
-            void spaceManager.fetchVolumeSpaces(volumes)
-        }
+        setOpen(!isOpen)
     }
 
-    // Export for keyboard shortcut access
+    /** Exported for keyboard shortcut access from parent. */
     export function toggle() {
-        isOpen = !isOpen
-        if (isOpen) {
-            void spaceManager.fetchVolumeSpaces(volumes)
-        }
+        setOpen(!isOpen)
     }
-
-    // Export to check if dropdown is open
     export function getIsOpen(): boolean {
         return isOpen
     }
-
-    // Export to explicitly close the dropdown
     export function close() {
         isOpen = false
     }
-
-    // Export to explicitly open the dropdown
     export function open() {
-        isOpen = true
-        void spaceManager.fetchVolumeSpaces(volumes)
-    }
-
-    /** Handles keyboard events when the submenu is open. Returns true if handled. */
-    function handleSubmenuKeyDown(key: string): boolean | null {
-        if (!submenuVolumeId) return null // submenu not open, let caller handle
-        switch (key) {
-            case 'ArrowDown':
-            case 'ArrowUp':
-            case 'ArrowRight':
-                return true // absorb — single-item submenu
-            case 'ArrowLeft':
-                closeSubmenu()
-                return true
-            case 'Enter':
-                void handleSubmenuAction()
-                return true
-            case 'Escape':
-                closeSubmenu()
-                return true
-            default:
-                return null
-        }
-    }
-
-    /** Handles a single key in the main dropdown (not submenu). Returns true if handled. */
-    function handleDropdownKey(key: string): boolean {
-        switch (key) {
-            case 'ArrowDown':
-                highlightedIndex = (highlightedIndex + 1) % allVolumes.length
-                enterKeyboardMode()
-                return true
-            case 'ArrowUp':
-                highlightedIndex = (highlightedIndex - 1 + allVolumes.length) % allVolumes.length
-                enterKeyboardMode()
-                return true
-            case 'ArrowRight':
-                if (
-                    highlightedIndex >= 0 &&
-                    allVolumes[highlightedIndex]?.smbConnectionState === 'os_mount'
-                ) {
-                    const el = dropdownRef?.querySelector(
-                        `.volume-item[data-index="${String(highlightedIndex)}"]`,
-                    ) as HTMLElement | null
-                    if (el) openSubmenu(allVolumes[highlightedIndex].id, el, true)
-                }
-                return true
-            case 'Enter':
-                if (highlightedIndex >= 0 && highlightedIndex < allVolumes.length) {
-                    void handleVolumeSelect(allVolumes[highlightedIndex])
-                }
-                return true
-            case 'Escape':
-                isOpen = false
-                return true
-            case 'Home':
-                highlightedIndex = 0
-                enterKeyboardMode()
-                return true
-            case 'End':
-                highlightedIndex = allVolumes.length - 1
-                enterKeyboardMode()
-                return true
-            default:
-                return false
-        }
+        setOpen(true)
     }
 
     // Export keyboard handler for parent components to call
     export function handleKeyDown(e: KeyboardEvent): boolean {
         if (!isOpen) return false
 
-        const submenuResult = handleSubmenuKeyDown(e.key)
+        const submenuResult = handleSubmenuKey(e.key, {
+            isOpen: () => submenu.volumeId !== null,
+            close: () => submenu.close(),
+            activate: () => {
+                void handleSubmenuAction()
+            },
+        })
         if (submenuResult !== null) {
             e.preventDefault()
             return submenuResult
         }
 
-        const handled = handleDropdownKey(e.key)
+        const handled = handleDropdownKey(e.key, {
+            moveHighlight: (delta) => {
+                highlightedIndex = (highlightedIndex + delta + allVolumes.length) % allVolumes.length
+                enterKeyboardMode()
+            },
+            goHome: () => {
+                highlightedIndex = 0
+                enterKeyboardMode()
+            },
+            goEnd: () => {
+                highlightedIndex = allVolumes.length - 1
+                enterKeyboardMode()
+            },
+            activate: () => {
+                if (highlightedIndex >= 0 && highlightedIndex < allVolumes.length) {
+                    void handleVolumeSelect(allVolumes[highlightedIndex])
+                }
+            },
+            close: () => {
+                isOpen = false
+            },
+            highlightedSupportsSubmenu: () =>
+                highlightedIndex >= 0 && allVolumes[highlightedIndex]?.smbConnectionState === 'os_mount',
+            openSubmenuAtHighlight: () => {
+                const el = dropdownRef?.querySelector(
+                    `.volume-item[data-index="${String(highlightedIndex)}"]`,
+                ) as HTMLElement | null
+                if (el) submenu.open(allVolumes[highlightedIndex].id, el, true)
+            },
+        })
         if (handled) e.preventDefault()
         return handled
     }
 
     function enterKeyboardMode() {
-        isKeyboardMode = true
-        lastMousePos = null // Will be captured on next mousemove
+        keyboardMode.enter()
         void scrollHighlightedIntoView()
     }
 
@@ -312,37 +278,14 @@
 
     // Handle mouse hover to sync with keyboard navigation
     function handleVolumeHover(volume: VolumeInfo) {
-        if (isKeyboardMode) return // Don't update highlight while in keyboard mode
+        if (keyboardMode.isKeyboardMode) return
         const idx = allVolumes.indexOf(volume)
-        if (idx >= 0) {
-            highlightedIndex = idx
-        }
+        if (idx >= 0) highlightedIndex = idx
     }
 
-    // Handle mouse movement to exit keyboard mode after 5px threshold
     function handleDropdownMouseMove(e: MouseEvent) {
-        if (!isKeyboardMode) return
-
-        if (!lastMousePos) {
-            // Capture position on first move after entering keyboard mode
-            lastMousePos = { x: e.clientX, y: e.clientY }
-            return
-        }
-
-        const dx = Math.abs(e.clientX - lastMousePos.x)
-        const dy = Math.abs(e.clientY - lastMousePos.y)
-        if (dx > 5 || dy > 5) {
-            isKeyboardMode = false
-            lastMousePos = null
-            // Update highlight to the item under the mouse cursor
-            const volumeItem = (e.target as HTMLElement).closest('.volume-item')
-            if (volumeItem) {
-                const idx = parseInt(volumeItem.getAttribute('data-index') ?? '-1', 10)
-                if (idx >= 0) {
-                    highlightedIndex = idx
-                }
-            }
-        }
+        const idx = keyboardMode.onMouseMove(e)
+        if (idx !== null) highlightedIndex = idx
     }
 
     function handleClickOutside(event: MouseEvent) {
@@ -353,9 +296,7 @@
 
     // Document-level keyboard handler for Escape when dropdown is open
     function handleDocumentKeyDown(event: KeyboardEvent) {
-        if (event.key === 'Escape' && isOpen) {
-            isOpen = false
-        }
+        if (event.key === 'Escape' && isOpen) isOpen = false
     }
 
     // Update containing volume when current path changes
@@ -388,31 +329,10 @@
         window.removeEventListener('resize', handleResize)
     })
 
-    function getConnectionTooltip(state: SmbConnectionState): string {
-        return state === 'direct'
-            ? 'Connected directly for fast file operations'
-            : 'Using system connection. Use the "Connect directly for faster access" menu item for faster access.'
-    }
-
-    function openSubmenu(volumeId: string, triggerEl?: HTMLElement, fromKeyboard = false) {
-        submenuVolumeId = volumeId
-        submenuHighlighted = fromKeyboard
-        if (triggerEl) {
-            const rect = triggerEl.getBoundingClientRect()
-            submenuPosition = { top: rect.top - 4, left: rect.right - 5 }
-        }
-    }
-
-    function closeSubmenu() {
-        submenuVolumeId = null
-        submenuPosition = null
-        submenuHighlighted = false
-    }
-
     async function handleSubmenuAction(overrideVolumeId?: string) {
-        const vid = overrideVolumeId ?? submenuVolumeId
-        closeSubmenu()
-        closeBreadcrumbPopup()
+        const vid = overrideVolumeId ?? submenu.volumeId
+        submenu.close()
+        breadcrumbPopup.close()
         if (!vid) return
 
         // Direct smb2 upgrade opens a TCP socket to a private IP — that triggers macOS's
@@ -440,42 +360,22 @@
         }
     }
 
-    function toggleBreadcrumbPopup() {
-        breadcrumbPopupOpen = !breadcrumbPopupOpen
-    }
-
-    function closeBreadcrumbPopup() {
-        breadcrumbPopupOpen = false
-    }
-
     function handleBreadcrumbPopupClickOutside(event: MouseEvent) {
         if (breadcrumbPopupRef && !breadcrumbPopupRef.contains(event.target as Node)) {
-            closeBreadcrumbPopup()
+            breadcrumbPopup.close()
         }
     }
 
     function handleBreadcrumbPopupKeyDown(event: KeyboardEvent) {
-        if (event.key === 'Escape' && breadcrumbPopupOpen) {
-            closeBreadcrumbPopup()
+        if (event.key === 'Escape' && breadcrumbPopup.isOpen) {
+            breadcrumbPopup.close()
         }
     }
 
-    // Close submenu on click outside dropdown
+    // Close submenu when the dropdown closes (covers click-outside too)
     $effect(() => {
-        if (!isOpen) {
-            closeSubmenu()
-        }
+        if (!isOpen) submenu.close()
     })
-
-    // Helper: check if a volume should show the checkmark
-    // For favorites, never show checkmark
-    // For actual volumes, show if it's the containing volume for the current path
-    function shouldShowCheckmark(volume: VolumeInfo): boolean {
-        if (volume.category === 'favorite') {
-            return false
-        }
-        return volume.id === containingVolumeId
-    }
 
 </script>
 
@@ -510,19 +410,19 @@
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <span
             class="breadcrumb-options-trigger"
-            class:is-open={breadcrumbPopupOpen}
+            class:is-open={breadcrumbPopup.isOpen}
             bind:this={breadcrumbPopupRef}
-            use:tooltip={breadcrumbPopupOpen ? '' : 'Volume options'}
+            use:tooltip={breadcrumbPopup.isOpen ? '' : 'Volume options'}
             onclick={(e: MouseEvent) => {
                 e.stopPropagation()
                 isOpen = false
-                toggleBreadcrumbPopup()
+                breadcrumbPopup.toggle()
             }}
         >
             <span class="smb-indicator smb-indicator-os_mount"></span>
             <span class="chevron"></span>
         </span>
-        {#if breadcrumbPopupOpen}
+        {#if breadcrumbPopup.isOpen}
             <div class="breadcrumb-popup">
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -541,7 +441,7 @@
 
     {#if isOpen && (groupedVolumes.length > 0 || volumesTimedOut)}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="volume-dropdown" class:keyboard-mode={isKeyboardMode} onmousemove={handleDropdownMouseMove}>
+        <div class="volume-dropdown" class:keyboard-mode={keyboardMode.isKeyboardMode} onmousemove={handleDropdownMouseMove}>
             {#each groupedVolumes as group, groupIndex (group.category)}
                 {#if group.label && groupIndex > 0}
                     <div class="category-separator"></div>
@@ -555,8 +455,8 @@
                     <!-- svelte-ignore a11y_mouse_events_have_key_events -->
                     <div
                         class="volume-item"
-                        class:is-under-cursor={shouldShowCheckmark(volume)}
-                        class:is-focused-and-under-cursor={allVolumes.indexOf(volume) === highlightedIndex && !submenuVolumeId}
+                        class:is-under-cursor={shouldShowCheckmark(volume, containingVolumeId)}
+                        class:is-focused-and-under-cursor={allVolumes.indexOf(volume) === highlightedIndex && !submenu.volumeId}
                         class:is-restricted={isRestricted(volume.path)}
                         data-index={allVolumes.indexOf(volume)}
                         use:tooltip={isRestricted(volume.path) ? RESTRICTED_FOLDER_TOOLTIP : ''}
@@ -566,13 +466,13 @@
                         onmouseover={(e: MouseEvent) => {
                             handleVolumeHover(volume)
                             if (volume.smbConnectionState === 'os_mount') {
-                                openSubmenu(volume.id, e.currentTarget as HTMLElement)
-                            } else if (submenuVolumeId) {
-                                closeSubmenu()
+                                submenu.open(volume.id, e.currentTarget as HTMLElement)
+                            } else if (submenu.volumeId) {
+                                submenu.close()
                             }
                         }}
                     >
-                        {#if shouldShowCheckmark(volume)}
+                        {#if shouldShowCheckmark(volume, containingVolumeId)}
                             <span class="checkmark">✓</span>
                         {:else}
                             <span class="checkmark-placeholder"></span>
@@ -690,26 +590,25 @@
                 </div>
             {/if}
         </div>
-        {#if submenuVolumeId && submenuPosition}
+        {#if submenu.volumeId && submenu.position}
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <div
                 class="connection-submenu"
                 bind:this={submenuRef}
-                style:position="fixed"
-                style:top="{submenuPosition.top}px"
-                style:left="{submenuPosition.left}px"
+                style:top="{submenu.position.top}px"
+                style:left="{submenu.position.left}px"
                 onmouseleave={() => {
-                    submenuHighlighted = false
-                    closeSubmenu()
+                    submenu.setHighlighted(false)
+                    submenu.close()
                 }}
             >
                 <!-- svelte-ignore a11y_mouse_events_have_key_events -->
                 <div
                     class="connection-submenu-item"
-                    class:is-highlighted={submenuHighlighted}
+                    class:is-highlighted={submenu.highlighted}
                     onmouseover={() => {
-                        submenuHighlighted = true
+                        submenu.setHighlighted(true)
                     }}
                     onclick={(e: MouseEvent) => {
                         e.stopPropagation()
@@ -1101,6 +1000,7 @@
     }
 
     .connection-submenu {
+        position: fixed;
         min-width: 220px;
         background-color: var(--color-bg-secondary);
         border: 1px solid var(--color-border-strong);

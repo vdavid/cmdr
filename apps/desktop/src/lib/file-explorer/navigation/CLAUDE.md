@@ -4,20 +4,21 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 
 ## Key files
 
-| File                             | Purpose                                                                                                                                                            |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `navigation-history.ts`          | Purely functional immutable history stack                                                                                                                          |
-| `path-navigation.ts`             | Picks initial path when switching volumes                                                                                                                          |
-| `path-resolution.ts`             | Walk-up `resolveValidPath` (split out to break cycle)                                                                                                              |
-| `path-segments.ts`               | Splits the breadcrumb display path into segments and flags any inside a `.git/...` portal (consumer: `FilePane.svelte` paints them with `--color-git-portal-text`) |
-| `keyboard-shortcuts.ts`          | Home/End/PageUp/PageDown handling for file lists                                                                                                                   |
-| `VolumeBreadcrumb.svelte`        | Clickable volume label + grouped dropdown                                                                                                                          |
-| `volume-grouping.ts`             | Pure logic: group volumes by category, get volume icons                                                                                                            |
-| `volume-space-manager.svelte.ts` | Reactive state machine for disk space fetch/retry/timeout                                                                                                          |
-| `navigation-history.test.ts`     | Full unit test coverage of history functions                                                                                                                       |
-| `path-navigation.test.ts`        | Unit tests for path resolution and timeouts                                                                                                                        |
-| `keyboard-shortcuts.test.ts`     | Unit tests for shortcut calculations                                                                                                                               |
-| `path-segments.test.ts`          | Unit tests for git-portal segment detection                                                                                                                        |
+| File                                   | Purpose                                                                                                                                                            |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `navigation-history.ts`                | Purely functional immutable history stack                                                                                                                          |
+| `path-navigation.ts`                   | Picks initial path when switching volumes                                                                                                                          |
+| `path-resolution.ts`                   | Walk-up `resolveValidPath` (split out to break cycle)                                                                                                              |
+| `path-segments.ts`                     | Splits the breadcrumb display path into segments and flags any inside a `.git/...` portal (consumer: `FilePane.svelte` paints them with `--color-git-portal-text`) |
+| `keyboard-shortcuts.ts`                | Home/End/PageUp/PageDown handling for file lists                                                                                                                   |
+| `VolumeBreadcrumb.svelte`              | Clickable volume label + grouped dropdown                                                                                                                          |
+| `volume-grouping.ts`                   | Pure logic: group volumes by category, get volume icons                                                                                                            |
+| `volume-space-manager.svelte.ts`       | Reactive state machine for disk space fetch/retry/timeout                                                                                                          |
+| `volume-breadcrumb-handlers.svelte.ts` | Submenu/breadcrumb-popup controllers, keyboard-mode tracker, and pure key-dispatch helpers for `VolumeBreadcrumb.svelte`                                           |
+| `navigation-history.test.ts`           | Full unit test coverage of history functions                                                                                                                       |
+| `path-navigation.test.ts`              | Unit tests for path resolution and timeouts                                                                                                                        |
+| `keyboard-shortcuts.test.ts`           | Unit tests for shortcut calculations                                                                                                                               |
+| `path-segments.test.ts`                | Unit tests for git-portal segment detection                                                                                                                        |
 
 ## `navigation-history.ts`
 

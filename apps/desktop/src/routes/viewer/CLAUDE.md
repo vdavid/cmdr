@@ -4,12 +4,15 @@ The file viewer opens files in a separate Tauri window with virtual scrolling an
 
 ## Files
 
-| File                            | Contents                                                                           |
-| ------------------------------- | ---------------------------------------------------------------------------------- |
-| `+page.svelte`                  | Top-level component: lifecycle, key handling, indexing poll, window management, UI |
-| `viewer-scroll.svelte.ts`       | Virtual scroll composable: line cache, fetch debounce, scroll compression, effects |
-| `viewer-search.svelte.ts`       | Search composable: start/poll/cancel/navigate, match highlighting, debounce        |
-| `viewer-line-heights.svelte.ts` | Height map for accurate word-wrap scrolling via pretext (FullLoad files only)      |
+| File                            | Contents                                                                            |
+| ------------------------------- | ----------------------------------------------------------------------------------- |
+| `+page.svelte`                  | Top-level component: lifecycle, window management, UI                               |
+| `viewer-scroll.svelte.ts`       | Virtual scroll composable: line cache, fetch debounce, scroll compression, effects  |
+| `viewer-search.svelte.ts`       | Search composable: start/poll/cancel/navigate, match highlighting, debounce         |
+| `viewer-line-heights.svelte.ts` | Height map for accurate word-wrap scrolling via pretext (FullLoad files only)       |
+| `viewer-text-width.svelte.ts`   | `ResizeObserver`-driven tracker for the rendered `.line-text` width                 |
+| `viewer-indexing-poll.ts`       | Periodic `viewer_get_status` poll while the backend builds a line index             |
+| `viewer-keyboard.ts`            | Pure helpers `handleNavigationKey` / `handleToggleKey` mapping keys to scroll calls |
 
 ## Architecture
 
