@@ -8766,6 +8766,7 @@ dependencies = [
 [[package]]
 name = "tauri-plugin-playwright"
 version = "0.3.0"
+source = "git+https://github.com/vdavid/tauri-playwright.git?branch=multi-window#6071e31d0fa610ec811ea6d0b43f4deb4b1b7902"
 dependencies = [
  "log",
  "serde",

@@ -477,9 +477,7 @@ export async function closeScopedWindow(mainPage: TauriPage, scoped: TauriPage, 
   void scoped
   const labelJson = JSON.stringify(label)
   try {
-    await mainPage.evaluate(
-      `window.__TAURI_INTERNALS__.invoke('plugin:window|close', { label: ${labelJson} })`,
-    )
+    await mainPage.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|close', { label: ${labelJson} })`)
   } catch {
     // The window may already be gone; fall through to the poll.
   }

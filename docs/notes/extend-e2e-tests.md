@@ -710,10 +710,14 @@ await closeScopedWindow(tauriPage, viewer, viewer.targetWindow!)
 For settings: `openSettingsWindowViaProd(tauriPage)` (label `settings`).
 
 **Dependency override**: while the upstream `@srsholmes/tauri-playwright` 0.3.0 + matching plugin crate aren't
-published, the repo points at a local fork:
+published, the repo points at the `vdavid/tauri-playwright` fork on the `multi-window` branch:
 
-- Rust: `apps/desktop/src-tauri/Cargo.toml` → `path = ".../tauri-playwright/packages/plugin"`
-- npm: `apps/desktop/package.json` → `file:.../packages/test/srsholmes-tauri-playwright-0.3.0.tgz`
+- Rust: `apps/desktop/src-tauri/Cargo.toml` → git ref against the fork's `multi-window` branch. Cargo's git source
+  resolves the workspace member (`packages/plugin/`) automatically; the resolved commit hash is pinned in `Cargo.lock`.
+- npm: `apps/desktop/package.json` → `file:.../packages/test/srsholmes-tauri-playwright-0.3.0.tgz`. We can't use a
+  GitHub ref here because the fork's `packages/test/package.json` has no `prepare` script, so pnpm doesn't run the
+  `tsup` build after fetching from git — leaving `dist/` missing and the package broken at import time. The tarball is
+  pre-built and lives in the fork's tree. TODO: drop this once `@srsholmes/tauri-playwright@0.3.0` ships to npm.
 
 Revert both to crates.io / npm registry refs (with the appropriate `0.3.x` version) once the fork is merged upstream and
 published.
