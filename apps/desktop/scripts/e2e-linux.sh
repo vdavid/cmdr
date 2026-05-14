@@ -258,19 +258,64 @@ DOCKER_TAURI_BINARY="/target/$LINUX_TARGET/release/Cmdr"
 
 SMB_SERVERS_DIR="$DESKTOP_DIR/test/smb-servers"
 SMB_NETWORK="smb-consumer_default"
+SMB_E2E_SERVICES=(smb-consumer-guest smb-consumer-auth smb-consumer-50shares smb-consumer-unicode)
+
+# probe_smb_ports returns 0 if every required service's published port 445
+# accepts TCP within $1 seconds, otherwise 1. NEVER replace this with a
+# blanket `sleep N` — see apps/desktop/test/CLAUDE.md "Testing principles".
+probe_smb_ports() {
+    local timeout="${1:-10}"
+    local deadline=$((SECONDS + timeout))
+    for service in "${SMB_E2E_SERVICES[@]}"; do
+        local host_port
+        host_port=$(docker compose -p smb-consumer port "$service" 445 2>/dev/null | awk -F: '{print $NF}')
+        if [ -z "$host_port" ]; then
+            return 1
+        fi
+        while ! (exec 3<>"/dev/tcp/127.0.0.1/$host_port") 2>/dev/null; do
+            if [ $SECONDS -ge $deadline ]; then
+                log_warn "  ! $service did not accept TCP on :$host_port within ${timeout}s"
+                return 1
+            fi
+            sleep 0.1
+        done
+        exec 3<&-
+        exec 3>&-
+    done
+    return 0
+}
 
 start_smb_containers() {
     # Check that ALL four required containers are running. A prior `minimal` or
     # `core` invocation leaves guest+auth up but not 50shares/unicode, so a
     # guest-only check falsely reports "already running" and tests that need
     # the other two fail with "Cannot reach smb-consumer-50shares".
+    #
+    # ALSO: "running" per `docker compose ps` only means the container is
+    # alive — smbd inside may be hung, OOM-killed, or still loading. We always
+    # follow the running-check with an active TCP probe; if it fails, we
+    # restart the SMB stack rather than letting the E2E run hit "Cannot reach"
+    # errors mid-test. See the case study in
+    # apps/desktop/test/CLAUDE.md "Testing principles".
     local running
     running=$(docker compose -p smb-consumer ps --services --filter status=running 2>/dev/null || true)
-    if echo "$running" | grep -q '^smb-consumer-guest$' \
-        && echo "$running" | grep -q '^smb-consumer-auth$' \
-        && echo "$running" | grep -q '^smb-consumer-50shares$' \
-        && echo "$running" | grep -q '^smb-consumer-unicode$'; then
-        log_info "SMB containers already running"
+    local all_running=true
+    for service in "${SMB_E2E_SERVICES[@]}"; do
+        if ! echo "$running" | grep -q "^${service}$"; then
+            all_running=false
+            break
+        fi
+    done
+
+    if $all_running; then
+        log_info "SMB containers already running — verifying smbd reachability..."
+        if probe_smb_ports 10; then
+            log_info "SMB containers healthy"
+        else
+            log_warn "SMB containers running but not serving — restarting"
+            docker compose -p smb-consumer down > /dev/null 2>&1 || true
+            "$SMB_SERVERS_DIR/start.sh" e2e
+        fi
     else
         log_info "Starting SMB containers (e2e)..."
         "$SMB_SERVERS_DIR/start.sh" e2e
@@ -283,6 +328,21 @@ start_smb_containers() {
     done
     if ! docker network inspect "$SMB_NETWORK" > /dev/null 2>&1; then
         log_error "SMB network '$SMB_NETWORK' not found after starting containers"
+        exit 1
+    fi
+
+    # Final confirmation banner. Surfaces in the failing-test output (per the
+    # checker's filter) so an agent reading a failed run knows whether SMB
+    # came up healthy or not, without spelunking container state.
+    if probe_smb_ports 30; then
+        log_info "SMB e2e stack ready: all 4 containers accepting TCP on :445"
+    else
+        log_error "SMB e2e stack NOT ready after restart — aborting before tests"
+        docker compose -p smb-consumer ps
+        for service in "${SMB_E2E_SERVICES[@]}"; do
+            log_warn "--- last 30 lines of $service log ---"
+            docker compose -p smb-consumer logs --tail=30 "$service" || true
+        done
         exit 1
     fi
 }

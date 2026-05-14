@@ -67,6 +67,16 @@ that the app expects (`/run/user/<uid>/gvfs/smb-share:server=<host>,share=<share
 The E2E container runs with `--privileged` because Docker's default seccomp profile blocks the `mount` syscall even with
 `CAP_SYS_ADMIN`, and GVFS-FUSE needs `/dev/fuse`.
 
+**SMB container readiness is always actively probed.** `e2e-linux.sh:start_smb_containers` runs `probe_smb_ports`
+(per-service TCP probe on port 445) on **both** paths — fresh start AND "already running". Docker reporting a container
+as `running` only means the container is alive; smbd inside can be hung, OOM-killed, or still initialising. A previous
+version of this script trusted the running-check and skipped the probe, which produced `Cannot reach smb-consumer-X`
+test failures whenever a stale stack from a prior run was unhealthy. If the probe fails on the already-running path, the
+SMB stack is torn down and restarted before tests run. The final probe (30 s deadline) emits an
+`SMB e2e stack ready: all 4 containers accepting TCP on :445` banner — visible at the top of the failing-test output if
+a later test still fails, so a reader can tell at a glance whether SMB was the upstream problem. See
+`apps/desktop/test/CLAUDE.md` "Testing principles" for the no-magic-sleep rule this enforces.
+
 ## Gotchas
 
 **Gotcha**: Root volume is named "Root" on Linux, "Macintosh HD" on macOS. **Why**: Tests that emit `mcp-volume-select`
