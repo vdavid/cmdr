@@ -478,6 +478,7 @@ fn collect_e2e_types(types: &mut Types) -> Vec<Function> {
     collect_functions![
         crate::commands::file_system::inject_listing_error,
         crate::commands::e2e::set_test_throttle,
+        crate::commands::e2e::flush_file_watcher,
     ](types)
 }
 #[cfg(not(feature = "playwright-e2e"))]
@@ -921,6 +922,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::e2e::get_e2e_start_path,
         #[cfg(feature = "playwright-e2e")]
         crate::commands::e2e::set_test_throttle,
+        #[cfg(feature = "playwright-e2e")]
+        crate::commands::e2e::flush_file_watcher,
         #[cfg(feature = "playwright-e2e")]
         crate::commands::file_system::inject_listing_error,
         #[cfg(debug_assertions)]

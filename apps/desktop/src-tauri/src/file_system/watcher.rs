@@ -479,6 +479,30 @@ pub async fn handle_directory_change(listing_id: &str) {
     }
 }
 
+/// Flushes pending watcher events by re-reading every active watch.
+///
+/// `notify-debouncer-full` doesn't expose a synchronous flush, and the
+/// debouncer's window (plus FSEvents coalescing on macOS) adds 1–10 s of
+/// latency per FS mutation under E2E. This helper sidesteps the debouncer:
+/// it grabs every active listing_id, then `handle_directory_change` re-reads
+/// each one via the Volume trait, computes the diff, updates LISTING_CACHE,
+/// and emits a `directory-diff` event.
+///
+/// Feature-gated to `playwright-e2e` so production builds can't accidentally
+/// bypass the debouncer (which exists to prevent thrash on bursts of events;
+/// tests don't need that — they need determinism).
+#[cfg(feature = "playwright-e2e")]
+pub async fn flush_all_watchers() {
+    let listing_ids: Vec<String> = match WATCHER_MANAGER.read() {
+        Ok(m) => m.watches.keys().cloned().collect(),
+        Err(_) => return,
+    };
+    log::debug!("flush_all_watchers: flushing {} watches", listing_ids.len());
+    for id in listing_ids {
+        handle_directory_change(&id).await;
+    }
+}
+
 /// Computes the diff between old and new directory listings.
 ///
 /// Used by both local file watcher and MTP file watcher to generate
