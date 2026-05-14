@@ -144,24 +144,32 @@ pub(super) fn enrich_via_parent_id_on(
     conn: &Connection,
     parent_path: &str,
 ) -> Result<(), String> {
+    let t0 = std::time::Instant::now();
+
     // Resolve parent directory path → entry ID (one tree walk, almost always cached)
     let parent_id = match store::resolve_path(conn, parent_path).map_err(|e| format!("{e}"))? {
         Some(id) => id,
         None => return Err(format!("Parent path not found in index: {parent_path}")),
     };
+    let resolve_parent_ms = t0.elapsed().as_millis();
 
     // Get all child directory (id, name) pairs
+    let t1 = std::time::Instant::now();
     let child_dirs = IndexStore::list_child_dir_ids_and_names(conn, parent_id).map_err(|e| format!("{e}"))?;
+    let list_children_ms = t1.elapsed().as_millis();
 
     if child_dirs.is_empty() {
         return Ok(());
     }
 
     // Batch-fetch dir_stats by integer IDs
+    let t2 = std::time::Instant::now();
     let child_ids: Vec<i64> = child_dirs.iter().map(|(id, _)| *id).collect();
     let stats_batch = IndexStore::get_dir_stats_batch_by_ids(conn, &child_ids).map_err(|e| format!("{e}"))?;
+    let batch_stats_ms = t2.elapsed().as_millis();
 
     // Build name → DirStatsById map (using normalized names for matching)
+    let t3 = std::time::Instant::now();
     let mut name_to_stats: std::collections::HashMap<String, DirStatsById> =
         std::collections::HashMap::with_capacity(child_dirs.len());
     for ((_, name), stats_opt) in child_dirs.into_iter().zip(stats_batch) {
@@ -184,6 +192,23 @@ pub(super) fn enrich_via_parent_id_on(
             entry.recursive_dir_count = Some(stats.recursive_dir_count);
             entry.recursive_has_symlinks = Some(stats.recursive_has_symlinks);
         }
+    }
+    let match_ms = t3.elapsed().as_millis();
+    let total_ms = t0.elapsed().as_millis();
+
+    // Phase 1: only log when slow (>50ms) to keep noise low.
+    if total_ms > 50 {
+        log::debug!(
+            target: "stall_probe::enrich",
+            "enrich_slow parent={} entries={} resolve_parent_ms={} list_children_ms={} batch_stats_ms={} match_ms={} total_ms={}",
+            parent_path,
+            entries.len(),
+            resolve_parent_ms,
+            list_children_ms,
+            batch_stats_ms,
+            match_ms,
+            total_ms,
+        );
     }
     Ok(())
 }

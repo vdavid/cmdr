@@ -7,10 +7,10 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicI64, AtomicU64, AtomicUsize, Ordering};
 use std::sync::mpsc;
 use std::thread;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
@@ -163,6 +163,10 @@ pub struct IndexWriter {
     /// should keep using `WRITER_GENERATION`.
     #[cfg_attr(not(test), allow(dead_code, reason = "test-only observable"))]
     mutation_counter: Arc<AtomicU64>,
+    /// Phase 1 instrumentation: best-effort estimate of channel depth.
+    /// Incremented on each `send()`; the writer thread decrements it after each `recv()`.
+    /// Used by the heartbeat (writer thread) to log queue pressure.
+    queue_depth: Arc<AtomicUsize>,
 }
 
 impl IndexWriter {
@@ -174,6 +178,19 @@ impl IndexWriter {
     /// events during `ComputeAllAggregates`.
     pub fn spawn(db_path: &Path, app_handle: Option<AppHandle>) -> Result<Self, IndexStoreError> {
         let conn = IndexStore::open_write_connection(db_path)?;
+        // Phase 1 instrumentation: install a SQLite busy retry logger.
+        // Single-writer + WAL should never trigger this; if it does, that's a finding.
+        conn.busy_handler(Some(|attempt: i32| {
+            log::warn!(target: "stall_probe::sqlite_busy", "writer busy_handler attempt={attempt}");
+            // Same back-off behaviour as default busy timeout (sleep up to ~100ms).
+            if attempt > 50 {
+                false
+            } else {
+                thread::sleep(Duration::from_millis(5));
+                true
+            }
+        }))?;
+
         let initial_next_id = IndexStore::get_next_id(&conn)?;
         let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(WRITER_CHANNEL_CAPACITY);
         let expected_total_entries = Arc::new(AtomicU64::new(0));
@@ -182,6 +199,8 @@ impl IndexWriter {
         let next_id_clone = Arc::clone(&next_id);
         let mutation_counter = Arc::new(AtomicU64::new(0));
         let mutation_counter_clone = Arc::clone(&mutation_counter);
+        let queue_depth = Arc::new(AtomicUsize::new(0));
+        let queue_depth_clone = Arc::clone(&queue_depth);
 
         let handle = thread::Builder::new()
             .name("index-writer".into())
@@ -193,6 +212,7 @@ impl IndexWriter {
                     expected_total_clone,
                     next_id_clone,
                     mutation_counter_clone,
+                    queue_depth_clone,
                 )
             })
             .map_err(IndexStoreError::Io)?;
@@ -204,6 +224,7 @@ impl IndexWriter {
             expected_total_entries,
             next_id,
             mutation_counter,
+            queue_depth,
         })
     }
 
@@ -238,7 +259,12 @@ impl IndexWriter {
     /// (backpressure), which slows down event processing rather than
     /// consuming unlimited memory.
     pub fn send(&self, msg: WriteMessage) -> Result<(), IndexStoreError> {
-        self.sender.send(msg).map_err(|_| {
+        // Phase 1 instrumentation: track best-effort channel depth.
+        self.queue_depth.fetch_add(1, Ordering::Relaxed);
+        self.sender.send(msg).map_err(|e| {
+            // Send failed — undo the depth bump so the heartbeat doesn't drift.
+            self.queue_depth.fetch_sub(1, Ordering::Relaxed);
+            let _ = e;
             IndexStoreError::Io(std::io::Error::new(
                 std::io::ErrorKind::BrokenPipe,
                 "Writer thread has shut down",
@@ -454,6 +480,7 @@ impl AccumulatorMaps {
 /// handled in order, ensuring all writes are serialized. Maintains in-memory
 /// accumulator maps during InsertEntriesV2 to skip expensive SQL queries
 /// when ComputeAllAggregates arrives.
+#[allow(clippy::too_many_arguments, reason = "writer-loop ambient state")]
 fn writer_loop(
     conn: rusqlite::Connection,
     receiver: mpsc::Receiver<WriteMessage>,
@@ -461,18 +488,46 @@ fn writer_loop(
     expected_total_entries: Arc<AtomicU64>,
     next_id: Arc<AtomicI64>,
     mutation_counter: Arc<AtomicU64>,
+    queue_depth: Arc<AtomicUsize>,
 ) {
     log::debug!("Writer: thread started");
     let mut stats = WriterStats::new();
     let mut accumulator = AccumulatorMaps::new();
 
-    for msg in &receiver {
+    // Phase 1 instrumentation: time split between recv() (idle waiting),
+    // processing (handlers), and commit (txn commits, tracked via wrapper).
+    let mut probe = ProbeStats::new();
+    // Heartbeat cadence
+    const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
+
+    loop {
+        let recv_start = Instant::now();
+        // Use recv_timeout so we can emit heartbeats even when the channel
+        // is idle (the 163s smoking gun should make this visible).
+        let recv_result = receiver.recv_timeout(HEARTBEAT_INTERVAL);
+        let recv_elapsed = recv_start.elapsed();
+        probe.time_in_recv += recv_elapsed;
+
+        let msg = match recv_result {
+            Ok(m) => {
+                // Decrement queue depth — the message has left the channel.
+                queue_depth.fetch_sub(1, Ordering::Relaxed);
+                m
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                // No message in this window. Emit heartbeat and loop.
+                probe.maybe_emit_heartbeat(queue_depth.load(Ordering::Relaxed));
+                continue;
+            }
+            Err(mpsc::RecvTimeoutError::Disconnected) => break,
+        };
+
         if !matches!(msg, WriteMessage::IncrementalVacuum) {
             stats.record(&msg);
         }
+
+        let proc_start = Instant::now();
         // macOS: drain autoreleased ObjC objects each iteration.
-        // app.emit() serializes through WebKit's Cocoa bridge, creating NSData/NSInvocation
-        // objects that accumulate without a pool on this std::thread::spawn thread.
         #[cfg(target_os = "macos")]
         let should_exit = objc2::rc::autoreleasepool(|_| {
             process_message(
@@ -484,6 +539,7 @@ fn writer_loop(
                 &expected_total_entries,
                 &next_id,
                 &mutation_counter,
+                &mut probe,
             )
         });
         #[cfg(not(target_os = "macos"))]
@@ -496,18 +552,68 @@ fn writer_loop(
             &expected_total_entries,
             &next_id,
             &mutation_counter,
+            &mut probe,
         );
+        probe.time_in_processing += proc_start.elapsed();
+        probe.messages_processed += 1;
+
         if should_exit {
             log::debug!("Writer: shutdown after processing {} messages", stats.current.total);
             return;
         }
         stats.maybe_log_summary();
+        probe.maybe_emit_heartbeat(queue_depth.load(Ordering::Relaxed));
     }
 
     log::debug!(
         "Writer: channel closed, thread exiting after processing {} messages",
         stats.current.total,
     );
+}
+
+/// Phase 1 instrumentation: rolling diagnostics for the writer thread.
+struct ProbeStats {
+    last_heartbeat: Instant,
+    time_in_recv: Duration,
+    time_in_processing: Duration,
+    time_in_commit: Duration,
+    messages_processed: u64,
+    transaction_commits: u64,
+}
+
+impl ProbeStats {
+    fn new() -> Self {
+        Self {
+            last_heartbeat: Instant::now(),
+            time_in_recv: Duration::ZERO,
+            time_in_processing: Duration::ZERO,
+            time_in_commit: Duration::ZERO,
+            messages_processed: 0,
+            transaction_commits: 0,
+        }
+    }
+
+    fn maybe_emit_heartbeat(&mut self, queue_depth: usize) {
+        if self.last_heartbeat.elapsed() < Duration::from_secs(5) {
+            return;
+        }
+        log::info!(
+            target: "stall_probe::writer",
+            "heartbeat queue_depth={} messages_processed_since_last_heartbeat={} transaction_commits_since_last_heartbeat={} time_in_recv_ms={} time_in_processing_ms={} time_in_commit_ms={}",
+            queue_depth,
+            self.messages_processed,
+            self.transaction_commits,
+            self.time_in_recv.as_millis(),
+            self.time_in_processing.as_millis(),
+            self.time_in_commit.as_millis(),
+        );
+        self.last_heartbeat = Instant::now();
+        self.time_in_recv = Duration::ZERO;
+        self.time_in_processing = Duration::ZERO;
+        self.time_in_commit = Duration::ZERO;
+        self.messages_processed = 0;
+        self.transaction_commits = 0;
+    }
 }
 
 /// Process a single message. Returns `true` if the thread should exit.
@@ -521,6 +627,7 @@ fn process_message(
     expected_total_entries: &AtomicU64,
     next_id: &AtomicI64,
     mutation_counter: &AtomicU64,
+    probe: &mut ProbeStats,
 ) -> bool {
     match msg {
         // ── Integer-keyed variants ───────────────────────────────────
@@ -640,7 +747,17 @@ fn process_message(
             if let Err(e) = conn.execute_batch("COMMIT") {
                 log::warn!("Index writer: COMMIT failed: {e}");
             }
-            log::debug!("Writer: COMMIT transaction ({}ms)", t.elapsed().as_millis());
+            let elapsed = t.elapsed();
+            probe.time_in_commit += elapsed;
+            probe.transaction_commits += 1;
+            let elapsed_ms = elapsed.as_millis();
+            log::debug!("Writer: COMMIT transaction ({elapsed_ms}ms)");
+            if elapsed_ms > 50 {
+                log::info!(
+                    target: "stall_probe::writer",
+                    "commit_slow ms={elapsed_ms}",
+                );
+            }
         }
         WriteMessage::BackfillMissingDirStats => {
             handle_backfill_missing_dir_stats(conn);

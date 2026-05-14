@@ -401,12 +401,25 @@ pub(crate) async fn read_directory_with_progress(
     // Read directory entries via Volume abstraction.
     // Spawn the listing as a tokio task and use select! with a cancellation poll loop
     // to remain responsive even when filesystem I/O blocks (slow/stuck network drives).
+    let total_start = std::time::Instant::now();
     let read_start = std::time::Instant::now();
     let path_for_task = path.to_path_buf();
     let events_for_progress = Arc::clone(events);
     let listing_id_for_progress = listing_id.to_string();
 
     let mut listing_task = tokio::spawn(async move {
+        // Stall-probe: marker logged as the FIRST executable line inside the spawned task.
+        // If `read_directory_with_progress: entry` fires but this `task started` line doesn't,
+        // the tokio runtime didn't schedule this task (worker starvation). If both fire but
+        // `list_directory_core` doesn't follow, the Volume's list_directory itself is blocked.
+        // Info-level (matches the other `stall_probe::*` lifecycle markers); always lands in
+        // the prod file chain for organic-repro triage.
+        log::info!(
+            target: "stall_probe::listing_task",
+            "task started: listing_id={}, path={}",
+            listing_id_for_progress,
+            path_for_task.display(),
+        );
         let on_progress = |loaded_count: usize| {
             events_for_progress.emit_progress(&listing_id_for_progress, loaded_count);
         };
@@ -446,12 +459,16 @@ pub(crate) async fn read_directory_with_progress(
 
     // Enrich directory entries with index data (recursive_size etc.) before sorting,
     // so that sort-by-size works correctly for directories.
+    let enrich_start = std::time::Instant::now();
     crate::indexing::enrich_entries_with_index(&mut entries);
+    let enrich_ms = enrich_start.elapsed().as_millis();
     crate::indexing::trigger_verification(&path.to_string_lossy());
 
     // Sort entries
     benchmark::log_event("sort START");
+    let sort_start = std::time::Instant::now();
     sort_entries(&mut entries, sort_by, sort_order, dir_sort_mode);
+    let sort_ms = sort_start.elapsed().as_millis();
     benchmark::log_event("sort END");
 
     // Calculate counts based on include_hidden setting
@@ -466,6 +483,8 @@ pub(crate) async fn read_directory_with_progress(
     // without this, a cancel arriving between a check and insert would leave a stale
     // entry (listDirectoryEnd would try to remove before the entry exists, then this
     // insert would add it permanently).
+    let cache_write_start = std::time::Instant::now();
+    let entries_count_for_log = entries.len();
     if let Ok(mut cache) = LISTING_CACHE.write() {
         // Check cancellation while holding the lock - makes check+insert atomic
         if state.cancelled.load(Ordering::Relaxed) {
@@ -488,12 +507,14 @@ pub(crate) async fn read_directory_with_progress(
             },
         );
     }
+    let cache_write_ms = cache_write_start.elapsed().as_millis();
 
     // Get the volume from VolumeManager to check if it supports watching.
     // Virtual git portal paths (`.git/branches/...` and friends) don't
     // exist on disk, so `notify` would error with "No path was found".
     // Cache invalidation for those listings flows through
     // `git::watcher::invalidate_virtual_listings` instead.
+    let watcher_start_t = std::time::Instant::now();
     if !crate::file_system::git::is_virtual(path)
         && let Some(volume) = crate::file_system::get_volume_manager().get(volume_id)
         && volume.supports_watching()
@@ -502,6 +523,7 @@ pub(crate) async fn read_directory_with_progress(
         log::warn!("Failed to start watcher: {}", e);
         // Continue anyway - watcher is optional enhancement
     }
+    let watcher_start_ms = watcher_start_t.elapsed().as_millis();
 
     // Get volume root for the event (used by frontend to determine if at volume root)
     let volume = crate::file_system::get_volume_manager().get(volume_id);
@@ -525,7 +547,27 @@ pub(crate) async fn read_directory_with_progress(
     }
 
     // Emit completion event
+    let emit_t = std::time::Instant::now();
     events.emit_complete(listing_id, total_count, volume_root);
+    let to_complete_emit_ms = emit_t.elapsed().as_millis();
+    let total_ms = total_start.elapsed().as_millis();
+
+    // Consolidated INFO log for the listing pipeline (Phase 1 instrumentation).
+    // Grepable single-line structured record. See stall_probe::listing target.
+    log::info!(
+        target: "stall_probe::listing",
+        "listing_done listing_id={} path={} entries={} read_dir_ms={} sort_ms={} cache_write_ms={} enrich_ms={} watcher_start_ms={} to_complete_emit_ms={} total_ms={}",
+        listing_id,
+        path.display(),
+        entries_count_for_log,
+        read_dir_time.as_millis(),
+        sort_ms,
+        cache_write_ms,
+        enrich_ms,
+        watcher_start_ms,
+        to_complete_emit_ms,
+        total_ms,
+    );
 
     benchmark::log_event_value(
         "read_directory_with_progress COMPLETE, read_dir_time_ms",

@@ -6,6 +6,7 @@
 //! races against shutdown must be exercised.
 
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 use crate::indexing::enrichment::{self, ReadPool};
 use crate::indexing::reconciler::{self, EventReconciler};
@@ -615,4 +616,379 @@ fn live_event_storm_with_concurrent_reads() {
     );
 
     writer.send(WriteMessage::Shutdown).unwrap();
+}
+
+// ── Phase 2 repro test: listing SLA under reconciler load ──────────────
+//
+// Goal: reproduce the rapid-Cmd-[/]-navigation stall described in
+// `.claude/worktrees/listing-stall-investigation/` task notes:
+//
+//   - Backend writer thread idle/blocked for 163s
+//   - Reconciler loop silent for 228s
+//   - /tmp re-listing's enrichment phase took 2m3s for dirs that took 10ms the first time
+//
+// Iteration log (synth load → observed listing latency):
+//   1. Single reconciler thread, 500 evt/s pacing, 50 subdirs × 20 files
+//      → ~14K events fired, listings finished in 0–1ms each. Insufficient pressure.
+//   2. 4 reconciler threads at full speed (no pacing), checkpoint-truncate thread @2 Hz,
+//      `BackfillMissingDirStats` / `ComputeAllAggregates` injected periodically,
+//      same tree size → ~142K events fired, listings still 0–3ms each.
+//
+// Negative finding: under this load shape, the WAL/read-pool/single-writer architecture
+// really does decouple read-side enrichment from write-side reconciler work. The 2-minute
+// production stall must therefore involve something *outside* the SQLite layer — most
+// likely tokio-runtime starvation around `tokio::task::block_in_place` inside
+// `process_live_batch`, Tauri event-emit serialization, or `app.emit()` traversing the
+// WebKit Cocoa bridge under load. None of those are reachable from a unit test.
+//
+// The SLA threshold below is intentionally tight enough that any *real* contention surfaces
+// in CI. It's the failing-assertion contract; if it fires, the Phase 1 logs name the phase.
+
+#[test]
+#[ignore = "Stall repro: slow, runs explicitly via `cargo nextest run -- --ignored` or by name"]
+fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
+    use crate::file_system::listing::FileEntry;
+    use std::sync::atomic::AtomicUsize;
+    use std::time::{Duration, Instant};
+
+    // Surface the `stall_probe::*` log lines on stderr. Idempotent across test runs.
+    let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+        .is_test(false)
+        .try_init();
+
+    // ── Setup: writer + ReadPool ──────────────────────────────────────
+    let (writer, _read_conn, _db_dir) = setup_writer();
+    let db_path = writer.db_path();
+    writer.send(WriteMessage::TruncateData).unwrap();
+    writer.flush_blocking().unwrap();
+
+    // ── Setup: synthetic on-disk tree (~1000 entries) ─────────────────
+    // Use CWD to avoid `/tmp/` exclusion on Linux and macOS `/tmp → /private/tmp`
+    // path-normalization mismatch.
+    let cwd = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+    // Use `cmdr-test-*` prefix so the `.gitignore` rule excludes it and so the
+    // test temp dirs are bucketed with the other tempdirs the test suite creates.
+    let disk = tempfile::Builder::new()
+        .prefix("cmdr-test-stall-repro-")
+        .tempdir_in(&cwd)
+        .expect("create temp dir in cwd");
+    let root = disk.path().to_path_buf();
+    // ~50 subdirs at top level, each with ~20 files. Plus the root holds ~50 dirs +
+    // some files. After enumeration, the root listing has ~50 dirs + a few files.
+    const NUM_SUBDIRS: usize = 50;
+    const FILES_PER_SUBDIR: usize = 20;
+    for i in 0..NUM_SUBDIRS {
+        let sub = root.join(format!("subdir_{i:03}"));
+        std::fs::create_dir(&sub).unwrap();
+        for j in 0..FILES_PER_SUBDIR {
+            std::fs::write(sub.join(format!("file_{j:02}.dat")), b"x").unwrap();
+        }
+    }
+    // A few files directly at the root for variety
+    for j in 0..10 {
+        std::fs::write(root.join(format!("root_file_{j}.dat")), b"y").unwrap();
+    }
+
+    // Mirror these into the DB. To make `process_fs_event` find parents during the
+    // storm, we model the full path components from `/` down to the synthetic tree.
+    // E.g. `/Users/veszelovszki/.../cmdr-stall-repro-XXX/subdir_000` is indexed as
+    // a chain: `/` → `Users` → ... → `cmdr-stall-repro-XXX` → `subdir_000`.
+    let mut next_id: i64 = 2;
+    let mut entries: Vec<EntryRow> = Vec::new();
+    // Walk from `/` down to the temp dir, creating directory entries for each.
+    let canonical_root = match std::fs::canonicalize(&root) {
+        Ok(p) => p,
+        Err(_) => root.clone(),
+    };
+    let mut parent_id = ROOT_ID;
+    let mut components: Vec<String> = Vec::new();
+    for c in canonical_root.components().skip(1) {
+        // skip the root `/`
+        components.push(c.as_os_str().to_string_lossy().to_string());
+    }
+    for c in &components {
+        let id = next_id;
+        next_id += 1;
+        entries.push(EntryRow {
+            id,
+            parent_id,
+            name: c.clone(),
+            is_directory: true,
+            is_symlink: false,
+            logical_size: None,
+            physical_size: None,
+            modified_at: None,
+            inode: None,
+        });
+        parent_id = id;
+    }
+    let temp_root_id = parent_id;
+    // Now the subdirs + files
+    let mut subdir_paths: Vec<std::path::PathBuf> = Vec::new();
+    let mut subdir_ids: Vec<i64> = Vec::new();
+    for i in 0..NUM_SUBDIRS {
+        let dir_name = format!("subdir_{i:03}");
+        let dir_id = next_id;
+        next_id += 1;
+        entries.push(EntryRow {
+            id: dir_id,
+            parent_id: temp_root_id,
+            name: dir_name.clone(),
+            is_directory: true,
+            is_symlink: false,
+            logical_size: None,
+            physical_size: None,
+            modified_at: None,
+            inode: None,
+        });
+        subdir_paths.push(canonical_root.join(&dir_name));
+        subdir_ids.push(dir_id);
+        for j in 0..FILES_PER_SUBDIR {
+            let id = next_id;
+            next_id += 1;
+            entries.push(EntryRow {
+                id,
+                parent_id: dir_id,
+                name: format!("file_{j:02}.dat"),
+                is_directory: false,
+                is_symlink: false,
+                logical_size: Some(1),
+                physical_size: Some(1),
+                modified_at: Some(1_700_000_000),
+                inode: Some(id as u64),
+            });
+        }
+    }
+    for j in 0..10 {
+        let id = next_id;
+        next_id += 1;
+        entries.push(EntryRow {
+            id,
+            parent_id: temp_root_id,
+            name: format!("root_file_{j}.dat"),
+            is_directory: false,
+            is_symlink: false,
+            logical_size: Some(1),
+            physical_size: Some(1),
+            modified_at: Some(1_700_000_000),
+            inode: Some(id as u64),
+        });
+    }
+    for chunk in entries.chunks(50) {
+        writer.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
+    }
+    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer.flush_blocking().unwrap();
+
+    // Build a ReadPool — listings enrich through this.
+    let pool = Arc::new(ReadPool::new(db_path.clone()).expect("create read pool"));
+
+    // ── Background reconciler storm ───────────────────────────────────
+    // Multiple reconciler threads firing synthetic FSEvents at full speed plus
+    // occasional `ComputeAllAggregates` / `BackfillMissingDirStats` injection
+    // and `wal_checkpoint(TRUNCATE)` to force checkpoint pauses.
+    let stop_storm = Arc::new(AtomicBool::new(false));
+    let events_fired = Arc::new(AtomicU64::new(0));
+    const STORM_THREADS: usize = 4;
+    let storm_handles: Vec<_> = (0..STORM_THREADS)
+        .map(|thread_idx| {
+            let writer = writer.clone();
+            let stop = Arc::clone(&stop_storm);
+            let events_fired = Arc::clone(&events_fired);
+            let db_path = db_path.clone();
+            let root_str = canonical_root.to_string_lossy().to_string();
+            std::thread::spawn(move || {
+                let conn = match IndexStore::open_read_connection(&db_path) {
+                    Ok(c) => c,
+                    Err(_) => return,
+                };
+                let storm_start = Instant::now();
+                let mut event_id: u64 = 1000 + (thread_idx as u64) * 1_000_000;
+                let mut counter = 0usize;
+                while !stop.load(Ordering::Relaxed) && storm_start.elapsed() < Duration::from_secs(10) {
+                    let i = (counter + thread_idx) % NUM_SUBDIRS;
+                    let j = counter % FILES_PER_SUBDIR;
+                    let path = match counter % 5 {
+                        0 => format!("{root_str}/subdir_{i:03}/file_{j:02}.dat"),
+                        1 => format!("{root_str}/subdir_{i:03}/new_synth_t{thread_idx}_{counter}.tmp"),
+                        2 => format!("{root_str}/nonexistent_t{thread_idx}_{counter}.tmp"),
+                        3 => format!("{root_str}/subdir_{i:03}"),
+                        _ => format!("{root_str}/subdir_{i:03}/file_{j:02}.dat"),
+                    };
+                    let flags = match counter % 3 {
+                        0 => FsEventFlags {
+                            item_created: true,
+                            item_is_file: true,
+                            ..Default::default()
+                        },
+                        1 => FsEventFlags {
+                            item_modified: true,
+                            item_is_file: true,
+                            ..Default::default()
+                        },
+                        _ => FsEventFlags {
+                            item_removed: true,
+                            item_is_file: true,
+                            ..Default::default()
+                        },
+                    };
+                    let event = FsChangeEvent { path, event_id, flags };
+                    event_id += 1;
+                    let _ = reconciler::process_fs_event(&event, &conn, &writer);
+                    events_fired.fetch_add(1, Ordering::Relaxed);
+                    counter += 1;
+                    // No sleep — apply full pressure. The 20K-bounded writer channel
+                    // is the limit. Periodically fire heavier writer commands.
+                    if thread_idx == 0 && counter.is_multiple_of(500) {
+                        let _ = writer.send(WriteMessage::BackfillMissingDirStats);
+                    }
+                    if thread_idx == 1 && counter.is_multiple_of(800) {
+                        let _ = writer.send(WriteMessage::ComputeAllAggregates);
+                    }
+                }
+            })
+        })
+        .collect();
+
+    // Force WAL checkpoints in a separate thread to model the "checkpoint stall" hypothesis.
+    let stop_checkpoint = Arc::clone(&stop_storm);
+    let checkpoint_handle = {
+        let db_path = db_path.clone();
+        std::thread::spawn(move || {
+            let conn = match IndexStore::open_read_connection(&db_path) {
+                Ok(c) => c,
+                Err(_) => return,
+            };
+            while !stop_checkpoint.load(Ordering::Relaxed) {
+                std::thread::sleep(Duration::from_millis(500));
+                let _ = conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
+            }
+        })
+    };
+
+    // Give the storm a moment to warm up so listings hit it mid-stride.
+    std::thread::sleep(Duration::from_millis(500));
+
+    // ── Listing operations: 8 concurrent, root + subdir mix ───────────
+    #[derive(Debug)]
+    struct ListingResult {
+        path: std::path::PathBuf,
+        elapsed_ms: u128,
+        entries_count: usize,
+    }
+    let results = Arc::new(std::sync::Mutex::new(Vec::<ListingResult>::new()));
+    // We run 4 against the root + 4 against subdirs. Use canonical paths so they
+    // match what the DB has indexed.
+    let listing_targets: Vec<std::path::PathBuf> = (0..4)
+        .map(|_| canonical_root.clone())
+        .chain((0..4).map(|i| subdir_paths[i].clone()))
+        .collect();
+    let started = Arc::new(AtomicUsize::new(0));
+
+    // Each listing simulates `read_directory_with_progress` (minus Tauri events):
+    //   read_dir -> enrich -> sort -> "complete".
+    let root_for_listing = canonical_root.clone();
+    let handles: Vec<_> = listing_targets
+        .into_iter()
+        .map(|path| {
+            let pool = Arc::clone(&pool);
+            let results = Arc::clone(&results);
+            let started = Arc::clone(&started);
+            let root_for_thread = root_for_listing.clone();
+            std::thread::spawn(move || {
+                // Stagger the starts so we hit different points of the storm.
+                let s = started.fetch_add(1, Ordering::Relaxed);
+                std::thread::sleep(Duration::from_millis(50 * s as u64));
+
+                // path is already canonical (we use `canonical_root` and subdirs under it)
+                let _ = &root_for_thread;
+                let t0 = Instant::now();
+                // 1) read_dir
+                let dir_entries: Vec<_> = match std::fs::read_dir(&path) {
+                    Ok(rd) => rd.flatten().collect(),
+                    Err(_) => Vec::new(),
+                };
+                // Build FileEntry objects with full canonical paths matching the DB.
+                let mut entries: Vec<FileEntry> = dir_entries
+                    .iter()
+                    .map(|e| {
+                        let name = e.file_name().to_string_lossy().to_string();
+                        let p = e.path();
+                        let is_dir = p.is_dir();
+                        FileEntry::new(name, p.to_string_lossy().to_string(), is_dir, false)
+                    })
+                    .collect();
+                // 2) enrich — this is the dominant cost when the index is contended.
+                let parent_path = path.to_string_lossy().to_string();
+                let enrich_start = Instant::now();
+                let _ = pool.with_conn(|conn| enrichment::enrich_via_parent_id_on(&mut entries, conn, &parent_path));
+                let enrich_ms = enrich_start.elapsed().as_millis();
+                if enrich_ms > 100 {
+                    log::info!(
+                        target: "stall_probe::test",
+                        "enrich_slow path={} enrich_ms={}",
+                        path.display(),
+                        enrich_ms,
+                    );
+                }
+                // 3) sort (cheap, mirrors streaming.rs `sort_entries`)
+                entries.sort_by(|a, b| a.name.cmp(&b.name));
+                let elapsed_ms = t0.elapsed().as_millis();
+
+                let result = ListingResult {
+                    path: path.clone(),
+                    elapsed_ms,
+                    entries_count: entries.len(),
+                };
+                log::info!(
+                    target: "stall_probe::test",
+                    "listing_done path={} entries={} elapsed_ms={}",
+                    path.display(),
+                    entries.len(),
+                    elapsed_ms,
+                );
+                results.lock().unwrap().push(result);
+            })
+        })
+        .collect();
+
+    for h in handles {
+        h.join().expect("listing thread panicked");
+    }
+    stop_storm.store(true, Ordering::Relaxed);
+    for h in storm_handles {
+        h.join().expect("storm thread panicked");
+    }
+    checkpoint_handle.join().expect("checkpoint thread panicked");
+
+    let total_events = events_fired.load(Ordering::Relaxed);
+    log::info!(target: "stall_probe::test", "storm fired {total_events} reconciler events");
+
+    // ── Assertion: each listing must complete within the SLA ──────────
+    const SLA_MS: u128 = 2_000;
+    let results = results.lock().unwrap();
+    let violators: Vec<&ListingResult> = results.iter().filter(|r| r.elapsed_ms > SLA_MS).collect();
+    if !violators.is_empty() {
+        let summary: String = violators
+            .iter()
+            .map(|r| {
+                format!(
+                    "path={} elapsed_ms={} entries={}",
+                    r.path.display(),
+                    r.elapsed_ms,
+                    r.entries_count
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n  ");
+        panic!(
+            "{count} listing(s) exceeded the {SLA_MS}ms SLA under reconciler load (storm: {total_events} events):\n  {summary}\n\n\
+             See the captured `stall_probe::*` log lines above (run with --no-capture to see them on stderr).",
+            count = violators.len(),
+        );
+    }
+
+    writer.send(WriteMessage::Shutdown).unwrap();
+    // Sanity: keep `disk` alive past this point.
+    drop(disk);
 }

@@ -137,6 +137,7 @@ pub(super) async fn run_live_event_loop(
     watcher_overflow: Option<Arc<AtomicBool>>,
 ) {
     log::info!("Live event processing: started");
+    log::info!(target: "stall_probe::reconciler", "live_event_loop_started");
 
     // Open a read connection for path resolution (integer-keyed lookups)
     let db_path = writer.db_path();
@@ -153,6 +154,13 @@ pub(super) async fn run_live_event_loop(
     let mut pending_events = HashMap::<String, watcher::FsChangeEvent>::new();
     let mut flush_interval = tokio::time::interval(Duration::from_millis(LIVE_FLUSH_INTERVAL_MS));
     flush_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+
+    // Phase 1 instrumentation: heartbeat every 5s with batch/event metrics.
+    let mut heartbeat_interval = tokio::time::interval(Duration::from_secs(5));
+    heartbeat_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    let mut batches_since_heartbeat: u64 = 0;
+    let mut events_since_heartbeat: u64 = 0;
+    let mut last_batch_duration_ms: u128 = 0;
 
     loop {
         tokio::select! {
@@ -218,10 +226,22 @@ pub(super) async fn run_live_event_loop(
                         break;
                     }
 
+                let batch_size = pending_events.len() as u64;
+                let batch_start = std::time::Instant::now();
                 process_live_batch(
                     &mut pending_events, &mut reconciler, &conn,
                     &writer, &mut pending_paths,
                 );
+                let batch_ms = batch_start.elapsed().as_millis();
+                batches_since_heartbeat += 1;
+                events_since_heartbeat += batch_size;
+                last_batch_duration_ms = batch_ms;
+                if batch_ms > 200 {
+                    log::info!(
+                        target: "stall_probe::reconciler",
+                        "process_live_batch_slow batch_size={batch_size} batch_ms={batch_ms}",
+                    );
+                }
                 if !pending_paths.is_empty() {
                     // Enqueue the notification as a writer message so it fires
                     // after all prior writes (deletes, upserts, deltas) commit.
@@ -232,10 +252,19 @@ pub(super) async fn run_live_event_loop(
                     ));
                 }
             }
+            _ = heartbeat_interval.tick() => {
+                log::info!(
+                    target: "stall_probe::reconciler",
+                    "live_heartbeat batches={batches_since_heartbeat} events={events_since_heartbeat} last_batch_ms={last_batch_duration_ms} total_events={event_count}",
+                );
+                batches_since_heartbeat = 0;
+                events_since_heartbeat = 0;
+            }
         }
     }
 
     log::info!("Live event processing: stopped ({event_count} events)");
+    log::info!(target: "stall_probe::reconciler", "live_event_loop_stopped events={event_count}");
 }
 
 /// Drain the pending events map, process each through the reconciler, and
@@ -494,6 +523,7 @@ pub(super) async fn run_replay_event_loop(
     } = config;
 
     log::info!("Replay: started (since_event_id={since_event_id}, estimated_total={estimated_total:?})");
+    log::info!(target: "stall_probe::reconciler", "replay_event_loop_started since_event_id={since_event_id}");
 
     // Open a read connection for path resolution (integer-keyed lookups)
     let db_path = writer.db_path();
