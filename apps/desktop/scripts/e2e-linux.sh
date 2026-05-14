@@ -349,6 +349,10 @@ else
 
             SOCKET_PATH="/tmp/tauri-playwright.sock"
 
+            # Canonical "we're under E2E" marker. Soft test hooks (delays,
+            # diagnostic logging) gate on this. See docs/testing.md.
+            export CMDR_E2E_MODE=1
+
             # Create fixtures via the shared helper
             export CMDR_E2E_START_PATH
             CMDR_E2E_START_PATH=$(npx tsx -e "import { createFixtures } from \"./test/e2e-shared/fixtures.js\"; console.log(createFixtures())" | tail -1)

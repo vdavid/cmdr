@@ -389,6 +389,9 @@ func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
 		"CMDR_MCP_ENABLED=true",
 		"CMDR_E2E_START_PATH="+s.fixtureDir,
 		"CMDR_PLAYWRIGHT_SOCKET="+s.socketPath,
+		// Canonical "we're under E2E" marker — soft test hooks gate on this.
+		// See docs/testing.md § "E2E env-var hooks" and src-tauri/src/test_mode.rs.
+		"CMDR_E2E_MODE=1",
 	)
 	// Only the MTP shard registers the virtual MTP device. Non-MTP shards skip
 	// the startup wipe-and-recreate of the shared backing dir
