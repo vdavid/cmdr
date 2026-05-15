@@ -203,14 +203,20 @@ describeSmb('SMB host discovery', () => {
 
     await mcpSelectVolume('left', 'Network')
 
-    // Wait for the guest host to appear and its shares to be prefetched
+    // Wait for the guest host to appear and its shares to be prefetched.
+    // 60s: 14 virtual hosts kick off concurrent prefetches at app startup; on
+    // Linux Docker some of them can hold up the FE flush of the share count
+    // past the previous 30s ceiling, which then triggered the spec-level
+    // `retries: 1` and doubled the wall time. The retry stays as a safety net
+    // for the actual flakiness it was added for (GVFS mount races on the
+    // mounting tests below), but the prefetch-completion polls don't need it.
     await pollUntil(
       tauriPage,
       async () => {
         const state = await mcpReadResource('cmdr://state')
         return state.includes('SMB Test (Guest)') && state.includes('shares=1')
       },
-      30000,
+      60000,
     )
   })
 })
@@ -369,14 +375,15 @@ describeSmb('SMB authentication', () => {
 
     await mcpSelectVolume('left', 'Network')
 
-    // Wait for the auth host to appear and its shares to be prefetched
+    // Wait for the auth host to appear and its shares to be prefetched.
+    // 60s deadline: see comment on the guest-host counterpart above.
     await pollUntil(
       tauriPage,
       async () => {
         const state = await mcpReadResource('cmdr://state')
         return state.includes('SMB Test (Auth)') && state.includes('shares=1')
       },
-      30000,
+      60000,
     )
   })
 
@@ -436,14 +443,16 @@ describeSmb('SMB 50-share server', () => {
 
     await mcpSelectVolume('left', 'Network')
 
-    // Wait for the 50-shares host to appear and prefetch shares
+    // Wait for the 50-shares host to appear and prefetch shares.
+    // 60s deadline: enumerating 50 shares over the in-Docker SMB hop can
+    // legitimately push past 30 s; see the guest-host counterpart above.
     await pollUntil(
       tauriPage,
       async () => {
         const state = await mcpReadResource('cmdr://state')
         return state.includes('SMB Test (50 Shares)') && state.includes('shares=50')
       },
-      30000,
+      60000,
     )
   })
 })
