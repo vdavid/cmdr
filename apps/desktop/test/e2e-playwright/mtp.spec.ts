@@ -127,6 +127,32 @@ async function getMtpVolumePath(storageName: string): Promise<string> {
   throw new Error(`MTP volume "${storageName}" not found in cmdr://state`)
 }
 
+/**
+ * Sets `.rename-input`'s value directly via the native setter so Svelte's
+ * reactivity sees a single update. Used instead of `tauriPage.type` because
+ * per-character key dispatch over the playwright socket costs ~14 s for an
+ * 18-char name on Linux/Xvfb (vs ~80 ms on macOS); the slow path made
+ * `MTP rename via keyboard` the worst per-test Linux outlier (5.1×).
+ */
+async function setRenameInputValue(page: PageLike, value: string): Promise<void> {
+  await page.evaluate(
+    `(function() {
+      var input = document.querySelector('.rename-input');
+      if (!input) return;
+      input.focus();
+      var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+      if (desc && desc.set) desc.set.call(input, ${JSON.stringify(value)});
+      else input.value = ${JSON.stringify(value)};
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`,
+  )
+  await pollUntil(
+    page,
+    async () => page.evaluate<boolean>(`document.querySelector('.rename-input')?.value === ${JSON.stringify(value)}`),
+    3000,
+  )
+}
+
 // MTP operations go through the virtual device which adds protocol overhead.
 // 30s default is too tight for multi-step MTP test chains.
 test.setTimeout(120_000)
@@ -608,30 +634,11 @@ test.describe('MTP rename', () => {
     await tauriPage.keyboard.press('F2')
     await tauriPage.waitForSelector('.rename-input', 10000)
 
-    // Clear existing value and type new name
-    await tauriPage.evaluate(`(function() {
-            var input = document.querySelector('.rename-input');
-            if (!input) return;
-            input.focus();
-            var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
-            if (desc && desc.set) desc.set.call(input, '');
-            else input.value = '';
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-        })()`)
-    // Wait for Svelte to flush the cleared input value.
-    await pollUntil(
-      tauriPage,
-      async () => tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === ''`),
-      2000,
-    )
-    await tauriPage.type('.rename-input', 'renamed-report.txt')
-    // Wait until the typed value is reflected in the input.
-    await pollUntil(
-      tauriPage,
-      async () =>
-        tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === 'renamed-report.txt'`),
-      3000,
-    )
+    // Set the new value directly. `tauriPage.type` dispatches one key event
+    // per character over the playwright socket, which adds ~14 s on Linux/Xvfb
+    // (vs ~80 ms on macOS) for an 18-char name. The setter+input event hits
+    // the same Svelte reactivity path that user typing does.
+    await setRenameInputValue(tauriPage, 'renamed-report.txt')
     await tauriPage.press('.rename-input', 'Enter')
 
     // Wait for rename input to disappear
@@ -659,26 +666,7 @@ test.describe('MTP rename', () => {
     await tauriPage.keyboard.press('F2')
     await tauriPage.waitForSelector('.rename-input', 10000)
 
-    await tauriPage.evaluate(`(function() {
-            var input = document.querySelector('.rename-input');
-            if (!input) return;
-            input.focus();
-            var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
-            if (desc && desc.set) desc.set.call(input, '');
-            else input.value = '';
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-        })()`)
-    await pollUntil(
-      tauriPage,
-      async () => tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === ''`),
-      2000,
-    )
-    await tauriPage.type('.rename-input', 'notes.txt')
-    await pollUntil(
-      tauriPage,
-      async () => tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === 'notes.txt'`),
-      3000,
-    )
+    await setRenameInputValue(tauriPage, 'notes.txt')
     await tauriPage.press('.rename-input', 'Enter')
 
     // Conflict dialog should appear since notes.txt already exists
