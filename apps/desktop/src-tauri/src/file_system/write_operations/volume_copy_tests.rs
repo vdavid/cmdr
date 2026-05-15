@@ -288,7 +288,7 @@ async fn test_multi_file_copy_all_files_arrive() {
     let config = VolumeCopyConfig::default();
 
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-1",
         &state,
         Arc::clone(&source),
@@ -334,7 +334,7 @@ async fn test_multi_file_copy_progress_tracking() {
     };
 
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-2",
         &state,
         Arc::clone(&source),
@@ -371,7 +371,7 @@ async fn test_multi_file_copy_cancel_before_start() {
     let config = VolumeCopyConfig::default();
 
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-pre-cancel",
         &state,
         Arc::clone(&source),
@@ -449,7 +449,7 @@ async fn test_multi_file_copy_cancel_mid_flight() {
     };
 
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-cancel-mid",
         &state,
         Arc::clone(&source),
@@ -515,7 +515,7 @@ async fn test_multi_file_copy_skip_conflict() {
     };
 
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-skip",
         &state,
         Arc::clone(&source),
@@ -555,7 +555,7 @@ async fn test_multi_file_copy_overwrite_conflict() {
     };
 
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-overwrite",
         &state,
         Arc::clone(&source),
@@ -603,7 +603,7 @@ async fn test_skipped_files_count_toward_progress() {
     };
 
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-skip-progress",
         &state,
         Arc::clone(&source),
@@ -783,7 +783,7 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
     assert_eq!(scans_before, 0);
 
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-no-rescan",
         &state,
         Arc::clone(&source),
@@ -848,7 +848,7 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
     });
 
     let stop_result = copy_volumes_with_progress(
-        stop_events.as_ref(),
+        stop_events.clone(),
         "test-op-stop-no-rescan",
         &stop_state,
         Arc::clone(&source),
@@ -917,7 +917,7 @@ async fn test_pre_known_conflicts_are_bulk_skipped_upfront() {
     };
 
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-bulk-skip",
         &state,
         Arc::clone(&source),
@@ -1023,7 +1023,7 @@ async fn test_stop_mode_does_not_bulk_skip_pre_known_conflicts() {
     });
 
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-stop-with-prek",
         &state,
         Arc::clone(&source),
@@ -1083,7 +1083,7 @@ async fn test_pre_known_conflicts_with_stale_entries_is_safe() {
     };
 
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-stale-prek",
         &state,
         Arc::clone(&source),
@@ -1137,7 +1137,7 @@ async fn test_pre_known_conflicts_ignored_outside_skip_mode() {
     };
 
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-overwrite-with-prek",
         &state,
         Arc::clone(&source),
@@ -1200,7 +1200,7 @@ async fn test_pre_known_conflicts_bulk_skip_on_real_local_volumes() {
     };
 
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-bulk-skip-real-fs",
         &state,
         Arc::clone(&source),
@@ -1387,7 +1387,7 @@ async fn test_concurrent_copy_50_files_all_succeed() {
 
     let paths: Vec<PathBuf> = (0..50).map(|i| PathBuf::from(format!("/file_{:02}.bin", i))).collect();
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-concurrent-50",
         &state,
         Arc::clone(&source),
@@ -1443,25 +1443,23 @@ impl Volume for PoisonedReadVolume {
         &'a self,
         path: &'a Path,
         on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
-    ) -> std::pin::Pin<
-        Box<dyn Future<Output = Result<Vec<crate::file_system::listing::FileEntry>, VolumeError>> + Send + 'a>,
-    > {
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::listing::FileEntry>, VolumeError>> + Send + 'a>>
+    {
         self.inner.list_directory(path, on_progress)
     }
     fn get_metadata<'a>(
         &'a self,
         path: &'a Path,
-    ) -> std::pin::Pin<Box<dyn Future<Output = Result<crate::file_system::listing::FileEntry, VolumeError>> + Send + 'a>>
-    {
+    ) -> Pin<Box<dyn Future<Output = Result<crate::file_system::listing::FileEntry, VolumeError>> + Send + 'a>> {
         self.inner.get_metadata(path)
     }
-    fn exists<'a>(&'a self, path: &'a Path) -> std::pin::Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
         self.inner.exists(path)
     }
     fn is_directory<'a>(
         &'a self,
         path: &'a Path,
-    ) -> std::pin::Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
         self.inner.is_directory(path)
     }
     fn supports_export(&self) -> bool {
@@ -1476,21 +1474,19 @@ impl Volume for PoisonedReadVolume {
     fn scan_for_copy<'a>(
         &'a self,
         path: &'a Path,
-    ) -> std::pin::Pin<
-        Box<dyn Future<Output = Result<crate::file_system::volume::CopyScanResult, VolumeError>> + Send + 'a>,
-    > {
+    ) -> Pin<Box<dyn Future<Output = Result<crate::file_system::volume::CopyScanResult, VolumeError>> + Send + 'a>>
+    {
         self.inner.scan_for_copy(path)
     }
     fn get_space_info<'a>(
         &'a self,
-    ) -> std::pin::Pin<Box<dyn Future<Output = Result<crate::file_system::volume::SpaceInfo, VolumeError>> + Send + 'a>>
-    {
+    ) -> Pin<Box<dyn Future<Output = Result<crate::file_system::volume::SpaceInfo, VolumeError>> + Send + 'a>> {
         self.inner.get_space_info()
     }
     fn open_read_stream<'a>(
         &'a self,
         path: &'a Path,
-    ) -> std::pin::Pin<
+    ) -> Pin<
         Box<
             dyn Future<Output = Result<Box<dyn crate::file_system::volume::VolumeReadStream>, VolumeError>> + Send + 'a,
         >,
@@ -1532,7 +1528,7 @@ async fn test_concurrent_copy_aborts_on_first_error() {
 
     let paths: Vec<PathBuf> = (0..20).map(|i| PathBuf::from(format!("/file_{:02}.bin", i))).collect();
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-concurrent-err",
         &state,
         Arc::clone(&source),
@@ -1621,7 +1617,7 @@ async fn test_concurrent_copy_cancellation_mid_batch() {
 
     let paths: Vec<PathBuf> = (0..20).map(|i| PathBuf::from(format!("/big_{:02}.bin", i))).collect();
     let result = copy_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "test-op-concurrent-cancel",
         &state,
         Arc::clone(&source),
@@ -1727,7 +1723,7 @@ async fn phase4_bench_baseline_smb_to_local_100_tiny_files() {
 
     // ── Run the copy through the real pipeline ────────────────────
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
-    let events = CollectorEventSink::new();
+    let events = Arc::new(CollectorEventSink::new());
     let config = VolumeCopyConfig {
         progress_interval_ms: 200,
         conflict_resolution: ConflictResolution::Overwrite,
@@ -1738,7 +1734,7 @@ async fn phase4_bench_baseline_smb_to_local_100_tiny_files() {
 
     let copy_start = Instant::now();
     let result = copy_volumes_with_progress(
-        &events,
+        events.clone(),
         "phase4-bench",
         &state,
         Arc::clone(&source_volume),

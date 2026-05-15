@@ -3562,12 +3562,12 @@ mod tests {
         ));
 
         let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
-        let events = CollectorEventSink::new();
+        let events = Arc::new(CollectorEventSink::new());
         let config = VolumeCopyConfig::default();
 
         let copy_start = Instant::now();
         let result = copy_volumes_with_progress(
-            &events,
+            events.clone(),
             "test-op-100-unique",
             &state,
             Arc::clone(&vol),
@@ -3882,12 +3882,12 @@ mod tests {
                 local_dir.path().to_path_buf(),
             ));
             let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
-            let events = CollectorEventSink::new();
+            let events = Arc::new(CollectorEventSink::new());
             let config = VolumeCopyConfig::default();
 
             let iter_start = Instant::now();
             let result = copy_volumes_with_progress(
-                &events,
+                events.clone(),
                 &format!("soak-iter-{iter_idx}"),
                 &state,
                 Arc::clone(&vol),

@@ -107,9 +107,9 @@ pub async fn move_between_volumes(
         let operation_id_for_cleanup = operation_id_for_spawn.clone();
         let app_for_error = app.clone();
 
-        let events = TauriEventSink::new(app);
+        let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
         let result: Result<(), WriteFailure> = move_volumes_with_progress(
-            &events,
+            Arc::clone(&events),
             &operation_id_for_spawn,
             &state,
             source_volume,
@@ -159,12 +159,18 @@ pub async fn move_between_volumes(
 /// tests can drive the full pipeline with a `CollectorEventSink` instead of
 /// spinning up a Tauri app. The public `move_between_volumes` wraps this in
 /// the `tokio::spawn` + state-cache lifecycle.
+///
+/// Takes `Arc<dyn OperationEventSink>` (not `&dyn`) so closures passed to
+/// `drive_transfer_serial_async` can `Arc::clone(&events)` into their
+/// environment without borrowing outer-fn refs (the driver's
+/// `for<'a> FnMut(...) -> Pin<Box<dyn Future + Send + 'a>>` bound rejects
+/// those — see `copy_volumes_with_progress` for the full rationale).
 #[allow(
     clippy::too_many_arguments,
     reason = "Volume move requires passing multiple context parameters"
 )]
 pub(super) async fn move_volumes_with_progress(
-    events: &dyn OperationEventSink,
+    events: Arc<dyn OperationEventSink>,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     source_volume: Arc<dyn Volume>,
@@ -202,19 +208,15 @@ pub(super) async fn move_volumes_with_progress(
     let failure_ctx_cell: Arc<std::sync::Mutex<Option<(VolumeError, PathBuf)>>> = Arc::new(std::sync::Mutex::new(None));
     let apply_to_all_cell: Arc<std::sync::Mutex<Option<ConflictResolution>>> = Arc::new(std::sync::Mutex::new(None));
 
-    // Closure captures need `'static`-bounded refs to satisfy the driver's
-    // for-all closure bound. See `volume_copy::copy_volumes_with_progress`
-    // for the full rationale; mirror the same shape here.
+    // Closure captures: `config` and `operation_id` clone cheaply; `events`
+    // is already an `Arc<dyn OperationEventSink>` on entry, so each closure
+    // `Arc::clone(&events)`s into its environment. See
+    // `volume_copy::copy_volumes_with_progress` for the full rationale.
     let config_owned: VolumeCopyConfig = config.clone();
     let operation_id_owned: String = operation_id.to_string();
-    // SAFETY: `events` outlives every closure invocation. The driver
-    // awaits in place; the closures are dropped before this function
-    // returns and the original `events` borrow ends.
-    let events_static: &'static dyn OperationEventSink =
-        unsafe { std::mem::transmute::<&dyn OperationEventSink, &'static dyn OperationEventSink>(events) };
 
     let outcome = drive_transfer_serial_async(
-        events,
+        &*events,
         state,
         operation_id,
         source_paths,
@@ -245,6 +247,7 @@ pub(super) async fn move_volumes_with_progress(
             let source_volume = Arc::clone(&source_volume);
             let dest_volume = Arc::clone(&dest_volume);
             let state = Arc::clone(state);
+            let events = Arc::clone(&events);
             let apply_to_all = Arc::clone(&apply_to_all_cell);
             let config = config_owned.clone();
             let operation_id = operation_id_owned.clone();
@@ -252,6 +255,7 @@ pub(super) async fn move_volumes_with_progress(
                 let source_volume = Arc::clone(&source_volume);
                 let dest_volume = Arc::clone(&dest_volume);
                 let state = Arc::clone(&state);
+                let events = Arc::clone(&events);
                 let apply_to_all = Arc::clone(&apply_to_all);
                 let config = config.clone();
                 let operation_id = operation_id.clone();
@@ -275,7 +279,7 @@ pub(super) async fn move_volumes_with_progress(
                         &dest_volume,
                         &initial_dest_owned,
                         &config,
-                        events_static,
+                        &*events,
                         &operation_id,
                         &state,
                         &mut latched,
@@ -303,6 +307,7 @@ pub(super) async fn move_volumes_with_progress(
             let dest_volume = Arc::clone(&dest_volume);
             let progress_interval = state.progress_interval;
             let state = Arc::clone(state);
+            let events = Arc::clone(&events);
             let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
             let operation_id = operation_id_owned.clone();
             let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(Instant::now()));
@@ -310,6 +315,7 @@ pub(super) async fn move_volumes_with_progress(
                 let source_volume = Arc::clone(&source_volume);
                 let dest_volume = Arc::clone(&dest_volume);
                 let state = Arc::clone(&state);
+                let events = Arc::clone(&events);
                 let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
                 let operation_id = operation_id.clone();
                 let last_progress_time = Arc::clone(&last_progress_time);
@@ -397,7 +403,7 @@ pub(super) async fn move_volumes_with_progress(
                         let new_files = files_done_so_far + 1;
                         let new_bytes = bytes_done_so_far + bytes;
                         state.emit_progress_via_sink(
-                            events_static,
+                            &*events,
                             WriteProgressEvent::new(
                                 operation_id.clone(),
                                 WriteOperationType::Move,
@@ -507,9 +513,9 @@ async fn move_within_same_volume(
         let operation_id_for_cleanup = operation_id_for_spawn.clone();
         let app_for_error = app.clone();
 
-        let events = TauriEventSink::new(app);
+        let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
         let result: Result<(), WriteOperationError> = move_within_same_volume_with_progress(
-            &events,
+            Arc::clone(&events),
             &operation_id_for_spawn,
             &state,
             volume,
@@ -557,12 +563,18 @@ async fn move_within_same_volume(
 /// Internal same-volume rename body. Takes a sink for event emission so unit
 /// tests can drive the full pipeline with a `CollectorEventSink` instead of
 /// spinning up a Tauri app.
+///
+/// Takes `Arc<dyn OperationEventSink>` (not `&dyn`) so closures passed to
+/// `drive_transfer_serial_async` can `Arc::clone(&events)` into their
+/// environment without borrowing outer-fn refs (the driver's
+/// `for<'a> FnMut(...) -> Pin<Box<dyn Future + Send + 'a>>` bound rejects
+/// those — see `copy_volumes_with_progress` for the full rationale).
 #[allow(
     clippy::too_many_arguments,
     reason = "Same-volume move requires passing multiple context parameters"
 )]
 pub(super) async fn move_within_same_volume_with_progress(
-    events: &dyn OperationEventSink,
+    events: Arc<dyn OperationEventSink>,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     volume: Arc<dyn Volume>,
@@ -590,13 +602,9 @@ pub(super) async fn move_within_same_volume_with_progress(
 
     let config_owned: VolumeCopyConfig = config.clone();
     let operation_id_owned: String = operation_id.to_string();
-    // SAFETY: `events` outlives every closure invocation; the driver awaits
-    // in place and the closures are dropped before this function returns.
-    let events_static: &'static dyn OperationEventSink =
-        unsafe { std::mem::transmute::<&dyn OperationEventSink, &'static dyn OperationEventSink>(events) };
 
     let outcome = drive_transfer_serial_async(
-        events,
+        &*events,
         state,
         operation_id,
         source_paths,
@@ -620,12 +628,14 @@ pub(super) async fn move_within_same_volume_with_progress(
         {
             let volume = Arc::clone(&volume);
             let state = Arc::clone(state);
+            let events = Arc::clone(&events);
             let apply_to_all = Arc::clone(&apply_to_all_cell);
             let config = config_owned.clone();
             let operation_id = operation_id_owned.clone();
             move |input: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
                 let volume = Arc::clone(&volume);
                 let state = Arc::clone(&state);
+                let events = Arc::clone(&events);
                 let apply_to_all = Arc::clone(&apply_to_all);
                 let config = config.clone();
                 let operation_id = operation_id.clone();
@@ -647,7 +657,7 @@ pub(super) async fn move_within_same_volume_with_progress(
                         &volume,
                         &initial_dest_owned,
                         &config,
-                        events_static,
+                        &*events,
                         &operation_id,
                         &state,
                         &mut latched,
@@ -674,11 +684,13 @@ pub(super) async fn move_within_same_volume_with_progress(
             let volume = Arc::clone(&volume);
             let progress_interval = state.progress_interval;
             let state = Arc::clone(state);
+            let events = Arc::clone(&events);
             let operation_id = operation_id_owned.clone();
             let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(Instant::now()));
             move |ctx: TransferContext<'_>| -> TransferFut<'_> {
                 let volume = Arc::clone(&volume);
                 let state = Arc::clone(&state);
+                let events = Arc::clone(&events);
                 let operation_id = operation_id.clone();
                 let last_progress_time = Arc::clone(&last_progress_time);
                 let source_path = ctx.source_path.to_path_buf();
@@ -715,7 +727,7 @@ pub(super) async fn move_within_same_volume_with_progress(
                         let new_files = files_done_so_far + 1;
                         let new_bytes = bytes_done_so_far + size;
                         state.emit_progress_via_sink(
-                            events_static,
+                            &*events,
                             WriteProgressEvent::new(
                                 operation_id.clone(),
                                 WriteOperationType::Move,

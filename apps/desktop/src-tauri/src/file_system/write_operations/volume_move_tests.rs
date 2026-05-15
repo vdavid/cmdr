@@ -55,7 +55,7 @@ async fn cross_volume_move_happy_path() {
     let config = VolumeCopyConfig::default();
 
     let result = move_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "op-move-happy",
         &state,
         Arc::clone(&source),
@@ -105,7 +105,7 @@ async fn cross_volume_move_conflict_skip_preserves_source_and_dest() {
     };
 
     let result = move_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "op-move-skip",
         &state,
         Arc::clone(&source),
@@ -160,7 +160,7 @@ async fn cross_volume_move_conflict_overwrite_replaces_dest_and_deletes_source()
     };
 
     let result = move_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "op-move-overwrite",
         &state,
         Arc::clone(&source),
@@ -210,7 +210,7 @@ async fn cross_volume_move_conflict_stop_resolves_via_oneshot() {
     });
 
     let result = move_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "op-move-stop",
         &state,
         Arc::clone(&source),
@@ -261,7 +261,7 @@ async fn cross_volume_move_pre_known_conflicts_bulk_skip() {
     };
 
     let result = move_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "op-move-bulk-skip",
         &state,
         Arc::clone(&source),
@@ -340,7 +340,7 @@ async fn cross_volume_move_cancel_between_sources_emits_cancelled_event() {
     state.intent.store(2, Ordering::Relaxed); // Stopped
 
     let result = move_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "op-move-cancel",
         &state,
         Arc::clone(&source),
@@ -432,7 +432,7 @@ async fn cross_volume_move_cancel_mid_batch_preserves_completed() {
     };
 
     let result = move_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "op-move-cancel-mid",
         &state,
         Arc::clone(&source),
@@ -509,7 +509,7 @@ async fn cross_volume_move_on_real_local_volumes() {
     let events = Arc::new(CollectorEventSink::new());
     let state = make_state();
     let result = move_volumes_with_progress(
-        events.as_ref(),
+        events.clone(),
         "op-move-real-fs",
         &state,
         Arc::clone(&source),
@@ -550,7 +550,7 @@ async fn same_volume_move_happy_path() {
     let state = make_state();
 
     let result = move_within_same_volume_with_progress(
-        events.as_ref(),
+        events.clone(),
         "op-same-move-happy",
         &state,
         Arc::clone(&volume),
@@ -591,7 +591,7 @@ async fn same_volume_move_conflict_skip_preserves_both() {
     };
 
     let result = move_within_same_volume_with_progress(
-        events.as_ref(),
+        events.clone(),
         "op-same-move-skip",
         &state,
         Arc::clone(&volume),
@@ -631,7 +631,7 @@ async fn same_volume_move_conflict_overwrite_replaces_dest() {
     };
 
     let result = move_within_same_volume_with_progress(
-        events.as_ref(),
+        events.clone(),
         "op-same-move-overwrite",
         &state,
         Arc::clone(&volume),
@@ -661,7 +661,7 @@ async fn same_volume_move_cancel_emits_cancelled_event() {
     state.intent.store(2, Ordering::Relaxed); // Stopped
 
     let result = move_within_same_volume_with_progress(
-        events.as_ref(),
+        events.clone(),
         "op-same-move-cancel",
         &state,
         Arc::clone(&volume),
@@ -713,7 +713,7 @@ async fn same_volume_move_pre_known_conflicts_bulk_skip() {
     };
 
     let result = move_within_same_volume_with_progress(
-        events.as_ref(),
+        events.clone(),
         "op-same-move-bulk-skip",
         &state,
         Arc::clone(&volume),

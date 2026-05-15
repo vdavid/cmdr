@@ -164,9 +164,9 @@ pub async fn copy_between_volumes(
         let operation_id_for_cleanup = operation_id_for_spawn.clone();
         let app_for_error = app.clone();
 
-        let events = TauriEventSink::new(app);
+        let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
         let result: Result<(), WriteFailure> = copy_volumes_with_progress(
-            &events,
+            Arc::clone(&events),
             &operation_id_for_spawn,
             &state,
             source_volume,
@@ -360,12 +360,20 @@ fn account_skipped_file(
 /// `volume/smb.rs`) can drive the real copy pipeline with a
 /// `CollectorEventSink` instead of spinning up a full Tauri app. In
 /// production, the only caller is `copy_between_volumes` in this file.
+///
+/// Takes `Arc<dyn OperationEventSink>` (not `&dyn`) because closures passed
+/// to `drive_transfer_serial_async` are bounded
+/// `for<'a> FnMut(...) -> Pin<Box<dyn Future + Send + 'a>>` — their returned
+/// futures must be valid for any input lifetime including `'static`, so the
+/// closures can't borrow outer-fn `&` args. `Arc::clone(&events)` into each
+/// closure is the clean way out; the caller and tests already wrap the sink
+/// in an Arc so the boundary is a no-op.
 #[allow(
     clippy::too_many_arguments,
     reason = "Volume copy requires passing multiple context parameters"
 )]
 pub(crate) async fn copy_volumes_with_progress(
-    events: &dyn OperationEventSink,
+    events: Arc<dyn OperationEventSink>,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     source_volume: Arc<dyn Volume>,
@@ -428,7 +436,7 @@ pub(crate) async fn copy_volumes_with_progress(
         );
 
         state.emit_progress_via_sink(
-            events,
+            &*events,
             WriteProgressEvent::new(
                 operation_id.to_string(),
                 WriteOperationType::Copy,
@@ -535,7 +543,7 @@ pub(crate) async fn copy_volumes_with_progress(
 
     // Emit initial copying phase event
     state.emit_progress_via_sink(
-        events,
+        &*events,
         WriteProgressEvent::new(
             operation_id.to_string(),
             WriteOperationType::Copy,
@@ -590,7 +598,7 @@ pub(crate) async fn copy_volumes_with_progress(
             bulk_skip_bytes
         );
         state.emit_progress_via_sink(
-            events,
+            &*events,
             WriteProgressEvent::new(
                 operation_id.to_string(),
                 WriteOperationType::Copy,
@@ -685,7 +693,7 @@ pub(crate) async fn copy_volumes_with_progress(
                         &dest_volume,
                         &dest_item_path,
                         config,
-                        events,
+                        &*events,
                         operation_id,
                         state,
                         &mut apply_to_all_resolution,
@@ -708,7 +716,7 @@ pub(crate) async fn copy_volumes_with_progress(
                                 &last_progress_mutex,
                                 progress_interval,
                                 state,
-                                events,
+                                &*events,
                                 operation_id,
                                 total_files,
                                 total_bytes,
@@ -732,7 +740,7 @@ pub(crate) async fn copy_volumes_with_progress(
                 let src_vol = Arc::clone(&source_volume);
                 let dst_vol = Arc::clone(&dest_volume);
                 let state_clone = Arc::clone(state);
-                let events_ref: &dyn OperationEventSink = events;
+                let events_task = Arc::clone(&events);
                 let op_id = operation_id;
                 let files_done_a = Arc::clone(&files_done_atomic);
                 let bytes_done_a = Arc::clone(&atomic_bytes_done);
@@ -761,7 +769,7 @@ pub(crate) async fn copy_volumes_with_progress(
                         if last.elapsed() >= progress_interval {
                             *last_prog_a.lock().unwrap() = Instant::now();
                             state_clone.emit_progress_via_sink(
-                                events_ref,
+                                &*events_task,
                                 WriteProgressEvent::new(
                                     op_id.to_string(),
                                     WriteOperationType::Copy,
@@ -878,29 +886,14 @@ pub(crate) async fn copy_volumes_with_progress(
         };
         // The driver bounds its closures as
         // `for<'a> FnMut(...) -> Pin<Box<dyn Future + Send + 'a>>` — the
-        // returned future must be valid for **any** input lifetime `'a`,
-        // including `'static`. Closures that capture outer-fn `&` args end
-        // up with futures bounded by those args' lifetimes, which the
-        // for-all bound rejects ("returning this value requires that `'N`
-        // must outlive `'static`"). The captures are sound in practice
-        // (the driver awaits inline and never holds closures past this
-        // function's end), but we have to convince the compiler.
-        //
-        // Strategy: clone what's cheap to clone, lifetime-extend the rest
-        // via `transmute` scoped to this block. `config` clones to owned
-        // (Clone), `operation_id` to `String`. `events` is a trait object
-        // whose concrete impl isn't clonable in general; transmute its
-        // borrow to `'static` and capture that.
+        // returned future must be valid for any input lifetime `'a`,
+        // including `'static`. Outer-fn `&` arg captures yield futures
+        // bounded by those args' lifetimes, which the for-all bound
+        // rejects. `config` and `operation_id` clone cheaply; `events` is
+        // already an `Arc<dyn OperationEventSink>` on entry, so each
+        // closure `Arc::clone(&events)`s into its environment.
         let config_owned: VolumeCopyConfig = config.clone();
         let operation_id_owned: String = operation_id.to_string();
-        // SAFETY: `events` outlives every closure invocation made by the
-        // driver: the driver awaits in-place at `.await` below, so the
-        // closures stop being called before this function returns. None of
-        // the closures or the futures they produce escape this scope; the
-        // `'static`-erased reference is dropped before the original
-        // `events` borrow ends.
-        let events_static: &'static dyn OperationEventSink =
-            unsafe { std::mem::transmute::<&dyn OperationEventSink, &'static dyn OperationEventSink>(events) };
         // Per-source mutable state shared with the driver's closures via
         // interior mutability. Avoids `&mut` captures (which would force
         // `AsyncFnMut` semantics; the driver bounds the closures as plain
@@ -914,7 +907,7 @@ pub(crate) async fn copy_volumes_with_progress(
         let source_hints_arc: Arc<HashMap<PathBuf, SourceHint>> = Arc::new(std::mem::take(&mut source_hints));
 
         let outcome = drive_transfer_serial_async(
-            events,
+            &*events,
             state,
             operation_id,
             source_paths,
@@ -945,6 +938,7 @@ pub(crate) async fn copy_volumes_with_progress(
                 let source_volume = Arc::clone(&source_volume);
                 let dest_volume = Arc::clone(&dest_volume);
                 let state = Arc::clone(state);
+                let events = Arc::clone(&events);
                 let apply_to_all = Arc::clone(&apply_to_all_cell);
                 let source_hints = Arc::clone(&source_hints_arc);
                 let config = config_owned.clone();
@@ -953,6 +947,7 @@ pub(crate) async fn copy_volumes_with_progress(
                     let source_volume = Arc::clone(&source_volume);
                     let dest_volume = Arc::clone(&dest_volume);
                     let state = Arc::clone(&state);
+                    let events = Arc::clone(&events);
                     let apply_to_all = Arc::clone(&apply_to_all);
                     let source_hints = Arc::clone(&source_hints);
                     let config = config.clone();
@@ -985,7 +980,7 @@ pub(crate) async fn copy_volumes_with_progress(
                             &dest_volume,
                             &initial_dest_owned,
                             &config,
-                            events_static,
+                            &*events,
                             &operation_id,
                             &state,
                             &mut latched,
@@ -1012,6 +1007,7 @@ pub(crate) async fn copy_volumes_with_progress(
                 let source_volume = Arc::clone(&source_volume);
                 let dest_volume = Arc::clone(&dest_volume);
                 let state = Arc::clone(state);
+                let events = Arc::clone(&events);
                 let last_dest_cell = Arc::clone(&last_dest_cell);
                 let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
                 let copied_paths = Arc::clone(&copied_paths_for_closure);
@@ -1021,6 +1017,7 @@ pub(crate) async fn copy_volumes_with_progress(
                     let source_volume = Arc::clone(&source_volume);
                     let dest_volume = Arc::clone(&dest_volume);
                     let state = Arc::clone(&state);
+                    let events = Arc::clone(&events);
                     let last_dest_cell = Arc::clone(&last_dest_cell);
                     let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
                     let copied_paths = Arc::clone(&copied_paths);
@@ -1052,6 +1049,7 @@ pub(crate) async fn copy_volumes_with_progress(
                         let last_emit = std::sync::Mutex::new(Instant::now());
                         let file_name_for_cb = file_name.clone();
                         let state_for_cb = Arc::clone(&state);
+                        let events_for_cb = Arc::clone(&events);
                         let on_file_progress = |file_bytes_done: u64, _file_bytes_total: u64| -> ControlFlow<()> {
                             if is_cancelled(&state_for_cb.intent) {
                                 return ControlFlow::Break(());
@@ -1062,7 +1060,7 @@ pub(crate) async fn copy_volumes_with_progress(
                                 drop(last);
                                 let current_total = bytes_done_so_far + file_bytes_done;
                                 state_for_cb.emit_progress_via_sink(
-                                    events_static,
+                                    &*events_for_cb,
                                     WriteProgressEvent::new(
                                         operation_id.clone(),
                                         WriteOperationType::Copy,
@@ -1217,7 +1215,7 @@ pub(crate) async fn copy_volumes_with_progress(
         let rollback_completed = volume_rollback_with_progress(
             &dest_volume,
             &copied_paths,
-            events,
+            &*events,
             operation_id,
             state,
             files_done,
