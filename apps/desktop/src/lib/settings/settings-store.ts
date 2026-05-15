@@ -217,12 +217,34 @@ export function getSetting<K extends SettingId>(id: K): SettingsValues[K] {
 /**
  * Set a setting value. Validates against constraints before storing.
  * Throws SettingValidationError if invalid.
+ *
+ * Idempotent: when `value` strictly equals the currently-cached value, the
+ * call returns after validation without scheduling a save, notifying
+ * listeners, or emitting the cross-window event. This avoids redundant work
+ * for the (common) case of writing the same value twice — e.g. a settings UI
+ * onChange that fires for any click, or test setup/teardown that resets a
+ * setting back to its already-current value. The cascade for `network.enabled`
+ * alone fires 14 `network-host-lost` events through the FE event loop on a
+ * real toggle, so the redundant call used to be heavy enough to occasionally
+ * starve a concurrent `mcp_round_trip` waiting on `mcp-response`.
+ *
+ * `===` is the right comparator here: every registered setting is a primitive
+ * (`boolean | number | string`) or a pinned-shape JSON object that callers
+ * replace by reference when they mutate, so same-reference always means
+ * no-change. If you add a setting that requires deep-equality, narrow the
+ * comparison here instead of dropping the guard.
  */
 export function setSetting<K extends SettingId>(id: K, value: SettingsValues[K]): void {
   log.debug('setSetting({id}, {value})', { id, value })
 
   // Validate the value
   validateSettingValue(id, value)
+
+  // Idempotency: skip the cascade when nothing actually changed.
+  if (settingsCache[id] === value) {
+    log.debug('setSetting({id}): unchanged, skipping notify+save+emit', { id })
+    return
+  }
 
   // Update cache immediately for synchronous access
   settingsCache[id] = value
