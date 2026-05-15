@@ -20,8 +20,9 @@ use super::state::{
     CopyTransaction, OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status,
 };
 use super::types::{
-    ConflictResolution, IoResultExt, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
-    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
+    ConflictResolution, IoResultExt, OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
+    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    WriteSourceItemDoneEvent,
 };
 
 // ============================================================================
@@ -49,7 +50,8 @@ fn validate_disk_space_cancellable(
 // Copy implementation
 // ============================================================================
 
-pub(super) fn copy_files_with_progress(
+pub(super) fn copy_files_with_progress_inner(
+    events: &dyn OperationEventSink,
     app: &tauri::AppHandle,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
@@ -57,8 +59,6 @@ pub(super) fn copy_files_with_progress(
     destination: &Path,
     config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
-    use tauri::Emitter;
-
     log::debug!(
         "copy_files_with_progress: starting operation_id={}, {} sources",
         operation_id,
@@ -156,8 +156,8 @@ pub(super) fn copy_files_with_progress(
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
 
     // Emit initial copying phase event (important when reusing cached scan - no scanning events were emitted)
-    state.emit_progress_via_app(
-        app,
+    state.emit_progress_via_sink(
+        events,
         WriteProgressEvent::new(
             operation_id.to_string(),
             WriteOperationType::Copy,
@@ -223,8 +223,8 @@ pub(super) fn copy_files_with_progress(
             skipped_bytes,
             pre_skip_top_levels.len()
         );
-        state.emit_progress_via_app(
-            app,
+        state.emit_progress_via_sink(
+            events,
             WriteProgressEvent::new(
                 operation_id.to_string(),
                 WriteOperationType::Copy,
@@ -283,13 +283,10 @@ pub(super) fn copy_files_with_progress(
             )?;
 
             if let Some(source_path) = tracker.record(file_info) {
-                let _ = app.emit(
-                    "write-source-item-done",
-                    WriteSourceItemDoneEvent {
-                        operation_id: operation_id.to_string(),
-                        source_path: source_path.display().to_string(),
-                    },
-                );
+                events.emit_source_item_done(WriteSourceItemDoneEvent {
+                    operation_id: operation_id.to_string(),
+                    source_path: source_path.display().to_string(),
+                });
             }
 
             // E2E-only per-file throttle. In production (env + IPC override both
@@ -323,7 +320,7 @@ pub(super) fn copy_files_with_progress(
                 );
                 let rollback_completed = rollback_with_progress(
                     &transaction,
-                    app,
+                    events,
                     operation_id,
                     state,
                     WriteOperationType::Copy,
@@ -334,15 +331,12 @@ pub(super) fn copy_files_with_progress(
                 );
                 transaction.commit();
 
-                let _ = app.emit(
-                    "write-cancelled",
-                    WriteCancelledEvent {
-                        operation_id: operation_id.to_string(),
-                        operation_type: WriteOperationType::Copy,
-                        files_processed: files_done,
-                        rolled_back: rollback_completed,
-                    },
-                );
+                events.emit_cancelled(WriteCancelledEvent {
+                    operation_id: operation_id.to_string(),
+                    operation_type: WriteOperationType::Copy,
+                    files_processed: files_done,
+                    rolled_back: rollback_completed,
+                });
                 return Ok(());
             }
 
@@ -360,15 +354,12 @@ pub(super) fn copy_files_with_progress(
             );
 
             // Emit completion
-            let _ = app.emit(
-                "write-complete",
-                WriteCompleteEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Copy,
-                    files_processed: files_done,
-                    bytes_processed: bytes_done,
-                },
-            );
+            events.emit_complete(WriteCompleteEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Copy,
+                files_processed: files_done,
+                bytes_processed: bytes_done,
+            });
             Ok(())
         }
         Err(e) => {
@@ -387,7 +378,7 @@ pub(super) fn copy_files_with_progress(
                         );
                         let rollback_completed = rollback_with_progress(
                             &transaction,
-                            app,
+                            events,
                             operation_id,
                             state,
                             WriteOperationType::Copy,
@@ -400,15 +391,12 @@ pub(super) fn copy_files_with_progress(
                         // prevent Drop from trying to delete them again.
                         transaction.commit();
 
-                        let _ = app.emit(
-                            "write-cancelled",
-                            WriteCancelledEvent {
-                                operation_id: operation_id.to_string(),
-                                operation_type: WriteOperationType::Copy,
-                                files_processed: files_done,
-                                rolled_back: rollback_completed,
-                            },
-                        );
+                        events.emit_cancelled(WriteCancelledEvent {
+                            operation_id: operation_id.to_string(),
+                            operation_type: WriteOperationType::Copy,
+                            files_processed: files_done,
+                            rolled_back: rollback_completed,
+                        });
                     }
                     _ => {
                         // Stopped (or unknown): keep partial files
@@ -419,15 +407,12 @@ pub(super) fn copy_files_with_progress(
                         );
                         transaction.commit();
 
-                        let _ = app.emit(
-                            "write-cancelled",
-                            WriteCancelledEvent {
-                                operation_id: operation_id.to_string(),
-                                operation_type: WriteOperationType::Copy,
-                                files_processed: files_done,
-                                rolled_back: false,
-                            },
-                        );
+                        events.emit_cancelled(WriteCancelledEvent {
+                            operation_id: operation_id.to_string(),
+                            operation_type: WriteOperationType::Copy,
+                            files_processed: files_done,
+                            rolled_back: false,
+                        });
                     }
                 }
             } else {
@@ -441,10 +426,11 @@ pub(super) fn copy_files_with_progress(
                 );
                 transaction.rollback();
 
-                let _ = app.emit(
-                    "write-error",
-                    WriteErrorEvent::new(operation_id.to_string(), WriteOperationType::Copy, e.clone()),
-                );
+                events.emit_error(WriteErrorEvent::new(
+                    operation_id.to_string(),
+                    WriteOperationType::Copy,
+                    e.clone(),
+                ));
             }
             Err(e)
         }
@@ -833,7 +819,7 @@ pub(super) fn copy_single_item(
 )]
 fn rollback_with_progress(
     transaction: &CopyTransaction,
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     operation_type: WriteOperationType,
@@ -847,8 +833,8 @@ fn rollback_with_progress(
     let mut last_progress_time = Instant::now();
 
     // Emit initial rollback phase event (same values as cancellation point)
-    state.emit_progress_via_app(
-        app,
+    state.emit_progress_via_sink(
+        events,
         WriteProgressEvent::new(
             operation_id.to_string(),
             operation_type,
@@ -901,8 +887,8 @@ fn rollback_with_progress(
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_default();
-            state.emit_progress_via_app(
-                app,
+            state.emit_progress_via_sink(
+                events,
                 WriteProgressEvent::new(
                     operation_id.to_string(),
                     operation_type,

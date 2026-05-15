@@ -42,7 +42,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use uuid::Uuid;
 
-use copy::copy_files_with_progress;
+use copy::copy_files_with_progress_inner;
 use delete::{delete_files_with_progress, delete_volume_files_with_progress};
 #[cfg(not(test))]
 use helpers::{
@@ -195,7 +195,8 @@ pub async fn copy_files_start(
             validate_destination_writable(&destination)?;
             validate_not_same_location(&sources, &destination)?;
             validate_destination_not_inside_source(&sources, &destination)?;
-            copy_files_with_progress(&app, &op_id, &state, &sources, &destination, &config)
+            let events = types::TauriEventSink::new(app.clone());
+            copy_files_with_progress_inner(&events, &app, &op_id, &state, &sources, &destination, &config)
         },
     )
     .await
