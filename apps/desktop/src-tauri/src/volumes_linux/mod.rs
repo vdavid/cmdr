@@ -107,6 +107,9 @@ pub struct LocationInfo {
     pub is_read_only: bool,
     /// SMB connection state indicator. Always `None` on Linux (no smb2 session tracking yet).
     pub smb_connection_state: Option<String>,
+    /// Negotiated USB link speed. Set only for MTP/mobile volumes; everything
+    /// else carries `None`. Frontend maps to a label like "USB 3.2 Gen 1".
+    pub usb_speed: Option<crate::usb_speed::UsbSpeed>,
 }
 
 /// Information about volume space.
@@ -262,6 +265,7 @@ fn get_favorites(mounts: &[MountEntry]) -> Vec<LocationInfo> {
                 supports_trash,
                 is_read_only: false,
                 smb_connection_state: None,
+                usb_speed: None,
             }
         })
         .collect()
@@ -282,6 +286,7 @@ fn get_main_volume(mounts: &[MountEntry]) -> Option<LocationInfo> {
         supports_trash,
         is_read_only: false,
         smb_connection_state: None,
+        usb_speed: None,
     })
 }
 
@@ -329,6 +334,7 @@ pub fn get_mounted_volumes(mounts: &[MountEntry]) -> Vec<LocationInfo> {
             supports_trash,
             is_read_only: false,
             smb_connection_state: None,
+            usb_speed: None,
         });
     }
 
@@ -364,6 +370,7 @@ fn get_cloud_drives(mounts: &[MountEntry]) -> Vec<LocationInfo> {
                 supports_trash,
                 is_read_only: false,
                 smb_connection_state: None,
+                usb_speed: None,
             });
         }
     }
@@ -431,6 +438,7 @@ fn get_network_mounts() -> Vec<LocationInfo> {
                 supports_trash: false,
                 is_read_only: false,
                 smb_connection_state: None,
+                usb_speed: None,
             });
         }
     }
@@ -500,6 +508,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
         supports_trash,
         is_read_only: false,
         smb_connection_state: None,
+        usb_speed: None,
     })
 }
 

@@ -15,7 +15,15 @@
     import { getCachedIcon, iconCacheVersion, prefetchIcons } from '$lib/icon-cache'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import InfoIcon from '~icons/lucide/info'
-    import type { VolumeInfo } from '../types'
+    import { describeUsbSpeed, type VolumeInfo } from '../types'
+
+    /** "USB 3.2 Gen 1 (Max. 625 MB/s)" - shared between the chip tooltip and the dropdown subline. */
+    function usbSpeedDisplay(volume: VolumeInfo | undefined): string {
+        if (!volume?.usbSpeed) return ''
+        const { label, maxMBps } = describeUsbSpeed(volume.usbSpeed)
+        const mbps = maxMBps >= 10 ? String(Math.round(maxMBps)) : maxMBps.toFixed(1)
+        return `${label} (Max. ${mbps} MB/s)`
+    }
 
     const RESTRICTED_FOLDER_TOOLTIP =
         'Access to this folder is limited. Grant Cmdr Full Disk Access in System Settings → Privacy & Security → Full Disk Access to remove all such limits. Or grant per-folder access in System Settings → Privacy & Security → Files & Folders → Cmdr.'
@@ -400,6 +408,12 @@
         {/if}
         <span class="chevron"></span>
     </span>
+    {#if currentVolume?.usbSpeed}
+        <span
+            class="usb-speed-indicator breadcrumb-usb-speed-indicator usb-speed-indicator-{describeUsbSpeed(currentVolume.usbSpeed).tier}"
+            use:tooltip={`${usbSpeedDisplay(currentVolume)}\nNegotiated for this cable, port, and device`}
+        ></span>
+    {/if}
     {#if currentVolume?.smbConnectionState === 'direct'}
         <span
             class="smb-indicator breadcrumb-smb-indicator smb-indicator-direct"
@@ -511,6 +525,12 @@
                             {#if volume.smbConnectionState === 'os_mount'}
                                 <span class="submenu-trigger"></span>
                             {/if}
+                        {/if}
+                        {#if volume.usbSpeed}
+                            <span
+                                class="usb-speed-indicator usb-speed-indicator-{describeUsbSpeed(volume.usbSpeed).tier}"
+                                use:tooltip={`${usbSpeedDisplay(volume)}\nNegotiated for this cable, port, and device`}
+                            ></span>
                         {/if}
                     </div>
                     {#if volumeSpaceMap.has(volume.id)}
@@ -984,6 +1004,61 @@
     /* If read-only badge is also present, don't double-auto-margin */
     .volume-item .read-only-indicator + .smb-indicator {
         margin-left: var(--spacing-sm);
+    }
+
+    /* ── USB speed indicators (MTP volumes) ──────────────────────────
+       Same shape as the SMB dot, with a 5-tier rainbow keyed to the
+       negotiated USB generation: red → orange → yellow → light green →
+       dark green. Dark green matches `--color-allow`, the same shade
+       SMB uses for a healthy direct session. */
+
+    .usb-speed-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        opacity: 0.8;
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .usb-speed-indicator-low {
+        background-color: var(--color-apple-red);
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .usb-speed-indicator-full {
+        background-color: var(--color-apple-orange);
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .usb-speed-indicator-high {
+        background-color: var(--color-apple-yellow);
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .usb-speed-indicator-super {
+        background-color: var(--color-apple-green);
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .usb-speed-indicator-super_plus {
+        background-color: var(--color-allow);
+    }
+
+    /* In the dropdown, push the indicator to the far right (same as SMB) */
+    .volume-item .usb-speed-indicator {
+        margin-left: auto;
+    }
+
+    /* If another right-aligned badge is already present, don't double-auto-margin */
+    .volume-item .smb-indicator + .usb-speed-indicator,
+    .volume-item .submenu-trigger + .usb-speed-indicator,
+    .volume-item .read-only-indicator + .usb-speed-indicator {
+        margin-left: var(--spacing-sm);
+    }
+
+    .breadcrumb-usb-speed-indicator {
+        margin-left: var(--spacing-xs);
     }
 
     .submenu-trigger {

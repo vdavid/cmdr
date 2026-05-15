@@ -249,6 +249,15 @@ impl MtpConnectionManager {
 
         // Get device info
         let mtp_info = device.device_info();
+
+        // Speed isn't exposed by the open MTP session — read it from a fresh USB
+        // enumeration. `list_devices()` is a cheap syscall (no device open).
+        let usb_speed = MtpDevice::list_devices()
+            .ok()
+            .and_then(|devs| devs.into_iter().find(|d| d.location_id == location_id))
+            .and_then(|d| d.speed)
+            .map(crate::mtp::types::UsbSpeed::from);
+
         let device_info = MtpDeviceInfo {
             id: device_id.to_string(),
             location_id,
@@ -269,6 +278,7 @@ impl MtpConnectionManager {
             } else {
                 Some(mtp_info.serial_number.clone())
             },
+            usb_speed,
         };
 
         debug!(
@@ -1007,6 +1017,7 @@ mod tests {
                 manufacturer: Some("Google".to_string()),
                 product: Some("Pixel 8".to_string()),
                 serial_number: None,
+                usb_speed: None,
             },
             storages: vec![MtpStorageInfo {
                 id: 65537,

@@ -41,6 +41,7 @@ pub fn list_mtp_devices() -> Vec<MtpDeviceInfo> {
                         manufacturer: d.manufacturer,
                         product: d.product,
                         serial_number: d.serial_number,
+                        usb_speed: d.speed.map(Into::into),
                     }
                 })
                 .collect()

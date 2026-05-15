@@ -70,6 +70,9 @@ The local `get_icon_for_path()` wrapper short-circuits to `None` while `crate::f
 **Gotcha**: `LocationInfo` enrichment with `VolumeManager` data happens in two places
 **Why**: `commands/volumes.rs::enrich_smb_connection_state` (for `list_volumes` IPC calls) and `volume_broadcast.rs::enrich_smb_connection_state` (for `volumes-changed` push events). Both must stay in sync. The pattern is: build the base `LocationInfo` from OS APIs, then cross-reference `VolumeManager` to add runtime state (`smb_connection_state`). If new enrichment fields are added, update both call sites.
 
+**Gotcha**: `append_mtp_volumes` is duplicated across `commands/volumes.rs` and `volume_broadcast.rs` (and their Linux counterparts), and both populate the MTP-only `usb_speed` field from `ConnectedDeviceInfo::device::usb_speed`
+**Why**: Same two-site sync problem as SMB enrichment, but for MTP-derived volume fields. Originally only `volume_broadcast.rs` set `usb_speed` from the device info; the `list_volumes` IPC variant hardcoded `None`, so the bootstrap call (used until the `volumes-changed` event lands) produced volumes with a missing dot until a later push refreshed them. Any new MTP-derived `LocationInfo` field needs to be set in BOTH `append_mtp_volumes` copies. The Linux variant lives in `commands/volumes_linux.rs` and mirrors the macOS one.
+
 ## Key decisions
 
 **Decision**: Gate launch-time icon fetches on the FDA decision (`crate::fda_gate::is_fda_pending_runtime()`)

@@ -4,6 +4,8 @@
 
 use serde::Serialize;
 
+pub use crate::usb_speed::UsbSpeed;
+
 /// Information about a connected MTP device.
 ///
 /// This represents a device detected via USB, before opening an MTP session.
@@ -25,6 +27,9 @@ pub struct MtpDeviceInfo {
     pub manufacturer: Option<String>,
     pub product: Option<String>,
     pub serial_number: Option<String>,
+    /// Negotiated USB link speed (slowest of host port, cable, device).
+    /// `None` if the OS doesn't report it.
+    pub usb_speed: Option<UsbSpeed>,
 }
 
 /// Information about a storage area on an MTP device.
@@ -64,6 +69,7 @@ mod tests {
             manufacturer: Some("Google".to_string()),
             product: Some("Pixel".to_string()),
             serial_number: None,
+            usb_speed: Some(UsbSpeed::Super),
         };
         let json = serde_json::to_string(&device).unwrap();
         assert!(json.contains("\"vendorId\":"));
@@ -71,6 +77,7 @@ mod tests {
         assert!(json.contains("\"locationId\":"));
         // serialNumber serializes as explicit null (no longer omitted)
         assert!(json.contains("\"serialNumber\":null"));
+        assert!(json.contains("\"usbSpeed\":\"super\""));
     }
 
     #[test]

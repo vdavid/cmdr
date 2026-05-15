@@ -35,6 +35,8 @@ pub struct VolumeInfo {
     pub is_read_only: bool,
     /// SMB connection state indicator. Always `None` on stub platforms.
     pub smb_connection_state: Option<String>,
+    /// Negotiated USB link speed. Always `None` on stub platforms (no MTP).
+    pub usb_speed: Option<crate::usb_speed::UsbSpeed>,
 }
 
 /// Information about volume space.
@@ -75,6 +77,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
                 supports_trash: true,
                 is_read_only: false,
                 smb_connection_state: None,
+                usb_speed: None,
             });
         }
     }
@@ -91,6 +94,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         supports_trash: true,
         is_read_only: false,
         smb_connection_state: None,
+        usb_speed: None,
     });
 
     // Add home directory
@@ -105,6 +109,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         supports_trash: true,
         is_read_only: false,
         smb_connection_state: None,
+        usb_speed: None,
     });
 
     locations

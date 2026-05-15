@@ -154,6 +154,16 @@ which tries stored credentials first; if none found or they fail, the backend re
 `onSmbUpgradeLogin` callback triggers `FilePane` to show `NetworkLoginForm` inline (same pattern as `ShareBrowser`).
 Submenu supports full keyboard navigation (ArrowRight to open, ArrowLeft/Escape to close, Enter to activate).
 
+### USB link-speed indicator (MTP)
+
+MTP volumes carry `usbSpeed: UsbSpeed` (`'low' | 'full' | 'high' | 'super' | 'super_plus'`) sourced from `mtp-rs` via
+the shared `crate::usb_speed::UsbSpeed`. `describeUsbSpeed(speed)` in `$lib/file-explorer/types` maps each tier to
+`{ tier, label, maxMBps }`; the breadcrumb renders a 5-tier rainbow dot (red → orange → yellow → light green → dark
+green; dark green is `--color-allow`, same shade as SMB direct) on the right of both the closed chip and each dropdown
+row. Tooltip shows `<label> (Max. <N> MB/s)\nNegotiated for this cable, port, and device` (the global tooltip CSS uses
+`white-space: pre-line`, so `\n` becomes a real line break). The dot is the only visual — no inline text in the chip and
+no extra line under the disk-space bar, by design.
+
 ### Dropdown and submenu UI patterns
 
 These patterns emerged during the volume picker implementation and should be followed in future dropdown/submenu work:

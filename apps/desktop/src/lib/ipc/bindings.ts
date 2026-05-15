@@ -2347,6 +2347,12 @@ export type LocationInfo = {
   isReadOnly: boolean
   // SMB connection state indicator. Only set for volumes with an active `SmbVolume`.
   smbConnectionState: SmbConnectionState | null
+  /**
+   *  Negotiated USB link speed. Set only for MTP/mobile volumes; everything
+   *  else carries `None`. Frontend maps to a label like "USB 3.2 Gen 1" and a
+   *  theoretical max MB/s for the volume switcher.
+   */
+  usbSpeed: UsbSpeed | null
 }
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'warning' | 'error'
@@ -2421,6 +2427,11 @@ export type MtpDeviceInfo = {
   manufacturer: string | null
   product: string | null
   serialNumber: string | null
+  /**
+   *  Negotiated USB link speed (slowest of host port, cable, device).
+   *  `None` if the OS doesn't report it.
+   */
+  usbSpeed: UsbSpeed | null
 }
 
 // Information about an object on the device (returned after creation).
@@ -3011,6 +3022,19 @@ export type UpgradeResult =
     }
   // Non-auth error (DNS, network, unreachable).
   | { status: 'networkError'; message: string }
+
+// Negotiated USB link speed (slowest of host port, cable, device).
+export type UsbSpeed =
+  // USB 1.0 low-speed (1.5 Mbit/s).
+  | 'low'
+  // USB 1.1 full-speed (12 Mbit/s).
+  | 'full'
+  // USB 2.0 high-speed (480 Mbit/s).
+  | 'high'
+  // USB 3.2 Gen 1 / formerly USB 3.0 (5 Gbit/s).
+  | 'super'
+  // USB 3.2 Gen 2 / formerly USB 3.1 Gen 2 (10 Gbit/s).
+  | 'super_plus'
 
 // Validation error types for filename and path checks.
 export type ValidationError =

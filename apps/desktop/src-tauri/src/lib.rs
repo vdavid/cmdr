@@ -127,6 +127,7 @@ pub mod test_mode;
 mod text_size;
 #[cfg(target_os = "macos")]
 mod updater;
+mod usb_speed;
 mod volume_broadcast;
 #[cfg(target_os = "macos")]
 mod volumes;

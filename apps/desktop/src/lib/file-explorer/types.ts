@@ -207,6 +207,43 @@ export interface VolumeInfo {
   supportsTrash?: boolean
   /** SMB connection state. Only set for volumes with an active SmbVolume in the backend. */
   smbConnectionState?: SmbConnectionState
+  /** Negotiated USB link speed. Only set for MTP/mobile volumes. */
+  usbSpeed?: UsbSpeed
+}
+
+/**
+ * Negotiated USB link speed (slowest of host port, cable, and device).
+ * Mirrors the Rust `UsbSpeed` enum from `bindings.ts`.
+ */
+export type UsbSpeed = 'low' | 'full' | 'high' | 'super' | 'super_plus'
+
+/** Display label and theoretical max for a `UsbSpeed`. */
+export interface UsbSpeedDisplay {
+  /** The raw tier identifier, useful for CSS class names (`usb-speed-indicator-{tier}`). */
+  tier: UsbSpeed
+  /** Generation name, e.g. "USB 3.2 Gen 1". */
+  label: string
+  /** Theoretical maximum throughput in MB/s (1 MB/s = 10^6 B/s, matching marketing). */
+  maxMBps: number
+}
+
+/**
+ * Map a `UsbSpeed` to its display label + theoretical max MB/s.
+ * Values follow USB-IF marketing: divide raw line rate by 8 (decimal MB).
+ */
+export function describeUsbSpeed(speed: UsbSpeed): UsbSpeedDisplay {
+  switch (speed) {
+    case 'low':
+      return { tier: 'low', label: 'USB 1.0 low-speed', maxMBps: 0.2 }
+    case 'full':
+      return { tier: 'full', label: 'USB 1.1 full-speed', maxMBps: 1.5 }
+    case 'high':
+      return { tier: 'high', label: 'USB 2.0', maxMBps: 60 }
+    case 'super':
+      return { tier: 'super', label: 'USB 3.2 Gen 1', maxMBps: 625 }
+    case 'super_plus':
+      return { tier: 'super_plus', label: 'USB 3.2 Gen 2', maxMBps: 1250 }
+  }
 }
 
 // ============================================================================

@@ -222,6 +222,7 @@ async fn append_mtp_volumes(volumes: &mut Vec<LocationInfo>) {
                 fs_type: Some("mtp".to_string()),
                 supports_trash: false,
                 smb_connection_state: None,
+                usb_speed: device.device.usb_speed,
             });
         }
     }

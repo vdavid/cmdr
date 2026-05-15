@@ -40,6 +40,13 @@ var allowedUnusedClasses = map[string]bool{
 	"cmdr-tooltip":     true,
 	"cmdr-tooltip-kbd": true,
 	"visible":          true,
+	// VolumeBreadcrumb.svelte - USB-speed indicator tier classes applied dynamically via
+	// `usb-speed-indicator-{tier}` template string, where `tier` is the UsbSpeed enum value.
+	"usb-speed-indicator-low":        true,
+	"usb-speed-indicator-full":       true,
+	"usb-speed-indicator-high":       true,
+	"usb-speed-indicator-super":      true,
+	"usb-speed-indicator-super_plus": true,
 }
 
 // allowedUnusedVariables lists CSS custom properties that are defined but used dynamically,

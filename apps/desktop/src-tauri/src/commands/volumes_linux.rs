@@ -78,6 +78,7 @@ pub async fn resolve_path_volume(path: String) -> PathVolumeResolution {
                 supports_trash: false,
                 is_read_only: false,
                 smb_connection_state: None,
+                usb_speed: None,
             }),
             timed_out: false,
         };
@@ -138,6 +139,7 @@ async fn append_mtp_volumes(volumes: &mut Vec<VolumeInfo>) {
                 fs_type: Some("mtp".to_string()),
                 supports_trash: false,
                 smb_connection_state: None,
+                usb_speed: device.device.usb_speed,
             });
         }
     }

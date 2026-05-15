@@ -9,11 +9,11 @@ On Linux, users may need udev rules for USB device permissions (see `resources/9
 | File | Purpose |
 |------|---------|
 | `mod.rs` | Re-exports public surface; module-level doc |
-| `types.rs` | `MtpDeviceInfo`, `MtpStorageInfo`: camelCase JSON via `serde(rename_all)` |
+| `types.rs` | `MtpDeviceInfo`, `MtpStorageInfo`: camelCase JSON via `serde(rename_all)`. `MtpDeviceInfo::usb_speed` mirrors `mtp_rs::UsbSpeed` via the shared `crate::usb_speed::UsbSpeed` (also surfaced on `LocationInfo` for MTP volumes so the volume switcher can show a colored dot). |
 | `discovery.rs` | `list_mtp_devices()` via `mtp_rs::MtpDevice::list_devices()`; device IDs formatted as `"mtp-{location_id}"` |
 | `watcher.rs` | `start_mtp_watcher()`: nusb hotplug watcher; 500 ms delay on connect before re-checking; auto-connects detected devices via `MtpConnectionManager::connect()` and auto-disconnects removed ones |
 | `macos_workaround.rs` | macOS-only (`#[cfg(target_os = "macos")]`). Auto-suppresses `ptpcamerad` via `launchctl disable` + `pkill`; restores on disconnect/exit; `ensure_ptpcamerad_enabled()` on startup for crash recovery. Falls back to manual `PTPCAMERAD_WORKAROUND_COMMAND` dialog if suppression fails |
-| `connection/mod.rs` | `MtpConnectionManager` singleton (`LazyLock`); `DeviceEntry` map; `connect()` (idempotent, probes write capability, registers `MtpVolume`); `disconnect()` |
+| `connection/mod.rs` | `MtpConnectionManager` singleton (`LazyLock`); `DeviceEntry` map; `connect()` (idempotent, probes write capability, registers `MtpVolume`, re-runs `MtpDevice::list_devices()` once to fetch the negotiated USB link speed since the open `MtpDevice` doesn't expose it); `disconnect()` |
 | `connection/cache.rs` | `PathHandleCache` (path → MTP object handle), `ListingCache` (5 s TTL), `EventDebouncer` (500 ms per device) |
 | `connection/errors.rs` | `MtpConnectionError` enum with typed variants and `map_mtp_error()` from `mtp_rs::Error` |
 | `connection/event_loop.rs` | Background tokio task per device: polls `device.next_event()`, computes diffs, emits `directory-diff` events using the unified diff system |

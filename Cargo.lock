@@ -5428,9 +5428,9 @@ dependencies = [
 
 [[package]]
 name = "mtp-rs"
-version = "0.13.3"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db7c57cd0f4a0371556db22a3a532eb6ab82b90979e53d7ba119d4a1156faf3f"
+checksum = "2afe3272f6e1e2461b7affe6c2e4d5d9df0cc923ea92a88b069fb9b9ec0b3282"
 dependencies = [
  "async-trait",
  "bytes",

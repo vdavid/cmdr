@@ -50,6 +50,10 @@ pub struct LocationInfo {
     pub is_read_only: bool,
     /// SMB connection state indicator. Only set for volumes with an active `SmbVolume`.
     pub smb_connection_state: Option<SmbConnectionState>,
+    /// Negotiated USB link speed. Set only for MTP/mobile volumes; everything
+    /// else carries `None`. Frontend maps to a label like "USB 3.2 Gen 1" and a
+    /// theoretical max MB/s for the volume switcher.
+    pub usb_speed: Option<crate::usb_speed::UsbSpeed>,
 }
 
 /// Default volume ID for the root filesystem.
@@ -257,6 +261,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
             supports_trash,
             is_read_only: false,
             smb_connection_state: None,
+            usb_speed: None,
         })
     })
 }
@@ -372,6 +377,7 @@ fn get_favorites() -> Vec<LocationInfo> {
                 supports_trash,
                 is_read_only: false,
                 smb_connection_state: None,
+                usb_speed: None,
             }
         })
         .collect()
@@ -413,6 +419,7 @@ fn get_main_volume() -> Option<LocationInfo> {
                     supports_trash,
                     is_read_only: false,
                     smb_connection_state: None,
+                    usb_speed: None,
                 });
             }
         }
@@ -490,6 +497,7 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
                 supports_trash,
                 is_read_only: false,
                 smb_connection_state: None,
+                usb_speed: None,
             });
         }
 
@@ -528,6 +536,7 @@ pub fn get_cloud_drives() -> Vec<LocationInfo> {
             supports_trash,
             is_read_only: false,
             smb_connection_state: None,
+            usb_speed: None,
         });
     }
 
@@ -556,6 +565,7 @@ pub fn get_cloud_drives() -> Vec<LocationInfo> {
                         supports_trash,
                         is_read_only: false,
                         smb_connection_state: None,
+                        usb_speed: None,
                     });
                 }
             }
