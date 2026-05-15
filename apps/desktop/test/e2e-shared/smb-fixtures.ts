@@ -52,6 +52,25 @@ export const SMB_AUTH_MOUNT = IS_LINUX
   ? `/run/user/${LINUX_UID}/gvfs/smb-share:server=${SMB_AUTH_HOST},share=${SMB_AUTH_SHARE}`
   : `/Volumes/${SMB_AUTH_SHARE}`
 
+/**
+ * Suite-specific subdirectory inside the SMB shares used by the E2E playwright
+ * suite for any writes. The Rust integration tests already scope each test to
+ * a unique `cmdr-test-{pid}-{ts}-{n}/` directory (see
+ * `apps/desktop/src-tauri/src/file_system/volume/smb.rs::test_dir_name`), so
+ * they can't collide with this subdir. Fixed name (not timestamped) so the
+ * post-setup teardown step in `setupSmb` can reliably wipe stale state from
+ * earlier runs.
+ */
+export const SMB_E2E_SUITE_DIR = 'e2e-playwright'
+
+/**
+ * Mount path joined with the suite subdir. Use this when writing files via
+ * the mounted path so the writes land in suite-specific space. Reads of
+ * share-level metadata (host discovery, share listing) still use the bare
+ * share via `SMB_GUEST_MOUNT`.
+ */
+export const SMB_GUEST_MOUNT_SUITE = `${SMB_GUEST_MOUNT}/${SMB_E2E_SUITE_DIR}`
+
 const SMB_SERVERS_DIR = path.resolve(__dirname, '../smb-servers')
 const DOCKER_COMPOSE_DIR = path.resolve(SMB_SERVERS_DIR, '.compose')
 
@@ -181,10 +200,64 @@ export function unmountSmbShares(): void {
 // ── Combined setup/teardown ──────────────────────────────────────────────────
 
 /**
+ * Wipes any leftover state from the suite subdir on the SMB share and
+ * recreates it empty. Uses smbclient directly (not the GVFS mount) because
+ * GVFS caching can mask just-written files for the first read. This makes
+ * subsequent suite writes deterministic: every cross-storage test starts
+ * with the same clean directory state, regardless of what an earlier run
+ * left behind.
+ */
+function resetSmbSuiteDir(host: string, port: number, share: string): void {
+  const cmd = [
+    `cd ${SMB_E2E_SUITE_DIR} || mkdir ${SMB_E2E_SUITE_DIR}`,
+    `cd ${SMB_E2E_SUITE_DIR}`,
+    // Best-effort cleanup: list+delete every file. Subdirectories aren't
+    // currently created here, but if they ever are this needs to be made
+    // recursive (smbclient `dir` + `rmdir` per entry).
+    'ls',
+  ].join(';')
+  try {
+    const out = execSync(`smbclient '//${host}/${share}' -N -p ${String(port)} -c '${cmd}'`, {
+      encoding: 'utf-8',
+      timeout: 15_000,
+    })
+    // Parse the ls output and delete real files (ignore '.' / '..' and DR-flagged dir entries).
+    const entries: string[] = []
+    for (const line of out.split('\n')) {
+      const m = line.match(/^\s+(\S.*?)\s+([ADHRS]+)\s+\d+\s+/)
+      if (!m) continue
+      const name = m[1].trim()
+      const flags = m[2]
+      if (name === '.' || name === '..') continue
+      if (flags.includes('D')) continue // skip dirs (none expected today)
+      entries.push(name)
+    }
+    if (entries.length > 0) {
+      const delCmd = ['cd ' + SMB_E2E_SUITE_DIR, ...entries.map((n) => `del ${n}`)].join(';')
+      execSync(`smbclient '//${host}/${share}' -N -p ${String(port)} -c '${delCmd}'`, {
+        encoding: 'utf-8',
+        timeout: 15_000,
+      })
+    }
+    // eslint-disable-next-line no-console
+    console.log(
+      `SMB suite dir reset: //${host}/${share}/${SMB_E2E_SUITE_DIR} (cleared ${String(entries.length)} file(s))`,
+    )
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    // eslint-disable-next-line no-console
+    console.warn(`SMB suite dir reset failed (continuing anyway): ${msg}`)
+  }
+}
+
+/**
  * Full SMB test setup.
  * - On macOS: ensures containers are running and optionally pre-mounts.
  * - On Linux (Docker): containers are managed externally by e2e-linux.sh,
  *   we only pre-mount.
+ * - Always: resets the suite subdir on the guest share (write isolation
+ *   from the Rust integration tests, which use their own `cmdr-test-{pid}-{ts}-{n}`
+ *   subdirs).
  */
 export function setupSmb(): void {
   if (!IS_LINUX) {
@@ -201,6 +274,7 @@ export function setupSmb(): void {
     // eslint-disable-next-line no-console
     console.warn(`Pre-mount skipped: ${msg}`)
   }
+  resetSmbSuiteDir(SMB_GUEST_HOST, SMB_GUEST_PORT, SMB_GUEST_SHARE)
 }
 
 /** Full SMB test teardown: unmount shares (containers left running for reuse). */

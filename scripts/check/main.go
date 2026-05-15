@@ -49,12 +49,22 @@ type cliFlags struct {
 }
 
 func main() {
-	// Kill all child process groups on Ctrl+C / SIGTERM so no orphans are left behind.
+	// SMB orchestrator: lazily set after we know which checks are selected.
+	// Captured by the signal handler so Ctrl+C also tears down containers.
+	var smb *SmbOrchestrator
+
+	// Kill all child process groups on Ctrl+C / SIGTERM so no orphans are left
+	// behind, AND tear down SMB containers we started (so a re-run starts
+	// clean and the user doesn't see zombie smb-consumer-* containers in
+	// `docker ps`).
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigCh
 		checks.KillAllProcesses()
+		if smb != nil {
+			smb.Stop()
+		}
 		os.Exit(130) // 128 + SIGINT(2)
 	}()
 
@@ -120,7 +130,32 @@ func main() {
 		}
 	}
 
+	smb = setupSmbOrchestratorIfNeeded(rootDir, checksToRun)
+	if smb != nil {
+		defer smb.Stop()
+	}
+
 	runChecks(ctx, checksToRun, flags.failFast, flags.noLog)
+}
+
+// setupSmbOrchestratorIfNeeded inspects the planned check set for any check
+// with a non-empty NeedsSmb. If any are present, it constructs and starts the
+// orchestrator. Returns nil when no SMB-using check was scheduled (in which
+// case main never needs to defer a stop).
+//
+// Extracted from main() so main stays under the gocyclo threshold; the
+// orchestrator's lifecycle is logically separate from the rest of startup.
+func setupSmbOrchestratorIfNeeded(rootDir string, checksToRun []checks.CheckDefinition) *SmbOrchestrator {
+	modes := collectModes(checksToRun)
+	if len(modes) == 0 {
+		return nil
+	}
+	smb := NewSmbOrchestrator(rootDir)
+	if err := smb.EnsureStarted(modes); err != nil {
+		printError("Error: %v", err)
+		os.Exit(1)
+	}
+	return smb
 }
 
 // handleFreestyleFlags dispatches --only-freestyle / --prefer-freestyle if set.

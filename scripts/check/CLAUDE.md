@@ -290,6 +290,20 @@ phrases). `trimRustTestProgress` in `desktop-rust-tests-linux.go` runs after `tr
 (`running N tests` header, FAIL/FAILED/LEAK/TIMEOUT verdicts, the `failures:` block, the `test result:` / `Summary`
 tally, `error:` lines, bench results) passes through unchanged.
 
+**Decision**: SMB Docker container lifecycle is owned by a runner-level orchestrator, not per-check. **Why**: Multiple
+checks (`desktop-rust-integration-tests`, `desktop-e2e-linux`) need the shared `smb-consumer` Docker Compose project.
+Before, each owned the lifecycle: start in entry, `defer ./stop.sh` in cleanup. When both ran in parallel under
+`--include-slow`, whichever finished first would tear down containers the other was still using, producing
+`Cannot reach smb-consumer-X` cascades. `SmbOrchestrator` (`scripts/check/smb_orchestrator.go`) lifts lifecycle one
+level up: at runner init, after `selectChecks()` resolves the planned set, the orchestrator brings up the union of
+`NeedsSmb` modes (`SmbModeCore` for integration tests, `SmbModeE2E` for e2e). At runner exit (normal, `--fail-fast`, or
+SIGINT) it tears down once. Checks marked `NeedsSmb` no longer manage their own lifecycle: they assume the containers
+are up and call `waitForSmbContainers` as a cheap mid-run zombie-guard. The smaller scripts (`start.sh`,
+`e2e-linux.sh::start_smb_containers`) keep working standalone for `pnpm test:e2e:linux` invocations outside the check
+runner; under check.sh their start.sh invocation just sees the orchestrator's containers already running and probes are
+idempotent. The SIGINT handler in `main.go` captures the orchestrator via shared variable so a Ctrl+C also triggers
+`./stop.sh` with a banner before exiting 130.
+
 **Decision**: silence apt/dpkg at the source, not via a post-hoc denylist. **Why**: `provisionScript` redirects both apt
 commands to a log file under `DEBIAN_FRONTEND=noninteractive` + `-qq`, so on a successful provision the check's stdout
 gets zero apt lines. The log lives on a per-run host directory (`/tmp/cmdr-rust-tests-linux-<unix-ts>/provision.log`)

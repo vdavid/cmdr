@@ -134,6 +134,7 @@ var AllChecks = []CheckDefinition{
 		App:               AppDesktop,
 		Tech:              "🦀 Rust",
 		FreestyleIncompat: true, // Needs Docker, which isn't available on freestyle.sh VMs
+		NeedsSmb:          SmbModeCore,
 		DependsOn:         []string{"desktop-rust-clippy"},
 		Run:               RunRustIntegrationTests,
 	},
@@ -265,6 +266,7 @@ var AllChecks = []CheckDefinition{
 		Tech:              "🎨 Svelte",
 		IsSlow:            true,
 		FreestyleIncompat: true,
+		NeedsSmb:          SmbModeE2E,
 		DependsOn:         []string{"desktop-svelte-e2e-linux-typecheck"},
 		Run:               RunDesktopE2ELinux,
 	},

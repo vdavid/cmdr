@@ -12,14 +12,21 @@ import (
 
 // RunRustIntegrationTests runs the Docker-backed SMB Rust integration tests.
 //
+// Container lifecycle: managed by the runner-level SMB orchestrator (see
+// scripts/check/smb_orchestrator.go). This check is marked `NeedsSmb: SmbModeCore`
+// in the registry, so the containers are guaranteed up by the time this
+// function runs and they survive past it (no per-check `defer ./stop.sh`).
+// The old defer broke parallel runs by tearing down containers
+// `desktop-e2e-linux` was still using.
+//
 // Flow:
-//  1. Start the core SMB Docker containers (guest, auth, both, readonly, flaky, slow)
-//     via apps/desktop/test/smb-servers/start.sh.
-//  2. Poll until the expected containers report `running`.
-//  3. Invoke `cargo nextest run --release --run-ignored only -E 'test(smb_integration_)'`
+//  1. Containers are already up (orchestrator started them at runner init).
+//     We still wait until the expected services report `running` as a
+//     cheap guard against mid-run zombies; smb2 reconnects if the server
+//     isn't ready on the first write.
+//  2. Invoke `cargo nextest run --release --run-ignored only -E 'test(smb_integration_)'`
 //     in apps/desktop/src-tauri. The expression filter matches every
 //     `smb_integration_*` test and skips other `#[ignore]` tests.
-//  4. Always tear the containers down afterwards (success or failure).
 func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 	// Docker is a hard requirement. Surface a clear message instead of a cryptic error.
 	if !CommandExists("docker") {
@@ -33,30 +40,12 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		)
 	}
 
-	smbServersDir := filepath.Join(ctx.RootDir, "apps", "desktop", "test", "smb-servers")
 	rustDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri")
 
-	// Start containers (core = guest, auth, both, readonly, flaky, slow). The
-	// make_docker_volume helper in smb.rs only uses the guest port today, but
-	// core matches what the default start.sh spins up and covers anything new
-	// we add.
-	startCmd := exec.Command("./start.sh", "core")
-	startCmd.Dir = smbServersDir
-	if startOutput, err := RunCommand(startCmd, true); err != nil {
-		return CheckResult{}, fmt.Errorf("couldn't start SMB containers\n%s", indentOutput(startOutput))
-	}
-
-	// Always stop containers when the check returns, regardless of outcome.
-	defer func() {
-		stopCmd := exec.Command("./stop.sh")
-		stopCmd.Dir = smbServersDir
-		_, _ = RunCommand(stopCmd, true)
-	}()
-
-	// Wait for the core services to be running. We don't require `healthy`
-	// here because these images don't all ship healthchecks; `running` plus
-	// a short settle is enough, and smb2 reconnects if the server isn't
-	// ready on the first write.
+	// Wait for the core services to be running (the orchestrator started them,
+	// but they may still be transitioning to `running` when this check
+	// kicks off). We don't require `healthy` here because these images don't
+	// all ship healthchecks.
 	expected := []string{
 		"smb-consumer-guest",
 		"smb-consumer-auth",

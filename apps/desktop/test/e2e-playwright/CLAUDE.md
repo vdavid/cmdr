@@ -204,10 +204,23 @@ or start the app manually first (see "Manually" section above).
 in-flight `evaluate()` result will be lost. Always `waitForSelector()` on the target page's element before evaluating
 further JS.
 
-**Gotcha**: `ensureAppReady()` must reset both the route AND the directories. **Why**: Navigating to SvelteKit route `/`
-only ensures we're on the file explorer page. It does NOT change which directory either pane is showing. Pane
-directories are persistent app state. So `ensureAppReady()` also emits `mcp-nav-to-path` Tauri events via
-`window.__TAURI_INTERNALS__` to navigate both panes back to the fixture root's `left/` and `right/` directories.
+**Gotcha**: `ensureAppReady()` must reset route, **volume**, and directories. **Why**: Navigating to SvelteKit route
+`/` only ensures we're on the file explorer page. It does NOT change which volume or directory either pane is showing.
+Pane state is persistent across tests. So `ensureAppReady()` does three things, in order:
+
+1. Read `cmdr://state` via MCP; if either pane is on a non-local volume (Network/MTP/etc.) or a modal is lingering,
+   emit `mcp-volume-select` for both panes targeting `LOCAL_VOLUME_NAME` (`Root` on Linux, `Macintosh HD` on macOS).
+   Followed by two Escape presses to dismiss any open dialog. Skipped via `isStateClean` short-circuit when state is
+   already clean (typical case → ~5 ms overhead).
+2. Emit `mcp-nav-to-path` Tauri events via `window.__TAURI_INTERNALS__` to navigate both panes back to the fixture
+   root's `left/` and `right/` directories.
+3. Poll for the expected fixture files to appear in the left pane.
+
+The volume reset (step 1) is required because `DualPaneExplorer.navigateToPath` **rejects** `mcp-nav-to-path` events
+for non-local panes — without the reset, step 2 silently no-ops and step 3 times out with an empty pane. Specs that
+explicitly switch panes to non-local volumes (`smb.spec.ts`, `mtp.spec.ts`, `mtp-conflicts.spec.ts`,
+`network-toggle.spec.ts`) previously did this reset themselves in their own `beforeEach`; that duplicate logic is now
+redundant but harmless to keep.
 
 **Gotcha**: File-operation tests need fixture recreation. **Why**: Tests that copy, move, rename, or create files mutate
 the shared fixture directory. Without cleanup, later tests see stale artifacts. `recreateFixtures()` runs in

@@ -19,6 +19,8 @@ import {
   setupSmb,
   teardownSmb,
   SMB_GUEST_MOUNT,
+  SMB_GUEST_MOUNT_SUITE,
+  SMB_E2E_SUITE_DIR,
   SMB_GUEST_SHARE,
   SMB_GUEST_HOST,
   SMB_GUEST_PORT,
@@ -272,14 +274,16 @@ describeSmb('SMB cross-storage copy', () => {
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
 
-    if (!fs.existsSync(SMB_GUEST_MOUNT)) {
+    if (!fs.existsSync(SMB_GUEST_MOUNT_SUITE)) {
       test.skip()
       return
     }
 
     // Left pane: local fixtures (already set by ensureAppReady)
-    // Right pane: mounted SMB share
-    await mcpNavToPath('right', SMB_GUEST_MOUNT)
+    // Right pane: suite-specific subdir on the mounted SMB share
+    // (write isolation from the Rust integration tests — see
+    // SMB_E2E_SUITE_DIR in smb-fixtures.ts).
+    await mcpNavToPath('right', SMB_GUEST_MOUNT_SUITE)
 
     // Copy file-a.txt from left to right
     await mcpCall('move_cursor', { pane: 'left', filename: 'file-a.txt' })
@@ -289,7 +293,7 @@ describeSmb('SMB cross-storage copy', () => {
     await mcpAwaitItem('right', 'file-a.txt', 30)
 
     // Verify on disk (the mount maps to Docker container volume)
-    const copied = path.join(SMB_GUEST_MOUNT, 'file-a.txt')
+    const copied = path.join(SMB_GUEST_MOUNT_SUITE, 'file-a.txt')
     await pollUntil(tauriPage, () => Promise.resolve(fs.existsSync(copied)), 10000)
     expect(fs.existsSync(copied)).toBe(true)
 
@@ -301,23 +305,25 @@ describeSmb('SMB cross-storage copy', () => {
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
 
-    if (!fs.existsSync(SMB_GUEST_MOUNT)) {
+    if (!fs.existsSync(SMB_GUEST_MOUNT_SUITE)) {
       test.skip()
       return
     }
 
     // Write test file directly to the SMB server via smbclient (bypasses GVFS
     // caching; files written through the GVFS mount aren't immediately visible).
+    // Target the suite-specific subdir so concurrent Rust integration tests
+    // can never see this file.
     smbWriteFile(
       SMB_GUEST_HOST,
       SMB_GUEST_PORT,
       SMB_GUEST_SHARE,
-      'smb-test-file.txt',
+      `${SMB_E2E_SUITE_DIR}/smb-test-file.txt`,
       'File from SMB share for E2E test.\n',
     )
 
     // Left pane: SMB share, Right pane: local fixtures right/
-    await mcpNavToPath('left', SMB_GUEST_MOUNT)
+    await mcpNavToPath('left', SMB_GUEST_MOUNT_SUITE)
     await mcpAwaitItem('left', 'smb-test-file.txt', 15)
 
     // Copy from SMB to local

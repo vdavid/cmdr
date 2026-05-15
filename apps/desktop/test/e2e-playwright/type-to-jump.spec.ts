@@ -70,6 +70,13 @@ async function indicatorText(tauriPage: PageLike): Promise<string> {
 }
 
 test.describe('Type-to-jump', () => {
+  // These tests cross 4-5 IPC roundtrips each (key dispatch + indicator poll +
+  // cursor-name poll). On macOS local they run in 200-500 ms; on Linux Docker
+  // under parallel load each roundtrip costs noticeably more, putting the
+  // wall-clock right at the 8 s default. 15 s gives realistic headroom
+  // without masking genuine hangs (a real bug would still blow past 15 s).
+  test.describe.configure({ timeout: 15_000 })
+
   test('typing letters jumps the cursor to the best fuzzy match', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 

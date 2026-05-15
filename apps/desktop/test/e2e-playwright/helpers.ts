@@ -26,6 +26,13 @@ export const TRANSFER_DIALOG = '[data-dialog-id="transfer-confirmation"]'
 
 export const CTRL_OR_META = process.platform === 'darwin' ? 'Meta' : 'Control'
 
+/**
+ * Name of the local root volume in cmdr's volume picker. Linux Docker images
+ * report it as "Root"; macOS uses "Macintosh HD". This must match the literal
+ * `cmdr://state` volume entry for `mcp-volume-select` to pick the right one.
+ */
+export const LOCAL_VOLUME_NAME = process.platform === 'linux' ? 'Root' : 'Macintosh HD'
+
 // ── Key name mapping ────────────────────────────────────────────────────────
 
 /**
@@ -138,6 +145,49 @@ export async function ensureAppReady(
         if (btn) btn.click();
     })()`)
   await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.ai-notification')), 3000)
+
+  // Reset both panes back to the local volume if a previous test (smb,
+  // mtp, mtp-conflicts, network-toggle) left one on Network/MTP/etc.
+  // `mcp-nav-to-path` below is rejected by `DualPaneExplorer.navigateToPath`
+  // for non-local panes, so the subsequent fixture-files poll would time out
+  // with an empty pane. This is the same volume-reset the volume-touching
+  // specs do in their own beforeEach — lifting it into `ensureAppReady`
+  // means every spec gets it for free instead of needing to know about
+  // the volume-pollution gotcha.
+  //
+  // Gated on `isStateClean` so the typical case (both panes already local,
+  // no modal lingering) skips the volume-select + Escape sequence and pays
+  // ~zero overhead — only ~5 ms for one MCP `cmdr://state` read.
+  try {
+    await ensureMcpClient(tauriPage)
+    if (!(await isStateClean(tauriPage, LOCAL_VOLUME_NAME))) {
+      await tauriPage.evaluate(`(function() {
+        var invoke = window.__TAURI_INTERNALS__.invoke;
+        invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'left', name: ${JSON.stringify(LOCAL_VOLUME_NAME)} } });
+        invoke('plugin:event|emit', { event: 'mcp-volume-select', payload: { pane: 'right', name: ${JSON.stringify(LOCAL_VOLUME_NAME)} } });
+      })()`)
+      // Wait for both panes to actually be on the local volume.
+      await pollUntil(
+        tauriPage,
+        async () => {
+          const state = await mcpReadResource('cmdr://state')
+          const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) =>
+            line.replace(/^\n {2}volume: /, ''),
+          )
+          return volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
+        },
+        5000,
+      )
+      // Dismiss any lingering dialog the volume-touching spec opened.
+      await tauriPage.keyboard.press('Escape')
+      await tauriPage.keyboard.press('Escape')
+      await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 2000)
+    }
+  } catch {
+    // mcp-client may not be available yet (very first test); fall through and
+    // let the nav-to-path attempt run. If the pane is non-local the
+    // expected-files poll below will fail with the existing clear error.
+  }
 
   // Navigate both panes to the fixture root's left/ and right/ directories.
   // Previous tests may have entered sub-dir or navigated elsewhere.

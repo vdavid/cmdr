@@ -91,9 +91,25 @@ type CheckDefinition struct {
 	Tech              string
 	IsSlow            bool
 	FreestyleIncompat bool // true = can NOT run on freestyle.sh VMs (Rust compilation, Docker, etc.)
-	DependsOn         []string
-	Run               CheckFunc
+	// NeedsSmb declares that this check requires the smb-consumer Docker stack
+	// to be running. The check runner manages the stack lifecycle for the union
+	// of selected checks with this flag (see scripts/check/smb_orchestrator.go).
+	// Without it, each such check tried to own the lifecycle itself and parallel
+	// runs trampled each other via stop.sh.
+	NeedsSmb  SmbMode // "" = no SMB needed; "core" = integration tests; "e2e" = e2e tests
+	DependsOn []string
+	Run       CheckFunc
 }
+
+// SmbMode names the SMB consumer container set a check needs. Mirrors the
+// modes accepted by apps/desktop/test/smb-servers/start.sh.
+type SmbMode string
+
+const (
+	SmbModeNone SmbMode = ""
+	SmbModeCore SmbMode = "core" // guest, auth, both, readonly, flaky, slow
+	SmbModeE2E  SmbMode = "e2e"  // guest, auth, 50shares, unicode
+)
 
 // processTracker keeps track of all running child processes so they can be
 // killed as a group on Ctrl+C. Each command is started with its own process
