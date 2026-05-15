@@ -36,6 +36,7 @@
         type CommandDispatchContext,
     } from './command-dispatch'
     import { setupMcpListeners } from './mcp-listeners'
+    import { initAppMode, getAppMode, type AppMode } from '$lib/app-mode'
     import {
         hideExpirationModal,
         loadLicenseStatus,
@@ -58,6 +59,7 @@
     let showSearchDialog = $state(false)
     let explorerRef: ExplorerAPI | undefined = $state()
     let windowTitle = $state('Cmdr')
+    let appMode = $state<AppMode>(getAppMode())
     const showFunctionKeyBar = $state(true)
 
     // Event handlers stored for cleanup
@@ -353,6 +355,10 @@
             loadingScreen.style.display = 'none'
         }
 
+        // Resolve dev/E2E/prod mode before anything opens child windows so the
+        // Settings and Viewer titles can be decorated at creation time.
+        appMode = await initAppMode()
+
         // Fetch platform-specific path limits (non-blocking, macOS defaults until resolved)
         void initPathLimits()
 
@@ -634,8 +640,15 @@
 
 <div class="page-container">
     {#if isMacOS()}
-        <header class="title-bar" class:dev-mode={import.meta.env.DEV} data-tauri-drag-region>
-            <span class="title-text">{import.meta.env.DEV ? `DEV MODE - ${windowTitle} - DEV MODE` : windowTitle}</span>
+        <header
+            class="title-bar"
+            class:dev-mode={appMode === 'dev'}
+            class:e2e-mode={appMode === 'e2e'}
+            data-tauri-drag-region
+        >
+            <span class="title-text">
+                {#if appMode === 'dev'}DEV MODE - {windowTitle} - DEV MODE{:else if appMode === 'e2e'}E2E MODE - {windowTitle} - E2E MODE{:else}{windowTitle}{/if}
+            </span>
         </header>
     {/if}
 
@@ -719,6 +732,15 @@
         position: absolute;
         inset: 0;
         background-color: color-mix(in srgb, hotpink, transparent 40%);
+        pointer-events: none;
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .title-bar.e2e-mode::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-color: color-mix(in srgb, dodgerblue, transparent 40%);
         pointer-events: none;
     }
 

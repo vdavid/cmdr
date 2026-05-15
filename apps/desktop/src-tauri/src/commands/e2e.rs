@@ -9,6 +9,16 @@ pub fn get_e2e_start_path() -> Option<String> {
     std::env::var("CMDR_E2E_START_PATH").ok()
 }
 
+/// Returns `true` when running under an E2E harness (`CMDR_E2E_MODE=1`).
+/// The frontend uses this to switch the title-bar styling and decorate child
+/// window titles so a tester can tell an automated window apart from prod or
+/// dev. Always compiled in; reading an unset env var is a no-op in production.
+#[tauri::command]
+#[specta::specta]
+pub fn is_e2e_mode() -> bool {
+    crate::test_mode::is_e2e_mode()
+}
+
 /// Sets the per-file copy throttle (milliseconds) for the next write operation.
 ///
 /// `None` clears the override. Tests use this to slow down the copy loop by a

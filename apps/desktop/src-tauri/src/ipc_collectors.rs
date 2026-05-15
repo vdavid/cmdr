@@ -176,6 +176,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::search::parse_search_scope,
         crate::commands::search::get_system_dir_excludes,
         crate::commands::e2e::get_e2e_start_path,
+        crate::commands::e2e::is_e2e_mode,
         crate::commands::clipboard::copy_files_to_clipboard,
         crate::commands::clipboard::cut_files_to_clipboard,
         crate::commands::clipboard::read_clipboard_files,

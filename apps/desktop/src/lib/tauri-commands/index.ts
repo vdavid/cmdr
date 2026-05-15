@@ -310,6 +310,7 @@ export {
   startIndexingAfterFdaDecision,
   getDirStatsBatch,
   getE2eStartPath,
+  isE2eMode,
   getAiStatus,
   getAiModelInfo,
   startAiDownload,

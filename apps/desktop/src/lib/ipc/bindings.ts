@@ -1125,6 +1125,13 @@ export const commands = {
    */
   getE2eStartPath: () => __TAURI_INVOKE<string | null>('get_e2e_start_path'),
   /**
+   *  Returns `true` when running under an E2E harness (`CMDR_E2E_MODE=1`).
+   *  The frontend uses this to switch the title-bar styling and decorate child
+   *  window titles so a tester can tell an automated window apart from prod or
+   *  dev. Always compiled in; reading an unset env var is a no-op in production.
+   */
+  isE2eMode: () => __TAURI_INVOKE<boolean>('is_e2e_mode'),
+  /**
    *  Resolves selected file paths and writes them to the system clipboard.
    *  Clears any existing cut state (this is a copy, not a cut).
    */

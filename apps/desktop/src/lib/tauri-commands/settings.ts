@@ -387,6 +387,19 @@ export async function getE2eStartPath(): Promise<string | null> {
   }
 }
 
+/**
+ * Returns true when the running binary is under an E2E harness
+ * (`CMDR_E2E_MODE=1`). Returns false when not, or when the backend isn't
+ * reachable (non-Tauri context, like a Vitest run).
+ */
+export async function isE2eMode(): Promise<boolean> {
+  try {
+    return await commands.isE2eMode()
+  } catch {
+    return false
+  }
+}
+
 /** Gets AI-generated folder name suggestions for the current directory. */
 export async function getFolderSuggestions(
   listingId: string,

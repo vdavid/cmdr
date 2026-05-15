@@ -26,6 +26,7 @@
     import { createIndexingPoll } from './viewer-indexing-poll'
     import { handleNavigationKey, handleToggleKey } from './viewer-keyboard'
     import Size from '$lib/ui/Size.svelte'
+    import { initAppMode, decorateChildWindowTitle } from '$lib/app-mode'
 
     const log = getAppLogger('viewer')
 
@@ -309,8 +310,9 @@
                 .catch(() => {}) // Non-critical: height map just won't activate
         }
 
+        await initAppMode()
         getCurrentWindow()
-            .setTitle(`${result.fileName} | Viewer`)
+            .setTitle(decorateChildWindowTitle(`${result.fileName} | Viewer`))
             .catch(() => {})
 
         await setupMcpListeners(path)

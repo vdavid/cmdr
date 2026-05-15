@@ -446,8 +446,8 @@ test.describe('MTP cross-volume copy conflicts', () => {
         fs.statSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt')).size
 
       expect(completed).not.toBeNull()
-      expect(completed!.filesProcessed).toBe(2)
-      expect(completed!.bytesProcessed).toBe(expectedBytes)
+      expect(completed?.filesProcessed).toBe(2)
+      expect(completed?.bytesProcessed).toBe(expectedBytes)
     } finally {
       await tauriPage.evaluate(`(async function() {
           const conflictId = window.__skipBytesTestConflictId;

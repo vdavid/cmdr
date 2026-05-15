@@ -21,6 +21,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { emitTo } from '@tauri-apps/api/event'
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
+import { decorateChildWindowTitle } from '$lib/app-mode'
 
 const log = getAppLogger('settings')
 
@@ -72,7 +73,7 @@ export async function openSettingsWindow(section?: string[]): Promise<void> {
 
   new WebviewWindow('settings', {
     url: section ? `/settings?section=${encodeURIComponent(JSON.stringify(section))}` : '/settings',
-    title: 'Settings',
+    title: decorateChildWindowTitle('Settings'),
     // Open at max width so the content-area starts at its scaled cap; user can
     // shrink down to `settingsMinWidth(scale)`.
     width: settingsMaxWidth(scale),

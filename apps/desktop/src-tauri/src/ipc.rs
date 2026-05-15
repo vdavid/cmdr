@@ -480,6 +480,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::search::parse_search_scope,
         crate::commands::search::get_system_dir_excludes,
         crate::commands::e2e::get_e2e_start_path,
+        crate::commands::e2e::is_e2e_mode,
         #[cfg(feature = "playwright-e2e")]
         crate::commands::e2e::set_test_throttle,
         #[cfg(feature = "playwright-e2e")]
