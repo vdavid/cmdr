@@ -363,6 +363,8 @@ pub async fn trash_files_start(
 #[cfg(test)]
 mod copy_integration_test;
 #[cfg(test)]
+mod driver_prototype_scratch;
+#[cfg(test)]
 mod delete_integration_test;
 #[cfg(test)]
 mod move_integration_test;
