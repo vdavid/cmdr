@@ -408,6 +408,9 @@ async fn cross_volume_move_cancel_mid_batch_preserves_completed() {
             self.inner.emit_conflict(e);
         }
         fn emit_source_item_done(&self, _e: WriteSourceItemDoneEvent) {}
+        fn emit_scan_progress(&self, _e: crate::file_system::write_operations::types::ScanProgressEvent) {}
+        fn emit_scan_conflict(&self, _c: crate::file_system::write_operations::types::ConflictInfo) {}
+        fn emit_dry_run_complete(&self, _r: crate::file_system::write_operations::types::DryRunResult) {}
     }
 
     let (source, dest) = make_volumes();

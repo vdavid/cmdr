@@ -670,10 +670,6 @@ pub struct ScanPreviewStartResult {
 /// Decouples the copy/move/delete pipeline from `tauri::AppHandle`. The Tauri
 /// layer provides `TauriEventSink` (calls `app.emit`). Tests use
 /// `CollectorEventSink` (stores events in a `Vec` for assertions).
-#[allow(
-    dead_code,
-    reason = "emit_error and emit_source_item_done will be used when local copy/delete are migrated"
-)]
 pub trait OperationEventSink: Send + Sync {
     fn emit_progress(&self, event: WriteProgressEvent);
     fn emit_complete(&self, event: WriteCompleteEvent);
@@ -681,6 +677,12 @@ pub trait OperationEventSink: Send + Sync {
     fn emit_error(&self, event: WriteErrorEvent);
     fn emit_conflict(&self, event: WriteConflictEvent);
     fn emit_source_item_done(&self, event: WriteSourceItemDoneEvent);
+    /// Per-iteration progress during dry-run scanning (separate from `write-progress`).
+    fn emit_scan_progress(&self, event: ScanProgressEvent);
+    /// One `ConflictInfo` per conflicting file during dry-run scanning.
+    fn emit_scan_conflict(&self, conflict: ConflictInfo);
+    /// Final dry-run result with conflict sample.
+    fn emit_dry_run_complete(&self, result: DryRunResult);
 }
 
 /// Tauri-backed event sink: calls `app.emit()` for each event.
@@ -719,6 +721,18 @@ impl OperationEventSink for TauriEventSink {
         use tauri::Emitter;
         let _ = self.app.emit("write-source-item-done", &event);
     }
+    fn emit_scan_progress(&self, event: ScanProgressEvent) {
+        use tauri::Emitter;
+        let _ = self.app.emit("scan-progress", &event);
+    }
+    fn emit_scan_conflict(&self, conflict: ConflictInfo) {
+        use tauri::Emitter;
+        let _ = self.app.emit("scan-conflict", &conflict);
+    }
+    fn emit_dry_run_complete(&self, result: DryRunResult) {
+        use tauri::Emitter;
+        let _ = self.app.emit("dry-run-complete", &result);
+    }
 }
 
 /// Test event sink: stores events for inspection.
@@ -733,6 +747,9 @@ pub(crate) struct CollectorEventSink {
     pub cancelled: std::sync::Mutex<Vec<WriteCancelledEvent>>,
     pub errors: std::sync::Mutex<Vec<WriteErrorEvent>>,
     pub conflicts: std::sync::Mutex<Vec<WriteConflictEvent>>,
+    pub scan_progress: std::sync::Mutex<Vec<ScanProgressEvent>>,
+    pub scan_conflicts: std::sync::Mutex<Vec<ConflictInfo>>,
+    pub dry_run: std::sync::Mutex<Vec<DryRunResult>>,
 }
 
 #[cfg(test)]
@@ -744,6 +761,9 @@ impl CollectorEventSink {
             cancelled: std::sync::Mutex::new(Vec::new()),
             errors: std::sync::Mutex::new(Vec::new()),
             conflicts: std::sync::Mutex::new(Vec::new()),
+            scan_progress: std::sync::Mutex::new(Vec::new()),
+            scan_conflicts: std::sync::Mutex::new(Vec::new()),
+            dry_run: std::sync::Mutex::new(Vec::new()),
         }
     }
 }
@@ -766,6 +786,15 @@ impl OperationEventSink for CollectorEventSink {
         self.conflicts.lock().unwrap().push(event);
     }
     fn emit_source_item_done(&self, _event: WriteSourceItemDoneEvent) {}
+    fn emit_scan_progress(&self, event: ScanProgressEvent) {
+        self.scan_progress.lock().unwrap().push(event);
+    }
+    fn emit_scan_conflict(&self, conflict: ConflictInfo) {
+        self.scan_conflicts.lock().unwrap().push(conflict);
+    }
+    fn emit_dry_run_complete(&self, result: DryRunResult) {
+        self.dry_run.lock().unwrap().push(result);
+    }
 }
 
 // ============================================================================

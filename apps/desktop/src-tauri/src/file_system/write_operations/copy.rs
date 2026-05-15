@@ -52,7 +52,6 @@ fn validate_disk_space_cancellable(
 
 pub(super) fn copy_files_with_progress_inner(
     events: &dyn OperationEventSink,
-    app: &tauri::AppHandle,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     sources: &[PathBuf],
@@ -71,7 +70,7 @@ pub(super) fn copy_files_with_progress_inner(
         sources,
         destination,
         state,
-        app,
+        events,
         operation_id,
         WriteOperationType::Copy,
         state.progress_interval,
@@ -105,7 +104,7 @@ pub(super) fn copy_files_with_progress_inner(
             scan_sources(
                 sources,
                 state,
-                app,
+                events,
                 operation_id,
                 WriteOperationType::Copy,
                 config.sort_column,
@@ -121,7 +120,7 @@ pub(super) fn copy_files_with_progress_inner(
         scan_sources(
             sources,
             state,
-            app,
+            events,
             operation_id,
             WriteOperationType::Copy,
             config.sort_column,
@@ -271,7 +270,7 @@ pub(super) fn copy_files_with_progress_inner(
                 scan_result.file_count,
                 scan_result.total_bytes,
                 state,
-                app,
+                events,
                 operation_id,
                 WriteOperationType::Copy,
                 &state.progress_interval,
@@ -458,7 +457,7 @@ pub(super) fn copy_single_item(
     files_total: usize,
     bytes_total: u64,
     state: &Arc<WriteOperationState>,
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     operation_type: WriteOperationType,
     progress_interval: &Duration,
@@ -517,7 +516,7 @@ pub(super) fn copy_single_item(
                     &blocking,
                     &blocking,
                     config,
-                    app,
+                    events,
                     operation_id,
                     state,
                     apply_to_all_resolution,
@@ -612,7 +611,7 @@ pub(super) fn copy_single_item(
                 source,
                 &dest_path,
                 config,
-                app,
+                events,
                 operation_id,
                 state,
                 apply_to_all_resolution,
@@ -666,7 +665,7 @@ pub(super) fn copy_single_item(
                 source,
                 &dest_path,
                 config,
-                app,
+                events,
                 operation_id,
                 state,
                 apply_to_all_resolution,
@@ -721,8 +720,8 @@ pub(super) fn copy_single_item(
                     effective_bytes_done,
                     bytes_total
                 );
-                state.emit_progress_via_app(
-                    app,
+                state.emit_progress_via_sink(
+                    events,
                     WriteProgressEvent::new(
                         operation_id.to_string(),
                         operation_type,
@@ -770,8 +769,8 @@ pub(super) fn copy_single_item(
                 *bytes_done,
                 bytes_total
             );
-            state.emit_progress_via_app(
-                app,
+            state.emit_progress_via_sink(
+                events,
                 WriteProgressEvent::new(
                     operation_id.to_string(),
                     operation_type,

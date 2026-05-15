@@ -9,8 +9,8 @@ use super::helpers::spawn_async_sync;
 use super::scan::{SourceItemTracker, scan_sources};
 use super::state::{WriteOperationState, update_operation_status};
 use super::types::{
-    DryRunResult, IoResultExt, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig, WriteOperationError,
-    WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
+    DryRunResult, IoResultExt, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
+    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use super::volume_copy::map_volume_error;
 use crate::file_system::volume::Volume;
@@ -28,11 +28,13 @@ pub(super) fn delete_files_with_progress(
 ) -> Result<(), WriteOperationError> {
     use tauri::Emitter;
 
+    let events = TauriEventSink::new(app.clone());
+
     // Phase 1: Scan to get file count (delete uses default sorting)
     let scan_result = scan_sources(
         sources,
         state,
-        app,
+        &events,
         operation_id,
         WriteOperationType::Delete,
         config.sort_column,

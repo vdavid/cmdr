@@ -11,8 +11,9 @@ use super::helpers::{is_same_filesystem, remove_dir_all_in_background, resolve_c
 use super::scan::{SourceItemTracker, handle_dry_run, scan_sources};
 use super::state::{CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status};
 use super::types::{
-    ConflictResolution, IoResultExt, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
-    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
+    ConflictResolution, IoResultExt, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
+    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    WriteSourceItemDoneEvent,
 };
 
 // ============================================================================
@@ -62,13 +63,15 @@ pub(super) fn move_files_with_progress(
     destination: &Path,
     config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
+    let events = TauriEventSink::new(app.clone());
+
     // Handle dry-run mode
     if handle_dry_run(
         config.dry_run,
         sources,
         destination,
         state,
-        app,
+        &events,
         operation_id,
         WriteOperationType::Move,
         state.progress_interval,
@@ -101,6 +104,7 @@ fn move_with_rename(
 ) -> Result<(), WriteOperationError> {
     use tauri::Emitter;
 
+    let events = TauriEventSink::new(app.clone());
     let mut files_done = 0;
     let mut apply_to_all_resolution: Option<ConflictResolution> = None;
     let mut move_tx = MoveTransaction::new();
@@ -127,7 +131,7 @@ fn move_with_rename(
                     source,
                     &dest_path,
                     config,
-                    app,
+                    &events,
                     operation_id,
                     state,
                     &mut apply_to_all_resolution,
@@ -139,7 +143,7 @@ fn move_with_rename(
                     source,
                     &dest_path,
                     config,
-                    app,
+                    &events,
                     operation_id,
                     state,
                     &mut apply_to_all_resolution,
@@ -228,7 +232,7 @@ fn merge_move_directory(
     source_dir: &Path,
     dest_dir: &Path,
     config: &WriteOperationConfig,
-    app: &tauri::AppHandle,
+    events: &dyn super::types::OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     apply_to_all_resolution: &mut Option<ConflictResolution>,
@@ -258,7 +262,7 @@ fn merge_move_directory(
                 &source_child,
                 &dest_child,
                 config,
-                app,
+                events,
                 operation_id,
                 state,
                 apply_to_all_resolution,
@@ -270,7 +274,7 @@ fn merge_move_directory(
                 &source_child,
                 &dest_child,
                 config,
-                app,
+                events,
                 operation_id,
                 state,
                 apply_to_all_resolution,
@@ -314,11 +318,13 @@ fn move_with_staging(
 ) -> Result<(), WriteOperationError> {
     use tauri::Emitter;
 
+    let events = TauriEventSink::new(app.clone());
+
     // Phase 1: Scan (move uses default sorting - order doesn't matter much for move)
     let scan_result = scan_sources(
         sources,
         state,
-        app,
+        &events,
         operation_id,
         WriteOperationType::Move,
         config.sort_column,
@@ -389,7 +395,7 @@ fn move_with_staging(
                 scan_result.file_count,
                 scan_result.total_bytes,
                 state,
-                app,
+                &events,
                 operation_id,
                 WriteOperationType::Move,
                 &state.progress_interval,
@@ -442,7 +448,7 @@ fn move_with_staging(
                     &staged_path,
                     &final_path,
                     config,
-                    app,
+                    &events,
                     operation_id,
                     state,
                     &mut apply_to_all_resolution,
@@ -454,7 +460,7 @@ fn move_with_staging(
                     source,
                     &final_path,
                     config,
-                    app,
+                    &events,
                     operation_id,
                     state,
                     &mut apply_to_all_resolution,

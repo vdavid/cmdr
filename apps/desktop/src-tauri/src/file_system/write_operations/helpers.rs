@@ -15,7 +15,9 @@ use super::macos_copy::{CopyProgressContext, copy_single_file_native};
 use super::state::WriteOperationState;
 #[cfg(not(target_os = "macos"))]
 use super::types::IoResultExt;
-use super::types::{ConflictInfo, ConflictResolution, WriteConflictEvent, WriteOperationConfig, WriteOperationError};
+use super::types::{
+    ConflictInfo, ConflictResolution, OperationEventSink, WriteConflictEvent, WriteOperationConfig, WriteOperationError,
+};
 
 // ============================================================================
 // Validation helpers
@@ -337,13 +339,11 @@ pub(super) fn resolve_conflict(
     source: &Path,
     dest_path: &Path,
     config: &WriteOperationConfig,
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     apply_to_all_resolution: &mut Option<ConflictResolution>,
 ) -> Result<Option<ResolvedDestination>, WriteOperationError> {
-    use tauri::Emitter;
-
     // Determine effective conflict resolution
     let resolution = if let Some(saved_resolution) = apply_to_all_resolution {
         // Use saved "apply to all" resolution
@@ -385,20 +385,17 @@ pub(super) fn resolve_conflict(
                 .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
                 .map(|d| d.as_secs() as i64);
 
-            let _ = app.emit(
-                "write-conflict",
-                WriteConflictEvent {
-                    operation_id: operation_id.to_string(),
-                    source_path: source.display().to_string(),
-                    destination_path: dest_path.display().to_string(),
-                    source_size,
-                    destination_size,
-                    source_modified,
-                    destination_modified,
-                    destination_is_newer,
-                    size_difference,
-                },
-            );
+            events.emit_conflict(WriteConflictEvent {
+                operation_id: operation_id.to_string(),
+                source_path: source.display().to_string(),
+                destination_path: dest_path.display().to_string(),
+                source_size,
+                destination_size,
+                source_modified,
+                destination_modified,
+                destination_is_newer,
+                size_difference,
+            });
 
             // Create a oneshot channel for this conflict resolution
             let (tx, rx) = tokio::sync::oneshot::channel();
@@ -702,4 +699,52 @@ where
             }
         }
     }
+}
+
+/// Scoped variant of [`run_cancellable`] that allows the work closure to borrow
+/// non-`'static` data (for example, a `&dyn OperationEventSink` reference).
+///
+/// Uses `std::thread::scope`, so the call blocks until the worker thread
+/// finishes or cancellation is observed. Behavior is otherwise identical to
+/// `run_cancellable`: the cancellation flag is polled every 100ms while the
+/// worker runs, and the function returns early on cancellation.
+pub(super) fn run_cancellable_scoped<'env, T, F>(
+    work: F,
+    state: &Arc<WriteOperationState>,
+    context: &str,
+    operation_id: &str,
+) -> Result<T, WriteOperationError>
+where
+    F: FnOnce() -> Result<T, WriteOperationError> + Send + 'env,
+    T: Send + 'env,
+{
+    use std::sync::mpsc;
+
+    let (tx, rx) = mpsc::channel();
+
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            let _ = tx.send(work());
+        });
+
+        loop {
+            if super::state::is_cancelled(&state.intent) {
+                log::debug!("{context}: cancellation detected during polling op={operation_id}");
+                return Err(WriteOperationError::Cancelled {
+                    message: "Operation cancelled by user".to_string(),
+                });
+            }
+
+            match rx.recv_timeout(CANCELLATION_POLL_INTERVAL) {
+                Ok(result) => return result,
+                Err(mpsc::RecvTimeoutError::Timeout) => {}
+                Err(mpsc::RecvTimeoutError::Disconnected) => {
+                    return Err(WriteOperationError::IoError {
+                        path: context.to_string(),
+                        message: format!("{context} thread terminated unexpectedly"),
+                    });
+                }
+            }
+        }
+    })
 }

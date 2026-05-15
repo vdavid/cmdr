@@ -196,7 +196,7 @@ pub async fn copy_files_start(
             validate_not_same_location(&sources, &destination)?;
             validate_destination_not_inside_source(&sources, &destination)?;
             let events = types::TauriEventSink::new(app.clone());
-            copy_files_with_progress_inner(&events, &app, &op_id, &state, &sources, &destination, &config)
+            copy_files_with_progress_inner(&events, &op_id, &state, &sources, &destination, &config)
         },
     )
     .await
@@ -363,9 +363,9 @@ pub async fn trash_files_start(
 #[cfg(test)]
 mod copy_integration_test;
 #[cfg(test)]
-mod driver_prototype_scratch;
-#[cfg(test)]
 mod delete_integration_test;
+#[cfg(test)]
+mod driver_prototype_scratch;
 #[cfg(test)]
 mod move_integration_test;
 #[cfg(test)]

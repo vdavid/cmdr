@@ -77,16 +77,20 @@
 
 #![cfg(test)]
 #![allow(dead_code, reason = "Throwaway prototype, deleted at end of M2")]
+#![allow(
+    clippy::doc_lazy_continuation,
+    clippy::too_many_arguments,
+    reason = "Throwaway prototype, not held to the project's lints"
+)]
 
-use std::collections::HashSet;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use super::scan::SourceItemTracker;
 use super::state::{CopyTransaction, FileInfo, WriteOperationState};
 use super::types::{
-    ConflictResolution, OperationEventSink, WriteOperationError, WriteOperationType,
-    WriteSourceItemDoneEvent,
+    ConflictResolution, OperationEventSink, WriteOperationError, WriteOperationType, WriteSourceItemDoneEvent,
 };
+use std::collections::HashSet;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 // ---------------------------------------------------------------------------
 // Proposed driver API surface (sketch, not the final shape)

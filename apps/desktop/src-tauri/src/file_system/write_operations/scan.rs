@@ -8,11 +8,13 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use super::helpers::{calculate_dest_path, create_conflict_info, is_symlink_loop, run_cancellable, sample_conflicts};
+use super::helpers::{
+    calculate_dest_path, create_conflict_info, is_symlink_loop, run_cancellable_scoped, sample_conflicts,
+};
 use super::state::{FileInfo, SCAN_PREVIEW_RESULTS, ScanResult, WriteOperationState, update_operation_status};
 use super::types::{
-    ConflictInfo, IoResultExt, ScanProgressEvent, WriteOperationError, WriteOperationPhase, WriteOperationType,
-    WriteProgressEvent,
+    ConflictInfo, IoResultExt, OperationEventSink, ScanProgressEvent, WriteOperationError, WriteOperationPhase,
+    WriteOperationType, WriteProgressEvent,
 };
 use crate::file_system::listing::{SortColumn, SortOrder};
 
@@ -239,25 +241,21 @@ pub(super) fn sort_files(files: &mut [FileInfo], column: SortColumn, order: Sort
 pub(super) fn scan_sources(
     sources: &[PathBuf],
     state: &Arc<WriteOperationState>,
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     operation_type: WriteOperationType,
     sort_column: SortColumn,
     sort_order: SortOrder,
 ) -> Result<ScanResult, WriteOperationError> {
-    let sources = sources.to_vec();
-    let state_clone = Arc::clone(state);
-    let app_clone = app.clone();
-    let operation_id_owned = operation_id.to_string();
     let progress_interval = state.progress_interval;
 
-    run_cancellable(
-        move || {
+    run_cancellable_scoped(
+        || {
             scan_sources_internal(
-                &sources,
-                &state_clone,
-                &app_clone,
-                &operation_id_owned,
+                sources,
+                state,
+                events,
+                operation_id,
                 operation_type,
                 sort_column,
                 sort_order,
@@ -278,7 +276,7 @@ pub(super) fn scan_sources(
 fn scan_sources_internal(
     sources: &[PathBuf],
     state: &Arc<WriteOperationState>,
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     operation_type: WriteOperationType,
     sort_column: SortColumn,
@@ -327,8 +325,8 @@ fn scan_sources_internal(
                 files_done,
                 bytes_done
             );
-            state.emit_progress_via_app(
-                app,
+            state.emit_progress_via_sink(
+                events,
                 WriteProgressEvent::new(
                     operation_id.to_string(),
                     operation_type,
@@ -378,8 +376,8 @@ fn scan_sources_internal(
         files.len(),
         total_bytes
     );
-    state.emit_progress_via_app(
-        app,
+    state.emit_progress_via_sink(
+        events,
         WriteProgressEvent::new(
             operation_id.to_string(),
             operation_type,
@@ -426,25 +424,19 @@ pub(super) fn dry_run_scan(
     sources: &[PathBuf],
     destination: &Path,
     state: &Arc<WriteOperationState>,
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     operation_type: WriteOperationType,
     progress_interval: Duration,
 ) -> Result<DryRunScanResult, WriteOperationError> {
-    let sources = sources.to_vec();
-    let destination = destination.to_path_buf();
-    let state_clone = Arc::clone(state);
-    let app_clone = app.clone();
-    let operation_id_owned = operation_id.to_string();
-
-    run_cancellable(
-        move || {
+    run_cancellable_scoped(
+        || {
             dry_run_scan_internal(
-                &sources,
-                &destination,
-                &state_clone,
-                &app_clone,
-                &operation_id_owned,
+                sources,
+                destination,
+                state,
+                events,
+                operation_id,
                 operation_type,
                 progress_interval,
             )
@@ -460,13 +452,11 @@ fn dry_run_scan_internal(
     sources: &[PathBuf],
     destination: &Path,
     state: &Arc<WriteOperationState>,
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     operation_type: WriteOperationType,
     progress_interval: Duration,
 ) -> Result<DryRunScanResult, WriteOperationError> {
-    use tauri::Emitter;
-
     let mut files_found = 0usize;
     let mut bytes_found = 0u64;
     let mut conflicts = Vec::new();
@@ -482,7 +472,7 @@ fn dry_run_scan_internal(
             &mut bytes_found,
             &mut conflicts,
             state,
-            app,
+            events,
             operation_id,
             operation_type,
             &progress_interval,
@@ -492,17 +482,14 @@ fn dry_run_scan_internal(
     }
 
     // Emit final scan progress
-    let _ = app.emit(
-        "scan-progress",
-        ScanProgressEvent {
-            operation_id: operation_id.to_string(),
-            operation_type,
-            files_found,
-            bytes_found,
-            conflicts_found: conflicts.len(),
-            current_path: None,
-        },
-    );
+    events.emit_scan_progress(ScanProgressEvent {
+        operation_id: operation_id.to_string(),
+        operation_type,
+        files_found,
+        bytes_found,
+        conflicts_found: conflicts.len(),
+        current_path: None,
+    });
 
     Ok(DryRunScanResult {
         file_count: files_found,
@@ -524,15 +511,13 @@ fn dry_run_scan_recursive(
     bytes_found: &mut u64,
     conflicts: &mut Vec<ConflictInfo>,
     state: &Arc<WriteOperationState>,
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     operation_type: WriteOperationType,
     progress_interval: &Duration,
     last_progress_time: &mut Instant,
     visited: &mut HashSet<PathBuf>,
 ) -> Result<(), WriteOperationError> {
-    use tauri::Emitter;
-
     // Check cancellation
     if super::state::is_cancelled(&state.intent) {
         return Err(WriteOperationError::Cancelled {
@@ -555,7 +540,7 @@ fn dry_run_scan_recursive(
             && let Some(conflict) = create_conflict_info(path, &dest_path, &metadata)?
         {
             // Emit conflict event for streaming
-            let _ = app.emit("scan-conflict", conflict.clone());
+            events.emit_scan_conflict(conflict.clone());
             conflicts.push(conflict);
         }
     } else if metadata.is_dir() {
@@ -576,7 +561,7 @@ fn dry_run_scan_recursive(
             && !dest_path.is_dir()
             && let Some(conflict) = create_conflict_info(path, &dest_path, &metadata)?
         {
-            let _ = app.emit("scan-conflict", conflict.clone());
+            events.emit_scan_conflict(conflict.clone());
             conflicts.push(conflict);
         }
 
@@ -592,7 +577,7 @@ fn dry_run_scan_recursive(
                 bytes_found,
                 conflicts,
                 state,
-                app,
+                events,
                 operation_id,
                 operation_type,
                 progress_interval,
@@ -607,17 +592,14 @@ fn dry_run_scan_recursive(
 
     // Emit progress periodically
     if last_progress_time.elapsed() >= *progress_interval {
-        let _ = app.emit(
-            "scan-progress",
-            ScanProgressEvent {
-                operation_id: operation_id.to_string(),
-                operation_type,
-                files_found: *files_found,
-                bytes_found: *bytes_found,
-                conflicts_found: conflicts.len(),
-                current_path: path.file_name().map(|n| n.to_string_lossy().to_string()),
-            },
-        );
+        events.emit_scan_progress(ScanProgressEvent {
+            operation_id: operation_id.to_string(),
+            operation_type,
+            files_found: *files_found,
+            bytes_found: *bytes_found,
+            conflicts_found: conflicts.len(),
+            current_path: path.file_name().map(|n| n.to_string_lossy().to_string()),
+        });
         *last_progress_time = Instant::now();
     }
 
@@ -635,14 +617,13 @@ pub(super) fn handle_dry_run(
     sources: &[PathBuf],
     destination: &Path,
     state: &Arc<WriteOperationState>,
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     operation_type: WriteOperationType,
     progress_interval: Duration,
     max_conflicts_to_show: usize,
 ) -> Result<bool, WriteOperationError> {
     use super::types::DryRunResult;
-    use tauri::Emitter;
 
     if !config_dry_run {
         return Ok(false);
@@ -652,7 +633,7 @@ pub(super) fn handle_dry_run(
         sources,
         destination,
         state,
-        app,
+        events,
         operation_id,
         operation_type,
         progress_interval,
@@ -671,7 +652,7 @@ pub(super) fn handle_dry_run(
         conflicts_sampled,
     };
 
-    let _ = app.emit("dry-run-complete", result);
+    events.emit_dry_run_complete(result);
     Ok(true)
 }
 
