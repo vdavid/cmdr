@@ -204,7 +204,7 @@ describeSmb('SMB host discovery', () => {
     await mcpSelectVolume('left', 'Network')
 
     // Wait for the guest host to appear and its shares to be prefetched
-    await pollUntil(
+    const result = await pollUntil(
       tauriPage,
       async () => {
         const state = await mcpReadResource('cmdr://state')
@@ -212,6 +212,7 @@ describeSmb('SMB host discovery', () => {
       },
       30000,
     )
+    expect(result).toBe(true)
   })
 })
 
@@ -370,7 +371,7 @@ describeSmb('SMB authentication', () => {
     await mcpSelectVolume('left', 'Network')
 
     // Wait for the auth host to appear and its shares to be prefetched
-    await pollUntil(
+    const result = await pollUntil(
       tauriPage,
       async () => {
         const state = await mcpReadResource('cmdr://state')
@@ -378,6 +379,7 @@ describeSmb('SMB authentication', () => {
       },
       30000,
     )
+    expect(result).toBe(true)
   })
 
   test('listing shares with valid credentials returns private share', async ({ tauriPage }) => {
@@ -437,7 +439,7 @@ describeSmb('SMB 50-share server', () => {
     await mcpSelectVolume('left', 'Network')
 
     // Wait for the 50-shares host to appear and prefetch shares
-    await pollUntil(
+    const result = await pollUntil(
       tauriPage,
       async () => {
         const state = await mcpReadResource('cmdr://state')
@@ -445,6 +447,7 @@ describeSmb('SMB 50-share server', () => {
       },
       30000,
     )
+    expect(result).toBe(true)
   })
 })
 

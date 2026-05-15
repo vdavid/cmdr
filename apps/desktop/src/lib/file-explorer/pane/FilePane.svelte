@@ -870,8 +870,24 @@
     /**
      * Sync pane state to Rust for MCP context tools.
      * Called when files load, cursor position changes, or view mode changes.
+     *
+     * Skipped entirely on the Network virtual volume: `NetworkBrowser`
+     * (mounted inside `NetworkMountView`) owns the pane-state push for that
+     * view and writes the host list as `files`. Without this guard, FilePane's
+     * own sync races NetworkBrowser's and overwrites it with stale local-pane
+     * data (empty `files`, the old fixture `path`, and a leftover
+     * `totalFiles`/`loadedRange`). That clobber is why three SMB tests
+     * (`guest host shows share count`, `auth host shows share count`,
+     * `50-share host shows correct share count`) used to time out at the 30s
+     * pollUntil deadline — `cmdr://state` never contained the host entries
+     * NetworkBrowser had just pushed.
+     *
+     * MTP volumes are not affected: their file list comes from a normal
+     * `list_directory` against the volume, so FilePane's sync is the right
+     * source of truth there.
      */
     async function syncPaneStateToMcp() {
+        if (isNetworkView) return
         try {
             const files = await buildMcpFileList()
             const effectiveTotal = hasParent ? totalCount + 1 : totalCount
