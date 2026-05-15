@@ -11,9 +11,9 @@ use super::helpers::{is_same_filesystem, remove_dir_all_in_background, resolve_c
 use super::scan::{SourceItemTracker, handle_dry_run, scan_sources};
 use super::state::{CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status};
 use super::types::{
-    ConflictResolution, IoResultExt, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
-    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
-    WriteSourceItemDoneEvent,
+    ConflictResolution, IoResultExt, OperationEventSink, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent,
+    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType,
+    WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 
 // ============================================================================
@@ -64,14 +64,24 @@ pub(super) fn move_files_with_progress(
     config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
     let events = TauriEventSink::new(app.clone());
+    move_files_with_progress_inner(&events, operation_id, state, sources, destination, config)
+}
 
+pub(super) fn move_files_with_progress_inner(
+    events: &dyn OperationEventSink,
+    operation_id: &str,
+    state: &Arc<WriteOperationState>,
+    sources: &[PathBuf],
+    destination: &Path,
+    config: &WriteOperationConfig,
+) -> Result<(), WriteOperationError> {
     // Handle dry-run mode
     if handle_dry_run(
         config.dry_run,
         sources,
         destination,
         state,
-        &events,
+        events,
         operation_id,
         WriteOperationType::Move,
         state.progress_interval,
@@ -87,24 +97,21 @@ pub(super) fn move_files_with_progress(
 
     if same_fs {
         // Use instant rename for each source
-        move_with_rename(app, operation_id, state, sources, destination, config)
+        move_with_rename(events, operation_id, state, sources, destination, config)
     } else {
         // Use atomic staging pattern for cross-filesystem move
-        move_with_staging(app, operation_id, state, sources, destination, config)
+        move_with_staging(events, operation_id, state, sources, destination, config)
     }
 }
 
 fn move_with_rename(
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     sources: &[PathBuf],
     destination: &Path,
     config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
-    use tauri::Emitter;
-
-    let events = TauriEventSink::new(app.clone());
     let mut files_done = 0;
     let mut apply_to_all_resolution: Option<ConflictResolution> = None;
     let mut move_tx = MoveTransaction::new();
@@ -131,7 +138,7 @@ fn move_with_rename(
                     source,
                     &dest_path,
                     config,
-                    &events,
+                    events,
                     operation_id,
                     state,
                     &mut apply_to_all_resolution,
@@ -143,7 +150,7 @@ fn move_with_rename(
                     source,
                     &dest_path,
                     config,
-                    &events,
+                    events,
                     operation_id,
                     state,
                     &mut apply_to_all_resolution,
@@ -165,13 +172,10 @@ fn move_with_rename(
 
             files_done += 1;
 
-            let _ = app.emit(
-                "write-source-item-done",
-                WriteSourceItemDoneEvent {
-                    operation_id: operation_id.to_string(),
-                    source_path: source.display().to_string(),
-                },
-            );
+            events.emit_source_item_done(WriteSourceItemDoneEvent {
+                operation_id: operation_id.to_string(),
+                source_path: source.display().to_string(),
+            });
         }
         Ok(())
     })();
@@ -188,15 +192,12 @@ fn move_with_rename(
             _ => false,
         };
 
-        let _ = app.emit(
-            "write-cancelled",
-            WriteCancelledEvent {
-                operation_id: operation_id.to_string(),
-                operation_type: WriteOperationType::Move,
-                files_processed: files_done,
-                rolled_back,
-            },
-        );
+        events.emit_cancelled(WriteCancelledEvent {
+            operation_id: operation_id.to_string(),
+            operation_type: WriteOperationType::Move,
+            files_processed: files_done,
+            rolled_back,
+        });
         return result;
     }
 
@@ -206,15 +207,12 @@ fn move_with_rename(
     spawn_async_sync();
 
     // Emit completion (instant, no progress needed)
-    let _ = app.emit(
-        "write-complete",
-        WriteCompleteEvent {
-            operation_id: operation_id.to_string(),
-            operation_type: WriteOperationType::Move,
-            files_processed: files_done,
-            bytes_processed: 0, // Rename doesn't track bytes
-        },
-    );
+    events.emit_complete(WriteCompleteEvent {
+        operation_id: operation_id.to_string(),
+        operation_type: WriteOperationType::Move,
+        files_processed: files_done,
+        bytes_processed: 0, // Rename doesn't track bytes
+    });
 
     Ok(())
 }
@@ -232,7 +230,7 @@ fn merge_move_directory(
     source_dir: &Path,
     dest_dir: &Path,
     config: &WriteOperationConfig,
-    events: &dyn super::types::OperationEventSink,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     apply_to_all_resolution: &mut Option<ConflictResolution>,
@@ -309,22 +307,18 @@ fn merge_move_directory(
 /// Performs cross-filesystem move using atomic staging pattern.
 /// This ensures source files remain intact if the operation fails.
 fn move_with_staging(
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     sources: &[PathBuf],
     destination: &Path,
     config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
-    use tauri::Emitter;
-
-    let events = TauriEventSink::new(app.clone());
-
     // Phase 1: Scan (move uses default sorting - order doesn't matter much for move)
     let scan_result = scan_sources(
         sources,
         state,
-        &events,
+        events,
         operation_id,
         WriteOperationType::Move,
         config.sort_column,
@@ -347,8 +341,8 @@ fn move_with_staging(
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
 
     // Emit initial copying phase event
-    state.emit_progress_via_app(
-        app,
+    state.emit_progress_via_sink(
+        events,
         WriteProgressEvent::new(
             operation_id.to_string(),
             WriteOperationType::Move,
@@ -395,7 +389,7 @@ fn move_with_staging(
                 scan_result.file_count,
                 scan_result.total_bytes,
                 state,
-                &events,
+                events,
                 operation_id,
                 WriteOperationType::Move,
                 &state.progress_interval,
@@ -407,13 +401,10 @@ fn move_with_staging(
             )?;
 
             if let Some(source_path) = tracker.record(file_info) {
-                let _ = app.emit(
-                    "write-source-item-done",
-                    WriteSourceItemDoneEvent {
-                        operation_id: operation_id.to_string(),
-                        source_path: source_path.display().to_string(),
-                    },
-                );
+                events.emit_source_item_done(WriteSourceItemDoneEvent {
+                    operation_id: operation_id.to_string(),
+                    source_path: source_path.display().to_string(),
+                });
             }
         }
         Ok(())
@@ -422,10 +413,11 @@ fn move_with_staging(
     if let Err(e) = copy_result {
         // Cleanup staging directory in background (may block on network mounts)
         remove_dir_all_in_background(staging_dir.clone());
-        let _ = app.emit(
-            "write-error",
-            WriteErrorEvent::new(operation_id.to_string(), WriteOperationType::Move, e.clone()),
-        );
+        events.emit_error(WriteErrorEvent::new(
+            operation_id.to_string(),
+            WriteOperationType::Move,
+            e.clone(),
+        ));
         return Err(e);
     }
 
@@ -448,7 +440,7 @@ fn move_with_staging(
                     &staged_path,
                     &final_path,
                     config,
-                    &events,
+                    events,
                     operation_id,
                     state,
                     &mut apply_to_all_resolution,
@@ -460,7 +452,7 @@ fn move_with_staging(
                     source,
                     &final_path,
                     config,
-                    &events,
+                    events,
                     operation_id,
                     state,
                     &mut apply_to_all_resolution,
@@ -495,15 +487,16 @@ fn move_with_staging(
     if let Err(e) = rename_result {
         // Cleanup staging directory in background (may block on network mounts)
         remove_dir_all_in_background(staging_dir);
-        let _ = app.emit(
-            "write-error",
-            WriteErrorEvent::new(operation_id.to_string(), WriteOperationType::Move, e.clone()),
-        );
+        events.emit_error(WriteErrorEvent::new(
+            operation_id.to_string(),
+            WriteOperationType::Move,
+            e.clone(),
+        ));
         return Err(e);
     }
 
     // Phase 4: Delete source files (only after successful copy+rename)
-    delete_sources_after_move(app, operation_id, state, sources, files_done)?;
+    delete_sources_after_move(events, operation_id, state, sources, files_done)?;
 
     // Phase 5: Remove empty staging directory
     let _ = fs::remove_dir(&staging_dir);
@@ -512,40 +505,32 @@ fn move_with_staging(
     spawn_async_sync();
 
     // Emit completion
-    let _ = app.emit(
-        "write-complete",
-        WriteCompleteEvent {
-            operation_id: operation_id.to_string(),
-            operation_type: WriteOperationType::Move,
-            files_processed: files_done,
-            bytes_processed: bytes_done,
-        },
-    );
+    events.emit_complete(WriteCompleteEvent {
+        operation_id: operation_id.to_string(),
+        operation_type: WriteOperationType::Move,
+        files_processed: files_done,
+        bytes_processed: bytes_done,
+    });
 
     Ok(())
 }
 
 fn delete_sources_after_move(
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     sources: &[PathBuf],
     files_done: usize,
 ) -> Result<(), WriteOperationError> {
-    use tauri::Emitter;
-
     for source in sources {
         // Check cancellation
         if super::state::is_cancelled(&state.intent) {
-            let _ = app.emit(
-                "write-cancelled",
-                WriteCancelledEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Move,
-                    files_processed: files_done,
-                    rolled_back: false, // Source deletion phase - nothing to rollback
-                },
-            );
+            events.emit_cancelled(WriteCancelledEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Move,
+                files_processed: files_done,
+                rolled_back: false, // Source deletion phase - nothing to rollback
+            });
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });
@@ -559,13 +544,10 @@ fn delete_sources_after_move(
                 fs::remove_file(source).with_path(source)?;
             }
 
-            let _ = app.emit(
-                "write-source-item-done",
-                WriteSourceItemDoneEvent {
-                    operation_id: operation_id.to_string(),
-                    source_path: source.display().to_string(),
-                },
-            );
+            events.emit_source_item_done(WriteSourceItemDoneEvent {
+                operation_id: operation_id.to_string(),
+                source_path: source.display().to_string(),
+            });
         }
     }
 
