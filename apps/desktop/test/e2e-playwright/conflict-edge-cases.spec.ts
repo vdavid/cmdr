@@ -38,10 +38,18 @@ test.beforeEach(() => {
 
 test.describe('Cancel and rollback', () => {
   test('Cancel copy mid-operation rolls back partial files', async ({ tauriPage }) => {
-    // Use a small in-test fixture (5 × ~1 KB files) and a per-file throttle
-    // via the `set_test_throttle` IPC. This gives us a deterministic ~1 s
-    // window in which to click Rollback (orders of magnitude cheaper than
-    // staging the 170 MB `bulk/` directory just to slow the copy down).
+    // Strategy: subscribe to `write-progress` events from the webview, wait
+    // for one with `filesDone >= 1 && filesDone < filesTotal` (= "mid-copy,
+    // backend has acknowledged at least one file done"), then click Rollback.
+    //
+    // The old approach polled `fs.existsSync(file-0) && !fs.existsSync(file-3)`
+    // every 50 ms. On macOS APFS with `copyfile(3) COPYFILE_CLONE` each
+    // per-file copy is near-instant, so the 200 ms × 5-file throttle creates
+    // only a ~600 ms window where the FS-state assertion holds. Under load
+    // (parallel shards) the polling sometimes never caught the window and the
+    // test failed with `Received: false`. The progress event fires the moment
+    // the backend records a file committed, before any wall-clock window
+    // exists for the polling loop to miss.
     const fixtureRoot = getFixtureRoot()
     recreateFixtures(fixtureRoot)
     const partialLeft = path.join(fixtureRoot, 'left', 'partial')
@@ -52,11 +60,29 @@ test.describe('Cancel and rollback', () => {
 
     await ensureAppReady(tauriPage)
 
-    // Per-file throttle: 200 ms × 5 files ≈ 1 s of copy time, plenty of room
-    // to click Rollback after file 0 is committed.
+    // Per-file throttle still kicks in so the copy can't finish before we
+    // subscribe and click. 200 ms gives the producer side plenty of room.
     await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: 200 })`)
 
     try {
+      // Subscribe to `write-progress` BEFORE starting the copy. Uses Tauri's
+      // internal `transformCallback` to register a handler ID, then calls
+      // `plugin:event|listen` directly (same path `@tauri-apps/api/event`'s
+      // `listen()` uses, just inlined so the test doesn't need the JS API
+      // loaded in the webview — `withGlobalTauri` is false in prod builds).
+      // We store events on `window.__cancelCopyTestEvents` and the test reads
+      // them via `evaluate`.
+      await tauriPage.evaluate(`(async function() {
+        window.__cancelCopyTestEvents = [];
+        const handler = (event) => { window.__cancelCopyTestEvents.push(event.payload); };
+        const handlerId = window.__TAURI_INTERNALS__.transformCallback(handler);
+        window.__cancelCopyTestEventId = await window.__TAURI_INTERNALS__.invoke('plugin:event|listen', {
+          event: 'write-progress',
+          target: { kind: 'Any' },
+          handler: handlerId,
+        });
+      })()`)
+
       const found = await moveCursorToFile(tauriPage, 'partial')
       expect(found).toBe(true)
 
@@ -64,20 +90,22 @@ test.describe('Cancel and rollback', () => {
       await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
       await clickTransferStart(tauriPage)
 
-      // Wait until the first file is committed AND later files don't exist yet.
-      // This is the deterministic "we're mid-copy" signal: no sleeps, no races.
-      const rightPartial = path.join(fixtureRoot, 'right', 'partial')
-      const midCopy = await pollUntil(
+      // Wait for a progress event proving we're mid-copy. `pollUntil` is fine
+      // here: the underlying signal is event-driven (events arrive in the
+      // buffer as the backend fires them), the poll is just how the Node-side
+      // test sees the buffer. Each iteration reads the in-memory array, no
+      // FS roundtrip. 10 s budget covers ~50 progress events at the backend's
+      // 200 ms throttle (10 files × 200 ms = 2 s worst case here).
+      const midCopySeen = await pollUntil(
         tauriPage,
-        () =>
-          Promise.resolve(
-            fs.existsSync(path.join(rightPartial, 'file-0.txt')) &&
-              !fs.existsSync(path.join(rightPartial, 'file-3.txt')),
+        async () =>
+          tauriPage.evaluate<boolean>(
+            `(window.__cancelCopyTestEvents ?? []).some(p => p.phase === 'copying' && p.filesDone >= 1 && p.filesDone < p.filesTotal)`,
           ),
-        5000,
-        50,
+        10000,
+        25,
       )
-      expect(midCopy).toBe(true)
+      expect(midCopySeen).toBe(true)
 
       // Click Rollback on the progress dialog.
       const clicked = await tauriPage.evaluate<boolean>(`(function(){
@@ -97,12 +125,23 @@ test.describe('Cancel and rollback', () => {
 
       // Rollback must remove the partial files and the directory we created
       // for them. Either right/partial/ doesn't exist, or it's empty.
+      const rightPartial = path.join(fixtureRoot, 'right', 'partial')
       const exists = fs.existsSync(rightPartial)
       if (exists) {
         const remaining = fs.readdirSync(rightPartial)
         expect(remaining.length).toBe(0)
       }
     } finally {
+      // Unlisten and clear test state, in that order so a partial failure can
+      // still tear down cleanly.
+      await tauriPage.evaluate(`(async function() {
+        const id = window.__cancelCopyTestEventId;
+        if (id !== undefined) {
+          await window.__TAURI_INTERNALS__.invoke('plugin:event|unlisten', { event: 'write-progress', eventId: id });
+        }
+        delete window.__cancelCopyTestEvents;
+        delete window.__cancelCopyTestEventId;
+      })()`)
       await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null })`)
     }
   })
