@@ -15,7 +15,7 @@ use super::helpers::{
     find_unique_name, is_same_file, resolve_conflict, run_cancellable, spawn_async_sync, validate_disk_space,
     validate_path_length,
 };
-use super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result};
+use super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_scan_result, top_level_source_path};
 use super::state::{
     CopyTransaction, OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status,
 };
@@ -81,7 +81,7 @@ pub(super) fn copy_files_with_progress(
     }
 
     // Phase 1: Scan (or reuse cached preview results)
-    let scan_result = if let Some(preview_id) = &config.preview_id {
+    let mut scan_result = if let Some(preview_id) = &config.preview_id {
         // Try to reuse cached scan results from preview.
         // Volume scans (MTP, etc.) cache aggregate stats only (empty `files` list).
         // This per-file copy path needs the file list, so treat an empty-files cache
@@ -178,6 +178,74 @@ pub(super) fn copy_files_with_progress(
         0,
         scan_result.total_bytes,
     );
+
+    // Bulk-skip pre-known conflicts (Skip mode only). For local↔local, the
+    // per-file `get_metadata` is cheap (microseconds), so the user-facing bug
+    // is much milder than the cross-volume case — but we still want the bar
+    // to reflect the user's "Skip all" decision immediately. The set is keyed
+    // by the absolute top-level source path (matching what
+    // `top_level_source_path(file_info)` returns).
+    let pre_skip_top_levels: HashSet<PathBuf> =
+        if config.conflict_resolution == ConflictResolution::Skip && !config.pre_known_conflicts.is_empty() {
+            let names: HashSet<&str> = config.pre_known_conflicts.iter().map(String::as_str).collect();
+            sources
+                .iter()
+                .filter(|p| {
+                    p.file_name()
+                        .and_then(|n| n.to_str())
+                        .map(|n| names.contains(n))
+                        .unwrap_or(false)
+                })
+                .cloned()
+                .collect()
+        } else {
+            HashSet::new()
+        };
+
+    if !pre_skip_top_levels.is_empty() {
+        let mut skipped_count = 0usize;
+        let mut skipped_bytes = 0u64;
+        scan_result.files.retain(|fi| {
+            let top = top_level_source_path(fi);
+            if pre_skip_top_levels.contains(&top) {
+                skipped_count += 1;
+                skipped_bytes += fi.size;
+                false
+            } else {
+                true
+            }
+        });
+        files_done = skipped_count;
+        bytes_done = skipped_bytes;
+        log::info!(
+            "copy_files_with_progress: bulk-skipping {} files ({} bytes) for {} pre-known conflicting top-level sources",
+            skipped_count,
+            skipped_bytes,
+            pre_skip_top_levels.len()
+        );
+        state.emit_progress_via_app(
+            app,
+            WriteProgressEvent::new(
+                operation_id.to_string(),
+                WriteOperationType::Copy,
+                WriteOperationPhase::Copying,
+                None,
+                files_done,
+                scan_result.file_count,
+                bytes_done,
+                scan_result.total_bytes,
+            ),
+        );
+        update_operation_status(
+            operation_id,
+            WriteOperationPhase::Copying,
+            None,
+            files_done,
+            scan_result.file_count,
+            bytes_done,
+            scan_result.total_bytes,
+        );
+    }
 
     log::debug!(
         "copy_files_with_progress: starting copy loop for operation_id={}, {} files",

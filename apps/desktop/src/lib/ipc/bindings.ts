@@ -255,6 +255,11 @@ export const commands = {
       previewId?: string | null
       // Maximum number of conflicts to include in DryRunResult (default: 100)
       maxConflictsToShow?: number
+      /**
+       *  Source filenames already known to conflict at the destination. See
+       *  `VolumeCopyConfig::pre_known_conflicts` for the full rationale.
+       */
+      preKnownConflicts?: string[]
     } | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
@@ -284,6 +289,11 @@ export const commands = {
       previewId?: string | null
       // Maximum number of conflicts to include in DryRunResult (default: 100)
       maxConflictsToShow?: number
+      /**
+       *  Source filenames already known to conflict at the destination. See
+       *  `VolumeCopyConfig::pre_known_conflicts` for the full rationale.
+       */
+      preKnownConflicts?: string[]
     } | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
@@ -313,6 +323,11 @@ export const commands = {
       previewId?: string | null
       // Maximum number of conflicts to include in DryRunResult (default: 100)
       maxConflictsToShow?: number
+      /**
+       *  Source filenames already known to conflict at the destination. See
+       *  `VolumeCopyConfig::pre_known_conflicts` for the full rationale.
+       */
+      preKnownConflicts?: string[]
     } | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
@@ -339,6 +354,11 @@ export const commands = {
       previewId?: string | null
       // Maximum number of conflicts to include in DryRunResult (default: 100)
       maxConflictsToShow?: number
+      /**
+       *  Source filenames already known to conflict at the destination. See
+       *  `VolumeCopyConfig::pre_known_conflicts` for the full rationale.
+       */
+      preKnownConflicts?: string[]
     } | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
@@ -410,6 +430,17 @@ export const commands = {
       maxConflictsToShow: number
       // Preview scan ID to reuse cached scan results (from start_scan_preview).
       previewId?: string | null
+      /**
+       *  Source filenames already known to conflict at the destination (from the
+       *  pre-flight `scan_for_conflicts` call). When `conflict_resolution == Skip`,
+       *  the copy pipeline bulk-skips these upfront so the progress bar jumps to
+       *  reflect them immediately, rather than discovering each one serially via
+       *  per-file `get_metadata` stats while non-conflict copies run in between.
+       *  Ignored for other resolution modes (Stop still prompts; Overwrite still
+       *  proceeds normally). Empty if the FE didn't pre-scan or found no
+       *  conflicts.
+       */
+      preKnownConflicts?: string[]
     } | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
@@ -432,6 +463,17 @@ export const commands = {
       maxConflictsToShow: number
       // Preview scan ID to reuse cached scan results (from start_scan_preview).
       previewId?: string | null
+      /**
+       *  Source filenames already known to conflict at the destination (from the
+       *  pre-flight `scan_for_conflicts` call). When `conflict_resolution == Skip`,
+       *  the copy pipeline bulk-skips these upfront so the progress bar jumps to
+       *  reflect them immediately, rather than discovering each one serially via
+       *  per-file `get_metadata` stats while non-conflict copies run in between.
+       *  Ignored for other resolution modes (Stop still prompts; Overwrite still
+       *  proceeds normally). Empty if the FE didn't pre-scan or found no
+       *  conflicts.
+       */
+      preKnownConflicts?: string[]
     } | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
@@ -3024,6 +3066,17 @@ export type VolumeCopyConfig = {
   maxConflictsToShow: number
   // Preview scan ID to reuse cached scan results (from start_scan_preview).
   previewId?: string | null
+  /**
+   *  Source filenames already known to conflict at the destination (from the
+   *  pre-flight `scan_for_conflicts` call). When `conflict_resolution == Skip`,
+   *  the copy pipeline bulk-skips these upfront so the progress bar jumps to
+   *  reflect them immediately, rather than discovering each one serially via
+   *  per-file `get_metadata` stats while non-conflict copies run in between.
+   *  Ignored for other resolution modes (Stop still prompts; Overwrite still
+   *  proceeds normally). Empty if the FE didn't pre-scan or found no
+   *  conflicts.
+   */
+  preKnownConflicts?: string[]
 }
 
 // Result of a pre-flight scan for volume copy.
@@ -3061,6 +3114,11 @@ export type WriteOperationConfig = {
   previewId?: string | null
   // Maximum number of conflicts to include in DryRunResult (default: 100)
   maxConflictsToShow?: number
+  /**
+   *  Source filenames already known to conflict at the destination. See
+   *  `VolumeCopyConfig::pre_known_conflicts` for the full rationale.
+   */
+  preKnownConflicts?: string[]
 }
 
 // Errors that can occur during write operations.

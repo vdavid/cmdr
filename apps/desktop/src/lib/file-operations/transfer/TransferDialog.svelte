@@ -11,7 +11,6 @@
         onScanPreviewCancelled,
         scanVolumeForConflicts,
         type VolumeSpaceInfo,
-        type VolumeConflictInfo,
         type SourceItemInput,
         type UnlistenFn,
     } from '$lib/tauri-commands'
@@ -63,6 +62,10 @@
             conflictResolution: ConflictResolution,
             operationType: TransferOperationType,
             scanInProgress: boolean,
+            /** Source filenames known to conflict at dest, for the BE to bulk-skip
+             *  under `Skip all`. Empty when no conflicts were found or the pre-flight
+             *  scan failed. */
+            preKnownConflicts: string[],
         ) => void
         onCancel: () => void
     }
@@ -122,8 +125,15 @@
     let confirmed = false
     let destroyed = false
 
-    // Conflict detection state
-    let conflicts = $state<VolumeConflictInfo[]>([])
+    // Conflict detection state. `totalConflictCount` is the unbounded count
+    // for the summary text (it was previously rendered from a capped slice
+    // and misled the user about how many files would actually be skipped).
+    // The full set of conflicting names is forwarded to the backend on
+    // confirm so it can bulk-skip them upfront under `Skip all`. We never
+    // render per-conflict rows in this dialog, so we don't need to keep the
+    // full `VolumeConflictInfo[]` array around.
+    let totalConflictCount = $state(0)
+    let conflictNames = $state<string[]>([])
     let isCheckingConflicts = $state(false)
     let conflictCheckComplete = $state(false)
     // Map MCP onConflict string to ConflictResolution, or default to "ask for each"
@@ -252,15 +262,17 @@
                 }
             })
 
-            const maxConflicts = getSetting('fileOperations.maxConflictsToShow')
             const foundConflicts = await scanVolumeForConflicts(selectedVolumeId, sourceItems, editedPath)
 
-            // Limit the conflicts shown
-            conflicts = foundConflicts.slice(0, maxConflicts)
+            // The dialog only renders an aggregate ("N files already exist"),
+            // not per-conflict rows; surface the true count and forward all
+            // the names to the backend so "Skip all" can bulk-skip them.
+            totalConflictCount = foundConflicts.length
+            conflictNames = foundConflicts.map((c) => c.sourcePath)
             conflictCheckComplete = true
 
-            if (conflicts.length > 0) {
-                log.info('Found {count} conflicts at destination', { count: conflicts.length })
+            if (totalConflictCount > 0) {
+                log.info('Found {count} conflicts at destination', { count: totalConflictCount })
             }
         } catch (err) {
             log.error('Failed to check for conflicts: {error}', { error: err })
@@ -385,7 +397,15 @@
         if (conflictCheckPromise) {
             await conflictCheckPromise
         }
-        onConfirm(editedPath, selectedVolumeId, previewId, conflictPolicy, activeOperationType, isScanning)
+        onConfirm(
+            editedPath,
+            selectedVolumeId,
+            previewId,
+            conflictPolicy,
+            activeOperationType,
+            isScanning,
+            conflictNames,
+        )
     }
 
     function handleCancel() {
@@ -506,11 +526,11 @@
             <span class="scan-spinner"></span>
             <span class="conflicts-checking-text">Checking for conflicts...</span>
         </div>
-    {:else if conflicts.length > 0}
+    {:else if totalConflictCount > 0}
         <div class="conflicts-section">
             <p class="conflicts-summary">
-                {conflicts.length}
-                {conflicts.length === 1 ? 'file already exists' : 'files already exist'}
+                {totalConflictCount}
+                {totalConflictCount === 1 ? 'file already exists' : 'files already exist'}
             </p>
             <div class="conflict-policy">
                 <label class="policy-option">

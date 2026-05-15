@@ -84,6 +84,9 @@
         destVolumeId?: string
         /** Conflict resolution policy from TransferDialog (not applicable for delete/trash) */
         conflictResolution?: ConflictResolution
+        /** Source filenames known to conflict at dest (from TransferDialog's pre-flight scan).
+         *  Forwarded to the BE so it can bulk-skip them upfront under `Skip all`. */
+        preKnownConflicts?: string[]
         /** Per-item sizes for trash progress (from scan or drive index, optional) */
         itemSizes?: number[]
         /** Whether the scan preview is still running (this dialog should subscribe to scan events) */
@@ -105,6 +108,7 @@
         sourceVolumeId,
         destVolumeId,
         conflictResolution,
+        preKnownConflicts,
         itemSizes,
         scanInProgress = false,
         onComplete,
@@ -470,6 +474,7 @@
                         progressIntervalMs,
                         maxConflictsToShow,
                         previewId,
+                        preKnownConflicts: preKnownConflicts ?? [],
                     },
                 )
             }
@@ -481,6 +486,7 @@
                 sortColumn,
                 sortOrder,
                 previewId,
+                preKnownConflicts: preKnownConflicts ?? [],
             })
         }
         // Copy: always use copyBetweenVolumes; the backend handles local-to-local optimization
@@ -494,6 +500,7 @@
                 progressIntervalMs,
                 maxConflictsToShow,
                 previewId,
+                preKnownConflicts: preKnownConflicts ?? [],
             },
         )
     }

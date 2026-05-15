@@ -15,7 +15,7 @@
 //! - Local → MTP: Uses volume.import_from_local()
 //! - MTP → Local: Uses volume.export_to_local()
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
@@ -106,11 +106,14 @@ pub async fn copy_between_volumes(
         let absolute_dest = dest_root.join(dest_path.strip_prefix("/").unwrap_or(&dest_path));
 
         // Convert VolumeCopyConfig to WriteOperationConfig, preserving preview_id
+        // and the pre-flight conflict list so local↔local copies get the same
+        // bulk-skip-under-Skip UX as cross-volume copies.
         let write_config = WriteOperationConfig {
             progress_interval_ms: config.progress_interval_ms,
             conflict_resolution: config.conflict_resolution,
             max_conflicts_to_show: config.max_conflicts_to_show,
             preview_id: config.preview_id,
+            pre_known_conflicts: config.pre_known_conflicts,
             ..Default::default()
         };
 
@@ -276,6 +279,64 @@ pub async fn scan_for_volume_copy(
         dest_space,
         conflicts,
     })
+}
+
+/// Bumps `files_done` and `bytes_done` for a skipped source and (throttled)
+/// emits a `write-progress` event. Without this, a "Skip all" choice silently
+/// runs through dozens of conflicts with the progress bar pinned at 0% — the
+/// user expects the bar to reflect skipped files since the operation is in
+/// fact processing them.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Helper bundles all the per-emit context the surrounding loop already has on hand"
+)]
+fn account_skipped_file(
+    source_path: &Path,
+    source_hints: &HashMap<PathBuf, SourceHint>,
+    files_done_atomic: &Arc<AtomicUsize>,
+    atomic_bytes_done: &Arc<AtomicU64>,
+    last_progress_mutex: &Arc<std::sync::Mutex<Instant>>,
+    progress_interval: Duration,
+    state: &Arc<WriteOperationState>,
+    events: &dyn OperationEventSink,
+    operation_id: &str,
+    total_files: usize,
+    total_bytes: u64,
+) {
+    let hint_size = source_hints
+        .get(source_path)
+        .map(|h| if h.is_directory { 0 } else { h.size })
+        .unwrap_or(0);
+    let new_files = files_done_atomic.fetch_add(1, Ordering::Relaxed) + 1;
+    let new_bytes = atomic_bytes_done.fetch_add(hint_size, Ordering::Relaxed) + hint_size;
+
+    let mut last = last_progress_mutex.lock().unwrap();
+    if last.elapsed() >= progress_interval {
+        *last = Instant::now();
+        drop(last);
+        state.emit_progress_via_sink(
+            events,
+            WriteProgressEvent::new(
+                operation_id.to_string(),
+                WriteOperationType::Copy,
+                WriteOperationPhase::Copying,
+                source_path.file_name().map(|n| n.to_string_lossy().to_string()),
+                new_files,
+                total_files,
+                new_bytes,
+                total_bytes,
+            ),
+        );
+        update_operation_status(
+            operation_id,
+            WriteOperationPhase::Copying,
+            source_path.file_name().map(|n| n.to_string_lossy().to_string()),
+            new_files,
+            total_files,
+            new_bytes,
+            total_bytes,
+        );
+    }
 }
 
 /// Internal function that performs the actual copy with progress reporting.
@@ -482,6 +543,74 @@ pub(crate) async fn copy_volumes_with_progress(
         total_bytes,
     );
 
+    // Bulk-skip pre-known conflicts when the user chose Skip upfront. The FE's
+    // `scan_for_conflicts` already found these; without this bulk pass, the
+    // main loop would re-discover them one at a time via per-file
+    // `dest_volume.get_metadata` stats, interleaved with the copies of
+    // non-conflicting files, so the progress bar would only advance by 1 per
+    // conflict instead of jumping to the full skipped count immediately.
+    // Build a `HashSet<&Path>` of the source paths to skip — checking that
+    // during iteration is O(1) and lets the main loop short-circuit cheaply.
+    let pre_skip_paths: HashSet<PathBuf> =
+        if config.conflict_resolution == ConflictResolution::Skip && !config.pre_known_conflicts.is_empty() {
+            let names: HashSet<&str> = config.pre_known_conflicts.iter().map(String::as_str).collect();
+            source_paths
+                .iter()
+                .filter(|p| {
+                    p.file_name()
+                        .and_then(|n| n.to_str())
+                        .map(|n| names.contains(n))
+                        .unwrap_or(false)
+                })
+                .cloned()
+                .collect()
+        } else {
+            HashSet::new()
+        };
+
+    if !pre_skip_paths.is_empty() {
+        let mut pre_skipped_count = 0usize;
+        let mut pre_skipped_bytes = 0u64;
+        for path in &pre_skip_paths {
+            let size = source_hints
+                .get(path)
+                .map(|h| if h.is_directory { 0 } else { h.size })
+                .unwrap_or(0);
+            pre_skipped_count += 1;
+            pre_skipped_bytes += size;
+        }
+        let new_files = files_done_atomic.fetch_add(pre_skipped_count, Ordering::Relaxed) + pre_skipped_count;
+        let new_bytes = atomic_bytes_done.fetch_add(pre_skipped_bytes, Ordering::Relaxed) + pre_skipped_bytes;
+        log::info!(
+            "copy_volumes_with_progress: bulk-skipping {} pre-known conflicts ({} bytes) before main iteration",
+            pre_skipped_count,
+            pre_skipped_bytes
+        );
+        // One progress event reflects the bulk skip; the bar jumps in one go.
+        state.emit_progress_via_sink(
+            events,
+            WriteProgressEvent::new(
+                operation_id.to_string(),
+                WriteOperationType::Copy,
+                WriteOperationPhase::Copying,
+                None,
+                new_files,
+                total_files,
+                new_bytes,
+                total_bytes,
+            ),
+        );
+        update_operation_status(
+            operation_id,
+            WriteOperationPhase::Copying,
+            None,
+            new_files,
+            total_files,
+            new_bytes,
+            total_bytes,
+        );
+    }
+
     // Track "apply to all" resolution for conflicts
     let mut apply_to_all_resolution: Option<ConflictResolution> = None;
 
@@ -522,6 +651,11 @@ pub(crate) async fn copy_volumes_with_progress(
                     break;
                 };
 
+                // Pre-known conflict already accounted upfront in the bulk skip.
+                if pre_skip_paths.contains(source_path) {
+                    continue;
+                }
+
                 // Resolve destination path + conflict synchronously.
                 let mut dest_item_path = if let Some(name) = source_path.file_name() {
                     dest_path.join(name)
@@ -530,7 +664,13 @@ pub(crate) async fn copy_volumes_with_progress(
                 };
                 if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path).await {
                     // Reuse the per-source hint from the scan instead of re-statting.
-                    let source_is_dir = source_hints.get(source_path).map(|h| h.is_directory).unwrap_or(false);
+                    let source_hint = source_hints.get(source_path).copied();
+                    let source_is_dir = source_hint.map(|h| h.is_directory).unwrap_or(false);
+                    // Pass file sizes to `resolve_volume_conflict` so it doesn't
+                    // re-scan to populate the conflict dialog (an MTP `scan_for_copy`
+                    // lists the parent dir, ~18 s for 1046 photos on a cold cache).
+                    let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
+                    let dest_size_hint = dest_meta.size;
                     log::debug!(
                         "copy_volumes_with_progress: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
                         dest_item_path.display(),
@@ -547,6 +687,8 @@ pub(crate) async fn copy_volumes_with_progress(
                         operation_id,
                         state,
                         &mut apply_to_all_resolution,
+                        source_size_hint,
+                        dest_size_hint,
                     )
                     .await
                     .map_err(WriteFailure::synthetic)?;
@@ -555,6 +697,19 @@ pub(crate) async fn copy_volumes_with_progress(
                             log::debug!(
                                 "copy_volumes_with_progress: skipping {} due to conflict resolution",
                                 source_path.display()
+                            );
+                            account_skipped_file(
+                                source_path,
+                                &source_hints,
+                                &files_done_atomic,
+                                &atomic_bytes_done,
+                                &last_progress_mutex,
+                                progress_interval,
+                                state,
+                                events,
+                                operation_id,
+                                total_files,
+                                total_bytes,
                             );
                             continue;
                         }
@@ -705,6 +860,11 @@ pub(crate) async fn copy_volumes_with_progress(
                 break;
             }
 
+            // Pre-known conflict already accounted upfront in the bulk skip.
+            if pre_skip_paths.contains(source_path) {
+                continue;
+            }
+
             let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
             let mut dest_item_path = if let Some(name) = source_path.file_name() {
                 dest_path.join(name)
@@ -713,7 +873,10 @@ pub(crate) async fn copy_volumes_with_progress(
             };
 
             if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path).await {
-                let source_is_dir = source_hints.get(source_path).map(|h| h.is_directory).unwrap_or(false);
+                let source_hint = source_hints.get(source_path).copied();
+                let source_is_dir = source_hint.map(|h| h.is_directory).unwrap_or(false);
+                let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
+                let dest_size_hint = dest_meta.size;
                 log::debug!(
                     "copy_volumes_with_progress: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
                     dest_item_path.display(),
@@ -730,6 +893,8 @@ pub(crate) async fn copy_volumes_with_progress(
                     operation_id,
                     state,
                     &mut apply_to_all_resolution,
+                    source_size_hint,
+                    dest_size_hint,
                 )
                 .await
                 .map_err(WriteFailure::synthetic)?;
@@ -738,6 +903,19 @@ pub(crate) async fn copy_volumes_with_progress(
                         log::debug!(
                             "copy_volumes_with_progress: skipping {} due to conflict resolution",
                             source_path.display()
+                        );
+                        account_skipped_file(
+                            source_path,
+                            &source_hints,
+                            &files_done_atomic,
+                            &atomic_bytes_done,
+                            &last_progress_mutex,
+                            progress_interval,
+                            state,
+                            events,
+                            operation_id,
+                            total_files,
+                            total_bytes,
                         );
                         continue;
                     }

@@ -29,6 +29,16 @@ pub(super) async fn resolve_volume_conflict(
     operation_id: &str,
     state: &Arc<WriteOperationState>,
     apply_to_all_resolution: &mut Option<ConflictResolution>,
+    // Size hints for the conflict dialog. `Some` skips a `scan_for_copy` call
+    // on that side. The copy path already has both: source size in
+    // `source_hints` (from the cached preview scan), dest size in `dest_meta`
+    // from the stat just done by the caller. Without these hints, an MTP
+    // source means listing the parent directory of `source_path` to find one
+    // entry's size — 18 s for /DCIM/Camera with 1046 photos when the listing
+    // cache has lapsed. The move path doesn't have a scan phase, so it still
+    // falls through to `scan_for_copy` for unknown hints.
+    source_size_hint: Option<u64>,
+    dest_size_hint: Option<u64>,
 ) -> Result<Option<PathBuf>, WriteOperationError> {
     // Determine effective conflict resolution
     let resolution = if let Some(saved_resolution) = apply_to_all_resolution {
@@ -41,16 +51,24 @@ pub(super) async fn resolve_volume_conflict(
     match resolution {
         ConflictResolution::Stop => {
             // Need to prompt user - gather metadata for the conflict event
-            let source_scan = source_volume.scan_for_copy(source_path).await.ok();
-            let source_size = source_scan.as_ref().map(|s| s.total_bytes).unwrap_or(0);
+            let source_size = if let Some(s) = source_size_hint {
+                s
+            } else {
+                let source_scan = source_volume.scan_for_copy(source_path).await.ok();
+                source_scan.as_ref().map(|s| s.total_bytes).unwrap_or(0)
+            };
 
-            // Try to get destination size by scanning (best effort)
-            let dest_size = dest_volume
-                .scan_for_copy(dest_path)
-                .await
-                .ok()
-                .map(|s| s.total_bytes)
-                .unwrap_or(0);
+            // Try to get destination size; prefer the hint to avoid a scan.
+            let dest_size = if let Some(s) = dest_size_hint {
+                s
+            } else {
+                dest_volume
+                    .scan_for_copy(dest_path)
+                    .await
+                    .ok()
+                    .map(|s| s.total_bytes)
+                    .unwrap_or(0)
+            };
 
             // We can't easily get modification times from Volume trait, so use None
             let source_modified: Option<i64> = None;

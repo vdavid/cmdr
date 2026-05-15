@@ -67,6 +67,7 @@
             conflictResolution: ConflictResolution,
             operationType: TransferOperationType,
             scanInProgress: boolean,
+            preKnownConflicts: string[],
         ) => void
         onTransferCancel: () => void
         onTransferComplete: (filesProcessed: number, bytesProcessed: number) => void
@@ -119,6 +120,7 @@
         sourceVolumeId={transferProgressProps.sourceVolumeId}
         destVolumeId={transferProgressProps.destVolumeId}
         conflictResolution={transferProgressProps.conflictResolution}
+        preKnownConflicts={transferProgressProps.preKnownConflicts}
         itemSizes={transferProgressProps.itemSizes}
         scanInProgress={transferProgressProps.scanInProgress}
         onComplete={onTransferComplete}

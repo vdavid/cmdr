@@ -567,6 +567,10 @@ pub struct WriteOperationConfig {
     /// Maximum number of conflicts to include in DryRunResult (default: 100)
     #[serde(default = "default_max_conflicts_to_show")]
     pub max_conflicts_to_show: usize,
+    /// Source filenames already known to conflict at the destination. See
+    /// `VolumeCopyConfig::pre_known_conflicts` for the full rationale.
+    #[serde(default)]
+    pub pre_known_conflicts: Vec<String>,
 }
 
 impl Default for WriteOperationConfig {
@@ -580,6 +584,7 @@ impl Default for WriteOperationConfig {
             sort_order: SortOrder::default(),
             preview_id: None,
             max_conflicts_to_show: default_max_conflicts_to_show(),
+            pre_known_conflicts: Vec::new(),
         }
     }
 }
@@ -779,6 +784,16 @@ pub struct VolumeCopyConfig {
     /// Preview scan ID to reuse cached scan results (from start_scan_preview).
     #[serde(default)]
     pub preview_id: Option<String>,
+    /// Source filenames already known to conflict at the destination (from the
+    /// pre-flight `scan_for_conflicts` call). When `conflict_resolution == Skip`,
+    /// the copy pipeline bulk-skips these upfront so the progress bar jumps to
+    /// reflect them immediately, rather than discovering each one serially via
+    /// per-file `get_metadata` stats while non-conflict copies run in between.
+    /// Ignored for other resolution modes (Stop still prompts; Overwrite still
+    /// proceeds normally). Empty if the FE didn't pre-scan or found no
+    /// conflicts.
+    #[serde(default)]
+    pub pre_known_conflicts: Vec<String>,
 }
 
 impl Default for VolumeCopyConfig {
@@ -788,6 +803,7 @@ impl Default for VolumeCopyConfig {
             conflict_resolution: ConflictResolution::Stop,
             max_conflicts_to_show: 100,
             preview_id: None,
+            pre_known_conflicts: Vec::new(),
         }
     }
 }
@@ -799,6 +815,7 @@ impl From<&WriteOperationConfig> for VolumeCopyConfig {
             conflict_resolution: config.conflict_resolution,
             max_conflicts_to_show: config.max_conflicts_to_show,
             preview_id: config.preview_id.clone(),
+            pre_known_conflicts: config.pre_known_conflicts.clone(),
         }
     }
 }

@@ -39,6 +39,9 @@ export interface TransferProgressPropsData {
   itemSizes?: number[]
   /** Whether the scan preview is still running (TransferProgressDialog should subscribe to scan events) */
   scanInProgress?: boolean
+  /** Source filenames known to conflict at dest (from pre-flight scan).
+   *  Forwarded to the BE so it can bulk-skip them upfront under `Skip all`. */
+  preKnownConflicts?: string[]
 }
 
 export interface NewFolderDialogPropsData {
@@ -269,6 +272,7 @@ export function createDialogState(deps: DialogStateDeps) {
       conflictResolution: ConflictResolution,
       operationType: TransferOperationType,
       scanInProgress: boolean,
+      preKnownConflicts: string[],
     ) {
       if (!transferDialogProps) return
 
@@ -286,6 +290,7 @@ export function createDialogState(deps: DialogStateDeps) {
         destVolumeId: volumeId,
         conflictResolution,
         scanInProgress,
+        preKnownConflicts,
       }
       snapshotSourcePaneSelection()
 
@@ -516,6 +521,7 @@ export function createDialogState(deps: DialogStateDeps) {
           resolution,
           transferDialogProps.operationType,
           false, // scanInProgress not tracked when confirming programmatically
+          [], // pre-known conflicts not available when confirming programmatically
         )
       } else if (dialogType === 'delete-confirmation' && showDeleteDialog && deleteDialogProps) {
         // previewId not available when confirming programmatically.

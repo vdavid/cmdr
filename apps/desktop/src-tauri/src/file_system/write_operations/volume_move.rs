@@ -5,6 +5,7 @@
 //! - Both local: delegates to `move_files_start` (handles same-fs rename optimization)
 //! - Cross-volume: copy to destination then delete sources
 
+use std::collections::HashSet;
 use std::ops::ControlFlow;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -60,6 +61,7 @@ pub async fn move_between_volumes(
             conflict_resolution: config.conflict_resolution,
             max_conflicts_to_show: config.max_conflicts_to_show,
             preview_id: config.preview_id,
+            pre_known_conflicts: config.pre_known_conflicts,
             ..Default::default()
         };
 
@@ -103,11 +105,59 @@ pub async fn move_between_volumes(
             // remaining files stay at source. No data loss, but the move is partial.
             let mut apply_to_all_resolution: Option<ConflictResolution> = None;
 
+            // Bulk-skip pre-known conflicts when the user chose Skip upfront.
+            // See `copy_volumes_with_progress` for the full rationale. Move-skipped
+            // means "don't transfer, don't delete source" — safe for both sides.
+            let pre_skip_paths: HashSet<PathBuf> =
+                if config.conflict_resolution == ConflictResolution::Skip && !config.pre_known_conflicts.is_empty() {
+                    let names: HashSet<&str> = config.pre_known_conflicts.iter().map(String::as_str).collect();
+                    source_paths
+                        .iter()
+                        .filter(|p| {
+                            p.file_name()
+                                .and_then(|n| n.to_str())
+                                .map(|n| names.contains(n))
+                                .unwrap_or(false)
+                        })
+                        .cloned()
+                        .collect()
+                } else {
+                    HashSet::new()
+                };
+
+            if !pre_skip_paths.is_empty() {
+                files_done = pre_skip_paths.len();
+                log::info!(
+                    "move_between_volumes: bulk-skipping {} pre-known conflicts before main iteration",
+                    files_done
+                );
+                // Move doesn't track bytes_total (always 0), so just bump the file counter
+                // and emit one progress event so the bar jumps in one go.
+                state.emit_progress_via_app(
+                    &app,
+                    WriteProgressEvent::new(
+                        operation_id_for_spawn.clone(),
+                        WriteOperationType::Move,
+                        WriteOperationPhase::Copying,
+                        None,
+                        files_done,
+                        total_files,
+                        bytes_done,
+                        0,
+                    ),
+                );
+            }
+
             for source_path in &source_paths {
                 if is_cancelled(&state.intent) {
                     return Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
                         message: "Operation cancelled by user".to_string(),
                     }));
+                }
+
+                // Pre-known conflict, already accounted upfront.
+                if pre_skip_paths.contains(source_path) {
+                    continue;
                 }
 
                 let file_name = source_path.file_name().ok_or_else(|| {
@@ -141,6 +191,10 @@ pub async fn move_between_volumes(
                     );
 
                     let events = TauriEventSink::new(app.clone());
+                    // Move has no scan phase, so pass `None` size hints; the
+                    // conflict resolver falls back to `scan_for_copy` to populate
+                    // the dialog (one MTP listing per conflicting source). Copy
+                    // is the path that supplies real hints from the cached scan.
                     let resolved = resolve_volume_conflict(
                         &source_volume,
                         source_path,
@@ -151,17 +205,39 @@ pub async fn move_between_volumes(
                         &operation_id_for_spawn,
                         &state,
                         &mut apply_to_all_resolution,
+                        None,
+                        dest_meta.size,
                     )
                     .await
                     .map_err(WriteFailure::synthetic)?;
 
                     match resolved {
                         None => {
-                            // Skip: don't copy and don't delete source
+                            // Skip: don't copy and don't delete source. The file
+                            // still counts as "processed" for progress purposes;
+                            // without this bump the bar would stall through a
+                            // run of conflicts the user chose to skip.
                             log::debug!(
                                 "move_between_volumes: skipping {} due to conflict resolution",
                                 source_path.display()
                             );
+                            files_done += 1;
+                            if last_progress_time.elapsed() >= progress_interval {
+                                state.emit_progress_via_app(
+                                    &app,
+                                    WriteProgressEvent::new(
+                                        operation_id_for_spawn.clone(),
+                                        WriteOperationType::Move,
+                                        WriteOperationPhase::Copying,
+                                        Some(file_name.to_string_lossy().to_string()),
+                                        files_done,
+                                        total_files,
+                                        bytes_done,
+                                        0,
+                                    ),
+                                );
+                                last_progress_time = Instant::now();
+                            }
                             continue;
                         }
                         Some(resolved_path) => {
@@ -349,11 +425,56 @@ async fn move_within_same_volume(
             let progress_interval = Duration::from_millis(progress_interval_ms);
             let mut apply_to_all_resolution: Option<ConflictResolution> = None;
 
+            // Bulk-skip pre-known conflicts upfront (Skip mode only). See
+            // `copy_volumes_with_progress` for rationale.
+            let pre_skip_paths: HashSet<PathBuf> =
+                if config.conflict_resolution == ConflictResolution::Skip && !config.pre_known_conflicts.is_empty() {
+                    let names: HashSet<&str> = config.pre_known_conflicts.iter().map(String::as_str).collect();
+                    source_paths
+                        .iter()
+                        .filter(|p| {
+                            p.file_name()
+                                .and_then(|n| n.to_str())
+                                .map(|n| names.contains(n))
+                                .unwrap_or(false)
+                        })
+                        .cloned()
+                        .collect()
+                } else {
+                    HashSet::new()
+                };
+
+            if !pre_skip_paths.is_empty() {
+                files_moved = pre_skip_paths.len();
+                log::info!(
+                    "move_within_same_volume: bulk-skipping {} pre-known conflicts before main iteration",
+                    files_moved
+                );
+                state.emit_progress_via_app(
+                    &app,
+                    WriteProgressEvent::new(
+                        operation_id_for_spawn.clone(),
+                        WriteOperationType::Move,
+                        WriteOperationPhase::Copying,
+                        None,
+                        files_moved,
+                        total_files,
+                        bytes_moved,
+                        0,
+                    ),
+                );
+            }
+
             for source_path in &source_paths {
                 if is_cancelled(&state.intent) {
                     return Err(WriteOperationError::Cancelled {
                         message: "Operation cancelled by user".to_string(),
                     });
+                }
+
+                // Pre-known conflict, already accounted upfront.
+                if pre_skip_paths.contains(source_path) {
+                    continue;
                 }
 
                 let file_name = source_path.file_name().ok_or_else(|| WriteOperationError::IoError {
@@ -384,16 +505,37 @@ async fn move_within_same_volume(
                         &operation_id_for_spawn,
                         &state,
                         &mut apply_to_all_resolution,
+                        None,
+                        dest_meta.size,
                     )
                     .await?;
 
                     match resolved {
                         None => {
-                            // Skip: don't move this file
+                            // Skip: don't move this file. Still counts toward
+                            // progress so the bar doesn't stall through a run
+                            // of conflicts.
                             log::debug!(
                                 "move_within_same_volume: skipping {} due to conflict resolution",
                                 source_path.display()
                             );
+                            files_moved += 1;
+                            if last_progress_time.elapsed() >= progress_interval {
+                                state.emit_progress_via_app(
+                                    &app,
+                                    WriteProgressEvent::new(
+                                        operation_id_for_spawn.clone(),
+                                        WriteOperationType::Move,
+                                        WriteOperationPhase::Copying,
+                                        Some(file_name.to_string_lossy().to_string()),
+                                        files_moved,
+                                        total_files,
+                                        bytes_moved,
+                                        0,
+                                    ),
+                                );
+                                last_progress_time = Instant::now();
+                            }
                             continue;
                         }
                         Some(resolved_path) => {

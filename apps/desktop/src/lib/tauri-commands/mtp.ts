@@ -478,6 +478,14 @@ export interface VolumeCopyConfig {
   maxConflictsToShow: number
   /** Preview scan ID to reuse cached scan results (from startScanPreview). */
   previewId?: string | null
+  /**
+   * Source filenames already known to conflict at the destination (from the
+   * pre-flight `scanVolumeForConflicts` call). When `conflictResolution` is
+   * `'skip'`, the backend bulk-skips these upfront so the progress bar
+   * reflects them immediately instead of advancing one-per-conflict as the
+   * loop re-discovers them. Ignored for other resolution modes.
+   */
+  preKnownConflicts?: string[]
 }
 
 /** Input for source item in conflict scanning. */

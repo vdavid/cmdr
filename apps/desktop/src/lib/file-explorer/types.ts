@@ -398,6 +398,11 @@ export interface WriteOperationConfig {
   previewId?: string | null
   /** Maximum number of conflicts to include in DryRunResult (default: 100) */
   maxConflictsToShow?: number
+  /** Source filenames already known to conflict at the destination (from the pre-flight
+   *  `scanVolumeForConflicts` call). When `conflictResolution` is `'skip'`, the backend
+   *  bulk-skips these upfront so the progress bar reflects them immediately. Ignored
+   *  for other resolution modes. */
+  preKnownConflicts?: string[]
 }
 
 /** Result of starting a write operation. */

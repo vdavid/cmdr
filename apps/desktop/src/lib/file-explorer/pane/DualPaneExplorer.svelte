@@ -2525,8 +2525,9 @@
         resolution: ConflictResolution,
         opType: TransferOperationType,
         scanning: boolean,
+        preKnownConflicts: string[],
     ) => {
-        dialogs.handleTransferConfirm(dest, volId, prevId, resolution, opType, scanning)
+        dialogs.handleTransferConfirm(dest, volId, prevId, resolution, opType, scanning, preKnownConflicts)
     }}
     onTransferCancel={() => {
         dialogs.handleTransferCancel()
