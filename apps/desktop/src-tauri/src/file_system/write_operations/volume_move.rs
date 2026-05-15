@@ -16,9 +16,9 @@ use super::state::{
     WRITE_OPERATION_STATE, WriteOperationState, is_cancelled, register_operation_status, unregister_operation_status,
 };
 use super::types::{
-    ConflictResolution, OperationEventSink, TauriEventSink, VolumeCopyConfig, WriteCompleteEvent, WriteErrorEvent,
-    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
-    WriteProgressEvent,
+    ConflictResolution, OperationEventSink, TauriEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent,
+    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult,
+    WriteOperationType, WriteProgressEvent,
 };
 use super::volume_conflict::resolve_volume_conflict;
 use super::volume_copy::{WriteFailure, delete_volume_path_recursive, map_volume_error, write_error_event_from};
@@ -214,6 +214,18 @@ pub(super) async fn move_volumes_with_progress(
 
     for source_path in source_paths {
         if is_cancelled(&state.intent) {
+            // Move has no rollback (it's copy+delete-source per file); cancelling
+            // leaves whatever's already at dest alone and stops further work. We
+            // emit `write-cancelled` here so the FE sees the cancel for the move
+            // path too, mirroring `copy_volumes_with_progress`. Without this, the
+            // outer wrapper would only log the cancel and the dialog would never
+            // close.
+            events.emit_cancelled(WriteCancelledEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Move,
+                files_processed: files_done,
+                rolled_back: false,
+            });
             return Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             }));
@@ -551,6 +563,15 @@ pub(super) async fn move_within_same_volume_with_progress(
 
     for source_path in source_paths {
         if is_cancelled(&state.intent) {
+            // Same-volume rename has no rollback (the previous renames stay
+            // in place). Emit `write-cancelled` so the FE closes the dialog;
+            // the outer wrapper only logs the typed `Cancelled` error.
+            events.emit_cancelled(WriteCancelledEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Move,
+                files_processed: files_moved,
+                rolled_back: false,
+            });
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });
@@ -676,3 +697,7 @@ pub(super) async fn move_within_same_volume_with_progress(
 
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "volume_move_tests.rs"]
+mod tests;
