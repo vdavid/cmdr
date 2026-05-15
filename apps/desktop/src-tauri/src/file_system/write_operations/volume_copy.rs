@@ -612,6 +612,13 @@ pub(crate) async fn copy_volumes_with_progress(
             bulk_skip_files,
             bulk_skip_bytes
         );
+        // Re-anchor the rate estimator: bulk-skip credit is past work, not
+        // throughput. Without this the first per-task progress callback's
+        // delta against `(0, 0)` pins `bytes_per_second` at GB/s level.
+        // Same pattern as the driver's serial preludes.
+        if let Ok(mut est) = state.estimator.lock() {
+            est.reseed_baseline(Instant::now(), new_bytes, new_files);
+        }
         state.emit_progress_via_sink(
             &*events,
             WriteProgressEvent::new(

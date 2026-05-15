@@ -93,6 +93,33 @@ impl EtaEstimator {
         Self::default()
     }
 
+    /// Re-anchor the estimator's baseline to the given counters without
+    /// computing a rate from the jump. Use this when the caller wants to
+    /// advance the absolute counters by a chunk that is NOT throughput
+    /// (e.g. the bulk-skip prelude credits N files / B bytes instantly to
+    /// reflect "Skip-All for pre-known conflicts" — those files were never
+    /// actually copied, so feeding the delta into the EWMA pins the first
+    /// sample at GB/s and pollutes the rate display for many seconds).
+    ///
+    /// No-op if no phase is active (the next `update` will seed normally).
+    /// Does NOT change the phase; the next `update` keeps the current phase
+    /// unless it actually transitions.
+    pub fn reseed_baseline(&mut self, now: Instant, bytes_done: u64, files_done: usize) {
+        if let Some(state) = self.state.as_mut() {
+            state.last_t = now;
+            state.last_bytes = bytes_done;
+            state.last_files = files_done;
+            // Reset samples to 0 so the next `update` takes the fast-path
+            // first-sample seed (initialize EWMA from the instantaneous rate
+            // rather than smoothing from zero, per the existing first-sample
+            // rationale). The samples gate also keeps `eta_seconds = None`
+            // until two real samples land.
+            state.samples = 0;
+            state.bytes_rate = 0.0;
+            state.files_rate = 0.0;
+        }
+    }
+
     /// Update the estimator with the latest counters and return the current stats.
     ///
     /// `now` is injected (not read from `Instant::now()` internally) so tests can
@@ -289,6 +316,57 @@ mod tests {
     fn first_sample_seeds_and_returns_zero() {
         let stats = run(WriteOperationPhase::Copying, 1_000, 10, &[(0, 0, 0)]);
         assert_eq!(stats, EtaStats::ZERO);
+    }
+
+    #[test]
+    fn bulk_skip_baseline_jump_does_not_pollute_rate() {
+        // Models the volume-copy Skip-All path. Caller emits `(0, 0)` at the
+        // Copying-phase boundary (the estimator reseeds and returns ZERO);
+        // the driver's bulk-skip prelude then jumps the counters to
+        // `(bulk_skip_files, bulk_skip_bytes)` instantly. Without an explicit
+        // baseline reseed, the bulk-skip delta over ε time becomes the
+        // first-sample rate (~22 GB/s, ~250 files/s in this fixture), and
+        // EWMA takes many seconds to decay it. The fix: call
+        // `reseed_baseline` before the bulk-skip emit so the jump becomes
+        // the new starting point, not throughput. The next real per-file
+        // emit's delta is then just the actually-copied portion.
+        let start = Instant::now();
+        let mut est = EtaEstimator::new();
+
+        // t=0: initial Copying emit (phase transition Scanning -> Copying).
+        let initial = est.update(at(start, 0), WriteOperationPhase::Copying, 0, 35_000_000_000, 0, 1051);
+        assert_eq!(initial, EtaStats::ZERO);
+
+        // t=1 ms: driver bulk-skip prelude credits 22 GB / 250 files
+        // instantly. Caller calls `reseed_baseline` immediately before the
+        // emit so the estimator absorbs the jump as its new starting point.
+        est.reseed_baseline(at(start, 1), 22_000_000_000, 250);
+
+        // t=1001 ms: first real per-file emit. Actually-copied delta vs.
+        // the new baseline = 15 MB / 1 file over 1 s.
+        let stats = est.update(
+            at(start, 1001),
+            WriteOperationPhase::Copying,
+            22_015_000_000,
+            35_000_000_000,
+            251,
+            1051,
+        );
+
+        // Pre-fix: bytes_per_second is in the GB/s range and files_per_second
+        // is in the hundreds (a 250-file / 22-GB jump over ε time pinned the
+        // EWMA's first sample, then partially decayed). Assert single-digit
+        // multiples of the true rate, not orders of magnitude off.
+        assert!(
+            stats.bytes_per_second < 50_000_000,
+            "bytes_per_second = {} (expected ~15 MB/s, bulk-skip should not feed the rate)",
+            stats.bytes_per_second,
+        );
+        assert!(
+            stats.files_per_second < 5.0,
+            "files_per_second = {} (expected ~1 file/s, bulk-skip should not feed the rate)",
+            stats.files_per_second,
+        );
     }
 
     #[test]

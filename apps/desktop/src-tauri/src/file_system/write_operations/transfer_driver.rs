@@ -385,6 +385,14 @@ where
             bulk_skip_files,
             bulk_skip_bytes
         );
+        // Re-anchor the rate estimator BEFORE emitting. The bulk-skip jump
+        // is past work credited instantly, not throughput; without this
+        // reseed the first real per-file emit's delta is computed against
+        // `(0, 0)` and pins `bytes_per_second` at GB/s level. See
+        // `eta::EtaEstimator::reseed_baseline` for the full rationale.
+        if let Ok(mut est) = state.estimator.lock() {
+            est.reseed_baseline(Instant::now(), bytes_done, files_done);
+        }
         emit_progress_and_status(
             events,
             state,
@@ -610,6 +618,11 @@ where
             bulk_skip_files,
             bulk_skip_bytes
         );
+        // Re-anchor the rate estimator: bulk-skip credit is past work, not
+        // throughput. See `drive_transfer_serial_sync` for the rationale.
+        if let Ok(mut est) = state.estimator.lock() {
+            est.reseed_baseline(Instant::now(), bytes_done, files_done);
+        }
         emit_progress_and_status(
             events,
             state,
