@@ -5,17 +5,22 @@
 
 ## Regenerating
 
+Usually you don't need to run anything manually: `./scripts/check.sh` runs `bindings-fresh`, which detects drift (via a
+hash of every input that could affect the output) and, outside `--ci`, regenerates `bindings.ts` for you and reports
+`SuccessWithChanges`. Same philosophy as `oxfmt` / `gofmt` / clippy `--fix`. Review the diff and commit it alongside the
+Rust change.
+
+If you want to regen explicitly:
+
 ```
 cd apps/desktop && pnpm bindings:regen
 ```
 
 This runs the (ignored) `ipc::tests::export_bindings_test` to write raw specta TS, then runs `oxfmt` to land in project
-format (single quotes, no semicolons, 2-space indent). Always commit the result alongside the Rust change that produced
-it.
+format (single quotes, no semicolons, 2-space indent).
 
-CI runs the `bindings-fresh` check (`./scripts/check.sh --check bindings-fresh`), which snapshots the committed file,
-re-regenerates, byte-compares, and restores the snapshot, so your working tree is never touched. A failure means
-somebody changed a `#[tauri::command]` surface or a Type-derived DTO without regenerating.
+In `--ci` mode the check is read-only: it regenerates into a temp snapshot, byte-compares, restores the original, and
+fails on drift with a "Run `pnpm bindings:regen`" hint. CI never modifies the working tree.
 
 ## Usage
 
@@ -81,13 +86,14 @@ Two patterns specta rc.24 can't handle. New code must avoid them; existing exclu
   type names in the TS output. Workaround: replace `Value` with a typed struct or enum. For genuinely free-form data
   where typing has no value, keep the call on raw `invoke()` with the standard opt-out comment (see § Excluded commands
   below). Try not to add new uses of `Value` at IPC boundaries.
-- **Internally-tagged enums with struct variants need `rename_all_fields`**: `#[serde(tag = "...", rename_all =
-  "camelCase")]` renames variant *tags* but does not cascade into the variants' fields. A `display_name: String` field
-  on a struct variant ships as `display_name` on the wire (and in `bindings.ts`), not `displayName`. Always pair the
-  enum attribute with `rename_all_fields = "camelCase"` so field names follow the convention too. Symptom when missed:
-  TS code reading `info.displayName` gets `undefined`; single-word fields (`share`, `port`) silently work, multi-word
-  fields don't. There's a guardrail check (`scripts/check/checks/ipc-enum-camelcase.go`) that flags any
-  `#[serde(tag = ..., rename_all = "camelCase")]` enum with struct variants that's missing `rename_all_fields`.
+- **Internally-tagged enums with struct variants need `rename_all_fields`**:
+  `#[serde(tag = "...", rename_all = "camelCase")]` renames variant _tags_ but does not cascade into the variants'
+  fields. A `display_name: String` field on a struct variant ships as `display_name` on the wire (and in `bindings.ts`),
+  not `displayName`. Always pair the enum attribute with `rename_all_fields = "camelCase"` so field names follow the
+  convention too. Symptom when missed: TS code reading `info.displayName` gets `undefined`; single-word fields (`share`,
+  `port`) silently work, multi-word fields don't. There's a guardrail check
+  (`scripts/check/checks/ipc-enum-camelcase.go`) that flags any `#[serde(tag = ..., rename_all = "camelCase")]` enum
+  with struct variants that's missing `rename_all_fields`.
 
 ## Excluded commands
 

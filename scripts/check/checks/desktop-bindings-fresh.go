@@ -21,10 +21,13 @@ import (
 // `.rs` file under `src-tauri/src` plus `Cargo.lock` and `Cargo.toml`) and the
 // current `bindings.ts`. If both hashes match the marker from the last
 // successful run, skip the regen entirely; that's the common case and turns a
-// ~2-minute test-mode compile into a ~50 ms hash scan. Otherwise: snapshot the
-// committed `bindings.ts`, run the regen, diff bytes, restore the snapshot
-// regardless of outcome (so the working tree stays exactly as the caller left
-// it), and update the marker on success.
+// ~2-minute test-mode compile into a ~50 ms hash scan. Otherwise: run the
+// regen and let it overwrite `bindings.ts`. In `--ci` mode we then restore
+// the original (CI never modifies the tree) and fail if the regenerated
+// content differs. Outside `--ci` we keep the regenerated file so the dev
+// gets the same auto-fix UX as `oxfmt` / `gofmt` / clippy `--fix`; the dev
+// reviews and commits the diff alongside the Rust change that caused it.
+// Marker is updated on success either way.
 //
 // The marker lives at `<CARGO_TARGET_DIR>/.bindings-fresh-marker` (or
 // `<workspace>/target/.bindings-fresh-marker` if the env var is unset), so it
@@ -59,15 +62,22 @@ func RunDesktopBindingsFresh(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, fmt.Errorf("failed to prepare llama-server binaries\n%s", indentOutput(output))
 	}
 
-	// Always restore before returning, even on regen failure.
-	defer func() {
-		_ = os.WriteFile(bindingsPath, original, 0o644)
-	}()
+	// In CI we never modify the working tree: restore on any exit path.
+	// Outside CI we restore only on regen failure (so a half-written file
+	// can't survive an error), then keep the regenerated content on success.
+	if ctx.CI {
+		defer func() {
+			_ = os.WriteFile(bindingsPath, original, 0o644)
+		}()
+	}
 
 	regenCmd := exec.Command("pnpm", "bindings:regen")
 	regenCmd.Dir = desktopDir
 	output, regenErr := RunCommand(regenCmd, true)
 	if regenErr != nil {
+		if !ctx.CI {
+			_ = os.WriteFile(bindingsPath, original, 0o644)
+		}
 		return CheckResult{}, fmt.Errorf("`pnpm bindings:regen` failed:\n%s", indentOutput(output))
 	}
 
@@ -76,17 +86,24 @@ func RunDesktopBindingsFresh(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, fmt.Errorf("couldn't read regenerated bindings: %w", err)
 	}
 
-	if string(regenerated) != string(original) {
+	changed := !bytes.Equal(regenerated, original)
+
+	if ctx.CI && changed {
 		return CheckResult{}, fmt.Errorf(
-			"bindings.ts is stale. Run `pnpm bindings:regen` from `apps/desktop/` and commit the diff",
+			"bindings.ts is stale. Run `pnpm bindings:regen` from `apps/desktop/`",
 		)
 	}
 
 	if hashErr == nil {
-		_ = writeBindingsMarker(markerPath, inputHash, bindingsSha)
+		// Hash the post-regen file so a follow-up run can short-circuit.
+		_ = writeBindingsMarker(markerPath, inputHash, sha256Bytes(regenerated))
 	}
 
-	return Success(fmt.Sprintf("bindings.ts in sync (%d lines)", bytes.Count(original, []byte{'\n'}))), nil
+	lineCount := bytes.Count(regenerated, []byte{'\n'})
+	if changed {
+		return SuccessWithChanges(fmt.Sprintf("bindings.ts regenerated (%d lines)", lineCount)), nil
+	}
+	return Success(fmt.Sprintf("bindings.ts in sync (%d lines)", lineCount)), nil
 }
 
 // hashBindingsInputs returns a stable hash of every input that could affect

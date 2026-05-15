@@ -1079,7 +1079,7 @@ export const commands = {
   /**
    *  Returns the `CMDR_E2E_START_PATH` env var if set.
    *  The frontend uses this to override startup paths for E2E tests.
-   *  Always compiled in — reading an unset env var is a no-op in production.
+   *  Always compiled in. Reading an unset env var is a no-op in production.
    */
   getE2eStartPath: () => __TAURI_INVOKE<string | null>('get_e2e_start_path'),
   /**
@@ -2543,7 +2543,7 @@ export type PathLimits = {
 /**
  *  Result of resolving a path to its containing volume.
  *  Unlike `TimedOut<Option<VolumeInfo>>`, `timed_out: true` means "the filesystem
- *  didn't respond, we genuinely don't know" — not "here's a fallback."
+ *  didn't respond, we genuinely don't know" (not "here's a fallback").
  */
 export type PathVolumeResolution = {
   volume: LocationInfo | null
@@ -2853,7 +2853,7 @@ export type SyncStatus =
  */
 export type SystemMemoryInfo = {
   totalBytes: number
-  // Wired + compressor-occupied memory (kernel, drivers — can't be freed).
+  // Wired + compressor-occupied memory (kernel, drivers; can't be freed).
   wiredBytes: number
   // App memory: active + inactive - purgeable (process memory the user can free by quitting apps).
   appBytes: number
