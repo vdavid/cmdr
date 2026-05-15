@@ -19,6 +19,7 @@ use super::scan::{SourceItemTracker, handle_dry_run, scan_sources, take_cached_s
 use super::state::{
     CopyTransaction, OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status,
 };
+use super::transfer_driver::{DriverConfig, PostLoopIntent, TransferOutcome, drive_transfer_serial_sync};
 use super::types::{
     ConflictResolution, IoResultExt, OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
@@ -148,8 +149,6 @@ pub(super) fn copy_files_with_progress_inner(
 
     // Phase 2: Copy files in sorted order with rollback support
     let mut transaction = CopyTransaction::new();
-    let mut files_done = 0;
-    let mut bytes_done = 0u64;
     let mut last_progress_time = Instant::now();
     let mut apply_to_all_resolution: Option<ConflictResolution> = None;
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
@@ -183,7 +182,10 @@ pub(super) fn copy_files_with_progress_inner(
     // is much milder than the cross-volume case — but we still want the bar
     // to reflect the user's "Skip all" decision immediately. The set is keyed
     // by the absolute top-level source path (matching what
-    // `top_level_source_path(file_info)` returns).
+    // `top_level_source_path(file_info)` returns). We filter `scan_result.files`
+    // pre-loop so the driver iterates only the surviving files; bulk-skip
+    // counters are handed to the driver via `bulk_skip_files` / `bulk_skip_bytes`
+    // and the driver emits the one bulk progress event.
     let pre_skip_top_levels: HashSet<PathBuf> =
         if config.conflict_resolution == ConflictResolution::Skip && !config.pre_known_conflicts.is_empty() {
             let names: HashSet<&str> = config.pre_known_conflicts.iter().map(String::as_str).collect();
@@ -201,48 +203,24 @@ pub(super) fn copy_files_with_progress_inner(
             HashSet::new()
         };
 
+    let mut bulk_skip_files = 0usize;
+    let mut bulk_skip_bytes = 0u64;
     if !pre_skip_top_levels.is_empty() {
-        let mut skipped_count = 0usize;
-        let mut skipped_bytes = 0u64;
         scan_result.files.retain(|fi| {
             let top = top_level_source_path(fi);
             if pre_skip_top_levels.contains(&top) {
-                skipped_count += 1;
-                skipped_bytes += fi.size;
+                bulk_skip_files += 1;
+                bulk_skip_bytes += fi.size;
                 false
             } else {
                 true
             }
         });
-        files_done = skipped_count;
-        bytes_done = skipped_bytes;
         log::info!(
             "copy_files_with_progress: bulk-skipping {} files ({} bytes) for {} pre-known conflicting top-level sources",
-            skipped_count,
-            skipped_bytes,
+            bulk_skip_files,
+            bulk_skip_bytes,
             pre_skip_top_levels.len()
-        );
-        state.emit_progress_via_sink(
-            events,
-            WriteProgressEvent::new(
-                operation_id.to_string(),
-                WriteOperationType::Copy,
-                WriteOperationPhase::Copying,
-                None,
-                files_done,
-                scan_result.file_count,
-                bytes_done,
-                scan_result.total_bytes,
-            ),
-        );
-        update_operation_status(
-            operation_id,
-            WriteOperationPhase::Copying,
-            None,
-            files_done,
-            scan_result.file_count,
-            bytes_done,
-            scan_result.total_bytes,
         );
     }
 
@@ -254,35 +232,75 @@ pub(super) fn copy_files_with_progress_inner(
 
     let mut tracker = SourceItemTracker::new(&scan_result.files);
 
-    let result: Result<(), WriteOperationError> = (|| {
-        for file_info in &scan_result.files {
+    // The sync driver iterates a `&[PathBuf]`; the closure needs the matching
+    // `FileInfo` per iteration (for `dest_path`, `is_symlink`, `size`, and the
+    // tracker key). We pre-collect aligned `paths` and walk `files` via an
+    // iterator the closure owns, advancing it in lock-step with the driver.
+    // Driver `pre_skip_paths` is empty: we already filtered above.
+    let files_for_loop: Vec<_> = scan_result.files.iter().collect();
+    let source_paths: Vec<PathBuf> = files_for_loop.iter().map(|fi| fi.path.clone()).collect();
+    let file_count = scan_result.file_count;
+    let total_bytes = scan_result.total_bytes;
+    let progress_interval = state.progress_interval;
+    let empty_pre_skip: HashSet<PathBuf> = HashSet::new();
+    let driver_config = DriverConfig {
+        operation_type: WriteOperationType::Copy,
+        phase: WriteOperationPhase::Copying,
+        conflict_resolution: config.conflict_resolution,
+        pre_known_conflicts: config.pre_known_conflicts.clone(),
+    };
+
+    let mut file_iter = files_for_loop.iter();
+
+    let outcome = drive_transfer_serial_sync(
+        events,
+        state,
+        operation_id,
+        &source_paths,
+        file_count,
+        total_bytes,
+        bulk_skip_files,
+        bulk_skip_bytes,
+        &empty_pre_skip,
+        &driver_config,
+        |ctx| {
+            let file_info = file_iter
+                .next()
+                .expect("file_iter aligned with driver iteration over source_paths");
             log::debug!(
                 "copy_files_with_progress: copying file {} ({} bytes)",
                 file_info.path.display(),
                 file_info.size
             );
+            // `copy_single_item` bumps `files_done` / `bytes_done` by reference
+            // and uses them to emit cumulative progress; seed with the
+            // driver-supplied cumulative snapshot so emitted events stay
+            // consistent across iterations.
+            let mut local_files = ctx.files_done_so_far;
+            let mut local_bytes = ctx.bytes_done_so_far;
             copy_single_item(
                 &file_info.path,
                 file_info.dest_path(destination),
                 file_info.is_symlink,
-                &mut files_done,
-                &mut bytes_done,
-                scan_result.file_count,
-                scan_result.total_bytes,
+                &mut local_files,
+                &mut local_bytes,
+                file_count,
+                total_bytes,
                 state,
-                events,
+                ctx.events,
                 operation_id,
                 WriteOperationType::Copy,
-                &state.progress_interval,
+                &progress_interval,
                 &mut last_progress_time,
                 config,
                 &mut transaction,
                 &mut apply_to_all_resolution,
                 &mut created_dirs,
             )?;
+            let bytes_delta = local_bytes.saturating_sub(ctx.bytes_done_so_far);
 
             if let Some(source_path) = tracker.record(file_info) {
-                events.emit_source_item_done(WriteSourceItemDoneEvent {
+                ctx.events.emit_source_item_done(WriteSourceItemDoneEvent {
                     operation_id: operation_id.to_string(),
                     source_path: source_path.display().to_string(),
                 });
@@ -298,20 +316,23 @@ pub(super) fn copy_files_with_progress_inner(
             {
                 std::thread::sleep(Duration::from_millis(ms));
             }
-        }
-        Ok(())
-    })();
 
-    match result {
-        Ok(()) => {
+            Ok(TransferOutcome::Transferred { bytes: bytes_delta })
+        },
+    );
+
+    let files_done = outcome.files_done;
+    let bytes_done = outcome.bytes_done;
+
+    match outcome.intent {
+        PostLoopIntent::Completed => {
             // The loop succeeded, but the user may have clicked Rollback between the last
             // file's `is_cancelled` check and the loop's exit (or, with APFS clonefile, the
             // whole 170 MB / 23 file copy can finish in <100 ms so the click lands after the
             // loop completes but before this match arm runs). Honor the rollback intent
             // before emitting write-complete: if we don't, the user explicitly requested
             // "delete what was copied" and got "everything's still there" instead.
-            let intent = load_intent(&state.intent);
-            if intent == OperationIntent::RollingBack {
+            if load_intent(&state.intent) == OperationIntent::RollingBack {
                 log::info!(
                     "copy_files_with_progress: rollback requested after loop completion op={}, {} files",
                     operation_id,
@@ -325,8 +346,8 @@ pub(super) fn copy_files_with_progress_inner(
                     WriteOperationType::Copy,
                     files_done,
                     bytes_done,
-                    scan_result.file_count,
-                    scan_result.total_bytes,
+                    file_count,
+                    total_bytes,
                 );
                 transaction.commit();
 
@@ -339,10 +360,7 @@ pub(super) fn copy_files_with_progress_inner(
                 return Ok(());
             }
 
-            // Success - commit transaction (don't rollback)
             transaction.commit();
-
-            // Spawn async sync for durability (non-blocking)
             spawn_async_sync();
 
             log::info!(
@@ -352,7 +370,6 @@ pub(super) fn copy_files_with_progress_inner(
                 bytes_done
             );
 
-            // Emit completion
             events.emit_complete(WriteCompleteEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Copy,
@@ -361,76 +378,74 @@ pub(super) fn copy_files_with_progress_inner(
             });
             Ok(())
         }
-        Err(e) => {
-            if matches!(e, WriteOperationError::Cancelled { .. }) {
-                let intent = load_intent(&state.intent);
-
-                match intent {
-                    OperationIntent::RollingBack => {
-                        // User requested rollback: tracked rollback with progress events.
-                        // Pass the progress state at cancellation so the frontend sees
-                        // the bars counting backwards from where they were.
-                        log::info!(
-                            "copy_files_with_progress: rolling back op={}, {} files",
-                            operation_id,
-                            transaction.created_files.len()
-                        );
-                        let rollback_completed = rollback_with_progress(
-                            &transaction,
-                            events,
-                            operation_id,
-                            state,
-                            WriteOperationType::Copy,
-                            files_done,
-                            bytes_done,
-                            scan_result.file_count,
-                            scan_result.total_bytes,
-                        );
-                        // rollback_with_progress already deleted the files; commit to
-                        // prevent Drop from trying to delete them again.
-                        transaction.commit();
-
-                        events.emit_cancelled(WriteCancelledEvent {
-                            operation_id: operation_id.to_string(),
-                            operation_type: WriteOperationType::Copy,
-                            files_processed: files_done,
-                            rolled_back: rollback_completed,
-                        });
-                    }
-                    _ => {
-                        // Stopped (or unknown): keep partial files
-                        log::info!(
-                            "copy_files_with_progress: cancelled op={}, keeping {} partial files",
-                            operation_id,
-                            transaction.created_files.len()
-                        );
-                        transaction.commit();
-
-                        events.emit_cancelled(WriteCancelledEvent {
-                            operation_id: operation_id.to_string(),
-                            operation_type: WriteOperationType::Copy,
-                            files_processed: files_done,
-                            rolled_back: false,
-                        });
-                    }
+        PostLoopIntent::Cancelled => {
+            let cancellation = WriteOperationError::Cancelled {
+                message: "Operation cancelled by user".to_string(),
+            };
+            match load_intent(&state.intent) {
+                OperationIntent::RollingBack => {
+                    // User requested rollback: tracked rollback with progress events.
+                    // Pass the progress state at cancellation so the frontend sees
+                    // the bars counting backwards from where they were.
+                    log::info!(
+                        "copy_files_with_progress: rolling back op={}, {} files",
+                        operation_id,
+                        transaction.created_files.len()
+                    );
+                    let rollback_completed = rollback_with_progress(
+                        &transaction,
+                        events,
+                        operation_id,
+                        state,
+                        WriteOperationType::Copy,
+                        files_done,
+                        bytes_done,
+                        file_count,
+                        total_bytes,
+                    );
+                    transaction.commit();
+                    events.emit_cancelled(WriteCancelledEvent {
+                        operation_id: operation_id.to_string(),
+                        operation_type: WriteOperationType::Copy,
+                        files_processed: files_done,
+                        rolled_back: rollback_completed,
+                    });
                 }
-            } else {
-                // Non-cancellation error - always rollback. Routed through `log_error!`
-                // so opt-in users get an auto error report (copy failures are exactly
-                // the kind of "this didn't work" we want signal on).
-                crate::log_error!(
-                    "copy_files_with_progress: failed op={} error={:?}, rolling back",
-                    operation_id,
-                    e,
-                );
-                transaction.rollback();
-
-                events.emit_error(WriteErrorEvent::new(
-                    operation_id.to_string(),
-                    WriteOperationType::Copy,
-                    e.clone(),
-                ));
+                _ => {
+                    // Stopped (or unknown): keep partial files. `transaction.commit()`
+                    // prevents the `Drop` safety-net from rolling back what the user
+                    // chose to keep.
+                    log::info!(
+                        "copy_files_with_progress: cancelled op={}, keeping {} partial files",
+                        operation_id,
+                        transaction.created_files.len()
+                    );
+                    transaction.commit();
+                    events.emit_cancelled(WriteCancelledEvent {
+                        operation_id: operation_id.to_string(),
+                        operation_type: WriteOperationType::Copy,
+                        files_processed: files_done,
+                        rolled_back: false,
+                    });
+                }
             }
+            Err(cancellation)
+        }
+        PostLoopIntent::Failed(e) => {
+            // Non-cancellation error - always rollback. Routed through `log_error!`
+            // so opt-in users get an auto error report (copy failures are exactly
+            // the kind of "this didn't work" we want signal on).
+            crate::log_error!(
+                "copy_files_with_progress: failed op={} error={:?}, rolling back",
+                operation_id,
+                e,
+            );
+            transaction.rollback();
+            events.emit_error(WriteErrorEvent::new(
+                operation_id.to_string(),
+                WriteOperationType::Copy,
+                e.clone(),
+            ));
             Err(e)
         }
     }
