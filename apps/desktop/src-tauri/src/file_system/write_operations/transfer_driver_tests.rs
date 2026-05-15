@@ -35,7 +35,9 @@ use super::{
     build_pre_skip_set, drive_transfer_serial_async, drive_transfer_serial_sync,
 };
 use std::collections::HashSet;
+use std::future::Future;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -77,6 +79,28 @@ fn copy_config() -> DriverConfig {
         pre_known_conflicts: Vec::new(),
     }
 }
+
+// ---------------------------------------------------------------------------
+// Closure-shape type aliases
+// ---------------------------------------------------------------------------
+//
+// The async driver bounds its closures as
+// `for<'a> FnMut(...) -> Pin<Box<dyn Future<...> + Send + 'a>>` rather than
+// `AsyncFnMut(...)` so the driver future is `Send` across `tokio::spawn`
+// (see `transfer_driver.rs` § "Closure-bound shape"). That shape doesn't
+// compose with `async ||` literals, so tests construct each per-call future
+// via `Box::pin(async move { ... })`. The type aliases below abbreviate the
+// return types so the test closures stay readable; the call sites still spell
+// out the lifetimes explicitly.
+
+/// Per-call future shape for `dest_meta_fetcher`.
+type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
+
+/// Per-call future shape for `conflict_resolver`.
+type ResolveFut<'a> = Pin<Box<dyn Future<Output = Result<ConflictDecision, WriteOperationError>> + Send + 'a>>;
+
+/// Per-call future shape for `transfer_one`.
+type TransferFut<'a> = Pin<Box<dyn Future<Output = Result<TransferOutcome, WriteOperationError>> + Send + 'a>>;
 
 /// Tiny in-memory "call log" the closures dump into so tests can assert
 /// invocation order and counts.
@@ -584,13 +608,16 @@ async fn async_driver_does_not_invoke_closure_for_pre_skipped_sources() {
         100,
         &pre_skip,
         &copy_config(),
-        async |_p: &Path| -> Option<u64> { None }, // no conflicts
-        async |_input: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> {
-            panic!("conflict resolver must NEVER be called when there's no conflict")
+        |_p: &Path| -> FetchFut<'_> { Box::pin(async { None }) }, // no conflicts
+        |_input: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+            Box::pin(async { panic!("conflict resolver must NEVER be called when there's no conflict") })
         },
-        async |ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            log_clone.record(ctx.source_path, ctx.dest_path);
-            Ok(TransferOutcome::Transferred { bytes: 100 })
+        |ctx: TransferContext<'_>| -> TransferFut<'_> {
+            let log_clone = Arc::clone(&log_clone);
+            Box::pin(async move {
+                log_clone.record(ctx.source_path, ctx.dest_path);
+                Ok(TransferOutcome::Transferred { bytes: 100 })
+            })
         },
     )
     .await;
@@ -630,16 +657,24 @@ async fn async_driver_does_not_invoke_closure_when_conflict_resolved_as_skip() {
         0,
         &HashSet::new(),
         &copy_config(),
-        async |p: &Path| -> Option<u64> { if p == Path::new("/dest/a.txt") { Some(50) } else { None } },
-        async |input: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> {
-            assert_eq!(input.source_path, Path::new("/a.txt"));
-            assert_eq!(input.initial_dest_path, Path::new("/dest/a.txt"));
-            assert_eq!(input.dest_size_hint, Some(50));
-            Ok(ConflictDecision::Skip)
+        |p: &Path| -> FetchFut<'_> {
+            let conflict = p == Path::new("/dest/a.txt");
+            Box::pin(async move { if conflict { Some(50) } else { None } })
         },
-        async |ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            log_clone.record(ctx.source_path, ctx.dest_path);
-            Ok(TransferOutcome::Transferred { bytes: 100 })
+        |input: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+            Box::pin(async move {
+                assert_eq!(input.source_path, Path::new("/a.txt"));
+                assert_eq!(input.initial_dest_path, Path::new("/dest/a.txt"));
+                assert_eq!(input.dest_size_hint, Some(50));
+                Ok(ConflictDecision::Skip)
+            })
+        },
+        |ctx: TransferContext<'_>| -> TransferFut<'_> {
+            let log_clone = Arc::clone(&log_clone);
+            Box::pin(async move {
+                log_clone.record(ctx.source_path, ctx.dest_path);
+                Ok(TransferOutcome::Transferred { bytes: 100 })
+            })
         },
     )
     .await;
@@ -679,13 +714,18 @@ async fn async_driver_pre_cancel_does_not_invoke_closure_or_resolver() {
         0,
         &HashSet::new(),
         &copy_config(),
-        async |_p: &Path| -> Option<u64> { panic!("dest_meta_fetcher must NEVER be called after pre-cancel") },
-        async |_i: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> {
-            panic!("conflict resolver must NEVER be called after pre-cancel")
+        |_p: &Path| -> FetchFut<'_> {
+            Box::pin(async { panic!("dest_meta_fetcher must NEVER be called after pre-cancel") })
         },
-        async |ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            log_clone.record(ctx.source_path, ctx.dest_path);
-            Ok(TransferOutcome::Transferred { bytes: 0 })
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+            Box::pin(async { panic!("conflict resolver must NEVER be called after pre-cancel") })
+        },
+        |ctx: TransferContext<'_>| -> TransferFut<'_> {
+            let log_clone = Arc::clone(&log_clone);
+            Box::pin(async move {
+                log_clone.record(ctx.source_path, ctx.dest_path);
+                Ok(TransferOutcome::Transferred { bytes: 0 })
+            })
         },
     )
     .await;
@@ -719,16 +759,20 @@ async fn async_driver_cancel_after_first_blocks_second() {
         0,
         &HashSet::new(),
         &copy_config(),
-        async |_p: &Path| -> Option<u64> { None },
-        async |_i: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> {
-            unreachable!("no conflicts in this test")
+        |_p: &Path| -> FetchFut<'_> { Box::pin(async { None }) },
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+            Box::pin(async { unreachable!("no conflicts in this test") })
         },
-        async |ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            log_clone.record(ctx.source_path, ctx.dest_path);
-            state_for_closure
-                .intent
-                .store(OperationIntent::Stopped as u8, Ordering::Relaxed);
-            Ok(TransferOutcome::Transferred { bytes: 50 })
+        |ctx: TransferContext<'_>| -> TransferFut<'_> {
+            let log_clone = Arc::clone(&log_clone);
+            let state_for_closure = Arc::clone(&state_for_closure);
+            Box::pin(async move {
+                log_clone.record(ctx.source_path, ctx.dest_path);
+                state_for_closure
+                    .intent
+                    .store(OperationIntent::Stopped as u8, Ordering::Relaxed);
+                Ok(TransferOutcome::Transferred { bytes: 50 })
+            })
         },
     )
     .await;
@@ -763,15 +807,18 @@ async fn async_driver_post_loop_intent_catches_late_cancel_race() {
         0,
         &HashSet::new(),
         &copy_config(),
-        async |_p: &Path| -> Option<u64> { None },
-        async |_i: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> { unreachable!() },
-        async |_ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            // Closure finishes successfully, then user clicks Rollback.
-            let bytes = 100;
-            state_for_closure
-                .intent
-                .store(OperationIntent::RollingBack as u8, Ordering::Relaxed);
-            Ok(TransferOutcome::Transferred { bytes })
+        |_p: &Path| -> FetchFut<'_> { Box::pin(async { None }) },
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> { Box::pin(async { unreachable!() }) },
+        |_ctx: TransferContext<'_>| -> TransferFut<'_> {
+            let state_for_closure = Arc::clone(&state_for_closure);
+            Box::pin(async move {
+                // Closure finishes successfully, then user clicks Rollback.
+                let bytes = 100;
+                state_for_closure
+                    .intent
+                    .store(OperationIntent::RollingBack as u8, Ordering::Relaxed);
+                Ok(TransferOutcome::Transferred { bytes })
+            })
         },
     )
     .await;
@@ -811,15 +858,20 @@ async fn async_driver_proceed_with_rewritten_dest_reaches_closure() {
         0,
         &HashSet::new(),
         &copy_config(),
-        async |_p: &Path| -> Option<u64> { Some(50) }, // always a conflict
-        async |_i: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> {
-            Ok(ConflictDecision::Proceed {
-                dest_path: PathBuf::from("/dest/a (1).txt"),
+        |_p: &Path| -> FetchFut<'_> { Box::pin(async { Some(50) }) }, // always a conflict
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+            Box::pin(async {
+                Ok(ConflictDecision::Proceed {
+                    dest_path: PathBuf::from("/dest/a (1).txt"),
+                })
             })
         },
-        async |ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            log_clone.record(ctx.source_path, ctx.dest_path);
-            Ok(TransferOutcome::Transferred { bytes: 100 })
+        |ctx: TransferContext<'_>| -> TransferFut<'_> {
+            let log_clone = Arc::clone(&log_clone);
+            Box::pin(async move {
+                log_clone.record(ctx.source_path, ctx.dest_path);
+                Ok(TransferOutcome::Transferred { bytes: 100 })
+            })
         },
     )
     .await;
@@ -854,15 +906,17 @@ async fn async_driver_resolver_error_propagates_as_failed_intent() {
         0,
         &HashSet::new(),
         &copy_config(),
-        async |_p: &Path| -> Option<u64> { Some(0) },
-        async |_i: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> {
-            Err(WriteOperationError::IoError {
-                path: "/a.txt".into(),
-                message: "resolver boom".into(),
+        |_p: &Path| -> FetchFut<'_> { Box::pin(async { Some(0) }) },
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+            Box::pin(async {
+                Err(WriteOperationError::IoError {
+                    path: "/a.txt".into(),
+                    message: "resolver boom".into(),
+                })
             })
         },
-        async |_ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            panic!("closure must NEVER fire when resolver errored")
+        |_ctx: TransferContext<'_>| -> TransferFut<'_> {
+            Box::pin(async { panic!("closure must NEVER fire when resolver errored") })
         },
     )
     .await;
@@ -897,15 +951,18 @@ async fn async_driver_no_conflict_skips_resolver_entirely() {
         0,
         &HashSet::new(),
         &copy_config(),
-        async |_p: &Path| -> Option<u64> { None },
-        async |_i: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> {
-            r.fetch_add(1, Ordering::SeqCst);
-            Ok(ConflictDecision::Proceed {
-                dest_path: PathBuf::new(),
+        |_p: &Path| -> FetchFut<'_> { Box::pin(async { None }) },
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+            let r = Arc::clone(&r);
+            Box::pin(async move {
+                r.fetch_add(1, Ordering::SeqCst);
+                Ok(ConflictDecision::Proceed {
+                    dest_path: PathBuf::new(),
+                })
             })
         },
-        async |_ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            Ok(TransferOutcome::Transferred { bytes: 100 })
+        |_ctx: TransferContext<'_>| -> TransferFut<'_> {
+            Box::pin(async { Ok(TransferOutcome::Transferred { bytes: 100 }) })
         },
     )
     .await;
@@ -935,7 +992,8 @@ async fn async_driver_apply_to_all_resolver_decision_persists_across_sources() {
     // works), and never invokes the closure (everything skipped).
     let resolver_calls: Arc<AtomicUsize> = Arc::new(AtomicUsize::new(0));
     let r = Arc::clone(&resolver_calls);
-    let mut latched: Option<ConflictDecision> = None;
+    let latched: Arc<Mutex<Option<ConflictDecision>>> = Arc::new(Mutex::new(None));
+    let latched_for_resolver = Arc::clone(&latched);
 
     let outcome = drive_transfer_serial_async(
         &sink,
@@ -949,18 +1007,26 @@ async fn async_driver_apply_to_all_resolver_decision_persists_across_sources() {
         0,
         &HashSet::new(),
         &copy_config(),
-        async |_p: &Path| -> Option<u64> { Some(0) }, // every source conflicts
-        async |_i: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> {
-            r.fetch_add(1, Ordering::SeqCst);
-            // Closure latches Skip on first call; from then on, returns Skip.
-            if latched.is_none() {
-                latched = Some(ConflictDecision::Skip);
-            }
-            Ok(ConflictDecision::Skip)
+        |_p: &Path| -> FetchFut<'_> { Box::pin(async { Some(0) }) }, // every source conflicts
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+            let r = Arc::clone(&r);
+            let latched = Arc::clone(&latched_for_resolver);
+            Box::pin(async move {
+                r.fetch_add(1, Ordering::SeqCst);
+                // Closure latches Skip on first call; from then on, returns Skip.
+                let mut guard = latched.lock().unwrap();
+                if guard.is_none() {
+                    *guard = Some(ConflictDecision::Skip);
+                }
+                Ok(ConflictDecision::Skip)
+            })
         },
-        async |ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            log_clone.record(ctx.source_path, ctx.dest_path);
-            Ok(TransferOutcome::Transferred { bytes: 999 })
+        |ctx: TransferContext<'_>| -> TransferFut<'_> {
+            let log_clone = Arc::clone(&log_clone);
+            Box::pin(async move {
+                log_clone.record(ctx.source_path, ctx.dest_path);
+                Ok(TransferOutcome::Transferred { bytes: 999 })
+            })
         },
     )
     .await;
@@ -1002,18 +1068,13 @@ async fn async_driver_progress_accounting_sums_correctly() {
         200, // 2 bulk-skipped, 100 bytes each
         &pre_skip,
         &copy_config(),
-        async |p: &Path| -> Option<u64> {
-            if p == Path::new("/dest/conflict") {
-                Some(50)
-            } else {
-                None
-            }
+        |p: &Path| -> FetchFut<'_> {
+            let conflict = p == Path::new("/dest/conflict");
+            Box::pin(async move { if conflict { Some(50) } else { None } })
         },
-        async |_i: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> {
-            Ok(ConflictDecision::Skip)
-        },
-        async |_ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            Ok(TransferOutcome::Transferred { bytes: 100 })
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> { Box::pin(async { Ok(ConflictDecision::Skip) }) },
+        |_ctx: TransferContext<'_>| -> TransferFut<'_> {
+            Box::pin(async { Ok(TransferOutcome::Transferred { bytes: 100 }) })
         },
     )
     .await;
@@ -1048,12 +1109,10 @@ async fn async_driver_status_cache_matches_emitted_progress() {
         0,
         &HashSet::new(),
         &copy_config(),
-        async |_p: &Path| -> Option<u64> { Some(50) }, // conflict
-        async |_i: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> {
-            Ok(ConflictDecision::Skip)
-        },
-        async |_ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            panic!("closure should not fire under Skip")
+        |_p: &Path| -> FetchFut<'_> { Box::pin(async { Some(50) }) }, // conflict
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> { Box::pin(async { Ok(ConflictDecision::Skip) }) },
+        |_ctx: TransferContext<'_>| -> TransferFut<'_> {
+            Box::pin(async { panic!("closure should not fire under Skip") })
         },
     )
     .await;
@@ -1093,11 +1152,14 @@ async fn async_driver_emitted_bytes_equal_sum_of_transferred() {
         0,
         &HashSet::new(),
         &copy_config(),
-        async |_p: &Path| -> Option<u64> { None },
-        async |_i: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> { unreachable!() },
-        async |_ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            let n = b.lock().unwrap().next().unwrap();
-            Ok(TransferOutcome::Transferred { bytes: n })
+        |_p: &Path| -> FetchFut<'_> { Box::pin(async { None }) },
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> { Box::pin(async { unreachable!() }) },
+        |_ctx: TransferContext<'_>| -> TransferFut<'_> {
+            let b = Arc::clone(&b);
+            Box::pin(async move {
+                let n = b.lock().unwrap().next().unwrap();
+                Ok(TransferOutcome::Transferred { bytes: n })
+            })
         },
     )
     .await;
@@ -1130,11 +1192,14 @@ async fn async_driver_threads_running_totals_through_context() {
         0,
         &HashSet::new(),
         &copy_config(),
-        async |_p: &Path| -> Option<u64> { None },
-        async |_i: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> { unreachable!() },
-        async |ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            s.lock().unwrap().push((ctx.files_done_so_far, ctx.bytes_done_so_far));
-            Ok(TransferOutcome::Transferred { bytes: 100 })
+        |_p: &Path| -> FetchFut<'_> { Box::pin(async { None }) },
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> { Box::pin(async { unreachable!() }) },
+        |ctx: TransferContext<'_>| -> TransferFut<'_> {
+            let s = Arc::clone(&s);
+            Box::pin(async move {
+                s.lock().unwrap().push((ctx.files_done_so_far, ctx.bytes_done_so_far));
+                Ok(TransferOutcome::Transferred { bytes: 100 })
+            })
         },
     )
     .await;
@@ -1171,11 +1236,14 @@ async fn async_driver_default_dest_joins_source_basename() {
         0,
         &HashSet::new(),
         &copy_config(),
-        async |_p: &Path| -> Option<u64> { None },
-        async |_i: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> { unreachable!() },
-        async |ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            log_clone.record(ctx.source_path, ctx.dest_path);
-            Ok(TransferOutcome::Transferred { bytes: 100 })
+        |_p: &Path| -> FetchFut<'_> { Box::pin(async { None }) },
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> { Box::pin(async { unreachable!() }) },
+        |ctx: TransferContext<'_>| -> TransferFut<'_> {
+            let log_clone = Arc::clone(&log_clone);
+            Box::pin(async move {
+                log_clone.record(ctx.source_path, ctx.dest_path);
+                Ok(TransferOutcome::Transferred { bytes: 100 })
+            })
         },
     )
     .await;
@@ -1218,13 +1286,17 @@ async fn async_driver_dest_meta_fetcher_polled_exactly_once_per_non_skipped_sour
         100,
         &pre_skip,
         &copy_config(),
-        async |path: &Path| -> Option<u64> {
-            p.lock().unwrap().push(path.to_path_buf());
-            None
+        |path: &Path| -> FetchFut<'_> {
+            let p = Arc::clone(&p);
+            let path = path.to_path_buf();
+            Box::pin(async move {
+                p.lock().unwrap().push(path);
+                None
+            })
         },
-        async |_i: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> { unreachable!() },
-        async |_ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            Ok(TransferOutcome::Transferred { bytes: 100 })
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> { Box::pin(async { unreachable!() }) },
+        |_ctx: TransferContext<'_>| -> TransferFut<'_> {
+            Box::pin(async { Ok(TransferOutcome::Transferred { bytes: 100 }) })
         },
     )
     .await;
@@ -1271,17 +1343,87 @@ async fn async_driver_cancel_check_precedes_pre_skip_check_precedes_conflict_res
         0,
         &pre_skip,
         &copy_config(),
-        async |_p: &Path| -> Option<u64> { panic!("cancel check must short-circuit BEFORE any fetcher call") },
-        async |_i: ConflictDecisionInput<'_>| -> Result<ConflictDecision, WriteOperationError> {
-            panic!("cancel check must short-circuit BEFORE any resolver call")
+        |_p: &Path| -> FetchFut<'_> {
+            Box::pin(async { panic!("cancel check must short-circuit BEFORE any fetcher call") })
         },
-        async |_ctx: TransferContext<'_>| -> Result<TransferOutcome, WriteOperationError> {
-            panic!("cancel check must short-circuit BEFORE any closure call")
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+            Box::pin(async { panic!("cancel check must short-circuit BEFORE any resolver call") })
+        },
+        |_ctx: TransferContext<'_>| -> TransferFut<'_> {
+            Box::pin(async { panic!("cancel check must short-circuit BEFORE any closure call") })
         },
     )
     .await;
 
     assert!(matches!(outcome.intent, PostLoopIntent::Cancelled));
+    uninstall_state(&op_id);
+    unregister_operation_status(&op_id);
+}
+
+// ===========================================================================
+// Send-bound regression guard
+// ===========================================================================
+
+/// The async driver's returned future must be `Send` so production callers can
+/// `tokio::spawn` it. `#[tokio::test]` alone doesn't enforce this (it runs on a
+/// single-thread runtime by default and `spawn`s the body itself, but doesn't
+/// require the body to outlive the spawn caller's borrows). Routing the call
+/// through an inner `tokio::spawn` forces the Send check.
+///
+/// Before the bound switched from `AsyncFnMut` to
+/// `for<'a> FnMut(...) -> Pin<Box<dyn Future + Send + 'a>>`, this test failed
+/// to compile with "future cannot be sent between threads safely" because
+/// `AsyncFnMut`'s HRTB-bound `CallRefFuture<'a>` isn't provably `Send` for all
+/// `'a` (rust-lang/rust#100013-class).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn driver_future_is_send_across_spawn() {
+    let op_id = unique_op_id("async-send-across-spawn");
+    let state = make_state();
+    install_state(&op_id, Arc::clone(&state));
+    register_operation_status(&op_id, WriteOperationType::Copy);
+
+    let op_id_clone = op_id.clone();
+    let state_clone = Arc::clone(&state);
+    // Mimic production: the closures capture a reference to an Arc that lives
+    // in the outer spawn'd future scope. This matches volume_copy's pattern of
+    // closing over `&dest_volume` (an `Arc<dyn Volume>`).
+    let shared: Arc<AtomicUsize> = Arc::new(AtomicUsize::new(0));
+    let task = tokio::spawn(async move {
+        let sink = CollectorEventSink::new();
+        let shared_ref = &shared;
+        drive_transfer_serial_async(
+            &sink,
+            &state_clone,
+            &op_id_clone,
+            &paths(&["/a"]),
+            Path::new("/dest"),
+            1,
+            100,
+            0,
+            0,
+            &HashSet::new(),
+            &copy_config(),
+            |_p: &Path| -> FetchFut<'_> {
+                let r = Arc::clone(shared_ref);
+                Box::pin(async move {
+                    r.fetch_add(1, Ordering::SeqCst);
+                    None
+                })
+            },
+            |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> { Box::pin(async { unreachable!() }) },
+            |_ctx: TransferContext<'_>| -> TransferFut<'_> {
+                let r = Arc::clone(shared_ref);
+                Box::pin(async move {
+                    r.fetch_add(1, Ordering::SeqCst);
+                    Ok(TransferOutcome::Transferred { bytes: 100 })
+                })
+            },
+        )
+        .await
+    });
+
+    let outcome = task.await.expect("driver future must be Send");
+    assert!(matches!(outcome.intent, PostLoopIntent::Completed));
     uninstall_state(&op_id);
     unregister_operation_status(&op_id);
 }

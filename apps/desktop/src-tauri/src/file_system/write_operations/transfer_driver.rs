@@ -102,7 +102,9 @@
 )]
 
 use std::collections::HashSet;
+use std::future::Future;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -521,15 +523,24 @@ pub(super) enum ConflictDecision {
 ///    e. If Proceed, invoke `transfer_one` with the resolved dest path.
 /// 3. Return `PostLoopIntent::Completed` if the loop drained without incident.
 ///
-/// # Why `async ||` (Rust 2024 syntax) is required
+/// # Closure-bound shape: boxed future, not `AsyncFnMut`
 ///
-/// The M2 step 0 prototype proved that the older `|ctx| async { ... }` form
-/// returns an async block that borrows the closure's `&mut` captures, which
-/// `AsyncFnMut` rejects ("returns an `async` block that contains a reference
-/// to a captured variable, which then escapes the closure body"). The
-/// `async ||` form ties the returned future to `&mut self` of the closure
-/// call, which is what `AsyncFnMut` actually expects. The codebase is on
-/// edition 2024 so the syntax is available.
+/// Each closure returns `Pin<Box<dyn Future<...> + Send + 'a>>` rather than
+/// being bound as `AsyncFnMut(...) -> T`. The explicit boxed-future shape is
+/// load-bearing for production callers: the driver's returned future must be
+/// `Send` so callers can `tokio::spawn` it, and `AsyncFnMut`'s HRTB-bound
+/// `CallRefFuture<'a>` is not provably `Send` for all `'a` when the closure
+/// body captures `&Arc<...>` or similar refs (rust-lang/rust#100013-class).
+/// The `+ Send` on the boxed future moves the Send obligation inside the
+/// per-call return type, where it's discharged at each call site.
+///
+/// `transfer_driver_tests.rs::driver_future_is_send_across_spawn` pins this:
+/// the driver call must compile inside a `tokio::spawn(async move { ... })`,
+/// which fails under `AsyncFnMut` and passes under the boxed-future shape.
+///
+/// The driver loop is still single-threaded (one `.await` per closure call
+/// in sequence); only the FUTURE returned by each call needs `Send`. The
+/// closure itself doesn't need to be `Send`.
 #[allow(
     clippy::too_many_arguments,
     reason = "Driver wraps the full per-iter context; bundling adds ceremony without removing parameters"
@@ -551,9 +562,17 @@ pub(super) async fn drive_transfer_serial_async<DestMetaFetcher, ConflictResolve
     mut transfer_one: TransferOne,
 ) -> TransferLoopOutcome
 where
-    DestMetaFetcher: AsyncFnMut(&Path) -> Option<u64>,
-    ConflictResolver: AsyncFnMut(ConflictDecisionInput<'_>) -> Result<ConflictDecision, WriteOperationError>,
-    TransferOne: AsyncFnMut(TransferContext<'_>) -> Result<TransferOutcome, WriteOperationError>,
+    DestMetaFetcher: for<'a> FnMut(&'a Path) -> Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>,
+    ConflictResolver: for<'a> FnMut(
+        ConflictDecisionInput<'a>,
+    ) -> Pin<
+        Box<dyn Future<Output = Result<ConflictDecision, WriteOperationError>> + Send + 'a>,
+    >,
+    TransferOne: for<'a> FnMut(
+        TransferContext<'a>,
+    ) -> Pin<
+        Box<dyn Future<Output = Result<TransferOutcome, WriteOperationError>> + Send + 'a>,
+    >,
 {
     let mut files_done = 0usize;
     let mut bytes_done = 0u64;
