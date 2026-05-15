@@ -584,6 +584,34 @@ pub trait Volume: Send + Sync {
         &'a self,
         paths: &'a [PathBuf],
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
+        self.scan_for_copy_batch_with_progress(paths, None)
+    }
+
+    /// Same as `scan_for_copy_batch`, but emits running progress as the scan
+    /// walks. `on_progress(files_found)` is called repeatedly as entries are
+    /// discovered, letting the scan-preview dialog show a climbing count
+    /// instead of a frozen "0 files" spinner during a slow enumeration (the
+    /// MTP listing of /DCIM/Camera with 1k+ entries takes ~17 s of USB
+    /// round-trips, and there's nothing for the user to look at during it).
+    ///
+    /// The default implementation ignores `on_progress` and delegates to the
+    /// existing `scan_for_copy_batch`. Volumes with expensive per-path I/O
+    /// (currently MTP) override this to thread the callback through to their
+    /// underlying streaming listing primitive (`list_directory_with_progress`).
+    ///
+    /// The callback receives only `files_found`, not byte counts: MTP's
+    /// streaming listing callback doesn't surface per-entry size yet (it only
+    /// knows entry count mid-stream), and adding it would mean a deeper change
+    /// to the MTP listing API. The FE shows `0 bytes` until the scan completes
+    /// and the final size lands on `scan-preview-complete`. That's a smaller
+    /// UX issue than the all-zero freeze and can be improved later if/when
+    /// list_directory_with_progress learns to surface bytes.
+    #[allow(unused_variables, reason = "Default impl intentionally ignores `on_progress`")]
+    fn scan_for_copy_batch_with_progress<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let mut aggregate = CopyScanResult {
                 file_count: 0,
@@ -600,6 +628,9 @@ pub trait Volume: Send + Sync {
                 aggregate.dir_count += scan.dir_count;
                 aggregate.total_bytes += scan.total_bytes;
                 per_path.push((path.clone(), scan));
+                if let Some(cb) = on_progress {
+                    cb(aggregate.file_count);
+                }
             }
             Ok(BatchScanResult { aggregate, per_path })
         })

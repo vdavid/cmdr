@@ -211,13 +211,52 @@ async fn run_volume_scan_preview(
 ) {
     use tauri::Emitter;
 
+    // Throttled progress emitter: the underlying MTP listing fires the callback
+    // per entry (~60/s for 1047 files at ~17 ms each). We collapse those down to
+    // ~5 events/s for the FE so the dialog's file count climbs smoothly without
+    // flooding the IPC layer. Throttling lives in the closure rather than inside
+    // each Volume impl so different backends share the same rate-limit policy.
+    let progress_state = Arc::new(std::sync::Mutex::new(Instant::now()));
+    let state_for_cb = Arc::clone(&state);
+    let app_for_cb = app.clone();
+    let preview_id_for_cb = preview_id.clone();
+    let on_progress = move |files_found: usize| {
+        if state_for_cb.cancelled.load(Ordering::Relaxed) {
+            return;
+        }
+        let Ok(mut last) = progress_state.lock() else {
+            return;
+        };
+        if last.elapsed() < Duration::from_millis(200) {
+            return;
+        }
+        *last = Instant::now();
+        drop(last);
+        let _ = app_for_cb.emit(
+            "scan-preview-progress",
+            ScanPreviewProgressEvent {
+                preview_id: preview_id_for_cb.clone(),
+                files_found,
+                dirs_found: 0,
+                // Bytes aren't surfaced by `list_directory_with_progress` mid-stream
+                // (it only knows the count). The FE will show "0 bytes" climbing in
+                // count alongside, then the final size lands on scan-preview-complete.
+                bytes_found: 0,
+                current_path: None,
+                current_dir: None,
+                expected_files_total: None,
+                expected_bytes_total: None,
+            },
+        );
+    };
+
     let result: Result<crate::file_system::volume::BatchScanResult, String> = async {
         if state.cancelled.load(Ordering::Relaxed) {
             return Err("Cancelled".to_string());
         }
 
         volume
-            .scan_for_copy_batch(&sources)
+            .scan_for_copy_batch_with_progress(&sources, Some(&on_progress))
             .await
             .map_err(|e| format!("Scan failed: {}", e))
     }

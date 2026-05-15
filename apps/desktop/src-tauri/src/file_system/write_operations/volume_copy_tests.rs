@@ -1245,6 +1245,68 @@ async fn test_pre_known_conflicts_bulk_skip_on_real_local_volumes() {
     let _ = fs::remove_dir_all(&dst_dir);
 }
 
+/// `scan_for_copy_batch_with_progress` must invoke the callback as it discovers
+/// entries so the FE's scan-preview dialog can show a climbing count instead of
+/// a frozen 0/0/0 spinner. The default trait implementation (used by
+/// `InMemoryVolume` and `LocalPosixVolume`) fires the callback once per scanned
+/// path with the running total; `MtpVolume` overrides to thread it through
+/// `list_directory_with_progress` for per-entry granularity.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_scan_for_copy_batch_with_progress_fires_callback() {
+    use std::sync::Mutex;
+
+    let vol = InMemoryVolume::new("V").with_space_info(1_000_000, 500_000);
+    vol.create_file(Path::new("/a.txt"), b"AA").await.unwrap();
+    vol.create_file(Path::new("/b.txt"), b"BBBB").await.unwrap();
+    vol.create_file(Path::new("/c.txt"), b"CCCCCC").await.unwrap();
+    let vol: Arc<dyn Volume> = Arc::new(vol);
+
+    let calls = Arc::new(Mutex::new(Vec::<usize>::new()));
+    let calls_for_cb = Arc::clone(&calls);
+    let on_progress = move |count: usize| {
+        calls_for_cb.lock().unwrap().push(count);
+    };
+
+    let paths = vec![
+        PathBuf::from("/a.txt"),
+        PathBuf::from("/b.txt"),
+        PathBuf::from("/c.txt"),
+    ];
+    let result = vol
+        .scan_for_copy_batch_with_progress(&paths, Some(&on_progress))
+        .await
+        .unwrap();
+
+    assert_eq!(result.aggregate.file_count, 3);
+    assert_eq!(result.aggregate.total_bytes, 12); // 2 + 4 + 6
+
+    // Callback must have fired with a monotonically growing count, ending at 3.
+    let recorded = calls.lock().unwrap();
+    assert!(!recorded.is_empty(), "on_progress must fire at least once");
+    assert!(
+        recorded.windows(2).all(|w| w[0] <= w[1]),
+        "progress counts must be monotonic; saw {recorded:?}",
+    );
+    assert_eq!(
+        *recorded.last().unwrap(),
+        3,
+        "final progress callback should report the full file count",
+    );
+}
+
+/// Backwards-compat: the no-progress `scan_for_copy_batch` must keep working
+/// (it's still called by `copy_volumes_with_progress` and `scan_for_volume_copy`).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_scan_for_copy_batch_without_progress_still_works() {
+    let vol = InMemoryVolume::new("V").with_space_info(1_000_000, 500_000);
+    vol.create_file(Path::new("/x.txt"), b"hello").await.unwrap();
+    let vol: Arc<dyn Volume> = Arc::new(vol);
+
+    let result = vol.scan_for_copy_batch(&[PathBuf::from("/x.txt")]).await.unwrap();
+    assert_eq!(result.aggregate.file_count, 1);
+    assert_eq!(result.aggregate.total_bytes, 5);
+}
+
 // ── delete_volume_path_recursive ──────────────────────────────────
 //
 // Regression coverage for the move-between-volumes recursive-delete fix.

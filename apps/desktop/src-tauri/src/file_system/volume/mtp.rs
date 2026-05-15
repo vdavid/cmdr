@@ -463,6 +463,14 @@ impl Volume for MtpVolume {
         &'a self,
         paths: &'a [PathBuf],
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
+        self.scan_for_copy_batch_with_progress(paths, None)
+    }
+
+    fn scan_for_copy_batch_with_progress<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+        on_progress: Option<&'a (dyn Fn(usize) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             if paths.is_empty() {
                 return Ok(BatchScanResult {
@@ -505,9 +513,14 @@ impl Volume for MtpVolume {
             };
 
             for (parent, children) in &by_parent {
-                // List the parent directory once (goes through the listing cache)
+                // List the parent directory once (goes through the listing cache).
+                // The MTP listing is what dominates wall-clock on a cold cache
+                // (17 s for 1047 entries via USB), so forward `on_progress` to
+                // `list_directory_with_progress` (via the trait method) so the
+                // scan-preview dialog sees a climbing file count instead of a
+                // frozen 0/0/0 spinner.
                 let parent_str = parent.to_string_lossy();
-                let entries = self.list_directory(Path::new(parent_str.as_ref()), None).await?;
+                let entries = self.list_directory(Path::new(parent_str.as_ref()), on_progress).await?;
 
                 // Index entries by name so each child lookup is O(1). A naive
                 // `entries.iter().find(...)` per child is O(n) and the outer
