@@ -416,6 +416,34 @@ via `[settings] disable_tools = ["pnpm"]` in `/root/.config/mise/config.toml`.
 **`--only-slow` needs ~20 min timeout.** Slow checks (E2E tests, eslint-typecheck) take significantly longer than the
 default checks. When running `--only-slow` via an agent or CI, set the timeout to at least 20 minutes (1,200,000 ms).
 
+**Never run two `./scripts/check.sh` invocations concurrently if either touches SMB.** The `SmbOrchestrator` is scoped
+to one runner process: it starts the `smb-consumer` Docker Compose project at runner init and tears it down at runner
+exit. Two parallel invocations get two orchestrators racing the same containers. The first to finish runs `./stop.sh`
+while the other is still mid-test, producing `Cannot reach smb-consumer-X` cascades. Symptom: a previously green check
+(typically `desktop-e2e-linux` or `desktop-rust-integration-tests`) starts failing several SMB tests with 30 s timeouts
+in the second-to-finish run.
+
+The right way to run two SMB-touching checks together is one invocation with multiple `--check` flags so the same
+orchestrator owns the containers, or sequentially. For example:
+
+```sh
+# Good: one orchestrator, shared SMB stack
+./scripts/check.sh --check desktop-e2e-linux --check desktop-e2e-playwright
+
+# Also fine: sequential
+./scripts/check.sh --check desktop-e2e-linux
+./scripts/check.sh --check desktop-e2e-playwright
+
+# Wrong: two orchestrators racing
+./scripts/check.sh --check desktop-e2e-linux &
+./scripts/check.sh --check desktop-e2e-playwright &
+```
+
+Same applies to running a check.sh invocation alongside a raw `pnpm test:e2e:linux` or
+`apps/desktop/test/smb-servers/start.sh` in another terminal — only one process should own the SMB stack at a time. The
+`e2e-linux.sh` and `start.sh` scripts are safe to run standalone when no `check.sh` is also running, but they don't
+coordinate with each other across processes.
+
 ## Dependencies
 
 `golang.org/x/term`, `golang.org/x/sys` (transitive). Go 1.25.
