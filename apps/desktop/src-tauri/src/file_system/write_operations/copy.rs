@@ -186,16 +186,36 @@ pub(super) fn copy_files_with_progress_inner(
     // pre-loop so the driver iterates only the surviving files; bulk-skip
     // counters are handed to the driver via `bulk_skip_files` / `bulk_skip_bytes`
     // and the driver emits the one bulk progress event.
+    //
+    // **Directories never bulk-skip.** A top-level directory's name matching a
+    // pre-known conflict only means SOME of its children collide at dest. The
+    // bulk-skip would drop the whole subtree, including non-conflicting
+    // children. We exclude directories here and fall through to per-iter
+    // conflict resolution inside the copy loop (where each conflicting child
+    // gets skipped individually while non-conflicting ones copy). Symlinks
+    // count as files (they're replaced atomically, not merged), so they stay
+    // in the bulk-skip set.
     let pre_skip_top_levels: HashSet<PathBuf> =
         if config.conflict_resolution == ConflictResolution::Skip && !config.pre_known_conflicts.is_empty() {
             let names: HashSet<&str> = config.pre_known_conflicts.iter().map(String::as_str).collect();
             sources
                 .iter()
                 .filter(|p| {
-                    p.file_name()
+                    let name_matches = p
+                        .file_name()
                         .and_then(|n| n.to_str())
                         .map(|n| names.contains(n))
-                        .unwrap_or(false)
+                        .unwrap_or(false);
+                    if !name_matches {
+                        return false;
+                    }
+                    // Only stat candidates whose filenames match (typically
+                    // few). `symlink_metadata` keeps symlinks classified as
+                    // files. If the stat fails (race / permission denied),
+                    // fall back to NOT bulk-skipping — safer to let the loop
+                    // discover the conflict and resolve it per-iter than to
+                    // wholesale drop a subtree we couldn't classify.
+                    fs::symlink_metadata(p).map(|m| !m.is_dir()).unwrap_or(false)
                 })
                 .cloned()
                 .collect()

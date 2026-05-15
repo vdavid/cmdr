@@ -133,12 +133,13 @@ impl CallLog {
 #[test]
 fn build_pre_skip_set_empty_when_not_skip() {
     let sources = paths(&["/a.txt", "/b.txt"]);
+    let empty_dirs = HashSet::new();
     for resolution in [
         ConflictResolution::Stop,
         ConflictResolution::Overwrite,
         ConflictResolution::Rename,
     ] {
-        let set = build_pre_skip_set(&sources, resolution, &["a.txt".into()]);
+        let set = build_pre_skip_set(&sources, resolution, &["a.txt".into()], &empty_dirs);
         assert!(
             set.is_empty(),
             "non-Skip resolution {resolution:?} must not populate pre-skip set"
@@ -149,7 +150,8 @@ fn build_pre_skip_set_empty_when_not_skip() {
 #[test]
 fn build_pre_skip_set_empty_when_pre_known_list_empty() {
     let sources = paths(&["/a.txt", "/b.txt"]);
-    let set = build_pre_skip_set(&sources, ConflictResolution::Skip, &[]);
+    let empty_dirs = HashSet::new();
+    let set = build_pre_skip_set(&sources, ConflictResolution::Skip, &[], &empty_dirs);
     assert!(set.is_empty());
 }
 
@@ -159,11 +161,42 @@ fn build_pre_skip_set_matches_by_filename_only() {
     // the conflict scan). The driver must match by `file_name()`, not full
     // path.
     let sources = paths(&["/photos/a.txt", "/docs/b.txt", "/docs/c.txt"]);
-    let set = build_pre_skip_set(&sources, ConflictResolution::Skip, &["a.txt".into(), "c.txt".into()]);
+    let empty_dirs = HashSet::new();
+    let set = build_pre_skip_set(
+        &sources,
+        ConflictResolution::Skip,
+        &["a.txt".into(), "c.txt".into()],
+        &empty_dirs,
+    );
     assert_eq!(set.len(), 2);
     assert!(set.contains(&PathBuf::from("/photos/a.txt")));
     assert!(set.contains(&PathBuf::from("/docs/c.txt")));
     assert!(!set.contains(&PathBuf::from("/docs/b.txt")));
+}
+
+/// Directory-typed top-level sources are excluded from the bulk-skip set
+/// even when their filenames match a pre-known conflict. Bulk-skip would
+/// drop the whole subtree; for directories the right behavior is to fall
+/// through to per-iter conflict resolution so the conflicting children get
+/// skipped individually while the non-conflicting ones still copy.
+#[test]
+fn build_pre_skip_set_excludes_known_directory_paths() {
+    let sources = paths(&["/photos/a.txt", "/docs", "/notes/c.txt"]);
+    let mut known_dirs = HashSet::new();
+    known_dirs.insert(PathBuf::from("/docs"));
+    let set = build_pre_skip_set(
+        &sources,
+        ConflictResolution::Skip,
+        &["a.txt".into(), "docs".into(), "c.txt".into()],
+        &known_dirs,
+    );
+    assert_eq!(set.len(), 2);
+    assert!(set.contains(&PathBuf::from("/photos/a.txt")));
+    assert!(set.contains(&PathBuf::from("/notes/c.txt")));
+    assert!(
+        !set.contains(&PathBuf::from("/docs")),
+        "known-directory path /docs must be excluded from bulk-skip"
+    );
 }
 
 // ===========================================================================

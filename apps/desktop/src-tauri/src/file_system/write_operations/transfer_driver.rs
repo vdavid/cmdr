@@ -215,10 +215,20 @@ pub(super) enum PostLoopIntent {
 /// `config_pre_known_conflicts`, when `config_resolution == Skip`. Empty for
 /// any other resolution. Exposed for the driver tests so they can audit it
 /// independently of the loop (per plan's "Open questions" section).
+///
+/// **Top-level directories are excluded from the bulk-skip set** even when
+/// their filenames match. A bulk-skip drops the whole subtree, which is
+/// correct only when the top-level source is a single file; for a top-level
+/// directory, only some children may actually conflict at dest, and the
+/// non-conflicting ones still need to copy. The caller is responsible for
+/// passing the set of top-level paths it has identified as directories via
+/// `known_directory_paths`; the helper falls through to the per-iter
+/// resolution path for those (which handles individual child conflicts).
 pub(super) fn build_pre_skip_set(
     sources: &[PathBuf],
     config_resolution: ConflictResolution,
     config_pre_known_conflicts: &[String],
+    known_directory_paths: &HashSet<PathBuf>,
 ) -> HashSet<PathBuf> {
     if config_resolution != ConflictResolution::Skip || config_pre_known_conflicts.is_empty() {
         return HashSet::new();
@@ -227,6 +237,9 @@ pub(super) fn build_pre_skip_set(
     sources
         .iter()
         .filter(|p| {
+            if known_directory_paths.contains(*p) {
+                return false;
+            }
             p.file_name()
                 .and_then(|n| n.to_str())
                 .map(|n| names.contains(n))

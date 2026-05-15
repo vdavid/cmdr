@@ -571,8 +571,23 @@ pub(crate) async fn copy_volumes_with_progress(
     // `dest_volume.get_metadata` stats, interleaved with the copies of
     // non-conflicting files, so the progress bar would only advance by 1 per
     // conflict instead of jumping to the full skipped count immediately.
-    let pre_skip_paths: HashSet<PathBuf> =
-        build_pre_skip_set(source_paths, config.conflict_resolution, &config.pre_known_conflicts);
+    // Bulk-skip is **file-only**: a top-level directory's name matching a
+    // pre-known conflict means only some of its children collide at dest, so
+    // dropping the whole subtree would lose non-conflicting files. We collect
+    // the top-level directory paths from `source_hints` (populated by the
+    // batched scan above) and exclude them; the loop falls through to
+    // per-iter conflict resolution for those.
+    let known_directory_paths: HashSet<PathBuf> = source_hints
+        .iter()
+        .filter(|&(_path, hint)| hint.is_directory)
+        .map(|(path, _hint)| path.clone())
+        .collect();
+    let pre_skip_paths: HashSet<PathBuf> = build_pre_skip_set(
+        source_paths,
+        config.conflict_resolution,
+        &config.pre_known_conflicts,
+        &known_directory_paths,
+    );
 
     let mut bulk_skip_files = 0usize;
     let mut bulk_skip_bytes = 0u64;

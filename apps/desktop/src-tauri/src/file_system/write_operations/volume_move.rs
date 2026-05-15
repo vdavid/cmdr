@@ -33,6 +33,48 @@ use crate::file_system::volume::{Volume, VolumeError};
 /// Per-call future shape for the driver's `dest_meta_fetcher` closure.
 type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
 
+/// Pre-stats the subset of `source_paths` whose filenames appear in
+/// `pre_known_conflicts` and returns those that are directories on
+/// `source_volume`. Returns an empty set when not relevant (non-Skip
+/// resolution, empty pre-known list, or no source-name matches).
+///
+/// Move has no scan phase, so we can't reuse a `SourceHint` map like
+/// `volume_copy` does. We stat each candidate up front to keep the
+/// bulk-skip prelude file-only (directories must fall through to per-iter
+/// conflict resolution so their non-conflicting children still move). This
+/// is one extra `get_metadata` round-trip per name-matching candidate
+/// (typically few), only when the user picked Skip with a non-empty
+/// pre-known conflict list. Acceptable cost for correctness.
+async fn collect_known_directory_paths(
+    source_volume: &Arc<dyn Volume>,
+    source_paths: &[PathBuf],
+    config_resolution: ConflictResolution,
+    config_pre_known_conflicts: &[String],
+) -> std::collections::HashSet<PathBuf> {
+    use std::collections::HashSet;
+    if config_resolution != ConflictResolution::Skip || config_pre_known_conflicts.is_empty() {
+        return HashSet::new();
+    }
+    let names: HashSet<&str> = config_pre_known_conflicts.iter().map(String::as_str).collect();
+    let mut out = HashSet::new();
+    for p in source_paths {
+        let name_matches = p
+            .file_name()
+            .and_then(|n| n.to_str())
+            .map(|n| names.contains(n))
+            .unwrap_or(false);
+        if !name_matches {
+            continue;
+        }
+        if let Ok(meta) = source_volume.get_metadata(p).await
+            && meta.is_directory
+        {
+            out.insert(p.clone());
+        }
+    }
+    out
+}
+
 /// Per-call future shape for the driver's `conflict_resolver` closure.
 type ResolveFut<'a> = Pin<Box<dyn Future<Output = Result<ConflictDecision, WriteOperationError>> + Send + 'a>>;
 
@@ -188,7 +230,24 @@ pub(super) async fn move_volumes_with_progress(
     // Copy+delete per file: on partial failure, already-moved files exist
     // at dest, remaining files stay at source. No data loss, but the move
     // is partial.
-    let pre_skip_paths = build_pre_skip_set(source_paths, config.conflict_resolution, &config.pre_known_conflicts);
+    //
+    // Bulk-skip is **file-only** (a top-level directory matching a pre-known
+    // conflict means only SOME of its children collide — dropping the whole
+    // subtree would lose non-conflicting files). Pre-stat the name-matching
+    // candidates against `source_volume` so we can exclude directories.
+    let known_directory_paths = collect_known_directory_paths(
+        &source_volume,
+        source_paths,
+        config.conflict_resolution,
+        &config.pre_known_conflicts,
+    )
+    .await;
+    let pre_skip_paths = build_pre_skip_set(
+        source_paths,
+        config.conflict_resolution,
+        &config.pre_known_conflicts,
+        &known_directory_paths,
+    );
     let bulk_skip_files = pre_skip_paths.len();
 
     let driver_config = DriverConfig {
@@ -584,7 +643,22 @@ pub(super) async fn move_within_same_volume_with_progress(
 ) -> Result<(), WriteOperationError> {
     let total_files = source_paths.len();
 
-    let pre_skip_paths = build_pre_skip_set(source_paths, config.conflict_resolution, &config.pre_known_conflicts);
+    // Bulk-skip is file-only. Same-volume move has no scan phase, so we
+    // pre-stat name-matching candidates against the volume to identify
+    // directories. See `move_volumes_with_progress` for the full reasoning.
+    let known_directory_paths = collect_known_directory_paths(
+        &volume,
+        source_paths,
+        config.conflict_resolution,
+        &config.pre_known_conflicts,
+    )
+    .await;
+    let pre_skip_paths = build_pre_skip_set(
+        source_paths,
+        config.conflict_resolution,
+        &config.pre_known_conflicts,
+        &known_directory_paths,
+    );
     let bulk_skip_files = pre_skip_paths.len();
 
     let driver_config = DriverConfig {

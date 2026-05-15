@@ -320,6 +320,93 @@ async fn cross_volume_move_pre_known_conflicts_bulk_skip() {
     assert_eq!(complete[0].files_processed, 5);
 }
 
+/// Top-level **directory** whose name matches a pre-known conflict must NOT
+/// land in the bulk-skip set: bulk-skip drops the whole subtree in a single
+/// counter bump (it's only correct when the top-level source is a FILE, in
+/// which case dropping == leaving the dest copy intact). Directories must
+/// fall through to per-iter conflict resolution instead, so the downstream
+/// resolver decides what to do with them.
+///
+/// This pins the bulk-skip prelude's file-only contract (data-correctness
+/// invariant the Playwright `Copy with Skip All preserves destination
+/// files` spec broke before the fix). The per-iter resolver's behavior for
+/// dir-vs-dir under Skip is a separate concern; this test only verifies
+/// the bulk-skip exclusion.
+///
+/// Setup:
+/// - source: `/file.txt` (file conflict), `/docs` (dir whose name also
+///   appears in pre_known_conflicts because the FE's top-level conflict
+///   scan reports name collisions regardless of type).
+/// - dest: `/file.txt`, `/docs/guide.txt`.
+/// - `pre_known_conflicts: ["file.txt", "docs"]`, `resolution = Skip`.
+///
+/// Expected:
+/// - `file.txt` bulk-skips: the source still has it, dest still has
+///   `old-file`, the source side is preserved (Skip is non-destructive).
+/// - `docs` does NOT bulk-skip. We pin this by inspecting the FIRST
+///   non-zero progress event: with the bug, it would account both
+///   `file.txt` AND `docs` (files_done = 2). With the fix, only
+///   `file.txt` (files_done = 1).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cross_volume_move_top_level_directory_excluded_from_bulk_skip() {
+    let (source, dest) = make_volumes();
+
+    source.create_file(Path::new("/file.txt"), b"new-file").await.unwrap();
+    source.create_directory(Path::new("/docs")).await.unwrap();
+    source
+        .create_file(Path::new("/docs/guide.txt"), b"new-guide")
+        .await
+        .unwrap();
+
+    dest.create_file(Path::new("/file.txt"), b"old-file").await.unwrap();
+    dest.create_directory(Path::new("/docs")).await.unwrap();
+    dest.create_file(Path::new("/docs/guide.txt"), b"old-guide")
+        .await
+        .unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state_with_interval_ms(0);
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Skip,
+        progress_interval_ms: 0,
+        pre_known_conflicts: vec!["file.txt".to_string(), "docs".to_string()],
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = move_volumes_with_progress(
+        events.clone(),
+        "op-move-bulk-skip-dir-excluded",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/file.txt"), PathBuf::from("/docs")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    // Skip is non-destructive: dest content preserved on both sides, source
+    // files survive too.
+    let mut dest_file = dest.open_read_stream(Path::new("/file.txt")).await.unwrap();
+    assert_eq!(dest_file.next_chunk().await.unwrap().unwrap(), b"old-file");
+    assert!(source.exists(Path::new("/file.txt")).await);
+
+    // Pin the bulk-skip exclusion: the first non-zero progress event must
+    // account exactly ONE source (`file.txt`), not two. If `docs` were
+    // bulk-skipped, this event would jump to `files_done = 2`.
+    let progress = events.progress.lock().unwrap();
+    let first_nonzero = progress
+        .iter()
+        .find(|p| p.files_done > 0)
+        .expect("expected a progress event with files_done > 0");
+    assert_eq!(
+        first_nonzero.files_done, 1,
+        "bulk-skip must account only the FILE conflict, not the directory; saw {first_nonzero:?}",
+    );
+}
+
 /// Cancellation between sources stops further transfers and emits `write-cancelled`.
 /// This was a latent bug pre-M1-step-4: the cancel path returned `Err(Cancelled)`
 /// but never emitted the event, leaving the FE dialog open. Fixed inline.
