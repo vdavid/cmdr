@@ -92,13 +92,18 @@
 //!   concurrency, so abstracting it would be a 1-of-4 abstraction, not a shared
 //!   pattern — see plan § "Concurrent driver scope").
 
-// The driver lands as new code; production callers (volume_copy, volume_move,
-// copy.rs) get migrated in M2 step 8 / M3 in a separate commit. Until then the
-// types and functions exist solely for the test module below, so suppress the
-// "never used in production" lint at the module level.
+// A handful of driver surface items aren't wired up by today's three callers
+// (`TransferOutcome::Skipped`, `DriverConfig::{conflict_resolution,
+// pre_known_conflicts}`, `ConflictDecisionInput::{source_is_directory_hint,
+// source_size_hint}`, and the unused `TransferContext` fields). They're load-
+// bearing for the driver's contract and exercised by `transfer_driver_tests.rs`
+// (`TransferOutcome::Skipped` is constructed in test closures; the config
+// fields feed `build_pre_skip_set` audits). Keep them as part of the public-
+// to-the-module surface so adding a future caller doesn't require widening the
+// driver in a separate commit.
 #![allow(
     dead_code,
-    reason = "Driver lands ahead of production callers (M2 step 8 / M3 migration); exercised by transfer_driver_tests.rs"
+    reason = "Driver surface kept stable for future callers; exercised by transfer_driver_tests.rs"
 )]
 
 use std::collections::HashSet;
