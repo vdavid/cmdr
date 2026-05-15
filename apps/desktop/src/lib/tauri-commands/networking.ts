@@ -2,7 +2,7 @@
 
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { commands } from '$lib/ipc/bindings'
-import type { MountResult, SmbCredentials } from '$lib/ipc/bindings'
+import type { MountResult, SmbCredentials, UpgradeResult } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 import type {
   AuthOptions,
@@ -305,18 +305,7 @@ export async function mountNetworkShare(
 }
 
 /** Result of an SMB volume upgrade attempt. */
-export type UpgradeResult =
-  | { status: 'success' }
-  | {
-      status: 'credentialsNeeded'
-      server: string
-      share: string
-      port: number
-      displayName: string
-      usernameHint: string | null
-      message: string | null
-    }
-  | { status: 'networkError'; message: string }
+export type { UpgradeResult }
 
 /**
  * Upgrades an existing OS-mounted SMB volume to use a direct smb2 connection.
@@ -327,8 +316,7 @@ export type UpgradeResult =
 export async function upgradeToSmbVolume(volumeId: string): Promise<UpgradeResult> {
   const res = await commands.upgradeToSmbVolume(volumeId)
   if (res.status === 'error') throwIpcError(res.error)
-  // specta rc.24 emits snake_case for these enum fields; actual wire format is camelCase (serde rename_all).
-  return res.data as unknown as UpgradeResult
+  return res.data
 }
 
 /**
@@ -342,8 +330,7 @@ export async function upgradeToSmbVolumeWithCredentials(
 ): Promise<UpgradeResult> {
   const res = await commands.upgradeToSmbVolumeWithCredentials(volumeId, username, password, rememberInKeychain)
   if (res.status === 'error') throwIpcError(res.error)
-  // specta rc.24 emits snake_case for these enum fields; actual wire format is camelCase (serde rename_all).
-  return res.data as unknown as UpgradeResult
+  return res.data
 }
 
 /**

@@ -40,7 +40,7 @@ pub struct ConnectedDeviceInfo {
 
 /// Error types for MTP connection operations (stub version).
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase", tag = "type")]
+#[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "type")]
 pub enum MtpConnectionError {
     NotSupported { message: String },
 }

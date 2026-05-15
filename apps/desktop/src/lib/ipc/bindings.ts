@@ -2961,9 +2961,9 @@ export type UpgradeResult =
       share: string
       port: number
       // Friendly display name for the server (mDNS hostname or IP).
-      display_name: string
+      displayName: string
       // Username hint from stored credentials or the OS mount.
-      username_hint: string | null
+      usernameHint: string | null
       // Optional message explaining why credentials are needed.
       message: string | null
     }

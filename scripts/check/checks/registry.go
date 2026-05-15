@@ -118,6 +118,16 @@ var AllChecks = []CheckDefinition{
 		Run:               RunDesktopBindingsFresh,
 	},
 	{
+		ID:                "desktop-rust-ipc-enum-camelcase",
+		Nickname:          "ipc-enum-camelcase",
+		DisplayName:       "ipc-enum-camelcase",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: false,
+		DependsOn:         nil,
+		Run:               RunIpcEnumCamelCase,
+	},
+	{
 		ID:                "desktop-rust-tests",
 		Nickname:          "rust-tests",
 		DisplayName:       "tests",

@@ -345,7 +345,7 @@ pub async fn mount_network_share(
 
 /// Result of an SMB volume upgrade attempt (stub version mirrors real type).
 #[derive(serde::Serialize, specta::Type)]
-#[serde(tag = "status", rename_all = "camelCase")]
+#[serde(tag = "status", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum UpgradeResult {
     NetworkError { message: String },
 }

@@ -15,7 +15,7 @@ use tauri_plugin_store::StoreExt;
 /// Serialized with `tag = "code"` so the frontend receives `{ code: "badSignature", ... }` and
 /// can switch on the code instead of pattern-matching English error strings.
 #[derive(Debug, Clone, Serialize, specta::Type)]
-#[serde(tag = "code", rename_all = "camelCase")]
+#[serde(tag = "code", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum LicenseActivationError {
     /// Key doesn't have the expected format (no dot separator, wrong structure).
     InvalidFormat,

@@ -24,7 +24,7 @@ use crate::file_system::watcher::start_watching;
 
 /// Status of a streaming directory listing
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase", tag = "status")]
+#[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "status")]
 pub enum ListingStatus {
     Loading,
     Ready,
