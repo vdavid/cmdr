@@ -164,7 +164,17 @@ impl EtaEstimator {
             state.files_rate = inst_files_rate;
         } else {
             state.bytes_rate = alpha * inst_bytes_rate + (1.0 - alpha) * state.bytes_rate;
-            state.files_rate = alpha * inst_files_rate + (1.0 - alpha) * state.files_rate;
+            // Only update files_rate when a file actually completed. File
+            // completions are bursty (one whole file at a time), so EWMA-ing
+            // `delta_files == 0` samples decays the rate toward zero during
+            // long single-file streams (e.g. a 500 MB video over MTP). That
+            // makes `eta_files` explode, and `max(eta_bytes, eta_files)` picks
+            // the bogus value (a 393 h ETA on a 22 min copy). Treat zero-delta
+            // samples as "no information"; keep the last positive rate until
+            // another completion arrives.
+            if delta_files > 0.0 {
+                state.files_rate = alpha * inst_files_rate + (1.0 - alpha) * state.files_rate;
+            }
         }
 
         state.last_t = now;
@@ -396,6 +406,85 @@ mod tests {
         );
         // Files rate should dominate the readout.
         assert!(last.files_per_second > 1000.0);
+    }
+
+    /// The pathological inverse of `big_first_then_small_tail_keeps_eta_alive`:
+    /// small files first, then a long single-file stream (e.g. a 500 MB video
+    /// from a phone). `delta_files == 0` for many samples in a row while bytes
+    /// keep flowing — historically the EWMA decayed `files_rate` to ~0.001,
+    /// which made `eta_files` explode to >100 hours and `max(eta_bytes, eta_files)`
+    /// picked the bogus value. Fix: skip the `files_rate` EWMA update when
+    /// `delta_files == 0`. ETA must stay bytes-rate-bounded in this scenario.
+    #[test]
+    fn long_single_file_stream_does_not_decay_files_rate_to_zero() {
+        let start = Instant::now();
+        let mut est = EtaEstimator::new();
+        let bytes_total = 35_000_000_000_u64; // 35 GB total
+        let files_total = 1_046_usize;
+
+        // Phase 1 (0–6 s): 6 small-to-medium files complete at ~1/s.
+        // Each ~80 MB at ~80 MB/s. After this: 480 MB done, 6 files done.
+        est.update(
+            at(start, 0),
+            WriteOperationPhase::Copying,
+            0,
+            bytes_total,
+            0,
+            files_total,
+        );
+        for i in 1..=6 {
+            let t = i * 1000;
+            est.update(
+                at(start, t),
+                WriteOperationPhase::Copying,
+                i * 80_000_000,
+                bytes_total,
+                i as usize,
+                files_total,
+            );
+        }
+
+        // Phase 2 (6–24 s): one big 500 MB video streams in. Bytes flow at
+        // ~28 MB/s (560 MB over 20 s); no file completes for 90 sample points
+        // at 200 ms each. This is the regime that used to wreck `files_rate`.
+        let mut last = EtaStats::ZERO;
+        let mut bytes_done = 480_000_000_u64;
+        for i in 1..=90 {
+            let t = 6_000 + i * 200;
+            bytes_done += 5_600_000; // 5.6 MB per 200 ms = 28 MB/s
+            last = est.update(
+                at(start, t),
+                WriteOperationPhase::Copying,
+                bytes_done,
+                bytes_total,
+                6, // ← no completion across all 90 samples
+                files_total,
+            );
+        }
+
+        // Sanity: bytes_rate stays healthy across the long stream.
+        assert!(
+            last.bytes_per_second >= 25_000_000 && last.bytes_per_second <= 32_000_000,
+            "bytes_per_second = {} should remain ~28 MB/s during the long stream",
+            last.bytes_per_second,
+        );
+
+        // The bug: `files_rate` decayed to ~7e-4 → `eta_files` ≈ 1040/7e-4 = 1.4M s.
+        // After the fix `files_rate` stays at the last positive EWMA value (~0.6)
+        // so `eta_files` stays bounded (~1700 s).
+        let eta = last.eta_seconds.expect("warmed up by now");
+        assert!(
+            eta < 10_000,
+            "ETA exploded to {eta} s: files_rate decay during a long single-file stream broke the readout",
+        );
+        // And the files-axis rate must not have collapsed below a believable floor.
+        // 6 completions in the first 6 s seeded the EWMA around 1 files/s; the
+        // 90 zero-delta samples after the stream should not drag it below 0.1.
+        assert!(
+            last.files_per_second >= 0.1,
+            "files_per_second = {} collapsed below 0.1 during the zero-delta stream",
+            last.files_per_second,
+        );
     }
 
     /// Mid-operation slowdown: starts at 60 MB/s, drops to 6 MB/s. The EWMA
