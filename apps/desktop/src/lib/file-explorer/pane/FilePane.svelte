@@ -423,6 +423,24 @@
     // Network browsing state - tracked here for history navigation integration
     let currentNetworkHost = $state<NetworkHost | null>(null)
 
+    // Clear the selected network host whenever the pane leaves the network
+    // volume so that re-entering Network always lands on the host list, not on
+    // a stale ShareBrowser for whichever host was open last. Without this,
+    // `NetworkMountView` re-mounts with the old `initialNetworkHost` and the
+    // user sees the previous share list when they expected the host list.
+    //
+    // Previously this only got cleared by an explicit "Back" click inside
+    // `ShareBrowser` (which calls `onNetworkHostChange(null)`). Volume-switches
+    // via the picker, the breadcrumb, history navigation, or MCP didn't trip
+    // that path, so the host stayed pinned. The matching gotcha in
+    // `file-explorer/network/CLAUDE.md` documented this as the cause of E2E
+    // test 436 ("unicode shares render") and several SMB share-count tests.
+    $effect(() => {
+        if (!isNetworkView && currentNetworkHost !== null) {
+            currentNetworkHost = null
+        }
+    })
+
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function toggleVolumeChooser() {
         volumeBreadcrumbRef?.toggle()
