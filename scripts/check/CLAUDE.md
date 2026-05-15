@@ -69,6 +69,7 @@ go run ./scripts/check --only-freestyle
           freestyleRun()
     -> selectChecks()                # filter AllChecks by flags
     -> FilterSlowChecks()            # drop IsSlow=true unless --include-slow or --check used
+    -> FilterCIOnlyChecks()          # drop CIOnly=true unless --ci or --check named it
     -> ensurePnpmDependencies()      # pnpm install once at root (skipped for Rust-only runs)
     -> Runner.Run():
         goroutine pool (NumCPU semaphore)
@@ -114,6 +115,10 @@ counted as failed. Dependencies not in the selected run set are treated as satis
 `desktop-e2e-playwright`). Named `--check` invocations implicitly include slow checks
 (`includeSlow = len(checkNames) > 0`).
 
+**CI-only checks:** `CIOnly: true` marks checks that run only in `--ci` mode (currently: `cargo-udeps`). They're
+silently dropped from local runs (no SKIPPED line) and are not pulled in by `--include-slow` or `--only-slow`.
+Escape hatch: an explicit `--check cargo-udeps` always runs, so you can verify locally before pushing.
+
 **Self-contained E2E checks:** `desktop-e2e-playwright` manages the full lifecycle (build binary once, create per-shard
 fixtures, start N Tauri instances, run N Playwright processes in parallel, cleanup). Each shard runs in its own isolated
 `CMDR_DATA_DIR` with its own Unix socket and MCP port (9429 + shard offset). One shard is dedicated to MTP specs
@@ -156,6 +161,7 @@ DisplayName:       "eslint", // shown in output
 App:               AppDesktop,
 Tech:              "🎨 Svelte",
 IsSlow:            false,
+CIOnly:            false, // true = run only in --ci mode (or explicit --check)
 FreestyleIncompat: true, // can NOT run on freestyle.sh VMs (Rust, Docker)
 DependsOn:         []string{"desktop-svelte-prettier"},
 Run:               RunDesktopESLint,
@@ -200,7 +206,7 @@ before tests.
 
 | App        | Tech    | Checks                                                                                                                                                                                              |
 | ---------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop    | Rust    | rustfmt, clippy, cargo-audit, cargo-deny, cargo-udeps, jscpd, log-error-macro, error-string-match, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow)    |
+| Desktop    | Rust    | rustfmt, clippy, cargo-audit, cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd, log-error-macro, error-string-match, bindings-fresh, ipc-enum-camelcase, tests, integration-tests (Docker SMB), tests-linux (slow) |
 | Desktop    | Svelte  | prettier, eslint, eslint-typecheck (slow), stylelint, css-unused, a11y-contrast, svelte-check, import-cycles, knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow) |
 | Website    | Astro   | prettier, eslint, typecheck, build, html-validate, e2e                                                                                                                                              |
 | Website    | Docker  | docker-build                                                                                                                                                                                        |
@@ -258,6 +264,38 @@ check sets `ESLINT_NO_TYPECHECK=1`, which `eslint.config.js` reads to use `tsesl
 suppress `reportUnusedDisableDirectives` (since disable comments for type-aware rules would look unused). The slow check
 (`IsSlow: true`) runs the full config with all rules and `reportUnusedDisableDirectives` on, so stale disable comments
 are still caught.
+
+**Decision**: Clippy runs the enforcing pass (`-D warnings`) first, and only invokes `cargo clippy --fix` if that
+fails (and we're not in CI). **Why**: Running `--fix` speculatively before every check doubled wall time on the happy
+path (no warnings = no fix to apply). The enforcing pass is the one that actually decides pass/fail anyway, and
+`--fix` ignores `-D warnings` so it can't be combined into a single invocation. The trade is one extra re-check on
+the rare warning path; cuts ~50% off clippy in the common clean case.
+
+**Decision**: `bindings-fresh` is hash-cached. **Why**: The check used to run `pnpm bindings:regen` on every invocation
+(~2 min for a test-mode compile of the full crate) just to confirm the output didn't change. We now hash every `.rs`
+file under `src-tauri/src` plus `Cargo.lock` and `Cargo.toml`, plus the current `bindings.ts`, and store both hashes in
+`<CARGO_TARGET_DIR or workspace target>/.bindings-fresh-marker` after each successful run. If both match next time, we
+return OK in <100 ms. The bindings.ts hash in the marker protects against manual edits; if someone hand-tweaks the file
+the marker no longer matches and we run the full regen. The marker lives inside cargo's actual target dir (honoring
+`CARGO_TARGET_DIR`), so `cargo clean` and wholesale `target/` deletion auto-invalidate it. Same shared-fate pattern as
+`node_modules/.pnpm-install-marker`. Hashing all `.rs` files (rather than only those with `#[tauri::command]` /
+`specta::Type`) costs ~tens of ms here and removes any "added the attr to a new file but the watch list didn't pick it
+up" footgun.
+
+**Decision**: `cargo-machete` runs locally; `cargo-udeps` is CI-only. **Why**: Both detect unused dependencies but
+trade off speed against precision. udeps compiles the whole crate with nightly (~2 min cold) and is authoritative.
+machete greps source files for `use foo;` patterns (~0.5 s on this codebase, no compile) and catches the common case
+(removed the last `use` but forgot to drop the dep) plus a class udeps misses ("transitively-used" deps where your
+Cargo.toml lists serde but only a transitive dep actually uses it). machete's blind spot is deps used only inside
+macro expansions or build.rs codegen; opt those out via `[package.metadata.cargo-machete] ignored = ["foo"]` in the
+relevant Cargo.toml. Local dev gets instant feedback from machete; CI runs udeps for the long-tail check.
+
+**Decision**: `CIOnly` field on `CheckDefinition` (mirrors `IsSlow` and `FreestyleIncompat`). **Why**: Keeps "this
+check runs only in CI" colocated with the check definition rather than as a hardcoded list elsewhere. `FilterCIOnlyChecks`
+in `registry.go` drops them outside `--ci`, with a `--check <name>` escape hatch so devs can verify locally before
+pushing. Orthogonal to `IsSlow`: `--include-slow` and `--only-slow` do NOT pull in CI-only checks (you'd otherwise lose
+the ability to run "all slow checks locally without the CI-only ones"). Negative-sense default (`false` = runs locally)
+matches the other gating fields.
 
 **Decision**: Skip `pnpm install` when lockfile is unchanged. **Why**: `pnpm install` takes ~20s and pegs all CPUs even
 when deps haven't changed. A marker file (`node_modules/.pnpm-install-marker`) stores `pnpm-lock.yaml`'s mtime after

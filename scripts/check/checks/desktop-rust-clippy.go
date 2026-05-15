@@ -22,17 +22,12 @@ func RunClippy(ctx *CheckContext) (CheckResult, error) {
 
 	// Touch lib.rs to force clippy to re-lint (otherwise cached builds skip linting)
 	libPath := filepath.Join(rustDir, "src", "lib.rs")
-	touchCmd := exec.Command("touch", libPath)
-	_ = touchCmd.Run() // Ignore errors, file might not exist in edge cases
+	_ = exec.Command("touch", libPath).Run()
 
-	// In local mode, first run with --fix to auto-fix what we can
-	if !ctx.CI {
-		fixCmd := exec.Command("cargo", "clippy", "--all-targets", "--fix", "--allow-dirty", "--allow-staged")
-		fixCmd.Dir = rustDir
-		_, _ = RunCommand(fixCmd, true) // Ignore errors, we'll catch them in the check run
-	}
-
-	// Run clippy WITHOUT --fix to check for remaining issues (--fix ignores -D warnings)
+	// Run the enforcing check first. On the happy path (no warnings) this is
+	// the only build pass we do. --fix is reserved for the failure branch
+	// because it ignores -D warnings, can rewrite source files, and re-running
+	// it speculatively doubled wall time on every clean run.
 	cmd := exec.Command("cargo", "clippy", "--all-targets", "--", "-D", "warnings")
 	cmd.Dir = rustDir
 	output, err := RunCommand(cmd, true)
@@ -40,7 +35,19 @@ func RunClippy(ctx *CheckContext) (CheckResult, error) {
 		if ctx.CI {
 			return CheckResult{}, fmt.Errorf("clippy errors found, run the check script locally\n%s", indentOutput(output))
 		}
-		return CheckResult{}, fmt.Errorf("clippy found unfixable issues\n%s", indentOutput(output))
+
+		// Locally: try to auto-fix, then re-check.
+		fixCmd := exec.Command("cargo", "clippy", "--all-targets", "--fix", "--allow-dirty", "--allow-staged")
+		fixCmd.Dir = rustDir
+		_, _ = RunCommand(fixCmd, true)
+
+		_ = exec.Command("touch", libPath).Run()
+		cmd = exec.Command("cargo", "clippy", "--all-targets", "--", "-D", "warnings")
+		cmd.Dir = rustDir
+		output, err = RunCommand(cmd, true)
+		if err != nil {
+			return CheckResult{}, fmt.Errorf("clippy found unfixable issues\n%s", indentOutput(output))
+		}
 	}
 
 	// Try to extract "Compiling X crates" from output

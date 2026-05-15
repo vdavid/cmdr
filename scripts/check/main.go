@@ -102,6 +102,7 @@ func main() {
 	}
 
 	checksToRun = checks.FilterSlowChecks(checksToRun, flags.includeSlow)
+	checksToRun = checks.FilterCIOnlyChecks(checksToRun, flags.ciMode, flags.checkNames)
 
 	if flags.freestyleRemote {
 		checksToRun = checks.FilterFreestyleCompat(checksToRun)

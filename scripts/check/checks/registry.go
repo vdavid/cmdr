@@ -58,11 +58,22 @@ var AllChecks = []CheckDefinition{
 		Run:               RunCargoDeny,
 	},
 	{
+		ID:                "desktop-rust-cargo-machete",
+		Nickname:          "cargo-machete",
+		DisplayName:       "cargo-machete",
+		App:               AppDesktop,
+		Tech:              "🦀 Rust",
+		FreestyleIncompat: true,
+		DependsOn:         nil,
+		Run:               RunCargoMachete,
+	},
+	{
 		ID:                "desktop-rust-cargo-udeps",
 		Nickname:          "cargo-udeps",
 		DisplayName:       "cargo-udeps",
 		App:               AppDesktop,
 		Tech:              "🦀 Rust",
+		CIOnly:            true,
 		FreestyleIncompat: true,
 		DependsOn:         nil,
 		Run:               RunCargoUdeps,
@@ -575,6 +586,28 @@ func FilterSlowChecks(defs []CheckDefinition, includeSlow bool) []CheckDefinitio
 	var result []CheckDefinition
 	for _, def := range defs {
 		if !def.IsSlow {
+			result = append(result, def)
+		}
+	}
+	return result
+}
+
+// FilterCIOnlyChecks removes CI-only checks unless we're running in CI mode
+// or the user explicitly named them via --check. The named-check escape hatch
+// lets developers verify a CI-only check locally before pushing.
+func FilterCIOnlyChecks(defs []CheckDefinition, isCI bool, namedChecks []string) []CheckDefinition {
+	if isCI {
+		return defs
+	}
+	named := make(map[string]bool, len(namedChecks))
+	for _, name := range namedChecks {
+		if c := GetCheckByID(name); c != nil {
+			named[c.ID] = true
+		}
+	}
+	var result []CheckDefinition
+	for _, def := range defs {
+		if !def.CIOnly || named[def.ID] {
 			result = append(result, def)
 		}
 	}
