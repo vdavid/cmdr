@@ -1,0 +1,3 @@
+# Compiled `go build` artifact when running from this directory.
+# Use `go run .` (no artifact) for normal use; see README.md.
+e2e-test-timings

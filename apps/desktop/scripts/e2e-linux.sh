@@ -378,6 +378,18 @@ if $INTERACTIVE; then
 else
     log_info "Running E2E tests in Docker..."
     log_info "Binary path: $DOCKER_TAURI_BINARY"
+
+    # Pre-create the host JSON report file so Docker bind-mounts it as a
+    # file (without this, Docker creates a directory at the bind target on
+    # first run). `playwright.config.ts` reads $CMDR_E2E_JSON_REPORT and routes
+    # its `json` reporter there; we bind-mount the host file at the same path
+    # inside the container so playwright writes through to the host. The
+    # report feeds `scripts/e2e-test-timings/` for macOS-vs-Linux per-test
+    # wall-clock comparisons. Truncating with `:>` instead of `touch` so a
+    # stale report from a previous run is overwritten cleanly.
+    LINUX_E2E_JSON_REPORT="/tmp/cmdr-e2e-report-linux.json"
+    : > "$LINUX_E2E_JSON_REPORT"
+
     # Capture the test exit code so we can run a post-flight diagnostic
     # regardless of pass/fail, then re-propagate it as the script's status.
     set +e
@@ -389,10 +401,12 @@ else
         -v "$TARGET_VOLUME:/target" \
         -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
         -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
+        -v "$LINUX_E2E_JSON_REPORT:$LINUX_E2E_JSON_REPORT" \
         -w /app/apps/desktop \
         -e TAURI_BINARY="$DOCKER_TAURI_BINARY" \
         -e CI=true \
         -e "E2E_GREP=${GREP_FILTER:-}" \
+        -e "CMDR_E2E_JSON_REPORT=$LINUX_E2E_JSON_REPORT" \
         $SMB_ENV_ARGS \
         "$IMAGE_NAME" \
         bash -c '
@@ -447,18 +461,20 @@ else
             fi
             echo "Socket ready."
 
-            # Run Playwright tests
+            # Run Playwright tests. We deliberately do NOT pass --reporter
+            # here — the config (`playwright.config.ts`) declares both
+            # `list` (for human-readable progress in the check output) and
+            # `json` (for `scripts/e2e-test-timings/`). Passing `--reporter=list`
+            # would override that pair and drop the json output.
             if [ -n "${E2E_GREP:-}" ]; then
                 npx playwright test \
                     --config test/e2e-playwright/playwright.config.ts \
                     --project tauri \
-                    --reporter=list \
                     --grep "$E2E_GREP"
             else
                 npx playwright test \
                     --config test/e2e-playwright/playwright.config.ts \
-                    --project tauri \
-                    --reporter=list
+                    --project tauri
             fi
         '
     docker_test_status=$?
