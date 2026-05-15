@@ -9,8 +9,9 @@ use super::helpers::spawn_async_sync;
 use super::scan::{SourceItemTracker, scan_sources};
 use super::state::{WriteOperationState, update_operation_status};
 use super::types::{
-    DryRunResult, IoResultExt, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
-    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
+    DryRunResult, IoResultExt, OperationEventSink, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent,
+    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    WriteSourceItemDoneEvent,
 };
 use super::volume_copy::map_volume_error;
 use crate::file_system::volume::Volume;
@@ -26,15 +27,22 @@ pub(super) fn delete_files_with_progress(
     sources: &[PathBuf],
     config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
-    use tauri::Emitter;
-
     let events = TauriEventSink::new(app.clone());
+    delete_files_with_progress_inner(&events, operation_id, state, sources, config)
+}
 
+pub(super) fn delete_files_with_progress_inner(
+    events: &dyn OperationEventSink,
+    operation_id: &str,
+    state: &Arc<WriteOperationState>,
+    sources: &[PathBuf],
+    config: &WriteOperationConfig,
+) -> Result<(), WriteOperationError> {
     // Phase 1: Scan to get file count (delete uses default sorting)
     let scan_result = scan_sources(
         sources,
         state,
-        &events,
+        events,
         operation_id,
         WriteOperationType::Delete,
         config.sort_column,
@@ -43,7 +51,7 @@ pub(super) fn delete_files_with_progress(
 
     // Handle dry-run mode (delete has no conflicts)
     if config.dry_run {
-        let result = DryRunResult {
+        events.emit_dry_run_complete(DryRunResult {
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Delete,
             files_total: scan_result.file_count,
@@ -51,9 +59,7 @@ pub(super) fn delete_files_with_progress(
             conflicts_total: 0,
             conflicts: Vec::new(),
             conflicts_sampled: false,
-        };
-
-        let _ = app.emit("dry-run-complete", result);
+        });
         return Ok(());
     }
 
@@ -68,15 +74,12 @@ pub(super) fn delete_files_with_progress(
     for file_info in &scan_result.files {
         // Check cancellation
         if super::state::is_cancelled(&state.intent) {
-            let _ = app.emit(
-                "write-cancelled",
-                WriteCancelledEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Delete,
-                    files_processed: files_done,
-                    rolled_back: false, // Delete operations can't be rolled back
-                },
-            );
+            events.emit_cancelled(WriteCancelledEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Delete,
+                files_processed: files_done,
+                rolled_back: false, // Delete operations can't be rolled back
+            });
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });
@@ -91,20 +94,17 @@ pub(super) fn delete_files_with_progress(
         bytes_done += file_size;
 
         if let Some(source_path) = tracker.record(file_info) {
-            let _ = app.emit(
-                "write-source-item-done",
-                WriteSourceItemDoneEvent {
-                    operation_id: operation_id.to_string(),
-                    source_path: source_path.display().to_string(),
-                },
-            );
+            events.emit_source_item_done(WriteSourceItemDoneEvent {
+                operation_id: operation_id.to_string(),
+                source_path: source_path.display().to_string(),
+            });
         }
 
         // Emit progress
         if last_progress_time.elapsed() >= state.progress_interval {
             let current_file = file_info.path.file_name().map(|n| n.to_string_lossy().to_string());
-            state.emit_progress_via_app(
-                app,
+            state.emit_progress_via_sink(
+                events,
                 WriteProgressEvent::new(
                     operation_id.to_string(),
                     WriteOperationType::Delete,
@@ -133,15 +133,12 @@ pub(super) fn delete_files_with_progress(
     for dir in scan_result.dirs.iter().rev() {
         // Check cancellation
         if super::state::is_cancelled(&state.intent) {
-            let _ = app.emit(
-                "write-cancelled",
-                WriteCancelledEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Delete,
-                    files_processed: files_done,
-                    rolled_back: false, // Delete operations can't be rolled back
-                },
-            );
+            events.emit_cancelled(WriteCancelledEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Delete,
+                files_processed: files_done,
+                rolled_back: false, // Delete operations can't be rolled back
+            });
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });
@@ -155,15 +152,12 @@ pub(super) fn delete_files_with_progress(
     spawn_async_sync();
 
     // Emit completion
-    let _ = app.emit(
-        "write-complete",
-        WriteCompleteEvent {
-            operation_id: operation_id.to_string(),
-            operation_type: WriteOperationType::Delete,
-            files_processed: files_done,
-            bytes_processed: bytes_done,
-        },
-    );
+    events.emit_complete(WriteCompleteEvent {
+        operation_id: operation_id.to_string(),
+        operation_type: WriteOperationType::Delete,
+        files_processed: files_done,
+        bytes_processed: bytes_done,
+    });
 
     Ok(())
 }
@@ -192,7 +186,7 @@ async fn scan_volume_recursive(
     entries: &mut Vec<VolumeDeleteEntry>,
     total_bytes: &mut u64,
     state: &Arc<WriteOperationState>,
-    app: &tauri::AppHandle,
+    events: &dyn OperationEventSink,
     operation_id: &str,
     last_progress_time: &mut Instant,
 ) -> Result<(), WriteOperationError> {
@@ -225,7 +219,7 @@ async fn scan_volume_recursive(
                     entries,
                     total_bytes,
                     state,
-                    app,
+                    events,
                     operation_id,
                     last_progress_time,
                 ))
@@ -261,8 +255,8 @@ async fn scan_volume_recursive(
     if last_progress_time.elapsed() >= state.progress_interval {
         let file_count = entries.iter().filter(|e| !e.is_dir).count();
         let current_file = path.file_name().map(|n| n.to_string_lossy().to_string());
-        state.emit_progress_via_app(
-            app,
+        state.emit_progress_via_sink(
+            events,
             WriteProgressEvent::new(
                 operation_id.to_string(),
                 WriteOperationType::Delete,
@@ -306,8 +300,22 @@ pub(super) async fn delete_volume_files_with_progress(
     sources: &[PathBuf],
     config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
-    use tauri::Emitter;
+    let events = TauriEventSink::new(app.clone());
+    delete_volume_files_with_progress_inner(volume, &events, operation_id, state, sources, config).await
+}
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Matches the parameter pattern of other write operation functions"
+)]
+pub(super) async fn delete_volume_files_with_progress_inner(
+    volume: Arc<dyn Volume>,
+    events: &dyn OperationEventSink,
+    operation_id: &str,
+    state: &Arc<WriteOperationState>,
+    sources: &[PathBuf],
+    config: &WriteOperationConfig,
+) -> Result<(), WriteOperationError> {
     // Phase 1: Scan. Recursively enumerate the tree via volume.list_directory().
     let mut entries: Vec<VolumeDeleteEntry> = Vec::new();
     let mut total_bytes = 0u64;
@@ -324,7 +332,7 @@ pub(super) async fn delete_volume_files_with_progress(
                 &mut entries,
                 &mut total_bytes,
                 state,
-                app,
+                events,
                 operation_id,
                 &mut last_progress_time,
             )
@@ -344,8 +352,8 @@ pub(super) async fn delete_volume_files_with_progress(
     let file_count = entries.iter().filter(|e| !e.is_dir).count();
 
     // Emit final scan progress
-    state.emit_progress_via_app(
-        app,
+    state.emit_progress_via_sink(
+        events,
         WriteProgressEvent::new(
             operation_id.to_string(),
             WriteOperationType::Delete,
@@ -360,7 +368,7 @@ pub(super) async fn delete_volume_files_with_progress(
 
     // Handle dry-run mode
     if config.dry_run {
-        let result = DryRunResult {
+        events.emit_dry_run_complete(DryRunResult {
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Delete,
             files_total: file_count,
@@ -368,9 +376,7 @@ pub(super) async fn delete_volume_files_with_progress(
             conflicts_total: 0,
             conflicts: Vec::new(),
             conflicts_sampled: false,
-        };
-
-        let _ = app.emit("dry-run-complete", result);
+        });
         return Ok(());
     }
 
@@ -384,15 +390,12 @@ pub(super) async fn delete_volume_files_with_progress(
     // Delete files
     for entry in entries.iter().filter(|e| !e.is_dir) {
         if super::state::is_cancelled(&state.intent) {
-            let _ = app.emit(
-                "write-cancelled",
-                WriteCancelledEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Delete,
-                    files_processed: files_done,
-                    rolled_back: false,
-                },
-            );
+            events.emit_cancelled(WriteCancelledEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Delete,
+                files_processed: files_done,
+                rolled_back: false,
+            });
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });
@@ -408,8 +411,8 @@ pub(super) async fn delete_volume_files_with_progress(
 
         if last_progress_time.elapsed() >= state.progress_interval {
             let current_file = entry.path.file_name().map(|n| n.to_string_lossy().to_string());
-            state.emit_progress_via_app(
-                app,
+            state.emit_progress_via_sink(
+                events,
                 WriteProgressEvent::new(
                     operation_id.to_string(),
                     WriteOperationType::Delete,
@@ -437,15 +440,12 @@ pub(super) async fn delete_volume_files_with_progress(
     // Delete directories (already in deepest-first order from scan_volume_recursive)
     for entry in entries.iter().filter(|e| e.is_dir) {
         if super::state::is_cancelled(&state.intent) {
-            let _ = app.emit(
-                "write-cancelled",
-                WriteCancelledEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Delete,
-                    files_processed: files_done,
-                    rolled_back: false,
-                },
-            );
+            events.emit_cancelled(WriteCancelledEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Delete,
+                files_processed: files_done,
+                rolled_back: false,
+            });
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });
@@ -456,15 +456,12 @@ pub(super) async fn delete_volume_files_with_progress(
     }
 
     // Emit completion
-    let _ = app.emit(
-        "write-complete",
-        WriteCompleteEvent {
-            operation_id: operation_id.to_string(),
-            operation_type: WriteOperationType::Delete,
-            files_processed: files_done,
-            bytes_processed: bytes_done,
-        },
-    );
+    events.emit_complete(WriteCompleteEvent {
+        operation_id: operation_id.to_string(),
+        operation_type: WriteOperationType::Delete,
+        files_processed: files_done,
+        bytes_processed: bytes_done,
+    });
 
     Ok(())
 }
