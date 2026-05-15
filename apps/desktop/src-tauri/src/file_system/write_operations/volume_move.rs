@@ -354,7 +354,10 @@ pub(super) async fn move_volumes_with_progress(
                                 "move_between_volumes: skipping {} due to conflict resolution",
                                 source_path_owned.display()
                             );
-                            ConflictDecision::Skip
+                            // Move has no pre-flight byte scan, so skip-bytes
+                            // stays at 0 (consistent with the move bulk-skip
+                            // prelude that always credits 0 bytes).
+                            ConflictDecision::Skip { bytes_accounted: 0 }
                         }
                         Some(dest_path) => ConflictDecision::Proceed { dest_path },
                     })
@@ -747,7 +750,9 @@ pub(super) async fn move_within_same_volume_with_progress(
                                 "move_within_same_volume: skipping {} due to conflict resolution",
                                 source_path_owned.display()
                             );
-                            ConflictDecision::Skip
+                            // Move has no pre-flight byte scan, so skip-bytes
+                            // stays at 0.
+                            ConflictDecision::Skip { bytes_accounted: 0 }
                         }
                         Some(dest_path) => ConflictDecision::Proceed { dest_path },
                     })

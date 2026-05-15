@@ -339,3 +339,125 @@ test.describe('MTP same-volume move conflicts', () => {
     expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(true)
   })
 })
+
+// ── Cross-volume COPY conflicts (MTP -> local) ─────────────────────────────
+
+test.describe('MTP cross-volume copy conflicts', () => {
+  test('MTP-to-local copy with apply-to-all Skip credits byte progress', async ({ tauriPage }) => {
+    // Regression test for: per-iter Skip in the async transfer driver bumps
+    // `filesDone` but not `bytesDone`. User-visible symptom: the file counter
+    // moves forward while the size counter stays at 0 % on Skip-All copies
+    // where conflicts resolve via `apply_to_all` (the mid-operation conflict
+    // dialog), not via the FE's pre-flight `preKnownConflicts` bulk-skip.
+    //
+    // Setup: MTP `Documents/` has `report.txt` + `notes.txt`. Pre-populate
+    // matching files at local `right/` so both source files conflict at dest.
+    // Trigger MTP -> local copy with the DEFAULT (`stop`) conflict policy so
+    // `preKnownConflicts` stays empty. Intercept the first `write-conflict`
+    // event and resolve it via `resolve_write_conflict(opId, Skip, true)` so
+    // `apply_to_all` latches and subsequent conflicts auto-resolve via the
+    // driver's per-iter Skip arm. Assert the final `write-progress` event has
+    // both axes landed at total.
+    const fixtureRoot = getFixtureRoot()
+    fs.writeFileSync(path.join(fixtureRoot, 'right', 'report.txt'), 'local-report')
+    fs.writeFileSync(path.join(fixtureRoot, 'right', 'notes.txt'), 'local-notes')
+
+    await ensureAppReady(tauriPage)
+    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
+    await mcpNavToPath('left', `${mtpPath}/Documents`)
+    await mcpAwaitItem('left', 'report.txt')
+    await mcpAwaitItem('left', 'notes.txt')
+
+    // Subscribe to write-conflict (for the apply-to-all answer) and
+    // write-complete (carries the authoritative `bytes_processed` /
+    // `files_processed`) BEFORE triggering the copy. write-progress is
+    // throttled to 200 ms and 2 fast in-memory Skips don't reliably emit a
+    // post-iter event — write-complete is the source of truth.
+    await tauriPage.evaluate(`(async function() {
+        window.__skipBytesTestConflicts = [];
+        window.__skipBytesTestComplete = null;
+        const conflictHandler = (event) => { window.__skipBytesTestConflicts.push(event.payload); };
+        const completeHandler = (event) => { window.__skipBytesTestComplete = event.payload; };
+        const conflictHandlerId = window.__TAURI_INTERNALS__.transformCallback(conflictHandler);
+        const completeHandlerId = window.__TAURI_INTERNALS__.transformCallback(completeHandler);
+        window.__skipBytesTestConflictId = await window.__TAURI_INTERNALS__.invoke('plugin:event|listen', {
+          event: 'write-conflict',
+          target: { kind: 'Any' },
+          handler: conflictHandlerId,
+        });
+        window.__skipBytesTestCompleteId = await window.__TAURI_INTERNALS__.invoke('plugin:event|listen', {
+          event: 'write-complete',
+          target: { kind: 'Any' },
+          handler: completeHandlerId,
+        });
+      })()`)
+
+    try {
+      // Select both files in the MTP pane.
+      await tauriPage.keyboard.press('Meta+A')
+      await dispatchMenuCommand(tauriPage, 'file.copy')
+
+      await tauriPage.waitForSelector(TRANSFER_DIALOG, 10000)
+      await waitForConflictPolicy(tauriPage)
+      // Leave the dropdown at its default ('stop') so preKnownConflicts stays
+      // empty and conflicts surface per-iter via write-conflict.
+      await clickTransferStart(tauriPage)
+
+      // Wait for the first write-conflict event, then resolve via IPC.
+      await pollUntil(
+        tauriPage,
+        async () => tauriPage.evaluate<boolean>(`(window.__skipBytesTestConflicts ?? []).length > 0`),
+        10000,
+        50,
+      )
+      const firstConflict = await tauriPage.evaluate<{ operationId: string }>(`window.__skipBytesTestConflicts[0]`)
+      expect(firstConflict.operationId).toBeTruthy()
+      await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('resolve_write_conflict', {
+          operationId: '${firstConflict.operationId}',
+          resolution: 'skip',
+          applyToAll: true,
+        })`)
+
+      await waitForDialogsToClose(tauriPage, 30000)
+
+      // Dest content unchanged (both files were skipped).
+      expect(fs.readFileSync(path.join(fixtureRoot, 'right', 'report.txt'), 'utf-8')).toBe('local-report')
+      expect(fs.readFileSync(path.join(fixtureRoot, 'right', 'notes.txt'), 'utf-8')).toBe('local-notes')
+
+      // Source files still on MTP (skip is non-destructive for copy).
+      expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt'))).toBe(true)
+      expect(fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt'))).toBe(true)
+
+      // write-complete carries the authoritative final tallies. With the bug,
+      // every per-iter Skip bumps `filesProcessed` by 1 but `bytesProcessed`
+      // stays at 0, so the dialog's size bar reads 0 % at the end.
+      const completed = await tauriPage.evaluate<{
+        filesProcessed: number
+        bytesProcessed: number
+      } | null>(`window.__skipBytesTestComplete`)
+      const expectedBytes =
+        fs.statSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt')).size +
+        fs.statSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'notes.txt')).size
+
+      expect(completed).not.toBeNull()
+      expect(completed!.filesProcessed).toBe(2)
+      expect(completed!.bytesProcessed).toBe(expectedBytes)
+    } finally {
+      await tauriPage.evaluate(`(async function() {
+          const conflictId = window.__skipBytesTestConflictId;
+          const completeId = window.__skipBytesTestCompleteId;
+          if (conflictId !== undefined) {
+            await window.__TAURI_INTERNALS__.invoke('plugin:event|unlisten', { event: 'write-conflict', eventId: conflictId });
+          }
+          if (completeId !== undefined) {
+            await window.__TAURI_INTERNALS__.invoke('plugin:event|unlisten', { event: 'write-complete', eventId: completeId });
+          }
+          delete window.__skipBytesTestConflicts;
+          delete window.__skipBytesTestComplete;
+          delete window.__skipBytesTestConflictId;
+          delete window.__skipBytesTestCompleteId;
+        })()`)
+    }
+  })
+})

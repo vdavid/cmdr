@@ -508,9 +508,14 @@ pub(super) struct ConflictDecisionInput<'a> {
 /// Conflict-resolution outcome the resolver hands back to the driver.
 #[derive(Debug)]
 pub(super) enum ConflictDecision {
-    /// Skip this source. Driver bumps counters via skip accounting and
-    /// continues. The `transfer_one` closure is NOT invoked.
-    Skip,
+    /// Skip this source. Driver bumps counters via skip accounting (both
+    /// `files_done += 1` and `bytes_done += bytes_accounted`) and continues.
+    /// The `transfer_one` closure is NOT invoked. `bytes_accounted` is the
+    /// source's byte size from the caller's pre-flight scan (volume copy
+    /// looks it up in `source_hints`; volume move has no scan and passes 0).
+    /// Without it, the size progress bar would stay at 0 % while the file
+    /// counter moved forward on Skip-All operations.
+    Skip { bytes_accounted: u64 },
     /// Proceed with the given (possibly rewritten) destination path. Driver
     /// calls `transfer_one` with `dest_path = Some(this)`.
     Proceed { dest_path: PathBuf },
@@ -671,11 +676,12 @@ where
             .await;
 
             match decision {
-                Ok(ConflictDecision::Skip) => {
+                Ok(ConflictDecision::Skip { bytes_accounted }) => {
                     // Per-iter skip accounting: bump counters and emit
                     // throttled progress so the bar reflects the skip
                     // immediately.
                     files_done += 1;
+                    bytes_done += bytes_accounted;
                     if last_progress_time.elapsed() >= progress_interval {
                         last_progress_time = Instant::now();
                         emit_progress_and_status(

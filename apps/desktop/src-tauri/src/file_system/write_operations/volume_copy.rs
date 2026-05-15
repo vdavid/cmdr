@@ -1011,7 +1011,14 @@ pub(crate) async fn copy_volumes_with_progress(
                                     "copy_volumes_with_progress: skipping {} due to conflict resolution",
                                     source_path_owned.display()
                                 );
-                                ConflictDecision::Skip
+                                // Credit the source's byte size so the size
+                                // progress bar matches the file counter when
+                                // every source is skipped. Dirs report 0 in
+                                // `source_hints` by convention (the recursive
+                                // total isn't tracked there); per-file skips
+                                // credit the real size.
+                                let bytes_accounted = source_hint.map(|h| h.size).unwrap_or(0);
+                                ConflictDecision::Skip { bytes_accounted }
                             }
                             Some(dest_path) => ConflictDecision::Proceed { dest_path },
                         })

@@ -699,7 +699,7 @@ async fn async_driver_does_not_invoke_closure_when_conflict_resolved_as_skip() {
                 assert_eq!(input.source_path, Path::new("/a.txt"));
                 assert_eq!(input.initial_dest_path, Path::new("/dest/a.txt"));
                 assert_eq!(input.dest_size_hint, Some(50));
-                Ok(ConflictDecision::Skip)
+                Ok(ConflictDecision::Skip { bytes_accounted: 0 })
             })
         },
         |ctx: TransferContext<'_>| -> TransferFut<'_> {
@@ -1049,9 +1049,9 @@ async fn async_driver_apply_to_all_resolver_decision_persists_across_sources() {
                 // Closure latches Skip on first call; from then on, returns Skip.
                 let mut guard = latched.lock().unwrap();
                 if guard.is_none() {
-                    *guard = Some(ConflictDecision::Skip);
+                    *guard = Some(ConflictDecision::Skip { bytes_accounted: 0 });
                 }
-                Ok(ConflictDecision::Skip)
+                Ok(ConflictDecision::Skip { bytes_accounted: 0 })
             })
         },
         |ctx: TransferContext<'_>| -> TransferFut<'_> {
@@ -1105,7 +1105,9 @@ async fn async_driver_progress_accounting_sums_correctly() {
             let conflict = p == Path::new("/dest/conflict");
             Box::pin(async move { if conflict { Some(50) } else { None } })
         },
-        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> { Box::pin(async { Ok(ConflictDecision::Skip) }) },
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+            Box::pin(async { Ok(ConflictDecision::Skip { bytes_accounted: 50 }) })
+        },
         |_ctx: TransferContext<'_>| -> TransferFut<'_> {
             Box::pin(async { Ok(TransferOutcome::Transferred { bytes: 100 }) })
         },
@@ -1115,8 +1117,8 @@ async fn async_driver_progress_accounting_sums_correctly() {
     assert!(matches!(outcome.intent, PostLoopIntent::Completed));
     assert_eq!(outcome.files_done, 4, "2 bulk + 1 conflict-skip + 1 transferred");
     assert_eq!(
-        outcome.bytes_done, 300,
-        "200 bulk-skipped + 0 (conflict-skip has no bytes) + 100 transferred"
+        outcome.bytes_done, 350,
+        "200 bulk-skipped + 50 (conflict-skip's `bytes_accounted`) + 100 transferred"
     );
     uninstall_state(&op_id);
     unregister_operation_status(&op_id);
@@ -1143,7 +1145,9 @@ async fn async_driver_status_cache_matches_emitted_progress() {
         &HashSet::new(),
         &copy_config(),
         |_p: &Path| -> FetchFut<'_> { Box::pin(async { Some(50) }) }, // conflict
-        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> { Box::pin(async { Ok(ConflictDecision::Skip) }) },
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+            Box::pin(async { Ok(ConflictDecision::Skip { bytes_accounted: 0 }) })
+        },
         |_ctx: TransferContext<'_>| -> TransferFut<'_> {
             Box::pin(async { panic!("closure should not fire under Skip") })
         },
