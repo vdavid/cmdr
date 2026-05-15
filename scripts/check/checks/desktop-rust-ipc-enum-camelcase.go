@@ -154,12 +154,10 @@ func findSerdeAttribute(attrs string) string {
 // enumHasStructVariant scans forward from the enum declaration line, tracking brace depth,
 // and returns true if any variant at depth 1 is a struct variant (`Name { ... }`).
 func enumHasStructVariant(lines []string, enumLineIdx int) bool {
-	// Find the opening brace of the enum body.
 	depth := 0
 	started := false
 	for i := enumLineIdx; i < len(lines); i++ {
-		line := lines[i]
-		for _, ch := range line {
+		for _, ch := range lines[i] {
 			if ch == '{' {
 				depth++
 				started = true
@@ -173,24 +171,31 @@ func enumHasStructVariant(lines []string, enumLineIdx int) bool {
 		if !started {
 			continue
 		}
-		// At depth 1 we are between enum variants. Look for struct-variant pattern,
-		// but skip lines that are attributes or the enum declaration itself.
-		if depth == 1 && i > enumLineIdx {
-			trimmed := strings.TrimSpace(line)
-			if trimmed == "" || strings.HasPrefix(trimmed, "//") || strings.HasPrefix(trimmed, "#[") {
-				continue
-			}
-			// A struct variant has `Name {` somewhere on its line, OR `Name` followed by `{` on a later line.
-			if structVariantPattern.MatchString(line) {
-				return true
-			}
-			// Handle `VariantName` on its own line with `{` on the next.
-			if bareVariantNamePattern.MatchString(line) && i+1 < len(lines) {
-				next := strings.TrimSpace(lines[i+1])
-				if strings.HasPrefix(next, "{") {
-					return true
-				}
-			}
+		// At depth 1 we are between enum variants. Skip the enum declaration line itself.
+		if depth == 1 && i > enumLineIdx && lineIsStructVariant(lines, i) {
+			return true
+		}
+	}
+	return false
+}
+
+// lineIsStructVariant reports whether `lines[i]` declares a struct enum variant
+// (`Name { ... }`), either inline or with `{` on the following line. Returns false
+// for blank lines, comments, and attribute lines.
+func lineIsStructVariant(lines []string, i int) bool {
+	line := lines[i]
+	trimmed := strings.TrimSpace(line)
+	if trimmed == "" || strings.HasPrefix(trimmed, "//") || strings.HasPrefix(trimmed, "#[") {
+		return false
+	}
+	if structVariantPattern.MatchString(line) {
+		return true
+	}
+	// `VariantName` on its own line with `{` on the next.
+	if bareVariantNamePattern.MatchString(line) && i+1 < len(lines) {
+		next := strings.TrimSpace(lines[i+1])
+		if strings.HasPrefix(next, "{") {
+			return true
 		}
 	}
 	return false
