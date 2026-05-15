@@ -319,22 +319,30 @@ pub(crate) async fn copy_volumes_with_progress(
         total_files = cached.file_count;
         total_bytes = cached.total_bytes;
         log::debug!(
-            "copy_volumes_with_progress: reused cached scan for operation_id={}, files={}, bytes={}",
+            "copy_volumes_with_progress: reused cached scan for operation_id={}, files={}, bytes={}, per_path={}",
             operation_id,
             total_files,
-            total_bytes
+            total_bytes,
+            cached.per_path.len()
         );
-        // TODO: extend the preview cache to carry per-source type + size so this
-        // branch doesn't need to re-stat. For now, the preview path already saved
-        // one full scan per source, and this extra stat is bounded by source count
-        // and the compound fast-path falls back cleanly when size is unknown.
-        for source_path in source_paths {
-            let is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
+        // Volume scan previews carry per-path results so we can seed source_hints
+        // directly. Without this, we'd `is_directory` each path here, and on MTP
+        // every `is_directory` lists the parent dir (15k photos in /DCIM/Camera =
+        // 15k sequential parent listings, ~2 min stall before the copy starts).
+        // Local-FS scans don't populate per_path; the unwrap_or default leaves
+        // source_hints empty (the conflict-resolution and SMB compound fast-paths
+        // both fall back cleanly when a hint is missing).
+        for (source_path, scan) in cached.per_path {
+            let size = if scan.top_level_is_directory {
+                0
+            } else {
+                scan.total_bytes
+            };
             source_hints.insert(
-                source_path.clone(),
+                source_path,
                 SourceHint {
-                    is_directory: is_dir,
-                    size: 0,
+                    is_directory: scan.top_level_is_directory,
+                    size,
                 },
             );
         }

@@ -509,11 +509,19 @@ impl Volume for MtpVolume {
                 let parent_str = parent.to_string_lossy();
                 let entries = self.list_directory(Path::new(parent_str.as_ref()), None).await?;
 
+                // Index entries by name so each child lookup is O(1). A naive
+                // `entries.iter().find(...)` per child is O(n) and the outer
+                // loop is also O(n), so 15k photos in /DCIM/Camera turned a
+                // single parent listing into ~225M string comparisons (~10 s
+                // stall in the scan preview).
+                let entries_by_name: std::collections::HashMap<&str, &FileEntry> =
+                    entries.iter().map(|e| (e.name.as_str(), e)).collect();
+
                 for child_path in children {
                     let mtp_path = self.to_mtp_path(child_path);
                     let name = Path::new(&mtp_path).file_name().and_then(|n| n.to_str()).unwrap_or("");
 
-                    if let Some(entry) = entries.iter().find(|e| e.name == name) {
+                    if let Some(entry) = entries_by_name.get(name).copied() {
                         if entry.is_directory {
                             let scan = self.scan_for_copy(child_path).await?;
                             aggregate.file_count += scan.file_count;

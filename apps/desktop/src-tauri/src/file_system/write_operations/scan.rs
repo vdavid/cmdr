@@ -200,6 +200,7 @@ pub(super) fn take_cached_scan_result(preview_id: &str) -> Option<ScanResult> {
             dirs: cached.dirs,
             file_count: cached.file_count,
             total_bytes: cached.total_bytes,
+            per_path: cached.per_path,
         })
     } else {
         None
@@ -397,6 +398,7 @@ fn scan_sources_internal(
         files,
         dirs,
         total_bytes,
+        per_path: Vec::new(),
     })
 }
 

@@ -13,6 +13,7 @@ use super::types::{
     ConflictResolution, OperationEventSink, OperationStatus, OperationSummary, WriteOperationPhase, WriteOperationType,
     WriteProgressEvent,
 };
+use crate::file_system::volume::CopyScanResult;
 
 // ============================================================================
 // Operation intent (state machine for cancellation)
@@ -376,6 +377,12 @@ pub(super) struct CachedScanResult {
     pub dirs: Vec<PathBuf>,
     pub file_count: usize,
     pub total_bytes: u64,
+    /// Per-source-path scan results from volume scans. Empty for local-FS
+    /// previews (the `files` Vec already carries everything the local copy
+    /// engine needs). Populated by `run_volume_scan_preview` so the copy
+    /// pipeline's cached branch can rebuild `source_hints` without per-path
+    /// `is_directory` probes (which on MTP each list the parent dir).
+    pub per_path: Vec<(PathBuf, CopyScanResult)>,
 }
 
 /// Global cache for scan preview states.
@@ -461,6 +468,10 @@ pub(super) struct ScanResult {
     /// Not including directories.
     pub file_count: usize,
     pub total_bytes: u64,
+    /// Per-source-path scan results, populated by volume scan previews so the
+    /// copy pipeline can seed `source_hints` without re-statting. Empty for
+    /// local-FS scans.
+    pub per_path: Vec<(PathBuf, CopyScanResult)>,
 }
 
 // ============================================================================

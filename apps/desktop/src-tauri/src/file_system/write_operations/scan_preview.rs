@@ -18,7 +18,6 @@ use super::types::{
     ScanPreviewStartResult,
 };
 use crate::file_system::listing::{SortColumn, SortOrder};
-use crate::file_system::volume::CopyScanResult;
 use crate::file_system::volume::Volume;
 
 /// Starts a scan preview for the Copy dialog.
@@ -175,6 +174,7 @@ fn run_scan_preview(
                             dirs,
                             file_count,
                             total_bytes,
+                            per_path: Vec::new(),
                         },
                     );
                 }
@@ -211,7 +211,7 @@ async fn run_volume_scan_preview(
 ) {
     use tauri::Emitter;
 
-    let result: Result<CopyScanResult, String> = async {
+    let result: Result<crate::file_system::volume::BatchScanResult, String> = async {
         if state.cancelled.load(Ordering::Relaxed) {
             return Err("Cancelled".to_string());
         }
@@ -219,17 +219,19 @@ async fn run_volume_scan_preview(
         volume
             .scan_for_copy_batch(&sources)
             .await
-            .map(|b| b.aggregate)
             .map_err(|e| format!("Scan failed: {}", e))
     }
     .await;
 
     // Extract stats from the result for the completion event
     let (total_files, total_dirs, total_bytes) = match &result {
-        Ok(scan) => (scan.file_count, scan.dir_count, scan.total_bytes),
+        Ok(batch) => (
+            batch.aggregate.file_count,
+            batch.aggregate.dir_count,
+            batch.aggregate.total_bytes,
+        ),
         Err(_) => (0, 0, 0),
     };
-    let result = result.map(|_| ());
 
     // Clean up state
     if let Ok(mut cache) = SCAN_PREVIEW_STATE.write() {
@@ -237,7 +239,7 @@ async fn run_volume_scan_preview(
     }
 
     match result {
-        Ok(()) => {
+        Ok(batch) => {
             if state.cancelled.load(Ordering::Relaxed) {
                 let _ = app.emit(
                     "scan-preview-cancelled",
@@ -246,8 +248,9 @@ async fn run_volume_scan_preview(
                     },
                 );
             } else {
-                // Cache results: volume scans don't produce per-file FileInfo,
-                // but the cache stores aggregate stats that copy_between_volumes can reuse.
+                // Cache results: volume scans don't produce per-file FileInfo, but
+                // the cache stores aggregate stats AND per-path scan results so
+                // copy_between_volumes can reuse both without re-statting.
                 if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
                     cache.insert(
                         preview_id.clone(),
@@ -256,6 +259,7 @@ async fn run_volume_scan_preview(
                             dirs: Vec::new(),
                             file_count: total_files,
                             total_bytes,
+                            per_path: batch.per_path,
                         },
                     );
                 }
