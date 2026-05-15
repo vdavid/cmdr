@@ -94,8 +94,15 @@ async function runAxeAudit(
   // `color-mix()` resolution quirks). Axe stays on for structural rules
   // (ARIA, focus order, labels, keyboard nav) where a running browser is
   // genuinely needed. See `docs/design-system.md` § a11y testing strategy.
+  //
+  // `resultTypes: ['violations']` tells axe to skip building the
+  // `passes`/`incomplete`/`inapplicable` arrays (we only read `violations`).
+  // On Linux/Xvfb this drops the Copy and License dialog audits from ~5 s to
+  // ~2 s without changing what's tested. axe-core docs:
+  // https://github.com/dequelabs/axe-core/blob/develop/doc/API.md#options-parameter.
   const axeOptions = JSON.stringify({
     rules: { 'color-contrast': { enabled: false } },
+    resultTypes: ['violations'],
   })
   const axeCall = `axe.run(${axeContext}, ${axeOptions})`
   const results = await tauriPage.evaluate<AxeResults>(axeCall)
