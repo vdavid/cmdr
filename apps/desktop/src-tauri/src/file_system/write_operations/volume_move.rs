@@ -6,14 +6,20 @@
 //! - Cross-volume: copy to destination then delete sources
 
 use std::collections::HashSet;
+use std::future::Future;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 use super::state::{
     WRITE_OPERATION_STATE, WriteOperationState, is_cancelled, register_operation_status, unregister_operation_status,
+};
+use super::transfer_driver::{
+    ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
+    build_pre_skip_set, drive_transfer_serial_async,
 };
 use super::types::{
     ConflictResolution, OperationEventSink, TauriEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent,
@@ -23,7 +29,16 @@ use super::types::{
 use super::volume_conflict::resolve_volume_conflict;
 use super::volume_copy::{WriteFailure, delete_volume_path_recursive, map_volume_error, write_error_event_from};
 use super::volume_strategy::copy_single_path;
-use crate::file_system::volume::Volume;
+use crate::file_system::volume::{Volume, VolumeError};
+
+/// Per-call future shape for the driver's `dest_meta_fetcher` closure.
+type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
+
+/// Per-call future shape for the driver's `conflict_resolver` closure.
+type ResolveFut<'a> = Pin<Box<dyn Future<Output = Result<ConflictDecision, WriteOperationError>> + Send + 'a>>;
+
+/// Per-call future shape for the driver's `transfer_one` closure.
+type TransferFut<'a> = Pin<Box<dyn Future<Output = Result<TransferOutcome, WriteOperationError>> + Send + 'a>>;
 
 /// Unified move across volume types.
 ///
@@ -160,260 +175,302 @@ pub(super) async fn move_volumes_with_progress(
     config: &VolumeCopyConfig,
 ) -> Result<(), WriteFailure> {
     let total_files = source_paths.len();
-    let mut files_done = 0usize;
-    let mut bytes_done = 0u64;
-    let mut last_progress_time = Instant::now();
-    let progress_interval = state.progress_interval;
 
-    // Copy+delete per file: on partial failure, already-moved files exist at dest,
-    // remaining files stay at source. No data loss, but the move is partial.
-    let mut apply_to_all_resolution: Option<ConflictResolution> = None;
+    // Move has no scan phase, so it tracks no per-source byte hints. The
+    // driver's `bulk_skip_bytes` stays at 0; pre-skipped sources only bump
+    // the file counter.
+    //
+    // Copy+delete per file: on partial failure, already-moved files exist
+    // at dest, remaining files stay at source. No data loss, but the move
+    // is partial.
+    let pre_skip_paths = build_pre_skip_set(source_paths, config.conflict_resolution, &config.pre_known_conflicts);
+    let bulk_skip_files = pre_skip_paths.len();
 
-    // Bulk-skip pre-known conflicts when the user chose Skip upfront.
-    // See `copy_volumes_with_progress` for the full rationale. Move-skipped
-    // means "don't transfer, don't delete source" — safe for both sides.
-    let pre_skip_paths: HashSet<PathBuf> =
-        if config.conflict_resolution == ConflictResolution::Skip && !config.pre_known_conflicts.is_empty() {
-            let names: HashSet<&str> = config.pre_known_conflicts.iter().map(String::as_str).collect();
-            source_paths
-                .iter()
-                .filter(|p| {
-                    p.file_name()
-                        .and_then(|n| n.to_str())
-                        .map(|n| names.contains(n))
-                        .unwrap_or(false)
+    let driver_config = DriverConfig {
+        operation_type: WriteOperationType::Move,
+        phase: WriteOperationPhase::Copying,
+        conflict_resolution: config.conflict_resolution,
+        pre_known_conflicts: config.pre_known_conflicts.clone(),
+    };
+
+    // Per-source state shared with the driver's closures via interior
+    // mutability. The transfer closure captures the originating
+    // `(VolumeError, path)` on error so the post-loop branch can rebuild a
+    // provider-enriched `FriendlyError`. The conflict resolver's
+    // apply-to-all latch lives in a cell so the closure stays `Fn`-shaped
+    // (the driver's `for<'a> FnMut(...) -> Pin<Box<dyn Future + Send +
+    // 'a>>` bound rejects `&mut` captures of outer-fn locals).
+    let failure_ctx_cell: Arc<std::sync::Mutex<Option<(VolumeError, PathBuf)>>> = Arc::new(std::sync::Mutex::new(None));
+    let apply_to_all_cell: Arc<std::sync::Mutex<Option<ConflictResolution>>> = Arc::new(std::sync::Mutex::new(None));
+
+    // Closure captures need `'static`-bounded refs to satisfy the driver's
+    // for-all closure bound. See `volume_copy::copy_volumes_with_progress`
+    // for the full rationale; mirror the same shape here.
+    let config_owned: VolumeCopyConfig = config.clone();
+    let operation_id_owned: String = operation_id.to_string();
+    // SAFETY: `events` outlives every closure invocation. The driver
+    // awaits in place; the closures are dropped before this function
+    // returns and the original `events` borrow ends.
+    let events_static: &'static dyn OperationEventSink =
+        unsafe { std::mem::transmute::<&dyn OperationEventSink, &'static dyn OperationEventSink>(events) };
+
+    let outcome = drive_transfer_serial_async(
+        events,
+        state,
+        operation_id,
+        source_paths,
+        dest_path,
+        total_files,
+        // Move tracks no byte totals: every progress event sets
+        // `bytes_total = 0`. The driver respects whatever we pass.
+        0,
+        bulk_skip_files,
+        0,
+        &pre_skip_paths,
+        &driver_config,
+        {
+            let dest_volume = Arc::clone(&dest_volume);
+            move |p: &Path| -> FetchFut<'_> {
+                let dest_volume = Arc::clone(&dest_volume);
+                let p_owned = p.to_path_buf();
+                Box::pin(async move {
+                    dest_volume
+                        .get_metadata(&p_owned)
+                        .await
+                        .ok()
+                        .map(|m| m.size.unwrap_or(0))
                 })
-                .cloned()
-                .collect()
-        } else {
-            HashSet::new()
-        };
+            }
+        },
+        {
+            let source_volume = Arc::clone(&source_volume);
+            let dest_volume = Arc::clone(&dest_volume);
+            let state = Arc::clone(state);
+            let apply_to_all = Arc::clone(&apply_to_all_cell);
+            let config = config_owned.clone();
+            let operation_id = operation_id_owned.clone();
+            move |input: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+                let source_volume = Arc::clone(&source_volume);
+                let dest_volume = Arc::clone(&dest_volume);
+                let state = Arc::clone(&state);
+                let apply_to_all = Arc::clone(&apply_to_all);
+                let config = config.clone();
+                let operation_id = operation_id.clone();
+                let source_path_owned = input.source_path.to_path_buf();
+                let initial_dest_owned = input.initial_dest_path.to_path_buf();
+                let dest_size_hint = input.dest_size_hint;
+                Box::pin(async move {
+                    log::debug!(
+                        "move_between_volumes: conflict detected at {}",
+                        initial_dest_owned.display()
+                    );
+                    // Move has no scan phase, so pass `None` source-size
+                    // hints; the resolver falls back to `scan_for_copy`
+                    // (one MTP listing per conflicting source). The copy
+                    // path is the one that supplies real hints from the
+                    // cached scan.
+                    let mut latched = apply_to_all.lock().unwrap().take();
+                    let resolved = resolve_volume_conflict(
+                        &source_volume,
+                        &source_path_owned,
+                        &dest_volume,
+                        &initial_dest_owned,
+                        &config,
+                        events_static,
+                        &operation_id,
+                        &state,
+                        &mut latched,
+                        None,
+                        dest_size_hint,
+                    )
+                    .await;
+                    *apply_to_all.lock().unwrap() = latched;
+                    let resolved = resolved?;
+                    Ok(match resolved {
+                        None => {
+                            log::debug!(
+                                "move_between_volumes: skipping {} due to conflict resolution",
+                                source_path_owned.display()
+                            );
+                            ConflictDecision::Skip
+                        }
+                        Some(dest_path) => ConflictDecision::Proceed { dest_path },
+                    })
+                })
+            }
+        },
+        {
+            let source_volume = Arc::clone(&source_volume);
+            let dest_volume = Arc::clone(&dest_volume);
+            let progress_interval = state.progress_interval;
+            let state = Arc::clone(state);
+            let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
+            let operation_id = operation_id_owned.clone();
+            let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(Instant::now()));
+            move |ctx: TransferContext<'_>| -> TransferFut<'_> {
+                let source_volume = Arc::clone(&source_volume);
+                let dest_volume = Arc::clone(&dest_volume);
+                let state = Arc::clone(&state);
+                let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
+                let operation_id = operation_id.clone();
+                let last_progress_time = Arc::clone(&last_progress_time);
+                let source_path = ctx.source_path.to_path_buf();
+                let dest_item_path = ctx
+                    .dest_path
+                    .expect("async driver always supplies dest_path")
+                    .to_path_buf();
+                let bytes_done_so_far = ctx.bytes_done_so_far;
+                let files_done_so_far = ctx.files_done_so_far;
+                Box::pin(async move {
+                    // Probe is-directory once: needed both to pick the
+                    // delete shape (recursive vs single) and as a hint for
+                    // `copy_single_path`. Volume-move has no scan phase to
+                    // cache this, so the stat is unavoidable.
+                    let source_is_dir = source_volume.is_directory(&source_path).await.unwrap_or(false);
 
-    if !pre_skip_paths.is_empty() {
-        files_done = pre_skip_paths.len();
-        log::info!(
-            "move_between_volumes: bulk-skipping {} pre-known conflicts before main iteration",
-            files_done
-        );
-        // Move doesn't track bytes_total (always 0), so just bump the file counter
-        // and emit one progress event so the bar jumps in one go.
-        state.emit_progress_via_sink(
-            events,
-            WriteProgressEvent::new(
-                operation_id.to_string(),
-                WriteOperationType::Move,
-                WriteOperationPhase::Copying,
-                None,
+                    let no_progress = |_: u64, _: u64| -> ControlFlow<()> {
+                        if is_cancelled(&state.intent) {
+                            return ControlFlow::Break(());
+                        }
+                        ControlFlow::Continue(())
+                    };
+                    let bytes = match copy_single_path(
+                        &source_volume,
+                        &source_path,
+                        source_is_dir,
+                        None,
+                        &dest_volume,
+                        &dest_item_path,
+                        &state,
+                        &no_progress,
+                        &|| {},
+                    )
+                    .await
+                    {
+                        Ok(b) => b,
+                        Err(e) => {
+                            log::warn!(
+                                target: "move",
+                                "move_between_volumes: copy phase failed for {} -> {}: {}",
+                                source_path.display(),
+                                dest_item_path.display(),
+                                e
+                            );
+                            let mapped = map_volume_error(&source_path.display().to_string(), e.clone());
+                            *failure_ctx_cell.lock().unwrap() = Some((e, source_path));
+                            return Err(mapped);
+                        }
+                    };
+
+                    // Delete source. `Volume::delete` is contractually for
+                    // files or *empty* directories (LocalPosix uses
+                    // `std::fs::remove_dir`, which fails ENOTEMPTY), so
+                    // directory sources need a recursive sweep. Cross-volume
+                    // copy doesn't touch the source, so its tree is intact.
+                    let delete_result = if source_is_dir {
+                        delete_volume_path_recursive(&source_volume, &source_path).await
+                    } else {
+                        source_volume.delete(&source_path).await
+                    };
+                    if let Err(e) = delete_result {
+                        log::warn!(
+                            target: "move",
+                            "move_between_volumes: source delete failed for {} after successful copy: {}",
+                            source_path.display(),
+                            e
+                        );
+                        let mapped = map_volume_error(&source_path.display().to_string(), e.clone());
+                        *failure_ctx_cell.lock().unwrap() = Some((e, source_path));
+                        return Err(mapped);
+                    }
+
+                    // Throttled per-source progress emit. The driver's
+                    // `Transferred` arm only updates counters; for the move
+                    // path, no per-byte progress fires from
+                    // `copy_single_path`, so without an emit here cancel-mid-batch
+                    // sinks listening to `emit_progress` would never observe
+                    // file-1's completion and never trip their cancel hook.
+                    let mut last = last_progress_time.lock().unwrap();
+                    if last.elapsed() >= progress_interval {
+                        *last = Instant::now();
+                        drop(last);
+                        let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
+                        let new_files = files_done_so_far + 1;
+                        let new_bytes = bytes_done_so_far + bytes;
+                        state.emit_progress_via_sink(
+                            events_static,
+                            WriteProgressEvent::new(
+                                operation_id.clone(),
+                                WriteOperationType::Move,
+                                WriteOperationPhase::Copying,
+                                file_name,
+                                new_files,
+                                total_files,
+                                new_bytes,
+                                0,
+                            ),
+                        );
+                    }
+
+                    Ok(TransferOutcome::Transferred { bytes })
+                })
+            }
+        },
+    )
+    .await;
+
+    let copy_failure_ctx: Option<(VolumeError, PathBuf)> = failure_ctx_cell.lock().unwrap().take();
+    let files_done = outcome.files_done;
+    let bytes_done = outcome.bytes_done;
+
+    match outcome.intent {
+        PostLoopIntent::Completed => {
+            log::info!(
+                "move_between_volumes: completed op={}, files={}, bytes={}",
+                operation_id,
                 files_done,
-                total_files,
-                bytes_done,
-                0,
-            ),
-        );
-    }
-
-    for source_path in source_paths {
-        if is_cancelled(&state.intent) {
-            // Move has no rollback (it's copy+delete-source per file); cancelling
-            // leaves whatever's already at dest alone and stops further work. We
-            // emit `write-cancelled` here so the FE sees the cancel for the move
-            // path too, mirroring `copy_volumes_with_progress`. Without this, the
-            // outer wrapper would only log the cancel and the dialog would never
-            // close.
+                bytes_done
+            );
+            events.emit_complete(WriteCompleteEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Move,
+                files_processed: files_done,
+                bytes_processed: bytes_done,
+            });
+            Ok(())
+        }
+        PostLoopIntent::Cancelled => {
+            // Move has no rollback (it's copy+delete-source per file);
+            // cancelling leaves whatever's already at dest alone and stops
+            // further work. Emit `write-cancelled` here so the FE sees the
+            // cancel for the move path too (mirrors
+            // `copy_volumes_with_progress`); without it the outer wrapper
+            // would only log the cancel and the dialog would never close.
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Move,
                 files_processed: files_done,
                 rolled_back: false,
             });
-            return Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
+            Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
-            }));
+            }))
         }
-
-        // Pre-known conflict, already accounted upfront.
-        if pre_skip_paths.contains(source_path) {
-            continue;
-        }
-
-        let file_name = source_path.file_name().ok_or_else(|| {
-            WriteFailure::synthetic(WriteOperationError::IoError {
-                path: source_path.display().to_string(),
-                message: "Invalid source path".to_string(),
+        PostLoopIntent::Failed(err) => {
+            // Rebuild a `WriteFailure` with volume context if the transfer
+            // closure populated it (so the FE gets a provider-enriched
+            // `FriendlyError`); otherwise fall back to synthetic
+            // (conflict-resolution errors and other non-`VolumeError`
+            // paths).
+            Err(match copy_failure_ctx {
+                Some((volume_err, path)) => WriteFailure {
+                    error: err,
+                    volume_ctx: Some((volume_err, path)),
+                },
+                None => WriteFailure::synthetic(err),
             })
-        })?;
-
-        let mut dest_item = dest_path.join(file_name);
-
-        // Probe once and reuse for both conflict detection and copy_single_path.
-        // Volume-move doesn't have a scan phase to cache this, so one stat per
-        // source is unavoidable here. Still cheaper than the old code path that
-        // re-statted inside `copy_single_path`.
-        let source_is_dir = source_volume.is_directory(source_path).await.unwrap_or(false);
-
-        // Check for conflict: does destination already exist? Route every conflict
-        // (file-vs-file, dir-vs-dir, file-vs-dir, dir-vs-file) through
-        // `resolve_volume_conflict` so the user's chosen `conflict_resolution`
-        // applies. For dir-vs-dir, picking Overwrite merges (the existing
-        // contents stay; same-named files inside get overwritten by the recursive
-        // copy); Skip skips the whole tree; Rename lands the source under a unique
-        // name; Stop emits a `write-conflict` event and awaits the user's pick.
-        if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item).await {
-            log::debug!(
-                "move_between_volumes: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
-                dest_item.display(),
-                source_is_dir,
-                dest_meta.is_directory,
-            );
-
-            // Move has no scan phase, so pass `None` size hints; the
-            // conflict resolver falls back to `scan_for_copy` to populate
-            // the dialog (one MTP listing per conflicting source). Copy
-            // is the path that supplies real hints from the cached scan.
-            let resolved = resolve_volume_conflict(
-                &source_volume,
-                source_path,
-                &dest_volume,
-                &dest_item,
-                config,
-                events,
-                operation_id,
-                state,
-                &mut apply_to_all_resolution,
-                None,
-                dest_meta.size,
-            )
-            .await
-            .map_err(WriteFailure::synthetic)?;
-
-            match resolved {
-                None => {
-                    // Skip: don't copy and don't delete source. The file
-                    // still counts as "processed" for progress purposes;
-                    // without this bump the bar would stall through a
-                    // run of conflicts the user chose to skip.
-                    log::debug!(
-                        "move_between_volumes: skipping {} due to conflict resolution",
-                        source_path.display()
-                    );
-                    files_done += 1;
-                    if last_progress_time.elapsed() >= progress_interval {
-                        state.emit_progress_via_sink(
-                            events,
-                            WriteProgressEvent::new(
-                                operation_id.to_string(),
-                                WriteOperationType::Move,
-                                WriteOperationPhase::Copying,
-                                Some(file_name.to_string_lossy().to_string()),
-                                files_done,
-                                total_files,
-                                bytes_done,
-                                0,
-                            ),
-                        );
-                        last_progress_time = Instant::now();
-                    }
-                    continue;
-                }
-                Some(resolved_path) => {
-                    dest_item = resolved_path;
-                }
-            }
-        }
-
-        // Copy to destination (no per-file progress for moves: total_bytes is 0)
-        let no_progress = |_: u64, _: u64| -> ControlFlow<()> {
-            if is_cancelled(&state.intent) {
-                return ControlFlow::Break(());
-            }
-            ControlFlow::Continue(())
-        };
-        let bytes = copy_single_path(
-            &source_volume,
-            source_path,
-            source_is_dir,
-            // Move has no scan phase to cache a size hint. The SMB
-            // compound fast-path falls through to streaming cleanly
-            // when the hint is missing.
-            None,
-            &dest_volume,
-            &dest_item,
-            state,
-            &no_progress,
-            &|| {},
-        )
-        .await
-        .map_err(|e| {
-            log::warn!(
-                target: "move",
-                "move_between_volumes: copy phase failed for {} -> {}: {}",
-                source_path.display(),
-                dest_item.display(),
-                e
-            );
-            WriteFailure::from_volume(source_path, e)
-        })?;
-
-        // Delete source. The Volume trait's `delete` is contractually for files
-        // or *empty* directories (LocalPosix uses `std::fs::remove_dir`, which
-        // fails ENOTEMPTY), so for a directory source we recurse: the cross-
-        // volume copy doesn't touch the source, so its tree is intact and needs
-        // a depth-first sweep. Files take the cheap one-shot path.
-        //
-        // Failures here leave a partial-move state (data at dest, sources still
-        // at origin). Log loudly so the cause is visible in the file log;
-        // without this the FE only sees a generic "io_error".
-        let delete_result = if source_is_dir {
-            delete_volume_path_recursive(&source_volume, source_path).await
-        } else {
-            source_volume.delete(source_path).await
-        };
-        delete_result.map_err(|e| {
-            log::warn!(
-                target: "move",
-                "move_between_volumes: source delete failed for {} after successful copy: {}",
-                source_path.display(),
-                e
-            );
-            WriteFailure::from_volume(source_path, e)
-        })?;
-
-        files_done += 1;
-        bytes_done += bytes;
-
-        if last_progress_time.elapsed() >= progress_interval {
-            state.emit_progress_via_sink(
-                events,
-                WriteProgressEvent::new(
-                    operation_id.to_string(),
-                    WriteOperationType::Move,
-                    WriteOperationPhase::Copying,
-                    Some(file_name.to_string_lossy().to_string()),
-                    files_done,
-                    total_files,
-                    bytes_done,
-                    0,
-                ),
-            );
-            last_progress_time = Instant::now();
         }
     }
-
-    log::info!(
-        "move_between_volumes: completed op={}, files={}, bytes={}",
-        operation_id,
-        files_done,
-        bytes_done
-    );
-
-    events.emit_complete(WriteCompleteEvent {
-        operation_id: operation_id.to_string(),
-        operation_type: WriteOperationType::Move,
-        files_processed: files_done,
-        bytes_processed: bytes_done,
-    });
-
-    Ok(())
 }
 
 /// Moves files within the same volume using native `Volume::rename`.
