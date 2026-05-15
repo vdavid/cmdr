@@ -30,9 +30,9 @@ type playwrightReport struct {
 }
 
 type suite struct {
-	Title  string `json:"title"`
-	File   string `json:"file"`
-	Specs  []spec `json:"specs"`
+	Title  string  `json:"title"`
+	File   string  `json:"file"`
+	Specs  []spec  `json:"specs"`
 	Suites []suite `json:"suites"`
 }
 

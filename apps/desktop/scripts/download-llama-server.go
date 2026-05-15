@@ -352,6 +352,21 @@ func createPlaceholder(path string) error {
 		return nil
 	}
 
+	// Worktree-in-Docker case: on the macOS host, `tryLinkFromMainClone` set
+	// up `resources/ai` as a symlink into the main clone's populated dir.
+	// Inside Docker that symlink target is a host path the container can't
+	// see, so the symlink is dangling and the MkdirAll below fails with
+	// "file exists". Detect and clean up before proceeding so the
+	// placeholder write can land in a real directory.
+	dir := filepath.Dir(path)
+	if info, lerr := os.Lstat(dir); lerr == nil && info.Mode()&os.ModeSymlink != 0 {
+		if _, serr := os.Stat(dir); serr != nil {
+			if err := os.Remove(dir); err != nil {
+				return fmt.Errorf("remove dangling worktree symlink at %s: %w", dir, err)
+			}
+		}
+	}
+
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create directory: %w", err)
 	}
