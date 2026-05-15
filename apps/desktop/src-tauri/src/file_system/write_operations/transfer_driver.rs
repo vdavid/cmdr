@@ -1,0 +1,748 @@
+//! Shared per-source transfer driver for copy and move operations.
+//!
+//! # What this is
+//!
+//! After commit `32e6de03` (bulk-skip pre-known conflicts), four functions in
+//! `write_operations/` ended up carrying the same scaffolding around different
+//! transfer cores:
+//!
+//! - `volume_copy.rs::copy_volumes_with_progress` (cross-volume copy, async)
+//! - `volume_move.rs::move_between_volumes` (cross-volume move, async)
+//! - `volume_move.rs::move_within_same_volume` (same-volume rename, async)
+//! - `copy.rs::copy_files_with_progress_inner` (local-FS copy, sync inside `spawn_blocking`)
+//!
+//! This driver owns that scaffolding once:
+//!
+//! - pre-known-conflicts bulk-skip prelude
+//! - per-iter cancellation check (positioned BEFORE any destructive call)
+//! - per-iter skip accounting (bumps `files_done` / `bytes_done` and emits throttled progress)
+//! - post-loop bookkeeping (final progress event, completion event)
+//! - paired `state.emit_progress_via_sink` + `update_operation_status` updates
+//!
+//! Each operation supplies a per-source `transfer_one` closure. The closure does
+//! ONLY the per-source transfer work and reports back via `TransferOutcome`.
+//!
+//! # Data-safety contract
+//!
+//! The whole point of this abstraction is to enforce, in one place, that **the
+//! `transfer_one` closure is NEVER invoked**:
+//!
+//! 1. for a source in the pre-known-conflicts bulk-skip set under
+//!    `ConflictResolution::Skip`, nor
+//! 2. after a top-level conflict resolution returned Skip (async driver only —
+//!    the sync driver delegates this to the closure), nor
+//! 3. after cancellation has been signaled on the operation state.
+//!
+//! `transfer_driver_tests.rs` pins each of these properties so a future refactor
+//! that violates the contract gets caught here, not by structural inspection of
+//! four different functions.
+//!
+//! # Sync vs async: two sibling entry points
+//!
+//! The four operations split cleanly along sync/async lines:
+//!
+//! - `copy_files_with_progress_inner` runs inside `tokio::task::spawn_blocking`
+//!   and uses synchronous `std::fs` I/O. Its loop is sync, and the closure
+//!   captures `&mut CopyTransaction` + `&mut HashSet<PathBuf>` + `&mut SourceItemTracker`.
+//! - The three volume ops are async (they `await` on the `Volume` trait's
+//!   `Pin<Box<dyn Future>>`-returning methods).
+//!
+//! Trying to be generic over sync/async via boxed futures would force every
+//! sync caller through an unnecessary `Pin<Box<dyn Future>>` allocation per
+//! source and lose the closure's `&mut` capture clarity. Two siblings with
+//! shared types is cleaner. See [`drive_transfer_serial_sync`] (for local
+//! copy/move) and [`drive_transfer_serial_async`] (for volume ops).
+//!
+//! # Conflict resolution: closure-owned for sync, driver-owned for async
+//!
+//! The two paths differ in where conflict resolution lives, and that split is
+//! load-bearing:
+//!
+//! - **Sync driver (`drive_transfer_serial_sync`)**: the closure handles
+//!   conflict resolution. Local-FS conflicts are discovered mid-flight inside
+//!   `copy_single_item` (a parent directory might be a regular file blocking
+//!   `create_dir_all`; that's a per-file conflict the driver can't pre-detect
+//!   via `dest.get_metadata` on the top-level source). The driver only
+//!   guarantees the bulk-skip prelude and the data-safety check ordering.
+//! - **Async driver (`drive_transfer_serial_async`)**: the driver owns top-level
+//!   conflict detection (`dest_volume.get_metadata` per source) and dispatch to
+//!   `resolve_volume_conflict`. Volume conflict resolution is uniform
+//!   (Stop/Skip/Overwrite/Rename, all at the top-level path) which is why the
+//!   driver can host it.
+//!
+//! This asymmetry is the same one the production code has today; the driver
+//! just makes it explicit and enforces the data-safety contract for both
+//! shapes.
+//!
+//! # What the driver does NOT do
+//!
+//! - **Scan phase**: scanning, disk-space check, and source-hint construction
+//!   are pre-loop concerns owned by the caller. They produce the inputs the
+//!   driver needs (`total_files`, `total_bytes`, `pre_skip_paths`).
+//! - **`SourceItemTracker`** (`write-source-item-done` emit): local-FS-only
+//!   concern. The sync driver's closure threads `SourceItemTracker` through
+//!   itself (it's `!Sync` and lives on the serial path only); volume ops
+//!   don't emit this event today.
+//! - **`CopyTransaction`** (rollback bookkeeping): local-FS-only. The closure
+//!   captures `&mut transaction`; the driver never sees it. On a non-Ok
+//!   `TransferLoopOutcome.intent`, the caller decides whether to invoke
+//!   `rollback_with_progress`.
+//! - **Concurrent path**: deliberately out of scope. `copy_volumes_with_progress`
+//!   keeps its `FuturesUnordered` block inline (only 1 of the 4 ops needs
+//!   concurrency, so abstracting it would be a 1-of-4 abstraction, not a shared
+//!   pattern — see plan § "Concurrent driver scope").
+
+// The driver lands as new code; production callers (volume_copy, volume_move,
+// copy.rs) get migrated in M2 step 8 / M3 in a separate commit. Until then the
+// types and functions exist solely for the test module below, so suppress the
+// "never used in production" lint at the module level.
+#![allow(
+    dead_code,
+    reason = "Driver lands ahead of production callers (M2 step 8 / M3 migration); exercised by transfer_driver_tests.rs"
+)]
+
+use std::collections::HashSet;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::time::Instant;
+
+use super::state::{OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status};
+use super::types::{
+    ConflictResolution, OperationEventSink, WriteOperationError, WriteOperationPhase, WriteOperationType,
+    WriteProgressEvent,
+};
+
+// ============================================================================
+// Core types
+// ============================================================================
+
+/// Per-iteration context passed to the `transfer_one` closure.
+///
+/// Carries everything the closure needs that the driver shouldn't care about.
+/// Operation-specific mutable state (transaction, created_dirs, tracker, partials
+/// list) is CAPTURED by the closure itself, not passed through this struct.
+/// That way, the driver doesn't grow new fields every time a new operation
+/// joins.
+pub(super) struct TransferContext<'a> {
+    /// Event sink for emitting progress / conflict / source-item-done events
+    /// from within the closure (used by sync local-copy for mid-flight conflict
+    /// events and for `write-source-item-done`).
+    pub events: &'a dyn OperationEventSink,
+    /// Operation state (cancellation flag, ETA estimator, conflict channel).
+    pub state: &'a Arc<WriteOperationState>,
+    pub operation_id: &'a str,
+    pub operation_type: WriteOperationType,
+    /// The source path the driver is asking the closure to transfer. For the
+    /// async driver this is the **top-level** source path (post conflict
+    /// resolution); for the sync driver this is whatever path the caller
+    /// passed in `sources` (typically also a top-level path, sometimes a
+    /// per-file `FileInfo.path` if the caller pre-flattened).
+    pub source_path: &'a Path,
+    /// The destination path the driver is asking the closure to write to. For
+    /// the async driver this is the path that came out of conflict resolution
+    /// (so it may differ from `dest_root.join(source_path.file_name())` under
+    /// Rename). For the sync driver this is `None` (the closure derives the
+    /// destination from its own destination root + `source_path`).
+    pub dest_path: Option<&'a Path>,
+    /// Cumulative files processed BEFORE this iteration. Lets the closure
+    /// compute `effective_bytes_done` for intra-file progress callbacks
+    /// without having to thread the counter through itself. Snapshotted by the
+    /// driver at the start of each iteration.
+    pub files_done_so_far: usize,
+    /// Cumulative bytes processed BEFORE this iteration. See `files_done_so_far`.
+    pub bytes_done_so_far: u64,
+    /// Total file count for the operation (post bulk-skip subtraction is NOT
+    /// applied — this is the original total so progress fractions stay
+    /// consistent with what the user saw at scan time).
+    pub total_files: usize,
+    /// Total bytes for the operation. See `total_files`.
+    pub total_bytes: u64,
+}
+
+/// What the closure returns for a single per-source iteration.
+///
+/// Outcomes drive the driver's progress accounting and post-loop intent.
+#[derive(Debug)]
+pub(super) enum TransferOutcome {
+    /// Source transferred successfully; `bytes` were written.
+    Transferred { bytes: u64 },
+    /// Source was skipped by closure-side logic (mid-flight conflict resolved
+    /// as Skip, same-inode self-copy detected, etc.). The driver bumps
+    /// `files_done` and adds `bytes_accounted` to `bytes_done` so the progress
+    /// bar reflects the skip immediately.
+    Skipped { bytes_accounted: u64 },
+}
+
+/// Driver's return value to the caller.
+///
+/// Carries the final counters plus an `intent` so the caller can decide
+/// whether to commit, roll back, or surface an error.
+#[derive(Debug)]
+pub(super) struct TransferLoopOutcome {
+    pub files_done: usize,
+    pub bytes_done: u64,
+    pub intent: PostLoopIntent,
+}
+
+/// Why the loop ended. The caller branches on this to decide
+/// rollback/commit/cancel emission.
+#[derive(Debug)]
+pub(super) enum PostLoopIntent {
+    /// All sources processed (closure returned `Ok` for every non-skipped one).
+    Completed,
+    /// Cancellation was observed mid-loop. The caller inspects
+    /// `load_intent(&state.intent)` to distinguish `Stopped` vs `RollingBack`.
+    Cancelled,
+    /// The closure returned an error for a source. The driver short-circuits;
+    /// the caller decides whether to rollback.
+    Failed(WriteOperationError),
+}
+
+// ============================================================================
+// Shared helpers
+// ============================================================================
+
+/// Builds the pre-known-conflicts bulk-skip set.
+///
+/// Returns the subset of `sources` whose **file names** appear in
+/// `config_pre_known_conflicts`, when `config_resolution == Skip`. Empty for
+/// any other resolution. Exposed for the driver tests so they can audit it
+/// independently of the loop (per plan's "Open questions" section).
+pub(super) fn build_pre_skip_set(
+    sources: &[PathBuf],
+    config_resolution: ConflictResolution,
+    config_pre_known_conflicts: &[String],
+) -> HashSet<PathBuf> {
+    if config_resolution != ConflictResolution::Skip || config_pre_known_conflicts.is_empty() {
+        return HashSet::new();
+    }
+    let names: HashSet<&str> = config_pre_known_conflicts.iter().map(String::as_str).collect();
+    sources
+        .iter()
+        .filter(|p| {
+            p.file_name()
+                .and_then(|n| n.to_str())
+                .map(|n| names.contains(n))
+                .unwrap_or(false)
+        })
+        .cloned()
+        .collect()
+}
+
+/// Emits a paired `write-progress` event AND `update_operation_status` call,
+/// so callers can't forget one or the other. Always go through this from the
+/// driver.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "These are the natural fields of a progress event; bundling adds ceremony without cleaning anything up"
+)]
+pub(super) fn emit_progress_and_status(
+    events: &dyn OperationEventSink,
+    state: &Arc<WriteOperationState>,
+    operation_id: &str,
+    operation_type: WriteOperationType,
+    phase: WriteOperationPhase,
+    current_file: Option<String>,
+    files_done: usize,
+    files_total: usize,
+    bytes_done: u64,
+    bytes_total: u64,
+) {
+    state.emit_progress_via_sink(
+        events,
+        WriteProgressEvent::new(
+            operation_id.to_string(),
+            operation_type,
+            phase,
+            current_file.clone(),
+            files_done,
+            files_total,
+            bytes_done,
+            bytes_total,
+        ),
+    );
+    update_operation_status(
+        operation_id,
+        phase,
+        current_file,
+        files_done,
+        files_total,
+        bytes_done,
+        bytes_total,
+    );
+}
+
+// ============================================================================
+// Configuration passed in by the caller
+// ============================================================================
+
+/// Driver-relevant slice of the operation config. The driver doesn't care
+/// about all of `WriteOperationConfig` / `VolumeCopyConfig`; this struct
+/// picks out exactly what it needs so callers can construct one from either.
+#[derive(Debug, Clone)]
+pub(super) struct DriverConfig {
+    pub operation_type: WriteOperationType,
+    pub phase: WriteOperationPhase,
+    /// Used by [`build_pre_skip_set`]. The list of filenames that the FE
+    /// already discovered as conflicts (only consulted when `resolution`
+    /// is `Skip`).
+    pub conflict_resolution: ConflictResolution,
+    pub pre_known_conflicts: Vec<String>,
+}
+
+// ============================================================================
+// Sync driver entry point (for local-FS copy/move, ran inside spawn_blocking)
+// ============================================================================
+
+/// Sync serial driver for local-FS operations.
+///
+/// # Data-safety contract
+///
+/// The `transfer_one` closure is invoked for a source iff **all** of the
+/// following hold:
+///
+/// - the source is NOT in the pre-known-conflicts bulk-skip set, AND
+/// - cancellation has NOT been observed on `state.intent` at the start of
+///   this iteration.
+///
+/// Top-level conflict resolution is the **closure's** responsibility for the
+/// sync path (local-FS conflicts happen mid-flight inside `copy_single_item`
+/// at parent-directory level, not at the top-level dest). The closure can
+/// still return `TransferOutcome::Skipped` to participate in the driver's
+/// skip accounting.
+///
+/// # What the driver does
+///
+/// 1. Pre-known-conflicts bulk-skip prelude. Sums `bulk_skip_bytes` from the
+///    caller, increments counters, and emits one bulk progress event.
+/// 2. Per-source loop:
+///    a. Check cancellation. If cancelled, return with `PostLoopIntent::Cancelled`.
+///    b. Skip pre-known-conflict sources (no closure invocation).
+///    c. Call `transfer_one`. On `Ok`, update counters. On `Err` with
+///    `WriteOperationError::Cancelled`, return `PostLoopIntent::Cancelled`. On
+///    any other `Err`, return `PostLoopIntent::Failed`.
+/// 3. Return `PostLoopIntent::Completed` if the loop drained without incident.
+///
+/// # Why no async / no boxed-future variant
+///
+/// The local-FS copy/move closures capture `&mut CopyTransaction` and
+/// `&mut HashSet<PathBuf>`. Forcing those captures through a boxed-future
+/// shape buys nothing — the underlying `std::fs::*` calls are sync.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Driver wraps the full per-iter loop context; bundling adds ceremony without removing parameters"
+)]
+pub(super) fn drive_transfer_serial_sync<F>(
+    events: &dyn OperationEventSink,
+    state: &Arc<WriteOperationState>,
+    operation_id: &str,
+    sources: &[PathBuf],
+    total_files: usize,
+    total_bytes: u64,
+    bulk_skip_files: usize,
+    bulk_skip_bytes: u64,
+    pre_skip_paths: &HashSet<PathBuf>,
+    config: &DriverConfig,
+    mut transfer_one: F,
+) -> TransferLoopOutcome
+where
+    F: FnMut(TransferContext<'_>) -> Result<TransferOutcome, WriteOperationError>,
+{
+    let mut files_done = 0usize;
+    let mut bytes_done = 0u64;
+
+    // ---- Pre-known-conflicts bulk-skip prelude. ----
+    // The caller has already filtered the source set (sync ops are per-file
+    // and have to filter `FileInfo`s, not top-level paths). The driver just
+    // emits the one progress event reflecting the bulk skip so the bar jumps
+    // in one go, instead of advancing one tick per skipped file interleaved
+    // with the real transfers.
+    if bulk_skip_files > 0 {
+        files_done += bulk_skip_files;
+        bytes_done += bulk_skip_bytes;
+        log::info!(
+            "drive_transfer_serial_sync: bulk-skipping {} files ({} bytes) before main iteration",
+            bulk_skip_files,
+            bulk_skip_bytes
+        );
+        emit_progress_and_status(
+            events,
+            state,
+            operation_id,
+            config.operation_type,
+            config.phase,
+            None,
+            files_done,
+            total_files,
+            bytes_done,
+            total_bytes,
+        );
+    }
+
+    // ---- Main loop. ----
+    for source_path in sources {
+        // CRITICAL: cancellation check is BEFORE any destructive call.
+        if is_cancelled(&state.intent) {
+            log::debug!(
+                "drive_transfer_serial_sync: cancellation observed at {} (of {}) for op={}",
+                files_done,
+                total_files,
+                operation_id
+            );
+            return TransferLoopOutcome {
+                files_done,
+                bytes_done,
+                intent: PostLoopIntent::Cancelled,
+            };
+        }
+
+        // CRITICAL: pre-skip check is BEFORE any closure invocation. The
+        // closure must NEVER see a pre-known-conflict source.
+        if pre_skip_paths.contains(source_path) {
+            continue;
+        }
+
+        let ctx = TransferContext {
+            events,
+            state,
+            operation_id,
+            operation_type: config.operation_type,
+            source_path,
+            dest_path: None,
+            files_done_so_far: files_done,
+            bytes_done_so_far: bytes_done,
+            total_files,
+            total_bytes,
+        };
+
+        match transfer_one(ctx) {
+            Ok(TransferOutcome::Transferred { bytes }) => {
+                // Sync per-file closures (e.g., `copy_single_item`) drive
+                // their own intra-file progress emission, so the driver
+                // doesn't need to emit here. Just update its counters.
+                files_done += 1;
+                bytes_done += bytes;
+            }
+            Ok(TransferOutcome::Skipped { bytes_accounted }) => {
+                files_done += 1;
+                bytes_done += bytes_accounted;
+                // Skip-arm bump emits a throttled progress event so the bar
+                // reflects the user's Skip choice immediately.
+                emit_progress_and_status(
+                    events,
+                    state,
+                    operation_id,
+                    config.operation_type,
+                    config.phase,
+                    source_path.file_name().map(|n| n.to_string_lossy().to_string()),
+                    files_done,
+                    total_files,
+                    bytes_done,
+                    total_bytes,
+                );
+            }
+            Err(WriteOperationError::Cancelled { .. }) => {
+                return TransferLoopOutcome {
+                    files_done,
+                    bytes_done,
+                    intent: PostLoopIntent::Cancelled,
+                };
+            }
+            Err(e) => {
+                return TransferLoopOutcome {
+                    files_done,
+                    bytes_done,
+                    intent: PostLoopIntent::Failed(e),
+                };
+            }
+        }
+    }
+
+    TransferLoopOutcome {
+        files_done,
+        bytes_done,
+        intent: PostLoopIntent::Completed,
+    }
+}
+
+// ============================================================================
+// Async driver entry point (for volume copy/move)
+// ============================================================================
+
+/// What the async driver hands the caller's resolver callback when it detects
+/// a top-level dest conflict.
+pub(super) struct ConflictDecisionInput<'a> {
+    pub source_path: &'a Path,
+    pub initial_dest_path: &'a Path,
+    /// Pre-fetched dest metadata so the resolver doesn't re-stat (the driver
+    /// already paid the `get_metadata` cost to discover the conflict).
+    pub dest_size_hint: Option<u64>,
+    /// Hint for the resolver: is the top-level source a directory? Saves the
+    /// resolver from re-probing.
+    pub source_is_directory_hint: Option<bool>,
+    /// Hint for the resolver: top-level source size for files. Saves an MTP
+    /// parent-listing on the conflict dialog path (see `resolve_volume_conflict`).
+    pub source_size_hint: Option<u64>,
+}
+
+/// Conflict-resolution outcome the resolver hands back to the driver.
+#[derive(Debug)]
+pub(super) enum ConflictDecision {
+    /// Skip this source. Driver bumps counters via skip accounting and
+    /// continues. The `transfer_one` closure is NOT invoked.
+    Skip,
+    /// Proceed with the given (possibly rewritten) destination path. Driver
+    /// calls `transfer_one` with `dest_path = Some(this)`.
+    Proceed { dest_path: PathBuf },
+}
+
+/// Async serial driver for volume operations.
+///
+/// # Data-safety contract
+///
+/// The `transfer_one` closure is invoked for a source iff **all** of the
+/// following hold:
+///
+/// - the source is NOT in the pre-known-conflicts bulk-skip set, AND
+/// - cancellation has NOT been observed on `state.intent` at the start of
+///   this iteration, AND
+/// - the conflict resolver returned `ConflictDecision::Proceed` (not Skip)
+///   when a top-level conflict was detected.
+///
+/// # What the driver does
+///
+/// 1. Pre-known-conflicts bulk-skip prelude (emit one bulk progress event).
+/// 2. Per-source loop:
+///    a. Cancellation check. If cancelled, return `PostLoopIntent::Cancelled`.
+///    b. Skip pre-known-conflict sources (no closure invocation).
+///    c. Conflict detection via `dest_meta_fetcher`. If conflict, invoke
+///    `conflict_resolver` and respect its decision.
+///    d. If Skip, do skip accounting + emit throttled progress; continue.
+///    e. If Proceed, invoke `transfer_one` with the resolved dest path.
+/// 3. Return `PostLoopIntent::Completed` if the loop drained without incident.
+///
+/// # Why `async ||` (Rust 2024 syntax) is required
+///
+/// The M2 step 0 prototype proved that the older `|ctx| async { ... }` form
+/// returns an async block that borrows the closure's `&mut` captures, which
+/// `AsyncFnMut` rejects ("returns an `async` block that contains a reference
+/// to a captured variable, which then escapes the closure body"). The
+/// `async ||` form ties the returned future to `&mut self` of the closure
+/// call, which is what `AsyncFnMut` actually expects. The codebase is on
+/// edition 2024 so the syntax is available.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Driver wraps the full per-iter context; bundling adds ceremony without removing parameters"
+)]
+pub(super) async fn drive_transfer_serial_async<DestMetaFetcher, ConflictResolver, TransferOne>(
+    events: &dyn OperationEventSink,
+    state: &Arc<WriteOperationState>,
+    operation_id: &str,
+    sources: &[PathBuf],
+    dest_root: &Path,
+    total_files: usize,
+    total_bytes: u64,
+    bulk_skip_files: usize,
+    bulk_skip_bytes: u64,
+    pre_skip_paths: &HashSet<PathBuf>,
+    config: &DriverConfig,
+    mut dest_meta_fetcher: DestMetaFetcher,
+    mut conflict_resolver: ConflictResolver,
+    mut transfer_one: TransferOne,
+) -> TransferLoopOutcome
+where
+    DestMetaFetcher: AsyncFnMut(&Path) -> Option<u64>,
+    ConflictResolver: AsyncFnMut(ConflictDecisionInput<'_>) -> Result<ConflictDecision, WriteOperationError>,
+    TransferOne: AsyncFnMut(TransferContext<'_>) -> Result<TransferOutcome, WriteOperationError>,
+{
+    let mut files_done = 0usize;
+    let mut bytes_done = 0u64;
+    let mut last_progress_time = Instant::now();
+
+    // ---- Pre-known-conflicts bulk-skip prelude. ----
+    if bulk_skip_files > 0 {
+        files_done += bulk_skip_files;
+        bytes_done += bulk_skip_bytes;
+        log::info!(
+            "drive_transfer_serial_async: bulk-skipping {} files ({} bytes) before main iteration",
+            bulk_skip_files,
+            bulk_skip_bytes
+        );
+        emit_progress_and_status(
+            events,
+            state,
+            operation_id,
+            config.operation_type,
+            config.phase,
+            None,
+            files_done,
+            total_files,
+            bytes_done,
+            total_bytes,
+        );
+    }
+
+    let progress_interval = state.progress_interval;
+
+    // ---- Main loop. ----
+    for source_path in sources {
+        // CRITICAL: cancellation check is BEFORE pre-skip, which is BEFORE
+        // any closure / conflict-resolver / destructive call.
+        if is_cancelled(&state.intent) {
+            log::debug!(
+                "drive_transfer_serial_async: cancellation observed at {} (of {}) for op={}",
+                files_done,
+                total_files,
+                operation_id
+            );
+            return TransferLoopOutcome {
+                files_done,
+                bytes_done,
+                intent: PostLoopIntent::Cancelled,
+            };
+        }
+
+        if pre_skip_paths.contains(source_path) {
+            continue;
+        }
+
+        let initial_dest_path = if let Some(name) = source_path.file_name() {
+            dest_root.join(name)
+        } else {
+            dest_root.to_path_buf()
+        };
+
+        // Conflict detection via caller-supplied dest meta fetcher.
+        // `Some(size)` => conflict; `None` => no conflict (or stat failed,
+        // treated identically to no-conflict at the top-level — same shape as
+        // today's `dest_volume.get_metadata(...).await.ok()` check in
+        // `copy_volumes_with_progress`).
+        let dest_size_hint = dest_meta_fetcher(&initial_dest_path).await;
+
+        let resolved_dest = if dest_size_hint.is_some() {
+            log::debug!(
+                "drive_transfer_serial_async: conflict detected at {}",
+                initial_dest_path.display()
+            );
+            let decision = conflict_resolver(ConflictDecisionInput {
+                source_path,
+                initial_dest_path: &initial_dest_path,
+                dest_size_hint,
+                source_is_directory_hint: None,
+                source_size_hint: None,
+            })
+            .await;
+
+            match decision {
+                Ok(ConflictDecision::Skip) => {
+                    // Per-iter skip accounting: bump counters and emit
+                    // throttled progress so the bar reflects the skip
+                    // immediately.
+                    files_done += 1;
+                    if last_progress_time.elapsed() >= progress_interval {
+                        last_progress_time = Instant::now();
+                        emit_progress_and_status(
+                            events,
+                            state,
+                            operation_id,
+                            config.operation_type,
+                            config.phase,
+                            source_path.file_name().map(|n| n.to_string_lossy().to_string()),
+                            files_done,
+                            total_files,
+                            bytes_done,
+                            total_bytes,
+                        );
+                    }
+                    continue;
+                }
+                Ok(ConflictDecision::Proceed { dest_path }) => dest_path,
+                Err(e) => {
+                    return TransferLoopOutcome {
+                        files_done,
+                        bytes_done,
+                        intent: PostLoopIntent::Failed(e),
+                    };
+                }
+            }
+        } else {
+            initial_dest_path
+        };
+
+        let ctx = TransferContext {
+            events,
+            state,
+            operation_id,
+            operation_type: config.operation_type,
+            source_path,
+            dest_path: Some(&resolved_dest),
+            files_done_so_far: files_done,
+            bytes_done_so_far: bytes_done,
+            total_files,
+            total_bytes,
+        };
+
+        match transfer_one(ctx).await {
+            Ok(TransferOutcome::Transferred { bytes }) => {
+                files_done += 1;
+                bytes_done += bytes;
+            }
+            Ok(TransferOutcome::Skipped { bytes_accounted }) => {
+                files_done += 1;
+                bytes_done += bytes_accounted;
+                if last_progress_time.elapsed() >= progress_interval {
+                    last_progress_time = Instant::now();
+                    emit_progress_and_status(
+                        events,
+                        state,
+                        operation_id,
+                        config.operation_type,
+                        config.phase,
+                        source_path.file_name().map(|n| n.to_string_lossy().to_string()),
+                        files_done,
+                        total_files,
+                        bytes_done,
+                        total_bytes,
+                    );
+                }
+            }
+            Err(WriteOperationError::Cancelled { .. }) => {
+                return TransferLoopOutcome {
+                    files_done,
+                    bytes_done,
+                    intent: PostLoopIntent::Cancelled,
+                };
+            }
+            Err(e) => {
+                return TransferLoopOutcome {
+                    files_done,
+                    bytes_done,
+                    intent: PostLoopIntent::Failed(e),
+                };
+            }
+        }
+    }
+
+    // One final post-loop check: a `RollingBack` or `Stopped` transition could
+    // land after the last iteration's check and before we return Completed.
+    // Today's `copy_files_with_progress_inner` post-loop intent check exists
+    // exactly for this race (commit `1de4255d`). We mirror it here so a
+    // future caller doesn't have to remember.
+    if load_intent(&state.intent) != OperationIntent::Running {
+        return TransferLoopOutcome {
+            files_done,
+            bytes_done,
+            intent: PostLoopIntent::Cancelled,
+        };
+    }
+
+    TransferLoopOutcome {
+        files_done,
+        bytes_done,
+        intent: PostLoopIntent::Completed,
+    }
+}
+
+#[cfg(test)]
+#[path = "transfer_driver_tests.rs"]
+mod tests;

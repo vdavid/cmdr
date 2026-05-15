@@ -30,6 +30,7 @@ mod move_op;
 mod scan;
 mod scan_preview;
 mod state;
+mod transfer_driver;
 pub(crate) mod trash;
 mod types;
 mod volume_conflict;
@@ -364,8 +365,6 @@ pub async fn trash_files_start(
 mod copy_integration_test;
 #[cfg(test)]
 mod delete_integration_test;
-#[cfg(test)]
-mod driver_prototype_scratch;
 #[cfg(test)]
 mod move_integration_test;
 #[cfg(test)]
