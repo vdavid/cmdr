@@ -46,7 +46,7 @@ pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult
                     h.abort();
                 }
                 state.idle_timer = None;
-                // Reset backstop timer — the previous session's timer may still
+                // Reset backstop timer; the previous session's timer may still
                 // be ticking and could fire while the dialog is open.
                 if let Some(ref h) = state.backstop_timer {
                     h.abort();
@@ -57,7 +57,7 @@ pub async fn prepare_search_index(app: tauri::AppHandle) -> Result<PrepareResult
                     entry_count: state.index.entries.len() as u64,
                 });
             }
-            // Stale — drop and reload below
+            // Stale: drop and reload below
         }
     }
 
@@ -204,7 +204,7 @@ pub async fn search_files(mut query: SearchQuery) -> Result<SearchResult, String
             }
             true
         });
-        // total_count is approximate after post-filtering — the true count
+        // total_count is approximate after post-filtering; the true count
         // would require fetching dir_stats for ALL matching directories, which
         // is too expensive. The displayed count may overestimate slightly.
         result.total_count = result.entries.len() as u32;
@@ -216,7 +216,7 @@ pub async fn search_files(mut query: SearchQuery) -> Result<SearchResult, String
         result.entries.truncate(limit);
     }
 
-    // Check generation staleness — trigger background reload if needed
+    // Check generation staleness; trigger background reload if needed
     let current_gen = WRITER_GENERATION.load(Ordering::Relaxed);
     if index.generation != current_gen {
         log::debug!(

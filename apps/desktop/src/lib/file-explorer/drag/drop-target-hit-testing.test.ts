@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { resolveDropTarget } from './drop-target-hit-testing'
 
-// jsdom doesn't implement elementFromPoint — stub it so we can mock per-test
+// jsdom doesn't implement elementFromPoint; stub it so we can mock per-test
 function mockElementFromPoint(el: Element | null) {
   document.elementFromPoint = vi.fn().mockReturnValue(el)
 }
@@ -37,7 +37,7 @@ describe('resolveDropTarget', () => {
 
     const fileEntry = document.createElement('div')
     fileEntry.className = 'file-entry'
-    // No data-drop-target-path — it's a file
+    // No data-drop-target-path; it's a file
     fileEntry.id = 'left-file'
     leftPane.appendChild(fileEntry)
 

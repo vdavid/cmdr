@@ -14,9 +14,9 @@ A static landing page for [getcmdr.com](https://getcmdr.com) featuring:
 
 ## Tech stack
 
-- **Astro** — Static site generator, zero JS by default
-- **Tailwind CSS v4** — Styling with CSS-first configuration
-- **Docker + nginx** — Production deployment
+- **Astro**: static site generator, zero JS by default
+- **Tailwind CSS v4**: styling with CSS-first configuration
+- **Docker + nginx**: production deployment
 
 ## Development
 

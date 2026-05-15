@@ -77,12 +77,12 @@
 
     // Load current cloud provider config into local state. The API key is async (lives in the OS
     // secret store, not settings.json) so the input shows '' until the fetch resolves on first
-    // mount — fine for a settings panel that's not on the hot path.
+    // mount (fine for a settings panel that's not on the hot path).
     void loadCloudProviderConfig(cloudProviderId)
 
     // Subscribe to cloud provider changes
     const unsubCloudProvider = onSpecificSettingChange('ai.cloudProvider', (_id, newValue) => {
-        // Commit any in-flight typing to the OLD provider's keychain entry before we switch —
+        // Commit any in-flight typing to the OLD provider's keychain entry before we switch;
         // otherwise the pending save would silently target the wrong provider after `cloudProviderId`
         // changes below.
         flushPendingApiKeySave()
@@ -99,7 +99,7 @@
     unlistenFns.push(unsubCloudConfigs)
 
     onDestroy(() => {
-        // Flush any in-flight typing before tearing down — closing Settings (or navigating to a
+        // Flush any in-flight typing before tearing down: closing Settings (or navigating to a
         // different section) shouldn't drop a key the user already typed.
         flushPendingApiKeySave()
         for (const fn of unlistenFns) {
@@ -232,7 +232,7 @@
         }, API_KEY_SAVE_DEBOUNCE_MS)
     }
 
-    /** Immediately commit any pending API key save. Idempotent — safe to call when nothing's queued. */
+    /** Immediately commit any pending API key save. Idempotent, safe to call when nothing's queued. */
     function flushPendingApiKeySave(): void {
         if (!apiKeySaveTimer || !pendingApiKeySave) return
         clearTimeout(apiKeySaveTimer)
@@ -246,7 +246,7 @@
         try {
             await saveAiApiKey(providerId, value)
         } catch (e) {
-            // Failed to persist — surface it visibly and SKIP pushing config + scheduling the
+            // Failed to persist: surface it visibly and SKIP pushing config + scheduling the
             // connection check. The in-memory value would mislead the user into thinking it worked.
             setSecretError(describeSecretError(e, 'save'))
             return

@@ -2,7 +2,7 @@
 
 /// Returns the `CMDR_E2E_START_PATH` env var if set.
 /// The frontend uses this to override startup paths for E2E tests.
-/// Always compiled in — reading an unset env var is a no-op in production.
+/// Always compiled in. Reading an unset env var is a no-op in production.
 #[tauri::command]
 #[specta::specta]
 pub fn get_e2e_start_path() -> Option<String> {
@@ -27,7 +27,7 @@ pub fn set_test_throttle(ms: Option<u64>) -> Result<(), String> {
 ///
 /// The notify-debouncer-full crate buffers events for `DEBOUNCE_MS` (200 ms by
 /// default), plus the OS itself coalesces FSEvents on macOS over a longer
-/// window — so a single FS mutation can take 1–10 s to land in the UI. For
+/// window, so a single FS mutation can take 1–10 s to land in the UI. For
 /// tests, that's pure waste.
 ///
 /// This command sidesteps the debouncer: it iterates every active listing and

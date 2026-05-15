@@ -87,7 +87,7 @@ func TestParseSvelteFile(t *testing.T) {
 
 	placeholder := findRule(pf.Rules, "baz", "placeholder")
 	if placeholder == nil {
-		// `.bar.baz::placeholder` — classes should be [bar baz], pseudo=placeholder
+		// `.bar.baz::placeholder`: classes should be [bar baz], pseudo=placeholder
 		for _, r := range pf.Rules {
 			if strings.Contains(r.Selector, "placeholder") {
 				placeholder = &r

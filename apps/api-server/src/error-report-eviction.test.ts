@@ -231,7 +231,7 @@ describe('tryEvict', () => {
 
   it('evicts oldest by key date prefix, then upload time for ties', async () => {
     const objs: StubObj[] = [
-      // Same day — two uploads with different upload times
+      // Same day: two uploads with different upload times
       {
         key: `${ERROR_REPORT_PREFIX}2026-04-01/ERR-AAAAA-u.zip`,
         size: 2 * GB,

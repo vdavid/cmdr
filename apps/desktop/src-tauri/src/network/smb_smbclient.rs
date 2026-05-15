@@ -69,7 +69,7 @@ pub async fn run_smbclient_list(
     );
 
     if !output.status.success() {
-        // Logged at warn! so the raw output is captured at default level —
+        // Logged at warn! so the raw output is captured at default level,
         // crucial for diagnosing E2E flakes where smbclient is the last-resort
         // fallback and its stderr is the only direct window into what the
         // server actually told us. Truncated to 1 KiB each to avoid log

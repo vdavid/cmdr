@@ -1,4 +1,4 @@
-# Error report feature — execution log
+# Error report feature: execution log
 
 Companion to [`error-report-plan.md`](error-report-plan.md). Records what shipped, in what order, and what an operator
 needs to do before the feature is live in production.
@@ -37,21 +37,21 @@ All `./scripts/check.sh` checks green at execution time (42 checks, ~2 m 14 s wa
 
 ## Divergences from plan
 
-- **Phase 1 — redactor scope.** MTP device names redacted in log targets but not in arbitrary message bodies. The plan
+- **Phase 1, redactor scope.** MTP device names redacted in log targets but not in arbitrary message bodies. The plan
   listed device-name redaction as a generic pattern; in practice the only stable signal is the log target prefix.
   Rationale: false positives in message bodies were higher than expected for short device-name strings. Listed as a
   follow-up below.
-- **Phase 2 — verbose toggle becomes a Rust-side no-op when file logging is on.** `tauri-plugin-log` doesn't support
+- **Phase 2, verbose toggle becoming a Rust-side no-op when file logging is on.** `tauri-plugin-log` doesn't support
   per-target level filtering, so raising the file target to DEBUG also raises the global floor. The frontend (LogTape)
   toggle still works; the Rust toggle is only visible when log storage is disabled. Documented in
   `apps/desktop/src/lib/logging/CLAUDE.md` and `docs/tooling/logging.md`.
-- **Phase 3 — admin re-mint endpoint deferred.** Plan listed `GET /admin/error-report/:id/url` as part of Phase 3.
+- **Phase 3, admin re-mint endpoint deferred.** Plan listed `GET /admin/error-report/:id/url` as part of Phase 3.
   Skipped because the 7-day presigned URL on the Discord embed covers the maintainer use case; re-mint becomes
   worthwhile only if access to `#error-reports` widens. ~50 LOC to add later.
-- **Phase 4 — Save-bundle-to-disk debug option.** Implemented as planned, gated on `cfg!(debug_assertions)`. No
+- **Phase 4, save-bundle-to-disk debug option.** Implemented as planned, gated on `cfg!(debug_assertions)`. No
   surprises.
-- **Phase 5 — `log_error!` migration scope.** Migrated only the call sites that already produce user-visible error
-  toasts (not every `log::error!`). Strict superset of the plan's "literal interpretation" — this is intentional and
+- **Phase 5, `log_error!` migration scope.** Migrated only the call sites that already produce user-visible error
+  toasts (not every `log::error!`). Strict superset of the plan's "literal interpretation"; this is intentional and
   matches the plan's stated bias toward better signal.
 
 ## Operator action required before deploying
@@ -67,8 +67,8 @@ Do these in order. None are reversible; do them when you're ready to flip the fe
    ./scripts/setup-cf-infra.sh
    ```
    This creates the `cmdr-error-reports` R2 bucket, the `ERROR_REPORT_META` KV namespace (the script prints the KV
-   namespace ID — copy it for step 3), and applies the 90-day R2 lifecycle rule.
-3. **Update `apps/api-server/wrangler.toml`** — replace `REPLACE_WITH_KV_ID` with the printed KV namespace ID. Commit
+   namespace ID, copy it for step 3), and applies the 90-day R2 lifecycle rule.
+3. **Update `apps/api-server/wrangler.toml`**: replace `REPLACE_WITH_KV_ID` with the printed KV namespace ID. Commit
    the change.
 4. **Generate an R2 S3-compat access key** in the Cloudflare dashboard with read access to `cmdr-error-reports`. Keep
    the access key ID and secret handy for step 5.
@@ -91,6 +91,6 @@ Do these in order. None are reversible; do them when you're ready to flip the fe
 - **Phase 1: MTP device names in message bodies.** Currently only redacted from log targets. ~5-line addition (extra
   pattern entry + corpus update) if real reports show device-name leaks in the message body.
 - **Phase 2: verbose-logging toggle is UX-confusing.** It's a Rust-side no-op when file logging is on; the label doesn't
-  communicate this. Consider renaming or restyling — for example, splitting into two switches (frontend verbose / Rust
+  communicate this. Consider renaming or restyling, for example, splitting into two switches (frontend verbose / Rust
   file-target level), or adding inline help text in the Logging section.
 - **Phase 3: admin re-mint endpoint.** Add if Discord channel access widens beyond the maintainer.

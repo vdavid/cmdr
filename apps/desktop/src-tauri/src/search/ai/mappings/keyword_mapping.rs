@@ -69,7 +69,7 @@ fn regex_escape(s: &str) -> String {
 // ── Pattern merging ──────────────────────────────────────────────────
 
 /// Known file extensions that, when used as keywords alongside a matching type,
-/// are redundant — the type pattern already covers them.
+/// are redundant: the type pattern already covers them.
 const EXTENSION_KEYWORDS: &[&str] = &[
     "heic", "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff", "mp4", "mov", "avi", "mkv", "webm", "pdf",
     "doc", "docx", "txt", "odt", "xls", "xlsx", "ppt", "pptx", "odp", "zip", "tar", "gz", "tgz", "bz2", "xz", "7z",
@@ -136,7 +136,7 @@ pub fn merge_keyword_and_type(
         // Both keyword and type → check for redundancy, then merge
         (Some((kw_pattern, _kw_type)), Some(tf)) => {
             // If keyword is redundant with the type (e.g., "heic" + photos, "sqlite" + databases),
-            // just use the type pattern — the keyword adds no value.
+            // just use the type pattern; the keyword adds no value.
             if keyword_redundant_with_type(&kw_pattern, tf.pattern) {
                 return (Some(format!("(?i){}", tf.pattern)), PatternType::Regex);
             }
@@ -318,7 +318,7 @@ mod tests {
         let (pattern, pt) = merge_keyword_and_type(kw, tf.as_ref());
         assert_eq!(pt, PatternType::Regex);
         let pattern = pattern.unwrap();
-        // Should NOT contain "heic.*" prefix — just the photos pattern
+        // Should NOT contain "heic.*" prefix; just the photos pattern
         assert!(
             !pattern.contains("heic.*"),
             "redundant keyword should be dropped: {pattern}"

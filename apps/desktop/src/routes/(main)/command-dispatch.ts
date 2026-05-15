@@ -56,7 +56,7 @@ function activeTextRegion(): Element | null {
 /**
  * Intercepts text-region shortcuts (⌘C, ⌘A) BEFORE the dispatcher logs or records
  * the action, so selecting text in the ErrorPane and copying it doesn't pollute the
- * user-action log used for rollback context — and doesn't fire file-scope side
+ * user-action log used for rollback context, and doesn't fire file-scope side
  * effects (copy files, select all files). Returns `true` if the shortcut was handled.
  *
  * For `edit.copy` we only intercept when the selection is non-collapsed (something is
@@ -74,7 +74,7 @@ function handleTextRegionShortcut(commandId: string): boolean {
     return true
   }
 
-  // selection.selectAll — replace the current selection with the whole region.
+  // selection.selectAll: replace the current selection with the whole region.
   // Includes hidden content inside collapsed <details>, which is what the user
   // actually wants when copying error context (technical details included).
   const range = document.createRange()
@@ -111,7 +111,7 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
   // Handle known commands by category
   switch (commandId) {
     // === App commands ===
-    // app.quit, app.hide, app.hideOthers, app.showAll are native-only —
+    // app.quit, app.hide, app.hideOthers, app.showAll are native-only;
     // handled by PredefinedMenuItems (terminate:, hide:, etc.), not JS dispatch.
 
     case 'app.commandPalette':
@@ -461,7 +461,7 @@ export async function handleCommandExecute(commandId: string, ctx: CommandDispat
       // (for example, the ErrorPane), prefer copying that text over the file
       // selection. Note: the +page.svelte global keydown bail doesn't help on
       // macOS, where the native Edit > Copy menu accelerator fires before JS
-      // sees the keydown — this branch is the actual entry point in that case.
+      // sees the keydown; this branch is the actual entry point in that case.
       const selection = window.getSelection()
       if (selection && !selection.isCollapsed && selection.toString().length > 0) {
         void navigator.clipboard.writeText(selection.toString())

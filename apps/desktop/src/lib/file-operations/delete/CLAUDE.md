@@ -12,7 +12,7 @@ dialog before acting. Reuses `TransferProgressDialog` for progress display.
 - **DeleteDialog.svelte**: Confirmation dialog with file list (max 10 items + overflow), live scan stats, symlink
   notice, no-trash volume warning, and a Trash/Delete segmented control that lets the user flip the operation in-dialog
   (hidden on no-trash volumes, where permanent is forced). Uses `ModalDialog` with `role="dialog"` for trash and
-  `role="alertdialog"` for permanent delete — the role flips reactively when the toggle changes.
+  `role="alertdialog"` for permanent delete. The role flips reactively when the toggle changes.
 - **delete-dialog-utils.ts**: Pure utility functions: `generateDeleteTitle()` (handles "N selected files" vs "1 file
   under cursor"), `abbreviatePath()`, `getSymlinkNotice()`, `countSymlinks()`.
 - **delete-dialog-utils.test.ts**: Vitest tests for the pure utilities.

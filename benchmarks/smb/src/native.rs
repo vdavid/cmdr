@@ -1,4 +1,4 @@
-//! Native (OS-mounted) SMB operations — uses std::fs on the mounted share path.
+//! Native (OS-mounted) SMB operations. Uses std::fs on the mounted share path.
 
 use crate::config::Target;
 use std::fs;

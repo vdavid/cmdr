@@ -1,7 +1,7 @@
 # Logging
 
 Both frontend and backend logs appear in a single unified stream (terminal + log file). The Rust side runs a hand-rolled
-`fern` dispatch tree with **per-output level filtering** — file always at Debug, terminal defaults to Info.
+`fern` dispatch tree with **per-output level filtering**: file always at Debug, terminal defaults to Info.
 
 ## Frontend (Svelte/TypeScript)
 
@@ -40,7 +40,7 @@ From lowest to highest: `debug` < `info` < `warning` < `error` < `fatal`
   the whole terminal to `debug` at runtime.
 - **Prod mode (terminal)**: Terminal isn't visible in shipped builds.
 - **File target**: Always `debug` when log storage is enabled (cap > 0). Absent when the cap is `0`. The file target is
-  independent — it ignores `RUST_LOG` and the verbose toggle, so error report bundles always carry the full debug
+  independent: it ignores `RUST_LOG` and the verbose toggle, so error report bundles always carry the full debug
   context.
 
 ## Log levels
@@ -112,7 +112,7 @@ RUST_LOG=trace pnpm dev
   context.
 - **Rotation**: 50 MB per file, keep-N where `N = ceil(cap_mb / 50)`. Backed by the `file-rotate` crate.
 - **Cap**: `Advanced > Maximum disk space for log files (MB)`, default 200 MB, range 0–5000. Set to `0` to disable log
-  storage entirely — error reports cannot be sent without logs. Lowering the cap at runtime eagerly prunes excess files.
+  storage entirely. Error reports cannot be sent without logs. Lowering the cap at runtime eagerly prunes excess files.
   `0 ↔ non-zero` transitions (and raising the cap beyond its baked-in value) require an app restart.
 - Accessible from **Settings > Logging > "Open log file"**, and bundled into error reports sent via **Help > Send error
   report…** (passes through the shared redactor first)
@@ -158,7 +158,7 @@ Toggle in **Settings > Developer > Logging > "Verbose console output (developer)
 - Flips frontend (LogTape) debug gating for the browser devtools console.
 - Bumps the Rust **stdout chain** from Info to Debug (and back). The file chain stays at Debug regardless, so error
   reports are unaffected by the toggle.
-- Implemented via an `AtomicU8` consulted on every record — the toggle takes effect mid-stream without rebuilding the
+- Implemented via an `AtomicU8` consulted on every record: the toggle takes effect mid-stream without rebuilding the
   logger, so no records are lost during the swap.
 - `RUST_LOG` always wins at startup. The toggle takes over at runtime if the user clicks it (it overwrites the atomic
   directly).

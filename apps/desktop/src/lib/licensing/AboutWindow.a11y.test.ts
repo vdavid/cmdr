@@ -24,7 +24,7 @@ vi.mock('$lib/tauri-commands', () => ({
   openExternalUrl: vi.fn(() => Promise.resolve()),
 }))
 
-// `@tauri-apps/api/app` is dynamically imported on mount — stub it so
+// `@tauri-apps/api/app` is dynamically imported on mount; stub it so
 // getVersion() resolves without crashing.
 vi.mock('@tauri-apps/api/app', () => ({
   getVersion: vi.fn(() => Promise.resolve('1.0.0')),

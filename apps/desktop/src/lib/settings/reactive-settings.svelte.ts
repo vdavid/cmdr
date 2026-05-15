@@ -90,7 +90,7 @@ export async function initReactiveSettings(): Promise<void> {
  *
  * Extracted from `initReactiveSettings` so the subscription arrow stays under the
  * complexity threshold. Each branch is a one-line write; the linear dispatch is
- * intentional — table-driven would obscure the per-setting typing.
+ * intentional. A table-driven approach would obscure the per-setting typing.
  */
 // eslint-disable-next-line complexity -- linear N-case dispatch; clearer as a flat switch than a table
 function applySettingChange(id: string, value: unknown): void {
@@ -174,7 +174,7 @@ export function getRowHeight(): number {
 /**
  * Get current icon size in pixels (file-list icons, etc.).
  *
- * Density is intentionally NOT a factor — the historical icon size was a
+ * Density is intentionally NOT a factor. The historical icon size was a
  * hardcoded 16 px regardless of density. Only the text-size scale applies.
  * Components that need this in JS (e.g. for `grid-template-columns`) read
  * this getter; the matching CSS token is `--spacing-icon-size` in app.css.
@@ -264,7 +264,7 @@ export function getTypeToJumpResetDelay(): number {
  * Returns the joined `text`, structured `parts` (with the year extracted for
  * coloring), and the `ageClass`. New date-touching components should call
  * this rather than reaching for `Date#toLocaleString` or building their own
- * formatters — keep date display consistent across the app.
+ * formatters. Keep date display consistent across the app.
  *
  * For the plain string form, use the `formatDateTime` shortcut below.
  *
@@ -275,7 +275,7 @@ export function formattedDate(timestamp: number | null | undefined): FormattedDa
 }
 
 /**
- * Shortcut for `formattedDate(ts).text` — the joined plain string. Use for
+ * Shortcut for `formattedDate(ts).text`, the joined plain string. Use for
  * tooltips, MCP responses, clipboard copies, and anywhere a one-line label is
  * wanted. UI rendering should prefer the `<DateLabel>` component or destructure
  * `formattedDate(ts).parts` directly.

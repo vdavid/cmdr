@@ -86,7 +86,7 @@ async fn list_shares_uncached(
             // Protocol error (likely RPC incompatibility with Samba). Try the
             // platform fallback: smbutil (macOS) / smbclient (Linux).
             // Logged at warn! so it's visible in the default E2E log without
-            // RUST_LOG=debug — we need this for diagnosing intermittent
+            // RUST_LOG=debug: we need this for diagnosing intermittent
             // SMB E2E failures where both paths fail and the user only sees
             // the secondary error.
             warn!(

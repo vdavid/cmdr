@@ -247,7 +247,7 @@
     // Handle keyboard navigation
     // noinspection JSUnusedGlobalSymbols -- used dynamically
     export function handleKeyDown(e: KeyboardEvent): boolean {
-        // ⌘R to refresh — works regardless of host count
+        // ⌘R to refresh, works regardless of host count
         if (isRefreshShortcut(e)) {
             e.preventDefault()
             handleRefreshClick()
@@ -271,7 +271,7 @@
             return true
         }
 
-        // F8 — remove manual host
+        // F8: remove manual host
         if (e.key === 'F8' && !isCursorOnConnectRow && cursorIndex < hosts.length) {
             e.preventDefault()
             const host = hosts[cursorIndex]
@@ -572,7 +572,7 @@
             </div>
         {/if}
 
-        <!-- "Connect to server..." pseudo-row — always at the bottom, keyboard navigable -->
+        <!-- "Connect to server..." pseudo-row, always at the bottom, keyboard navigable -->
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div
             class="host-row connect-row"

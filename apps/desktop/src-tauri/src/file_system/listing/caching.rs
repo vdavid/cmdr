@@ -22,7 +22,7 @@ pub enum DirectoryChange {
     Modified(FileEntry),
     /// An entry was renamed within the same directory.
     Renamed { old_name: String, new_entry: FileEntry },
-    /// Unknown or bulk change — trigger a full re-read via the Volume trait.
+    /// Unknown or bulk change: trigger a full re-read via the Volume trait.
     FullRefresh,
 }
 
@@ -58,7 +58,7 @@ pub(crate) struct CachedListing {
     /// Lives on the listing so it works for all volume types, including SMB/MTP
     /// which don't use the FSEvents-based `WatchedDirectory`.
     pub sequence: AtomicU64,
-    /// When this listing was created. Used by `snapshot_listings` for triage —
+    /// When this listing was created. Used by `snapshot_listings` for triage,
     /// surfacing orphan listings (e.g., volume dropdown previews) in error reports.
     pub created_at: Instant,
 }
@@ -73,8 +73,8 @@ pub struct ListingSummary {
 }
 
 /// Returns a snapshot of every active listing in the cache. Used by `cmdr://state`
-/// so triagers can spot orphan listings (started but never bound to a pane —
-/// for example, when a volume dropdown commits a navigation that the user then
+/// so triagers can spot orphan listings (started but never bound to a pane,
+/// for example when a volume dropdown commits a navigation that the user then
 /// abandons or that surfaces an error).
 pub fn snapshot_listings() -> Vec<ListingSummary> {
     let cache = match LISTING_CACHE.read() {

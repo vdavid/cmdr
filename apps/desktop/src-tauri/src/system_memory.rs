@@ -1,4 +1,4 @@
-//! System memory measurement — used by the AI RAM gauge and available for other features.
+//! System memory measurement, used by the AI RAM gauge and available for other features.
 //!
 //! On macOS, uses `host_statistics64` (Mach API) for accurate, non-overlapping
 //! memory categories. Falls back to `sysinfo` on other platforms.
@@ -9,7 +9,7 @@
 #[serde(rename_all = "camelCase")]
 pub struct SystemMemoryInfo {
     pub total_bytes: u64,
-    /// Wired + compressor-occupied memory (kernel, drivers — can't be freed).
+    /// Wired + compressor-occupied memory (kernel, drivers; can't be freed).
     pub wired_bytes: u64,
     /// App memory: active + inactive - purgeable (process memory the user can free by quitting apps).
     pub app_bytes: u64,

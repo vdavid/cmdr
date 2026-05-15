@@ -321,7 +321,7 @@ fn backward_scan_with_no_newline_caps_at_max() {
 
     let backend = ByteSeekBackend::open(&file).unwrap();
 
-    // Seek to byte 15000 — backward scan of 8192 bytes won't find '\n'
+    // Seek to byte 15000; backward scan of 8192 bytes won't find '\n'
     let chunk = backend.get_lines(&SeekTarget::ByteOffset(15000), 1).unwrap();
 
     // Should fall back to scan_start = 15000 - 8192 = 6808

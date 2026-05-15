@@ -507,7 +507,7 @@ func extractE2ETestOutput(output string) string {
 	// Extract any SMB-stack readiness lines from §1 BEFORE we trim the setup
 	// phase away. These banners come from desktop-e2e-linux's pre-flight and
 	// post-flight probes and are crucial signal for diagnosing SMB-related
-	// test failures — they answer "were the SMB containers healthy when
+	// test failures: they answer "were the SMB containers healthy when
 	// tests started / ended?" Without preserving them, every SMB failure
 	// looks like a pure Cmdr-side bug.
 	smbBanners := extractSMBBanners(output)

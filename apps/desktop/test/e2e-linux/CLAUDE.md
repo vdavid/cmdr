@@ -68,7 +68,7 @@ The E2E container runs with `--privileged` because Docker's default seccomp prof
 `CAP_SYS_ADMIN`, and GVFS-FUSE needs `/dev/fuse`.
 
 **SMB container readiness is always actively probed.** `e2e-linux.sh:start_smb_containers` runs `probe_smb_ports`
-(per-service TCP probe on port 445) on **both** paths — fresh start AND "already running". Docker reporting a container
+(per-service TCP probe on port 445) on **both** paths: fresh start AND "already running". Docker reporting a container
 as `running` only means the container is alive; smbd inside can be hung, OOM-killed, or still initialising. A previous
 version of this script trusted the running-check and skipped the probe, which produced `Cannot reach smb-consumer-X`
 test failures whenever a stale stack from a prior run was unhealthy. If the probe fails on the already-running path, the
@@ -78,7 +78,7 @@ principles" for the no-magic-sleep rule this enforces.
 
 **Post-flight SMB probe**: after the test phase exits (success or failure), the script re-runs `probe_smb_ports 5` and
 emits either `SMB post-flight: all 4 containers still accepting TCP on :445` or
-`SMB post-flight: at least one container is no longer accepting TCP — likely died mid-run` plus per-service compose
+`SMB post-flight: at least one container is no longer accepting TCP, likely died mid-run` plus per-service compose
 state. Both pre- and post-flight banners are hoisted to the top of the failing-test summary by the checker's filter
 (prefixed `[SMB]`) so an agent reading a failed run can immediately tell whether SMB was healthy at start, at end, or
 both. Diverging banners (pre-flight OK + post-flight FAIL) localise the problem to "containers died mid-run"; both OK

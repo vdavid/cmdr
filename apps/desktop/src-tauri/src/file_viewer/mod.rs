@@ -1,4 +1,4 @@
-//! File viewer module — on-demand line serving with three backend strategies.
+//! File viewer module: on-demand line serving with three backend strategies.
 //!
 //! Backends:
 //! - `FullLoadBackend`: loads entire file into memory (small files, <1 MB)
@@ -37,7 +37,7 @@ const MAX_BACKWARD_SCAN: usize = 8192;
 
 /// Maximum number of matches stored during search. Once reached, the search stops entirely.
 /// The frontend highlights additional matches client-side on visible lines, so stopping early
-/// doesn't lose highlighting — it only caps the prev/next navigation index.
+/// doesn't lose highlighting: it only caps the prev/next navigation index.
 const MAX_SEARCH_MATCHES: usize = 10_000;
 
 /// Where to seek in the file.

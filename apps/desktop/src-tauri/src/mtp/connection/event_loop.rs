@@ -57,7 +57,7 @@ impl MtpConnectionManager {
                         break;
                     }
 
-                    // Poll for next event — no device lock needed (interrupt endpoint is independent)
+                    // Poll for next event (no device lock needed; interrupt endpoint is independent)
                     result = tokio::time::timeout(Duration::from_secs(5), event_device.next_event()) => {
                         result.unwrap_or(Err(mtp_rs::Error::Timeout))
                     }
@@ -178,7 +178,7 @@ impl MtpConnectionManager {
             let app_clone = app.clone();
             tokio::spawn(async move {
                 tokio::time::sleep(Duration::from_millis(EVENT_DEBOUNCE_MS + 50)).await;
-                // Re-emit — this goes through the debouncer again (which will pass
+                // Re-emit; this goes through the debouncer again (which will pass
                 // since the window has expired) to avoid duplicate processing.
                 Self::emit_directory_changed(&device_id_owned, &app_clone);
             });
@@ -255,8 +255,8 @@ impl MtpConnectionManager {
             };
 
             // Invalidate the MTP listing cache before re-reading so we get fresh data.
-            // Must use the normalized MTP path (e.g., "/Documents") — not the raw LISTING_CACHE
-            // path (e.g., "mtp://mtp-device/65537/Documents") — because that's what list_directory
+            // Must use the normalized MTP path (for example, "/Documents"), not the raw LISTING_CACHE
+            // path (for example, "mtp://mtp-device/65537/Documents"), because that's what list_directory
             // uses as the cache key.
             connection_manager()
                 .invalidate_listing_cache(device_id, storage_id, &normalize_mtp_path(&mtp_path))

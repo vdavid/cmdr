@@ -10,7 +10,7 @@ offers them the right download.
 alternative). macOS users continue to see exactly what they see today. The updater works for both platforms.
 
 **Architecture, not distro.** Linux distro detection is unnecessary. AppImage works everywhere. The only axis that
-matters is CPU architecture. We build for both `x86_64` and `aarch64` from day one — aarch64 is useful for ARM VMs and
+matters is CPU architecture. We build for both `x86_64` and `aarch64` from day one; aarch64 is useful for ARM VMs and
 growing ARM Linux desktop/server usage.
 
 ## Part 1: CI workflow
@@ -32,28 +32,28 @@ Add two Linux matrix entries to the existing `build` job:
 
 The existing macOS entries get `os: macos-latest` and `platform: macos` to distinguish them.
 
-The aarch64 build runs on GitHub's ARM runner (`ubuntu-24.04-arm`) for native compilation — no cross-compilation needed.
+The aarch64 build runs on GitHub's ARM runner (`ubuntu-24.04-arm`) for native compilation, no cross-compilation needed.
 Native is simpler and faster than cross-compilation.
 
 ### Linux build steps
 
 The Linux matrix entry needs different setup than macOS (no signing/notarization, different system deps):
 
-1. **System dependencies** — same as CI already uses:
+1. **System dependencies** (same as CI already uses):
    ```bash
    sudo apt-get update
    sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev
    ```
-2. **Checkout, mise, pnpm install, svelte-kit sync** — identical to macOS.
-3. **No Apple certificate / notarization steps** — skip via `if: matrix.platform == 'macos'` conditions on those steps.
-4. **Build with tauri-action** — same as macOS entries, just `--target ${{ matrix.target }}`. Override `bundle.targets`
+2. **Checkout, mise, pnpm install, svelte-kit sync**: identical to macOS.
+3. **No Apple certificate / notarization steps**: skip via `if: matrix.platform == 'macos'` conditions on those steps.
+4. **Build with tauri-action**: same as macOS entries, just `--target ${{ matrix.target }}`. Override `bundle.targets`
    to `["deb", "appimage"]` for Linux (via `--bundles deb,appimage` or Tauri config override) to avoid attempting RPM
    builds that need `rpmbuild`.
-5. **Upload artifacts** — find the `.AppImage`, `.deb`, and updater `.AppImage.tar.zst` + `.sig` in
+5. **Upload artifacts**: find the `.AppImage`, `.deb`, and updater `.AppImage.tar.zst` + `.sig` in
    `target/${{ matrix.target }}/release/bundle/`. Upload to the GitHub release with `gh release upload --clobber`.
    Rename updater artifact to include platform + arch: `Cmdr_linux_x86_64.AppImage.tar.zst` /
    `Cmdr_linux_aarch64.AppImage.tar.zst`.
-6. **Pass signature to publish job** — same pattern as macOS: `actions/upload-artifact` with the `.sig` content.
+6. **Pass signature to publish job**: same pattern as macOS: `actions/upload-artifact` with the `.sig` content.
 
 ### Publish job changes
 
@@ -82,7 +82,7 @@ with the additional platform keys:
 
 Tauri uses Debian-style arch names (`amd64`/`arm64`) for AppImage and .deb filenames. The updater artifacts use our own
 naming with `linux_x86_64`/`linux_aarch64` for consistency with the macOS pattern. Check Tauri's actual output filenames
-during a test build — they may differ slightly.
+during a test build; they may differ slightly.
 
 ### Bundled resources: llama-server
 
@@ -110,7 +110,7 @@ Changes needed:
 
 ## Part 3: Website
 
-### 3a. `release.ts` — add Linux URLs and sizes
+### 3a. `release.ts`: add Linux URLs and sizes
 
 ```ts
 export const appImageUrls = {
@@ -138,16 +138,16 @@ export const appImageSizes =
 Extend `latest.json` schema: add `appImageSizes: { x86_64: 0, aarch64: 0 }` next to `dmgSizes` so the publish job can
 populate it.
 
-### 3b. `Layout.astro` — extend the inline script for OS detection
+### 3b. `Layout.astro`: extend the inline script for OS detection
 
 The existing script detects macOS architecture via `userAgentData`. Extend it to also detect the OS so download links
 can swap between macOS and Linux.
 
 OS detection fallback chain (from most to least reliable):
 
-1. `navigator.userAgentData.platform` — modern Chromium browsers, returns `"Linux"` directly.
-2. `navigator.platform` — deprecated but still widely supported, returns `"Linux x86_64"` or similar.
-3. `navigator.userAgent` regex — last resort for browsers where the above return empty, check for `/Linux/`.
+1. `navigator.userAgentData.platform`: modern Chromium browsers, returns `"Linux"` directly.
+2. `navigator.platform`: deprecated but still widely supported, returns `"Linux x86_64"` or similar.
+3. `navigator.userAgent` regex: last resort for browsers where the above return empty, check for `/Linux/`.
 
 ```js
 var isLinux =
@@ -170,7 +170,7 @@ When macOS is detected (or no detection):
 
 - Everything stays exactly as it is today. No behavioral change for macOS users.
 
-### 3c. Download link components — add Linux data attributes
+### 3c. Download link components: add Linux data attributes
 
 All download `<a>` tags that currently have `data-download-link` get one more attribute:
 
@@ -188,12 +188,12 @@ All download `<a>` tags that currently have `data-download-link` get one more at
 
 **Files to update:**
 
-- `Hero.astro` — CTA button: add `data-linux-appimage`. JS swaps href + button text ("Download for Linux").
-- `Header.astro` — desktop + mobile download buttons: same pattern.
-- `pricing.astro` — download button: same pattern. Update the "macOS only" subtitle to show "Linux" when detected.
-- `Download.astro` — full platform card (see below).
+- `Hero.astro`: CTA button: add `data-linux-appimage`. JS swaps href + button text ("Download for Linux").
+- `Header.astro`: desktop + mobile download buttons: same pattern.
+- `pricing.astro`: download button: same pattern. Update the "macOS only" subtitle to show "Linux" when detected.
+- `Download.astro`: full platform card (see below).
 
-### 3d. `Download.astro` — platform-aware download card
+### 3d. `Download.astro`: platform-aware download card
 
 Replace the single macOS card with a structure that adapts based on detected OS. Static HTML defaults to macOS (the
 primary platform). JS shows the Linux variant for Linux visitors.
@@ -222,8 +222,8 @@ For macOS visitors (no change from today except one addition):
 
 Two card variants inside `Download.astro`, toggled by CSS using `html[data-os="linux"]`:
 
-- `data-platform-card="macos"` — shown by default, hidden when `data-os="linux"`
-- `data-platform-card="linux"` — hidden by default, shown when `data-os="linux"`
+- `data-platform-card="macos"`: shown by default, hidden when `data-os="linux"`
+- `data-platform-card="linux"`: hidden by default, shown when `data-os="linux"`
 
 This avoids a flash of the wrong platform since the macOS card renders instantly and the Linux card swaps in after JS
 runs. The swap is fast enough to be imperceptible.
@@ -234,7 +234,7 @@ The "Windows coming soon" newsletter CTA at the bottom of Download.astro changes
 ### 3e. No-JS / unsupported browser behavior
 
 All links default to macOS (universal DMG) in static HTML. Linux users without JS or with unusual browsers see the macOS
-download — but they're technical enough to find the GitHub releases page. The "Also available for Linux" link is visible
+download, but they're technical enough to find the GitHub releases page. The "Also available for Linux" link is visible
 in the HTML regardless of JS.
 
 ## Part 4: Updater compatibility
@@ -245,7 +245,7 @@ No Tauri code changes needed. The updater reads `latest.json` and selects the pl
 - Linux installs compiled with `aarch64-unknown-linux-gnu` match `linux-aarch64`
 
 **Important**: During the first test build (Milestone 3), verify that the platform key Tauri's updater actually sends
-matches exactly what we put in `latest.json`. A mismatch means silent updater failure — the app would appear up-to-date
+matches exactly what we put in `latest.json`. A mismatch means silent updater failure: the app would appear up-to-date
 when it isn't. Check Tauri's updater source or logs to confirm the target string format.
 
 ## Part 5: `latest.json` schema update
@@ -281,11 +281,11 @@ The publish job populates `appImageSizes` by checking AppImage file sizes, same 
 
 ## Part 6: Rust build confidence
 
-The codebase already compiles for Linux — the CI runs Linux E2E tests via
+The codebase already compiles for Linux; the CI runs Linux E2E tests via
 `cargo build --target x86_64-unknown-linux-gnu` on every PR. All platform-specific Rust code uses
 `#[cfg(target_os = "...")]` gates (`zbus`, `freedesktop-icons`, `libacl`, etc. for Linux; `objc2`, `core-foundation`,
 etc. for macOS). The `cfg-gate` check in CI (`./scripts/check.sh --check cfg-gate`) verifies that no macOS-only code
-leaks into Linux builds and vice versa. No additional Rust changes are expected for the release build — the same binary
+leaks into Linux builds and vice versa. No additional Rust changes are expected for the release build; the same binary
 that passes E2E tests is the one that gets bundled.
 
 ## Verification
@@ -298,7 +298,7 @@ that passes E2E tests is the one that gets bundled.
    - Download buttons swap to AppImage links
    - Download.astro shows the Linux card with x86_64 as default
    - The "Also available for macOS" link is visible
-   - Switch back to macOS UA — verify macOS card shows as before, with "Also available for Linux" link
+   - Switch back to macOS UA and verify macOS card shows as before, with "Also available for Linux" link
 3. **Updater**: Install from the AppImage on a Linux machine (or VM), verify it picks up the correct `linux-*` entry
    from `latest.json`. Confirm the platform key the Tauri updater requests matches exactly what `latest.json` provides
    (check updater logs)

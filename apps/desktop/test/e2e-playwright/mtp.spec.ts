@@ -91,7 +91,7 @@ function safeFileSize(p: string): number {
  * Polls the filesystem-side MTP backing dir until `predicate()` returns true.
  *
  * MTP write operations (copy/move/delete/mkdir/rename) are fire-and-forget on
- * the IPC side — the MCP `copy`/`move`/`delete`/`mkdir` tools emit an event
+ * the IPC side: the MCP `copy`/`move`/`delete`/`mkdir` tools emit an event
  * and return immediately, while the actual work happens on a background task.
  * Polling the backing directory is the most direct signal we have: once the
  * file is on disk, an MTP `refresh` + `mcpAwaitItem` will see it.
@@ -141,7 +141,7 @@ test.beforeEach(async ({ tauriPage }) => {
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('pause_virtual_mtp_watcher')`)
   recreateMtpFixtures() // MTP backing dir
 
-  // Settle FSEvents, rescan, settle again, rescan, then resume — all in one
+  // Settle FSEvents, rescan, settle again, rescan, then resume, all in one
   // IPC call. See `resync_virtual_mtp_after_disk_change` in commands/mtp.rs
   // for the rationale (FSEvents has ~200-500 ms latency on macOS, so a naive
   // rescan + resume races with late events).
@@ -277,7 +277,7 @@ test.describe('MTP navigation', () => {
         })()`)
     await pollUntil(tauriPage, async () => tauriPage.isVisible('.volume-dropdown'), 5000)
 
-    // Poll for space info — MTP space data may load asynchronously after dropdown opens
+    // Poll for space info: MTP space data may load asynchronously after dropdown opens
     await pollUntil(
       tauriPage,
       async () =>
@@ -343,7 +343,7 @@ test.describe('MTP file operations', () => {
     await mcpCall('move_cursor', { pane: 'left', filename: 'file-a.txt' })
     await mcpCall('copy', { autoConfirm: true })
 
-    // MTP transfer is fire-and-forget — poll the backing dir until the file
+    // MTP transfer is fire-and-forget. Poll the backing dir until the file
     // lands, then force a refresh so the pane re-lists.
     await pollFs(tauriPage, () => fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'file-a.txt')), 30000)
     await mcpCall('refresh', {})
@@ -389,7 +389,7 @@ test.describe('MTP file operations', () => {
     await mcpCall('move_cursor', { pane: 'left', filename: 'notes.txt' })
     await mcpCall('move', { autoConfirm: true })
 
-    // MTP move is fire-and-forget — poll for the backing-dir state (source gone,
+    // MTP move is fire-and-forget. Poll for the backing-dir state (source gone,
     // dest present) before triggering the refresh that drives the pane re-listing.
     await pollFs(
       tauriPage,
@@ -424,7 +424,7 @@ test.describe('MTP file operations', () => {
     // Move cursor to report.txt via keyboard (to test full keyboard flow)
     await moveCursorToFile(tauriPage, 'report.txt')
 
-    // Press F8 to open delete dialog (not autoConfirm — we want to inspect the dialog)
+    // Press F8 to open delete dialog (not autoConfirm, because we want to inspect the dialog)
     await pressKey(tauriPage, 'F8')
     await tauriPage.waitForSelector('[data-dialog-id="delete-confirmation"]', 10000)
 
@@ -461,7 +461,7 @@ test.describe('MTP file operations', () => {
       10000,
     )
 
-    // MTP delete is fire-and-forget — poll the backing dir until the file is gone.
+    // MTP delete is fire-and-forget. Poll the backing dir until the file is gone.
     await pollFs(
       tauriPage,
       () => !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'report.txt')),
@@ -512,7 +512,7 @@ test.describe('MTP file operations', () => {
     // Delete via MCP with autoConfirm
     await mcpCall('delete', { autoConfirm: true })
 
-    // MTP multi-delete is fire-and-forget — poll the backing dir.
+    // MTP multi-delete is fire-and-forget. Poll the backing dir.
     await pollFs(
       tauriPage,
       () =>
@@ -546,7 +546,7 @@ test.describe('MTP file operations', () => {
     await mcpCall('move_cursor', { pane: 'left', filename: 'DCIM' })
     await mcpCall('delete', { autoConfirm: true })
 
-    // MTP recursive delete is fire-and-forget — poll the backing dir.
+    // MTP recursive delete is fire-and-forget. Poll the backing dir.
     await pollFs(tauriPage, () => !fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'DCIM')), 45000)
     await mcpCall('refresh', {})
 
@@ -564,7 +564,7 @@ test.describe('MTP file operations', () => {
     await mcpSelectVolume('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
 
-    // Create folder via MCP — mkdir opens the dialog, then we type the name and confirm
+    // Create folder via MCP: mkdir opens the dialog, then we type the name and confirm
     await mcpCall('mkdir', {})
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
@@ -576,7 +576,7 @@ test.describe('MTP file operations', () => {
     // Wait for dialog to close
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
 
-    // MTP mkdir is fire-and-forget — poll the backing dir for the folder.
+    // MTP mkdir is fire-and-forget. Poll the backing dir for the folder.
     await pollFs(tauriPage, () => fs.existsSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'NewFolder')), 15000)
     await mcpCall('refresh', {})
 
@@ -688,7 +688,7 @@ test.describe('MTP rename', () => {
     )
     expect(dialogText).toContain('already exists')
 
-    // Cancel the dialog — both files should remain unchanged
+    // Cancel the dialog. Both files should remain unchanged.
     await tauriPage.keyboard.press('Escape')
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
 
@@ -784,7 +784,7 @@ test.describe('MTP clipboard rejection', () => {
       2000,
     )
 
-    // Press Cmd+C (copy to clipboard) — toast appears asynchronously.
+    // Press Cmd+C (copy to clipboard). Toast appears asynchronously.
     await pressKey(tauriPage, `${CTRL_OR_META}+c`)
 
     // Verify toast appears with MTP clipboard message
@@ -833,7 +833,7 @@ test.describe('MTP clipboard rejection', () => {
       2000,
     )
 
-    // Press Cmd+X (cut to clipboard) — toast appears asynchronously and the
+    // Press Cmd+X (cut to clipboard). Toast appears asynchronously, and
     // pollUntilValue below handles waiting for it.
     await pressKey(tauriPage, `${CTRL_OR_META}+x`)
 
@@ -923,7 +923,7 @@ test.describe('MTP read-only enforcement', () => {
     const hasSunset = await fileExistsInPane(tauriPage, 'sunset.jpg', 0)
     expect(hasSunset).toBe(true)
 
-    // Try F7 (create folder) — should trigger an error or show the dialog which
+    // Try F7 (create folder), which should trigger an error or show the dialog which
     // will fail on confirm. Press F7 and wait until either the read-only alert
     // OR the mkdir dialog has appeared.
     await pressKey(tauriPage, 'F7')
@@ -939,7 +939,7 @@ test.describe('MTP read-only enforcement', () => {
     const hasMkdir = await tauriPage.isVisible(MKDIR_DIALOG)
 
     if (hasAlert) {
-      // Read-only pre-check showed an alert — verify the message
+      // Read-only pre-check showed an alert. Verify the message.
       const alertText = await tauriPage.evaluate<string>(`(function() {
                 var msg = document.querySelector('[data-dialog-id="alert"] .message, [data-dialog-id="alert"] #alert-dialog-message');
                 return msg ? msg.textContent : '';
@@ -953,7 +953,7 @@ test.describe('MTP read-only enforcement', () => {
             })()`)
       await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
     } else if (hasMkdir) {
-      // Dialog opened — type a name and confirm, expect backend error
+      // Dialog opened. Type a name and confirm, expect backend error.
       await tauriPage.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
       await tauriPage.fill(`${MKDIR_DIALOG} .name-input`, 'TestFolder')
       await pollUntil(tauriPage, async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), 2000)
@@ -975,7 +975,7 @@ test.describe('MTP read-only enforcement', () => {
       await tauriPage.keyboard.press('Escape')
       await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 5000)
     } else {
-      // Neither dialog appeared — this is unexpected, fail explicitly
+      // Neither dialog appeared. This is unexpected; fail explicitly.
       throw new Error('Expected either an alert or mkdir dialog to appear, but neither did')
     }
 
@@ -1025,12 +1025,12 @@ test.describe('MTP file watching', () => {
 
     // Wait for the file to appear via the virtual device's file watcher → event loop → directory-diff pipeline.
     // In long-running test suites, the watcher may be slow to process events. If the first
-    // wait times out, force a refresh and try again — this tests that the file exists on
+    // wait times out, force a refresh and try again. This tests that the file exists on
     // the virtual device even if the push-based watcher missed the event.
     try {
       await mcpAwaitItem('left', 'new-file.txt', 30)
     } catch {
-      // File watcher didn't pick it up — force refresh and retry
+      // File watcher didn't pick it up. Force refresh and retry.
       await mcpCall('refresh', {})
       await mcpAwaitItem('left', 'new-file.txt', 30)
     }

@@ -284,7 +284,7 @@ func TestRunFileLength_AllowlistSuppresses(t *testing.T) {
 func TestRunFileLength_AllowlistWithinBuffer(t *testing.T) {
 	tmp := t.TempDir()
 
-	// File at 990 lines vs allowlist 900 — within the 10% growth buffer
+	// File at 990 lines vs allowlist 900; within the 10% growth buffer
 	path := filepath.Join(tmp, "grew.go")
 	if err := os.WriteFile(path, []byte(strings.Repeat("line\n", 990)), 0644); err != nil {
 		t.Fatal(err)
@@ -304,7 +304,7 @@ func TestRunFileLength_AllowlistWithinBuffer(t *testing.T) {
 func TestRunFileLength_AllowlistExceeded(t *testing.T) {
 	tmp := t.TempDir()
 
-	// File at 1035 lines vs allowlist 900 — 15% over, outside the 10% buffer
+	// File at 1035 lines vs allowlist 900; 15% over, outside the 10% buffer
 	path := filepath.Join(tmp, "grew.go")
 	if err := os.WriteFile(path, []byte(strings.Repeat("line\n", 1035)), 0644); err != nil {
 		t.Fatal(err)

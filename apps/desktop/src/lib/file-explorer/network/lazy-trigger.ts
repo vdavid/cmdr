@@ -1,7 +1,7 @@
 /**
  * Lazy trigger for the macOS Local Network permission prompt.
  *
- * mDNS browsing isn't started at app launch on fresh installs — instead, the first user
+ * mDNS browsing isn't started at app launch on fresh installs. Instead, the first user
  * action that depends on networking calls `triggerNetworkDiscovery()`. This is what fires
  * the system "Cmdr wants to find devices on local networks" prompt: macOS gates it on the
  * actual multicast browse, not on app startup. After the first trigger we persist

@@ -1,4 +1,4 @@
-# Phase 4 — Unified volume copy abstraction + concurrency
+# Phase 4: Unified volume copy abstraction + concurrency
 
 **Status**: P4.1 complete, P4.2 complete, P4.3 complete. P4.4 (re-measure on QNAP) pending a network where the NAS is
 reachable.
@@ -16,20 +16,20 @@ copy direction.
 
 Three stages on `main`, each its own commit and green-light gate:
 
-1. **P4.1 — Unify the trait.** Remove `export_to_local` / `import_from_local`. Ensure all backends (`LocalPosixVolume`,
+1. **P4.1: Unify the trait.** Remove `export_to_local` / `import_from_local`. Ensure all backends (`LocalPosixVolume`,
    `SmbVolume`, `MtpVolume`, `InMemoryVolume`) implement `open_read_stream` + `write_from_stream`. Refactor
    `volume_copy.rs::copy_single_path` (or equivalent inner dispatch) to two cases:
    `LocalPosixVolume↔LocalPosixVolume same APFS` → clonefile; else → generic streaming pipe. **No concurrency changes**
-   — per-file semantics behavior-equivalent to pre-refactor.
-2. **P4.2 — Add concurrency at the copy engine.** Introduce `Volume::max_concurrent_ops()` (default `1`). `SmbVolume`
+   Per-file semantics are behavior-equivalent to pre-refactor.
+2. **P4.2: Add concurrency at the copy engine.** Introduce `Volume::max_concurrent_ops()` (default `1`). `SmbVolume`
    returns the settings-configurable value (default `10`). When copying N files between two volumes, the copy engine
    spawns `min(src.max_concurrent_ops(), dst.max_concurrent_ops())` parallel streaming-pipe tasks via
    `FuturesUnordered`. Progress aggregates across tasks. Cancellation check stays at task boundary.
-3. **P4.3 — Settings surface.** `network.smbConcurrency` in `settings.json`, default `10`, range `1..=32`. Wire through
+3. **P4.3: Settings surface.** `network.smbConcurrency` in `settings.json`, default `10`, range `1..=32`. Wire through
    to `SmbVolume::max_concurrent_ops`. Settings > Advanced > Network row with a numeric input.
 
 Why the split: P4.1 is a refactor with zero runtime behavior change (the byte path per file flips from a direct
-`std::fs` write to a stream pipe; same data, same ordering, same events) — its risk is all in correctness of the new
+`std::fs` write to a stream pipe; same data, same ordering, same events). Its risk is all in correctness of the new
 wiring, easy to test. P4.2 adds async complexity that's risky but concentrated in one place (copy engine). P4.3 is UI
 polish. Independent review units.
 
@@ -48,7 +48,7 @@ Current state has three copy paths tangled together:
 Path 1 is legit: APFS clonefile is a real capability no streaming abstraction can match. Preserved.
 
 Paths 2 and 3 are not legit to keep as separate concepts: `export_to_local(src, dst)` is functionally "open a read
-stream, pipe to local `std::fs::File`." The split is historical — path 2 predates streaming being robust. It's tech debt
+stream, pipe to local `std::fs::File`." The split is historical: path 2 predates streaming being robust. It's tech debt
 that (a) doubles every backend's copy-method count, (b) forces new backends (S3, WebDAV, FTP) to implement twice as many
 methods for no benefit, (c) spreads concurrency logic across path 2 methods when it should live once in the copy engine.
 
@@ -60,7 +60,7 @@ Consolidating to one streaming path (plus the APFS clone fast path) means:
 - One place to add features (resume, checksums, progress, cancellation) affects all copy directions.
 
 The bench-measured 7x speedup for "100 tiny files from SMB" that `smb2` Phase 3 unlocked can't be realized in cmdr
-without the copy engine spawning concurrent streams — Phase 3 is the wire-level engine, Phase 4 is the consumer-side
+without the copy engine spawning concurrent streams. Phase 3 is the wire-level engine, Phase 4 is the consumer-side
 driver.
 
 ## The unified design in one paragraph
@@ -81,7 +81,7 @@ streams via `FuturesUnordered`; backends that can't parallelize (MTP over USB) r
 | F2  | `supports_export` capability flag               | **Kept.** Renamed semantics: "this volume can stream its bytes" = source for a copy.                                                                                                                                                                                                                                                  | Some volumes are write-only or read-only; the flag still gates the copy dialog's "copy from this" UI.                                                     |
 | F3  | APFS clone fast path                            | **Kept.** `LocalPosix → LocalPosix, same device` dispatches to `copy.rs` which already handles clone.                                                                                                                                                                                                                                 | Real capability. No streaming alternative is equivalent.                                                                                                  |
 | F4  | Same-APFS detection                             | Use `std::os::unix::fs::MetadataExt::dev()` (already exists in `copy_strategy.rs::is_same_apfs_volume`).                                                                                                                                                                                                                              | Reuse existing logic.                                                                                                                                     |
-| F5  | `Volume::max_concurrent_ops()`                  | New trait method. Signature: `fn max_concurrent_ops(&self) -> usize;` default `1`. `SmbVolume` returns settings-derived value (default 10). `LocalPosixVolume` returns `num_cpus::get().clamp(4, 16)` or similar — disk I/O is multi-queue capable. `MtpVolume` returns 1. `InMemoryVolume` returns `usize::MAX` (clamped by caller). | Each backend knows its own parallelism limit. Copy engine takes `min` of both sides.                                                                      |
+| F5  | `Volume::max_concurrent_ops()`                  | New trait method. Signature: `fn max_concurrent_ops(&self) -> usize;` default `1`. `SmbVolume` returns settings-derived value (default 10). `LocalPosixVolume` returns `num_cpus::get().clamp(4, 16)` or similar (disk I/O is multi-queue capable). `MtpVolume` returns 1. `InMemoryVolume` returns `usize::MAX` (clamped by caller). | Each backend knows its own parallelism limit. Copy engine takes `min` of both sides.                                                                      |
 | F6  | Upper bound on concurrency                      | Copy engine clamps to `min(src, dst, 32)`.                                                                                                                                                                                                                                                                                            | 32 is smb2's `MAX_PIPELINE_WINDOW`. Beyond it doesn't help, and for local-to-local "many tiny files" workloads we don't want to spawn hundreds of tasks.  |
 | F7  | Threshold for switching on concurrency          | `N >= 3` files. Below that, sequential loop.                                                                                                                                                                                                                                                                                          | Spawning a task and collecting a future isn't free; for 1-2 files it's noise.                                                                             |
 | F8  | Concurrency primitive                           | `futures_util::stream::FuturesUnordered<BoxedCopyFut>` driven by a loop that keeps the in-flight window filled.                                                                                                                                                                                                                       | Matches the pattern smb2's pipelined loops already use. Keeps the sliding window semantics.                                                               |
@@ -91,7 +91,7 @@ streams via `FuturesUnordered`; backends that can't parallelize (MTP over USB) r
 | F12 | Cancellation check frequency                    | Check `is_cancelled(&state.intent)` at task start, and again between chunks inside each stream pipe.                                                                                                                                                                                                                                  | Already the per-file pattern; carries over.                                                                                                               |
 | F13 | Ordering of events                              | `write-progress` events emit aggregated state. `write-source-item-done` fires when each file completes, potentially out of submission order.                                                                                                                                                                                          | Matches what the UI already tolerates (it was already `tokio::spawn` friendly).                                                                           |
 | F14 | Conflict resolution interaction                 | Conflict detection is still pre-copy (scan phase). Resolution (`Stop` mode) blocks the whole batch until user decides. Per-file `Overwrite` / `Skip` / `Rename` applies at task start.                                                                                                                                                | Scan-first keeps UX the same.                                                                                                                             |
-| F15 | `SmbVolume` mutex handling                      | **Keep the mutex for single-op paths** (`list_directory`, `stat`, `rename`, etc.) — they're fine serialized. For stream open/write, grab a `Connection` clone **outside the mutex** once, drop the guard, then spawn tasks each holding the clone. Tasks never touch the mutex.                                                       | Mutex still protects the `SmbClient` + `Tree` for non-concurrent ops; concurrent ops use the already-Clone'd Connection underneath. No pool, no new data. |
+| F15 | `SmbVolume` mutex handling                      | **Keep the mutex for single-op paths** (`list_directory`, `stat`, `rename`, etc.): they're fine serialized. For stream open/write, grab a `Connection` clone **outside the mutex** once, drop the guard, then spawn tasks each holding the clone. Tasks never touch the mutex.                                                       | Mutex still protects the `SmbClient` + `Tree` for non-concurrent ops; concurrent ops use the already-Clone'd Connection underneath. No pool, no new data. |
 | F16 | `LocalPosixVolume` concurrency strategy         | Use `num_cpus::get().clamp(4, 16)`; each task is a `tokio::task::spawn_blocking` doing a chunked local copy.                                                                                                                                                                                                                          | Local disk can handle plenty of concurrent I/O; clamp to avoid runaway for giant batches.                                                                 |
 | F17 | Settings key for SMB concurrency                | `network.smbConcurrency` (number), default `10`, range `1..=32`.                                                                                                                                                                                                                                                                      | Lives with other network settings. Range matches `MAX_PIPELINE_WINDOW`.                                                                                   |
 | F18 | Settings UI placement                           | Settings > Advanced > Network. Small numeric input, help text "Concurrent operations per SMB connection (default 10)".                                                                                                                                                                                                                | Advanced avoids cluttering primary settings.                                                                                                              |
@@ -100,17 +100,17 @@ streams via `FuturesUnordered`; backends that can't parallelize (MTP over USB) r
 
 ## Migration plan (concrete)
 
-### P4.1 — Unify the trait
+### P4.1: Unify the trait
 
 1. **Remove from trait** (`src/file_system/volume/mod.rs` in the `Volume` trait def): `export_to_local`,
-   `import_from_local`, and the capability check `supports_export` is revisited (still used to gate the copy dialog —
+   `import_from_local`, and the capability check `supports_export` is revisited (still used to gate the copy dialog,
    kept, same semantics).
 2. **Remove implementations**: `LocalPosixVolume::export_to_local` (becomes `std::fs::copy` via `copy.rs`),
    `SmbVolume::export_to_local` / `import_from_local` (becomes open_read_stream + write_from_stream usage by
    `volume_copy.rs`), `MtpVolume::export_to_local` / `import_from_local` (same), `InMemoryVolume` (already uses
-   streaming). Net line delta: negative — each backend loses 50-200 LOC.
+   streaming). Net line delta: negative (each backend loses 50-200 LOC).
 3. **Verify streaming methods work on every backend**: each of the four backends has `open_read_stream` and
-   `write_from_stream` implemented. `LocalPosixVolume` — add them if not present; they wrap `std::fs::File` +
+   `write_from_stream` implemented. `LocalPosixVolume`: add them if not present; they wrap `std::fs::File` +
    `tokio::task::spawn_blocking` for the blocking reads/writes.
 4. **Rewrite `volume_copy.rs::copy_single_path`**:
    ```rust
@@ -126,20 +126,20 @@ streams via `FuturesUnordered`; backends that can't parallelize (MTP over USB) r
    chunk, checks cancellation between chunks.
 5. **Keep `volume_copy.rs::copy_volumes_with_progress` shape**. Internal `copy_single_path` is the only thing that
    changes. Outer scan/conflict/progress flow stays.
-6. **Update `src/file_system/volume/CLAUDE.md`** — trait table, capability table, "how to add a new volume" checklist
+6. **Update `src/file_system/volume/CLAUDE.md`**: trait table, capability table, "how to add a new volume" checklist
    collapses from "3 copy methods" to "2 stream methods."
 7. **Run P4.0 bench** post-P4.1 to confirm no performance regression. Expected: same as pre-P4.1 (same per-file work,
    just via streaming path; if anything slightly slower due to extra chunk hop, but should be within noise).
 
-### P4.2 — Add concurrency — DONE
+### P4.2: Add concurrency (DONE)
 
 Deviations from the pre-pinned F-decisions:
 
-- **F5 — `LocalPosixVolume` concurrency**: Used `std::thread::available_parallelism()` (stdlib) with a rough "halve for
+- **F5, `LocalPosixVolume` concurrency**: Used `std::thread::available_parallelism()` (stdlib) with a rough "halve for
   physical cores" heuristic instead of adding a `num_cpus` crate dependency. Still clamped to `4..=16`. Same effective
   concurrency on typical dev/user hardware.
-- **F5 — `InMemoryVolume` concurrency**: Returns `32` (matches the caller's upper bound) instead of `usize::MAX`. No
-  behavioral difference — both hit the clamp — but the smaller number is less surprising in logs.
+- **F5, `InMemoryVolume` concurrency**: Returns `32` (matches the caller's upper bound) instead of `usize::MAX`. No
+  behavioral difference (both hit the clamp), but the smaller number is less surprising in logs.
 - **Partial cleanup under concurrency**: Added a shared `Arc<Mutex<Vec<PathBuf>>>` tracking in-flight destination paths.
   On abort/cancel (F10) the partial-cleanup loop now walks both `last_dest_path` (sequential) and `in_flight_partials`
   (concurrent), which extends F11's "drop-based cleanup = concurrency-safe" with an explicit delete-of-renamed-dest
@@ -171,7 +171,7 @@ Implementation notes:
    the same `AtomicU64` is fine. The 200 ms emit throttle on the driver side stays the same.
 5. **Run P4.0 bench** post-P4.2, compare to baseline.
 
-### P4.3 — Settings
+### P4.3: Settings
 
 1. Add `network.smbConcurrency: number` to the settings schema (wherever it lives in `src/lib/settings/`).
 2. Global accessor in Rust (like `crate::file_system::is_filter_safe_save_artifacts_enabled`):
@@ -185,7 +185,7 @@ Implementation notes:
 
 - **Unit**: existing `InMemoryVolume` copy tests should pass unchanged (they already use streaming).
 - **Integration**: `phase4_bench_baseline_smb_to_local_100_tiny_files` (the P4.0 test) should produce the same wall
-  clock before and after P4.1 — no concurrency yet, just refactored path. Expected within ~10% of pre-P4.1.
+  clock before and after P4.1 (no concurrency yet, just refactored path). Expected within ~10% of pre-P4.1.
 - **Local↔Local APFS clone**: add/keep a test asserting clonefile is used for same-volume (can verify via `statfs` +
   file count; or explicit test of `copy_strategy::is_same_apfs_volume`).
 - **Cross-volume streaming** (SMB↔MTP, MTP↔Local, etc.): pick one representative direction and write/keep a test; the
@@ -210,7 +210,7 @@ Implementation notes:
 
 | Risk                                                                                                                             | Mitigation                                                                                                                                                      |
 | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P4.1 streaming path is slower per-file than pre-refactor `export_to_local` for small files.                                      | The bench compares. If slower by > 10%, investigate — likely extra chunk-buffer hop. Fix by tuning chunk size in the stream pipe.                               |
+| P4.1 streaming path is slower per-file than pre-refactor `export_to_local` for small files.                                      | The bench compares. If slower by > 10%, investigate (likely extra chunk-buffer hop). Fix by tuning chunk size in the stream pipe.                               |
 | `LocalPosixVolume::open_read_stream` / `write_from_stream` isn't implemented.                                                    | Check first; if missing, add as part of P4.1 with `spawn_blocking` wrappers around `std::fs::File`.                                                             |
 | `SmbVolume::max_concurrent_ops` needs access to settings during construction, but SmbVolume is constructed before settings load. | Settings accessor reads from a global `OnceLock` or `RwLock` that's populated early; reading during copy (after user interaction) is always post-settings-load. |
 | Progress event storm under 100 concurrent tasks.                                                                                 | 200 ms throttle on the emit side already caps it. Atomic counter + throttle = max 5 events/sec regardless of task count.                                        |
@@ -220,10 +220,10 @@ Implementation notes:
 
 ## Out of scope for Phase 4
 
-- `delete_many` / `get_metadata_many` batch methods. Same pattern, different operation — do later if we see the pain.
+- `delete_many` / `get_metadata_many` batch methods. Same pattern, different operation. Do later if we see the pain.
 - Multi-session `SmbVolume` connection pool. Phase 3 bench showed single-session concurrent is enough; revisit only if
   we find workloads that need it.
-- Write-side concurrency benchmarking on SMB. Reads are bench-proven; writes may behave differently on QNAP — measure
+- Write-side concurrency benchmarking on SMB. Reads are bench-proven; writes may behave differently on QNAP, so measure
   before committing.
 - Upload/download progress shown as per-file + aggregate simultaneously in the UI. Current UI shows aggregate; per-file
   panel is a future UI improvement.

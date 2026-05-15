@@ -4,10 +4,10 @@ UI and state management for Android device file browsing via MTP (Media Transfer
 
 ## Architecture
 
-- **State**: `mtp-store.svelte.ts` — Reactive device list, connection status, Tauri event listeners
-- **Path utils**: `mtp-path-utils.ts` — Parse/construct MTP paths (`mtp://{deviceId}:{storageId}/path`)
-- **Dialog**: `PtpcameradDialog.svelte` — macOS-specific helper for `ptpcamerad` workaround (shows Terminal command)
-- **Toast**: `MtpConnectedToastContent.svelte` — Sticky toast shown when an MTP device connects. Explains ptpcamerad
+- **State**: `mtp-store.svelte.ts`: reactive device list, connection status, Tauri event listeners
+- **Path utils**: `mtp-path-utils.ts`: parse/construct MTP paths (`mtp://{deviceId}:{storageId}/path`)
+- **Dialog**: `PtpcameradDialog.svelte`: macOS-specific helper for `ptpcamerad` workaround (shows Terminal command)
+- **Toast**: `MtpConnectedToastContent.svelte`: sticky toast shown when an MTP device connects. Explains ptpcamerad
   suppression (macOS) or generic info (Linux). Offers "Don't show again" checkbox and "Disable MTP..." link. Uses
   module-level `$state` (`lastConnectedDeviceName`) set by `+layout.svelte` before `addToast()`, since the toast system
   renders components with zero props. Gated by `fileOperations.mtpConnectionWarning` setting (default `true`).
@@ -17,9 +17,9 @@ UI and state management for Android device file browsing via MTP (Media Transfer
 
 ### Path format: `mtp://{deviceId}:{storageId}/path`
 
-- `deviceId` — Unique USB device identifier (vendor:product)
-- `storageId` — MTP storage ID (hex, like `0x00010001` for Internal Storage)
-- `path` — Virtual filesystem path on device (e.g., `/DCIM/Camera`)
+- `deviceId`: unique USB device identifier (vendor:product)
+- `storageId`: MTP storage ID (hex, like `0x00010001` for Internal Storage)
+- `path`: virtual filesystem path on device (for example, `/DCIM/Camera`)
 
 Multiple storages (Internal + SD Card) become separate volumes in UI. Each has distinct volume ID.
 
@@ -32,7 +32,7 @@ sends event with `deviceId`. Frontend re-fetches current directory if viewing th
 
 MTP support can be disabled entirely from Settings > General > MTP. The toggle calls `setMtpEnabled()` (wired through
 `settings-applier.ts`), which invokes the `set_mtp_enabled` Tauri command. When disabled, all devices disconnect and
-hotplug events are ignored. The frontend is passive — it reacts to `volumes-changed` events as usual.
+hotplug events are ignored. The frontend is passive and reacts to `volumes-changed` events as usual.
 
 ### Automatic ptpcamerad suppression (macOS)
 
@@ -60,7 +60,7 @@ The udev rules file is at `src-tauri/resources/99-cmdr-mtp.rules` (for deb/rpm p
 
 MTP volumes implement the `Volume` trait. Browsing, `create_directory`, `delete`, `rename`, copy (F5), move (F6), and
 delete (F8) all route through the Volume abstraction. Clipboard operations (Cmd+C/V/X) remain blocked because the system
-clipboard requires local file paths, which MTP virtual paths can't provide — the UI suggests F5/F6 instead.
+clipboard requires local file paths, which MTP virtual paths can't provide, so the UI suggests F5/F6 instead.
 
 ## Gotchas
 

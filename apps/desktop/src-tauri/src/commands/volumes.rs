@@ -9,7 +9,7 @@ use crate::volumes::{self, DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo, Volu
 
 /// Result of resolving a path to its containing volume.
 /// Unlike `TimedOut<Option<VolumeInfo>>`, `timed_out: true` means "the filesystem
-/// didn't respond, we genuinely don't know" — not "here's a fallback."
+/// didn't respond, we genuinely don't know" (not "here's a fallback").
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PathVolumeResolution {

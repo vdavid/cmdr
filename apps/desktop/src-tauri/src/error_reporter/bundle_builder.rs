@@ -8,7 +8,7 @@
 //!   timestamp, packs into a `BTreeMap`, then calls [`build_zip`].
 //!
 //! Public entry point is [`build_bundle`], which dispatches on the scope. Capping is in
-//! the sibling [`super::bundle_capper`] module — Flow A enforces the cap inline, Flow B
+//! the sibling [`super::bundle_capper`] module. Flow A enforces the cap inline; Flow B
 //! relies on a post-build trim from the auto-dispatcher.
 
 use super::tail_walker;
@@ -36,7 +36,7 @@ const SAMPLE_LAST_LINES: usize = 20;
 const FLOW_B_PRE_ERROR_WINDOW: chrono::Duration = chrono::Duration::minutes(30);
 
 /// One log file selected for inclusion: redacted lines plus the source file's mtime
-/// (used to date the zip entry — without an explicit mtime, `zip` writes 1980-01-01).
+/// (used to date the zip entry; without an explicit mtime, `zip` writes 1980-01-01).
 #[derive(Debug, Clone)]
 pub(super) struct PreparedFile {
     pub(super) lines: Vec<String>,
@@ -46,7 +46,7 @@ pub(super) struct PreparedFile {
 /// Build an error report bundle in memory. No network. No disk writes (except reading logs).
 ///
 /// `user_note` is trimmed and dropped if empty. Callers are expected to cap its length
-/// (the commands layer enforces 100 000 chars) — we store it verbatim.
+/// (the commands layer enforces 100 000 chars); we store it verbatim.
 ///
 /// `scope` controls which log content makes it into the bundle. See [`BundleScope`].
 ///
@@ -202,7 +202,7 @@ pub(super) fn build_bundle_streaming(
 
         if walk.lines.is_empty() {
             // If we bailed at the cutoff with no lines, older rotations would be
-            // older still — stop walking entirely.
+            // older still. Stop walking entirely.
             if walk.hit_cutoff {
                 break;
             }
@@ -241,7 +241,7 @@ pub(super) fn build_bundle_streaming(
 
             // Mid-file cap check. The deflater holds an internal buffer of up to ~64 KB
             // that hasn't been flushed to the cursor yet, so the counter is a lower
-            // bound on the eventual on-disk size — there's a small overshoot risk on
+            // bound on the eventual on-disk size. There's a small overshoot risk on
             // the order of one chunk + the central directory tail (~few hundred bytes
             // per entry). Both are well inside the cap's headroom.
             let bytes_so_far = counter.load(std::sync::atomic::Ordering::Relaxed) as usize;
@@ -279,7 +279,7 @@ pub(super) fn build_bundle_streaming(
 /// `Write::write` call. Lets the streaming zip pipeline poll the running compressed
 /// byte count without taking an unsafe `get_mut()` borrow on the `ZipWriter`.
 ///
-/// The counter measures bytes the `zip` crate emitted to the cursor — i.e. compressed
+/// The counter measures bytes the `zip` crate emitted to the cursor, i.e. compressed
 /// payload + per-entry headers up to the last deflate flush. The crate's internal
 /// deflate buffer (up to ~64 KB) lags behind, so callers should treat the counter as a
 /// lower bound on the final size and budget conservatively.
@@ -331,7 +331,7 @@ fn build_bundle_legacy_window(
     now_system: SystemTime,
     salt: &[u8],
 ) -> Result<BuiltBundle, String> {
-    // BTreeMap so zip order is deterministic — same inputs, same bytes out. Matters for
+    // BTreeMap so zip order is deterministic: same inputs, same bytes out. Matters for
     // the preview hash and for byte-level tests.
     let mut prepared: BTreeMap<String, PreparedFile> = BTreeMap::new();
     let mut total_redacted_lines: usize = 0;
@@ -386,7 +386,7 @@ fn build_bundle_legacy_window(
 ///
 /// Returns `None` if the file can't be opened or its mtime can't be read; returns
 /// `Some((lines, mtime))` otherwise. `lines` may be empty if the entire file was
-/// outside the scope window — callers drop empty results so the bundle doesn't ship
+/// outside the scope window. Callers drop empty results so the bundle doesn't ship
 /// empty `logs/<name>` entries.
 pub(super) fn load_and_filter_log_file(
     path: &Path,
@@ -409,7 +409,7 @@ pub(super) fn load_and_filter_log_file(
     let mtime = metadata.modified().unwrap_or(now_system);
 
     // File-level filter. If a file's mtime is older than the lower bound of the scope's
-    // window, skip it entirely — its newest line is older than what we want.
+    // window, skip it entirely: its newest line is older than what we want.
     let lower_bound = match scope {
         BundleScope::Recent { window } => {
             now_utc - chrono::Duration::from_std(window).unwrap_or(chrono::Duration::hours(1))
@@ -436,7 +436,7 @@ pub(super) fn load_and_filter_log_file(
 
     // Per-line filter for the Flow B window: drop lines whose leading ISO-8601 stamp
     // is older than `lower_bound`. Lines without a parseable stamp pass through (the
-    // log line wasn't written by us — we keep it as-is rather than risk dropping
+    // log line wasn't written by us, so we keep it as-is rather than risk dropping
     // something useful).
     let mut lines: Vec<String> = Vec::new();
     for line in reader.lines().map_while(Result::ok) {
@@ -454,7 +454,7 @@ pub(super) fn load_and_filter_log_file(
 
 /// Convert a [`SystemTime`] into a [`zip::DateTime`] (the format the zip crate stores
 /// per entry). On parse failure (system clock before 1980, post-2107) returns the zip
-/// crate's default — not a hard error; the bundle still ships, just with a placeholder
+/// crate's default (not a hard error). The bundle still ships, just with a placeholder
 /// mtime on that one entry.
 pub(super) fn zip_dt(time: SystemTime) -> ZipDateTime {
     let local: DateTime<chrono::Local> = time.into();
@@ -473,8 +473,8 @@ pub(super) fn zip_dt(time: SystemTime) -> ZipDateTime {
 ///
 /// Each entry's mtime is set explicitly: `manifest.json` uses `now`, log entries use
 /// the source file's mtime. Without this, the `zip` crate writes 1980-01-01 00:00 for
-/// every entry (DOS epoch), which makes downstream tooling — and humans inspecting the
-/// archive — unable to tell when anything was actually captured.
+/// every entry (DOS epoch), which makes downstream tooling and humans inspecting the
+/// archive unable to tell when anything was actually captured.
 ///
 /// Split out from [`build_bundle`] so tests can feed synthetic inputs without needing
 /// a Tauri app handle or a real log directory.

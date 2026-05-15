@@ -346,7 +346,7 @@ describe('validateFilename', () => {
   })
 
   it('returns first error before warnings', () => {
-    // Empty AND conflicting — error takes precedence
+    // Empty AND conflicting: error takes precedence
     const result = validateFilename('', 'old.txt', parentPath, [''], 'yes')
     expect(result.severity).toBe('error')
   })

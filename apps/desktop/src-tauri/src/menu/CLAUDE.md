@@ -6,29 +6,29 @@ window focus context.
 
 ## File layout
 
-- `mod.rs` — shared types (`MenuState`, `MenuItems`, `MenuItemEntry`, `MenuContext`,
+- `mod.rs`: shared types (`MenuState`, `MenuItems`, `MenuItemEntry`, `MenuContext`,
   `NetworkHostMenuContext`, `CommandScope`, `ViewMode`), constants (all menu item IDs), the
   ID mapping functions (`menu_id_to_command`, `command_id_to_menu_id`), and re-exports of the
   public API exposed by the submodules below.
-- `menu_items.rs` — small-piece builders and platform-aware helpers: `build_sort_submenu`,
+- `menu_items.rs`: small-piece builders and platform-aware helpers: `build_sort_submenu`,
   `build_zoom_submenu`, `register_item`, `truncate_for_menu_label`, the `copy_path_accelerator` /
   `show_in_file_manager_*` / `full_view_label` / `brief_view_label` platform helpers, and the
   `SortSubmenuItems` struct.
-- `menu_structure.rs` — hierarchical assembly: the `build_menu` dispatcher, file context menu
+- `menu_structure.rs`: hierarchical assembly: the `build_menu` dispatcher, file context menu
   (`build_context_menu`), breadcrumb / tab / network-host context menus, the viewer-window menu
   (`build_viewer_menu`), plus the `FileContextInfo` and `ContextMenuResult` types.
-- `menu_handlers.rs` — event-handler and live-update helpers: `rebuild_view_mode_items`,
+- `menu_handlers.rs`: event-handler and live-update helpers: `rebuild_view_mode_items`,
   `sync_view_mode_check_states`, `update_menu_item_accelerator`, `frontend_shortcut_to_accelerator`,
   and the macOS post-construction wrappers `cleanup_macos_menus` / `set_macos_menu_icons` (the
   actual objc2 FFI lives in `macos.rs`).
-- `macos.rs` — `build_menu_macos` (full macOS menu bar), `cleanup_macos_menus` (removes
+- `macos.rs`: `build_menu_macos` (full macOS menu bar), `cleanup_macos_menus` (removes
   system-injected Edit items, registers Help menu), `set_macos_menu_icons` (SF Symbol icons via
   objc2 FFI), and their helpers.
-- `open_with.rs` (macOS) — `build_open_with_submenu` for the file context menu's "Open with"
+- `open_with.rs` (macOS): `build_open_with_submenu` for the file context menu's "Open with"
   submenu. Returns the submenu plus a `bundle_id → app_path` map that callers stash in
   `MenuState.context.open_with_apps` so `on_menu_event` can resolve dynamic `open-with:<bundle-id>`
   click targets.
-- `linux.rs` — `build_menu_linux` (full Linux/GTK menu bar with mnemonics, no F-key accelerators).
+- `linux.rs`: `build_menu_linux` (full Linux/GTK menu bar with mnemonics, no F-key accelerators).
 
 ## Key concepts
 
@@ -46,7 +46,7 @@ Exceptions that do NOT use `"execute-command"`:
   `tab.close`
 - **Sort items**: emit `"menu-sort"` with field/direction payload. The four shortcut-bound columns
   (`SORT_BY_{NAME,EXTENSION,MODIFIED,SIZE}_ID`) are *also* listed in `menu_id_to_command` and
-  registered in the items HashMap — purely so user-customized accelerators flow through the
+  registered in the items HashMap, purely so user-customized accelerators flow through the
   generic update path. The on_menu_event special-case fires first, so the generic dispatch is
   never reached at click time.
 - **Tab context menu**: emits specific tab action events with tab index payload
@@ -63,7 +63,7 @@ Shared state managed via `tauri::State<MenuState<Wry>>`. Holds:
 - Named `CheckMenuItem` references (`show_hidden_files`, plus four per-pane view-mode items:
   `view_mode_full_left/right` and `view_mode_brief_left/right`) for checked-state sync
 - `pin_tab` MenuItem reference for dynamic label changes ("Pin tab" / "Unpin tab")
-- `view_left_pane_submenu` / `view_right_pane_submenu` — the two pane-scoped submenus that hold
+- `view_left_pane_submenu` / `view_right_pane_submenu`: the two pane-scoped submenus that hold
   the Full/Brief CheckMenuItems (Full at position 0, Brief at position 1). Used by
   `rebuild_view_mode_items` to remove/recreate/reinsert items when accelerators move on focus change.
 - Cached view-mode state (`view_mode_active_pane`, `view_mode_left`, `view_mode_right`,
@@ -71,7 +71,7 @@ Shared state managed via `tauri::State<MenuState<Wry>>`. Holds:
   attach the keyboard accelerator only to the currently-active pane's pair
 - `items: HashMap<String, MenuItemEntry>` for the ~20 regular MenuItems that need accelerator
   updates and enable/disable
-- `context: MenuContext` for right-click context menu — `path` (primary right-clicked file),
+- `context: MenuContext` for right-click context menu: `path` (primary right-clicked file),
   `filename`, `paths` (full selection if the right-clicked file is part of it, else `[path]`),
   and (macOS) `open_with_apps` (`bundle_id → app_path` map populated when "Open with" submenu
   is built, consumed by `on_menu_event` on click)
@@ -126,7 +126,7 @@ Uses `objc2::exception::catch` because NSMenu operations can raise ObjC exceptio
 selection highlighting. Also handles nested submenus (Sort by) via
 `apply_sf_symbols_to_nested_submenu`.
 
-Context menus don't get SF Symbols for our own items — Tauri doesn't expose the raw `NSMenu`
+Context menus don't get SF Symbols for our own items because Tauri doesn't expose the raw `NSMenu`
 pointer for context menus, and rasterized SF Symbol bitmaps via `IconMenuItem` look poor (no
 template auto-tinting). However, **full-color non-template images do render correctly** through
 `IconMenuItem`, and that's what the "Open with" submenu uses for app-bundle icons (loaded via
@@ -150,7 +150,7 @@ Both platforms share: File, Edit, View (with Sort by and Zoom submenus), Go, Tab
 
 The **Zoom** submenu (`build_zoom_submenu`) holds the text-size presets (75/100/125/150 %) plus Zoom in (`Cmd+Plus`) /
 Zoom out (`Cmd+Minus`) / 100 % (`Cmd+0`). Items are `App`-scoped so the keyboard accelerators fire in any focused window.
-Linux skips the in/out accelerators because GTK intercepts `Cmd+Plus` / `Cmd+Minus` at the toolkit level — the JS
+Linux skips the in/out accelerators because GTK intercepts `Cmd+Plus` / `Cmd+Minus` at the toolkit level; the JS
 shortcut dispatch path covers Linux.
 macOS adds: cmdr (app menu), Window. See the menu item ID constants in `mod.rs` for the full item list.
 
@@ -184,10 +184,10 @@ also Window and Help.
 **Why**: CheckMenuItems auto-toggle their checked state on click. If the click also emitted `"execute-command"` and the frontend toggled the setting, the state would double-toggle (menu toggles once, frontend toggles again). Instead, these items emit `"settings-changed"` or `"view-mode-changed"` directly, treating the menu click as the authoritative state change.
 
 **Decision**: Per-pane View submenus (`View > Left pane > …`, `View > Right pane > …`) with the accelerator following the active pane.
-**Why**: The previous single Full/Brief pair always targeted the active pane, but that scope was invisible in the menu — testers were slow to figure out how to change the inactive pane's view. Nesting each pane's Full/Brief items inside its own submenu makes the scope obvious without cluttering the View root. The accelerator is attached only to the active pane's pair (and migrates on focus change via `rebuild_view_mode_items`) so the shortcut remains accurate — pressing ⌘1 always affects the active pane, and the visible binding sits next to the items it actually targets.
+**Why**: The previous single Full/Brief pair always targeted the active pane, but that scope was invisible in the menu, so testers were slow to figure out how to change the inactive pane's view. Nesting each pane's Full/Brief items inside its own submenu makes the scope obvious without cluttering the View root. The accelerator is attached only to the active pane's pair (and migrates on focus change via `rebuild_view_mode_items`) so the shortcut remains accurate: pressing ⌘1 always affects the active pane, and the visible binding sits next to the items it actually targets.
 
 **Decision**: SF Symbol icons only on the menu bar, not on context menus.
-**Why**: Tauri doesn't support SF Symbols natively. For the menu bar, we walk `NSApplication.mainMenu()` post-construction via objc2 FFI and set SF Symbols directly on `NSMenuItem` objects — this produces true template images that auto-tint correctly. Context menus don't get icons because Tauri doesn't expose the raw `NSMenu` pointer, and the alternative (rasterized bitmaps via `IconMenuItem`) produces visually poor results (no template tinting, wrong size/weight).
+**Why**: Tauri doesn't support SF Symbols natively. For the menu bar, we walk `NSApplication.mainMenu()` post-construction via objc2 FFI and set SF Symbols directly on `NSMenuItem` objects, producing true template images that auto-tint correctly. Context menus don't get icons because Tauri doesn't expose the raw `NSMenu` pointer, and the alternative (rasterized bitmaps via `IconMenuItem`) produces visually poor results (no template tinting, wrong size/weight).
 
 ## Gotchas
 
@@ -201,19 +201,19 @@ also Window and Help.
   decide between file clipboard and text clipboard (via `document.activeElement` check). If a
   non-main window is focused (viewer, settings), `send_native_clipboard_action()` in `lib.rs` sends
   the native `copy:`/`cut:`/`paste:` selector through the responder chain via
-  `NSApplication.sendAction:to:from:` — replicating what PredefinedMenuItems do internally. This
+  `NSApplication.sendAction:to:from:`, replicating what PredefinedMenuItems do internally. This
   ensures text clipboard works natively in all windows. Undo and Redo remain PredefinedMenuItems
   since they only apply to text fields.
 - **⌘A dual routing**: "Select all" uses ⌘A as a native menu accelerator (so it's visible in the
   Edit menu). Since macOS intercepts it before the webview, the frontend's `handleCommandExecute`
-  checks `document.activeElement` — if it's an input/textarea, it calls `.select()` for text
+  checks `document.activeElement`: if it's an input/textarea, it calls `.select()` for text
   selection; otherwise it selects files. This avoids PredefinedMenuItem::select_all which would
   conflict with the custom MenuItem.
 - **Pin tab label**: `pin_tab` in MenuState is updated dynamically by the frontend to show
   "Pin tab" or "Unpin tab" based on the active tab's state.
 - **Reopen closed tab item**: The Tab submenu includes "Reopen closed tab" (⌘⇧T on macOS) between
   Close tab and the Next/Previous tab pair. The item is created **disabled** and toggled live via
-  `set_reopen_closed_tab_enabled(enabled: bool)` — same dynamic-state pattern as `pin_tab`'s label.
+  `set_reopen_closed_tab_enabled(enabled: bool)`, using the same dynamic-state pattern as `pin_tab`'s label.
   `MenuState.reopen_closed_tab` holds the `MenuItem` reference. The frontend pushes enable state
   after every close, reopen, and focus change so the menu always reflects the focused pane's
   closed-tab stack.

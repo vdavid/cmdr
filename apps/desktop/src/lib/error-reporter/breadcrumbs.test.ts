@@ -1,7 +1,7 @@
 /**
  * Tests for the FE breadcrumb wrapper.
  *
- * The wrapper is intentionally thin — it just calls `invoke('record_breadcrumb', ...)`
+ * The wrapper is intentionally thin: it just calls `invoke('record_breadcrumb', ...)`
  * with a normalised `ctx` (null when undefined) and swallows errors. We assert the
  * IPC contract because callers rely on it (kind, message, ctx shape).
  */

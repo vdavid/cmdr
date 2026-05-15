@@ -65,7 +65,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
       requestId?: string
     }
     const explorerRef = getExplorer()
-    // explorerRef may be null during HMR — skip silently, let the backend timeout handle it
+    // explorerRef may be null during HMR; skip silently, let the backend timeout handle it
     if (!explorerRef) return
     const result = explorerRef.navigateToPath(pane, path)
     if (requestId) {
@@ -75,7 +75,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
           // Synchronous error (pane not available, wrong volume, etc.)
           await emit('mcp-response', { requestId, ok: false, error: result })
         } else {
-          // Promise — wait for directory listing to complete
+          // Promise: wait for directory listing to complete
           try {
             await result
             await emit('mcp-response', { requestId, ok: true })

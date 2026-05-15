@@ -44,7 +44,7 @@ async function readNetworkLabel(tauriPage: Parameters<typeof pollUntil>[0]): Pro
   })()`)
 }
 
-/** Sets a setting through the MCP bridge — same code path the UI uses. */
+/** Sets a setting through the MCP bridge (same code path the UI uses). */
 async function setSettingViaBridge(
   _tauriPage: Parameters<typeof pollUntil>[0],
   settingId: string,
@@ -52,7 +52,7 @@ async function setSettingViaBridge(
 ): Promise<void> {
   // The `set_setting` MCP tool uses `mcp_round_trip` and only returns after the
   // frontend handler has acknowledged the change. This replaces the prior
-  // emit-and-sleep dance — no fixed-duration wait needed.
+  // emit-and-sleep dance; no fixed-duration wait needed.
   await mcpCall('set_setting', { id: settingId, value })
 }
 
@@ -72,7 +72,7 @@ async function closeVolumePicker(tauriPage: Parameters<typeof pollUntil>[0]): Pr
 test.describe('Network toggle in volume picker', () => {
   test.beforeEach(async ({ tauriPage }) => {
     // Force both panes back to a local volume in case a prior MTP test left a pane on
-    // a virtual MTP volume — `ensureAppReady`'s `mcp-nav-to-path` doesn't cross volume
+    // a virtual MTP volume; `ensureAppReady`'s `mcp-nav-to-path` doesn't cross volume
     // boundaries, so we have to switch volumes explicitly first.
     //
     // Short-circuit: skip the volume-select + cmdr://state poll when both panes are
@@ -109,7 +109,7 @@ test.describe('Network toggle in volume picker', () => {
   test.afterEach(async ({ tauriPage }) => {
     // Restore the default so the next spec file starts clean.
     await setSettingViaBridge(tauriPage, 'network.enabled', true)
-    // Close any settings window the click test may have opened. Best-effort — the
+    // Close any settings window the click test may have opened. Best-effort; the
     // Tauri webviewWindow API is the same module the app uses to open it.
     await tauriPage.evaluate(`(async function() {
       try {
@@ -152,7 +152,7 @@ test.describe('Network toggle in volume picker', () => {
     // Capture the visible breadcrumb label BEFORE the click. The picker's `.volume-name`
     // shows the active volume; if `handleVolumeSelect` had taken the navigate-to-volume
     // branch (i.e. our early-return guard didn't fire), this label would change after the
-    // click. So path-stability is our proxy for "the early-return branch ran" — the only
+    // click. So path-stability is our proxy for "the early-return branch ran": the only
     // branch that fits the disabled-network condition.
     const labelBefore = await tauriPage.evaluate<string>(
       `(function() { var bc = document.querySelector('.volume-name'); return bc ? bc.textContent || '' : ''; })()`,
@@ -185,16 +185,16 @@ test.describe('Network toggle in volume picker', () => {
     expect(clicked).toBe(true)
 
     // The dropdown should close. `handleVolumeSelect` sets `isOpen = false` up front, so
-    // both the early-return and the navigate paths close the dropdown — but only the
+    // both the early-return and the navigate paths close the dropdown, but only the
     // early-return path leaves the breadcrumb unchanged (next assertion).
     await pollUntil(tauriPage, async () => !(await tauriPage.isVisible(PICKER_DROPDOWN)), 3000)
     expect(await tauriPage.isVisible(PICKER_DROPDOWN)).toBe(false)
 
     // Active volume must NOT have changed: the disabled-network branch returns early
-    // without calling `onVolumeChange`, so the breadcrumb stays put. (We don't assert
-    // that the settings window actually opened — `openSettingsWindow` is fire-and-forget,
+    // without calling `onVolumeChange`, so the breadcrumb stays put. We don't assert
+    // that the settings window actually opened; `openSettingsWindow` is fire-and-forget,
     // and inspecting other webviews from the test webview is awkward via `evaluate()`.
-    // The breadcrumb-stability check is enough to prove our branch was the one that ran.)
+    // The breadcrumb-stability check is enough to prove our branch was the one that ran.
     const labelAfter = await tauriPage.evaluate<string>(
       `(function() { var bc = document.querySelector('.volume-name'); return bc ? bc.textContent || '' : ''; })()`,
     )

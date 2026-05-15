@@ -114,7 +114,7 @@
     let unlisteners: UnlistenFn[] = []
     // Promise that resolves once startScanPreview IPC has returned and previewId is set.
     // handleConfirm awaits this to guarantee previewId is non-null when passed to
-    // TransferProgressDialog — otherwise a fast confirm races with IPC and leaves the
+    // TransferProgressDialog, otherwise a fast confirm races with IPC and leaves the
     // progress dialog stuck in "Scanning 0 files" forever.
     let scanStarted: Promise<void> = Promise.resolve()
 
@@ -196,7 +196,7 @@
         }
     }
 
-    // Reset to volume root when volume changes — the current path is meaningless on a different volume
+    // Reset to volume root when volume changes: the current path is meaningless on a different volume
     function handleVolumeChange() {
         editedPath = '/'
         void loadVolumeSpace()
@@ -207,7 +207,7 @@
         // Watch for volume changes - read the reactive value to track it
         void selectedVolumeId
         if (isInitialVolumeEffect) {
-            // Skip the first run — editedPath is already initialized with the correct volume-relative path.
+            // Skip the first run: editedPath is already initialized with the correct volume-relative path.
             // Only load volume space on init.
             isInitialVolumeEffect = false
             void loadVolumeSpace()
@@ -230,7 +230,7 @@
      * with `conflicts: []` even when conflicts exist. The FE never displays the count
      * + radio policy section, and the backend can't help if the user picked
      * `overwrite_all` blindly. We resolve this by gating Confirm on the check
-     * completing — see `handleConfirm`.
+     * completing. See `handleConfirm`.
      */
     let conflictCheckPromise: Promise<void> | null = $state(null)
 
@@ -330,7 +330,7 @@
             const alreadyComplete = await checkScanPreviewStatus(previewId)
             if (alreadyComplete) {
                 // The scan finished before we could listen. Re-fetch the result by triggering
-                // a fresh scan status check — the backend will re-emit the complete event.
+                // a fresh scan status check; the backend will re-emit the complete event.
                 // For now, mark as complete with whatever stats we have (they'll be updated
                 // when the copy starts and reads the cached scan result).
                 isScanning = false
@@ -349,7 +349,7 @@
         // Volume space is loaded by the $effect watching selectedVolumeId
 
         // Start scanning files immediately. Track the promise so handleConfirm can
-        // await it — this ensures previewId is set before onConfirm fires.
+        // await it: this ensures previewId is set before onConfirm fires.
         scanStarted = startScan()
 
         // Auto-confirm if MCP requested it (after a tick so the dialog is fully initialized)
@@ -361,7 +361,7 @@
 
     onDestroy(() => {
         destroyed = true
-        // Cancel scan preview if still running — but only if the user cancelled, not confirmed.
+        // Cancel scan preview if still running, but only if the user cancelled, not confirmed.
         // On confirm, the TransferProgressDialog takes over listening to the same scan.
         if (previewId && isScanning && !confirmed) {
             void cancelScanPreview(previewId)
@@ -378,7 +378,7 @@
         // cannot recover from once scan events have already been emitted.
         await scanStarted
         // Also wait for the conflict scan if it's still running. Without this, a fast
-        // confirm sends `conflicts: []` to the backend even when conflicts exist —
+        // confirm sends `conflicts: []` to the backend even when conflicts exist,
         // the user never sees the radio policy section, and the operation runs with
         // whatever default `conflictPolicy` was set ("stop" by default, so it'd still
         // prompt per-file via the backend, but only because of the default).

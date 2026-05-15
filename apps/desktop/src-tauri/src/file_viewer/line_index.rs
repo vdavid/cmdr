@@ -1,7 +1,7 @@
-//! LineIndexBackend — sparse line-offset index for efficient line-based seeking.
+//! LineIndexBackend: sparse line-offset index for efficient line-based seeking.
 //!
 //! Stores byte offsets every INDEX_CHECKPOINT_INTERVAL lines (256 by default).
-//! Memory: O(total_lines / 256) — a 10M-line file uses ~40 KB of index.
+//! Memory: O(total_lines / 256); a 10M-line file uses ~40 KB of index.
 //!
 //! The index is built by scanning the file for newlines using memchr (SIMD-accelerated).
 //! After scanning, supports O(1) line-based seeking via the checkpoint array.
@@ -102,7 +102,7 @@ impl LineIndexBackend {
         }
 
         // total_lines is line_number + 1 (for the last line, which may not end with \n)
-        // But if the file ends with \n, the last "line" is empty — we still count it.
+        // But if the file ends with \n, the last "line" is empty; we still count it.
         let total_lines = line_number + 1;
 
         Ok(Self {
@@ -217,7 +217,7 @@ impl FileViewerBackend for LineIndexBackend {
 
         let lines = self.read_lines_from_checkpoint(checkpoint.offset, lines_to_skip, count)?;
 
-        // Calculate byte offset of the target line (approximate — it's the checkpoint offset)
+        // Calculate byte offset of the target line (approximate; it's the checkpoint offset)
         let byte_offset = checkpoint.offset;
 
         Ok(LineChunk {
@@ -315,7 +315,7 @@ impl FileViewerBackend for LineIndexBackend {
             *progress.lock_ignore_poison() = scanned;
         }
 
-        // Handle last line (only reached if limit not hit — loop breaks early otherwise)
+        // Handle last line (only reached if limit not hit; loop breaks early otherwise)
         if !leftover.is_empty() {
             let line = String::from_utf8_lossy(&leftover);
             let line_lower = line.to_lowercase();

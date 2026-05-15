@@ -1,10 +1,10 @@
-//! "Make available offline" / "Remove download" wrappers — iCloud Drive only.
+//! "Make available offline" / "Remove download" wrappers (iCloud Drive only).
 //!
-//! Implementation notes — important context for future agents:
+//! Implementation notes (important context for future agents):
 //!
 //! `NSFileProviderManager` looked like the universal cross-provider API (Dropbox,
 //! Google Drive, OneDrive, Box, iCloud all show up as File Provider domains since
-//! macOS 12.3). It isn't — its host-side methods (`getDomainsWithCompletionHandler`,
+//! macOS 12.3). It isn't: its host-side methods (`getDomainsWithCompletionHandler`,
 //! `evictItemWithIdentifier`, `requestDownloadForItemWithIdentifier`) are reserved
 //! for the app that *bundles* the File Provider extension. From a third-party app
 //! like Cmdr, the system rejects the call with `NSFileProviderErrorProviderNotFound`
@@ -13,7 +13,7 @@
 //!
 //! What does work for any app: `FileManager.evictUbiquitousItem(at:)` and
 //! `startDownloadingUbiquitousItem(at:)`. They route through the **iCloud (NSUbiquity)
-//! infrastructure** — separate from the File Provider host APIs above — and accept
+//! infrastructure**, separate from the File Provider host APIs above, and accept
 //! any URL inside an iCloud ubiquity container. So we offer the eviction / download
 //! menu items only for files under `~/Library/Mobile Documents/com~apple~CloudDocs/`
 //! (iCloud Drive). For Dropbox/GDrive/OneDrive items the menu items don't appear;
@@ -32,7 +32,7 @@ fn home_dir() -> Option<PathBuf> {
     std::env::var_os("HOME").map(PathBuf::from)
 }
 
-/// Returns true only for paths inside iCloud Drive — the location where
+/// Returns true only for paths inside iCloud Drive, the location where
 /// `FileManager.evictUbiquitousItem` / `startDownloadingUbiquitousItem` work.
 #[cfg(target_os = "macos")]
 pub fn is_in_icloud_drive(path: &Path) -> bool {
@@ -150,7 +150,7 @@ mod tests {
     #[test]
     fn is_in_icloud_drive_excludes_third_party() {
         set_test_home();
-        // Third-party clouds aren't iCloud — eviction APIs don't apply.
+        // Third-party clouds aren't iCloud, so eviction APIs don't apply.
         assert!(!is_in_icloud_drive(Path::new(
             "/Users/test/Library/CloudStorage/Dropbox/foo.txt"
         )));
