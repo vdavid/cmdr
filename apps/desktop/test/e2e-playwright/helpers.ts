@@ -213,7 +213,7 @@ export async function ensureAppReady(
   // The leftExpected file poll below covers the wait for navigation to land.
 
   // Wait for the left pane to show the expected fixture files
-  const leftExpected = expectedFiles?.leftPane ?? ['file-a.txt', 'sub-dir']
+  const leftExpected = expectedFiles?.leftPane ?? ['file-a.txt', 'file-b.txt', 'sub-dir']
   const filesFound = await pollUntil(
     tauriPage,
     async () => {

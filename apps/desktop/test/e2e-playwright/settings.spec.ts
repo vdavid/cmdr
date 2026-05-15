@@ -226,22 +226,6 @@ test.describe('Settings keyboard binding', () => {
   // binding in `routes/settings/+page.svelte`.
 
   test('Escape closes the settings window (production binding)', async ({ tauriPage }) => {
-    // Linux-only timeout bump (macOS local runs in 272 ms total). The assert
-    // path polls `main.listWindows()` after Escape, which goes through
-    // tauri-plugin-playwright's `list_windows` command → Tauri's window
-    // registry. On Linux/GTK the registry mutex is held while webkit2gtk
-    // tears down the closed settings webview, blocking the first
-    // post-Escape call for ~7-8 s under suite load. The window IS closed
-    // (visually confirmed); only the assertion path stalls.
-    //
-    // The 8 s default leaves no headroom for the registry-mutex wait.
-    // 15 s gives the assertion a chance to resolve once destruction completes,
-    // without masking a real hang (a stuck close would still blow past 15 s).
-    // The phase timings below stay so the wall-clock distribution is visible
-    // on every future run; if mutex wait ever drops below the default again,
-    // we can remove this whole block.
-    test.setTimeout(15_000)
-
     const main = tauriPage as TauriPage
     const settings = await openSettingsWindowViaProd(main)
     await settings.waitForSelector('.settings-window', 3000)

@@ -24,6 +24,7 @@ import {
   mcpSwitchPane,
 } from '../e2e-shared/mcp-client.js'
 import {
+  CTRL_OR_META,
   dispatchMenuCommand,
   ensureAppReady,
   getFixtureRoot,
@@ -394,8 +395,12 @@ test.describe('MTP cross-volume copy conflicts', () => {
       })()`)
 
     try {
-      // Select both files in the MTP pane.
-      await tauriPage.keyboard.press('Meta+A')
+      // Select both files in the MTP pane. Meta is Cmd on macOS but Super on
+      // Linux where select-all is bound to Ctrl+A — use the platform-aware
+      // modifier rather than a hardcoded `Meta`.
+      await tauriPage.keyboard.down(CTRL_OR_META)
+      await tauriPage.keyboard.press('A')
+      await tauriPage.keyboard.up(CTRL_OR_META)
       await dispatchMenuCommand(tauriPage, 'file.copy')
 
       await tauriPage.waitForSelector(TRANSFER_DIALOG, 10000)
