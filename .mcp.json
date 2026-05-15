@@ -1,8 +1,12 @@
 {
   "mcpServers": {
-    "cmdr": {
+    "cmdr-dev": {
       "type": "http",
-      "url": "http://127.0.0.1:9225/mcp"
+      "url": "http://127.0.0.1:19225/mcp"
+    },
+    "cmdr-prod": {
+      "type": "http",
+      "url": "http://127.0.0.1:19224/mcp"
     },
     "tauri": {
       "type": "stdio",
