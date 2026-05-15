@@ -150,9 +150,14 @@ Unlike tools (which need a session via `initialize`), resources can be read imme
 
 The `cmdr://settings` resource and `set_setting` tool both use round-trips to the main window frontend. This means settings are always fetched fresh from the source of truth, rather than being synced to a Rust-side store. The tradeoff is a ~5s timeout if the frontend is unresponsive, but this avoids stale state issues.
 
-### `select_volume` times out when re-selecting the same volume
+### `select_volume` polls for `volume_name` match, not path change
 
-`select_volume` polls the target pane's path in `PaneStateStore` until it changes. If the pane is already on the requested volume (same path), no change is detected and the tool times out after 30s. This is harmless, since re-selecting the same volume is a no-op.
+`select_volume` polls the target pane's `volume_name` in `PaneStateStore` until it equals the requested name. Two consequences worth knowing:
+
+- **Re-selecting the same volume is an instant no-op** (the first poll matches). The previous "wait for path to change" formulation timed out for ~30s in this case.
+- **Virtual volumes like `Network`** work correctly even though the pane path doesn't necessarily change. The volume_name does change, which is what we check.
+
+`volume_name` flows through `PaneState` from the FE via `update_left_pane_state` / `update_right_pane_state` on every state push (`FilePane.svelte`).
 
 ### Tool execution is async but mostly synchronous
 

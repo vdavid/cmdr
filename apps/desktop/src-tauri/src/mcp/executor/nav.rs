@@ -95,29 +95,42 @@ pub async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, nam
                 .try_state::<PaneStateStore>()
                 .ok_or_else(|| ToolError::internal("Pane state not available"))?;
             store.set_focused_pane(pane.to_string());
-            let path_before = match pane {
-                "left" => store.get_left().path,
-                "right" => store.get_right().path,
-                _ => unreachable!(),
-            };
             app.emit("mcp-volume-select", json!({"pane": pane, "name": volume_name}))?;
 
-            // Wait for the target pane's path to change (meaning the volume switch
-            // and directory listing completed, and state was pushed to the store).
+            // Wait for the target pane's `volume_name` to match the requested
+            // name. This is the actual condition we care about and works
+            // uniformly for local, MTP, SMB, and virtual (Network) volumes.
+            //
+            // The previous "wait for `path` to change" formulation had two
+            // false-timeout failure modes:
+            //   1. Re-selecting the same volume: path doesn't change → 30s timeout
+            //      (a no-op should succeed instantly).
+            //   2. Switching to the virtual `Network` volume: the FE swaps in
+            //      NetworkBrowser without changing the pane path, so polling
+            //      for path change deadlocked. This was the actual root cause
+            //      of the SMB tests' `retries: 1` paying ~30s per first-run
+            //      failure.
+            //
+            // `volume_name` flows through `PaneState` via `update_left_pane_state`
+            // / `update_right_pane_state` on every FE-side state push (see
+            // `FilePane.svelte`). For an already-on-target volume the first poll
+            // matches immediately; for a real switch we wait for the FE to push
+            // the new name.
+            let target_name = volume_name.to_string();
             let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(30);
             let poll_interval = std::time::Duration::from_millis(250);
             loop {
-                let current_path = match pane {
-                    "left" => store.get_left().path,
-                    "right" => store.get_right().path,
+                let current_name = match pane {
+                    "left" => store.get_left().volume_name,
+                    "right" => store.get_right().volume_name,
                     _ => unreachable!(),
                 };
-                if current_path != path_before {
+                if current_name.as_deref() == Some(target_name.as_str()) {
                     break;
                 }
                 if tokio::time::Instant::now() >= deadline {
                     return Err(ToolError::internal(format!(
-                        "Timed out waiting for volume '{volume_name}' to load on {pane} pane"
+                        "Timed out waiting for volume '{volume_name}' to load on {pane} pane (last seen volume_name: {current_name:?})"
                     )));
                 }
                 tokio::time::sleep(poll_interval).await;
