@@ -19,6 +19,7 @@ use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
@@ -28,6 +29,10 @@ use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
 
 use super::scan::take_cached_scan_result;
+use super::transfer_driver::{
+    ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
+    build_pre_skip_set, drive_transfer_serial_async,
+};
 
 /// Per-source hints collected during the scan phase, so the copy loop can
 /// skip re-probing the source type/size per file. `size` is only meaningful
@@ -50,6 +55,15 @@ use super::types::{
 use super::volume_conflict::resolve_volume_conflict;
 use super::volume_strategy::copy_single_path;
 use crate::file_system::volume::{SourceItemInfo, Volume, VolumeError};
+
+/// Per-call future shape for the driver's `dest_meta_fetcher` closure.
+type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
+
+/// Per-call future shape for the driver's `conflict_resolver` closure.
+type ResolveFut<'a> = Pin<Box<dyn Future<Output = Result<ConflictDecision, WriteOperationError>> + Send + 'a>>;
+
+/// Per-call future shape for the driver's `transfer_one` closure.
+type TransferFut<'a> = Pin<Box<dyn Future<Output = Result<TransferOutcome, WriteOperationError>> + Send + 'a>>;
 
 /// Starts a copy operation between two volumes.
 ///
@@ -493,8 +507,8 @@ pub(crate) async fn copy_volumes_with_progress(
     let files_done_atomic = Arc::new(AtomicUsize::new(0));
     let atomic_bytes_done = Arc::new(AtomicU64::new(0));
     let last_progress_mutex = Arc::new(std::sync::Mutex::new(Instant::now()));
-    let mut files_done = 0;
-    let mut bytes_done = 0u64;
+    let files_done;
+    let bytes_done;
     let progress_interval = Duration::from_millis(config.progress_interval_ms);
 
     // Determine concurrency for this batch.
@@ -549,44 +563,32 @@ pub(crate) async fn copy_volumes_with_progress(
     // `dest_volume.get_metadata` stats, interleaved with the copies of
     // non-conflicting files, so the progress bar would only advance by 1 per
     // conflict instead of jumping to the full skipped count immediately.
-    // Build a `HashSet<&Path>` of the source paths to skip — checking that
-    // during iteration is O(1) and lets the main loop short-circuit cheaply.
     let pre_skip_paths: HashSet<PathBuf> =
-        if config.conflict_resolution == ConflictResolution::Skip && !config.pre_known_conflicts.is_empty() {
-            let names: HashSet<&str> = config.pre_known_conflicts.iter().map(String::as_str).collect();
-            source_paths
-                .iter()
-                .filter(|p| {
-                    p.file_name()
-                        .and_then(|n| n.to_str())
-                        .map(|n| names.contains(n))
-                        .unwrap_or(false)
-                })
-                .cloned()
-                .collect()
-        } else {
-            HashSet::new()
-        };
+        build_pre_skip_set(source_paths, config.conflict_resolution, &config.pre_known_conflicts);
 
-    if !pre_skip_paths.is_empty() {
-        let mut pre_skipped_count = 0usize;
-        let mut pre_skipped_bytes = 0u64;
-        for path in &pre_skip_paths {
-            let size = source_hints
-                .get(path)
-                .map(|h| if h.is_directory { 0 } else { h.size })
-                .unwrap_or(0);
-            pre_skipped_count += 1;
-            pre_skipped_bytes += size;
-        }
-        let new_files = files_done_atomic.fetch_add(pre_skipped_count, Ordering::Relaxed) + pre_skipped_count;
-        let new_bytes = atomic_bytes_done.fetch_add(pre_skipped_bytes, Ordering::Relaxed) + pre_skipped_bytes;
+    let mut bulk_skip_files = 0usize;
+    let mut bulk_skip_bytes = 0u64;
+    for path in &pre_skip_paths {
+        let size = source_hints
+            .get(path)
+            .map(|h| if h.is_directory { 0 } else { h.size })
+            .unwrap_or(0);
+        bulk_skip_files += 1;
+        bulk_skip_bytes += size;
+    }
+
+    // The concurrent path keeps its own bulk-skip emit so its shared atomics
+    // stay consistent; the serial path delegates the bulk-skip prelude to
+    // `drive_transfer_serial_async` (which emits one progress event from its
+    // own prelude using `bulk_skip_files` / `bulk_skip_bytes`).
+    if use_concurrent_path && bulk_skip_files > 0 {
+        let new_files = files_done_atomic.fetch_add(bulk_skip_files, Ordering::Relaxed) + bulk_skip_files;
+        let new_bytes = atomic_bytes_done.fetch_add(bulk_skip_bytes, Ordering::Relaxed) + bulk_skip_bytes;
         log::info!(
             "copy_volumes_with_progress: bulk-skipping {} pre-known conflicts ({} bytes) before main iteration",
-            pre_skipped_count,
-            pre_skipped_bytes
+            bulk_skip_files,
+            bulk_skip_bytes
         );
-        // One progress event reflects the bulk skip; the bar jumps in one go.
         state.emit_progress_via_sink(
             events,
             WriteProgressEvent::new(
@@ -632,7 +634,7 @@ pub(crate) async fn copy_volumes_with_progress(
         // is spawned (F14) so the whole batch blocks on a single Stop prompt
         // instead of racing per-task prompts.
         type CopyTaskFuture<'a> =
-            std::pin::Pin<Box<dyn Future<Output = Result<(PathBuf, u64), (PathBuf, VolumeError)>> + Send + 'a>>;
+            Pin<Box<dyn Future<Output = Result<(PathBuf, u64), (PathBuf, VolumeError)>> + Send + 'a>>;
         let mut in_flight: FuturesUnordered<CopyTaskFuture<'_>> = FuturesUnordered::new();
 
         // Inline helper: drains ONE future from `in_flight`, updates tracking.
@@ -853,164 +855,308 @@ pub(crate) async fn copy_volumes_with_progress(
         files_done = files_done_atomic.load(Ordering::Relaxed);
         bytes_done = atomic_bytes_done.load(Ordering::Relaxed);
     } else {
-        // Sequential path (unchanged semantics). Kept behavior-equivalent to
-        // pre-P4.2 for small batches and for backends that don't parallelize.
-        for source_path in source_paths {
-            if is_cancelled(&state.intent) {
-                break;
-            }
+        // Serial path: delegate the per-iter scaffolding (cancellation check,
+        // pre-skip, conflict detect/resolve, skip accounting, paired progress
+        // emit) to `drive_transfer_serial_async`. The two closures below own
+        // only the per-source work: conflict resolver dispatch and the actual
+        // copy via `copy_single_path`. Post-loop bookkeeping (rollback,
+        // partial cleanup, write-cancelled / write-complete emits) stays in
+        // this function, keyed off `outcome.intent` and `state.intent`.
+        //
+        // Why the concurrent path above stays inline rather than living in
+        // the driver: only `copy_volumes_with_progress` uses
+        // `FuturesUnordered` (moves are serial; local-FS copy is serial).
+        // Abstracting it would be a 1-of-4 abstraction with very different
+        // trait bounds (`Fn + Send + Sync` for `FuturesUnordered` polling vs
+        // the serial driver's per-call `FnMut`). See plan §
+        // "Concurrent driver scope" option (a).
+        let driver_config = DriverConfig {
+            operation_type: WriteOperationType::Copy,
+            phase: WriteOperationPhase::Copying,
+            conflict_resolution: config.conflict_resolution,
+            pre_known_conflicts: config.pre_known_conflicts.clone(),
+        };
+        // The driver bounds its closures as
+        // `for<'a> FnMut(...) -> Pin<Box<dyn Future + Send + 'a>>` — the
+        // returned future must be valid for **any** input lifetime `'a`,
+        // including `'static`. Closures that capture outer-fn `&` args end
+        // up with futures bounded by those args' lifetimes, which the
+        // for-all bound rejects ("returning this value requires that `'N`
+        // must outlive `'static`"). The captures are sound in practice
+        // (the driver awaits inline and never holds closures past this
+        // function's end), but we have to convince the compiler.
+        //
+        // Strategy: clone what's cheap to clone, lifetime-extend the rest
+        // via `transmute` scoped to this block. `config` clones to owned
+        // (Clone), `operation_id` to `String`. `events` is a trait object
+        // whose concrete impl isn't clonable in general; transmute its
+        // borrow to `'static` and capture that.
+        let config_owned: VolumeCopyConfig = config.clone();
+        let operation_id_owned: String = operation_id.to_string();
+        // SAFETY: `events` outlives every closure invocation made by the
+        // driver: the driver awaits in-place at `.await` below, so the
+        // closures stop being called before this function returns. None of
+        // the closures or the futures they produce escape this scope; the
+        // `'static`-erased reference is dropped before the original
+        // `events` borrow ends.
+        let events_static: &'static dyn OperationEventSink =
+            unsafe { std::mem::transmute::<&dyn OperationEventSink, &'static dyn OperationEventSink>(events) };
+        // Per-source mutable state shared with the driver's closures via
+        // interior mutability. Avoids `&mut` captures (which would force
+        // `AsyncFnMut` semantics; the driver bounds the closures as plain
+        // `FnMut` returning `Pin<Box<dyn Future + Send>>`).
+        let last_dest_cell: Arc<std::sync::Mutex<Option<PathBuf>>> = Arc::new(std::sync::Mutex::new(None));
+        let failure_ctx_cell: Arc<std::sync::Mutex<Option<(VolumeError, PathBuf)>>> =
+            Arc::new(std::sync::Mutex::new(None));
+        let apply_to_all_cell: Arc<std::sync::Mutex<Option<ConflictResolution>>> =
+            Arc::new(std::sync::Mutex::new(apply_to_all_resolution));
+        let copied_paths_for_closure = Arc::clone(&copied_paths);
+        let source_hints_arc: Arc<HashMap<PathBuf, SourceHint>> = Arc::new(std::mem::take(&mut source_hints));
 
-            // Pre-known conflict already accounted upfront in the bulk skip.
-            if pre_skip_paths.contains(source_path) {
-                continue;
-            }
-
-            let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
-            let mut dest_item_path = if let Some(name) = source_path.file_name() {
-                dest_path.join(name)
-            } else {
-                dest_path.to_path_buf()
-            };
-
-            if let Ok(dest_meta) = dest_volume.get_metadata(&dest_item_path).await {
-                let source_hint = source_hints.get(source_path).copied();
-                let source_is_dir = source_hint.map(|h| h.is_directory).unwrap_or(false);
-                let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
-                let dest_size_hint = dest_meta.size;
-                log::debug!(
-                    "copy_volumes_with_progress: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
-                    dest_item_path.display(),
-                    source_is_dir,
-                    dest_meta.is_directory,
-                );
-                let resolved = resolve_volume_conflict(
-                    &source_volume,
-                    source_path,
-                    &dest_volume,
-                    &dest_item_path,
-                    config,
-                    events,
-                    operation_id,
-                    state,
-                    &mut apply_to_all_resolution,
-                    source_size_hint,
-                    dest_size_hint,
-                )
-                .await
-                .map_err(WriteFailure::synthetic)?;
-                match resolved {
-                    None => {
-                        log::debug!(
-                            "copy_volumes_with_progress: skipping {} due to conflict resolution",
-                            source_path.display()
-                        );
-                        account_skipped_file(
-                            source_path,
-                            &source_hints,
-                            &files_done_atomic,
-                            &atomic_bytes_done,
-                            &last_progress_mutex,
-                            progress_interval,
-                            state,
-                            events,
-                            operation_id,
-                            total_files,
-                            total_bytes,
-                        );
-                        continue;
-                    }
-                    Some(resolved_path) => {
-                        dest_item_path = resolved_path;
-                    }
-                }
-            }
-
-            log::debug!(
-                "copy_volumes_with_progress: copying {} -> {}",
-                source_path.display(),
-                dest_item_path.display()
-            );
-
-            let last_file_bytes = AtomicU64::new(0);
-            let file_name_for_cb = file_name.clone();
-            let bytes_done_a = Arc::clone(&atomic_bytes_done);
-            let files_done_a = Arc::clone(&files_done_atomic);
-            let last_prog_a = Arc::clone(&last_progress_mutex);
-
-            let on_file_progress = |file_bytes_done: u64, _file_bytes_total: u64| -> ControlFlow<()> {
-                if is_cancelled(&state.intent) {
-                    return ControlFlow::Break(());
-                }
-                let prev = last_file_bytes.swap(file_bytes_done, Ordering::Relaxed);
-                let delta = file_bytes_done.saturating_sub(prev);
-                let current_total = bytes_done_a.fetch_add(delta, Ordering::Relaxed) + delta;
-                let current_files_done = files_done_a.load(Ordering::Relaxed);
-                let last = *last_prog_a.lock().unwrap();
-                if last.elapsed() >= progress_interval {
-                    *last_prog_a.lock().unwrap() = Instant::now();
-                    state.emit_progress_via_sink(
-                        events,
-                        WriteProgressEvent::new(
-                            operation_id.to_string(),
-                            WriteOperationType::Copy,
-                            WriteOperationPhase::Copying,
-                            file_name_for_cb.clone(),
-                            current_files_done,
-                            total_files,
-                            current_total,
-                            total_bytes,
-                        ),
-                    );
-                    update_operation_status(
-                        operation_id,
-                        WriteOperationPhase::Copying,
-                        file_name_for_cb.clone(),
-                        current_files_done,
-                        total_files,
-                        current_total,
-                        total_bytes,
-                    );
-                }
-                ControlFlow::Continue(())
-            };
-
-            let on_file_complete = || {
-                files_done_atomic.fetch_add(1, Ordering::Relaxed);
-            };
-
-            last_dest_path = Some(dest_item_path.clone());
-
-            let hint = source_hints.get(source_path).copied().unwrap_or_default();
-            let source_is_dir_hint = hint.is_directory;
-            let source_size_hint = if hint.is_directory { None } else { Some(hint.size) };
-            match copy_single_path(
-                &source_volume,
-                source_path,
-                source_is_dir_hint,
-                source_size_hint,
-                &dest_volume,
-                &dest_item_path,
-                state,
-                &on_file_progress,
-                &on_file_complete,
-            )
-            .await
+        let outcome = drive_transfer_serial_async(
+            events,
+            state,
+            operation_id,
+            source_paths,
+            dest_path,
+            total_files,
+            total_bytes,
+            bulk_skip_files,
+            bulk_skip_bytes,
+            &pre_skip_paths,
+            &driver_config,
             {
-                Ok(bytes_copied) => {
-                    copied_paths.lock().unwrap().push(dest_item_path);
-                    last_dest_path = None;
-                    files_done = files_done_atomic.load(Ordering::Relaxed);
-                    bytes_done = atomic_bytes_done.load(Ordering::Relaxed);
-                    if last_file_bytes.load(Ordering::Relaxed) == 0 && bytes_copied > 0 {
-                        bytes_done += bytes_copied;
-                        atomic_bytes_done.store(bytes_done, Ordering::Relaxed);
-                    }
+                let dest_volume = Arc::clone(&dest_volume);
+                move |p: &Path| -> FetchFut<'_> {
+                    let dest_volume = Arc::clone(&dest_volume);
+                    let p_owned = p.to_path_buf();
+                    Box::pin(async move {
+                        // `Some(_)` signals a conflict; preserve the existing
+                        // "treat any successful stat as a conflict" semantics.
+                        dest_volume
+                            .get_metadata(&p_owned)
+                            .await
+                            .ok()
+                            .map(|m| m.size.unwrap_or(0))
+                    })
                 }
-                Err(e) => {
-                    bytes_done = atomic_bytes_done.load(Ordering::Relaxed);
-                    copy_error = Some(WriteFailure::from_volume(source_path, e));
-                    break;
+            },
+            {
+                let source_volume = Arc::clone(&source_volume);
+                let dest_volume = Arc::clone(&dest_volume);
+                let state = Arc::clone(state);
+                let apply_to_all = Arc::clone(&apply_to_all_cell);
+                let source_hints = Arc::clone(&source_hints_arc);
+                let config = config_owned.clone();
+                let operation_id = operation_id_owned.clone();
+                move |input: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+                    let source_volume = Arc::clone(&source_volume);
+                    let dest_volume = Arc::clone(&dest_volume);
+                    let state = Arc::clone(&state);
+                    let apply_to_all = Arc::clone(&apply_to_all);
+                    let source_hints = Arc::clone(&source_hints);
+                    let config = config.clone();
+                    let operation_id = operation_id.clone();
+                    let source_path_owned = input.source_path.to_path_buf();
+                    let initial_dest_owned = input.initial_dest_path.to_path_buf();
+                    let dest_size_hint = input.dest_size_hint;
+                    Box::pin(async move {
+                        // Look up cached scan hints rather than re-probing;
+                        // this wires `source_hints` into the conflict path
+                        // and saves an MTP parent listing per conflicting
+                        // source.
+                        let source_hint = source_hints.get(&source_path_owned).copied();
+                        let source_is_dir = source_hint.map(|h| h.is_directory).unwrap_or(false);
+                        let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
+                        log::debug!(
+                            "copy_volumes_with_progress: conflict detected at {} (source_is_dir={})",
+                            initial_dest_owned.display(),
+                            source_is_dir,
+                        );
+                        // Take the apply-to-all latch into a stack local for
+                        // the `&mut`-bounded resolver, then store it back.
+                        // The serial driver guarantees single-threaded
+                        // sequencing; the Mutex just keeps the closure
+                        // `Fn`-shaped.
+                        let mut latched = apply_to_all.lock().unwrap().take();
+                        let resolved = resolve_volume_conflict(
+                            &source_volume,
+                            &source_path_owned,
+                            &dest_volume,
+                            &initial_dest_owned,
+                            &config,
+                            events_static,
+                            &operation_id,
+                            &state,
+                            &mut latched,
+                            source_size_hint,
+                            dest_size_hint,
+                        )
+                        .await;
+                        *apply_to_all.lock().unwrap() = latched;
+                        let resolved = resolved?;
+                        Ok(match resolved {
+                            None => {
+                                log::debug!(
+                                    "copy_volumes_with_progress: skipping {} due to conflict resolution",
+                                    source_path_owned.display()
+                                );
+                                ConflictDecision::Skip
+                            }
+                            Some(dest_path) => ConflictDecision::Proceed { dest_path },
+                        })
+                    })
                 }
+            },
+            {
+                let source_volume = Arc::clone(&source_volume);
+                let dest_volume = Arc::clone(&dest_volume);
+                let state = Arc::clone(state);
+                let last_dest_cell = Arc::clone(&last_dest_cell);
+                let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
+                let copied_paths = Arc::clone(&copied_paths_for_closure);
+                let source_hints = Arc::clone(&source_hints_arc);
+                let operation_id = operation_id_owned.clone();
+                move |ctx: TransferContext<'_>| -> TransferFut<'_> {
+                    let source_volume = Arc::clone(&source_volume);
+                    let dest_volume = Arc::clone(&dest_volume);
+                    let state = Arc::clone(&state);
+                    let last_dest_cell = Arc::clone(&last_dest_cell);
+                    let failure_ctx_cell = Arc::clone(&failure_ctx_cell);
+                    let copied_paths = Arc::clone(&copied_paths);
+                    let source_hints = Arc::clone(&source_hints);
+                    let operation_id = operation_id.clone();
+                    let source_path = ctx.source_path.to_path_buf();
+                    let dest_item_path = ctx
+                        .dest_path
+                        .expect("async driver always supplies dest_path")
+                        .to_path_buf();
+                    let bytes_done_so_far = ctx.bytes_done_so_far;
+                    let files_done_so_far = ctx.files_done_so_far;
+                    Box::pin(async move {
+                        let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
+                        log::debug!(
+                            "copy_volumes_with_progress: copying {} -> {}",
+                            source_path.display(),
+                            dest_item_path.display()
+                        );
+
+                        let hint = source_hints.get(&source_path).copied().unwrap_or_default();
+                        let source_is_dir_hint = hint.is_directory;
+                        let source_size_hint = if hint.is_directory { None } else { Some(hint.size) };
+
+                        // Per-file intra-progress: emit a throttled
+                        // aggregate event including running totals
+                        // (`bytes_done_so_far` was snapshotted by the
+                        // driver at the start of this iteration).
+                        let last_emit = std::sync::Mutex::new(Instant::now());
+                        let file_name_for_cb = file_name.clone();
+                        let state_for_cb = Arc::clone(&state);
+                        let on_file_progress = |file_bytes_done: u64, _file_bytes_total: u64| -> ControlFlow<()> {
+                            if is_cancelled(&state_for_cb.intent) {
+                                return ControlFlow::Break(());
+                            }
+                            let mut last = last_emit.lock().unwrap();
+                            if last.elapsed() >= progress_interval {
+                                *last = Instant::now();
+                                drop(last);
+                                let current_total = bytes_done_so_far + file_bytes_done;
+                                state_for_cb.emit_progress_via_sink(
+                                    events_static,
+                                    WriteProgressEvent::new(
+                                        operation_id.clone(),
+                                        WriteOperationType::Copy,
+                                        WriteOperationPhase::Copying,
+                                        file_name_for_cb.clone(),
+                                        files_done_so_far,
+                                        total_files,
+                                        current_total,
+                                        total_bytes,
+                                    ),
+                                );
+                                update_operation_status(
+                                    &operation_id,
+                                    WriteOperationPhase::Copying,
+                                    file_name_for_cb.clone(),
+                                    files_done_so_far,
+                                    total_files,
+                                    current_total,
+                                    total_bytes,
+                                );
+                            }
+                            ControlFlow::Continue(())
+                        };
+                        let on_file_complete = || {};
+
+                        *last_dest_cell.lock().unwrap() = Some(dest_item_path.clone());
+
+                        match copy_single_path(
+                            &source_volume,
+                            &source_path,
+                            source_is_dir_hint,
+                            source_size_hint,
+                            &dest_volume,
+                            &dest_item_path,
+                            &state,
+                            &on_file_progress,
+                            &on_file_complete,
+                        )
+                        .await
+                        {
+                            Ok(bytes_copied) => {
+                                copied_paths.lock().unwrap().push(dest_item_path);
+                                *last_dest_cell.lock().unwrap() = None;
+                                Ok(TransferOutcome::Transferred { bytes: bytes_copied })
+                            }
+                            Err(e) => {
+                                let mapped = map_volume_error(&source_path.display().to_string(), e.clone());
+                                *failure_ctx_cell.lock().unwrap() = Some((e, source_path));
+                                Err(mapped)
+                            }
+                        }
+                    })
+                }
+            },
+        )
+        .await;
+
+        // Pull mutable cells back into function-scope locals so the
+        // post-loop branch sees the same shape as the legacy serial loop
+        // for `last_dest_path` (partial-cleanup state) and the failure
+        // context (`WriteFailure` reconstruction below).
+        //
+        // `apply_to_all_resolution` and `source_hints` are subsumed by the
+        // driver and never read post-loop — silenced with `_ =` rather than
+        // assigned back to dead locals (which `#[deny(unused_assignments)]`
+        // would flag).
+        let _ = apply_to_all_cell.lock().unwrap().take();
+        if let Some(p) = last_dest_cell.lock().unwrap().take() {
+            last_dest_path = Some(p);
+        }
+        let copy_failure_ctx: Option<(VolumeError, PathBuf)> = failure_ctx_cell.lock().unwrap().take();
+        let _ = source_hints_arc;
+
+        files_done = outcome.files_done;
+        bytes_done = outcome.bytes_done;
+        match outcome.intent {
+            PostLoopIntent::Completed | PostLoopIntent::Cancelled => {
+                // Both drop into the post-loop branch below, which keys off
+                // `load_intent(&state.intent)` for rollback vs cancel cleanup
+                // and off `copy_error.is_none()` for the success arm.
+            }
+            PostLoopIntent::Failed(err) => {
+                // Rebuild a `WriteFailure` with volume context if the
+                // `copy_single_path` arm populated it (so the FE gets a
+                // provider-enriched `FriendlyError`); otherwise fall back to
+                // synthetic (conflict-resolution errors, which don't carry
+                // a `VolumeError`).
+                copy_error = Some(match copy_failure_ctx {
+                    Some((volume_err, path)) => WriteFailure {
+                        error: err,
+                        volume_ctx: Some((volume_err, path)),
+                    },
+                    None => WriteFailure::synthetic(err),
+                });
             }
         }
     }
