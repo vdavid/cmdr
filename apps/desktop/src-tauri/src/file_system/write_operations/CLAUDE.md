@@ -260,6 +260,9 @@ and `statfs.f_fstypename` for APFS. See `copy_strategy.rs` for the implementatio
 **Gotcha**: On macOS, never use `statvfs` alone for disk space checks; use `NSURLVolumeAvailableCapacityForImportantUsageKey`
 **Why**: `statvfs` reports only physically free blocks. On APFS, purgeable space (iCloud caches, APFS snapshots) can account for tens of GB that macOS will reclaim on demand. Using `statvfs` causes the "insufficient space" error to reject copies that would actually succeed, and shows a different available-space number than the status bar (which uses the NSURL API). `validate_disk_space` in `helpers.rs` calls `crate::volumes::get_volume_space()` on macOS and falls back to `statvfs` on Linux.
 
+**Gotcha**: Skip-All on volume copy/move with a top-level dir conflict still skips the entire dir subtree, even after the local-FS bulk-skip fix.
+**Why**: `build_pre_skip_set` now excludes top-level directories so non-conflicting children inside a conflicting dir get a chance to copy. For LOCAL copy this works because `copy_files_with_progress_inner` flattens dirs to per-file `FileInfo` entries pre-loop, and per-iter conflict resolution then evaluates each child individually. For VOLUME copy/move, the driver iterates top-level paths directly, and `resolve_volume_conflict` returns `Ok(None)` (= Skip) for ANY dir-vs-dir conflict under Skip mode without recursing — so the whole subtree is still dropped. Fixing this requires teaching `resolve_volume_conflict` (or the volume-side closure) to recurse-and-merge for dir conflicts under Skip, the same way `apply_volume_conflict_resolution` already does for Overwrite. Pinned by the Playwright spec `conflict-copy.spec.ts::Copy with Skip All preserves destination files` (local-FS path, currently green) — a volume-side equivalent test would catch the residual.
+
 ## Dependencies
 
 - `crate::file_system::volume`: `Volume` trait, `SpaceInfo`, `ScanConflict` (used by `volume_copy`)
