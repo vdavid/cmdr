@@ -56,8 +56,11 @@ scripts/check/check
 scripts/check-a11y-contrast/check-a11y-contrast
 scripts/check-css-unused/check-css-unused
 
-# Downloaded llama-server binaries (fetched at build time, not committed)
+# Downloaded llama-server binaries (fetched at build time, not committed).
+# Both forms because worktrees replace the dir with a symlink that points into
+# the main clone; the trailing-slash pattern alone won't catch that symlink.
 apps/desktop/src-tauri/resources/ai/
+apps/desktop/src-tauri/resources/ai
 
 .cargo-docker/
 
