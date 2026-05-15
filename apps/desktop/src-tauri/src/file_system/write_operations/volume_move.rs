@@ -5,7 +5,6 @@
 //! - Both local: delegates to `move_files_start` (handles same-fs rename optimization)
 //! - Cross-volume: copy to destination then delete sources
 
-use std::collections::HashSet;
 use std::future::Future;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
@@ -572,187 +571,206 @@ pub(super) async fn move_within_same_volume_with_progress(
     config: &VolumeCopyConfig,
 ) -> Result<(), WriteOperationError> {
     let total_files = source_paths.len();
-    let mut files_moved = 0usize;
-    let mut bytes_moved = 0u64;
-    let mut last_progress_time = Instant::now();
-    let progress_interval = state.progress_interval;
-    let mut apply_to_all_resolution: Option<ConflictResolution> = None;
 
-    // Bulk-skip pre-known conflicts upfront (Skip mode only). See
-    // `copy_volumes_with_progress` for rationale.
-    let pre_skip_paths: HashSet<PathBuf> =
-        if config.conflict_resolution == ConflictResolution::Skip && !config.pre_known_conflicts.is_empty() {
-            let names: HashSet<&str> = config.pre_known_conflicts.iter().map(String::as_str).collect();
-            source_paths
-                .iter()
-                .filter(|p| {
-                    p.file_name()
-                        .and_then(|n| n.to_str())
-                        .map(|n| names.contains(n))
-                        .unwrap_or(false)
+    let pre_skip_paths = build_pre_skip_set(source_paths, config.conflict_resolution, &config.pre_known_conflicts);
+    let bulk_skip_files = pre_skip_paths.len();
+
+    let driver_config = DriverConfig {
+        operation_type: WriteOperationType::Move,
+        phase: WriteOperationPhase::Copying,
+        conflict_resolution: config.conflict_resolution,
+        pre_known_conflicts: config.pre_known_conflicts.clone(),
+    };
+
+    // Interior mutability shapes the apply-to-all latch into a Mutex cell so
+    // the conflict resolver stays `Fn`-shaped (the driver's
+    // `for<'a> FnMut(...) -> Pin<Box<dyn Future + Send + 'a>>` bound rejects
+    // `&mut` captures of outer-fn locals).
+    let apply_to_all_cell: Arc<std::sync::Mutex<Option<ConflictResolution>>> = Arc::new(std::sync::Mutex::new(None));
+
+    let config_owned: VolumeCopyConfig = config.clone();
+    let operation_id_owned: String = operation_id.to_string();
+    // SAFETY: `events` outlives every closure invocation; the driver awaits
+    // in place and the closures are dropped before this function returns.
+    let events_static: &'static dyn OperationEventSink =
+        unsafe { std::mem::transmute::<&dyn OperationEventSink, &'static dyn OperationEventSink>(events) };
+
+    let outcome = drive_transfer_serial_async(
+        events,
+        state,
+        operation_id,
+        source_paths,
+        dest_path,
+        total_files,
+        // Same-volume move tracks no per-byte total: `bytes_total = 0` on
+        // every progress event. The driver respects what we pass.
+        0,
+        bulk_skip_files,
+        0,
+        &pre_skip_paths,
+        &driver_config,
+        {
+            let volume = Arc::clone(&volume);
+            move |p: &Path| -> FetchFut<'_> {
+                let volume = Arc::clone(&volume);
+                let p_owned = p.to_path_buf();
+                Box::pin(async move { volume.get_metadata(&p_owned).await.ok().map(|m| m.size.unwrap_or(0)) })
+            }
+        },
+        {
+            let volume = Arc::clone(&volume);
+            let state = Arc::clone(state);
+            let apply_to_all = Arc::clone(&apply_to_all_cell);
+            let config = config_owned.clone();
+            let operation_id = operation_id_owned.clone();
+            move |input: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+                let volume = Arc::clone(&volume);
+                let state = Arc::clone(&state);
+                let apply_to_all = Arc::clone(&apply_to_all);
+                let config = config.clone();
+                let operation_id = operation_id.clone();
+                let source_path_owned = input.source_path.to_path_buf();
+                let initial_dest_owned = input.initial_dest_path.to_path_buf();
+                let dest_size_hint = input.dest_size_hint;
+                Box::pin(async move {
+                    log::debug!(
+                        "move_within_same_volume: conflict detected at {}",
+                        initial_dest_owned.display()
+                    );
+                    let mut latched = apply_to_all.lock().unwrap().take();
+                    // Same volume on both sides; pass `&volume` twice.
+                    // `None` source-size hint matches the legacy shape
+                    // (same-volume move has no scan phase).
+                    let resolved = resolve_volume_conflict(
+                        &volume,
+                        &source_path_owned,
+                        &volume,
+                        &initial_dest_owned,
+                        &config,
+                        events_static,
+                        &operation_id,
+                        &state,
+                        &mut latched,
+                        None,
+                        dest_size_hint,
+                    )
+                    .await;
+                    *apply_to_all.lock().unwrap() = latched;
+                    let resolved = resolved?;
+                    Ok(match resolved {
+                        None => {
+                            log::debug!(
+                                "move_within_same_volume: skipping {} due to conflict resolution",
+                                source_path_owned.display()
+                            );
+                            ConflictDecision::Skip
+                        }
+                        Some(dest_path) => ConflictDecision::Proceed { dest_path },
+                    })
                 })
-                .cloned()
-                .collect()
-        } else {
-            HashSet::new()
-        };
+            }
+        },
+        {
+            let volume = Arc::clone(&volume);
+            let progress_interval = state.progress_interval;
+            let state = Arc::clone(state);
+            let operation_id = operation_id_owned.clone();
+            let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(Instant::now()));
+            move |ctx: TransferContext<'_>| -> TransferFut<'_> {
+                let volume = Arc::clone(&volume);
+                let state = Arc::clone(&state);
+                let operation_id = operation_id.clone();
+                let last_progress_time = Arc::clone(&last_progress_time);
+                let source_path = ctx.source_path.to_path_buf();
+                let dest_item_path = ctx
+                    .dest_path
+                    .expect("async driver always supplies dest_path")
+                    .to_path_buf();
+                let bytes_done_so_far = ctx.bytes_done_so_far;
+                let files_done_so_far = ctx.files_done_so_far;
+                Box::pin(async move {
+                    let size = volume
+                        .get_metadata(&source_path)
+                        .await
+                        .ok()
+                        .and_then(|m| m.size)
+                        .unwrap_or(0);
 
-    if !pre_skip_paths.is_empty() {
-        files_moved = pre_skip_paths.len();
-        log::info!(
-            "move_within_same_volume: bulk-skipping {} pre-known conflicts before main iteration",
-            files_moved
-        );
-        state.emit_progress_via_sink(
-            events,
-            WriteProgressEvent::new(
-                operation_id.to_string(),
-                WriteOperationType::Move,
-                WriteOperationPhase::Copying,
-                None,
+                    volume
+                        .rename(&source_path, &dest_item_path, false)
+                        .await
+                        .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
+
+                    // Throttled per-source progress emit. The driver's
+                    // `Transferred` arm only updates counters; rename
+                    // itself fires no per-byte progress, so without this
+                    // emit cancel-mid-batch sinks listening to
+                    // `emit_progress` would never observe a successful
+                    // rename and never trip their cancel hook.
+                    let mut last = last_progress_time.lock().unwrap();
+                    if last.elapsed() >= progress_interval {
+                        *last = Instant::now();
+                        drop(last);
+                        let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
+                        let new_files = files_done_so_far + 1;
+                        let new_bytes = bytes_done_so_far + size;
+                        state.emit_progress_via_sink(
+                            events_static,
+                            WriteProgressEvent::new(
+                                operation_id.clone(),
+                                WriteOperationType::Move,
+                                WriteOperationPhase::Copying,
+                                file_name,
+                                new_files,
+                                total_files,
+                                new_bytes,
+                                0,
+                            ),
+                        );
+                    }
+
+                    Ok(TransferOutcome::Transferred { bytes: size })
+                })
+            }
+        },
+    )
+    .await;
+
+    let files_moved = outcome.files_done;
+    let bytes_moved = outcome.bytes_done;
+
+    match outcome.intent {
+        PostLoopIntent::Completed => {
+            log::info!(
+                "move_within_same_volume: completed op={}, files={}, bytes={}",
+                operation_id,
                 files_moved,
-                total_files,
-                bytes_moved,
-                0,
-            ),
-        );
-    }
-
-    for source_path in source_paths {
-        if is_cancelled(&state.intent) {
-            // Same-volume rename has no rollback (the previous renames stay
-            // in place). Emit `write-cancelled` so the FE closes the dialog;
-            // the outer wrapper only logs the typed `Cancelled` error.
+                bytes_moved
+            );
+            events.emit_complete(WriteCompleteEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Move,
+                files_processed: files_moved,
+                bytes_processed: bytes_moved,
+            });
+            Ok(())
+        }
+        PostLoopIntent::Cancelled => {
+            // Same-volume rename has no rollback; emit `write-cancelled`
+            // so the FE closes the dialog. The outer wrapper only logs
+            // the typed `Cancelled` error otherwise.
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Move,
                 files_processed: files_moved,
                 rolled_back: false,
             });
-            return Err(WriteOperationError::Cancelled {
+            Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
-            });
+            })
         }
-
-        // Pre-known conflict, already accounted upfront.
-        if pre_skip_paths.contains(source_path) {
-            continue;
-        }
-
-        let file_name = source_path.file_name().ok_or_else(|| WriteOperationError::IoError {
-            path: source_path.display().to_string(),
-            message: "Invalid source path".to_string(),
-        })?;
-
-        let mut dest_item = dest_path.join(file_name);
-
-        // Check for conflict: does destination already exist?
-        if let Ok(dest_meta) = volume.get_metadata(&dest_item).await {
-            let source_is_dir = volume.is_directory(source_path).await.unwrap_or(false);
-            log::debug!(
-                "move_within_same_volume: conflict detected at {} (source_is_dir={}, dest_is_dir={})",
-                dest_item.display(),
-                source_is_dir,
-                dest_meta.is_directory,
-            );
-
-            let resolved = resolve_volume_conflict(
-                &volume,
-                source_path,
-                &volume,
-                &dest_item,
-                config,
-                events,
-                operation_id,
-                state,
-                &mut apply_to_all_resolution,
-                None,
-                dest_meta.size,
-            )
-            .await?;
-
-            match resolved {
-                None => {
-                    // Skip: don't move this file. Still counts toward
-                    // progress so the bar doesn't stall through a run
-                    // of conflicts.
-                    log::debug!(
-                        "move_within_same_volume: skipping {} due to conflict resolution",
-                        source_path.display()
-                    );
-                    files_moved += 1;
-                    if last_progress_time.elapsed() >= progress_interval {
-                        state.emit_progress_via_sink(
-                            events,
-                            WriteProgressEvent::new(
-                                operation_id.to_string(),
-                                WriteOperationType::Move,
-                                WriteOperationPhase::Copying,
-                                Some(file_name.to_string_lossy().to_string()),
-                                files_moved,
-                                total_files,
-                                bytes_moved,
-                                0,
-                            ),
-                        );
-                        last_progress_time = Instant::now();
-                    }
-                    continue;
-                }
-                Some(resolved_path) => {
-                    dest_item = resolved_path;
-                }
-            }
-        }
-
-        let size = volume
-            .get_metadata(source_path)
-            .await
-            .ok()
-            .and_then(|m| m.size)
-            .unwrap_or(0);
-
-        volume
-            .rename(source_path, &dest_item, false)
-            .await
-            .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
-
-        files_moved += 1;
-        bytes_moved += size;
-
-        if last_progress_time.elapsed() >= progress_interval {
-            state.emit_progress_via_sink(
-                events,
-                WriteProgressEvent::new(
-                    operation_id.to_string(),
-                    WriteOperationType::Move,
-                    WriteOperationPhase::Copying,
-                    Some(file_name.to_string_lossy().to_string()),
-                    files_moved,
-                    total_files,
-                    bytes_moved,
-                    0,
-                ),
-            );
-            last_progress_time = Instant::now();
-        }
+        PostLoopIntent::Failed(err) => Err(err),
     }
-
-    log::info!(
-        "move_within_same_volume: completed op={}, files={}, bytes={}",
-        operation_id,
-        files_moved,
-        bytes_moved
-    );
-
-    events.emit_complete(WriteCompleteEvent {
-        operation_id: operation_id.to_string(),
-        operation_type: WriteOperationType::Move,
-        files_processed: files_moved,
-        bytes_processed: bytes_moved,
-    });
-
-    Ok(())
 }
 
 #[cfg(test)]
