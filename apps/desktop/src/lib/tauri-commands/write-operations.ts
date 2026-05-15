@@ -217,6 +217,27 @@ export function formatBytes(bytes: number): string {
 }
 
 /**
+ * Formats a files-per-second rate for the progress dialog.
+ *
+ * - `< 3`: 1 decimal (`"0.4 files/s"`, `"1.8 files/s"`). Small values aren't useful as integers.
+ * - Rounds to exactly `1`: `"1 file/s"` (singular).
+ * - `>= 3`: integer (`"27 files/s"`). Decimal precision adds nothing at high rates.
+ *
+ * Returns `null` for rates that round to `0.0` so the caller can hide the readout
+ * entirely. The previous "0 files/s" display masked the real (sub-1) rates that
+ * heterogeneous-size copies produce.
+ */
+export function formatFilesPerSecond(rate: number): string | null {
+  if (rate < 3) {
+    const oneDecimal = Math.round(rate * 10) / 10
+    if (oneDecimal === 0) return null
+    if (oneDecimal === 1) return '1 file/s'
+    return `${oneDecimal.toFixed(1)} files/s`
+  }
+  return `${String(Math.round(rate))} files/s`
+}
+
+/**
  * Formats seconds as human-readable duration (like "2m 30s").
  */
 export function formatDuration(seconds: number): string {

@@ -20,6 +20,7 @@
         onScanPreviewError,
         onScanPreviewCancelled,
         formatDuration,
+        formatFilesPerSecond,
         DEFAULT_VOLUME_ID,
         type WriteProgressEvent,
         type WriteCompleteEvent,
@@ -1027,8 +1028,11 @@
                         {#if bytesPerSecond !== null && bytesPerSecond > 0}
                             <span class="progress-speed"><Size bytes={bytesPerSecond} />/s</span>
                         {/if}
-                        {#if filesPerSecond !== null && filesPerSecond > 0}
-                            <span class="progress-speed">{formatNumber(Math.round(filesPerSecond))} files/s</span>
+                        {#if filesPerSecond !== null}
+                            {@const filesPerSecLabel = formatFilesPerSecond(filesPerSecond)}
+                            {#if filesPerSecLabel !== null}
+                                <span class="progress-speed">{filesPerSecLabel}</span>
+                            {/if}
                         {/if}
                     </span>
                     {#if etaSecondsDisplay !== null}
