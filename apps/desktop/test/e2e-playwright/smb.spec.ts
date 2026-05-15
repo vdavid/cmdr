@@ -188,12 +188,9 @@ describeSmb('SMB host discovery', () => {
     await mcpSelectVolume('left', 'Network')
 
     // Wait for virtual hosts to appear (injected by smb-e2e feature).
-    // 60s: hosts typically appear within 1-3 s, but on Linux Docker the
-    // simultaneous prefetches kicked off at app startup can starve the
-    // network-host-found flush past 30 s. Bumped so the first attempt clears
-    // the spec-level `retries: 1` safety net (which is reserved for GVFS
-    // mount races below, not discovery).
-    await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), 60000)
+    // 30s: defensive bound. Hosts typically appear within 1-3 s; longer budget covers
+    // mDNS discovery latency variance on Linux Docker.
+    await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), 30000)
 
     const hasGuest = await hostExistsInPane(tauriPage, 'SMB Test (Guest)')
     const hasAuth = await hostExistsInPane(tauriPage, 'SMB Test (Auth)')
@@ -491,14 +488,12 @@ describeSmb('SMB unicode server', () => {
 
     // Switch to Network, open unicode host
     await mcpSelectVolume('left', 'Network')
-    await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Unicode)'), 60000)
+    await pollUntil(tauriPage, async () => hostExistsInPane(tauriPage, 'SMB Test (Unicode)'), 15000)
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'SMB Test (Unicode)' })
     await mcpCall('open_under_cursor', {})
 
-    // Wait for share browser to load, should show at least one share.
-    // 60s deadline: opening the host triggers a fresh share enum over the
-    // in-Docker SMB hop; matches the other discovery-style polls in this spec.
+    // Wait for share browser to load, should show at least one share
     await pollUntil(
       tauriPage,
       async () => {
@@ -507,7 +502,7 @@ describeSmb('SMB unicode server', () => {
           return rows.length > 0;
         })()`)
       },
-      60000,
+      30000,
     )
 
     // Verify share names rendered (not empty or garbled)
